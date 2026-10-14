@@ -2707,6 +2707,51 @@
         }
       }
     },
+    "/api/v1/users/lookup": {
+      "get": {
+        "tags": [
+          "UsersLookup"
+        ],
+        "operationId": "LookupUsers",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "maxLength": 100,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserLookupItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/intake/parse-email": {
       "post": {
         "tags": [
@@ -10038,6 +10083,22 @@
           }
         }
       },
+      "UserLookupItem": {
+        "required": [
+          "userId",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          }
+        }
+      },
       "UserPodDto": {
         "required": [
           "podId",
@@ -10599,6 +10660,9 @@
     },
     {
       "name": "Users"
+    },
+    {
+      "name": "UsersLookup"
     },
     {
       "name": "Intake"
