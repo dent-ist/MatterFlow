@@ -588,7 +588,7 @@ Stored fields: `DueDate` (date, optional), `DueTime` (time, optional, requires D
 | Forms | `/forms/{definitionId}`, `/forms/{definitionId}/versions`, `POST .../versions/{id}/publish`, `POST .../versions/{id}/clone`, `GET /forms/versions/{id}/schema` |
 | Workflow config | `/step-definitions`, `/workflows`, `/workflows/{id}/versions`, `POST .../publish` |
 | Tasks | `POST/GET /tasks`, `GET/PUT /tasks/{id}`, status/assignment/priority actions, `/tasks/{id}/assets`, `/tasks/{id}/comments`, `/tasks/{id}/workflow`, step actions, `/tasks/{id}/activity` |
-| Views | `GET /views/my-work`, `/views/pod-work`, `/views/dashboard`; Task Queue = `GET /tasks` with filters |
+| Views | `GET /my-work`, `/pod-work`, `/dashboard`; Task Queue = `GET /tasks` with filters |
 | Search | `GET /search?q=` (grouped), `GET /search/{type}` (paged) |
 | Intake | `POST /intake/parse-email` (multipart), no persistence |
 | Audit | `GET /audit/events` |

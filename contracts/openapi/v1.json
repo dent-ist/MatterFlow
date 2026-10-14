@@ -5073,6 +5073,38 @@
         }
       }
     },
+    "/api/v1/dashboard": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "GetDashboard",
+        "parameters": [
+          {
+            "name": "periodDays",
+            "in": "query",
+            "schema": {
+              "maximum": 365,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/task-queue": {
       "get": {
         "tags": [
@@ -7998,6 +8030,297 @@
               "integer"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "DashboardAgingBucket": {
+        "required": [
+          "key",
+          "label",
+          "minDays",
+          "maxDays",
+          "count",
+          "query"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "minDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": "string"
+          }
+        }
+      },
+      "DashboardBreakdownItem": {
+        "required": [
+          "id",
+          "code",
+          "label",
+          "count",
+          "query",
+          "isOther"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isOther": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DashboardCount": {
+        "required": [
+          "count",
+          "query"
+        ],
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": "string"
+          }
+        }
+      },
+      "DashboardMine": {
+        "required": [
+          "open",
+          "overdue",
+          "dueSoon",
+          "createdByMe"
+        ],
+        "type": "object",
+        "properties": {
+          "open": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "overdue": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "dueSoon": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "createdByMe": {
+            "$ref": "#/components/schemas/DashboardCount"
+          }
+        }
+      },
+      "DashboardPeriod": {
+        "required": [
+          "days",
+          "from",
+          "to"
+        ],
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "DashboardRecentTask": {
+        "required": [
+          "taskId",
+          "taskNumber",
+          "title",
+          "matterId",
+          "matterRef",
+          "matterName",
+          "status",
+          "statusLabel",
+          "atUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "taskNumber": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterRef": {
+            "type": "string"
+          },
+          "matterName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "atUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DashboardSummary": {
+        "required": [
+          "period",
+          "timeZone",
+          "generatedAtUtc",
+          "open",
+          "unassigned",
+          "overdue",
+          "onHold",
+          "dueSoon",
+          "asapOpen",
+          "completed",
+          "created",
+          "byPod",
+          "byTaskType",
+          "byPriority",
+          "byStatus",
+          "aging",
+          "recentlyCreated",
+          "recentlyCompleted",
+          "mine"
+        ],
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/DashboardPeriod"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "generatedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "open": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "unassigned": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "overdue": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "onHold": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "dueSoon": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "asapOpen": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "completed": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "created": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "byPod": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardBreakdownItem"
+            }
+          },
+          "byTaskType": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardBreakdownItem"
+            }
+          },
+          "byPriority": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardBreakdownItem"
+            }
+          },
+          "byStatus": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardBreakdownItem"
+            }
+          },
+          "aging": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardAgingBucket"
+            }
+          },
+          "recentlyCreated": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardRecentTask"
+            }
+          },
+          "recentlyCompleted": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardRecentTask"
+            }
+          },
+          "mine": {
+            "$ref": "#/components/schemas/DashboardMine"
           }
         }
       },
@@ -12935,6 +13258,9 @@
     },
     {
       "name": "TaskActivity"
+    },
+    {
+      "name": "Dashboard"
     },
     {
       "name": "TaskQueue"
