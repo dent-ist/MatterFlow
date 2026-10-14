@@ -32,6 +32,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { WorkflowDiff, diffVersions } from './workflow-diff';
 import { workflowErrors } from './workflow-errors';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { Badge, workflowStatusTone } from '../../../shared/ui/badge';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -64,7 +65,7 @@ const UNORDERED_TEXT =
  */
 @Component({
   selector: 'mf-workflow-version-page',
-  imports: [ErrorReference, RouterLink, Button, ConfirmDialog, DynamicForm],
+  imports: [Badge, ErrorReference, RouterLink, Button, ConfirmDialog, DynamicForm],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
   template: `
@@ -87,9 +88,7 @@ const UNORDERED_TEXT =
           </p>
           <h1 class="pg-title">
             {{ v.workflowName }} v{{ v.version.versionNo }}
-            <span class="wf-status" [class]="'wf-status wf-status--' + statusClass()" data-status>{{
-              v.version.status
-            }}</span>
+            <mf-badge [tone]="statusTone()" data-status>{{ v.version.status }}</mf-badge>
           </h1>
           @if (workflow()?.publishedVersionNo; as p) {
             <p class="pg-muted" data-published-note>Current published version: v{{ p }}</p>
@@ -535,8 +534,8 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
   protected readonly isPublished = computed(
     () => this.version()?.version.status === WorkflowVersionStatus.Published,
   );
-  protected readonly statusClass = computed(
-    () => this.version()?.version.status.toLowerCase() ?? '',
+  protected readonly statusTone = computed(() =>
+    workflowStatusTone(this.version()?.version.status),
   );
   protected readonly dirty = computed(
     () => this.editable() && this.currentKey() !== this.baseline(),

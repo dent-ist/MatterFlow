@@ -26,6 +26,8 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
 import { AssetLinkedTasks } from './asset-linked-tasks';
 import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ActiveBadge } from '../../../shared/ui/badge';
+import { Badge } from '../../../shared/ui/badge';
 
 type Tab = 'details' | 'tasks' | 'history';
 type LoadState = 'loading' | 'ready' | 'error';
@@ -38,6 +40,8 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-asset-detail-page',
   imports: [
+    Badge,
+    ActiveBadge,
     ErrorReference,
     RouterLink,
     Button,
@@ -72,10 +76,8 @@ type LoadState = 'loading' | 'ready' | 'error';
               <p class="pg-crumbs"><a routerLink="/assets">Assets</a> &gt; {{ a.displayName }}</p>
               <h1 class="pg-title">
                 {{ a.displayName }}
-                <span class="pg-chip" data-type-badge>{{ a.assetTypeName }}</span>
-                <span class="pg-chip" [class.pg-chip--inactive]="!a.isActive" data-status>{{
-                  a.isActive ? 'Active' : 'Inactive'
-                }}</span>
+                <mf-badge tone="info" data-type-badge>{{ a.assetTypeName }}</mf-badge>
+                <mf-active-badge [active]="a.isActive" data-status />
               </h1>
               <p class="pg-muted" data-matter>
                 Matter:

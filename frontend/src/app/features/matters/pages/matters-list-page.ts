@@ -25,13 +25,23 @@ import {
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { Pager } from '../../../shared/ui/pager';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ActiveBadge, SensitiveBadge } from '../../../shared/ui/badge';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
 /** Matters list (UX S06): search by `343-12`, `00343-00012`, a number or a name; client and status filters; state lives in the URL. */
 @Component({
   selector: 'mf-matters-list-page',
-  imports: [ErrorReference, RouterLink, Button, HasPermissionDirective, Pager, MatterRef],
+  imports: [
+    ActiveBadge,
+    SensitiveBadge,
+    ErrorReference,
+    RouterLink,
+    Button,
+    HasPermissionDirective,
+    Pager,
+    MatterRef,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -145,9 +155,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                   <td>
                     {{ m.name }}
                     @if (m.isSensitive) {
-                      <span class="pg-chip pg-chip--sensitive" title="Sensitive matter">
-                        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i> Sensitive
-                      </span>
+                      <mf-sensitive-badge />
                     }
                   </td>
                   <td>
@@ -157,9 +165,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                   </td>
                   <td>{{ m.projectCount }}</td>
                   <td>
-                    <span class="pg-chip" [class.pg-chip--inactive]="!m.isActive">{{
-                      m.isActive ? 'Active' : 'Inactive'
-                    }}</span>
+                    <mf-active-badge [active]="m.isActive" />
                   </td>
                 </tr>
               }

@@ -25,13 +25,22 @@ import {
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { Pager } from '../../../shared/ui/pager';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ActiveBadge } from '../../../shared/ui/badge';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
 /** Global Projects list (UX S07): search by name or matter reference, status filter, optional matter filter. */
 @Component({
   selector: 'mf-projects-list-page',
-  imports: [ErrorReference, RouterLink, Button, HasPermissionDirective, Pager, MatterRef],
+  imports: [
+    ActiveBadge,
+    ErrorReference,
+    RouterLink,
+    Button,
+    HasPermissionDirective,
+    Pager,
+    MatterRef,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -141,9 +150,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                     <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />
                   </td>
                   <td>
-                    <span class="pg-chip" [class.pg-chip--inactive]="!p.isActive">{{
-                      p.isActive ? 'Active' : 'Archived'
-                    }}</span>
+                    <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
                   </td>
                 </tr>
               }

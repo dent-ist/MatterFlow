@@ -21,6 +21,7 @@ import {
 } from '../../../shared/ui/list-helpers';
 import { Pager } from '../../../shared/ui/pager';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ActiveBadge, Badge } from '../../../shared/ui/badge';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -30,7 +31,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-workflows-list-page',
-  imports: [ErrorReference, RouterLink, Button, Pager],
+  imports: [Badge, ActiveBadge, ErrorReference, RouterLink, Button, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
   template: `
@@ -133,7 +134,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                   </td>
                   <td>
                     @if (w.publishedVersionNo) {
-                      <span class="wf-status wf-status--published">Published</span>
+                      <mf-badge tone="success" icon="pi-check-circle">Published</mf-badge>
                       v{{ w.publishedVersionNo }} ({{ stepsLabel(w.publishedStepCount) }})
                     } @else {
                       <span class="pg-muted">Not published</span>
@@ -141,16 +142,14 @@ type LoadState = 'loading' | 'ready' | 'error';
                   </td>
                   <td>
                     @if (w.draftVersionNo) {
-                      <span class="wf-status wf-status--draft">Draft</span>
+                      <mf-badge tone="warning" icon="pi-pencil">Draft</mf-badge>
                       v{{ w.draftVersionNo }}
                     } @else {
                       <span class="pg-muted">None</span>
                     }
                   </td>
                   <td>
-                    <span class="pg-chip" [class.pg-chip--inactive]="!w.isActive">{{
-                      w.isActive ? 'Active' : 'Inactive'
-                    }}</span>
+                    <mf-active-badge [active]="w.isActive" />
                   </td>
                 </tr>
               }

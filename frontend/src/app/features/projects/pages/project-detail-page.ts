@@ -23,6 +23,7 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
 import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
 import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ActiveBadge } from '../../../shared/ui/badge';
 
 type Tab = 'tasks' | 'details' | 'activity';
 type LoadState = 'loading' | 'ready' | 'error';
@@ -31,6 +32,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-project-detail-page',
   imports: [
+    ActiveBadge,
     ErrorReference,
     RouterLink,
     Button,
@@ -67,9 +69,7 @@ type LoadState = 'loading' | 'ready' | 'error';
               </p>
               <h1 class="pg-title">
                 {{ p.name }}
-                <span class="pg-chip" [class.pg-chip--inactive]="!p.isActive">{{
-                  p.isActive ? 'Active' : 'Archived'
-                }}</span>
+                <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
               </h1>
               <p class="pg-muted" data-matter>
                 Matter: <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />

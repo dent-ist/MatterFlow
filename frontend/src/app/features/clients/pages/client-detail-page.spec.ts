@@ -122,7 +122,7 @@ describe('ClientDetailPage', () => {
       isActive: false,
       rowVersion: 'AAAA',
     });
-    expect(el().querySelector('.pg-chip')?.textContent).toContain('Inactive');
+    expect(el().querySelector('mf-active-badge')?.textContent).toContain('Inactive');
   });
 
   it('shows a not-found state with Retry', async () => {

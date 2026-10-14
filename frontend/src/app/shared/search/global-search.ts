@@ -23,6 +23,7 @@ import {
   noResultsMessage,
   searchTypeInfo,
 } from './search-meta';
+import { Badge, SensitiveBadge } from '../ui/badge';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -47,6 +48,7 @@ interface DisplayGroup {
  * Result counts and states are announced through a live region. Only the types the user may view come back (the server filters by permission).
  */
 @Component({
+  imports: [Badge, SensitiveBadge],
   selector: 'mf-global-search',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'onDocumentClick($event)', '(focusout)': 'onFocusOut($event)' },
@@ -138,23 +140,17 @@ interface DisplayGroup {
                             }
                           </span>
                           @if (option.hit!.isSensitive && option.hit!.type === 'matter') {
-                            <span class="mf-gs__badge" title="Sensitive matter">
-                              <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-                              Sensitive
-                            </span>
+                            <mf-sensitive-badge />
                           }
                           @if (!option.hit!.isActive) {
-                            <span class="mf-gs__tag">inactive</span>
+                            <mf-badge>Inactive</mf-badge>
                           }
                         </span>
                         @if (context(option.hit!); as line) {
                           <span class="mf-gs__sub">
                             {{ line }}
                             @if (option.hit!.isSensitive && option.hit!.type !== 'matter') {
-                              <span class="mf-gs__badge" title="Sensitive matter">
-                                <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-                                Sensitive
-                              </span>
+                              <mf-sensitive-badge />
                             }
                           </span>
                         }
@@ -273,21 +269,6 @@ interface DisplayGroup {
     .mf-gs__sub {
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
-    }
-    .mf-gs__badge {
-      display: inline-block;
-      padding: 0 var(--mf-s2);
-      border-radius: var(--mf-radius);
-      background: var(--mf-warning-bg);
-      color: var(--mf-warning);
-      font-size: var(--mf-fs-xs);
-    }
-    .mf-gs__tag {
-      padding: 0 var(--mf-s2);
-      border-radius: var(--mf-radius);
-      background: var(--mf-st-cancel-bg);
-      color: var(--mf-st-cancel-fg);
-      font-size: var(--mf-fs-xs);
     }
     .mf-gs__all {
       border-top: 1px solid var(--mf-border);

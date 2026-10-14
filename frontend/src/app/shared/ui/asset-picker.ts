@@ -15,6 +15,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AssetLookupItem, AssetsClient } from '../../api/generated/api-client';
 import { ReferenceNames } from '../../core/lookups/reference-names';
+import { Badge } from './badge';
 
 /**
  * Supplies the Matter whose Assets a picker offers when the host cannot pass it as an input (the form engine creates pickers
@@ -50,6 +51,7 @@ const toChoice = (a: AssetLookupItem): Choice => ({
  * (otherwise the `AssetPickerContext` of the host page). Keyboard: arrows move, Enter selects, Escape closes.
  */
 @Component({
+  imports: [Badge],
   selector: 'mf-asset-picker',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -64,7 +66,7 @@ const toChoice = (a: AssetLookupItem): Choice => ({
             <span class="ap__detail">{{ ' ' }}{{ c.reference }}</span>
           }
           @if (c.inactive) {
-            <span class="ap__tag">inactive</span>
+            <mf-badge>Inactive</mf-badge>
           }
         </span>
       } @else {
@@ -78,7 +80,7 @@ const toChoice = (a: AssetLookupItem): Choice => ({
           <span class="ap__detail">{{ ' ' }}{{ c.reference }}</span>
         }
         @if (c.inactive) {
-          <span class="ap__tag">inactive</span>
+          <mf-badge>Inactive</mf-badge>
         }
         @if (!disabled()) {
           <button type="button" class="ap__change" (click)="clear()">Change</button>
@@ -134,7 +136,7 @@ const toChoice = (a: AssetLookupItem): Choice => ({
                   <span class="ap__detail">{{ ' ' }}{{ o.reference }}</span>
                 }
                 @if (o.inactive) {
-                  <span class="ap__tag">inactive</span>
+                  <mf-badge>Inactive</mf-badge>
                 }
               </li>
             }
@@ -222,13 +224,6 @@ const toChoice = (a: AssetLookupItem): Choice => ({
       height: 1px;
       overflow: hidden;
       clip-path: inset(50%);
-    }
-    .ap__tag {
-      padding: 0 var(--mf-s2);
-      border-radius: var(--mf-radius);
-      background: var(--mf-st-cancel-bg);
-      color: var(--mf-st-cancel-fg);
-      font-size: var(--mf-fs-xs);
     }
   `,
 })

@@ -15,6 +15,7 @@ import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { StatusFilter, isActiveParam, debounced } from './list-helpers';
 import { Pager } from './pager';
 import { ErrorReference } from './error-reference';
+import { ActiveBadge } from './badge';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -24,7 +25,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-matter-assets',
-  imports: [ErrorReference, RouterLink, Button, HasPermissionDirective, Pager],
+  imports: [ActiveBadge, ErrorReference, RouterLink, Button, HasPermissionDirective, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './page.scss',
   template: `
@@ -110,9 +111,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                   <td>{{ a.assetTypeName }}</td>
                   <td class="pg-mono">{{ a.externalReference }}</td>
                   <td>
-                    <span class="pg-chip" [class.pg-chip--inactive]="!a.isActive">{{
-                      a.isActive ? 'Active' : 'Inactive'
-                    }}</span>
+                    <mf-active-badge [active]="a.isActive" />
                   </td>
                 </tr>
               }

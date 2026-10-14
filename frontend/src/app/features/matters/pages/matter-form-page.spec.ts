@@ -132,7 +132,7 @@ describe('MatterFormPage', () => {
       await settle(fixture);
 
       expect(el().textContent).toContain('00001 Beta LLC');
-      expect(el().querySelectorAll('.mf-picker__tag')).toHaveLength(1);
+      expect(el().querySelectorAll('mf-badge')).toHaveLength(1);
     });
 
     it('maps a duplicate matter number to the field and links to the existing matter', async () => {

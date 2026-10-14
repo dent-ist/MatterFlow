@@ -25,6 +25,7 @@ import { TextField } from '../../../shared/ui/text-field';
 import { workflowErrors } from './workflow-errors';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { Badge, BadgeTone, workflowStatusTone } from '../../../shared/ui/badge';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -34,7 +35,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-workflow-edit-page',
-  imports: [ConfirmDialog, ErrorReference, RouterLink, Button, TextField, LocalTimePipe],
+  imports: [Badge, ConfirmDialog, ErrorReference, RouterLink, Button, TextField, LocalTimePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
   template: `
@@ -181,9 +182,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                       }
                     </td>
                     <td>
-                      <span class="wf-status" [class]="'wf-status wf-status--' + statusClass(v)">{{
-                        v.status
-                      }}</span>
+                      <mf-badge [tone]="statusTone(v)">{{ v.status }}</mf-badge>
                     </td>
                     <td>{{ v.isOrdered ? 'Ordered' : 'Unordered' }}</td>
                     <td>{{ v.stepCount }}</td>
@@ -290,8 +289,8 @@ export class WorkflowEditPage implements HasUnsavedChanges {
     return v.status === WorkflowVersionStatus.Draft;
   }
 
-  protected statusClass(v: WorkflowVersionSummary): string {
-    return v.status.toLowerCase();
+  protected statusTone(v: WorkflowVersionSummary): BadgeTone {
+    return workflowStatusTone(v.status);
   }
 
   async load(): Promise<void> {

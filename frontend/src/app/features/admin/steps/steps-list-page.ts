@@ -21,6 +21,7 @@ import {
 } from '../../../shared/ui/list-helpers';
 import { Pager } from '../../../shared/ui/pager';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ActiveBadge } from '../../../shared/ui/badge';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -30,7 +31,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-steps-list-page',
-  imports: [ErrorReference, RouterLink, Button, Pager],
+  imports: [ActiveBadge, ErrorReference, RouterLink, Button, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -129,9 +130,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                   <td>{{ s.description }}</td>
                   <td>{{ usage(s) }}</td>
                   <td>
-                    <span class="pg-chip" [class.pg-chip--inactive]="!s.isActive">{{
-                      s.isActive ? 'Active' : 'Inactive'
-                    }}</span>
+                    <mf-active-badge [active]="s.isActive" />
                   </td>
                 </tr>
               }

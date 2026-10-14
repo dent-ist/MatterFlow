@@ -34,7 +34,7 @@ describe('mf-entity-picker', () => {
     const options = Array.from(el().querySelectorAll('[role=option]'));
     expect(options.map((o) => o.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
       '00343 Acme Corp',
-      '00001 Beta LLC inactive',
+      '00001 Beta LLC Inactive',
     ]);
   });
 

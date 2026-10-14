@@ -16,6 +16,7 @@ import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { ActiveBadge } from '../../../shared/ui/badge';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -26,7 +27,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-asset-types-page',
-  imports: [ConfirmDialog, ErrorReference, RouterLink, Button, TextField],
+  imports: [ActiveBadge, ConfirmDialog, ErrorReference, RouterLink, Button, TextField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -179,9 +180,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                   </td>
                   <td>{{ t.assetCount }}</td>
                   <td>
-                    <span class="pg-chip" [class.pg-chip--inactive]="!t.isActive">{{
-                      t.isActive ? 'Active' : 'Inactive'
-                    }}</span>
+                    <mf-active-badge [active]="t.isActive" />
                   </td>
                   <td class="pg-row-actions">
                     @if (canManage()) {

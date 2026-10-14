@@ -314,10 +314,10 @@ describe('mf-global-search (header typeahead)', () => {
     await type('merger');
 
     const [matter, asset] = options();
-    expect(matter.querySelector('.mf-gs__badge')!.textContent).toContain('Sensitive');
-    expect(matter.querySelector('.mf-gs__tag')!.textContent).toContain('inactive');
+    expect(matter.querySelector('mf-sensitive-badge')!.textContent).toContain('Sensitive');
+    expect(matter.textContent).toContain('Inactive');
     expect(asset.querySelector('.mf-gs__sub')!.textContent).toContain('00343-00012 Merger Review');
-    expect(asset.querySelector('.mf-gs__badge')!.textContent).toContain('Sensitive');
+    expect(asset.querySelector('mf-sensitive-badge')!.textContent).toContain('Sensitive');
   });
 
   it('highlights the typed text in labels', async () => {

@@ -27,6 +27,7 @@ import { EntityActivity } from '../../../shared/ui/entity-activity';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ActiveBadge } from '../../../shared/ui/badge';
 
 type Tab = 'matters' | 'details' | 'activity';
 type LoadState = 'loading' | 'ready' | 'error';
@@ -35,6 +36,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-client-detail-page',
   imports: [
+    ActiveBadge,
     ErrorReference,
     RouterLink,
     Button,
@@ -68,9 +70,7 @@ type LoadState = 'loading' | 'ready' | 'error';
               </p>
               <h1 class="pg-title">
                 <span class="pg-mono" data-number>{{ c.clientNumber }}</span> {{ c.name }}
-                <span class="pg-chip" [class.pg-chip--inactive]="!c.isActive">{{
-                  c.isActive ? 'Active' : 'Inactive'
-                }}</span>
+                <mf-active-badge [active]="c.isActive" />
               </h1>
             </div>
             <div class="pg-actions">
@@ -162,9 +162,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                         <td>{{ m.name }}</td>
                         <td>{{ m.projectCount }}</td>
                         <td>
-                          <span class="pg-chip" [class.pg-chip--inactive]="!m.isActive">{{
-                            m.isActive ? 'Active' : 'Inactive'
-                          }}</span>
+                          <mf-active-badge [active]="m.isActive" />
                         </td>
                       </tr>
                     }

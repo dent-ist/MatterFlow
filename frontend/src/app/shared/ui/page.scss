@@ -104,26 +104,6 @@
   color: var(--mf-link);
 }
 
-.pg-chip {
-  display: inline-block;
-  padding: 0 var(--mf-s2);
-  border-radius: var(--mf-radius);
-  font-size: var(--mf-fs-sm);
-  background: var(--mf-st-done-bg);
-  color: var(--mf-st-done-fg);
-}
-
-.pg-chip--inactive {
-  background: var(--mf-st-cancel-bg);
-  color: var(--mf-st-cancel-fg);
-}
-
-.pg-chip--sensitive {
-  margin-left: var(--mf-s2);
-  background: var(--mf-warning-bg);
-  color: var(--mf-warning);
-}
-
 .pg-label {
   font-weight: 600;
   font-size: var(--mf-fs-sm);

@@ -1,28 +1,4 @@
 /* Workflow designer styles (UX S16). Page-level layout comes from shared page.scss. */
-.wf-status {
-  display: inline-block;
-  padding: 0 var(--mf-s2);
-  border-radius: var(--mf-radius);
-  font-size: var(--mf-fs-sm);
-  font-weight: 600;
-  border: 1px solid currentColor;
-}
-
-.wf-status--draft {
-  background: var(--mf-warning-bg);
-  color: var(--mf-warning);
-}
-
-.wf-status--published {
-  background: var(--mf-st-done-bg);
-  color: var(--mf-st-done-fg);
-}
-
-.wf-status--retired {
-  background: var(--mf-st-cancel-bg);
-  color: var(--mf-st-cancel-fg);
-}
-
 .wf-cols {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);

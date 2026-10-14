@@ -19,12 +19,13 @@ import { toFormDefinition } from '../../../shared/forms/form-schema';
 import { splitFormErrors } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { TaskDetailStore } from './task-detail.store';
+import { Badge, BadgeTone } from '../../../shared/ui/badge';
 
-const STATUS_TEXT: Readonly<Record<string, { text: string; icon: string }>> = {
-  PENDING: { text: 'Pending', icon: 'pi-circle' },
-  IN_PROGRESS: { text: 'In progress', icon: 'pi-play-circle' },
-  COMPLETED: { text: 'Completed', icon: 'pi-check-circle' },
-  SKIPPED: { text: 'Skipped', icon: 'pi-minus-circle' },
+const STATUS_TEXT: Readonly<Record<string, { text: string; icon: string; tone: BadgeTone }>> = {
+  PENDING: { text: 'Pending', icon: 'pi-circle', tone: 'neutral' },
+  IN_PROGRESS: { text: 'In progress', icon: 'pi-play-circle', tone: 'info' },
+  COMPLETED: { text: 'Completed', icon: 'pi-check-circle', tone: 'success' },
+  SKIPPED: { text: 'Skipped', icon: 'pi-minus-circle', tone: 'neutral' },
 };
 
 /** Patch of `current` against `original`: changed values, and `null` for values the user cleared. */
@@ -47,7 +48,7 @@ export function valuesPatch(
  */
 @Component({
   selector: 'mf-task-step',
-  imports: [DynamicForm, ConfirmDialog, LocalTimePipe],
+  imports: [Badge, DynamicForm, ConfirmDialog, LocalTimePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let s = step();
@@ -64,13 +65,13 @@ export function valuesPatch(
           <i class="pi" [class]="locked() ? 'pi-lock' : status().icon" aria-hidden="true"></i>
           <span class="step__no">{{ s.sequenceNo }}.</span>
           <span class="step__title">{{ s.title }}</span>
-          <span class="tag" data-state>{{ status().text }}</span>
+          <mf-badge [tone]="status().tone" data-state>{{ status().text }}</mf-badge>
           @if (s.isCurrent && ordered()) {
-            <span class="tag tag--current" data-current>Current step</span>
+            <mf-badge tone="info" data-current>Current step</mf-badge>
           }
-          <span class="tag tag--muted">{{ s.isSkippable ? 'Skippable' : 'Required' }}</span>
+          <mf-badge tone="neutral">{{ s.isSkippable ? 'Skippable' : 'Required' }}</mf-badge>
           @if (s.isReopenedPrerequisite) {
-            <span class="tag tag--warn" data-reopened>Reopened</span>
+            <mf-badge tone="warning" data-reopened>Reopened</mf-badge>
           }
         </button>
       </h3>
@@ -273,24 +274,6 @@ export function valuesPatch(
     .step__title {
       font-weight: 600;
     }
-    .tag {
-      padding: 0 var(--mf-s2);
-      border: 1px solid currentColor;
-      border-radius: var(--mf-radius);
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-    }
-    .tag--muted {
-      color: var(--mf-text-muted);
-      font-weight: 400;
-    }
-    .tag--current {
-      color: var(--mf-link);
-    }
-    .tag--warn {
-      background: var(--mf-warning-bg);
-      color: var(--mf-warning);
-    }
     .step__note {
       margin: var(--mf-s1) 0 0;
       color: var(--mf-text-muted);
@@ -381,7 +364,12 @@ export class TaskStep {
 
   protected readonly busy = this.store.busy;
   protected readonly status = computed(
-    () => STATUS_TEXT[this.step().status] ?? { text: this.step().status, icon: 'pi-circle' },
+    () =>
+      STATUS_TEXT[this.step().status] ?? {
+        text: this.step().status,
+        icon: 'pi-circle',
+        tone: 'neutral' as BadgeTone,
+      },
   );
   protected readonly resolved = computed(() =>
     ['COMPLETED', 'SKIPPED'].includes(this.step().status),

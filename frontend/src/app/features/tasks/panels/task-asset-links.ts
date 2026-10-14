@@ -20,6 +20,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { AssetPicker } from '../../../shared/ui/asset-picker';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { Badge } from '../../../shared/ui/badge';
 
 export const ASSETS_EMPTY = 'No assets linked.';
 export const ASSETS_CLOSED_NOTE =
@@ -35,7 +36,7 @@ export const ASSETS_CLOSED_NOTE =
  */
 @Component({
   selector: 'mf-task-asset-links',
-  imports: [AssetPicker, ConfirmDialog],
+  imports: [Badge, AssetPicker, ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="tl" aria-label="Linked assets">
@@ -127,7 +128,7 @@ export const ASSETS_CLOSED_NOTE =
                       <td>
                         {{ a.displayName }}
                         @if (!a.isActive) {
-                          <span class="tl__tag">inactive</span>
+                          <mf-badge>Inactive</mf-badge>
                         }
                       </td>
                       <td>{{ a.assetTypeName }}</td>
@@ -284,14 +285,6 @@ export const ASSETS_CLOSED_NOTE =
     .tl__buttons {
       display: flex;
       gap: var(--mf-s2);
-    }
-    .tl__tag {
-      margin-left: var(--mf-s2);
-      padding: 0 var(--mf-s2);
-      border-radius: var(--mf-radius);
-      background: var(--mf-st-cancel-bg);
-      color: var(--mf-st-cancel-fg);
-      font-size: var(--mf-fs-xs);
     }
     .tl__muted,
     .tl__note {

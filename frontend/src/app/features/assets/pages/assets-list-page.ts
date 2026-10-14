@@ -30,6 +30,7 @@ import {
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { Pager } from '../../../shared/ui/pager';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ActiveBadge } from '../../../shared/ui/badge';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -39,7 +40,15 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-assets-list-page',
-  imports: [ErrorReference, RouterLink, Button, HasPermissionDirective, Pager, MatterRef],
+  imports: [
+    ActiveBadge,
+    ErrorReference,
+    RouterLink,
+    Button,
+    HasPermissionDirective,
+    Pager,
+    MatterRef,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -167,9 +176,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                   </td>
                   <td class="pg-mono">{{ a.externalReference }}</td>
                   <td>
-                    <span class="pg-chip" [class.pg-chip--inactive]="!a.isActive">{{
-                      a.isActive ? 'Active' : 'Inactive'
-                    }}</span>
+                    <mf-active-badge [active]="a.isActive" />
                   </td>
                 </tr>
               }

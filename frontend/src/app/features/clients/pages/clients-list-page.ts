@@ -24,13 +24,14 @@ import {
 } from '../../../shared/ui/list-helpers';
 import { Pager } from '../../../shared/ui/pager';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ActiveBadge } from '../../../shared/ui/badge';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
 /** Clients list (UX S05): search by number (padded or not) or name, status filter, sortable, server paged. State lives in the URL. */
 @Component({
   selector: 'mf-clients-list-page',
-  imports: [ErrorReference, RouterLink, Button, HasPermissionDirective, Pager],
+  imports: [ActiveBadge, ErrorReference, RouterLink, Button, HasPermissionDirective, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -136,9 +137,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                   <td>{{ c.name }}</td>
                   <td>{{ c.matterCount }}</td>
                   <td>
-                    <span class="pg-chip" [class.pg-chip--inactive]="!c.isActive">{{
-                      c.isActive ? 'Active' : 'Inactive'
-                    }}</span>
+                    <mf-active-badge [active]="c.isActive" />
                   </td>
                 </tr>
               }

@@ -30,6 +30,7 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
 import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
 import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ActiveBadge } from '../../../shared/ui/badge';
 
 type Tab = 'tasks' | 'projects' | 'assets' | 'details' | 'activity';
 type LoadState = 'loading' | 'ready' | 'error';
@@ -41,6 +42,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-matter-detail-page',
   imports: [
+    ActiveBadge,
     ErrorReference,
     RouterLink,
     Button,
@@ -76,9 +78,7 @@ type LoadState = 'loading' | 'ready' | 'error';
               </p>
               <h1 class="pg-title">
                 <mf-matter-ref [value]="m.matterRef" /> {{ m.name }}
-                <span class="pg-chip" [class.pg-chip--inactive]="!m.isActive">{{
-                  m.isActive ? 'Active' : 'Inactive'
-                }}</span>
+                <mf-active-badge [active]="m.isActive" />
               </h1>
               <p class="pg-muted" data-client>
                 Client:
@@ -222,9 +222,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                         </td>
                         <td>{{ p.description }}</td>
                         <td>
-                          <span class="pg-chip" [class.pg-chip--inactive]="!p.isActive">{{
-                            p.isActive ? 'Active' : 'Archived'
-                          }}</span>
+                          <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
                         </td>
                       </tr>
                     }

@@ -204,7 +204,7 @@ describe('Projects pages', () => {
         undefined,
       );
       expect(el().textContent).toContain('00001-00003 Old');
-      expect(el().querySelectorAll('.mf-picker__tag')).toHaveLength(1); // the inactive matter is marked
+      expect(el().querySelectorAll('mf-badge')).toHaveLength(1); // the inactive matter is marked
     });
 
     it('maps a duplicate name to the field', async () => {

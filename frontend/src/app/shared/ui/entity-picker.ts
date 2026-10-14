@@ -7,6 +7,7 @@ import {
   model,
   signal,
 } from '@angular/core';
+import { Badge } from './badge';
 
 /** One selectable record in an entity picker. */
 export interface PickerOption {
@@ -24,6 +25,7 @@ export type PickerSearch = (query: string) => Promise<PickerOption[]>;
  * record is shown as text with a "Change" action. Keyboard: Arrow keys move, Enter selects, Escape closes.
  */
 @Component({
+  imports: [Badge],
   selector: 'mf-entity-picker',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -38,7 +40,7 @@ export type PickerSearch = (query: string) => Promise<PickerOption[]>;
         <div class="mf-picker__chosen" data-chosen>
           <span>{{ s.label }}</span>
           @if (s.inactive) {
-            <span class="mf-picker__tag">inactive</span>
+            <mf-badge>Inactive</mf-badge>
           }
           @if (!locked()) {
             <button type="button" class="mf-picker__change" (click)="clear()">Change</button>
@@ -82,7 +84,7 @@ export type PickerSearch = (query: string) => Promise<PickerOption[]>;
                 >
                   {{ o.label }}
                   @if (o.inactive) {
-                    <span class="mf-picker__tag">inactive</span>
+                    <mf-badge>Inactive</mf-badge>
                   }
                 </li>
               }
@@ -149,14 +151,6 @@ export type PickerSearch = (query: string) => Promise<PickerOption[]>;
       font: inherit;
       text-decoration: underline;
       cursor: pointer;
-    }
-    .mf-picker__tag {
-      margin-left: var(--mf-s2);
-      padding: 0 var(--mf-s2);
-      border-radius: var(--mf-radius);
-      background: var(--mf-st-cancel-bg);
-      color: var(--mf-st-cancel-fg);
-      font-size: var(--mf-fs-xs);
     }
   `,
 })

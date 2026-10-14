@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { FormVersionStatus, FormsClient } from '../../../api/generated/api-client';
 import { CUSTOM_FIELD_OBJECTS } from './custom-field-form-designer-api';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { Badge } from '../../../shared/ui/badge';
 
 type LoadState = 'loading' | 'ready' | 'error';
 type FormStatus = 'none' | 'draft' | 'published';
@@ -25,7 +26,7 @@ interface Row {
  */
 @Component({
   selector: 'mf-custom-fields-page',
-  imports: [ErrorReference, RouterLink, Button],
+  imports: [Badge, ErrorReference, RouterLink, Button],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -71,13 +72,15 @@ interface Row {
                 <td data-status>
                   @switch (r.status) {
                     @case ('published') {
-                      <span class="pg-chip">Published v{{ r.publishedNo }}</span>
+                      <mf-badge tone="success" icon="pi-check-circle"
+                        >Published v{{ r.publishedNo }}</mf-badge
+                      >
                       @if (r.hasDraft) {
                         <span class="pg-muted"> (draft in progress)</span>
                       }
                     }
                     @case ('draft') {
-                      <span class="pg-chip pg-chip--inactive">Draft, not published</span>
+                      <mf-badge tone="warning" icon="pi-pencil">Draft, not published</mf-badge>
                     }
                     @default {
                       <span class="pg-muted">No custom fields</span>

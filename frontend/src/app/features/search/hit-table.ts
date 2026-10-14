@@ -4,6 +4,7 @@ import { SearchHit } from '../../api/generated/api-client';
 import { highlightParts } from '../../shared/search/search-meta';
 import { CopyButton } from '../../shared/ui/copy-button';
 import { StatusBadge } from '../../shared/ui/status-badge';
+import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
 
 /**
  * The table of search results shared by the results page and Advanced Search: reference, name (a link, with the typed text highlighted), details,
@@ -11,7 +12,7 @@ import { StatusBadge } from '../../shared/ui/status-badge';
  */
 @Component({
   selector: 'mf-search-hit-table',
-  imports: [RouterLink, CopyButton, StatusBadge],
+  imports: [ActiveBadge, SensitiveBadge, RouterLink, CopyButton, StatusBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   styles: `
@@ -66,9 +67,7 @@ import { StatusBadge } from '../../shared/ui/status-badge';
                   <span class="pg-mono">{{ hit.matterRef }}</span>
                   <mf-copy-button [text]="hit.matterRef" label="matter number" />
                   @if (hit.isSensitive) {
-                    <span class="pg-chip pg-chip--sensitive" title="Sensitive matter">
-                      <i class="pi pi-exclamation-triangle" aria-hidden="true"></i> Sensitive
-                    </span>
+                    <mf-sensitive-badge />
                   }
                 </span>
               }
@@ -77,9 +76,7 @@ import { StatusBadge } from '../../shared/ui/status-badge';
               @if (hit.status) {
                 <mf-status-badge [code]="hit.status" />
               } @else {
-                <span class="pg-chip" [class.pg-chip--inactive]="!hit.isActive">{{
-                  hit.isActive ? 'Active' : 'Inactive'
-                }}</span>
+                <mf-active-badge [active]="hit.isActive" />
               }
             </td>
           </tr>
