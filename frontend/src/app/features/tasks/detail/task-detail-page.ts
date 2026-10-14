@@ -257,10 +257,7 @@ export class TaskDetailPage implements HasUnsavedChanges {
     if (next < 0) return;
     event.preventDefault();
     this.store.tab.set(TASK_TABS[next]);
-    queueMicrotask(() =>
-      (event.currentTarget as HTMLElement)
-        .querySelector<HTMLElement>(`#task-tab-${TASK_TABS[next]}`)
-        ?.focus(),
-    );
+    const id = `task-tab-${TASK_TABS[next]}`;
+    queueMicrotask(() => document.getElementById(id)?.focus());
   }
 }

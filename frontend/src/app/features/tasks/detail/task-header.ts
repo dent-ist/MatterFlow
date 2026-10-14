@@ -260,7 +260,16 @@ export class TaskHeader {
   }
 
   protected onMenuKey(event: KeyboardEvent): void {
-    if (!this.open()) return;
+    if (!this.open()) {
+      if (
+        event.key === 'ArrowDown' &&
+        (event.target as HTMLElement).dataset['statusMenu'] !== undefined
+      ) {
+        event.preventDefault();
+        this.toggle();
+      }
+      return;
+    }
     const list = this.items_().filter((b) => !b.disabled);
     const index = list.indexOf(document.activeElement as HTMLButtonElement);
     if (event.key === 'Escape') {
