@@ -8,6 +8,8 @@ import { FakeMeApi, provideFakeMe, withPermissions } from './core/auth/auth-test
 import { MeApi } from './core/auth/me-api';
 import { StubMeApi } from './core/auth/stub-me-api';
 import { APP_ENV } from './core/config/app-env';
+import { IdentityAdminApi } from './core/identity-admin/identity-admin-api';
+import { InMemoryIdentityAdminApi } from './core/identity-admin/in-memory-identity-admin-api';
 import { USER_TIME_ZONE } from './core/time/clock';
 import { environment } from '../environments/environment';
 
@@ -110,6 +112,21 @@ describe('App shell with the stub provider', () => {
       'Search',
     );
     expect(document.body.textContent).toContain('Create Task');
+  });
+
+  it('shows the pending-access count badge on Users & Roles for users who can view users', async () => {
+    configure('director');
+    TestBed.configureTestingModule({
+      providers: [{ provide: IdentityAdminApi, useClass: InMemoryIdentityAdminApi }],
+    });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/dashboard');
+    await new Promise((r) => setTimeout(r, 20));
+    harness.detectChanges();
+
+    const badge = document.querySelector('[data-pending-badge]');
+    expect(badge?.textContent?.trim()).toBe('2');
+    expect(badge?.closest('a')?.textContent).toContain('Users & Roles');
   });
 
   it('hides nav items the user has no View permission for', async () => {

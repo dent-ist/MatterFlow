@@ -159,3 +159,15 @@
     padding: 0;
   }
 }
+
+.mf-badge {
+  margin-left: auto;
+  min-width: 1.5em;
+  padding: 0 var(--mf-s2);
+  text-align: center;
+  font-size: var(--mf-fs-xs);
+  font-weight: 600;
+  color: #fff;
+  background: var(--mf-danger);
+  border-radius: 999px;
+}

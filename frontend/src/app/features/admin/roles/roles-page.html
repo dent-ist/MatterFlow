@@ -1,0 +1,127 @@
+<header class="mf-head">
+  <h1>Roles &amp; Permissions</h1>
+  <a routerLink="/admin/users" class="mf-link">Users</a>
+</header>
+
+@if (loadError()) {
+  <p class="mf-error" role="alert">We could not load roles. Try again.</p>
+} @else {
+  <div class="mf-layout">
+    <section class="mf-list" aria-label="Roles">
+      <ul>
+        @for (r of roles(); track r.roleId) {
+          <li>
+            <button
+              type="button"
+              class="mf-role"
+              [attr.data-role]="r.roleId"
+              [class.mf-active]="selected()?.roleId === r.roleId"
+              (click)="edit(r)"
+            >
+              <span class="mf-name">{{ r.name }}</span>
+              @if (r.isSystemAdmin) {
+                <span class="mf-chip">Built-in, locked</span>
+              }
+              <span class="mf-count">{{ r.memberCount }} members</span>
+            </button>
+          </li>
+        }
+      </ul>
+      <p-button label="New role" icon="pi pi-plus" size="small" (onClick)="startNew()" />
+    </section>
+
+    @if (editing()) {
+      <section class="mf-editor" aria-label="Role editor" data-editor>
+        @if (locked()) {
+          <p class="mf-info" data-locked>
+            System Admin holds every permission and cannot be edited or deleted.
+          </p>
+        }
+        @if (error()) {
+          <p class="mf-error" role="alert" data-error>{{ error() }}</p>
+        }
+
+        <label>
+          Name
+          <input
+            type="text"
+            maxlength="100"
+            data-name
+            [disabled]="locked()"
+            [value]="draftName()"
+            (input)="draftName.set($any($event.target).value)"
+          />
+        </label>
+        @if (nameError()) {
+          <p class="mf-error" role="alert" data-name-error>{{ nameError() }}</p>
+        }
+        <label>
+          Description
+          <input
+            type="text"
+            maxlength="500"
+            data-description
+            [disabled]="locked()"
+            [value]="draftDescription()"
+            (input)="draftDescription.set($any($event.target).value)"
+          />
+        </label>
+
+        <div class="mf-tools">
+          <label>
+            Search permissions
+            <input
+              type="search"
+              data-filter
+              [value]="filter()"
+              (input)="filter.set($any($event.target).value)"
+            />
+          </label>
+          @if (!locked()) {
+            <label>
+              Copy from role
+              <select data-copy (change)="copyFrom($any($event.target).value)">
+                <option value="">Choose...</option>
+                @for (r of roles(); track r.roleId) {
+                  <option [value]="r.roleId">{{ r.name }}</option>
+                }
+              </select>
+            </label>
+          }
+        </div>
+
+        <p class="mf-live" aria-live="polite" data-note>{{ note() }}</p>
+
+        @for (g of visibleGroups(); track g.group) {
+          <fieldset [attr.data-group]="g.group" [disabled]="locked()">
+            <legend>{{ g.group }}</legend>
+            @for (p of g.permissions; track p.code) {
+              <label class="mf-perm">
+                <input
+                  type="checkbox"
+                  [attr.data-perm]="p.code"
+                  [checked]="locked() || isChecked(p.code)"
+                  (change)="toggle(p.code, $any($event.target).checked)"
+                />
+                <span>
+                  <strong>{{ p.code }}</strong>
+                  <span class="mf-muted">{{ p.description }}</span>
+                </span>
+              </label>
+            }
+          </fieldset>
+        }
+
+        @if (!locked()) {
+          <p class="mf-muted">Changes apply on each user's next request.</p>
+          <div class="mf-actions">
+            <p-button label="Save" [disabled]="saving()" (onClick)="save()" />
+            @if (canDelete()) {
+              <p-button label="Delete role" severity="danger" [text]="true" (onClick)="remove()" />
+            }
+          </div>
+        }
+      </section>
+    }
+  </div>
+}

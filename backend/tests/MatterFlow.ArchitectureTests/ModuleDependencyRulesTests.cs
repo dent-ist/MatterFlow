@@ -18,7 +18,7 @@ public class ModuleDependencyRulesTests
     /// <summary>Allowed Contracts dependencies per module (the arrows in the section 5.2 diagram).</summary>
     private static readonly Dictionary<string, string[]> AllowedContracts = new()
     {
-        ["Identity"] = [],
+        ["Identity"] = ["Audit"],
         ["Audit"] = [],
         ["Configuration"] = ["Identity", "Audit"],
         ["Organization"] = ["Configuration", "Identity", "Audit"],

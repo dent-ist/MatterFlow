@@ -6,7 +6,7 @@ import {
 } from '@angular/common/http';
 import { Injector, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { Observable, catchError, from, map, mergeMap, of, throwError } from 'rxjs';
 import { AuthStore } from '../auth/auth.store';
 import { APP_PATHS } from '../auth/guards';
 import { NotificationService } from '../notify/notification.service';
@@ -38,16 +38,46 @@ export const problemDetailsInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error: unknown) => {
       if (!(error instanceof HttpErrorResponse)) return throwError(() => error);
-      const apiError = ApiError.from(error);
-      if (!req.context.get(SKIP_ERROR_TOAST)) {
-        const toast = toastFor(apiError);
-        if (toast) injector.get(NotificationService).error(toast.summary, toast.detail);
-      }
-      if (shouldRefreshPermissions(req, apiError)) void refreshAfterDenied(injector);
-      return throwError(() => apiError);
+      return decodeBlobBody(error).pipe(
+        mergeMap((decoded) => {
+          const apiError = ApiError.from(decoded);
+          if (!req.context.get(SKIP_ERROR_TOAST)) {
+            const toast = toastFor(apiError);
+            if (toast) injector.get(NotificationService).error(toast.summary, toast.detail);
+          }
+          if (shouldRefreshPermissions(req, apiError)) void refreshAfterDenied(injector);
+          return throwError(() => apiError);
+        }),
+      );
     }),
   );
 };
+
+/**
+ * The generated NSwag client requests `responseType: 'blob'`, so error bodies arrive as a Blob. Parse them as JSON so the
+ * problem details (stable `code`, field errors) are available to callers; synchronous for non-blob bodies.
+ */
+function decodeBlobBody(error: HttpErrorResponse): Observable<HttpErrorResponse> {
+  if (!(error.error instanceof Blob)) return of(error);
+  return from(error.error.text()).pipe(
+    map((text) => {
+      let body: unknown = text;
+      try {
+        body = JSON.parse(text);
+      } catch {
+        /* not JSON: keep the raw text */
+      }
+      return new HttpErrorResponse({
+        error: body,
+        headers: error.headers,
+        status: error.status,
+        statusText: error.statusText,
+        url: error.url ?? undefined,
+      });
+    }),
+    catchError(() => of(error)),
+  );
+}
 
 export const MF_HTTP_INTERCEPTORS = [
   timeZoneInterceptor,

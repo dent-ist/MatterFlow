@@ -52,6 +52,14 @@
             <a [routerLink]="item.path" routerLinkActive="mf-active" [title]="item.label">
               <i [class]="item.icon" aria-hidden="true"></i>
               <span class="mf-nav-label">{{ item.label }}</span>
+              @if (item.pendingBadge && pendingUsers.count() > 0) {
+                <span
+                  class="mf-badge"
+                  data-pending-badge
+                  [attr.aria-label]="pendingUsers.count() + ' users waiting for access'"
+                  >{{ pendingUsers.count() }}</span
+                >
+              }
             </a>
           </li>
         }

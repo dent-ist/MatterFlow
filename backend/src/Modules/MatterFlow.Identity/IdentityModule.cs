@@ -52,6 +52,8 @@ public static class IdentityModule
         services.AddScoped<IdentitySeeder>();
         services.AddScoped<PodService>();
         services.AddScoped<IPodDirectory, PodDirectory>();
+        services.AddScoped<Application.UserAdministration>();
+        services.AddScoped<Application.RoleAdministration>();
 
         services.AddScoped<CurrentUser>();
         services.Replace(ServiceDescriptor.Scoped<ICurrentUser>(sp => sp.GetRequiredService<CurrentUser>()));

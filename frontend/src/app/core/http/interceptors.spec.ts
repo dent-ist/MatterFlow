@@ -139,6 +139,25 @@ describe('HTTP interceptors', () => {
     expect(messages.add).not.toHaveBeenCalled();
   });
 
+  it('parses problem details from blob error bodies (generated NSwag client)', async () => {
+    const { http, ctrl, messages } = setup();
+    let caught: unknown;
+    http
+      .get('/api/v1/users/1', { responseType: 'blob' })
+      .subscribe({ error: (e: unknown) => (caught = e) });
+    const body = new Blob([JSON.stringify({ code: 'LAST_ADMIN', detail: 'Keep one admin.' })], {
+      type: 'application/problem+json',
+    });
+    ctrl.expectOne('/api/v1/users/1').flush(body, { status: 409, statusText: 'Conflict' });
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(caught).toBeInstanceOf(ApiError);
+    expect((caught as ApiError).code).toBe('LAST_ADMIN');
+    expect(messages.add).toHaveBeenCalledWith(
+      expect.objectContaining({ summary: 'Keep one admin.' }),
+    );
+  });
+
   it('refreshes permissions after 403 PERMISSION_DENIED', async () => {
     const { http, ctrl, me, messages } = setup();
     await TestBed.inject(AuthStore).ensureLoaded();

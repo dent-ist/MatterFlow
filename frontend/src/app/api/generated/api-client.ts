@@ -896,6 +896,751 @@ export class PodsClient implements IPodsClient {
     }
 }
 
+export interface IRolesClient {
+    /**
+     * @return OK
+     */
+    listRoles(): Observable<RoleSummaryDto[]>;
+    /**
+     * @return Created
+     */
+    createRole(body: SaveRoleRequest): Observable<RoleDetailDto>;
+    /**
+     * @return OK
+     */
+    getRole(roleId: number): Observable<RoleDetailDto>;
+    /**
+     * @return OK
+     */
+    updateRole(roleId: number, body: SaveRoleRequest): Observable<RoleDetailDto>;
+    /**
+     * @return No Content
+     */
+    deleteRole(roleId: number): Observable<void>;
+    /**
+     * @return OK
+     */
+    listPermissions(): Observable<PermissionGroupDto[]>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class RolesClient implements IRolesClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listRoles(): Observable<RoleSummaryDto[]> {
+        let url_ = this.baseUrl + "/api/v1/roles";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListRoles(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListRoles(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RoleSummaryDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RoleSummaryDto[]>;
+        }));
+    }
+
+    protected processListRoles(response: HttpResponseBase): Observable<RoleSummaryDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RoleSummaryDto[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createRole(body: SaveRoleRequest): Observable<RoleDetailDto> {
+        let url_ = this.baseUrl + "/api/v1/roles";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateRole(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateRole(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RoleDetailDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RoleDetailDto>;
+        }));
+    }
+
+    protected processCreateRole(response: HttpResponseBase): Observable<RoleDetailDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RoleDetailDto;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getRole(roleId: number): Observable<RoleDetailDto> {
+        let url_ = this.baseUrl + "/api/v1/roles/{roleId}";
+        if (roleId === undefined || roleId === null)
+            throw new globalThis.Error("The parameter 'roleId' must be defined.");
+        url_ = url_.replace("{roleId}", encodeURIComponent("" + roleId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetRole(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetRole(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RoleDetailDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RoleDetailDto>;
+        }));
+    }
+
+    protected processGetRole(response: HttpResponseBase): Observable<RoleDetailDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RoleDetailDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateRole(roleId: number, body: SaveRoleRequest): Observable<RoleDetailDto> {
+        let url_ = this.baseUrl + "/api/v1/roles/{roleId}";
+        if (roleId === undefined || roleId === null)
+            throw new globalThis.Error("The parameter 'roleId' must be defined.");
+        url_ = url_.replace("{roleId}", encodeURIComponent("" + roleId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateRole(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateRole(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RoleDetailDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RoleDetailDto>;
+        }));
+    }
+
+    protected processUpdateRole(response: HttpResponseBase): Observable<RoleDetailDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RoleDetailDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    deleteRole(roleId: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/roles/{roleId}";
+        if (roleId === undefined || roleId === null)
+            throw new globalThis.Error("The parameter 'roleId' must be defined.");
+        url_ = url_.replace("{roleId}", encodeURIComponent("" + roleId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteRole(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteRole(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteRole(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    listPermissions(): Observable<PermissionGroupDto[]> {
+        let url_ = this.baseUrl + "/api/v1/permissions";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListPermissions(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListPermissions(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PermissionGroupDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PermissionGroupDto[]>;
+        }));
+    }
+
+    protected processListPermissions(response: HttpResponseBase): Observable<PermissionGroupDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PermissionGroupDto[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IUsersClient {
+    /**
+     * @param status (optional) 
+     * @param search (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    listUsers(status?: string | undefined, search?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfUserSummaryDto>;
+    /**
+     * @return OK
+     */
+    getUserCounts(): Observable<UserCountsDto>;
+    /**
+     * @return OK
+     */
+    getUser(userId: number): Observable<UserDetailDto>;
+    /**
+     * @return OK
+     */
+    updateUserProfile(userId: number, body: UpdateUserProfileRequest): Observable<UserDetailDto>;
+    /**
+     * @return OK
+     */
+    setUserRoles(userId: number, body: SetUserRolesRequest): Observable<UserDetailDto>;
+    /**
+     * @return OK
+     */
+    setUserActive(userId: number, body: SetUserActiveRequest): Observable<UserDetailDto>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class UsersClient implements IUsersClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param status (optional) 
+     * @param search (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    listUsers(status?: string | undefined, search?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfUserSummaryDto> {
+        let url_ = this.baseUrl + "/api/v1/users?";
+        if (status === null)
+            throw new globalThis.Error("The parameter 'status' cannot be null.");
+        else if (status !== undefined)
+            url_ += "status=" + encodeURIComponent("" + status) + "&";
+        if (search === null)
+            throw new globalThis.Error("The parameter 'search' cannot be null.");
+        else if (search !== undefined)
+            url_ += "search=" + encodeURIComponent("" + search) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListUsers(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListUsers(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultOfUserSummaryDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultOfUserSummaryDto>;
+        }));
+    }
+
+    protected processListUsers(response: HttpResponseBase): Observable<PagedResultOfUserSummaryDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfUserSummaryDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getUserCounts(): Observable<UserCountsDto> {
+        let url_ = this.baseUrl + "/api/v1/users/counts";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetUserCounts(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetUserCounts(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserCountsDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserCountsDto>;
+        }));
+    }
+
+    protected processGetUserCounts(response: HttpResponseBase): Observable<UserCountsDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserCountsDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getUser(userId: number): Observable<UserDetailDto> {
+        let url_ = this.baseUrl + "/api/v1/users/{userId}";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetUser(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetUser(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserDetailDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserDetailDto>;
+        }));
+    }
+
+    protected processGetUser(response: HttpResponseBase): Observable<UserDetailDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserDetailDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateUserProfile(userId: number, body: UpdateUserProfileRequest): Observable<UserDetailDto> {
+        let url_ = this.baseUrl + "/api/v1/users/{userId}";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateUserProfile(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateUserProfile(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserDetailDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserDetailDto>;
+        }));
+    }
+
+    protected processUpdateUserProfile(response: HttpResponseBase): Observable<UserDetailDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserDetailDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setUserRoles(userId: number, body: SetUserRolesRequest): Observable<UserDetailDto> {
+        let url_ = this.baseUrl + "/api/v1/users/{userId}/roles";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetUserRoles(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetUserRoles(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserDetailDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserDetailDto>;
+        }));
+    }
+
+    protected processSetUserRoles(response: HttpResponseBase): Observable<UserDetailDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserDetailDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setUserActive(userId: number, body: SetUserActiveRequest): Observable<UserDetailDto> {
+        let url_ = this.baseUrl + "/api/v1/users/{userId}/status";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetUserActive(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetUserActive(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserDetailDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserDetailDto>;
+        }));
+    }
+
+    protected processSetUserActive(response: HttpResponseBase): Observable<UserDetailDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserDetailDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface AddPodMembersRequest {
     userIds: number[];
 
@@ -982,6 +1727,29 @@ export interface PagedResultOfPodSummary {
     [key: string]: any;
 }
 
+export interface PagedResultOfUserSummaryDto {
+    items: UserSummaryDto[];
+    total: number;
+    page: number;
+    pageSize: number;
+
+    [key: string]: any;
+}
+
+export interface PermissionGroupDto {
+    group: string;
+    permissions: PermissionItemDto[];
+
+    [key: string]: any;
+}
+
+export interface PermissionItemDto {
+    code: string;
+    description: string;
+
+    [key: string]: any;
+}
+
 export interface PingResponse {
     status: string;
     serverTimeUtc: string;
@@ -1031,8 +1799,54 @@ export interface PodSummary {
     [key: string]: any;
 }
 
+export interface RoleDetailDto {
+    roleId: number;
+    name: string;
+    description: string | undefined;
+    isSystemAdmin: boolean;
+    memberCount: number;
+    permissionCodes: string[];
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface RoleSummaryDto {
+    roleId: number;
+    name: string;
+    description: string | undefined;
+    isSystemAdmin: boolean;
+    memberCount: number;
+    permissionCount: number;
+
+    [key: string]: any;
+}
+
+export interface SaveRoleRequest {
+    name: string;
+    description: string | undefined;
+    permissionCodes: string[];
+    rowVersion: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface SetPrimaryPodRequest {
     isPrimary: boolean | undefined;
+
+    [key: string]: any;
+}
+
+export interface SetUserActiveRequest {
+    isActive: boolean;
+    rowVersion: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface SetUserRolesRequest {
+    roleIds: number[];
+    rowVersion: string | undefined;
 
     [key: string]: any;
 }
@@ -1046,11 +1860,62 @@ export interface UpdatePodRequest {
     [key: string]: any;
 }
 
+export interface UpdateUserProfileRequest {
+    displayName: string;
+    email: string | undefined;
+    rowVersion: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface UserCountsDto {
+    pending: number;
+    active: number;
+    inactive: number;
+
+    [key: string]: any;
+}
+
+export interface UserDetailDto {
+    userId: number;
+    displayName: string;
+    email: string | undefined;
+    windowsAccount: string | undefined;
+    isActive: boolean;
+    isPending: boolean;
+    isSystemAdmin: boolean;
+    isSeededAdmin: boolean;
+    roleIds: number[];
+    roles: string[];
+    effectivePermissions: string[];
+    registeredAtUtc: string;
+    lastLoginAtUtc: string | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface UserPodDto {
     podId: number;
     name: string;
     isActive: boolean;
     isPrimary: boolean;
+
+    [key: string]: any;
+}
+
+export interface UserSummaryDto {
+    userId: number;
+    displayName: string;
+    email: string | undefined;
+    windowsAccount: string | undefined;
+    isActive: boolean;
+    isPending: boolean;
+    isSystemAdmin: boolean;
+    isSeededAdmin: boolean;
+    roles: string[];
+    registeredAtUtc: string;
+    lastLoginAtUtc: string | undefined;
 
     [key: string]: any;
 }
@@ -1086,6 +1951,7 @@ export enum ApiProblemDetailsCode {
     FORM_NOT_PUBLISHED = "FORM_NOT_PUBLISHED",
     PUBLISH_VALIDATION_FAILED = "PUBLISH_VALIDATION_FAILED",
     LAST_ADMIN = "LAST_ADMIN",
+    ROLE_IN_USE = "ROLE_IN_USE",
     EMAIL_PARSE_FAILED = "EMAIL_PARSE_FAILED",
     PAYLOAD_TOO_LARGE = "PAYLOAD_TOO_LARGE",
     HOLD_COMMENT_REQUIRED = "HOLD_COMMENT_REQUIRED",

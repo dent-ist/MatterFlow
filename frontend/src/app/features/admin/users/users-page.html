@@ -1,0 +1,237 @@
+<header class="mf-head">
+  <h1>Users &amp; Roles</h1>
+  @if (canManageRoles()) {
+    <a routerLink="/admin/roles" class="mf-link">Roles &amp; Permissions</a>
+  }
+</header>
+
+<div class="mf-tabs" role="tablist" aria-label="Users">
+  @for (t of tabs; track t.id) {
+    <button
+      type="button"
+      role="tab"
+      class="mf-tab"
+      [attr.data-tab]="t.id"
+      [attr.aria-selected]="tab() === t.id"
+      [class.mf-active]="tab() === t.id"
+      (click)="selectTab(t.id)"
+    >
+      {{ t.label }} ({{ countFor(t.id) }})
+    </button>
+  }
+  <label class="mf-search">
+    <span class="mf-sr">Search users</span>
+    <input
+      type="search"
+      data-search
+      placeholder="Search name, e-mail or account"
+      [value]="search()"
+      (input)="onSearchInput($any($event.target).value)"
+      (keydown.enter)="applySearch()"
+    />
+  </label>
+</div>
+
+<div class="mf-layout">
+  <section class="mf-list" aria-live="polite">
+    @if (loadError()) {
+      <p class="mf-error" role="alert">We could not load users. Try again.</p>
+    } @else if (loading() && users().length === 0) {
+      <p class="mf-muted">Loading...</p>
+    } @else if (users().length === 0) {
+      <p class="mf-muted" data-empty>
+        {{ tab() === 'pending' ? 'No one is waiting for access.' : 'No users found.' }}
+      </p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Windows account</th>
+            <th scope="col">First seen</th>
+            <th scope="col">Email</th>
+            <th scope="col">Roles</th>
+            <th scope="col"><span class="mf-sr">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of users(); track u.userId) {
+            <tr [attr.data-user]="u.userId" [class.mf-selected]="selected()?.userId === u.userId">
+              <td>
+                {{ u.displayName }}
+                @if (u.isSeededAdmin) {
+                  <span class="mf-chip">Seeded</span>
+                }
+              </td>
+              <td class="mf-mono">{{ u.windowsAccount }}</td>
+              <td>{{ u.registeredAtUtc | localTime }}</td>
+              <td>{{ u.email }}</td>
+              <td>{{ rolesLabel(u) }}</td>
+              <td>
+                <p-button
+                  [label]="u.isPending && canManage() ? 'Grant access' : 'Open'"
+                  [text]="true"
+                  size="small"
+                  (onClick)="open(u)"
+                />
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (pageCount() > 1) {
+        <nav class="mf-pager" aria-label="Pages">
+          <p-button
+            label="Previous"
+            [text]="true"
+            size="small"
+            [disabled]="page() <= 1"
+            (onClick)="goTo(page() - 1)"
+          />
+          <span>Page {{ page() }} of {{ pageCount() }}</span>
+          <p-button
+            label="Next"
+            [text]="true"
+            size="small"
+            [disabled]="page() >= pageCount()"
+            (onClick)="goTo(page() + 1)"
+          />
+        </nav>
+      }
+    }
+  </section>
+
+  @if (selected(); as u) {
+    <aside class="mf-panel" aria-label="User details" data-panel>
+      <header>
+        <h2>{{ u.displayName }}</h2>
+        <p-button
+          label="Close"
+          icon="pi pi-times"
+          [text]="true"
+          size="small"
+          (onClick)="closePanel()"
+        />
+      </header>
+      <p class="mf-muted">
+        <span class="mf-mono">{{ u.windowsAccount }}</span>
+        @if (u.email) {
+          &middot; {{ u.email }}
+        }
+        <br />First seen {{ u.registeredAtUtc | localTime }}
+        @if (u.lastLoginAtUtc) {
+          &middot; Last seen {{ u.lastLoginAtUtc | localTime }}
+        }
+      </p>
+
+      @if (panelError()) {
+        <p class="mf-error" role="alert" data-panel-error>{{ panelError() }}</p>
+      }
+
+      <fieldset [disabled]="!canManage()">
+        <legend>Profile</legend>
+        <label>
+          Display name
+          <input
+            type="text"
+            maxlength="200"
+            data-name
+            [value]="draftName()"
+            (input)="draftName.set($any($event.target).value)"
+          />
+        </label>
+        <label>
+          Email
+          <input
+            type="email"
+            maxlength="320"
+            data-email
+            [value]="draftEmail()"
+            (input)="draftEmail.set($any($event.target).value)"
+          />
+        </label>
+      </fieldset>
+
+      <fieldset [disabled]="!canManage()">
+        <legend>Status</legend>
+        <label class="mf-inline">
+          <input
+            type="radio"
+            name="status"
+            data-status-active
+            [checked]="draftActive()"
+            (change)="setActive(true)"
+          />
+          Active
+        </label>
+        <label class="mf-inline">
+          <input
+            type="radio"
+            name="status"
+            data-status-inactive
+            [checked]="!draftActive()"
+            (change)="setActive(false)"
+          />
+          Inactive
+        </label>
+      </fieldset>
+
+      <fieldset [disabled]="!canManage()">
+        <legend>Roles</legend>
+        @for (r of roles(); track r.roleId) {
+          <label class="mf-inline">
+            <input
+              type="checkbox"
+              [attr.data-role]="r.roleId"
+              [checked]="draftRoleIds().includes(r.roleId)"
+              (change)="toggleRole(r.roleId, $any($event.target).checked)"
+            />
+            {{ r.name }}
+          </label>
+        }
+      </fieldset>
+
+      <!-- EXTENSION POINT (Pods ticket): the Organization module adds pod membership (primary pod, pods list) here. -->
+
+      <section class="mf-effective" aria-label="Effective permissions">
+        <h3>Effective permissions ({{ u.effectivePermissions.length }})</h3>
+        @if (u.effectivePermissions.length === 0) {
+          <p class="mf-muted">No permissions. This user stays in Access Pending.</p>
+        } @else {
+          <ul>
+            @for (code of u.effectivePermissions; track code) {
+              <li>{{ code }}</li>
+            }
+          </ul>
+        }
+      </section>
+
+      @if (confirmDeactivate()) {
+        <div class="mf-confirm" role="alertdialog" aria-label="Confirm deactivation" data-confirm>
+          <p>
+            Deactivate {{ u.displayName }}? They can no longer sign in. Their assigned tasks stay
+            assigned until you reassign them one by one.
+          </p>
+        </div>
+      }
+
+      @if (canManage()) {
+        <div class="mf-actions">
+          <p-button
+            [label]="confirmDeactivate() ? 'Confirm and save' : 'Save'"
+            [disabled]="!dirty() || saving()"
+            (onClick)="save()"
+          />
+          @if (confirmDeactivate()) {
+            <p-button
+              label="Cancel"
+              severity="secondary"
+              [text]="true"
+              (onClick)="setActive(true)"
+            />
+          }
+        </div>
+      }
+    </aside>
+  }
+</div>

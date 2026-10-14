@@ -27,8 +27,16 @@ const taskTypeForms = (path: string) => ({
 /** Administration (UX 2.1). Each screen needs its own *.Manage / View permission. */
 export const ADMIN_ROUTES: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'users' },
-  page('users', 'Users & Roles', 'User.View', 'User.Manage', 'Role.Manage'),
-  page('roles', 'Roles & Permissions', 'Role.Manage'),
+  {
+    path: 'users',
+    canActivate: [permissionGuard('User.View')],
+    loadComponent: () => import('./users/users-page').then((m) => m.UsersPage),
+  },
+  {
+    path: 'roles',
+    canActivate: [permissionGuard('Role.Manage')],
+    loadComponent: () => import('./roles/roles-page').then((m) => m.RolesPage),
+  },
   {
     path: 'pods',
     canActivate: [permissionGuard('Pod.Manage', 'Pod.ManageMembers')],
