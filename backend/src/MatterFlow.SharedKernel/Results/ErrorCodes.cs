@@ -34,6 +34,7 @@ public static class ErrorCodes
     public const string FormNotPublished = "FORM_NOT_PUBLISHED";
     public const string PublishValidationFailed = "PUBLISH_VALIDATION_FAILED";
     public const string LastAdmin = "LAST_ADMIN";
+    public const string RoleInUse = "ROLE_IN_USE";
     public const string EmailParseFailed = "EMAIL_PARSE_FAILED";
     public const string PayloadTooLarge = "PAYLOAD_TOO_LARGE";
 

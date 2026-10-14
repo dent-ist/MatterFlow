@@ -49,6 +49,8 @@ public static class IdentityModule
         services.AddSingleton<IDirectoryProfileProvider, ActiveDirectoryProfileProvider>();
         services.AddScoped<IUserResolver, UserResolver>();
         services.AddScoped<IdentitySeeder>();
+        services.AddScoped<Application.UserAdministration>();
+        services.AddScoped<Application.RoleAdministration>();
 
         services.AddScoped<CurrentUser>();
         services.Replace(ServiceDescriptor.Scoped<ICurrentUser>(sp => sp.GetRequiredService<CurrentUser>()));

@@ -1,8 +1,10 @@
+using MatterFlow.SharedKernel.Audit;
 using MatterFlow.SharedKernel.Entities;
 
 namespace MatterFlow.Identity.Domain;
 
 /// <summary>The application-owned user. Every actor/assignee foreign key in the system references <see cref="Entity{TKey}.Id"/> (UserId).</summary>
+[Audited(ObjectType = "User")]
 public class AppUser : AuditedEntity<int>
 {
     public string DisplayName { get; set; } = string.Empty;
@@ -43,6 +45,7 @@ public class UserIdentity : AuditedEntity<int>
     public DateTime? VerifiedAt { get; set; }
 }
 
+[Audited(ObjectType = "Role")]
 public class Role : AuditedEntity<int>
 {
     public string Name { get; set; } = string.Empty;
