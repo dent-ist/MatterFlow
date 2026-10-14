@@ -5845,6 +5845,221 @@ export class ProjectsClient implements IProjectsClient {
     }
 }
 
+export interface ISearchClient {
+    /**
+     * @param q (optional) 
+     * @param types (optional) 
+     * @param limit (optional) 
+     * @return OK
+     */
+    search(q?: string | undefined, types?: string[] | undefined, limit?: number | undefined): Observable<SearchResponse>;
+    /**
+     * @param type (optional) 
+     * @param q (optional) 
+     * @param client (optional) 
+     * @param matter (optional) 
+     * @param project (optional) 
+     * @param assetType (optional) 
+     * @param active (optional) 
+     * @param sensitive (optional) 
+     * @param status (optional) 
+     * @param requestor (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    advancedSearch(type?: string | undefined, q?: string | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, assetType?: number | undefined, active?: boolean | undefined, sensitive?: boolean | undefined, status?: string[] | undefined, requestor?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<AdvancedSearchPage>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class SearchClient implements ISearchClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param q (optional) 
+     * @param types (optional) 
+     * @param limit (optional) 
+     * @return OK
+     */
+    search(q?: string | undefined, types?: string[] | undefined, limit?: number | undefined): Observable<SearchResponse> {
+        let url_ = this.baseUrl + "/api/v1/search?";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "q=" + encodeURIComponent("" + q) + "&";
+        if (types === null)
+            throw new globalThis.Error("The parameter 'types' cannot be null.");
+        else if (types !== undefined)
+            types && types.forEach(item => { url_ += "types=" + encodeURIComponent("" + item) + "&"; });
+        if (limit === null)
+            throw new globalThis.Error("The parameter 'limit' cannot be null.");
+        else if (limit !== undefined)
+            url_ += "limit=" + encodeURIComponent("" + limit) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSearch(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSearch(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<SearchResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<SearchResponse>;
+        }));
+    }
+
+    protected processSearch(response: HttpResponseBase): Observable<SearchResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as SearchResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param type (optional) 
+     * @param q (optional) 
+     * @param client (optional) 
+     * @param matter (optional) 
+     * @param project (optional) 
+     * @param assetType (optional) 
+     * @param active (optional) 
+     * @param sensitive (optional) 
+     * @param status (optional) 
+     * @param requestor (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    advancedSearch(type?: string | undefined, q?: string | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, assetType?: number | undefined, active?: boolean | undefined, sensitive?: boolean | undefined, status?: string[] | undefined, requestor?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<AdvancedSearchPage> {
+        let url_ = this.baseUrl + "/api/v1/search/advanced?";
+        if (type === null)
+            throw new globalThis.Error("The parameter 'type' cannot be null.");
+        else if (type !== undefined)
+            url_ += "type=" + encodeURIComponent("" + type) + "&";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "q=" + encodeURIComponent("" + q) + "&";
+        if (client === null)
+            throw new globalThis.Error("The parameter 'client' cannot be null.");
+        else if (client !== undefined)
+            url_ += "client=" + encodeURIComponent("" + client) + "&";
+        if (matter === null)
+            throw new globalThis.Error("The parameter 'matter' cannot be null.");
+        else if (matter !== undefined)
+            url_ += "matter=" + encodeURIComponent("" + matter) + "&";
+        if (project === null)
+            throw new globalThis.Error("The parameter 'project' cannot be null.");
+        else if (project !== undefined)
+            url_ += "project=" + encodeURIComponent("" + project) + "&";
+        if (assetType === null)
+            throw new globalThis.Error("The parameter 'assetType' cannot be null.");
+        else if (assetType !== undefined)
+            url_ += "assetType=" + encodeURIComponent("" + assetType) + "&";
+        if (active === null)
+            throw new globalThis.Error("The parameter 'active' cannot be null.");
+        else if (active !== undefined)
+            url_ += "active=" + encodeURIComponent("" + active) + "&";
+        if (sensitive === null)
+            throw new globalThis.Error("The parameter 'sensitive' cannot be null.");
+        else if (sensitive !== undefined)
+            url_ += "sensitive=" + encodeURIComponent("" + sensitive) + "&";
+        if (status === null)
+            throw new globalThis.Error("The parameter 'status' cannot be null.");
+        else if (status !== undefined)
+            status && status.forEach(item => { url_ += "status=" + encodeURIComponent("" + item) + "&"; });
+        if (requestor === null)
+            throw new globalThis.Error("The parameter 'requestor' cannot be null.");
+        else if (requestor !== undefined)
+            url_ += "requestor=" + encodeURIComponent("" + requestor) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAdvancedSearch(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAdvancedSearch(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AdvancedSearchPage>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AdvancedSearchPage>;
+        }));
+    }
+
+    protected processAdvancedSearch(response: HttpResponseBase): Observable<AdvancedSearchPage> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AdvancedSearchPage;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface ITasksClient {
     /**
      * @param page (optional) 
@@ -9478,6 +9693,16 @@ export interface AddTaskCommentRequest {
     [key: string]: any;
 }
 
+export interface AdvancedSearchPage {
+    type: string;
+    items: SearchHit[];
+    total: number;
+    page: number;
+    pageSize: number;
+
+    [key: string]: any;
+}
+
 export interface ApiFieldError {
     code: string;
     message: string;
@@ -10391,6 +10616,38 @@ export interface SaveWorkflowDraftRequest {
     isOrdered: boolean;
     steps: WorkflowStepPlacement[];
     rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface SearchGroup {
+    type: string;
+    items: SearchHit[];
+    hasMore: boolean;
+
+    [key: string]: any;
+}
+
+export interface SearchHit {
+    type: string;
+    id: number;
+    reference: string | undefined;
+    label: string;
+    secondary: string | undefined;
+    path: string;
+    isSensitive: boolean;
+    matterRef: string | undefined;
+    matterName: string | undefined;
+    isActive: boolean;
+    status: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface SearchResponse {
+    query: string;
+    normalized: string | undefined;
+    groups: SearchGroup[];
 
     [key: string]: any;
 }
