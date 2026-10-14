@@ -39,7 +39,7 @@ const navLabels = (root: HTMLElement) =>
   Array.from(root.querySelectorAll('nav a')).map((a) => a.textContent?.trim());
 
 describe('App shell with the stub provider', () => {
-  it('creates the root component', () => {
+  it('creates the root component', async () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -47,6 +47,7 @@ describe('App shell with the stub provider', () => {
         provideFakeMe(new FakeMeApi(withPermissions('Task.View'))),
       ],
     });
+    await TestBed.compileComponents(); // the leave-confirm host is deferred
     expect(TestBed.createComponent(App).componentInstance).toBeTruthy();
   });
 
