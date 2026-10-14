@@ -1,4 +1,9 @@
 import { Routes } from '@angular/router';
-import { placeholderRoutes } from '../../shared/ui/placeholder-routes';
 
-export const POD_WORK_ROUTES: Routes = placeholderRoutes('Pod Work');
+export const POD_WORK_ROUTES: Routes = [
+  {
+    path: '',
+    title: 'Pod Work',
+    loadComponent: () => import('./pages/pod-work-page').then((m) => m.PodWorkPage),
+  },
+];

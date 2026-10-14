@@ -1,0 +1,165 @@
+:host {
+  display: block;
+}
+
+.wt-wrap {
+  overflow-x: auto;
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-1);
+}
+
+.wt-dim {
+  opacity: 0.6;
+}
+
+.wt {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--mf-fs-md);
+}
+
+.wt th,
+.wt td {
+  padding: var(--mf-s2) var(--mf-s3);
+  border-bottom: 1px solid var(--mf-border);
+  text-align: left;
+  vertical-align: middle;
+  height: var(--mf-row-h);
+}
+
+.wt--compact th,
+.wt--compact td {
+  padding-block: var(--mf-s1);
+  height: var(--mf-row-h-compact);
+}
+
+.wt th {
+  background: var(--mf-surface-alt);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.wt-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.wt-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mf-s1);
+  min-height: var(--mf-target-min);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wt-sort .pi {
+  font-size: var(--mf-fs-xs);
+}
+
+th[aria-sort='ascending'] .wt-sort,
+th[aria-sort='descending'] .wt-sort {
+  color: var(--mf-primary);
+}
+
+/* Overdue rows get a leading bar plus the "Overdue" text in the due cell, so the cue is not color alone. */
+.wt-row--overdue td:first-child {
+  box-shadow: inset 4px 0 0 var(--mf-due-overdue);
+}
+
+.wt-mono {
+  font-family: var(--mf-font-mono);
+  white-space: nowrap;
+}
+
+.wt-link {
+  color: var(--mf-link);
+}
+
+.wt-title {
+  color: var(--mf-link);
+  font-weight: 600;
+}
+
+.wt-muted {
+  color: var(--mf-text-muted);
+}
+
+.wt-unassigned {
+  color: var(--mf-text-muted);
+  font-style: italic;
+}
+
+.wt-sensitive {
+  margin-left: var(--mf-s1);
+  color: var(--mf-warning);
+}
+
+.wt-asap {
+  display: inline-block;
+  padding: 0 var(--mf-s2);
+  border: 2px solid var(--mf-asap);
+  border-radius: 999px;
+  color: var(--mf-asap);
+  font-weight: 700;
+  font-size: var(--mf-fs-sm);
+}
+
+.wt-due {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mf-s1);
+}
+
+.wt-due--overdue {
+  color: var(--mf-due-overdue);
+}
+
+.wt-due--soon {
+  color: var(--mf-due-soon);
+}
+
+.wt-due--closed {
+  color: var(--mf-text-muted);
+}
+
+.wt-progress {
+  display: grid;
+  gap: 2px;
+  min-width: 160px;
+  font-size: var(--mf-fs-sm);
+}
+
+.wt-progress progress {
+  width: 100%;
+  height: 6px;
+  accent-color: var(--mf-primary);
+}
+
+.wt-action {
+  min-height: var(--mf-target-min);
+  padding: 0 var(--mf-s3);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+  color: var(--mf-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.wt-bone {
+  display: block;
+  height: 12px;
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface-alt);
+}

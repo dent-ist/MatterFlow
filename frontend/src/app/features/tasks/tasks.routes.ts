@@ -7,7 +7,11 @@ import { PlaceholderPage } from '../../shared/ui/placeholder-page';
 import { UserPicker } from './create/user-picker';
 
 export const TASKS_ROUTES: Routes = [
-  { path: '', component: PlaceholderPage, data: { title: 'Task Queue' } },
+  {
+    path: '',
+    title: 'Task Queue',
+    loadComponent: () => import('../task-queue/pages/task-queue-page').then((m) => m.TaskQueuePage),
+  },
   {
     path: 'new',
     canActivate: [permissionGuard('Task.Create')],
