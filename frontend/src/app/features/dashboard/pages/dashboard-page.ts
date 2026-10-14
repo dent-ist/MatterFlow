@@ -14,6 +14,7 @@ import {
   DashboardClient,
   DashboardSummary,
 } from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { formatInstantTime } from '../../../core/time/time';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
@@ -346,6 +347,7 @@ export class DashboardPage implements OnInit {
   private readonly api = inject(DashboardClient);
   private readonly destroyRef = inject(DestroyRef);
   private readonly zone = inject(USER_TIME_ZONE);
+  private readonly auth = inject(AuthStore);
   private requestId = 0;
 
   protected readonly periods = PERIODS;
@@ -361,10 +363,18 @@ export class DashboardPage implements OnInit {
     const d = this.data();
     return d ? formatInstantTime(d.generatedAtUtc, this.zone) : null;
   });
-  /** No tasks at all: nothing created yet and nothing open (the recent list is not limited to the period). */
+  /**
+   * No tasks at all: nothing created yet and nothing open (the recent list is not limited to the period). Only meaningful for people who
+   * may see department figures: for everyone else the server returns zeros for the department, which must not read as "no tasks yet".
+   */
   protected readonly isEmpty = computed(() => {
     const d = this.data();
-    return !!d && d.recentlyCreated.length === 0 && d.open.count === 0;
+    return (
+      this.auth.has('Dashboard.ViewDepartment') &&
+      !!d &&
+      d.recentlyCreated.length === 0 &&
+      d.open.count === 0
+    );
   });
   protected readonly pods = computed(() => toBars(this.data()?.byPod ?? []));
   protected readonly priorities = computed(() => toBars(this.data()?.byPriority ?? []));

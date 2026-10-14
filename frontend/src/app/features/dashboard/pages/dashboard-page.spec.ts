@@ -234,19 +234,23 @@ describe('DashboardPage', () => {
     expect(el.querySelector('[data-section="activity"]')).toBeNull();
   });
 
-  it('shows the empty state with a create button only for users who can create tasks', async () => {
+  it('shows the empty state only to people who can see department figures, with a create button only if they can create tasks', async () => {
     const empty = summary({ open: count(0, OPEN), recentlyCreated: [], recentlyCompleted: [] });
-    let el = await open(of(empty));
-    expect(el.querySelector('[data-empty]')!.textContent).toContain('No tasks yet.');
-    expect(el.querySelector('a[href="/tasks/new"]')!.textContent).toContain(
-      'Create the first task',
-    );
-    expect(el.querySelector('[data-section="department"]')).toBeNull();
+    // Without Dashboard.ViewDepartment the server returns zeros for the department: that must not read as "no tasks yet".
+    let el = await open(of(empty), ['Task.View']);
+    expect(el.querySelector('[data-empty]')).toBeNull();
+    expect(el.querySelector('[data-section="mine"]')).not.toBeNull();
 
     TestBed.resetTestingModule();
     el = await open(of(empty), ['Task.View', 'Dashboard.ViewDepartment']);
-    expect(el.querySelector('[data-empty]')).not.toBeNull();
+    expect(el.querySelector('[data-empty]')!.textContent).toContain('No tasks yet.');
     expect(el.querySelector('a[href="/tasks/new"]')).toBeNull();
+
+    TestBed.resetTestingModule();
+    el = await open(of(empty), ['Task.View', 'Task.Create', 'Dashboard.ViewDepartment']);
+    expect(el.querySelector('a[href="/tasks/new"]')!.textContent).toContain(
+      'Create the first task',
+    );
   });
 
   it('shows a loading placeholder while waiting', async () => {
