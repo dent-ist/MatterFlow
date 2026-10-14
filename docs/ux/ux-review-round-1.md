@@ -166,6 +166,12 @@ Ordered to fix shared pieces once, with visible wins first. Suggested GitHub iss
 - **`mf-badge` tones; migrate Active/Published/Sensitive/step chips** (UXR-15, UXR-27). S.
 - **`mf-matter-ref` component (link colour, monospace, copy)** (UXR-13, UXR-36). S.
 
+**Batch 1 status: implemented.** How to use the shared pieces:
+- Buttons: `.mf-btn` (secondary outline) with `--primary`, `--danger` (red outline; add `--solid` only for the confirming button in a confirm dialog), `--text` (link style), `--icon`; PrimeNG `p-button` is themed to the same four variants (`severity="secondary"` is the outline, `[text]="true"` the link style, `severity="danger"` the red outline, `styleClass="mf-btn--solid"` in dialogs). One size: 14 px label, 32 px high. Source: `frontend/src/styles/_buttons.scss` and `core/theme/mf-preset.ts`.
+- Page header: `<mf-page-header heading="..." description="..." [crumbs]="[...]">` with `mfActions` on each action (secondary first, primary last = top right), `mfTitle` for a rich title (`mf-record-title` with `mfRef`), default slot for extra header content. Nothing else renders an H1 on a screen.
+- Dates: `mfDate(value, zone)` / `| mfDate` (`Oct 12, 2026`; `Oct 12, 2026, 10:23 PM EDT`; `'date'` for the day of an instant). The one input is `mf-date-input` (from `form-engine`): accepts `Oct 12, 2026`, `10/12/2026`, `10/12/26`, `2026-10-12`, `12 Oct 2026`, shows a visible hint, tidies to the display format, keeps and reports text it cannot read. Native `type="time"` stays for the time of day.
+- Badges: `mf-badge` (tone neutral, info, success, warning, danger + optional icon), `mf-active-badge`, `mf-sensitive-badge`; matter references: `mf-matter-ref` (themed link, monospace, optional copy button via `[copy]`).
+
 ### Batch 2: tables and filters
 - **`mf-data-table` for Clients, Matters, Projects, Assets, Steps, Workflows, Task Types, Pods: sort, page size, status default, loading/empty/error** (UXR-12, UXR-19, UXR-20, UXR-05 row actions, UXR-37). L.
 - **Live debounced search box on all lists** (UXR-11). M. Depends on the table work for the shared hook.
