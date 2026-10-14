@@ -3,11 +3,14 @@ import { permissionGuard } from '../../core/auth/guards';
 import { MF_ASSET_PICKER, MF_USER_PICKER } from 'form-engine';
 import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
 import { AssetPicker } from '../../shared/ui/asset-picker';
-import { PlaceholderPage } from '../../shared/ui/placeholder-page';
 import { UserPicker } from './create/user-picker';
 
 export const TASKS_ROUTES: Routes = [
-  { path: '', component: PlaceholderPage, data: { title: 'Task Queue' } },
+  {
+    path: '',
+    title: 'Task Queue',
+    loadComponent: () => import('../task-queue/pages/task-queue-page').then((m) => m.TaskQueuePage),
+  },
   {
     path: 'new',
     canActivate: [permissionGuard('Task.Create')],

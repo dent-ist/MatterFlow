@@ -1,0 +1,123 @@
+:host {
+  display: block;
+}
+
+.wp-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mf-s3);
+  margin-bottom: var(--mf-s4);
+}
+
+.wp-title {
+  margin: 0;
+  font-size: var(--mf-fs-h1);
+}
+
+.wp-help {
+  margin: 0 0 var(--mf-s3);
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.wp-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s2) var(--mf-s5);
+  margin: 0 0 var(--mf-s3);
+  padding: 0;
+  list-style: none;
+  color: var(--mf-text-muted);
+}
+
+.wp-summary strong {
+  color: var(--mf-text);
+}
+
+.wp-field {
+  display: grid;
+  gap: var(--mf-s1);
+}
+
+.wp-field label {
+  font-weight: 600;
+  font-size: var(--mf-fs-sm);
+}
+
+.wp-select {
+  min-height: var(--mf-row-h);
+  min-width: 220px;
+  padding: 0 var(--mf-s3);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+  color: var(--mf-text);
+  font: inherit;
+}
+
+.wp-link {
+  color: var(--mf-link);
+}
+
+.wp-button {
+  min-height: var(--mf-row-h-compact);
+  padding: 0 var(--mf-s4);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+  color: var(--mf-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.wp-members {
+  width: 100%;
+  margin-bottom: var(--mf-s4);
+  border-collapse: collapse;
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-1);
+}
+
+.wp-members th,
+.wp-members td {
+  padding: var(--mf-s2) var(--mf-s3);
+  border-bottom: 1px solid var(--mf-border);
+  text-align: left;
+}
+
+.wp-members th {
+  background: var(--mf-surface-alt);
+}
+
+.wp-note {
+  color: var(--mf-text-muted);
+}
+
+.wp-link-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mf-link);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.wp-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.wl-empty-note {
+  padding: var(--mf-s5);
+  border: 1px dashed var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+  text-align: center;
+}
