@@ -376,6 +376,10 @@ export class AssetTypesClient implements IAssetTypesClient {
 
 export interface IAssetsClient {
     /**
+     * @return OK
+     */
+    listAssetLinkedTasks(assetId: number): Observable<AssetLinkedTasksResponse>;
+    /**
      * @param matterId (optional) 
      * @param assetTypeId (optional) 
      * @param isActive (optional) 
@@ -423,6 +427,59 @@ export class AssetsClient implements IAssetsClient {
     constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
         this.http = http;
         this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listAssetLinkedTasks(assetId: number): Observable<AssetLinkedTasksResponse> {
+        let url_ = this.baseUrl + "/api/v1/assets/{assetId}/linked-tasks";
+        if (assetId === undefined || assetId === null)
+            throw new globalThis.Error("The parameter 'assetId' must be defined.");
+        url_ = url_.replace("{assetId}", encodeURIComponent("" + assetId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListAssetLinkedTasks(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListAssetLinkedTasks(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetLinkedTasksResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetLinkedTasksResponse>;
+        }));
+    }
+
+    protected processListAssetLinkedTasks(response: HttpResponseBase): Observable<AssetLinkedTasksResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetLinkedTasksResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
     }
 
     /**
@@ -6920,6 +6977,670 @@ export class TaskWorkflowClient implements ITaskWorkflowClient {
     }
 }
 
+export interface ITaskCommentsClient {
+    /**
+     * @param newestFirst (optional) 
+     * @return OK
+     */
+    listTaskComments(taskId: number, newestFirst?: boolean | undefined): Observable<TaskCommentListResponse>;
+    /**
+     * @return Created
+     */
+    addTaskComment(taskId: number, body: AddTaskCommentRequest): Observable<TaskCommentResponse>;
+    /**
+     * @return OK
+     */
+    editTaskComment(taskId: number, commentId: number, body: EditTaskCommentRequest): Observable<TaskCommentResponse>;
+    /**
+     * @return No Content
+     */
+    deleteTaskComment(taskId: number, commentId: number): Observable<void>;
+    /**
+     * @return OK
+     */
+    listTaskCommentRevisions(taskId: number, commentId: number): Observable<TaskCommentRevisionListResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class TaskCommentsClient implements ITaskCommentsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param newestFirst (optional) 
+     * @return OK
+     */
+    listTaskComments(taskId: number, newestFirst?: boolean | undefined): Observable<TaskCommentListResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/comments?";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        if (newestFirst === null)
+            throw new globalThis.Error("The parameter 'newestFirst' cannot be null.");
+        else if (newestFirst !== undefined)
+            url_ += "newestFirst=" + encodeURIComponent("" + newestFirst) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListTaskComments(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListTaskComments(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskCommentListResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskCommentListResponse>;
+        }));
+    }
+
+    protected processListTaskComments(response: HttpResponseBase): Observable<TaskCommentListResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskCommentListResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    addTaskComment(taskId: number, body: AddTaskCommentRequest): Observable<TaskCommentResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/comments";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAddTaskComment(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAddTaskComment(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskCommentResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskCommentResponse>;
+        }));
+    }
+
+    protected processAddTaskComment(response: HttpResponseBase): Observable<TaskCommentResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskCommentResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    editTaskComment(taskId: number, commentId: number, body: EditTaskCommentRequest): Observable<TaskCommentResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/comments/{commentId}";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        if (commentId === undefined || commentId === null)
+            throw new globalThis.Error("The parameter 'commentId' must be defined.");
+        url_ = url_.replace("{commentId}", encodeURIComponent("" + commentId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processEditTaskComment(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processEditTaskComment(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskCommentResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskCommentResponse>;
+        }));
+    }
+
+    protected processEditTaskComment(response: HttpResponseBase): Observable<TaskCommentResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskCommentResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    deleteTaskComment(taskId: number, commentId: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/comments/{commentId}";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        if (commentId === undefined || commentId === null)
+            throw new globalThis.Error("The parameter 'commentId' must be defined.");
+        url_ = url_.replace("{commentId}", encodeURIComponent("" + commentId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteTaskComment(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteTaskComment(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteTaskComment(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    listTaskCommentRevisions(taskId: number, commentId: number): Observable<TaskCommentRevisionListResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/comments/{commentId}/revisions";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        if (commentId === undefined || commentId === null)
+            throw new globalThis.Error("The parameter 'commentId' must be defined.");
+        url_ = url_.replace("{commentId}", encodeURIComponent("" + commentId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListTaskCommentRevisions(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListTaskCommentRevisions(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskCommentRevisionListResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskCommentRevisionListResponse>;
+        }));
+    }
+
+    protected processListTaskCommentRevisions(response: HttpResponseBase): Observable<TaskCommentRevisionListResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskCommentRevisionListResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface ITaskAssetsClient {
+    /**
+     * @return OK
+     */
+    listTaskAssets(taskId: number): Observable<TaskAssetLinkListResponse>;
+    /**
+     * @return Created
+     */
+    linkTaskAsset(taskId: number, body: LinkTaskAssetRequest): Observable<TaskAssetLinkResponse>;
+    /**
+     * @return OK
+     */
+    changeTaskAssetRole(taskId: number, assetId: number, body: ChangeTaskAssetRoleRequest): Observable<TaskAssetLinkResponse>;
+    /**
+     * @return No Content
+     */
+    unlinkTaskAsset(taskId: number, assetId: number): Observable<void>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class TaskAssetsClient implements ITaskAssetsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listTaskAssets(taskId: number): Observable<TaskAssetLinkListResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/assets";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListTaskAssets(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListTaskAssets(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskAssetLinkListResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskAssetLinkListResponse>;
+        }));
+    }
+
+    protected processListTaskAssets(response: HttpResponseBase): Observable<TaskAssetLinkListResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskAssetLinkListResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    linkTaskAsset(taskId: number, body: LinkTaskAssetRequest): Observable<TaskAssetLinkResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/assets";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processLinkTaskAsset(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processLinkTaskAsset(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskAssetLinkResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskAssetLinkResponse>;
+        }));
+    }
+
+    protected processLinkTaskAsset(response: HttpResponseBase): Observable<TaskAssetLinkResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskAssetLinkResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    changeTaskAssetRole(taskId: number, assetId: number, body: ChangeTaskAssetRoleRequest): Observable<TaskAssetLinkResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/assets/{assetId}";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        if (assetId === undefined || assetId === null)
+            throw new globalThis.Error("The parameter 'assetId' must be defined.");
+        url_ = url_.replace("{assetId}", encodeURIComponent("" + assetId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processChangeTaskAssetRole(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processChangeTaskAssetRole(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskAssetLinkResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskAssetLinkResponse>;
+        }));
+    }
+
+    protected processChangeTaskAssetRole(response: HttpResponseBase): Observable<TaskAssetLinkResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskAssetLinkResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    unlinkTaskAsset(taskId: number, assetId: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/assets/{assetId}";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        if (assetId === undefined || assetId === null)
+            throw new globalThis.Error("The parameter 'assetId' must be defined.");
+        url_ = url_.replace("{assetId}", encodeURIComponent("" + assetId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUnlinkTaskAsset(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUnlinkTaskAsset(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processUnlinkTaskAsset(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface ITaskActivityClient {
+    /**
+     * @param cursor (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    getTaskActivity(taskId: number, cursor?: string | undefined, pageSize?: number | undefined): Observable<TaskActivityPage>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class TaskActivityClient implements ITaskActivityClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param cursor (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    getTaskActivity(taskId: number, cursor?: string | undefined, pageSize?: number | undefined): Observable<TaskActivityPage> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/activity?";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        if (cursor === null)
+            throw new globalThis.Error("The parameter 'cursor' cannot be null.");
+        else if (cursor !== undefined)
+            url_ += "cursor=" + encodeURIComponent("" + cursor) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetTaskActivity(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetTaskActivity(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskActivityPage>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskActivityPage>;
+        }));
+    }
+
+    protected processGetTaskActivity(response: HttpResponseBase): Observable<TaskActivityPage> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskActivityPage;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IStepDefinitionsClient {
     /**
      * @param q (optional) 
@@ -8072,6 +8793,12 @@ export interface AddPodMembersRequest {
     [key: string]: any;
 }
 
+export interface AddTaskCommentRequest {
+    bodyHtml: string;
+
+    [key: string]: any;
+}
+
 export interface ApiFieldError {
     code: string;
     message: string;
@@ -8090,6 +8817,12 @@ export interface ApiProblemDetails {
     traceId?: string | undefined;
     errors?: { [key: string]: ApiFieldError[]; } | undefined;
     meta?: any | undefined;
+
+    [key: string]: any;
+}
+
+export interface AssetLinkedTasksResponse {
+    items: AssetTaskLink[];
 
     [key: string]: any;
 }
@@ -8156,6 +8889,18 @@ export interface AssetResponse {
     [key: string]: any;
 }
 
+export interface AssetTaskLink {
+    taskId: number;
+    taskNumber: string;
+    title: string;
+    statusCode: string;
+    assetLinkRoleId: number | undefined;
+    assetLinkRoleName: string | undefined;
+    linkedAtUtc: string;
+
+    [key: string]: any;
+}
+
 export interface AssetTypeResponse {
     assetTypeId: number;
     name: string;
@@ -8217,6 +8962,13 @@ export interface CancelTaskRequest {
 export interface ChangeNumberRequest {
     number: string;
     rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface ChangeTaskAssetRoleRequest {
+    assetLinkRoleId?: number | undefined;
+    rowVersion?: string | undefined;
 
     [key: string]: any;
 }
@@ -8394,6 +9146,13 @@ export interface CustomFieldFormResponse {
     [key: string]: any;
 }
 
+export interface EditTaskCommentRequest {
+    bodyHtml: string;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export enum EmailSource {
     Eml = "eml",
     Msg = "msg",
@@ -8517,6 +9276,13 @@ export interface FormVersionSummary {
 }
 
 export interface JsonElement {
+
+    [key: string]: any;
+}
+
+export interface LinkTaskAssetRequest {
+    assetId: number;
+    assetLinkRoleId?: number | undefined;
 
     [key: string]: any;
 }
@@ -8966,6 +9732,28 @@ export interface StepUsage {
     [key: string]: any;
 }
 
+export interface TaskActivityItem {
+    eventId: number;
+    occurredAtUtc: string;
+    eventType: string;
+    category: string;
+    actor: TaskUserRef | undefined;
+    summary: string;
+    fieldKey: string | undefined;
+    oldValue: string | undefined;
+    newValue: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface TaskActivityPage {
+    items: TaskActivityItem[];
+    nextCursor: string | undefined;
+    canViewChanges: boolean;
+
+    [key: string]: any;
+}
+
 export interface TaskAllowedActions {
     canEdit: boolean;
     canAssign: boolean;
@@ -8974,6 +9762,68 @@ export interface TaskAllowedActions {
     canExecuteSteps: boolean;
     canReopenSteps: boolean;
     transitions: TaskTransitionOption[];
+
+    [key: string]: any;
+}
+
+export interface TaskAssetLinkListResponse {
+    items: TaskAssetLinkResponse[];
+    canEdit: boolean;
+
+    [key: string]: any;
+}
+
+export interface TaskAssetLinkResponse {
+    assetId: number;
+    displayName: string;
+    assetTypeName: string;
+    externalReference: string | undefined;
+    isActive: boolean;
+    assetLinkRoleId: number | undefined;
+    assetLinkRoleName: string | undefined;
+    linkedAtUtc: string;
+    linkedBy: TaskUserRef | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface TaskCommentListResponse {
+    items: TaskCommentResponse[];
+    total: number;
+
+    [key: string]: any;
+}
+
+export interface TaskCommentResponse {
+    commentId: number;
+    taskId: number;
+    purpose: string;
+    purposeLabel: string | undefined;
+    bodyHtml: string;
+    author: TaskUserRef;
+    createdAtUtc: string;
+    editedAtUtc: string | undefined;
+    isEdited: boolean;
+    canEdit: boolean;
+    canDelete: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface TaskCommentRevisionListResponse {
+    items: TaskCommentRevisionResponse[];
+
+    [key: string]: any;
+}
+
+export interface TaskCommentRevisionResponse {
+    revisionId: number;
+    bodyHtml: string;
+    reason: string;
+    revisedAtUtc: string;
+    revisedBy: TaskUserRef | undefined;
 
     [key: string]: any;
 }

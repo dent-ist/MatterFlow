@@ -12,6 +12,7 @@ public static class AuditModule
     public static IServiceCollection AddAuditModule(this IServiceCollection services)
     {
         services.AddAuditServices();
+        services.TryAddScoped<IAuditReader, AuditReader>();
         services.AddControllers().AddApplicationPart(typeof(AuditModule).Assembly);
         return services;
     }

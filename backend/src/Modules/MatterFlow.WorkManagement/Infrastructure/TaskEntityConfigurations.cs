@@ -62,3 +62,29 @@ internal sealed class TaskCommentConfiguration : IEntityTypeConfiguration<TaskCo
         b.HasIndex(x => new { x.TaskId, x.CreatedAtUtc }).HasDatabaseName("IX_TaskComment_Task");
     }
 }
+
+internal sealed class TaskCommentRevisionConfiguration : IEntityTypeConfiguration<TaskCommentRevision>
+{
+    public void Configure(EntityTypeBuilder<TaskCommentRevision> b)
+    {
+        b.ToTable("TaskCommentRevision", t => t.HasTrigger("TR_TaskCommentRevision_AppendOnly"));
+        b.Property(x => x.BodyHtml).HasColumnType("nvarchar(max)").IsRequired();
+        b.Property(x => x.Reason).HasMaxLength(10).IsUnicode(false).IsRequired();
+        b.Property(x => x.RevisedAtUtc).HasColumnName("RevisedAt").HasColumnType("datetime2(3)");
+        b.HasIndex(x => new { x.TaskCommentId, x.RevisedAtUtc }).HasDatabaseName("IX_TaskCommentRevision_Comment");
+    }
+}
+
+internal sealed class TaskAssetConfiguration : IEntityTypeConfiguration<TaskAsset>
+{
+    public void Configure(EntityTypeBuilder<TaskAsset> b)
+    {
+        // Composite key, so the shared Entity conventions do not apply: map the audit columns and the rowversion here.
+        b.ToTable("TaskAsset");
+        b.HasKey(x => new { x.TaskId, x.AssetId });
+        b.Property(x => x.CreatedAtUtc).HasColumnName("CreatedAt").IsRequired();
+        b.Property(x => x.ModifiedAtUtc).HasColumnName("ModifiedAt");
+        b.Property(x => x.RowVersion).HasColumnName("RowVersion").IsRowVersion().IsRequired();
+        b.HasIndex(x => x.AssetId).HasDatabaseName("IX_TaskAsset_Asset");
+    }
+}

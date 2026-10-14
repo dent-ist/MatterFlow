@@ -1,3 +1,4 @@
+using MatterFlow.Assets.Contracts;
 using MatterFlow.Configuration.Contracts;
 using MatterFlow.Organization.Contracts;
 using MatterFlow.WorkManagement.Application;
@@ -23,7 +24,12 @@ public static class WorkManagementModule
         services.AddScoped<TaskService>();
         services.AddScoped<TaskLifecycleService>();
         services.AddScoped<TaskWorkflowService>();
+        services.AddScoped<TaskCommentService>();
+        services.AddScoped<TaskAssetService>();
+        services.AddScoped<TaskActivityService>();
         services.AddScoped<ITaskDirectory, TaskDirectory>();
+        services.AddScoped<IAssetTaskLinkReader, TaskAssetLinkReader>();
+        services.AddScoped<IAssetLinkRoleUsage, TaskAssetLinkRoleUsage>();
 
         // Replace (not TryAdd): the Organization default says no Matter ever has open Tasks.
         services.RemoveAll<IMatterTaskGuard>();

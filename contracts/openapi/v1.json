@@ -231,6 +231,37 @@
         }
       }
     },
+    "/api/v1/assets/{assetId}/linked-tasks": {
+      "get": {
+        "tags": [
+          "Assets"
+        ],
+        "operationId": "ListAssetLinkedTasks",
+        "parameters": [
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetLinkedTasksResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/assets": {
       "get": {
         "tags": [
@@ -4606,6 +4637,441 @@
         }
       }
     },
+    "/api/v1/tasks/{taskId}/comments": {
+      "get": {
+        "tags": [
+          "TaskComments"
+        ],
+        "operationId": "ListTaskComments",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "newestFirst",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCommentListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "TaskComments"
+        ],
+        "operationId": "AddTaskComment",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddTaskCommentRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddTaskCommentRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddTaskCommentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCommentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/comments/{commentId}": {
+      "put": {
+        "tags": [
+          "TaskComments"
+        ],
+        "operationId": "EditTaskComment",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "commentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditTaskCommentRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditTaskCommentRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditTaskCommentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCommentResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "TaskComments"
+        ],
+        "operationId": "DeleteTaskComment",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "commentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/comments/{commentId}/revisions": {
+      "get": {
+        "tags": [
+          "TaskComments"
+        ],
+        "operationId": "ListTaskCommentRevisions",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "commentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCommentRevisionListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/assets": {
+      "get": {
+        "tags": [
+          "TaskAssets"
+        ],
+        "operationId": "ListTaskAssets",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskAssetLinkListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "TaskAssets"
+        ],
+        "operationId": "LinkTaskAsset",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkTaskAssetRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkTaskAssetRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkTaskAssetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskAssetLinkResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/assets/{assetId}": {
+      "put": {
+        "tags": [
+          "TaskAssets"
+        ],
+        "operationId": "ChangeTaskAssetRole",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeTaskAssetRoleRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeTaskAssetRoleRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeTaskAssetRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskAssetLinkResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "TaskAssets"
+        ],
+        "operationId": "UnlinkTaskAsset",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/activity": {
+      "get": {
+        "tags": [
+          "TaskActivity"
+        ],
+        "operationId": "GetTaskActivity",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskActivityPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/step-definitions": {
       "get": {
         "tags": [
@@ -5429,6 +5895,17 @@
           }
         }
       },
+      "AddTaskCommentRequest": {
+        "required": [
+          "bodyHtml"
+        ],
+        "type": "object",
+        "properties": {
+          "bodyHtml": {
+            "type": "string"
+          }
+        }
+      },
       "ApiFieldError": {
         "required": [
           "code",
@@ -5554,6 +6031,20 @@
               "null",
               "object"
             ]
+          }
+        }
+      },
+      "AssetLinkedTasksResponse": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetTaskLink"
+            }
           }
         }
       },
@@ -5795,6 +6286,50 @@
               "null",
               "string"
             ],
+            "format": "date-time"
+          }
+        }
+      },
+      "AssetTaskLink": {
+        "required": [
+          "taskId",
+          "taskNumber",
+          "title",
+          "statusCode",
+          "assetLinkRoleId",
+          "assetLinkRoleName",
+          "linkedAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "taskNumber": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "statusCode": {
+            "type": "string"
+          },
+          "assetLinkRoleId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "assetLinkRoleName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "linkedAtUtc": {
+            "type": "string",
             "format": "date-time"
           }
         }
@@ -6041,6 +6576,24 @@
           },
           "rowVersion": {
             "type": "string"
+          }
+        }
+      },
+      "ChangeTaskAssetRoleRequest": {
+        "type": "object",
+        "properties": {
+          "assetLinkRoleId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -6653,6 +7206,21 @@
           }
         }
       },
+      "EditTaskCommentRequest": {
+        "required": [
+          "bodyHtml",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "bodyHtml": {
+            "type": "string"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "EmailSource": {
         "enum": [
           "eml",
@@ -7048,6 +7616,27 @@
         }
       },
       "JsonElement": { },
+      "LinkTaskAssetRequest": {
+        "required": [
+          "assetId"
+        ],
+        "type": "object",
+        "properties": {
+          "assetId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "assetLinkRoleId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "MatterResponse": {
         "required": [
           "matterId",
@@ -8490,6 +9079,92 @@
           }
         }
       },
+      "TaskActivityItem": {
+        "required": [
+          "eventId",
+          "occurredAtUtc",
+          "eventType",
+          "category",
+          "actor",
+          "summary",
+          "fieldKey",
+          "oldValue",
+          "newValue"
+        ],
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "occurredAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "actor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskUserRef"
+              }
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "fieldKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "oldValue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "newValue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "TaskActivityPage": {
+        "required": [
+          "items",
+          "nextCursor",
+          "canViewChanges"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskActivityItem"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "canViewChanges": {
+            "type": "boolean"
+          }
+        }
+      },
       "TaskAllowedActions": {
         "required": [
           "canEdit",
@@ -8525,6 +9200,224 @@
             "items": {
               "$ref": "#/components/schemas/TaskTransitionOption"
             }
+          }
+        }
+      },
+      "TaskAssetLinkListResponse": {
+        "required": [
+          "items",
+          "canEdit"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskAssetLinkResponse"
+            }
+          },
+          "canEdit": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TaskAssetLinkResponse": {
+        "required": [
+          "assetId",
+          "displayName",
+          "assetTypeName",
+          "externalReference",
+          "isActive",
+          "assetLinkRoleId",
+          "assetLinkRoleName",
+          "linkedAtUtc",
+          "linkedBy",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "assetId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "assetTypeName": {
+            "type": "string"
+          },
+          "externalReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "assetLinkRoleId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "assetLinkRoleName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "linkedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "linkedBy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskUserRef"
+              }
+            ]
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "TaskCommentListResponse": {
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskCommentResponse"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "TaskCommentResponse": {
+        "required": [
+          "commentId",
+          "taskId",
+          "purpose",
+          "purposeLabel",
+          "bodyHtml",
+          "author",
+          "createdAtUtc",
+          "editedAtUtc",
+          "isEdited",
+          "canEdit",
+          "canDelete",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "commentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "taskId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "purposeLabel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bodyHtml": {
+            "type": "string"
+          },
+          "author": {
+            "$ref": "#/components/schemas/TaskUserRef"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "editedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "isEdited": {
+            "type": "boolean"
+          },
+          "canEdit": {
+            "type": "boolean"
+          },
+          "canDelete": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "TaskCommentRevisionListResponse": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskCommentRevisionResponse"
+            }
+          }
+        }
+      },
+      "TaskCommentRevisionResponse": {
+        "required": [
+          "revisionId",
+          "bodyHtml",
+          "reason",
+          "revisedAtUtc",
+          "revisedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "revisionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bodyHtml": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "revisedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revisedBy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskUserRef"
+              }
+            ]
           }
         }
       },
@@ -10681,6 +11574,15 @@
     },
     {
       "name": "TaskWorkflow"
+    },
+    {
+      "name": "TaskComments"
+    },
+    {
+      "name": "TaskAssets"
+    },
+    {
+      "name": "TaskActivity"
     },
     {
       "name": "StepDefinitions"
