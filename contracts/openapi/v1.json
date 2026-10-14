@@ -638,6 +638,141 @@
         }
       }
     },
+    "/api/v1/audit/search": {
+      "get": {
+        "tags": [
+          "AuditSearch"
+        ],
+        "operationId": "SearchAuditEvents",
+        "parameters": [
+          {
+            "name": "objectType",
+            "in": "query",
+            "schema": {
+              "maxLength": 40,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "objectId",
+            "in": "query",
+            "schema": {
+              "maxLength": 40,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "actor",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "eventType",
+            "in": "query",
+            "schema": {
+              "maxLength": 64,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "correlationId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "maximum": 9223372036854776000,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditSearchPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit/facets": {
+      "get": {
+        "tags": [
+          "AuditSearch"
+        ],
+        "operationId": "GetAuditFacets",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditFacets"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/asset-link-roles": {
       "get": {
         "tags": [
@@ -7231,6 +7366,25 @@
           }
         }
       },
+      "AuditActor": {
+        "required": [
+          "userId",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          }
+        }
+      },
       "AuditEventDto": {
         "required": [
           "auditEventId",
@@ -7344,6 +7498,172 @@
               "integer"
             ],
             "format": "int64"
+          }
+        }
+      },
+      "AuditFacets": {
+        "required": [
+          "objectTypes",
+          "eventTypes"
+        ],
+        "type": "object",
+        "properties": {
+          "objectTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "eventTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AuditObjectInfo": {
+        "required": [
+          "type",
+          "id",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AuditSearchItem": {
+        "required": [
+          "auditEventId",
+          "occurredAtUtc",
+          "actor",
+          "eventType",
+          "object",
+          "matterId",
+          "taskId",
+          "fieldKey",
+          "summary",
+          "oldValue",
+          "newValue",
+          "oldValueTruncated",
+          "newValueTruncated",
+          "valuesRedacted",
+          "correlationId",
+          "correlationEventCount"
+        ],
+        "type": "object",
+        "properties": {
+          "auditEventId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "occurredAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/AuditActor"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "object": {
+            "$ref": "#/components/schemas/AuditObjectInfo"
+          },
+          "matterId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "taskId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "fieldKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "oldValue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "newValue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "oldValueTruncated": {
+            "type": "boolean"
+          },
+          "newValueTruncated": {
+            "type": "boolean"
+          },
+          "valuesRedacted": {
+            "type": "boolean"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "correlationEventCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AuditSearchPage": {
+        "required": [
+          "items",
+          "nextCursor",
+          "pageSize",
+          "timeZone"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditSearchItem"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "timeZone": {
+            "type": "string"
           }
         }
       },
@@ -13201,6 +13521,9 @@
     },
     {
       "name": "AuditEvents"
+    },
+    {
+      "name": "AuditSearch"
     },
     {
       "name": "AssetLinkRoles"

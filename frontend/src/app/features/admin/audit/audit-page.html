@@ -1,0 +1,345 @@
+@if (!canView()) {
+  <p class="au-state" role="alert" data-no-access>
+    You don't have permission to view the audit log.
+  </p>
+} @else {
+  <header class="au-head">
+    <h1>Audit Log</h1>
+    <p class="au-muted">
+      Every recorded change, newest first. Times are shown in your time zone ({{ zone }}); the date
+      filters use it too. The log is read only and can't be exported.
+    </p>
+  </header>
+
+  <form
+    class="au-filters"
+    role="search"
+    aria-label="Filter audit events"
+    (submit)="$event.preventDefault(); apply()"
+  >
+    <div class="au-field">
+      <label for="au-object-type">Object type</label>
+      <select
+        id="au-object-type"
+        [value]="draft().objectType"
+        (change)="set('objectType', $any($event.target).value)"
+      >
+        <option value="">Any</option>
+        @for (t of facets().objectTypes; track t) {
+          <option [value]="t" [selected]="t === draft().objectType">{{ t }}</option>
+        }
+      </select>
+    </div>
+    <div class="au-field">
+      <label for="au-object-id">Object id</label>
+      <input
+        id="au-object-id"
+        type="text"
+        inputmode="numeric"
+        autocomplete="off"
+        [disabled]="!draft().objectType"
+        [attr.aria-describedby]="draft().objectType ? null : 'au-object-id-hint'"
+        [value]="draft().objectId"
+        (input)="set('objectId', $any($event.target).value)"
+      />
+      @if (!draft().objectType) {
+        <span class="au-hint" id="au-object-id-hint">Choose an object type first.</span>
+      }
+    </div>
+    <div class="au-field au-actor">
+      @if (canLookUpUsers()) {
+        <label for="au-actor">Actor</label>
+        <input
+          id="au-actor"
+          type="search"
+          autocomplete="off"
+          placeholder="Type a name"
+          role="combobox"
+          aria-autocomplete="list"
+          [attr.aria-expanded]="actorMatches().length > 0"
+          aria-controls="au-actor-list"
+          [value]="actorQuery()"
+          (input)="onActorInput($any($event.target).value)"
+        />
+        @if (draft().actor) {
+          <button type="button" class="au-link" (click)="clearActor()">
+            Clear actor ({{ draft().actor?.displayName }})
+          </button>
+        }
+        @if (actorMatches().length > 0) {
+          <ul class="au-suggest" id="au-actor-list" role="listbox" aria-label="Matching users">
+            @for (u of actorMatches(); track u.userId) {
+              <li role="option" [attr.aria-selected]="draft().actor?.userId === u.userId">
+                <button type="button" (click)="pickActor(u)">
+                  {{ u.displayName }}
+                  @if (u.email) {
+                    <span class="au-muted">{{ u.email }}</span>
+                  }
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      } @else {
+        <label for="au-actor-id">Actor (user id)</label>
+        <input
+          id="au-actor-id"
+          type="number"
+          min="1"
+          [value]="draft().actorId"
+          (input)="set('actorId', $any($event.target).value)"
+        />
+      }
+    </div>
+    <div class="au-field">
+      <label for="au-event-type">Event type</label>
+      <select
+        id="au-event-type"
+        [value]="draft().eventType"
+        (change)="set('eventType', $any($event.target).value)"
+      >
+        <option value="">Any</option>
+        @for (t of facets().eventTypes; track t) {
+          <option [value]="t" [selected]="t === draft().eventType">{{ t }}</option>
+        }
+      </select>
+    </div>
+    <div class="au-field">
+      <label for="au-from">From</label>
+      <input
+        id="au-from"
+        type="date"
+        [value]="draft().from"
+        [attr.aria-invalid]="dateError() ? 'true' : null"
+        [attr.aria-describedby]="dateError() ? 'au-date-error' : null"
+        (input)="set('from', $any($event.target).value)"
+      />
+    </div>
+    <div class="au-field">
+      <label for="au-to">To</label>
+      <input
+        id="au-to"
+        type="date"
+        [value]="draft().to"
+        [attr.aria-invalid]="dateError() ? 'true' : null"
+        [attr.aria-describedby]="dateError() ? 'au-date-error' : null"
+        (input)="set('to', $any($event.target).value)"
+      />
+    </div>
+    <div class="au-field au-wide">
+      <label for="au-q">Search summary or field</label>
+      <input
+        id="au-q"
+        type="search"
+        autocomplete="off"
+        [value]="draft().q"
+        (input)="set('q', $any($event.target).value)"
+      />
+    </div>
+    <div class="au-buttons">
+      <button type="submit" class="au-primary" data-apply>Apply filters</button>
+      <button type="button" class="au-secondary" data-reset (click)="reset()">Reset</button>
+    </div>
+  </form>
+  @if (dateError()) {
+    <p class="au-error" id="au-date-error" role="alert">{{ dateError() }}</p>
+  }
+
+  @if (applied().correlationId) {
+    <p class="au-banner" role="note" data-operation-banner>
+      Showing the events of one operation.
+      <button type="button" class="au-link" (click)="reset()">Show all events</button>
+    </p>
+  }
+
+  <div class="au-bar">
+    <label class="au-check">
+      <input
+        type="checkbox"
+        data-group-toggle
+        [checked]="grouped()"
+        (change)="grouped.set($any($event.target).checked)"
+      />
+      Group events of one operation
+    </label>
+  </div>
+
+  <div class="au-sr" role="status" aria-live="polite">{{ announcement() }}</div>
+
+  @if (state() === 'error') {
+    <div class="au-alert" role="alert" data-error>
+      We couldn't load the audit log.
+      <button type="button" class="au-secondary" (click)="retry()">Retry</button>
+    </div>
+  } @else if (state() === 'loading') {
+    <p class="au-state" role="status" aria-busy="true" data-loading>Loading audit events...</p>
+  } @else if (items().length === 0) {
+    <div class="au-state" data-empty>
+      @if (filtered()) {
+        <p>No audit events match these filters.</p>
+        <button type="button" class="au-secondary" (click)="reset()">Clear filters</button>
+      } @else {
+        <p>No audit events have been recorded yet.</p>
+      }
+    </div>
+  } @else {
+    <table class="au-table">
+      <caption class="au-sr">
+        Audit events, newest first
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col"><span class="au-sr">Details</span></th>
+          <th scope="col">When</th>
+          <th scope="col">Who</th>
+          <th scope="col">What happened</th>
+          <th scope="col">Object</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (grouped()) {
+          @for (g of groups(); track g.key) {
+            @if (g.items.length > 1) {
+              <tr class="au-group" [attr.data-group]="g.items[0].correlationId">
+                <td>
+                  <button
+                    type="button"
+                    class="au-toggle"
+                    [attr.aria-expanded]="isGroupOpen(g)"
+                    [attr.aria-label]="
+                      (isGroupOpen(g) ? 'Hide' : 'Show') +
+                      ' the ' +
+                      g.items.length +
+                      ' events of this operation'
+                    "
+                    (click)="toggleGroup(g)"
+                  >
+                    <i
+                      class="pi"
+                      [class]="isGroupOpen(g) ? 'pi-chevron-down' : 'pi-chevron-right'"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+                </td>
+                <td>
+                  <time [attr.datetime]="g.items[0].occurredAtUtc">{{
+                    g.items[0].occurredAtUtc | localTime
+                  }}</time>
+                </td>
+                <td>{{ g.items[0].actor.displayName }}</td>
+                <td colspan="2">
+                  <strong>{{ g.items.length }} events in one operation</strong>
+                  <span class="au-muted"> (for example: {{ g.items[0].summary }})</span>
+                  <button type="button" class="au-link" (click)="showOperation(g.items[0])">
+                    Show only this operation
+                  </button>
+                </td>
+              </tr>
+              @if (isGroupOpen(g)) {
+                @for (item of g.items; track item.auditEventId) {
+                  <ng-container
+                    *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: true }"
+                  />
+                }
+              }
+            } @else {
+              <ng-container
+                *ngTemplateOutlet="eventRows; context: { $implicit: g.items[0], nested: false }"
+              />
+            }
+          }
+        } @else {
+          @for (item of items(); track item.auditEventId) {
+            <ng-container
+              *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: false }"
+            />
+          }
+        }
+      </tbody>
+    </table>
+
+    <div class="au-foot">
+      @if (nextCursor() !== null) {
+        <button
+          type="button"
+          class="au-secondary"
+          data-load-more
+          [disabled]="loadingMore()"
+          (click)="loadMore()"
+        >
+          {{ loadingMore() ? 'Loading...' : 'Load more' }}
+        </button>
+      } @else {
+        <span class="au-muted" data-end>End of the results.</span>
+      }
+    </div>
+  }
+}
+
+<ng-template #eventRows let-item let-nested="nested">
+  <tr class="au-row" [class.au-nested]="nested" [attr.data-event]="item.auditEventId">
+    <td>
+      <button
+        type="button"
+        class="au-toggle"
+        [attr.aria-expanded]="isOpen(item)"
+        [attr.aria-controls]="'au-detail-' + item.auditEventId"
+        [attr.aria-label]="
+          (isOpen(item) ? 'Hide' : 'Show') + ' details of event ' + item.auditEventId
+        "
+        (click)="toggle(item)"
+      >
+        <i
+          class="pi"
+          [class]="isOpen(item) ? 'pi-chevron-down' : 'pi-chevron-right'"
+          aria-hidden="true"
+        ></i>
+      </button>
+    </td>
+    <td>
+      <time [attr.datetime]="item.occurredAtUtc">{{ item.occurredAtUtc | localTime }}</time>
+    </td>
+    <td>{{ item.actor.displayName }}</td>
+    <td>{{ item.summary }}</td>
+    <td>
+      @if (route(item); as link) {
+        <a class="au-linkout" [routerLink]="link">{{ objectText(item) }}</a>
+      } @else {
+        {{ objectText(item) }}
+      }
+    </td>
+  </tr>
+  @if (isOpen(item)) {
+    <tr class="au-detail" [id]="'au-detail-' + item.auditEventId">
+      <td></td>
+      <td colspan="4">
+        <dl class="au-dl">
+          <dt>Event</dt>
+          <dd class="au-mono">{{ item.eventType }}</dd>
+          @if (item.fieldKey) {
+            <dt>Field</dt>
+            <dd class="au-mono">{{ item.fieldKey }}</dd>
+          }
+          <dt>Old value</dt>
+          <dd class="au-value" data-old>{{ valueText(item.oldValue, item.oldValueTruncated) }}</dd>
+          <dt>New value</dt>
+          <dd class="au-value" data-new>{{ valueText(item.newValue, item.newValueTruncated) }}</dd>
+          @if (item.valuesRedacted) {
+            <dt>Note</dt>
+            <dd>Secret values are hidden.</dd>
+          }
+          <dt>Operation</dt>
+          <dd>
+            <span class="au-mono">{{ item.correlationId }}</span>
+            @if (item.correlationEventCount > 1) {
+              ({{ item.correlationEventCount }} events)
+              <button type="button" class="au-link" (click)="showOperation(item)">
+                Show all events of this operation
+              </button>
+            }
+          </dd>
+        </dl>
+      </td>
+    </tr>
+  }
+</ng-template>

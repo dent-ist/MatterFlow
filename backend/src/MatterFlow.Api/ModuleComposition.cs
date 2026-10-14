@@ -1,6 +1,8 @@
+using MatterFlow.Api.Http;
 using MatterFlow.Api.Seeding;
 using MatterFlow.Assets;
 using MatterFlow.Audit;
+using MatterFlow.Audit.Contracts;
 using MatterFlow.Configuration;
 using MatterFlow.Configuration.Application.Lookups;
 using MatterFlow.Data;
@@ -12,6 +14,7 @@ using MatterFlow.Search;
 using MatterFlow.WorkflowEngine;
 using MatterFlow.WorkManagement;
 using MatterFlow.WorkViews;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MatterFlow.Api;
 
@@ -26,6 +29,7 @@ public static class ModuleComposition
         services.AddDataModule();
         services.AddIdentityModule(configuration, environment);
         services.AddAuditModule();
+        services.Replace(ServiceDescriptor.Scoped<IAuditDisplayLookup, AuditDisplayLookup>()); // user names and object labels from other modules' Contracts
         services.AddConfigurationModule();
         services.AddOrganizationModule();
         services.AddAssetsModule();

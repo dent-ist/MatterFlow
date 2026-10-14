@@ -950,6 +950,191 @@ export class AuditEventsClient implements IAuditEventsClient {
     }
 }
 
+export interface IAuditSearchClient {
+    /**
+     * @param objectType (optional) 
+     * @param objectId (optional) 
+     * @param actor (optional) 
+     * @param eventType (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param q (optional) 
+     * @param correlationId (optional) 
+     * @param cursor (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    searchAuditEvents(objectType?: string | undefined, objectId?: string | undefined, actor?: number | undefined, eventType?: string | undefined, from?: string | undefined, to?: string | undefined, q?: string | undefined, correlationId?: string | undefined, cursor?: number | undefined, pageSize?: number | undefined): Observable<AuditSearchPage>;
+    /**
+     * @return OK
+     */
+    getAuditFacets(): Observable<AuditFacets>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class AuditSearchClient implements IAuditSearchClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param objectType (optional) 
+     * @param objectId (optional) 
+     * @param actor (optional) 
+     * @param eventType (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param q (optional) 
+     * @param correlationId (optional) 
+     * @param cursor (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    searchAuditEvents(objectType?: string | undefined, objectId?: string | undefined, actor?: number | undefined, eventType?: string | undefined, from?: string | undefined, to?: string | undefined, q?: string | undefined, correlationId?: string | undefined, cursor?: number | undefined, pageSize?: number | undefined): Observable<AuditSearchPage> {
+        let url_ = this.baseUrl + "/api/v1/audit/search?";
+        if (objectType === null)
+            throw new globalThis.Error("The parameter 'objectType' cannot be null.");
+        else if (objectType !== undefined)
+            url_ += "objectType=" + encodeURIComponent("" + objectType) + "&";
+        if (objectId === null)
+            throw new globalThis.Error("The parameter 'objectId' cannot be null.");
+        else if (objectId !== undefined)
+            url_ += "objectId=" + encodeURIComponent("" + objectId) + "&";
+        if (actor === null)
+            throw new globalThis.Error("The parameter 'actor' cannot be null.");
+        else if (actor !== undefined)
+            url_ += "actor=" + encodeURIComponent("" + actor) + "&";
+        if (eventType === null)
+            throw new globalThis.Error("The parameter 'eventType' cannot be null.");
+        else if (eventType !== undefined)
+            url_ += "eventType=" + encodeURIComponent("" + eventType) + "&";
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent("" + from) + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent("" + to) + "&";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "q=" + encodeURIComponent("" + q) + "&";
+        if (correlationId === null)
+            throw new globalThis.Error("The parameter 'correlationId' cannot be null.");
+        else if (correlationId !== undefined)
+            url_ += "correlationId=" + encodeURIComponent("" + correlationId) + "&";
+        if (cursor === null)
+            throw new globalThis.Error("The parameter 'cursor' cannot be null.");
+        else if (cursor !== undefined)
+            url_ += "cursor=" + encodeURIComponent("" + cursor) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSearchAuditEvents(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSearchAuditEvents(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AuditSearchPage>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AuditSearchPage>;
+        }));
+    }
+
+    protected processSearchAuditEvents(response: HttpResponseBase): Observable<AuditSearchPage> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AuditSearchPage;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getAuditFacets(): Observable<AuditFacets> {
+        let url_ = this.baseUrl + "/api/v1/audit/facets";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAuditFacets(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAuditFacets(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AuditFacets>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AuditFacets>;
+        }));
+    }
+
+    protected processGetAuditFacets(response: HttpResponseBase): Observable<AuditFacets> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AuditFacets;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IAssetLinkRolesClient {
     /**
      * @return OK
@@ -9681,6 +9866,13 @@ export interface AssignTaskRequest {
     [key: string]: any;
 }
 
+export interface AuditActor {
+    userId: number | undefined;
+    displayName: string;
+
+    [key: string]: any;
+}
+
 export interface AuditEventDto {
     auditEventId: number;
     occurredAtUtc: string;
@@ -9704,6 +9896,51 @@ export interface AuditEventDto {
 export interface AuditEventPage {
     items: AuditEventDto[];
     nextAfterId: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface AuditFacets {
+    objectTypes: string[];
+    eventTypes: string[];
+
+    [key: string]: any;
+}
+
+export interface AuditObjectInfo {
+    type: string;
+    id: string;
+    label: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface AuditSearchItem {
+    auditEventId: number;
+    occurredAtUtc: string;
+    actor: AuditActor;
+    eventType: string;
+    object: AuditObjectInfo;
+    matterId: number | undefined;
+    taskId: number | undefined;
+    fieldKey: string | undefined;
+    summary: string;
+    oldValue: string | undefined;
+    newValue: string | undefined;
+    oldValueTruncated: boolean;
+    newValueTruncated: boolean;
+    valuesRedacted: boolean;
+    correlationId: string;
+    correlationEventCount: number;
+
+    [key: string]: any;
+}
+
+export interface AuditSearchPage {
+    items: AuditSearchItem[];
+    nextCursor: number | undefined;
+    pageSize: number;
+    timeZone: string;
 
     [key: string]: any;
 }
