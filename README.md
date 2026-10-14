@@ -6,11 +6,13 @@ Design documents live in `docs/` (start with `docs/architecture.md`; environment
 
 ## Status
 
-Working end to end today: identity and access (Windows/Dev auth, JIT provisioning, roles and permissions, Access Pending), audit,
-organization (clients, matters, projects with custom fields), configuration (priorities, task types, status labels), forms and the
-custom-field engine, workflow definitions and instances, assets, the admin screens, and the Angular shell with the lazy-loaded feature areas.
-The Task module (creation, lifecycle, queues) is being built; Outlook intake, search and the e2e suite come later. The phase plan is in
-`docs/architecture.md` section 18.
+All Phase 1 features are built and verified end to end: identity and access (Windows/Dev auth, JIT provisioning, roles and permissions, Access Pending),
+organization (clients, matters, projects with custom fields), configuration (priorities, status labels, task types, step library, workflows, asset
+types), the forms and custom-field engine, assets, the full Task module (creation including from an email, lifecycle, assignment, workflow steps with
+bulk-complete, comments, asset links, activity), Task Queue / My Work / Pod Work / Dashboard, global and advanced search, the audit log browser, and
+production hosting (the API serves the Angular build on one origin). Hardening is under way: two security reviews with fixes, two exploratory UAT
+rounds, an end-to-end suite and CI. Still to do: a performance pass with realistic data and a rehearsal on a domain-joined IIS server (see
+`docs/runbook.md` section 9). The phase plan is in `docs/architecture.md` section 18; QA reports are in `docs/qa/`.
 
 ## Repository layout
 
