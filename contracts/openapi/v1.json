@@ -6205,6 +6205,15 @@
         "operationId": "ListStepDefinitions",
         "parameters": [
           {
+            "name": "Sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 30,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
             "name": "Q",
             "in": "query",
             "schema": {
@@ -6478,6 +6487,15 @@
         ],
         "operationId": "ListWorkflows",
         "parameters": [
+          {
+            "name": "Sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 30,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
           {
             "name": "Q",
             "in": "query",

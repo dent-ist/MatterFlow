@@ -126,7 +126,14 @@ public sealed record StepActiveRequest
 /// <summary>Step library list filters.</summary>
 public sealed class StepDefinitionListQuery
 {
-    internal static readonly string[] Keys = ["page", "pageSize", "q", "isActive"];
+    internal static readonly string[] Keys = ["page", "pageSize", "q", "isActive", "sort"];
+
+    /// <summary>Sort fields accepted by <see cref="Sort"/> (prefix with <c>-</c> for descending).</summary>
+    internal static readonly string[] SortFields = ["title", "-title", "usedInVersions", "-usedInVersions"];
+
+    /// <summary>One of <c>title</c> (default), <c>-title</c>, <c>usedInVersions</c> or <c>-usedInVersions</c>.</summary>
+    [StringLength(30)]
+    public string? Sort { get; init; }
 
     /// <summary>Title or description fragment.</summary>
     [StringLength(200)]
@@ -156,6 +163,11 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
             return paging.Error!;
         }
 
+        if (query.Sort is not null && !StepDefinitionListQuery.SortFields.Contains(query.Sort))
+        {
+            return Error.Validation("sort", "INVALID", $"sort must be one of: {string.Join(", ", StepDefinitionListQuery.SortFields)}.");
+        }
+
         var steps = db.Set<StepDefinition>().AsNoTracking();
         if (query.IsActive is { } active)
         {
@@ -170,15 +182,19 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
 
         var total = await steps.CountAsync(ct);
         var page = paging.Value;
-        var rows = await steps
-            .OrderBy(s => s.Title).ThenBy(s => s.Id)
-            .Skip(page.Skip).Take(page.PageSize)
-            .Select(s => new
-            {
-                Step = s,
-                Used = db.Set<WorkflowVersionStep>().Count(v => v.SourceStepDefinitionId == s.Id),
-            })
-            .ToListAsync(ct);
+        var withUsage = steps.Select(s => new
+        {
+            Step = s,
+            Used = db.Set<WorkflowVersionStep>().Count(v => v.SourceStepDefinitionId == s.Id),
+        });
+        var ordered = query.Sort switch
+        {
+            "-title" => withUsage.OrderByDescending(r => r.Step.Title).ThenBy(r => r.Step.Id),
+            "usedInVersions" => withUsage.OrderBy(r => r.Used).ThenBy(r => r.Step.Title).ThenBy(r => r.Step.Id),
+            "-usedInVersions" => withUsage.OrderByDescending(r => r.Used).ThenBy(r => r.Step.Title).ThenBy(r => r.Step.Id),
+            _ => withUsage.OrderBy(r => r.Step.Title).ThenBy(r => r.Step.Id),
+        };
+        var rows = await ordered.Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
         var items = rows.Select(r => ToSummary(r.Step, r.Used)).ToList();
         return new PagedResult<StepDefinitionSummary>(items, total, page.Page, page.PageSize);
     }

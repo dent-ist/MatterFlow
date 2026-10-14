@@ -173,7 +173,14 @@ public sealed record WorkflowVersionActionRequest
 /// <summary>Workflow list filters.</summary>
 public sealed class WorkflowListQuery
 {
-    internal static readonly string[] Keys = ["page", "pageSize", "q", "isActive"];
+    internal static readonly string[] Keys = ["page", "pageSize", "q", "isActive", "sort"];
+
+    /// <summary>Sort fields accepted by <see cref="Sort"/> (prefix with <c>-</c> for descending).</summary>
+    internal static readonly string[] SortFields = ["name", "-name"];
+
+    /// <summary>One of <c>name</c> (default) or <c>-name</c>.</summary>
+    [StringLength(30)]
+    public string? Sort { get; init; }
 
     /// <summary>Name or description fragment.</summary>
     [StringLength(200)]

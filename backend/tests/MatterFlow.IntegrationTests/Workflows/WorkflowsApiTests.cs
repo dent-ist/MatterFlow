@@ -176,6 +176,12 @@ public sealed class WorkflowsApiTests(SqlServerFixture sql) : IAsyncLifetime
         list.GetProperty("total").GetInt32().ShouldBe(2);
         list.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("title").GetString()).ShouldBe(["Intake QC", "QC Check"]);
 
+        // Sorting by title (default), descending, and by where the step is used; an unknown field is a 400.
+        var descending = await OkAsync(await client.GetAsync("/api/v1/step-definitions?q=qc&sort=-title"));
+        descending.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("title").GetString()).ShouldBe(["QC Check", "Intake QC"]);
+        (await OkAsync(await client.GetAsync("/api/v1/step-definitions?q=qc&sort=usedInVersions"))).GetProperty("total").GetInt32().ShouldBe(2);
+        (await client.GetAsync("/api/v1/step-definitions?sort=nonsense")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
         (await client.GetAsync("/api/v1/step-definitions?bogus=1")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await client.GetAsync("/api/v1/step-definitions/9999")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await OkAsync(await client.GetAsync("/api/v1/step-definitions?isActive=false"))).GetProperty("total").GetInt32().ShouldBe(0);
@@ -193,6 +199,14 @@ public sealed class WorkflowsApiTests(SqlServerFixture sql) : IAsyncLifetime
         created.GetProperty("workflow").GetProperty("publishedVersionId").ValueKind.ShouldBe(JsonValueKind.Null);
 
         (await client.PostAsync("/api/v1/workflows", Json(new { name = "Standard Processing" }))).StatusCode.ShouldBe(HttpStatusCode.Conflict);
+
+        // The list sorts by name, ascending by default and descending with a minus sign; an unknown field is a 400.
+        await CreateWorkflowAsync(client, "Archive Review");
+        var ascending = (await OkAsync(await client.GetAsync("/api/v1/workflows?sort=name"))).GetProperty("items").EnumerateArray().Select(i => i.GetProperty("name").GetString()).ToList();
+        ascending.IndexOf("Archive Review").ShouldBeLessThan(ascending.IndexOf("Standard Processing"));
+        var descending = (await OkAsync(await client.GetAsync("/api/v1/workflows?sort=-name"))).GetProperty("items").EnumerateArray().Select(i => i.GetProperty("name").GetString()).ToList();
+        descending.IndexOf("Standard Processing").ShouldBeLessThan(descending.IndexOf("Archive Review"));
+        (await client.GetAsync("/api/v1/workflows?sort=nonsense")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
 
         var draft = await GetVersionAsync(client, workflowId, DraftId(created));
         var rejected = await PublishAsync(client, workflowId, draft);

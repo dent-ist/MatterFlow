@@ -38,6 +38,11 @@ public sealed class WorkflowAdminService(
             return paging.Error!;
         }
 
+        if (query.Sort is not null && !WorkflowListQuery.SortFields.Contains(query.Sort))
+        {
+            return Error.Validation("sort", "INVALID", $"sort must be one of: {string.Join(", ", WorkflowListQuery.SortFields)}.");
+        }
+
         var workflows = db.Set<WorkflowDefinition>().AsNoTracking();
         if (query.IsActive is { } active)
         {
@@ -52,7 +57,8 @@ public sealed class WorkflowAdminService(
 
         var total = await workflows.CountAsync(ct);
         var page = paging.Value;
-        var defs = await workflows.OrderBy(w => w.Name).ThenBy(w => w.Id).Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
+        var ordered = query.Sort == "-name" ? workflows.OrderByDescending(w => w.Name).ThenBy(w => w.Id) : workflows.OrderBy(w => w.Name).ThenBy(w => w.Id);
+        var defs = await ordered.Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
         var items = await SummariesAsync(defs, ct);
         return new PagedResult<WorkflowSummary>(items, total, page.Page, page.PageSize);
     }
