@@ -16,6 +16,7 @@ public class AppUser : AuditedEntity<int>
     /// <summary>Set once when <c>Bootstrap:SystemAdmins</c> granted System Admin, so an admin can later revoke it without it re-granting.</summary>
     public DateTime? BootstrapAppliedAt { get; set; }
 
+    /// <summary>Obsolete since script 13: no longer written (see <see cref="UserIdentity.LastLoginAt"/>). Kept for databases that still hold history.</summary>
     public DateTime? LastLoginAt { get; set; }
 
     public List<UserIdentity> Identities { get; set; } = [];
@@ -43,6 +44,9 @@ public class UserIdentity : AuditedEntity<int>
     public bool IsActive { get; set; } = true;
 
     public DateTime? VerifiedAt { get; set; }
+
+    /// <summary>Last successful resolution of this identity (throttled). Lives here, not on <see cref="AppUser"/>, so that bookkeeping never changes the row version an administrator edits.</summary>
+    public DateTime? LastLoginAt { get; set; }
 }
 
 [Audited(ObjectType = "Role")]

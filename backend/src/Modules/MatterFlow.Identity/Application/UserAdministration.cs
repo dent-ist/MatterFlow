@@ -78,6 +78,7 @@ public sealed class UserAdministration(
             {
                 User = u,
                 Account = u.Identities.OrderBy(i => i.Id).Select(i => i.Username).FirstOrDefault(),
+                LastLogin = u.Identities.Max(i => i.LastLoginAt),
                 HasAccess = u.Roles.Any(ur => ur.Role.IsActive && (ur.Role.IsSystemAdmin || ur.Role.Permissions.Any(rp => rp.Permission.IsActive))),
                 IsAdmin = u.Roles.Any(r => r.Role.IsSystemAdmin && r.Role.IsActive),
                 Roles = u.Roles.Select(r => r.Role.Name).OrderBy(n => n).ToList(),
@@ -85,7 +86,7 @@ public sealed class UserAdministration(
             .ToListAsync(ct);
 
         var items = rows
-            .Select(r => ToSummary(r.User, r.Account, !r.HasAccess, r.IsAdmin, r.Roles))
+            .Select(r => ToSummary(r.User, r.Account, r.LastLogin, !r.HasAccess, r.IsAdmin, r.Roles))
             .ToList();
         return new PagedResult<UserSummaryDto>(items, total, page.Page, page.PageSize);
     }
@@ -106,6 +107,7 @@ public sealed class UserAdministration(
             {
                 User = u,
                 Account = u.Identities.OrderBy(i => i.Id).Select(i => i.Username).FirstOrDefault(),
+                LastLogin = u.Identities.Max(i => i.LastLoginAt),
                 HasAccess = u.Roles.Any(ur => ur.Role.IsActive && (ur.Role.IsSystemAdmin || ur.Role.Permissions.Any(rp => rp.Permission.IsActive))),
                 Granted = u.Roles.Select(r => new { r.RoleId, r.Role.Name, r.Role.IsSystemAdmin, r.Role.IsActive }).ToList(),
             })
@@ -136,7 +138,7 @@ public sealed class UserAdministration(
             row.Granted.Select(r => r.Name).Order(StringComparer.OrdinalIgnoreCase).ToArray(),
             permissions.Order(StringComparer.Ordinal).ToArray(),
             Utc(row.User.CreatedAtUtc),
-            row.User.LastLoginAt is { } login ? Utc(login) : null,
+            row.LastLogin is { } login ? Utc(login) : null,
             Convert.ToBase64String(row.User.RowVersion));
     }
 
@@ -219,7 +221,7 @@ public sealed class UserAdministration(
         if (currentUser.UserId is { } actor && AdminGuards.CheckSelfDeactivation(actor, userId, isActive) is { } self)
             return self;
 
-        var user = await db.Set<AppUser>().Include(u => u.Identities).FirstOrDefaultAsync(u => u.Id == userId, ct);
+        var user = await db.Set<AppUser>().FirstOrDefaultAsync(u => u.Id == userId, ct);
         if (user is null)
             return NotFoundUser();
         if (CheckVersion(user, rowVersion) is { } conflict)
@@ -235,8 +237,8 @@ public sealed class UserAdministration(
                 return AdminGuards.LastAdminError();
 
             user.IsActive = isActive;
-            foreach (var identity in user.Identities)
-                identity.IsActive = isActive;
+            // Set-based so a concurrent sign-in (which touches the identity row) cannot fail this save; same transaction.
+            await db.Set<UserIdentity>().Where(i => i.UserId == userId).ExecuteUpdateAsync(s => s.SetProperty(i => i.IsActive, isActive), ct);
             audit.Write(new AuditEntry
             {
                 EventType = isActive ? "USER_ACTIVATED" : "USER_DEACTIVATED",
@@ -336,7 +338,7 @@ public sealed class UserAdministration(
 
     private static DateTime Utc(DateTime value) => DateTime.SpecifyKind(value, DateTimeKind.Utc);
 
-    private static UserSummaryDto ToSummary(AppUser u, string? account, bool pending, bool admin, List<string> roles) => new(
+    private static UserSummaryDto ToSummary(AppUser u, string? account, DateTime? lastLogin, bool pending, bool admin, List<string> roles) => new(
         u.Id,
         u.DisplayName,
         u.Email,
@@ -347,7 +349,7 @@ public sealed class UserAdministration(
         u.BootstrapAppliedAt is not null,
         roles.ToArray(),
         Utc(u.CreatedAtUtc),
-        u.LastLoginAt is { } login ? Utc(login) : null);
+        lastLogin is { } login ? Utc(login) : null);
 
     private static string EscapeLike(string value) =>
         value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("%", "\\%", StringComparison.Ordinal).Replace("_", "\\_", StringComparison.Ordinal).Replace("[", "\\[", StringComparison.Ordinal);

@@ -16,6 +16,9 @@
 --      (sysadmin, db_owner) can still disable the INSTEAD OF trigger or this DDL trigger deliberately; the application identity cannot (it is denied ALTER on the table), and
 --      the API verifies at startup that it has no such rights. Detection of deliberate tampering is a monitoring task (runbook).
 --
+--   5. (SEC-13) moves the last-sign-in bookkeeping from dbo.AppUser to dbo.UserIdentity. Every write to AppUser changes its row version, so
+--      a sign-in used to turn an administrator's open edit of that user (or of themselves) into a false CONCURRENCY_CONFLICT.
+--
 -- DBA step after the first deployment (not possible in a script because logins are server-level and site specific):
 --   CREATE USER [DOMAIN\app-pool-gmsa$] FOR LOGIN [DOMAIN\app-pool-gmsa$];  ALTER ROLE mf_app ADD MEMBER [DOMAIN\app-pool-gmsa$];
 --   and, if a separate migration login is used:  ALTER ROLE mf_migrator ADD MEMBER [<migration user>];
@@ -75,4 +78,14 @@ BEGIN
         THROW 51001, 'The audit trail is protected: its tables and the append-only trigger cannot be dropped or altered this way.', 1;
     END;
 END;
+GO
+
+-- SEC-13: last sign-in lives on the identity row, which no administrator edits through a row-version-checked form.
+ALTER TABLE dbo.UserIdentity ADD LastLoginAt DATETIME2 NULL;
+GO
+
+UPDATE i SET LastLoginAt = u.LastLoginAt
+FROM dbo.UserIdentity i
+JOIN dbo.AppUser u ON u.UserId = i.UserId
+WHERE u.LastLoginAt IS NOT NULL;
 GO

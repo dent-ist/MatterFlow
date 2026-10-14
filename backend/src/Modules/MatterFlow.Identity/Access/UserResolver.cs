@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using MatterFlow.Audit.Contracts;
 using MatterFlow.Identity.Authentication;
 using MatterFlow.Identity.DirectoryLookup;
 using MatterFlow.Identity.Domain;
@@ -29,10 +30,14 @@ public sealed class UserResolver(
     UserAccessCache cache,
     IDirectoryProfileProvider directory,
     IClock clock,
+    IAuditWriter audit,
     IOptions<BootstrapOptions> bootstrap,
     ILogger<UserResolver> logger) : IUserResolver
 {
     private const int MaxAttempts = 3;
+
+    /// <summary>Last-login bookkeeping is written at most this often per identity (it is a database write on a cache miss).</summary>
+    private static readonly TimeSpan LastLoginGranularity = TimeSpan.FromMinutes(5);
 
     public async Task<AccessSnapshot?> ResolveAsync(ClaimsPrincipal principal, CancellationToken cancellationToken = default)
     {
@@ -55,7 +60,9 @@ public sealed class UserResolver(
             catch (DbUpdateException ex) when ((IsDuplicateKey(ex) || ex is DbUpdateConcurrencyException) && attempt < MaxAttempts)
             {
                 // A concurrent first request won the unique index or the row version (identity or bootstrap grant); re-read what it wrote.
+                // The audit entries of the failed attempt were re-queued by the interceptor; they describe changes that did not happen.
                 db.ChangeTracker.Clear();
+                audit.DiscardPending();
             }
         }
     }
@@ -89,8 +96,20 @@ public sealed class UserResolver(
                 VerifiedAt = now,
             };
             db.Set<UserIdentity>().Add(identity);
+            audit.Write(new AuditEntry
+            {
+                EventType = "USER_PROVISIONED",
+                ObjectType = "User",
+                ObjectIdFactory = () => user.Id.ToString(),
+                NewValue = external.Username,
+                Summary = $"User provisioned at first sign-in ({external.Provider}) with no roles",
+            });
             await db.SaveChangesAsync(ct);
             logger.LogInformation("Provisioned user {UserId} for {Provider} identity {Username} with no roles (access pending).", user.Id, external.Provider, external.Username);
+            if (external.Provider == "Windows" && !external.Subject.StartsWith("S-1-", StringComparison.Ordinal))
+            {
+                logger.LogWarning("User {UserId} was keyed on the account name {Username}, not a Windows SID: the host did not supply a primary-SID claim, so the identity key is weaker.", user.Id, external.Username);
+            }
         }
 
         var appUser = identity.User;
@@ -98,36 +117,78 @@ public sealed class UserResolver(
         {
             if (appUser.BootstrapAppliedAt is null && IsBootstrapAdmin(external.Username))
             {
-                await ApplyBootstrapAsync(appUser, ct);
+                if (await ApplyBootstrapAsync(appUser, external, ct))
+                    await db.SaveChangesAsync(ct);
+            }
+
+            if (!string.Equals(identity.Username, external.Username, StringComparison.Ordinal))
+            {
+                // A changed account name (rename in the directory) is recorded, because the bootstrap list and the audit trail show names.
+                audit.Write(new AuditEntry
+                {
+                    EventType = "USER_IDENTITY_RENAMED",
+                    ObjectType = "User",
+                    ObjectId = appUser.Id.ToString(),
+                    FieldKey = "username",
+                    OldValue = identity.Username,
+                    NewValue = external.Username,
+                    Summary = $"Account name changed from '{identity.Username}' to '{external.Username}'",
+                });
+                identity.Username = external.Username;
                 await db.SaveChangesAsync(ct);
             }
 
-            // Bookkeeping that must not conflict with concurrent logins or admin edits: plain updates, no row-version check.
-            await db.Set<AppUser>().Where(u => u.Id == appUser.Id).ExecuteUpdateAsync(s => s.SetProperty(u => u.LastLoginAt, now), ct);
-            if (!string.Equals(identity.Username, external.Username, StringComparison.Ordinal))
-            {
-                await db.Set<UserIdentity>().Where(i => i.Id == identity.Id).ExecuteUpdateAsync(s => s.SetProperty(i => i.Username, external.Username), ct);
-                identity.Username = external.Username;
-            }
+            // Bookkeeping that must not conflict with concurrent logins or admin edits: a plain update without a row-version check.
+            if (identity.LastLoginAt is not { } last || now - last >= LastLoginGranularity)
+                await db.Set<UserIdentity>().Where(i => i.Id == identity.Id).ExecuteUpdateAsync(s => s.SetProperty(i => i.LastLoginAt, now), ct);
         }
 
-        return await BuildSnapshotAsync(identity, ct);
+        // Detach everything the resolution loaded, so the rest of the request re-reads current rows instead of reusing entities that a
+        // set-based update has made stale (SEC-13).
+        var snapshot = await BuildSnapshotAsync(identity, ct);
+        db.ChangeTracker.Clear();
+        return snapshot;
     }
 
-    private async Task ApplyBootstrapAsync(AppUser user, CancellationToken ct)
+    /// <summary>
+    /// Grants System Admin from <c>Bootstrap:SystemAdmins</c> (security review SEC-06): only while the system has no active System Admin,
+    /// and once per user. The bootstrap list is matched on the account name, which is mutable and can be recycled, so it is a recovery
+    /// and first-install mechanism and not a standing entitlement. Returns true when changes were made that need saving.
+    /// </summary>
+    private async Task<bool> ApplyBootstrapAsync(AppUser user, ExternalIdentity external, CancellationToken ct)
     {
         var adminRoleId = await db.Set<Role>().Where(r => r.IsSystemAdmin).Select(r => (int?)r.Id).FirstOrDefaultAsync(ct);
         if (adminRoleId is null)
         {
             logger.LogError("Bootstrap admin {DisplayName} cannot be granted: the System Admin role row is missing.", user.DisplayName);
-            return;
+            return false;
+        }
+
+        var hasActiveAdmin = await db.Set<UserRole>().AnyAsync(ur => ur.RoleId == adminRoleId && ur.User.IsActive, ct);
+        if (hasActiveAdmin)
+        {
+            logger.LogWarning(
+                "Bootstrap:SystemAdmins lists {Username} but the system already has an active System Admin; not granting System Admin to user {UserId}.",
+                external.Username,
+                user.Id);
+            return false;
         }
 
         if (!await db.Set<UserRole>().AnyAsync(ur => ur.UserId == user.Id && ur.RoleId == adminRoleId, ct))
             db.Set<UserRole>().Add(new UserRole { UserId = user.Id, RoleId = adminRoleId.Value, GrantedAt = clock.UtcNow });
 
         user.BootstrapAppliedAt = clock.UtcNow;
+        audit.Write(new AuditEntry
+        {
+            EventType = "ADMIN_BOOTSTRAPPED",
+            ObjectType = "User",
+            ObjectId = user.Id.ToString(),
+            FieldKey = "role",
+            NewValue = "System Admin",
+            Summary = $"System Admin granted from Bootstrap:SystemAdmins to '{external.Username}'",
+        });
         logger.LogWarning("ADMIN_BOOTSTRAPPED: user {UserId} ({DisplayName}) granted System Admin from Bootstrap:SystemAdmins.", user.Id, user.DisplayName);
+        return true;
     }
 
     private bool IsBootstrapAdmin(string username) =>
