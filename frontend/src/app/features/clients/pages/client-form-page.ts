@@ -28,6 +28,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { NumberInput, numberProblem } from '../../../shared/ui/number-input';
 import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -35,6 +36,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-client-form-page',
   imports: [
+    PageHeader,
     ErrorReference,
     RouterLink,
     CustomFieldsEditor,
@@ -47,14 +49,10 @@ type LoadState = 'loading' | 'ready' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <header class="pg-head">
-      <div>
-        <p class="pg-crumbs">
-          <a routerLink="/clients">Clients</a> &gt; {{ isEdit() ? 'Edit' : 'New' }}
-        </p>
-        <h1 class="pg-title">{{ isEdit() ? 'Edit client' : 'New client' }}</h1>
-      </div>
-    </header>
+    <mf-page-header
+      [crumbs]="[{ label: 'Clients', link: '/clients' }, { label: isEdit() ? 'Edit' : 'New' }]"
+      [heading]="isEdit() ? 'Edit client' : 'New client'"
+    />
 
     @if (state() === 'loading') {
       <div class="pg-state" role="status" aria-busy="true">Loading the client...</div>

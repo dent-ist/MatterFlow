@@ -17,6 +17,7 @@ import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ActiveBadge } from '../../../shared/ui/badge';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -27,24 +28,18 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-asset-types-page',
-  imports: [ActiveBadge, ConfirmDialog, ErrorReference, RouterLink, Button, TextField],
+  imports: [PageHeader, ActiveBadge, ConfirmDialog, ErrorReference, RouterLink, Button, TextField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <header class="pg-head">
-      <div>
-        <h1 class="pg-title">Asset types</h1>
-        <p class="pg-muted">
-          Each type has its own fields. Fields are versioned; changing them never alters saved
-          values.
-        </p>
-      </div>
-      <div class="pg-actions">
-        @if (canManage()) {
-          <p-button label="New asset type" icon="pi pi-plus" (onClick)="startCreate()" />
-        }
-      </div>
-    </header>
+    <mf-page-header
+      heading="Asset types"
+      description="Each type has its own fields. Fields are versioned; changing them never alters saved values."
+    >
+      @if (canManage()) {
+        <p-button mfActions label="New asset type" icon="pi pi-plus" (onClick)="startCreate()" />
+      }
+    </mf-page-header>
 
     <p class="pg-sr" role="status" aria-live="polite" data-announce>{{ announcement() }}</p>
 

@@ -73,11 +73,6 @@ const isTab = (v: unknown): v is TaskTab => TASK_TABS.includes(v as TaskTab);
       }
       @case ('ready') {
         @if (store.task(); as t) {
-          <p class="pg-crumbs">
-            <a routerLink="/tasks">Tasks</a> &gt; {{ t.matter.matterRef }} {{ t.matter.name }} &gt;
-            {{ t.taskNumber }}
-          </p>
-
           @if (store.conflict()) {
             <div class="pg-alert" role="alert" data-conflict-banner>
               This task was changed by someone else, so your change wasn't saved. Reload to see the

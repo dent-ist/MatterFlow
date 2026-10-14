@@ -30,8 +30,8 @@ import { ApiError } from '../../../core/http/api-error';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { FormDesignerApi, FormOwner, FormVersion, FormVersionSummary } from './form-designer-api';
 import { publishIssuesOf } from './form-mapping';
-import { RouterLink } from '@angular/router';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { Crumb, PageHeader } from '../../../shared/ui/page-header';
 
 type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | null;
 type LoadState = 'loading' | 'ready' | 'error';
@@ -45,8 +45,8 @@ type LoadState = 'loading' | 'ready' | 'error';
   selector: 'mf-task-type-form-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    PageHeader,
     ErrorReference,
-    RouterLink,
     FormDesigner,
     Button,
     Dialog,
@@ -65,6 +65,17 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   /** Where the breadcrumb's first segment leads. */
   readonly sectionPath = input('/admin/task-types');
   readonly ownerLabel = input('Task Type');
+  /** `Task types > Access Request > Form`: every segment is a link where the owner has a page of its own. */
+  protected readonly formCrumbs = computed<Crumb[]>(() => {
+    const o = this.owner();
+    if (!o) return [];
+    const hasPage = ['Task Type', 'Step'].includes(this.ownerLabel());
+    return [
+      { label: this.heading(), link: this.sectionPath() },
+      { label: o.name, link: hasPage ? [this.sectionPath(), this.ownerId()] : undefined },
+      { label: 'Form' },
+    ];
+  });
   /** What the form's records are called in copy: tasks for Task Types, assets for Asset Types, records for custom fields. */
   protected readonly recordNoun = computed(() => {
     switch (this.ownerLabel()) {

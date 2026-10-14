@@ -8,7 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { ProjectResponse, ProjectsClient } from '../../../api/generated/api-client';
@@ -24,6 +24,7 @@ import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
 import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ActiveBadge } from '../../../shared/ui/badge';
+import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
 
 type Tab = 'tasks' | 'details' | 'activity';
 type LoadState = 'loading' | 'ready' | 'error';
@@ -32,9 +33,10 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-project-detail-page',
   imports: [
+    PageHeader,
+    RecordTitle,
     ActiveBadge,
     ErrorReference,
-    RouterLink,
     Button,
     HasPermissionDirective,
     ConfirmDialog,
@@ -60,37 +62,35 @@ type LoadState = 'loading' | 'ready' | 'error';
       }
       @case ('ready') {
         @if (project(); as p) {
-          <header class="pg-head">
-            <div>
-              <p class="pg-crumbs">
-                <a routerLink="/matters">Matters</a> &gt;
-                <a [routerLink]="['/matters', p.matterId]">{{ p.matterRef }}</a> &gt; Project:
-                {{ p.name }}
-              </p>
-              <h1 class="pg-title">
-                {{ p.name }}
-                <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
-              </h1>
-              <p class="pg-muted" data-matter>
-                Matter: <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />
-                {{ p.matterName }}
-              </p>
-            </div>
-            <div class="pg-actions">
-              <p-button
-                *mfHasPermission="'Project.Edit'"
-                label="Edit"
-                severity="secondary"
-                (onClick)="go('/projects/' + p.projectId + '/edit')"
-              />
-              <p-button
-                *mfHasPermission="'Project.Archive'"
-                [label]="p.isActive ? 'Archive' : 'Restore'"
-                severity="secondary"
-                (onClick)="toggleOpen.set(true)"
-              />
-            </div>
-          </header>
+          <mf-page-header
+            [crumbs]="[
+              { label: 'Matters', link: '/matters' },
+              { label: p.matterRef, link: ['/matters', p.matterId] },
+              { label: 'Project: ' + p.name },
+            ]"
+          >
+            <mf-record-title mfTitle [name]="p.name">
+              <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
+            </mf-record-title>
+            <p-button
+              mfActions
+              *mfHasPermission="'Project.Archive'"
+              [label]="p.isActive ? 'Archive' : 'Restore'"
+              severity="secondary"
+              (onClick)="toggleOpen.set(true)"
+            />
+            <p-button
+              mfActions
+              *mfHasPermission="'Project.Edit'"
+              label="Edit"
+              severity="secondary"
+              (onClick)="go('/projects/' + p.projectId + '/edit')"
+            />
+            <p class="pg-muted" data-matter>
+              Matter: <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />
+              {{ p.matterName }}
+            </p>
+          </mf-page-header>
 
           @if (!p.isActive) {
             <div class="pg-banner" role="note" data-archived-banner>

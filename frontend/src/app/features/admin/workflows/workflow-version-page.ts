@@ -33,6 +33,7 @@ import { WorkflowDiff, diffVersions } from './workflow-diff';
 import { workflowErrors } from './workflow-errors';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { Badge, workflowStatusTone } from '../../../shared/ui/badge';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -65,7 +66,7 @@ const UNORDERED_TEXT =
  */
 @Component({
   selector: 'mf-workflow-version-page',
-  imports: [Badge, ErrorReference, RouterLink, Button, ConfirmDialog, DynamicForm],
+  imports: [PageHeader, Badge, ErrorReference, RouterLink, Button, ConfirmDialog, DynamicForm],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
   template: `
@@ -78,24 +79,25 @@ const UNORDERED_TEXT =
         <p-button label="Retry" severity="secondary" (onClick)="load()" />
       </div>
     } @else if (version(); as v) {
-      <header class="pg-head">
-        <div>
-          <p class="pg-crumbs">
-            <a routerLink="/admin/workflows">Workflows</a> &gt;
-            <a [routerLink]="['/admin/workflows', workflowId()]">{{ v.workflowName }}</a> &gt; v{{
-              v.version.versionNo
-            }}
-          </p>
-          <h1 class="pg-title">
-            {{ v.workflowName }} v{{ v.version.versionNo }}
-            <mf-badge [tone]="statusTone()" data-status>{{ v.version.status }}</mf-badge>
-          </h1>
-          @if (workflow()?.publishedVersionNo; as p) {
-            <p class="pg-muted" data-published-note>Current published version: v{{ p }}</p>
-          }
-        </div>
-        <div class="pg-actions">
+      <mf-page-header
+        [crumbs]="[
+          { label: 'Workflows', link: '/admin/workflows' },
+          { label: v.workflowName, link: ['/admin/workflows', workflowId()] },
+          { label: 'v' + v.version.versionNo },
+        ]"
+      >
+        <span mfTitle>
+          {{ v.workflowName }} v{{ v.version.versionNo }}
+          <mf-badge [tone]="statusTone()" data-status>{{ v.version.status }}</mf-badge>
+        </span>
+        <div mfActions class="mf-contents">
           @if (editable()) {
+            <p-button
+              label="Discard draft"
+              severity="secondary"
+              [disabled]="busy()"
+              (onClick)="discardOpen.set(true)"
+            />
             <p-button
               label="Save draft"
               severity="secondary"
@@ -107,23 +109,7 @@ const UNORDERED_TEXT =
               [disabled]="busy() || rows().length === 0"
               (onClick)="startPublish()"
             />
-            @if (rows().length === 0) {
-              <span class="pg-muted" data-publish-hint>
-                Add at least one step before you can publish.
-              </span>
-            }
-            <p-button
-              label="Discard draft"
-              severity="secondary"
-              [disabled]="busy()"
-              (onClick)="discardOpen.set(true)"
-            />
           } @else {
-            <p-button
-              [label]="'Create new draft from v' + v.version.versionNo"
-              [disabled]="busy() || !!workflow()?.draftVersionId"
-              (onClick)="newDraft()"
-            />
             @if (isPublished()) {
               <p-button
                 label="Retire version"
@@ -132,9 +118,20 @@ const UNORDERED_TEXT =
                 (onClick)="retireOpen.set(true)"
               />
             }
+            <p-button
+              [label]="'Create new draft from v' + v.version.versionNo"
+              [disabled]="busy() || !!workflow()?.draftVersionId"
+              (onClick)="newDraft()"
+            />
           }
         </div>
-      </header>
+        @if (workflow()?.publishedVersionNo; as p) {
+          <p class="pg-muted" data-published-note>Current published version: v{{ p }}</p>
+        }
+        @if (editable() && rows().length === 0) {
+          <p class="pg-muted" data-publish-hint>Add at least one step before you can publish.</p>
+        }
+      </mf-page-header>
 
       @if (!editable()) {
         <div class="pg-banner" data-readonly-banner>

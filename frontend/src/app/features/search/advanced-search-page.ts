@@ -33,6 +33,7 @@ import { parsePage } from '../../shared/ui/list-helpers';
 import { Pager } from '../../shared/ui/pager';
 import { HitTable } from './hit-table';
 import { ErrorReference } from '../../shared/ui/error-reference';
+import { PageHeader } from '../../shared/ui/page-header';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 type Tri = 'any' | 'true' | 'false';
@@ -69,13 +70,11 @@ const asList = (value: string | string[] | undefined): string[] =>
  */
 @Component({
   selector: 'mf-advanced-search-page',
-  imports: [ErrorReference, Button, EntityPicker, HitTable, Pager],
+  imports: [PageHeader, ErrorReference, Button, EntityPicker, HitTable, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   template: `
-    <header class="pg-head">
-      <h1 class="pg-title">Advanced search</h1>
-    </header>
+    <mf-page-header heading="Advanced search" />
 
     <form
       class="adv-form"

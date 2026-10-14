@@ -36,6 +36,7 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
 import { NumberInput, numberProblem } from '../../../shared/ui/number-input';
 import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -47,6 +48,7 @@ function clientOption(c: ClientResponse): PickerOption {
 @Component({
   selector: 'mf-matter-form-page',
   imports: [
+    PageHeader,
     ErrorReference,
     RouterLink,
     CustomFieldsEditor,
@@ -61,14 +63,10 @@ function clientOption(c: ClientResponse): PickerOption {
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <header class="pg-head">
-      <div>
-        <p class="pg-crumbs">
-          <a routerLink="/matters">Matters</a> &gt; {{ isEdit() ? 'Edit' : 'New' }}
-        </p>
-        <h1 class="pg-title">{{ isEdit() ? 'Edit matter' : 'New matter' }}</h1>
-      </div>
-    </header>
+    <mf-page-header
+      [crumbs]="[{ label: 'Matters', link: '/matters' }, { label: isEdit() ? 'Edit' : 'New' }]"
+      [heading]="isEdit() ? 'Edit matter' : 'New matter'"
+    />
 
     @if (state() === 'loading') {
       <div class="pg-state" role="status" aria-busy="true">Loading...</div>

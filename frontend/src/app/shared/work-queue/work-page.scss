@@ -2,20 +2,6 @@
   display: block;
 }
 
-.wp-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--mf-s3);
-  margin-bottom: var(--mf-s4);
-}
-
-.wp-title {
-  margin: 0;
-  font-size: var(--mf-fs-h1);
-}
-
 .wp-help {
   margin: 0 0 var(--mf-s3);
   color: var(--mf-text-muted);

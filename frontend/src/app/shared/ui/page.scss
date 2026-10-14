@@ -3,30 +3,6 @@
   display: block;
 }
 
-.pg-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--mf-s3);
-  margin-bottom: var(--mf-s4);
-}
-
-.pg-title {
-  margin: 0;
-  font-size: var(--mf-fs-h1);
-}
-
-.pg-crumbs {
-  margin: 0 0 var(--mf-s1);
-  color: var(--mf-text-muted);
-  font-size: var(--mf-fs-sm);
-}
-
-.pg-crumbs a {
-  color: var(--mf-link);
-}
-
 .pg-actions {
   display: flex;
   flex-wrap: wrap;

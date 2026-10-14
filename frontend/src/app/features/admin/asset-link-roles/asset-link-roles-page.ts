@@ -15,6 +15,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -25,7 +26,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-asset-link-roles-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ErrorReference, FormsModule, Button, HasPermissionDirective],
+  imports: [PageHeader, ErrorReference, FormsModule, Button, HasPermissionDirective],
   templateUrl: './asset-link-roles-page.html',
   styleUrl: '../admin-lookup.scss',
 })

@@ -8,7 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -28,6 +28,7 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ActiveBadge } from '../../../shared/ui/badge';
+import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
 
 type Tab = 'matters' | 'details' | 'activity';
 type LoadState = 'loading' | 'ready' | 'error';
@@ -36,9 +37,10 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-client-detail-page',
   imports: [
+    PageHeader,
+    RecordTitle,
     ActiveBadge,
     ErrorReference,
-    RouterLink,
     Button,
     HasPermissionDirective,
     ConfirmDialog,
@@ -63,31 +65,30 @@ type LoadState = 'loading' | 'ready' | 'error';
       }
       @case ('ready') {
         @if (client(); as c) {
-          <header class="pg-head">
-            <div>
-              <p class="pg-crumbs">
-                <a routerLink="/clients">Clients</a> &gt; {{ c.clientNumber }} {{ c.name }}
-              </p>
-              <h1 class="pg-title">
-                <span class="pg-mono" data-number>{{ c.clientNumber }}</span> {{ c.name }}
-                <mf-active-badge [active]="c.isActive" />
-              </h1>
-            </div>
-            <div class="pg-actions">
-              <p-button
-                *mfHasPermission="'Client.Edit'"
-                label="Edit"
-                severity="secondary"
-                (onClick)="go('/clients/' + c.clientId + '/edit')"
-              />
-              <p-button
-                *mfHasPermission="'Client.Edit'"
-                [label]="c.isActive ? 'Set inactive' : 'Set active'"
-                severity="secondary"
-                (onClick)="toggleOpen.set(true)"
-              />
-            </div>
-          </header>
+          <mf-page-header
+            [crumbs]="[
+              { label: 'Clients', link: '/clients' },
+              { label: c.clientNumber + ' ' + c.name },
+            ]"
+          >
+            <mf-record-title mfTitle [ref]="c.clientNumber" [name]="c.name">
+              <mf-active-badge [active]="c.isActive" />
+            </mf-record-title>
+            <p-button
+              mfActions
+              *mfHasPermission="'Client.Edit'"
+              [label]="c.isActive ? 'Set inactive' : 'Set active'"
+              severity="secondary"
+              (onClick)="toggleOpen.set(true)"
+            />
+            <p-button
+              mfActions
+              *mfHasPermission="'Client.Edit'"
+              label="Edit"
+              severity="secondary"
+              (onClick)="go('/clients/' + c.clientId + '/edit')"
+            />
+          </mf-page-header>
 
           <div class="pg-tabs" role="tablist" aria-label="Client sections">
             <button

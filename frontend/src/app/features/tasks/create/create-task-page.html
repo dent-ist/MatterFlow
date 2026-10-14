@@ -1,9 +1,7 @@
-<header class="pg-head">
-  <div>
-    <p class="pg-crumbs"><a routerLink="/tasks">Tasks</a> &gt; New</p>
-    <h1 class="pg-title">Create task</h1>
-  </div>
-</header>
+<mf-page-header
+  heading="Create task"
+  [crumbs]="[{ label: 'Tasks', link: '/tasks' }, { label: 'New' }]"
+/>
 
 @if (!canCreate()) {
   <div class="pg-alert" role="alert" data-denied>You don't have permission to create tasks.</div>

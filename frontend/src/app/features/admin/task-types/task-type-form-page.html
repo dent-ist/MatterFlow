@@ -1,23 +1,6 @@
-<header class="ttf__head">
-  <div>
-    <h1 class="ttf__title">{{ owner() ? 'Form: ' + owner()!.name : heading() }}</h1>
-    @if (owner(); as o) {
-      <p class="ttf__crumb">
-        <a [routerLink]="sectionPath()">{{ heading() }}</a> &gt; {{ o.name }} &gt; Form
-        @if (current(); as c) {
-          <span class="ttf__status" data-status>
-            {{ title(c) }}
-            @if (published() && c.status === 'DRAFT') {
-              (published: v{{ published()!.versionNo }})
-            }
-          </span>
-        }
-      </p>
-    }
-  </div>
-
+<mf-page-header [heading]="owner() ? 'Form: ' + owner()!.name : heading()" [crumbs]="formCrumbs()">
   @if (state() === 'ready' && current()) {
-    <div class="ttf__actions">
+    <div mfActions class="mf-contents">
       @if (!readOnly()) {
         <p-button
           label="Save draft"
@@ -41,7 +24,17 @@
       }
     </div>
   }
-</header>
+  @if (owner() && current(); as c) {
+    <p class="ttf__crumb">
+      <span class="ttf__status" data-status>
+        {{ title(c) }}
+        @if (published() && c.status === 'DRAFT') {
+          (published: v{{ published()!.versionNo }})
+        }
+      </span>
+    </p>
+  }
+</mf-page-header>
 
 <p class="ttf__live" role="status" aria-live="polite">{{ notice() }}</p>
 @if (failure()) {

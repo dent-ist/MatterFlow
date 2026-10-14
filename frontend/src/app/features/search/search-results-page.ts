@@ -22,6 +22,7 @@ import {
 } from '../../shared/search/search-meta';
 import { HitTable } from './hit-table';
 import { ErrorReference } from '../../shared/ui/error-reference';
+import { PageHeader } from '../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -44,18 +45,19 @@ interface Section {
  */
 @Component({
   selector: 'mf-search-results-page',
-  imports: [ErrorReference, RouterLink, Button, HitTable],
+  imports: [PageHeader, ErrorReference, RouterLink, Button, HitTable],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   template: `
-    <header class="pg-head">
-      <h1 class="pg-title">Search results</h1>
-      <div class="pg-actions">
-        <a class="pg-link" routerLink="/search/advanced" [queryParams]="{ q: trimmed() || null }"
-          >Advanced search</a
-        >
-      </div>
-    </header>
+    <mf-page-header heading="Search results">
+      <a
+        mfActions
+        class="mf-btn"
+        routerLink="/search/advanced"
+        [queryParams]="{ q: trimmed() || null }"
+        >Advanced search</a
+      >
+    </mf-page-header>
 
     @if (!searchable()) {
       <div class="pg-state" data-state="short">

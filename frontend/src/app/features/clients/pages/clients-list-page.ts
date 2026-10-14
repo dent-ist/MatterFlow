@@ -25,27 +25,34 @@ import {
 import { Pager } from '../../../shared/ui/pager';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ActiveBadge } from '../../../shared/ui/badge';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
 /** Clients list (UX S05): search by number (padded or not) or name, status filter, sortable, server paged. State lives in the URL. */
 @Component({
   selector: 'mf-clients-list-page',
-  imports: [ActiveBadge, ErrorReference, RouterLink, Button, HasPermissionDirective, Pager],
+  imports: [
+    PageHeader,
+    ActiveBadge,
+    ErrorReference,
+    RouterLink,
+    Button,
+    HasPermissionDirective,
+    Pager,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <header class="pg-head">
-      <h1 class="pg-title">Clients</h1>
-      <div class="pg-actions">
-        <p-button
-          *mfHasPermission="'Client.Create'"
-          label="New client"
-          icon="pi pi-plus"
-          (onClick)="go('/clients/new')"
-        />
-      </div>
-    </header>
+    <mf-page-header heading="Clients">
+      <p-button
+        mfActions
+        *mfHasPermission="'Client.Create'"
+        label="New client"
+        icon="pi pi-plus"
+        (onClick)="go('/clients/new')"
+      />
+    </mf-page-header>
 
     <form
       class="pg-filters"

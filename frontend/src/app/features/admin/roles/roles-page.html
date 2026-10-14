@@ -1,7 +1,6 @@
-<header class="mf-head">
-  <h1>Roles &amp; Permissions</h1>
-  <a routerLink="/admin/users" class="mf-link">Users</a>
-</header>
+<mf-page-header heading="Roles &amp; Permissions">
+  <a mfActions routerLink="/admin/users" class="mf-btn">Users</a>
+</mf-page-header>
 
 @if (loadError()) {
   <p class="mf-error" role="alert">We could not load roles. Try again.</p>

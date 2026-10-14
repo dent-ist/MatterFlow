@@ -31,6 +31,7 @@ import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
 import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ActiveBadge } from '../../../shared/ui/badge';
+import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
 
 type Tab = 'tasks' | 'projects' | 'assets' | 'details' | 'activity';
 type LoadState = 'loading' | 'ready' | 'error';
@@ -42,6 +43,8 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-matter-detail-page',
   imports: [
+    PageHeader,
+    RecordTitle,
     ActiveBadge,
     ErrorReference,
     RouterLink,
@@ -71,60 +74,61 @@ type LoadState = 'loading' | 'ready' | 'error';
       }
       @case ('ready') {
         @if (matter(); as m) {
-          <header class="pg-head">
-            <div>
-              <p class="pg-crumbs">
-                <a routerLink="/matters">Matters</a> &gt; {{ m.matterRef }} {{ m.name }}
-              </p>
-              <h1 class="pg-title">
-                <mf-matter-ref [value]="m.matterRef" /> {{ m.name }}
-                <mf-active-badge [active]="m.isActive" />
-              </h1>
-              <p class="pg-muted" data-client>
-                Client:
-                <a class="pg-link" [routerLink]="['/clients', m.clientId]"
-                  ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
-                >
-              </p>
-            </div>
-            <div class="pg-actions">
+          <mf-page-header
+            [crumbs]="[
+              { label: 'Matters', link: '/matters' },
+              { label: m.matterRef + ' ' + m.name },
+            ]"
+          >
+            <mf-record-title mfTitle [name]="m.name">
+              <mf-matter-ref mfRef [value]="m.matterRef" />
+              <mf-active-badge [active]="m.isActive" />
+            </mf-record-title>
+            <span *mfHasPermission="'Matter.SetActive'" mfActions class="pg-toggle">
               <p-button
-                *mfHasPermission="'Task.Create'"
-                label="Create task in this matter"
-                icon="pi pi-plus"
-                [disabled]="!m.isActive"
-                (onClick)="go('/tasks/new?matterId=' + m.matterId)"
-              />
-              <p-button
-                *mfHasPermission="'Project.Create'"
-                label="New project"
-                icon="pi pi-plus"
+                [label]="m.isActive ? 'Set inactive' : 'Set active'"
                 severity="secondary"
-                (onClick)="go('/projects/new?matterId=' + m.matterId)"
+                [disabled]="deactivateBlocked()"
+                [attr.aria-describedby]="deactivateBlocked() ? 'matter-toggle-reason' : null"
+                (onClick)="toggleOpen.set(true)"
               />
-              <p-button
-                *mfHasPermission="'Matter.Edit'"
-                label="Edit"
-                severity="secondary"
-                (onClick)="go('/matters/' + m.matterId + '/edit')"
-              />
-              <span *mfHasPermission="'Matter.SetActive'" class="pg-toggle">
-                <p-button
-                  [label]="m.isActive ? 'Set inactive' : 'Set active'"
-                  severity="secondary"
-                  [disabled]="deactivateBlocked()"
-                  [attr.aria-describedby]="deactivateBlocked() ? 'matter-toggle-reason' : null"
-                  (onClick)="toggleOpen.set(true)"
-                />
-                @if (deactivateBlocked()) {
-                  <span class="pg-reason" id="matter-toggle-reason" data-toggle-reason>
-                    This matter has {{ m.openTaskCount }} tasks that aren't Completed or Cancelled.
-                    Finish or cancel them first.
-                  </span>
-                }
-              </span>
-            </div>
-          </header>
+              @if (deactivateBlocked()) {
+                <span class="pg-reason" id="matter-toggle-reason" data-toggle-reason>
+                  This matter has {{ m.openTaskCount }} tasks that aren't Completed or Cancelled.
+                  Finish or cancel them first.
+                </span>
+              }
+            </span>
+            <p-button
+              mfActions
+              *mfHasPermission="'Matter.Edit'"
+              label="Edit"
+              severity="secondary"
+              (onClick)="go('/matters/' + m.matterId + '/edit')"
+            />
+            <p-button
+              mfActions
+              *mfHasPermission="'Project.Create'"
+              label="New project"
+              icon="pi pi-plus"
+              severity="secondary"
+              (onClick)="go('/projects/new?matterId=' + m.matterId)"
+            />
+            <p-button
+              mfActions
+              *mfHasPermission="'Task.Create'"
+              label="Create task in this matter"
+              icon="pi pi-plus"
+              [disabled]="!m.isActive"
+              (onClick)="go('/tasks/new?matterId=' + m.matterId)"
+            />
+            <p class="pg-muted" data-client>
+              Client:
+              <a class="pg-link" [routerLink]="['/clients', m.clientId]"
+                ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
+              >
+            </p>
+          </mf-page-header>
 
           @if (m.isSensitive) {
             <div class="pg-banner" role="note" data-sensitive-banner>
@@ -192,7 +196,11 @@ type LoadState = 'loading' | 'ready' | 'error';
 
           @switch (tab()) {
             @case ('tasks') {
-              <mf-scoped-tasks [matterId]="m.matterId" [canCreate]="m.isActive" />
+              <mf-scoped-tasks
+                [matterId]="m.matterId"
+                [canCreate]="m.isActive"
+                [showCreate]="false"
+              />
             }
             @case ('projects') {
               @if (projects().length === 0) {

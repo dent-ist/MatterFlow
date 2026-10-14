@@ -24,6 +24,7 @@ import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { fieldLabel, friendlyText } from '../../../shared/ui/audit-format';
 import { AuditGroup, auditObjectRoute, auditObjectText, groupByCorrelation } from './audit-links';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -61,7 +62,7 @@ const ACTOR_DEBOUNCE_MS = 250;
  */
 @Component({
   selector: 'mf-audit-page',
-  imports: [DateInput, ErrorReference, RouterLink, MfDatePipe, NgTemplateOutlet],
+  imports: [PageHeader, DateInput, ErrorReference, RouterLink, MfDatePipe, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './audit-page.html',
   styleUrl: './audit-page.scss',

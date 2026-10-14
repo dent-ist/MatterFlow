@@ -3,13 +3,14 @@
     You don't have permission to view the audit log.
   </p>
 } @else {
-  <header class="au-head">
-    <h1>Audit log</h1>
-    <p class="au-muted">
-      Every recorded change, newest first. Times are shown in your time zone ({{ zone }}); the date
-      filters use it too. The log is read only and can't be exported.
-    </p>
-  </header>
+  <mf-page-header
+    heading="Audit log"
+    [description]="
+      'Every recorded change, newest first. Times are shown in your time zone (' +
+      zone +
+      '); the date filters use it too. The log is read only and can\'t be exported.'
+    "
+  />
 
   <form
     class="au-filters"

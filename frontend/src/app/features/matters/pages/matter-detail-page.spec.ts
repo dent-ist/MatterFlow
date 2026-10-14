@@ -140,7 +140,7 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('dl')?.textContent).toContain('Merger Review');
   });
 
-  it('lists the matter tasks in the Tasks tab (open by default, All on request) and offers Create task', async () => {
+  it('lists the matter tasks in the Tasks tab (open by default, All on request); Create task is offered once, in the header', async () => {
     await create(['Matter.View', 'Task.View', 'Task.Create'], aMatter({ openTaskCount: 3 }));
 
     expect(tab('Tasks').textContent?.trim()).toBe('Tasks (3 open)');
@@ -159,7 +159,8 @@ describe('MatterDetailPage', () => {
     args = queue.getTaskQueue.mock.calls.at(-1)!;
     expect(args[1]).toBeUndefined();
 
-    el().querySelector<HTMLButtonElement>('mf-scoped-tasks [data-create-task] button')!.click();
+    expect(el().querySelector('mf-scoped-tasks [data-create-task]')).toBeNull();
+    buttonByLabel(el(), 'Create task in this matter')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/tasks/new?matterId=7');
   });
 

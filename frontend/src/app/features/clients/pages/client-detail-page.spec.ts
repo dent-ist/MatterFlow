@@ -56,7 +56,7 @@ describe('ClientDetailPage', () => {
   it('shows the number prominently with the matters of the client', async () => {
     await create(['Client.View', 'Matter.View']);
 
-    expect(el().querySelector('[data-number]')?.textContent?.trim()).toBe('00343');
+    expect(el().querySelector('[data-ref]')?.textContent?.trim()).toBe('00343');
     expect(el().querySelector('h1')?.textContent).toContain('Acme Corp');
     expect(matters.listMatters).toHaveBeenCalledWith(
       undefined,

@@ -26,6 +26,7 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
 import { Pager } from '../../../shared/ui/pager';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ActiveBadge, SensitiveBadge } from '../../../shared/ui/badge';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -33,6 +34,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-matters-list-page',
   imports: [
+    PageHeader,
     ActiveBadge,
     SensitiveBadge,
     ErrorReference,
@@ -45,17 +47,15 @@ type LoadState = 'loading' | 'ready' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <header class="pg-head">
-      <h1 class="pg-title">Matters</h1>
-      <div class="pg-actions">
-        <p-button
-          *mfHasPermission="'Matter.Create'"
-          label="New matter"
-          icon="pi pi-plus"
-          (onClick)="go('/matters/new')"
-        />
-      </div>
-    </header>
+    <mf-page-header heading="Matters">
+      <p-button
+        mfActions
+        *mfHasPermission="'Matter.Create'"
+        label="New matter"
+        icon="pi pi-plus"
+        (onClick)="go('/matters/new')"
+      />
+    </mf-page-header>
 
     <form
       class="pg-filters"

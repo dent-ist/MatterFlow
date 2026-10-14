@@ -19,6 +19,7 @@ import { loadPodChoices } from '../../../shared/work-queue/pod-options';
 import { QueuePageBase } from '../../../shared/work-queue/queue-page';
 import { PodOption, WorkFilterBar } from '../../../shared/work-queue/work-filter-bar';
 import { WorkList } from '../../../shared/work-queue/work-list';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 /**
  * Task Queue (UX S03, ticket 49): every Task for anyone with Task.View. Search, quick views, filters, chips, sortable columns,
@@ -27,19 +28,19 @@ import { WorkList } from '../../../shared/work-queue/work-list';
  */
 @Component({
   selector: 'mf-task-queue-page',
-  imports: [Button, HasPermissionDirective, WorkFilterBar, WorkList],
+  imports: [PageHeader, Button, HasPermissionDirective, WorkFilterBar, WorkList],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
-    <header class="wp-head">
-      <h1 class="wp-title">Task Queue</h1>
+    <mf-page-header heading="Task Queue">
       <p-button
+        mfActions
         *mfHasPermission="'Task.Create'"
         label="Create task"
         icon="pi pi-plus"
         (onClick)="go('/tasks/new')"
       />
-    </header>
+    </mf-page-header>
 
     <mf-work-filter-bar
       [filters]="state().filters"

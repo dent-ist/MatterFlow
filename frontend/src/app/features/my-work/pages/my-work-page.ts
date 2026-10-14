@@ -12,6 +12,7 @@ import { QueuePageBase } from '../../../shared/work-queue/queue-page';
 import { PodOption, WorkFilterBar } from '../../../shared/work-queue/work-filter-bar';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type TabKey = 'active' | 'dueSoon' | 'completed' | 'createdByMe';
 
@@ -31,13 +32,11 @@ const COMPLETED_WINDOW_DAYS = 90;
  */
 @Component({
   selector: 'mf-my-work-page',
-  imports: [RouterLink, WorkFilterBar, WorkList, WorkTabs],
+  imports: [PageHeader, RouterLink, WorkFilterBar, WorkList, WorkTabs],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
-    <header class="wp-head">
-      <h1 class="wp-title">My Work</h1>
-    </header>
+    <mf-page-header heading="My Work" />
 
     <mf-work-tabs
       label="My Work views"

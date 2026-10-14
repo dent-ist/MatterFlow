@@ -29,6 +29,7 @@ import {
 } from '../../../shared/guards/unsaved-changes.guard';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 type StatusFilter = 'all' | 'active' | 'inactive';
@@ -44,7 +45,7 @@ const SEARCH_DEBOUNCE_MS = 200;
 @Component({
   selector: 'mf-pods-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ConfirmDialog, ErrorReference, Button, HasPermissionDirective, RouterLink],
+  imports: [PageHeader, ConfirmDialog, ErrorReference, Button, HasPermissionDirective, RouterLink],
   templateUrl: './pods-page.html',
   styleUrl: './pods-page.scss',
 })

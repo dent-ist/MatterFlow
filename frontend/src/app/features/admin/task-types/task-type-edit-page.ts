@@ -20,6 +20,7 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { TaskTypeView, TaskTypesApi } from './task-types-api';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -55,7 +56,7 @@ const key = (m: Model): string =>
 @Component({
   selector: 'mf-task-type-edit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ConfirmDialog, ErrorReference, FormsModule, RouterLink, Button],
+  imports: [PageHeader, ConfirmDialog, ErrorReference, FormsModule, RouterLink, Button],
   templateUrl: './task-type-edit-page.html',
   styleUrls: ['../admin-lookup.scss', './task-type-edit-page.scss'],
 })

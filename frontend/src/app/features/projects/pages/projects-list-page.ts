@@ -26,6 +26,7 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
 import { Pager } from '../../../shared/ui/pager';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ActiveBadge } from '../../../shared/ui/badge';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -33,6 +34,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-projects-list-page',
   imports: [
+    PageHeader,
     ActiveBadge,
     ErrorReference,
     RouterLink,
@@ -44,17 +46,15 @@ type LoadState = 'loading' | 'ready' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <header class="pg-head">
-      <h1 class="pg-title">Projects</h1>
-      <div class="pg-actions">
-        <p-button
-          *mfHasPermission="'Project.Create'"
-          label="New project"
-          icon="pi pi-plus"
-          (onClick)="go('/projects/new' + (matterId() ? '?matterId=' + matterId() : ''))"
-        />
-      </div>
-    </header>
+    <mf-page-header heading="Projects">
+      <p-button
+        mfActions
+        *mfHasPermission="'Project.Create'"
+        label="New project"
+        icon="pi pi-plus"
+        (onClick)="go('/projects/new' + (matterId() ? '?matterId=' + matterId() : ''))"
+      />
+    </mf-page-header>
 
     <form
       class="pg-filters"

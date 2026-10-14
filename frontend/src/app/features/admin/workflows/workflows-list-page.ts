@@ -22,6 +22,7 @@ import {
 import { Pager } from '../../../shared/ui/pager';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ActiveBadge, Badge } from '../../../shared/ui/badge';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -31,22 +32,21 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-workflows-list-page',
-  imports: [Badge, ActiveBadge, ErrorReference, RouterLink, Button, Pager],
+  imports: [PageHeader, Badge, ActiveBadge, ErrorReference, RouterLink, Button, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
   template: `
-    <header class="pg-head">
-      <div>
-        <h1 class="pg-title">Workflows</h1>
-        <p class="pg-muted">
-          A workflow is an ordered or unordered list of steps. Tasks run on a published version;
-          edit by creating a new draft.
-        </p>
-      </div>
-      <div class="pg-actions">
-        <p-button label="New workflow" icon="pi pi-plus" (onClick)="go('/admin/workflows/new')" />
-      </div>
-    </header>
+    <mf-page-header
+      heading="Workflows"
+      description="A workflow is an ordered or unordered list of steps. Tasks run on a published version; edit by creating a new draft."
+    >
+      <p-button
+        mfActions
+        label="New workflow"
+        icon="pi pi-plus"
+        (onClick)="go('/admin/workflows/new')"
+      />
+    </mf-page-header>
 
     <form
       class="pg-filters"

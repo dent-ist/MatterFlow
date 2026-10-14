@@ -1,18 +1,16 @@
-<div class="pods__head">
-  <div>
-    <h1 class="pods__title">Pods</h1>
-    <p class="pods__muted">
-      Pod leads are a role. Assign the Pod Lead role under
-      <a routerLink="/admin/users" class="pods__link">Users &amp; Roles</a>.
-    </p>
-  </div>
+<mf-page-header heading="Pods">
+  <span mfDescription>
+    Pod leads are a role. Assign the Pod Lead role under
+    <a routerLink="/admin/users" class="pods__link">Users &amp; Roles</a>.
+  </span>
   <p-button
+    mfActions
     *mfHasPermission="'Pod.Manage'"
     label="New pod"
     icon="pi pi-plus"
     (onClick)="newPod()"
   />
-</div>
+</mf-page-header>
 
 <p class="pods__live" role="status" aria-live="polite" data-live>{{ announce() }}</p>
 

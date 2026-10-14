@@ -11,7 +11,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { DateInput, DynamicForm, errorSummary } from 'form-engine';
 import type { FormDefinition, ServerFieldError } from 'form-engine';
 import { Button } from 'primeng/button';
@@ -53,6 +53,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { splitFormErrors } from '../../../shared/ui/custom-fields';
 import { EmailIntake, EmailPrefill } from '../../../shared/ui/email-intake';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
+import { PageHeader } from '../../../shared/ui/page-header';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
@@ -97,8 +98,8 @@ const matterOption = (m: MatterResponse): PickerOption => ({
   selector: 'mf-create-task-page',
   imports: [
     ErrorReference,
-    RouterLink,
     Button,
+    PageHeader,
     DynamicForm,
     DateInput,
     EmailIntake,

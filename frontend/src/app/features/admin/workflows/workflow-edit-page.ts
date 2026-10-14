@@ -26,6 +26,7 @@ import { workflowErrors } from './workflow-errors';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { Badge, BadgeTone, workflowStatusTone } from '../../../shared/ui/badge';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -35,18 +36,26 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-workflow-edit-page',
-  imports: [Badge, ConfirmDialog, ErrorReference, RouterLink, Button, TextField, MfDatePipe],
+  imports: [
+    PageHeader,
+    Badge,
+    ConfirmDialog,
+    ErrorReference,
+    RouterLink,
+    Button,
+    TextField,
+    MfDatePipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
   template: `
-    <header class="pg-head">
-      <div>
-        <p class="pg-crumbs">
-          <a routerLink="/admin/workflows">Workflows</a> &gt; {{ isEdit() ? 'Edit' : 'New' }}
-        </p>
-        <h1 class="pg-title">{{ isEdit() ? name() || 'Edit workflow' : 'New workflow' }}</h1>
-      </div>
-    </header>
+    <mf-page-header
+      [crumbs]="[
+        { label: 'Workflows', link: '/admin/workflows' },
+        { label: isEdit() ? 'Edit' : 'New' },
+      ]"
+      [heading]="isEdit() ? name() || 'Edit workflow' : 'New workflow'"
+    />
 
     @if (state() === 'loading') {
       <div class="pg-state" role="status" aria-busy="true">Loading the workflow...</div>

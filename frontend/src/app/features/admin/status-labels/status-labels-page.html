@@ -1,13 +1,12 @@
-<header class="head">
-  <div>
-    <h1>Status labels</h1>
-    <p class="muted">You can rename how statuses appear. You can't add or remove them.</p>
-  </div>
+<mf-page-header
+  heading="Priorities &amp; Status Labels"
+  description="You can rename how statuses appear. You can't add or remove them."
+>
   <nav class="tabs" aria-label="Priorities and status labels">
     <a *mfHasPermission="'Priority.Manage'" routerLink="/admin/priorities">Priorities</a>
     <a routerLink="/admin/status-labels" aria-current="page">Status labels</a>
   </nav>
-</header>
+</mf-page-header>
 
 <div class="sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
 

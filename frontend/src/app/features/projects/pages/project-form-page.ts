@@ -31,6 +31,7 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -44,18 +45,22 @@ function matterOption(m: MatterResponse): PickerOption {
  */
 @Component({
   selector: 'mf-project-form-page',
-  imports: [ErrorReference, RouterLink, CustomFieldsEditor, Button, TextField, EntityPicker],
+  imports: [
+    PageHeader,
+    ErrorReference,
+    RouterLink,
+    CustomFieldsEditor,
+    Button,
+    TextField,
+    EntityPicker,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <header class="pg-head">
-      <div>
-        <p class="pg-crumbs">
-          <a routerLink="/projects">Projects</a> &gt; {{ isEdit() ? 'Edit' : 'New' }}
-        </p>
-        <h1 class="pg-title">{{ isEdit() ? 'Edit project' : 'New project' }}</h1>
-      </div>
-    </header>
+    <mf-page-header
+      [crumbs]="[{ label: 'Projects', link: '/projects' }, { label: isEdit() ? 'Edit' : 'New' }]"
+      [heading]="isEdit() ? 'Edit project' : 'New project'"
+    />
 
     @if (state() === 'loading') {
       <div class="pg-state" role="status" aria-busy="true">Loading...</div>

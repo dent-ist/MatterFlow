@@ -22,6 +22,7 @@ import {
 import { Pager } from '../../../shared/ui/pager';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ActiveBadge } from '../../../shared/ui/badge';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -31,22 +32,16 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-steps-list-page',
-  imports: [ActiveBadge, ErrorReference, RouterLink, Button, Pager],
+  imports: [PageHeader, ActiveBadge, ErrorReference, RouterLink, Button, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <header class="pg-head">
-      <div>
-        <h1 class="pg-title">Step library</h1>
-        <p class="pg-muted">
-          Reusable steps. Workflows copy a step when they are published, so editing a step here
-          never changes a published workflow.
-        </p>
-      </div>
-      <div class="pg-actions">
-        <p-button label="New step" icon="pi pi-plus" (onClick)="go('/admin/steps/new')" />
-      </div>
-    </header>
+    <mf-page-header
+      heading="Step library"
+      description="Reusable steps. Workflows copy a step when they are published, so editing a step here never changes a published workflow."
+    >
+      <p-button mfActions label="New step" icon="pi pi-plus" (onClick)="go('/admin/steps/new')" />
+    </mf-page-header>
 
     <form
       class="pg-filters"

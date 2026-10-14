@@ -12,6 +12,7 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { StatusBadge } from '../../../shared/ui/status-badge';
 import { ACTION_LABELS, TaskDetailStore } from './task-detail.store';
+import { Crumb, PageHeader } from '../../../shared/ui/page-header';
 
 const BLOCKED_TEXT: Readonly<Record<string, string>> = {
   MATTER_INACTIVE: "Matter is inactive. This task can't be reopened.",
@@ -24,18 +25,18 @@ const BLOCKED_TEXT: Readonly<Record<string, string>> = {
  */
 @Component({
   selector: 'mf-task-header',
-  imports: [MatterRef, PriorityBadge, StatusBadge, DueLabelPipe],
+  imports: [PageHeader, MatterRef, PriorityBadge, StatusBadge, DueLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     @if (store.task(); as t) {
-      <header class="th" data-task-header>
-        <div class="th__top">
-          <h1 class="pg-title th__title">
+      <div class="th" data-task-header>
+        <mf-page-header [crumbs]="crumbs()">
+          <span mfTitle class="th__title">
             <span class="pg-mono" data-task-number>{{ t.taskNumber }}</span>
             <span data-task-title>{{ t.title }}</span>
-          </h1>
-          <div class="pg-actions">
+          </span>
+          <div mfActions class="mf-contents">
             @if (t.allowedActions.canEdit) {
               <button type="button" class="mf-btn" data-edit (click)="edit()">Edit</button>
             }
@@ -87,42 +88,46 @@ const BLOCKED_TEXT: Readonly<Record<string, string>> = {
               </div>
             }
           </div>
-        </div>
 
-        <div class="th__meta">
-          <mf-status-badge [code]="t.status" [label]="t.statusLabel" />
-          <mf-priority-badge
-            [priorityId]="t.priority.priorityId"
-            [label]="t.priority.label"
-            [color]="t.priority.color"
-          />
-          <span data-due
-            ><span class="pg-label">Due:</span>
-            {{ { dueDate: t.dueDate, dueAtUtc: t.dueAtUtc } | dueLabel: t.status }}</span
-          >
-          <span data-pod
-            ><span class="pg-label">Pod:</span> {{ t.assignedPod?.name ?? 'No pod' }}</span
-          >
-          <span data-assignee
-            ><span class="pg-label">Assignee:</span>
-            {{ t.assignedUser?.displayName ?? 'Unassigned' }}</span
-          >
-          <span class="th__matter" data-matter
-            ><span class="pg-label">Matter:</span>
-            <mf-matter-ref [value]="t.matter.matterRef" [link]="['/matters', t.matter.matterId]" />
-            {{ t.matter.name }}
-          </span>
-          <span data-workflow
-            ><span class="pg-label">Workflow:</span> {{ t.workflow.workflowName }} v{{
-              t.workflow.versionNo
-            }}
-            ({{ t.workflow.isOrdered ? 'ordered' : 'unordered' }}) &middot;
-            <span data-progress
-              >{{ t.workflow.progress.resolved }} of {{ t.workflow.progress.total }} resolved</span
-            ></span
-          >
-        </div>
-      </header>
+          <div class="th__meta">
+            <mf-status-badge [code]="t.status" [label]="t.statusLabel" />
+            <mf-priority-badge
+              [priorityId]="t.priority.priorityId"
+              [label]="t.priority.label"
+              [color]="t.priority.color"
+            />
+            <span data-due
+              ><span class="pg-label">Due:</span>
+              {{ { dueDate: t.dueDate, dueAtUtc: t.dueAtUtc } | dueLabel: t.status }}</span
+            >
+            <span data-pod
+              ><span class="pg-label">Pod:</span> {{ t.assignedPod?.name ?? 'No pod' }}</span
+            >
+            <span data-assignee
+              ><span class="pg-label">Assignee:</span>
+              {{ t.assignedUser?.displayName ?? 'Unassigned' }}</span
+            >
+            <span class="th__matter" data-matter
+              ><span class="pg-label">Matter:</span>
+              <mf-matter-ref
+                [value]="t.matter.matterRef"
+                [link]="['/matters', t.matter.matterId]"
+              />
+              {{ t.matter.name }}
+            </span>
+            <span data-workflow
+              ><span class="pg-label">Workflow:</span> {{ t.workflow.workflowName }} v{{
+                t.workflow.versionNo
+              }}
+              ({{ t.workflow.isOrdered ? 'ordered' : 'unordered' }}) &middot;
+              <span data-progress
+                >{{ t.workflow.progress.resolved }} of
+                {{ t.workflow.progress.total }} resolved</span
+              ></span
+            >
+          </div>
+        </mf-page-header>
+      </div>
     }
   `,
   styles: `
@@ -134,18 +139,13 @@ const BLOCKED_TEXT: Readonly<Record<string, string>> = {
       padding: var(--mf-s3) 0;
       background: var(--mf-bg);
     }
-    .th__top {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: var(--mf-s3);
-    }
     .th__title {
-      display: flex;
+      display: inline-flex;
       flex-wrap: wrap;
       gap: var(--mf-s2);
-      overflow-wrap: anywhere;
+    }
+    mf-page-header {
+      margin-bottom: 0;
     }
     .th__meta {
       display: flex;
@@ -208,6 +208,17 @@ export class TaskHeader {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly open = signal(false);
+
+  /** `Tasks > 00343-00012 Merger Review > TSK-1`: every segment before the current task is a link. */
+  protected readonly crumbs = computed<Crumb[]>(() => {
+    const t = this.store.task();
+    if (!t) return [];
+    return [
+      { label: 'Tasks', link: '/tasks' },
+      { label: `${t.matter.matterRef} ${t.matter.name}`, link: ['/matters', t.matter.matterId] },
+      { label: t.taskNumber },
+    ];
+  });
 
   /** Transitions shown in the menu: not the ones the caller lacks permission for. */
   protected readonly items = computed<TaskTransitionOption[]>(() =>

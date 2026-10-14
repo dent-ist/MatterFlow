@@ -2,7 +2,6 @@
   display: block;
 }
 
-.pods__head,
 .pods__editor-head {
   display: flex;
   flex-wrap: wrap;
@@ -10,11 +9,6 @@
   align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 1rem;
-}
-
-.pods__title {
-  margin: 0 0 0.25rem;
-  font-size: var(--mf-fs-h1, 1.5rem);
 }
 
 .pods__subtitle {

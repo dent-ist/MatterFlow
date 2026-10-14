@@ -1,9 +1,10 @@
-<header class="head">
-  <div>
-    <h1>{{ isNew() ? 'New task type' : (taskType()?.name ?? 'Task type') }}</h1>
-    <p class="muted"><a routerLink="/admin/task-types">Back to task types</a></p>
-  </div>
-</header>
+<mf-page-header
+  [heading]="isNew() ? 'New task type' : (taskType()?.name ?? 'Task type')"
+  [crumbs]="[
+    { label: 'Task types', link: '/admin/task-types' },
+    { label: isNew() ? 'New' : (taskType()?.name ?? 'Edit') },
+  ]"
+/>
 
 <div class="sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
 

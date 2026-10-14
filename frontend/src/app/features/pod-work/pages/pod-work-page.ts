@@ -14,6 +14,7 @@ import { QueuePageBase } from '../../../shared/work-queue/queue-page';
 import { PodOption, WorkFilterBar } from '../../../shared/work-queue/work-filter-bar';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type TabKey = 'queue' | 'members' | 'attention' | 'all';
 
@@ -24,12 +25,11 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
  */
 @Component({
   selector: 'mf-pod-work-page',
-  imports: [WorkFilterBar, WorkList, WorkTabs],
+  imports: [PageHeader, WorkFilterBar, WorkList, WorkTabs],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
-    <header class="wp-head">
-      <h1 class="wp-title">Pod Work</h1>
+    <mf-page-header heading="Pod Work">
       @if (pods().length > 0) {
         <div class="wp-field">
           <label for="pw-pod">Pod</label>
@@ -63,7 +63,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
           </select>
         </div>
       }
-    </header>
+    </mf-page-header>
 
     @if (loadState() === 'ready' && pods().length === 0) {
       <div class="wl-empty-note" data-empty="no-pod" role="status">

@@ -9,6 +9,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { TaskTypeView, TaskTypesApi } from './task-types-api';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -19,7 +20,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-task-types-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ConfirmDialog, ErrorReference, RouterLink, Button],
+  imports: [PageHeader, ConfirmDialog, ErrorReference, RouterLink, Button],
   templateUrl: './task-types-page.html',
   styleUrls: ['../admin-lookup.scss', './task-types-page.scss'],
 })

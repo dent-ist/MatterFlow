@@ -107,15 +107,17 @@ const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'
             <option value="all" [selected]="scope() === 'all'">All tasks</option>
           </select>
         </div>
-        <p-button
-          *mfHasPermission="'Task.Create'"
-          label="Create task"
-          icon="pi pi-plus"
-          severity="secondary"
-          data-create-task
-          [disabled]="!canCreate()"
-          (onClick)="create()"
-        />
+        @if (showCreate()) {
+          <p-button
+            *mfHasPermission="'Task.Create'"
+            label="Create task"
+            icon="pi pi-plus"
+            severity="secondary"
+            data-create-task
+            [disabled]="!canCreate()"
+            (onClick)="create()"
+          />
+        }
       </div>
 
       <div class="st-sr" role="status" aria-live="polite">{{ announcement() }}</div>
@@ -160,6 +162,8 @@ export class ScopedTasks {
   readonly projectId = input<number | null>(null);
   /** False disables Create Task (an inactive Matter takes no new Tasks). */
   readonly canCreate = input(true);
+  /** False where the page header already offers the one Create Task button (Matter detail, UXR-40). */
+  readonly showCreate = input(true);
 
   private static nextId = 0;
   protected readonly id = `st-${ScopedTasks.nextId++}`;

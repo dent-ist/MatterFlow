@@ -8,7 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { DynamicForm, FormDefinition } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
@@ -28,6 +28,7 @@ import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { Badge } from '../../../shared/ui/badge';
+import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
 
 type Tab = 'details' | 'tasks' | 'history';
 type LoadState = 'loading' | 'ready' | 'error';
@@ -40,10 +41,11 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-asset-detail-page',
   imports: [
+    PageHeader,
+    RecordTitle,
     Badge,
     ActiveBadge,
     ErrorReference,
-    RouterLink,
     Button,
     HasPermissionDirective,
     ConfirmDialog,
@@ -71,54 +73,52 @@ type LoadState = 'loading' | 'ready' | 'error';
       }
       @case ('ready') {
         @if (asset(); as a) {
-          <header class="pg-head">
-            <div>
-              <p class="pg-crumbs"><a routerLink="/assets">Assets</a> &gt; {{ a.displayName }}</p>
-              <h1 class="pg-title">
-                {{ a.displayName }}
-                <mf-badge tone="info" data-type-badge>{{ a.assetTypeName }}</mf-badge>
-                <mf-active-badge [active]="a.isActive" data-status />
-              </h1>
-              <p class="pg-muted" data-matter>
-                Matter:
-                <mf-matter-ref [value]="a.matterRef" [link]="['/matters', a.matterId]" />
-                {{ a.matterName }}
-              </p>
-              @if (a.externalReference) {
-                <p class="pg-muted" data-external-reference>
-                  External reference:
-                  @if (isUrl(a.externalReference)) {
-                    <a
-                      class="pg-link"
-                      [href]="a.externalReference"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      >{{ a.externalReference }}</a
-                    >
-                  } @else {
-                    <span class="pg-mono">{{ a.externalReference }}</span>
-                  }
-                  <mf-copy-button [text]="a.externalReference" label="external reference" />
-                </p>
-              }
-            </div>
-            <div class="pg-actions">
-              @if (a.isActive) {
-                <p-button
-                  *mfHasPermission="'Asset.Edit'"
-                  label="Edit"
-                  severity="secondary"
-                  (onClick)="go('/assets/' + a.assetId + '/edit')"
-                />
-              }
+          <mf-page-header
+            [crumbs]="[{ label: 'Assets', link: '/assets' }, { label: a.displayName }]"
+          >
+            <mf-record-title mfTitle [name]="a.displayName">
+              <mf-badge tone="info" data-type-badge>{{ a.assetTypeName }}</mf-badge>
+              <mf-active-badge [active]="a.isActive" data-status />
+            </mf-record-title>
+            <p-button
+              mfActions
+              *mfHasPermission="'Asset.Edit'"
+              [label]="a.isActive ? 'Set inactive' : 'Set active'"
+              severity="secondary"
+              (onClick)="toggleOpen.set(true)"
+            />
+            @if (a.isActive) {
               <p-button
+                mfActions
                 *mfHasPermission="'Asset.Edit'"
-                [label]="a.isActive ? 'Set inactive' : 'Set active'"
+                label="Edit"
                 severity="secondary"
-                (onClick)="toggleOpen.set(true)"
+                (onClick)="go('/assets/' + a.assetId + '/edit')"
               />
-            </div>
-          </header>
+            }
+            <p class="pg-muted" data-matter>
+              Matter:
+              <mf-matter-ref [value]="a.matterRef" [link]="['/matters', a.matterId]" />
+              {{ a.matterName }}
+            </p>
+            @if (a.externalReference) {
+              <p class="pg-muted" data-external-reference>
+                External reference:
+                @if (isUrl(a.externalReference)) {
+                  <a
+                    class="pg-link"
+                    [href]="a.externalReference"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >{{ a.externalReference }}</a
+                  >
+                } @else {
+                  <span class="pg-mono">{{ a.externalReference }}</span>
+                }
+                <mf-copy-button [text]="a.externalReference" label="external reference" />
+              </p>
+            }
+          </mf-page-header>
 
           @if (!a.isActive) {
             <div class="pg-banner" role="note" data-inactive-banner>

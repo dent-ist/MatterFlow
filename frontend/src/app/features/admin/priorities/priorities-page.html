@@ -1,13 +1,12 @@
-<header class="head">
-  <div>
-    <h1>Priorities &amp; Status Labels</h1>
-    <p class="muted">Order from most to least urgent. Users see labels, not numbers.</p>
-  </div>
+<mf-page-header
+  heading="Priorities &amp; Status Labels"
+  description="Order from most to least urgent. Users see labels, not numbers."
+>
   <nav class="tabs" aria-label="Priorities and status labels">
     <a routerLink="/admin/priorities" aria-current="page">Priorities</a>
     <a *mfHasPermission="'StatusLabel.Manage'" routerLink="/admin/status-labels">Status labels</a>
   </nav>
-</header>
+</mf-page-header>
 
 <div class="sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
 

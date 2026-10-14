@@ -10,7 +10,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { DynamicForm, FormDefinition, ServerFieldError, errorSummary } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
@@ -31,6 +31,7 @@ import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -55,19 +56,15 @@ export function externalReferenceError(text: string): string | null {
  */
 @Component({
   selector: 'mf-asset-form-page',
-  imports: [ErrorReference, RouterLink, Button, TextField, EntityPicker, DynamicForm],
+  imports: [PageHeader, ErrorReference, Button, TextField, EntityPicker, DynamicForm],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <header class="pg-head">
-      <div>
-        <p class="pg-crumbs">
-          <a routerLink="/assets">Assets</a> &gt; {{ isEdit() ? 'Edit' : 'New' }}
-        </p>
-        <h1 class="pg-title">{{ isEdit() ? 'Edit asset' : 'New asset' }}</h1>
-      </div>
-    </header>
+    <mf-page-header
+      [crumbs]="[{ label: 'Assets', link: '/assets' }, { label: isEdit() ? 'Edit' : 'New' }]"
+      [heading]="isEdit() ? 'Edit asset' : 'New asset'"
+    />
 
     @if (state() === 'loading') {
       <div class="pg-state" role="status" aria-busy="true">Loading...</div>

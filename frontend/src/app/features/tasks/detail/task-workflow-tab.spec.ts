@@ -337,7 +337,7 @@ describe('Workflow tab: unordered', () => {
     const { el } = await mountWorkflow(unordered());
     expect(q(el, '[data-mode]')!.textContent).toContain('Unordered');
     expect(el.querySelector('[data-locked]')).toBeNull();
-    expect(el.querySelector('[aria-current]')).toBeNull();
+    expect(el.querySelector('ol.wf__steps [aria-current]')).toBeNull();
     const b = q(el, '[data-step-id="202"]')!;
     // open the pending step: its actions are available even though step 1.. are not "current"
     (b.querySelector('.step__toggle') as HTMLElement).click();

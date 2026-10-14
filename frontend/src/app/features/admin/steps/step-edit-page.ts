@@ -19,6 +19,7 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -41,18 +42,17 @@ export function isValidDocumentationUrl(value: string): boolean {
  */
 @Component({
   selector: 'mf-step-edit-page',
-  imports: [ErrorReference, RouterLink, Button, TextField, ConfirmDialog],
+  imports: [PageHeader, ErrorReference, RouterLink, Button, TextField, ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <header class="pg-head">
-      <div>
-        <p class="pg-crumbs">
-          <a routerLink="/admin/steps">Step library</a> &gt; {{ isEdit() ? 'Edit' : 'New' }}
-        </p>
-        <h1 class="pg-title">{{ isEdit() ? 'Edit step' : 'New step' }}</h1>
-      </div>
-    </header>
+    <mf-page-header
+      [crumbs]="[
+        { label: 'Step library', link: '/admin/steps' },
+        { label: isEdit() ? 'Edit' : 'New' },
+      ]"
+      [heading]="isEdit() ? 'Edit step' : 'New step'"
+    />
 
     @if (state() === 'loading') {
       <div class="pg-state" role="status" aria-busy="true">Loading the step...</div>

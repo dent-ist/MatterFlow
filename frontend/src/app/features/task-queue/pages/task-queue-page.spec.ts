@@ -314,11 +314,11 @@ describe('TaskQueuePage', () => {
 
   it('shows Create task only with Task.Create', async () => {
     let el = await open('/tasks?status=NEW');
-    expect(el.querySelector('.wp-head')!.textContent).toContain('Create task');
+    expect(el.querySelector('mf-page-header')!.textContent).toContain('Create task');
 
     TestBed.resetTestingModule();
     el = await open('/tasks?status=NEW', { permissions: ['Task.View'] });
-    expect(el.querySelector('.wp-head')!.textContent).not.toContain('Create task');
+    expect(el.querySelector('mf-page-header')!.textContent).not.toContain('Create task');
   });
 
   it('remembers the chosen columns and density for the user', async () => {

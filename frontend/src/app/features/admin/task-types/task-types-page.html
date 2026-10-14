@@ -1,13 +1,11 @@
-<header class="head">
-  <div>
-    <h1>Task types</h1>
-    <p class="muted">
-      What people can request. Each type has a request form and the workflows it may use. Types are
-      deactivated, never deleted.
-    </p>
-  </div>
-  <a class="new" routerLink="/admin/task-types/new" data-new>New task type</a>
-</header>
+<mf-page-header
+  heading="Task types"
+  description="What people can request. Each type has a request form and the workflows it may use. Types are deactivated, never deleted."
+>
+  <a mfActions class="mf-btn mf-btn--primary" routerLink="/admin/task-types/new" data-new>
+    <i class="pi pi-plus" aria-hidden="true"></i> New task type
+  </a>
+</mf-page-header>
 
 <div class="sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
 

@@ -2,17 +2,6 @@
   display: block;
 }
 
-.mf-head {
-  display: flex;
-  align-items: baseline;
-  gap: var(--mf-s4);
-
-  h1 {
-    margin: 0 0 var(--mf-s3);
-    font-size: var(--mf-fs-h1);
-  }
-}
-
 .mf-link {
   color: var(--mf-link);
 }

@@ -6,6 +6,7 @@ import { FormVersionStatus, FormsClient } from '../../../api/generated/api-clien
 import { CUSTOM_FIELD_OBJECTS } from './custom-field-form-designer-api';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { Badge } from '../../../shared/ui/badge';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 type FormStatus = 'none' | 'draft' | 'published';
@@ -26,19 +27,14 @@ interface Row {
  */
 @Component({
   selector: 'mf-custom-fields-page',
-  imports: [Badge, ErrorReference, RouterLink, Button],
+  imports: [PageHeader, Badge, ErrorReference, RouterLink, Button],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <header class="pg-head">
-      <div>
-        <h1 class="pg-title">Custom fields</h1>
-        <p class="pg-muted">
-          Extra fields for Clients, Matters and Projects. Fields are versioned: publishing a new
-          version never changes values already saved, and existing records stay editable.
-        </p>
-      </div>
-    </header>
+    <mf-page-header
+      heading="Custom fields"
+      description="Extra fields for Clients, Matters and Projects. Fields are versioned: publishing a new version never changes values already saved, and existing records stay editable."
+    ></mf-page-header>
 
     @switch (state()) {
       @case ('loading') {

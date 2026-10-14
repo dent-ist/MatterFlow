@@ -42,3 +42,8 @@ a:not([class]) {
 :root {
   --mf-target-min: 32px;
 }
+
+/* Wrapper that takes part in its parent's flex layout (page-header action groups with @if blocks). */
+.mf-contents {
+  display: contents;
+}

@@ -1,9 +1,10 @@
-<header class="mf-head">
-  <h1>Users &amp; Roles</h1>
+<mf-page-header heading="Users &amp; Roles">
   @if (canManageRoles()) {
-    <a routerLink="/admin/roles" class="mf-link">Roles &amp; Permissions</a>
+    <div mfActions class="mf-contents">
+      <a routerLink="/admin/roles" class="mf-btn">Roles &amp; Permissions</a>
+    </div>
   }
-</header>
+</mf-page-header>
 
 <div class="mf-tabs">
   <div class="mf-tablist" role="tablist" aria-label="Users">

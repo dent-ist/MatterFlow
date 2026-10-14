@@ -22,6 +22,7 @@ import { BarItem, BarList } from '../ui/bar-list';
 import { RecentTaskList } from '../ui/recent-task-list';
 import { StatTile } from '../ui/stat-tile';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -56,12 +57,19 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
  */
 @Component({
   selector: 'mf-dashboard-page',
-  imports: [ErrorReference, BarList, HasPermissionDirective, RecentTaskList, RouterLink, StatTile],
+  imports: [
+    PageHeader,
+    ErrorReference,
+    BarList,
+    HasPermissionDirective,
+    RecentTaskList,
+    RouterLink,
+    StatTile,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <header class="head">
-      <h1>Dashboard</h1>
-      <div class="controls">
+    <mf-page-header heading="Dashboard">
+      <div mfActions class="controls">
         <label class="period">
           <span>Period</span>
           <select [value]="period()" (change)="setPeriod($any($event.target).value)">
@@ -82,7 +90,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
           <span class="updated" data-updated>Updated {{ u }}</span>
         }
       </div>
-    </header>
+    </mf-page-header>
 
     @switch (state()) {
       @case ('loading') {
@@ -239,18 +247,6 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
   styles: `
     :host {
       display: block;
-    }
-    .head {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--mf-s3);
-      margin-bottom: var(--mf-s4);
-    }
-    h1 {
-      margin: 0;
-      font-size: var(--mf-fs-h1);
     }
     h2 {
       margin: 0 0 var(--mf-s3);
