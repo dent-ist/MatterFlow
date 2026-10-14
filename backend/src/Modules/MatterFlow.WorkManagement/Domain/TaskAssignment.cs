@@ -1,3 +1,4 @@
+using MatterFlow.SharedKernel.Tasks;
 namespace MatterFlow.WorkManagement.Domain;
 
 /// <summary>Result of applying an assignment change to a Task.</summary>

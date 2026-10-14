@@ -1,6 +1,6 @@
-namespace MatterFlow.WorkManagement.Domain;
+namespace MatterFlow.SharedKernel.Tasks;
 
-/// <summary>Fixed internal Task lifecycle states (architecture 8.3). Labels are configurable; these codes are stable.</summary>
+/// <summary>Fixed internal Task lifecycle states (shared by the Work Management and Workflow Engine modules) (architecture 8.3). Labels are configurable; these codes are stable.</summary>
 public enum TaskStatusCode
 {
     New = 0,
