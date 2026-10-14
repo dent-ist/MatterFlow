@@ -138,7 +138,7 @@ falling back to `ConnectionStrings:Default`; the application uses `ConnectionStr
 | `nightly.yml` | daily and manual | Full backend suite with coverage plus frontend tests and build. |
 | `codeql.yml` | push to `dev`, weekly | CodeQL for C# and JavaScript/TypeScript. |
 | `publish.yml` | push to `dev`, manual | Builds the deployable package (`deploy/publish.sh`, win-x64) and uploads it as the artifact `matterflow-publish-<sha>`. |
-| `e2e.yml` | manual | Placeholder for the Playwright suite (deferred); documents how it will run. |
+| `e2e.yml` | manual, nightly, PRs labelled `e2e` | Playwright end-to-end suite (`frontend/e2e`, about 80 tests, SCN-001..020 and more) against SQL Server in Docker and the real API; traces and screenshots are uploaded on failure. Run locally with `cd frontend && npm run e2e` (see `docs/qa/e2e.md`). |
 
 `.github/dependabot.yml` opens weekly grouped (minor/patch) updates for NuGet, npm and GitHub Actions.
 
