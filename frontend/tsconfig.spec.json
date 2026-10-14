@@ -3,6 +3,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "paths": { "form-engine": ["./projects/form-engine/src/public-api.ts"] },
     "outDir": "./out-tsc/spec",
     "types": [
       "vitest/globals"
