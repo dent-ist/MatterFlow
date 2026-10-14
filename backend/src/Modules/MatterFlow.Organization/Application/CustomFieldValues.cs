@@ -121,6 +121,7 @@ public sealed class CustomFieldValues(
                 Mode = FormSubmissionMode.Submit,
                 ExistingValues = existing,
                 ValidateOnly = existing is null ? null : FormSubmissionOptions.ChangedFieldsOf(values, existing),
+                RequireAllWhenChanged = true,
             },
             ct);
         if (checkedValues.IsFailure)

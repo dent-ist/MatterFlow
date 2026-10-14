@@ -186,11 +186,15 @@ public sealed class AssetService(
 
             var stored = await valueStore.GetAsync(FormValueOwnerKind.Asset, asset.Id, definition.Value, ct);
             previous = stored?.Values ?? NoValues;
-            var plan = await PlanFormAsync(asset.AssetTypeId, patch, stored is null ? null : previous, ct);
-            if (plan.IsFailure)
-                return plan.Error!;
+            // An existing asset without stored values that is saved without entering any value is not validated (decisions addendum P).
+            if (stored is not null || patch.Values.Any(v => v.ValueKind != JsonValueKind.Null))
+            {
+                var plan = await PlanFormAsync(asset.AssetTypeId, patch, stored is null ? null : previous, ct);
+                if (plan.IsFailure)
+                    return plan.Error!;
 
-            target = plan.Value;
+                target = plan.Value;
+            }
         }
 
         asset.DisplayName = name;
@@ -321,6 +325,7 @@ public sealed class AssetService(
                 Mode = FormSubmissionMode.Submit,
                 ExistingValues = existing,
                 ValidateOnly = existing is null ? null : FormSubmissionOptions.ChangedFieldsOf(values, existing),
+                RequireAllWhenChanged = true,
             },
             ct);
         if (checkedValues.IsFailure)

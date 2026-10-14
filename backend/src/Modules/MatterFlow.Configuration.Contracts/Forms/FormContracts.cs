@@ -21,6 +21,12 @@ public sealed record FormSubmissionOptions
     /// </summary>
     public IReadOnlyCollection<string>? ValidateOnly { get; init; }
 
+    /// <summary>
+    /// With <see cref="ValidateOnly"/>: when at least one field was changed, missing REQUIRED fields are reported too (decisions addendum P).
+    /// A save that touches no custom value reports nothing; a save that does touch the section must satisfy every required field in it.
+    /// </summary>
+    public bool RequireAllWhenChanged { get; init; }
+
     /// <summary>The keys whose submitted value differs from the existing one (compared as JSON text).</summary>
     public static IReadOnlyCollection<string> ChangedFieldsOf(IReadOnlyDictionary<string, JsonElement> submitted, IReadOnlyDictionary<string, JsonElement>? existing) =>
         [.. submitted
