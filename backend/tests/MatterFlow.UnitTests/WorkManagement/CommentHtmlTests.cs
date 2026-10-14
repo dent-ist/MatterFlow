@@ -137,7 +137,7 @@ public sealed partial class CommentHtmlTests
         foreach (var tag in TagPattern().Matches(result).Select(m => m.Groups["name"].Value.ToLowerInvariant()))
             AllowedTags.ShouldContain(tag, $"'{tag}' leaked from: {payload} => {result}");
 
-        foreach (var forbidden in new[] { "<script", "<svg", "<math", "<img", "<iframe", "<object", "<embed", "<style", "<form", "<input", "<link", "<meta", "<base", "javascript:", "onerror", "onload", "onclick", "onfocus", "onmouseover", "ontoggle", "style=", "srcdoc", "xlink", "data:", "<!--", "<![cdata"})
+        foreach (var forbidden in new[] { "<script", "<svg", "<math", "<img", "<iframe", "<object", "<embed", "<style", "<form", "<input", "<link", "<meta", "<base", "javascript:", "onerror", "onload", "onclick", "onfocus", "onmouseover", "ontoggle", "style=", "srcdoc", "xlink", "data:", "<!--", "<![cdata" })
             result.ShouldNotContain(forbidden, Case.Insensitive, $"{payload} => {result}");
 
         foreach (var attribute in AttributePattern().Matches(result).Select(m => m.Groups["name"].Value.ToLowerInvariant()))
@@ -167,8 +167,21 @@ public sealed partial class CommentHtmlTests
     [Fact]
     public void Unknown_wrappers_are_unwrapped_so_pasted_text_survives()
     {
-        CommentHtml.Sanitize("<div><span style=\"color:red\">hello</span></div>").ShouldBe("hello");
-        CommentHtml.Sanitize("<h1>Title</h1>").ShouldBe("Title");
+        CommentHtml.Sanitize("<div><span style=\"color:red\">hello</span></div>").ShouldBe("<p>hello</p>");
+        CommentHtml.Sanitize("<h1>Title</h1>").ShouldBe("<p>Title</p>");
+        CommentHtml.Sanitize("<font color=\"red\">plain</font>").ShouldBe("plain");
+    }
+
+    [Fact]
+    public void Editor_lines_in_divs_become_paragraphs_and_nesting_is_kept_valid()
+    {
+        CommentHtml.Sanitize("<div>one</div><div>two</div>").ShouldBe("<p>one</p><p>two</p>");
+        CommentHtml.Sanitize("<div><p>inner</p></div>").ShouldBe("<p>inner</p>");
+        CommentHtml.Sanitize("<div><ul><li>a</li></ul></div>").ShouldBe("<ul><li>a</li></ul>");
+        CommentHtml.Sanitize("<div>text<br><b>bold</b></div>").ShouldBe("<p>text<br><b>bold</b></p>");
+        var nested = CommentHtml.Sanitize("<div><div>deep</div></div>");
+        nested.ShouldBe("<p>deep</p>");
+        CommentHtml.Sanitize(nested).ShouldBe(nested);
     }
 
     [Fact]

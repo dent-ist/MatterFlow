@@ -1,6 +1,6 @@
-using Ganss.Xss;
 using System.Net;
 using System.Text.RegularExpressions;
+using Ganss.Xss;
 
 namespace MatterFlow.WorkManagement.Domain;
 
@@ -105,8 +105,28 @@ public static partial class CommentHtml
                 element.Remove();
         }
 
+        // Pasted or contenteditable markup (div lines, headings, quotes) becomes paragraphs so line breaks survive the allow-list.
+        foreach (var element in body.QuerySelectorAll(string.Join(',', BlockWrappers)).Reverse().ToList())
+        {
+            var hasBlockChild = element.Children.Any(c => BlockNames.Contains(c.LocalName));
+            if (hasBlockChild)
+            {
+                element.Replace([.. element.ChildNodes]);
+                continue;
+            }
+
+            var paragraph = document.CreateElement("p");
+            foreach (var child in element.ChildNodes.ToList())
+                paragraph.AppendChild(child);
+            element.Replace(paragraph);
+        }
+
         return body.InnerHtml;
     }
+
+    private static readonly string[] BlockWrappers = ["div", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "section", "article", "address", "tr"];
+
+    private static readonly HashSet<string> BlockNames = new(["p", "ul", "ol", "li", "div", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "section", "article", "address", "table", "tr", "td", "th", "tbody", "thead"], StringComparer.Ordinal);
 
     [GeneratedRegex(@"<\s*(br\s*/?|/p|/li)\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex BreakPattern();
