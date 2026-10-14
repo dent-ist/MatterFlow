@@ -22,10 +22,27 @@ public sealed class TaskCommentService(
     IClock clock,
     IUserDirectory users)
 {
-    private const int MaxListed = 1000;
+    /// <summary>Stable validation code for comment markup beyond the structural caps (SEC2-01).</summary>
+    public const string TooComplexCode = "TOO_COMPLEX";
 
-    public async Task<Result<TaskCommentListResponse>> ListAsync(long taskId, bool newestFirst, CancellationToken ct)
+    /// <summary>Most comments returned by one list call (SEC2-10); page with skip/take for more.</summary>
+    public const int MaxPageSize = 200;
+
+    /// <summary>Most comments (deleted ones included) one Task can hold.</summary>
+    public const int MaxCommentsPerTask = 2000;
+
+    /// <summary>Most edits one comment accepts; every edit keeps a full earlier body.</summary>
+    public const int MaxEditsPerComment = 50;
+
+    public const string CommentLimitCode = "COMMENT_LIMIT"; // 409
+
+    public async Task<Result<TaskCommentListResponse>> ListAsync(long taskId, bool newestFirst, int? skip, int? take, CancellationToken ct)
     {
+        if (skip is < 0)
+            return Error.Validation("skip", "RANGE", "skip must be 0 or more.");
+        if (take is < 1 or > MaxPageSize)
+            return Error.Validation("take", "RANGE", $"take must be between 1 and {MaxPageSize}.");
+
         if (!await db.Set<WorkTask>().AnyAsync(t => t.Id == taskId, ct))
             return TaskSupport.NotFound();
 
@@ -34,7 +51,7 @@ public sealed class TaskCommentService(
         var ordered = newestFirst
             ? query.OrderByDescending(c => c.CreatedAtUtc).ThenByDescending(c => c.Id)
             : query.OrderBy(c => c.CreatedAtUtc).ThenBy(c => c.Id);
-        var rows = await ordered.Take(MaxListed).ToListAsync(ct);
+        var rows = await ordered.Skip(skip ?? 0).Take(take ?? MaxPageSize).ToListAsync(ct);
         var authors = await users.FindManyAsync([.. rows.Select(r => r.AuthorUserId).Distinct()], ct);
         return new TaskCommentListResponse([.. rows.Select(r => ToResponse(r, authors))], total);
     }
@@ -73,6 +90,9 @@ public sealed class TaskCommentService(
                 if (task is null)
                     return TaskSupport.NotFound();
 
+                if (await db.Set<TaskComment>().CountAsync(c => c.TaskId == taskId, token) >= MaxCommentsPerTask)
+                    return Error.Conflict(CommentLimitCode, $"A task can have at most {MaxCommentsPerTask} comments.");
+
                 var comment = new TaskComment { TaskId = taskId, AuthorUserId = authorId, Purpose = TaskCommentPurpose.Normal, BodyHtml = body.Value };
                 db.Set<TaskComment>().Add(comment);
                 await db.SaveChangesAsync(token);
@@ -103,6 +123,8 @@ public sealed class TaskCommentService(
                     return CommentNotFound();
                 if (comment.AuthorUserId != currentUser.UserId)
                     return Error.Forbidden("You can only edit your own comments.");
+                if (!comment.Purpose.IsDeletable())
+                    return Error.Conflict(TaskSupport.CommentNotEditableCode, "The reason given for cancelling or putting a task on hold is part of the record and can't be edited.");
 
                 var version = CheckVersion(comment.RowVersion, request.RowVersion);
                 if (version.IsFailure)
@@ -110,6 +132,9 @@ public sealed class TaskCommentService(
 
                 if (string.Equals(comment.BodyHtml, body.Value, StringComparison.Ordinal))
                     return comment.Id;
+
+                if (await db.Set<TaskCommentRevision>().CountAsync(r => r.TaskCommentId == comment.Id, token) >= MaxEditsPerComment)
+                    return Error.Conflict(CommentLimitCode, $"A comment can be edited at most {MaxEditsPerComment} times.");
 
                 var now = clock.UtcNow;
                 db.Set<TaskCommentRevision>().Add(new TaskCommentRevision
@@ -194,7 +219,7 @@ public sealed class TaskCommentService(
             TaskSupport.Utc(c.CreatedAtUtc),
             TaskSupport.Utc(c.EditedAtUtc),
             c.EditedAtUtc is not null,
-            own,
+            own && c.Purpose.IsDeletable(),
             own && c.Purpose.IsDeletable(),
             TaskSupport.Encode(c.RowVersion));
     }
@@ -219,6 +244,9 @@ public sealed class TaskCommentService(
     {
         if (html is { Length: > CommentHtml.MaxLength })
             return Error.Validation("bodyHtml", "TOO_LONG", $"A comment can have at most {CommentHtml.MaxLength} characters.");
+
+        if (CommentHtmlGuard.IsTooComplex(html))
+            return Error.Validation("bodyHtml", TooComplexCode, "The comment has too many tags or is nested too deeply. Simplify the formatting and try again.");
 
         var clean = CommentHtml.Sanitize(html);
         if (clean.Length == 0)

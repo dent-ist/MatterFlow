@@ -291,7 +291,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
 
         if (f.CreatedTo is { } createdTo)
         {
-            var end = c.StartOfDayUtc(createdTo.AddDays(1));
+            var end = c.EndOfDayUtc(createdTo);
             rows = rows.Where(t => t.CreatedAtUtc < end);
         }
 
@@ -317,7 +317,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
 
         if (f.CompletedTo is { } completedTo)
         {
-            var end = c.StartOfDayUtc(completedTo.AddDays(1));
+            var end = c.EndOfDayUtc(completedTo);
             rows = rows.Where(TaskQueueRules.Closed).Where(t => t.StatusChangedAtUtc < end);
         }
 

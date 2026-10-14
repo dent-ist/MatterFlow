@@ -33,6 +33,7 @@ public static class ConfigurationModule
         services.AddScoped<FormDefinitionResolver>();
         services.AddScoped<IFormDefinitionResolver>(sp => sp.GetRequiredService<FormDefinitionResolver>());
         services.AddScoped<IFormSubmissionValidator, FormSubmissionValidator>();
+        services.AddScoped<IFormReferenceValidator, UserReferenceValidator>();
         services.AddScoped<IFormValueStore, FormValueStore>();
         services.AddScoped<FormAdminService>();
         return services;

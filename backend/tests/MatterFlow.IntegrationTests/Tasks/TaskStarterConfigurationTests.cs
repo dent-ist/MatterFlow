@@ -119,7 +119,7 @@ public sealed class TaskStarterConfigurationTests(SqlServerFixture sql) : IAsync
         else
         {
             var problem = await ProblemAsync(
-                await _h.Admin.PostAsJsonAsync($"/api/v1/tasks/{TaskId(task)}/complete", new { completeUnresolvedSteps = true, rowVersion = RowVersion(task) }),
+                await _h.Admin.PostAsJsonAsync($"/api/v1/tasks/{TaskId(task)}/complete", new { completeUnresolvedSteps = true, rowVersion = RowVersion(task), workflowRowVersion = WorkflowRowVersion(task) }),
                 HttpStatusCode.Conflict,
                 "COMPLETION_BLOCKED");
             problem.GetProperty("meta").GetProperty("stepsMissingInputs").GetArrayLength().ShouldBeGreaterThan(0);

@@ -15,7 +15,7 @@ public sealed record UserLookupItem([property: Required] int UserId, [property: 
 
 /// <summary>
 /// Lightweight user lookup for pickers (Create Task assignee). Unlike <c>GET /users</c> (User.View, administration data) it only exposes
-/// id and display name of active users, to anyone who may assign Tasks.
+/// id and display name of active users that hold a role, to anyone who may assign Tasks.
 /// </summary>
 [ApiController]
 [Route("api/v1/users/lookup")]
@@ -34,7 +34,8 @@ public class UsersLookupController(DbContext db) : ControllerBase
         [FromQuery, Range(1, 50)] int limit = 25,
         CancellationToken cancellationToken = default)
     {
-        var query = db.Set<AppUser>().AsNoTracking().Where(u => u.IsActive);
+        // Access Pending users (active, no role) cannot open Tasks, so they are not offered as assignees (SEC2-14).
+        var query = db.Set<AppUser>().AsNoTracking().Where(u => u.IsActive && db.Set<UserRole>().Any(r => r.UserId == u.Id));
         if (!string.IsNullOrWhiteSpace(q))
         {
             var term = q.Trim();

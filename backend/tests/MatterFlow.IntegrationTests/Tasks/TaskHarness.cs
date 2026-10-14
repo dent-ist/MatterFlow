@@ -148,7 +148,7 @@ public sealed class TaskHarness
     }
 
     /// <summary>Creates a Task Type with <see cref="RequestFormFields"/> published (or no form) and the given eligible workflows.</summary>
-    public async Task<int> CreateTaskTypeAsync(string name, int[] workflowIds, bool withForm = true)
+    public async Task<int> CreateTaskTypeAsync(string name, int[] workflowIds, bool withForm = true, string? formFieldsJson = null)
     {
         var created = await OkAsync(
             await Admin.PostAsJsonAsync("/api/v1/task-types", new { name, eligibleWorkflowIds = workflowIds, defaultWorkflowDefinitionId = workflowIds[0] }),
@@ -159,7 +159,7 @@ public sealed class TaskHarness
             var definitionId = created.GetProperty("formDefinitionId").GetInt32();
             var draft = await OkAsync(await Admin.PostAsync($"/api/v1/forms/{definitionId}/versions", Json("{}")), HttpStatusCode.Created);
             var versionId = draft.GetProperty("version").GetProperty("formVersionId").GetInt32();
-            await OkAsync(await FormDraftApi.SaveAsync(Admin, definitionId, versionId, RequestFormFields));
+            await OkAsync(await FormDraftApi.SaveAsync(Admin, definitionId, versionId, formFieldsJson ?? RequestFormFields));
             await OkAsync(await FormDraftApi.PublishAsync(Admin, definitionId, versionId));
         }
 
@@ -238,7 +238,7 @@ public sealed class TaskHarness
         await PostAsync(TaskId(task), "status", new { status, comment, rowVersion = RowVersion(task) }, client);
 
     public async Task<JsonElement> CompleteAsync(JsonElement task, bool bulk = true, HttpClient? client = null) =>
-        await PostAsync(TaskId(task), "complete", new { completeUnresolvedSteps = bulk, rowVersion = RowVersion(task) }, client);
+        await PostAsync(TaskId(task), "complete", new { completeUnresolvedSteps = bulk, rowVersion = RowVersion(task), workflowRowVersion = bulk ? WorkflowRowVersion(task) : null }, client);
 
     public async Task<JsonElement> StepAsync(JsonElement task, int stepInstanceId, string action, object? body = null, HttpClient? client = null, HttpStatusCode expected = HttpStatusCode.OK)
     {

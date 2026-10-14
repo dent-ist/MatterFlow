@@ -6,7 +6,7 @@ using MatterFlow.SharedKernel.Results;
 namespace MatterFlow.Configuration.Application.Forms;
 
 /// <summary>Validates submitted values against a stored form version with the authoritative evaluator (<see cref="IFormSubmissionValidator"/>).</summary>
-internal sealed class FormSubmissionValidator(FormSchemaLoader loader) : IFormSubmissionValidator
+internal sealed class FormSubmissionValidator(FormSchemaLoader loader, IEnumerable<IFormReferenceValidator> referenceValidators) : IFormSubmissionValidator
 {
     public async Task<Result<FormSubmissionResult>> ValidateAsync(
         int formVersionId,
@@ -22,7 +22,9 @@ internal sealed class FormSubmissionValidator(FormSchemaLoader loader) : IFormSu
             return Result<FormSubmissionResult>.Failure(form.Error!);
         }
 
-        return Evaluate(form.Value, values, options ?? new FormSubmissionOptions());
+        options ??= new FormSubmissionOptions();
+        var result = Evaluate(form.Value, values, options);
+        return await FormReferenceChecks.ApplyAsync(referenceValidators, form.Value, result, options.ValidateOnly, options.References, cancellationToken);
     }
 
     /// <summary>The evaluation shared by the validator and the value store.</summary>

@@ -21,6 +21,7 @@ internal static class TaskSupport
 
     // Stable error codes of the comment and asset-link endpoints (HTTP status in the comment).
     public const string CommentNotDeletableCode = "COMMENT_NOT_DELETABLE"; // 409
+    public const string CommentNotEditableCode = "COMMENT_NOT_EDITABLE"; // 409
     public const string AlreadyLinkedCode = "ASSET_ALREADY_LINKED"; // 409
 
     public static string Encode(byte[] rowVersion) => Convert.ToBase64String(rowVersion);

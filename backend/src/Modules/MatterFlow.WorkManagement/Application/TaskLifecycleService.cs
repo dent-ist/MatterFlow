@@ -40,7 +40,7 @@ public sealed class TaskLifecycleService(
 
         var e = evaluation.Value;
         static IReadOnlyList<TaskStepRef> Map(IReadOnlyList<StepRef> steps) => [.. steps.Select(s => new TaskStepRef(s.StepInstanceId, s.SequenceNo, s.Title))];
-        return new TaskCompletionCheck(e.IsReady, e.CanBulkComplete, Map(e.Unresolved), Map(e.BulkCompletable), Map(e.Blocked));
+        return new TaskCompletionCheck(e.IsReady, e.CanBulkComplete, Map(e.Unresolved), Map(e.BulkCompletable), Map(e.Blocked), e.RowVersion);
     }
 
     /// <summary>
@@ -55,9 +55,10 @@ public sealed class TaskLifecycleService(
         bool completeUnresolvedSteps,
         string rowVersion,
         CancellationToken ct,
-        IReadOnlyCollection<TaskStatusCode>? onlyFrom = null)
+        IReadOnlyCollection<TaskStatusCode>? onlyFrom = null,
+        string? workflowRowVersion = null)
     {
-        var done = await tx.RunAsync(token => ChangeCoreAsync(taskId, target, comment, completeUnresolvedSteps, rowVersion, onlyFrom, token), ct);
+        var done = await tx.RunAsync(token => ChangeCoreAsync(taskId, target, comment, completeUnresolvedSteps, rowVersion, onlyFrom, workflowRowVersion, token), ct);
         return done.IsFailure ? done.Error! : await presenter.GetAsync(taskId, done.Value, ct);
     }
 
@@ -68,6 +69,7 @@ public sealed class TaskLifecycleService(
         bool completeUnresolvedSteps,
         string rowVersion,
         IReadOnlyCollection<TaskStatusCode>? onlyFrom,
+        string? workflowRowVersion,
         CancellationToken ct)
     {
         var task = await tx.LockTaskAsync(taskId, ct);
@@ -109,7 +111,7 @@ public sealed class TaskLifecycleService(
         IReadOnlyList<int> bulkCompleted = [];
         if (target == TaskStatusCode.Completed)
         {
-            var completion = await CompletionAsync(task, completeUnresolvedSteps, ct);
+            var completion = await CompletionAsync(task, completeUnresolvedSteps, workflowRowVersion, ct);
             if (completion.IsFailure)
                 return Result<CommandNotes>.Failure(completion.Error!);
 
@@ -160,7 +162,7 @@ public sealed class TaskLifecycleService(
     /// The completion rule: every step is resolved, or - when the caller confirmed - every unresolved step is bulk-completed first.
     /// Blocked (a step lacks required inputs) changes nothing: 409 COMPLETION_BLOCKED with the step ids in the meta.
     /// </summary>
-    private async Task<Result<IReadOnlyList<int>>> CompletionAsync(WorkTask task, bool completeUnresolvedSteps, CancellationToken ct)
+    private async Task<Result<IReadOnlyList<int>>> CompletionAsync(WorkTask task, bool completeUnresolvedSteps, string? workflowRowVersion, CancellationToken ct)
     {
         var evaluation = await workflows.EvaluateCompletionAsync(task.WorkflowInstanceId, ct);
         if (evaluation.IsFailure)
@@ -176,7 +178,11 @@ public sealed class TaskLifecycleService(
         if (execute.IsFailure)
             return Result<IReadOnlyList<int>>.Failure(execute.Error!);
 
-        var outcome = await workflows.BulkCompleteUnresolvedAsync(task.WorkflowInstanceId, new StepActionContext(task.Status, task.Id, task.MatterId), ct);
+        // The user confirmed a list of steps they saw: complete only if the workflow is still in the state that list came from (SEC2-08).
+        if (string.IsNullOrWhiteSpace(workflowRowVersion))
+            return Error.Validation("workflowRowVersion", "REQUIRED", "Reload the task and confirm the list of steps again.");
+
+        var outcome = await workflows.BulkCompleteUnresolvedAsync(task.WorkflowInstanceId, new StepActionContext(task.Status, task.Id, task.MatterId, workflowRowVersion), ct);
         return outcome.IsFailure
             ? Result<IReadOnlyList<int>>.Failure(outcome.Error!)
             : Result<IReadOnlyList<int>>.Success(outcome.Value.AffectedStepInstanceIds);

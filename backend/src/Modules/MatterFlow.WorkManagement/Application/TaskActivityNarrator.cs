@@ -44,7 +44,7 @@ internal static partial class TaskActivityNarrator
         ["priority"] = "Priority",
     };
 
-    public static Narration Narrate(AuditRecord e, ActivityNames names)
+    public static Narration Narrate(AuditRecord e, ActivityNames names, bool includeValues = true)
     {
         switch (e.EventType)
         {
@@ -61,7 +61,7 @@ internal static partial class TaskActivityNarrator
             case AuditEventTypes.TaskAssigned:
                 return Assigned(e, names);
             case AuditEventTypes.FieldChanged:
-                return FieldChange(e);
+                return FieldChange(e, includeValues);
             case "FORM_VALUES_DROPPED":
                 return new(Fields, e.Summary is { Length: > 0 } dropped ? Sentence(dropped) : "Hidden form values were dropped", null, null);
             case TaskSupport.CommentAddedEvent:
@@ -115,13 +115,19 @@ internal static partial class TaskActivityNarrator
         return new(Assignment, text, oldText, newText);
     }
 
-    private static Narration FieldChange(AuditRecord e)
+    /// <summary>
+    /// The sentence of a field change. Without <paramref name="includeValues"/> (the caller lacks Audit.View) it names the field only, so the
+    /// always-returned sentence cannot reveal what the value was before (SEC2-06).
+    /// </summary>
+    private static Narration FieldChange(AuditRecord e, bool includeValues)
     {
         var key = e.FieldKey ?? string.Empty;
         var label = FieldLabel(key);
         string text;
         if (key == "description")
             text = "Description changed";
+        else if (!includeValues)
+            text = string.IsNullOrEmpty(e.NewValue) ? $"{label} cleared" : string.IsNullOrEmpty(e.OldValue) ? $"{label} set" : $"{label} changed";
         else if (string.IsNullOrEmpty(e.OldValue) && !string.IsNullOrEmpty(e.NewValue))
             text = $"{label} set to {Clip(e.NewValue)}";
         else if (!string.IsNullOrEmpty(e.OldValue) && string.IsNullOrEmpty(e.NewValue))

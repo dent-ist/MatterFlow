@@ -251,6 +251,7 @@ describe('TaskDetailPage complete', () => {
     expect(fakes.tasks['completeTask']).toHaveBeenCalledWith(1042, {
       rowVersion: 'RV1',
       completeUnresolvedSteps: true,
+      workflowRowVersion: 'WRV1', // the version of the check the user confirmed (SEC2-08)
     });
   });
 
@@ -309,6 +310,28 @@ describe('TaskDetailPage complete', () => {
     await click(fixture, q(el, '[data-action=COMPLETE]'));
     await click(fixture, dialogButton('Mark all completed and finish task')!);
     expect(q(body(), '[data-blocked-body]')).not.toBeNull();
+  });
+
+  it('a stale confirmation (workflow changed meanwhile) shows the fresh list instead of completing', async () => {
+    const fresh = aCheck({
+      workflowRowVersion: 'WRV2',
+      unresolved: [{ stepInstanceId: 103, sequenceNo: 3, title: 'OCR' }],
+      bulkCompletable: [{ stepInstanceId: 103, sequenceNo: 3, title: 'OCR' }],
+    });
+    const check = vi.fn().mockReturnValueOnce(ok(aCheck())).mockReturnValue(ok(fresh));
+    const { fixture, el, fakes } = await mountTaskPage(aTask(), PERMS, {
+      tasks: {
+        getTaskCompletionCheck: check,
+        completeTask: vi.fn().mockReturnValue(apiError(409, { code: 'CONCURRENCY_CONFLICT' })),
+      },
+    });
+    await openMenu(fixture, el);
+    await click(fixture, q(el, '[data-action=COMPLETE]'));
+    await click(fixture, dialogButton('Mark all completed and finish task')!);
+
+    expect(fakes.tasks['completeTask']).toHaveBeenCalledTimes(1);
+    expect(q(body(), '[data-bulk-steps]')!.textContent).not.toContain('Deduplicate');
+    expect(q(body(), '[data-bulk-steps]')!.textContent).toContain('OCR');
   });
 
   it('explains when the user cannot complete steps', async () => {

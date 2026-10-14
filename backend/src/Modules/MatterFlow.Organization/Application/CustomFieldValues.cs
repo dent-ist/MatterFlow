@@ -87,7 +87,7 @@ public sealed class CustomFieldValues(
             ownerId,
             plan.Version.FormVersionId,
             plan.Submitted,
-            new FormSaveOptions { Mode = FormSubmissionMode.Submit, ValidateOnlyChanged = true },
+            new FormSaveOptions { Mode = FormSubmissionMode.Submit, ValidateOnlyChanged = true, References = new FormReferenceContext() },
             ct);
         return saved.IsFailure
             ? Result<IReadOnlyList<string>>.Failure(saved.Error!)
@@ -122,6 +122,7 @@ public sealed class CustomFieldValues(
                 ExistingValues = existing,
                 ValidateOnly = existing is null ? null : FormSubmissionOptions.ChangedFieldsOf(values, existing),
                 RequireAllWhenChanged = true,
+                References = new FormReferenceContext(),
             },
             ct);
         if (checkedValues.IsFailure)

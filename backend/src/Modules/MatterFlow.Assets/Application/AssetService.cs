@@ -118,7 +118,7 @@ public sealed class AssetService(
             return Error.Validation("displayName", "REQUIRED", "Enter a name.");
 
         var values = request.FormValues ?? [];
-        var plan = await PlanFormAsync(type.Id, values, existing: null, ct);
+        var plan = await PlanFormAsync(type.Id, request.MatterId, values, existing: null, ct);
         if (plan.IsFailure)
             return plan.Error!;
 
@@ -189,7 +189,7 @@ public sealed class AssetService(
             // An existing asset without stored values that is saved without entering any value is not validated (decisions addendum P).
             if (stored is not null || patch.Values.Any(v => v.ValueKind != JsonValueKind.Null))
             {
-                var plan = await PlanFormAsync(asset.AssetTypeId, patch, stored is null ? null : previous, ct);
+                var plan = await PlanFormAsync(asset.AssetTypeId, asset.MatterId, patch, stored is null ? null : previous, ct);
                 if (plan.IsFailure)
                     return plan.Error!;
 
@@ -301,6 +301,7 @@ public sealed class AssetService(
     /// </summary>
     private async Task<Result<FormPlan?>> PlanFormAsync(
         int assetTypeId,
+        int matterId,
         IReadOnlyDictionary<string, JsonElement> values,
         IReadOnlyDictionary<string, JsonElement>? existing,
         CancellationToken ct)
@@ -327,6 +328,7 @@ public sealed class AssetService(
                 ExistingValues = existing,
                 ValidateOnly = existing is null ? null : FormSubmissionOptions.ChangedFieldsOf(values, existing),
                 RequireAllWhenChanged = true,
+                References = new FormReferenceContext(matterId),
             },
             ct);
         if (checkedValues.IsFailure)
@@ -352,7 +354,7 @@ public sealed class AssetService(
             asset.Id,
             plan.Version.FormVersionId,
             values,
-            new FormSaveOptions { Mode = FormSubmissionMode.Submit, ValidateOnlyChanged = true },
+            new FormSaveOptions { Mode = FormSubmissionMode.Submit, ValidateOnlyChanged = true, References = new FormReferenceContext(asset.MatterId) },
             ct);
         if (saved.IsFailure)
             return Result<IReadOnlyList<string>>.Failure(saved.Error!);

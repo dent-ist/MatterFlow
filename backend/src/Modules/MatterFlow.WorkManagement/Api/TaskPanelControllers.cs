@@ -26,14 +26,17 @@ internal static class TaskPanelPolicies
 [Route("api/v1/tasks/{taskId:long}/comments")]
 public class TaskCommentsController(TaskCommentService comments) : ControllerBase
 {
-    /// <summary>The comments of the Task, oldest first (<c>newestFirst=true</c> reverses), without deleted ones.</summary>
+    /// <summary>
+    /// The comments of the Task, oldest first (<c>newestFirst=true</c> reverses), without deleted ones. Paged with <c>skip</c> (default 0) and
+    /// <c>take</c> (default and maximum 200); <c>total</c> is the whole thread (SEC2-10).
+    /// </summary>
     [HttpGet(Name = "ListTaskComments")]
     [Authorize(Policy = TaskPolicies.View)]
     [ProducesResponseType<TaskCommentListResponse>(StatusCodes.Status200OK, "application/json")]
-    public async Task<ActionResult<TaskCommentListResponse>> List(long taskId, [FromQuery] bool newestFirst, CancellationToken cancellationToken)
+    public async Task<ActionResult<TaskCommentListResponse>> List(long taskId, [FromQuery] bool newestFirst, [FromQuery] int? skip, [FromQuery] int? take, CancellationToken cancellationToken)
     {
-        FilterParsing.EnsureKnown(Request.Query.Keys, ["newestFirst"]).OrThrow();
-        return (await comments.ListAsync(taskId, newestFirst, cancellationToken)).OrThrow();
+        FilterParsing.EnsureKnown(Request.Query.Keys, ["newestFirst", "skip", "take"]).OrThrow();
+        return (await comments.ListAsync(taskId, newestFirst, skip, take, cancellationToken)).OrThrow();
     }
 
     /// <summary>Posts a comment. The HTML is sanitized (400 REQUIRED when nothing is left, 400 TOO_LONG above 20000 characters).</summary>

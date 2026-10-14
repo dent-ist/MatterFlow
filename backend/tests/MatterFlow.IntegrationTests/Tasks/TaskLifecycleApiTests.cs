@@ -52,7 +52,7 @@ public sealed class TaskLifecycleApiTests(SqlServerFixture sql) : IAsyncLifetime
                 Status(task).ShouldBe(from);
 
                 var response = to == "COMPLETED"
-                    ? await _h.Admin.PostAsJsonAsync($"/api/v1/tasks/{TaskId(task)}/complete", new { completeUnresolvedSteps = true, rowVersion = RowVersion(task) })
+                    ? await _h.Admin.PostAsJsonAsync($"/api/v1/tasks/{TaskId(task)}/complete", new { completeUnresolvedSteps = true, rowVersion = RowVersion(task), workflowRowVersion = WorkflowRowVersion(task) })
                     : await TryStatusAsync(task, to);
 
                 if (Allowed[from].Contains(to))
@@ -124,7 +124,7 @@ public sealed class TaskLifecycleApiTests(SqlServerFixture sql) : IAsyncLifetime
 
         // ... and through the dedicated endpoints (policy-level check).
         if (permission == "Task.Complete")
-            await ProblemAsync(await withoutIt.PostAsJsonAsync($"/api/v1/tasks/{TaskId(task)}/complete", new { completeUnresolvedSteps = true, rowVersion = RowVersion(task) }), HttpStatusCode.Forbidden, "PERMISSION_DENIED");
+            await ProblemAsync(await withoutIt.PostAsJsonAsync($"/api/v1/tasks/{TaskId(task)}/complete", new { completeUnresolvedSteps = true, rowVersion = RowVersion(task), workflowRowVersion = WorkflowRowVersion(task) }), HttpStatusCode.Forbidden, "PERMISSION_DENIED");
         if (permission == "Task.Cancel")
             await ProblemAsync(await withoutIt.PostAsJsonAsync($"/api/v1/tasks/{TaskId(task)}/cancel", new { comment = "no", rowVersion = RowVersion(task) }), HttpStatusCode.Forbidden, "PERMISSION_DENIED");
         if (permission == "Task.Reopen")
@@ -285,13 +285,41 @@ public sealed class TaskLifecycleApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Sec2_08_bulk_completion_completes_only_the_list_the_user_confirmed()
+    {
+        var task = await _h.CreateTaskAsync(_w, ordered: false);
+        var check = await OkAsync(await _h.Admin.GetAsync($"/api/v1/tasks/{TaskId(task)}/completion"));
+        var seen = check.GetProperty("workflowRowVersion").GetString()!;
+        var url = $"/api/v1/tasks/{TaskId(task)}/complete";
+
+        // The version of the confirmed list is mandatory for a bulk completion.
+        await ProblemAsync(await _h.Admin.PostAsJsonAsync(url, new { completeUnresolvedSteps = true, rowVersion = RowVersion(task) }), HttpStatusCode.BadRequest, "VALIDATION_FAILED");
+
+        // Someone else changes the workflow while the dialog is open.
+        await _h.StepAsync(task, StepIds(task)[0], "start");
+        var changed = await _h.GetTaskAsync(TaskId(task));
+        RowVersion(changed).ShouldNotBe(string.Empty);
+        await ProblemAsync(
+            await _h.Admin.PostAsJsonAsync(url, new { completeUnresolvedSteps = true, rowVersion = RowVersion(changed), workflowRowVersion = seen }),
+            HttpStatusCode.Conflict,
+            "CONCURRENCY_CONFLICT");
+        Status(await _h.GetTaskAsync(TaskId(task))).ShouldNotBe("COMPLETED");
+        StepIds(changed).Select(id => StepStatus(changed, id)).ShouldNotContain("COMPLETED");
+
+        // A fresh check carries the current version and works.
+        var fresh = await OkAsync(await _h.Admin.GetAsync($"/api/v1/tasks/{TaskId(task)}/completion"));
+        var done = await _h.PostAsync(TaskId(task), "complete", new { completeUnresolvedSteps = true, rowVersion = RowVersion(changed), workflowRowVersion = fresh.GetProperty("workflowRowVersion").GetString() });
+        Status(done).ShouldBe("COMPLETED");
+    }
+
+    [Fact]
     public async Task Bulk_completion_is_all_or_nothing_when_a_step_lacks_required_inputs()
     {
         var task = await _h.CreateTaskAsync(_w, ordered: true);
         var auditBefore = (await _h.AuditAsync(TaskId(task))).Count;
 
         var problem = await ProblemAsync(
-            await _h.Admin.PostAsJsonAsync($"/api/v1/tasks/{TaskId(task)}/complete", new { completeUnresolvedSteps = true, rowVersion = RowVersion(task) }),
+            await _h.Admin.PostAsJsonAsync($"/api/v1/tasks/{TaskId(task)}/complete", new { completeUnresolvedSteps = true, rowVersion = RowVersion(task), workflowRowVersion = WorkflowRowVersion(task) }),
             HttpStatusCode.Conflict,
             "COMPLETION_BLOCKED");
         problem.GetProperty("meta").GetProperty("stepsMissingInputs").EnumerateArray().Select(e => e.GetInt32()).ShouldBe([StepIds(task)[0]]);
@@ -336,7 +364,7 @@ public sealed class TaskLifecycleApiTests(SqlServerFixture sql) : IAsyncLifetime
         var onlyComplete = await _h.UserWithAsync(@"KE\closer", "Task.View", "Task.Complete");
 
         var problem = await ProblemAsync(
-            await onlyComplete.PostAsJsonAsync($"/api/v1/tasks/{TaskId(task)}/complete", new { completeUnresolvedSteps = true, rowVersion = RowVersion(task) }),
+            await onlyComplete.PostAsJsonAsync($"/api/v1/tasks/{TaskId(task)}/complete", new { completeUnresolvedSteps = true, rowVersion = RowVersion(task), workflowRowVersion = WorkflowRowVersion(task) }),
             HttpStatusCode.Forbidden,
             "PERMISSION_DENIED");
         problem.GetProperty("meta").GetProperty("permission").GetString().ShouldBe("Workflow.Execute");

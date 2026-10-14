@@ -125,7 +125,7 @@ public class TasksController(TaskService tasks, TaskLifecycleService lifecycle) 
     [Authorize(Policy = TaskPolicies.Complete)]
     [ProducesResponseType<TaskResponse>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<TaskResponse>> Complete(long taskId, [FromBody] CompleteTaskRequest request, CancellationToken cancellationToken) =>
-        (await lifecycle.ChangeStatusAsync(taskId, TaskStatusCode.Completed, null, request.CompleteUnresolvedSteps, request.RowVersion, cancellationToken)).OrThrow();
+        (await lifecycle.ChangeStatusAsync(taskId, TaskStatusCode.Completed, null, request.CompleteUnresolvedSteps, request.RowVersion, cancellationToken, workflowRowVersion: request.WorkflowRowVersion)).OrThrow();
 
     /// <summary>What completing would do: the unresolved steps, the ones a bulk completion can finish and the ones missing required inputs.</summary>
     [HttpGet("{taskId:long}/completion", Name = "GetTaskCompletionCheck")]

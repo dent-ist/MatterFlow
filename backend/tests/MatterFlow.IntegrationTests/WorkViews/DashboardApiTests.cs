@@ -344,6 +344,31 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Sec2_05_department_figures_need_Dashboard_ViewDepartment_and_the_mine_block_does_not()
+    {
+        var admin = await DashboardAsync();
+        admin.GetProperty("open").GetProperty("count").GetInt32().ShouldBeGreaterThan(0);
+
+        var viewer = await _h.UserWithAsync(@"KE\deptless", "Task.View");
+        var d = await OkAsync(await viewer.GetAsync("/api/v1/dashboard"));
+        foreach (var name in new[] { "open", "unassigned", "overdue", "onHold", "dueSoon", "asapOpen", "completed", "created" })
+            d.GetProperty(name).GetProperty("count").GetInt32().ShouldBe(0, name);
+        foreach (var name in new[] { "byPod", "byTaskType", "recentlyCreated", "recentlyCompleted" })
+            d.GetProperty(name).GetArrayLength().ShouldBe(0, name);
+        d.GetProperty("byPriority").EnumerateArray().Sum(i => i.GetProperty("count").GetInt32()).ShouldBe(0);
+        d.GetProperty("byStatus").EnumerateArray().Sum(i => i.GetProperty("count").GetInt32()).ShouldBe(0);
+        d.GetProperty("aging").EnumerateArray().Sum(i => i.GetProperty("count").GetInt32()).ShouldBe(0);
+        d.GetProperty("mine").GetProperty("open").GetProperty("count").GetInt32().ShouldBe(0);
+
+        // The personal block still works for a caller without the department permission.
+        (await OkAsync(await _techA.GetAsync("/api/v1/dashboard"))).GetProperty("mine").GetProperty("open").GetProperty("count").GetInt32().ShouldBe(3);
+        (await OkAsync(await _techA.GetAsync("/api/v1/dashboard"))).GetProperty("open").GetProperty("count").GetInt32().ShouldBe(0);
+
+        var manager = await _h.UserWithAsync(@"KE\deptfull", "Task.View", "Dashboard.ViewDepartment");
+        (await OkAsync(await manager.GetAsync("/api/v1/dashboard"))).GetProperty("open").GetProperty("count").GetInt32().ShouldBe(admin.GetProperty("open").GetProperty("count").GetInt32());
+    }
+
+    [Fact]
     public async Task A_user_without_task_view_gets_403_and_an_empty_database_gives_zeros()
     {
         var none = await _h.UserWithAsync(@"KE\nobody", "Matter.View");

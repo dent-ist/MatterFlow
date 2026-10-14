@@ -7378,9 +7378,11 @@ export class TaskWorkflowClient implements ITaskWorkflowClient {
 export interface ITaskCommentsClient {
     /**
      * @param newestFirst (optional) 
+     * @param skip (optional) 
+     * @param take (optional) 
      * @return OK
      */
-    listTaskComments(taskId: number, newestFirst?: boolean | undefined): Observable<TaskCommentListResponse>;
+    listTaskComments(taskId: number, newestFirst?: boolean | undefined, skip?: number | undefined, take?: number | undefined): Observable<TaskCommentListResponse>;
     /**
      * @return Created
      */
@@ -7414,9 +7416,11 @@ export class TaskCommentsClient implements ITaskCommentsClient {
 
     /**
      * @param newestFirst (optional) 
+     * @param skip (optional) 
+     * @param take (optional) 
      * @return OK
      */
-    listTaskComments(taskId: number, newestFirst?: boolean | undefined): Observable<TaskCommentListResponse> {
+    listTaskComments(taskId: number, newestFirst?: boolean | undefined, skip?: number | undefined, take?: number | undefined): Observable<TaskCommentListResponse> {
         let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/comments?";
         if (taskId === undefined || taskId === null)
             throw new globalThis.Error("The parameter 'taskId' must be defined.");
@@ -7425,6 +7429,14 @@ export class TaskCommentsClient implements ITaskCommentsClient {
             throw new globalThis.Error("The parameter 'newestFirst' cannot be null.");
         else if (newestFirst !== undefined)
             url_ += "newestFirst=" + encodeURIComponent("" + newestFirst) + "&";
+        if (skip === null)
+            throw new globalThis.Error("The parameter 'skip' cannot be null.");
+        else if (skip !== undefined)
+            url_ += "skip=" + encodeURIComponent("" + skip) + "&";
+        if (take === null)
+            throw new globalThis.Error("The parameter 'take' cannot be null.");
+        else if (take !== undefined)
+            url_ += "take=" + encodeURIComponent("" + take) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -10226,6 +10238,7 @@ export interface CompleteStepRequest {
 export interface CompleteTaskRequest {
     rowVersion: string;
     completeUnresolvedSteps?: boolean;
+    workflowRowVersion?: string | undefined;
 
     [key: string]: any;
 }
@@ -11268,6 +11281,7 @@ export interface TaskCompletionCheck {
     unresolved: TaskStepRef[];
     bulkCompletable: TaskStepRef[];
     blocked: TaskStepRef[];
+    workflowRowVersion: string;
 
     [key: string]: any;
 }

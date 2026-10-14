@@ -122,7 +122,7 @@ internal sealed class WorkflowInstanceService(
             return Result<WorkflowCompletionEvaluation>.Failure(inputs.Error!);
         }
 
-        return ToEvaluation(domain.Value.EvaluateTaskCompletion(StepInputCheck.From(id => inputs.Value[id].IsValid)), record.Steps.ToDictionary(s => s.Id));
+        return ToEvaluation(domain.Value.EvaluateTaskCompletion(StepInputCheck.From(id => inputs.Value[id].IsValid)), record.Steps.ToDictionary(s => s.Id), WorkflowSupport.FormatRowVersion(record.RowVersion));
     }
 
     // ---- actions
@@ -145,7 +145,7 @@ internal sealed class WorkflowInstanceService(
                 return Result<ActionPlan>.Failure(events.Error!);
             }
 
-            var saved = await SaveValuesAsync(loaded.Steps[stepInstanceId], values, ct);
+            var saved = await SaveValuesAsync(loaded.Steps[stepInstanceId], values, context.MatterId, ct);
             return saved.IsFailure ? Result<ActionPlan>.Failure(saved.Error!) : new ActionPlan(events.Value, saved.Value.Dropped, saved.Value);
         }, cancellationToken);
 
@@ -167,7 +167,7 @@ internal sealed class WorkflowInstanceService(
             var changed = (IReadOnlyList<string>)[];
             if (values is { Count: > 0 })
             {
-                var saved = await SaveValuesAsync(step, values, ct);
+                var saved = await SaveValuesAsync(step, values, context.MatterId, ct);
                 if (saved.IsFailure)
                 {
                     return Result<ActionPlan>.Failure(saved.Error!);
@@ -399,7 +399,7 @@ internal sealed class WorkflowInstanceService(
     // ---- values and inputs
 
     /// <summary>Saves draft values through the forms engine (patch semantics, hidden values dropped). Null/empty values save nothing.</summary>
-    private async Task<Result<SavedValues>> SaveValuesAsync(StepInstanceRecord step, IReadOnlyDictionary<string, JsonElement>? values, CancellationToken cancellationToken)
+    private async Task<Result<SavedValues>> SaveValuesAsync(StepInstanceRecord step, IReadOnlyDictionary<string, JsonElement>? values, int? matterId, CancellationToken cancellationToken)
     {
         if (values is null || values.Count == 0)
         {
@@ -417,7 +417,7 @@ internal sealed class WorkflowInstanceService(
             step.Id,
             formVersionId,
             values,
-            new FormSaveOptions { Mode = FormSubmissionMode.Draft, ValidateOnlyChanged = true },
+            new FormSaveOptions { Mode = FormSubmissionMode.Draft, ValidateOnlyChanged = true, References = new FormReferenceContext(matterId) },
             cancellationToken);
         return saved.IsFailure
             ? Result<SavedValues>.Failure(saved.Error!)
@@ -460,10 +460,10 @@ internal sealed class WorkflowInstanceService(
             record.IsOrdered,
             record.Steps.Select(s => new StepSnapshot(new StepSpec(s.Id, s.SequenceNo, s.IsSkippable, s.SkipCommentRequired), s.Status, s.FirstResolvedAt is not null, s.SkipComment)));
 
-    private static Result<WorkflowCompletionEvaluation> ToEvaluation(TaskCompletionEvaluation e, Dictionary<int, StepInstanceRecord> steps)
+    private static Result<WorkflowCompletionEvaluation> ToEvaluation(TaskCompletionEvaluation e, Dictionary<int, StepInstanceRecord> steps, string rowVersion)
     {
         List<StepRef> Refs(IEnumerable<int> ids) => [.. ids.Select(id => new StepRef(id, steps[id].SequenceNo, steps[id].Title))];
-        return new WorkflowCompletionEvaluation(Refs(e.UnresolvedStepIds), Refs(e.BulkCompletableStepIds), Refs(e.BlockedStepIds));
+        return new WorkflowCompletionEvaluation(Refs(e.UnresolvedStepIds), Refs(e.BulkCompletableStepIds), Refs(e.BlockedStepIds), rowVersion);
     }
 
     private async Task<Result<WorkflowInstanceView>> BuildViewAsync(WorkflowInstanceRecord record, CancellationToken cancellationToken)

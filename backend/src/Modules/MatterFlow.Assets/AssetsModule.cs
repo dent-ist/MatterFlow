@@ -1,5 +1,6 @@
 using MatterFlow.Assets.Application;
 using MatterFlow.Assets.Contracts;
+using MatterFlow.Configuration.Contracts.Forms;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MatterFlow.Assets;
@@ -15,6 +16,7 @@ public static class AssetsModule
         services.AddScoped<AssetTypeService>();
         services.AddScoped<AssetService>();
         services.AddScoped<IAssetDirectory, AssetDirectory>();
+        services.AddScoped<IFormReferenceValidator, AssetReferenceValidator>();
         return services;
     }
 }

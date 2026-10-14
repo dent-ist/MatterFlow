@@ -62,7 +62,7 @@ public sealed class TaskActivityService(
         var canView = permissions.Has(Permissions.Audit.View);
         var items = page.Items.Select(e =>
         {
-            var story = TaskActivityNarrator.Narrate(e, names);
+            var story = TaskActivityNarrator.Narrate(e, names, canView);
             var actor = e.ActorUserId is { } id && userMap.TryGetValue(id, out var u) ? new TaskUserRef(u.UserId, u.DisplayName, u.IsActive) : null;
             return new TaskActivityItem(
                 e.AuditEventId,

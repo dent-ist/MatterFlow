@@ -115,10 +115,12 @@ public sealed record StepRef(int StepInstanceId, int SequenceNo, string Title);
 /// <param name="Unresolved">Steps not completed or skipped, in workflow order.</param>
 /// <param name="BulkCompletable">Unresolved steps whose required inputs are all present.</param>
 /// <param name="Blocked">Unresolved steps missing required inputs.</param>
+/// <param name="RowVersion">The instance row version (base64) this evaluation was made against; a bulk completion confirmed by a user must send it back (SEC2-08).</param>
 public sealed record WorkflowCompletionEvaluation(
     IReadOnlyList<StepRef> Unresolved,
     IReadOnlyList<StepRef> BulkCompletable,
-    IReadOnlyList<StepRef> Blocked)
+    IReadOnlyList<StepRef> Blocked,
+    string RowVersion = "")
 {
     /// <summary>Every step is resolved; the Task may complete.</summary>
     public bool IsReady => Unresolved.Count == 0;
