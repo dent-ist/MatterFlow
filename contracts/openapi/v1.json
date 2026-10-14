@@ -3658,6 +3658,909 @@
         }
       }
     },
+    "/api/v1/tasks": {
+      "get": {
+        "tags": [
+          "Tasks"
+        ],
+        "operationId": "ListTasks",
+        "parameters": [
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "MatterId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ProjectId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Status",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "AssigneeId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PodId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "TaskTypeId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PriorityId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Q",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfTaskListItem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "operationId": "CreateTask",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}": {
+      "get": {
+        "tags": [
+          "Tasks"
+        ],
+        "operationId": "GetTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Tasks"
+        ],
+        "operationId": "UpdateTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/assignment": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "operationId": "AssignTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignTaskRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignTaskRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/priority": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "operationId": "SetTaskPriority",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTaskPriorityRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTaskPriorityRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTaskPriorityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/status": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "operationId": "ChangeTaskStatus",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeTaskStatusRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeTaskStatusRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeTaskStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/complete": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "operationId": "CompleteTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteTaskRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteTaskRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/completion": {
+      "get": {
+        "tags": [
+          "Tasks"
+        ],
+        "operationId": "GetTaskCompletionCheck",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCompletionCheck"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/cancel": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "operationId": "CancelTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelTaskRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelTaskRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/reopen": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "operationId": "ReopenTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReopenTaskRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReopenTaskRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReopenTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/workflow": {
+      "get": {
+        "tags": [
+          "TaskWorkflow"
+        ],
+        "operationId": "GetTaskWorkflow",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskWorkflowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/workflow/steps/{stepInstanceId}/start": {
+      "post": {
+        "tags": [
+          "TaskWorkflow"
+        ],
+        "operationId": "StartTaskStep",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "stepInstanceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartStepRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartStepRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartStepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepActionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/workflow/steps/{stepInstanceId}/values": {
+      "post": {
+        "tags": [
+          "TaskWorkflow"
+        ],
+        "operationId": "SaveTaskStepValues",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "stepInstanceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveStepValuesRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveStepValuesRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveStepValuesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepActionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/workflow/steps/{stepInstanceId}/complete": {
+      "post": {
+        "tags": [
+          "TaskWorkflow"
+        ],
+        "operationId": "CompleteTaskStep",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "stepInstanceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteStepRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteStepRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteStepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepActionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/workflow/steps/{stepInstanceId}/skip": {
+      "post": {
+        "tags": [
+          "TaskWorkflow"
+        ],
+        "operationId": "SkipTaskStep",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "stepInstanceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkipStepRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkipStepRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkipStepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepActionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{taskId}/workflow/steps/{stepInstanceId}/reopen": {
+      "post": {
+        "tags": [
+          "TaskWorkflow"
+        ],
+        "operationId": "ReopenTaskStep",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "stepInstanceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReopenStepRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReopenStepRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReopenStepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepActionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/step-definitions": {
       "get": {
         "tags": [
@@ -4921,6 +5824,31 @@
           }
         }
       },
+      "AssignTaskRequest": {
+        "required": [
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": "string"
+          },
+          "podId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "userId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "AuditEventDto": {
         "required": [
           "auditEventId",
@@ -5037,6 +5965,23 @@
           }
         }
       },
+      "CancelTaskRequest": {
+        "required": [
+          "rowVersion",
+          "comment"
+        ],
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": "string"
+          },
+          "comment": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "type": "string"
+          }
+        }
+      },
       "ChangeNumberRequest": {
         "required": [
           "number",
@@ -5051,6 +5996,29 @@
           },
           "rowVersion": {
             "type": "string"
+          }
+        }
+      },
+      "ChangeTaskStatusRequest": {
+        "required": [
+          "rowVersion",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "comment": {
+            "maxLength": 4000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -5127,6 +6095,37 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "CompleteStepRequest": {
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "values": {
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        }
+      },
+      "CompleteTaskRequest": {
+        "required": [
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": "string"
+          },
+          "completeUnresolvedSteps": {
+            "type": "boolean"
           }
         }
       },
@@ -5403,6 +6402,118 @@
             "type": [
               "null",
               "string"
+            ]
+          }
+        }
+      },
+      "CreateTaskRequest": {
+        "required": [
+          "matterId",
+          "taskTypeId",
+          "workflowDefinitionId",
+          "title",
+          "requestorName"
+        ],
+        "type": "object",
+        "properties": {
+          "matterId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "taskTypeId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "workflowDefinitionId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 20000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requestorName": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "requestorEmail": {
+            "maxLength": 254,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requestedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "priorityId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "dueTime": {
+            "maxLength": 8,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "assignedPodId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "assignedUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "formValues": {
+            "type": [
+              "null",
+              "object"
             ]
           }
         }
@@ -6265,6 +7376,35 @@
           }
         }
       },
+      "PagedResultOfTaskListItem": {
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskListItem"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "PagedResultOfUserSummaryDto": {
         "required": [
           "items",
@@ -6742,6 +7882,28 @@
           }
         }
       },
+      "ReopenStepRequest": {
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ReopenTaskRequest": {
+        "required": [
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "ReorderRequest": {
         "required": [
           "ids"
@@ -6895,6 +8057,31 @@
           }
         }
       },
+      "SaveStepValuesRequest": {
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "values": {
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "skipComment": {
+            "maxLength": 2000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "SaveWorkflowDraftRequest": {
         "required": [
           "isOrdered",
@@ -6959,6 +8146,24 @@
           }
         }
       },
+      "SetTaskPriorityRequest": {
+        "required": [
+          "rowVersion",
+          "priorityId"
+        ],
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": "string"
+          },
+          "priorityId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "SetUserActiveRequest": {
         "required": [
           "isActive",
@@ -6999,6 +8204,36 @@
           }
         }
       },
+      "SkipStepRequest": {
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "comment": {
+            "maxLength": 2000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "StartStepRequest": {
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "StatusLabelView": {
         "required": [
           "code",
@@ -7020,6 +8255,36 @@
           },
           "rowVersion": {
             "type": "string"
+          }
+        }
+      },
+      "StepActionResponse": {
+        "required": [
+          "task",
+          "affectedStepInstanceIds",
+          "droppedFields",
+          "taskStatusChanged"
+        ],
+        "type": "object",
+        "properties": {
+          "task": {
+            "$ref": "#/components/schemas/TaskResponse"
+          },
+          "affectedStepInstanceIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "droppedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "taskStatusChanged": {
+            "type": "boolean"
           }
         }
       },
@@ -7180,6 +8445,764 @@
           }
         }
       },
+      "TaskAllowedActions": {
+        "required": [
+          "canEdit",
+          "canAssign",
+          "canSetPriority",
+          "canComment",
+          "canExecuteSteps",
+          "canReopenSteps",
+          "transitions"
+        ],
+        "type": "object",
+        "properties": {
+          "canEdit": {
+            "type": "boolean"
+          },
+          "canAssign": {
+            "type": "boolean"
+          },
+          "canSetPriority": {
+            "type": "boolean"
+          },
+          "canComment": {
+            "type": "boolean"
+          },
+          "canExecuteSteps": {
+            "type": "boolean"
+          },
+          "canReopenSteps": {
+            "type": "boolean"
+          },
+          "transitions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskTransitionOption"
+            }
+          }
+        }
+      },
+      "TaskCompletionCheck": {
+        "required": [
+          "isReady",
+          "canBulkComplete",
+          "unresolved",
+          "bulkCompletable",
+          "blocked"
+        ],
+        "type": "object",
+        "properties": {
+          "isReady": {
+            "type": "boolean"
+          },
+          "canBulkComplete": {
+            "type": "boolean"
+          },
+          "unresolved": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskStepRef"
+            }
+          },
+          "bulkCompletable": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskStepRef"
+            }
+          },
+          "blocked": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskStepRef"
+            }
+          }
+        }
+      },
+      "TaskListItem": {
+        "required": [
+          "taskId",
+          "taskNumber",
+          "title",
+          "matterId",
+          "matterRef",
+          "matterName",
+          "projectId",
+          "projectName",
+          "taskTypeId",
+          "taskTypeName",
+          "priority",
+          "status",
+          "statusLabel",
+          "assignedPod",
+          "assignedUser",
+          "dueDate",
+          "dueAtUtc",
+          "isAsap",
+          "isOverdue",
+          "createdAtUtc",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "taskNumber": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterRef": {
+            "type": "string"
+          },
+          "matterName": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "projectName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "taskTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "taskTypeName": {
+            "type": "string"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/TaskPriorityRef"
+          },
+          "status": {
+            "type": "string"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "assignedPod": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskPodRef"
+              }
+            ]
+          },
+          "assignedUser": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskUserRef"
+              }
+            ]
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "dueAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "isAsap": {
+            "type": "boolean"
+          },
+          "isOverdue": {
+            "type": "boolean"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "TaskMatterRef": {
+        "required": [
+          "matterId",
+          "clientId",
+          "clientNumber",
+          "matterNumber",
+          "matterRef",
+          "name",
+          "isActive",
+          "isSensitive"
+        ],
+        "type": "object",
+        "properties": {
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "clientId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "clientNumber": {
+            "type": "string"
+          },
+          "matterNumber": {
+            "type": "string"
+          },
+          "matterRef": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isSensitive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TaskPodRef": {
+        "required": [
+          "podId",
+          "name",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "podId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TaskPriorityRef": {
+        "required": [
+          "priorityId",
+          "label",
+          "color",
+          "sortOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "priorityId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "label": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "TaskProjectRef": {
+        "required": [
+          "projectId",
+          "name",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TaskResponse": {
+        "required": [
+          "taskId",
+          "taskNumber",
+          "matter",
+          "project",
+          "taskType",
+          "title",
+          "description",
+          "requestorName",
+          "requestorEmail",
+          "requestedAtUtc",
+          "priority",
+          "status",
+          "statusLabel",
+          "assignedPod",
+          "assignedUser",
+          "dueDate",
+          "dueTime",
+          "dueAtUtc",
+          "isAsap",
+          "isOverdue",
+          "timeZone",
+          "createdBy",
+          "createdAtUtc",
+          "modifiedAtUtc",
+          "statusChangedAtUtc",
+          "completedAtUtc",
+          "formVersionId",
+          "formVersionNo",
+          "formValues",
+          "workflow",
+          "allowedActions",
+          "statusReason",
+          "rowVersion",
+          "warnings",
+          "droppedFields",
+          "bulkCompletedStepInstanceIds"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "taskNumber": {
+            "type": "string"
+          },
+          "matter": {
+            "$ref": "#/components/schemas/TaskMatterRef"
+          },
+          "project": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskProjectRef"
+              }
+            ]
+          },
+          "taskType": {
+            "$ref": "#/components/schemas/TaskTypeRef"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requestorName": {
+            "type": "string"
+          },
+          "requestorEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requestedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/TaskPriorityRef"
+          },
+          "status": {
+            "type": "string"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "assignedPod": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskPodRef"
+              }
+            ]
+          },
+          "assignedUser": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskUserRef"
+              }
+            ]
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "dueTime": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dueAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "isAsap": {
+            "type": "boolean"
+          },
+          "isOverdue": {
+            "type": "boolean"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "createdBy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskUserRef"
+              }
+            ]
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "modifiedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "statusChangedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "formVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "formVersionNo": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "formValues": {
+            "type": "object"
+          },
+          "workflow": {
+            "$ref": "#/components/schemas/TaskWorkflowResponse"
+          },
+          "allowedActions": {
+            "$ref": "#/components/schemas/TaskAllowedActions"
+          },
+          "statusReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskStatusReason"
+              }
+            ]
+          },
+          "rowVersion": {
+            "type": "string"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "droppedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bulkCompletedStepInstanceIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "TaskStatusReason": {
+        "required": [
+          "commentId",
+          "purpose",
+          "bodyHtml",
+          "authorUserId",
+          "authorName",
+          "createdAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "commentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "bodyHtml": {
+            "type": "string"
+          },
+          "authorUserId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TaskStepInstance": {
+        "required": [
+          "stepInstanceId",
+          "sequenceNo",
+          "title",
+          "description",
+          "instructions",
+          "documentationUrl",
+          "inputFormVersionId",
+          "isSkippable",
+          "skipCommentRequired",
+          "status",
+          "hasBeenResolved",
+          "isCurrent",
+          "isReopenedPrerequisite",
+          "requiredInputsSatisfied",
+          "skipComment",
+          "firstResolvedAtUtc",
+          "resolvedAtUtc",
+          "resolvedByUserId",
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "stepInstanceId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sequenceNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instructions": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentationUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "inputFormVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "isSkippable": {
+            "type": "boolean"
+          },
+          "skipCommentRequired": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "hasBeenResolved": {
+            "type": "boolean"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          },
+          "isReopenedPrerequisite": {
+            "type": "boolean"
+          },
+          "requiredInputsSatisfied": {
+            "type": "boolean"
+          },
+          "skipComment": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "firstResolvedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "resolvedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "resolvedByUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "values": {
+            "type": "object"
+          }
+        }
+      },
+      "TaskStepRef": {
+        "required": [
+          "stepInstanceId",
+          "sequenceNo",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "stepInstanceId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sequenceNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "TaskTransitionOption": {
+        "required": [
+          "action",
+          "targetStatus",
+          "requiresComment",
+          "requiredPermission",
+          "permitted",
+          "blockedReason"
+        ],
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "targetStatus": {
+            "type": "string"
+          },
+          "requiresComment": {
+            "type": "boolean"
+          },
+          "requiredPermission": {
+            "type": "string"
+          },
+          "permitted": {
+            "type": "boolean"
+          },
+          "blockedReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "TaskTypeRef": {
+        "required": [
+          "taskTypeId",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "taskTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "TaskTypeView": {
         "required": [
           "id",
@@ -7282,6 +9305,129 @@
           },
           "rowVersion": {
             "type": "string"
+          }
+        }
+      },
+      "TaskUserRef": {
+        "required": [
+          "userId",
+          "displayName",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TaskWorkflowProgress": {
+        "required": [
+          "total",
+          "pending",
+          "inProgress",
+          "completed",
+          "skipped",
+          "resolved",
+          "currentStepInstanceId",
+          "reopenedPrerequisiteStepInstanceIds"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pending": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "inProgress": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "skipped": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "resolved": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "currentStepInstanceId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "reopenedPrerequisiteStepInstanceIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "TaskWorkflowResponse": {
+        "required": [
+          "workflowInstanceId",
+          "workflowDefinitionId",
+          "workflowName",
+          "workflowVersionId",
+          "versionNo",
+          "isOrdered",
+          "rowVersion",
+          "progress",
+          "steps"
+        ],
+        "type": "object",
+        "properties": {
+          "workflowInstanceId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "workflowDefinitionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "workflowName": {
+            "type": "string"
+          },
+          "workflowVersionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "versionNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isOrdered": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/TaskWorkflowProgress"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskStepInstance"
+            }
           }
         }
       },
@@ -7584,6 +9730,108 @@
           },
           "rowVersion": {
             "type": "string"
+          }
+        }
+      },
+      "UpdateTaskRequest": {
+        "required": [
+          "rowVersion",
+          "title",
+          "requestorName"
+        ],
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": "string"
+          },
+          "matterId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "taskTypeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "workflowDefinitionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 20000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requestorName": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "requestorEmail": {
+            "maxLength": 254,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requestedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "priorityId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "dueTime": {
+            "maxLength": 8,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "formValues": {
+            "type": [
+              "null",
+              "object"
+            ]
           }
         }
       },
@@ -8363,6 +10611,12 @@
     },
     {
       "name": "Projects"
+    },
+    {
+      "name": "Tasks"
+    },
+    {
+      "name": "TaskWorkflow"
     },
     {
       "name": "StepDefinitions"
