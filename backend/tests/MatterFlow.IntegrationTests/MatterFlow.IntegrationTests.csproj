@@ -13,6 +13,10 @@
     <PackageReference Include="Testcontainers.MsSql" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Email fixtures of the Outlook drag-and-drop spike, linked and never forked. -->
+    <None Include="..\..\..\tools\spike-outlook-dnd\samples\*.eml" Link="Intake\samples\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\src\MatterFlow.Api\MatterFlow.Api.csproj" />
     <ProjectReference Include="..\..\src\MatterFlow.Data\MatterFlow.Data.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Configuration\MatterFlow.Configuration.csproj" />
