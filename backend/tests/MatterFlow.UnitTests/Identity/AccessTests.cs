@@ -271,7 +271,8 @@ public class AuthenticationSelectionTests
     [InlineData("Development", null, AuthProvider.Dev)]
     [InlineData("Production", null, AuthProvider.Windows)]
     [InlineData("Staging", null, AuthProvider.Windows)]
-    [InlineData("Staging", "dev", AuthProvider.Dev)]
+    [InlineData("Test", "dev", AuthProvider.Dev)]
+    [InlineData("Development", "Dev", AuthProvider.Dev)]
     [InlineData("Production", "Windows", AuthProvider.Windows)]
     [InlineData("Development", "Windows", AuthProvider.Windows)]
     public void Provider_defaults_and_overrides(string environment, string? configured, AuthProvider expected)
@@ -283,6 +284,20 @@ public class AuthenticationSelectionTests
     public void Dev_provider_is_refused_in_production()
     {
         Should.Throw<InvalidOperationException>(() => AuthProviderSelection.Resolve(Config("Dev"), Env("Production")));
+    }
+
+    // SEC-10: allow-list, not a Production deny-list. (The former row Staging + dev -> Dev encoded the insecure behavior.)
+    [Theory]
+    [InlineData("Staging")]
+    [InlineData("UAT")]
+    [InlineData("PreProd")]
+    [InlineData("production")]
+    [InlineData("Developmnt")]
+    [InlineData("")]
+    public void Dev_provider_is_refused_in_every_environment_that_is_not_development_or_test(string environment)
+    {
+        Should.Throw<InvalidOperationException>(() => AuthProviderSelection.Resolve(Config("Dev"), Env(environment)))
+            .Message.ShouldContain("only allowed in the Development and Test");
     }
 
     [Fact]

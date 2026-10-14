@@ -30,7 +30,7 @@ secret lives in the repository.
 | `Bootstrap:SystemAdmins` | List of accounts that become System Admin at their first sign-in. Set to `["ke\\kekim"]` (domain `KE`, SAM `kekim`; case-insensitive). As an environment variable: `Bootstrap__SystemAdmins__0=ke\kekim`. |
 | `ActiveDirectory:LookupEnabled` | Optional display-name/email lookup at first login. **Off by default.** It reads AD with the web app's own identity, so enable it only after IT confirms that identity can read AD. When off or on any failure the display name falls back to `KE\sam` and an admin can edit name and email. |
 | `Firm:TimeZoneId` | Default time zone, `America/New_York` (Eastern). Used when a browser does not send a valid `X-Time-Zone` header. Timestamps are always stored in UTC; users see their own local time (addendum M). |
-| `Auth:Provider` | Leave unset in Production (defaults to `Windows`). `Dev` is rejected at startup when `ASPNETCORE_ENVIRONMENT=Production`. |
+| `Auth:Provider` | Leave unset in Production (defaults to `Windows`). `Dev` is rejected at startup unless `ASPNETCORE_ENVIRONMENT` is `Development` or `Test` (so also in Staging/UAT). |
 | `Migrations:Enabled` | Default `true`. Also `LockTimeoutSeconds` (300), `CommandTimeoutSeconds` (600), `ConnectionStringName` (`Migrations`), `ScriptsFolder` (ops hotfix testing only). |
 | `Seed:StarterConfiguration:Enabled` | Optional starter data (task types, workflows, forms, priorities). Default: on in Development, **off elsewhere**. Idempotent and never overwrites admin edits. `DryRun=true` only logs what it would create. |
 

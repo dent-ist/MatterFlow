@@ -35,6 +35,8 @@ public static class IdentityModule
         {
             authentication.AddScheme<DevSchemeOptions, DevAuthenticationHandler>(DevAuthOptions.SchemeName, _ => { });
             services.Configure<DevAuthOptions>(configuration.GetSection("Auth:Dev"));
+            if (!environment.IsDevelopment())
+                services.PostConfigure<DevAuthOptions>(o => o.QueryName = string.Empty); // header only in the Test environment
         }
         else
         {
