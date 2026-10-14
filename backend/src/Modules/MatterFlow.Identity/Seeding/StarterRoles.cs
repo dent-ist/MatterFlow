@@ -1,0 +1,59 @@
+using MatterFlow.Identity.Contracts;
+
+namespace MatterFlow.Identity.Seeding;
+
+/// <summary>A starter role and its default grants.</summary>
+public sealed record StarterRole(string Name, string Description, IReadOnlyList<string> Permissions);
+
+/// <summary>
+/// The starter role matrix of docs/architecture.md 6.3. Seeded once (only when no non-system role exists) and editable afterwards;
+/// configuration and user management are System Admin only by default.
+/// </summary>
+public static class StarterRoles
+{
+    private static readonly string[] ViewAll =
+    [
+        Permissions.Client.View, Permissions.Matter.View, Permissions.Project.View, Permissions.Asset.View,
+    ];
+
+    private static readonly string[] Everyone =
+    [
+        ..ViewAll,
+        Permissions.Asset.Create, Permissions.Asset.Edit, Permissions.Asset.Link,
+        Permissions.Task.View, Permissions.Task.Create, Permissions.Task.Comment,
+        Permissions.Task.Edit, Permissions.Task.Assign, Permissions.Task.SetPriority, Permissions.Task.ChangeStatus,
+        Permissions.Task.Complete, Permissions.Task.Cancel, Permissions.Task.Reopen,
+        Permissions.Workflow.Execute, Permissions.Workflow.StepReopen,
+        Permissions.Pod.View,
+    ];
+
+    private static readonly string[] ClientMatterEdit =
+    [
+        Permissions.Client.Create, Permissions.Client.Edit, Permissions.Matter.Create, Permissions.Matter.Edit,
+    ];
+
+    private static readonly string[] ProjectManage =
+    [
+        Permissions.Project.Create, Permissions.Project.Edit, Permissions.Project.Archive,
+    ];
+
+    private static readonly string[] NumbersAndActivation =
+    [
+        Permissions.Client.EditNumber, Permissions.Matter.EditNumber, Permissions.Matter.SetActive,
+    ];
+
+    public static IReadOnlyList<StarterRole> All { get; } =
+    [
+        new("Director", "Department head: full operational access plus oversight.",
+            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
+                Permissions.User.View, Permissions.Dashboard.ViewDepartment, Permissions.Audit.View]),
+        new("Project Manager", "Manages clients, matters and projects and the department dashboard.",
+            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Dashboard.ViewDepartment]),
+        new("Pod Lead", "Leads a pod: manages pod members and the department dashboard.",
+            [..Everyone, ..ClientMatterEdit, ..ProjectManage, Permissions.Pod.Manage, Permissions.Pod.ManageMembers, Permissions.Dashboard.ViewDepartment]),
+        new("Data Technician", "Works tasks and manages projects.",
+            [..Everyone, ..ProjectManage]),
+        new("Data Scientist", "Works tasks; read access to projects.",
+            [..Everyone]),
+    ];
+}

@@ -1,0 +1,220 @@
+{
+  "$comment": "Permission catalog source of truth (docs/architecture.md 6.3, FND-03). Synced into dbo.Permission at startup. Keep Permissions.cs (tests enforce it) and the Angular permissions.ts in sync.",
+  "permissions": [
+    {
+      "code": "Client.View",
+      "group": "Client/Matter",
+      "description": "View clients"
+    },
+    {
+      "code": "Client.Create",
+      "group": "Client/Matter",
+      "description": "Create clients"
+    },
+    {
+      "code": "Client.Edit",
+      "group": "Client/Matter",
+      "description": "Edit client details"
+    },
+    {
+      "code": "Client.EditNumber",
+      "group": "Client/Matter",
+      "description": "Change a client number"
+    },
+    {
+      "code": "Matter.View",
+      "group": "Client/Matter",
+      "description": "View matters"
+    },
+    {
+      "code": "Matter.Create",
+      "group": "Client/Matter",
+      "description": "Create matters"
+    },
+    {
+      "code": "Matter.Edit",
+      "group": "Client/Matter",
+      "description": "Edit matter details"
+    },
+    {
+      "code": "Matter.EditNumber",
+      "group": "Client/Matter",
+      "description": "Change a matter number"
+    },
+    {
+      "code": "Matter.SetActive",
+      "group": "Client/Matter",
+      "description": "Activate or deactivate matters"
+    },
+    {
+      "code": "Project.View",
+      "group": "Project",
+      "description": "View projects"
+    },
+    {
+      "code": "Project.Create",
+      "group": "Project",
+      "description": "Create projects"
+    },
+    {
+      "code": "Project.Edit",
+      "group": "Project",
+      "description": "Edit projects"
+    },
+    {
+      "code": "Project.Archive",
+      "group": "Project",
+      "description": "Archive and unarchive projects"
+    },
+    {
+      "code": "Task.View",
+      "group": "Task",
+      "description": "View tasks"
+    },
+    {
+      "code": "Task.Create",
+      "group": "Task",
+      "description": "Create tasks"
+    },
+    {
+      "code": "Task.Edit",
+      "group": "Task",
+      "description": "Edit task details"
+    },
+    {
+      "code": "Task.Assign",
+      "group": "Task",
+      "description": "Assign or reassign tasks to pods and users"
+    },
+    {
+      "code": "Task.SetPriority",
+      "group": "Task",
+      "description": "Set task priority"
+    },
+    {
+      "code": "Task.ChangeStatus",
+      "group": "Task",
+      "description": "Change task status (start, hold, resume)"
+    },
+    {
+      "code": "Task.Complete",
+      "group": "Task",
+      "description": "Complete tasks"
+    },
+    {
+      "code": "Task.Cancel",
+      "group": "Task",
+      "description": "Cancel tasks"
+    },
+    {
+      "code": "Task.Reopen",
+      "group": "Task",
+      "description": "Reopen completed or cancelled tasks"
+    },
+    {
+      "code": "Task.Comment",
+      "group": "Task",
+      "description": "Add task comments"
+    },
+    {
+      "code": "Workflow.Execute",
+      "group": "Workflow execution",
+      "description": "Start, fill in, complete and skip workflow steps"
+    },
+    {
+      "code": "Workflow.StepReopen",
+      "group": "Workflow execution",
+      "description": "Reopen a completed workflow step"
+    },
+    {
+      "code": "Asset.View",
+      "group": "Assets",
+      "description": "View assets"
+    },
+    {
+      "code": "Asset.Create",
+      "group": "Assets",
+      "description": "Create assets"
+    },
+    {
+      "code": "Asset.Edit",
+      "group": "Assets",
+      "description": "Edit assets"
+    },
+    {
+      "code": "Asset.Link",
+      "group": "Assets",
+      "description": "Link assets to tasks"
+    },
+    {
+      "code": "Pod.View",
+      "group": "Organization",
+      "description": "View pods"
+    },
+    {
+      "code": "Pod.Manage",
+      "group": "Organization",
+      "description": "Create, edit and deactivate pods"
+    },
+    {
+      "code": "Pod.ManageMembers",
+      "group": "Organization",
+      "description": "Manage pod membership"
+    },
+    {
+      "code": "User.View",
+      "group": "Organization",
+      "description": "View the user list and access queue"
+    },
+    {
+      "code": "User.Manage",
+      "group": "Organization",
+      "description": "Activate or disable users and assign roles"
+    },
+    {
+      "code": "Role.Manage",
+      "group": "Configuration",
+      "description": "Create and edit roles and their permissions"
+    },
+    {
+      "code": "TaskType.Manage",
+      "group": "Configuration",
+      "description": "Manage task types and their workflows"
+    },
+    {
+      "code": "Workflow.Manage",
+      "group": "Configuration",
+      "description": "Manage step definitions and workflows"
+    },
+    {
+      "code": "AssetType.Manage",
+      "group": "Configuration",
+      "description": "Manage asset types and asset link roles"
+    },
+    {
+      "code": "CustomField.Manage",
+      "group": "Configuration",
+      "description": "Manage client, matter and project custom fields"
+    },
+    {
+      "code": "Priority.Manage",
+      "group": "Configuration",
+      "description": "Manage priorities"
+    },
+    {
+      "code": "StatusLabel.Manage",
+      "group": "Configuration",
+      "description": "Manage task status labels"
+    },
+    {
+      "code": "Dashboard.ViewDepartment",
+      "group": "Oversight",
+      "description": "View the department dashboard"
+    },
+    {
+      "code": "Audit.View",
+      "group": "Oversight",
+      "description": "Browse the audit log"
+    }
+  ]
+}

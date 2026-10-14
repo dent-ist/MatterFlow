@@ -14,6 +14,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\MatterFlow.SharedKernel\MatterFlow.SharedKernel.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Configuration\MatterFlow.Configuration.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Identity\MatterFlow.Identity.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Identity.Contracts\MatterFlow.Identity.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- Shared conformance vectors: linked, never forked (contracts/form-rules.md section 5). -->

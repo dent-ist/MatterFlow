@@ -24,7 +24,9 @@ public static class ModelConventions
 
             var builder = modelBuilder.Entity(clr);
             builder.HasKey(nameof(Entity<int>.Id));
-            builder.Property(nameof(Entity<int>.Id)).HasColumnName(clr.Name + "Id");
+            var key = builder.Property(nameof(Entity<int>.Id));
+            if (key.Metadata.FindAnnotation(RelationalAnnotationNames.ColumnName) is null) // an explicit name wins (AppUser.UserId)
+                key.HasColumnName(clr.Name + "Id");
 
             if (typeof(IAuditStamped).IsAssignableFrom(clr))
             {

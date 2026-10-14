@@ -108,6 +108,26 @@
           }
         }
       }
+    },
+    "/api/v1/me": {
+      "get": {
+        "tags": [
+          "Me"
+        ],
+        "operationId": "GetMe",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -346,6 +366,67 @@
           }
         }
       },
+      "MeResponse": {
+        "required": [
+          "userId",
+          "displayName",
+          "status",
+          "isPending",
+          "windowsAccount",
+          "email",
+          "registeredAtUtc",
+          "roles",
+          "permissions",
+          "isSystemAdmin"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "isPending": {
+            "type": "boolean"
+          },
+          "windowsAccount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "registeredAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "isSystemAdmin": {
+            "type": "boolean"
+          }
+        }
+      },
       "PingResponse": {
         "required": [
           "status",
@@ -394,6 +475,9 @@
     },
     {
       "name": "AuditEvents"
+    },
+    {
+      "name": "Me"
     }
   ]
 }

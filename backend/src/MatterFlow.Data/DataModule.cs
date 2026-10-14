@@ -24,7 +24,7 @@ public static class DataModule
         services.AddAuditServices();
         services.AddScoped<AuditColumnsInterceptor>();
         services.AddScoped<AuditSaveChangesInterceptor>();
-        // Modules cannot reference MatterFlowDbContext (dependency rules); they inject the base DbContext, which resolves to it.
+        // Modules cannot reference Data (dependency rules), so they take the plain DbContext, which resolves to the shared context.
         services.AddScoped<DbContext>(sp => sp.GetRequiredService<MatterFlowDbContext>());
         services.AddDbContext<MatterFlowDbContext>((sp, options) =>
         {

@@ -26,8 +26,10 @@ public class AuditEventsApiTests(SqlServerFixture sql)
         {
             builder.UseSetting("ConnectionStrings:MatterFlow", cs);
             builder.UseSetting("ConnectionStrings:Default", cs); // schema runner: applies the real scripts at startup
-            builder.ConfigureServices(services => services.AddAuthorization(o =>
-                o.AddPolicy(PolicyNames.AuditView, p => p.RequireAssertion(_ => true))));
+            // Real login path: the Dev provider signs in as the bootstrap System Admin, who holds Audit.View.
+            builder.UseSetting("Auth:Provider", "Dev");
+            builder.UseSetting("Auth:Dev:DefaultUser", DatabaseApiFactory.AdminAccount);
+            builder.UseSetting("Bootstrap:SystemAdmins:0", DatabaseApiFactory.AdminAccount);
         });
     }
 
@@ -58,6 +60,7 @@ public class AuditEventsApiTests(SqlServerFixture sql)
         await using var factory = await CreateFactoryAsync();
         await SeedAsync(factory, 3);
         var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "tests");
 
         var page1 = await client.GetFromJsonAsync<JsonElement>("/api/v1/audit/events?objectType=Task&objectId=12&pageSize=2");
 

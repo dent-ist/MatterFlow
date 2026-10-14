@@ -8,6 +8,6 @@ Planned files (added by the features that own them):
 - `form-rules.schema.json` - JSON Schema of conditional-rule expressions.
 - `form-rules.vectors.json` - shared conformance vectors run by both .NET and TypeScript tests.
 - `form-rules.messages.json` - message keys and wording for every form-rules error code.
-- `permissions.json` - permission catalog source (codes, groups, descriptions).
+- `permissions.json` - permission catalog source (codes, groups, descriptions). Exists. Embedded into the Identity module and synced into `dbo.Permission` at startup; `Permissions.cs` and the Angular `permissions.ts` must list the same codes (a unit test enforces both).
 
 See `docs/architecture.md` sections 3, 7 and 11.

@@ -3,4 +3,14 @@
     <ProjectReference Include="..\..\MatterFlow.SharedKernel\MatterFlow.SharedKernel.csproj" />
     <ProjectReference Include="..\MatterFlow.Identity.Contracts\MatterFlow.Identity.Contracts.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" />
+    <PackageReference Include="System.DirectoryServices.AccountManagement" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Permission catalog source of truth (docs/architecture.md 6.3), synced into dbo.Permission at startup. -->
+    <EmbeddedResource Include="..\..\..\..\contracts\permissions.json" LogicalName="contracts.permissions.json" />
+  </ItemGroup>
 </Project>
