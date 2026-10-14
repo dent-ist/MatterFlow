@@ -1,0 +1,18 @@
+.new {
+  padding: var(--mf-s2) var(--mf-s4);
+  border-radius: var(--mf-radius);
+  background: var(--mf-link);
+  color: var(--mf-surface);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.chip {
+  display: inline-block;
+  margin: var(--mf-s1) 0 0;
+  padding: 2px var(--mf-s2);
+  border: 1px solid var(--mf-danger);
+  border-radius: var(--mf-radius);
+  color: var(--mf-danger);
+  font-size: var(--mf-fs-xs);
+}

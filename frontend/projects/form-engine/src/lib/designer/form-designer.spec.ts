@@ -251,4 +251,40 @@ describe('FormDesigner', () => {
     });
     expect(unnamed).toEqual([]);
   });
+
+  it('shows host-supplied issues inline and in the list without hiding the preview', async () => {
+    await create([
+      { key: 'ocr', control: 'TEXT', label: 'OCR' },
+      { key: 'notes', control: 'TEXT', label: 'Notes' },
+    ]);
+    fixture.componentRef.setInput('externalIssues', [
+      {
+        id: 'server:form:ocr:DUPLICATE_FIELD_KEY:0',
+        code: 'DUPLICATE_FIELD_KEY',
+        severity: 'error',
+        fieldKey: 'ocr',
+        slot: 'key',
+        message: 'The server says this key is taken.',
+      },
+      {
+        id: 'server:form:0',
+        code: 'SCHEMA_VIOLATION',
+        severity: 'error',
+        slot: 'form',
+        message: 'The server found a problem with the form.',
+      },
+    ]);
+    await stable();
+
+    const list = q('.fd__issue-list').textContent!;
+    expect(list).toContain('The server says this key is taken.');
+    expect(list).toContain('The server found a problem with the form.');
+    // The preview still renders: only local diagnostics hide it.
+    expect(el().querySelector('[data-preview-blocked]')).toBeNull();
+
+    // Selecting the field shows the message next to its key input.
+    el().querySelector<HTMLElement>('.fd__issue-list .fd__link')!.click();
+    await stable();
+    expect(el().textContent).toContain('The server says this key is taken.');
+  });
 });

@@ -16,6 +16,7 @@ import { Dialog } from 'primeng/dialog';
 import {
   DefinitionDiff,
   DesignerDefinition,
+  DesignerIssue,
   FormDesigner,
   diagnoseDefinition,
   diffDefinitions,
@@ -24,10 +25,12 @@ import {
 } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
 
+import { ApiError } from '../../../core/http/api-error';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { FormDesignerApi, FormOwner, FormVersion, FormVersionSummary } from './form-designer-api';
+import { publishIssuesOf } from './form-mapping';
 
-type DialogKind = 'publish' | 'retire' | 'discard' | null;
+type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | null;
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
@@ -64,6 +67,8 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   protected readonly publishNote = signal('');
   protected readonly diff = signal<DefinitionDiff | null>(null);
   protected readonly publishedDefinition = signal<DesignerDefinition | undefined>(undefined);
+  /** Problems the server reported when publishing; shown inline in the designer until the next edit. */
+  protected readonly serverIssues = signal<readonly DesignerIssue[]>([]);
   private pendingVersionId: string | null = null;
   private invoker: HTMLElement | null = null;
 
@@ -156,10 +161,15 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   private setCurrent(v: FormVersion): void {
     this.current.set(v);
     this.working.set(structuredClone(v.definition));
+    this.serverIssues.set([]);
   }
 
   private messageOf(e: unknown): string {
     return e instanceof Error ? e.message : 'Something went wrong. Try again.';
+  }
+
+  private isConflict(e: unknown): boolean {
+    return e instanceof ApiError && e.code === 'CONCURRENCY_CONFLICT';
   }
 
   private async refreshVersions(): Promise<void> {
@@ -171,6 +181,7 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   protected onChange(definition: DesignerDefinition): void {
     this.working.set(definition);
     this.notice.set('');
+    this.serverIssues.set([]);
   }
 
   protected async run(action: () => Promise<void>): Promise<boolean> {
@@ -180,7 +191,18 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
       await action();
       return true;
     } catch (e) {
-      this.failure.set(this.messageOf(e));
+      const issues = publishIssuesOf(e);
+      if (issues) {
+        this.serverIssues.set(issues);
+        this.failure.set(
+          `The server found ${issues.length} ${issues.length === 1 ? 'problem' : 'problems'} in this form. Fix them under Validation, then publish again.`,
+        );
+      } else if (this.isConflict(e)) {
+        this.failure.set('');
+        this.show('conflict');
+      } else {
+        this.failure.set(this.messageOf(e));
+      }
       return false;
     } finally {
       this.busy.set(false);
@@ -192,7 +214,9 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
     if (!v || this.readOnly()) return;
     const ok = await this.run(async () => {
       this.setCurrent(
-        await firstValueFrom(this.api.saveDraft(this.ownerId(), v.id, this.working())),
+        await firstValueFrom(
+          this.api.saveDraft(this.ownerId(), v.id, this.working(), v.rowVersion),
+        ),
       );
       await this.refreshVersions();
     });
@@ -264,19 +288,43 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
     const v = this.current();
     if (!v) return;
     const ok = await this.run(async () => {
-      let id = v.id;
+      let saved = v;
       if (this.dirty()) {
-        id = (await firstValueFrom(this.api.saveDraft(this.ownerId(), v.id, this.working()))).id;
+        saved = await firstValueFrom(
+          this.api.saveDraft(this.ownerId(), v.id, this.working(), v.rowVersion),
+        );
+        this.setCurrent(saved);
       }
       this.setCurrent(
-        await firstValueFrom(this.api.publish(this.ownerId(), id, this.publishNote())),
+        await firstValueFrom(
+          this.api.publish(this.ownerId(), saved.id, this.publishNote(), saved.rowVersion),
+        ),
       );
       await this.refreshVersions();
     });
-    this.dialog.set(null);
+    // A conflict opens its own dialog; every other outcome closes the publish dialog.
+    if (this.dialog() === 'publish') this.dialog.set(null);
     if (ok)
       this.notice.set(`Version ${this.current()?.versionNo} is published. It can't be edited.`);
-    else this.restoreFocus();
+    else if (this.dialog() === null) this.restoreFocus();
+  }
+
+  /** Conflict dialog: take the other admin's saved draft (dropping mine) or keep my edits on top of it. */
+  protected async resolveConflict(keepMine: boolean): Promise<void> {
+    const mine = this.working();
+    this.dialog.set(null);
+    await this.run(async () => {
+      const latest = await firstValueFrom(this.api.getVersion(this.ownerId(), this.current()!.id));
+      this.setCurrent(latest);
+      if (keepMine) this.working.set(mine);
+      await this.refreshVersions();
+    });
+    this.notice.set(
+      keepMine
+        ? 'Reloaded the latest draft. Your edits are kept; save to overwrite the other changes.'
+        : 'Reloaded the latest draft.',
+    );
+    this.restoreFocus();
   }
 
   protected async confirmRetire(): Promise<void> {

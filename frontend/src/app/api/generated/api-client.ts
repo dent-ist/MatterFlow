@@ -1849,6 +1849,253 @@ export class StatusLabelsClient implements IStatusLabelsClient {
     }
 }
 
+export interface ITaskTypesClient {
+    /**
+     * @return OK
+     */
+    listTaskTypes(): Observable<TaskTypeView[]>;
+    /**
+     * @return Created
+     */
+    createTaskType(body: CreateTaskTypeRequest): Observable<TaskTypeView>;
+    /**
+     * @return OK
+     */
+    getTaskType(id: number): Observable<TaskTypeView>;
+    /**
+     * @return OK
+     */
+    updateTaskType(id: number, body: UpdateTaskTypeRequest): Observable<TaskTypeView>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class TaskTypesClient implements ITaskTypesClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listTaskTypes(): Observable<TaskTypeView[]> {
+        let url_ = this.baseUrl + "/api/v1/task-types";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListTaskTypes(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListTaskTypes(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskTypeView[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskTypeView[]>;
+        }));
+    }
+
+    protected processListTaskTypes(response: HttpResponseBase): Observable<TaskTypeView[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskTypeView[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createTaskType(body: CreateTaskTypeRequest): Observable<TaskTypeView> {
+        let url_ = this.baseUrl + "/api/v1/task-types";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateTaskType(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateTaskType(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskTypeView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskTypeView>;
+        }));
+    }
+
+    protected processCreateTaskType(response: HttpResponseBase): Observable<TaskTypeView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskTypeView;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getTaskType(id: number): Observable<TaskTypeView> {
+        let url_ = this.baseUrl + "/api/v1/task-types/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetTaskType(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetTaskType(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskTypeView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskTypeView>;
+        }));
+    }
+
+    protected processGetTaskType(response: HttpResponseBase): Observable<TaskTypeView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskTypeView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateTaskType(id: number, body: UpdateTaskTypeRequest): Observable<TaskTypeView> {
+        let url_ = this.baseUrl + "/api/v1/task-types/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateTaskType(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateTaskType(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskTypeView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskTypeView>;
+        }));
+    }
+
+    protected processUpdateTaskType(response: HttpResponseBase): Observable<TaskTypeView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskTypeView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IMeClient {
     /**
      * @return OK
@@ -5748,6 +5995,16 @@ export interface CreateStepDefinitionRequest {
     [key: string]: any;
 }
 
+export interface CreateTaskTypeRequest {
+    name: string;
+    description: string | undefined;
+    isActive?: boolean;
+    eligibleWorkflowIds?: number[] | undefined;
+    defaultWorkflowDefinitionId?: number | undefined;
+
+    [key: string]: any;
+}
+
 export interface CreateWorkflowDraftRequest {
     fromVersionId?: number | undefined;
 
@@ -6219,6 +6476,26 @@ export interface StepUsage {
     [key: string]: any;
 }
 
+export interface TaskTypeView {
+    id: number;
+    name: string;
+    description: string | undefined;
+    isActive: boolean;
+    defaultWorkflowDefinitionId: number | undefined;
+    eligibleWorkflowIds: number[];
+    formDefinitionId: number | undefined;
+    formStatus: FormVersionStatus | undefined;
+    publishedFormVersionId: number | undefined;
+    publishedFormVersionNo: number | undefined;
+    draftFormVersionNo: number | undefined;
+    hasFormFields: boolean;
+    isUsable: boolean;
+    usabilityIssues: string[];
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface UpdateAssetLinkRoleRequest {
     name: string;
     isActive: boolean;
@@ -6282,6 +6559,17 @@ export interface UpdateStepDefinitionRequest {
     instructions?: string | undefined;
     documentationUrl?: string | undefined;
     isActive: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UpdateTaskTypeRequest {
+    name: string;
+    description: string | undefined;
+    isActive: boolean;
+    eligibleWorkflowIds: number[];
+    defaultWorkflowDefinitionId: number | undefined;
     rowVersion: string;
 
     [key: string]: any;

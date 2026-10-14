@@ -1,0 +1,174 @@
+<header class="head">
+  <div>
+    <h1>{{ isNew() ? 'New task type' : (taskType()?.name ?? 'Task type') }}</h1>
+    <p class="muted"><a routerLink="/admin/task-types">Back to task types</a></p>
+  </div>
+</header>
+
+<div class="sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
+
+@if (failure()) {
+  <p class="error" role="alert" data-failure>{{ failure() }}</p>
+}
+@if (conflict()) {
+  <p class="error" role="alert" data-conflict>
+    Someone else changed this task type.
+    <button type="button" class="link" (click)="reload()" data-reload>
+      Reload the latest version
+    </button>
+    (your unsaved edits will be discarded).
+  </p>
+}
+
+@switch (state()) {
+  @case ('loading') {
+    <p class="muted" data-loading>Loading...</p>
+  }
+  @case ('error') {
+    <p class="error" role="alert">Couldn't load this task type.</p>
+    <p-button label="Try again" severity="secondary" (onClick)="retry()" />
+  }
+  @default {
+    <form class="edit" (submit)="$event.preventDefault(); save()" novalidate>
+      <section aria-labelledby="tt-general">
+        <h2 id="tt-general">General</h2>
+        <div class="field">
+          <label for="tt-name">Name (required)</label>
+          <input
+            id="tt-name"
+            class="text"
+            name="name"
+            maxlength="100"
+            [ngModel]="model().name"
+            (ngModelChange)="patch({ name: $event })"
+            [attr.aria-invalid]="fieldErrors()['name'] ? 'true' : null"
+            [attr.aria-describedby]="fieldErrors()['name'] ? 'tt-name-error' : null"
+            data-name
+          />
+          @if (fieldErrors()['name']) {
+            <p id="tt-name-error" class="error" role="alert" data-name-error>
+              {{ fieldErrors()['name'] }}
+            </p>
+          }
+        </div>
+        <div class="field">
+          <label for="tt-description">Description</label>
+          <textarea
+            id="tt-description"
+            class="text"
+            name="description"
+            rows="3"
+            maxlength="1000"
+            [ngModel]="model().description"
+            (ngModelChange)="patch({ description: $event })"
+            data-description
+          ></textarea>
+        </div>
+        <div class="field inline">
+          <input
+            id="tt-active"
+            type="checkbox"
+            class="check"
+            name="isActive"
+            [ngModel]="model().isActive"
+            (ngModelChange)="patch({ isActive: $event })"
+            data-active
+          />
+          <label for="tt-active">Active (offered for new tasks)</label>
+        </div>
+      </section>
+
+      <section aria-labelledby="tt-form">
+        <h2 id="tt-form">Request form</h2>
+        @if (taskType(); as t) {
+          <p data-form-summary>{{ formSummary(t) }}</p>
+          <a class="open-form" [routerLink]="['/admin/task-types', t.id, 'form']" data-open-form
+            >Open the form designer</a
+          >
+          @if (dirty()) {
+            <p class="muted hint">Save your changes before opening the designer.</p>
+          }
+        } @else {
+          <p class="muted" data-form-hint>
+            Save the task type first, then design its request form.
+          </p>
+        }
+      </section>
+
+      <section aria-labelledby="tt-workflows">
+        <h2 id="tt-workflows">Eligible workflows</h2>
+        <p class="muted hint">
+          People choose one of these when they create a task of this type. A type needs at least one
+          to be usable.
+        </p>
+        @if (workflows().length === 0 && unknownEligible().length === 0) {
+          <p class="muted" data-no-workflows>No workflows exist yet.</p>
+        }
+        <ul class="workflows" data-workflows>
+          @for (w of workflows(); track w.id) {
+            <li>
+              <input
+                type="checkbox"
+                class="check"
+                [id]="'tt-wf-' + w.id"
+                [checked]="isEligible(w.id)"
+                (change)="toggleEligible(w, $any($event.target).checked)"
+                [attr.data-workflow]="w.id"
+              />
+              <label [for]="'tt-wf-' + w.id">{{ workflowLabel(w) }}</label>
+            </li>
+          }
+          @for (id of unknownEligible(); track id) {
+            <li class="muted">Workflow {{ id }} (no longer listed)</li>
+          }
+        </ul>
+
+        <div class="field">
+          <label for="tt-default">Default workflow</label>
+          <select
+            id="tt-default"
+            class="select"
+            name="defaultWorkflow"
+            [ngModel]="model().defaultWorkflow"
+            (ngModelChange)="patch({ defaultWorkflow: $event })"
+            [attr.aria-invalid]="fieldErrors()['defaultWorkflowDefinitionId'] ? 'true' : null"
+            data-default
+          >
+            <option [ngValue]="null">None</option>
+            @for (w of eligibleOptions(); track w.id) {
+              <option [ngValue]="w.id">{{ w.name }}</option>
+            }
+          </select>
+          @if (fieldErrors()['defaultWorkflowDefinitionId']) {
+            <p class="error" role="alert" data-default-error>
+              {{ fieldErrors()['defaultWorkflowDefinitionId'] }}
+            </p>
+          }
+        </div>
+      </section>
+
+      @if (taskType(); as t) {
+        @if (!t.isUsable) {
+          <section class="usability" data-usability>
+            <h2>Not usable for new tasks yet</h2>
+            <ul>
+              @for (code of t.usabilityIssues; track code) {
+                <li>{{ issueText(code) }}</li>
+              }
+            </ul>
+          </section>
+        }
+      }
+
+      <div class="actions-row">
+        <p-button
+          type="submit"
+          [label]="isNew() ? 'Create task type' : 'Save'"
+          [disabled]="busy() || (!isNew() && !dirty())"
+          data-save
+        />
+        <a class="link" routerLink="/admin/task-types">Cancel</a>
+      </div>
+    </form>
+  }
+}

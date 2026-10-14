@@ -1,5 +1,6 @@
 using MatterFlow.Configuration.Application.Forms;
 using MatterFlow.Configuration.Application.Lookups;
+using MatterFlow.Configuration.Application.TaskTypes;
 using MatterFlow.Configuration.Contracts;
 using MatterFlow.Configuration.Contracts.Forms;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,8 @@ public static class ConfigurationModule
         services.AddScoped<IStatusLabelCatalog>(sp => sp.GetRequiredService<StatusLabelService>());
         services.AddScoped<AssetLinkRoleService>();
         services.AddScoped<IAssetLinkRoleCatalog>(sp => sp.GetRequiredService<AssetLinkRoleService>());
+        services.AddScoped<TaskTypeService>();
+        services.AddScoped<ITaskTypeCatalog>(sp => sp.GetRequiredService<TaskTypeService>());
         services.AddScoped<ConfigurationSeeder>();
         // Forms (architecture 7). Compiled schemas of immutable versions are cached for the life of the process.
         services.AddSingleton<FormSchemaCache>();

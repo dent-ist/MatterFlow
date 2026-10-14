@@ -71,6 +71,11 @@ export class FormDesigner {
   readonly definition = input.required<DesignerDefinition>();
   readonly saved = input<DesignerDefinition | null>(null);
   readonly readOnly = input(false);
+  /**
+   * Problems the host learned elsewhere (for example the server's publish validation). They are listed with the local
+   * diagnostics and shown inline next to their field, but they do not hide the preview.
+   */
+  readonly externalIssues = input<readonly DesignerIssue[]>([]);
 
   readonly definitionChange = output<DesignerDefinition>();
   readonly issuesChange = output<DesignerIssue[]>();
@@ -95,11 +100,12 @@ export class FormDesigner {
   protected readonly keyMessage = signal('');
   protected readonly testSubmitted = signal(false);
 
-  protected readonly issues = computed(() => diagnoseDefinition(this.fields()));
+  private readonly localIssues = computed(() => diagnoseDefinition(this.fields()));
+  protected readonly issues = computed(() => [...this.localIssues(), ...this.externalIssues()]);
   protected readonly errorCount = computed(
     () => this.issues().filter((i) => i.severity === 'error').length,
   );
-  protected readonly blocked = computed(() => hasErrors(this.issues()));
+  protected readonly blocked = computed(() => hasErrors(this.localIssues()));
 
   protected readonly current = computed<DesignerField | null>(
     () => this.fields()[this.selected()] ?? null,
@@ -135,7 +141,7 @@ export class FormDesigner {
 
   constructor() {
     // Report diagnostics to the host (it disables Publish while errors remain).
-    afterNextRender(() => this.issuesChange.emit(this.issues()), { injector: this.injector });
+    afterNextRender(() => this.issuesChange.emit(this.localIssues()), { injector: this.injector });
   }
 
   // ---------------------------------------------------------------- helpers

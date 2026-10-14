@@ -2,7 +2,9 @@ import { DOCUMENT } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { throwError } from 'rxjs';
 
+import { apiError } from '../../../core/lookups/lookups-testing';
 import {
   UNSAVED_CHANGES_MESSAGE,
   unsavedChangesGuard,
@@ -133,6 +135,75 @@ describe('TaskTypeFormPage', () => {
     await settle();
     await press('Discard changes', document.body);
     expect(q('[data-status]').textContent).toContain('Published v1');
+  });
+
+  it('shows the server publish validation errors inline and keeps the draft editable', async () => {
+    await press('Create new draft');
+    q('[data-add="TEXT"]').click();
+    await settle();
+    await press('Save draft');
+    vi.spyOn(api, 'publish').mockReturnValue(
+      throwError(() =>
+        apiError(400, 'PUBLISH_VALIDATION_FAILED', 'The form cannot be published: 2 problem(s).', {
+          'form:requires_ocr': [
+            { code: 'INVALID_FIELD_KEY', message: 'The server rejects this key.' },
+          ],
+          form: [{ code: 'SCHEMA_VIOLATION', message: 'The server found a form-level problem.' }],
+        }),
+      ),
+    );
+    await press('Publish...');
+    await press('Publish version 2', document.body);
+
+    expect(q('[role=alert]').textContent).toContain('The server found 2 problems');
+    const issues = el().querySelector('.fd__issue-list')!.textContent!;
+    expect(issues).toContain('The server rejects this key.');
+    expect(issues).toContain('The server found a form-level problem.');
+    expect(q('[data-status]').textContent).toContain('Draft v2');
+    expect(button('Save draft')).toBeDefined();
+
+    // Editing clears the server's issues until the next publish attempt.
+    q('[data-add="TEXT"]').click();
+    await settle();
+    expect(el().querySelector('.fd__issue-list')?.textContent ?? '').not.toContain(
+      'The server rejects this key.',
+    );
+  });
+
+  it('offers a conflict dialog when the draft changed under the editor', async () => {
+    await press('Create new draft');
+    q('[data-add="TEXT"]').click();
+    await settle();
+    const save = vi
+      .spyOn(api, 'saveDraft')
+      .mockReturnValue(
+        throwError(() => apiError(409, 'CONCURRENCY_CONFLICT', 'Someone else changed this.')),
+      );
+    await press('Save draft');
+
+    expect(q('[data-dialog="conflict"]', document.body)).not.toBeNull();
+    expect(el().querySelector('[role=alert]')).toBeNull();
+
+    // Keep my changes: the latest version is reloaded but the local edits stay.
+    save.mockRestore();
+    await press('Keep my changes', document.body);
+    expect(document.body.querySelector('[data-dialog="conflict"]')).toBeNull();
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+    expect(q('[role=status]:not(.fd__sr)').textContent).toContain('Your edits are kept');
+    await press('Save draft');
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+  });
+
+  it('reloads the latest draft and drops local edits from the conflict dialog', async () => {
+    await press('Create new draft');
+    q('[data-add="TEXT"]').click();
+    await settle();
+    vi.spyOn(api, 'saveDraft').mockReturnValue(
+      throwError(() => apiError(409, 'CONCURRENCY_CONFLICT', 'Someone else changed this.')),
+    );
+    await press('Save draft');
+    await press('Reload latest', document.body);
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
   });
 
   it('retires a published version after confirmation', async () => {
