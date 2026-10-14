@@ -1,3 +1,5 @@
+import { DestroyRef, inject } from '@angular/core';
+
 /** Next `sort` value when a column header is activated: ascending, then descending, then ascending again. */
 export function nextSort(current: string | null | undefined, field: string): string {
   return current === field ? `-${field}` : field;
@@ -29,4 +31,20 @@ export function parsePage(value: string | number | null | undefined): number {
 
 export function parseStatus(value: string | null | undefined): StatusFilter {
   return value === 'inactive' || value === 'all' ? value : 'active';
+}
+
+/**
+ * A function that runs `fn` once `ms` after its last call, so a list can search while the user types. Call in an injection context;
+ * a pending call is dropped when the component is destroyed.
+ */
+export function debounced<A extends unknown[]>(
+  fn: (...args: A) => void,
+  ms = 350,
+): (...args: A) => void {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  inject(DestroyRef).onDestroy(() => clearTimeout(timer));
+  return (...args: A) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  };
 }

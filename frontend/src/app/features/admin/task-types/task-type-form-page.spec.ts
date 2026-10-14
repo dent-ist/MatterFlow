@@ -1,4 +1,3 @@
-import { DOCUMENT } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -6,7 +5,7 @@ import { throwError } from 'rxjs';
 
 import { apiError } from '../../../core/lookups/lookups-testing';
 import {
-  UNSAVED_CHANGES_MESSAGE,
+  LeaveConfirmService,
   unsavedChangesGuard,
 } from '../../../shared/guards/unsaved-changes.guard';
 import { FormDesignerApi } from './form-designer-api';
@@ -215,32 +214,27 @@ describe('TaskTypeFormPage', () => {
 });
 
 describe('unsavedChangesGuard', () => {
-  function run(dirty: boolean, answer: boolean): { result: unknown; asked: boolean } {
-    let asked = false;
-    const doc = {
-      defaultView: {
-        confirm: (message: string) => {
-          asked = true;
-          expect(message).toBe(UNSAVED_CHANGES_MESSAGE);
-          return answer;
-        },
-      },
-    };
-    TestBed.configureTestingModule({ providers: [{ provide: DOCUMENT, useValue: doc }] });
-    const result = TestBed.runInInjectionContext(() =>
+  function run(dirty: boolean): unknown {
+    return TestBed.runInInjectionContext(() =>
       unsavedChangesGuard({ hasUnsavedChanges: () => dirty }, null!, null!, null!),
     );
-    return { result, asked };
   }
 
   it('lets clean screens go without asking', () => {
-    expect(run(false, false)).toEqual({ result: true, asked: false });
+    expect(run(false)).toBe(true);
+    expect(TestBed.inject(LeaveConfirmService).open()).toBe(false);
   });
 
-  it('asks when dirty and honours the answer', () => {
-    TestBed.resetTestingModule();
-    expect(run(true, false)).toEqual({ result: false, asked: true });
-    TestBed.resetTestingModule();
-    expect(run(true, true)).toEqual({ result: true, asked: true });
+  it('asks in the themed dialog when dirty and honours the answer', async () => {
+    const service = TestBed.inject(LeaveConfirmService);
+    const stay = run(true) as Promise<boolean>;
+    expect(service.open()).toBe(true);
+    service.answer(false);
+    expect(await stay).toBe(false);
+    expect(service.open()).toBe(false);
+
+    const leave = run(true) as Promise<boolean>;
+    service.answer(true);
+    expect(await leave).toBe(true);
   });
 });

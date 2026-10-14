@@ -22,7 +22,11 @@ import {
 } from '../../../api/generated/api-client';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { metaNumber, serverFormErrors } from '../../../shared/forms/api-errors';
-import { CustomFieldsEditor, splitFormErrors } from '../../../shared/ui/custom-fields';
+import {
+  CustomFieldsEditor,
+  customFieldsProblem,
+  splitFormErrors,
+} from '../../../shared/ui/custom-fields';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { TextField } from '../../../shared/ui/text-field';
@@ -275,7 +279,8 @@ export class ProjectFormPage implements HasUnsavedChanges {
     if (this.name().trim() === '') problems.push('Enter a project name.');
     this.customErrors.set([]);
     const custom = this.customEditor()?.collect(this.isEdit() ? this.customValues() : undefined);
-    if (custom?.invalid) problems.push('Complete the highlighted custom fields.');
+    const customProblem = customFieldsProblem(custom);
+    if (customProblem) problems.push(customProblem);
     if (problems.length > 0) {
       this.summary.set(problems);
       return;

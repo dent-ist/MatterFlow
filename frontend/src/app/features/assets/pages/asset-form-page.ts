@@ -412,9 +412,19 @@ export class AssetFormPage implements HasUnsavedChanges {
     if (referenceProblem) problems.push(referenceProblem);
 
     // Reveals the type-specific errors inline and gives the values to send.
-    const evaluation = this.dynamicForm()?.validate();
+    // An existing asset whose type fields the user did not touch is saved without them, so a newly required field never blocks it.
+    const untouchedEdit = this.isEdit() && !this.formTouched();
+    const evaluation = untouchedEdit ? undefined : this.dynamicForm()?.validate();
     if (evaluation && evaluation.errors.length > 0) {
-      problems.push('Complete the highlighted fields.');
+      const keys = new Set(evaluation.errors.map((e) => e.fieldKey));
+      const names = (this.schema()?.fields ?? [])
+        .filter((f) => keys.has(f.key))
+        .map((f) => f.label?.trim() || f.key);
+      problems.push(
+        names.length > 0
+          ? `Complete the highlighted fields: ${names.join(', ')}.`
+          : 'Complete the highlighted fields.',
+      );
     }
     if (problems.length > 0) {
       this.summary.set(problems);
@@ -432,7 +442,7 @@ export class AssetFormPage implements HasUnsavedChanges {
               displayName: this.displayName().trim(),
               externalReference: reference,
               description,
-              formValues: this.schema() ? this.patchOf(normalized) : undefined,
+              formValues: this.schema() && !untouchedEdit ? this.patchOf(normalized) : undefined,
               rowVersion: this.original()!.rowVersion,
             }),
           )

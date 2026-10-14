@@ -1,4 +1,3 @@
-import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,8 +5,10 @@ import {
   OnInit,
   computed,
   inject,
+  input,
   signal,
 } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 
@@ -24,7 +25,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import {
   HasUnsavedChanges,
-  UNSAVED_CHANGES_MESSAGE,
+  LeaveConfirmService,
 } from '../../../shared/guards/unsaved-changes.guard';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -41,14 +42,18 @@ const SEARCH_DEBOUNCE_MS = 200;
 @Component({
   selector: 'mf-pods-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Button, HasPermissionDirective],
+  imports: [Button, HasPermissionDirective, RouterLink],
   templateUrl: './pods-page.html',
   styleUrl: './pods-page.scss',
 })
 export class PodsPage implements OnInit, OnDestroy, HasUnsavedChanges {
   private readonly api = inject(PodsClient);
   private readonly notify = inject(NotificationService);
-  private readonly document = inject(DOCUMENT);
+  private readonly router = inject(Router);
+
+  /** Query parameter `pod`: a pod id or `new`, so a reload or a shared link returns to the same editor. */
+  readonly pod = input<string | undefined>(undefined);
+  private readonly leaveConfirm = inject(LeaveConfirmService);
   protected readonly auth = inject(AuthStore);
 
   // ---- list
@@ -100,7 +105,30 @@ export class PodsPage implements OnInit, OnDestroy, HasUnsavedChanges {
   private candidateTimer: ReturnType<typeof setTimeout> | undefined;
 
   ngOnInit(): void {
-    void this.load();
+    void this.load().then(() => this.openFromUrl());
+  }
+
+  private async openFromUrl(): Promise<void> {
+    const pod = this.pod();
+    if (!pod || this.editorOpen()) return;
+    if (pod === 'new') {
+      this.openEditor(null, '', '', true);
+      return;
+    }
+    const id = Number(pod);
+    if (!Number.isInteger(id)) return;
+    try {
+      const detail = await firstValueFrom(this.api.getPod(id));
+      this.openEditor(detail, detail.pod.name, detail.pod.description ?? '', detail.pod.isActive);
+    } catch {
+      this.syncUrl(null); // an unknown pod: stay on the list
+    }
+  }
+
+  private syncUrl(pod: string | null): void {
+    void this.router
+      .navigate([], { queryParams: { pod }, queryParamsHandling: 'merge', replaceUrl: true })
+      .catch(() => undefined);
   }
 
   ngOnDestroy(): void {
@@ -156,13 +184,13 @@ export class PodsPage implements OnInit, OnDestroy, HasUnsavedChanges {
 
   // ---- editor actions
 
-  protected newPod(): void {
-    if (!this.leaveEditor()) return;
+  protected async newPod(): Promise<void> {
+    if (!(await this.leaveEditor())) return;
     this.openEditor(null, '', '', true);
   }
 
   protected async edit(summary: PodSummary): Promise<void> {
-    if (!this.leaveEditor()) return;
+    if (!(await this.leaveEditor())) return;
     try {
       const detail = await firstValueFrom(this.api.getPod(summary.podId));
       this.openEditor(detail, detail.pod.name, detail.pod.description ?? '', detail.pod.isActive);
@@ -171,10 +199,11 @@ export class PodsPage implements OnInit, OnDestroy, HasUnsavedChanges {
     }
   }
 
-  protected close(): void {
-    if (!this.leaveEditor()) return;
+  protected async close(): Promise<void> {
+    if (!(await this.leaveEditor())) return;
     this.editorOpen.set(false);
     this.detail.set(null);
+    this.syncUrl(null);
   }
 
   protected onName(event: Event): void {
@@ -218,7 +247,6 @@ export class PodsPage implements OnInit, OnDestroy, HasUnsavedChanges {
           )
         : await firstValueFrom(this.api.createPod({ name, description }));
       this.openEditor(saved, saved.pod.name, saved.pod.description ?? '', saved.pod.isActive);
-      this.announce.set(current ? 'Pod saved.' : 'Pod created.');
       this.notify.success(current ? 'Pod saved' : 'Pod created');
       void this.load();
     } catch (error) {
@@ -339,10 +367,11 @@ export class PodsPage implements OnInit, OnDestroy, HasUnsavedChanges {
     this.selected.set([]);
     this.announce.set('');
     this.editorOpen.set(true);
+    this.syncUrl(detail ? String(detail.pod.podId) : 'new');
   }
 
-  private leaveEditor(): boolean {
-    return !this.dirty() || (this.document.defaultView?.confirm(UNSAVED_CHANGES_MESSAGE) ?? true);
+  private async leaveEditor(): Promise<boolean> {
+    return !this.dirty() || (await this.leaveConfirm.ask());
   }
 
   private showSaveError(error: unknown, name: string): void {

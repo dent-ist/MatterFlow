@@ -2,7 +2,8 @@
   <div>
     <h1 class="pods__title">Pods</h1>
     <p class="pods__muted">
-      Pod leads are a role. Assign the Pod Lead role under Users &amp; Roles.
+      Pod leads are a role. Assign the Pod Lead role under
+      <a routerLink="/admin/users" class="pods__link">Users &amp; Roles</a>.
     </p>
   </div>
   <p-button
@@ -133,6 +134,9 @@
                       (member.isPrimary ? 'Clear primary pod for ' : 'Make primary pod for ') +
                       member.displayName
                     "
+                    [attr.title]="
+                      member.isPrimary ? 'Primary pod: click to clear' : 'Make this the primary pod'
+                    "
                     [disabled]="busy() || !auth.has('Pod.ManageMembers') || !detail()!.pod.isActive"
                     (click)="togglePrimary(member)"
                   >
@@ -251,7 +255,9 @@
             @for (pod of pods(); track pod.podId) {
               <tr [attr.data-pod]="pod.podId">
                 <td>
-                  <strong>{{ pod.name }}</strong>
+                  <button type="button" class="pods__name" (click)="edit(pod)">
+                    {{ pod.name }}
+                  </button>
                   @if (pod.description) {
                     <div class="pods__muted">{{ pod.description }}</div>
                   }

@@ -320,7 +320,7 @@ export class MatterDetailPage {
   protected readonly state = signal<LoadState>('loading');
   protected readonly matter = signal<MatterResponse | null>(null);
   protected readonly projects = signal<ProjectResponse[]>([]);
-  protected readonly tab = signal<Tab>('projects');
+  protected readonly tab = signal<Tab>('tasks');
   protected readonly toggleOpen = signal(false);
   protected readonly blockedOpen = signal(false);
   protected readonly blockedCount = signal(0);

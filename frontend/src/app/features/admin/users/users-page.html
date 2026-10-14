@@ -5,20 +5,22 @@
   }
 </header>
 
-<div class="mf-tabs" role="tablist" aria-label="Users">
-  @for (t of tabs; track t.id) {
-    <button
-      type="button"
-      role="tab"
-      class="mf-tab"
-      [attr.data-tab]="t.id"
-      [attr.aria-selected]="tab() === t.id"
-      [class.mf-active]="tab() === t.id"
-      (click)="selectTab(t.id)"
-    >
-      {{ t.label }} ({{ countFor(t.id) }})
-    </button>
-  }
+<div class="mf-tabs">
+  <div class="mf-tablist" role="tablist" aria-label="Users">
+    @for (t of tabs; track t.id) {
+      <button
+        type="button"
+        role="tab"
+        class="mf-tab"
+        [attr.data-tab]="t.id"
+        [attr.aria-selected]="tab() === t.id"
+        [class.mf-active]="tab() === t.id"
+        (click)="selectTab(t.id)"
+      >
+        {{ t.label }} ({{ countFor(t.id) }})
+      </button>
+    }
+  </div>
   <label class="mf-search">
     <span class="mf-sr">Search users</span>
     <input
@@ -194,8 +196,15 @@
       <!-- EXTENSION POINT (Pods ticket): the Organization module adds pod membership (primary pod, pods list) here. -->
 
       <section class="mf-effective" aria-label="Effective permissions">
-        <h3>Effective permissions ({{ u.effectivePermissions.length }})</h3>
-        @if (u.effectivePermissions.length === 0) {
+        <h3>
+          Effective permissions
+          @if (!rolesChanged()) {
+            ({{ u.effectivePermissions.length }})
+          }
+        </h3>
+        @if (rolesChanged()) {
+          <p class="mf-muted" data-permissions-stale>Permissions update after you save.</p>
+        } @else if (u.effectivePermissions.length === 0) {
           <p class="mf-muted">No permissions. This user stays in Access Pending.</p>
         } @else {
           <ul>

@@ -1,4 +1,5 @@
 :host {
+  --mf-header-h: 3.75rem;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -26,6 +27,10 @@
   padding: var(--mf-s2) var(--mf-s5);
   background: var(--mf-surface);
   border-bottom: 1px solid var(--mf-border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: var(--mf-header-h);
 }
 
 .mf-logo {
@@ -83,6 +88,12 @@
   padding: var(--mf-s3);
   background: var(--mf-surface);
   border-right: 1px solid var(--mf-border);
+  /* Stays in view while the page scrolls; scrolls itself when the window is shorter than the menu. */
+  position: sticky;
+  top: var(--mf-header-h);
+  align-self: flex-start;
+  max-height: calc(100vh - var(--mf-header-h));
+  overflow-y: auto;
 
   ul {
     list-style: none;

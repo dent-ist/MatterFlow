@@ -203,3 +203,8 @@ tr.mf-selected {
     width: 100%;
   }
 }
+
+.mf-tablist {
+  display: flex;
+  gap: var(--mf-s2);
+}

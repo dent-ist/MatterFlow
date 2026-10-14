@@ -18,3 +18,26 @@ body {
   outline: 2px solid var(--mf-focus);
   outline-offset: 2px;
 }
+
+/* Consistent native controls (UAT-10): themed accent and a comfortable hit area. */
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--mf-primary);
+  width: 1.125rem;
+  height: 1.125rem;
+  cursor: pointer;
+}
+
+input[type='checkbox']:disabled,
+input[type='radio']:disabled {
+  cursor: default;
+}
+
+a:not([class]) {
+  color: var(--mf-link);
+}
+
+/* PrimeNG small buttons stay readable (they rendered at about 11px). */
+.p-button.p-button-sm {
+  font-size: 0.875rem;
+}

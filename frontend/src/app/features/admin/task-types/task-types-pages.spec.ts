@@ -215,3 +215,15 @@ describe('TaskTypeEditPage', () => {
     expect(q<HTMLInputElement>('[data-workflow="3"]').checked).toBe(true);
   });
 });
+
+describe('TaskTypeEditPage workflow labels', () => {
+  it('shows "not published yet" once, with the plain workflow name', async () => {
+    configure();
+    const fixture = TestBed.createComponent(TaskTypeEditPage);
+    fixture.componentRef.setInput('id', '1');
+    await settle(fixture);
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Production (not published yet)');
+    expect(text).not.toContain('(not published yet) (not published yet)');
+  });
+});

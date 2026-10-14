@@ -101,7 +101,16 @@ const UNORDERED_TEXT =
               [disabled]="busy() || !dirty()"
               (onClick)="save()"
             />
-            <p-button label="Publish..." [disabled]="busy()" (onClick)="startPublish()" />
+            <p-button
+              label="Publish..."
+              [disabled]="busy() || rows().length === 0"
+              (onClick)="startPublish()"
+            />
+            @if (rows().length === 0) {
+              <span class="pg-muted" data-publish-hint>
+                Add at least one step before you can publish.
+              </span>
+            }
             <p-button
               label="Discard draft"
               severity="secondary"

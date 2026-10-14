@@ -121,6 +121,28 @@ describe('DynamicForm', () => {
     );
   });
 
+  it('rejects non-numeric text in a number control and accepts a decimal', async () => {
+    await create({ fields: [{ key: 'size', control: 'NUMBER', label: 'Size' }] });
+    const emitted: Record<string, unknown>[] = [];
+    fixture.componentInstance.valuesChange.subscribe((v) => emitted.push(v));
+    const input = field('size')!.querySelector<HTMLInputElement>('input')!;
+    input.value = '12abc';
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+    await stable();
+    expect(field('size')!.textContent).toContain('Enter a number, for example 250.5');
+    expect(input.value).toBe('12abc');
+    expect(fixture.componentInstance.validate().errors).toEqual([
+      { fieldKey: 'size', code: 'INVALID_TYPE' },
+    ]);
+    input.value = '250.5';
+    input.dispatchEvent(new Event('input'));
+    await stable();
+    expect(field('size')!.textContent).not.toContain('Enter a number');
+    expect(emitted.at(-1)).toEqual({ size: 250.5 });
+    expect(fixture.componentInstance.validate().errors).toEqual([]);
+  });
+
   it('renders values as text in read-only mode', async () => {
     await create(
       OCR_FORM,

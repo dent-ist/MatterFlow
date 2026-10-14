@@ -12,7 +12,7 @@ import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { AssetListItem, AssetsClient } from '../../api/generated/api-client';
 import { HasPermissionDirective } from '../directives/has-permission.directive';
-import { StatusFilter, isActiveParam } from './list-helpers';
+import { StatusFilter, isActiveParam, debounced } from './list-helpers';
 import { Pager } from './pager';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -38,6 +38,7 @@ type LoadState = 'loading' | 'ready' | 'error';
           placeholder="Name, type or reference"
           [value]="q()"
           (keydown.enter)="search(searchBox.value)"
+          (input)="searchLater(searchBox.value)"
           (blur)="search(searchBox.value)"
         />
       </div>
@@ -174,6 +175,8 @@ export class MatterAssets {
       if (id === this.requestId) this.state.set('error');
     }
   }
+
+  protected readonly searchLater = debounced((text: string) => this.search(text));
 
   protected search(text: string): void {
     const q = text.trim();

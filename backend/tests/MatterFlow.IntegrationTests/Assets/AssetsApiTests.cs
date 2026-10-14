@@ -401,6 +401,38 @@ public sealed class AssetsApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task An_asset_without_stored_values_is_edited_freely_until_a_value_is_entered_then_all_required_fields_are_named()
+    {
+        var matterId = await CreateMatterAsync();
+        var typeId = (await CreateTypeAsync()).GetProperty("assetTypeId").GetInt32();
+        var asset = await CreateAssetAsync(matterId, typeId); // created before the type has any form
+        var id = asset.GetProperty("assetId").GetInt32();
+        await PublishFormAsync(typeId, DocumentFields);
+
+        var renamed = await OkAsync(await As().PutAsync(
+            $"/api/v1/assets/{id}",
+            Json($$"""{"displayName":"Renamed","formValues":{},"rowVersion":"{{asset.GetProperty("rowVersion").GetString()}}"}""")));
+        renamed.GetProperty("displayName").GetString().ShouldBe("Renamed");
+
+        var problem = await ProblemAsync(
+            await As().PutAsync($"/api/v1/assets/{id}", Json($$"""{"displayName":"Renamed","formValues":{"notes":"x"},"rowVersion":"{{renamed.GetProperty("rowVersion").GetString()}}"}""")),
+            HttpStatusCode.BadRequest,
+            "FORM_VALIDATION_FAILED");
+        problem.GetProperty("errors").GetProperty("form:pages")[0].GetProperty("code").GetString().ShouldBe("REQUIRED");
+    }
+
+    [Fact]
+    public async Task A_number_sent_as_text_is_a_field_error_not_a_silently_dropped_value()
+    {
+        var (matterId, typeId, _) = await SetUpAsync();
+        var problem = await ProblemAsync(
+            await As().PostAsync("/api/v1/assets", Json($$"""{"matterId":{{matterId}},"assetTypeId":{{typeId}},"displayName":"A","formValues":{"pages":"12abc"} }""")),
+            HttpStatusCode.BadRequest,
+            "FORM_VALIDATION_FAILED");
+        problem.GetProperty("errors").GetProperty("form:pages")[0].GetProperty("code").GetString().ShouldBe("INVALID_TYPE");
+    }
+
+    [Fact]
     public async Task Concurrent_edits_are_detected_with_the_row_version()
     {
         var (matterId, typeId, _) = await SetUpAsync();

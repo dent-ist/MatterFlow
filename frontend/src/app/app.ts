@@ -1,17 +1,43 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { NgComponentOutlet } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  Type,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Toast } from 'primeng/toast';
+import { LeaveConfirmService } from './shared/guards/unsaved-changes.guard';
 import { DevAuthBanner } from './shared/layout/dev-auth-banner';
 
-/** Root: dev-auth banner (stub provider only), routed content, global toast host. */
+/** Root: dev-auth banner (stub provider only), routed content, global toast host and the lazy "Leave without saving?" dialog. */
 @Component({
   selector: 'mf-root',
-  imports: [RouterOutlet, Toast, DevAuthBanner],
+  imports: [RouterOutlet, Toast, DevAuthBanner, NgComponentOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-dev-auth-banner />
     <router-outlet />
-    <p-toast position="top-right" />
+    <p-toast position="bottom-right" />
+    @if (leaveHost(); as host) {
+      <ng-container *ngComponentOutlet="host" />
+    }
   `,
 })
-export class App {}
+export class App {
+  private readonly leaveConfirm = inject(LeaveConfirmService);
+  protected readonly leaveHost = signal<Type<unknown> | null>(null);
+
+  constructor() {
+    // The dialog (PrimeNG dialog + button) loads the first time a screen asks to be left.
+    effect(() => {
+      if (!this.leaveConfirm.open() || untracked(this.leaveHost)) return;
+      void import('./shared/guards/leave-confirm-host').then((m) =>
+        this.leaveHost.set(m.LeaveConfirmHost),
+      );
+    });
+  }
+}

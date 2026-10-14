@@ -107,9 +107,9 @@ public sealed class CustomFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
         var withEmpty = await UpdateMatterAsync(renamed, "{}");
         withEmpty.GetProperty("formValues").EnumerateObject().ShouldBeEmpty();
         var optionalOnly = await UpdateMatterAsync(withEmpty, """{"notes":"later"}""", HttpStatusCode.BadRequest);
-        optionalOnly.GetProperty("code").GetString().ShouldBe("FORM_VALIDATION_FAILED"); // first stored values must be complete
+        optionalOnly.GetProperty("code").GetString().ShouldBe("FORM_VALIDATION_FAILED"); // entering a value touches the section: required fields must be complete
 
-        // For a record that already has values, only the changed fields are validated.
+        // A record whose values are complete can change one of them.
         var edited = await UpdateMatterAsync(read, """{"notes":"changed"}""");
         edited.GetProperty("formValues").GetProperty("practice_area").GetString().ShouldBe("M&A");
         edited.GetProperty("formValues").GetProperty("notes").GetString().ShouldBe("changed");
@@ -120,7 +120,7 @@ public sealed class CustomFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task A_field_made_required_later_does_not_block_unrelated_edits_of_a_record_that_has_values()
+    public async Task A_field_made_required_later_never_blocks_an_edit_that_leaves_the_custom_fields_alone()
     {
         var clientId = await CreateClientAsync();
         await PublishFormAsync("Matter", Field("notes", "TEXT"));
@@ -128,9 +128,19 @@ public sealed class CustomFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
 
         await PublishFormAsync("Matter", Field("notes", "TEXT"), Field("practice_area", "TEXT", """ "required":true"""));
 
-        var edited = await UpdateMatterAsync(matter, """{"notes":"b"}""");
-        edited.GetProperty("formValues").GetProperty("notes").GetString().ShouldBe("b");
-        edited.GetProperty("formVersionId").GetInt32().ShouldBe(edited.GetProperty("publishedFormVersionId").GetInt32());
+        // No custom values sent, or the same values sent back: the record is edited without validating the new required field.
+        var renamed = await UpdateMatterAsync(matter, null);
+        var sameValues = await UpdateMatterAsync(renamed, """{"notes":"a"}""");
+        sameValues.GetProperty("name").GetString().ShouldBe("Merger 2");
+
+        // Changing a custom value touches the section (decisions addendum P): every required field of it must be satisfied, named per field.
+        var touched = await UpdateMatterAsync(sameValues, """{"notes":"b"}""", HttpStatusCode.BadRequest);
+        touched.GetProperty("code").GetString().ShouldBe("FORM_VALIDATION_FAILED");
+        touched.GetProperty("errors").GetProperty("form:practice_area")[0].GetProperty("code").GetString().ShouldBe("REQUIRED");
+        touched.GetProperty("errors").TryGetProperty("form:notes", out _).ShouldBeFalse();
+
+        var complete = await UpdateMatterAsync(sameValues, """{"notes":"b","practice_area":"M&A"}""");
+        complete.GetProperty("formValues").GetProperty("practice_area").GetString().ShouldBe("M&A");
 
         // A new matter must satisfy the new required field.
         (await CreateMatterAsync(clientId, "2", """{"notes":"c"}""", HttpStatusCode.BadRequest)).GetProperty("code").GetString().ShouldBe("FORM_VALIDATION_FAILED");

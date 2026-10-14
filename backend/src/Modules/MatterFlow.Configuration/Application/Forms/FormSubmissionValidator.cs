@@ -60,7 +60,10 @@ internal sealed class FormSubmissionValidator(FormSchemaLoader loader) : IFormSu
 
         var only = options.ValidateOnly is null ? null : options.ValidateOnly.ToHashSet(StringComparer.Ordinal);
         var errors = result.Errors
-            .Where(e => only is null || e.Code == FormErrorCode.UnknownField || only.Contains(e.FieldKey))
+            .Where(e => only is null
+                || e.Code == FormErrorCode.UnknownField
+                || only.Contains(e.FieldKey)
+                || (options.RequireAllWhenChanged && only.Count > 0 && e.Code == FormErrorCode.Required))
             .Select(e => new FormSubmissionError(e.FieldKey, e.Code.ToWireName(), e.Message))
             .ToList();
 

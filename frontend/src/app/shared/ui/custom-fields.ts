@@ -43,10 +43,20 @@ async function loadSchema(
   }
 }
 
+/** The summary line for invalid custom fields, naming each field; null when all are valid. */
+export function customFieldsProblem(custom: CollectedCustomFields | undefined): string | null {
+  if (!custom?.invalid) return null;
+  return custom.invalidFields.length > 0
+    ? `Complete the highlighted custom fields: ${custom.invalidFields.join(', ')}.`
+    : 'Complete the highlighted custom fields.';
+}
+
 /** What `collect()` hands to the page. */
 export interface CollectedCustomFields {
   /** True when a visible custom field is invalid; the errors are shown inline. */
   invalid: boolean;
+  /** Labels of the invalid fields, in form order (for the summary line). */
+  invalidFields: string[];
   /** Values to send: all values on create, a patch (changed values, `null` for cleared ones) on edit; undefined without a form. */
   values: Record<string, unknown> | undefined;
 }
@@ -67,7 +77,7 @@ export interface CollectedCustomFields {
           [definition]="definition"
           [values]="values()"
           [serverErrors]="serverErrors()"
-          (valuesChange)="touched.emit()"
+          (valuesChange)="changed()"
         />
       </fieldset>
     }
@@ -98,6 +108,8 @@ export class CustomFieldsEditor {
 
   private readonly forms = inject(FormsClient);
   private readonly dynamicForm = viewChild(DynamicForm);
+  /** True once the user entered or changed a value in this section. */
+  private readonly userTouched = signal(false);
 
   protected readonly schema = signal<FormDefinition | null>(null);
 
@@ -108,21 +120,38 @@ export class CustomFieldsEditor {
     });
   }
 
-  /** Validates the visible fields (revealing errors inline) and returns the values to send. */
+  protected changed(): void {
+    this.userTouched.set(true);
+    this.touched.emit();
+  }
+
+  /**
+   * Validates the visible fields (revealing errors inline, red border) and returns the values to send. When editing an existing record
+   * whose custom-fields section the user did not touch, nothing is validated or sent, so new required fields never block the save
+   * (decisions addendum P).
+   */
   collect(original?: Record<string, unknown>): CollectedCustomFields {
     const schema = this.schema();
     const form = this.dynamicForm();
-    if (!schema || !form) return { invalid: false, values: undefined };
+    if (!schema || !form) return { invalid: false, invalidFields: [], values: undefined };
+    if (original && !this.userTouched())
+      return { invalid: false, invalidFields: [], values: undefined };
     const evaluation = form.validate();
-    if (evaluation.errors.length > 0) return { invalid: true, values: undefined };
+    if (evaluation.errors.length > 0) {
+      const invalidKeys = new Set(evaluation.errors.map((e) => e.fieldKey));
+      const invalidFields = schema.fields
+        .filter((f) => invalidKeys.has(f.key))
+        .map((f) => f.label?.trim() || f.key);
+      return { invalid: true, invalidFields, values: undefined };
+    }
     const normalized = evaluation.normalized ?? {};
-    if (!original) return { invalid: false, values: normalized };
+    if (!original) return { invalid: false, invalidFields: [], values: normalized };
     const known = new Set(schema.fields.map((f) => f.key));
     const patch: Record<string, unknown> = { ...normalized };
     for (const key of Object.keys(original)) {
       if (known.has(key) && !(key in normalized)) patch[key] = null;
     }
-    return { invalid: false, values: patch };
+    return { invalid: false, invalidFields: [], values: patch };
   }
 }
 

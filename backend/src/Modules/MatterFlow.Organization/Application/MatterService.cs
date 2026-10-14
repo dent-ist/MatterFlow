@@ -41,7 +41,16 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
         {
             if (TryParsePair(q, out var clientNumber, out var matterNumber))
             {
-                rows = rows.Where(r => r.Matter.ClientNumber == clientNumber && r.Matter.MatterNumber == matterNumber);
+                // Search-as-you-type: `343-99` also finds matters whose unpadded number starts with 99 (00343-99999), besides the exact 00343-00099.
+                var typed = q[(q.IndexOf('-', StringComparison.Ordinal) + 1)..].Trim().TrimStart('0');
+                var prefixes = Enumerable.Range(0, BusinessNumber.Length - typed.Length + 1)
+                    .Select(zeros => clientNumber.Value + "-" + new string('0', zeros) + typed)
+                    .Concat(Enumerable.Repeat("#", BusinessNumber.Length))
+                    .Take(BusinessNumber.Length)
+                    .ToArray(); // "#" never matches; fixed arity keeps the query translatable
+                rows = rows.Where(r => (r.Matter.ClientNumber == clientNumber && r.Matter.MatterNumber == matterNumber)
+                    || (typed.Length > 0 && (r.Matter.MatterRef.StartsWith(prefixes[0]) || r.Matter.MatterRef.StartsWith(prefixes[1])
+                        || r.Matter.MatterRef.StartsWith(prefixes[2]) || r.Matter.MatterRef.StartsWith(prefixes[3]) || r.Matter.MatterRef.StartsWith(prefixes[4]))));
             }
             else if (BusinessNumber.TryParse(q, out var number))
             {

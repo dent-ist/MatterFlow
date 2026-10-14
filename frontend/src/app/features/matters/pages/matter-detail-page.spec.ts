@@ -108,7 +108,11 @@ describe('MatterDetailPage', () => {
     expect(
       Array.from(el().querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
     ).toEqual(['Tasks (0 open)', 'Projects (1)', 'Assets', 'Details']);
+    // The first tab (Tasks) is selected on open.
+    expect(el().querySelector('[data-placeholder=tasks]')).not.toBeNull();
     expect(projects.listProjects).toHaveBeenCalledWith(undefined, 7, undefined, 1, 100, 'name');
+    tab('Projects').click();
+    await settle(fixture);
     expect(el().querySelector('tbody a')?.getAttribute('href')).toBe('/projects/3');
 
     tab('Tasks').click();

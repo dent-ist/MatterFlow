@@ -1,6 +1,6 @@
 <header class="head">
   <div>
-    <h1>Task link labels</h1>
+    <h1>Asset link roles</h1>
     <p class="muted">
       How an Asset relates to a Task: for example Source, Destination, Subject or Result.
     </p>
@@ -15,10 +15,10 @@
 
 @switch (state()) {
   @case ('loading') {
-    <p class="muted" data-loading>Loading link labels...</p>
+    <p class="muted" data-loading>Loading asset link roles...</p>
   }
   @case ('error') {
-    <p class="error" role="alert">Couldn't load link labels.</p>
+    <p class="error" role="alert">Couldn't load asset link roles.</p>
     <p-button label="Try again" severity="secondary" (onClick)="load()" />
   }
   @default {
@@ -27,7 +27,7 @@
     </p>
     <table class="grid" data-roles>
       <caption class="sr-only">
-        Task link labels in display order
+        Asset link roles in display order
       </caption>
       <thead>
         <tr>
@@ -165,7 +165,7 @@
     </table>
 
     <section class="add" *mfHasPermission="'AssetType.Manage'" aria-labelledby="add-heading">
-      <h2 id="add-heading">Add link label</h2>
+      <h2 id="add-heading">Add asset link role</h2>
       <form class="inline" (submit)="$event.preventDefault(); add()">
         <label for="new-name">Name (required)</label>
         <input
@@ -179,7 +179,7 @@
           [attr.aria-describedby]="addError() ? 'add-error' : null"
           data-new-name
         />
-        <p-button type="submit" label="Add link label" [disabled]="busy()" />
+        <p-button type="submit" label="Add asset link role" [disabled]="busy()" />
       </form>
       @if (addError()) {
         <p id="add-error" class="error" role="alert" data-add-error>{{ addError() }}</p>

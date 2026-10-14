@@ -151,3 +151,18 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+.pods__name {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--mf-link);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.pods__link {
+  color: var(--mf-link);
+}

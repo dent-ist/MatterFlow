@@ -17,6 +17,7 @@ import {
   RoleSummaryDto,
 } from '../../../core/identity-admin/identity-admin-api';
 import { NotificationService } from '../../../core/notify/notification.service';
+import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 
 /** The permission that every other permission of the same group needs (Assign requires View), if the catalog has one. */
 export function prerequisiteOf(code: string, all: ReadonlySet<string>): string | undefined {
@@ -28,7 +29,7 @@ export function prerequisiteOf(code: string, all: ReadonlySet<string>): string |
 /** S12 Admin: Roles and permissions. List with member counts, editor with the grouped permission matrix. */
 @Component({
   selector: 'mf-roles-page',
-  imports: [Button, RouterLink],
+  imports: [Button, RouterLink, ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './roles-page.html',
   styleUrl: './roles-page.scss',
@@ -52,6 +53,7 @@ export class RolesPage implements OnInit {
   protected readonly error = signal('');
   protected readonly nameError = signal('');
   protected readonly saving = signal(false);
+  protected readonly confirmingDelete = signal(false);
 
   protected readonly locked = computed(() => this.selected()?.isSystemAdmin ?? false);
   protected readonly allCodes = computed(
@@ -185,6 +187,7 @@ export class RolesPage implements OnInit {
 
   protected async remove(): Promise<void> {
     const role = this.selected();
+    this.confirmingDelete.set(false);
     if (!role || role.isSystemAdmin) return;
     this.error.set('');
     try {
@@ -204,7 +207,13 @@ export class RolesPage implements OnInit {
     } else if (err.code === 'DUPLICATE_NAME') {
       this.nameError.set('A role with this name already exists.');
     } else if (err.code === 'ROLE_IN_USE') {
-      this.error.set(err.message);
+      const count =
+        this.roles().find((r) => r.roleId === this.selected()?.roleId)?.memberCount ?? 0;
+      this.error.set(
+        count > 0
+          ? `${count === 1 ? '1 user has' : `${count} users have`} this role. Remove them from it before deleting.`
+          : 'People still have this role. Remove them from it before deleting.',
+      );
     } else if (err.code === 'CONCURRENCY_CONFLICT') {
       this.error.set('This role was changed by someone else. Reopen it to see the latest values.');
     } else {

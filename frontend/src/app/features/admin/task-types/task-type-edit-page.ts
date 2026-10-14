@@ -160,9 +160,10 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
   }
 
   protected workflowLabel(w: WorkflowOption): string {
+    const name = w.isActive === false ? `${w.name} (inactive)` : w.name;
     return w.publishedVersionNo
-      ? `${w.name} (published v${w.publishedVersionNo})`
-      : `${w.name} (not published yet)`;
+      ? `${name} (published v${w.publishedVersionNo})`
+      : `${name} (not published yet)`;
   }
 
   protected formSummary(t: TaskTypeView | null): string {

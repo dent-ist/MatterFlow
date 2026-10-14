@@ -23,7 +23,11 @@ import {
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { metaNumber, serverFormErrors } from '../../../shared/forms/api-errors';
-import { CustomFieldsEditor, splitFormErrors } from '../../../shared/ui/custom-fields';
+import {
+  CustomFieldsEditor,
+  customFieldsProblem,
+  splitFormErrors,
+} from '../../../shared/ui/custom-fields';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { normalizeNumber } from '../../../shared/pipes/matter-ref.pipe';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -354,7 +358,8 @@ export class MatterFormPage implements HasUnsavedChanges {
     if (this.name().trim() === '') problems.push('Enter a matter name.');
     this.customErrors.set([]);
     const custom = this.customEditor()?.collect(this.isEdit() ? this.customValues() : undefined);
-    if (custom?.invalid) problems.push('Complete the highlighted custom fields.');
+    const customProblem = customFieldsProblem(custom);
+    if (customProblem) problems.push(customProblem);
     if (problems.length > 0) {
       this.summary.set(problems);
       return;
