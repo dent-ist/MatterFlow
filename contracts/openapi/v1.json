@@ -2367,17 +2367,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveRoleRequest"
+                "$ref": "#/components/schemas/UpdateRoleRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveRoleRequest"
+                "$ref": "#/components/schemas/UpdateRoleRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveRoleRequest"
+                "$ref": "#/components/schemas/UpdateRoleRequest"
               }
             }
           },
@@ -6867,8 +6867,7 @@
         "required": [
           "name",
           "description",
-          "permissionCodes",
-          "rowVersion"
+          "permissionCodes"
         ],
         "type": "object",
         "properties": {
@@ -6886,12 +6885,6 @@
             "items": {
               "type": "string"
             }
-          },
-          "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
           }
         }
       },
@@ -6970,10 +6963,7 @@
             "type": "boolean"
           },
           "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           }
         }
       },
@@ -6992,10 +6982,7 @@
             }
           },
           "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           }
         }
       },
@@ -7527,6 +7514,35 @@
           }
         }
       },
+      "UpdateRoleRequest": {
+        "required": [
+          "name",
+          "description",
+          "permissionCodes",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "permissionCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateStatusLabelRequest": {
         "required": [
           "displayLabel",
@@ -7647,10 +7663,7 @@
             ]
           },
           "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           }
         }
       },

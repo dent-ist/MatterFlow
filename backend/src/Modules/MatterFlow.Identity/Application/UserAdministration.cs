@@ -6,6 +6,7 @@ using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Time;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Identity.Application;
@@ -30,6 +31,7 @@ public sealed class UserAdministration(
     IUserAccessInvalidator invalidator,
     IAuditWriter audit,
     ICurrentUser currentUser,
+    IPermissionChecker callerPermissions,
     IClock clock)
 {
     /// <summary>Access Pending: active with no effective permission (same rule as <c>AccessSnapshot.IsPending</c>).</summary>
@@ -138,8 +140,15 @@ public sealed class UserAdministration(
             Convert.ToBase64String(row.User.RowVersion));
     }
 
-    /// <summary>Replaces the user's roles with <paramref name="roleIds"/> (grants the new ones, revokes the missing ones).</summary>
-    public async Task<Result<UserDetailDto>> SetRolesAsync(int userId, IReadOnlyCollection<int> roleIds, string? rowVersion, CancellationToken ct)
+    /// <summary>
+    /// Replaces the user's roles with <paramref name="roleIds"/> (grants the new ones, revokes the missing ones).
+    /// Privilege rules (SEC-01, permission-matrix PM-X-12): only a System Admin may grant or revoke the System Admin role, and a
+    /// caller may only grant a role whose permissions the caller holds themselves ("no grant above own level").
+    /// </summary>
+    public Task<Result<UserDetailDto>> SetRolesAsync(int userId, IReadOnlyCollection<int> roleIds, string? rowVersion, CancellationToken ct) =>
+        InAdminGuardAsync(() => SetRolesCoreAsync(userId, roleIds, rowVersion, ct), ct);
+
+    private async Task<Result<UserDetailDto>> SetRolesCoreAsync(int userId, IReadOnlyCollection<int> roleIds, string? rowVersion, CancellationToken ct)
     {
         var user = await db.Set<AppUser>().Include(u => u.Roles).ThenInclude(r => r.Role).FirstOrDefaultAsync(u => u.Id == userId, ct);
         if (user is null)
@@ -155,6 +164,15 @@ public sealed class UserAdministration(
 
         var toRevoke = user.Roles.Where(ur => !wanted.Contains(ur.RoleId)).ToList();
         var toGrant = wanted.Where(id => user.Roles.All(ur => ur.RoleId != id)).ToList();
+
+        if (!currentUser.IsSystemAdmin
+            && (toRevoke.Any(ur => ur.Role.IsSystemAdmin) || toGrant.Any(id => roles[id].IsSystemAdmin)))
+        {
+            return Error.Forbidden("Only a System Admin can grant or revoke the System Admin role.");
+        }
+
+        if (!currentUser.IsSystemAdmin && toGrant.Count > 0 && await FirstUnheldPermissionAsync(toGrant, ct) is { } unheld)
+            return Error.Forbidden($"You cannot grant a role that carries the permission '{unheld}', which you do not hold yourself.");
 
         if (toRevoke.Any(ur => ur.Role.IsSystemAdmin) && user.IsActive && await WouldLoseLastAdminAsync(userId, ct))
             return AdminGuards.LastAdminError();
@@ -182,7 +200,21 @@ public sealed class UserAdministration(
         return await GetAsync(userId, ct);
     }
 
-    public async Task<Result<UserDetailDto>> SetActiveAsync(int userId, bool isActive, string? rowVersion, CancellationToken ct)
+    /// <summary>The first permission carried by the given roles that the caller does not hold, or null when the caller covers all of them.</summary>
+    private async Task<string?> FirstUnheldPermissionAsync(IReadOnlyCollection<int> roleIds, CancellationToken ct)
+    {
+        var codes = await db.Set<RolePermission>()
+            .Where(rp => roleIds.Contains(rp.RoleId) && rp.Permission.IsActive)
+            .Select(rp => rp.Permission.Code)
+            .Distinct()
+            .ToListAsync(ct);
+        return codes.Order(StringComparer.Ordinal).FirstOrDefault(c => !callerPermissions.Has(c));
+    }
+
+    public Task<Result<UserDetailDto>> SetActiveAsync(int userId, bool isActive, string? rowVersion, CancellationToken ct) =>
+        InAdminGuardAsync(() => SetActiveCoreAsync(userId, isActive, rowVersion, ct), ct);
+
+    private async Task<Result<UserDetailDto>> SetActiveCoreAsync(int userId, bool isActive, string? rowVersion, CancellationToken ct)
     {
         if (currentUser.UserId is { } actor && AdminGuards.CheckSelfDeactivation(actor, userId, isActive) is { } self)
             return self;
@@ -195,6 +227,10 @@ public sealed class UserAdministration(
 
         if (user.IsActive != isActive)
         {
+            // A System Admin account can only be switched off or on by another System Admin (SEC-01 hardening).
+            if (!currentUser.IsSystemAdmin && await IsSystemAdminAsync(userId, ct))
+                return Error.Forbidden("Only a System Admin can activate or deactivate a System Admin.");
+
             if (!isActive && await WouldLoseLastAdminAsync(userId, ct))
                 return AdminGuards.LastAdminError();
 
@@ -213,6 +249,39 @@ public sealed class UserAdministration(
         }
 
         return await GetAsync(userId, ct);
+    }
+
+    private Task<bool> IsSystemAdminAsync(int userId, CancellationToken ct) =>
+        db.Set<UserRole>().AnyAsync(ur => ur.UserId == userId && ur.Role.IsSystemAdmin, ct);
+
+    /// <summary>
+    /// Runs an admin-affecting operation (role change, activation) under an exclusive application lock inside one transaction, so the
+    /// "at least one active System Admin" check and the write cannot interleave with another admin's operation (SEC-03). The lock is
+    /// released at commit or rollback. A deadlock victim (SQL 1205) becomes a retryable 409 instead of a 500 (SEC-17).
+    /// </summary>
+    private async Task<Result<UserDetailDto>> InAdminGuardAsync(Func<Task<Result<UserDetailDto>>> operation, CancellationToken ct)
+    {
+        if (db.Database.CurrentTransaction is not null)
+            return await operation();
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            await AdminGuardLock.AcquireAsync(db, ct);
+            var result = await operation();
+            if (result.IsFailure)
+            {
+                await transaction.RollbackAsync(ct);
+                return result;
+            }
+
+            await transaction.CommitAsync(ct);
+            return result;
+        }
+        catch (Exception ex) when (ex is SqlException { Number: 1205 } || ex.InnerException is SqlException { Number: 1205 })
+        {
+            return Error.Conflict(ErrorCodes.ConcurrencyConflict, "The system was busy with another administrative change. Reload and try again.");
+        }
     }
 
     /// <summary>Edits display name and e-mail (needed when the directory lookup is off).</summary>
@@ -248,7 +317,7 @@ public sealed class UserAdministration(
     }
 
     private static Error? CheckVersion(AppUser user, string? rowVersion) =>
-        rowVersion is not null && !string.Equals(rowVersion, Convert.ToBase64String(user.RowVersion), StringComparison.Ordinal)
+        !string.Equals(rowVersion, Convert.ToBase64String(user.RowVersion), StringComparison.Ordinal)
             ? Error.Conflict(ErrorCodes.ConcurrencyConflict, "The user was changed by someone else. Reload and try again.")
             : null;
 
