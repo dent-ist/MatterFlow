@@ -99,8 +99,18 @@ export class Api {
     return { status: response.status(), body: parsed };
   }
 
+  /**
+   * Performs the call and returns the parsed body; throws on a non-2xx answer. A 500 `INTERNAL_ERROR` is retried once after a short
+   * pause: on a cold database concurrent setup calls occasionally lose a SQL Server deadlock (see docs/qa/e2e-findings.md, E2E-F3),
+   * the transaction is rolled back and the same call succeeds. The retry is logged so it stays visible.
+   */
   async call<T = Json>(method: string, path: string, body?: unknown): Promise<T> {
-    const result = await this.raw(method, path, body);
+    let result = await this.raw(method, path, body);
+    if (result.status === 500 && result.body?.code === 'INTERNAL_ERROR') {
+      console.warn(`[e2e] ${method} ${path} -> 500 INTERNAL_ERROR, retrying once`);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      result = await this.raw(method, path, body);
+    }
     if (result.status < 200 || result.status >= 300) {
       throw new ApiError(method, path, result.status, result.body);
     }

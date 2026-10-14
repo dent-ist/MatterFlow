@@ -86,4 +86,4 @@ if [ -z "${E2E_CHROMIUM_PATH:-}" ] && [ -x /opt/pw-browsers/chromium-1194/chrome
   export E2E_NO_SANDBOX=1 # the preinstalled browser runs as root in the sandbox container
 fi
 export E2E_BASE_URL="http://127.0.0.1:$api_port"
-npx playwright test "$@"
+npx playwright test -c e2e/playwright.config.ts "$@"

@@ -18,6 +18,7 @@ const isCi = !!process.env['CI'];
 
 export default defineConfig({
   testDir: './tests',
+  globalSetup: './global-setup.ts',
   outputDir: '../test-results',
   fullyParallel: true,
   forbidOnly: isCi,

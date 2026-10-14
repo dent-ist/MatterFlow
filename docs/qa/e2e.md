@@ -56,6 +56,7 @@ Typical full run: about 80 tests in under two minutes with two workers, plus rou
 ```
 frontend/e2e/
   playwright.config.ts   baseURL, time zone, trace/screenshot/video on failure, retries 1 on CI
+  global-setup.ts        fails fast when the stack is not ready, warms the API with one throwaway set of records
   tsconfig.json          its own TypeScript project (strict), separate from the Angular app
   run-local.sh           the stack + test runner described above
   support/
@@ -103,6 +104,7 @@ Baseline 6.4 scenario 3 (Access Pending, role grant, dashboard) is covered by th
 - **Independent tests.** Each test creates its own data with `seed` (unique client numbers, uniquely named step, workflow, task type, project, asset and user records). No test depends on another or on the starter configuration, so files and tests run in any order and in parallel. The database is shared by the whole run and never cleaned; names carry a short random token to avoid collisions across runs.
 - **Shared lists.** The Task Queue and the dashboard contain everyone's tasks. Scope them: `/tasks?matter=<id>` or a `search()` on the unique title, a fresh user for My Work and the "Your work" dashboard tiles. Never assert a global count.
 - **Locators.** Roles, labels and visible text first (`getByRole`, `getByLabel`); the `data-*` hooks the app already carries (`data-task-header`, `data-step-id`, `data-status-reason`...) where a role would be ambiguous; page objects hold them so a markup change is fixed in one place. No CSS class chains, no `nth` unless the order is the point.
+- **Setup retries.** `Api.call` repeats a setup request once when the API answers `500 INTERNAL_ERROR` (a SQL deadlock victim, `E2E-F3`) and logs it. UI waits are never retried.
 - **Waiting.** Web-first assertions only (`await expect(locator).toHaveText(...)`). No `waitForTimeout`, no retries to hide flakiness (`retries` is 1 on CI only, to survive infrastructure hiccups). To wait for an API side effect use `expect.poll`.
 - **Numbers.** `seed.freeClientNumber()` picks an unused number; pass `true` for one below 10000 when the padded and unpadded spellings should differ.
 - **Time.** The default browser zone is `America/New_York`, the firm zone. Tests about time zones use `asUser(name, { timezoneId })` and, for API checks, `Api.as(user, { timeZone })`. Dates are computed with `support/time.ts`, never hard coded, so the suite works on any day.

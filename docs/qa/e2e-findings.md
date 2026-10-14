@@ -6,6 +6,7 @@ Application defects found while writing the Playwright suite (`docs/qa/e2e.md`, 
 |---|---|---|---|
 | E2E-F1 | Minor | Task detail, workflow reopen | The UI and the API disagree about reopening a step of a **New** task, and the UI gives a wrong reason. |
 | E2E-F2 | Minor | Task detail, assignment | A technician cannot hand a task without a Pod to a colleague from **Edit details**: the Assignee list holds only the current assignee. |
+| E2E-F3 | Minor | API, concurrency | A SQL Server deadlock between two concurrent requests surfaces as `500 INTERNAL_ERROR` (seen once on `PUT /api/v1/workflows/{id}/versions/{versionId}` at the start of a run on a cold database). |
 
 ## E2E-F1: reopening a step on a New task
 
@@ -37,3 +38,15 @@ Application defects found while writing the Playwright suite (`docs/qa/e2e.md`, 
 **Where.** `frontend/src/app/features/tasks/detail/task-details-tab.ts` (around `usersApi.listUsers('active', undefined, 1, 100)`): use the lookup endpoint/`UserPicker` that Create Task uses.
 
 **Test.** `assignment-and-views.spec.ts`, `E2E-F2` (fixme). The passing SCN-006 test gives the task a Pod containing both people.
+
+## E2E-F3: deadlock victim returned as 500
+
+**What happens.** At the very start of a run on a fresh database, with two test workers creating configuration at the same time, one `PUT /api/v1/workflows/9/versions/9` (save draft with 3 steps) took 4.7 s and failed with `500 INTERNAL_ERROR`. The API log shows `Transaction (Process ID 56) was deadlocked on lock resources with another process and has been chosen as the deadlock victim`, wrapped in "An exception has been raised that is likely due to a transient failure. Consider enabling transient error resiliency by adding 'EnableRetryOnFailure'". The transaction rolled back; the same call succeeds when repeated. Error 1205 is a transient condition; the client gets an opaque 500 with only a trace id.
+
+**Reproduce (not deterministic).** Start the API on an empty database (`frontend/e2e/run-local.sh`), then create steps and workflows in parallel from two clients (`POST /step-definitions`, `POST /workflows`, `PUT /workflows/{id}/versions/{v}` with 3 placements) right after startup. It happened once in about ten cold starts; warm databases did not show it in several hundred test runs.
+
+**Expected.** Retry a deadlocked unit of work once or twice inside the API (or answer 409/503 with a retry hint) instead of a 500.
+
+**Mitigation in the suite.** `Api.call` (used for setup, not for negative checks) retries a `500 INTERNAL_ERROR` once and logs `[e2e] ... retrying once`, and `global-setup.ts` warms the API before the workers start. If the warning shows up often, the defect is more than a cold-start effect. There is no `fixme` test for this one.
+
+**Where.** `backend/src/Modules/MatterFlow.WorkflowEngine` (workflow draft save) and the `UseSqlServer` registration (no `EnableRetryOnFailure`, no deadlock retry).
