@@ -1,0 +1,316 @@
+using System.ComponentModel.DataAnnotations;
+using System.Globalization;
+using MatterFlow.Audit.Contracts;
+using MatterFlow.Configuration.Application.Lookups;
+using MatterFlow.Configuration.Contracts;
+using MatterFlow.Configuration.Contracts.Forms;
+using MatterFlow.Configuration.Domain;
+using MatterFlow.Configuration.Domain.Forms;
+using MatterFlow.Configuration.Infrastructure;
+using MatterFlow.SharedKernel.Identity;
+using MatterFlow.SharedKernel.Results;
+using MatterFlow.SharedKernel.Time;
+using Microsoft.EntityFrameworkCore;
+
+namespace MatterFlow.Configuration.Application.TaskTypes;
+
+/// <summary>A Task Type for the admin screen (UX S14) and the Task screens' pickers.</summary>
+/// <param name="Id">Task Type id.</param>
+/// <param name="Name">Unique display name.</param>
+/// <param name="Description">Optional description.</param>
+/// <param name="IsActive">False = not offered for new Tasks; historical Tasks keep it.</param>
+/// <param name="DefaultWorkflowDefinitionId">Workflow pre-selected for new Tasks; one of the eligible workflows.</param>
+/// <param name="EligibleWorkflowIds">Workflow definition ids a new Task of this type may use, ascending.</param>
+/// <param name="FormDefinitionId">The request form's definition id (provisioned together with the Task Type).</param>
+/// <param name="FormStatus">Published when a version is published, else Draft when a draft is open, else Retired; absent when the form has no versions.</param>
+/// <param name="PublishedFormVersionId">The current PUBLISHED request-form version.</param>
+/// <param name="PublishedFormVersionNo">Its version number.</param>
+/// <param name="DraftFormVersionNo">The open draft's version number.</param>
+/// <param name="HasFormFields">True when any form version has at least one field.</param>
+/// <param name="IsUsable">True when active, the form is published (or has no fields) and there is at least one eligible workflow.</param>
+/// <param name="UsabilityIssues">Why the type is not usable: INACTIVE, FORM_NOT_PUBLISHED, NO_ELIGIBLE_WORKFLOW. Empty when usable.</param>
+/// <param name="RowVersion">Optimistic-concurrency token (base64); send it back on update.</param>
+public sealed record TaskTypeView(
+    [property: Required] int Id,
+    [property: Required] string Name,
+    string? Description,
+    [property: Required] bool IsActive,
+    int? DefaultWorkflowDefinitionId,
+    [property: Required] IReadOnlyList<int> EligibleWorkflowIds,
+    int? FormDefinitionId,
+    FormVersionStatus? FormStatus,
+    int? PublishedFormVersionId,
+    int? PublishedFormVersionNo,
+    int? DraftFormVersionNo,
+    [property: Required] bool HasFormFields,
+    [property: Required] bool IsUsable,
+    [property: Required] IReadOnlyList<string> UsabilityIssues,
+    [property: Required] string RowVersion);
+
+/// <summary>Body to create a Task Type. Its (empty) request form is provisioned with it.</summary>
+public sealed record CreateTaskTypeRequest(
+    [Required, StringLength(100)] string Name,
+    [StringLength(1000)] string? Description,
+    bool IsActive = true,
+    IReadOnlyList<int>? EligibleWorkflowIds = null,
+    int? DefaultWorkflowDefinitionId = null);
+
+/// <summary>Body to change a Task Type, including its complete set of eligible workflows.</summary>
+public sealed record UpdateTaskTypeRequest(
+    [Required, StringLength(100)] string Name,
+    [StringLength(1000)] string? Description,
+    [Required] bool IsActive,
+    [Required] IReadOnlyList<int> EligibleWorkflowIds,
+    int? DefaultWorkflowDefinitionId,
+    [Required] string RowVersion);
+
+/// <summary>Task Types: admin commands (audited) and the <see cref="ITaskTypeCatalog"/> read side for other modules.</summary>
+public sealed class TaskTypeService(
+    DbContext db,
+    IFormDefinitionResolver forms,
+    IAuditWriter audit,
+    IClock clock,
+    ICurrentUser currentUser) : ITaskTypeCatalog
+{
+    private const string ObjectType = "TaskType";
+
+    public const string Inactive = "INACTIVE";
+    public const string FormNotPublished = "FORM_NOT_PUBLISHED";
+    public const string NoEligibleWorkflow = "NO_ELIGIBLE_WORKFLOW";
+
+    private sealed record FormFacts(
+        int DefinitionId,
+        int? PublishedId,
+        int? PublishedNo,
+        int? DraftNo,
+        bool AnyRetired,
+        bool HasFields);
+
+    // ---- read side
+
+    public async Task<IReadOnlyList<TaskTypeView>> ListViewsAsync(CancellationToken ct = default)
+    {
+        var rows = await db.Set<TaskType>().AsNoTracking().Include(t => t.EligibleWorkflows).OrderBy(t => t.Name).ThenBy(t => t.Id).ToListAsync(ct);
+        var facts = await LoadFormFactsAsync(rows.Select(r => r.Id).ToList(), ct);
+        return [.. rows.Select(r => ToView(r, facts.GetValueOrDefault(r.Id)))];
+    }
+
+    public async Task<Result<TaskTypeView>> GetViewAsync(int id, CancellationToken ct = default)
+    {
+        var row = await db.Set<TaskType>().AsNoTracking().Include(t => t.EligibleWorkflows).FirstOrDefaultAsync(t => t.Id == id, ct);
+        if (row is null)
+            return Error.NotFound("Task type not found.");
+        var facts = await LoadFormFactsAsync([id], ct);
+        return ToView(row, facts.GetValueOrDefault(id));
+    }
+
+    public async Task<IReadOnlyList<TaskTypeInfo>> ListUsableAsync(CancellationToken cancellationToken = default) =>
+        [.. (await ListAsync(false, cancellationToken)).Where(t => t.IsUsable)];
+
+    public async Task<IReadOnlyList<TaskTypeInfo>> ListAsync(bool includeInactive, CancellationToken cancellationToken = default) =>
+        [.. (await ListViewsAsync(cancellationToken)).Where(v => includeInactive || v.IsActive).Select(ToInfo)];
+
+    public async Task<TaskTypeInfo?> GetAsync(int taskTypeId, CancellationToken cancellationToken = default)
+    {
+        var view = await GetViewAsync(taskTypeId, cancellationToken);
+        return view.IsSuccess ? ToInfo(view.Value) : null;
+    }
+
+    private static TaskTypeInfo ToInfo(TaskTypeView v) =>
+        new(v.Id, v.Name, v.Description, v.IsActive, v.FormDefinitionId, v.PublishedFormVersionId, v.HasFormFields, v.EligibleWorkflowIds, v.DefaultWorkflowDefinitionId, v.IsUsable);
+
+    private static TaskTypeView ToView(TaskType t, FormFacts? form)
+    {
+        var eligible = t.EligibleWorkflows.Select(e => e.WorkflowDefinitionId).Order().ToList();
+        var issues = new List<string>();
+        if (!t.IsActive)
+            issues.Add(Inactive);
+        // A published form is required once the form has fields; a type whose form never had a field needs none.
+        if (form is { PublishedId: null } && form.HasFields)
+            issues.Add(FormNotPublished);
+        if (eligible.Count == 0)
+            issues.Add(NoEligibleWorkflow);
+
+        var status = form is null ? (FormVersionStatus?)null
+            : form.PublishedId is not null ? FormVersionStatus.Published
+            : form.DraftNo is not null ? FormVersionStatus.Draft
+            : form.AnyRetired ? FormVersionStatus.Retired
+            : null;
+        return new TaskTypeView(
+            t.Id,
+            t.Name,
+            t.Description,
+            t.IsActive,
+            t.DefaultWorkflowDefinitionId,
+            eligible,
+            form?.DefinitionId,
+            status,
+            form?.PublishedId,
+            form?.PublishedNo,
+            form?.DraftNo,
+            form?.HasFields ?? false,
+            issues.Count == 0,
+            issues,
+            LookupSupport.FormatRowVersion(t.RowVersion));
+    }
+
+    private async Task<Dictionary<int, FormFacts>> LoadFormFactsAsync(IReadOnlyCollection<int> taskTypeIds, CancellationToken ct)
+    {
+        if (taskTypeIds.Count == 0)
+            return [];
+
+        var rows = await db.Set<FormDefinition>().AsNoTracking()
+            .Where(d => d.Scope == FormOwnerKind.TaskType && d.TaskTypeId != null && taskTypeIds.Contains(d.TaskTypeId.Value))
+            .Select(d => new
+            {
+                TaskTypeId = d.TaskTypeId!.Value,
+                DefinitionId = d.Id,
+                PublishedId = d.Versions.Where(v => v.Status == FormVersionStatus.Published).Select(v => (int?)v.Id).FirstOrDefault(),
+                PublishedNo = d.Versions.Where(v => v.Status == FormVersionStatus.Published).Select(v => (int?)v.VersionNo).FirstOrDefault(),
+                DraftNo = d.Versions.Where(v => v.Status == FormVersionStatus.Draft).Select(v => (int?)v.VersionNo).FirstOrDefault(),
+                AnyRetired = d.Versions.Any(v => v.Status == FormVersionStatus.Retired),
+                HasFields = d.Versions.Any(v => v.Fields.Any()),
+            })
+            .ToListAsync(ct);
+        return rows.ToDictionary(r => r.TaskTypeId, r => new FormFacts(r.DefinitionId, r.PublishedId, r.PublishedNo, r.DraftNo, r.AnyRetired, r.HasFields));
+    }
+
+    // ---- commands
+
+    public async Task<Result<TaskTypeView>> CreateAsync(CreateTaskTypeRequest request, CancellationToken ct = default)
+    {
+        var name = LookupSupport.CleanText(request.Name, "name", "Enter a name.", 100);
+        if (name.IsFailure)
+            return name.Error!;
+        var description = CleanDescription(request.Description);
+        if (description.IsFailure)
+            return description.Error!;
+        var workflows = CheckWorkflows(request.EligibleWorkflowIds ?? [], request.DefaultWorkflowDefinitionId);
+        if (workflows.IsFailure)
+            return workflows.Error!;
+        if (await NameExistsAsync(name.Value, null, ct))
+            return Duplicate(name.Value);
+
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        var taskType = new TaskType
+        {
+            Name = name.Value,
+            Description = description.Value,
+            IsActive = request.IsActive,
+            DefaultWorkflowDefinitionId = request.DefaultWorkflowDefinitionId,
+        };
+        foreach (var workflowId in workflows.Value)
+            taskType.EligibleWorkflows.Add(new TaskTypeWorkflowEligibility { WorkflowDefinitionId = workflowId, CreatedByUserId = currentUser.UserId });
+        db.Set<TaskType>().Add(taskType);
+        if (workflows.Value.Count > 0)
+            WriteWorkflowsChanged(taskType, null, workflows.Value);
+
+        var failure = await LookupSupport.SaveAsync(db, Duplicate(name.Value), null, ct);
+        if (failure is not null)
+            return failure;
+
+        var form = await forms.EnsureDefinitionAsync(FormOwnerKind.TaskType, taskType.Id, ct);
+        if (form.IsFailure)
+            return form.Error!;
+        await tx.CommitAsync(ct);
+        return (await GetViewAsync(taskType.Id, ct)).Value;
+    }
+
+    public async Task<Result<TaskTypeView>> UpdateAsync(int id, UpdateTaskTypeRequest request, CancellationToken ct = default)
+    {
+        var version = LookupSupport.ParseRowVersion(request.RowVersion);
+        if (version is null)
+            return LookupErrors.InvalidRowVersion();
+        var name = LookupSupport.CleanText(request.Name, "name", "Enter a name.", 100);
+        if (name.IsFailure)
+            return name.Error!;
+        var description = CleanDescription(request.Description);
+        if (description.IsFailure)
+            return description.Error!;
+        var workflows = CheckWorkflows(request.EligibleWorkflowIds, request.DefaultWorkflowDefinitionId);
+        if (workflows.IsFailure)
+            return workflows.Error!;
+
+        var taskType = await db.Set<TaskType>().Include(t => t.EligibleWorkflows).FirstOrDefaultAsync(t => t.Id == id, ct);
+        if (taskType is null)
+            return Error.NotFound("Task type not found.");
+        if (!LookupSupport.VersionMatches(taskType, version))
+            return LookupErrors.Concurrency();
+        if (await NameExistsAsync(name.Value, id, ct))
+            return Duplicate(name.Value);
+
+        taskType.Name = name.Value;
+        taskType.Description = description.Value;
+        taskType.IsActive = request.IsActive;
+        taskType.DefaultWorkflowDefinitionId = request.DefaultWorkflowDefinitionId;
+
+        var before = taskType.EligibleWorkflows.Select(e => e.WorkflowDefinitionId).Order().ToList();
+        var after = workflows.Value;
+        if (!before.SequenceEqual(after))
+        {
+            foreach (var removed in taskType.EligibleWorkflows.Where(e => !after.Contains(e.WorkflowDefinitionId)).ToList())
+                taskType.EligibleWorkflows.Remove(removed);
+            foreach (var added in after.Where(w => !before.Contains(w)))
+                taskType.EligibleWorkflows.Add(new TaskTypeWorkflowEligibility { TaskTypeId = id, WorkflowDefinitionId = added, CreatedByUserId = currentUser.UserId });
+            WriteWorkflowsChanged(taskType, before, after);
+            // The eligibility rows are children: touch the parent so its row version moves and concurrent editors conflict.
+            taskType.ModifiedAtUtc = clock.UtcNow;
+            taskType.ModifiedByUserId = currentUser.UserId;
+        }
+
+        LookupSupport.ExpectVersion(db, taskType, version);
+        var failure = await LookupSupport.SaveAsync(db, Duplicate(name.Value), null, ct);
+        if (failure is not null)
+            return failure;
+
+        // Self-heal a Task Type whose form definition was never provisioned.
+        var form = await forms.EnsureDefinitionAsync(FormOwnerKind.TaskType, id, ct);
+        if (form.IsFailure)
+            return form.Error!;
+        return (await GetViewAsync(id, ct)).Value;
+    }
+
+    // ---- helpers
+
+    private void WriteWorkflowsChanged(TaskType taskType, IReadOnlyList<int>? before, IReadOnlyList<int> after) =>
+        audit.Write(new AuditEntry
+        {
+            EventType = "TASK_TYPE_WORKFLOWS_CHANGED",
+            ObjectType = ObjectType,
+            ObjectIdFactory = () => taskType.Id.ToString(CultureInfo.InvariantCulture),
+            FieldKey = "eligibleWorkflows",
+            OldValue = before is null ? null : string.Join(", ", before),
+            NewValue = string.Join(", ", after),
+            Summary = $"Eligible workflows of {taskType.Name}: {(after.Count == 0 ? "none" : string.Join(", ", after))}",
+        });
+
+    private static Result<string?> CleanDescription(string? value)
+    {
+        var text = value?.Trim();
+        if (string.IsNullOrEmpty(text))
+            return Result<string?>.Success(null);
+        return text.Length > 1000 ? LookupErrors.TooLong("description", "Use at most 1000 characters.") : Result<string?>.Success(text);
+    }
+
+    /// <summary>Distinct ascending workflow ids; the default must be among them (erd.md: application check).</summary>
+    private static Result<IReadOnlyList<int>> CheckWorkflows(IReadOnlyList<int> ids, int? defaultId)
+    {
+        if (ids.Any(i => i <= 0))
+            return Error.Validation("eligibleWorkflowIds", "INVALID", "Workflow ids must be positive numbers.");
+        var distinct = ids.Distinct().Order().ToList();
+        if (defaultId is not null && !distinct.Contains(defaultId.Value))
+        {
+            return Error.Validation(
+                "defaultWorkflowDefinitionId",
+                "NOT_ELIGIBLE",
+                "The default workflow must be one of the eligible workflows.");
+        }
+
+        return Result<IReadOnlyList<int>>.Success(distinct);
+    }
+
+    private static Error Duplicate(string name) => LookupErrors.Duplicate("name", $"A task type named '{name}' already exists.");
+
+    private Task<bool> NameExistsAsync(string name, int? exceptId, CancellationToken ct) =>
+        db.Set<TaskType>().AnyAsync(t => t.Name == name && (exceptId == null || t.Id != exceptId), ct);
+}

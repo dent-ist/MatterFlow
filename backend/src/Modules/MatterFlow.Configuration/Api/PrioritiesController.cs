@@ -19,6 +19,8 @@ internal static class ConfigurationPolicies
     /// <summary>Read the lookups on Task screens.</summary>
     public const string TaskView = Prefix + Permissions.Task.View;
 
+    public const string TaskTypeManage = Prefix + Permissions.TaskType.Manage;
+
     public const string PriorityManage = Prefix + Permissions.Priority.Manage;
 
     public const string StatusLabelManage = Prefix + Permissions.StatusLabel.Manage;
