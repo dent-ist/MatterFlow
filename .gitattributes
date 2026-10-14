@@ -1,0 +1,16 @@
+* text=auto eol=lf
+
+*.sql text eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.zip binary
+
+backend/src/MatterFlow.Api/web.config text eol=lf
+contracts/openapi/v1.json linguist-generated=true
+frontend/src/app/api/generated/** linguist-generated=true

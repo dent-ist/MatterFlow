@@ -1,0 +1,8 @@
+<Project>
+  <!-- Inherit backend/Directory.Build.props -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+  <!-- Module implementation projects host controllers (Api/ folder); .Contracts projects stay framework-free. -->
+  <ItemGroup Condition="!$(MSBuildProjectName.EndsWith('.Contracts'))">
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>
