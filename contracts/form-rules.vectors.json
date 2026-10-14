@@ -1,0 +1,3508 @@
+{
+  "$comment": "Shared conformance vectors for the form-rules engine; see form-rules.md. Compared fields: expected.* only (messages are not compared). errors are compared as a set of {fieldKey, code}.",
+  "contractVersion": 1,
+  "vectors": [
+    {
+      "name": "text-required-missing",
+      "description": "Static required TEXT with no value yields REQUIRED.",
+      "schema": {
+        "fields": [
+          {
+            "key": "custodian",
+            "control": "TEXT",
+            "required": true
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "custodian": true
+        },
+        "required": {
+          "custodian": true
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "custodian",
+            "code": "REQUIRED"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "text-required-whitespace-only",
+      "description": "A string made only of ASCII whitespace (space, tab, LF, CR) is empty, so required fails.",
+      "schema": {
+        "fields": [
+          {
+            "key": "custodian",
+            "control": "TEXT",
+            "required": true
+          }
+        ]
+      },
+      "values": {
+        "custodian": " \t\n "
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "custodian": true
+        },
+        "required": {
+          "custodian": true
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "custodian",
+            "code": "REQUIRED"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "text-value-kept-untrimmed",
+      "description": "Non-empty text is persisted exactly as submitted (no trimming).",
+      "schema": {
+        "fields": [
+          {
+            "key": "custodian",
+            "control": "TEXT",
+            "required": true
+          }
+        ]
+      },
+      "values": {
+        "custodian": "  Jane Doe "
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "custodian": true
+        },
+        "required": {
+          "custodian": true
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "custodian": "  Jane Doe "
+        }
+      }
+    },
+    {
+      "name": "text-optional-empty-omitted",
+      "description": "Optional TEXT submitted as empty string: no error and omitted from normalized values.",
+      "schema": {
+        "fields": [
+          {
+            "key": "notes",
+            "control": "TEXTAREA"
+          }
+        ]
+      },
+      "values": {
+        "notes": ""
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "notes": true
+        },
+        "required": {
+          "notes": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "text-wrong-json-type",
+      "description": "TEXT given a JSON number: INVALID_TYPE (no coercion).",
+      "schema": {
+        "fields": [
+          {
+            "key": "custodian",
+            "control": "TEXT"
+          }
+        ]
+      },
+      "values": {
+        "custodian": 42
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "custodian": true
+        },
+        "required": {
+          "custodian": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "custodian",
+            "code": "INVALID_TYPE"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "text-too-long",
+      "description": "maxLength counts UTF-16 code units; 6 > 5 yields TOO_LONG.",
+      "schema": {
+        "fields": [
+          {
+            "key": "code",
+            "control": "TEXT",
+            "validation": {
+              "maxLength": 5
+            }
+          }
+        ]
+      },
+      "values": {
+        "code": "ABCDEF"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "code": true
+        },
+        "required": {
+          "code": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "code",
+            "code": "TOO_LONG"
+          }
+        ],
+        "normalized": {
+          "code": "ABCDEF"
+        }
+      }
+    },
+    {
+      "name": "text-max-length-boundary-ok",
+      "description": "Exactly maxLength characters is allowed.",
+      "schema": {
+        "fields": [
+          {
+            "key": "code",
+            "control": "TEXT",
+            "validation": {
+              "maxLength": 5
+            }
+          }
+        ]
+      },
+      "values": {
+        "code": "ABCDE"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "code": true
+        },
+        "required": {
+          "code": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "code": "ABCDE"
+        }
+      }
+    },
+    {
+      "name": "text-pattern-mismatch",
+      "description": "pattern is an unanchored ECMAScript regex search; \"ABC-12\" does not match ^[A-Z]{3}-\\d{4}$.",
+      "schema": {
+        "fields": [
+          {
+            "key": "bates",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^[A-Z]{3}-\\d{4}$"
+            }
+          }
+        ]
+      },
+      "values": {
+        "bates": "ABC-12"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "bates": true
+        },
+        "required": {
+          "bates": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "bates",
+            "code": "PATTERN"
+          }
+        ],
+        "normalized": {
+          "bates": "ABC-12"
+        }
+      }
+    },
+    {
+      "name": "text-pattern-match",
+      "description": "Matching value passes pattern.",
+      "schema": {
+        "fields": [
+          {
+            "key": "bates",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^[A-Z]{3}-\\d{4}$"
+            }
+          }
+        ]
+      },
+      "values": {
+        "bates": "ABC-0042"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "bates": true
+        },
+        "required": {
+          "bates": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "bates": "ABC-0042"
+        }
+      }
+    },
+    {
+      "name": "text-eq-is-ascii-case-insensitive",
+      "description": "eq on TEXT folds ASCII case only: \"ACME\" equals literal \"acme\", so the dependent field is shown.",
+      "schema": {
+        "fields": [
+          {
+            "key": "client_name",
+            "control": "TEXT"
+          },
+          {
+            "key": "acme_notes",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "eq",
+              "field": "client_name",
+              "value": "acme"
+            }
+          }
+        ]
+      },
+      "values": {
+        "client_name": "ACME",
+        "acme_notes": "x"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "client_name": true,
+          "acme_notes": true
+        },
+        "required": {
+          "client_name": false,
+          "acme_notes": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "client_name": "ACME",
+          "acme_notes": "x"
+        }
+      }
+    },
+    {
+      "name": "text-eq-non-ascii-is-exact",
+      "description": "Non-ASCII letters are NOT case folded: \"É\" does not equal \"é\", so the dependent field stays hidden and its value is dropped.",
+      "schema": {
+        "fields": [
+          {
+            "key": "client_name",
+            "control": "TEXT"
+          },
+          {
+            "key": "accent_notes",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "eq",
+              "field": "client_name",
+              "value": "é"
+            }
+          }
+        ]
+      },
+      "values": {
+        "client_name": "É",
+        "accent_notes": "x"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "client_name": true,
+          "accent_notes": false
+        },
+        "required": {
+          "client_name": false,
+          "accent_notes": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "client_name": "É"
+        }
+      }
+    },
+    {
+      "name": "url-valid-and-invalid",
+      "description": "URL must be an absolute http/https URL; the second field fails with INVALID_TYPE.",
+      "schema": {
+        "fields": [
+          {
+            "key": "doc_url",
+            "control": "URL"
+          },
+          {
+            "key": "other_url",
+            "control": "URL"
+          }
+        ]
+      },
+      "values": {
+        "doc_url": "https://dms.example.com/a?b=1",
+        "other_url": "ftp://x"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "doc_url": true,
+          "other_url": true
+        },
+        "required": {
+          "doc_url": false,
+          "other_url": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "other_url",
+            "code": "INVALID_TYPE"
+          }
+        ],
+        "normalized": {
+          "doc_url": "https://dms.example.com/a?b=1"
+        }
+      }
+    },
+    {
+      "name": "number-above-max",
+      "description": "NUMBER above validation.max yields OUT_OF_RANGE.",
+      "schema": {
+        "fields": [
+          {
+            "key": "volume",
+            "control": "NUMBER",
+            "validation": {
+              "min": 0,
+              "max": 100
+            }
+          }
+        ]
+      },
+      "values": {
+        "volume": 100.5
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "volume": true
+        },
+        "required": {
+          "volume": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "volume",
+            "code": "OUT_OF_RANGE"
+          }
+        ],
+        "normalized": {
+          "volume": 100.5
+        }
+      }
+    },
+    {
+      "name": "number-at-bounds-ok",
+      "description": "Bounds are inclusive.",
+      "schema": {
+        "fields": [
+          {
+            "key": "low",
+            "control": "NUMBER",
+            "validation": {
+              "min": 0,
+              "max": 100
+            }
+          },
+          {
+            "key": "high",
+            "control": "NUMBER",
+            "validation": {
+              "min": 0,
+              "max": 100
+            }
+          }
+        ]
+      },
+      "values": {
+        "low": 0,
+        "high": 100
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "low": true,
+          "high": true
+        },
+        "required": {
+          "low": false,
+          "high": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "low": 0,
+          "high": 100
+        }
+      }
+    },
+    {
+      "name": "number-string-is-invalid-type",
+      "description": "No coercion: the JSON string \"12\" is INVALID_TYPE for NUMBER.",
+      "schema": {
+        "fields": [
+          {
+            "key": "volume",
+            "control": "NUMBER"
+          }
+        ]
+      },
+      "values": {
+        "volume": "12"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "volume": true
+        },
+        "required": {
+          "volume": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "volume",
+            "code": "INVALID_TYPE"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "number-zero-satisfies-required",
+      "description": "0 is a value, not empty: required is satisfied and 0 is persisted.",
+      "schema": {
+        "fields": [
+          {
+            "key": "volume",
+            "control": "NUMBER",
+            "required": true
+          }
+        ]
+      },
+      "values": {
+        "volume": 0
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "volume": true
+        },
+        "required": {
+          "volume": true
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "volume": 0
+        }
+      }
+    },
+    {
+      "name": "number-required-when-gt",
+      "description": "requiredWhen gt: volume 1500 > 1000 makes justification required; 1000 would not.",
+      "schema": {
+        "fields": [
+          {
+            "key": "volume",
+            "control": "NUMBER"
+          },
+          {
+            "key": "justification",
+            "control": "TEXT",
+            "requiredWhen": {
+              "op": "gt",
+              "field": "volume",
+              "value": 1000
+            }
+          }
+        ]
+      },
+      "values": {
+        "volume": 1500
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "volume": true,
+          "justification": true
+        },
+        "required": {
+          "volume": false,
+          "justification": true
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "justification",
+            "code": "REQUIRED"
+          }
+        ],
+        "normalized": {
+          "volume": 1500
+        }
+      }
+    },
+    {
+      "name": "number-boundary-gt-not-required",
+      "description": "gt is strict: volume 1000 does not make justification required.",
+      "schema": {
+        "fields": [
+          {
+            "key": "volume",
+            "control": "NUMBER"
+          },
+          {
+            "key": "justification",
+            "control": "TEXT",
+            "requiredWhen": {
+              "op": "gt",
+              "field": "volume",
+              "value": 1000
+            }
+          }
+        ]
+      },
+      "values": {
+        "volume": 1000
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "volume": true,
+          "justification": true
+        },
+        "required": {
+          "volume": false,
+          "justification": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "volume": 1000
+        }
+      }
+    },
+    {
+      "name": "number-invalid-type-reads-as-null-in-rules",
+      "description": "A type-invalid value reads as null in rules: neq on null is true, so the dependent field is shown (INVALID_TYPE still reported).",
+      "schema": {
+        "fields": [
+          {
+            "key": "volume",
+            "control": "NUMBER"
+          },
+          {
+            "key": "other",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "neq",
+              "field": "volume",
+              "value": 5
+            }
+          }
+        ]
+      },
+      "values": {
+        "volume": "abc"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "volume": true,
+          "other": true
+        },
+        "required": {
+          "volume": false,
+          "other": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "volume",
+            "code": "INVALID_TYPE"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "checkbox-false-satisfies-required",
+      "description": "false is an answer: a required CHECKBOX with false passes; only null/absent fails.",
+      "schema": {
+        "fields": [
+          {
+            "key": "requires_ocr",
+            "control": "CHECKBOX",
+            "required": true
+          }
+        ]
+      },
+      "values": {
+        "requires_ocr": false
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "requires_ocr": true
+        },
+        "required": {
+          "requires_ocr": true
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "requires_ocr": false
+        }
+      }
+    },
+    {
+      "name": "checkbox-absent-required",
+      "description": "Required CHECKBOX with no value: REQUIRED.",
+      "schema": {
+        "fields": [
+          {
+            "key": "requires_ocr",
+            "control": "CHECKBOX",
+            "required": true
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "requires_ocr": true
+        },
+        "required": {
+          "requires_ocr": true
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "requires_ocr",
+            "code": "REQUIRED"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "checkbox-string-is-invalid-type",
+      "description": "No coercion: the JSON string \"true\" is INVALID_TYPE.",
+      "schema": {
+        "fields": [
+          {
+            "key": "requires_ocr",
+            "control": "CHECKBOX"
+          }
+        ]
+      },
+      "values": {
+        "requires_ocr": "true"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "requires_ocr": true
+        },
+        "required": {
+          "requires_ocr": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "requires_ocr",
+            "code": "INVALID_TYPE"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "checkbox-true-shows-and-requires",
+      "description": "requires_ocr=true shows ocr_language and makes it conditionally required; it is missing, so REQUIRED.",
+      "schema": {
+        "fields": [
+          {
+            "key": "requires_ocr",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "ocr_language",
+            "control": "SELECT",
+            "showWhen": {
+              "op": "isTrue",
+              "field": "requires_ocr"
+            },
+            "requiredWhen": {
+              "op": "isTrue",
+              "field": "requires_ocr"
+            },
+            "options": [
+              {
+                "key": "eng"
+              },
+              {
+                "key": "fra"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {
+        "requires_ocr": true
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "requires_ocr": true,
+          "ocr_language": true
+        },
+        "required": {
+          "requires_ocr": false,
+          "ocr_language": true
+        },
+        "options": {
+          "ocr_language": [
+            "eng",
+            "fra"
+          ]
+        },
+        "errors": [
+          {
+            "fieldKey": "ocr_language",
+            "code": "REQUIRED"
+          }
+        ],
+        "normalized": {
+          "requires_ocr": true
+        }
+      }
+    },
+    {
+      "name": "checkbox-false-hides-and-drops-value",
+      "description": "requires_ocr=false hides ocr_language; the submitted value is dropped silently (no error, not persisted).",
+      "schema": {
+        "fields": [
+          {
+            "key": "requires_ocr",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "ocr_language",
+            "control": "SELECT",
+            "showWhen": {
+              "op": "isTrue",
+              "field": "requires_ocr"
+            },
+            "requiredWhen": {
+              "op": "isTrue",
+              "field": "requires_ocr"
+            },
+            "options": [
+              {
+                "key": "eng"
+              },
+              {
+                "key": "fra"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {
+        "requires_ocr": false,
+        "ocr_language": "eng"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "requires_ocr": true,
+          "ocr_language": false
+        },
+        "required": {
+          "requires_ocr": false,
+          "ocr_language": false
+        },
+        "options": {
+          "ocr_language": [
+            "eng",
+            "fra"
+          ]
+        },
+        "errors": [],
+        "normalized": {
+          "requires_ocr": false
+        }
+      }
+    },
+    {
+      "name": "checkbox-unanswered-isfalse-is-false",
+      "description": "isTrue and isFalse are both false on an unanswered checkbox; not(isTrue) is true.",
+      "schema": {
+        "fields": [
+          {
+            "key": "flag",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "shown_if_false",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "isFalse",
+              "field": "flag"
+            }
+          },
+          {
+            "key": "shown_if_not_true",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "not",
+              "arg": {
+                "op": "isTrue",
+                "field": "flag"
+              }
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "flag": true,
+          "shown_if_false": false,
+          "shown_if_not_true": true
+        },
+        "required": {
+          "flag": false,
+          "shown_if_false": false,
+          "shown_if_not_true": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "select-valid-option",
+      "description": "SELECT with a declared option key is accepted.",
+      "schema": {
+        "fields": [
+          {
+            "key": "profile",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "fast"
+              },
+              {
+                "key": "full"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {
+        "profile": "fast"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "profile": true
+        },
+        "required": {
+          "profile": false
+        },
+        "options": {
+          "profile": [
+            "fast",
+            "full"
+          ]
+        },
+        "errors": [],
+        "normalized": {
+          "profile": "fast"
+        }
+      }
+    },
+    {
+      "name": "select-unknown-option",
+      "description": "SELECT value not among declared options: OPTION_NOT_ALLOWED.",
+      "schema": {
+        "fields": [
+          {
+            "key": "profile",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "fast"
+              },
+              {
+                "key": "full"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {
+        "profile": "turbo"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "profile": true
+        },
+        "required": {
+          "profile": false
+        },
+        "options": {
+          "profile": [
+            "fast",
+            "full"
+          ]
+        },
+        "errors": [
+          {
+            "fieldKey": "profile",
+            "code": "OPTION_NOT_ALLOWED"
+          }
+        ],
+        "normalized": {
+          "profile": "turbo"
+        }
+      }
+    },
+    {
+      "name": "select-option-keys-case-sensitive",
+      "description": "Option keys are compared exactly: \"FAST\" is not \"fast\".",
+      "schema": {
+        "fields": [
+          {
+            "key": "profile",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "fast"
+              },
+              {
+                "key": "full"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {
+        "profile": "FAST"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "profile": true
+        },
+        "required": {
+          "profile": false
+        },
+        "options": {
+          "profile": [
+            "fast",
+            "full"
+          ]
+        },
+        "errors": [
+          {
+            "fieldKey": "profile",
+            "code": "OPTION_NOT_ALLOWED"
+          }
+        ],
+        "normalized": {
+          "profile": "FAST"
+        }
+      }
+    },
+    {
+      "name": "select-number-is-invalid-type",
+      "description": "SELECT value must be a string.",
+      "schema": {
+        "fields": [
+          {
+            "key": "profile",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "fast"
+              },
+              {
+                "key": "full"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {
+        "profile": 1
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "profile": true
+        },
+        "required": {
+          "profile": false
+        },
+        "options": {
+          "profile": [
+            "fast",
+            "full"
+          ]
+        },
+        "errors": [
+          {
+            "fieldKey": "profile",
+            "code": "INVALID_TYPE"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "radio-eq-show-when",
+      "description": "RADIO eq (exact, case-sensitive) controls visibility.",
+      "schema": {
+        "fields": [
+          {
+            "key": "dedupe",
+            "control": "RADIO",
+            "options": [
+              {
+                "key": "none"
+              },
+              {
+                "key": "global"
+              }
+            ]
+          },
+          {
+            "key": "dedupe_scope",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "eq",
+              "field": "dedupe",
+              "value": "global"
+            }
+          }
+        ]
+      },
+      "values": {
+        "dedupe": "global",
+        "dedupe_scope": "matter"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "dedupe": true,
+          "dedupe_scope": true
+        },
+        "required": {
+          "dedupe": false,
+          "dedupe_scope": false
+        },
+        "options": {
+          "dedupe": [
+            "none",
+            "global"
+          ]
+        },
+        "errors": [],
+        "normalized": {
+          "dedupe": "global",
+          "dedupe_scope": "matter"
+        }
+      }
+    },
+    {
+      "name": "select-in-and-notin",
+      "description": "in / notIn on a SELECT: \"full\" is in [full, deep] and not in [fast].",
+      "schema": {
+        "fields": [
+          {
+            "key": "profile",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "fast"
+              },
+              {
+                "key": "full"
+              },
+              {
+                "key": "deep"
+              }
+            ]
+          },
+          {
+            "key": "a",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "in",
+              "field": "profile",
+              "value": [
+                "full",
+                "deep"
+              ]
+            }
+          },
+          {
+            "key": "b",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "notIn",
+              "field": "profile",
+              "value": [
+                "fast"
+              ]
+            }
+          },
+          {
+            "key": "c",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "in",
+              "field": "profile",
+              "value": [
+                "fast"
+              ]
+            }
+          }
+        ]
+      },
+      "values": {
+        "profile": "full"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "profile": true,
+          "a": true,
+          "b": true,
+          "c": false
+        },
+        "required": {
+          "profile": false,
+          "a": false,
+          "b": false,
+          "c": false
+        },
+        "options": {
+          "profile": [
+            "fast",
+            "full",
+            "deep"
+          ]
+        },
+        "errors": [],
+        "normalized": {
+          "profile": "full"
+        }
+      }
+    },
+    {
+      "name": "select-neq-on-empty-is-true",
+      "description": "Comparisons against null are false except neq / notIn / isEmpty: neq on an unanswered SELECT shows the field.",
+      "schema": {
+        "fields": [
+          {
+            "key": "profile",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "fast"
+              },
+              {
+                "key": "full"
+              }
+            ]
+          },
+          {
+            "key": "x",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "neq",
+              "field": "profile",
+              "value": "fast"
+            }
+          },
+          {
+            "key": "y",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "eq",
+              "field": "profile",
+              "value": "fast"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "profile": true,
+          "x": true,
+          "y": false
+        },
+        "required": {
+          "profile": false,
+          "x": false,
+          "y": false
+        },
+        "options": {
+          "profile": [
+            "fast",
+            "full"
+          ]
+        },
+        "errors": [],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "option-availability-filters-set",
+      "description": "Option availableWhen filters the offered set: country=us leaves [ny, any].",
+      "schema": {
+        "fields": [
+          {
+            "key": "country",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "us"
+              },
+              {
+                "key": "ca"
+              },
+              {
+                "key": "uk"
+              }
+            ]
+          },
+          {
+            "key": "region",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "ny",
+                "availableWhen": {
+                  "op": "eq",
+                  "field": "country",
+                  "value": "us"
+                }
+              },
+              {
+                "key": "on",
+                "availableWhen": {
+                  "op": "eq",
+                  "field": "country",
+                  "value": "ca"
+                }
+              },
+              {
+                "key": "any"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {
+        "country": "us",
+        "region": "ny"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "country": true,
+          "region": true
+        },
+        "required": {
+          "country": false,
+          "region": false
+        },
+        "options": {
+          "country": [
+            "us",
+            "ca",
+            "uk"
+          ],
+          "region": [
+            "ny",
+            "any"
+          ]
+        },
+        "errors": [],
+        "normalized": {
+          "country": "us",
+          "region": "ny"
+        }
+      }
+    },
+    {
+      "name": "option-unavailable-selected-rejected",
+      "description": "Selecting an option whose availableWhen is false yields OPTION_NOT_ALLOWED even though it is declared.",
+      "schema": {
+        "fields": [
+          {
+            "key": "country",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "us"
+              },
+              {
+                "key": "ca"
+              },
+              {
+                "key": "uk"
+              }
+            ]
+          },
+          {
+            "key": "region",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "ny",
+                "availableWhen": {
+                  "op": "eq",
+                  "field": "country",
+                  "value": "us"
+                }
+              },
+              {
+                "key": "on",
+                "availableWhen": {
+                  "op": "eq",
+                  "field": "country",
+                  "value": "ca"
+                }
+              },
+              {
+                "key": "any"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {
+        "country": "ca",
+        "region": "ny"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "country": true,
+          "region": true
+        },
+        "required": {
+          "country": false,
+          "region": false
+        },
+        "options": {
+          "country": [
+            "us",
+            "ca",
+            "uk"
+          ],
+          "region": [
+            "on",
+            "any"
+          ]
+        },
+        "errors": [
+          {
+            "fieldKey": "region",
+            "code": "OPTION_NOT_ALLOWED"
+          }
+        ],
+        "normalized": {
+          "country": "ca",
+          "region": "ny"
+        }
+      }
+    },
+    {
+      "name": "option-availability-reads-null-when-source-empty",
+      "description": "availableWhen reading an empty field sees null: eq is false, so only unconditional options remain.",
+      "schema": {
+        "fields": [
+          {
+            "key": "country",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "us"
+              },
+              {
+                "key": "ca"
+              },
+              {
+                "key": "uk"
+              }
+            ]
+          },
+          {
+            "key": "region",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "ny",
+                "availableWhen": {
+                  "op": "eq",
+                  "field": "country",
+                  "value": "us"
+                }
+              },
+              {
+                "key": "on",
+                "availableWhen": {
+                  "op": "eq",
+                  "field": "country",
+                  "value": "ca"
+                }
+              },
+              {
+                "key": "any"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "country": true,
+          "region": true
+        },
+        "required": {
+          "country": false,
+          "region": false
+        },
+        "options": {
+          "country": [
+            "us",
+            "ca",
+            "uk"
+          ],
+          "region": [
+            "any"
+          ]
+        },
+        "errors": [],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "multiselect-valid-keeps-order",
+      "description": "Valid selection is persisted in submitted order.",
+      "schema": {
+        "fields": [
+          {
+            "key": "outputs",
+            "control": "MULTISELECT",
+            "options": [
+              {
+                "key": "pdf"
+              },
+              {
+                "key": "tiff"
+              },
+              {
+                "key": "native"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {
+        "outputs": [
+          "tiff",
+          "pdf"
+        ]
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "outputs": true
+        },
+        "required": {
+          "outputs": false
+        },
+        "options": {
+          "outputs": [
+            "pdf",
+            "tiff",
+            "native"
+          ]
+        },
+        "errors": [],
+        "normalized": {
+          "outputs": [
+            "tiff",
+            "pdf"
+          ]
+        }
+      }
+    },
+    {
+      "name": "multiselect-one-bad-key",
+      "description": "One undeclared key yields exactly one OPTION_NOT_ALLOWED for the field.",
+      "schema": {
+        "fields": [
+          {
+            "key": "outputs",
+            "control": "MULTISELECT",
+            "options": [
+              {
+                "key": "pdf"
+              },
+              {
+                "key": "tiff"
+              },
+              {
+                "key": "native"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {
+        "outputs": [
+          "pdf",
+          "bogus",
+          "also-bogus"
+        ]
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "outputs": true
+        },
+        "required": {
+          "outputs": false
+        },
+        "options": {
+          "outputs": [
+            "pdf",
+            "tiff",
+            "native"
+          ]
+        },
+        "errors": [
+          {
+            "fieldKey": "outputs",
+            "code": "OPTION_NOT_ALLOWED"
+          }
+        ],
+        "normalized": {
+          "outputs": [
+            "pdf",
+            "bogus",
+            "also-bogus"
+          ]
+        }
+      }
+    },
+    {
+      "name": "multiselect-duplicate-is-invalid-type",
+      "description": "Duplicate keys in a MULTISELECT array: INVALID_TYPE.",
+      "schema": {
+        "fields": [
+          {
+            "key": "outputs",
+            "control": "MULTISELECT",
+            "options": [
+              {
+                "key": "pdf"
+              },
+              {
+                "key": "tiff"
+              },
+              {
+                "key": "native"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {
+        "outputs": [
+          "pdf",
+          "pdf"
+        ]
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "outputs": true
+        },
+        "required": {
+          "outputs": false
+        },
+        "options": {
+          "outputs": [
+            "pdf",
+            "tiff",
+            "native"
+          ]
+        },
+        "errors": [
+          {
+            "fieldKey": "outputs",
+            "code": "INVALID_TYPE"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "multiselect-empty-array-required",
+      "description": "An empty array is empty: a required MULTISELECT fails with REQUIRED.",
+      "schema": {
+        "fields": [
+          {
+            "key": "outputs",
+            "control": "MULTISELECT",
+            "options": [
+              {
+                "key": "pdf"
+              },
+              {
+                "key": "tiff"
+              },
+              {
+                "key": "native"
+              }
+            ],
+            "required": true
+          }
+        ]
+      },
+      "values": {
+        "outputs": []
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "outputs": true
+        },
+        "required": {
+          "outputs": true
+        },
+        "options": {
+          "outputs": [
+            "pdf",
+            "tiff",
+            "native"
+          ]
+        },
+        "errors": [
+          {
+            "fieldKey": "outputs",
+            "code": "REQUIRED"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "multiselect-contains-shows-field",
+      "description": "contains tests membership of the selection; \"pdf\" is selected so pdf_options is shown, tiff_options is hidden.",
+      "schema": {
+        "fields": [
+          {
+            "key": "outputs",
+            "control": "MULTISELECT",
+            "options": [
+              {
+                "key": "pdf"
+              },
+              {
+                "key": "tiff"
+              },
+              {
+                "key": "native"
+              }
+            ]
+          },
+          {
+            "key": "pdf_options",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "contains",
+              "field": "outputs",
+              "value": "pdf"
+            }
+          },
+          {
+            "key": "tiff_options",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "contains",
+              "field": "outputs",
+              "value": "tiff"
+            }
+          }
+        ]
+      },
+      "values": {
+        "outputs": [
+          "pdf",
+          "native"
+        ],
+        "pdf_options": "a4",
+        "tiff_options": "g4"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "outputs": true,
+          "pdf_options": true,
+          "tiff_options": false
+        },
+        "required": {
+          "outputs": false,
+          "pdf_options": false,
+          "tiff_options": false
+        },
+        "options": {
+          "outputs": [
+            "pdf",
+            "tiff",
+            "native"
+          ]
+        },
+        "errors": [],
+        "normalized": {
+          "outputs": [
+            "pdf",
+            "native"
+          ],
+          "pdf_options": "a4"
+        }
+      }
+    },
+    {
+      "name": "multiselect-not-contains-on-empty",
+      "description": "contains on an empty MULTISELECT is false, so not(contains) is true.",
+      "schema": {
+        "fields": [
+          {
+            "key": "outputs",
+            "control": "MULTISELECT",
+            "options": [
+              {
+                "key": "pdf"
+              },
+              {
+                "key": "tiff"
+              },
+              {
+                "key": "native"
+              }
+            ]
+          },
+          {
+            "key": "no_pdf_note",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "not",
+              "arg": {
+                "op": "contains",
+                "field": "outputs",
+                "value": "pdf"
+              }
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "outputs": true,
+          "no_pdf_note": true
+        },
+        "required": {
+          "outputs": false,
+          "no_pdf_note": false
+        },
+        "options": {
+          "outputs": [
+            "pdf",
+            "tiff",
+            "native"
+          ]
+        },
+        "errors": [],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "date-valid-in-range",
+      "description": "Valid date inside [min, max].",
+      "schema": {
+        "fields": [
+          {
+            "key": "due",
+            "control": "DATE",
+            "validation": {
+              "min": "2026-01-01",
+              "max": "2026-12-31"
+            }
+          }
+        ]
+      },
+      "values": {
+        "due": "2026-06-30"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "due": true
+        },
+        "required": {
+          "due": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "due": "2026-06-30"
+        }
+      }
+    },
+    {
+      "name": "date-before-min",
+      "description": "Date before min: OUT_OF_RANGE.",
+      "schema": {
+        "fields": [
+          {
+            "key": "due",
+            "control": "DATE",
+            "validation": {
+              "min": "2026-01-01",
+              "max": "2026-12-31"
+            }
+          }
+        ]
+      },
+      "values": {
+        "due": "2025-12-31"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "due": true
+        },
+        "required": {
+          "due": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "due",
+            "code": "OUT_OF_RANGE"
+          }
+        ],
+        "normalized": {
+          "due": "2025-12-31"
+        }
+      }
+    },
+    {
+      "name": "date-impossible-calendar-day",
+      "description": "2026-02-30 is not a real date: INVALID_TYPE.",
+      "schema": {
+        "fields": [
+          {
+            "key": "due",
+            "control": "DATE",
+            "validation": {
+              "min": "2026-01-01",
+              "max": "2026-12-31"
+            }
+          }
+        ]
+      },
+      "values": {
+        "due": "2026-02-30"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "due": true
+        },
+        "required": {
+          "due": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "due",
+            "code": "INVALID_TYPE"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "date-wrong-format",
+      "description": "Only yyyy-MM-dd is accepted: 2026-6-30 and \"06/30/2026\" are INVALID_TYPE.",
+      "schema": {
+        "fields": [
+          {
+            "key": "d1",
+            "control": "DATE"
+          },
+          {
+            "key": "d2",
+            "control": "DATE"
+          }
+        ]
+      },
+      "values": {
+        "d1": "2026-6-30",
+        "d2": "06/30/2026"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "d1": true,
+          "d2": true
+        },
+        "required": {
+          "d1": false,
+          "d2": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "d1",
+            "code": "INVALID_TYPE"
+          },
+          {
+            "fieldKey": "d2",
+            "code": "INVALID_TYPE"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "date-gte-rule-ordinal",
+      "description": "Date rules compare chronologically (ordinal on yyyy-MM-dd): 2026-03-01 >= 2026-01-01 shows rush_reason, < 2026-02-01 would not.",
+      "schema": {
+        "fields": [
+          {
+            "key": "collected",
+            "control": "DATE"
+          },
+          {
+            "key": "rush_reason",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "gte",
+              "field": "collected",
+              "value": "2026-01-01"
+            }
+          },
+          {
+            "key": "early",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "lt",
+              "field": "collected",
+              "value": "2026-02-01"
+            }
+          }
+        ]
+      },
+      "values": {
+        "collected": "2026-03-01"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "collected": true,
+          "rush_reason": true,
+          "early": false
+        },
+        "required": {
+          "collected": false,
+          "rush_reason": false,
+          "early": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "collected": "2026-03-01"
+        }
+      }
+    },
+    {
+      "name": "datetime-format",
+      "description": "DATETIME must be ISO-8601 UTC with Z: the offset form is INVALID_TYPE.",
+      "schema": {
+        "fields": [
+          {
+            "key": "at_ok",
+            "control": "DATETIME"
+          },
+          {
+            "key": "at_bad",
+            "control": "DATETIME"
+          }
+        ]
+      },
+      "values": {
+        "at_ok": "2026-03-01T10:00:00Z",
+        "at_bad": "2026-03-01T10:00:00+01:00"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "at_ok": true,
+          "at_bad": true
+        },
+        "required": {
+          "at_ok": false,
+          "at_bad": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "at_bad",
+            "code": "INVALID_TYPE"
+          }
+        ],
+        "normalized": {
+          "at_ok": "2026-03-01T10:00:00Z"
+        }
+      }
+    },
+    {
+      "name": "user-ref-integer-only",
+      "description": "USER_REF / ASSET_REF are positive integers; existence is a server concern outside these vectors.",
+      "schema": {
+        "fields": [
+          {
+            "key": "owner",
+            "control": "USER_REF"
+          },
+          {
+            "key": "src",
+            "control": "ASSET_REF"
+          },
+          {
+            "key": "dst",
+            "control": "ASSET_REF"
+          }
+        ]
+      },
+      "values": {
+        "owner": 7,
+        "src": 1.5,
+        "dst": "3"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "owner": true,
+          "src": true,
+          "dst": true
+        },
+        "required": {
+          "owner": false,
+          "src": false,
+          "dst": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "dst",
+            "code": "INVALID_TYPE"
+          },
+          {
+            "fieldKey": "src",
+            "code": "INVALID_TYPE"
+          }
+        ],
+        "normalized": {
+          "owner": 7
+        }
+      }
+    },
+    {
+      "name": "nested-and-or-true-via-second-branch",
+      "description": "a AND (b=x OR c): a=true, b=y, c=true => shown and required.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "b",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "x"
+              },
+              {
+                "key": "y"
+              }
+            ]
+          },
+          {
+            "key": "c",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "target",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "and",
+              "args": [
+                {
+                  "op": "isTrue",
+                  "field": "a"
+                },
+                {
+                  "op": "or",
+                  "args": [
+                    {
+                      "op": "eq",
+                      "field": "b",
+                      "value": "x"
+                    },
+                    {
+                      "op": "isTrue",
+                      "field": "c"
+                    }
+                  ]
+                }
+              ]
+            },
+            "requiredWhen": {
+              "op": "and",
+              "args": [
+                {
+                  "op": "isTrue",
+                  "field": "a"
+                },
+                {
+                  "op": "or",
+                  "args": [
+                    {
+                      "op": "eq",
+                      "field": "b",
+                      "value": "x"
+                    },
+                    {
+                      "op": "isTrue",
+                      "field": "c"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "values": {
+        "a": true,
+        "b": "y",
+        "c": true
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "a": true,
+          "b": true,
+          "c": true,
+          "target": true
+        },
+        "required": {
+          "a": false,
+          "b": false,
+          "c": false,
+          "target": true
+        },
+        "options": {
+          "b": [
+            "x",
+            "y"
+          ]
+        },
+        "errors": [
+          {
+            "fieldKey": "target",
+            "code": "REQUIRED"
+          }
+        ],
+        "normalized": {
+          "a": true,
+          "b": "y",
+          "c": true
+        }
+      }
+    },
+    {
+      "name": "nested-and-or-false",
+      "description": "a AND (b=x OR c): a=true, b=y, c=false => hidden; submitted value dropped.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "b",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "x"
+              },
+              {
+                "key": "y"
+              }
+            ]
+          },
+          {
+            "key": "c",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "target",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "and",
+              "args": [
+                {
+                  "op": "isTrue",
+                  "field": "a"
+                },
+                {
+                  "op": "or",
+                  "args": [
+                    {
+                      "op": "eq",
+                      "field": "b",
+                      "value": "x"
+                    },
+                    {
+                      "op": "isTrue",
+                      "field": "c"
+                    }
+                  ]
+                }
+              ]
+            },
+            "requiredWhen": {
+              "op": "and",
+              "args": [
+                {
+                  "op": "isTrue",
+                  "field": "a"
+                },
+                {
+                  "op": "or",
+                  "args": [
+                    {
+                      "op": "eq",
+                      "field": "b",
+                      "value": "x"
+                    },
+                    {
+                      "op": "isTrue",
+                      "field": "c"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "values": {
+        "a": true,
+        "b": "y",
+        "c": false,
+        "target": "ignored"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "a": true,
+          "b": true,
+          "c": true,
+          "target": false
+        },
+        "required": {
+          "a": false,
+          "b": false,
+          "c": false,
+          "target": false
+        },
+        "options": {
+          "b": [
+            "x",
+            "y"
+          ]
+        },
+        "errors": [],
+        "normalized": {
+          "a": true,
+          "b": "y",
+          "c": false
+        }
+      }
+    },
+    {
+      "name": "nested-and-or-outer-false",
+      "description": "a=false short-circuits the AND even if b=x.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "b",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "x"
+              },
+              {
+                "key": "y"
+              }
+            ]
+          },
+          {
+            "key": "c",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "target",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "and",
+              "args": [
+                {
+                  "op": "isTrue",
+                  "field": "a"
+                },
+                {
+                  "op": "or",
+                  "args": [
+                    {
+                      "op": "eq",
+                      "field": "b",
+                      "value": "x"
+                    },
+                    {
+                      "op": "isTrue",
+                      "field": "c"
+                    }
+                  ]
+                }
+              ]
+            },
+            "requiredWhen": {
+              "op": "and",
+              "args": [
+                {
+                  "op": "isTrue",
+                  "field": "a"
+                },
+                {
+                  "op": "or",
+                  "args": [
+                    {
+                      "op": "eq",
+                      "field": "b",
+                      "value": "x"
+                    },
+                    {
+                      "op": "isTrue",
+                      "field": "c"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "values": {
+        "a": false,
+        "b": "x",
+        "c": true,
+        "target": "ignored"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "a": true,
+          "b": true,
+          "c": true,
+          "target": false
+        },
+        "required": {
+          "a": false,
+          "b": false,
+          "c": false,
+          "target": false
+        },
+        "options": {
+          "b": [
+            "x",
+            "y"
+          ]
+        },
+        "errors": [],
+        "normalized": {
+          "a": false,
+          "b": "x",
+          "c": true
+        }
+      }
+    },
+    {
+      "name": "nested-depth-three-ok",
+      "description": "or(and(a,b),c) has depth 3 (leaf=1, and=2, or=3), the maximum allowed, so the definition is valid.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "b",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "c",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "t",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "or",
+              "args": [
+                {
+                  "op": "and",
+                  "args": [
+                    {
+                      "op": "isTrue",
+                      "field": "a"
+                    },
+                    {
+                      "op": "isTrue",
+                      "field": "b"
+                    }
+                  ]
+                },
+                {
+                  "op": "isTrue",
+                  "field": "c"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "values": {
+        "a": true,
+        "b": true,
+        "t": "v"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "a": true,
+          "b": true,
+          "c": true,
+          "t": true
+        },
+        "required": {
+          "a": false,
+          "b": false,
+          "c": false,
+          "t": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "a": true,
+          "b": true,
+          "t": "v"
+        }
+      }
+    },
+    {
+      "name": "not-operator",
+      "description": "not inverts: not(eq(b, x)) with b=y is true.",
+      "schema": {
+        "fields": [
+          {
+            "key": "b",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "x"
+              },
+              {
+                "key": "y"
+              }
+            ]
+          },
+          {
+            "key": "t",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "not",
+              "arg": {
+                "op": "eq",
+                "field": "b",
+                "value": "x"
+              }
+            }
+          }
+        ]
+      },
+      "values": {
+        "b": "y"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "b": true,
+          "t": true
+        },
+        "required": {
+          "b": false,
+          "t": false
+        },
+        "options": {
+          "b": [
+            "x",
+            "y"
+          ]
+        },
+        "errors": [],
+        "normalized": {
+          "b": "y"
+        }
+      }
+    },
+    {
+      "name": "hidden-required-is-not-required",
+      "description": "A statically required field that is hidden is not required and produces no error.",
+      "schema": {
+        "fields": [
+          {
+            "key": "has_pw",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "pw_note",
+            "control": "TEXT",
+            "required": true,
+            "showWhen": {
+              "op": "isTrue",
+              "field": "has_pw"
+            }
+          }
+        ]
+      },
+      "values": {
+        "has_pw": false
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "has_pw": true,
+          "pw_note": false
+        },
+        "required": {
+          "has_pw": false,
+          "pw_note": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "has_pw": false
+        }
+      }
+    },
+    {
+      "name": "hidden-value-reads-as-null-for-dependents",
+      "description": "A hidden field reads as null: b is hidden (a=false) so c, which needs b=x, is hidden too even though b=x was submitted.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "b",
+            "control": "SELECT",
+            "showWhen": {
+              "op": "isTrue",
+              "field": "a"
+            },
+            "options": [
+              {
+                "key": "x"
+              },
+              {
+                "key": "y"
+              }
+            ]
+          },
+          {
+            "key": "c",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "eq",
+              "field": "b",
+              "value": "x"
+            }
+          }
+        ]
+      },
+      "values": {
+        "a": false,
+        "b": "x",
+        "c": "v"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "a": true,
+          "b": false,
+          "c": false
+        },
+        "required": {
+          "a": false,
+          "b": false,
+          "c": false
+        },
+        "options": {
+          "b": [
+            "x",
+            "y"
+          ]
+        },
+        "errors": [],
+        "normalized": {
+          "a": false
+        }
+      }
+    },
+    {
+      "name": "hidden-invalid-value-is-silently-dropped",
+      "description": "Hidden fields are not validated: an invalid-typed value for a hidden field is dropped without error.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "n",
+            "control": "NUMBER",
+            "showWhen": {
+              "op": "isTrue",
+              "field": "a"
+            }
+          }
+        ]
+      },
+      "values": {
+        "a": false,
+        "n": "not-a-number"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "a": true,
+          "n": false
+        },
+        "required": {
+          "a": false,
+          "n": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "a": false
+        }
+      }
+    },
+    {
+      "name": "section-hidden-hides-members",
+      "description": "Fields in a hidden section inherit hidden: adv_note (required) is hidden, not required, and dropped.",
+      "schema": {
+        "fields": [
+          {
+            "key": "adv",
+            "control": "SECTION_HEADING",
+            "showWhen": {
+              "op": "isTrue",
+              "field": "show_adv"
+            }
+          },
+          {
+            "key": "show_adv",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "adv_note",
+            "control": "TEXT",
+            "section": "adv",
+            "required": true
+          },
+          {
+            "key": "plain",
+            "control": "TEXT"
+          }
+        ]
+      },
+      "values": {
+        "show_adv": false,
+        "adv_note": "x",
+        "plain": "p"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "adv": false,
+          "show_adv": true,
+          "adv_note": false,
+          "plain": true
+        },
+        "required": {
+          "adv": false,
+          "show_adv": false,
+          "adv_note": false,
+          "plain": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "show_adv": false,
+          "plain": "p"
+        }
+      }
+    },
+    {
+      "name": "section-visible-shows-members",
+      "description": "With the section visible, adv_note (required) is enforced.",
+      "schema": {
+        "fields": [
+          {
+            "key": "adv",
+            "control": "SECTION_HEADING",
+            "showWhen": {
+              "op": "isTrue",
+              "field": "show_adv"
+            }
+          },
+          {
+            "key": "show_adv",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "adv_note",
+            "control": "TEXT",
+            "section": "adv",
+            "required": true
+          },
+          {
+            "key": "plain",
+            "control": "TEXT"
+          }
+        ]
+      },
+      "values": {
+        "show_adv": true
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "adv": true,
+          "show_adv": true,
+          "adv_note": true,
+          "plain": true
+        },
+        "required": {
+          "adv": false,
+          "show_adv": false,
+          "adv_note": true,
+          "plain": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "adv_note",
+            "code": "REQUIRED"
+          }
+        ],
+        "normalized": {
+          "show_adv": true
+        }
+      }
+    },
+    {
+      "name": "draft-mode-skips-required-only",
+      "description": "mode=draft: REQUIRED is not enforced but type errors still are; required map is unchanged.",
+      "mode": "draft",
+      "schema": {
+        "fields": [
+          {
+            "key": "name",
+            "control": "TEXT",
+            "required": true
+          },
+          {
+            "key": "count",
+            "control": "NUMBER",
+            "required": true
+          }
+        ]
+      },
+      "values": {
+        "count": "x"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "name": true,
+          "count": true
+        },
+        "required": {
+          "name": true,
+          "count": true
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "count",
+            "code": "INVALID_TYPE"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "unknown-key-submitted",
+      "description": "A submitted key that is not a field (or is a non-input SECTION_HEADING / HELP_TEXT) yields UNKNOWN_FIELD.",
+      "schema": {
+        "fields": [
+          {
+            "key": "title",
+            "control": "SECTION_HEADING"
+          },
+          {
+            "key": "hint",
+            "control": "HELP_TEXT"
+          },
+          {
+            "key": "name",
+            "control": "TEXT"
+          }
+        ]
+      },
+      "values": {
+        "name": "n",
+        "ghost": 1,
+        "title": "x",
+        "hint": "y"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "title": true,
+          "hint": true,
+          "name": true
+        },
+        "required": {
+          "title": false,
+          "hint": false,
+          "name": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "ghost",
+            "code": "UNKNOWN_FIELD"
+          },
+          {
+            "fieldKey": "hint",
+            "code": "UNKNOWN_FIELD"
+          },
+          {
+            "fieldKey": "title",
+            "code": "UNKNOWN_FIELD"
+          }
+        ],
+        "normalized": {
+          "name": "n"
+        }
+      }
+    },
+    {
+      "name": "def-circular-two-fields",
+      "description": "a shows when b is true, b shows when a is true: CIRCULAR_DEPENDENCY.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "CHECKBOX",
+            "showWhen": {
+              "op": "isTrue",
+              "field": "b"
+            }
+          },
+          {
+            "key": "b",
+            "control": "CHECKBOX",
+            "showWhen": {
+              "op": "isTrue",
+              "field": "a"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "CIRCULAR_DEPENDENCY"
+        ]
+      }
+    },
+    {
+      "name": "def-circular-three-mixed-rule-kinds",
+      "description": "Cycle across showWhen, requiredWhen and an option availableWhen: a -> b -> c -> a.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "CHECKBOX",
+            "showWhen": {
+              "op": "isTrue",
+              "field": "b"
+            }
+          },
+          {
+            "key": "b",
+            "control": "CHECKBOX",
+            "requiredWhen": {
+              "op": "eq",
+              "field": "c",
+              "value": "x"
+            }
+          },
+          {
+            "key": "c",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "x",
+                "availableWhen": {
+                  "op": "isTrue",
+                  "field": "a"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "CIRCULAR_DEPENDENCY"
+        ]
+      }
+    },
+    {
+      "name": "def-circular-through-section",
+      "description": "The heading depends on a member of its own section: member -> heading -> member.",
+      "schema": {
+        "fields": [
+          {
+            "key": "adv",
+            "control": "SECTION_HEADING",
+            "showWhen": {
+              "op": "isTrue",
+              "field": "flag"
+            }
+          },
+          {
+            "key": "flag",
+            "control": "CHECKBOX",
+            "section": "adv"
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "CIRCULAR_DEPENDENCY"
+        ]
+      }
+    },
+    {
+      "name": "def-self-reference-show-when",
+      "description": "A field may not reference itself.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "CHECKBOX",
+            "showWhen": {
+              "op": "isTrue",
+              "field": "a"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "SELF_REFERENCE"
+        ]
+      }
+    },
+    {
+      "name": "def-self-reference-option-rule",
+      "description": "An option rule may not reference its own field.",
+      "schema": {
+        "fields": [
+          {
+            "key": "p",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "x",
+                "availableWhen": {
+                  "op": "eq",
+                  "field": "p",
+                  "value": "y"
+                }
+              },
+              {
+                "key": "y"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "SELF_REFERENCE"
+        ]
+      }
+    },
+    {
+      "name": "def-unknown-field-reference",
+      "description": "Rule references a field that is not in the form.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "isTrue",
+              "field": "missing_field"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "UNKNOWN_FIELD_REFERENCE"
+        ]
+      }
+    },
+    {
+      "name": "def-reference-to-heading",
+      "description": "Rules may not reference SECTION_HEADING or HELP_TEXT fields.",
+      "schema": {
+        "fields": [
+          {
+            "key": "h",
+            "control": "SECTION_HEADING"
+          },
+          {
+            "key": "a",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "isEmpty",
+              "field": "h"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_REFERENCE_TARGET"
+        ]
+      }
+    },
+    {
+      "name": "def-rule-too-deep",
+      "description": "and > or > not > leaf has depth 4 (> 3): RULE_TOO_DEEP.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "t",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "and",
+              "args": [
+                {
+                  "op": "or",
+                  "args": [
+                    {
+                      "op": "not",
+                      "arg": {
+                        "op": "isTrue",
+                        "field": "a"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "RULE_TOO_DEEP"
+        ]
+      }
+    },
+    {
+      "name": "def-operator-type-mismatch-ordering-on-select",
+      "description": "Ordering operators are not allowed on SELECT.",
+      "schema": {
+        "fields": [
+          {
+            "key": "p",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "x"
+              }
+            ]
+          },
+          {
+            "key": "t",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "gt",
+              "field": "p",
+              "value": "x"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "OPERATOR_TYPE_MISMATCH"
+        ]
+      }
+    },
+    {
+      "name": "def-operator-type-mismatch-istrue-on-text",
+      "description": "isTrue only applies to CHECKBOX.",
+      "schema": {
+        "fields": [
+          {
+            "key": "p",
+            "control": "TEXT"
+          },
+          {
+            "key": "t",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "isTrue",
+              "field": "p"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "OPERATOR_TYPE_MISMATCH"
+        ]
+      }
+    },
+    {
+      "name": "def-literal-type-mismatch",
+      "description": "NUMBER compared with a string literal.",
+      "schema": {
+        "fields": [
+          {
+            "key": "n",
+            "control": "NUMBER"
+          },
+          {
+            "key": "t",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "eq",
+              "field": "n",
+              "value": "5"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "LITERAL_TYPE_MISMATCH"
+        ]
+      }
+    },
+    {
+      "name": "def-unknown-option-reference",
+      "description": "Rule literal is not a declared option key of the referenced SELECT.",
+      "schema": {
+        "fields": [
+          {
+            "key": "p",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "fast"
+              },
+              {
+                "key": "full"
+              }
+            ]
+          },
+          {
+            "key": "t",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "eq",
+              "field": "p",
+              "value": "turbo"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "UNKNOWN_OPTION_REFERENCE"
+        ]
+      }
+    },
+    {
+      "name": "def-duplicate-field-key",
+      "description": "Two fields share a key.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "TEXT"
+          },
+          {
+            "key": "a",
+            "control": "NUMBER"
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "DUPLICATE_FIELD_KEY"
+        ]
+      }
+    },
+    {
+      "name": "def-duplicate-option-key",
+      "description": "Two options of one field share a key.",
+      "schema": {
+        "fields": [
+          {
+            "key": "p",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "x"
+              },
+              {
+                "key": "x"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "DUPLICATE_OPTION_KEY"
+        ]
+      }
+    },
+    {
+      "name": "def-rule-fails-json-schema",
+      "description": "Unknown operator \"xor\" violates the rule JSON schema.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "t",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "xor",
+              "args": [
+                {
+                  "op": "isTrue",
+                  "field": "a"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "SCHEMA_VIOLATION"
+        ]
+      }
+    },
+    {
+      "name": "def-invalid-section",
+      "description": "section must name an existing SECTION_HEADING.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "TEXT",
+            "section": "nope"
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_SECTION"
+        ]
+      }
+    }
+  ]
+}

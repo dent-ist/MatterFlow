@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://matterflow.internal/schemas/form-rule.v1.json",
+  "$comment": "Root = one rule node (ShowWhenJson / RequiredWhenJson / AvailableWhenJson). $defs/formFragment and $defs/vectorFile describe the conformance-vector file. Semantics (types, null handling, depth, cycles) live in form-rules.md; this schema covers structure only. Only the keyword subset checked by validate-contracts.mjs is used.",
+  "$ref": "#/$defs/node",
+  "examples": [
+    { "op": "isTrue", "field": "requires_ocr" },
+    { "op": "and", "args": [ { "op": "isTrue", "field": "requires_ocr" }, { "op": "neq", "field": "ocr_language", "value": "eng" } ] },
+    { "op": "or", "args": [ { "op": "in", "field": "profile", "value": ["fast", "full"] }, { "op": "not", "arg": { "op": "isEmpty", "field": "notes" } } ] },
+    { "op": "contains", "field": "outputs", "value": "pdf" },
+    { "op": "gte", "field": "volume", "value": 1000 }
+  ],
+  "$defs": {
+    "fieldKey": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+    "optionKey": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$" },
+    "scalar": { "type": ["string", "number", "boolean"] },
+    "node": {
+      "oneOf": [
+        { "$ref": "#/$defs/group" },
+        { "$ref": "#/$defs/not" },
+        { "$ref": "#/$defs/compareScalar" },
+        { "$ref": "#/$defs/compareSet" },
+        { "$ref": "#/$defs/unary" }
+      ]
+    },
+    "group": {
+      "type": "object", "additionalProperties": false, "required": ["op", "args"],
+      "properties": {
+        "op": { "enum": ["and", "or"] },
+        "args": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/$defs/node" } }
+      }
+    },
+    "not": {
+      "type": "object", "additionalProperties": false, "required": ["op", "arg"],
+      "properties": { "op": { "const": "not" }, "arg": { "$ref": "#/$defs/node" } }
+    },
+    "compareScalar": {
+      "type": "object", "additionalProperties": false, "required": ["op", "field", "value"],
+      "properties": {
+        "op": { "enum": ["eq", "neq", "gt", "gte", "lt", "lte", "contains"] },
+        "field": { "$ref": "#/$defs/fieldKey" },
+        "value": { "$ref": "#/$defs/scalar" }
+      }
+    },
+    "compareSet": {
+      "type": "object", "additionalProperties": false, "required": ["op", "field", "value"],
+      "properties": {
+        "op": { "enum": ["in", "notIn"] },
+        "field": { "$ref": "#/$defs/fieldKey" },
+        "value": { "type": "array", "minItems": 1, "maxItems": 50, "items": { "$ref": "#/$defs/scalar" } }
+      }
+    },
+    "unary": {
+      "type": "object", "additionalProperties": false, "required": ["op", "field"],
+      "properties": {
+        "op": { "enum": ["isEmpty", "isNotEmpty", "isTrue", "isFalse"] },
+        "field": { "$ref": "#/$defs/fieldKey" }
+      }
+    },
+
+    "control": {
+      "enum": ["TEXT", "TEXTAREA", "NUMBER", "CHECKBOX", "SELECT", "RADIO", "MULTISELECT", "DATE", "DATETIME", "URL", "ASSET_REF", "USER_REF", "SECTION_HEADING", "HELP_TEXT"]
+    },
+    "anyRule": { "$comment": "Rule slot inside a vector fragment. Unconstrained here so a vector can carry a deliberately malformed rule; the validator script checks it against #/$defs/node unless the vector expects SCHEMA_VIOLATION." },
+    "validation": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "min": { "type": ["number", "string"] },
+        "max": { "type": ["number", "string"] },
+        "maxLength": { "type": "integer", "minimum": 1 },
+        "pattern": { "type": "string" }
+      }
+    },
+    "option": {
+      "type": "object", "additionalProperties": false, "required": ["key"],
+      "properties": {
+        "key": { "type": "string" },
+        "label": { "type": "string" },
+        "availableWhen": { "$ref": "#/$defs/anyRule" }
+      }
+    },
+    "formField": {
+      "type": "object", "additionalProperties": false, "required": ["key", "control"],
+      "properties": {
+        "key": { "type": "string" },
+        "control": { "$ref": "#/$defs/control" },
+        "label": { "type": "string" },
+        "required": { "type": "boolean" },
+        "section": { "type": "string" },
+        "validation": { "$ref": "#/$defs/validation" },
+        "showWhen": { "$ref": "#/$defs/anyRule" },
+        "requiredWhen": { "$ref": "#/$defs/anyRule" },
+        "options": { "type": "array", "items": { "$ref": "#/$defs/option" } }
+      }
+    },
+    "formFragment": {
+      "type": "object", "additionalProperties": false, "required": ["fields"],
+      "properties": { "fields": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/formField" } } }
+    },
+    "errorCode": { "enum": ["REQUIRED", "INVALID_TYPE", "OUT_OF_RANGE", "TOO_LONG", "PATTERN", "OPTION_NOT_ALLOWED", "UNKNOWN_FIELD"] },
+    "definitionErrorCode": {
+      "enum": ["DUPLICATE_FIELD_KEY", "DUPLICATE_OPTION_KEY", "SCHEMA_VIOLATION", "RULE_TOO_DEEP", "UNKNOWN_FIELD_REFERENCE", "INVALID_REFERENCE_TARGET", "SELF_REFERENCE", "CIRCULAR_DEPENDENCY", "OPERATOR_TYPE_MISMATCH", "LITERAL_TYPE_MISMATCH", "UNKNOWN_OPTION_REFERENCE", "INVALID_SECTION"]
+    },
+    "expectedValid": {
+      "type": "object", "additionalProperties": false,
+      "required": ["definitionValid", "visible", "required", "options", "errors", "normalized"],
+      "properties": {
+        "definitionValid": { "const": true },
+        "visible": { "type": "object", "additionalProperties": { "type": "boolean" } },
+        "required": { "type": "object", "additionalProperties": { "type": "boolean" } },
+        "options": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "string" } } },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["fieldKey", "code"],
+            "properties": { "fieldKey": { "type": "string" }, "code": { "$ref": "#/$defs/errorCode" } }
+          }
+        },
+        "normalized": { "type": "object" }
+      }
+    },
+    "expectedInvalid": {
+      "type": "object", "additionalProperties": false, "required": ["definitionValid", "definitionErrors"],
+      "properties": {
+        "definitionValid": { "const": false },
+        "definitionErrors": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/definitionErrorCode" } }
+      }
+    },
+    "vector": {
+      "type": "object", "additionalProperties": false, "required": ["name", "description", "schema", "values", "expected"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "description": { "type": "string" },
+        "mode": { "enum": ["submit", "draft"] },
+        "schema": { "$ref": "#/$defs/formFragment" },
+        "values": { "type": "object" },
+        "expected": { "oneOf": [ { "$ref": "#/$defs/expectedValid" }, { "$ref": "#/$defs/expectedInvalid" } ] }
+      }
+    },
+    "vectorFile": {
+      "type": "object", "additionalProperties": false, "required": ["contractVersion", "vectors"],
+      "properties": {
+        "$comment": { "type": "string" },
+        "contractVersion": { "const": 1 },
+        "vectors": { "type": "array", "minItems": 30, "items": { "$ref": "#/$defs/vector" } }
+      }
+    }
+  }
+}
