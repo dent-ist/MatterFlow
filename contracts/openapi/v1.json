@@ -2707,6 +2707,86 @@
         }
       }
     },
+    "/api/v1/intake/parse-email": {
+      "post": {
+        "tags": [
+          "Intake"
+        ],
+        "operationId": "ParseEmailFile",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "The .eml or .msg file (at most 10 MB).",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParsedEmailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intake/parse-email/text": {
+      "post": {
+        "tags": [
+          "Intake"
+        ],
+        "operationId": "ParseEmailText",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParsePastedTextRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParsePastedTextRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParsePastedTextRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParsedEmailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/clients": {
       "get": {
         "tags": [
@@ -5417,6 +5497,13 @@
           }
         }
       },
+      "EmailSource": {
+        "enum": [
+          "eml",
+          "msg",
+          "text"
+        ]
+      },
       "EnsureFormDefinitionRequest": {
         "required": [
           "ownerKind"
@@ -6233,6 +6320,62 @@
           "pageSize": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "ParsedEmailResponse": {
+        "required": [
+          "subject",
+          "body",
+          "fromName",
+          "fromEmail",
+          "sentAt",
+          "source",
+          "warnings"
+        ],
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "fromName": {
+            "type": "string"
+          },
+          "fromEmail": {
+            "type": "string"
+          },
+          "sentAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "source": {
+            "$ref": "#/components/schemas/EmailSource"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ParsePastedTextRequest": {
+        "required": [
+          "pastedText"
+        ],
+        "type": "object",
+        "properties": {
+          "pastedText": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -8208,6 +8351,9 @@
     },
     {
       "name": "Users"
+    },
+    {
+      "name": "Intake"
     },
     {
       "name": "Clients"

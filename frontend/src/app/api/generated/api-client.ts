@@ -4254,6 +4254,144 @@ export class UsersClient implements IUsersClient {
     }
 }
 
+export interface IIntakeClient {
+    /**
+     * @param file (optional) The .eml or .msg file (at most 10 MB).
+     * @return OK
+     */
+    parseEmailFile(file?: FileParameter | undefined): Observable<ParsedEmailResponse>;
+    /**
+     * @return OK
+     */
+    parseEmailText(body: ParsePastedTextRequest): Observable<ParsedEmailResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class IntakeClient implements IIntakeClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param file (optional) The .eml or .msg file (at most 10 MB).
+     * @return OK
+     */
+    parseEmailFile(file?: FileParameter | undefined): Observable<ParsedEmailResponse> {
+        let url_ = this.baseUrl + "/api/v1/intake/parse-email";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = new FormData();
+        if (file === null || file === undefined)
+            throw new globalThis.Error("The parameter 'file' cannot be null.");
+        else
+            content_.append("file", file.data, file.fileName ? file.fileName : "file");
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processParseEmailFile(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processParseEmailFile(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ParsedEmailResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ParsedEmailResponse>;
+        }));
+    }
+
+    protected processParseEmailFile(response: HttpResponseBase): Observable<ParsedEmailResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ParsedEmailResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    parseEmailText(body: ParsePastedTextRequest): Observable<ParsedEmailResponse> {
+        let url_ = this.baseUrl + "/api/v1/intake/parse-email/text";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processParseEmailText(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processParseEmailText(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ParsedEmailResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ParsedEmailResponse>;
+        }));
+    }
+
+    protected processParseEmailText(response: HttpResponseBase): Observable<ParsedEmailResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ParsedEmailResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IClientsClient {
     /**
      * @param q (optional) 
@@ -6986,6 +7124,12 @@ export interface CustomFieldFormResponse {
     [key: string]: any;
 }
 
+export enum EmailSource {
+    Eml = "eml",
+    Msg = "msg",
+    Text = "text",
+}
+
 export interface EnsureFormDefinitionRequest {
     ownerKind: FormOwnerKind;
     ownerId?: number | undefined;
@@ -7223,6 +7367,24 @@ export interface PagedResultOfWorkflowSummary {
     total: number;
     page: number;
     pageSize: number;
+
+    [key: string]: any;
+}
+
+export interface ParsedEmailResponse {
+    subject: string;
+    body: string;
+    fromName: string;
+    fromEmail: string;
+    sentAt: string | undefined;
+    source: EmailSource;
+    warnings: string[];
+
+    [key: string]: any;
+}
+
+export interface ParsePastedTextRequest {
+    pastedText: string | undefined;
 
     [key: string]: any;
 }
@@ -7840,6 +8002,11 @@ export enum ApiProblemDetailsCode {
     ASSET_INACTIVE = "ASSET_INACTIVE",
     UNSUPPORTED_MEDIA_TYPE = "UNSUPPORTED_MEDIA_TYPE",
     INTERNAL_ERROR = "INTERNAL_ERROR",
+}
+
+export interface FileParameter {
+    data: any;
+    fileName: string;
 }
 
 export class SwaggerException extends Error {

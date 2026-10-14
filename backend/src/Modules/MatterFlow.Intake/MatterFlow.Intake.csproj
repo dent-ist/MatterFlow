@@ -1,5 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\MatterFlow.SharedKernel\MatterFlow.SharedKernel.csproj" />
+    <ProjectReference Include="..\MatterFlow.Identity.Contracts\MatterFlow.Identity.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MatterFlow.UnitTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="MimeKit" />
+    <PackageReference Include="MsgReader" />
+    <PackageReference Include="HtmlAgilityPack" />
   </ItemGroup>
 </Project>

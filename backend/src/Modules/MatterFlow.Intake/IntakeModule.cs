@@ -1,3 +1,5 @@
+using MatterFlow.Intake.Api;
+using MatterFlow.Intake.Application;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MatterFlow.Intake;
@@ -9,6 +11,11 @@ public static class IntakeModule
     public static IServiceCollection AddIntakeModule(this IServiceCollection services)
     {
         services.AddControllers().AddApplicationPart(typeof(IntakeModule).Assembly);
+
+        services.AddOptions<IntakeOptions>().BindConfiguration(IntakeOptions.SectionName);
+
+        services.AddScoped<EmailParseService>();
+        services.AddIntakeOpenApi();
         return services;
     }
 }

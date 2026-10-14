@@ -135,6 +135,14 @@ Input arrives as either `text/html` or `text/plain` from the clipboard (new Outl
 5. Only the **first** header block is treated as the message header; later `From:/Sent:` blocks (replies/forwards) stay in the body.
 6. The user always reviews/edits every prefilled field. Unit-test the helper with vectors made from the sample `.eml` files and real pasted Outlook text collected by the spike's `paste` events (the product owner's JSON reports provide these vectors).
 
+### Implementation record (tickets 57 and 58)
+
+Restored through the proxy and checked in the restored `.nuspec` files: MimeKit 4.18.1 (MIT), MsgReader 6.2.0 (MIT), HtmlAgilityPack 1.13.1 (MIT). Transitive: BouncyCastle.Cryptography (MIT), Microsoft.Maui.Graphics (MIT; the net10.0 asset is pulled, platform TFMs are not used on the server), Microsoft.IO.RecyclableMemoryStream (MIT), OpenMcdf (MPL-2.0), UTF.Unknown (MPL-1.1), System.Security.Cryptography.Pkcs (MIT). RtfPipe 2.0.7677.4303 publishes no license in its `.nuspec` (project page erdomke/RtfPipe); its licence must be confirmed from the repository before release, and the licence inventory updated. The GitHub LICENSE files could not be read from the build environment, so these are the NuGet-declared expressions. MsgReader was kept: its dependency tree restores and loads fine on net10.0, so the OpenMcdf-only alternative was not needed.
+
+`.msg` is covered by a fixture built in memory with OpenMcdf (`MsgFixture`); real Outlook `.msg` files are still wanted.
+
+API shape: `POST /api/v1/intake/parse-email` accepts a multipart `file` or a JSON `{ "pastedText" }` body on the same URL. The OpenAPI document describes the multipart upload there (`ParseEmailFile`) and the JSON variant at `POST /api/v1/intake/parse-email/text` (`ParseEmailText`), because one path cannot carry two request bodies for the generated client. Pasted-text header detection runs on the server (single implementation); the client sends the pasted text as is.
+
 ## 7. Consequences
 
 - Architecture s13 stays valid: server endpoint (MimeKit + MsgReader) serves both file picker and, if applicable, drop. The spike result determines only whether the dropzone ships.

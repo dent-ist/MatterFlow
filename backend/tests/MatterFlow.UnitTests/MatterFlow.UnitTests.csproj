@@ -16,6 +16,7 @@
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Configuration\MatterFlow.Configuration.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Identity\MatterFlow.Identity.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Identity.Contracts\MatterFlow.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Intake\MatterFlow.Intake.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Organization\MatterFlow.Organization.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Organization.Contracts\MatterFlow.Organization.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkManagement\MatterFlow.WorkManagement.csproj" />
@@ -24,6 +25,10 @@
   <ItemGroup>
     <!-- Shared conformance vectors: linked, never forked (contracts/form-rules.md section 5). -->
     <None Include="..\..\..\contracts\form-rules.vectors.json" Link="Configuration\Forms\form-rules.vectors.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Email fixtures of the Outlook drag-and-drop spike, linked and never forked. -->
+    <None Include="..\..\..\tools\spike-outlook-dnd\samples\*.eml" Link="Intake\samples\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\MatterFlow.Data\MatterFlow.Data.csproj" />
