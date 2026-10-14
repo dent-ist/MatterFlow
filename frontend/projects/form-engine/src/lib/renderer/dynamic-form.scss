@@ -1,0 +1,82 @@
+:host {
+  display: block;
+}
+
+.mf-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 40rem;
+}
+
+.mf-form__heading {
+  margin: 0.5rem 0 0;
+  font-size: 1.125rem;
+}
+
+.mf-form__help,
+.mf-form__helptext,
+.mf-field__help {
+  margin: 0;
+  color: var(--mf-text-muted, #4b5563);
+  font-size: 0.875rem;
+}
+
+.mf-form__invalid,
+.mf-field__error {
+  display: flex;
+  gap: 0.375rem;
+  align-items: baseline;
+  margin: 0;
+  color: var(--mf-danger-text, #b91c1c);
+  font-size: 0.875rem;
+}
+
+.mf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+
+  > input,
+  > textarea,
+  > p-inputnumber,
+  > p-select,
+  > p-multiselect,
+  > p-datepicker {
+    width: 100%;
+  }
+}
+
+.mf-field__group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.mf-field__label {
+  font-weight: 600;
+}
+
+.mf-field__req {
+  font-weight: 400;
+  color: var(--mf-text-muted, #4b5563);
+}
+
+.mf-field__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin-top: 0.375rem;
+}
+
+.mf-field__option,
+.mf-field__check {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.mf-field__value {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

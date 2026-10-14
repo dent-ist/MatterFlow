@@ -1,0 +1,251 @@
+@if (definitionErrors().length) {
+  <div class="mf-form__invalid" role="alert">
+    <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+    This form definition is not valid and cannot be shown ({{ definitionErrors().join(', ') }}).
+  </div>
+} @else {
+  <div class="mf-form" [class.mf-form--readonly]="readOnly()">
+    @for (row of rows(); track row.field.key) {
+      @switch (row.field.control) {
+        @case ('SECTION_HEADING') {
+          <h3 class="mf-form__heading">{{ row.label }}</h3>
+          @if (row.field.helpText) {
+            <p class="mf-form__help">{{ row.field.helpText }}</p>
+          }
+        }
+        @case ('HELP_TEXT') {
+          <p class="mf-form__helptext">{{ row.field.helpText || row.label }}</p>
+        }
+        @default {
+          <div
+            class="mf-field"
+            [attr.data-field]="row.field.key"
+            (focusout)="markTouched(row.field.key)"
+          >
+            @if (row.field.control === 'RADIO' && !readOnly()) {
+              <fieldset class="mf-field__group">
+                <legend class="mf-field__label">
+                  {{ row.label }}
+                  @if (row.required) {
+                    <span class="mf-field__req">(required)</span>
+                  }
+                </legend>
+                <div
+                  class="mf-field__options"
+                  role="radiogroup"
+                  [attr.aria-invalid]="row.error ? 'true' : null"
+                  [attr.aria-describedby]="describedBy(row)"
+                >
+                  @for (opt of row.items; track opt.value) {
+                    <span class="mf-field__option">
+                      <p-radiobutton
+                        [name]="row.id"
+                        [value]="opt.value"
+                        [inputId]="row.id + '-' + opt.value"
+                        [invalid]="!!row.error"
+                        [ngModel]="row.model"
+                        (ngModelChange)="setValue(row.field, $event)"
+                      />
+                      <label [for]="row.id + '-' + opt.value">{{ opt.label }}</label>
+                    </span>
+                  }
+                </div>
+              </fieldset>
+            } @else if (row.field.control === 'CHECKBOX' && !readOnly()) {
+              <div class="mf-field__check">
+                <p-checkbox
+                  [binary]="true"
+                  [inputId]="row.id"
+                  [invalid]="!!row.error"
+                  [ngModel]="row.model"
+                  (ngModelChange)="setValue(row.field, $event)"
+                />
+                <label [for]="row.id" class="mf-field__label">
+                  {{ row.label }}
+                  @if (row.required) {
+                    <span class="mf-field__req">(required)</span>
+                  }
+                </label>
+              </div>
+            } @else if (readOnly()) {
+              <div class="mf-field__label" [id]="row.id + '-label'">{{ row.label }}</div>
+              @if (
+                (row.field.control === 'ASSET_REF' || row.field.control === 'USER_REF') &&
+                pickerFor(row) &&
+                row.model !== null
+              ) {
+                <div class="mf-field__value">
+                  <ng-container
+                    [mfPickerHost]="pickerFor(row)!"
+                    [value]="$any(row.model)"
+                    [pickerDisabled]="true"
+                    [pickerInputId]="row.id"
+                    [pickerLabel]="row.label"
+                  />
+                </div>
+              } @else {
+                <div class="mf-field__value" [attr.aria-labelledby]="row.id + '-label'">
+                  {{ row.text }}
+                </div>
+              }
+            } @else {
+              <label [for]="row.id" class="mf-field__label">
+                {{ row.label }}
+                @if (row.required) {
+                  <span class="mf-field__req">(required)</span>
+                }
+              </label>
+              @switch (row.field.control) {
+                @case ('TEXT') {
+                  <input
+                    pInputText
+                    type="text"
+                    [id]="row.id"
+                    [placeholder]="row.field.placeholder ?? ''"
+                    [attr.aria-invalid]="row.error ? 'true' : null"
+                    [attr.aria-describedby]="describedBy(row)"
+                    [ngModel]="row.model"
+                    (ngModelChange)="setValue(row.field, $event)"
+                  />
+                }
+                @case ('URL') {
+                  <input
+                    pInputText
+                    type="text"
+                    inputmode="url"
+                    [id]="row.id"
+                    [placeholder]="row.field.placeholder ?? 'https://'"
+                    [attr.aria-invalid]="row.error ? 'true' : null"
+                    [attr.aria-describedby]="describedBy(row)"
+                    [ngModel]="row.model"
+                    (ngModelChange)="setValue(row.field, $event)"
+                  />
+                }
+                @case ('TEXTAREA') {
+                  <textarea
+                    pTextarea
+                    rows="4"
+                    [id]="row.id"
+                    [placeholder]="row.field.placeholder ?? ''"
+                    [attr.aria-invalid]="row.error ? 'true' : null"
+                    [attr.aria-describedby]="describedBy(row)"
+                    [ngModel]="row.model"
+                    (ngModelChange)="setValue(row.field, $event)"
+                  ></textarea>
+                }
+                @case ('NUMBER') {
+                  <p-inputnumber
+                    [inputId]="row.id"
+                    [useGrouping]="false"
+                    [maxFractionDigits]="10"
+                    [invalid]="!!row.error"
+                    [placeholder]="row.field.placeholder ?? ''"
+                    [ngModel]="row.model"
+                    (ngModelChange)="setValue(row.field, $event)"
+                  />
+                }
+                @case ('SELECT') {
+                  <p-select
+                    [inputId]="row.id"
+                    [options]="row.items"
+                    optionLabel="label"
+                    optionValue="value"
+                    [showClear]="!row.required"
+                    [placeholder]="row.field.placeholder ?? 'Select...'"
+                    [invalid]="!!row.error"
+                    [ngModel]="row.model"
+                    (ngModelChange)="setValue(row.field, $event)"
+                  />
+                }
+                @case ('MULTISELECT') {
+                  <p-multiselect
+                    [inputId]="row.id"
+                    [options]="row.items"
+                    optionLabel="label"
+                    optionValue="value"
+                    [placeholder]="row.field.placeholder ?? 'Select...'"
+                    [invalid]="!!row.error"
+                    [ngModel]="row.model"
+                    (ngModelChange)="setValue(row.field, $event)"
+                  />
+                }
+                @case ('DATE') {
+                  <p-datepicker
+                    [inputId]="row.id"
+                    dateFormat="yy-mm-dd"
+                    [showIcon]="true"
+                    [invalid]="!!row.error"
+                    [ngModel]="row.model"
+                    (ngModelChange)="setValue(row.field, $event)"
+                  />
+                }
+                @case ('DATETIME') {
+                  <p-datepicker
+                    [inputId]="row.id"
+                    dateFormat="yy-mm-dd"
+                    [showTime]="true"
+                    [showIcon]="true"
+                    [invalid]="!!row.error"
+                    [ngModel]="row.model"
+                    (ngModelChange)="setValue(row.field, $event)"
+                  />
+                }
+                @case ('ASSET_REF') {
+                  @if (pickerFor(row); as picker) {
+                    <ng-container
+                      [mfPickerHost]="picker"
+                      [value]="$any(row.model)"
+                      [pickerInvalid]="!!row.error"
+                      [pickerInputId]="row.id"
+                      [pickerLabel]="row.label"
+                      (valueChange)="setValue(row.field, $event)"
+                    />
+                  } @else {
+                    <p-inputnumber
+                      [inputId]="row.id"
+                      [useGrouping]="false"
+                      [min]="1"
+                      [invalid]="!!row.error"
+                      [ngModel]="row.model"
+                      (ngModelChange)="setValue(row.field, $event)"
+                    />
+                  }
+                }
+                @case ('USER_REF') {
+                  @if (pickerFor(row); as picker) {
+                    <ng-container
+                      [mfPickerHost]="picker"
+                      [value]="$any(row.model)"
+                      [pickerInvalid]="!!row.error"
+                      [pickerInputId]="row.id"
+                      [pickerLabel]="row.label"
+                      (valueChange)="setValue(row.field, $event)"
+                    />
+                  } @else {
+                    <p-inputnumber
+                      [inputId]="row.id"
+                      [useGrouping]="false"
+                      [min]="1"
+                      [invalid]="!!row.error"
+                      [ngModel]="row.model"
+                      (ngModelChange)="setValue(row.field, $event)"
+                    />
+                  }
+                }
+              }
+            }
+            @if (row.field.helpText) {
+              <p class="mf-field__help" [id]="helpId(row)">{{ row.field.helpText }}</p>
+            }
+            @if (row.error) {
+              <p class="mf-field__error" role="alert" [id]="errorId(row)">
+                <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+                {{ row.error }}
+              </p>
+            }
+          </div>
+        }
+      }
+    }
+  </div>
+}
