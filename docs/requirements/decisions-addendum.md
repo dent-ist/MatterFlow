@@ -94,3 +94,12 @@
 ## N. QA findings resolved by the project manager (2026-10-14)
 
 See `docs/qa/findings.md`. Notable: Completed -> Cancelled is allowed directly (Cancel "at any time"); a NEW Task can be Completed (bulk-complete applies); bulk-complete is all-or-nothing.
+
+## O. Decisions from the SME review (2026-10-14)
+
+- **On Hold requires a comment** (reason), stored like the Cancel comment (not deletable). Resuming needs no comment.
+- **Matter sensitivity flag:** Matters get an optional `IsSensitive` flag (and the sensitive-matter warning banner on its Tasks/Assets and in search results). **Display-only in Phase 1**; it does not restrict access (ethical walls remain a later phase). A code-name convention is a firm practice, not a feature.
+- **Open visibility** (anyone with `Task.View` sees all Tasks) is treated as covered by the firm's own sign-off; no work item for the product.
+- **No data purge.** Phase 1 retains all records and audit history indefinitely; no retention/purge job.
+- **Adopted from `docs/sme/domain-review.md`:** copy button on the `#####-#####` reference; search accepts an unpadded `343-12` pair; privilege-reminder notice on Outlook intake, Task Description and comments; Assets can be deactivated but never hard-deleted and show their change history; the bulk-complete dialog names the steps; seed Task Type forms carry a deadline-driver and notes block.
+- **Deferred/not adopted for now:** per-Asset-Type statuses, duplicate-Asset/similar-Task warnings, "trim quoted chain" tool, custody-event Task Type beyond the seed data.
