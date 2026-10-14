@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core
 import { RouterLink } from '@angular/router';
 import { DashboardRecentTask } from '../../../api/generated/api-client';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
-import { formatInstantDate } from '../../../core/time/time';
+import { mfDate } from '../../../core/time/time';
 
 let nextId = 0;
 
@@ -106,6 +106,6 @@ export class RecentTaskList {
   protected readonly id = `mf-recent-${nextId++}`;
 
   protected dateOf(instant: string): string {
-    return formatInstantDate(instant, this.zone);
+    return mfDate(instant, this.zone, 'date');
   }
 }

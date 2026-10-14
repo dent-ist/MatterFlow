@@ -21,7 +21,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
+import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { EntityActivity } from '../../../shared/ui/entity-activity';
@@ -51,7 +51,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     MatterRef,
     MatterAssets,
     EntityActivity,
-    LocalTimePipe,
+    MfDatePipe,
     CustomFieldsView,
     ScopedTasks,
   ],
@@ -254,10 +254,10 @@ type LoadState = 'loading' | 'ready' | 'error';
                 <dt>Sensitive</dt>
                 <dd>{{ m.isSensitive ? 'Yes (warning only)' : 'No' }}</dd>
                 <dt>Created</dt>
-                <dd>{{ m.createdAtUtc | localTime }}</dd>
+                <dd>{{ m.createdAtUtc | mfDate }}</dd>
                 @if (m.modifiedAtUtc) {
                   <dt>Last changed</dt>
-                  <dd>{{ m.modifiedAtUtc | localTime }}</dd>
+                  <dd>{{ m.modifiedAtUtc | mfDate }}</dd>
                 }
               </dl>
               <mf-custom-fields-view [versionId]="m.formVersionId" [values]="m.formValues ?? {}" />

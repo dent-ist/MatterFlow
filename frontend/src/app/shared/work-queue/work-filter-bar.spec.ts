@@ -158,10 +158,36 @@ describe('WorkFilterBar', () => {
     pod.value = '4';
     pod.dispatchEvent(new Event('change'));
     const from = el().querySelector<HTMLInputElement>('#fb-due-from')!;
+    expect(from.value).toBe('Jan 1, 2026');
     from.value = '';
-    from.dispatchEvent(new Event('change'));
+    from.dispatchEvent(new Event('input'));
+    from.dispatchEvent(new Event('blur'));
     expect(changes[0].pod).toEqual([4]);
     expect(changes[1].dueFrom).toBeNull();
+  });
+
+  it('applies a typed date only when the user leaves the field, and keeps text it cannot read', async () => {
+    await create(emptyFilters());
+    openPanel();
+    const to = el().querySelector<HTMLInputElement>('#fb-due-to')!;
+    to.value = '10/1/20';
+    to.dispatchEvent(new Event('input'));
+    expect(changes).toHaveLength(0); // no query for a half-typed year
+    to.value = '10/12/2026';
+    to.dispatchEvent(new Event('input'));
+    to.dispatchEvent(new Event('blur'));
+    expect(changes.at(-1)?.dueTo).toBe('2026-10-12');
+    fixture.detectChanges();
+    expect(to.value).toBe('Oct 12, 2026');
+
+    const before = changes.length;
+    to.value = 'someday';
+    to.dispatchEvent(new Event('input'));
+    to.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+    expect(to.value).toBe('someday');
+    expect(changes).toHaveLength(before); // nothing applied for text that is not a date
+    expect(el().textContent).toContain('Enter a valid date');
   });
 
   it('leaves out the parts the page does not want', async () => {

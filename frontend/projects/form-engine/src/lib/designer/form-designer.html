@@ -347,12 +347,12 @@
               @case ('DATE') {
                 <div class="fd__field">
                   <label [for]="rowId('default')">Default value</label>
-                  <input
-                    type="date"
-                    [id]="rowId('default')"
+                  <mf-date-input
                     data-slot="default"
-                    [value]="f.defaultValue ?? ''"
-                    (change)="setDefault(v($event))"
+                    label="default value"
+                    [inputId]="rowId('default')"
+                    [isoValue]="$any(f.defaultValue ?? null)"
+                    (isoChange)="setDefault($event ?? undefined)"
                   />
                 </div>
               }
@@ -420,20 +420,20 @@
               } @else if (f.control === 'DATE') {
                 <div class="fd__field">
                   <label [for]="rowId('min')">Earliest date</label>
-                  <input
-                    type="date"
-                    [id]="rowId('min')"
-                    [value]="validationValue('min')"
-                    (change)="setValidation('min', v($event))"
+                  <mf-date-input
+                    label="earliest date"
+                    [inputId]="rowId('min')"
+                    [isoValue]="$any(validationValue('min')) || null"
+                    (isoChange)="setValidation('min', $event ?? '')"
                   />
                 </div>
                 <div class="fd__field">
                   <label [for]="rowId('max')">Latest date</label>
-                  <input
-                    type="date"
-                    [id]="rowId('max')"
-                    [value]="validationValue('max')"
-                    (change)="setValidation('max', v($event))"
+                  <mf-date-input
+                    label="latest date"
+                    [inputId]="rowId('max')"
+                    [isoValue]="$any(validationValue('max')) || null"
+                    (isoChange)="setValidation('max', $event ?? '')"
                   />
                 </div>
               } @else {

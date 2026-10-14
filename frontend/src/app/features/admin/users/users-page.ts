@@ -22,7 +22,7 @@ import {
 } from '../../../core/identity-admin/identity-admin-api';
 import { PendingUsersStore } from '../../../core/identity-admin/pending-users.store';
 import { NotificationService } from '../../../core/notify/notification.service';
-import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
+import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 
 type Tab = Exclude<UserStatusFilter, 'all'>;
 
@@ -32,7 +32,7 @@ const SEARCH_DEBOUNCE_MS = 250;
 /** S12 Admin: Users. Tabs Pending / Active / Inactive, search, paging and the user detail panel with role assignment. */
 @Component({
   selector: 'mf-users-page',
-  imports: [Button, RouterLink, LocalTimePipe],
+  imports: [Button, RouterLink, MfDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './users-page.html',
   styleUrl: './users-page.scss',

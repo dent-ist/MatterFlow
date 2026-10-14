@@ -17,7 +17,7 @@ import {
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
-import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
+import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { COMMENT_MAX_TEXT, decorateLinks, htmlToText, isBlankHtml } from './rich-text';
 import { RichTextEditor } from './rich-text-editor';
@@ -43,7 +43,7 @@ const RENDER_CACHE_LIMIT = 1000;
  */
 @Component({
   selector: 'mf-task-comments',
-  imports: [LocalTimePipe, RichTextEditor, ConfirmDialog],
+  imports: [MfDatePipe, RichTextEditor, ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="tc" aria-label="Comments">
@@ -89,7 +89,7 @@ const RENDER_CACHE_LIMIT = 1000;
                   <div class="tc__meta">
                     <strong class="tc__author">{{ c.author.displayName }}</strong>
                     <time [attr.datetime]="c.createdAtUtc" [title]="c.createdAtUtc + ' (UTC)'">{{
-                      c.createdAtUtc | localTime
+                      c.createdAtUtc | mfDate
                     }}</time>
                     @if (c.purposeLabel) {
                       <span class="tc__tag" data-purpose>{{ c.purposeLabel }}</span>
@@ -134,7 +134,7 @@ const RENDER_CACHE_LIMIT = 1000;
                         <span data-edited
                           >Edited
                           <time [attr.datetime]="c.editedAtUtc">{{
-                            c.editedAtUtc | localTime
+                            c.editedAtUtc | mfDate
                           }}</time></span
                         >
                         <button
@@ -155,7 +155,7 @@ const RENDER_CACHE_LIMIT = 1000;
                             @for (r of history(); track r.revisionId) {
                               <div class="tc__rev">
                                 <time [attr.datetime]="r.revisedAtUtc">{{
-                                  r.revisedAtUtc | localTime
+                                  r.revisedAtUtc | mfDate
                                 }}</time>
                                 <div class="tc__body" [innerHTML]="render(r.bodyHtml)"></div>
                               </div>

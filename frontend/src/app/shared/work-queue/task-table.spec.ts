@@ -102,7 +102,7 @@ describe('TaskTable', () => {
     const dues = Array.from(el().querySelectorAll('tbody td[data-col="due"]'));
     expect(dues[0].textContent).toContain('Due soon');
     expect(dues[0].querySelector('.pi-clock')).not.toBeNull();
-    expect(dues[1].textContent).toContain('Oct 28, 2026 3:00 PM CDT');
+    expect(dues[1].textContent).toContain('Oct 28, 2026, 3:00 PM CDT');
     expect(dues[1].textContent).not.toContain('Due soon');
   });
 

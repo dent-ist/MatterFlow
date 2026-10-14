@@ -109,7 +109,7 @@
           />
           @if (requestedAt(); as sent) {
             <p class="mf-field__help" data-source-sent>
-              Source email sent: {{ sent | localTime }} (read-only, from the email)
+              Source email sent: {{ sent | mfDate }} (read-only, from the email)
             </p>
           }
 
@@ -275,14 +275,15 @@
           <div class="ct__due">
             <div class="mf-field">
               <label class="mf-field__label" for="ct-due-date">Due date (optional)</label>
-              <input
-                id="ct-due-date"
-                class="mf-field__input"
-                type="date"
-                [value]="dueDate()"
-                [attr.aria-invalid]="fieldError('dueDate') ? 'true' : null"
-                aria-describedby="ct-due-help"
-                (input)="onDueDate($event)"
+              <mf-date-input
+                inputId="ct-due-date"
+                label="due date"
+                [isoValue]="dueDate() || null"
+                [invalid]="!!fieldError('dueDate')"
+                [showError]="false"
+                describedBy="ct-due-help"
+                (isoChange)="dueDate.set($event ?? '')"
+                (textInvalid)="dueDateBad.set($event)"
               />
               @if (fieldError('dueDate'); as e) {
                 <p class="mf-field__error" role="alert">

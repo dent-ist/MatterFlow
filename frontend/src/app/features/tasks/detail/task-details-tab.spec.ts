@@ -66,7 +66,7 @@ describe('Details tab', () => {
     await click(fixture, q(el, '[data-edit-details]'));
 
     expect((q(el, '#td-title') as HTMLInputElement).value).toBe('Process Smith custodians');
-    expect((q(el, '#td-due-date') as HTMLInputElement).value).toBe('2026-10-30');
+    expect((q(el, '#td-due-date') as HTMLInputElement).value).toBe('Oct 30, 2026');
     expect((q(el, '#td-due-time') as HTMLInputElement).value).toBe('15:00');
     expect(q(el, 'label[for=td-due-time]')!.textContent).toMatch(/Time \(.+\)/);
     expect(q(el, '#td-pod')).not.toBeNull();

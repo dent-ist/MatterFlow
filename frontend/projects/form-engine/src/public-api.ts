@@ -11,3 +11,5 @@ export type { ServerFieldError } from './lib/renderer/dynamic-form';
 export * from './lib/designer/designer-model';
 export { FormDesigner } from './lib/designer/form-designer';
 export { RuleBuilder } from './lib/designer/rule-builder';
+export { DateInput, dateToIso, isoToDate } from './lib/renderer/date-input';
+export * from './lib/renderer/date-format';

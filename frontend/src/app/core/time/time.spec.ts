@@ -14,26 +14,28 @@ const utc = (iso: string) => new Date(iso);
 
 describe('formatInstant', () => {
   it('renders UTC in the viewer zone with the zone abbreviation', () => {
-    expect(formatInstant('2026-10-28T20:00:00Z', CHI)).toBe('Oct 28, 2026 3:00 PM CDT');
-    expect(formatInstant('2026-10-28T20:00:00Z', LA)).toBe('Oct 28, 2026 1:00 PM PDT');
-    expect(formatInstant('2026-10-28T20:00:00Z', 'UTC')).toBe('Oct 28, 2026 8:00 PM UTC');
+    expect(formatInstant('2026-10-28T20:00:00Z', CHI)).toBe('Oct 28, 2026, 3:00 PM CDT');
+    expect(formatInstant('2026-10-28T20:00:00Z', LA)).toBe('Oct 28, 2026, 1:00 PM PDT');
+    expect(formatInstant('2026-10-28T20:00:00Z', 'UTC')).toBe('Oct 28, 2026, 8:00 PM UTC');
   });
 
   it('moves to the next local day when the zone is past midnight', () => {
-    expect(formatInstant('2026-10-29T03:30:00Z', NY)).toBe('Oct 28, 2026 11:30 PM EDT');
-    expect(formatInstant('2026-10-29T03:30:00Z', 'Asia/Tokyo')).toBe('Oct 29, 2026 12:30 PM GMT+9');
+    expect(formatInstant('2026-10-29T03:30:00Z', NY)).toBe('Oct 28, 2026, 11:30 PM EDT');
+    expect(formatInstant('2026-10-29T03:30:00Z', 'Asia/Tokyo')).toBe(
+      'Oct 29, 2026, 12:30 PM GMT+9',
+    );
   });
 
   it('switches abbreviation across the spring-forward DST boundary', () => {
     // 2026-03-08 07:00Z is the instant New York jumps 2:00 EST -> 3:00 EDT.
-    expect(formatInstant('2026-03-08T06:59:00Z', NY)).toBe('Mar 8, 2026 1:59 AM EST');
-    expect(formatInstant('2026-03-08T07:00:00Z', NY)).toBe('Mar 8, 2026 3:00 AM EDT');
+    expect(formatInstant('2026-03-08T06:59:00Z', NY)).toBe('Mar 8, 2026, 1:59 AM EST');
+    expect(formatInstant('2026-03-08T07:00:00Z', NY)).toBe('Mar 8, 2026, 3:00 AM EDT');
   });
 
   it('switches abbreviation across the fall-back DST boundary', () => {
     // 2026-11-01 06:00Z is the instant New York falls back 2:00 EDT -> 1:00 EST.
-    expect(formatInstant('2026-11-01T05:30:00Z', NY)).toBe('Nov 1, 2026 1:30 AM EDT');
-    expect(formatInstant('2026-11-01T06:30:00Z', NY)).toBe('Nov 1, 2026 1:30 AM EST');
+    expect(formatInstant('2026-11-01T05:30:00Z', NY)).toBe('Nov 1, 2026, 1:30 AM EDT');
+    expect(formatInstant('2026-11-01T06:30:00Z', NY)).toBe('Nov 1, 2026, 1:30 AM EST');
   });
 });
 
@@ -133,10 +135,10 @@ describe('describeDue', () => {
 
     it('renders in the viewer zone with abbreviation', () => {
       expect(describeDue(due, utc('2026-10-01T00:00:00Z'), CHI).label).toBe(
-        'Oct 28, 2026 3:00 PM CDT',
+        'Oct 28, 2026, 3:00 PM CDT',
       );
       expect(describeDue(due, utc('2026-10-01T00:00:00Z'), LA).label).toBe(
-        'Oct 28, 2026 1:00 PM PDT',
+        'Oct 28, 2026, 1:00 PM PDT',
       );
     });
 

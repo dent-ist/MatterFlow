@@ -162,9 +162,33 @@ export function formatInstantTime(instant: Date | string | number, zone: string)
   );
 }
 
-/** "Oct 28, 2026 3:00 PM CDT": the standard timestamp rendering (comments, activity, due). */
+/** "Oct 28, 2026, 3:00 PM CDT": the standard timestamp rendering (comments, activity, audit, due). */
 export function formatInstant(instant: Date | string | number, zone: string): string {
-  return `${formatInstantDate(instant, zone)} ${formatInstantTime(instant, zone)}`;
+  return `${formatInstantDate(instant, zone)}, ${formatInstantTime(instant, zone)}`;
+}
+
+export type MfDateKind = 'auto' | 'date' | 'datetime';
+
+/**
+ * The one date formatter of the app (UXR-08, addendum M). Every screen shows dates through this function or the `mfDate` pipe:
+ *  - a floating calendar date (`2026-10-12`) renders as `Oct 12, 2026` and never shifts with the viewer's zone;
+ *  - an instant renders in the viewer's zone as `Oct 12, 2026, 10:23 PM EDT` (`kind: 'datetime'`, the default for instants)
+ *    or as just `Oct 12, 2026` (`kind: 'date'`).
+ * Empty or unreadable input renders as an empty string; an unreadable string is never echoed as a guess.
+ */
+export function mfDate(
+  value: Date | string | number | null | undefined,
+  zone: string,
+  kind: MfDateKind = 'auto',
+): string {
+  if (value === null || value === undefined || value === '') return '';
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const day = parseDateOnly(value);
+    return day ? formatCalendarDay(day) : '';
+  }
+  const instant = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(instant.getTime())) return '';
+  return kind === 'date' ? formatInstantDate(instant, zone) : formatInstant(instant, zone);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -182,7 +206,7 @@ export type DueKind = 'asap' | 'future' | 'soon' | 'overdue' | 'closed';
 
 export interface DueState {
   kind: DueKind;
-  /** Display string, e.g. `ASAP`, `Oct 28, 2026 3:00 PM CDT`, `Oct 28, 2026 · Overdue 4d`. */
+  /** Display string, e.g. `ASAP`, `Oct 28, 2026, 3:00 PM CDT`, `Oct 28, 2026 · Overdue 4d`. */
   label: string;
   /** The date/time part only (empty for ASAP). */
   dateText: string;

@@ -14,6 +14,7 @@ import {
   viewChild,
 } from '@angular/core';
 
+import { DateInput } from '../renderer/date-input';
 import { DynamicForm } from '../renderer/dynamic-form';
 import { FormControl, FormOption, RuleNode } from '../rules/types';
 import {
@@ -63,7 +64,7 @@ const WHERE: Record<Dependent['where'], string> = {
 @Component({
   selector: 'mf-form-designer',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamicForm, RuleBuilder, NgTemplateOutlet],
+  imports: [DynamicForm, DateInput, RuleBuilder, NgTemplateOutlet],
   templateUrl: './form-designer.html',
   styleUrl: './form-designer.scss',
 })

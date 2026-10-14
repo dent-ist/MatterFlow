@@ -17,7 +17,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
-import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
+import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { CopyButton } from '../../../shared/ui/copy-button';
@@ -51,7 +51,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     CopyButton,
     EntityActivity,
     DynamicForm,
-    LocalTimePipe,
+    MfDatePipe,
     AssetLinkedTasks,
   ],
   providers: [AssetPickerContext],
@@ -171,10 +171,10 @@ type LoadState = 'loading' | 'ready' | 'error';
                 <dt>Description</dt>
                 <dd>{{ a.description || 'Not provided' }}</dd>
                 <dt>Created</dt>
-                <dd>{{ a.createdAtUtc | localTime }}</dd>
+                <dd>{{ a.createdAtUtc | mfDate }}</dd>
                 @if (a.modifiedAtUtc) {
                   <dt>Last changed</dt>
-                  <dd>{{ a.modifiedAtUtc | localTime }}</dd>
+                  <dd>{{ a.modifiedAtUtc | mfDate }}</dd>
                 }
               </dl>
               @if (schema(); as definition) {

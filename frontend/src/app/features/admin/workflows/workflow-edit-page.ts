@@ -20,7 +20,7 @@ import {
 } from '../../../api/generated/api-client';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
-import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
+import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { TextField } from '../../../shared/ui/text-field';
 import { workflowErrors } from './workflow-errors';
 import { ErrorReference } from '../../../shared/ui/error-reference';
@@ -35,7 +35,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-workflow-edit-page',
-  imports: [Badge, ConfirmDialog, ErrorReference, RouterLink, Button, TextField, LocalTimePipe],
+  imports: [Badge, ConfirmDialog, ErrorReference, RouterLink, Button, TextField, MfDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
   template: `
@@ -186,7 +186,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                     </td>
                     <td>{{ v.isOrdered ? 'Ordered' : 'Unordered' }}</td>
                     <td>{{ v.stepCount }}</td>
-                    <td>{{ v.publishedAtUtc | localTime }}</td>
+                    <td>{{ v.publishedAtUtc | mfDate }}</td>
                     <td>
                       @if (v.status === published) {
                         <p-button

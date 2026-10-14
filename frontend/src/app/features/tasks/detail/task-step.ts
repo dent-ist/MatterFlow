@@ -14,7 +14,7 @@ import { DynamicForm, FormDefinition, ServerFieldError } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
 import { FormsClient, TaskStepInstance } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
-import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
+import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
 import { splitFormErrors } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -48,7 +48,7 @@ export function valuesPatch(
  */
 @Component({
   selector: 'mf-task-step',
-  imports: [Badge, DynamicForm, ConfirmDialog, LocalTimePipe],
+  imports: [Badge, DynamicForm, ConfirmDialog, MfDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let s = step();
@@ -79,7 +79,7 @@ export function valuesPatch(
         <p class="step__note" data-skip-comment>Skipped: "{{ s.skipComment }}"</p>
       }
       @if (s.resolvedAtUtc && (s.status === 'COMPLETED' || s.status === 'SKIPPED')) {
-        <p class="step__note">{{ status().text }} {{ s.resolvedAtUtc | localTime }}</p>
+        <p class="step__note">{{ status().text }} {{ s.resolvedAtUtc | mfDate }}</p>
       }
       @if (s.isReopenedPrerequisite) {
         <p class="step__note step__note--warn" data-reopened-note>

@@ -181,7 +181,9 @@ describe('DashboardPage', () => {
     expect(tiles[6].querySelector('a')!.getAttribute('href')).toBe(
       '/tasks?status=COMPLETED&completedFrom=2026-09-15',
     );
-    expect(el.querySelector('[data-updated]')!.textContent).toContain('Updated 3:42 PM');
+    expect(el.querySelector('[data-updated]')!.textContent).toContain(
+      'Updated Oct 14, 2026, 3:42 PM',
+    );
   });
 
   it('shows the Your work tiles with links to the queue', async () => {

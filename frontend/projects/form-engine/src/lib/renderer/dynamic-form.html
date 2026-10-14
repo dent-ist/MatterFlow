@@ -182,11 +182,9 @@
                     [invalid]="!!row.error"
                     [describedBy]="dateDescribedBy(row)"
                     (valueChange)="setValue(row.field, $event)"
+                    [showError]="false"
                     (textInvalid)="setDateInvalid(row.field, $event)"
                   />
-                  <p class="mf-field__help" [id]="hintId(row)">
-                    Format: yyyy-mm-dd, or 10/14/2026, or Oct 14, 2026.
-                  </p>
                 }
                 @case ('DATETIME') {
                   <mf-date-input
@@ -197,11 +195,9 @@
                     [invalid]="!!row.error"
                     [describedBy]="dateDescribedBy(row)"
                     (valueChange)="setValue(row.field, $event)"
+                    [showError]="false"
                     (textInvalid)="setDateInvalid(row.field, $event)"
                   />
-                  <p class="mf-field__help" [id]="hintId(row)">
-                    Format: yyyy-mm-dd hh:mm (local time), or 10/14/2026 2:30 PM.
-                  </p>
                 }
                 @case ('ASSET_REF') {
                   @if (pickerFor(row); as picker) {

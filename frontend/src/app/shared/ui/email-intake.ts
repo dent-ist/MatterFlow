@@ -15,7 +15,7 @@ import { firstValueFrom } from 'rxjs';
 import { IntakeClient, ParsedEmailResponse } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { ApiError } from '../../core/http/api-error';
-import { LocalTimePipe } from '../pipes/local-time.pipe';
+import { MfDatePipe } from '../pipes/mf-date.pipe';
 import { TextField } from './text-field';
 
 /** The values the host prefills a Create Task form with. A field is present only when the user chose to replace it. */
@@ -59,7 +59,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
  */
 @Component({
   selector: 'mf-email-intake',
-  imports: [Button, TextField, LocalTimePipe],
+  imports: [Button, TextField, MfDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './email-intake.scss',
   template: `
@@ -258,7 +258,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
                   <p class="ei__sent" data-sent>
                     Source email sent:
                     @if (sentAt(); as s) {
-                      {{ s | localTime }}
+                      {{ s | mfDate }}
                     } @else {
                       not found in the email
                     }

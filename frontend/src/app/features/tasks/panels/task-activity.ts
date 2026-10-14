@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { TaskActivityClient, TaskActivityItem } from '../../../api/generated/api-client';
-import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
+import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 
 interface Filter {
   readonly key: string;
@@ -39,7 +39,7 @@ const PAGE_SIZE = 25;
  */
 @Component({
   selector: 'mf-task-activity',
-  imports: [LocalTimePipe],
+  imports: [MfDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="ta" aria-label="Activity">
@@ -88,7 +88,7 @@ const PAGE_SIZE = 25;
                     class="ta__time"
                     [attr.datetime]="e.occurredAtUtc"
                     [title]="e.occurredAtUtc + ' (UTC)'"
-                    >{{ e.occurredAtUtc | localTime }}</time
+                    >{{ e.occurredAtUtc | mfDate }}</time
                   >
                   <div class="ta__what">
                     <span class="ta__actor" data-actor>{{ e.actor?.displayName ?? 'System' }}</span>

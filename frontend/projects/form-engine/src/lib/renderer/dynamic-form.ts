@@ -31,6 +31,7 @@ import {
   FormField,
 } from '../rules/types';
 import { DateInput } from './date-input';
+import { formatStoredDate, formatStoredInstant } from './date-format';
 import { fieldLabel, validationMessage } from './messages';
 import {
   MF_ASSET_PICKER,
@@ -323,26 +324,19 @@ export class DynamicForm {
     });
   }
 
-  protected hintId(row: FieldRow): string {
-    return `${row.id}-hint`;
-  }
-
+  /** Extra ids for a date control's `aria-describedby`; the control references its own format hint. */
   protected dateDescribedBy(row: FieldRow): string {
-    return [
-      this.hintId(row),
-      row.field.helpText ? this.helpId(row) : '',
-      row.error ? this.errorId(row) : '',
-    ]
+    return [row.field.helpText ? this.helpId(row) : '', row.error ? this.errorId(row) : '']
       .filter(Boolean)
       .join(' ');
   }
 
   private messageFor(field: FormField, code: FormErrorCode): string {
     if (field.control === 'DATE' && code === 'INVALID_TYPE') {
-      return 'Enter a valid date, for example 2026-10-14 or 10/14/2026.';
+      return 'Enter a valid date, for example Oct 14, 2026 or 10/14/2026.';
     }
     if (field.control === 'DATETIME' && code === 'INVALID_TYPE') {
-      return 'Enter a valid date and time, for example 2026-10-14 14:30.';
+      return 'Enter a valid date and time, for example Oct 14, 2026, 2:30 PM.';
     }
     if (field.control === 'NUMBER' && code === 'INVALID_TYPE') {
       return 'Enter a number, for example 250.5';
@@ -436,9 +430,11 @@ export class DynamicForm {
         return label(raw);
       case 'MULTISELECT':
         return Array.isArray(raw) ? raw.map(label).join(', ') : none;
+      case 'DATE':
+        return typeof raw === 'string' ? formatStoredDate(raw) : String(raw);
       case 'DATETIME': {
         const d = dateTimeFromString(raw);
-        return d ? d.toLocaleString(undefined, { timeZoneName: 'short' }) : String(raw);
+        return d ? formatStoredInstant(d) : String(raw);
       }
       default:
         return String(raw);

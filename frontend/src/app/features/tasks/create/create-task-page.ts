@@ -12,7 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { DynamicForm, errorSummary } from 'form-engine';
+import { DateInput, DynamicForm, errorSummary } from 'form-engine';
 import type { FormDefinition, ServerFieldError } from 'form-engine';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
@@ -46,7 +46,7 @@ import {
 } from '../../../core/time/time';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
-import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
+import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -100,12 +100,13 @@ const matterOption = (m: MatterResponse): PickerOption => ({
     RouterLink,
     Button,
     DynamicForm,
+    DateInput,
     EmailIntake,
     EntityPicker,
     TextField,
     ConfirmDialog,
     PriorityBadge,
-    LocalTimePipe,
+    MfDatePipe,
   ],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -139,6 +140,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
 
   private readonly summaryBox = viewChild<ElementRef<HTMLElement>>('summaryBox');
   private readonly requestForm = viewChild(DynamicForm);
+  private readonly dueDateInput = viewChild(DateInput);
 
   // --- permissions ------------------------------------------------------------------------------
   protected readonly canCreate = computed(() => this.auth.has('Task.Create'));
@@ -190,6 +192,8 @@ export class CreateTaskPage implements HasUnsavedChanges {
   protected readonly requestedAt = signal<string | null>(null);
   protected readonly priorityId = signal<number | null>(null);
   protected readonly dueDate = signal('');
+  /** The due date field holds text that is not a date (kept visible, reported, and blocks creating the task). */
+  protected readonly dueDateBad = signal(false);
   protected readonly dueTime = signal('');
   protected readonly podId = signal<number | null>(null);
   protected readonly assignee = signal<PickerOption | null>(null);
@@ -295,7 +299,11 @@ export class CreateTaskPage implements HasUnsavedChanges {
     if (this.canSetPriority() && this.priorityLabelId() === null) {
       errors['priorityId'] = 'Select a priority.';
     }
-    if (this.dueTime() && !this.dueDate()) errors['dueDate'] = 'Enter a date before adding a time.';
+    if (this.dueDateBad()) {
+      errors['dueDate'] = 'Enter a valid date, for example Oct 12, 2026 or 10/12/2026.';
+    } else if (this.dueTime() && !this.dueDate()) {
+      errors['dueDate'] = 'Enter a date before adding a time.';
+    }
     return errors;
   });
 
@@ -544,10 +552,6 @@ export class CreateTaskPage implements HasUnsavedChanges {
     this.priorityId.set(value ? Number(value) : null);
   }
 
-  protected onDueDate(event: Event): void {
-    this.dueDate.set((event.target as HTMLInputElement).value);
-  }
-
   protected onDueTime(event: Event): void {
     this.dueTime.set((event.target as HTMLInputElement).value);
   }
@@ -693,6 +697,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
     this.requestedAt.set(null);
     this.emailFilled.set(false);
     this.dueDate.set('');
+    this.dueDateInput()?.clear();
     this.dueTime.set('');
     this.assignee.set(null);
     this.applyType(null);

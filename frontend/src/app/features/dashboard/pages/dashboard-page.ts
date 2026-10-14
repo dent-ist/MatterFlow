@@ -16,7 +16,7 @@ import {
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
-import { formatInstantTime } from '../../../core/time/time';
+import { mfDate } from '../../../core/time/time';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { BarItem, BarList } from '../ui/bar-list';
 import { RecentTaskList } from '../ui/recent-task-list';
@@ -362,7 +362,7 @@ export class DashboardPage implements OnInit {
   );
   protected readonly updated = computed(() => {
     const d = this.data();
-    return d ? formatInstantTime(d.generatedAtUtc, this.zone) : null;
+    return d ? mfDate(d.generatedAtUtc, this.zone, 'datetime') : null;
   });
   /**
    * No tasks at all: nothing created yet and nothing open (the recent list is not limited to the period). Only meaningful for people who

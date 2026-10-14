@@ -66,7 +66,7 @@
                 }
               </td>
               <td class="mf-mono">{{ u.windowsAccount }}</td>
-              <td>{{ u.registeredAtUtc | localTime }}</td>
+              <td>{{ u.registeredAtUtc | mfDate }}</td>
               <td>{{ u.email }}</td>
               <td>{{ rolesLabel(u) }}</td>
               <td>
@@ -120,9 +120,9 @@
         @if (u.email) {
           &middot; {{ u.email }}
         }
-        <br />First seen {{ u.registeredAtUtc | localTime }}
+        <br />First seen {{ u.registeredAtUtc | mfDate }}
         @if (u.lastLoginAtUtc) {
-          &middot; Last seen {{ u.lastLoginAtUtc | localTime }}
+          &middot; Last seen {{ u.lastLoginAtUtc | mfDate }}
         }
       </p>
 

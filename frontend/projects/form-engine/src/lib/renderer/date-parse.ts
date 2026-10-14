@@ -3,7 +3,7 @@
  * locale or on `Date.parse`: each accepted shape is listed, and anything else is rejected so the caller can show an error.
  *
  * Dates: `2026-10-14`, `2026-1-4`, `2026/10/14`, `10/14/2026`, `10/1/26`, `10-14-2026`, `Oct 14, 2026`, `October 14 2026`,
- * `14 Oct 2026`. Times (datetime fields): `14:30`, `2:30 PM`, `2:30:15pm`; the date and time are separated by a space or `T`.
+ * `14 Oct 2026`. Times (datetime fields): `14:30`, `2:30 PM`, `2:30:15pm`; the date and time are separated by a space, a comma or `T`.
  */
 
 const MONTHS = [
@@ -107,7 +107,7 @@ export function parseDateTimeText(input: string, withTime: boolean): Date | null
     return d ? new Date(d.year, d.month - 1, d.day) : null;
   }
   // The time is the trailing token (with its AM/PM); everything before it is the date.
-  const m = /^(.*?)[ T](\d{1,2}:\d{2}(?::\d{2})?(?: ?[AaPp][Mm])?)$/.exec(text);
+  const m = /^(.*?),?[ T](\d{1,2}:\d{2}(?::\d{2})?(?: ?[AaPp][Mm])?)$/.exec(text);
   if (!m) return null;
   const d = parseDateText(m[1]);
   const t = parseTimeText(m[2]);

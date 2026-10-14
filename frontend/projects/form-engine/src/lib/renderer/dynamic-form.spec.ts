@@ -156,6 +156,22 @@ describe('DynamicForm', () => {
     expect(el().textContent).not.toContain('(required)');
   });
 
+  it('shows read-only dates and date-times the way the app shows them', async () => {
+    await create(
+      {
+        fields: [
+          { key: 'd', control: 'DATE', label: 'Date' },
+          { key: 'dt', control: 'DATETIME', label: 'Date time' },
+        ],
+      },
+      { d: '2026-10-12', dt: '2026-10-12T22:23:00Z' },
+      { readOnly: true },
+    );
+    expect(field('d')!.textContent).toContain('Oct 12, 2026');
+    expect(field('d')!.textContent).not.toContain('2026-10-12');
+    expect(field('dt')!.textContent).toMatch(/Oct 1[23], 2026, \d{1,2}:\d{2} [AP]M [A-Z]{2,5}/);
+  });
+
   it('maps server errors onto fields', async () => {
     await create(OCR_FORM, { notes: 'x' });
     fixture.componentRef.setInput('serverErrors', [
@@ -232,17 +248,18 @@ describe('DynamicForm', () => {
     };
 
     it.each([
-      ['2026-09-14', '2026-09-14'],
-      ['9/14/2026', '2026-09-14'],
-      ['Oct 1, 2026', '2026-10-01'],
-      ['10/1/26', '2026-10-01'],
-    ])('stores %s as %s', async (typed, stored) => {
+      ['2026-09-14', '2026-09-14', 'Sep 14, 2026'],
+      ['9/14/2026', '2026-09-14', 'Sep 14, 2026'],
+      ['Oct 1, 2026', '2026-10-01', 'Oct 1, 2026'],
+      ['10/1/26', '2026-10-01', 'Oct 1, 2026'],
+      ['1 October 2026', '2026-10-01', 'Oct 1, 2026'],
+    ])('stores %s as %s and shows it as %s', async (typed, stored, shown) => {
       await create(DATES);
       const emitted: Record<string, unknown>[] = [];
       fixture.componentInstance.valuesChange.subscribe((v) => emitted.push(v));
       const input = await type(typed);
       expect(emitted.at(-1)).toEqual({ received: stored });
-      expect(input.value).toBe(stored);
+      expect(input.value).toBe(shown);
       expect(field('received')!.querySelector('[role=alert]')).toBeNull();
     });
 
@@ -273,7 +290,9 @@ describe('DynamicForm', () => {
 
     it('shows a format hint and an accessible calendar button', async () => {
       await create(DATES);
-      expect(field('received')!.textContent).toContain('Format: yyyy-mm-dd');
+      expect(field('received')!.textContent).toContain('Type a date such as Oct 12, 2026');
+      const input = field('received')!.querySelector<HTMLInputElement>('input[type=text]')!;
+      expect(input.getAttribute('aria-describedby')).toContain(`${input.id}-hint`);
       expect(field('received')!.querySelector('button')!.getAttribute('aria-label')).toContain(
         'Received date',
       );

@@ -6,6 +6,7 @@ import {
   computed,
   inject,
   signal,
+  viewChildren,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -18,7 +19,8 @@ import {
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
-import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
+import { DateInput } from 'form-engine';
+import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { fieldLabel, friendlyText } from '../../../shared/ui/audit-format';
 import { AuditGroup, auditObjectRoute, auditObjectText, groupByCorrelation } from './audit-links';
 import { ErrorReference } from '../../../shared/ui/error-reference';
@@ -59,7 +61,7 @@ const ACTOR_DEBOUNCE_MS = 250;
  */
 @Component({
   selector: 'mf-audit-page',
-  imports: [ErrorReference, RouterLink, LocalTimePipe, NgTemplateOutlet],
+  imports: [DateInput, ErrorReference, RouterLink, MfDatePipe, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './audit-page.html',
   styleUrl: './audit-page.scss',
@@ -87,6 +89,10 @@ export class AuditPage implements OnDestroy {
   protected readonly expanded = signal<ReadonlySet<number>>(new Set());
   protected readonly openGroups = signal<ReadonlySet<string>>(new Set());
   protected readonly dateError = signal('');
+  /** A date field holds text that is not a date (its own message is shown); applying is held back. */
+  protected readonly badFrom = signal(false);
+  protected readonly badTo = signal(false);
+  private readonly dateInputs = viewChildren(DateInput);
 
   protected readonly actorMatches = signal<UserSummaryDto[]>([]);
   protected readonly actorQuery = signal('');
@@ -122,6 +128,7 @@ export class AuditPage implements OnDestroy {
   }
 
   protected apply(): void {
+    if (this.badFrom() || this.badTo()) return;
     const { from, to } = this.draft();
     if (from && to && from > to) {
       this.dateError.set('The start date must not be after the end date.');
@@ -137,6 +144,7 @@ export class AuditPage implements OnDestroy {
     this.actorQuery.set('');
     this.actorMatches.set([]);
     this.dateError.set('');
+    this.dateInputs().forEach((d) => d.clear());
     this.applied.set({ ...EMPTY });
     void this.load(true);
   }

@@ -9,7 +9,13 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { DynamicForm, FormDefinition, ServerFieldError, errorSummary } from 'form-engine';
+import {
+  DateInput,
+  DynamicForm,
+  FormDefinition,
+  ServerFieldError,
+  errorSummary,
+} from 'form-engine';
 import { firstValueFrom } from 'rxjs';
 import {
   FormsClient,
@@ -27,7 +33,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
 import { DueLabelPipe } from '../../../shared/pipes/due-label.pipe';
-import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
+import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import {
   calendarDayInZone,
@@ -73,7 +79,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
  */
 @Component({
   selector: 'mf-task-details-tab',
-  imports: [DynamicForm, LocalTimePipe, DueLabelPipe, EntityPicker, MatterRef],
+  imports: [DynamicForm, DateInput, MfDatePipe, DueLabelPipe, EntityPicker, MatterRef],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', '../../../shared/ui/form-field.scss'],
@@ -225,13 +231,14 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
               <div class="dt__due-row">
                 <div class="mf-field">
                   <label class="mf-field__label" for="td-due-date">Date</label>
-                  <input
-                    id="td-due-date"
-                    class="mf-field__input"
-                    type="date"
-                    [value]="model().dueDate"
-                    [attr.aria-invalid]="err('dueDate') ? 'true' : null"
-                    (input)="set('dueDate', $any($event.target).value)"
+                  <mf-date-input
+                    inputId="td-due-date"
+                    label="due date"
+                    [isoValue]="model().dueDate || null"
+                    [invalid]="!!err('dueDate')"
+                    [showError]="false"
+                    (isoChange)="set('dueDate', $event ?? '')"
+                    (textInvalid)="dueDateBad.set($event)"
                   />
                   @if (err('dueDate'); as e) {
                     <p class="mf-field__error" role="alert">{{ e }}</p>
@@ -348,7 +355,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
             </dd>
             @if (t.requestedAtUtc) {
               <dt>Request sent</dt>
-              <dd>{{ t.requestedAtUtc | localTime }}</dd>
+              <dd>{{ t.requestedAtUtc | mfDate }}</dd>
             }
             <dt>Project</dt>
             <dd>{{ t.project?.name ?? 'No project' }}</dd>
@@ -361,10 +368,10 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
             <dt>Assignee</dt>
             <dd>{{ t.assignedUser?.displayName ?? 'Unassigned' }}</dd>
             <dt>Created</dt>
-            <dd>{{ t.createdBy?.displayName ?? 'Unknown' }}, {{ t.createdAtUtc | localTime }}</dd>
+            <dd>{{ t.createdBy?.displayName ?? 'Unknown' }}, {{ t.createdAtUtc | mfDate }}</dd>
             @if (t.modifiedAtUtc) {
               <dt>Last updated</dt>
-              <dd>{{ t.modifiedAtUtc | localTime }}</dd>
+              <dd>{{ t.modifiedAtUtc | mfDate }}</dd>
             }
           </dl>
 
@@ -472,6 +479,8 @@ export class TaskDetailsTab {
   protected readonly model = signal<EditModel>(this.emptyModel());
   private original: EditModel = this.emptyModel();
   protected readonly fieldErrors = signal<Record<string, string>>({});
+  /** The due date field holds text that is not a date: kept visible, reported and blocks saving. */
+  protected readonly dueDateBad = signal(false);
   protected readonly formErrors = signal<ServerFieldError[]>([]);
   protected readonly summary = signal<string[]>([]);
 
@@ -711,7 +720,11 @@ export class TaskDetailsTab {
     if (m.requestorEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.requestorEmail.trim())) {
       errors['requestorEmail'] = 'Enter a valid email address.';
     }
-    if (m.dueTime && !m.dueDate) errors['dueDate'] = 'Choose a date for the due time.';
+    if (this.dueDateBad()) {
+      errors['dueDate'] = 'Enter a valid date, for example Oct 12, 2026 or 10/12/2026.';
+    } else if (m.dueTime && !m.dueDate) {
+      errors['dueDate'] = 'Choose a date for the due time.';
+    }
     return errors;
   }
 

@@ -115,7 +115,7 @@ describe('AuditPage', () => {
     const row = el().querySelector('tr[data-event="100"]')!;
     expect(row.textContent).toContain('Dana Director');
     expect(row.textContent).toContain('Status changed from In Progress to On Hold');
-    expect(row.querySelector('time')?.textContent).toBe('Oct 14, 2026 10:05 AM CDT');
+    expect(row.querySelector('time')?.textContent).toBe('Oct 14, 2026, 10:05 AM CDT');
     expect(row.querySelector('a')?.getAttribute('href')).toBe('/tasks/1042');
     expect(row.querySelector('a')?.textContent).toContain('TSK-1042 Process Smith custodians');
     expect(el().textContent).toContain('America/Chicago');

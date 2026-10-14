@@ -354,6 +354,39 @@ describe('CreateTaskPage', () => {
     );
   });
 
+  it('keeps a due date it cannot read, explains it and does not create the task (UAT2-02)', async () => {
+    const h = await create({ inputs: { matterId: '7' } });
+    await fillRequired(h);
+    await type(h, '[data-request-details] input[type=text]', 'WS-9');
+    await type(h, '#ct-due-date', 'next tuesday');
+    field(h, '#ct-due-date').dispatchEvent(new Event('blur'));
+    await settle(h.fixture);
+
+    await submit(h);
+
+    expect(h.tasks.createTask).not.toHaveBeenCalled();
+    expect((field(h, '#ct-due-date') as HTMLInputElement).value).toBe('next tuesday');
+    expect(field(h, '#ct-due-date').closest('.mf-field')!.textContent).toContain(
+      'Enter a valid date',
+    );
+  });
+
+  it('accepts a due date typed as 10/30/2026 and sends it as 2026-10-30', async () => {
+    const h = await create({ inputs: { matterId: '7' } });
+    await fillRequired(h);
+    await type(h, '[data-request-details] input[type=text]', 'WS-9');
+    await type(h, '#ct-due-date', '10/30/2026');
+    field(h, '#ct-due-date').dispatchEvent(new Event('blur'));
+    await settle(h.fixture);
+    expect((field(h, '#ct-due-date') as HTMLInputElement).value).toBe('Oct 30, 2026');
+
+    await submit(h);
+
+    expect(h.tasks.createTask).toHaveBeenCalledWith(
+      expect.objectContaining({ dueDate: '2026-10-30' }),
+    );
+  });
+
   it('shows the sensitive-matter warning', async () => {
     const h = await create({ inputs: { matterId: '7' }, matter: aMatter({ isSensitive: true }) });
     expect(field(h, '[data-sensitive-banner]').textContent).toContain('Sensitive matter');

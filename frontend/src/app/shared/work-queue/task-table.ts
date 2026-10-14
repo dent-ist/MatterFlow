@@ -3,9 +3,9 @@ import { RouterLink } from '@angular/router';
 import { TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
-import { formatInstantDate } from '../../core/time/time';
+import { mfDate } from '../../core/time/time';
 import { DueStatePipe } from '../pipes/due-label.pipe';
-import { LocalTimePipe } from '../pipes/local-time.pipe';
+import { MfDatePipe } from '../pipes/mf-date.pipe';
 import { MatterRef } from '../ui/matter-ref';
 import { PriorityBadge } from '../ui/priority-badge';
 import { StatusBadge } from '../ui/status-badge';
@@ -23,15 +23,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
  */
 @Component({
   selector: 'mf-task-table',
-  imports: [
-    RouterLink,
-    MatterRef,
-    DueStatePipe,
-    LocalTimePipe,
-    PriorityBadge,
-    RowEdit,
-    StatusBadge,
-  ],
+  imports: [RouterLink, MatterRef, DueStatePipe, MfDatePipe, PriorityBadge, RowEdit, StatusBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './task-table.scss',
   template: `
@@ -239,7 +231,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                       {{ dayOf(row.createdAtUtc) }}
                     }
                     @case ('updated') {
-                      {{ row.updatedAtUtc | localTime }}
+                      {{ row.updatedAtUtc | mfDate }}
                     }
                   }
                 </td>
@@ -328,6 +320,6 @@ export class TaskTable {
   }
 
   protected dayOf(instant: string): string {
-    return formatInstantDate(instant, this.zone);
+    return mfDate(instant, this.zone, 'date');
   }
 }

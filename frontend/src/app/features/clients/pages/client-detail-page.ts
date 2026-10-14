@@ -20,7 +20,7 @@ import {
 import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
+import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { EntityActivity } from '../../../shared/ui/entity-activity';
@@ -44,7 +44,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     ConfirmDialog,
     MatterRef,
     EntityActivity,
-    LocalTimePipe,
+    MfDatePipe,
     CustomFieldsView,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -179,10 +179,10 @@ type LoadState = 'loading' | 'ready' | 'error';
                 <dt>Status</dt>
                 <dd>{{ c.isActive ? 'Active' : 'Inactive' }}</dd>
                 <dt>Created</dt>
-                <dd>{{ c.createdAtUtc | localTime }}</dd>
+                <dd>{{ c.createdAtUtc | mfDate }}</dd>
                 @if (c.modifiedAtUtc) {
                   <dt>Last changed</dt>
-                  <dd>{{ c.modifiedAtUtc | localTime }}</dd>
+                  <dd>{{ c.modifiedAtUtc | mfDate }}</dd>
                 }
               </dl>
               <mf-custom-fields-view [versionId]="c.formVersionId" [values]="c.formValues ?? {}" />

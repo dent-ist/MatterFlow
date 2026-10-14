@@ -47,6 +47,8 @@ describe('date-parse', () => {
     expect(parseDateTimeText('2026-10-01 14:30', true)).toEqual(new Date(2026, 9, 1, 14, 30));
     expect(parseDateTimeText('2026-10-01T14:30', true)).toEqual(new Date(2026, 9, 1, 14, 30));
     expect(parseDateTimeText('Oct 1, 2026 2:30 PM', true)).toEqual(new Date(2026, 9, 1, 14, 30));
+    expect(parseDateTimeText('Oct 1, 2026, 2:30 PM', true)).toEqual(new Date(2026, 9, 1, 14, 30));
+    expect(parseDateTimeText('10/1/2026, 14:30', true)).toEqual(new Date(2026, 9, 1, 14, 30));
     expect(parseDateTimeText('2026-10-01', true)).toBeNull();
   });
 

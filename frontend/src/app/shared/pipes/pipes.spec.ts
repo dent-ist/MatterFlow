@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { DueLabelPipe, DueStatePipe } from './due-label.pipe';
-import { LocalTimePipe } from './local-time.pipe';
+import { MfDatePipe } from './mf-date.pipe';
 import { MatterRefPipe, normalizeNumber } from './matter-ref.pipe';
 
 describe('normalizeNumber / matterRef', () => {
@@ -33,7 +33,7 @@ describe('normalizeNumber / matterRef', () => {
   });
 });
 
-describe('dueLabel / dueState / localTime pipes', () => {
+describe('dueLabel / dueState / mfDate pipes', () => {
   function setup(zone: string, nowIso: string) {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -45,7 +45,7 @@ describe('dueLabel / dueState / localTime pipes', () => {
     return TestBed.runInInjectionContext(() => ({
       due: new DueLabelPipe(),
       state: new DueStatePipe(),
-      local: new LocalTimePipe(),
+      local: new MfDatePipe(),
     }));
   }
 
@@ -63,7 +63,7 @@ describe('dueLabel / dueState / localTime pipes', () => {
   it('renders an instant in the viewer zone with abbreviation', () => {
     const { due } = setup('America/Chicago', '2026-10-14T12:00:00Z');
     expect(due.transform({ dueDate: '2026-10-28', dueAtUtc: '2026-10-28T20:00:00Z' })).toBe(
-      'Oct 28, 2026 3:00 PM CDT',
+      'Oct 28, 2026, 3:00 PM CDT',
     );
   });
 
@@ -82,10 +82,24 @@ describe('dueLabel / dueState / localTime pipes', () => {
     expect(state.transform(null).tooltip).toBe('No due date set. Handle promptly.');
   });
 
-  it('localTime renders UTC timestamps in local time with zone', () => {
+  it('mfDate renders UTC timestamps in local time with the zone abbreviation', () => {
     const { local } = setup('America/Los_Angeles', '2026-10-14T12:00:00Z');
-    expect(local.transform('2026-10-14T14:05:00Z')).toBe('Oct 14, 2026 7:05 AM PDT');
+    expect(local.transform('2026-10-14T14:05:00Z')).toBe('Oct 14, 2026, 7:05 AM PDT');
+    expect(local.transform('2026-10-14T14:05:00Z', 'date')).toBe('Oct 14, 2026');
     expect(local.transform(null)).toBe('');
     expect(local.transform('garbage')).toBe('');
+  });
+
+  it('mfDate shows a calendar date as Oct 12, 2026 in every zone and never shifts it', () => {
+    for (const zone of ['Pacific/Auckland', 'America/Los_Angeles', 'UTC']) {
+      const { local } = setup(zone, '2026-10-14T12:00:00Z');
+      expect(local.transform('2026-10-12')).toBe('Oct 12, 2026');
+      expect(local.transform('2026-10-12', 'datetime')).toBe('Oct 12, 2026');
+    }
+    const { local } = setup('America/New_York', '2026-10-14T12:00:00Z');
+    expect(local.transform('2026-02-30')).toBe('');
+    expect(local.transform(new Date('2026-10-12T22:23:00-04:00'))).toBe(
+      'Oct 12, 2026, 10:23 PM EDT',
+    );
   });
 });

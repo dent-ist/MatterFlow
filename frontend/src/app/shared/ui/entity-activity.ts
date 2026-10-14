@@ -9,13 +9,13 @@ import {
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AuditEventDto, AuditEventsClient, UsersClient } from '../../api/generated/api-client';
-import { LocalTimePipe } from '../pipes/local-time.pipe';
+import { MfDatePipe } from '../pipes/mf-date.pipe';
 import { describeAuditEvent, isNoise } from './audit-format';
 
 /** Change history of one object (UX `mf-activity-feed`), read from the audit trail. Needs `Audit.View`; hide the host tab otherwise. */
 @Component({
   selector: 'mf-entity-activity',
-  imports: [LocalTimePipe],
+  imports: [MfDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @switch (state()) {
@@ -32,7 +32,7 @@ import { describeAuditEvent, isNoise } from './audit-format';
           <ol class="mf-activity" aria-label="Activity">
             @for (e of events(); track e.auditEventId) {
               <li>
-                <time [attr.datetime]="e.occurredAtUtc">{{ e.occurredAtUtc | localTime }}</time>
+                <time [attr.datetime]="e.occurredAtUtc">{{ e.occurredAtUtc | mfDate }}</time>
                 <span class="mf-activity__what">{{ describe(e) }}</span>
                 <span class="mf-activity__who">{{ actor(e) }}</span>
               </li>

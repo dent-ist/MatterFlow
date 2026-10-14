@@ -1,4 +1,4 @@
-import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
+import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -52,7 +52,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     Dialog,
     DialogFocus,
     FormsModule,
-    LocalTimePipe,
+    MfDatePipe,
   ],
   templateUrl: './task-type-form-page.html',
   styleUrl: './task-type-form-page.scss',

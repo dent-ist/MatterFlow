@@ -21,6 +21,7 @@ import {
   buildChips,
   filterCount,
 } from './queue-filters';
+import { DateInput } from 'form-engine';
 
 export interface PodOption {
   id: number;
@@ -36,6 +37,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
 @Component({
   selector: 'mf-work-filter-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DateInput],
   styleUrl: './work-filter-bar.scss',
   template: `
     <div class="fb">
@@ -180,42 +182,42 @@ export const SEARCH_DEBOUNCE_MS = 300;
           </div>
           <div class="fb-field">
             <label for="fb-due-from">Due from</label>
-            <input
-              id="fb-due-from"
-              class="fb-input"
-              type="date"
-              [value]="filters().dueFrom ?? ''"
-              (change)="update({ dueFrom: $any($event.target).value || null })"
+            <mf-date-input
+              inputId="fb-due-from"
+              label="due from"
+              [commitOnly]="true"
+              [isoValue]="filters().dueFrom ?? null"
+              (isoChange)="update({ dueFrom: $event })"
             />
           </div>
           <div class="fb-field">
             <label for="fb-due-to">Due to</label>
-            <input
-              id="fb-due-to"
-              class="fb-input"
-              type="date"
-              [value]="filters().dueTo ?? ''"
-              (change)="update({ dueTo: $any($event.target).value || null })"
+            <mf-date-input
+              inputId="fb-due-to"
+              label="due to"
+              [commitOnly]="true"
+              [isoValue]="filters().dueTo ?? null"
+              (isoChange)="update({ dueTo: $event })"
             />
           </div>
           <div class="fb-field">
             <label for="fb-created-from">Created from</label>
-            <input
-              id="fb-created-from"
-              class="fb-input"
-              type="date"
-              [value]="filters().createdFrom ?? ''"
-              (change)="update({ createdFrom: $any($event.target).value || null })"
+            <mf-date-input
+              inputId="fb-created-from"
+              label="created from"
+              [commitOnly]="true"
+              [isoValue]="filters().createdFrom ?? null"
+              (isoChange)="update({ createdFrom: $event })"
             />
           </div>
           <div class="fb-field">
             <label for="fb-created-to">Created to</label>
-            <input
-              id="fb-created-to"
-              class="fb-input"
-              type="date"
-              [value]="filters().createdTo ?? ''"
-              (change)="update({ createdTo: $any($event.target).value || null })"
+            <mf-date-input
+              inputId="fb-created-to"
+              label="created to"
+              [commitOnly]="true"
+              [isoValue]="filters().createdTo ?? null"
+              (isoChange)="update({ createdTo: $event })"
             />
           </div>
         </div>
