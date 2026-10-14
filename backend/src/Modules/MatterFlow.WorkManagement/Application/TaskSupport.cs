@@ -13,6 +13,15 @@ internal static class TaskSupport
     public const string TaskObjectType = "Task";
     public const string TaskUpdatedEvent = "TASK_UPDATED";
     public const string CommentAddedEvent = "COMMENT_ADDED";
+    public const string CommentEditedEvent = "COMMENT_EDITED";
+    public const string CommentDeletedEvent = "COMMENT_DELETED";
+    public const string AssetLinkedEvent = "TASK_ASSET_LINKED";
+    public const string AssetUnlinkedEvent = "TASK_ASSET_UNLINKED";
+    public const string AssetRoleChangedEvent = "TASK_ASSET_ROLE_CHANGED";
+
+    // Stable error codes of the comment and asset-link endpoints (HTTP status in the comment).
+    public const string CommentNotDeletableCode = "COMMENT_NOT_DELETABLE"; // 409
+    public const string AlreadyLinkedCode = "ASSET_ALREADY_LINKED"; // 409
 
     public static string Encode(byte[] rowVersion) => Convert.ToBase64String(rowVersion);
 

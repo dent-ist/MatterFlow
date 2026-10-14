@@ -1,4 +1,5 @@
 using MatterFlow.Assets.Application;
+using MatterFlow.Assets.Contracts;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
@@ -73,8 +74,22 @@ public class AssetTypesController(AssetTypeService types) : ControllerBase
 /// <summary>Assets: Matter-owned records Tasks work on. Never deleted; deactivate instead.</summary>
 [ApiController]
 [Route("api/v1/assets")]
-public class AssetsController(AssetService assets) : ControllerBase
+public class AssetsController(AssetService assets, IAssetDirectory directory, IEnumerable<IAssetTaskLinkReader> taskLinks) : ControllerBase
 {
+    /// <summary>The Tasks this Asset is linked to ("Linked Tasks" on the Asset detail), with the relationship of the link.</summary>
+    [HttpGet("{assetId:int}/linked-tasks", Name = "ListAssetLinkedTasks")]
+    [Authorize(Policy = AssetPolicies.AssetView)]
+    [ProducesResponseType<AssetLinkedTasksResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> LinkedTasks(int assetId, CancellationToken cancellationToken)
+    {
+        if (await directory.FindAsync(assetId, cancellationToken) is null)
+            return this.Problem(AssetSupport.NotFound("Asset"));
+
+        var reader = taskLinks.FirstOrDefault();
+        IReadOnlyList<AssetTaskLink> items = reader is null ? [] : await reader.ListForAssetAsync(assetId, cancellationToken);
+        return Ok(new AssetLinkedTasksResponse(items));
+    }
+
     /// <summary>
     /// Lists Assets, usually of one Matter (<c>matterId</c>). <c>q</c> searches the display name, the Asset Type name and the external
     /// reference. Sort: displayName (default), assetType, createdAt.

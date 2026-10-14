@@ -79,3 +79,50 @@ public class TaskComment : AuditedEntity<long>
 
     public int? DeletedByUserId { get; set; }
 }
+
+/// <summary>Why a revision row exists: the body before an edit, or the final body at deletion.</summary>
+public static class CommentRevisionReasons
+{
+    public const string Edit = "EDIT";
+    public const string Delete = "DELETE";
+}
+
+/// <summary>Append-only history of a comment: its sanitized body as it was before an edit (or at deletion).</summary>
+public class TaskCommentRevision : Entity<long>
+{
+    public long TaskCommentId { get; set; }
+
+    public string BodyHtml { get; set; } = string.Empty;
+
+    /// <summary>EDIT or DELETE (<see cref="CommentRevisionReasons"/>).</summary>
+    public string Reason { get; set; } = CommentRevisionReasons.Edit;
+
+    public DateTime RevisedAtUtc { get; set; }
+
+    public int? RevisedByUserId { get; set; }
+}
+
+/// <summary>
+/// A link between a Task and an Asset of the same Matter (composite foreign keys), optionally with a relationship role (Source, Destination,
+/// Subject, Result, ...). Keyed by (TaskId, AssetId); unlinking deletes the row.
+/// </summary>
+public class TaskAsset : IAuditStamped
+{
+    public long TaskId { get; set; }
+
+    public int AssetId { get; set; }
+
+    public int MatterId { get; set; }
+
+    public int? AssetLinkRoleId { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; }
+
+    public int? CreatedByUserId { get; set; }
+
+    public DateTime? ModifiedAtUtc { get; set; }
+
+    public int? ModifiedByUserId { get; set; }
+
+    public byte[] RowVersion { get; set; } = [];
+}

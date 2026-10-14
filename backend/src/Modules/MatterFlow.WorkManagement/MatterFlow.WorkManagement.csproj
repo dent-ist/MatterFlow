@@ -15,5 +15,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="HtmlSanitizer" />
   </ItemGroup>
 </Project>
