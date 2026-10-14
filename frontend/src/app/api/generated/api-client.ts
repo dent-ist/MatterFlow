@@ -97,6 +97,97 @@ export class SystemClient implements ISystemClient {
     }
 }
 
+export interface IAuditEventsClient {
+    /**
+     * @param afterId (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    listAuditEvents(objectType: string, objectId: string, afterId?: number | undefined, pageSize?: number | undefined): Observable<AuditEventPage>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class AuditEventsClient implements IAuditEventsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param afterId (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    listAuditEvents(objectType: string, objectId: string, afterId?: number | undefined, pageSize?: number | undefined): Observable<AuditEventPage> {
+        let url_ = this.baseUrl + "/api/v1/audit/events?";
+        if (objectType === undefined || objectType === null)
+            throw new globalThis.Error("The parameter 'objectType' must be defined and cannot be null.");
+        else
+            url_ += "objectType=" + encodeURIComponent("" + objectType) + "&";
+        if (objectId === undefined || objectId === null)
+            throw new globalThis.Error("The parameter 'objectId' must be defined and cannot be null.");
+        else
+            url_ += "objectId=" + encodeURIComponent("" + objectId) + "&";
+        if (afterId === null)
+            throw new globalThis.Error("The parameter 'afterId' cannot be null.");
+        else if (afterId !== undefined)
+            url_ += "afterId=" + encodeURIComponent("" + afterId) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListAuditEvents(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListAuditEvents(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AuditEventPage>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AuditEventPage>;
+        }));
+    }
+
+    protected processListAuditEvents(response: HttpResponseBase): Observable<AuditEventPage> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AuditEventPage;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface ApiFieldError {
     code: string;
     message: string;
@@ -115,6 +206,33 @@ export interface ApiProblemDetails {
     traceId?: string | undefined;
     errors?: { [key: string]: ApiFieldError[]; } | undefined;
     meta?: any | undefined;
+
+    [key: string]: any;
+}
+
+export interface AuditEventDto {
+    auditEventId: number;
+    occurredAtUtc: string;
+    actorUserId: number | undefined;
+    eventType: string;
+    objectType: string;
+    objectId: string;
+    matterId: number | undefined;
+    taskId: number | undefined;
+    fieldKey: string | undefined;
+    oldValue: string | undefined;
+    newValue: string | undefined;
+    oldValueTruncated: boolean;
+    newValueTruncated: boolean;
+    summary: string | undefined;
+    correlationId: string;
+
+    [key: string]: any;
+}
+
+export interface AuditEventPage {
+    items: AuditEventDto[];
+    nextAfterId: number | undefined;
 
     [key: string]: any;
 }

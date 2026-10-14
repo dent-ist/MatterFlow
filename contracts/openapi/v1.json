@@ -45,6 +45,69 @@
           }
         }
       }
+    },
+    "/api/v1/audit/events": {
+      "get": {
+        "tags": [
+          "AuditEvents"
+        ],
+        "operationId": "ListAuditEvents",
+        "parameters": [
+          {
+            "name": "objectType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "maxLength": 40,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "objectId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "maxLength": 40,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "afterId",
+            "in": "query",
+            "schema": {
+              "maximum": 9223372036854776000,
+              "minimum": 0,
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventPage"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -167,6 +230,122 @@
           }
         }
       },
+      "AuditEventDto": {
+        "required": [
+          "auditEventId",
+          "occurredAtUtc",
+          "actorUserId",
+          "eventType",
+          "objectType",
+          "objectId",
+          "matterId",
+          "taskId",
+          "fieldKey",
+          "oldValue",
+          "newValue",
+          "oldValueTruncated",
+          "newValueTruncated",
+          "summary",
+          "correlationId"
+        ],
+        "type": "object",
+        "properties": {
+          "auditEventId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "occurredAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actorUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "objectType": {
+            "type": "string"
+          },
+          "objectId": {
+            "type": "string"
+          },
+          "matterId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "taskId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "fieldKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "oldValue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "newValue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "oldValueTruncated": {
+            "type": "boolean"
+          },
+          "newValueTruncated": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "AuditEventPage": {
+        "required": [
+          "items",
+          "nextAfterId"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEventDto"
+            }
+          },
+          "nextAfterId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          }
+        }
+      },
       "PingResponse": {
         "required": [
           "status",
@@ -212,6 +391,9 @@
   "tags": [
     {
       "name": "System"
+    },
+    {
+      "name": "AuditEvents"
     }
   ]
 }

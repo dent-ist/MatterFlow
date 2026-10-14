@@ -30,6 +30,8 @@ builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.NumberHandling = JsonNumberHandling.Strict; // keeps numbers as plain integers in the OpenAPI schemas
 });
 builder.Services.AddHealthChecks();
+// Policies (e.g. Audit.View) are registered by the Identity/authorization module; the host only enables the middleware.
+builder.Services.AddAuthorization();
 builder.Services.AddSchemaMigrations(builder.Configuration);
 builder.Services.AddUserTimeZone();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -61,6 +63,8 @@ app.UseStatusCodePages();
 
 if (app.Environment.IsDevelopment())
     app.MapOpenApi("/openapi/{documentName}.json");
+
+app.UseAuthorization();
 
 app.MapHealthChecks("/health/live");
 app.MapControllers();
