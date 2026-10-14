@@ -49,7 +49,9 @@ test.describe('Assignment by a technician (SCN-006)', () => {
     await detail.expectStatus('In Progress');
 
     await page.getByRole('button', { name: 'Edit details' }).click();
-    await page.getByLabel('Assignee', { exact: true }).selectOption({ label: colleague.username });
+    await page.getByRole('button', { name: 'Change', exact: true }).click();
+    await page.getByRole('combobox', { name: 'Assignee' }).fill(colleague.username);
+    await page.getByRole('option', { name: colleague.username }).click();
     await page.getByRole('button', { name: 'Save changes' }).click();
 
     await expect(detail.assignee).toContainText(colleague.username);
@@ -74,7 +76,7 @@ test.describe('Known application defects (docs/qa/e2e-findings.md)', () => {
     await detail.open(task.taskId);
     await page.getByRole('button', { name: 'Edit details' }).click();
     // Any active user can be chosen (the same lookup as Create Task), not only members of the task's Pod.
-    await page.getByRole('button', { name: 'Change' }).click();
+    await page.getByRole('button', { name: 'Change', exact: true }).click();
     await page.getByRole('combobox', { name: 'Assignee' }).fill(colleague.username);
     await page.getByRole('option', { name: colleague.username }).click();
     await page.getByRole('button', { name: 'Save changes' }).click();

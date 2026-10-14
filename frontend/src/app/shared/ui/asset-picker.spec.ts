@@ -91,6 +91,32 @@ describe('AssetPicker', () => {
     expect(el().querySelector('.ap__change')).toBeNull();
   });
 
+  it('links the read-only name to the asset and shows type and external reference (UAT2-01, UAT2-12)', async () => {
+    configure();
+    api.getAsset.mockReturnValue(ok(anAsset({ externalReference: 'REL-77' })));
+    await create({ matterId: 7, value: 9, readOnly: true });
+    const link = el().querySelector<HTMLAnchorElement>('[data-readonly] a')!;
+    expect(link.textContent).toContain('Contract bundle');
+    expect(link.getAttribute('href')).toBe('/assets/9');
+    expect(el().querySelector('[data-readonly]')!.textContent).toContain('REL-77');
+  });
+
+  it('says so when no asset matches and shows the type and reference of each option', async () => {
+    configure();
+    await create({ matterId: 7 });
+    api.lookupAssets.mockReturnValue(ok([aLookupItem({ externalReference: 'EXT-1' })]));
+    box().dispatchEvent(new Event('focus'));
+    await settle(fixture);
+    expect(el().querySelector('[role=option]')!.textContent).toContain('EXT-1');
+    expect(el().querySelector('[role=option]')!.textContent).toContain('Document Set');
+
+    api.lookupAssets.mockReturnValue(ok([]));
+    box().value = 'zzz';
+    box().dispatchEvent(new Event('input'));
+    await settle(fixture);
+    expect(el().querySelector('[role=status]')?.textContent).toContain('No assets match');
+  });
+
   it('takes the matter from the host page context when no input is given', async () => {
     const context = new AssetPickerContext();
     configure([{ provide: AssetPickerContext, useValue: context }]);

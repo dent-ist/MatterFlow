@@ -17,6 +17,7 @@ import {
   TaskWorkflowClient,
   TasksClient,
   UsersClient,
+  UsersLookupClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
@@ -262,6 +263,12 @@ export async function mountTaskPage(
         },
       },
       { provide: UsersClient, useValue: { listUsers: () => ok({ items: [] }) } },
+      {
+        provide: UsersLookupClient,
+        useValue: {
+          lookupUsers: vi.fn().mockReturnValue(ok([{ userId: 20, displayName: 'Colleague C.' }])),
+        },
+      },
     ],
   });
   vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);

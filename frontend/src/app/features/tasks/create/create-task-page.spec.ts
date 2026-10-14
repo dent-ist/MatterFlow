@@ -271,6 +271,23 @@ describe('CreateTaskPage', () => {
     expect(field(h, '[data-summary]').textContent).toContain('Workspace ID: Enter workspace ID.');
   });
 
+  it('drops each problem from the summary as it is fixed and removes the summary when none is left (UAT2-17)', async () => {
+    const h = await create({ inputs: { matterId: '7' } });
+    await type(h, '#ct-title', 'Process Smith custodians');
+    await choose(h, '#ct-type', '1');
+    await submit(h);
+    const summary = (): string => field(h, '[data-summary]')?.textContent ?? '';
+    expect(summary()).toContain("Enter the requestor's name.");
+    expect(summary()).toContain('Workspace ID: Enter workspace ID.');
+
+    await type(h, '#ct-requestor-name', 'Jane Doe');
+    expect(summary()).not.toContain('requestor');
+    expect(summary()).toContain('Workspace ID');
+
+    await type(h, '[data-request-details] input[type=text]', 'WS-1');
+    expect(h.el.querySelector('[data-summary]')).toBeNull();
+  });
+
   it('creates the task in one call with the form values, due date and assignment, then opens it', async () => {
     const h = await create({ inputs: { matterId: '7', projectId: '3' } });
     await fillRequired(h);
