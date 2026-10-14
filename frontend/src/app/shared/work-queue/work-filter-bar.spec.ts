@@ -50,10 +50,7 @@ describe('WorkFilterBar', () => {
     // The first render can lag behind whenStable on a busy machine: wait for the search box instead of assuming it is there.
     await vi.waitFor(() => {
       fixture.detectChanges();
-      expect(
-        el().querySelector('#fb-q'),
-        `DIAG html=[${el().outerHTML.slice(0, 300)}] ready=${String(fixture.isStable())} ctor=${fixture.componentInstance?.constructor?.name}`,
-      ).not.toBeNull();
+      expect(el().querySelector('#fb-q')).not.toBeNull();
     });
   }
 
