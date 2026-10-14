@@ -47,6 +47,11 @@ public static class ErrorCodes
 
     /// <summary>The default configuration item cannot be deactivated or deleted; choose another default first.</summary>
     public const string DefaultRequired = "DEFAULT_REQUIRED";
+    /// <summary>A form definition already has an open draft.</summary>
+    public const string FormDraftExists = "FORM_DRAFT_EXISTS";
+
+    /// <summary>A published or retired form version cannot be edited (create a new draft instead).</summary>
+    public const string FormVersionImmutable = "FORM_VERSION_IMMUTABLE";
 
     /// <summary>Transport-level codes for responses not produced by a feature.</summary>
     public const string UnsupportedMediaType = "UNSUPPORTED_MEDIA_TYPE";

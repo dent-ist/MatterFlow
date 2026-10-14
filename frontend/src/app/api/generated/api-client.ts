@@ -491,6 +491,872 @@ export class AssetLinkRolesClient implements IAssetLinkRolesClient {
     }
 }
 
+export interface IFormsClient {
+    /**
+     * @return OK
+     */
+    ensureFormDefinition(body: EnsureFormDefinitionRequest): Observable<FormDefinitionModel>;
+    /**
+     * @param ownerKind (optional) 
+     * @param ownerId (optional) 
+     * @return OK
+     */
+    findFormDefinition(ownerKind?: FormOwnerKind | undefined, ownerId?: number | undefined): Observable<FormDefinitionModel>;
+    /**
+     * @return OK
+     */
+    getFormDefinition(definitionId: number): Observable<FormDefinitionModel>;
+    /**
+     * @return OK
+     */
+    listFormVersions(definitionId: number): Observable<FormVersionSummary[]>;
+    /**
+     * @param body (optional) 
+     * @return Created
+     */
+    createFormDraft(definitionId: number, body?: CreateFormDraftRequest | null | undefined): Observable<FormVersionDetail>;
+    /**
+     * @return OK
+     */
+    getPublishedFormVersion(definitionId: number): Observable<FormVersionDetail>;
+    /**
+     * @return OK
+     */
+    getFormVersionSchema(versionId: number): Observable<FormVersionDetail>;
+    /**
+     * @return Created
+     */
+    cloneFormVersion(definitionId: number, versionId: number): Observable<FormVersionDetail>;
+    /**
+     * @return OK
+     */
+    saveFormDraft(definitionId: number, versionId: number, body: SaveFormDraftRequest): Observable<FormVersionDetail>;
+    /**
+     * @return No Content
+     */
+    discardFormDraft(definitionId: number, versionId: number): Observable<void>;
+    /**
+     * @param rowVersion (optional) 
+     * @return OK
+     */
+    publishFormVersion(definitionId: number, versionId: number, rowVersion?: string | undefined): Observable<FormVersionDetail>;
+    /**
+     * @return OK
+     */
+    retireFormVersion(definitionId: number, versionId: number): Observable<FormVersionDetail>;
+    /**
+     * @param against (optional) 
+     * @return OK
+     */
+    diffFormVersion(definitionId: number, versionId: number, against?: number | undefined): Observable<FormDiffModel>;
+    /**
+     * @return OK
+     */
+    validateFormValues(versionId: number, body: ValidateFormValuesRequest): Observable<ValidateFormValuesResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class FormsClient implements IFormsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    ensureFormDefinition(body: EnsureFormDefinitionRequest): Observable<FormDefinitionModel> {
+        let url_ = this.baseUrl + "/api/v1/forms";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processEnsureFormDefinition(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processEnsureFormDefinition(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FormDefinitionModel>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FormDefinitionModel>;
+        }));
+    }
+
+    protected processEnsureFormDefinition(response: HttpResponseBase): Observable<FormDefinitionModel> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as FormDefinitionModel;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param ownerKind (optional) 
+     * @param ownerId (optional) 
+     * @return OK
+     */
+    findFormDefinition(ownerKind?: FormOwnerKind | undefined, ownerId?: number | undefined): Observable<FormDefinitionModel> {
+        let url_ = this.baseUrl + "/api/v1/forms/by-owner?";
+        if (ownerKind === null)
+            throw new globalThis.Error("The parameter 'ownerKind' cannot be null.");
+        else if (ownerKind !== undefined)
+            url_ += "ownerKind=" + encodeURIComponent("" + ownerKind) + "&";
+        if (ownerId === null)
+            throw new globalThis.Error("The parameter 'ownerId' cannot be null.");
+        else if (ownerId !== undefined)
+            url_ += "ownerId=" + encodeURIComponent("" + ownerId) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processFindFormDefinition(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processFindFormDefinition(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FormDefinitionModel>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FormDefinitionModel>;
+        }));
+    }
+
+    protected processFindFormDefinition(response: HttpResponseBase): Observable<FormDefinitionModel> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as FormDefinitionModel;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getFormDefinition(definitionId: number): Observable<FormDefinitionModel> {
+        let url_ = this.baseUrl + "/api/v1/forms/{definitionId}";
+        if (definitionId === undefined || definitionId === null)
+            throw new globalThis.Error("The parameter 'definitionId' must be defined.");
+        url_ = url_.replace("{definitionId}", encodeURIComponent("" + definitionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetFormDefinition(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetFormDefinition(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FormDefinitionModel>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FormDefinitionModel>;
+        }));
+    }
+
+    protected processGetFormDefinition(response: HttpResponseBase): Observable<FormDefinitionModel> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as FormDefinitionModel;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    listFormVersions(definitionId: number): Observable<FormVersionSummary[]> {
+        let url_ = this.baseUrl + "/api/v1/forms/{definitionId}/versions";
+        if (definitionId === undefined || definitionId === null)
+            throw new globalThis.Error("The parameter 'definitionId' must be defined.");
+        url_ = url_.replace("{definitionId}", encodeURIComponent("" + definitionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListFormVersions(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListFormVersions(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FormVersionSummary[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FormVersionSummary[]>;
+        }));
+    }
+
+    protected processListFormVersions(response: HttpResponseBase): Observable<FormVersionSummary[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as FormVersionSummary[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param body (optional) 
+     * @return Created
+     */
+    createFormDraft(definitionId: number, body?: CreateFormDraftRequest | null | undefined): Observable<FormVersionDetail> {
+        let url_ = this.baseUrl + "/api/v1/forms/{definitionId}/versions";
+        if (definitionId === undefined || definitionId === null)
+            throw new globalThis.Error("The parameter 'definitionId' must be defined.");
+        url_ = url_.replace("{definitionId}", encodeURIComponent("" + definitionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateFormDraft(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateFormDraft(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FormVersionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FormVersionDetail>;
+        }));
+    }
+
+    protected processCreateFormDraft(response: HttpResponseBase): Observable<FormVersionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as FormVersionDetail;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getPublishedFormVersion(definitionId: number): Observable<FormVersionDetail> {
+        let url_ = this.baseUrl + "/api/v1/forms/{definitionId}/published";
+        if (definitionId === undefined || definitionId === null)
+            throw new globalThis.Error("The parameter 'definitionId' must be defined.");
+        url_ = url_.replace("{definitionId}", encodeURIComponent("" + definitionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetPublishedFormVersion(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetPublishedFormVersion(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FormVersionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FormVersionDetail>;
+        }));
+    }
+
+    protected processGetPublishedFormVersion(response: HttpResponseBase): Observable<FormVersionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as FormVersionDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getFormVersionSchema(versionId: number): Observable<FormVersionDetail> {
+        let url_ = this.baseUrl + "/api/v1/forms/versions/{versionId}/schema";
+        if (versionId === undefined || versionId === null)
+            throw new globalThis.Error("The parameter 'versionId' must be defined.");
+        url_ = url_.replace("{versionId}", encodeURIComponent("" + versionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetFormVersionSchema(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetFormVersionSchema(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FormVersionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FormVersionDetail>;
+        }));
+    }
+
+    protected processGetFormVersionSchema(response: HttpResponseBase): Observable<FormVersionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as FormVersionDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    cloneFormVersion(definitionId: number, versionId: number): Observable<FormVersionDetail> {
+        let url_ = this.baseUrl + "/api/v1/forms/{definitionId}/versions/{versionId}/clone";
+        if (definitionId === undefined || definitionId === null)
+            throw new globalThis.Error("The parameter 'definitionId' must be defined.");
+        url_ = url_.replace("{definitionId}", encodeURIComponent("" + definitionId));
+        if (versionId === undefined || versionId === null)
+            throw new globalThis.Error("The parameter 'versionId' must be defined.");
+        url_ = url_.replace("{versionId}", encodeURIComponent("" + versionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCloneFormVersion(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCloneFormVersion(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FormVersionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FormVersionDetail>;
+        }));
+    }
+
+    protected processCloneFormVersion(response: HttpResponseBase): Observable<FormVersionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as FormVersionDetail;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    saveFormDraft(definitionId: number, versionId: number, body: SaveFormDraftRequest): Observable<FormVersionDetail> {
+        let url_ = this.baseUrl + "/api/v1/forms/{definitionId}/versions/{versionId}";
+        if (definitionId === undefined || definitionId === null)
+            throw new globalThis.Error("The parameter 'definitionId' must be defined.");
+        url_ = url_.replace("{definitionId}", encodeURIComponent("" + definitionId));
+        if (versionId === undefined || versionId === null)
+            throw new globalThis.Error("The parameter 'versionId' must be defined.");
+        url_ = url_.replace("{versionId}", encodeURIComponent("" + versionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSaveFormDraft(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSaveFormDraft(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FormVersionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FormVersionDetail>;
+        }));
+    }
+
+    protected processSaveFormDraft(response: HttpResponseBase): Observable<FormVersionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as FormVersionDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    discardFormDraft(definitionId: number, versionId: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/forms/{definitionId}/versions/{versionId}";
+        if (definitionId === undefined || definitionId === null)
+            throw new globalThis.Error("The parameter 'definitionId' must be defined.");
+        url_ = url_.replace("{definitionId}", encodeURIComponent("" + definitionId));
+        if (versionId === undefined || versionId === null)
+            throw new globalThis.Error("The parameter 'versionId' must be defined.");
+        url_ = url_.replace("{versionId}", encodeURIComponent("" + versionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDiscardFormDraft(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDiscardFormDraft(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDiscardFormDraft(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param rowVersion (optional) 
+     * @return OK
+     */
+    publishFormVersion(definitionId: number, versionId: number, rowVersion?: string | undefined): Observable<FormVersionDetail> {
+        let url_ = this.baseUrl + "/api/v1/forms/{definitionId}/versions/{versionId}/publish?";
+        if (definitionId === undefined || definitionId === null)
+            throw new globalThis.Error("The parameter 'definitionId' must be defined.");
+        url_ = url_.replace("{definitionId}", encodeURIComponent("" + definitionId));
+        if (versionId === undefined || versionId === null)
+            throw new globalThis.Error("The parameter 'versionId' must be defined.");
+        url_ = url_.replace("{versionId}", encodeURIComponent("" + versionId));
+        if (rowVersion === null)
+            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
+        else if (rowVersion !== undefined)
+            url_ += "rowVersion=" + encodeURIComponent("" + rowVersion) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processPublishFormVersion(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processPublishFormVersion(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FormVersionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FormVersionDetail>;
+        }));
+    }
+
+    protected processPublishFormVersion(response: HttpResponseBase): Observable<FormVersionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as FormVersionDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    retireFormVersion(definitionId: number, versionId: number): Observable<FormVersionDetail> {
+        let url_ = this.baseUrl + "/api/v1/forms/{definitionId}/versions/{versionId}/retire";
+        if (definitionId === undefined || definitionId === null)
+            throw new globalThis.Error("The parameter 'definitionId' must be defined.");
+        url_ = url_.replace("{definitionId}", encodeURIComponent("" + definitionId));
+        if (versionId === undefined || versionId === null)
+            throw new globalThis.Error("The parameter 'versionId' must be defined.");
+        url_ = url_.replace("{versionId}", encodeURIComponent("" + versionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processRetireFormVersion(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processRetireFormVersion(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FormVersionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FormVersionDetail>;
+        }));
+    }
+
+    protected processRetireFormVersion(response: HttpResponseBase): Observable<FormVersionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as FormVersionDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param against (optional) 
+     * @return OK
+     */
+    diffFormVersion(definitionId: number, versionId: number, against?: number | undefined): Observable<FormDiffModel> {
+        let url_ = this.baseUrl + "/api/v1/forms/{definitionId}/versions/{versionId}/diff?";
+        if (definitionId === undefined || definitionId === null)
+            throw new globalThis.Error("The parameter 'definitionId' must be defined.");
+        url_ = url_.replace("{definitionId}", encodeURIComponent("" + definitionId));
+        if (versionId === undefined || versionId === null)
+            throw new globalThis.Error("The parameter 'versionId' must be defined.");
+        url_ = url_.replace("{versionId}", encodeURIComponent("" + versionId));
+        if (against === null)
+            throw new globalThis.Error("The parameter 'against' cannot be null.");
+        else if (against !== undefined)
+            url_ += "against=" + encodeURIComponent("" + against) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDiffFormVersion(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDiffFormVersion(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FormDiffModel>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FormDiffModel>;
+        }));
+    }
+
+    protected processDiffFormVersion(response: HttpResponseBase): Observable<FormDiffModel> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as FormDiffModel;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    validateFormValues(versionId: number, body: ValidateFormValuesRequest): Observable<ValidateFormValuesResponse> {
+        let url_ = this.baseUrl + "/api/v1/forms/versions/{versionId}/validate";
+        if (versionId === undefined || versionId === null)
+            throw new globalThis.Error("The parameter 'versionId' must be defined.");
+        url_ = url_.replace("{versionId}", encodeURIComponent("" + versionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processValidateFormValues(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processValidateFormValues(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ValidateFormValuesResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ValidateFormValuesResponse>;
+        }));
+    }
+
+    protected processValidateFormValues(response: HttpResponseBase): Observable<ValidateFormValuesResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ValidateFormValuesResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IPrioritiesClient {
     /**
      * @return OK
@@ -2508,6 +3374,13 @@ export interface CreateAssetLinkRoleRequest {
     [key: string]: any;
 }
 
+export interface CreateFormDraftRequest {
+    fromVersionId?: number | undefined;
+    notes?: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface CreatePodRequest {
     name: string;
     description?: string | undefined;
@@ -2519,6 +3392,127 @@ export interface CreatePriorityRequest {
     label: string;
     color: string;
     isActive?: boolean;
+
+    [key: string]: any;
+}
+
+export interface EnsureFormDefinitionRequest {
+    ownerKind: FormOwnerKind;
+    ownerId?: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface FormDefinitionModel {
+    formDefinitionId: number;
+    ownerKind: FormOwnerKind;
+    ownerId: number | undefined;
+    isActive: boolean;
+    publishedVersionId: number | undefined;
+    draftVersionId: number | undefined;
+    versions: FormVersionSummary[];
+
+    [key: string]: any;
+}
+
+export interface FormDiffModel {
+    fromVersionId: number | undefined;
+    toVersionId: number;
+    added: number;
+    removed: number;
+    changed: number;
+    changes: FormFieldChangeModel[];
+
+    [key: string]: any;
+}
+
+export interface FormFieldChangeModel {
+    fieldKey: string;
+    kind: string;
+    details: string[];
+
+    [key: string]: any;
+}
+
+export interface FormFieldModel {
+    key: string;
+    label: string;
+    control: string;
+    helpText?: string | undefined;
+    section?: string | undefined;
+    required?: boolean;
+    defaultValue?: JsonElement | undefined;
+    validation?: JsonElement | undefined;
+    showWhen?: JsonElement | undefined;
+    requiredWhen?: JsonElement | undefined;
+    isFilterable?: boolean;
+    options?: FormOptionModel[] | undefined;
+
+    [key: string]: any;
+}
+
+export interface FormOptionModel {
+    key: string;
+    label: string;
+    availableWhen?: JsonElement | undefined;
+
+    [key: string]: any;
+}
+
+export enum FormOwnerKind {
+    TaskType = "TaskType",
+    Step = "Step",
+    AssetType = "AssetType",
+    Client = "Client",
+    Matter = "Matter",
+    Project = "Project",
+}
+
+export enum FormSubmissionMode {
+    Submit = "Submit",
+    Draft = "Draft",
+}
+
+export interface FormValueErrorModel {
+    fieldKey: string;
+    code: string;
+    message: string;
+
+    [key: string]: any;
+}
+
+export interface FormVersionDetail {
+    version: FormVersionSummary;
+    ownerKind: FormOwnerKind;
+    ownerId: number | undefined;
+    fields: FormFieldModel[];
+
+    [key: string]: any;
+}
+
+export enum FormVersionStatus {
+    Draft = "Draft",
+    Published = "Published",
+    Retired = "Retired",
+}
+
+export interface FormVersionSummary {
+    formVersionId: number;
+    formDefinitionId: number;
+    versionNo: number;
+    status: FormVersionStatus;
+    clonedFromVersionId: number | undefined;
+    createdAtUtc: string;
+    publishedAtUtc: string | undefined;
+    publishedByUserId: number | undefined;
+    notes: string | undefined;
+    fieldCount: number;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface JsonElement {
 
     [key: string]: any;
 }
@@ -2660,6 +3654,14 @@ export interface RoleSummaryDto {
     [key: string]: any;
 }
 
+export interface SaveFormDraftRequest {
+    fields: FormFieldModel[];
+    notes?: string | undefined;
+    rowVersion?: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface SaveRoleRequest {
     name: string;
     description: string | undefined;
@@ -2791,6 +3793,24 @@ export interface UserSummaryDto {
     [key: string]: any;
 }
 
+export interface ValidateFormValuesRequest {
+    values: any;
+    mode?: FormSubmissionMode;
+    existingValues?: any | undefined;
+    validateOnlyChanged?: boolean;
+
+    [key: string]: any;
+}
+
+export interface ValidateFormValuesResponse {
+    isValid: boolean;
+    errors: FormValueErrorModel[];
+    normalizedValues: any;
+    droppedFields: string[];
+
+    [key: string]: any;
+}
+
 export enum ApiProblemDetailsCode {
     VALIDATION_FAILED = "VALIDATION_FAILED",
     FORM_VALIDATION_FAILED = "FORM_VALIDATION_FAILED",
@@ -2828,6 +3848,8 @@ export enum ApiProblemDetailsCode {
     HOLD_COMMENT_REQUIRED = "HOLD_COMMENT_REQUIRED",
     IN_USE = "IN_USE",
     DEFAULT_REQUIRED = "DEFAULT_REQUIRED",
+    FORM_DRAFT_EXISTS = "FORM_DRAFT_EXISTS",
+    FORM_VERSION_IMMUTABLE = "FORM_VERSION_IMMUTABLE",
     UNSUPPORTED_MEDIA_TYPE = "UNSUPPORTED_MEDIA_TYPE",
     INTERNAL_ERROR = "INTERNAL_ERROR",
 }

@@ -289,6 +289,596 @@
         }
       }
     },
+    "/api/v1/forms": {
+      "post": {
+        "tags": [
+          "Forms"
+        ],
+        "operationId": "EnsureFormDefinition",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnsureFormDefinitionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnsureFormDefinitionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnsureFormDefinitionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormDefinitionModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/forms/by-owner": {
+      "get": {
+        "tags": [
+          "Forms"
+        ],
+        "operationId": "FindFormDefinition",
+        "parameters": [
+          {
+            "name": "ownerKind",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/FormOwnerKind"
+            }
+          },
+          {
+            "name": "ownerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormDefinitionModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/forms/{definitionId}": {
+      "get": {
+        "tags": [
+          "Forms"
+        ],
+        "operationId": "GetFormDefinition",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormDefinitionModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/forms/{definitionId}/versions": {
+      "get": {
+        "tags": [
+          "Forms"
+        ],
+        "operationId": "ListFormVersions",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FormVersionSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Forms"
+        ],
+        "operationId": "CreateFormDraft",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CreateFormDraftRequest"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CreateFormDraftRequest"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CreateFormDraftRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/forms/{definitionId}/published": {
+      "get": {
+        "tags": [
+          "Forms"
+        ],
+        "operationId": "GetPublishedFormVersion",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/forms/versions/{versionId}/schema": {
+      "get": {
+        "tags": [
+          "Forms"
+        ],
+        "operationId": "GetFormVersionSchema",
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/forms/{definitionId}/versions/{versionId}/clone": {
+      "post": {
+        "tags": [
+          "Forms"
+        ],
+        "operationId": "CloneFormVersion",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/forms/{definitionId}/versions/{versionId}": {
+      "put": {
+        "tags": [
+          "Forms"
+        ],
+        "operationId": "SaveFormDraft",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveFormDraftRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveFormDraftRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveFormDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Forms"
+        ],
+        "operationId": "DiscardFormDraft",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/forms/{definitionId}/versions/{versionId}/publish": {
+      "post": {
+        "tags": [
+          "Forms"
+        ],
+        "operationId": "PublishFormVersion",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "rowVersion",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/forms/{definitionId}/versions/{versionId}/retire": {
+      "post": {
+        "tags": [
+          "Forms"
+        ],
+        "operationId": "RetireFormVersion",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/forms/{definitionId}/versions/{versionId}/diff": {
+      "get": {
+        "tags": [
+          "Forms"
+        ],
+        "operationId": "DiffFormVersion",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "against",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormDiffModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/forms/versions/{versionId}/validate": {
+      "post": {
+        "tags": [
+          "Forms"
+        ],
+        "operationId": "ValidateFormValues",
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateFormValuesRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateFormValuesRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateFormValuesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateFormValuesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/priorities": {
       "get": {
         "tags": [
@@ -1588,6 +2178,8 @@
               "HOLD_COMMENT_REQUIRED",
               "IN_USE",
               "DEFAULT_REQUIRED",
+              "FORM_DRAFT_EXISTS",
+              "FORM_VERSION_IMMUTABLE",
               "UNSUPPORTED_MEDIA_TYPE",
               "INTERNAL_ERROR"
             ],
@@ -1780,6 +2372,24 @@
           }
         }
       },
+      "CreateFormDraftRequest": {
+        "type": "object",
+        "properties": {
+          "fromVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "CreatePodRequest": {
         "required": [
           "name"
@@ -1820,6 +2430,394 @@
           }
         }
       },
+      "EnsureFormDefinitionRequest": {
+        "required": [
+          "ownerKind"
+        ],
+        "type": "object",
+        "properties": {
+          "ownerKind": {
+            "$ref": "#/components/schemas/FormOwnerKind"
+          },
+          "ownerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "FormDefinitionModel": {
+        "required": [
+          "formDefinitionId",
+          "ownerKind",
+          "ownerId",
+          "isActive",
+          "publishedVersionId",
+          "draftVersionId",
+          "versions"
+        ],
+        "type": "object",
+        "properties": {
+          "formDefinitionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ownerKind": {
+            "$ref": "#/components/schemas/FormOwnerKind"
+          },
+          "ownerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "publishedVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "draftVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormVersionSummary"
+            }
+          }
+        }
+      },
+      "FormDiffModel": {
+        "required": [
+          "fromVersionId",
+          "toVersionId",
+          "added",
+          "removed",
+          "changed",
+          "changes"
+        ],
+        "type": "object",
+        "properties": {
+          "fromVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "toVersionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "added": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "removed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "changed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormFieldChangeModel"
+            }
+          }
+        }
+      },
+      "FormFieldChangeModel": {
+        "required": [
+          "fieldKey",
+          "kind",
+          "details"
+        ],
+        "type": "object",
+        "properties": {
+          "fieldKey": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "FormFieldModel": {
+        "required": [
+          "key",
+          "label",
+          "control"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "control": {
+            "type": "string"
+          },
+          "helpText": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "section": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "defaultValue": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "validation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "showWhen": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "requiredWhen": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "isFilterable": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/FormOptionModel"
+            }
+          }
+        }
+      },
+      "FormOptionModel": {
+        "required": [
+          "key",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "availableWhen": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          }
+        }
+      },
+      "FormOwnerKind": {
+        "enum": [
+          "TaskType",
+          "Step",
+          "AssetType",
+          "Client",
+          "Matter",
+          "Project"
+        ]
+      },
+      "FormSubmissionMode": {
+        "enum": [
+          "Submit",
+          "Draft"
+        ]
+      },
+      "FormValueErrorModel": {
+        "required": [
+          "fieldKey",
+          "code",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "fieldKey": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "FormVersionDetail": {
+        "required": [
+          "version",
+          "ownerKind",
+          "ownerId",
+          "fields"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "$ref": "#/components/schemas/FormVersionSummary"
+          },
+          "ownerKind": {
+            "$ref": "#/components/schemas/FormOwnerKind"
+          },
+          "ownerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormFieldModel"
+            }
+          }
+        }
+      },
+      "FormVersionStatus": {
+        "enum": [
+          "Draft",
+          "Published",
+          "Retired"
+        ]
+      },
+      "FormVersionSummary": {
+        "required": [
+          "formVersionId",
+          "formDefinitionId",
+          "versionNo",
+          "status",
+          "clonedFromVersionId",
+          "createdAtUtc",
+          "publishedAtUtc",
+          "publishedByUserId",
+          "notes",
+          "fieldCount",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "formVersionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "formDefinitionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "versionNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/FormVersionStatus"
+          },
+          "clonedFromVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "publishedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "publishedByUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fieldCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "JsonElement": { },
       "MeResponse": {
         "required": [
           "userId",
@@ -2259,6 +3257,32 @@
           }
         }
       },
+      "SaveFormDraftRequest": {
+        "required": [
+          "fields"
+        ],
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormFieldModel"
+            }
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "SaveRoleRequest": {
         "required": [
           "name",
@@ -2679,6 +3703,58 @@
             "format": "date-time"
           }
         }
+      },
+      "ValidateFormValuesRequest": {
+        "required": [
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "values": {
+            "type": "object"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/FormSubmissionMode"
+          },
+          "existingValues": {
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "validateOnlyChanged": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ValidateFormValuesResponse": {
+        "required": [
+          "isValid",
+          "errors",
+          "normalizedValues",
+          "droppedFields"
+        ],
+        "type": "object",
+        "properties": {
+          "isValid": {
+            "type": "boolean"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormValueErrorModel"
+            }
+          },
+          "normalizedValues": {
+            "type": "object"
+          },
+          "droppedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       }
     }
   },
@@ -2691,6 +3767,9 @@
     },
     {
       "name": "AssetLinkRoles"
+    },
+    {
+      "name": "Forms"
     },
     {
       "name": "Priorities"
