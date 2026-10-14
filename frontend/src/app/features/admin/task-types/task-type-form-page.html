@@ -57,7 +57,7 @@
   }
   @case ('ready') {
     @if (!current()) {
-      <p class="ttf__muted">This task type has no form yet.</p>
+      <p class="ttf__muted">This {{ ownerLabel().toLowerCase() }} has no form yet.</p>
       <p-button label="Create new draft" (onClick)="createDraft()" />
     } @else {
       @if (readOnly()) {

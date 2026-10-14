@@ -24,6 +24,7 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { EntityActivity } from '../../../shared/ui/entity-activity';
+import { MatterAssets } from '../../../shared/ui/matter-assets';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 
 type Tab = 'tasks' | 'projects' | 'assets' | 'details' | 'activity';
@@ -31,7 +32,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * Matter detail (UX S06): reference with copy button, sensitivity and inactive banners, activation with the open-task rule,
- * and Tasks / Projects / Assets / Details / Activity tabs (Tasks and Assets are placeholders until those modules exist).
+ * and Tasks / Projects / Assets / Details / Activity tabs (Tasks is a placeholder until that module exists).
  */
 @Component({
   selector: 'mf-matter-detail-page',
@@ -41,6 +42,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     HasPermissionDirective,
     ConfirmDialog,
     MatterRef,
+    MatterAssets,
     EntityActivity,
     LocalTimePipe,
   ],
@@ -218,9 +220,13 @@ type LoadState = 'loading' | 'ready' | 'error';
               }
             }
             @case ('assets') {
-              <div class="pg-state" data-placeholder="assets">
-                Assets for this matter will appear here once the asset registry is available.
-              </div>
+              @if (canSeeAssets()) {
+                <mf-matter-assets [matterId]="m.matterId" />
+              } @else {
+                <div class="pg-state" data-no-access="assets">
+                  You don't have permission to view assets.
+                </div>
+              }
             }
             @case ('details') {
               <dl class="pg-dl">
@@ -317,6 +323,7 @@ export class MatterDetailPage {
   protected readonly blockedCount = signal(0);
   protected readonly busy = signal(false);
   protected readonly canSeeActivity = computed(() => this.auth.has('Audit.View'));
+  protected readonly canSeeAssets = computed(() => this.auth.has('Asset.View'));
   /** Deactivation is disabled with a visible reason while Tasks are open (UX 5.7). */
   protected readonly deactivateBlocked = computed(() => {
     const m = this.matter();

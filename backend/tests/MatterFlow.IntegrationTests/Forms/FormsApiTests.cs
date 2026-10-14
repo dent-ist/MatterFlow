@@ -161,6 +161,8 @@ public sealed class FormsApiTests(SqlServerFixture sql) : IAsyncLifetime
     public async Task Editing_a_published_form_creates_a_new_draft_and_publishing_retires_the_previous_version()
     {
         var client = As();
+        // The form definition's owner key is a real foreign key to the Asset Type (script 10).
+        await _factory.WithDbAsync(db => db.Database.ExecuteSqlRawAsync("INSERT dbo.AssetType (Name) VALUES (N'Document Set'), (N'Data Room')"));
         var definitionId = await EnsureAsync(client, "AssetType", 2);
         var v1 = await PublishFormAsync(client, definitionId, Field("title", "TEXT"), Field("pages", "NUMBER"));
 

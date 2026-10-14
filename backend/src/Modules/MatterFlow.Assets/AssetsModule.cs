@@ -1,3 +1,5 @@
+using MatterFlow.Assets.Application;
+using MatterFlow.Assets.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MatterFlow.Assets;
@@ -9,6 +11,10 @@ public static class AssetsModule
     public static IServiceCollection AddAssetsModule(this IServiceCollection services)
     {
         services.AddControllers().AddApplicationPart(typeof(AssetsModule).Assembly);
+
+        services.AddScoped<AssetTypeService>();
+        services.AddScoped<AssetService>();
+        services.AddScoped<IAssetDirectory, AssetDirectory>();
         return services;
     }
 }
