@@ -97,6 +97,711 @@ export class SystemClient implements ISystemClient {
     }
 }
 
+export interface IAssetTypesClient {
+    /**
+     * @param q (optional) 
+     * @param isActive (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listAssetTypes(q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetTypeResponse>;
+    /**
+     * @return Created
+     */
+    createAssetType(body: CreateAssetTypeRequest): Observable<AssetTypeResponse>;
+    /**
+     * @return OK
+     */
+    getAssetType(assetTypeId: number): Observable<AssetTypeResponse>;
+    /**
+     * @return OK
+     */
+    updateAssetType(assetTypeId: number, body: UpdateAssetTypeRequest): Observable<AssetTypeResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class AssetTypesClient implements IAssetTypesClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param q (optional) 
+     * @param isActive (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listAssetTypes(q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetTypeResponse> {
+        let url_ = this.baseUrl + "/api/v1/asset-types?";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (isActive === null)
+            throw new globalThis.Error("The parameter 'isActive' cannot be null.");
+        else if (isActive !== undefined)
+            url_ += "IsActive=" + encodeURIComponent("" + isActive) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "Page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "Sort=" + encodeURIComponent("" + sort) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListAssetTypes(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListAssetTypes(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultOfAssetTypeResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultOfAssetTypeResponse>;
+        }));
+    }
+
+    protected processListAssetTypes(response: HttpResponseBase): Observable<PagedResultOfAssetTypeResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfAssetTypeResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createAssetType(body: CreateAssetTypeRequest): Observable<AssetTypeResponse> {
+        let url_ = this.baseUrl + "/api/v1/asset-types";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateAssetType(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateAssetType(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetTypeResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetTypeResponse>;
+        }));
+    }
+
+    protected processCreateAssetType(response: HttpResponseBase): Observable<AssetTypeResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetTypeResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getAssetType(assetTypeId: number): Observable<AssetTypeResponse> {
+        let url_ = this.baseUrl + "/api/v1/asset-types/{assetTypeId}";
+        if (assetTypeId === undefined || assetTypeId === null)
+            throw new globalThis.Error("The parameter 'assetTypeId' must be defined.");
+        url_ = url_.replace("{assetTypeId}", encodeURIComponent("" + assetTypeId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAssetType(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAssetType(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetTypeResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetTypeResponse>;
+        }));
+    }
+
+    protected processGetAssetType(response: HttpResponseBase): Observable<AssetTypeResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetTypeResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateAssetType(assetTypeId: number, body: UpdateAssetTypeRequest): Observable<AssetTypeResponse> {
+        let url_ = this.baseUrl + "/api/v1/asset-types/{assetTypeId}";
+        if (assetTypeId === undefined || assetTypeId === null)
+            throw new globalThis.Error("The parameter 'assetTypeId' must be defined.");
+        url_ = url_.replace("{assetTypeId}", encodeURIComponent("" + assetTypeId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateAssetType(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateAssetType(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetTypeResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetTypeResponse>;
+        }));
+    }
+
+    protected processUpdateAssetType(response: HttpResponseBase): Observable<AssetTypeResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetTypeResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IAssetsClient {
+    /**
+     * @param matterId (optional) 
+     * @param assetTypeId (optional) 
+     * @param isActive (optional) 
+     * @param q (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listAssets(matterId?: number | undefined, assetTypeId?: number | undefined, isActive?: boolean | undefined, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem>;
+    /**
+     * @return Created
+     */
+    createAsset(body: CreateAssetRequest): Observable<AssetResponse>;
+    /**
+     * @param matterId (optional) 
+     * @param q (optional) 
+     * @param includeInactive (optional) 
+     * @param limit (optional) 
+     * @return OK
+     */
+    lookupAssets(matterId?: number | undefined, q?: string | undefined, includeInactive?: boolean | undefined, limit?: number | undefined): Observable<AssetLookupItem[]>;
+    /**
+     * @return OK
+     */
+    getAsset(assetId: number): Observable<AssetResponse>;
+    /**
+     * @return OK
+     */
+    updateAsset(assetId: number, body: UpdateAssetRequest): Observable<AssetResponse>;
+    /**
+     * @return OK
+     */
+    setAssetActive(assetId: number, body: SetAssetActiveRequest): Observable<AssetResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class AssetsClient implements IAssetsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param matterId (optional) 
+     * @param assetTypeId (optional) 
+     * @param isActive (optional) 
+     * @param q (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listAssets(matterId?: number | undefined, assetTypeId?: number | undefined, isActive?: boolean | undefined, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem> {
+        let url_ = this.baseUrl + "/api/v1/assets?";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "MatterId=" + encodeURIComponent("" + matterId) + "&";
+        if (assetTypeId === null)
+            throw new globalThis.Error("The parameter 'assetTypeId' cannot be null.");
+        else if (assetTypeId !== undefined)
+            url_ += "AssetTypeId=" + encodeURIComponent("" + assetTypeId) + "&";
+        if (isActive === null)
+            throw new globalThis.Error("The parameter 'isActive' cannot be null.");
+        else if (isActive !== undefined)
+            url_ += "IsActive=" + encodeURIComponent("" + isActive) + "&";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "Page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "Sort=" + encodeURIComponent("" + sort) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListAssets(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListAssets(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultOfAssetListItem>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultOfAssetListItem>;
+        }));
+    }
+
+    protected processListAssets(response: HttpResponseBase): Observable<PagedResultOfAssetListItem> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfAssetListItem;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createAsset(body: CreateAssetRequest): Observable<AssetResponse> {
+        let url_ = this.baseUrl + "/api/v1/assets";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateAsset(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateAsset(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetResponse>;
+        }));
+    }
+
+    protected processCreateAsset(response: HttpResponseBase): Observable<AssetResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param matterId (optional) 
+     * @param q (optional) 
+     * @param includeInactive (optional) 
+     * @param limit (optional) 
+     * @return OK
+     */
+    lookupAssets(matterId?: number | undefined, q?: string | undefined, includeInactive?: boolean | undefined, limit?: number | undefined): Observable<AssetLookupItem[]> {
+        let url_ = this.baseUrl + "/api/v1/assets/lookup?";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "MatterId=" + encodeURIComponent("" + matterId) + "&";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (includeInactive === null)
+            throw new globalThis.Error("The parameter 'includeInactive' cannot be null.");
+        else if (includeInactive !== undefined)
+            url_ += "IncludeInactive=" + encodeURIComponent("" + includeInactive) + "&";
+        if (limit === null)
+            throw new globalThis.Error("The parameter 'limit' cannot be null.");
+        else if (limit !== undefined)
+            url_ += "Limit=" + encodeURIComponent("" + limit) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processLookupAssets(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processLookupAssets(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetLookupItem[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetLookupItem[]>;
+        }));
+    }
+
+    protected processLookupAssets(response: HttpResponseBase): Observable<AssetLookupItem[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetLookupItem[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getAsset(assetId: number): Observable<AssetResponse> {
+        let url_ = this.baseUrl + "/api/v1/assets/{assetId}";
+        if (assetId === undefined || assetId === null)
+            throw new globalThis.Error("The parameter 'assetId' must be defined.");
+        url_ = url_.replace("{assetId}", encodeURIComponent("" + assetId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAsset(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAsset(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetResponse>;
+        }));
+    }
+
+    protected processGetAsset(response: HttpResponseBase): Observable<AssetResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateAsset(assetId: number, body: UpdateAssetRequest): Observable<AssetResponse> {
+        let url_ = this.baseUrl + "/api/v1/assets/{assetId}";
+        if (assetId === undefined || assetId === null)
+            throw new globalThis.Error("The parameter 'assetId' must be defined.");
+        url_ = url_.replace("{assetId}", encodeURIComponent("" + assetId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateAsset(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateAsset(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetResponse>;
+        }));
+    }
+
+    protected processUpdateAsset(response: HttpResponseBase): Observable<AssetResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setAssetActive(assetId: number, body: SetAssetActiveRequest): Observable<AssetResponse> {
+        let url_ = this.baseUrl + "/api/v1/assets/{assetId}/active";
+        if (assetId === undefined || assetId === null)
+            throw new globalThis.Error("The parameter 'assetId' must be defined.");
+        url_ = url_.replace("{assetId}", encodeURIComponent("" + assetId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetAssetActive(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetAssetActive(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetResponse>;
+        }));
+    }
+
+    protected processSetAssetActive(response: HttpResponseBase): Observable<AssetResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IAuditEventsClient {
     /**
      * @param afterId (optional) 
@@ -4493,6 +5198,74 @@ export interface AssetLinkRoleView {
     [key: string]: any;
 }
 
+export interface AssetListItem {
+    assetId: number;
+    matterId: number;
+    matterRef: string;
+    matterName: string;
+    assetTypeId: number;
+    assetTypeName: string;
+    displayName: string;
+    externalReference: string | undefined;
+    description: string | undefined;
+    isActive: boolean;
+    rowVersion: string;
+    createdAtUtc: string;
+    modifiedAtUtc: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface AssetLookupItem {
+    assetId: number;
+    matterId: number;
+    assetTypeName: string;
+    displayName: string;
+    externalReference: string | undefined;
+    isActive: boolean;
+
+    [key: string]: any;
+}
+
+export interface AssetResponse {
+    assetId: number;
+    matterId: number;
+    matterRef: string;
+    matterName: string;
+    assetTypeId: number;
+    assetTypeName: string;
+    assetTypeIsActive: boolean;
+    displayName: string;
+    externalReference: string | undefined;
+    description: string | undefined;
+    isActive: boolean;
+    formVersionId: number | undefined;
+    publishedFormVersionId: number | undefined;
+    formValues: any;
+    droppedFields: string[];
+    rowVersion: string;
+    createdAtUtc: string;
+    modifiedAtUtc: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface AssetTypeResponse {
+    assetTypeId: number;
+    name: string;
+    description: string | undefined;
+    sortOrder: number;
+    isActive: boolean;
+    assetCount: number;
+    publishedFormVersionId: number | undefined;
+    publishedFormVersionNo: number | undefined;
+    rowVersion: string;
+    createdAtUtc: string;
+    modifiedAtUtc: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface AuditEventDto {
     auditEventId: number;
     occurredAtUtc: string;
@@ -4543,6 +5316,25 @@ export interface ClientResponse {
 export interface CreateAssetLinkRoleRequest {
     name: string;
     isActive?: boolean;
+
+    [key: string]: any;
+}
+
+export interface CreateAssetRequest {
+    matterId?: number;
+    assetTypeId?: number;
+    displayName: string;
+    externalReference?: string | undefined;
+    description?: string | undefined;
+    formValues?: any | undefined;
+
+    [key: string]: any;
+}
+
+export interface CreateAssetTypeRequest {
+    name: string;
+    description?: string | undefined;
+    sortOrder?: number | undefined;
 
     [key: string]: any;
 }
@@ -4749,6 +5541,24 @@ export interface MeResponse {
     [key: string]: any;
 }
 
+export interface PagedResultOfAssetListItem {
+    items: AssetListItem[];
+    total: number;
+    page: number;
+    pageSize: number;
+
+    [key: string]: any;
+}
+
+export interface PagedResultOfAssetTypeResponse {
+    items: AssetTypeResponse[];
+    total: number;
+    page: number;
+    pageSize: number;
+
+    [key: string]: any;
+}
+
 export interface PagedResultOfClientResponse {
     items: ClientResponse[];
     total: number;
@@ -4938,6 +5748,13 @@ export interface SetActiveRequest {
     [key: string]: any;
 }
 
+export interface SetAssetActiveRequest {
+    isActive?: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface SetPrimaryPodRequest {
     isPrimary: boolean | undefined;
 
@@ -4970,6 +5787,28 @@ export interface StatusLabelView {
 export interface UpdateAssetLinkRoleRequest {
     name: string;
     isActive: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UpdateAssetRequest {
+    matterId?: number | undefined;
+    assetTypeId?: number | undefined;
+    displayName: string;
+    externalReference?: string | undefined;
+    description?: string | undefined;
+    formValues?: any | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UpdateAssetTypeRequest {
+    name: string;
+    description?: string | undefined;
+    sortOrder?: number;
+    isActive?: boolean;
     rowVersion: string;
 
     [key: string]: any;
@@ -5141,6 +5980,8 @@ export enum ApiProblemDetailsCode {
     DEFAULT_REQUIRED = "DEFAULT_REQUIRED",
     FORM_DRAFT_EXISTS = "FORM_DRAFT_EXISTS",
     FORM_VERSION_IMMUTABLE = "FORM_VERSION_IMMUTABLE",
+    ASSET_TYPE_INACTIVE = "ASSET_TYPE_INACTIVE",
+    ASSET_INACTIVE = "ASSET_INACTIVE",
     UNSUPPORTED_MEDIA_TYPE = "UNSUPPORTED_MEDIA_TYPE",
     INTERNAL_ERROR = "INTERNAL_ERROR",
 }

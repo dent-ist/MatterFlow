@@ -2,6 +2,7 @@ import { Route, Routes } from '@angular/router';
 import { permissionGuard } from '../../core/auth/guards';
 import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
 import { PlaceholderPage } from '../../shared/ui/placeholder-page';
+import { AssetTypeFormDesignerApi } from './asset-types/asset-type-form-designer-api';
 import { FormDesignerApi } from './task-types/form-designer-api';
 import { InMemoryFormDesignerApi } from './task-types/in-memory-form-designer-api';
 
@@ -30,6 +31,16 @@ const taskTypeForms = (path: string) => ({
   loadComponent: () => import('./task-types/task-type-form-page').then((m) => m.TaskTypeFormPage),
 });
 
+/** Asset Types > Fields (UX S17): the same designer, backed by the forms endpoints for the Asset Type's form. */
+const assetTypeForm = (path: string): Route => ({
+  path,
+  canActivate: [permissionGuard('AssetType.Manage')],
+  canDeactivate: [unsavedChangesGuard],
+  providers: [{ provide: FormDesignerApi, useClass: AssetTypeFormDesignerApi }],
+  data: { heading: 'Asset Types & Fields', ownerLabel: 'Asset Type' },
+  loadComponent: () => import('./task-types/task-type-form-page').then((m) => m.TaskTypeFormPage),
+});
+
 /** Administration (UX 2.1). Each screen needs its own *.Manage / View permission. */
 export const ADMIN_ROUTES: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'users' },
@@ -53,7 +64,10 @@ export const ADMIN_ROUTES: Routes = [
   taskTypeForms('task-types/:ownerId/form'),
   page('steps', 'Step Library', 'Workflow.Manage'),
   page('workflows', 'Workflows', 'Workflow.Manage'),
-  page('asset-types', 'Asset Types', 'AssetType.Manage'),
+  lazy('asset-types', 'AssetType.Manage', () =>
+    import('./asset-types/asset-types-page').then((m) => m.AssetTypesPage),
+  ),
+  assetTypeForm('asset-types/:ownerId/form'),
   page('custom-fields', 'Custom Fields', 'CustomField.Manage'),
   lazy('priorities', 'Priority.Manage', () =>
     import('./priorities/priorities-page').then((m) => m.PrioritiesPage),

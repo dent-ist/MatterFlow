@@ -184,10 +184,10 @@ Also: UNIQUE `UQ_Project_IdMatter (ProjectId, MatterId)` - target of `Task` comp
 | ExternalReference | nvarchar(1000) | yes | URL, workspace id, media label |
 | Description | nvarchar(2000) | yes | |
 | IsActive | bit | no | |
-| CustomFieldsJson | nvarchar(max) | yes | values of the Asset Type's form |
+| CustomFieldsJson | nvarchar(max) | yes | **Not created (script 10):** the values of the Asset Type's form are stored by the forms value store in `FormValueSet` (OwnerKind ASSET) with the form version captured at save time |
 | RowVersion | rowversion | no | |
 
-Also: UNIQUE `UQ_Asset_IdMatter (AssetId, MatterId)` - target of `TaskAsset` composite FK. Indexes: `IX_Asset_Matter (MatterId, AssetTypeId) INCLUDE (DisplayName, IsActive)`, `IX_Asset_Name (DisplayName)`, `IX_Asset_ExternalRef (ExternalReference)` (prefix/contains search; 200-300 assets per Matter).
+Also: UNIQUE `UQ_Asset_IdMatter (AssetId, MatterId)` - target of `TaskAsset` composite FK. Indexes: `IX_Asset_Matter (MatterId, AssetTypeId) INCLUDE (DisplayName, IsActive)`, `IX_Asset_Name (DisplayName)`, `IX_Asset_Type (AssetTypeId)`. `ExternalReference` is not indexed (1000-char free text exceeds the index key limit); search by it is a bounded contains scan inside one Matter (200-300 assets). Trigger `TR_Asset_Guard` rejects any change of `MatterId` and any hard delete.
 
 ### TaskAsset
 Defined with the Task core (section 5) because it is bound to `Task`; shown here for the Asset side.

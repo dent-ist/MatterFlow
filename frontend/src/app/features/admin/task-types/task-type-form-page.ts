@@ -45,6 +45,9 @@ type LoadState = 'loading' | 'ready' | 'error';
 export class TaskTypeFormPage implements HasUnsavedChanges {
   /** Route parameter `ownerId`; the unparameterised route shows the seeded Data Processing type. */
   readonly ownerId = input('data-processing');
+  /** Page title and owner label; the Asset Type form route reuses this page with its own wording (route `data`). */
+  readonly heading = input('Task Types & Forms');
+  readonly ownerLabel = input('Task Type');
 
   private readonly api = inject(FormDesignerApi);
 

@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import {
+  AssetsClient,
   AuditEventsClient,
   MattersClient,
   ProjectsClient,
@@ -20,11 +21,13 @@ import {
   settle,
   withPermissions,
 } from '../../../shared/testing/org-testing';
+import { anAssetListItem, pageOfAssets } from '../../../shared/testing/asset-testing';
 import { MatterDetailPage } from './matter-detail-page';
 
 describe('MatterDetailPage', () => {
   let matters: { getMatter: ReturnType<typeof vi.fn>; setMatterActive: ReturnType<typeof vi.fn> };
   let projects: { listProjects: ReturnType<typeof vi.fn> };
+  let assets: { listAssets: ReturnType<typeof vi.fn> };
   let fixture: ComponentFixture<MatterDetailPage>;
   let navigateByUrl: ReturnType<typeof vi.fn>;
   let writeText: ReturnType<typeof vi.fn>;
@@ -36,6 +39,7 @@ describe('MatterDetailPage', () => {
       setMatterActive: vi.fn().mockReturnValue(ok(aMatter({ isActive: false }))),
     };
     projects = { listProjects: vi.fn().mockReturnValue(ok(pageOfProjects(aProject()))) };
+    assets = { listAssets: vi.fn().mockReturnValue(ok(pageOfAssets(anAssetListItem()))) };
     writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
     TestBed.configureTestingModule({
@@ -45,6 +49,7 @@ describe('MatterDetailPage', () => {
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: MattersClient, useValue: matters },
         { provide: ProjectsClient, useValue: projects },
+        { provide: AssetsClient, useValue: assets },
         {
           provide: AuditEventsClient,
           useValue: { listAuditEvents: vi.fn().mockReturnValue(ok({ items: [] })) },
@@ -97,7 +102,7 @@ describe('MatterDetailPage', () => {
     expect(buttonByLabel(el(), 'Reactivate')).toBeDefined();
   });
 
-  it('has Tasks, Projects and Assets tabs; Tasks and Assets are placeholders, Projects lists the matter projects', async () => {
+  it('has Tasks, Projects and Assets tabs; Tasks is a placeholder, Projects lists the matter projects', async () => {
     await create(['Matter.View', 'Project.View']);
 
     expect(
@@ -111,10 +116,47 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('[data-placeholder=tasks]')).not.toBeNull();
     tab('Assets').click();
     await settle(fixture);
-    expect(el().querySelector('[data-placeholder=assets]')).not.toBeNull();
+    expect(el().querySelector('[data-no-access=assets]')).not.toBeNull();
+    expect(assets.listAssets).not.toHaveBeenCalled();
     tab('Details').click();
     await settle(fixture);
     expect(el().querySelector('dl')?.textContent).toContain('Merger Review');
+  });
+
+  it('lists the matter assets in the Assets tab with server-side search and links to the asset', async () => {
+    await create(['Matter.View', 'Asset.View', 'Asset.Create']);
+
+    tab('Assets').click();
+    await settle(fixture);
+
+    expect(assets.listAssets).toHaveBeenCalledWith(
+      7,
+      undefined,
+      true,
+      undefined,
+      1,
+      25,
+      'displayName',
+    );
+    expect(el().querySelector('mf-matter-assets tbody a')?.getAttribute('href')).toBe('/assets/9');
+    expect(buttonByLabel(el(), 'New Asset')).toBeDefined();
+
+    const box = el().querySelector<HTMLInputElement>('#matter-asset-search')!;
+    box.value = 'contract';
+    box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    await settle(fixture);
+    expect(assets.listAssets).toHaveBeenLastCalledWith(
+      7,
+      undefined,
+      true,
+      'contract',
+      1,
+      25,
+      'displayName',
+    );
+
+    buttonByLabel(el(), 'New Asset')!.click();
+    expect(navigateByUrl).toHaveBeenCalledWith('/assets/new?matterId=7');
   });
 
   it('gates Edit, New Project and the activation button by permission', async () => {
