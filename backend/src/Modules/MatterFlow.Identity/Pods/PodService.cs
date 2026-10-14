@@ -1,4 +1,6 @@
+using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
+using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
 using Microsoft.Data.SqlClient;
@@ -10,7 +12,7 @@ namespace MatterFlow.Identity.Pods;
 /// Pod administration. Changes are audited field by field by the Data layer (<c>[Audited]</c> on Pod and PodMember) in the same
 /// transaction as the change. Membership never restricts Task assignment; this service only maintains the data.
 /// </summary>
-public sealed class PodService(DbContext db)
+public sealed class PodService(DbContext db, IPermissionChecker permissions)
 {
     private const int UniqueIndexViolation = 2601;
     private const int UniqueConstraintViolation = 2627;
@@ -227,15 +229,26 @@ public sealed class PodService(DbContext db)
             .Select(m => new { m.UserId, m.User.DisplayName, m.User.Email, m.User.IsActive, m.IsPrimary })
             .ToListAsync(ct);
 
+        // Pod.View is in every starter role; the directory details (e-mail, role names such as who the System Admins are) are shown only to
+        // callers who may see the user directory or manage pods (security review SEC-14).
+        var seesDirectory = permissions.Has(Permissions.User.View) || permissions.Has(Permissions.Pod.Manage);
         var ids = members.Select(m => m.UserId).ToList();
-        var roles = (await db.Set<UserRole>().AsNoTracking()
-                .Where(r => ids.Contains(r.UserId) && r.Role.IsActive)
-                .Select(r => new { r.UserId, r.Role.Name })
-                .ToListAsync(ct))
-            .ToLookup(r => r.UserId, r => r.Name);
+        var roles = seesDirectory
+            ? (await db.Set<UserRole>().AsNoTracking()
+                    .Where(r => ids.Contains(r.UserId) && r.Role.IsActive)
+                    .Select(r => new { r.UserId, r.Role.Name })
+                    .ToListAsync(ct))
+                .ToLookup(r => r.UserId, r => r.Name)
+            : Enumerable.Empty<(int UserId, string Name)>().ToLookup(r => r.UserId, r => r.Name);
 
         var dtos = members
-            .Select(m => new PodMemberDto(m.UserId, m.DisplayName, m.Email, m.IsActive, m.IsPrimary, roles[m.UserId].Order(StringComparer.OrdinalIgnoreCase).ToArray()))
+            .Select(m => new PodMemberDto(
+                m.UserId,
+                m.DisplayName,
+                seesDirectory ? m.Email : null,
+                m.IsActive,
+                m.IsPrimary,
+                roles[m.UserId].Order(StringComparer.OrdinalIgnoreCase).ToArray()))
             .ToArray();
         return new PodDetail(ToSummary(pod, dtos.Length), dtos);
     }

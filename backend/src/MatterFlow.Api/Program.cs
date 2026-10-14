@@ -66,13 +66,30 @@ if (System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name != "GetDocumen
 {
     await app.Services.RunSchemaMigrationsAsync();
 
-    // Startup seeds (permission catalog, starter roles, dev users) need the migrated schema (architecture 4.3, 4.6).
-    if (app.Services.GetRequiredService<MigrationsOptions>().Enabled)
+    // Startup seeds (permission catalog, starter roles, dev users) need the migrated schema (architecture 4.3, 4.6). They run whenever the
+    // API has a database, also when a separate step migrated it (Migrations:Enabled=false), so new permission codes are synced after upgrades;
+    // Seeds:Enabled=false turns them off (security review SEC-18).
+    var configuration = app.Services.GetRequiredService<IConfiguration>();
+    var hasDatabase = !string.IsNullOrWhiteSpace(configuration.GetConnectionString("MatterFlow"));
+    var seedsEnabled = app.Services.GetRequiredService<MigrationsOptions>().Enabled || (hasDatabase && configuration.GetValue("Seeds:Enabled", true));
+    if (seedsEnabled)
         await app.Services.RunModuleSeedsAsync();
 
+    // Until the Task module registers the real guard, a Matter with open Tasks can be deactivated (security review SEC-23).
+    await using (var guardScope = app.Services.CreateAsyncScope())
+    {
+        if (guardScope.ServiceProvider.GetRequiredService<MatterFlow.Organization.Contracts.IMatterTaskGuard>() is MatterFlow.Organization.Contracts.NoTasksMatterTaskGuard)
+        {
+            app.Logger.LogWarning("The placeholder IMatterTaskGuard is registered: Matters can be deactivated although they have open Tasks. The Task module must Replace it.");
+        }
+    }
+
     // The API's own database identity must not be able to rewrite the audit trail (security review SEC-04).
-    if (app.Services.GetRequiredService<MigrationsOptions>().Enabled)
+    if (seedsEnabled)
+    {
         await AuditStoreGuard.VerifyAsync(app.Services);
+        await DatabaseSettingsCheck.VerifyAsync(app.Services);
+    }
 }
 
 // HSTS (browsers then refuse plain HTTP for a year) and the security headers come first so that error responses carry them too.

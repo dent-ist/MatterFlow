@@ -41,6 +41,8 @@ public static class ModuleComposition
     /// <summary>Runs every module's idempotent startup seed. Call after schema migrations, before the host listens.</summary>
     public static async Task RunModuleSeedsAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
     {
+        // One instance at a time: a second API instance starting together waits here instead of colliding on the unique indexes.
+        await using var seedLock = await SeedLock.AcquireAsync(services.GetRequiredService<IConfiguration>(), cancellationToken);
         await services.SeedIdentityAsync(cancellationToken);
         await services.SeedConfigurationAsync(cancellationToken);
         await services.SeedStarterConfigurationAsync(cancellationToken);

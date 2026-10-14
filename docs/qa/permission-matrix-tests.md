@@ -26,7 +26,7 @@ Source: `architecture.md` section 6 (catalog 6.3, pipeline 6.1, policies 6.5, CS
 | PM-X-09 | IT | Multi-permission endpoints (see section 3 flagged rows) | Each sub-permission checked; denial of one sub-permission rejects the **whole** request, no partial update |
 | PM-X-10 | UT (arch) | Every controller action has a permission policy or `[AllowAuthenticated]`; only `/me` is the latter | Pass |
 | PM-X-11 | IT | System Admin role cannot be edited or deleted; roles in use cannot be deleted; last active admin cannot be disabled or demoted | 409 `LAST_ADMIN` / validation errors |
-| PM-X-12 | IT | Privilege escalation: user with `User.Manage` but not `Role.Manage` (if separate, FND-03) assigns System Admin to self | Denied; only System Admin may grant System Admin (recommended) |
+| PM-X-12 | IT | Privilege escalation: user with `User.Manage` assigns System Admin to self or others, or grants a role carrying permissions they do not hold; user with `Role.Manage` adds a permission they do not hold to a role | **Enforced (SEC-01):** 403 `PERMISSION_DENIED`. Only a System Admin may grant or revoke the System Admin role or activate/deactivate a System Admin; everybody else may grant only roles whose permissions they hold, and add only permissions they hold to a role. Tests: `IdentityPrivilegeTests` |
 | PM-X-13 | IT | Bootstrapped admin revoked, logs in again | Not re-granted (ADMIN_BOOTSTRAPPED once) |
 | PM-X-14 | IT | Dev auth provider in production configuration | Not available (SEC-DEV-01) |
 | PM-X-15 | IT | IDOR: user with `Task.Edit` PUT /tasks/{id} for a task on any Matter | Allowed (Phase 1 visibility: anyone with `Task.View` sees all; E1). The test documents that there is deliberately no Matter-level denial |
@@ -41,7 +41,7 @@ Source: `architecture.md` section 6 (catalog 6.3, pipeline 6.1, policies 6.5, CS
 | | GET /users, GET /users/{id} | `User.View` | 200 | |
 | | PUT /users/{id} (activate/disable/name) | `User.Manage` | 200 | Last-admin guard |
 | | PUT /users/{id}/roles | `User.Manage` (+ `Role.Manage`? FND-03) | 200 | Audit `ROLE_GRANTED/REVOKED` |
-| | GET /roles, GET /permissions | `Role.Manage` | 200 | |
+| | GET /roles, GET /roles/{id}, GET /permissions | `User.View` (the user drawer lists roles; decided in security review SEC-15, code is authoritative) | 200 | |
 | | POST/PUT /roles | `Role.Manage` | 201/200 | System Admin role locked |
 | | GET /pods | `Pod.View` | 200 | |
 | | POST/PUT /pods | `Pod.Manage` | 201/200 | |
@@ -79,12 +79,12 @@ Source: `architecture.md` section 6 (catalog 6.3, pipeline 6.1, policies 6.5, CS
 | | PUT/DELETE /tasks/{id}/comments/{cid} | `Task.Comment` and author only | 200/204 | Non-author with all permissions: 403; System Admin: FND-11 |
 | Workflow execution | POST step start/save/complete/skip | `Workflow.Execute` | 200 | Ordering/skip rules apply after permission |
 | | POST step reopen | `Workflow.StepReopen` | 200 | On Completed task also moves task (FND-06) |
-| Config | GET/POST/PUT /priorities | `Priority.Manage` for writes; reads available to any authenticated app user with any permission (needed by pickers) | 200 | Read access to config lists used by forms must not require Manage: test that a technician can load priorities, status labels, asset link roles |
+| Config | GET/POST/PUT /priorities | `Priority.Manage` for writes; reads need `Task.View` (every starter role holds it; decided in security review SEC-15, code is authoritative; status labels, asset link roles and task types read the same way) | 200 | Read access to config lists used by forms must not require Manage: test that a technician can load priorities, status labels, asset link roles |
 | | PUT /status-labels | `StatusLabel.Manage` | 200 | |
 | | /task-types, /task-types/{id}/workflows (writes) | `TaskType.Manage` | 200 | SCN-019 |
 | | /forms/** writes (drafts, publish, clone) | `TaskType.Manage` for Task Type forms; `Workflow.Manage` for step forms; `AssetType.Manage` for asset forms; `CustomField.Manage` for client/matter/project fields | 200 | Generator needs owner-kind-aware permission mapping; test cross-use (TaskType.Manage cannot publish an Asset Type form) |
 | | /step-definitions, /workflows writes, publish | `Workflow.Manage` | 200/201 | SCN-019 |
-| | GET /forms/versions/{id}/schema | any permission that can render the form (`Task.Create` for Task Type forms, `Asset.View` for assets, etc.) | 200 | Schema must not be readable by zero-permission user |
+| | GET /forms/versions/{id}/schema | `Task.View` for every owner kind today (security review SEC-15). Known limitation: a user with `Asset.View` or a custom-field permission but without `Task.View` cannot load that schema; owner-kind-aware read permissions are a follow-up | 200 | Schema must not be readable by zero-permission user |
 | | POST/PUT /asset-link-roles | `AssetType.Manage` (assumed) | 201/200 | Ownership of this permission is not stated: FND-03 |
 | Views | GET /views/my-work | `Task.View` | 200 | |
 | | GET /views/pod-work | `Task.View` and `Pod.View` | 200 | Which Pods may be selected: FND-16 |

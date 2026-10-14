@@ -125,6 +125,9 @@ public sealed class FormDefinitionResolver(DbContext db, IAuditWriter audit) : I
             draft?.FieldCount ?? 0);
     }
 
+    public Task<int?> FindDefinitionIdAsync(FormOwnerKind ownerKind, int? ownerId, CancellationToken cancellationToken = default) =>
+        FindIdAsync(ownerKind, ownerId, cancellationToken);
+
     /// <summary>The definition id of an owner, or null.</summary>
     public async Task<int?> FindIdAsync(FormOwnerKind kind, int? ownerId, CancellationToken cancellationToken) =>
         await db.Set<FormDefinition>().AsNoTracking()

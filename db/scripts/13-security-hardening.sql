@@ -18,6 +18,8 @@
 --
 --   5. (SEC-13) moves the last-sign-in bookkeeping from dbo.AppUser to dbo.UserIdentity. Every write to AppUser changes its row version, so
 --      a sign-in used to turn an administrator's open edit of that user (or of themselves) into a false CONCURRENCY_CONFLICT.
+--   6. (SEC-18) adds dbo.SeedMarker so the starter roles are created exactly once, instead of being inferred from "no custom role exists"
+--      (which re-created them after an administrator deleted every custom role).
 --
 -- DBA step after the first deployment (not possible in a script because logins are server-level and site specific):
 --   CREATE USER [DOMAIN\app-pool-gmsa$] FOR LOGIN [DOMAIN\app-pool-gmsa$];  ALTER ROLE mf_app ADD MEMBER [DOMAIN\app-pool-gmsa$];
@@ -88,4 +90,11 @@ UPDATE i SET LastLoginAt = u.LastLoginAt
 FROM dbo.UserIdentity i
 JOIN dbo.AppUser u ON u.UserId = i.UserId
 WHERE u.LastLoginAt IS NOT NULL;
+GO
+
+-- SEC-18: one row per one-time startup seed.
+CREATE TABLE dbo.SeedMarker (
+    Name      VARCHAR(100) NOT NULL CONSTRAINT PK_SeedMarker PRIMARY KEY,
+    AppliedAt DATETIME2    NOT NULL CONSTRAINT DF_SeedMarker_AppliedAt DEFAULT SYSUTCDATETIME()
+);
 GO
