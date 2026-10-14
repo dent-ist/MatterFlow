@@ -6,7 +6,7 @@ import {
 } from '@angular/common/http';
 import { Injector, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { catchError, from, mergeMap, throwError } from 'rxjs';
 import { AuthStore } from '../auth/auth.store';
 import { APP_PATHS } from '../auth/guards';
 import { NotificationService } from '../notify/notification.service';
@@ -35,19 +35,46 @@ export const csrfInterceptor: HttpInterceptorFn = (req, next) => {
 /** Converts failures to `ApiError`, toasts non-field errors, refreshes permissions on 403. */
 export const problemDetailsInterceptor: HttpInterceptorFn = (req, next) => {
   const injector = inject(Injector);
+  const fail = (error: HttpErrorResponse) => {
+    const apiError = ApiError.from(error);
+    if (!req.context.get(SKIP_ERROR_TOAST)) {
+      const toast = toastFor(apiError);
+      if (toast) injector.get(NotificationService).error(toast.summary, toast.detail);
+    }
+    if (shouldRefreshPermissions(req, apiError)) void refreshAfterDenied(injector);
+    return throwError(() => apiError);
+  };
   return next(req).pipe(
     catchError((error: unknown) => {
       if (!(error instanceof HttpErrorResponse)) return throwError(() => error);
-      const apiError = ApiError.from(error);
-      if (!req.context.get(SKIP_ERROR_TOAST)) {
-        const toast = toastFor(apiError);
-        if (toast) injector.get(NotificationService).error(toast.summary, toast.detail);
-      }
-      if (shouldRefreshPermissions(req, apiError)) void refreshAfterDenied(injector);
-      return throwError(() => apiError);
+      // The generated client requests blobs; read the problem+json body so the error keeps its code.
+      if (error.error instanceof Blob) return from(readBlobBody(error)).pipe(mergeMap(fail));
+      return fail(error);
     }),
   );
 };
+
+/** Replaces a Blob error body with its parsed JSON (or text), keeping status and headers. */
+async function readBlobBody(error: HttpErrorResponse): Promise<HttpErrorResponse> {
+  let body: unknown = null;
+  try {
+    const text = await (error.error as Blob).text();
+    try {
+      body = JSON.parse(text);
+    } catch {
+      body = text;
+    }
+  } catch {
+    body = null;
+  }
+  return new HttpErrorResponse({
+    error: body,
+    headers: error.headers,
+    status: error.status,
+    statusText: error.statusText,
+    url: error.url ?? undefined,
+  });
+}
 
 export const MF_HTTP_INTERCEPTORS = [
   timeZoneInterceptor,

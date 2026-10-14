@@ -1,6 +1,7 @@
 using MatterFlow.Assets;
 using MatterFlow.Audit;
 using MatterFlow.Configuration;
+using MatterFlow.Configuration.Application.Lookups;
 using MatterFlow.Data;
 using MatterFlow.Identity;
 using MatterFlow.Identity.Seeding;
@@ -39,5 +40,6 @@ public static class ModuleComposition
     public static async Task RunModuleSeedsAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
     {
         await services.SeedIdentityAsync(cancellationToken);
+        await services.SeedConfigurationAsync(cancellationToken);
     }
 }

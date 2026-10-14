@@ -11,6 +11,7 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
     {
         var problem = exception switch
         {
+            ErrorException e => Problems.FromError(httpContext, e.Error),
             DbUpdateConcurrencyException => Problems.Create(
                 httpContext,
                 StatusCodes.Status409Conflict,

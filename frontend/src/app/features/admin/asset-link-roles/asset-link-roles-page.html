@@ -1,0 +1,189 @@
+<header class="head">
+  <div>
+    <h1>Task link labels</h1>
+    <p class="muted">
+      How an Asset relates to a Task: for example Source, Destination, Subject or Result.
+    </p>
+  </div>
+</header>
+
+<div class="sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
+
+@if (failure()) {
+  <p class="error" role="alert" data-failure>{{ failure() }}</p>
+}
+
+@switch (state()) {
+  @case ('loading') {
+    <p class="muted" data-loading>Loading link labels...</p>
+  }
+  @case ('error') {
+    <p class="error" role="alert">Couldn't load link labels.</p>
+    <p-button label="Try again" severity="secondary" (onClick)="load()" />
+  }
+  @default {
+    <p class="muted hint">
+      Drag a row or use the arrows to reorder. Inactive labels aren't offered for new links.
+    </p>
+    <table class="grid" data-roles>
+      <caption class="sr-only">
+        Task link labels in display order
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Order</th>
+          <th scope="col">Name</th>
+          <th scope="col">Active</th>
+          <th scope="col"><span class="sr-only">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of rows(); track r.id; let i = $index) {
+          <tr
+            [attr.data-row]="r.name"
+            [class.inactive]="!r.isActive"
+            [attr.draggable]="busy() || !canManage() ? 'false' : 'true'"
+            (dragstart)="onDragStart(i, $event)"
+            (dragover)="onDragOver($event)"
+            (drop)="onDrop(i, $event)"
+          >
+            <td class="order">
+              <span class="grip pi pi-bars" aria-hidden="true"></span>
+              <span class="movers" *mfHasPermission="'AssetType.Manage'">
+                <button
+                  type="button"
+                  class="icon-btn"
+                  [attr.aria-label]="'Move ' + r.name + ' up'"
+                  [disabled]="busy() || !canMove(i, -1)"
+                  (click)="move(i, -1)"
+                  data-move-up
+                >
+                  <span class="pi pi-arrow-up" aria-hidden="true"></span>
+                </button>
+                <button
+                  type="button"
+                  class="icon-btn"
+                  [attr.aria-label]="'Move ' + r.name + ' down'"
+                  [disabled]="busy() || !canMove(i, 1)"
+                  (click)="move(i, 1)"
+                  data-move-down
+                >
+                  <span class="pi pi-arrow-down" aria-hidden="true"></span>
+                </button>
+              </span>
+            </td>
+            <td>
+              @if (editingId() === r.id) {
+                <form class="inline" (submit)="$event.preventDefault(); commitRename(r)">
+                  <label class="sr-only" [for]="'rename-' + r.id">Name for {{ r.name }}</label>
+                  <input
+                    [id]="'rename-' + r.id"
+                    class="text"
+                    name="name"
+                    maxlength="50"
+                    [ngModel]="draftName()"
+                    (ngModelChange)="draftName.set($event)"
+                    (keydown.escape)="cancelRename()"
+                    [attr.aria-invalid]="editError() ? 'true' : null"
+                    [attr.aria-describedby]="editError() ? 'rename-error-' + r.id : null"
+                    data-rename-input
+                  />
+                  <p-button type="submit" label="Save" size="small" [disabled]="busy()" />
+                  <p-button
+                    label="Cancel"
+                    size="small"
+                    severity="secondary"
+                    (onClick)="cancelRename()"
+                  />
+                </form>
+                @if (editError()) {
+                  <p class="error" role="alert" [id]="'rename-error-' + r.id">{{ editError() }}</p>
+                }
+              } @else {
+                <span>{{ r.name }}</span>
+                @if (!r.isActive) {
+                  <span class="muted tag">Inactive</span>
+                }
+                <button
+                  type="button"
+                  class="link"
+                  *mfHasPermission="'AssetType.Manage'"
+                  [attr.aria-label]="'Rename ' + r.name"
+                  (click)="startRename(r)"
+                  data-rename
+                >
+                  Rename
+                </button>
+              }
+            </td>
+            <td>
+              <input
+                type="checkbox"
+                class="check"
+                [checked]="r.isActive"
+                [disabled]="busy() || !canManage()"
+                [attr.aria-label]="'Active: ' + r.name"
+                (change)="toggleActive(r, $any($event.target).checked)"
+                data-active
+              />
+            </td>
+            <td class="actions">
+              @if (confirmDeleteId() === r.id) {
+                <span class="confirm" role="group" [attr.aria-label]="'Confirm delete ' + r.name">
+                  Delete {{ r.name }}?
+                  <p-button
+                    label="Delete"
+                    size="small"
+                    severity="danger"
+                    (onClick)="confirmDelete(r)"
+                    data-confirm-delete
+                  />
+                  <p-button
+                    label="Keep"
+                    size="small"
+                    severity="secondary"
+                    (onClick)="cancelDelete()"
+                  />
+                </span>
+              } @else {
+                <button
+                  type="button"
+                  class="link danger"
+                  *mfHasPermission="'AssetType.Manage'"
+                  [disabled]="busy()"
+                  [attr.aria-label]="'Delete ' + r.name"
+                  (click)="askDelete(r)"
+                  data-delete
+                >
+                  Delete
+                </button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <section class="add" *mfHasPermission="'AssetType.Manage'" aria-labelledby="add-heading">
+      <h2 id="add-heading">Add link label</h2>
+      <form class="inline" (submit)="$event.preventDefault(); add()">
+        <label for="new-name">Name (required)</label>
+        <input
+          id="new-name"
+          class="text"
+          name="newName"
+          maxlength="50"
+          [ngModel]="newName()"
+          (ngModelChange)="newName.set($event)"
+          [attr.aria-invalid]="addError() ? 'true' : null"
+          [attr.aria-describedby]="addError() ? 'add-error' : null"
+          data-new-name
+        />
+        <p-button type="submit" label="Add link label" [disabled]="busy()" />
+      </form>
+      @if (addError()) {
+        <p id="add-error" class="error" role="alert" data-add-error>{{ addError() }}</p>
+      }
+    </section>
+  }
+}
