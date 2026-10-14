@@ -3,6 +3,7 @@ import { permissionGuard } from '../../core/auth/guards';
 import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
 import { PlaceholderPage } from '../../shared/ui/placeholder-page';
 import { FormDesignerApi } from './task-types/form-designer-api';
+import { StepFormDesignerApi } from './steps/step-form-designer-api';
 import { InMemoryFormDesignerApi } from './task-types/in-memory-form-designer-api';
 
 const page = (path: string, title: string, ...codes: Parameters<typeof permissionGuard>) => ({
@@ -30,6 +31,33 @@ const taskTypeForms = (path: string) => ({
   loadComponent: () => import('./task-types/task-type-form-page').then((m) => m.TaskTypeFormPage),
 });
 
+/** Step Library (UX S15): list, create/edit, and the step's input form in the shared form designer, backed by the Forms endpoints. */
+const STEP_ROUTES: Routes = [
+  lazy('steps', 'Workflow.Manage', () =>
+    import('./steps/steps-list-page').then((m) => m.StepsListPage),
+  ),
+  {
+    path: 'steps/new',
+    canActivate: [permissionGuard('Workflow.Manage')],
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./steps/step-edit-page').then((m) => m.StepEditPage),
+  },
+  {
+    path: 'steps/:ownerId/form',
+    canActivate: [permissionGuard('Workflow.Manage')],
+    canDeactivate: [unsavedChangesGuard],
+    providers: [{ provide: FormDesignerApi, useClass: StepFormDesignerApi }],
+    data: { heading: 'Step Library', ownerLabel: 'Step' },
+    loadComponent: () => import('./task-types/task-type-form-page').then((m) => m.TaskTypeFormPage),
+  },
+  {
+    path: 'steps/:stepId',
+    canActivate: [permissionGuard('Workflow.Manage')],
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./steps/step-edit-page').then((m) => m.StepEditPage),
+  },
+];
+
 /** Administration (UX 2.1). Each screen needs its own *.Manage / View permission. */
 export const ADMIN_ROUTES: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'users' },
@@ -51,7 +79,7 @@ export const ADMIN_ROUTES: Routes = [
   },
   taskTypeForms('task-types'),
   taskTypeForms('task-types/:ownerId/form'),
-  page('steps', 'Step Library', 'Workflow.Manage'),
+  ...STEP_ROUTES,
   page('workflows', 'Workflows', 'Workflow.Manage'),
   page('asset-types', 'Asset Types', 'AssetType.Manage'),
   page('custom-fields', 'Custom Fields', 'CustomField.Manage'),
