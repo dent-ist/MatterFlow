@@ -185,4 +185,42 @@ public sealed class IntakeApiTests(SqlServerFixture sql) : IAsyncLifetime
 
         response.IsSuccessStatusCode.ShouldBeFalse();
     }
+
+    // ---- SEC-02: hostile input and request limits
+
+    [Fact]
+    public async Task Hostile_nested_html_upload_is_answered_quickly()
+    {
+        var html = string.Concat(Enumerable.Repeat("<div>", 30_000)) + "payload";
+        var eml = "From: A <a@x.test>\r\nSubject: hostile\r\nContent-Type: text/html\r\n\r\n" + html + "\r\n";
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var response = await As().PostAsync(Url, Upload(Encoding.ASCII.GetBytes(eml), "hostile.eml"));
+        stopwatch.Stop();
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(3));
+        JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("body").GetString().ShouldBe("payload");
+    }
+
+    [Fact]
+    public async Task A_user_who_exceeds_the_intake_request_budget_gets_429()
+    {
+        await using var limited = _factory.WithWebHostBuilder(b => b.UseSetting("Intake:RequestsPerMinutePerUser", "3"));
+        HttpClient Client()
+        {
+            var client = limited.CreateClient();
+            client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+            client.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
+            return client;
+        }
+
+        var client = Client();
+        for (var i = 0; i < 3; i++)
+            (await client.PostAsync(Url, Json("Hello"))).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var rejected = await client.PostAsync(Url, Json("Hello"));
+        await ProblemAsync(rejected, HttpStatusCode.TooManyRequests, "TOO_MANY_REQUESTS");
+        rejected.Headers.Contains("Retry-After").ShouldBeTrue();
+    }
 }

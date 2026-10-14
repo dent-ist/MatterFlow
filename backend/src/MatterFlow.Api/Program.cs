@@ -72,6 +72,7 @@ app.UseStatusCodePages();
 app.UseMiddleware<RequestForgeryGuard>();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
     app.MapOpenApi("/openapi/{documentName}.json").AllowAnonymous();

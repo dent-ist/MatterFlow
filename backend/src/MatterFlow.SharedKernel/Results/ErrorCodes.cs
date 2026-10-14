@@ -70,6 +70,8 @@ public static class ErrorCodes
     public const string UnsupportedMediaType = "UNSUPPORTED_MEDIA_TYPE";
 
     public const string InternalError = "INTERNAL_ERROR";
+    public const string TooManyRequests = "TOO_MANY_REQUESTS";
+    public const string MethodNotAllowed = "METHOD_NOT_ALLOWED";
 
     /// <summary>Every code, in declaration order. Used to emit the OpenAPI enum.</summary>
     public static IReadOnlyList<string> All { get; } =

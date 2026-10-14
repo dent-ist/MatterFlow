@@ -43,6 +43,37 @@ public class HtmlToTextTests
         HtmlToText.Convert(html).ShouldBe("deep");
     }
 
+    [Theory]
+    [InlineData(50_000)]
+    [InlineData(150_000)]
+    public void Nested_tags_are_converted_in_linear_time(int depth)
+    {
+        var html = string.Concat(Enumerable.Repeat("<div>", depth)) + "deep";
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var text = HtmlToText.Convert(html);
+        stopwatch.Stop();
+
+        text.ShouldBe("deep");
+        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public void Input_beyond_the_size_cap_is_ignored()
+    {
+        var html = "<p>kept</p>" + new string(' ', HtmlToText.MaxInputChars) + "<p>ignored</p>";
+
+        HtmlToText.Convert(html).ShouldBe("kept");
+    }
+
+    [Fact]
+    public void Unclosed_script_and_unterminated_tags_swallow_the_rest()
+    {
+        HtmlToText.Convert("<p>a</p><script>alert(1)<p>b</p>").ShouldBe("a");
+        HtmlToText.Convert("<p>a</p><div title=\"x").ShouldBe("a");
+        HtmlToText.Convert("1 < 2 and 3 > 2").ShouldBe("1 < 2 and 3 > 2");
+    }
+
     [Fact]
     public void Output_is_capped()
     {

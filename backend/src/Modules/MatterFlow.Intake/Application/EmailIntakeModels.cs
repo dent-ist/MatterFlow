@@ -48,6 +48,18 @@ public sealed class IntakeOptions
 
     /// <summary>Longest time one parse may take.</summary>
     public TimeSpan ParseTimeout { get; set; } = TimeSpan.FromSeconds(15);
+
+    /// <summary>How many uploaded emails the whole server parses at the same time; further requests wait in the queue (SEC-02).</summary>
+    public int MaxConcurrentParses { get; set; } = 2;
+
+    /// <summary>How many uploads may wait for a free parse slot before the server answers 429.</summary>
+    public int MaxQueuedParses { get; set; } = 4;
+
+    /// <summary>Upload requests one user may make per minute.</summary>
+    public int RequestsPerMinutePerUser { get; set; } = 30;
+
+    /// <summary>Longest accepted value, in bytes, of a header that is decoded (Subject, From, Date, ...) in an <c>.eml</c>.</summary>
+    public int MaxHeaderBytes { get; set; } = 64 * 1024;
 }
 
 /// <summary>Output limits of the parsers.</summary>

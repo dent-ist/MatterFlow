@@ -4578,7 +4578,9 @@
               "ASSET_TYPE_INACTIVE",
               "ASSET_INACTIVE",
               "UNSUPPORTED_MEDIA_TYPE",
-              "INTERNAL_ERROR"
+              "INTERNAL_ERROR",
+              "TOO_MANY_REQUESTS",
+              "METHOD_NOT_ALLOWED"
             ],
             "type": "string",
             "description": "Stable machine-readable error code."

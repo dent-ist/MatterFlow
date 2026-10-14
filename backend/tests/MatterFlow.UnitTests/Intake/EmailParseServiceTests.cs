@@ -174,6 +174,71 @@ public class EmailParseServiceTests
         result.Value.Body.ShouldBe("body");
     }
 
+    // ---- SEC-02: hostile HTML and headers must cost (almost) nothing and the work must really stop
+
+    [Fact]
+    public async Task Hostile_nested_html_eml_of_150_kb_is_read_in_well_under_a_second()
+    {
+        // Reproduction of SEC-02: 30,000 nested <div> (150 KB) made HtmlAgilityPack burn a core for more than 15 s.
+        var html = string.Concat(Enumerable.Repeat("<div>", 30_000)) + "payload" + string.Concat(Enumerable.Repeat("</div>", 100));
+        var eml = "From: A <a@x.test>\r\nSubject: hostile\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=utf-8\r\n\r\n" + html + "\r\n";
+        eml.Length.ShouldBeGreaterThan(150_000);
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = await ParseAsync(Encoding.ASCII.GetBytes(eml), "hostile.eml");
+        stopwatch.Stop();
+
+        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(1));
+        result.Value.Subject.ShouldBe("hostile");
+        result.Value.Body.ShouldBe("payload");
+    }
+
+    [Fact]
+    public async Task Hostile_nested_html_eml_of_a_megabyte_is_still_fast()
+    {
+        var html = string.Concat(Enumerable.Repeat("<div><span><b>", 70_000)); // about 1 MB, never closed
+        var eml = "From: A <a@x.test>\r\nSubject: hostile\r\nContent-Type: text/html\r\n\r\n" + html + "tail\r\n";
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = await ParseAsync(Encoding.ASCII.GetBytes(eml), "hostile.eml");
+        stopwatch.Stop();
+
+        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(1));
+        result.IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task A_huge_decoded_header_is_rejected_before_the_slow_decoder_runs()
+    {
+        var eml = $"From: A <a@x.test>\r\nSubject: {new string('s', 5_000_000)}\r\nDate: Mon, 12 Oct 2026 09:15:00 +0000\r\n\r\nbody\r\n";
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = await ParseAsync(Encoding.ASCII.GetBytes(eml), "x.eml");
+        stopwatch.Stop();
+
+        result.Error!.Code.ShouldBe(ErrorCodes.EmailParseFailed);
+        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public async Task A_huge_folded_subject_is_rejected_too()
+    {
+        var folded = string.Join("\r\n ", Enumerable.Repeat(new string('s', 70), 2_000));
+        var eml = $"From: A <a@x.test>\r\nSubject: {folded}\r\n\r\nbody\r\n";
+
+        (await ParseAsync(Encoding.ASCII.GetBytes(eml), "x.eml")).Error!.Code.ShouldBe(ErrorCodes.EmailParseFailed);
+    }
+
+    [Fact]
+    public void A_cancelled_html_conversion_stops_instead_of_finishing_in_the_background()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        var html = string.Concat(Enumerable.Repeat("<p>x</p>", 50_000));
+
+        Should.Throw<OperationCanceledException>(() => HtmlToText.Convert(html, cancellationToken: cts.Token));
+    }
+
     [Fact]
     public async Task Oversized_input_is_payload_too_large()
     {
