@@ -93,9 +93,17 @@ export class UsersPage implements OnInit, OnDestroy {
     clearTimeout(this.searchTimer);
   }
 
+  /** Pending users are also counted as active by the API; they are listed under Pending only. */
   protected countFor(tab: Tab): number {
-    return this.counts()[tab];
+    const counts = this.counts();
+    return tab === 'active' ? Math.max(0, counts.active - counts.pending) : counts[tab];
   }
+
+  /** True while the role ticks in the panel differ from the saved ones, so the effective permissions shown are out of date. */
+  protected readonly rolesChanged = computed(() => {
+    const u = this.selected();
+    return !!u && !sameIds(this.draftRoleIds(), u.roleIds);
+  });
 
   protected async selectTab(tab: Tab): Promise<void> {
     this.tab.set(tab);
@@ -247,8 +255,9 @@ export class UsersPage implements OnInit, OnDestroy {
         ),
         firstValueFrom(this.api.userCounts()),
       ]);
-      this.users.set(list.items);
-      this.total.set(list.total);
+      const items = this.tab() === 'active' ? list.items.filter((u) => !u.isPending) : list.items;
+      this.users.set(items);
+      this.total.set(list.total - (list.items.length - items.length));
       this.counts.set(counts);
       this.pending.set(counts.pending);
     } catch {

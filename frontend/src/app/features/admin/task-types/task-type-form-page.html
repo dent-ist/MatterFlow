@@ -199,7 +199,9 @@
     }
     @case ('retire') {
       <div class="ttf__dialog" data-dialog="retire">
-        <p>New {{ recordNoun() }} can't use a retired version. Existing {{ recordNoun() }} keep it.</p>
+        <p>
+          New {{ recordNoun() }} can't use a retired version. Existing {{ recordNoun() }} keep it.
+        </p>
         <div class="ttf__dialog-actions">
           <p-button label="Cancel" severity="secondary" (onClick)="closeDialog()" />
           <p-button label="Retire version" severity="danger" (onClick)="confirmRetire()" />

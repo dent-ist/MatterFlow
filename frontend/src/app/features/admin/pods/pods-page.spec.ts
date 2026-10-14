@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { of, throwError } from 'rxjs';
 
@@ -79,6 +80,7 @@ describe('PodsPage', () => {
     TestBed.configureTestingModule({
       providers: [
         MessageService,
+        provideRouter([]),
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: PodsClient, useValue: api },
       ],
@@ -174,7 +176,7 @@ describe('PodsPage', () => {
 
     expect(api.createPod).toHaveBeenCalledWith({ name: 'Pod C', description: 'New work' });
     expect(text('#pods-editor-title')).toBe('Edit Pod');
-    expect(text('[data-live]')).toBe('Pod created.');
+    expect(text('[data-live]')).toBe(''); // the toast confirms the save; no second message
     expect(text('[data-no-members]')).toBe('No members yet.');
   });
 

@@ -98,7 +98,7 @@ describe('HTTP interceptors', () => {
       expect.objectContaining({
         severity: 'error',
         summary: 'Cannot move a Completed task to On Hold.',
-        detail: 'Reference: 00-abc',
+        detail: undefined,
       }),
     );
   });

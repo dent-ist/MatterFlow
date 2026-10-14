@@ -351,7 +351,8 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
       await this.refreshVersions();
     });
     this.dialog.set(null);
-    if (ok) this.notice.set(`Version ${v.versionNo} is retired. New ${this.recordNoun()} can't use it.`);
+    if (ok)
+      this.notice.set(`Version ${v.versionNo} is retired. New ${this.recordNoun()} can't use it.`);
     this.restoreFocus();
   }
 

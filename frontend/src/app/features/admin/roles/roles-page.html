@@ -22,7 +22,9 @@
               @if (r.isSystemAdmin) {
                 <span class="mf-chip">Built-in, locked</span>
               }
-              <span class="mf-count">{{ r.memberCount }} {{ r.memberCount === 1 ? 'member' : 'members' }}</span>
+              <span class="mf-count"
+                >{{ r.memberCount }} {{ r.memberCount === 1 ? 'member' : 'members' }}</span
+              >
             </button>
           </li>
         }
@@ -117,7 +119,12 @@
           <div class="mf-actions">
             <p-button label="Save" [disabled]="saving()" (onClick)="save()" />
             @if (canDelete()) {
-              <p-button label="Delete role" severity="danger" [text]="true" (onClick)="confirmingDelete.set(true)" />
+              <p-button
+                label="Delete role"
+                severity="danger"
+                [text]="true"
+                (onClick)="confirmingDelete.set(true)"
+              />
             }
           </div>
         }

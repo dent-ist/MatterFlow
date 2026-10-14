@@ -58,7 +58,7 @@ describe('UsersPage', () => {
     await create('User.View', 'User.Manage');
 
     expect(q('[data-tab="pending"]').textContent).toContain('Pending access (2)');
-    expect(q('[data-tab="active"]').textContent).toContain('Active (4)');
+    expect(q('[data-tab="active"]').textContent).toContain('Active (2)');
     expect(q('[data-tab="inactive"]').textContent).toContain('Inactive (1)');
     expect(rows()).toEqual(['Priya Patel', 'Tariq Mahmood']);
     expect(TestBed.inject(PendingUsersStore).count()).toBe(2);
@@ -82,11 +82,11 @@ describe('UsersPage', () => {
     expect(rows()).toContain('Dana Director');
 
     const input = q<HTMLInputElement>('[data-search]');
-    input.value = 'tariq';
+    input.value = 'dana';
     input.dispatchEvent(new Event('input'));
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await settle();
-    expect(rows()).toEqual(['Tariq Mahmood']);
+    expect(rows()).toEqual(['Dana Director']);
   });
 
   it('grants a role to a pending user: the drawer saves, the queue shrinks', async () => {

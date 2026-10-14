@@ -37,7 +37,10 @@ export function parseStatus(value: string | null | undefined): StatusFilter {
  * A function that runs `fn` once `ms` after its last call, so a list can search while the user types. Call in an injection context;
  * a pending call is dropped when the component is destroyed.
  */
-export function debounced<A extends unknown[]>(fn: (...args: A) => void, ms = 350): (...args: A) => void {
+export function debounced<A extends unknown[]>(
+  fn: (...args: A) => void,
+  ms = 350,
+): (...args: A) => void {
   let timer: ReturnType<typeof setTimeout> | undefined;
   inject(DestroyRef).onDestroy(() => clearTimeout(timer));
   return (...args: A) => {

@@ -207,7 +207,8 @@ export class RolesPage implements OnInit {
     } else if (err.code === 'DUPLICATE_NAME') {
       this.nameError.set('A role with this name already exists.');
     } else if (err.code === 'ROLE_IN_USE') {
-      const count = this.roles().find((r) => r.roleId === this.selected()?.roleId)?.memberCount ?? 0;
+      const count =
+        this.roles().find((r) => r.roleId === this.selected()?.roleId)?.memberCount ?? 0;
       this.error.set(
         count > 0
           ? `${count === 1 ? '1 user has' : `${count} users have`} this role. Remove them from it before deleting.`

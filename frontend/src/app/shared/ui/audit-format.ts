@@ -2,7 +2,9 @@ import { AuditEventDto } from '../../api/generated/api-client';
 
 /** Fields recorded by the change tracker that mean nothing to a reader (keys, concurrency tokens, timestamps). */
 function isTechnicalField(key: string): boolean {
-  return /(^|[^A-Za-z])Id$/.test(key) || /Id$/.test(key) || key === 'RowVersion' || /Utc$/.test(key);
+  return (
+    /(^|[^A-Za-z])Id$/.test(key) || /Id$/.test(key) || key === 'RowVersion' || /Utc$/.test(key)
+  );
 }
 
 /** `IsSensitive` -> `Sensitive`, `form:billing_code` -> `Billing code`, `ClientNumber` -> `Client number`. */

@@ -75,7 +75,7 @@ describe('RolesPage', () => {
     expect(names[0]).toBe('System Admin');
     expect(names).toContain('Data Scientist');
     expect(q('[data-role="1"]').textContent).toContain('Built-in, locked');
-    expect(q('[data-role="5"]').textContent).toContain('1 members');
+    expect(q('[data-role="5"]').textContent).toContain('1 member');
   });
 
   it('opens System Admin read-only with no save or delete', async () => {
@@ -142,9 +142,9 @@ describe('RolesPage', () => {
 
   async function confirmDelete(): Promise<void> {
     await press('Delete role'); // opens the confirmation
-    const confirm = Array.from(document.body.querySelectorAll<HTMLButtonElement>('.p-dialog button')).find(
-      (b) => b.textContent!.trim() === 'Delete role',
-    )!;
+    const confirm = Array.from(
+      document.body.querySelectorAll<HTMLButtonElement>('.p-dialog button'),
+    ).find((b) => b.textContent!.trim() === 'Delete role')!;
     confirm.click();
     await settle();
   }
@@ -156,7 +156,9 @@ describe('RolesPage', () => {
     expect(api.roles.some((r) => r.roleId === 5)).toBe(true);
     expect(document.body.querySelector('.p-dialog')?.textContent).toContain('Delete role?');
     await confirmDelete();
-    expect(q('[data-error]').textContent).toMatch(/has this role\. Remove them from it before deleting/);
+    expect(q('[data-error]').textContent).toMatch(
+      /has this role\. Remove them from it before deleting/,
+    );
     expect(api.roles.some((r) => r.roleId === 5)).toBe(true);
 
     q('[data-role="4"]').click(); // Pod Lead has no members
