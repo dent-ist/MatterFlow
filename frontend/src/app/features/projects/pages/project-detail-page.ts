@@ -20,6 +20,7 @@ import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { EntityActivity } from '../../../shared/ui/entity-activity';
 import { MatterRef } from '../../../shared/ui/matter-ref';
+import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
 
 type Tab = 'tasks' | 'details' | 'activity';
 type LoadState = 'loading' | 'ready' | 'error';
@@ -36,6 +37,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     EntityActivity,
     LocalTimePipe,
     CustomFieldsView,
+    ScopedTasks,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -123,9 +125,11 @@ type LoadState = 'loading' | 'ready' | 'error';
 
           @switch (tab()) {
             @case ('tasks') {
-              <div class="pg-state" data-placeholder="tasks">
-                Tasks in this project will appear here once task management is available.
-              </div>
+              <mf-scoped-tasks
+                [matterId]="p.matterId"
+                [projectId]="p.projectId"
+                [canCreate]="p.isActive"
+              />
             }
             @case ('details') {
               <dl class="pg-dl">

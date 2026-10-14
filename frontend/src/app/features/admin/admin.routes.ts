@@ -1,18 +1,10 @@
 import { Route, Routes } from '@angular/router';
 import { permissionGuard } from '../../core/auth/guards';
 import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
-import { PlaceholderPage } from '../../shared/ui/placeholder-page';
 import { AssetTypeFormDesignerApi } from './asset-types/asset-type-form-designer-api';
 import { CustomFieldFormDesignerApi } from './custom-fields/custom-field-form-designer-api';
 import { FormDesignerApi } from './task-types/form-designer-api';
 import { StepFormDesignerApi } from './steps/step-form-designer-api';
-
-const page = (path: string, title: string, ...codes: Parameters<typeof permissionGuard>) => ({
-  path,
-  canActivate: [permissionGuard(...codes)],
-  component: PlaceholderPage,
-  data: { title },
-});
 
 const lazy = (
   path: string,
@@ -136,5 +128,5 @@ export const ADMIN_ROUTES: Routes = [
   lazy('asset-link-roles', 'AssetType.Manage', () =>
     import('./asset-link-roles/asset-link-roles-page').then((m) => m.AssetLinkRolesPage),
   ),
-  page('audit', 'Audit Log', 'Audit.View'),
+  lazy('audit', 'Audit.View', () => import('./audit/audit-page').then((m) => m.AuditPage)),
 ];

@@ -27,13 +27,14 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { EntityActivity } from '../../../shared/ui/entity-activity';
 import { MatterAssets } from '../../../shared/ui/matter-assets';
 import { MatterRef } from '../../../shared/ui/matter-ref';
+import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
 
 type Tab = 'tasks' | 'projects' | 'assets' | 'details' | 'activity';
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * Matter detail (UX S06): reference with copy button, sensitivity and inactive banners, activation with the open-task rule,
- * and Tasks / Projects / Assets / Details / Activity tabs (Tasks is a placeholder until that module exists).
+ * and Tasks / Projects / Assets / Details / Activity tabs (Tasks is the shared work-queue table filtered to the Matter).
  */
 @Component({
   selector: 'mf-matter-detail-page',
@@ -47,6 +48,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     EntityActivity,
     LocalTimePipe,
     CustomFieldsView,
+    ScopedTasks,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -186,9 +188,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 
           @switch (tab()) {
             @case ('tasks') {
-              <div class="pg-state" data-placeholder="tasks">
-                Tasks for this matter will appear here once task management is available.
-              </div>
+              <mf-scoped-tasks [matterId]="m.matterId" [canCreate]="m.isActive" />
             }
             @case ('projects') {
               @if (projects().length === 0) {

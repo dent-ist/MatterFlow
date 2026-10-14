@@ -6,6 +6,7 @@ import {
   AuditEventsClient,
   MattersClient,
   ProjectsClient,
+  TaskQueueClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
@@ -22,12 +23,19 @@ import {
   withPermissions,
 } from '../../../shared/testing/org-testing';
 import { anAssetListItem, pageOfAssets } from '../../../shared/testing/asset-testing';
+import {
+  aRow,
+  pageOf,
+  provideClock,
+  provideLookups,
+} from '../../../shared/work-queue/work-queue-testing';
 import { MatterDetailPage } from './matter-detail-page';
 
 describe('MatterDetailPage', () => {
   let matters: { getMatter: ReturnType<typeof vi.fn>; setMatterActive: ReturnType<typeof vi.fn> };
   let projects: { listProjects: ReturnType<typeof vi.fn> };
   let assets: { listAssets: ReturnType<typeof vi.fn> };
+  let queue: { getTaskQueue: ReturnType<typeof vi.fn> };
   let fixture: ComponentFixture<MatterDetailPage>;
   let navigateByUrl: ReturnType<typeof vi.fn>;
   let writeText: ReturnType<typeof vi.fn>;
@@ -40,6 +48,7 @@ describe('MatterDetailPage', () => {
     };
     projects = { listProjects: vi.fn().mockReturnValue(ok(pageOfProjects(aProject()))) };
     assets = { listAssets: vi.fn().mockReturnValue(ok(pageOfAssets(anAssetListItem()))) };
+    queue = { getTaskQueue: vi.fn().mockReturnValue(ok(pageOf([aRow()]))) };
     writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
     TestBed.configureTestingModule({
@@ -50,6 +59,9 @@ describe('MatterDetailPage', () => {
         { provide: MattersClient, useValue: matters },
         { provide: ProjectsClient, useValue: projects },
         { provide: AssetsClient, useValue: assets },
+        { provide: TaskQueueClient, useValue: queue },
+        ...provideLookups(),
+        ...provideClock('2026-10-14T15:00:00Z'),
         {
           provide: AuditEventsClient,
           useValue: { listAuditEvents: vi.fn().mockReturnValue(ok({ items: [] })) },
@@ -102,14 +114,15 @@ describe('MatterDetailPage', () => {
     expect(buttonByLabel(el(), 'Reactivate')).toBeDefined();
   });
 
-  it('has Tasks, Projects and Assets tabs; Tasks is a placeholder, Projects lists the matter projects', async () => {
+  it('has Tasks, Projects and Assets tabs; Tasks needs Task.View, Projects lists the matter projects', async () => {
     await create(['Matter.View', 'Project.View']);
 
     expect(
       Array.from(el().querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
     ).toEqual(['Tasks (0 open)', 'Projects (1)', 'Assets', 'Details']);
-    // The first tab (Tasks) is selected on open.
-    expect(el().querySelector('[data-placeholder=tasks]')).not.toBeNull();
+    // The first tab (Tasks) is selected on open; without Task.View it says so and loads nothing.
+    expect(el().querySelector('[data-no-access=tasks]')).not.toBeNull();
+    expect(queue.getTaskQueue).not.toHaveBeenCalled();
     expect(projects.listProjects).toHaveBeenCalledWith(undefined, 7, undefined, 1, 100, 'name');
     tab('Projects').click();
     await settle(fixture);
@@ -117,7 +130,7 @@ describe('MatterDetailPage', () => {
 
     tab('Tasks').click();
     await settle(fixture);
-    expect(el().querySelector('[data-placeholder=tasks]')).not.toBeNull();
+    expect(el().querySelector('[data-no-access=tasks]')).not.toBeNull();
     tab('Assets').click();
     await settle(fixture);
     expect(el().querySelector('[data-no-access=assets]')).not.toBeNull();
@@ -125,6 +138,46 @@ describe('MatterDetailPage', () => {
     tab('Details').click();
     await settle(fixture);
     expect(el().querySelector('dl')?.textContent).toContain('Merger Review');
+  });
+
+  it('lists the matter tasks in the Tasks tab (open by default, All on request) and offers Create Task', async () => {
+    await create(['Matter.View', 'Task.View', 'Task.Create'], aMatter({ openTaskCount: 3 }));
+
+    expect(tab('Tasks').textContent?.trim()).toBe('Tasks (3 open)');
+    let args = queue.getTaskQueue.mock.calls[0];
+    expect(args[8]).toBe(7);
+    expect(args[9]).toBeUndefined();
+    expect(args[1]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
+    expect(el().querySelector('tbody tr[data-task=TSK-1042] a')?.getAttribute('href')).toBe(
+      '/tasks/1042',
+    );
+
+    const filter = el().querySelector<HTMLSelectElement>('[data-status-filter]')!;
+    filter.value = 'all';
+    filter.dispatchEvent(new Event('change'));
+    await settle(fixture);
+    args = queue.getTaskQueue.mock.calls.at(-1)!;
+    expect(args[1]).toBeUndefined();
+
+    el().querySelector<HTMLButtonElement>('mf-scoped-tasks [data-create-task] button')!.click();
+    expect(navigateByUrl).toHaveBeenCalledWith('/tasks/new?matterId=7');
+  });
+
+  it('shows an empty state and a retry when the matter tasks cannot be loaded', async () => {
+    await create(['Matter.View', 'Task.View']);
+    queue.getTaskQueue.mockReturnValue(ok(pageOf([])));
+    tab('Projects').click();
+    await settle(fixture);
+    tab('Tasks').click();
+    await settle(fixture);
+    expect(el().querySelector('[data-empty=tasks]')?.textContent).toContain('No open tasks.');
+
+    queue.getTaskQueue.mockReturnValue(apiError(500, { title: 'x', status: 500 } as never));
+    tab('Projects').click();
+    await settle(fixture);
+    tab('Tasks').click();
+    await settle(fixture);
+    expect(el().querySelector('[data-error]')).not.toBeNull();
   });
 
   it('lists the matter assets in the Assets tab with server-side search and links to the asset', async () => {

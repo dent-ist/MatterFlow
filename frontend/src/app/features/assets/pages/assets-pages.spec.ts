@@ -29,6 +29,7 @@ import {
   settle,
   withPermissions,
 } from '../../../shared/testing/org-testing';
+import { provideLookups } from '../../../shared/work-queue/work-queue-testing';
 import { AssetDetailPage } from './asset-detail-page';
 import { AssetFormPage, externalReferenceError } from './asset-form-page';
 import { AssetsListPage } from './assets-list-page';
@@ -37,7 +38,13 @@ type Mock = ReturnType<typeof vi.fn>;
 
 describe('Assets pages', () => {
   let assets: Record<
-    'listAssets' | 'getAsset' | 'createAsset' | 'updateAsset' | 'setAssetActive' | 'lookupAssets',
+    | 'listAssets'
+    | 'getAsset'
+    | 'createAsset'
+    | 'updateAsset'
+    | 'setAssetActive'
+    | 'lookupAssets'
+    | 'listAssetLinkedTasks',
     Mock
   >;
   let types: Record<'listAssetTypes', Mock>;
@@ -64,6 +71,21 @@ describe('Assets pages', () => {
       updateAsset: vi.fn().mockReturnValue(ok(anAsset({ displayName: 'Renamed' }))),
       setAssetActive: vi.fn().mockReturnValue(ok(anAsset({ isActive: false }))),
       lookupAssets: vi.fn().mockReturnValue(ok([])),
+      listAssetLinkedTasks: vi.fn().mockReturnValue(
+        ok({
+          items: [
+            {
+              taskId: 1042,
+              taskNumber: 'TSK-1042',
+              title: 'Process Smith custodians',
+              statusCode: 'IN_PROGRESS',
+              assetLinkRoleId: 2,
+              assetLinkRoleName: 'Source',
+              linkedAtUtc: '2026-10-01T12:00:00Z',
+            },
+          ],
+        }),
+      ),
     };
     types = {
       listAssetTypes: vi.fn().mockReturnValue(
@@ -95,6 +117,7 @@ describe('Assets pages', () => {
         { provide: FormsClient, useValue: forms },
         { provide: MattersClient, useValue: matters },
         { provide: AuditEventsClient, useValue: audit },
+        ...provideLookups(),
       ],
     });
     const router = TestBed.inject(Router);
@@ -472,18 +495,54 @@ describe('Assets pages', () => {
       expect(el().querySelector('[data-external-reference]')?.textContent).toContain('WS-8841');
     });
 
-    it('has Details, a placeholder Linked Tasks tab and a History tab only with Audit.View', async () => {
-      await create(['Asset.View']);
+    it('has Details, a Linked Tasks tab and a History tab only with Audit.View', async () => {
+      await create(['Asset.View', 'Task.View']);
       expect(tab('History')).toBeUndefined();
+      expect(assets.listAssetLinkedTasks).not.toHaveBeenCalled(); // lazy: only once the tab opens
       tab('Linked Tasks')!.click();
       await settle(fixture);
-      expect(el().querySelector('[data-placeholder=linked-tasks]')).not.toBeNull();
+      expect(assets.listAssetLinkedTasks).toHaveBeenCalledWith(9);
 
       TestBed.resetTestingModule();
       await create(['Asset.View', 'Audit.View']);
       tab('History')!.click();
       await settle(fixture);
       expect(audit.listAuditEvents).toHaveBeenCalledWith('Asset', '9', undefined, 50);
+    });
+
+    it('lists the linked tasks with number, title, status, role and a link to the task', async () => {
+      await create(['Asset.View', 'Task.View']);
+      tab('Linked Tasks')!.click();
+      await settle(fixture);
+
+      const row = el().querySelector('tbody tr[data-task=TSK-1042]')!;
+      expect(row.querySelector('td')?.textContent).toBe('TSK-1042');
+      expect(row.querySelector('a')?.getAttribute('href')).toBe('/tasks/1042');
+      expect(row.querySelector('a')?.textContent).toBe('Process Smith custodians');
+      expect(row.querySelector('[data-status]')?.getAttribute('data-status')).toBe('IN_PROGRESS');
+      expect(row.textContent).toContain('Source');
+    });
+
+    it('shows empty, error and no-permission states for the linked tasks', async () => {
+      await create(['Asset.View', 'Task.View']);
+      assets.listAssetLinkedTasks.mockReturnValue(ok({ items: [] }));
+      tab('Linked Tasks')!.click();
+      await settle(fixture);
+      expect(el().querySelector('[data-empty=linked-tasks]')).not.toBeNull();
+
+      TestBed.resetTestingModule();
+      await create(['Asset.View', 'Task.View']);
+      assets.listAssetLinkedTasks.mockReturnValue(apiError(500, { title: 'x' } as never));
+      tab('Linked Tasks')!.click();
+      await settle(fixture);
+      expect(el().querySelector('[data-error]')).not.toBeNull();
+
+      TestBed.resetTestingModule();
+      await create(['Asset.View']);
+      tab('Linked Tasks')!.click();
+      await settle(fixture);
+      expect(el().querySelector('[data-no-access=linked-tasks]')).not.toBeNull();
+      expect(assets.listAssetLinkedTasks).not.toHaveBeenCalled();
     });
 
     it('gates Edit and the activation button by permission and hides Edit for an inactive asset', async () => {

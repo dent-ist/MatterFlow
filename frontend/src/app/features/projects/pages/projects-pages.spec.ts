@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { MattersClient, ProjectsClient } from '../../../api/generated/api-client';
+import { MattersClient, ProjectsClient, TaskQueueClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
 import {
@@ -17,6 +17,12 @@ import {
   settle,
   withPermissions,
 } from '../../../shared/testing/org-testing';
+import {
+  aRow,
+  pageOf,
+  provideClock,
+  provideLookups,
+} from '../../../shared/work-queue/work-queue-testing';
 import { ProjectDetailPage } from './project-detail-page';
 import { ProjectFormPage } from './project-form-page';
 import { ProjectsListPage } from './projects-list-page';
@@ -29,6 +35,7 @@ describe('Projects pages', () => {
     Mock
   >;
   let matters: Record<'getMatter' | 'listMatters', Mock>;
+  let queue: Record<'getTaskQueue', Mock>;
   let navigate: Mock;
   let navigateByUrl: Mock;
 
@@ -59,6 +66,7 @@ describe('Projects pages', () => {
           ),
         ),
     };
+    queue = { getTaskQueue: vi.fn().mockReturnValue(ok(pageOf([aRow({ projectId: 3 })]))) };
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -66,6 +74,9 @@ describe('Projects pages', () => {
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: ProjectsClient, useValue: projects },
         { provide: MattersClient, useValue: matters },
+        { provide: TaskQueueClient, useValue: queue },
+        ...provideLookups(),
+        ...provideClock('2026-10-14T15:00:00Z'),
       ],
     });
     const router = TestBed.inject(Router);
@@ -253,14 +264,41 @@ describe('Projects pages', () => {
       await settle(fixture);
     }
 
-    it('shows the project in its matter and a flat tasks placeholder', async () => {
+    it('shows the project in its matter', async () => {
       await create(['Project.View']);
 
       expect(el().querySelector('h1')?.textContent).toContain('Custodian Processing');
       expect(el().querySelector('[data-matter] .mf-ref')?.textContent).toBe('00343-00012');
-      expect(el().querySelector('[data-placeholder=tasks]')).not.toBeNull();
       expect(buttonByLabel(el(), 'Archive')).toBeUndefined();
       expect(buttonByLabel(el(), 'Edit')).toBeUndefined();
+    });
+
+    it('lists the project tasks through the work-queue table, filtered by matter and project', async () => {
+      await create(['Project.View', 'Task.View']);
+
+      const args = queue.getTaskQueue.mock.calls[0];
+      expect(args[8]).toBe(7); // matter
+      expect(args[9]).toBe(3); // project
+      expect(args[1]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']); // open by default
+      expect(el().querySelector('tbody tr[data-task=TSK-1042] a')?.getAttribute('href')).toBe(
+        '/tasks/1042',
+      );
+      expect(el().querySelector('mf-scoped-tasks [data-create-task]')).toBeNull(); // needs Task.Create
+    });
+
+    it('offers Create Task prefilled with the matter and the project', async () => {
+      await create(['Project.View', 'Task.View', 'Task.Create']);
+
+      el().querySelector<HTMLButtonElement>('mf-scoped-tasks [data-create-task] button')!.click();
+
+      expect(navigateByUrl).toHaveBeenCalledWith('/tasks/new?matterId=7&projectId=3');
+    });
+
+    it('says so, and loads nothing, without Task.View', async () => {
+      await create(['Project.View']);
+
+      expect(el().querySelector('[data-no-access=tasks]')).not.toBeNull();
+      expect(queue.getTaskQueue).not.toHaveBeenCalled();
     });
 
     it('archives after confirmation, explaining that existing tasks keep the project', async () => {

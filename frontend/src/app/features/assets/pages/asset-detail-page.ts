@@ -23,13 +23,14 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { EntityActivity } from '../../../shared/ui/entity-activity';
 import { MatterRef } from '../../../shared/ui/matter-ref';
+import { AssetLinkedTasks } from './asset-linked-tasks';
 
 type Tab = 'details' | 'tasks' | 'history';
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * Asset detail (UX S08): type badge, Matter link, external reference (copy button, link when it is a URL), the type-specific values
- * shown with the form version they were captured under, a Linked Tasks tab (filled in when task management exists) and a History
+ * shown with the form version they were captured under, a Linked Tasks tab (the Tasks linked to it) and a History
  * tab with the change history from the audit trail. Assets are deactivated, never deleted.
  */
 @Component({
@@ -44,6 +45,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     EntityActivity,
     DynamicForm,
     LocalTimePipe,
+    AssetLinkedTasks,
   ],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -183,9 +185,7 @@ type LoadState = 'loading' | 'ready' | 'error';
               }
             }
             @case ('tasks') {
-              <div class="pg-state" data-placeholder="linked-tasks">
-                Tasks linked to this asset will appear here once task management is available.
-              </div>
+              <mf-asset-linked-tasks [assetId]="a.assetId" />
             }
             @case ('history') {
               <mf-entity-activity objectType="Asset" [objectId]="a.assetId" />
