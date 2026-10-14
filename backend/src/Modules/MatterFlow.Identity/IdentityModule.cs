@@ -3,6 +3,7 @@ using MatterFlow.Identity.Authentication;
 using MatterFlow.Identity.Authorization;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.DirectoryLookup;
+using MatterFlow.Identity.Pods;
 using MatterFlow.Identity.Seeding;
 using MatterFlow.SharedKernel.Identity;
 using Microsoft.AspNetCore.Authentication;
@@ -49,6 +50,8 @@ public static class IdentityModule
         services.AddSingleton<IDirectoryProfileProvider, ActiveDirectoryProfileProvider>();
         services.AddScoped<IUserResolver, UserResolver>();
         services.AddScoped<IdentitySeeder>();
+        services.AddScoped<PodService>();
+        services.AddScoped<IPodDirectory, PodDirectory>();
 
         services.AddScoped<CurrentUser>();
         services.Replace(ServiceDescriptor.Scoped<ICurrentUser>(sp => sp.GetRequiredService<CurrentUser>()));

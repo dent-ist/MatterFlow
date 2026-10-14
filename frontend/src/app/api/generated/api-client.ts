@@ -259,6 +259,649 @@ export class MeClient implements IMeClient {
     }
 }
 
+export interface IPodsClient {
+    /**
+     * @param q (optional) 
+     * @param active (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listPods(q?: string | undefined, active?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfPodSummary>;
+    /**
+     * @return Created
+     */
+    createPod(body: CreatePodRequest): Observable<PodDetail>;
+    /**
+     * @return OK
+     */
+    getPod(podId: number): Observable<PodDetail>;
+    /**
+     * @return OK
+     */
+    updatePod(podId: number, body: UpdatePodRequest): Observable<PodDetail>;
+    /**
+     * @return OK
+     */
+    addPodMembers(podId: number, body: AddPodMembersRequest): Observable<PodDetail>;
+    /**
+     * @return No Content
+     */
+    removePodMember(podId: number, userId: number): Observable<void>;
+    /**
+     * @return OK
+     */
+    setPrimaryPod(podId: number, userId: number, body: SetPrimaryPodRequest): Observable<PodDetail>;
+    /**
+     * @param q (optional) 
+     * @return OK
+     */
+    findPodMemberCandidates(q?: string | undefined): Observable<PodMemberCandidate[]>;
+    /**
+     * @param includeInactive (optional) 
+     * @return OK
+     */
+    listUserPods(userId: number, includeInactive?: boolean | undefined): Observable<UserPodDto[]>;
+    /**
+     * @return OK
+     */
+    listMyPods(): Observable<UserPodDto[]>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class PodsClient implements IPodsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param q (optional) 
+     * @param active (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listPods(q?: string | undefined, active?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfPodSummary> {
+        let url_ = this.baseUrl + "/api/v1/pods?";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "q=" + encodeURIComponent("" + q) + "&";
+        if (active === null)
+            throw new globalThis.Error("The parameter 'active' cannot be null.");
+        else if (active !== undefined)
+            url_ += "active=" + encodeURIComponent("" + active) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "sort=" + encodeURIComponent("" + sort) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListPods(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListPods(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultOfPodSummary>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultOfPodSummary>;
+        }));
+    }
+
+    protected processListPods(response: HttpResponseBase): Observable<PagedResultOfPodSummary> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfPodSummary;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createPod(body: CreatePodRequest): Observable<PodDetail> {
+        let url_ = this.baseUrl + "/api/v1/pods";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreatePod(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreatePod(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PodDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PodDetail>;
+        }));
+    }
+
+    protected processCreatePod(response: HttpResponseBase): Observable<PodDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PodDetail;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getPod(podId: number): Observable<PodDetail> {
+        let url_ = this.baseUrl + "/api/v1/pods/{podId}";
+        if (podId === undefined || podId === null)
+            throw new globalThis.Error("The parameter 'podId' must be defined.");
+        url_ = url_.replace("{podId}", encodeURIComponent("" + podId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetPod(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetPod(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PodDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PodDetail>;
+        }));
+    }
+
+    protected processGetPod(response: HttpResponseBase): Observable<PodDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PodDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updatePod(podId: number, body: UpdatePodRequest): Observable<PodDetail> {
+        let url_ = this.baseUrl + "/api/v1/pods/{podId}";
+        if (podId === undefined || podId === null)
+            throw new globalThis.Error("The parameter 'podId' must be defined.");
+        url_ = url_.replace("{podId}", encodeURIComponent("" + podId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdatePod(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdatePod(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PodDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PodDetail>;
+        }));
+    }
+
+    protected processUpdatePod(response: HttpResponseBase): Observable<PodDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PodDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    addPodMembers(podId: number, body: AddPodMembersRequest): Observable<PodDetail> {
+        let url_ = this.baseUrl + "/api/v1/pods/{podId}/members";
+        if (podId === undefined || podId === null)
+            throw new globalThis.Error("The parameter 'podId' must be defined.");
+        url_ = url_.replace("{podId}", encodeURIComponent("" + podId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAddPodMembers(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAddPodMembers(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PodDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PodDetail>;
+        }));
+    }
+
+    protected processAddPodMembers(response: HttpResponseBase): Observable<PodDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PodDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    removePodMember(podId: number, userId: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/pods/{podId}/members/{userId}";
+        if (podId === undefined || podId === null)
+            throw new globalThis.Error("The parameter 'podId' must be defined.");
+        url_ = url_.replace("{podId}", encodeURIComponent("" + podId));
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processRemovePodMember(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processRemovePodMember(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processRemovePodMember(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setPrimaryPod(podId: number, userId: number, body: SetPrimaryPodRequest): Observable<PodDetail> {
+        let url_ = this.baseUrl + "/api/v1/pods/{podId}/members/{userId}";
+        if (podId === undefined || podId === null)
+            throw new globalThis.Error("The parameter 'podId' must be defined.");
+        url_ = url_.replace("{podId}", encodeURIComponent("" + podId));
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetPrimaryPod(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetPrimaryPod(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PodDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PodDetail>;
+        }));
+    }
+
+    protected processSetPrimaryPod(response: HttpResponseBase): Observable<PodDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PodDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param q (optional) 
+     * @return OK
+     */
+    findPodMemberCandidates(q?: string | undefined): Observable<PodMemberCandidate[]> {
+        let url_ = this.baseUrl + "/api/v1/pods/member-candidates?";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "q=" + encodeURIComponent("" + q) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processFindPodMemberCandidates(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processFindPodMemberCandidates(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PodMemberCandidate[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PodMemberCandidate[]>;
+        }));
+    }
+
+    protected processFindPodMemberCandidates(response: HttpResponseBase): Observable<PodMemberCandidate[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PodMemberCandidate[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param includeInactive (optional) 
+     * @return OK
+     */
+    listUserPods(userId: number, includeInactive?: boolean | undefined): Observable<UserPodDto[]> {
+        let url_ = this.baseUrl + "/api/v1/users/{userId}/pods?";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        if (includeInactive === null)
+            throw new globalThis.Error("The parameter 'includeInactive' cannot be null.");
+        else if (includeInactive !== undefined)
+            url_ += "includeInactive=" + encodeURIComponent("" + includeInactive) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListUserPods(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListUserPods(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserPodDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserPodDto[]>;
+        }));
+    }
+
+    protected processListUserPods(response: HttpResponseBase): Observable<UserPodDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserPodDto[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    listMyPods(): Observable<UserPodDto[]> {
+        let url_ = this.baseUrl + "/api/v1/me/pods";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListMyPods(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListMyPods(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserPodDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserPodDto[]>;
+        }));
+    }
+
+    protected processListMyPods(response: HttpResponseBase): Observable<UserPodDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserPodDto[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface AddPodMembersRequest {
+    userIds: number[];
+
+    [key: string]: any;
+}
+
 export interface ApiFieldError {
     code: string;
     message: string;
@@ -308,6 +951,13 @@ export interface AuditEventPage {
     [key: string]: any;
 }
 
+export interface CreatePodRequest {
+    name: string;
+    description?: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface MeResponse {
     userId: number;
     displayName: string;
@@ -323,6 +973,15 @@ export interface MeResponse {
     [key: string]: any;
 }
 
+export interface PagedResultOfPodSummary {
+    items: PodSummary[];
+    total: number;
+    page: number;
+    pageSize: number;
+
+    [key: string]: any;
+}
+
 export interface PingResponse {
     status: string;
     serverTimeUtc: string;
@@ -331,6 +990,67 @@ export interface PingResponse {
     localTime: string;
     timeZoneAbbreviation: string;
     echo: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface PodDetail {
+    pod: PodSummary;
+    members: PodMemberDto[];
+
+    [key: string]: any;
+}
+
+export interface PodMemberCandidate {
+    userId: number;
+    displayName: string;
+    email: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface PodMemberDto {
+    userId: number;
+    displayName: string;
+    email: string | undefined;
+    isActive: boolean;
+    isPrimary: boolean;
+    roles: string[];
+
+    [key: string]: any;
+}
+
+export interface PodSummary {
+    podId: number;
+    name: string;
+    description: string | undefined;
+    isActive: boolean;
+    memberCount: number;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface SetPrimaryPodRequest {
+    isPrimary: boolean | undefined;
+
+    [key: string]: any;
+}
+
+export interface UpdatePodRequest {
+    name: string;
+    description?: string | undefined;
+    isActive: boolean | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UserPodDto {
+    podId: number;
+    name: string;
+    isActive: boolean;
+    isPrimary: boolean;
 
     [key: string]: any;
 }
@@ -351,6 +1071,7 @@ export enum ApiProblemDetailsCode {
     MATTER_HAS_OPEN_TASKS = "MATTER_HAS_OPEN_TASKS",
     CLIENT_INACTIVE = "CLIENT_INACTIVE",
     PROJECT_INACTIVE = "PROJECT_INACTIVE",
+    POD_INACTIVE = "POD_INACTIVE",
     TASK_NOT_EDITABLE = "TASK_NOT_EDITABLE",
     INVALID_STATUS_TRANSITION = "INVALID_STATUS_TRANSITION",
     COMPLETION_BLOCKED = "COMPLETION_BLOCKED",

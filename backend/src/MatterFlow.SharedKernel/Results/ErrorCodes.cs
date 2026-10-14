@@ -20,6 +20,7 @@ public static class ErrorCodes
     public const string MatterHasOpenTasks = "MATTER_HAS_OPEN_TASKS";
     public const string ClientInactive = "CLIENT_INACTIVE";
     public const string ProjectInactive = "PROJECT_INACTIVE";
+    public const string PodInactive = "POD_INACTIVE";
     public const string TaskNotEditable = "TASK_NOT_EDITABLE";
     public const string InvalidStatusTransition = "INVALID_STATUS_TRANSITION";
     public const string CompletionBlocked = "COMPLETION_BLOCKED";
