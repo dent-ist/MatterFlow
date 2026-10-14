@@ -1,0 +1,50 @@
+<main class="mf-pending">
+  <p class="mf-brand">MatterFlow</p>
+
+  @if (auth.isDisabled()) {
+    <h1 #heading tabindex="-1">Your account is disabled</h1>
+    <p>Your account is disabled. Contact the administrator.</p>
+  } @else {
+    <h1 #heading tabindex="-1">Your access is pending</h1>
+    @if (auth.profile(); as p) {
+      <p>
+        You're signed in as <strong>{{ p.displayName }}</strong>
+        @if (p.windowsAccount) {
+          (<span class="mf-account">{{ p.windowsAccount }}</span
+          >)
+        }
+        . An administrator needs to give you a role before you can use MatterFlow.
+        @if (p.registeredAtUtc) {
+          Registered {{ p.registeredAtUtc | localTime }}.
+        }
+      </p>
+    }
+
+    <h2>What to do next</h2>
+    <ul>
+      <li>Ask your pod lead or manager to request access for you.</li>
+      @if (auth.profile()?.windowsAccount; as account) {
+        <li>
+          Give the administrator your Windows account name:
+          <span class="mf-account">{{ account }}</span>
+          <mf-copy-button [text]="account" label="Windows account name" [showText]="true" />
+        </li>
+      }
+      <li>
+        Already granted?
+        <p-button
+          label="Check again"
+          size="small"
+          [outlined]="true"
+          [loading]="checking()"
+          (onClick)="checkAgain()"
+        />
+      </li>
+    </ul>
+    <p class="mf-status" role="status" aria-live="polite">{{ message() }}</p>
+  }
+
+  @if (helpContact) {
+    <p class="mf-help">Need help? Contact: {{ helpContact }}</p>
+  }
+</main>

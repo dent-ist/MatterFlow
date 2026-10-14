@@ -1,31 +1,17 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { Toast } from 'primeng/toast';
+import { DevAuthBanner } from './shared/layout/dev-auth-banner';
 
+/** Root: dev-auth banner (stub provider only), routed content, global toast host. */
 @Component({
   selector: 'mf-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, Toast, DevAuthBanner],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <header class="mf-app-header">
-      <h1>MatterFlow</h1>
-    </header>
-    <main class="mf-app-main">
-      <router-outlet />
-    </main>
-  `,
-  styles: `
-    .mf-app-header {
-      background: var(--mf-surface);
-      border-bottom: 1px solid var(--mf-border);
-      padding: 0.75rem 1.5rem;
-    }
-    .mf-app-header h1 {
-      margin: 0;
-      font-size: var(--mf-fs-h2);
-    }
-    .mf-app-main {
-      padding: 1.5rem;
-    }
+    <mf-dev-auth-banner />
+    <router-outlet />
+    <p-toast position="top-right" />
   `,
 })
 export class App {}

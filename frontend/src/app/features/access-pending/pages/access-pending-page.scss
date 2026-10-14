@@ -1,0 +1,46 @@
+.mf-pending {
+  max-width: 640px;
+  margin: var(--mf-s7) auto;
+  padding: var(--mf-s5);
+  background: var(--mf-surface);
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius-lg);
+  box-shadow: var(--mf-shadow-1);
+}
+
+.mf-brand {
+  margin: 0 0 var(--mf-s4);
+  font-size: var(--mf-fs-h3);
+  font-weight: 600;
+  color: var(--mf-primary);
+}
+
+h1 {
+  margin: 0 0 var(--mf-s3);
+  font-size: var(--mf-fs-h1);
+
+  &:focus {
+    outline: none;
+  }
+}
+
+h2 {
+  font-size: var(--mf-fs-lg);
+}
+
+li {
+  margin-bottom: var(--mf-s2);
+}
+
+.mf-account {
+  font-family: var(--mf-font-mono);
+}
+
+.mf-status {
+  min-height: 1.5em;
+  color: var(--mf-text-muted);
+}
+
+.mf-help {
+  color: var(--mf-text-muted);
+}
