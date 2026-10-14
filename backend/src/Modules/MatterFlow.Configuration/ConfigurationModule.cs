@@ -1,3 +1,5 @@
+using MatterFlow.Configuration.Application.Forms;
+using MatterFlow.Configuration.Contracts.Forms;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MatterFlow.Configuration;
@@ -9,6 +11,15 @@ public static class ConfigurationModule
     public static IServiceCollection AddConfigurationModule(this IServiceCollection services)
     {
         services.AddControllers().AddApplicationPart(typeof(ConfigurationModule).Assembly);
+
+        // Forms (architecture 7). Compiled schemas of immutable versions are cached for the life of the process.
+        services.AddSingleton<FormSchemaCache>();
+        services.AddScoped<FormSchemaLoader>();
+        services.AddScoped<FormDefinitionResolver>();
+        services.AddScoped<IFormDefinitionResolver>(sp => sp.GetRequiredService<FormDefinitionResolver>());
+        services.AddScoped<IFormSubmissionValidator, FormSubmissionValidator>();
+        services.AddScoped<IFormValueStore, FormValueStore>();
+        services.AddScoped<FormAdminService>();
         return services;
     }
 }
