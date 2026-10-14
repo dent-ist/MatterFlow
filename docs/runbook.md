@@ -25,7 +25,8 @@ secret lives in the repository.
 | Key | Purpose |
 |---|---|
 | `ConnectionStrings:MatterFlow` | Application connection (DML + EXEC, no DDL; audit table INSERT/SELECT only). Example: `Server=SQLHOST;Database=MatterFlow;Trusted_Connection=True;TrustServerCertificate=True` |
-| `ConnectionStrings:Migrations` | Connection used by the schema runner (needs DDL). Falls back to `ConnectionStrings:Default` if unset. In small installs one login may hold both roles, but the DENY on the audit table must stay (architecture section 9). |
+| `ConnectionStrings:Migrations` | Connection used by the schema runner (needs DDL; a member of the `mf_migrator` role). Falls back to `ConnectionStrings:Default` if unset (a warning is logged). Use a different login from `ConnectionStrings:MatterFlow`: the application identity must be DML-only so the audit table stays append-only (architecture section 9, security review SEC-04). |
+| `Security:AllowPrivilegedDatabaseIdentity` | Default `false`. In `Production` the API refuses to start when its own database identity can UPDATE, DELETE or ALTER `dbo.AuditEvent` (for example `sa`, `db_owner`). Set `true` only as a documented, temporary exception. |
 | `Bootstrap:SystemAdmins` | List of accounts that become System Admin at their first sign-in. Set to `["ke\\kekim"]` (domain `KE`, SAM `kekim`; case-insensitive). As an environment variable: `Bootstrap__SystemAdmins__0=ke\kekim`. |
 | `ActiveDirectory:LookupEnabled` | Optional display-name/email lookup at first login. **Off by default.** It reads AD with the web app's own identity, so enable it only after IT confirms that identity can read AD. When off or on any failure the display name falls back to `KE\sam` and an admin can edit name and email. |
 | `Firm:TimeZoneId` | Default time zone, `America/New_York` (Eastern). Used when a browser does not send a valid `X-Time-Zone` header. Timestamps are always stored in UTC; users see their own local time (addendum M). |
@@ -40,8 +41,18 @@ Set `ASPNETCORE_ENVIRONMENT=Production`.
 - **Migrations run at startup**, before the host listens: the app takes an application lock, applies pending `db/scripts/NN-*.sql`
   scripts in order (each in one transaction), verifies checksums of applied scripts and records them in `dbo.SchemaMigration`.
   Any failure aborts the start (process exits non-zero, readiness never healthy). Details: architecture section 4.3.
-- The database itself must exist and be empty or already managed by this runner. Create it once: `CREATE DATABASE MatterFlow;`
-  and grant the app-pool identity access (a login mapped to `mf_app`, plus the migrator role used for `ConnectionStrings:Migrations`).
+- The database itself must exist and be empty or already managed by this runner. Create it once: `CREATE DATABASE MatterFlow;`.
+  Script `13-security-hardening.sql` creates the database roles `mf_app` (DML + EXECUTE, no DDL, audit table INSERT/SELECT only) and
+  `mf_migrator` (DDL + DML, audit rows still append-only). After the first start the DBA maps the logins, once:
+  `CREATE USER [DOMAIN\\app-pool-gmsa$] FOR LOGIN [DOMAIN\\app-pool-gmsa$]; ALTER ROLE mf_app ADD MEMBER [DOMAIN\\app-pool-gmsa$];`
+  and, for the separate migration login, `ALTER ROLE mf_migrator ADD MEMBER [<migration user>];`. The very first start therefore needs
+  `ConnectionStrings:Migrations` (or `ConnectionStrings:Default`) with a privileged login; afterwards run the API as `mf_app` and keep the
+  privileged login for deployments only. Never make the application identity `db_owner` or `sysadmin`.
+- Audit protection in layers: `DENY UPDATE, DELETE` (and `ALTER` for `mf_app`) on `dbo.AuditEvent`; an INSTEAD OF trigger against
+  UPDATE/DELETE; a permanently empty `dbo.AuditEventGuard` table whose foreign key makes `TRUNCATE TABLE` impossible even for sysadmin; a
+  database DDL trigger against DROP/ALTER of the audit objects. A sysadmin can still disable triggers deliberately; monitor
+  `sys.triggers` (`is_disabled`) and `sys.database_permissions` on the audit table as part of the periodic access review.
+- Recommended: turn on `READ_COMMITTED_SNAPSHOT` once, as a DBA (cannot run inside a migration transaction): `ALTER DATABASE MatterFlow SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE;` (security review SEC-17; fewer reader/writer deadlocks).
 - Applied scripts are immutable (checksum guard). Fix forward by adding a new script.
 - Planned, not implemented yet: a `migrate-only` command line switch (architecture 4.3 item 9) to migrate before swapping binaries.
 - A `Success=0` row in `dbo.SchemaMigration` blocks startup until an operator repairs the database and removes the row.

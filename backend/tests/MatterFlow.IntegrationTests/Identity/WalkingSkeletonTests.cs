@@ -48,8 +48,24 @@ public sealed class WalkingSkeletonTests(SqlServerFixture sql) : IAsyncLifetime
         return (await JsonAsync(response)).GetProperty("roleId").GetInt32();
     }
 
-    private static Task<HttpResponseMessage> SetRolesAsync(HttpClient admin, int userId, params int[] roleIds) =>
-        admin.PutAsJsonAsync($"/api/v1/users/{userId}/roles", new { roleIds });
+    // Row versions are mandatory on user and role updates (SEC-09): read the current one the way the UI does, then send it back.
+    private static async Task<string> UserVersionAsync(HttpClient client, int userId)
+    {
+        var response = await client.GetAsync($"/api/v1/users/{userId}");
+        return response.IsSuccessStatusCode ? (await JsonAsync(response)).GetProperty("rowVersion").GetString()! : "unreadable";
+    }
+
+    private static async Task<string> RoleVersionAsync(HttpClient client, int roleId) =>
+        (await JsonAsync(await client.GetAsync($"/api/v1/roles/{roleId}"))).GetProperty("rowVersion").GetString()!;
+
+    private static async Task<HttpResponseMessage> SetRolesAsync(HttpClient admin, int userId, params int[] roleIds) =>
+        await admin.PutAsJsonAsync($"/api/v1/users/{userId}/roles", new { roleIds, rowVersion = await UserVersionAsync(admin, userId) });
+
+    private static async Task<HttpResponseMessage> SetActiveAsync(HttpClient admin, int userId, bool isActive) =>
+        await admin.PutAsJsonAsync($"/api/v1/users/{userId}/status", new { isActive, rowVersion = await UserVersionAsync(admin, userId) });
+
+    private static async Task<HttpResponseMessage> UpdateRoleAsync(HttpClient admin, int roleId, string name, string[] permissionCodes, string? description = null) =>
+        await admin.PutAsJsonAsync($"/api/v1/roles/{roleId}", new { name, description, permissionCodes, rowVersion = await RoleVersionAsync(admin, roleId) });
 
     private static async Task<int> SystemAdminRoleIdAsync(HttpClient admin)
     {
@@ -99,7 +115,7 @@ public sealed class WalkingSkeletonTests(SqlServerFixture sql) : IAsyncLifetime
         (await _factory.WithDbAsync(db => db.Set<AppUser>().CountAsync(u => u.DisplayName == @"KE\newhire"))).ShouldBe(1);
 
         // Deactivated user is denied everywhere, including /me.
-        (await admin.PutAsJsonAsync($"/api/v1/users/{userId}/status", new { isActive = false })).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await SetActiveAsync(admin, userId, false)).StatusCode.ShouldBe(HttpStatusCode.OK);
         foreach (var path in new[] { "/api/v1/me", "/api/v1/test/tasks" })
         {
             var denied = await newhire.GetAsync(path);
@@ -108,7 +124,7 @@ public sealed class WalkingSkeletonTests(SqlServerFixture sql) : IAsyncLifetime
         }
 
         // Reactivation restores access.
-        (await admin.PutAsJsonAsync($"/api/v1/users/{userId}/status", new { isActive = true })).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await SetActiveAsync(admin, userId, true)).StatusCode.ShouldBe(HttpStatusCode.OK);
         (await newhire.GetAsync("/api/v1/test/tasks")).StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
@@ -136,7 +152,7 @@ public sealed class WalkingSkeletonTests(SqlServerFixture sql) : IAsyncLifetime
         var adminId = await UserIdAsync(Admin);
         var systemAdminRole = await SystemAdminRoleIdAsync(admin);
 
-        var self = await admin.PutAsJsonAsync($"/api/v1/users/{adminId}/status", new { isActive = false });
+        var self = await SetActiveAsync(admin, adminId, false);
         self.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await JsonAsync(self)).GetProperty("errors").GetProperty("isActive")[0].GetProperty("code").GetString().ShouldBe("SELF_DEACTIVATION");
 
@@ -156,7 +172,7 @@ public sealed class WalkingSkeletonTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Deactivating_another_user_who_is_the_last_admin_is_refused()
+    public async Task Non_admin_user_manager_cannot_deactivate_system_admins()
     {
         // KE\second is the only System Admin besides the actor; the actor then loses the role so second is last.
         var admin = As(Admin);
@@ -164,17 +180,21 @@ public sealed class WalkingSkeletonTests(SqlServerFixture sql) : IAsyncLifetime
         var otherId = await UserIdAsync(@"KE\second");
         (await SetRolesAsync(admin, otherId, systemAdminRole)).StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        // A User.Manage holder who is not an admin tries to deactivate the last admins one by one.
+        // A User.Manage holder who is not an admin cannot deactivate System Admins at all (SEC-01); the last-admin guard is exercised by
+        // IdentityPrivilegeTests (concurrent pairs) and by the role-revocation test above.
         var managerRole = await CreateRoleAsync(admin, "User Manager", "User.View", "User.Manage");
         var managerId = await UserIdAsync(@"KE\manager");
         (await SetRolesAsync(admin, managerId, managerRole)).StatusCode.ShouldBe(HttpStatusCode.OK);
         var manager = As(@"KE\manager");
 
         var adminId = await UserIdAsync(Admin);
-        (await manager.PutAsJsonAsync($"/api/v1/users/{adminId}/status", new { isActive = false })).StatusCode.ShouldBe(HttpStatusCode.OK);
-        var last = await manager.PutAsJsonAsync($"/api/v1/users/{otherId}/status", new { isActive = false });
-        last.StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        Code(await JsonAsync(last)).ShouldBe("LAST_ADMIN");
+        (await SetActiveAsync(manager, adminId, false)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await SetActiveAsync(manager, otherId, false)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+
+        // An admin deactivating the other admin is fine while one remains; the survivor can then not be removed by anyone but themselves.
+        (await SetActiveAsync(admin, otherId, false)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        var self = await SetActiveAsync(admin, adminId, false);
+        self.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
     [Fact]
@@ -186,7 +206,7 @@ public sealed class WalkingSkeletonTests(SqlServerFixture sql) : IAsyncLifetime
         var detail = await JsonAsync(await admin.GetAsync($"/api/v1/roles/{systemAdminRole}"));
         detail.GetProperty("permissionCodes").GetArrayLength().ShouldBeGreaterThan(20);
 
-        var edit = await admin.PutAsJsonAsync($"/api/v1/roles/{systemAdminRole}", new { name = "Boss", permissionCodes = new[] { "Task.View" } });
+        var edit = await UpdateRoleAsync(admin, systemAdminRole, "Boss", ["Task.View"]);
         edit.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         Code(await JsonAsync(edit)).ShouldBe("IMMUTABLE_FIELD");
         (await admin.DeleteAsync($"/api/v1/roles/{systemAdminRole}")).StatusCode.ShouldBe(HttpStatusCode.Conflict);
@@ -196,10 +216,10 @@ public sealed class WalkingSkeletonTests(SqlServerFixture sql) : IAsyncLifetime
         duplicate.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         Code(await JsonAsync(duplicate)).ShouldBe("DUPLICATE_NAME");
 
-        var unknown = await admin.PutAsJsonAsync($"/api/v1/roles/{roleId}", new { name = "Reviewer", permissionCodes = new[] { "Nope.Nope" } });
+        var unknown = await UpdateRoleAsync(admin, roleId, "Reviewer", ["Nope.Nope"]);
         unknown.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
 
-        var updated = await admin.PutAsJsonAsync($"/api/v1/roles/{roleId}", new { name = "Reviewer 2", description = "d", permissionCodes = new[] { "Task.View", "Task.Comment" } });
+        var updated = await UpdateRoleAsync(admin, roleId, "Reviewer 2", ["Task.View", "Task.Comment"], "d");
         updated.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await JsonAsync(updated)).GetProperty("permissionCodes").GetArrayLength().ShouldBe(2);
 
@@ -227,13 +247,13 @@ public sealed class WalkingSkeletonTests(SqlServerFixture sql) : IAsyncLifetime
         var clerk = As(@"KE\clerk");
         (await clerk.GetAsync("/api/v1/test/clients")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
 
-        (await admin.PutAsJsonAsync($"/api/v1/roles/{roleId}", new { name = "Clerk", permissionCodes = new[] { "Task.View", "Client.View" } })).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await UpdateRoleAsync(admin, roleId, "Clerk", ["Task.View", "Client.View"])).StatusCode.ShouldBe(HttpStatusCode.OK);
         (await clerk.GetAsync("/api/v1/test/clients")).StatusCode.ShouldBe(HttpStatusCode.OK);
 
         // Director holds User.View but not User.Manage / Role.Manage.
         var director = As(@"KE\director");
         (await director.GetAsync("/api/v1/users")).StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await director.PutAsJsonAsync($"/api/v1/users/{userId}/roles", new { roleIds = Array.Empty<int>() })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await director.PutAsJsonAsync($"/api/v1/users/{userId}/roles", new { roleIds = Array.Empty<int>(), rowVersion = await UserVersionAsync(director, userId) })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await director.PostAsJsonAsync("/api/v1/roles", new { name = "X", permissionCodes = Array.Empty<string>() })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 

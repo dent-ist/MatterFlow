@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using MatterFlow.Api;
 using MatterFlow.Api.Http;
 using MatterFlow.Api.OpenApi;
+using MatterFlow.Api.Security;
 using MatterFlow.Data.SchemaMigrations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -64,6 +65,10 @@ if (System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name != "GetDocumen
     // Startup seeds (permission catalog, starter roles, dev users) need the migrated schema (architecture 4.3, 4.6).
     if (app.Services.GetRequiredService<MigrationsOptions>().Enabled)
         await app.Services.RunModuleSeedsAsync();
+
+    // The API's own database identity must not be able to rewrite the audit trail (security review SEC-04).
+    if (app.Services.GetRequiredService<MigrationsOptions>().Enabled)
+        await AuditStoreGuard.VerifyAsync(app.Services);
 }
 
 app.UseExceptionHandler();
