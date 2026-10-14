@@ -134,14 +134,17 @@
                   ></textarea>
                 }
                 @case ('NUMBER') {
-                  <p-inputnumber
-                    [inputId]="row.id"
-                    [useGrouping]="false"
-                    [maxFractionDigits]="10"
-                    [invalid]="!!row.error"
+                  <input
+                    pInputText
+                    type="text"
+                    inputmode="decimal"
+                    autocomplete="off"
+                    [id]="row.id"
                     [placeholder]="row.field.placeholder ?? ''"
-                    [ngModel]="row.model"
-                    (ngModelChange)="setValue(row.field, $event)"
+                    [attr.aria-invalid]="row.error ? 'true' : null"
+                    [attr.aria-describedby]="describedBy(row)"
+                    [value]="numberText(row)"
+                    (input)="setNumber(row.field, $any($event.target).value)"
                   />
                 }
                 @case ('SELECT') {

@@ -26,6 +26,8 @@ import {
   DefinitionErrorCode,
   EvaluationMode,
   FormDefinition,
+  FormError,
+  FormErrorCode,
   FormEvaluation,
   FormField,
 } from '../rules/types';
@@ -158,6 +160,11 @@ export class DynamicForm {
 
   /** What the user has entered, including values of currently hidden fields. */
   private readonly draft = linkedSignal<Record<string, unknown>>(() => ({ ...this.values() }));
+  /** Text typed into NUMBER controls that is not a number; kept so the user sees it and the form can refuse it. */
+  private readonly badNumbers = linkedSignal<Record<string, string>>(() => {
+    this.values();
+    return {};
+  });
   private readonly touched = signal<ReadonlySet<string>>(new Set());
   private readonly submitted = signal(false);
 
@@ -168,7 +175,14 @@ export class DynamicForm {
   /** Latest evaluation (visibility, requiredness, options, errors, normalized values). */
   readonly evaluation = computed<FormEvaluation>(() => {
     if (this.definitionErrors().length) return EMPTY_EVALUATION;
-    return this.evaluate(this.draft());
+    const ev = this.evaluate(this.draft());
+    const bad = this.badNumbers();
+    const extra: FormError[] = this.definition()
+      .fields.filter((f) => f.control === 'NUMBER' && ev.visible[f.key] && f.key in bad)
+      .map((f) => ({ fieldKey: f.key, code: 'INVALID_TYPE' as const }));
+    if (!extra.length) return ev;
+    const keys = new Set(extra.map((e) => e.fieldKey));
+    return { ...ev, errors: [...ev.errors.filter((e) => !keys.has(e.fieldKey)), ...extra] };
   });
 
   protected readonly resolvedAssetPicker = computed(() => this.assetPicker() ?? this.assetToken);
@@ -207,7 +221,7 @@ export class DynamicForm {
         error:
           !readOnly && isInput
             ? (serverError?.message ??
-              (showLocal && local ? validationMessage(field, local.code) : null))
+              (showLocal && local ? this.messageFor(field, local.code) : null))
             : null,
       });
     }
@@ -254,6 +268,33 @@ export class DynamicForm {
     const ev = this.evaluation();
     this.valuesChange.emit({ ...ev.normalized });
     this.evaluationChange.emit(ev);
+  }
+
+  /** What a NUMBER control shows: the rejected text while it is invalid, else the stored number. */
+  protected numberText(row: FieldRow): string {
+    const bad = this.badNumbers()[row.field.key];
+    if (bad !== undefined) return bad;
+    return typeof row.model === 'number' ? String(row.model) : '';
+  }
+
+  /** Typed text of a NUMBER control: a plain decimal is stored; anything else is refused with an inline error. */
+  protected setNumber(field: FormField, text: string): void {
+    const trimmed = text.trim();
+    const isNumber = /^[+-]?(\d+\.?\d*|\.\d+)$/.test(trimmed);
+    this.badNumbers.update((b) => {
+      const next = { ...b };
+      if (trimmed === '' || isNumber) delete next[field.key];
+      else next[field.key] = text;
+      return next;
+    });
+    this.setValue(field, isNumber ? Number(trimmed) : null);
+  }
+
+  private messageFor(field: FormField, code: FormErrorCode): string {
+    if (field.control === 'NUMBER' && code === 'INVALID_TYPE') {
+      return 'Enter a number, for example 250.5';
+    }
+    return validationMessage(field, code);
   }
 
   protected markTouched(key: string): void {

@@ -16,3 +16,11 @@
   color: var(--mf-danger);
   font-size: var(--mf-fs-xs);
 }
+
+.actions {
+  white-space: nowrap;
+
+  > * + * {
+    margin-left: var(--mf-s3);
+  }
+}
