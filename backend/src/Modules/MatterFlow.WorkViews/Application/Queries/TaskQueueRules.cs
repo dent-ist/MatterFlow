@@ -20,6 +20,9 @@ public sealed record QueueClock(DateTime NowUtc, DateOnly Today, string ZoneId, 
 
     /// <summary>The instant the given local calendar day starts in the viewer's zone.</summary>
     public DateTime StartOfDayUtc(DateOnly date) => LocalToUtc(date.ToDateTime(TimeOnly.MinValue));
+
+    /// <summary>The instant after the given local calendar day ends (exclusive upper bound); the last representable day gets the largest instant instead of overflowing (SEC2-09).</summary>
+    public DateTime EndOfDayUtc(DateOnly date) => date == DateOnly.MaxValue ? DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc) : StartOfDayUtc(date.AddDays(1));
 }
 
 /// <summary>

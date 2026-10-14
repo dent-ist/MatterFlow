@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using MatterFlow.Configuration.Domain;
+using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
 using MatterFlow.Organization.Domain;
 using MatterFlow.SharedKernel.Identity;
@@ -18,7 +19,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// block and two small lists), never a read per row. It reuses <see cref="TaskQueueRules"/> so every number agrees with the Task Queue the user lands
 /// on, and each number carries the Task Queue query that lists exactly the counted Tasks. Phase 1 has no per-record visibility (addendum E).
 /// </summary>
-public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser)
+public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, IPermissionChecker permissions)
 {
     public async Task<Result<DashboardSummary>> GetAsync(DashboardQuery query, CancellationToken ct)
     {
@@ -38,8 +39,11 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         Expression<Func<WorkTask, bool>> dueSoon = t => t.DueDate != null && t.DueDate <= dueSoonDay;
         var openDueSoon = open.Where(dueSoon).Where(Not(overdue));
 
+        // Department figures need Dashboard.ViewDepartment; without it the caller gets only the personal block and empty department blocks (SEC2-05).
+        var department = permissions.Has(Permissions.Dashboard.ViewDepartment);
+
         // Headline counts: one statement with a scalar subquery per number.
-        var head = await tasks.Select(_ => new
+        var head = !department ? null : await tasks.Select(_ => new
         {
             Open = open.Count(),
             Unassigned = open.Count(t => t.AssignedUserId == null),
@@ -60,12 +64,13 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             Created = tasks.Count(t => t.CreatedByUserId == me && t.CreatedAtUtc >= fromUtc),
         }).FirstOrDefaultAsync(ct);
 
-        var byStatus = await open.GroupBy(t => t.Status).Select(g => new { Status = g.Key, Count = g.Count() }).ToListAsync(ct);
-        var byPriority = await open.GroupBy(t => t.PriorityId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct);
-        var byPod = await open.GroupBy(t => t.AssignedPodId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct);
-        var byType = await open.GroupBy(t => t.TaskTypeId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct);
+        var departmentOpen = department ? open : open.Where(_ => false);
+        var byStatus = await departmentOpen.GroupBy(t => t.Status).Select(g => new { Status = g.Key, Count = g.Count() }).ToListAsync(ct);
+        var byPriority = await departmentOpen.GroupBy(t => t.PriorityId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct);
+        var byPod = await departmentOpen.GroupBy(t => t.AssignedPodId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct);
+        var byType = await departmentOpen.GroupBy(t => t.TaskTypeId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct);
 
-        var aging = await AgingAsync(open, queueClock, ct);
+        var aging = await AgingAsync(departmentOpen, queueClock, ct);
 
         var statusLabels = await db.Set<TaskStatusLabel>().AsNoTracking().ToDictionaryAsync(l => l.StatusCode, l => l.DisplayLabel, ct);
         var priorityRows = await db.Set<Priority>().AsNoTracking().OrderBy(p => p.SortOrder).Select(p => new { p.Id, p.Label, p.IsActive }).ToListAsync(ct);
@@ -110,8 +115,10 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             DashboardRules.TopN,
             "Other Task Types");
 
-        var recentlyCreated = await RecentAsync(tasks, null, t => t.CreatedAtUtc, t => t.CreatedAtUtc, statusLabels, ct);
-        var recentlyCompleted = await RecentAsync(tasks, t => t.Status == TaskStatusCode.Completed, t => t.StatusChangedAtUtc, t => t.CompletedAtUtc ?? t.StatusChangedAtUtc, statusLabels, ct);
+        IReadOnlyList<DashboardRecentTask> recentlyCreated = department ? await RecentAsync(tasks, null, t => t.CreatedAtUtc, t => t.CreatedAtUtc, statusLabels, ct) : [];
+        IReadOnlyList<DashboardRecentTask> recentlyCompleted = department
+            ? await RecentAsync(tasks, t => t.Status == TaskStatusCode.Completed, t => t.StatusChangedAtUtc, t => t.CompletedAtUtc ?? t.StatusChangedAtUtc, statusLabels, ct)
+            : [];
 
         head ??= new { Open = 0, Unassigned = 0, Overdue = 0, OnHold = 0, DueSoon = 0, AsapOpen = 0, Completed = 0, Created = 0 };
         mine ??= new { Open = 0, Overdue = 0, DueSoon = 0, Created = 0 };

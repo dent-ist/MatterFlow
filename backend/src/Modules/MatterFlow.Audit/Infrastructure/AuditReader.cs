@@ -1,3 +1,4 @@
+using MatterFlow.Audit.Application;
 using MatterFlow.Audit.Contracts;
 using MatterFlow.Audit.Domain;
 using MatterFlow.SharedKernel.Audit;
@@ -33,8 +34,11 @@ internal sealed class AuditReader(DbContext db) : IAuditReader
         return new AuditRecordPage(items, hasMore ? items[^1].AuditEventId : null);
     }
 
-    private static AuditRecord ToRecord(AuditEvent e) =>
-        new(
+    /// <summary>Values and summary pass the secret guard like the audit browser's (SEC2-06): a token or password never leaves through the activity feed.</summary>
+    private static AuditRecord ToRecord(AuditEvent e)
+    {
+        var sensitive = AuditValueGuard.IsSensitiveKey(e.FieldKey);
+        return new(
             e.Id,
             DateTime.SpecifyKind(e.OccurredAtUtc, DateTimeKind.Utc),
             e.ActorUserId,
@@ -44,7 +48,8 @@ internal sealed class AuditReader(DbContext db) : IAuditReader
             e.MatterId,
             e.TaskId,
             e.FieldKey,
-            Redaction.Truncate(e.OldValue, out _),
-            Redaction.Truncate(e.NewValue, out _),
-            e.Summary);
+            AuditValueGuard.Guard(e.OldValue, sensitive, out _, out _),
+            AuditValueGuard.Guard(e.NewValue, sensitive, out _, out _),
+            AuditValueGuard.LooksLikeSecret(e.Summary) ? null : e.Summary);
+    }
 }

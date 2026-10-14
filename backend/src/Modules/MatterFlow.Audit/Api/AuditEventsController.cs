@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using MatterFlow.Audit.Application;
 using MatterFlow.Audit.Domain;
 using MatterFlow.SharedKernel.Audit;
 using MatterFlow.SharedKernel.Authorization;
@@ -72,8 +73,9 @@ public sealed record AuditEventDto(
 {
     internal static AuditEventDto From(AuditEvent e)
     {
-        var oldValue = Redaction.Truncate(e.OldValue, out var oldTruncated);
-        var newValue = Redaction.Truncate(e.NewValue, out var newTruncated);
+        var sensitive = AuditValueGuard.IsSensitiveKey(e.FieldKey);
+        var oldValue = AuditValueGuard.Guard(e.OldValue, sensitive, out var oldTruncated, out _);
+        var newValue = AuditValueGuard.Guard(e.NewValue, sensitive, out var newTruncated, out _);
         return new AuditEventDto(
             e.Id,
             DateTime.SpecifyKind(e.OccurredAtUtc, DateTimeKind.Utc),
@@ -88,7 +90,7 @@ public sealed record AuditEventDto(
             newValue,
             oldTruncated,
             newTruncated,
-            e.Summary,
+            AuditValueGuard.LooksLikeSecret(e.Summary) ? null : e.Summary,
             e.CorrelationId);
     }
 }

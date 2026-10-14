@@ -267,8 +267,8 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions)
         return
         [
             .. rows.Select(r => new SearchHit(
-                SearchTypes.Project, r.Item.Id, null, r.Item.Name, $"{r.Item.MatterRef} {r.Item.MatterName}", $"/projects/{r.Item.Id}",
-                r.Item.IsSensitive, r.Item.MatterRef, r.Item.MatterName, r.Item.IsActive, null)),
+                SearchTypes.Project, r.Item.Id, null, r.Item.Name, ShowMatter ? $"{r.Item.MatterRef} {r.Item.MatterName}" : null, $"/projects/{r.Item.Id}",
+                r.Item.IsSensitive, ShowMatter ? r.Item.MatterRef : null, ShowMatter ? r.Item.MatterName : null, r.Item.IsActive, null)),
         ];
     }
 
@@ -329,7 +329,7 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions)
         [
             .. rows.Select(r => new SearchHit(
                 SearchTypes.Task, r.Item.Id, r.Item.Number, r.Item.Title, r.Item.Requestor, $"/tasks/{r.Item.Id}",
-                r.Item.IsSensitive, r.Item.MatterRef, r.Item.MatterName, true, r.Item.Status.ToCode())),
+                r.Item.IsSensitive, ShowMatter ? r.Item.MatterRef : null, ShowMatter ? r.Item.MatterName : null, true, r.Item.Status.ToCode())),
         ];
     }
 
@@ -380,9 +380,12 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions)
         [
             .. rows.Select(r => new SearchHit(
                 SearchTypes.Asset, r.Item.Id, r.Item.ExternalReference, r.Item.Name, r.Item.TypeName, $"/assets/{r.Item.Id}",
-                r.Item.IsSensitive, r.Item.MatterRef, r.Item.MatterName, r.Item.IsActive, null)),
+                r.Item.IsSensitive, ShowMatter ? r.Item.MatterRef : null, ShowMatter ? r.Item.MatterName : null, r.Item.IsActive, null)),
         ];
     }
+
+    /// <summary>Matter reference and name travel with Project, Task and Asset hits only for callers who may view Matters (SEC2-11).</summary>
+    private bool ShowMatter => permissions.Has(Permissions.Matter.View);
 
     /// <summary>A combined number (<c>343-12</c>, <c>343-</c>) also finds the records that belong to that Matter (SCN-020): they rank just below a name match at the start.</summary>
     private static IEnumerable<Tier<T>> RelatedTiers<T>(System.Linq.Expressions.Expression<Func<T, string?>> matterRef, SearchTerm term)

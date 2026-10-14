@@ -123,7 +123,7 @@ public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display
         if (to is { } t)
         {
             // Inclusive day in the viewer's zone: everything before local midnight of the next day.
-            var beforeUtc = timeZone.ToUtc(t.AddDays(1).ToDateTime(TimeOnly.MinValue));
+            var beforeUtc = t == DateOnly.MaxValue ? DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc) : timeZone.ToUtc(t.AddDays(1).ToDateTime(TimeOnly.MinValue));
             query = query.Where(e => e.OccurredAtUtc < beforeUtc);
         }
 

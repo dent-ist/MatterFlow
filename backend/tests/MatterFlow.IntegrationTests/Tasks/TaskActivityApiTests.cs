@@ -142,6 +142,29 @@ public sealed class TaskActivityApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Sec2_06_field_change_sentences_carry_no_values_without_audit_view()
+    {
+        var task = await _h.CreateTaskAsync(_w, extra: new() { ["requestorEmail"] = "old.person@example.com" });
+        await OkAsync(await _h.Admin.PutAsJsonAsync($"/api/v1/tasks/{TaskId(task)}", new
+        {
+            rowVersion = RowVersion(task),
+            title = task.GetProperty("title").GetString(),
+            requestorName = "Pat Partner",
+            requestorEmail = "new.person@example.com",
+        }));
+        var viewer = await _h.UserWithAsync(@"KEiewer", "Task.View");
+
+        var page = await OkAsync(await viewer.GetAsync(Url(TaskId(task))));
+        var sentences = Summaries(page);
+        sentences.ShouldContain("Requestor email changed");
+        sentences.ShouldNotContain(s => s.Contains("old.person", StringComparison.Ordinal) || s.Contains("new.person", StringComparison.Ordinal));
+        page.GetRawText().ShouldNotContain("old.person");
+
+        // With Audit.View (the administrator) the sentence names both values.
+        Summaries(await OkAsync(await _h.Admin.GetAsync(Url(TaskId(task))))).ShouldContain(s => s.Contains("old.person@example.com", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Field_edits_and_asset_links_appear_and_task_updated_bookkeeping_does_not()
     {
         var task = await _h.CreateTaskAsync(_w);

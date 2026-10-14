@@ -36,6 +36,10 @@ public sealed class UsersLookupApiTests(SqlServerFixture sql) : IAsyncLifetime
     {
         await ProvisionAsync(@"KE\tariq");
         var leaver = await ProvisionAsync(@"KE\leaver");
+        // Only users who hold a role are offered (Access Pending users cannot open Tasks; SEC2-14).
+        var assignable = await _factory.CreateRoleAsync("Assignable", "Task.View");
+        await _factory.GrantRoleAsync(@"KE\tariq", assignable);
+        await _factory.GrantRoleAsync(@"KE\leaver", assignable);
         await _factory.WithDbAsync(async db =>
         {
             (await db.Set<AppUser>().SingleAsync(u => u.Id == leaver)).IsActive = false;
@@ -49,6 +53,20 @@ public sealed class UsersLookupApiTests(SqlServerFixture sql) : IAsyncLifetime
 
         (await JsonAsync(await As(@"KE\scientist").GetAsync("/api/v1/users/lookup")))
             .EnumerateArray().Select(u => u.GetProperty("userId").GetInt32()).ShouldNotContain(leaver);
+    }
+
+    [Fact]
+    public async Task Sec2_14_access_pending_users_are_not_offered_as_assignees()
+    {
+        var pending = await ProvisionAsync(@"KE\pendingperson");
+        var withRole = await ProvisionAsync(@"KE\roleperson");
+        var roleId = await _factory.CreateRoleAsync("Lookup role", "Task.View");
+        await _factory.GrantRoleAsync(@"KE\roleperson", roleId);
+
+        var ids = (await JsonAsync(await As(@"KE\scientist").GetAsync("/api/v1/users/lookup?limit=50")))
+            .EnumerateArray().Select(u => u.GetProperty("userId").GetInt32()).ToArray();
+        ids.ShouldContain(withRole);
+        ids.ShouldNotContain(pending);
     }
 
     [Fact]
