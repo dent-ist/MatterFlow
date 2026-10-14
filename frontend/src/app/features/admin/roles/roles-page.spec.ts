@@ -140,16 +140,28 @@ describe('RolesPage', () => {
     expect(q('[data-name-error]').textContent).toContain('already exists');
   });
 
-  it('blocks deleting a role in use and deletes an unused one', async () => {
+  async function confirmDelete(): Promise<void> {
+    await press('Delete role'); // opens the confirmation
+    const confirm = Array.from(document.body.querySelectorAll<HTMLButtonElement>('.p-dialog button')).find(
+      (b) => b.textContent!.trim() === 'Delete role',
+    )!;
+    confirm.click();
+    await settle();
+  }
+
+  it('asks for confirmation, blocks deleting a role in use and deletes an unused one', async () => {
     q('[data-role="5"]').click(); // Data Technician has a member
     await settle();
     await press('Delete role');
-    expect(q('[data-error]').textContent).toContain('Remove them first');
+    expect(api.roles.some((r) => r.roleId === 5)).toBe(true);
+    expect(document.body.querySelector('.p-dialog')?.textContent).toContain('Delete role?');
+    await confirmDelete();
+    expect(q('[data-error]').textContent).toMatch(/has this role\. Remove them from it before deleting/);
     expect(api.roles.some((r) => r.roleId === 5)).toBe(true);
 
     q('[data-role="4"]').click(); // Pod Lead has no members
     await settle();
-    await press('Delete role');
+    await confirmDelete();
     expect(api.roles.some((r) => r.roleId === 4)).toBe(false);
   });
 });

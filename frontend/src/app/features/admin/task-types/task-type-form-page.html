@@ -173,10 +173,10 @@
         }
         <p>
           @if (published(); as p) {
-            Existing tasks keep form version {{ p.versionNo }}. New tasks will use version
-            {{ current()?.versionNo }}.
+            Existing {{ recordNoun() }} keep form version {{ p.versionNo }}. New
+            {{ recordNoun() }} will use version {{ current()?.versionNo }}.
           } @else {
-            New tasks will use version {{ current()?.versionNo }}.
+            New {{ recordNoun() }} will use version {{ current()?.versionNo }}.
           }
           Published versions can't be edited.
         </p>
@@ -199,7 +199,7 @@
     }
     @case ('retire') {
       <div class="ttf__dialog" data-dialog="retire">
-        <p>New tasks can't use a retired version. Existing tasks keep it.</p>
+        <p>New {{ recordNoun() }} can't use a retired version. Existing {{ recordNoun() }} keep it.</p>
         <div class="ttf__dialog-actions">
           <p-button label="Cancel" severity="secondary" (onClick)="closeDialog()" />
           <p-button label="Retire version" severity="danger" (onClick)="confirmRetire()" />

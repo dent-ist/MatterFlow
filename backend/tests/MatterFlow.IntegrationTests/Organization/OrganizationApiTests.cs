@@ -199,6 +199,23 @@ public sealed class OrganizationApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Matter_search_by_a_partial_pair_finds_padded_numbers_as_the_user_types()
+    {
+        var clientId = (await CreateClientAsync("343")).GetProperty("clientId").GetInt32();
+        await CreateMatterAsync(clientId, "12");
+        var big = (await CreateMatterAsync(clientId, "99999")).GetProperty("matterId").GetInt32();
+        var small = (await CreateMatterAsync(clientId, "99")).GetProperty("matterId").GetInt32();
+
+        async Task<int[]> Search(string q) =>
+            [.. (await OkAsync(await Admin().GetAsync($"/api/v1/matters?q={Uri.EscapeDataString(q)}"))).GetProperty("items").EnumerateArray().Select(i => i.GetProperty("matterId").GetInt32()).Order()];
+
+        (await Search("343-99")).ShouldBe(new[] { small, big }.Order().ToArray()); // exact 00099 and the prefix 99xxx
+        (await Search("343-999")).ShouldBe(new[] { big });
+        (await Search("343-1")).Length.ShouldBe(1); // 00012
+        (await Search("343-13")).ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task Matter_directory_contract_resolves_matters_for_other_modules()
     {
         var client = await CreateClientAsync("343");

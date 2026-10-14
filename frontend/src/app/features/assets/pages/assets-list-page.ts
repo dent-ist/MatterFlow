@@ -24,8 +24,7 @@ import {
   isActiveParam,
   nextSort,
   parsePage,
-  parseStatus,
-} from '../../../shared/ui/list-helpers';
+  parseStatus, debounced } from '../../../shared/ui/list-helpers';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { Pager } from '../../../shared/ui/pager';
 
@@ -68,6 +67,7 @@ type LoadState = 'loading' | 'ready' | 'error';
           placeholder="Name, type or external reference"
           [value]="q() ?? ''"
           (keydown.enter)="search(searchBox.value)"
+          (input)="searchLater(searchBox.value)"
           (blur)="search(searchBox.value)"
         />
       </div>
@@ -268,6 +268,8 @@ export class AssetsListPage {
       if (id === this.requestId) this.state.set('error');
     }
   }
+
+  protected readonly searchLater = debounced((text: string) => this.search(text));
 
   protected search(text: string): void {
     const q = text.trim() || null;

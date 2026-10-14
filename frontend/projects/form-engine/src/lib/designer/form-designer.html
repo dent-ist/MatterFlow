@@ -553,7 +553,9 @@
   <section class="fd__issues" aria-labelledby="{{ uid }}-issues-h">
     <h3 class="fd__h" [id]="uid + '-issues-h'">Validation</h3>
     @if (issues().length === 0) {
-      <p class="fd__ok" data-valid>No problems found. This form can be published.</p>
+      <p class="fd__ok" data-valid>
+        No problems found.{{ readOnly() ? '' : ' This form can be published.' }}
+      </p>
     } @else {
       <p class="fd__summary">
         {{ errorCount() }} {{ errorCount() === 1 ? 'error' : 'errors' }} to fix before publishing.
@@ -561,9 +563,8 @@
       <ul class="fd__issue-list">
         @for (i of issues(); track i.id) {
           <li [class.is-warning]="i.severity === 'warning'" [attr.data-issue]="i.code">
-            <b>{{ i.severity === 'error' ? 'Error' : 'Warning' }}</b>
-            <b>{{ issueLabel(i) }}:</b>
-            {{ i.message }}
+            <b>{{ i.severity === 'error' ? 'Error' : 'Warning' }}:</b>
+            <b>{{ issueLabel(i) }}</b> - {{ i.message }}
             @if (i.fieldKey !== undefined) {
               <button type="button" class="fd__link" (click)="goTo(i)">
                 Go to <span class="fd__sr">{{ issueLabel(i) }}</span>

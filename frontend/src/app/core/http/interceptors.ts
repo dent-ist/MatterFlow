@@ -90,6 +90,7 @@ export function toastFor(err: ApiError): { summary: string; detail?: string } | 
   if (err.hasFieldErrors) return null; // forms map these back onto controls
   if (err.code === 'CONCURRENCY_CONFLICT') return null; // conflict dialog
   if (err.code === 'ACCESS_PENDING' || err.code === 'ACCOUNT_DISABLED') return null; // redirect
+  if (err.code === 'ROLE_IN_USE') return null; // the Roles page explains it inline
   const reference = err.traceId ? `Reference: ${err.traceId}` : undefined;
   if (err.isNetworkError || err.status >= 500) {
     return { summary: 'Something went wrong. Try again.', detail: reference };
@@ -101,7 +102,7 @@ export function toastFor(err: ApiError): { summary: string; detail?: string } | 
   if (err.status === 404) return { summary: "We couldn't find that." };
   return {
     summary: err.problem?.detail ?? err.problem?.title ?? 'Something went wrong. Try again.',
-    detail: reference,
+    // A 4xx explains itself; the trace reference is only useful for server faults.
   };
 }
 

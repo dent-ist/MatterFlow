@@ -51,6 +51,19 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   /** Page title and owner label; other owners (Step Library, Asset Types) reuse this page with their own wording through route `data`. */
   readonly heading = input('Task Types & Forms');
   readonly ownerLabel = input('Task Type');
+  /** What the form's records are called in copy: tasks for Task Types, assets for Asset Types, records for custom fields. */
+  protected readonly recordNoun = computed(() => {
+    switch (this.ownerLabel()) {
+      case 'Task Type':
+        return 'tasks';
+      case 'Asset Type':
+        return 'assets';
+      case 'Step':
+        return 'step runs';
+      default:
+        return 'records';
+    }
+  });
 
   private readonly api = inject(FormDesignerApi);
 
@@ -228,8 +241,13 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
       await this.refreshVersions();
       this.setCurrent(draft);
     });
-    if (ok)
-      this.notice.set(`Draft v${this.current()?.versionNo} created from the published version.`);
+    if (ok) {
+      this.notice.set(
+        this.published()
+          ? `Draft v${this.current()?.versionNo} created from the published version.`
+          : `Draft v${this.current()?.versionNo} created.`,
+      );
+    }
   }
 
   protected open(versionId: string, invoker?: HTMLElement): void {
@@ -303,8 +321,7 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
     });
     // A conflict opens its own dialog; every other outcome closes the publish dialog.
     if (this.dialog() === 'publish') this.dialog.set(null);
-    if (ok)
-      this.notice.set(`Version ${this.current()?.versionNo} is published. It can't be edited.`);
+    if (ok) this.notice.set(`Version ${this.current()?.versionNo} published.`);
     else if (this.dialog() === null) this.restoreFocus();
   }
 
@@ -334,7 +351,7 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
       await this.refreshVersions();
     });
     this.dialog.set(null);
-    if (ok) this.notice.set(`Version ${v.versionNo} is retired. New tasks can't use it.`);
+    if (ok) this.notice.set(`Version ${v.versionNo} is retired. New ${this.recordNoun()} can't use it.`);
     this.restoreFocus();
   }
 
