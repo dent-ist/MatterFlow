@@ -8,8 +8,19 @@ namespace MatterFlow.Data;
 /// assembly, discovered automatically (see <see cref="ModuleAssemblies"/>); cross-module relationships live in
 /// CrossModuleRelationships.cs. No EF migrations (ADR 003): the schema is the numbered SQL scripts.
 /// </summary>
-public class MatterFlowDbContext(DbContextOptions<MatterFlowDbContext> options) : DbContext(options)
+public class MatterFlowDbContext : DbContext
 {
+    public MatterFlowDbContext(DbContextOptions<MatterFlowDbContext> options)
+        : base(options)
+    {
+    }
+
+    /// <summary>For derived contexts (tests add throw-away entities this way) that bring their own typed options.</summary>
+    protected MatterFlowDbContext(DbContextOptions options)
+        : base(options)
+    {
+    }
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         configurationBuilder.Properties<BusinessNumber>()

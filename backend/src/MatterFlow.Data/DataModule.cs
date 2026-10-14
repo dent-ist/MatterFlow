@@ -1,3 +1,4 @@
+using MatterFlow.Audit;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
@@ -20,13 +21,19 @@ public static class DataModule
     {
         services.TryAddSingleton<IClock, SystemClock>();
         services.TryAddScoped<ICurrentUser, SystemCurrentUser>();
+        services.AddAuditServices();
         services.AddScoped<AuditColumnsInterceptor>();
+        services.AddScoped<AuditSaveChangesInterceptor>();
+        // Modules cannot reference MatterFlowDbContext (dependency rules); they inject the base DbContext, which resolves to it.
+        services.AddScoped<DbContext>(sp => sp.GetRequiredService<MatterFlowDbContext>());
         services.AddDbContext<MatterFlowDbContext>((sp, options) =>
         {
             var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString(ConnectionStringName)
                 ?? throw new InvalidOperationException($"Connection string 'ConnectionStrings:{ConnectionStringName}' is not configured.");
             options.UseSqlServer(connectionString);
-            options.AddInterceptors(sp.GetRequiredService<AuditColumnsInterceptor>());
+            options.AddInterceptors(
+                sp.GetRequiredService<AuditColumnsInterceptor>(),
+                sp.GetRequiredService<AuditSaveChangesInterceptor>());
         });
         return services;
     }

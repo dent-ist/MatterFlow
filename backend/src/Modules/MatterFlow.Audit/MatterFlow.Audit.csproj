@@ -3,4 +3,7 @@
     <ProjectReference Include="..\..\MatterFlow.SharedKernel\MatterFlow.SharedKernel.csproj" />
     <ProjectReference Include="..\MatterFlow.Audit.Contracts\MatterFlow.Audit.Contracts.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+  </ItemGroup>
 </Project>
