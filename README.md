@@ -19,6 +19,7 @@ The Task module (creation, lifecycle, queues) is being built; Outlook intake, se
 | `backend/` | .NET solution `MatterFlow.sln`: `src/MatterFlow.Api` (host), `MatterFlow.SharedKernel`, `MatterFlow.Data`, `src/Modules/*` (one project per module plus `.Contracts`), `tests/*` |
 | `frontend/` | Angular 21 workspace (`src/` app, `projects/form-engine` library) |
 | `contracts/` | Cross-stack contracts (OpenAPI, form-rule schema and vectors, permission catalog) |
+| `deploy/` | Production packaging: publish scripts, IIS `web.config`, settings template |
 | `db/scripts/` | Numbered, immutable SQL schema scripts (see its README) |
 | `docs/` | Requirements, architecture, ERD, UX spec and tokens |
 | `.github/` | GitHub Actions workflows, the shared `setup-dotnet` action, Dependabot config |
@@ -39,7 +40,7 @@ cd backend
 dotnet build                 # add -warnaserror to match CI
 dotnet test                  # everything: unit, architecture, schema and integration tests (the last two need Docker)
 dotnet test tests/MatterFlow.UnitTests   # fast, no Docker (also tests/MatterFlow.ArchitectureTests)
-dotnet run --project src/MatterFlow.Api   # http://localhost:5080, liveness at /health/live
+dotnet run --project src/MatterFlow.Api   # http://localhost:5080, liveness at /health/live, readiness at /health/ready
 dotnet format --verify-no-changes         # style check used by CI
 ```
 
@@ -136,13 +137,24 @@ falling back to `ConnectionStrings:Default`; the application uses `ConnectionStr
 | `ci.yml` | PRs and pushes to `dev` | `backend` (build with warnings as errors, OpenAPI drift, format, unit and architecture tests), `backend-integration` in parallel (SQL Server in Docker via Testcontainers: integration and schema tests), `frontend` (lint, format, Vitest, API client drift, production build). TRX results are uploaded as artifacts; NuGet packages are cached and restore retries once. |
 | `nightly.yml` | daily and manual | Full backend suite with coverage plus frontend tests and build. |
 | `codeql.yml` | push to `dev`, weekly | CodeQL for C# and JavaScript/TypeScript. |
+| `publish.yml` | push to `dev`, manual | Builds the deployable package (`deploy/publish.sh`, win-x64) and uploads it as the artifact `matterflow-publish-<sha>`. |
 | `e2e.yml` | manual | Placeholder for the Playwright suite (deferred); documents how it will run. |
 
 `.github/dependabot.yml` opens weekly grouped (minor/patch) updates for NuGet, npm and GitHub Actions.
 
 ## Deployment
 
-IIS with Windows authentication on a single origin: see `docs/runbook.md`.
+IIS with Windows authentication on a single origin: the API serves the Angular build from `wwwroot` (SPA fallback, cache headers, compression, the
+same security headers). Step by step install, upgrade, rollback, backup and the on-server checklist: `docs/runbook.md`.
+
+```bash
+deploy/publish.sh [output-dir] [runtime-identifier]   # npm ci + build, dotnet publish, copy the build into wwwroot (default win-x64); deploy/publish.ps1 on Windows
+dotnet MatterFlow.Api.dll --migrate-only              # apply schema scripts with ConnectionStrings:Migrations and exit 0/1 (no web host)
+```
+
+`deploy/` holds the package scripts, `web.config` (ASP.NET Core Module V2 in-process, Windows auth on, anonymous off, 12 MB request limit) and
+`appsettings.Production.template.json`. Probes: `/health/live` (process up) and `/health/ready` (database reachable, no pending schema script; 503 with a short
+JSON reason otherwise). The `publish` workflow uploads the package as an artifact on every push to `dev`.
 
 ## Documentation map
 
