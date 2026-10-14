@@ -3,7 +3,12 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsClient } from '../../api/generated/api-client';
 import { DOCUMENT_FIELDS, aFormVersion } from '../testing/asset-testing';
 import { ok, settle } from '../testing/org-testing';
-import { CustomFieldsEditor, CustomFieldsView, splitFormErrors } from './custom-fields';
+import {
+  CustomFieldsEditor,
+  CustomFieldsView,
+  customFieldsProblem,
+  splitFormErrors,
+} from './custom-fields';
 
 @Component({
   imports: [CustomFieldsEditor, CustomFieldsView],
@@ -49,6 +54,7 @@ describe('custom fields editor and view', () => {
     expect(el().querySelector('[data-custom-fields]')).toBeNull();
     expect(fixture.componentInstance.editor().collect()).toEqual({
       invalid: false,
+      invalidFields: [],
       values: undefined,
     });
   });
@@ -57,24 +63,56 @@ describe('custom fields editor and view', () => {
     await create(21);
     const editor = fixture.componentInstance.editor();
 
-    expect(editor.collect().invalid).toBe(true);
+    const blocked = editor.collect();
+    expect(blocked.invalid).toBe(true);
+    expect(blocked.invalidFields).toEqual(['Workspace ID']);
+    expect(customFieldsProblem(blocked)).toBe(
+      'Complete the highlighted custom fields: Workspace ID.',
+    );
 
     const input = el().querySelector<HTMLInputElement>('fieldset input[type=text]')!;
     input.value = 'WS-1';
     input.dispatchEvent(new Event('input'));
     await settle(fixture);
 
-    expect(editor.collect()).toEqual({ invalid: false, values: { workspace_id: 'WS-1' } });
+    expect(editor.collect()).toEqual({
+      invalid: false,
+      invalidFields: [],
+      values: { workspace_id: 'WS-1' },
+    });
   });
 
   it('collects a patch on edit with null for cleared known values', async () => {
     await create(21, { workspace_id: 'WS-1', notes: 'old' });
     const editor = fixture.componentInstance.editor();
+    const input = el().querySelector<HTMLInputElement>('fieldset input[type=text]')!;
+    input.value = 'WS-1';
+    input.dispatchEvent(new Event('input'));
+    await settle(fixture);
 
     const result = editor.collect({ workspace_id: 'WS-1', notes: 'old' });
 
     expect(result.invalid).toBe(false);
     expect(result.values).toMatchObject({ workspace_id: 'WS-1' });
+  });
+
+  it('does not validate or send an untouched custom-fields section of an existing record', async () => {
+    await create(21, {});
+    const editor = fixture.componentInstance.editor();
+
+    expect(editor.collect({})).toEqual({ invalid: false, invalidFields: [], values: undefined });
+    expect(el().querySelector('[aria-invalid="true"]')).toBeNull();
+
+    // Entering any value touches the section: the required fields must now be satisfied and are highlighted.
+    const notes = el().querySelector<HTMLTextAreaElement>('fieldset textarea')!;
+    notes.value = 'x';
+    notes.dispatchEvent(new Event('input'));
+    await settle(fixture);
+    const touched = editor.collect({});
+    expect(touched.invalid).toBe(true);
+    expect(touched.invalidFields).toEqual(['Workspace ID']);
+    await settle(fixture);
+    expect(el().querySelector('input[aria-invalid="true"]')).not.toBeNull();
   });
 
   it('shows stored values read-only in the view', async () => {

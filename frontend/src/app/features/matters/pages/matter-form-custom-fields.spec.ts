@@ -69,7 +69,7 @@ describe('MatterFormPage custom fields', () => {
     await submit(fixture);
 
     expect(fixture.nativeElement.querySelector('[data-summary]')?.textContent).toContain(
-      'Complete the highlighted custom fields.',
+      'Complete the highlighted custom fields: Workspace ID.',
     );
     expect(matters.createMatter).not.toHaveBeenCalled();
   });

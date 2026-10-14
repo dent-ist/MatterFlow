@@ -47,34 +47,9 @@ export class HttpWorkflowLookup extends WorkflowLookup {
   private async loadAll(): Promise<WorkflowOption[]> {
     const options: WorkflowOption[] = [];
     for (let page = 1; ; page++) {
-      const result = await firstValueFrom(this.client.listWorkflows(undefined, undefined, page, 100));
-      for (const w of result.items) {
-        options.push({
-          id: w.workflowDefinitionId,
-          name: w.name,
-          publishedVersionNo: w.publishedVersionNo,
-          isActive: w.isActive,
-        });
-      }
-      if (result.items.length === 0 || page * result.pageSize >= result.total) break;
-    }
-    return options;
-  }
-}
-
-/** Real lookup over `/api/v1/workflows` (all pages, active and inactive, each with its latest published version number). */
-@Injectable()
-export class HttpWorkflowLookup extends WorkflowLookup {
-  private readonly client = inject(WorkflowsClient);
-
-  list(): Observable<WorkflowOption[]> {
-    return from(this.loadAll());
-  }
-
-  private async loadAll(): Promise<WorkflowOption[]> {
-    const options: WorkflowOption[] = [];
-    for (let page = 1; ; page++) {
-      const result = await firstValueFrom(this.client.listWorkflows(undefined, undefined, page, 100));
+      const result = await firstValueFrom(
+        this.client.listWorkflows(undefined, undefined, page, 100),
+      );
       for (const w of result.items) {
         options.push({
           id: w.workflowDefinitionId,

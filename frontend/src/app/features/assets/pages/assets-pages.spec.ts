@@ -297,7 +297,7 @@ describe('Assets pages', () => {
       await submit();
       expect(el().querySelector('[data-summary]')!.textContent).toContain('Select a matter.');
       expect(el().querySelector('[data-summary]')!.textContent).toContain(
-        'Complete the highlighted fields.',
+        'Complete the highlighted fields: Workspace ID.',
       );
       expect(assets.createAsset).not.toHaveBeenCalled();
     });
