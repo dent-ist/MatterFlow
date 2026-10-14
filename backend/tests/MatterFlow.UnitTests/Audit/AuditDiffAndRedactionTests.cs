@@ -168,3 +168,44 @@ public class AuditEntryBufferTests
         correlation.Id.ShouldBe(second);
     }
 }
+
+public class AuditEventClippingTests
+{
+    [Fact]
+    public void Long_bounded_columns_are_cut_to_their_width_and_marked()
+    {
+        var evt = new MatterFlow.Audit.Domain.AuditEvent
+        {
+            EventType = new string('e', 100),
+            ObjectType = new string('o', 100),
+            ObjectId = new string('1', 100),
+            FieldKey = new string('f', 300),
+            Summary = "Hidden values dropped: " + string.Join(", ", Enumerable.Range(0, 200).Select(i => "a_very_long_field_key_number_" + i)),
+            OldValue = new string('x', 100_000),
+        };
+
+        evt.ClipToColumnLimits();
+
+        evt.EventType.Length.ShouldBe(64);
+        evt.ObjectType.Length.ShouldBe(40);
+        evt.ObjectId.Length.ShouldBe(40);
+        evt.FieldKey!.Length.ShouldBe(100);
+        evt.Summary!.Length.ShouldBe(500);
+        evt.Summary.ShouldEndWith("...");
+        evt.Summary.ShouldStartWith("Hidden values dropped: a_very_long");
+        evt.OldValue!.Length.ShouldBe(100_000); // NVARCHAR(MAX) is never cut
+    }
+
+    [Fact]
+    public void Values_within_the_limits_are_left_alone()
+    {
+        var evt = new MatterFlow.Audit.Domain.AuditEvent { EventType = "TASK_CREATED", ObjectType = "Task", ObjectId = "42", FieldKey = null, Summary = new string('s', 500) };
+
+        evt.ClipToColumnLimits();
+
+        evt.Summary!.Length.ShouldBe(500);
+        evt.Summary.ShouldNotEndWith("...");
+        evt.FieldKey.ShouldBeNull();
+        evt.EventType.ShouldBe("TASK_CREATED");
+    }
+}
