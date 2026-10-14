@@ -11,8 +11,10 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AssetLookupItem, AssetsClient } from '../../api/generated/api-client';
+import { ReferenceNames } from '../../core/lookups/reference-names';
 
 /**
  * Supplies the Matter whose Assets a picker offers when the host cannot pass it as an input (the form engine creates pickers
@@ -28,6 +30,8 @@ interface Choice {
   id: number;
   label: string;
   detail: string;
+  /** External reference, to tell assets with the same name apart. */
+  reference: string;
   inactive: boolean;
 }
 
@@ -35,6 +39,7 @@ const toChoice = (a: AssetLookupItem): Choice => ({
   id: a.assetId,
   label: a.displayName,
   detail: a.assetTypeName,
+  reference: a.externalReference ?? '',
   inactive: !a.isActive,
 });
 
@@ -49,13 +54,29 @@ const toChoice = (a: AssetLookupItem): Choice => ({
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (readOnly()) {
-      <span data-readonly>{{
-        chosen()?.label ?? (value() ? 'Asset ' + value() : 'Not provided')
-      }}</span>
+      @if (chosen(); as c) {
+        <span data-readonly>
+          <a class="ap__link" [href]="'/assets/' + c.id" (click)="openAsset($event, c.id)">{{
+            c.label
+          }}</a>
+          <span class="ap__detail">{{ c.detail }}</span>
+          @if (c.reference) {
+            <span class="ap__detail">{{ c.reference }}</span>
+          }
+          @if (c.inactive) {
+            <span class="ap__tag">inactive</span>
+          }
+        </span>
+      } @else {
+        <span data-readonly>{{ readOnlyFallback() }}</span>
+      }
     } @else if (chosen(); as c) {
       <div class="ap__chosen" data-chosen>
         <span>{{ c.label }}</span>
         <span class="ap__detail">{{ c.detail }}</span>
+        @if (c.reference) {
+          <span class="ap__detail">{{ c.reference }}</span>
+        }
         @if (c.inactive) {
           <span class="ap__tag">inactive</span>
         }
@@ -89,12 +110,15 @@ const toChoice = (a: AssetLookupItem): Choice => ({
           (keydown)="onKey($event)"
           (blur)="close()"
         />
+        @if (open() && !loading() && options().length === 0) {
+          <span class="ap__sr" role="status">No assets match.</span>
+        }
         @if (open()) {
           <ul class="ap__list" role="listbox" [id]="inputId() + '-list'">
             @if (loading()) {
               <li class="ap__note" role="presentation">Searching...</li>
             } @else if (options().length === 0) {
-              <li class="ap__note" role="presentation">No assets in this matter match.</li>
+              <li class="ap__note" role="presentation">No assets match.</li>
             }
             @for (o of options(); track o.id; let i = $index) {
               <li
@@ -106,6 +130,9 @@ const toChoice = (a: AssetLookupItem): Choice => ({
                 (mousedown)="$event.preventDefault(); choose(o)"
               >
                 {{ o.label }} <span class="ap__detail">{{ o.detail }}</span>
+                @if (o.reference) {
+                  <span class="ap__detail">{{ o.reference }}</span>
+                }
                 @if (o.inactive) {
                   <span class="ap__tag">inactive</span>
                 }
@@ -186,6 +213,16 @@ const toChoice = (a: AssetLookupItem): Choice => ({
       text-decoration: underline;
       cursor: pointer;
     }
+    .ap__link {
+      color: var(--mf-link);
+    }
+    .ap__sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
     .ap__tag {
       padding: 0 var(--mf-s2);
       border-radius: var(--mf-radius);
@@ -210,6 +247,8 @@ export class AssetPicker implements OnDestroy {
 
   private readonly api = inject(AssetsClient);
   private readonly context = inject(AssetPickerContext, { optional: true });
+  private readonly names = inject(ReferenceNames);
+  private readonly router = inject(Router);
 
   protected readonly effectiveMatter = computed(
     () => this.matterId() ?? this.context?.matterId() ?? null,
@@ -247,18 +286,33 @@ export class AssetPicker implements OnDestroy {
     this.loadFailed.set(false);
     this.chosen.set(null);
     try {
-      const asset = await firstValueFrom(this.api.getAsset(id));
-      if (this.value() === id) {
-        this.chosen.set({
-          id,
-          label: asset.displayName,
-          detail: asset.assetTypeName,
-          inactive: !asset.isActive,
-        });
+      const asset = await this.names.asset(id);
+      if (this.value() !== id) return;
+      if (!asset) {
+        this.loadFailed.set(true);
+        return;
       }
+      this.chosen.set({
+        id,
+        label: asset.displayName,
+        detail: asset.assetTypeName,
+        reference: asset.externalReference ?? '',
+        inactive: !asset.isActive,
+      });
     } catch {
       if (this.value() === id) this.loadFailed.set(true);
     }
+  }
+
+  protected readOnlyFallback(): string {
+    if (!this.value()) return 'Not provided';
+    return this.loadFailed() ? `Asset ${this.value()} (not available)` : 'Loading asset...';
+  }
+
+  protected openAsset(event: MouseEvent, id: number): void {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    void this.router.navigateByUrl(`/assets/${id}`);
   }
 
   protected onFocus(): void {

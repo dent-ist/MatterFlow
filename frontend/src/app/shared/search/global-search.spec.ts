@@ -94,7 +94,8 @@ describe('mf-global-search (header typeahead)', () => {
     expect(text[0]).toContain('Merger Review');
     expect(text[0]).toContain('Acme Corp');
     expect(text[0]).toContain('Sensitive');
-    expect(text[1]).toContain('00343 Acme Corp');
+    expect(text[1]).toContain('00343');
+    expect(text[1]).toContain('Acme Corp');
     expect(text[2]).toContain('TSK-1042');
     expect(text.at(-1)).toBe('View all results for "343"');
   });

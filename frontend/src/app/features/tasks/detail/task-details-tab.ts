@@ -9,7 +9,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { DynamicForm, FormDefinition, ServerFieldError } from 'form-engine';
+import { DynamicForm, FormDefinition, ServerFieldError, errorSummary } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
 import {
   FormsClient,
@@ -19,7 +19,7 @@ import {
   ProjectResponse,
   ProjectsClient,
   TasksClient,
-  UsersClient,
+  UsersLookupClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { LookupStore } from '../../../core/lookups/lookup-store';
@@ -28,8 +28,16 @@ import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
 import { DueLabelPipe } from '../../../shared/pipes/due-label.pipe';
 import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
-import { USER_TIME_ZONE } from '../../../core/time/clock';
-import { zoneAbbreviation } from '../../../core/time/time';
+import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
+import {
+  calendarDayInZone,
+  dayIndex,
+  parseDateOnly,
+  zoneAbbreviation,
+  zonedLocalToUtc,
+} from '../../../core/time/time';
+import { AssetPickerContext } from '../../../shared/ui/asset-picker';
+import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { splitFormErrors } from '../../../shared/ui/custom-fields';
 import { TaskDetailStore } from './task-detail.store';
 import { valuesPatch } from './task-step';
@@ -64,7 +72,8 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
  */
 @Component({
   selector: 'mf-task-details-tab',
-  imports: [DynamicForm, LocalTimePipe, DueLabelPipe],
+  imports: [DynamicForm, LocalTimePipe, DueLabelPipe, EntityPicker],
+  providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', '../../../shared/ui/form-field.scss'],
   template: `
@@ -245,6 +254,12 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
               <p class="mf-field__help">
                 Leave the date empty for ASAP. The time is optional and is in your local time zone.
               </p>
+              @if (pastDue()) {
+                <p class="warn" role="status" data-past-due>
+                  <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                  This date has already passed. The task will be overdue. You can still save.
+                </p>
+              }
             </fieldset>
 
             @if (t.allowedActions.canAssign) {
@@ -263,28 +278,21 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
                   }
                 </select>
               </div>
-              <div class="mf-field">
-                <label class="mf-field__label" for="td-assignee">Assignee</label>
-                <select
-                  id="td-assignee"
-                  class="mf-field__input"
-                  [attr.aria-describedby]="notInPod() ? 'td-assignee-warning' : null"
-                  (change)="set('userId', toNumber($any($event.target).value))"
-                >
-                  <option value="" [selected]="model().userId === null">Unassigned</option>
-                  @for (u of userOptions(); track u.id) {
-                    <option [value]="u.id" [selected]="model().userId === u.id">
-                      {{ u.label }}
-                    </option>
-                  }
-                </select>
-                @if (notInPod()) {
-                  <p class="mf-field__help warn" id="td-assignee-warning" data-pod-warning>
-                    <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-                    This person isn't a member of the selected Pod. You can still save.
-                  </p>
-                }
-              </div>
+              <mf-entity-picker
+                inputId="td-assignee"
+                label="Assignee"
+                placeholder="Search users"
+                help="Any active user can be assigned, not only members of the Pod. Clear the choice to leave the task unassigned."
+                [search]="searchUsers"
+                [selected]="assignee()"
+                (selectedChange)="onAssignee($event)"
+              />
+              @if (notInPod()) {
+                <p class="mf-field__help warn" id="td-assignee-warning" data-pod-warning>
+                  <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                  This person isn't a member of the selected Pod. You can still save.
+                </p>
+              }
             }
 
             @if (schema(); as definition) {
@@ -454,11 +462,12 @@ export class TaskDetailsTab {
   private readonly forms = inject(FormsClient);
   private readonly projectsApi = inject(ProjectsClient);
   private readonly podsApi = inject(PodsClient);
-  private readonly usersApi = inject(UsersClient);
+  private readonly usersApi = inject(UsersLookupClient);
   private readonly auth = inject(AuthStore);
   private readonly lookups = inject(LookupStore);
   private readonly notify = inject(NotificationService);
   private readonly zone = inject(USER_TIME_ZONE);
+  private readonly clock = inject(Clock);
   private readonly dynamicForm = viewChild(DynamicForm);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -476,7 +485,7 @@ export class TaskDetailsTab {
   protected readonly projects = signal<ProjectResponse[]>([]);
   protected readonly pods = signal<PodSummary[]>([]);
   protected readonly podMembers = signal<PodMemberDto[] | null>(null);
-  protected readonly users = signal<Option[]>([]);
+  protected readonly assignee = signal<PickerOption | null>(null);
 
   protected readonly formValues = computed(
     () => (this.store.task()?.formValues ?? {}) as Record<string, unknown>,
@@ -514,22 +523,19 @@ export class TaskDetailsTab {
     return list;
   });
 
-  protected readonly userOptions = computed<Option[]>(() => {
-    const current = this.store.task()?.assignedUser;
-    const list = [...this.users()];
-    const members = this.podMembers() ?? [];
-    for (const m of members) {
-      if (m.isActive && !list.some((o) => o.id === m.userId)) {
-        list.push({ id: m.userId, label: m.displayName });
-      }
+  /** Non-blocking (UAT2-16): the chosen due date or time is already in the past. */
+  protected readonly pastDue = computed(() => {
+    const m = this.model();
+    const day = parseDateOnly(m.dueDate);
+    if (!day) return false;
+    // Only when the person set it: an already overdue task is not nagged about its unchanged date.
+    if (m.dueDate === this.original.dueDate && m.dueTime === this.original.dueTime) return false;
+    const now = this.clock.now();
+    const time = /^(\d{2}):(\d{2})$/.exec(m.dueTime);
+    if (time) {
+      return zonedLocalToUtc({ ...day, hour: +time[1], minute: +time[2] }, this.zone) < now;
     }
-    if (current && !list.some((o) => o.id === current.userId)) {
-      list.push({
-        id: current.userId,
-        label: current.isActive ? current.displayName : `${current.displayName} (inactive)`,
-      });
-    }
-    return list.sort((a, b) => a.label.localeCompare(b.label));
+    return dayIndex(day) < dayIndex(calendarDayInZone(now, this.zone));
   });
 
   private readonly selectedPodId = computed(() => this.model().podId);
@@ -547,6 +553,9 @@ export class TaskDetailsTab {
   });
 
   constructor() {
+    // The request form's asset picker offers the assets of the task's own matter.
+    const pickerContext = inject(AssetPickerContext);
+    effect(() => pickerContext.matterId.set(this.store.task()?.matter.matterId ?? null));
     effect(() => {
       const id = this.store.task()?.formVersionId;
       untracked(() => void this.loadSchema(id));
@@ -612,6 +621,16 @@ export class TaskDetailsTab {
     };
     this.original = m;
     this.model.set(m);
+    this.assignee.set(
+      t.assignedUser
+        ? {
+            id: t.assignedUser.userId,
+            label: t.assignedUser.isActive
+              ? t.assignedUser.displayName
+              : `${t.assignedUser.displayName} (inactive)`,
+          }
+        : null,
+    );
     void this.loadMembers(m.podId);
     this.fieldErrors.set({});
     this.formErrors.set([]);
@@ -639,15 +658,6 @@ export class TaskDetailsTab {
             .catch(() => undefined),
         );
       }
-      if (this.auth.has('User.View')) {
-        tasks.push(
-          firstValueFrom(this.usersApi.listUsers('active', undefined, 1, 100))
-            .then((r) =>
-              this.users.set((r.items ?? []).map((u) => ({ id: u.userId, label: u.displayName }))),
-            )
-            .catch(() => undefined),
-        );
-      }
     }
     await Promise.all(tasks);
   }
@@ -672,6 +682,17 @@ export class TaskDetailsTab {
       delete next[key];
       return next;
     });
+  }
+
+  /** Any active user, as in Create Task (`GET /users/lookup`, needs Task.Assign), not just the Pod's members. */
+  protected readonly searchUsers = async (query: string): Promise<PickerOption[]> => {
+    const found = await firstValueFrom(this.usersApi.lookupUsers(query || undefined, 8));
+    return found.map((u) => ({ id: u.userId, label: u.displayName }));
+  };
+
+  protected onAssignee(option: PickerOption | null): void {
+    this.assignee.set(option);
+    this.set('userId', option?.id ?? null);
   }
 
   protected onFormValues(): void {
@@ -709,10 +730,13 @@ export class TaskDetailsTab {
     const form = this.dynamicForm();
     let formPatch: Record<string, unknown> | undefined;
     let formInvalid = false;
+    let formLines: string[] = [];
     if (form && this.schema()) {
       const evaluation = form.validate();
-      if (evaluation.errors.length > 0) formInvalid = true;
-      else {
+      if (evaluation.errors.length > 0) {
+        formInvalid = true;
+        formLines = errorSummary(this.schema()?.fields ?? [], evaluation.errors);
+      } else {
         formPatch = valuesPatch(
           this.formValues(),
           evaluation.normalized ?? {},
@@ -723,7 +747,9 @@ export class TaskDetailsTab {
     this.fieldErrors.set(errors);
     if (Object.keys(errors).length > 0 || formInvalid) {
       this.summary.set(
-        Object.values(errors).concat(formInvalid ? ['Fix the request details.'] : []),
+        Object.values(errors).concat(
+          formInvalid ? (formLines.length > 0 ? formLines : ['Fix the request details.']) : [],
+        ),
       );
       this.focusSummary();
       return;

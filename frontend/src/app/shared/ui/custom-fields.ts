@@ -9,7 +9,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { DynamicForm, FormDefinition, ServerFieldError } from 'form-engine';
+import { DynamicForm, FormDefinition, ServerFieldError, errorSummary } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
 import { FormsClient } from '../../api/generated/api-client';
 import { toFormDefinition } from '../forms/form-schema';
@@ -43,19 +43,19 @@ async function loadSchema(
   }
 }
 
-/** The summary line for invalid custom fields, naming each field; null when all are valid. */
-export function customFieldsProblem(custom: CollectedCustomFields | undefined): string | null {
-  if (!custom?.invalid) return null;
+/** The summary lines for invalid custom fields, one per field with its label; empty when all are valid. */
+export function customFieldsProblems(custom: CollectedCustomFields | undefined): string[] {
+  if (!custom?.invalid) return [];
   return custom.invalidFields.length > 0
-    ? `Complete the highlighted custom fields: ${custom.invalidFields.join(', ')}.`
-    : 'Complete the highlighted custom fields.';
+    ? custom.invalidFields
+    : ['Complete the highlighted custom fields.'];
 }
 
 /** What `collect()` hands to the page. */
 export interface CollectedCustomFields {
   /** True when a visible custom field is invalid; the errors are shown inline. */
   invalid: boolean;
-  /** Labels of the invalid fields, in form order (for the summary line). */
+  /** One line per invalid field (label and message), in form order, for the summary list. */
   invalidFields: string[];
   /** Values to send: all values on create, a patch (changed values, `null` for cleared ones) on edit; undefined without a form. */
   values: Record<string, unknown> | undefined;
@@ -138,10 +138,7 @@ export class CustomFieldsEditor {
       return { invalid: false, invalidFields: [], values: undefined };
     const evaluation = form.validate();
     if (evaluation.errors.length > 0) {
-      const invalidKeys = new Set(evaluation.errors.map((e) => e.fieldKey));
-      const invalidFields = schema.fields
-        .filter((f) => invalidKeys.has(f.key))
-        .map((f) => f.label?.trim() || f.key);
+      const invalidFields = errorSummary(schema.fields, evaluation.errors);
       return { invalid: true, invalidFields, values: undefined };
     }
     const normalized = evaluation.normalized ?? {};

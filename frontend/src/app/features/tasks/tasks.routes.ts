@@ -24,6 +24,11 @@ export const TASKS_ROUTES: Routes = [
   {
     path: ':id',
     canDeactivate: [unsavedChangesGuard],
+    // The request form's ASSET_REF / USER_REF fields show names with a picker (UAT2-01).
+    providers: [
+      { provide: MF_ASSET_PICKER, useValue: AssetPicker },
+      { provide: MF_USER_PICKER, useValue: UserPicker },
+    ],
     loadComponent: () => import('./detail/task-detail-page').then((m) => m.TaskDetailPage),
   },
 ];

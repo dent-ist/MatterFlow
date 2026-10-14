@@ -87,13 +87,13 @@ describe('DynamicForm', () => {
 
   it('shows required errors from the copy deck after validate()', async () => {
     await create(OCR_FORM);
-    expect(el().textContent).not.toContain('Enter Notes.');
+    expect(el().textContent).not.toContain('Enter notes.');
 
     const result = fixture.componentInstance.validate();
     await stable();
 
     expect(result.errors).toEqual([{ fieldKey: 'notes', code: 'REQUIRED' }]);
-    expect(field('notes')!.querySelector('[role=alert]')!.textContent).toContain('Enter Notes.');
+    expect(field('notes')!.querySelector('[role=alert]')!.textContent).toContain('Enter notes.');
     expect(field('notes')!.querySelector('input')!.getAttribute('aria-invalid')).toBe('true');
   });
 
@@ -212,5 +212,77 @@ describe('DynamicForm', () => {
 
     expect(emitted.at(-1)).toEqual({ src: 42 });
     expect(field('src')!.textContent).toContain('Pick 42');
+  });
+
+  describe('date fields (UAT2-02)', () => {
+    const DATES: FormDefinition = {
+      fields: [{ key: 'received', control: 'DATE', label: 'Received date' }],
+    };
+    const type = async (text: string, blur = true): Promise<HTMLInputElement> => {
+      const input = field('received')!.querySelector<HTMLInputElement>('input[type=text]')!;
+      input.value = text;
+      input.dispatchEvent(new Event('input'));
+      await stable();
+      if (blur) {
+        input.dispatchEvent(new Event('blur'));
+        input.closest('[data-field]')!.dispatchEvent(new Event('focusout', { bubbles: true }));
+        await stable();
+      }
+      return input;
+    };
+
+    it.each([
+      ['2026-09-14', '2026-09-14'],
+      ['9/14/2026', '2026-09-14'],
+      ['Oct 1, 2026', '2026-10-01'],
+      ['10/1/26', '2026-10-01'],
+    ])('stores %s as %s', async (typed, stored) => {
+      await create(DATES);
+      const emitted: Record<string, unknown>[] = [];
+      fixture.componentInstance.valuesChange.subscribe((v) => emitted.push(v));
+      const input = await type(typed);
+      expect(emitted.at(-1)).toEqual({ received: stored });
+      expect(input.value).toBe(stored);
+      expect(field('received')!.querySelector('[role=alert]')).toBeNull();
+    });
+
+    it('does not rewrite the text while typing and never produces a corrupt date', async () => {
+      await create(DATES);
+      let input = await type('2026-09-0', false);
+      expect(input.value).toBe('2026-09-0');
+      input = await type('2026-09-01', false);
+      expect(input.value).toBe('2026-09-01');
+      input = await type('2026-09-016');
+      expect(input.value).toBe('2026-09-016');
+    });
+
+    it('keeps text that is not a date and shows an inline error', async () => {
+      await create(DATES);
+      const emitted: Record<string, unknown>[] = [];
+      fixture.componentInstance.valuesChange.subscribe((v) => emitted.push(v));
+      const input = await type('next tuesday');
+      expect(input.value).toBe('next tuesday');
+      expect(emitted.at(-1)).toEqual({});
+      expect(field('received')!.querySelector('[role=alert]')!.textContent).toContain(
+        'Enter a valid date',
+      );
+      expect(fixture.componentInstance.validate().errors).toEqual([
+        { fieldKey: 'received', code: 'INVALID_TYPE' },
+      ]);
+    });
+
+    it('shows a format hint and an accessible calendar button', async () => {
+      await create(DATES);
+      expect(field('received')!.textContent).toContain('Format: yyyy-mm-dd');
+      expect(field('received')!.querySelector('button')!.getAttribute('aria-label')).toContain(
+        'Received date',
+      );
+    });
+  });
+
+  it('gives a select its field label as the accessible name', async () => {
+    await create(OCR_FORM, { requires_ocr: true });
+    const focusable = field('ocr_language')!.querySelector('[role=combobox]')!;
+    expect(focusable.getAttribute('aria-label')).toBe('OCR language');
   });
 });

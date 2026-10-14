@@ -75,14 +75,16 @@ type Command = 'bold' | 'italic' | 'insertUnorderedList' | 'insertOrderedList';
             [id]="linkId"
             [value]="linkText()"
             [attr.aria-invalid]="linkError() ? 'true' : null"
+            [attr.aria-describedby]="linkError() ? linkId + '-error' : null"
             (input)="linkText.set($any($event.target).value); linkError.set(false)"
             (keydown.escape)="closeLink()"
           />
           <button type="submit" class="rte__small">Add link</button>
           <button type="button" class="rte__small" (click)="closeLink()">Cancel</button>
           @if (linkError()) {
-            <span class="rte__error" role="alert" data-link-error
-              >Enter an http(s) address or a mailto: address.</span
+            <span class="rte__error" role="alert" [id]="linkId + '-error'" data-link-error
+              >That address can't be used as a link. Use one that starts with http://, https:// or
+              mailto:, or a web address such as example.com.</span
             >
           }
         </form>
@@ -334,8 +336,12 @@ export class RichTextEditor {
     if (hasSelection) {
       this.exec('createLink', url);
     } else {
-      // Nothing selected: insert the address itself as the link text.
-      this.exec('insertHTML', `<a href="${escapeAttribute(url)}">${escapeText(url)}</a>`);
+      // Nothing selected: insert the address itself as the link text, set off by spaces so it does not run into the words around it
+      // ("run QChttps://..." in UAT2-11) and the caret can carry on typing after it.
+      this.exec(
+        'insertHTML',
+        `${leadingSpace(this.savedRange)}<a href="${escapeAttribute(url)}">${escapeText(url)}</a>&nbsp;`,
+      );
     }
     this.linkOpen.set(false);
     this.onInput();
@@ -389,6 +395,17 @@ export class RichTextEditor {
   private exec(command: string, argument?: string): void {
     if (typeof document.execCommand === 'function') document.execCommand(command, false, argument);
   }
+}
+
+/** A space to put before an inserted link when the text just before the caret does not already end in one. */
+export function leadingSpace(range: Range | null): string {
+  if (!range || !range.collapsed) return '';
+  const node = range.startContainer;
+  const before =
+    node.nodeType === Node.TEXT_NODE && range.startOffset > 0
+      ? (node.textContent ?? '').charAt(range.startOffset - 1)
+      : '';
+  return before !== '' && !/\s/.test(before) ? '&nbsp;' : '';
 }
 
 const escapeText = (value: string): string =>

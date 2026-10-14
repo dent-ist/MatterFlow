@@ -13,7 +13,6 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Checkbox } from 'primeng/checkbox';
-import { DatePicker } from 'primeng/datepicker';
 import { InputNumber } from 'primeng/inputnumber';
 import { InputText } from 'primeng/inputtext';
 import { MultiSelect } from 'primeng/multiselect';
@@ -31,6 +30,7 @@ import {
   FormEvaluation,
   FormField,
 } from '../rules/types';
+import { DateInput } from './date-input';
 import { fieldLabel, validationMessage } from './messages';
 import {
   MF_ASSET_PICKER,
@@ -128,7 +128,7 @@ let nextInstance = 0;
     Select,
     RadioButton,
     MultiSelect,
-    DatePicker,
+    DateInput,
     ReferencePickerHost,
   ],
   templateUrl: './dynamic-form.html',
@@ -165,6 +165,11 @@ export class DynamicForm {
     this.values();
     return {};
   });
+  /** DATE/DATETIME fields whose typed text is not a date; kept so the user sees it and the form can refuse it. */
+  private readonly badDates = linkedSignal<ReadonlySet<string>>(() => {
+    this.values();
+    return new Set<string>();
+  });
   private readonly touched = signal<ReadonlySet<string>>(new Set());
   private readonly submitted = signal(false);
 
@@ -177,8 +182,14 @@ export class DynamicForm {
     if (this.definitionErrors().length) return EMPTY_EVALUATION;
     const ev = this.evaluate(this.draft());
     const bad = this.badNumbers();
+    const badDates = this.badDates();
     const extra: FormError[] = this.definition()
-      .fields.filter((f) => f.control === 'NUMBER' && ev.visible[f.key] && f.key in bad)
+      .fields.filter(
+        (f) =>
+          ev.visible[f.key] &&
+          ((f.control === 'NUMBER' && f.key in bad) ||
+            ((f.control === 'DATE' || f.control === 'DATETIME') && badDates.has(f.key))),
+      )
       .map((f) => ({ fieldKey: f.key, code: 'INVALID_TYPE' as const }));
     if (!extra.length) return ev;
     const keys = new Set(extra.map((e) => e.fieldKey));
@@ -290,7 +301,37 @@ export class DynamicForm {
     this.setValue(field, isNumber ? Number(trimmed) : null);
   }
 
+  protected setDateInvalid(field: FormField, invalid: boolean): void {
+    this.badDates.update((set) => {
+      if (set.has(field.key) === invalid) return set;
+      const next = new Set(set);
+      if (invalid) next.add(field.key);
+      else next.delete(field.key);
+      return next;
+    });
+  }
+
+  protected hintId(row: FieldRow): string {
+    return `${row.id}-hint`;
+  }
+
+  protected dateDescribedBy(row: FieldRow): string {
+    return [
+      this.hintId(row),
+      row.field.helpText ? this.helpId(row) : '',
+      row.error ? this.errorId(row) : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
+
   private messageFor(field: FormField, code: FormErrorCode): string {
+    if (field.control === 'DATE' && code === 'INVALID_TYPE') {
+      return 'Enter a valid date, for example 2026-10-14 or 10/14/2026.';
+    }
+    if (field.control === 'DATETIME' && code === 'INVALID_TYPE') {
+      return 'Enter a valid date and time, for example 2026-10-14 14:30.';
+    }
     if (field.control === 'NUMBER' && code === 'INVALID_TYPE') {
       return 'Enter a number, for example 250.5';
     }

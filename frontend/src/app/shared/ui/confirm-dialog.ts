@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, model, output } from '@angular/core';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
+import { DialogFocus } from './dialog-focus';
 
 /**
  * Generic confirmation (UX `mf-confirm-dialog`, 5.4): title states the action, body the consequence, buttons use verbs.
@@ -8,13 +9,15 @@ import { Dialog } from 'primeng/dialog';
  */
 @Component({
   selector: 'mf-confirm-dialog',
-  imports: [Dialog, Button],
+  imports: [Dialog, Button, DialogFocus],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <p-dialog
       [header]="title()"
       [modal]="true"
       [closable]="true"
+      closeAriaLabel="Close dialog"
+      [mfDialogFocus]="visible()"
       [draggable]="false"
       [resizable]="false"
       [visible]="visible()"

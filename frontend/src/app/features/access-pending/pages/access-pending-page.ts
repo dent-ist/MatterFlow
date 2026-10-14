@@ -43,7 +43,13 @@ export class AccessPendingPage implements AfterViewInit {
     await this.auth.refresh();
     this.checking.set(false);
     if (this.auth.isRestricted()) {
-      this.message.set('Still pending. Nothing has changed yet.');
+      // The time makes every result a new text, so a screen reader announces each press, not only the first (UAT2-23).
+      const time = new Date().toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+      this.message.set(`Still pending. Nothing has changed yet. Checked at ${time}.`);
     } else {
       await this.router.navigateByUrl(defaultLandingPath(this.auth));
     }

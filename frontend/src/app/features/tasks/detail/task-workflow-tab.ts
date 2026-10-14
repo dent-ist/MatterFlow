@@ -79,7 +79,9 @@ import { TaskDetailStore } from './task-detail.store';
         @if (completeOption(); as c) {
           <div class="wf__complete" data-complete-task>
             <p [id]="'wf-complete-note'">
-              @if (unresolvedCount() > 0) {
+              @if (!c.permitted) {
+                {{ completeBlockedText(c.blockedReason) }}
+              } @else if (unresolvedCount() > 0) {
                 Task completion: {{ unresolvedCount() }}
                 {{ unresolvedCount() === 1 ? 'step is' : 'steps are' }} not completed. You will be
                 asked whether to mark them all completed.
@@ -209,6 +211,13 @@ export class TaskWorkflowTab {
     () =>
       this.store.task()?.allowedActions.transitions.find((o) => o.action === 'COMPLETE') ?? null,
   );
+
+  /** Why Complete task is disabled, for people who cannot use it (UAT2-18). */
+  protected completeBlockedText(reason: string | undefined): string {
+    return reason === 'MATTER_INACTIVE'
+      ? "The matter is inactive, so this task can't be completed."
+      : "You can view this task but you don't have permission to complete it.";
+  }
 
   /** Why step actions are unavailable at the task level. */
   protected readonly notice = computed(() => {

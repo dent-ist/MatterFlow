@@ -1,4 +1,5 @@
 import { AuditSearchItem } from '../../../api/generated/api-client';
+import { objectTypeLabel } from '../../../shared/ui/audit-format';
 
 /** Where an audited object lives in the app, or null when it has no page. Events of a Task's parts (comments, steps, links) open the Task. */
 export function auditObjectRoute(item: AuditSearchItem): string[] | null {
@@ -25,7 +26,8 @@ export function auditObjectRoute(item: AuditSearchItem): string[] | null {
 /** The text shown for the object: its label when the API could resolve one, otherwise `Type id`. */
 export function auditObjectText(item: AuditSearchItem): string {
   const { type, id, label } = item.object;
-  return label ? `${type}: ${label}` : `${type} ${id}`;
+  const name = objectTypeLabel(type);
+  return label ? `${name}: ${label}` : /^\d+$/.test(id) ? `${name} #${id}` : `${name} ${id}`;
 }
 
 /** Consecutive events of one operation (same correlation id) as one group; single events stay alone. */

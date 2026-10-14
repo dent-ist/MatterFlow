@@ -96,9 +96,10 @@ const isTab = (v: unknown): v is TaskTab => TASK_TABS.includes(v as TaskTab);
 
           @if (store.closed()) {
             <div class="pg-banner" role="note" data-closed-banner>
-              This task is {{ t.statusLabel }}. Move it back to In Progress to edit.
+              This task is {{ t.statusLabel }}.
               @if (reopen(); as r) {
                 @if (r.permitted) {
+                  Move it back to In Progress to edit.
                   <button
                     type="button"
                     class="link-btn"
@@ -135,7 +136,7 @@ const isTab = (v: unknown): v is TaskTab => TASK_TABS.includes(v as TaskTab);
                 role="tab"
                 [id]="'task-tab-' + tab.id"
                 [attr.aria-selected]="store.tab() === tab.id"
-                [attr.aria-controls]="'task-panel-' + tab.id"
+                [attr.aria-controls]="store.tab() === tab.id ? 'task-panel-' + tab.id : null"
                 [attr.tabindex]="store.tab() === tab.id ? 0 : -1"
                 (click)="select(tab.id)"
                 (keydown)="onTabKey($event)"

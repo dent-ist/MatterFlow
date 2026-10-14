@@ -268,9 +268,7 @@ describe('CreateTaskPage', () => {
     await submit(h);
 
     expect(h.tasks.createTask).not.toHaveBeenCalled();
-    expect(field(h, '[data-summary]').textContent).toContain(
-      'Complete the highlighted request details.',
-    );
+    expect(field(h, '[data-summary]').textContent).toContain('Workspace ID: Enter workspace ID.');
   });
 
   it('creates the task in one call with the form values, due date and assignment, then opens it', async () => {

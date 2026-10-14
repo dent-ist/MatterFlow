@@ -37,7 +37,12 @@ a:not([class]) {
   color: var(--mf-link);
 }
 
-/* PrimeNG small buttons stay readable (they rendered at about 11px). */
+/* Small buttons stay readable and easy to hit (UAT2-22: they rendered at about 11px and under 32px tall). */
+:root {
+  --mf-target-min: 32px;
+}
+
 .p-button.p-button-sm {
+  min-height: 2rem;
   font-size: 0.875rem;
 }

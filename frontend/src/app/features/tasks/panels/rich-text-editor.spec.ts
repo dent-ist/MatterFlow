@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { settle } from '../../../shared/testing/org-testing';
-import { RichTextEditor } from './rich-text-editor';
+import { RichTextEditor, leadingSpace } from './rich-text-editor';
 
 @Component({
   selector: 'mf-editor-host',
@@ -155,7 +155,12 @@ describe('RichTextEditor', () => {
     input.dispatchEvent(new Event('input'));
     form.dispatchEvent(new Event('submit', { cancelable: true }));
     await settle(fixture);
-    expect(el().querySelector('[data-link-error]')).not.toBeNull();
+    expect(el().querySelector('[data-link-error]')?.textContent).toContain(
+      "can't be used as a link",
+    );
+    expect(input.getAttribute('aria-describedby')).toBe(
+      el().querySelector('[data-link-error]')!.id,
+    );
     expect(exec).not.toHaveBeenCalledWith('createLink', false, expect.anything());
     expect(exec).not.toHaveBeenCalledWith('insertHTML', false, expect.anything());
 
@@ -167,7 +172,7 @@ describe('RichTextEditor', () => {
     expect(exec).toHaveBeenCalledWith(
       'insertHTML',
       false,
-      '<a href="https://example.com/doc">https://example.com/doc</a>',
+      '<a href="https://example.com/doc">https://example.com/doc</a>&nbsp;',
     );
     expect(el().querySelector('[data-link-form]')).toBeNull();
   });
@@ -191,5 +196,24 @@ describe('RichTextEditor', () => {
     await settle(fixture);
     expect(area().getAttribute('contenteditable')).toBe('false');
     expect(button('bold').disabled).toBe(true);
+  });
+
+  it('puts a space before an inserted link that would touch the word before it (UAT2-11)', () => {
+    const host = document.createElement('p');
+    host.textContent = 'run QC';
+    const range = document.createRange();
+    range.setStart(host.firstChild!, 6);
+    expect(leadingSpace(range)).toBe('&nbsp;');
+    range.setStart(host.firstChild!, 5);
+    range.collapse(true);
+    expect(leadingSpace(range)).toBe('&nbsp;');
+    range.setStart(host.firstChild!, 4);
+    range.collapse(true);
+    expect(leadingSpace(range)).toBe('');
+    host.textContent = 'run QC ';
+    range.setStart(host.firstChild!, 7);
+    range.collapse(true);
+    expect(leadingSpace(range)).toBe('');
+    expect(leadingSpace(null)).toBe('');
   });
 });

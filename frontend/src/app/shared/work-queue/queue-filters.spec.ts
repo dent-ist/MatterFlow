@@ -205,8 +205,8 @@ describe('filter chips', () => {
       'Project: Project 12',
       'Type: Type 13',
       'Workflow: Workflow 14',
-      'Created: from 2026-01-01',
-      'Due: until 2026-02-28',
+      'Created: from Jan 1, 2026',
+      'Due: until Feb 28, 2026',
       'Has a due date',
     ]);
   });

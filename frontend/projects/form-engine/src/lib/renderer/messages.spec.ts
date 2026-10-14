@@ -48,12 +48,25 @@ describe('form-rules messages', () => {
     const text: FormField = { key: 'notes', control: 'TEXT', label: 'Notes' };
     const url: FormField = { key: 'site', control: 'URL', label: 'Site' };
     const pick: FormField = { key: 'owner', control: 'USER_REF', label: 'Owner' };
-    expect(validationMessage(text, 'REQUIRED')).toBe('Enter Notes.');
-    expect(validationMessage(pick, 'REQUIRED')).toBe('Select Owner.');
+    expect(validationMessage(text, 'REQUIRED')).toBe('Enter notes.');
+    expect(validationMessage(pick, 'REQUIRED')).toBe('Select an owner.');
     expect(validationMessage(url, 'INVALID_TYPE')).toBe(
       'Enter a valid web address starting with http:// or https://.',
     );
-    expect(validationMessage(text, 'INVALID_TYPE')).toBe('Enter a valid Notes.');
+    expect(validationMessage(text, 'INVALID_TYPE')).toBe('Enter a valid notes.');
+  });
+
+  it('reads naturally for labels written as nouns or questions (UAT2-09)', () => {
+    const select = (label: string): FormField => ({ key: 'f', control: 'SELECT', label });
+    const text = (label: string): FormField => ({ key: 'f', control: 'TEXT', label });
+    expect(validationMessage(select('Category'), 'REQUIRED')).toBe('Select a category.');
+    expect(validationMessage(text('What is needed'), 'REQUIRED')).toBe('Enter what is needed.');
+    expect(validationMessage(text('Approximate size (GB)'), 'REQUIRED')).toBe(
+      'Enter approximate size (GB).',
+    );
+    expect(validationMessage(select('What is driving the due date?'), 'REQUIRED')).toBe(
+      'Select an option for: what is driving the due date.',
+    );
   });
 
   it('fills range and length placeholders', () => {
@@ -82,7 +95,7 @@ describe('form-rules messages', () => {
     };
     expect(validationMessage(field, 'PATTERN')).toBe('Use digits only.');
     expect(validationMessage({ ...field, validation: { pattern: '^a$' } }, 'PATTERN')).toBe(
-      'Enter Code in the expected format.',
+      'Enter code in the expected format.',
     );
   });
 

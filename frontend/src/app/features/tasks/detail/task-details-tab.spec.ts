@@ -69,7 +69,8 @@ describe('Details tab', () => {
     expect((q(el, '#td-due-time') as HTMLInputElement).value).toBe('15:00');
     expect(q(el, 'label[for=td-due-time]')!.textContent).toMatch(/Time \(.+\)/);
     expect(q(el, '#td-pod')).not.toBeNull();
-    expect(q(el, '#td-assignee')).not.toBeNull();
+    // The assignee is chosen with the user picker (any active user), not a list of the Pod's members.
+    expect(q(el, 'mf-entity-picker')).not.toBeNull();
     // Matter, Task Type and Workflow stay read-only
     expect(q(el, '[data-locked-fields]')).not.toBeNull();
     expect(q(el, '#td-matter')).toBeNull();

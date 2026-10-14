@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
-import { DynamicForm, FormDefinition, ServerFieldError } from 'form-engine';
+import { DynamicForm, FormDefinition, ServerFieldError, errorSummary } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
 import {
   AssetResponse,
@@ -416,15 +416,8 @@ export class AssetFormPage implements HasUnsavedChanges {
     const untouchedEdit = this.isEdit() && !this.formTouched();
     const evaluation = untouchedEdit ? undefined : this.dynamicForm()?.validate();
     if (evaluation && evaluation.errors.length > 0) {
-      const keys = new Set(evaluation.errors.map((e) => e.fieldKey));
-      const names = (this.schema()?.fields ?? [])
-        .filter((f) => keys.has(f.key))
-        .map((f) => f.label?.trim() || f.key);
-      problems.push(
-        names.length > 0
-          ? `Complete the highlighted fields: ${names.join(', ')}.`
-          : 'Complete the highlighted fields.',
-      );
+      const lines = errorSummary(this.schema()?.fields ?? [], evaluation.errors);
+      problems.push(...(lines.length > 0 ? lines : ['Complete the highlighted fields.']));
     }
     if (problems.length > 0) {
       this.summary.set(problems);

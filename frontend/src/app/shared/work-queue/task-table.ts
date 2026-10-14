@@ -23,7 +23,14 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './task-table.scss',
   template: `
-    <div class="wt-wrap" [class.wt-dim]="loading() && rows().length > 0">
+    <p class="wt-hint" data-scroll-hint>Scroll sideways to see every column.</p>
+    <div
+      class="wt-wrap"
+      role="region"
+      tabindex="0"
+      [attr.aria-label]="caption() + ' (scrolls sideways)'"
+      [class.wt-dim]="loading() && rows().length > 0"
+    >
       <table
         class="wt"
         [class.wt--compact]="density() === 'compact'"

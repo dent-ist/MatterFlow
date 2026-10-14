@@ -71,7 +71,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
             type="button"
             class="ei__toggle"
             [attr.aria-expanded]="open()"
-            aria-controls="ei-body"
+            [attr.aria-controls]="open() ? 'ei-body' : null"
             (click)="open.set(!open())"
           >
             {{ open() ? 'Hide' : 'Show' }}

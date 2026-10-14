@@ -6,7 +6,7 @@ import { ok, settle } from '../testing/org-testing';
 import {
   CustomFieldsEditor,
   CustomFieldsView,
-  customFieldsProblem,
+  customFieldsProblems,
   splitFormErrors,
 } from './custom-fields';
 
@@ -65,10 +65,8 @@ describe('custom fields editor and view', () => {
 
     const blocked = editor.collect();
     expect(blocked.invalid).toBe(true);
-    expect(blocked.invalidFields).toEqual(['Workspace ID']);
-    expect(customFieldsProblem(blocked)).toBe(
-      'Complete the highlighted custom fields: Workspace ID.',
-    );
+    expect(blocked.invalidFields).toEqual(['Workspace ID: Enter workspace ID.']);
+    expect(customFieldsProblems(blocked)).toEqual(['Workspace ID: Enter workspace ID.']);
 
     const input = el().querySelector<HTMLInputElement>('fieldset input[type=text]')!;
     input.value = 'WS-1';
@@ -110,7 +108,7 @@ describe('custom fields editor and view', () => {
     await settle(fixture);
     const touched = editor.collect({});
     expect(touched.invalid).toBe(true);
-    expect(touched.invalidFields).toEqual(['Workspace ID']);
+    expect(touched.invalidFields).toEqual(['Workspace ID: Enter workspace ID.']);
     await settle(fixture);
     expect(el().querySelector('input[aria-invalid="true"]')).not.toBeNull();
   });
