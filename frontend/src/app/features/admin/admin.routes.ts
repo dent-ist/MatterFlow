@@ -3,6 +3,7 @@ import { permissionGuard } from '../../core/auth/guards';
 import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
 import { PlaceholderPage } from '../../shared/ui/placeholder-page';
 import { AssetTypeFormDesignerApi } from './asset-types/asset-type-form-designer-api';
+import { CustomFieldFormDesignerApi } from './custom-fields/custom-field-form-designer-api';
 import { FormDesignerApi } from './task-types/form-designer-api';
 import { StepFormDesignerApi } from './steps/step-form-designer-api';
 
@@ -56,6 +57,16 @@ const assetTypeForm = (path: string): Route => ({
   loadComponent: () => import('./task-types/task-type-form-page').then((m) => m.TaskTypeFormPage),
 });
 
+/** Custom Fields > Edit fields (UX S18): the same designer on the singleton form of Client, Matter or Project. */
+const customFieldForm = (path: string): Route => ({
+  path,
+  canActivate: [permissionGuard('CustomField.Manage')],
+  canDeactivate: [unsavedChangesGuard],
+  providers: [{ provide: FormDesignerApi, useClass: CustomFieldFormDesignerApi }],
+  data: { heading: 'Custom Fields', ownerLabel: 'Object' },
+  loadComponent: () => import('./task-types/task-type-form-page').then((m) => m.TaskTypeFormPage),
+});
+
 /** Administration (UX 2.1). Each screen needs its own *.Manage / View permission. */
 export const ADMIN_ROUTES: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'users' },
@@ -86,7 +97,10 @@ export const ADMIN_ROUTES: Routes = [
     import('./asset-types/asset-types-page').then((m) => m.AssetTypesPage),
   ),
   assetTypeForm('asset-types/:ownerId/form'),
-  page('custom-fields', 'Custom Fields', 'CustomField.Manage'),
+  lazy('custom-fields', 'CustomField.Manage', () =>
+    import('./custom-fields/custom-fields-page').then((m) => m.CustomFieldsPage),
+  ),
+  customFieldForm('custom-fields/:ownerId/form'),
   lazy('priorities', 'Priority.Manage', () =>
     import('./priorities/priorities-page').then((m) => m.PrioritiesPage),
   ),

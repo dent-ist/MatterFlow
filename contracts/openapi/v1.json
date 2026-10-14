@@ -2812,6 +2812,26 @@
         }
       }
     },
+    "/api/v1/clients/custom-fields": {
+      "get": {
+        "tags": [
+          "Clients"
+        ],
+        "operationId": "GetClientCustomFieldForm",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomFieldFormResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/clients/{clientId}": {
       "get": {
         "tags": [
@@ -3085,6 +3105,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MatterResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matters/custom-fields": {
+      "get": {
+        "tags": [
+          "Matters"
+        ],
+        "operationId": "GetMatterCustomFieldForm",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomFieldFormResponse"
                 }
               }
             }
@@ -3380,6 +3420,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProjectResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/custom-fields": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "GetProjectCustomFieldForm",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomFieldFormResponse"
                 }
               }
             }
@@ -4921,6 +4981,10 @@
           "name",
           "isActive",
           "matterCount",
+          "formVersionId",
+          "publishedFormVersionId",
+          "formValues",
+          "droppedFields",
           "rowVersion",
           "createdAtUtc",
           "modifiedAtUtc"
@@ -4943,6 +5007,32 @@
           "matterCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "formVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "publishedFormVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "formValues": {
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "droppedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "rowVersion": {
             "type": "string"
@@ -5066,6 +5156,12 @@
             "maxLength": 200,
             "minLength": 1,
             "type": "string"
+          },
+          "formValues": {
+            "type": [
+              "null",
+              "object"
+            ]
           }
         }
       },
@@ -5112,6 +5208,12 @@
           },
           "isSensitive": {
             "type": "boolean"
+          },
+          "formValues": {
+            "type": [
+              "null",
+              "object"
+            ]
           }
         }
       },
@@ -5178,6 +5280,12 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "formValues": {
+            "type": [
+              "null",
+              "object"
             ]
           }
         }
@@ -5291,6 +5399,21 @@
           },
           "isOrdered": {
             "type": "boolean"
+          }
+        }
+      },
+      "CustomFieldFormResponse": {
+        "required": [
+          "publishedFormVersionId"
+        ],
+        "type": "object",
+        "properties": {
+          "publishedFormVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -5696,6 +5819,10 @@
           "isSensitive",
           "projectCount",
           "openTaskCount",
+          "formVersionId",
+          "publishedFormVersionId",
+          "formValues",
+          "droppedFields",
           "rowVersion",
           "createdAtUtc",
           "modifiedAtUtc"
@@ -5744,6 +5871,32 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "formVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "publishedFormVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "formValues": {
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "droppedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "rowVersion": {
             "type": "string"
@@ -6318,6 +6471,10 @@
           "name",
           "description",
           "isActive",
+          "formVersionId",
+          "publishedFormVersionId",
+          "formValues",
+          "droppedFields",
           "rowVersion",
           "createdAtUtc",
           "modifiedAtUtc"
@@ -6352,6 +6509,32 @@
           },
           "isActive": {
             "type": "boolean"
+          },
+          "formVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "publishedFormVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "formValues": {
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "droppedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "rowVersion": {
             "type": "string"
@@ -7080,6 +7263,12 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "formValues": {
+            "type": [
+              "null",
+              "object"
+            ]
           }
         }
       },
@@ -7100,6 +7289,12 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "formValues": {
+            "type": [
+              "null",
+              "object"
+            ]
           }
         }
       },
@@ -7180,6 +7375,12 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "formValues": {
+            "type": [
+              "null",
+              "object"
+            ]
           }
         }
       },

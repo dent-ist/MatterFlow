@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Organization.Application;
 
-public sealed class ProjectService(DbContext db, IAuditWriter audit)
+public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomFieldValues custom)
 {
     public static readonly string[] SortFields = ["name", "matterRef", "createdAt"];
 
@@ -51,13 +51,17 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit)
             .Take(page.PageSize)
             .ToListAsync(ct);
 
-        return OrganizationSupport.Page(items.Select(ToResponse).ToList(), total, page);
+        return OrganizationSupport.Page(items.Select(r => ToResponse(r)).ToList(), total, page);
     }
 
-    public async Task<Result<ProjectResponse>> GetAsync(int id, CancellationToken ct)
+    public async Task<Result<ProjectResponse>> GetAsync(int id, CancellationToken ct) => await GetAsync(id, [], ct);
+
+    private async Task<Result<ProjectResponse>> GetAsync(int id, IReadOnlyList<string> dropped, CancellationToken ct)
     {
         var row = await Rows().Where(r => r.Project.Id == id).SingleOrDefaultAsync(ct);
-        return row is null ? OrganizationSupport.NotFound("Project") : ToResponse(row);
+        return row is null
+            ? OrganizationSupport.NotFound("Project")
+            : ToResponse(row, await custom.ReadAsync(CustomFieldTarget.Project, id, ct), dropped);
     }
 
     public async Task<Result<ProjectResponse>> CreateAsync(CreateProjectRequest request, CancellationToken ct)
@@ -69,6 +73,10 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit)
         var existing = await FindIdByNameAsync(request.MatterId, name, null, ct);
         if (existing is not null)
             return DuplicateName(name, existing);
+
+        var plan = await custom.PlanCreateAsync(CustomFieldTarget.Project, request.FormValues, ct);
+        if (plan.IsFailure)
+            return plan.Error!;
 
         var project = new Project
         {
@@ -87,17 +95,35 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit)
             Summary = $"Project '{name}' created.",
         });
 
-        try
+        IReadOnlyList<string> dropped = [];
+        await using (var transaction = await db.Database.BeginTransactionAsync(ct))
         {
-            await db.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateException ex) when (OrganizationSupport.IsUniqueViolation(ex, OrganizationSupport.ProjectNameUnique))
-        {
-            db.ChangeTracker.Clear();
-            return DuplicateName(name, await FindIdByNameAsync(request.MatterId, name, null, ct));
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex) when (OrganizationSupport.IsUniqueViolation(ex, OrganizationSupport.ProjectNameUnique))
+            {
+                db.ChangeTracker.Clear();
+                return DuplicateName(name, await FindIdByNameAsync(request.MatterId, name, null, ct));
+            }
+
+            if (plan.Value is { } formPlan)
+            {
+                var saved = await custom.SaveAsync(CustomFieldTarget.Project, project.Id, request.MatterId, formPlan, ct);
+                if (saved.IsFailure)
+                {
+                    db.ChangeTracker.Clear();
+                    return saved.Error!;
+                }
+
+                dropped = saved.Value;
+            }
+
+            await transaction.CommitAsync(ct);
         }
 
-        return await GetAsync(project.Id, ct);
+        return await GetAsync(project.Id, dropped, ct);
     }
 
     public async Task<Result<ProjectResponse>> UpdateAsync(int id, UpdateProjectRequest request, CancellationToken ct)
@@ -118,21 +144,46 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit)
                 return DuplicateName(name, existing);
         }
 
+        var plan = await custom.PlanUpdateAsync(CustomFieldTarget.Project, id, request.FormValues, ct);
+        if (plan.IsFailure)
+            return plan.Error!;
+
+        var matterId = project.MatterId;
         project.Name = name;
         project.Description = Clean(request.Description);
         OrganizationSupport.TrackOriginalRowVersion(db, project, request.RowVersion);
+
+        IReadOnlyList<string> dropped = [];
         try
         {
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
             await db.SaveChangesAsync(ct);
+            if (plan.Value is { } formPlan)
+            {
+                var saved = await custom.SaveAsync(CustomFieldTarget.Project, id, matterId, formPlan, ct);
+                if (saved.IsFailure)
+                {
+                    db.ChangeTracker.Clear();
+                    return saved.Error!;
+                }
+
+                dropped = saved.Value;
+            }
+
+            await transaction.CommitAsync(ct);
         }
         catch (DbUpdateException ex) when (OrganizationSupport.IsUniqueViolation(ex, OrganizationSupport.ProjectNameUnique))
         {
-            var matterId = project.MatterId;
             db.ChangeTracker.Clear();
             return DuplicateName(name, await FindIdByNameAsync(matterId, name, id, ct));
         }
+        catch (DbUpdateConcurrencyException)
+        {
+            db.ChangeTracker.Clear();
+            return OrganizationSupport.ConcurrencyError();
+        }
 
-        return await GetAsync(id, ct);
+        return await GetAsync(id, dropped, ct);
     }
 
     /// <summary>Archives (inactive) or restores a Project. Existing Tasks keep it; new Tasks cannot select an inactive Project.</summary>
@@ -172,7 +223,7 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit)
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
-    private static ProjectResponse ToResponse(ProjectRow r) => new(
+    private static ProjectResponse ToResponse(ProjectRow r, CustomFieldView? view = null, IReadOnlyList<string>? dropped = null) => new(
         r.Project.Id,
         r.Project.MatterId,
         r.MatterRef,
@@ -181,6 +232,10 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit)
         r.Project.Name,
         r.Project.Description,
         r.Project.IsActive,
+        view?.FormVersionId,
+        view?.PublishedFormVersionId,
+        view?.Values,
+        dropped ?? [],
         OrganizationSupport.Encode(r.Project.RowVersion),
         OrganizationSupport.Utc(r.Project.CreatedAtUtc),
         OrganizationSupport.Utc(r.Project.ModifiedAtUtc));

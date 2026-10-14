@@ -140,7 +140,7 @@ erDiagram
 | ClientNumber | char(5) | no | **normalized zero-padded** (input `343` -> `00343`); UNIQUE `UQ_Client_Number`; CHECK `CK_Client_Number`: `ClientNumber NOT LIKE '%[^0-9]%' AND LEN(ClientNumber)=5` (digits only, length 5) |
 | Name | nvarchar(200) | no | |
 | IsActive | bit | no | default 1; deactivation allowed only when all its Matters are inactive (app rule) |
-| CustomFieldsJson | nvarchar(max) | yes | values for the CLIENT form; ISJSON check |
+| CustomFieldsJson | nvarchar(max) | yes | **Unused (ticket 59):** kept nullable to avoid a destructive script. The values of the CLIENT custom-field form are stored by the forms value store in `FormValueSet` (OwnerKind CLIENT) with the form version captured at save time |
 | RowVersion | rowversion | no | |
 
 Also: UNIQUE `(ClientId, ClientNumber)` `UQ_Client_IdNumber` - target of the Matter composite FK. Index `IX_Client_Name (Name)`.
@@ -543,7 +543,7 @@ erDiagram
 
 Triggers (defense in depth): `TR_FormVersion_Immutable` (blocks UPDATE of anything except `Status` PUBLISHED->RETIRED, DELETE of non-DRAFT), `TR_FormField_Immutable` and `TR_FormFieldOption_Immutable` (block INSERT/UPDATE/DELETE when the parent version is not DRAFT).
 
-Value storage: JSON on owner rows (`Task.FormValuesJson`, `StepInstance.ValuesJson`, `Client|Matter|Project|Asset.CustomFieldsJson`) keyed by `FieldKey`; typed copies for filterable fields in `CustomFieldIndex`.
+Value storage: JSON on owner rows (`Task.FormValuesJson`, `StepInstance.ValuesJson`); Client, Matter, Project and Asset values live only in `FormValueSet` (the nullable `Client|Matter|Project.CustomFieldsJson` columns are unused, ticket 59) keyed by `FieldKey`; typed copies for filterable fields in `CustomFieldIndex`.
 
 ---
 

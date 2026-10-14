@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Organization.Application;
 
-public sealed class ClientService(DbContext db, IAuditWriter audit)
+public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldValues custom)
 {
     public static readonly string[] SortFields = ["clientNumber", "name", "createdAt"];
 
@@ -47,13 +47,17 @@ public sealed class ClientService(DbContext db, IAuditWriter audit)
         return OrganizationSupport.Page(rows.Select(r => ToResponse(r.Client, r.MatterCount)).ToList(), total, page);
     }
 
-    public async Task<Result<ClientResponse>> GetAsync(int id, CancellationToken ct)
+    public async Task<Result<ClientResponse>> GetAsync(int id, CancellationToken ct) => await GetAsync(id, [], ct);
+
+    private async Task<Result<ClientResponse>> GetAsync(int id, IReadOnlyList<string> dropped, CancellationToken ct)
     {
         var row = await db.Set<Client>().AsNoTracking()
             .Where(c => c.Id == id)
             .Select(c => new { Client = c, MatterCount = db.Set<Matter>().Count(m => m.ClientId == c.Id) })
             .SingleOrDefaultAsync(ct);
-        return row is null ? OrganizationSupport.NotFound("Client") : ToResponse(row.Client, row.MatterCount);
+        return row is null
+            ? OrganizationSupport.NotFound("Client")
+            : ToResponse(row.Client, row.MatterCount, await custom.ReadAsync(CustomFieldTarget.Client, id, ct), dropped);
     }
 
     public async Task<Result<ClientResponse>> CreateAsync(CreateClientRequest request, CancellationToken ct)
@@ -66,6 +70,10 @@ public sealed class ClientService(DbContext db, IAuditWriter audit)
         if (existing is not null)
             return DuplicateNumber(number.Value, existing);
 
+        var plan = await custom.PlanCreateAsync(CustomFieldTarget.Client, request.FormValues, ct);
+        if (plan.IsFailure)
+            return plan.Error!;
+
         var client = new Client { ClientNumber = number.Value, Name = request.Name.Trim() };
         db.Set<Client>().Add(client);
         audit.Write(new AuditEntry
@@ -77,17 +85,35 @@ public sealed class ClientService(DbContext db, IAuditWriter audit)
             Summary = $"Client {number.Value} created.",
         });
 
-        try
+        IReadOnlyList<string> dropped = [];
+        await using (var transaction = await db.Database.BeginTransactionAsync(ct))
         {
-            await db.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateException ex) when (OrganizationSupport.IsUniqueViolation(ex, OrganizationSupport.ClientNumberUnique))
-        {
-            db.ChangeTracker.Clear();
-            return DuplicateNumber(number.Value, await FindIdByNumberAsync(number.Value, null, ct));
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex) when (OrganizationSupport.IsUniqueViolation(ex, OrganizationSupport.ClientNumberUnique))
+            {
+                db.ChangeTracker.Clear();
+                return DuplicateNumber(number.Value, await FindIdByNumberAsync(number.Value, null, ct));
+            }
+
+            if (plan.Value is { } formPlan)
+            {
+                var saved = await custom.SaveAsync(CustomFieldTarget.Client, client.Id, null, formPlan, ct);
+                if (saved.IsFailure)
+                {
+                    db.ChangeTracker.Clear();
+                    return saved.Error!;
+                }
+
+                dropped = saved.Value;
+            }
+
+            await transaction.CommitAsync(ct);
         }
 
-        return ToResponse(client, 0);
+        return await GetAsync(client.Id, dropped, ct);
     }
 
     public async Task<Result<ClientResponse>> UpdateAsync(int id, UpdateClientRequest request, CancellationToken ct)
@@ -100,11 +126,40 @@ public sealed class ClientService(DbContext db, IAuditWriter audit)
         if (version.IsFailure)
             return version.Error!;
 
+        var plan = await custom.PlanUpdateAsync(CustomFieldTarget.Client, id, request.FormValues, ct);
+        if (plan.IsFailure)
+            return plan.Error!;
+
         client.Name = request.Name.Trim();
         client.IsActive = request.IsActive;
         OrganizationSupport.TrackOriginalRowVersion(db, client, request.RowVersion);
-        await db.SaveChangesAsync(ct);
-        return await GetAsync(id, ct);
+
+        IReadOnlyList<string> dropped = [];
+        try
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            await db.SaveChangesAsync(ct);
+            if (plan.Value is { } formPlan)
+            {
+                var saved = await custom.SaveAsync(CustomFieldTarget.Client, id, null, formPlan, ct);
+                if (saved.IsFailure)
+                {
+                    db.ChangeTracker.Clear();
+                    return saved.Error!;
+                }
+
+                dropped = saved.Value;
+            }
+
+            await transaction.CommitAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            db.ChangeTracker.Clear();
+            return OrganizationSupport.ConcurrencyError();
+        }
+
+        return await GetAsync(id, dropped, ct);
     }
 
     /// <summary>Changes the Client number (needs Client.EditNumber at the API). Writes CLIENT_NUMBER_CHANGED; the database cascades the copy held by the Client's Matters.</summary>
@@ -168,12 +223,16 @@ public sealed class ClientService(DbContext db, IAuditWriter audit)
     private static Error DuplicateNumber(BusinessNumber number, int? existingId, string field = "clientNumber") =>
         OrganizationSupport.Duplicate(ErrorCodes.DuplicateNumber, field, $"Client {number} already exists.", existingId);
 
-    internal static ClientResponse ToResponse(Client c, int matterCount) => new(
+    private static ClientResponse ToResponse(Client c, int matterCount, CustomFieldView? view = null, IReadOnlyList<string>? dropped = null) => new(
         c.Id,
         c.ClientNumber.Value,
         c.Name,
         c.IsActive,
         matterCount,
+        view?.FormVersionId,
+        view?.PublishedFormVersionId,
+        view?.Values,
+        dropped ?? [],
         OrganizationSupport.Encode(c.RowVersion),
         OrganizationSupport.Utc(c.CreatedAtUtc),
         OrganizationSupport.Utc(c.ModifiedAtUtc));

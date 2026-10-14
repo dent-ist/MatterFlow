@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 
 namespace MatterFlow.Organization.Application;
 
@@ -8,6 +9,10 @@ namespace MatterFlow.Organization.Application;
 /// <param name="Name">Client name.</param>
 /// <param name="IsActive">An inactive Client cannot receive new Matters; existing records keep working.</param>
 /// <param name="MatterCount">Number of Matters under the Client.</param>
+/// <param name="FormVersionId">The custom-field form version the stored values were captured under; null when none were saved.</param>
+/// <param name="PublishedFormVersionId">The currently published custom-field form version (the schema to edit with); null when there is none.</param>
+/// <param name="FormValues">Custom-field values keyed by field key; only filled on the detail response (null in lists).</param>
+/// <param name="DroppedFields">Keys of values dropped by this save because the form hides them (empty on reads).</param>
 /// <param name="RowVersion">Concurrency token (base64); send it back on every update.</param>
 /// <param name="CreatedAtUtc">When the Client was created (UTC).</param>
 /// <param name="ModifiedAtUtc">When the Client was last changed (UTC), if ever.</param>
@@ -17,6 +22,10 @@ public sealed record ClientResponse(
     [property: Required] string Name,
     [property: Required] bool IsActive,
     [property: Required] int MatterCount,
+    int? FormVersionId,
+    int? PublishedFormVersionId,
+    Dictionary<string, JsonElement>? FormValues,
+    [property: Required] IReadOnlyList<string> DroppedFields,
     [property: Required] string RowVersion,
     [property: Required] DateTime CreatedAtUtc,
     DateTime? ModifiedAtUtc);
@@ -31,6 +40,9 @@ public sealed class CreateClientRequest
     /// <summary>Client name (max 200).</summary>
     [Required, StringLength(200, MinimumLength = 1)]
     public string Name { get; init; } = string.Empty;
+
+    /// <summary>Custom-field values keyed by field key, validated against the published custom-field form (hidden values are dropped). Null means none.</summary>
+    public Dictionary<string, JsonElement>? FormValues { get; init; }
 }
 
 /// <summary>Updates a Client's name and active flag (the number has its own endpoint).</summary>
@@ -44,6 +56,12 @@ public sealed class UpdateClientRequest
     /// <summary>The <c>rowVersion</c> last read.</summary>
     [Required]
     public string RowVersion { get; init; } = string.Empty;
+
+    /// <summary>
+    /// A patch over the stored custom-field values keyed by field key: a JSON <c>null</c> clears a value, omitted keys stay as they are.
+    /// Omit the property to leave the values untouched. Only the changed fields are validated.
+    /// </summary>
+    public Dictionary<string, JsonElement>? FormValues { get; init; }
 }
 
 /// <summary>Changes a Client or Matter number (restricted and audited).</summary>
@@ -71,6 +89,10 @@ public sealed class ChangeNumberRequest
 /// <param name="IsSensitive">Display-only warning flag; does not restrict access.</param>
 /// <param name="ProjectCount">Number of Projects in the Matter.</param>
 /// <param name="OpenTaskCount">Tasks that are not Completed or Cancelled; only filled on the detail response.</param>
+/// <param name="FormVersionId">The custom-field form version the stored values were captured under; null when none were saved.</param>
+/// <param name="PublishedFormVersionId">The currently published custom-field form version (the schema to edit with); null when there is none.</param>
+/// <param name="FormValues">Custom-field values keyed by field key; only filled on the detail response (null in lists).</param>
+/// <param name="DroppedFields">Keys of values dropped by this save because the form hides them (empty on reads).</param>
 /// <param name="RowVersion">Concurrency token (base64).</param>
 /// <param name="CreatedAtUtc">When the Matter was created (UTC).</param>
 /// <param name="ModifiedAtUtc">When the Matter was last changed (UTC), if ever.</param>
@@ -87,6 +109,10 @@ public sealed record MatterResponse(
     [property: Required] bool IsSensitive,
     [property: Required] int ProjectCount,
     int? OpenTaskCount,
+    int? FormVersionId,
+    int? PublishedFormVersionId,
+    Dictionary<string, JsonElement>? FormValues,
+    [property: Required] IReadOnlyList<string> DroppedFields,
     [property: Required] string RowVersion,
     [property: Required] DateTime CreatedAtUtc,
     DateTime? ModifiedAtUtc);
@@ -108,6 +134,9 @@ public sealed class CreateMatterRequest
 
     /// <summary>Show the sensitive-matter warning banner (display only).</summary>
     public bool IsSensitive { get; init; }
+
+    /// <summary>Custom-field values keyed by field key, validated against the published custom-field form (hidden values are dropped). Null means none.</summary>
+    public Dictionary<string, JsonElement>? FormValues { get; init; }
 }
 
 /// <summary>Updates a Matter's name and sensitivity flag (number and active state have their own endpoints).</summary>
@@ -121,6 +150,12 @@ public sealed class UpdateMatterRequest
     /// <summary>The <c>rowVersion</c> last read.</summary>
     [Required]
     public string RowVersion { get; init; } = string.Empty;
+
+    /// <summary>
+    /// A patch over the stored custom-field values keyed by field key: a JSON <c>null</c> clears a value, omitted keys stay as they are.
+    /// Omit the property to leave the values untouched. Only the changed fields are validated.
+    /// </summary>
+    public Dictionary<string, JsonElement>? FormValues { get; init; }
 }
 
 /// <summary>Sets a Matter or Project active or inactive.</summary>
@@ -142,6 +177,10 @@ public sealed class SetActiveRequest
 /// <param name="Name">Project name, unique within the Matter.</param>
 /// <param name="Description">Optional description.</param>
 /// <param name="IsActive">False means archived: new Tasks cannot select it.</param>
+/// <param name="FormVersionId">The custom-field form version the stored values were captured under; null when none were saved.</param>
+/// <param name="PublishedFormVersionId">The currently published custom-field form version (the schema to edit with); null when there is none.</param>
+/// <param name="FormValues">Custom-field values keyed by field key; only filled on the detail response (null in lists).</param>
+/// <param name="DroppedFields">Keys of values dropped by this save because the form hides them (empty on reads).</param>
 /// <param name="RowVersion">Concurrency token (base64).</param>
 /// <param name="CreatedAtUtc">When the Project was created (UTC).</param>
 /// <param name="ModifiedAtUtc">When the Project was last changed (UTC), if ever.</param>
@@ -154,6 +193,10 @@ public sealed record ProjectResponse(
     [property: Required] string Name,
     string? Description,
     [property: Required] bool IsActive,
+    int? FormVersionId,
+    int? PublishedFormVersionId,
+    Dictionary<string, JsonElement>? FormValues,
+    [property: Required] IReadOnlyList<string> DroppedFields,
     [property: Required] string RowVersion,
     [property: Required] DateTime CreatedAtUtc,
     DateTime? ModifiedAtUtc);
@@ -169,6 +212,9 @@ public sealed class CreateProjectRequest
 
     [StringLength(2000)]
     public string? Description { get; init; }
+
+    /// <summary>Custom-field values keyed by field key, validated against the published custom-field form (hidden values are dropped). Null means none.</summary>
+    public Dictionary<string, JsonElement>? FormValues { get; init; }
 }
 
 /// <summary>Updates a Project's name and description (archive state has its own endpoint).</summary>
@@ -183,4 +229,14 @@ public sealed class UpdateProjectRequest
     /// <summary>The <c>rowVersion</c> last read.</summary>
     [Required]
     public string RowVersion { get; init; } = string.Empty;
+
+    /// <summary>
+    /// A patch over the stored custom-field values keyed by field key: a JSON <c>null</c> clears a value, omitted keys stay as they are.
+    /// Omit the property to leave the values untouched. Only the changed fields are validated.
+    /// </summary>
+    public Dictionary<string, JsonElement>? FormValues { get; init; }
 }
+
+/// <summary>The published custom-field form of a Client, Matter or Project.</summary>
+/// <param name="PublishedFormVersionId">The published form version to render (fetch its schema from the forms API); null when no custom fields are published.</param>
+public sealed record CustomFieldFormResponse(int? PublishedFormVersionId);
