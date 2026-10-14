@@ -65,24 +65,6 @@ const REQUESTOR_NAME_MAX = 200;
 const REQUESTOR_EMAIL_MAX = 254;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Server field names (DTO properties) the page maps onto an input; `form:<key>` goes to the request form. */
-const FIELD_ORDER = [
-  'matterId',
-  'projectId',
-  'title',
-  'description',
-  'taskTypeId',
-  'workflowDefinitionId',
-  'formValues',
-  'requestorName',
-  'requestorEmail',
-  'priorityId',
-  'dueDate',
-  'dueTime',
-  'assignedPodId',
-  'assignedUserId',
-] as const;
-
 interface WorkflowChoice {
   id: number;
   name: string;

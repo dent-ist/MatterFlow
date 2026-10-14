@@ -83,6 +83,13 @@ type LoadState = 'loading' | 'ready' | 'error';
             </div>
             <div class="pg-actions">
               <p-button
+                *mfHasPermission="'Task.Create'"
+                label="Create Task"
+                icon="pi pi-plus"
+                [disabled]="!m.isActive"
+                (onClick)="go('/tasks/new?matterId=' + m.matterId)"
+              />
+              <p-button
                 *mfHasPermission="'Project.Create'"
                 label="New Project"
                 icon="pi pi-plus"
