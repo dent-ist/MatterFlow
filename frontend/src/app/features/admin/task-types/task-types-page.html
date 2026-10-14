@@ -1,0 +1,101 @@
+<header class="head">
+  <div>
+    <h1>Task types</h1>
+    <p class="muted">
+      What people can request. Each type has a request form and the workflows it may use. Types are
+      deactivated, never deleted.
+    </p>
+  </div>
+  <a class="new" routerLink="/admin/task-types/new" data-new>New task type</a>
+</header>
+
+<div class="sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
+
+@if (failure()) {
+  <p class="error" role="alert" data-failure>{{ failure() }}</p>
+}
+
+@switch (state()) {
+  @case ('loading') {
+    <p class="muted" data-loading>Loading task types...</p>
+  }
+  @case ('error') {
+    <p class="error" role="alert">Couldn't load task types.</p>
+    <p-button label="Try again" severity="secondary" (onClick)="load()" />
+  }
+  @default {
+    @if (rows().length === 0) {
+      <p class="muted" data-empty>No task types yet. Create the first one.</p>
+    } @else {
+      <table class="grid" data-task-types>
+        <caption class="sr-only">
+          Task types
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Request form</th>
+            <th scope="col">Eligible workflows</th>
+            <th scope="col">Default workflow</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of rows(); track t.id) {
+            <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
+              <td>
+                <a [routerLink]="['/admin/task-types', t.id]">{{ t.name }}</a>
+                @if (!t.isActive) {
+                  <span class="muted tag">Inactive</span>
+                }
+                @if (warning(t); as w) {
+                  <p class="chip" data-warning>{{ w }}</p>
+                }
+              </td>
+              <td data-form-status>
+                {{ formStatus(t) }}
+                @if (formVersion(t)) {
+                  <span class="muted">{{ formVersion(t) }}</span>
+                }
+                <a
+                  class="link"
+                  [routerLink]="['/admin/task-types', t.id, 'form']"
+                  [attr.aria-label]="'Design the request form of ' + t.name"
+                  >Design</a
+                >
+              </td>
+              <td data-eligible-count>{{ t.eligibleWorkflowIds.length }}</td>
+              <td data-default>{{ workflowName(t.defaultWorkflowDefinitionId) }}</td>
+              <td class="actions">
+                <a class="link" [routerLink]="['/admin/task-types', t.id]">Edit</a>
+                @if (t.isActive) {
+                  <button
+                    type="button"
+                    class="link danger"
+                    [disabled]="busy()"
+                    [attr.aria-label]="'Deactivate ' + t.name"
+                    (click)="setActive(t, false)"
+                    data-deactivate
+                  >
+                    Deactivate
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="link"
+                    [disabled]="busy()"
+                    [attr.aria-label]="'Activate ' + t.name"
+                    (click)="setActive(t, true)"
+                    data-activate
+                  >
+                    Activate
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  }
+}

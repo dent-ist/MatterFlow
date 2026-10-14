@@ -82,6 +82,7 @@
         [definition]="working()"
         [saved]="current()!.definition"
         [readOnly]="readOnly()"
+        [externalIssues]="serverIssues()"
         (definitionChange)="onChange($event)"
       />
 
@@ -145,7 +146,9 @@
       ? 'Publish version ' + current()?.versionNo
       : dialog() === 'retire'
         ? 'Retire version ' + current()?.versionNo
-        : 'Discard unsaved changes?'
+        : dialog() === 'conflict'
+          ? 'This draft was changed by someone else'
+          : 'Discard unsaved changes?'
   "
 >
   @switch (dialog()) {
@@ -200,6 +203,18 @@
         <div class="ttf__dialog-actions">
           <p-button label="Cancel" severity="secondary" (onClick)="closeDialog()" />
           <p-button label="Retire version" severity="danger" (onClick)="confirmRetire()" />
+        </div>
+      </div>
+    }
+    @case ('conflict') {
+      <div class="ttf__dialog" data-dialog="conflict">
+        <p>
+          Another admin saved this draft after you opened it. Reload to see their version, or keep
+          your edits and save over theirs.
+        </p>
+        <div class="ttf__dialog-actions">
+          <p-button label="Reload latest" severity="secondary" (onClick)="resolveConflict(false)" />
+          <p-button label="Keep my changes" (onClick)="resolveConflict(true)" />
         </div>
       </div>
     }

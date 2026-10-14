@@ -1,0 +1,66 @@
+.edit {
+  display: grid;
+  gap: var(--mf-s5);
+  max-width: 640px;
+
+  h2 {
+    margin: 0 0 var(--mf-s2);
+    font-size: var(--mf-fs-h3);
+  }
+}
+
+.field {
+  display: grid;
+  gap: var(--mf-s1);
+  margin-bottom: var(--mf-s3);
+
+  &.inline {
+    display: flex;
+    align-items: center;
+    gap: var(--mf-s2);
+  }
+
+  label {
+    font-weight: 600;
+  }
+
+  textarea.text {
+    padding: var(--mf-s2);
+  }
+}
+
+.workflows {
+  display: grid;
+  gap: var(--mf-s2);
+  margin: 0 0 var(--mf-s3);
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--mf-s2);
+  }
+}
+
+.open-form {
+  color: var(--mf-link);
+}
+
+.usability {
+  padding: var(--mf-s3);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface-alt);
+
+  ul {
+    margin: 0;
+    padding-left: var(--mf-s5);
+  }
+}
+
+.actions-row {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s3);
+}

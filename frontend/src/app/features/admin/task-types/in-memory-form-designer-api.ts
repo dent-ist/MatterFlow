@@ -37,22 +37,24 @@ const SEED: DesignerDefinition = {
 export class InMemoryFormDesignerApi extends FormDesignerApi {
   private readonly owners = new Map<string, FormOwner>([
     ['data-processing', { id: 'data-processing', name: 'Data Processing' }],
+    // The stub Task Types list (InMemoryTaskTypesApi) numbers Data Processing 1.
+    ['1', { id: '1', name: 'Data Processing' }],
   ]);
   private readonly versions = new Map<string, FormVersion[]>([
-    [
-      'data-processing',
-      [
-        {
-          id: 'v1',
-          versionNo: 1,
-          status: 'PUBLISHED',
-          updatedAtUtc: '2026-10-01T09:00:00Z',
-          definition: clone(SEED),
-        },
-      ],
-    ],
+    ['data-processing', [this.seedVersion()]],
+    ['1', [this.seedVersion()]],
   ]);
   private nextId = 2;
+
+  private seedVersion(): FormVersion {
+    return {
+      id: 'v1',
+      versionNo: 1,
+      status: 'PUBLISHED',
+      updatedAtUtc: '2026-10-01T09:00:00Z',
+      definition: clone(SEED),
+    };
+  }
 
   private list(ownerId: string): FormVersion[] {
     const list = this.versions.get(ownerId);

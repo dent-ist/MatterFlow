@@ -10,6 +10,8 @@ export interface FormVersionSummary {
   /** Optional note given at publish time. */
   note?: string;
   updatedAtUtc: string;
+  /** Concurrency token of the version (real API only); send it back when saving or publishing a draft. */
+  rowVersion?: string;
 }
 
 export interface FormVersion extends FormVersionSummary {
@@ -22,9 +24,9 @@ export interface FormOwner {
 }
 
 /**
- * Persistence for form definition versions (architecture 7.2). The backend API does not exist yet;
- * the admin route provides `InMemoryFormDesignerApi`. Swap the provider for a client generated
- * from contracts/openapi when the endpoints land; nothing else changes.
+ * Persistence for form definition versions (architecture 7.2). The admin routes provide
+ * `HttpFormDesignerApi` (the generated client over `/api/v1/forms`) and, with the stub auth provider
+ * or in unit tests, `InMemoryFormDesignerApi`.
  *
  * Rules the server enforces (and the stub mimics): at most one DRAFT per owner; only a DRAFT can
  * be saved; publish re-validates and retires the previous PUBLISHED version atomically; published
@@ -40,7 +42,18 @@ export abstract class FormDesignerApi {
     ownerId: string,
     versionId: string,
     definition: DesignerDefinition,
+    rowVersion?: string,
   ): Observable<FormVersion>;
-  abstract publish(ownerId: string, versionId: string, note?: string): Observable<FormVersion>;
+  /**
+   * Publishes a saved draft. A server-side definition check failure surfaces as an `ApiError` with
+   * code `PUBLISH_VALIDATION_FAILED` and errors keyed `form:<fieldKey>`; a stale `rowVersion` as
+   * `CONCURRENCY_CONFLICT`.
+   */
+  abstract publish(
+    ownerId: string,
+    versionId: string,
+    note?: string,
+    rowVersion?: string,
+  ): Observable<FormVersion>;
   abstract retire(ownerId: string, versionId: string): Observable<FormVersion>;
 }
