@@ -5,6 +5,7 @@
     <ProjectReference Include="..\MatterFlow.Organization\MatterFlow.Organization.csproj" />
     <ProjectReference Include="..\MatterFlow.Assets\MatterFlow.Assets.csproj" />
     <ProjectReference Include="..\MatterFlow.Configuration\MatterFlow.Configuration.csproj" />
+    <ProjectReference Include="..\MatterFlow.Identity.Contracts\MatterFlow.Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\MatterFlow.Data\MatterFlow.Data.csproj" />
   </ItemGroup>
 </Project>

@@ -92,7 +92,8 @@ public class AuthorizationRulesTests
             foreach (var attribute in attributes)
             {
                 (attribute.Policy ?? string.Empty).ShouldStartWith(AccessPolicies.PermissionPrefix, customMessage: $"{Name(controller, action)} must use [RequirePermission]");
-                Permissions.All.ShouldContain(attribute.Policy![AccessPolicies.PermissionPrefix.Length..], $"{Name(controller, action)} references an unknown permission");
+                foreach (var code in attribute.Policy![AccessPolicies.PermissionPrefix.Length..].Split(AccessPolicies.AnyOfSeparator))
+                    Permissions.All.ShouldContain(code, $"{Name(controller, action)} references an unknown permission");
             }
         }
     }
