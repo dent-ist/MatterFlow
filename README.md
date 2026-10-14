@@ -4,6 +4,14 @@ Internal law-firm eDiscovery Matter and Task tracker. ASP.NET Core (.NET 10) + S
 
 Design documents live in `docs/` (start with `docs/architecture.md`; environment notes in `docs/dev-environment.md`).
 
+## Status
+
+Working end to end today: identity and access (Windows/Dev auth, JIT provisioning, roles and permissions, Access Pending), audit,
+organization (clients, matters, projects with custom fields), configuration (priorities, task types, status labels), forms and the
+custom-field engine, workflow definitions and instances, assets, the admin screens, and the Angular shell with the lazy-loaded feature areas.
+The Task module (creation, lifecycle, queues) is being built; Outlook intake, search and the e2e suite come later. The phase plan is in
+`docs/architecture.md` section 18.
+
 ## Repository layout
 
 | Path | Contents |
@@ -13,7 +21,9 @@ Design documents live in `docs/` (start with `docs/architecture.md`; environment
 | `contracts/` | Cross-stack contracts (OpenAPI, form-rule schema and vectors, permission catalog) |
 | `db/scripts/` | Numbered, immutable SQL schema scripts (see its README) |
 | `docs/` | Requirements, architecture, ERD, UX spec and tokens |
-| `.github/workflows/` | CI |
+| `.github/` | GitHub Actions workflows, the shared `setup-dotnet` action, Dependabot config |
+| `docker-compose.dev.yml` | Local SQL Server 2022 (see below) |
+| `tools/` | Helper tooling and spikes |
 
 ## Prerequisites
 
@@ -27,7 +37,8 @@ Design documents live in `docs/` (start with `docs/architecture.md`; environment
 ```bash
 cd backend
 dotnet build                 # add -warnaserror to match CI
-dotnet test                  # unit, architecture, schema and smoke integration tests
+dotnet test                  # everything: unit, architecture, schema and integration tests (the last two need Docker)
+dotnet test tests/MatterFlow.UnitTests   # fast, no Docker (also tests/MatterFlow.ArchitectureTests)
 dotnet run --project src/MatterFlow.Api   # http://localhost:5080, liveness at /health/live
 dotnet format --verify-no-changes         # style check used by CI
 ```
@@ -88,7 +99,56 @@ Without a browser, the Dev provider also accepts the `X-Dev-User` header, for ex
 The same flow is covered by an automated test: `backend/tests/MatterFlow.IntegrationTests/Identity/WalkingSkeletonTests.cs`
 (Testcontainers, real SQL Server).
 
+## Local SQL Server (docker compose)
+
+```bash
+docker compose -f docker-compose.dev.yml up -d --wait   # SQL Server 2022 on localhost:1433, empty database MatterFlow
+docker compose -f docker-compose.dev.yml down           # stop; add -v to also delete the data volume
+```
+
+The dev password is in the compose file (`MatterFlow_Dev1!`, not a secret). The compose file only creates the empty database;
+the API creates the schema itself.
+
+## Migrations
+
+Schema changes are numbered SQL scripts in `db/scripts/` (immutable once merged; fix forward with a new script, see `db/scripts/README.md`).
+The API applies pending scripts at startup before it listens (`Migrations:Enabled`, default true), under an application lock, and
+records them in `dbo.SchemaMigration` with checksums. There are no EF migrations. Connection string: `ConnectionStrings:Migrations`,
+falling back to `ConnectionStrings:Default`; the application uses `ConnectionStrings:MatterFlow`. Design: `docs/architecture.md` section 4.
+
+## Configuration and dev authentication
+
+| Setting | Meaning |
+|---|---|
+| `Auth:Provider` | `Windows` (IIS, production) or `Dev`. Unset means `Dev` in Development and `Windows` elsewhere; `Dev` is refused in Production. |
+| `X-Dev-User` header | With the Dev provider, names the calling user (for example `KE\alice`); the query form `?devUser=` also works. Unknown names are provisioned like a first login. |
+| `Auth:Dev:DefaultUser` | User signed in when a request names none (what the browser gets). Empty means 401. |
+| `Dev:Users` | Optional seeded users: `[{ "Username": "KE\\alice", "DisplayName": "Alice", "Email": "...", "Roles": ["..."] }]` (Dev provider only). |
+| `Bootstrap:SystemAdmins` | Accounts that become System Admin at their first sign-in (production value: `ke\kekim`). |
+| `Seed:StarterConfiguration:Enabled` | Seeds starter task types, workflows, forms and priorities at startup. Default on in Development, off elsewhere; `DryRun` only logs. Never overwrites admin edits. |
+| `ActiveDirectory:LookupEnabled` | Optional AD profile lookup (off by default). |
+| `Firm:TimeZoneId` | Fallback time zone (default `America/New_York`). |
+
 ## CI
 
-`.github/workflows/ci.yml` runs on pull requests and on pushes to `dev`: backend (build with warnings as errors, format check, all
-test projects) and frontend (`npm ci`, lint, format check, tests, production build).
+| Workflow | When | What |
+|---|---|---|
+| `ci.yml` | PRs and pushes to `dev` | `backend` (build with warnings as errors, OpenAPI drift, format, unit and architecture tests), `backend-integration` in parallel (SQL Server in Docker via Testcontainers: integration and schema tests), `frontend` (lint, format, Vitest, API client drift, production build). TRX results are uploaded as artifacts; NuGet packages are cached and restore retries once. |
+| `nightly.yml` | daily and manual | Full backend suite with coverage plus frontend tests and build. |
+| `codeql.yml` | push to `dev`, weekly | CodeQL for C# and JavaScript/TypeScript. |
+| `e2e.yml` | manual | Placeholder for the Playwright suite (deferred); documents how it will run. |
+
+`.github/dependabot.yml` opens weekly grouped (minor/patch) updates for NuGet, npm and GitHub Actions.
+
+## Deployment
+
+IIS with Windows authentication on a single origin: see `docs/runbook.md`.
+
+## Documentation map
+
+- `docs/architecture.md`: decisions, modules, schema runner, auth, CI outline, build phases
+- `docs/requirements/baseline-v1.1.md` and `decisions-addendum.md`: requirements and later decisions
+- `docs/erd.md`: data model; `docs/ux/ux-spec.md` and `tokens.css`: UX
+- `docs/qa/`: test plan, traceability, risk register, permission matrix tests
+- `docs/runbook.md`: deployment and operations; `docs/dev-environment.md`: cloud container notes
+- `docs/adr/`: spikes and decision records

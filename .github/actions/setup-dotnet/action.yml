@@ -1,0 +1,25 @@
+name: Set up .NET and restore
+description: Installs the SDK from global.json, caches the NuGet package folder and restores the solution (one retry on failure).
+
+inputs:
+  working-directory:
+    description: Folder that contains the solution.
+    default: backend
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
+    - uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: nuget-${{ runner.os }}-${{ hashFiles('backend/Directory.Packages.props', 'backend/**/*.csproj', 'global.json') }}
+        restore-keys: |
+          nuget-${{ runner.os }}-
+    - name: Restore (retries once on a transient failure)
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        dotnet restore || { echo "::warning::dotnet restore failed, retrying once"; sleep 15; dotnet restore; }

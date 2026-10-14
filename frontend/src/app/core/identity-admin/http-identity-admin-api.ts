@@ -1,6 +1,6 @@
-import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
-import { RolesClient, UsersClient } from '../../api/generated/api-client';
+import { Injectable, Injector, inject } from '@angular/core';
+import { Observable, defer, from, shareReplay, switchMap } from 'rxjs';
+import type { RolesClient, UsersClient } from '../../api/generated/api-client';
 import {
   IdentityAdminApi,
   PagedResultOfUserSummaryDto,
@@ -13,35 +13,51 @@ import {
   UserListQuery,
 } from './identity-admin-api';
 
-/** Real provider over the generated API client. */
+/**
+ * Real provider over the generated API client. The client module (all ~24 API classes, ~100 kB) is
+ * imported on first use so it stays out of the initial bundle; this class is eager because the
+ * app shell needs it for the pending-users badge.
+ */
 @Injectable()
 export class HttpIdentityAdminApi extends IdentityAdminApi {
-  private readonly users = inject(UsersClient);
-  private readonly roles = inject(RolesClient);
+  private readonly injector = inject(Injector);
+  private readonly client$ = defer(() => from(import('../../api/generated/api-client'))).pipe(
+    shareReplay({ bufferSize: 1, refCount: false }),
+  );
+
+  private withUsers<T>(call: (c: UsersClient) => Observable<T>): Observable<T> {
+    return this.client$.pipe(switchMap((m) => call(this.injector.get(m.UsersClient))));
+  }
+
+  private withRoles<T>(call: (c: RolesClient) => Observable<T>): Observable<T> {
+    return this.client$.pipe(switchMap((m) => call(this.injector.get(m.RolesClient))));
+  }
 
   listUsers(q: UserListQuery): Observable<PagedResultOfUserSummaryDto> {
-    return this.users.listUsers(
-      q.status && q.status !== 'all' ? q.status : undefined,
-      q.search?.trim() || undefined,
-      q.page,
-      q.pageSize,
+    return this.withUsers((c) =>
+      c.listUsers(
+        q.status && q.status !== 'all' ? q.status : undefined,
+        q.search?.trim() || undefined,
+        q.page,
+        q.pageSize,
+      ),
     );
   }
 
   userCounts(): Observable<UserCountsDto> {
-    return this.users.getUserCounts();
+    return this.withUsers((c) => c.getUserCounts());
   }
 
   getUser(userId: number): Observable<UserDetailDto> {
-    return this.users.getUser(userId);
+    return this.withUsers((c) => c.getUser(userId));
   }
 
   setUserRoles(userId: number, roleIds: number[], rowVersion?: string): Observable<UserDetailDto> {
-    return this.users.setUserRoles(userId, { roleIds, rowVersion });
+    return this.withUsers((c) => c.setUserRoles(userId, { roleIds, rowVersion }));
   }
 
   setUserActive(userId: number, isActive: boolean, rowVersion?: string): Observable<UserDetailDto> {
-    return this.users.setUserActive(userId, { isActive, rowVersion });
+    return this.withUsers((c) => c.setUserActive(userId, { isActive, rowVersion }));
   }
 
   updateUserProfile(
@@ -50,30 +66,30 @@ export class HttpIdentityAdminApi extends IdentityAdminApi {
     email: string | undefined,
     rowVersion?: string,
   ): Observable<UserDetailDto> {
-    return this.users.updateUserProfile(userId, { displayName, email, rowVersion });
+    return this.withUsers((c) => c.updateUserProfile(userId, { displayName, email, rowVersion }));
   }
 
   listRoles(): Observable<RoleSummaryDto[]> {
-    return this.roles.listRoles();
+    return this.withRoles((c) => c.listRoles());
   }
 
   getRole(roleId: number): Observable<RoleDetailDto> {
-    return this.roles.getRole(roleId);
+    return this.withRoles((c) => c.getRole(roleId));
   }
 
   createRole(request: SaveRoleRequest): Observable<RoleDetailDto> {
-    return this.roles.createRole(request);
+    return this.withRoles((c) => c.createRole(request));
   }
 
   updateRole(roleId: number, request: SaveRoleRequest): Observable<RoleDetailDto> {
-    return this.roles.updateRole(roleId, request);
+    return this.withRoles((c) => c.updateRole(roleId, request));
   }
 
   deleteRole(roleId: number): Observable<void> {
-    return this.roles.deleteRole(roleId);
+    return this.withRoles((c) => c.deleteRole(roleId));
   }
 
   listPermissions(): Observable<PermissionGroupDto[]> {
-    return this.roles.listPermissions();
+    return this.withRoles((c) => c.listPermissions());
   }
 }

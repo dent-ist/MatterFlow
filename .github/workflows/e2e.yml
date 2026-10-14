@@ -1,0 +1,22 @@
+name: e2e
+
+# PLACEHOLDER. Browser end-to-end tests (Playwright) are deferred to the end of the project.
+# This workflow only documents the intended shape and always succeeds. When the suite exists:
+#   1. Start SQL Server:  docker compose -f docker-compose.dev.yml up -d --wait
+#   2. Start the API with the Dev auth provider (see README "Walking skeleton"): dotnet run --project backend/src/MatterFlow.Api &
+#   3. Install browsers: npx playwright install --with-deps chromium  (in frontend/)
+#   4. Run: npx playwright test  (baseURL http://localhost:4200, `npm run start:api` or the built dist served statically)
+#   5. Upload playwright-report/ and traces as artifacts.
+# Then replace the placeholder step below with these steps and add a schedule or a pull_request trigger.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  placeholder:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: echo "Playwright e2e is not implemented yet (deferred to the end of the project). See the comments at the top of this workflow."
