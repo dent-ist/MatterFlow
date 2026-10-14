@@ -103,3 +103,11 @@ See `docs/qa/findings.md`. Notable: Completed -> Cancelled is allowed directly (
 - **No data purge.** Phase 1 retains all records and audit history indefinitely; no retention/purge job.
 - **Adopted from `docs/sme/domain-review.md`:** copy button on the `#####-#####` reference; search accepts an unpadded `343-12` pair; privilege-reminder notice on Outlook intake, Task Description and comments; Assets can be deactivated but never hard-deleted and show their change history; the bulk-complete dialog names the steps; seed Task Type forms carry a deadline-driver and notes block.
 - **Deferred/not adopted for now:** per-Asset-Type statuses, duplicate-Asset/similar-Task warnings, "trim quoted chain" tool, custody-event Task Type beyond the seed data.
+
+## P. Required custom fields and existing records (decided 2026-10-14, from UAT-07)
+
+- Publishing a new required custom field **never blocks editing existing Clients, Matters, Projects or Assets**. Only the fields a user actually changes are validated (FND-07).
+- If an existing record has no stored custom values and the user saves other changes **without touching the custom-fields section**, the save succeeds and the required custom fields stay empty.
+- If the user **enters or changes any custom value** in that section, the required fields in that section must be satisfied, and the screen highlights exactly which ones are missing (inline, red border, listed by name).
+- On **create**, all required custom fields are enforced as before.
+- Detail screens may show a neutral "Not provided" for required fields that old records lack.
