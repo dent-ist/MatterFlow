@@ -48,8 +48,8 @@ public sealed class CustomFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
         var definitionId = definition.GetProperty("formDefinitionId").GetInt32();
         var draft = await OkAsync(await admin.PostAsync($"/api/v1/forms/{definitionId}/versions", Json("{}")), HttpStatusCode.Created);
         var versionId = draft.GetProperty("version").GetProperty("formVersionId").GetInt32();
-        await OkAsync(await admin.PutAsync($"/api/v1/forms/{definitionId}/versions/{versionId}", Json($$"""{"fields":[{{string.Join(",", fields)}}]}""")));
-        await OkAsync(await admin.PostAsync($"/api/v1/forms/{definitionId}/versions/{versionId}/publish", null));
+        await OkAsync(await FormDraftApi.SaveAsync(admin, definitionId, versionId, $$"""{"fields":[{{string.Join(",", fields)}}]}"""));
+        await OkAsync(await FormDraftApi.PublishAsync(admin, definitionId, versionId));
         return versionId;
     }
 

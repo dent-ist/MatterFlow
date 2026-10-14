@@ -33,7 +33,7 @@ public class RolesController(RoleAdministration roles) : ControllerBase
     [HttpPost("roles", Name = "CreateRole")]
     [RequirePermission(Permissions.Role.Manage)]
     [ProducesResponseType<RoleDetailDto>(StatusCodes.Status201Created, "application/json")]
-    public async Task<IActionResult> Create([FromBody] SaveRoleRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateRoleRequest request, CancellationToken cancellationToken)
     {
         var result = await roles.CreateAsync(request, cancellationToken);
         return result.IsFailure

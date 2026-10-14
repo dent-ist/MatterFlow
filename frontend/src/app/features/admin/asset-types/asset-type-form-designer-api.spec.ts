@@ -156,7 +156,9 @@ describe('AssetTypeFormDesignerApi', () => {
     await firstValueFrom(api.listVersions('4'));
     await firstValueFrom(api.publish('4', '30'));
     expect(forms['saveFormDraft']).not.toHaveBeenCalled();
-    expect(forms['publishFormVersion']).toHaveBeenCalledWith(5, 30, undefined);
+    // The server requires a row version on publish (SEC-09): the designer reads the current one when it never loaded it.
+    expect(forms['getFormVersionSchema']).toHaveBeenCalledWith(30);
+    expect(forms['publishFormVersion']).toHaveBeenCalledWith(5, 30, 'DRAFTRV');
 
     await firstValueFrom(api.retire('4', '21'));
     expect(forms['retireFormVersion']).toHaveBeenCalledWith(5, 21);

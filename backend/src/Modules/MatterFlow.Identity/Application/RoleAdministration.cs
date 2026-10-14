@@ -49,7 +49,7 @@ public sealed class RoleAdministration(DbContext db, IUserAccessInvalidator inva
             .ToList();
     }
 
-    public async Task<Result<RoleDetailDto>> CreateAsync(SaveRoleRequest request, CancellationToken ct)
+    public async Task<Result<RoleDetailDto>> CreateAsync(CreateRoleRequest request, CancellationToken ct)
     {
         var name = request.Name.Trim();
         if (await NameTakenAsync(name, null, ct))

@@ -1241,10 +1241,9 @@ export interface IFormsClient {
      */
     discardFormDraft(definitionId: number, versionId: number): Observable<void>;
     /**
-     * @param rowVersion (optional) 
      * @return OK
      */
-    publishFormVersion(definitionId: number, versionId: number, rowVersion?: string | undefined): Observable<FormVersionDetail>;
+    publishFormVersion(definitionId: number, versionId: number, rowVersion: string): Observable<FormVersionDetail>;
     /**
      * @return OK
      */
@@ -1827,10 +1826,9 @@ export class FormsClient implements IFormsClient {
     }
 
     /**
-     * @param rowVersion (optional) 
      * @return OK
      */
-    publishFormVersion(definitionId: number, versionId: number, rowVersion?: string | undefined): Observable<FormVersionDetail> {
+    publishFormVersion(definitionId: number, versionId: number, rowVersion: string): Observable<FormVersionDetail> {
         let url_ = this.baseUrl + "/api/v1/forms/{definitionId}/versions/{versionId}/publish?";
         if (definitionId === undefined || definitionId === null)
             throw new globalThis.Error("The parameter 'definitionId' must be defined.");
@@ -1838,9 +1836,9 @@ export class FormsClient implements IFormsClient {
         if (versionId === undefined || versionId === null)
             throw new globalThis.Error("The parameter 'versionId' must be defined.");
         url_ = url_.replace("{versionId}", encodeURIComponent("" + versionId));
-        if (rowVersion === null)
-            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
-        else if (rowVersion !== undefined)
+        if (rowVersion === undefined || rowVersion === null)
+            throw new globalThis.Error("The parameter 'rowVersion' must be defined and cannot be null.");
+        else
             url_ += "rowVersion=" + encodeURIComponent("" + rowVersion) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -3517,7 +3515,7 @@ export interface IRolesClient {
     /**
      * @return Created
      */
-    createRole(body: SaveRoleRequest): Observable<RoleDetailDto>;
+    createRole(body: CreateRoleRequest): Observable<RoleDetailDto>;
     /**
      * @return OK
      */
@@ -3525,7 +3523,7 @@ export interface IRolesClient {
     /**
      * @return OK
      */
-    updateRole(roleId: number, body: SaveRoleRequest): Observable<RoleDetailDto>;
+    updateRole(roleId: number, body: UpdateRoleRequest): Observable<RoleDetailDto>;
     /**
      * @return No Content
      */
@@ -3602,7 +3600,7 @@ export class RolesClient implements IRolesClient {
     /**
      * @return Created
      */
-    createRole(body: SaveRoleRequest): Observable<RoleDetailDto> {
+    createRole(body: CreateRoleRequest): Observable<RoleDetailDto> {
         let url_ = this.baseUrl + "/api/v1/roles";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -3709,7 +3707,7 @@ export class RolesClient implements IRolesClient {
     /**
      * @return OK
      */
-    updateRole(roleId: number, body: SaveRoleRequest): Observable<RoleDetailDto> {
+    updateRole(roleId: number, body: UpdateRoleRequest): Observable<RoleDetailDto> {
         let url_ = this.baseUrl + "/api/v1/roles/{roleId}";
         if (roleId === undefined || roleId === null)
             throw new globalThis.Error("The parameter 'roleId' must be defined.");
@@ -7085,6 +7083,14 @@ export interface CreateProjectRequest {
     [key: string]: any;
 }
 
+export interface CreateRoleRequest {
+    name: string;
+    description: string | undefined;
+    permissionCodes: string[];
+
+    [key: string]: any;
+}
+
 export interface CreateStepDefinitionRequest {
     title: string;
     description?: string | undefined;
@@ -7529,16 +7535,7 @@ export interface RoleSummaryDto {
 export interface SaveFormDraftRequest {
     fields: FormFieldModel[];
     notes?: string | undefined;
-    rowVersion?: string | undefined;
-
-    [key: string]: any;
-}
-
-export interface SaveRoleRequest {
-    name: string;
-    description: string | undefined;
-    permissionCodes: string[];
-    rowVersion: string | undefined;
+    rowVersion: string;
 
     [key: string]: any;
 }
@@ -7573,14 +7570,14 @@ export interface SetPrimaryPodRequest {
 
 export interface SetUserActiveRequest {
     isActive: boolean;
-    rowVersion: string | undefined;
+    rowVersion: string;
 
     [key: string]: any;
 }
 
 export interface SetUserRolesRequest {
     roleIds: number[];
-    rowVersion: string | undefined;
+    rowVersion: string;
 
     [key: string]: any;
 }
@@ -7733,6 +7730,15 @@ export interface UpdateProjectRequest {
     [key: string]: any;
 }
 
+export interface UpdateRoleRequest {
+    name: string;
+    description: string | undefined;
+    permissionCodes: string[];
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface UpdateStatusLabelRequest {
     displayLabel: string;
     rowVersion: string;
@@ -7765,7 +7771,7 @@ export interface UpdateTaskTypeRequest {
 export interface UpdateUserProfileRequest {
     displayName: string;
     email: string | undefined;
-    rowVersion: string | undefined;
+    rowVersion: string;
 
     [key: string]: any;
 }
@@ -8002,6 +8008,8 @@ export enum ApiProblemDetailsCode {
     ASSET_INACTIVE = "ASSET_INACTIVE",
     UNSUPPORTED_MEDIA_TYPE = "UNSUPPORTED_MEDIA_TYPE",
     INTERNAL_ERROR = "INTERNAL_ERROR",
+    TOO_MANY_REQUESTS = "TOO_MANY_REQUESTS",
+    METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED",
 }
 
 export interface FileParameter {

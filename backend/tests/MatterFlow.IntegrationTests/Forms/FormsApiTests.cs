@@ -60,8 +60,7 @@ public sealed class FormsApiTests(SqlServerFixture sql) : IAsyncLifetime
 
     private async Task<HttpResponseMessage> SaveAsync(HttpClient client, int definitionId, int versionId, string fieldsJson, string? rowVersion = null)
     {
-        var rv = rowVersion is null ? string.Empty : $$""","rowVersion":"{{rowVersion}}" """;
-        return await client.PutAsync($"/api/v1/forms/{definitionId}/versions/{versionId}", Json(fieldsJson.TrimEnd('}') + rv + "}"));
+        return await FormDraftApi.SaveAsync(client, definitionId, versionId, fieldsJson, rowVersion);
     }
 
     /// <summary>Creates a draft with the fields, saves and publishes it; returns the published version id.</summary>
@@ -71,7 +70,7 @@ public sealed class FormsApiTests(SqlServerFixture sql) : IAsyncLifetime
         var versionId = VersionId(draft);
         var saved = await SaveAsync(client, definitionId, versionId, Body(fields));
         saved.StatusCode.ShouldBe(HttpStatusCode.OK, await saved.Content.ReadAsStringAsync());
-        var published = await client.PostAsync($"/api/v1/forms/{definitionId}/versions/{versionId}/publish", null);
+        var published = await FormDraftApi.PublishAsync(client, definitionId, versionId);
         published.StatusCode.ShouldBe(HttpStatusCode.OK, await published.Content.ReadAsStringAsync());
         return versionId;
     }
@@ -121,7 +120,7 @@ public sealed class FormsApiTests(SqlServerFixture sql) : IAsyncLifetime
         savedBody.GetProperty("fields").GetArrayLength().ShouldBe(3);
         savedBody.GetProperty("fields")[1].GetProperty("options").GetArrayLength().ShouldBe(2);
 
-        var published = await ReadAsync(await client.PostAsync($"/api/v1/forms/{definitionId}/versions/{versionId}/publish", null));
+        var published = await ReadAsync(await FormDraftApi.PublishAsync(client, definitionId, versionId));
         published.GetProperty("version").GetProperty("status").GetString().ShouldBe("Published");
         published.GetProperty("version").GetProperty("publishedAtUtc").ValueKind.ShouldBe(JsonValueKind.String);
 
@@ -130,7 +129,7 @@ public sealed class FormsApiTests(SqlServerFixture sql) : IAsyncLifetime
         edit.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await ReadAsync(edit)).GetProperty("code").GetString().ShouldBe("FORM_VERSION_IMMUTABLE");
         (await client.DeleteAsync($"/api/v1/forms/{definitionId}/versions/{versionId}")).StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        (await client.PostAsync($"/api/v1/forms/{definitionId}/versions/{versionId}/publish", null)).StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await FormDraftApi.PublishAsync(client, definitionId, versionId)).StatusCode.ShouldBe(HttpStatusCode.Conflict);
 
         // Database guard: even raw SQL cannot change or delete a published version, its fields or its options.
         await ShouldBeRejectedAsync($"UPDATE dbo.FormField SET Label = N'hacked' WHERE FormVersionId = {versionId}");
@@ -184,7 +183,7 @@ public sealed class FormsApiTests(SqlServerFixture sql) : IAsyncLifetime
         VersionId(published).ShouldBe(v1);
         published.GetProperty("fields").GetArrayLength().ShouldBe(2);
 
-        (await client.PostAsync($"/api/v1/forms/{definitionId}/versions/{v2}/publish", null)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await FormDraftApi.PublishAsync(client, definitionId, v2)).StatusCode.ShouldBe(HttpStatusCode.OK);
 
         var definition = await ReadAsync(await client.GetAsync($"/api/v1/forms/{definitionId}"));
         definition.GetProperty("publishedVersionId").GetInt32().ShouldBe(v2);
@@ -243,6 +242,21 @@ public sealed class FormsApiTests(SqlServerFixture sql) : IAsyncLifetime
         fresh.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
+    [Fact]
+    public async Task Saving_or_publishing_a_draft_without_a_row_version_is_rejected()
+    {
+        var client = As();
+        var definitionId = await EnsureAsync(client, "Matter", null);
+        var versionId = VersionId(await NewDraftAsync(client, definitionId));
+
+        var save = await client.PutAsync($"/api/v1/forms/{definitionId}/versions/{versionId}", Json(Body(Field("a", "TEXT"))));
+        var publish = await client.PostAsync($"/api/v1/forms/{definitionId}/versions/{versionId}/publish", null);
+
+        save.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        publish.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await ReadAsync(await FormDraftApi.SaveAsync(client, definitionId, versionId, Body(Field("a", "TEXT"))))).GetProperty("version").GetProperty("fieldCount").GetInt32().ShouldBe(1);
+    }
+
     // ---- validation
 
     [Fact]
@@ -259,7 +273,7 @@ public sealed class FormsApiTests(SqlServerFixture sql) : IAsyncLifetime
             Field("d", "TEXT", """ "showWhen":{"op":"isNotEmpty","field":"d"}"""),
             Field("e", "SELECT")))).StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        var response = await client.PostAsync($"/api/v1/forms/{definitionId}/versions/{versionId}/publish", null);
+        var response = await FormDraftApi.PublishAsync(client, definitionId, versionId);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         response.Content.Headers.ContentType!.MediaType.ShouldBe("application/problem+json");
@@ -285,17 +299,17 @@ public sealed class FormsApiTests(SqlServerFixture sql) : IAsyncLifetime
             [.. Enumerable.Range(1, 6).Select(i => Field($"f{i}", "TEXT", """ "isFilterable":true""")),
              Field("note", "HELP_TEXT", """ "isFilterable":true"""),
              Field("qty", "NUMBER", """ "validation":{"max":5},"defaultValue":9""")]))).StatusCode.ShouldBe(HttpStatusCode.OK);
-        var rejected = await ReadAsync(await client.PostAsync($"/api/v1/forms/{definitionId}/versions/{tooManyId}/publish", null));
+        var rejected = await ReadAsync(await FormDraftApi.PublishAsync(client, definitionId, tooManyId));
         ErrorCodes(rejected).ShouldBe(["TOO_MANY_FILTERABLE_FIELDS", "INVALID_FILTERABLE_FIELD", "INVALID_DEFAULT"], ignoreOrder: true);
 
         (await SaveAsync(client, definitionId, tooManyId, Body(Field("qty", "NUMBER", """ "isFilterable":true"""), Field("flag", "CHECKBOX")))).StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await client.PostAsync($"/api/v1/forms/{definitionId}/versions/{tooManyId}/publish", null)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await FormDraftApi.PublishAsync(client, definitionId, tooManyId)).StatusCode.ShouldBe(HttpStatusCode.OK);
 
         // 'qty' is a NUMBER in version 1: it cannot become text later; a different text control family is fine.
         var next = await NewDraftAsync(client, definitionId);
         var nextId = VersionId(next);
         (await SaveAsync(client, definitionId, nextId, Body(Field("qty", "TEXT"), Field("flag", "CHECKBOX")))).StatusCode.ShouldBe(HttpStatusCode.OK);
-        var changed = await ReadAsync(await client.PostAsync($"/api/v1/forms/{definitionId}/versions/{nextId}/publish", null));
+        var changed = await ReadAsync(await FormDraftApi.PublishAsync(client, definitionId, nextId));
         ErrorCodes(changed).ShouldBe(["FIELD_TYPE_CHANGED"]);
         changed.GetProperty("errors").GetProperty("form:qty").GetArrayLength().ShouldBe(1);
     }
@@ -425,7 +439,7 @@ public sealed class FormsApiTests(SqlServerFixture sql) : IAsyncLifetime
         var customFields = As(customFieldManager);
         (await customFields.GetAsync($"/api/v1/forms/versions/{draftId}/schema")).StatusCode.ShouldBe(HttpStatusCode.OK);
         (await SaveAsync(customFields, clientForm, draftId, Body(Field("segment", "TEXT")))).StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await customFields.PostAsync($"/api/v1/forms/{clientForm}/versions/{draftId}/publish", null)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await FormDraftApi.PublishAsync(customFields, clientForm, draftId)).StatusCode.ShouldBe(HttpStatusCode.OK);
         (await customFields.PostAsync($"/api/v1/forms/{taskTypeForm}/versions", Json("{}"))).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
 
         // Anonymous callers are rejected.
@@ -440,7 +454,7 @@ public sealed class FormsApiTests(SqlServerFixture sql) : IAsyncLifetime
         var definitionId = await EnsureAsync(client, "TaskType", 30);
         var v1 = await PublishFormAsync(client, definitionId, Field("title", "TEXT"));
         var v2 = VersionId(await NewDraftAsync(client, definitionId));
-        (await client.PostAsync($"/api/v1/forms/{definitionId}/versions/{v2}/publish", null)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await FormDraftApi.PublishAsync(client, definitionId, v2)).StatusCode.ShouldBe(HttpStatusCode.OK);
 
         var page = await ReadAsync(await client.GetAsync($"/api/v1/audit/events?objectType=FormDefinition&objectId={definitionId}"));
         var events = page.GetProperty("items").EnumerateArray().Select(e => e.GetProperty("eventType").GetString()).ToList();

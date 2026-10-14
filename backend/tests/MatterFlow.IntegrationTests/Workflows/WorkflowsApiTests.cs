@@ -74,8 +74,8 @@ public sealed class WorkflowsApiTests(SqlServerFixture sql) : IAsyncLifetime
         var draft = await OkAsync(await client.PostAsync($"/api/v1/forms/{definitionId}/versions", Json("{}")), HttpStatusCode.Created);
         var versionId = draft.GetProperty("version").GetProperty("formVersionId").GetInt32();
         var body = $$"""{"fields":[{"key":"{{fieldKey}}","label":"Items in","control":"NUMBER"}]}""";
-        (await client.PutAsync($"/api/v1/forms/{definitionId}/versions/{versionId}", Json(body))).StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await client.PostAsync($"/api/v1/forms/{definitionId}/versions/{versionId}/publish", null)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await FormDraftApi.SaveAsync(client, definitionId, versionId, body)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await FormDraftApi.PublishAsync(client, definitionId, versionId)).StatusCode.ShouldBe(HttpStatusCode.OK);
         return versionId;
     }
 
@@ -248,7 +248,7 @@ public sealed class WorkflowsApiTests(SqlServerFixture sql) : IAsyncLifetime
         var emptyDraftForm = await CreateStepAsync(client, "Empty draft form");
         var formId = withDraftForm.GetProperty("formDefinitionId").GetInt32();
         var versionId = (await OkAsync(await client.PostAsync($"/api/v1/forms/{formId}/versions", Json("{}")), HttpStatusCode.Created)).GetProperty("version").GetProperty("formVersionId").GetInt32();
-        (await client.PutAsync($"/api/v1/forms/{formId}/versions/{versionId}", Json("""{"fields":[{"key":"qc","label":"QC","control":"TEXT"}]}"""))).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await FormDraftApi.SaveAsync(client, formId, versionId, """{"fields":[{"key":"qc","label":"QC","control":"TEXT"}]}""")).StatusCode.ShouldBe(HttpStatusCode.OK);
         (await client.PostAsync($"/api/v1/forms/{emptyDraftForm.GetProperty("formDefinitionId").GetInt32()}/versions", Json("{}"))).StatusCode.ShouldBe(HttpStatusCode.Created);
 
         var workflow = await CreateWorkflowAsync(client, "Mixed");
@@ -264,7 +264,7 @@ public sealed class WorkflowsApiTests(SqlServerFixture sql) : IAsyncLifetime
         problem.GetProperty("errors").TryGetProperty("steps[2]", out _).ShouldBeFalse();
 
         // Publish the step's form; now the workflow publishes and pins it. The step with an empty form pins nothing.
-        (await client.PostAsync($"/api/v1/forms/{formId}/versions/{versionId}/publish", null)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await FormDraftApi.PublishAsync(client, formId, versionId)).StatusCode.ShouldBe(HttpStatusCode.OK);
         var published = await OkAsync(await PublishAsync(client, workflowId, saved));
         var steps = published.GetProperty("steps").EnumerateArray().ToList();
         steps[0].GetProperty("stepFormVersionId").GetInt32().ShouldBeGreaterThan(0);

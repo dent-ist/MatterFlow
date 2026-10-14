@@ -1219,6 +1219,7 @@
           {
             "name": "rowVersion",
             "in": "query",
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -2287,17 +2288,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveRoleRequest"
+                "$ref": "#/components/schemas/CreateRoleRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveRoleRequest"
+                "$ref": "#/components/schemas/CreateRoleRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveRoleRequest"
+                "$ref": "#/components/schemas/CreateRoleRequest"
               }
             }
           },
@@ -5372,6 +5373,31 @@
           }
         }
       },
+      "CreateRoleRequest": {
+        "required": [
+          "name",
+          "description",
+          "permissionCodes"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "permissionCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "CreateStepDefinitionRequest": {
         "required": [
           "title"
@@ -6841,7 +6867,8 @@
       },
       "SaveFormDraftRequest": {
         "required": [
-          "fields"
+          "fields",
+          "rowVersion"
         ],
         "type": "object",
         "properties": {
@@ -6858,35 +6885,7 @@
             ]
           },
           "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
-      "SaveRoleRequest": {
-        "required": [
-          "name",
-          "description",
-          "permissionCodes"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
             "type": "string"
-          },
-          "description": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "permissionCodes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           }
         }
       },

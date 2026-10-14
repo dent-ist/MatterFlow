@@ -83,6 +83,14 @@ export class AssetTypeFormDesignerApi extends FormDesignerApi {
   private readonly types = inject(AssetTypesClient);
   private readonly definitions = new Map<string, number>();
   private readonly rowVersions = new Map<number, string>();
+
+  /** The row version the designer last saw; the server requires one on every save and publish, so read it when it was never loaded. */
+  private async rowVersionOf(versionId: number): Promise<string> {
+    return (
+      this.rowVersions.get(versionId) ??
+      (await firstValueFrom(this.forms.getFormVersionSchema(versionId))).version.rowVersion
+    );
+  }
   private readonly filterable = new Map<number, Set<string>>();
 
   override getOwner(ownerId: string): Observable<FormOwner> {
@@ -144,7 +152,7 @@ export class AssetTypeFormDesignerApi extends FormDesignerApi {
           await this.save(ownerId, id, { fields: draft.fields.map(toDesignerField) }, note.trim());
         }
         const detail = await firstValueFrom(
-          this.forms.publishFormVersion(definitionId, id, this.rowVersions.get(id)),
+          this.forms.publishFormVersion(definitionId, id, await this.rowVersionOf(id)),
         );
         return this.version(detail);
       })(),
@@ -173,7 +181,7 @@ export class AssetTypeFormDesignerApi extends FormDesignerApi {
       this.forms.saveFormDraft(definitionId, versionId, {
         fields: definition.fields.map((f) => toServerField(f, filterable)),
         notes,
-        rowVersion: this.rowVersions.get(versionId),
+        rowVersion: await this.rowVersionOf(versionId),
       }),
     );
     return this.version(detail);

@@ -7,7 +7,8 @@ import {
   PermissionGroupDto,
   RoleDetailDto,
   RoleSummaryDto,
-  SaveRoleRequest,
+  CreateRoleRequest,
+  UpdateRoleRequest,
   UserCountsDto,
   UserDetailDto,
   UserListQuery,
@@ -52,11 +53,11 @@ export class HttpIdentityAdminApi extends IdentityAdminApi {
     return this.withUsers((c) => c.getUser(userId));
   }
 
-  setUserRoles(userId: number, roleIds: number[], rowVersion?: string): Observable<UserDetailDto> {
+  setUserRoles(userId: number, roleIds: number[], rowVersion: string): Observable<UserDetailDto> {
     return this.withUsers((c) => c.setUserRoles(userId, { roleIds, rowVersion }));
   }
 
-  setUserActive(userId: number, isActive: boolean, rowVersion?: string): Observable<UserDetailDto> {
+  setUserActive(userId: number, isActive: boolean, rowVersion: string): Observable<UserDetailDto> {
     return this.withUsers((c) => c.setUserActive(userId, { isActive, rowVersion }));
   }
 
@@ -64,7 +65,7 @@ export class HttpIdentityAdminApi extends IdentityAdminApi {
     userId: number,
     displayName: string,
     email: string | undefined,
-    rowVersion?: string,
+    rowVersion: string,
   ): Observable<UserDetailDto> {
     return this.withUsers((c) => c.updateUserProfile(userId, { displayName, email, rowVersion }));
   }
@@ -77,11 +78,11 @@ export class HttpIdentityAdminApi extends IdentityAdminApi {
     return this.withRoles((c) => c.getRole(roleId));
   }
 
-  createRole(request: SaveRoleRequest): Observable<RoleDetailDto> {
+  createRole(request: CreateRoleRequest): Observable<RoleDetailDto> {
     return this.withRoles((c) => c.createRole(request));
   }
 
-  updateRole(roleId: number, request: SaveRoleRequest): Observable<RoleDetailDto> {
+  updateRole(roleId: number, request: UpdateRoleRequest): Observable<RoleDetailDto> {
     return this.withRoles((c) => c.updateRole(roleId, request));
   }
 

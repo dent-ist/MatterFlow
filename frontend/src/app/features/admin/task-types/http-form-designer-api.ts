@@ -45,6 +45,13 @@ export class HttpFormDesignerApi extends FormDesignerApi {
     );
   }
 
+  /** The caller's row version, or the current one when the caller has none: the server requires one on every save and publish. */
+  private rowVersionOf(versionId: string, known?: string): Observable<string> {
+    return known !== undefined
+      ? of(known)
+      : this.forms.getFormVersionSchema(Number(versionId)).pipe(map((d) => d.version.rowVersion));
+  }
+
   saveDraft(
     ownerId: string,
     versionId: string,
@@ -53,10 +60,14 @@ export class HttpFormDesignerApi extends FormDesignerApi {
   ): Observable<FormVersion> {
     return this.definitionId(ownerId).pipe(
       switchMap((id) =>
-        this.forms.saveFormDraft(id, Number(versionId), {
-          fields: toFieldModels(definition),
-          rowVersion,
-        }),
+        this.rowVersionOf(versionId, rowVersion).pipe(
+          switchMap((current) =>
+            this.forms.saveFormDraft(id, Number(versionId), {
+              fields: toFieldModels(definition),
+              rowVersion: current,
+            }),
+          ),
+        ),
       ),
       map(toVersion),
     );
@@ -72,18 +83,18 @@ export class HttpFormDesignerApi extends FormDesignerApi {
     return this.definitionId(ownerId).pipe(
       switchMap((id) => {
         // The version note lives on the draft: store it first (this also yields the fresh row version).
-        const prepared: Observable<string | undefined> = trimmed
+        const prepared: Observable<string> = trimmed
           ? this.forms.getFormVersionSchema(Number(versionId)).pipe(
               switchMap((detail) =>
                 this.forms.saveFormDraft(id, Number(versionId), {
                   fields: detail.fields,
                   notes: trimmed,
-                  rowVersion,
+                  rowVersion: rowVersion ?? detail.version.rowVersion,
                 }),
               ),
               map((saved) => saved.version.rowVersion),
             )
-          : of(rowVersion);
+          : this.rowVersionOf(versionId, rowVersion);
         return prepared.pipe(
           switchMap((rv) => this.forms.publishFormVersion(id, Number(versionId), rv)),
         );

@@ -77,7 +77,7 @@ public sealed class StarterConfigurationSeeder(
                 continue;
             }
 
-            var created = await roles.CreateAsync(new SaveRoleRequest(role.Name, Trim(role.Description, 500), [.. role.Permissions]), ct);
+            var created = await roles.CreateAsync(new CreateRoleRequest(role.Name, Trim(role.Description, 500), [.. role.Permissions]), ct);
             report.Add(KindRole, role.Name, created.IsSuccess ? SeedOutcome.Created : SeedOutcome.Failed, created.IsSuccess ? null : Describe(created.Error!));
         }
     }

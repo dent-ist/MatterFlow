@@ -89,11 +89,13 @@ public sealed class TaskTypesApiTests(SqlServerFixture sql) : IAsyncLifetime
         var draft = await client.PostAsync($"/api/v1/forms/{definitionId}/versions", Json("{}"));
         draft.StatusCode.ShouldBe(HttpStatusCode.Created, await draft.Content.ReadAsStringAsync());
         var versionId = (await ReadAsync(draft)).GetProperty("version").GetProperty("formVersionId").GetInt32();
-        var saved = await client.PutAsync(
-            $"/api/v1/forms/{definitionId}/versions/{versionId}",
-            Json("""{"fields":[{"key":"requires_ocr","label":"Requires OCR?","control":"CHECKBOX"}]}"""));
+        var saved = await FormDraftApi.SaveAsync(
+            client,
+            definitionId,
+            versionId,
+            """{"fields":[{"key":"requires_ocr","label":"Requires OCR?","control":"CHECKBOX"}]}""");
         saved.StatusCode.ShouldBe(HttpStatusCode.OK, await saved.Content.ReadAsStringAsync());
-        var published = await client.PostAsync($"/api/v1/forms/{definitionId}/versions/{versionId}/publish", null);
+        var published = await FormDraftApi.PublishAsync(client, definitionId, versionId);
         published.StatusCode.ShouldBe(HttpStatusCode.OK, await published.Content.ReadAsStringAsync());
         return versionId;
     }
@@ -225,9 +227,11 @@ public sealed class TaskTypesApiTests(SqlServerFixture sql) : IAsyncLifetime
         var draft = await admin.PostAsync($"/api/v1/forms/{definitionId}/versions", Json("{}"));
         var draftBody = await ReadAsync(draft);
         var draftVersion = draftBody.GetProperty("version");
-        (await admin.PutAsync(
-            $"/api/v1/forms/{definitionId}/versions/{draftVersion.GetProperty("formVersionId").GetInt32()}",
-            Json("""{"fields":[{"key":"notes","label":"Notes","control":"TEXTAREA"}]}"""))).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await FormDraftApi.SaveAsync(
+            admin,
+            definitionId,
+            draftVersion.GetProperty("formVersionId").GetInt32(),
+            """{"fields":[{"key":"notes","label":"Notes","control":"TEXTAREA"}]}""")).StatusCode.ShouldBe(HttpStatusCode.OK);
 
         var drafting = await GetAsync(admin, id);
         drafting.GetProperty("formStatus").GetString().ShouldBe("Draft");
@@ -238,8 +242,7 @@ public sealed class TaskTypesApiTests(SqlServerFixture sql) : IAsyncLifetime
             (await scope.ServiceProvider.GetRequiredService<ITaskTypeCatalog>().ListUsableAsync()).ShouldBeEmpty();
 
         // Publish: usable, and the catalog reports the form version a new Task would pin.
-        var publishedVersion = (await admin.PostAsync(
-            $"/api/v1/forms/{definitionId}/versions/{draftVersion.GetProperty("formVersionId").GetInt32()}/publish", null));
+        var publishedVersion = await FormDraftApi.PublishAsync(admin, definitionId, draftVersion.GetProperty("formVersionId").GetInt32());
         publishedVersion.StatusCode.ShouldBe(HttpStatusCode.OK);
         var published = await GetAsync(admin, id);
         published.GetProperty("formStatus").GetString().ShouldBe("Published");

@@ -67,8 +67,8 @@ public sealed record RoleDetailDto(
     [property: Required] string[] PermissionCodes,
     [property: Required] string RowVersion);
 
-/// <summary>Creates a role (no row version yet).</summary>
-public sealed record SaveRoleRequest(
+/// <summary>Creates a role (a new record has no row version yet).</summary>
+public sealed record CreateRoleRequest(
     [Required, StringLength(100, MinimumLength = 1)] string Name,
     [StringLength(500)] string? Description,
     [Required] string[] PermissionCodes);

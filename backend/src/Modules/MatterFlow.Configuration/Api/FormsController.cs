@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using MatterFlow.Configuration.Application.Forms;
 using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.Identity.Contracts;
@@ -115,11 +116,11 @@ public class FormsController(FormAdminService forms, IFormSubmissionValidator va
     /// </summary>
     /// <param name="definitionId">Definition id.</param>
     /// <param name="versionId">Draft version id.</param>
-    /// <param name="rowVersion">Optional row version read last (409 CONCURRENCY_CONFLICT on mismatch).</param>
+    /// <param name="rowVersion">Row version of the draft as last read (required; 409 CONCURRENCY_CONFLICT on mismatch).</param>
     /// <param name="cancellationToken">Request cancellation.</param>
     [HttpPost("{definitionId:int}/versions/{versionId:int}/publish", Name = "PublishFormVersion")]
     [ProducesResponseType<FormVersionDetail>(StatusCodes.Status200OK, "application/json")]
-    public async Task<IActionResult> Publish(int definitionId, int versionId, [FromQuery] string? rowVersion, CancellationToken cancellationToken) =>
+    public async Task<IActionResult> Publish(int definitionId, int versionId, [FromQuery, Required] string rowVersion, CancellationToken cancellationToken) =>
         this.ToActionResult(await forms.PublishAsync(definitionId, versionId, rowVersion, cancellationToken));
 
     /// <summary>Retires the published version.</summary>

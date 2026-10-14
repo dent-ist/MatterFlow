@@ -4,7 +4,8 @@ import {
   PermissionGroupDto,
   RoleDetailDto,
   RoleSummaryDto,
-  SaveRoleRequest,
+  CreateRoleRequest,
+  UpdateRoleRequest,
   UserCountsDto,
   UserDetailDto,
 } from '../../api/generated/api-client';
@@ -14,7 +15,8 @@ export type {
   PermissionGroupDto,
   RoleDetailDto,
   RoleSummaryDto,
-  SaveRoleRequest,
+  CreateRoleRequest,
+  UpdateRoleRequest,
   UserCountsDto,
   UserDetailDto,
   UserSummaryDto,
@@ -40,24 +42,24 @@ export abstract class IdentityAdminApi {
   abstract setUserRoles(
     userId: number,
     roleIds: number[],
-    rowVersion?: string,
+    rowVersion: string,
   ): Observable<UserDetailDto>;
   abstract setUserActive(
     userId: number,
     isActive: boolean,
-    rowVersion?: string,
+    rowVersion: string,
   ): Observable<UserDetailDto>;
   abstract updateUserProfile(
     userId: number,
     displayName: string,
     email: string | undefined,
-    rowVersion?: string,
+    rowVersion: string,
   ): Observable<UserDetailDto>;
 
   abstract listRoles(): Observable<RoleSummaryDto[]>;
   abstract getRole(roleId: number): Observable<RoleDetailDto>;
-  abstract createRole(request: SaveRoleRequest): Observable<RoleDetailDto>;
-  abstract updateRole(roleId: number, request: SaveRoleRequest): Observable<RoleDetailDto>;
+  abstract createRole(request: CreateRoleRequest): Observable<RoleDetailDto>;
+  abstract updateRole(roleId: number, request: UpdateRoleRequest): Observable<RoleDetailDto>;
   abstract deleteRole(roleId: number): Observable<void>;
   abstract listPermissions(): Observable<PermissionGroupDto[]>;
 }

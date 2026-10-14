@@ -556,7 +556,7 @@ public sealed class FormAdminService(
     {
         if (string.IsNullOrEmpty(rowVersion))
         {
-            return true;
+            return false; // a row version is mandatory on every update (SEC-09)
         }
 
         try
