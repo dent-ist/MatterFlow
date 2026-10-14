@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MatterFlow Outlook DnD Spike</title>
+<style>
+  :root { --bg:#fff; --fg:#1b1f24; --muted:#5b6570; --line:#c9d1d9; --accent:#0b5cad; --zone:#eef5fc; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#14181d; --fg:#e6ebf0; --muted:#9aa5b1; --line:#3a444f; --accent:#6cb0f5; --zone:#1c2733; } }
+  body { font-family: system-ui, Segoe UI, sans-serif; background:var(--bg); color:var(--fg); margin:0 auto; max-width:60rem; padding:1rem; }
+  h1 { font-size:1.3rem; } h2 { font-size:1.05rem; margin-top:1.5rem; }
+  .zone { border:3px dashed var(--accent); background:var(--zone); padding:2.5rem 1rem; text-align:center; border-radius:8px; }
+  .zone.over { border-style:solid; }
+  textarea, input[type=text] { width:100%; box-sizing:border-box; background:var(--bg); color:var(--fg); border:1px solid var(--line); padding:.5rem; font:inherit; }
+  button { font:inherit; padding:.5rem 1rem; margin:.25rem .25rem .25rem 0; cursor:pointer; }
+  pre { background:var(--zone); border:1px solid var(--line); padding:.75rem; overflow:auto; max-height:28rem; white-space:pre-wrap; word-break:break-word; }
+  .muted { color:var(--muted); font-size:.9rem; }
+  label { display:block; margin:.5rem 0 .2rem; }
+</style>
+</head>
+<body>
+<h1>MatterFlow: Outlook drag-and-drop spike</h1>
+<p class="muted">Local test page. Nothing is uploaded or stored; all data stays in this browser tab. Follow docs/adr/outlook-dnd-spike.md. Message content in the log may be confidential: use a test mailbox where possible and review the report before sending it.</p>
+
+<label for="env">Environment (e.g. "new Outlook desktop 1.2026.x, Edge 130, Win11")</label>
+<input type="text" id="env" placeholder="Outlook app/version, browser/version, OS">
+<label for="scn">Scenario (e.g. "S1 single message from list")</label>
+<input type="text" id="scn" placeholder="Scenario id and notes">
+
+<h2>1. Drop zone</h2>
+<div id="zone" class="zone" tabindex="0">Drag an email here from Outlook</div>
+
+<h2>2. Paste target</h2>
+<textarea id="paste" rows="4" placeholder="Click here, then press Ctrl+V after copying a message (or its text) in Outlook"></textarea>
+
+<h2>3. Whole-page drop</h2>
+<p class="muted">Drops anywhere else on the page are also logged (the event target is recorded).</p>
+
+<p>
+  <button id="copy">Copy report (JSON)</button>
+  <button id="dl">Download report (.json)</button>
+  <button id="clear">Clear log</button>
+  <span id="status" class="muted" role="status"></span>
+</p>
+
+<h2>Log</h2>
+<pre id="log">(no events yet)</pre>
+<script src="spike.js"></script>
+</body>
+</html>
