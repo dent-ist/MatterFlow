@@ -17,6 +17,9 @@ public enum FormControl
     UserRef,
     SectionHeading,
     HelpText,
+
+    /// <summary>A control name outside the catalog (reported as <c>UNKNOWN_CONTROL</c> at compile time; never evaluated).</summary>
+    Unknown,
 }
 
 /// <summary>Classification and wire-name helpers for <see cref="FormControl"/>.</summary>
@@ -49,11 +52,11 @@ public static class FormControlExtensions
 
     /// <summary>The persisted control name.</summary>
     public static string ToWireName(this FormControl control) =>
-        ByWireName.First(p => p.Value == control).Key;
+        control == FormControl.Unknown ? "UNKNOWN" : ByWireName.First(p => p.Value == control).Key;
 
-    /// <summary>True for every control that holds a value (everything except SECTION_HEADING and HELP_TEXT).</summary>
+    /// <summary>True for every control that holds a value (everything except SECTION_HEADING, HELP_TEXT and unknown controls).</summary>
     public static bool IsInput(this FormControl control) =>
-        control is not (FormControl.SectionHeading or FormControl.HelpText);
+        control is not (FormControl.SectionHeading or FormControl.HelpText or FormControl.Unknown);
 
     /// <summary>TEXT, TEXTAREA and URL.</summary>
     public static bool IsTextFamily(this FormControl control) =>

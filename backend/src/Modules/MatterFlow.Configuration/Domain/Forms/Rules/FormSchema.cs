@@ -117,12 +117,18 @@ public sealed class FormSchema
 
             foreach (var field in _fields)
             {
+                CheckKeyAndControl(field);
                 CheckSection(field);
-                CheckOptionKeys(field);
+                CheckOptions(field);
+                CheckValidation(field);
                 field.ShowWhen = CompileRule(field, field.Definition.ShowWhen, "showWhen");
                 field.RequiredWhen = CompileRule(field, field.Definition.RequiredWhen, "requiredWhen");
-                field.Options = [.. field.Definition.Options.Select(o =>
-                    new CompiledOption(o.Key, CompileRule(field, o.AvailableWhen, $"option '{o.Key}' availableWhen")))];
+
+                // Options of a control without options are ignored entirely (contracts/form-rules.md section 1).
+                field.Options = field.Definition.Control.HasOptions()
+                    ? [.. field.Definition.Options.Select(o =>
+                        new CompiledOption(o.Key, CompileRule(field, o.AvailableWhen, $"option '{o.Key}' availableWhen")))]
+                    : [];
             }
 
             var order = TopologicalOrder();
@@ -174,18 +180,108 @@ public sealed class FormSchema
             Add(FormDefinitionErrorCode.InvalidSection, field.Definition.Key, $"Section '{section}' is not a different SECTION_HEADING field.");
         }
 
-        private void CheckOptionKeys(CompiledField field)
+        private void CheckKeyAndControl(CompiledField field)
         {
-            var seen = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var option in field.Definition.Options)
+            var def = field.Definition;
+            if (!FormValueRules.IsValidFieldKey(def.Key))
             {
-                if (!seen.Add(option.Key))
+                Add(FormDefinitionErrorCode.InvalidFieldKey, def.Key, $"Field key '{def.Key}' does not match ^[a-z][a-z0-9_]{{0,63}}$.");
+            }
+
+            if (def.Control == FormControl.Unknown)
+            {
+                Add(FormDefinitionErrorCode.UnknownControl, def.Key, $"Field '{def.Key}' has a control that is not in the catalog.");
+            }
+        }
+
+        private void CheckOptions(CompiledField field)
+        {
+            var def = field.Definition;
+            if (!def.Control.HasOptions())
+            {
+                return;
+            }
+
+            if (def.Options.Count == 0)
+            {
+                Add(FormDefinitionErrorCode.NoOptions, def.Key, $"Field '{def.Key}' declares no options.");
+            }
+
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            var reportedDuplicate = false;
+            var reportedShape = false;
+            foreach (var option in def.Options)
+            {
+                if (!reportedShape && !FormValueRules.IsValidOptionKey(option.Key))
                 {
-                    Add(FormDefinitionErrorCode.DuplicateOptionKey, field.Definition.Key, $"Option key '{option.Key}' is used more than once.");
-                    return;
+                    reportedShape = true;
+                    Add(FormDefinitionErrorCode.InvalidOptionKey, def.Key, $"Option key '{option.Key}' does not match ^[A-Za-z0-9][A-Za-z0-9_.-]{{0,63}}$.");
+                }
+
+                if (!seen.Add(option.Key) && !reportedDuplicate)
+                {
+                    reportedDuplicate = true;
+                    Add(FormDefinitionErrorCode.DuplicateOptionKey, def.Key, $"Option key '{option.Key}' is used more than once.");
                 }
             }
         }
+
+        private void CheckValidation(CompiledField field)
+        {
+            var def = field.Definition;
+            if (def.Validation is not { } validation)
+            {
+                return;
+            }
+
+            if (def.Control == FormControl.Number)
+            {
+                CheckBounds(def, validation, FormValueRules.IsFiniteNumber, (a, b) => a.GetDouble() > b.GetDouble());
+            }
+            else if (def.Control == FormControl.Date)
+            {
+                CheckBounds(
+                    def,
+                    validation,
+                    e => e.ValueKind == JsonValueKind.String && FormValueRules.TryParseDate(e.GetString()!, out _),
+                    (a, b) => string.CompareOrdinal(a.GetString(), b.GetString()) > 0);
+            }
+            else if (def.Control.IsTextFamily())
+            {
+                if (validation.MaxLength is < 1)
+                {
+                    Add(FormDefinitionErrorCode.InvalidValidation, def.Key, $"maxLength of '{def.Key}' must be an integer from 1 to {int.MaxValue}.");
+                }
+
+                if (validation.Pattern is { } pattern && !PortablePattern.TryTranslate(pattern, out _))
+                {
+                    Add(FormDefinitionErrorCode.InvalidPattern, def.Key, $"The pattern of '{def.Key}' is outside the portable subset.");
+                }
+
+                if (validation.PatternMessage is { Length: 0 or > 200 })
+                {
+                    Add(FormDefinitionErrorCode.InvalidValidation, def.Key, $"patternMessage of '{def.Key}' must be 1 to 200 characters.");
+                }
+            }
+        }
+
+        private void CheckBounds(
+            FormFieldDefinition def,
+            FormFieldValidation validation,
+            Func<JsonElement, bool> isValid,
+            Func<JsonElement, JsonElement, bool> isGreater)
+        {
+            var min = Present(validation.Min);
+            var max = Present(validation.Max);
+            if ((min is { } lo && !isValid(lo)) || (max is { } hi && !isValid(hi)) ||
+                (min is { } a && max is { } b && isGreater(a, b)))
+            {
+                Add(FormDefinitionErrorCode.InvalidValidation, def.Key, $"The min/max limits of '{def.Key}' are not valid for its control.");
+            }
+        }
+
+        private static JsonElement? Present(JsonElement? element) =>
+            element is { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) } e ? e : null;
 
         private RuleNode? CompileRule(CompiledField owner, JsonElement? raw, string where)
         {
@@ -224,6 +320,11 @@ public sealed class FormSchema
             }
 
             var target = _defs[targetIndex];
+            if (target.Control == FormControl.Unknown)
+            {
+                return; // already reported as UNKNOWN_CONTROL
+            }
+
             if (!target.Control.IsInput())
             {
                 Add(FormDefinitionErrorCode.InvalidReferenceTarget, key, $"The {where} rule of '{key}' references non-input field '{leaf.Field}'.");

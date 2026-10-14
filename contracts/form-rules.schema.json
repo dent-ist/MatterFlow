@@ -61,21 +61,23 @@
     "control": {
       "enum": ["TEXT", "TEXTAREA", "NUMBER", "CHECKBOX", "SELECT", "RADIO", "MULTISELECT", "DATE", "DATETIME", "URL", "ASSET_REF", "USER_REF", "SECTION_HEADING", "HELP_TEXT"]
     },
-    "anyRule": { "$comment": "Rule slot inside a vector fragment. Unconstrained here so a vector can carry a deliberately malformed rule; the validator script checks it against #/$defs/node unless the vector expects SCHEMA_VIOLATION." },
+    "anyRule": { "$comment": "Rule slot inside a vector fragment. Unconstrained here so a vector can carry a deliberately malformed rule or JSON null (= absent); the validator script checks it against #/$defs/node unless the vector expects SCHEMA_VIOLATION." },
     "validation": {
+      "$comment": "Structure only: JSON null means absent. The value rules (NUMBER bounds are numbers, DATE bounds are real yyyy-MM-dd dates, min <= max, maxLength an integer 1..2147483647, pattern in the portable subset, patternMessage 1..200 characters) are definition checks (form-rules.md section 4, INVALID_VALIDATION / INVALID_PATTERN), so a vector can carry a deliberately bad value.",
       "type": "object", "additionalProperties": false,
       "properties": {
-        "min": { "type": ["number", "string"] },
-        "max": { "type": ["number", "string"] },
-        "maxLength": { "type": "integer", "minimum": 1 },
-        "pattern": { "type": "string" }
+        "min": { "type": ["number", "string", "null"] },
+        "max": { "type": ["number", "string", "null"] },
+        "maxLength": { "type": ["number", "null"] },
+        "pattern": { "type": ["string", "null"] },
+        "patternMessage": { "type": ["string", "null"] }
       }
     },
     "option": {
       "type": "object", "additionalProperties": false, "required": ["key"],
       "properties": {
         "key": { "type": "string" },
-        "label": { "type": "string" },
+        "label": { "type": ["string", "null"] },
         "availableWhen": { "$ref": "#/$defs/anyRule" }
       }
     },
@@ -83,14 +85,14 @@
       "type": "object", "additionalProperties": false, "required": ["key", "control"],
       "properties": {
         "key": { "type": "string" },
-        "control": { "$ref": "#/$defs/control" },
-        "label": { "type": "string" },
-        "required": { "type": "boolean" },
-        "section": { "type": "string" },
-        "validation": { "$ref": "#/$defs/validation" },
+        "control": { "type": "string", "$comment": "Any string here so a vector can carry an unknown control (UNKNOWN_CONTROL); known values are $defs/control." },
+        "label": { "type": ["string", "null"] },
+        "required": { "type": ["boolean", "null"] },
+        "section": { "type": ["string", "null"] },
+        "validation": { "oneOf": [ { "$ref": "#/$defs/validation" }, { "type": "null" } ] },
         "showWhen": { "$ref": "#/$defs/anyRule" },
         "requiredWhen": { "$ref": "#/$defs/anyRule" },
-        "options": { "type": "array", "items": { "$ref": "#/$defs/option" } }
+        "options": { "type": ["array", "null"], "items": { "$ref": "#/$defs/option" } }
       }
     },
     "formFragment": {
@@ -99,7 +101,7 @@
     },
     "errorCode": { "enum": ["REQUIRED", "INVALID_TYPE", "OUT_OF_RANGE", "TOO_LONG", "PATTERN", "OPTION_NOT_ALLOWED", "UNKNOWN_FIELD"] },
     "definitionErrorCode": {
-      "enum": ["DUPLICATE_FIELD_KEY", "DUPLICATE_OPTION_KEY", "SCHEMA_VIOLATION", "RULE_TOO_DEEP", "UNKNOWN_FIELD_REFERENCE", "INVALID_REFERENCE_TARGET", "SELF_REFERENCE", "CIRCULAR_DEPENDENCY", "OPERATOR_TYPE_MISMATCH", "LITERAL_TYPE_MISMATCH", "UNKNOWN_OPTION_REFERENCE", "INVALID_SECTION"]
+      "enum": ["DUPLICATE_FIELD_KEY", "INVALID_FIELD_KEY", "UNKNOWN_CONTROL", "DUPLICATE_OPTION_KEY", "INVALID_OPTION_KEY", "NO_OPTIONS", "INVALID_VALIDATION", "INVALID_PATTERN", "SCHEMA_VIOLATION", "RULE_TOO_DEEP", "UNKNOWN_FIELD_REFERENCE", "INVALID_REFERENCE_TARGET", "SELF_REFERENCE", "CIRCULAR_DEPENDENCY", "OPERATOR_TYPE_MISMATCH", "LITERAL_TYPE_MISMATCH", "UNKNOWN_OPTION_REFERENCE", "INVALID_SECTION"]
     },
     "expectedValid": {
       "type": "object", "additionalProperties": false,

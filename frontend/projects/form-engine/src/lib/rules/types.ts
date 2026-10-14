@@ -25,17 +25,23 @@ export type RuleNode =
   | { op: 'in' | 'notIn'; field: string; value: Scalar[] }
   | { op: 'isEmpty' | 'isNotEmpty' | 'isTrue' | 'isFalse'; field: string };
 
+/** Every optional member may also be JSON `null`, which means absent (contracts/form-rules.md section 1). */
 export interface FieldValidation {
-  min?: number | string;
-  max?: number | string;
-  maxLength?: number;
-  pattern?: string;
+  /** NUMBER: a finite JSON number. DATE: a real `yyyy-MM-dd` date. Ignored on other controls. */
+  min?: number | string | null;
+  max?: number | string | null;
+  /** Text family: an integer from 1 to 2147483647 (UTF-16 code units). */
+  maxLength?: number | null;
+  /** Text family: a pattern in the portable subset (contracts/form-rules.md section 3.1). */
+  pattern?: string | null;
+  /** Text family: display text (1..200 characters) for the PATTERN error; never changes the code. */
+  patternMessage?: string | null;
 }
 
 export interface FormOption {
   key: string;
   label?: string;
-  availableWhen?: RuleNode;
+  availableWhen?: RuleNode | null;
 }
 
 export interface FormField {
@@ -45,12 +51,12 @@ export interface FormField {
   /** Help text shown beneath the control; for HELP_TEXT fields it is the displayed text. */
   helpText?: string;
   placeholder?: string;
-  required?: boolean;
-  section?: string;
-  validation?: FieldValidation;
-  showWhen?: RuleNode;
-  requiredWhen?: RuleNode;
-  options?: FormOption[];
+  required?: boolean | null;
+  section?: string | null;
+  validation?: FieldValidation | null;
+  showWhen?: RuleNode | null;
+  requiredWhen?: RuleNode | null;
+  options?: FormOption[] | null;
 }
 
 export interface FormDefinition {
@@ -80,7 +86,13 @@ export type DefinitionErrorCode =
   | 'OPERATOR_TYPE_MISMATCH'
   | 'LITERAL_TYPE_MISMATCH'
   | 'UNKNOWN_OPTION_REFERENCE'
-  | 'INVALID_SECTION';
+  | 'INVALID_SECTION'
+  | 'INVALID_FIELD_KEY'
+  | 'UNKNOWN_CONTROL'
+  | 'INVALID_OPTION_KEY'
+  | 'NO_OPTIONS'
+  | 'INVALID_VALIDATION'
+  | 'INVALID_PATTERN';
 
 export interface FormError {
   fieldKey: string;
