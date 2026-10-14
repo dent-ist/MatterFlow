@@ -390,7 +390,7 @@ Source of truth: `contracts/permissions.json` (code, group, description), genera
 
 ### 6.4 Bootstrap System Admin
 
-`Bootstrap:SystemAdmins: ["CORP\\jsmith", ...]` (SAM names, case-insensitive). On the first successful resolution of a `UserIdentity` whose `Username` matches **and** `AppUser.BootstrapAppliedAt IS NULL`, the user receives the System Admin role, `BootstrapAppliedAt` is set, and an audit event `ADMIN_BOOTSTRAPPED` is written. Because it is applied once per user, an admin can later revoke it without it re-granting on the next login. In Dev, `Dev:Users` config defines seeded users and roles.
+`Bootstrap:SystemAdmins: ["CORP\\jsmith", ...]` (SAM names, case-insensitive). On the first successful resolution of a `UserIdentity` whose `Username` matches, **while the system has no active System Admin**, **and** `AppUser.BootstrapAppliedAt IS NULL`, the user receives the System Admin role (security review SEC-06: the account name is mutable and can be recycled, so the list is a first-install and recovery mechanism, never a standing entitlement; a listed name seen while an admin exists is logged at Warning and ignored), `BootstrapAppliedAt` is set, and an audit event `ADMIN_BOOTSTRAPPED` is written. Because it is applied once per user, an admin can later revoke it without it re-granting on the next login. In Dev, `Dev:Users` config defines seeded users and roles.
 
 ### 6.5 Policies and handlers
 
@@ -404,7 +404,7 @@ Source of truth: `contracts/permissions.json` (code, group, description), genera
 
 ### 6.6 Request-forgery and transport protections
 
-Windows auth credentials are sent automatically by browsers, so state-changing requests require protection: every non-GET/HEAD request must carry `X-MatterFlow-Client: web` (added by the Angular interceptor) and `Content-Type: application/json` (or multipart for intake); anything else gets 400. With CORS disabled, a cross-site page cannot add that header without a preflight, which fails. Additionally validate the `Origin`/`Sec-Fetch-Site` header (`same-origin` or absent for non-browser tests). Security headers (CSP `default-src 'self'`, `X-Content-Type-Options`, `frame-ancestors 'none'`) are set by middleware.
+Windows auth credentials are sent automatically by browsers, so state-changing requests require protection: every non-GET/HEAD request must carry `X-MatterFlow-Client: web` (added by the Angular interceptor) and `Content-Type: application/json` (or multipart for intake); anything else gets 400. With CORS disabled, a cross-site page cannot add that header without a preflight, which fails. Additionally the `Sec-Fetch-Site` header is validated (`same-origin`, `none` or absent; an `Origin` allow-list is not implemented because the custom header already defeats cross-site forms). Security headers are set by `SecurityHeadersMiddleware` (CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Cache-Control: no-store` on `/api`), HSTS outside Development, request bodies are capped at 2 MB (intake raises its own limit) and `AllowedHosts` restricts the host header (security review SEC-08, SEC-19).
 
 ---
 
@@ -543,7 +543,7 @@ Stored fields: `DueDate` (date, optional), `DueTime` (time, optional, requires D
 - **Interceptor** (`AuditSaveChangesInterceptor`, in `MatterFlow.Data`) generates generic `FIELD_CHANGED` events (old/new per property) for entities marked `[Audited]` for properties **not** marked `[AuditExplicit]`. JSON value columns (`FormValuesJson`, `CustomFieldsJson`, step `ValuesJson`) are diffed per field key (`FieldKey = "form:ocr_language"`). Properties covered by explicit events are marked `[AuditExplicit]` so nothing is double-written. Excluded: rowversion, computed columns, `CustomFieldIndex`, `ModifiedAt/By`.
 - Row shape: `AuditEventId bigint, OccurredAtUtc, ActorUserId (null = system), EventType, ObjectType, ObjectId, MatterId?, TaskId? (denormalized for scoped reads), FieldKey?, OldValue, NewValue, CorrelationId (one per SaveChanges/request), Summary`.
 - **Append-only:** `mf_app` has `INSERT, SELECT` only on `AuditEvent` (`DENY UPDATE, DELETE`); retention and purge are open (no purge job). Tamper-resistance beyond DB permissions (hash chaining) is out of Phase 1.
-- Reads: `GET /tasks/{id}/activity` for `Task.View` holders (all events with `TaskId`); `GET /audit` (all events, filters) requires `Audit.View`. Sensitive text (description, comment bodies) appears in OldValue/NewValue; truncated to 4000 chars with a "truncated" marker for display, full value kept.
+- Reads: `GET /tasks/{id}/activity` for `Task.View` holders (all events with `TaskId`); `GET /api/v1/audit/events` (all events, filters) requires `Audit.View`. Sensitive text (description, comment bodies) appears in OldValue/NewValue; truncated to 4000 chars with a "truncated" marker for display, full value kept.
 - Read access logging is out of scope (addendum F). Config changes (roles, forms, workflows, priorities, labels) are audited through the interceptor plus explicit publish events.
 - No `TaskAssignmentHistory`/`TaskStatusHistory` tables: the Activity tab and any history UI read `AuditEvent`.
 
@@ -591,7 +591,7 @@ Stored fields: `DueDate` (date, optional), `DueTime` (time, optional, requires D
 | Views | `GET /views/my-work`, `/views/pod-work`, `/views/dashboard`; Task Queue = `GET /tasks` with filters |
 | Search | `GET /search?q=` (grouped), `GET /search/{type}` (paged) |
 | Intake | `POST /intake/parse-email` (multipart), no persistence |
-| Audit | `GET /audit` |
+| Audit | `GET /audit/events` |
 
 - **OpenAPI:** built-in `Microsoft.AspNetCore.OpenApi` document generation at build time → `contracts/openapi/v1.json` (committed; CI fails if regenerating changes it). Schema transformers add the error-code enum and permission requirement (`x-permission`). Swagger UI/Scalar served only in Development. Angular client generated by NSwag CLI (`nswag run`) into `src/app/api/generated`.
 - **Contract-first parallelism:** DTO + controller skeletons returning `501` are merged first so the OpenAPI file and Angular client exist before implementations; frontend work uses MSW mocks until the backend endpoint lands.
@@ -692,7 +692,7 @@ Default branch `dev`; PRs required, `ci` check required, CODEOWNERS on `contract
 - ASP.NET request logging at Information with route template (not query string values for `q` and `field.*`).
 - **Health:** `/health/live` and `/health/ready` (DB reachable, migrations complete, permission catalog synced); anonymous-allowed but return no detail.
 - **Metrics/traces:** OpenTelemetry instrumentation (ASP.NET, SqlClient, HttpClient) registered but exporter off unless configured. Key counters: migration duration, unhandled errors, concurrency conflicts, slow queries (> 500 ms logged with the SQL template only).
-- **Client errors:** Angular `ErrorHandler` posts sanitized errors (message + route + traceId, no payloads) to `POST /api/v1/client-log` (rate limited).
+- **Client errors:** Angular `ErrorHandler` posts sanitized errors (message + route + traceId, no payloads) to `POST /api/v1/client-log` (rate limited). **Not implemented yet** (no such endpoint exists; security review SEC-27).
 
 ---
 

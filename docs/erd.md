@@ -213,7 +213,7 @@ erDiagram
     nvarchar_320 Email
     bit IsActive
     datetime2 BootstrapAppliedAt
-    datetime2 LastLoginAt
+    datetime2 LastLoginAt "obsolete since script 13; see UserIdentity.LastLoginAt"
     rowversion RowVersion
   }
   UserIdentity {
@@ -225,6 +225,7 @@ erDiagram
     nvarchar_256 Username "DOMAIN-sam display"
     bit IsActive
     datetime2 VerifiedAt
+    datetime2 LastLoginAt "throttled sign-in stamp (script 13)"
   }
   Role {
     int RoleId PK
@@ -271,8 +272,8 @@ erDiagram
 
 | Entity | Key columns and constraints | Notes |
 |---|---|---|
-| AppUser | PK `UserId`; `DisplayName` not null; `Email` null; `IsActive` default 1; `BootstrapAppliedAt` null; `LastLoginAt`; `RowVersion` | Referenced by every actor/assignee FK. "Access Pending" = no effective permissions (derived, not stored). Never deleted. Index `IX_AppUser_Display (DisplayName)`. |
-| UserIdentity | PK `UserIdentityId`; FK `UserId`; UNIQUE `UQ_UserIdentity_Provider (Provider, TenantId, ProviderSubject)`; CHECK `Provider IN ('Windows','Dev','Entra')`; `TenantId` NOT NULL default `''` (so uniqueness works for Windows) | Windows subject = SID. Entra later: `(Entra, tid, oid)` linked to an **existing** `UserId` by admin review; never auto-merged on name/email. Index `IX_UserIdentity_User (UserId)`, `IX_UserIdentity_Username (Username)`. |
+| AppUser | PK `UserId`; `DisplayName` not null; `Email` null; `IsActive` default 1; `BootstrapAppliedAt` null; `LastLoginAt` (obsolete, no longer written: the last sign-in lives on `UserIdentity.LastLoginAt` since script 13, so that sign-in bookkeeping never changes the row version an administrator edits, SEC-13); `RowVersion` | Referenced by every actor/assignee FK. "Access Pending" = no effective permissions (derived, not stored). Never deleted. Index `IX_AppUser_Display (DisplayName)`. |
+| UserIdentity | PK `UserIdentityId`; FK `UserId`; UNIQUE `UQ_UserIdentity_Provider (Provider, TenantId, ProviderSubject)`; CHECK `Provider IN ('Windows','Dev','Entra')`; `TenantId` NOT NULL default `''` (so uniqueness works for Windows) | `LastLoginAt` (script 13) is the throttled last-sign-in stamp. Windows subject = SID (a host that supplies no SID falls back to the upper-cased account name and the API logs a warning). Entra later: `(Entra, tid, oid)` linked to an **existing** `UserId` by admin review; never auto-merged on name/email. Index `IX_UserIdentity_User (UserId)`, `IX_UserIdentity_Username (Username)`. |
 | Role | PK `RoleId`; UNIQUE `Name`; `IsSystemAdmin` bit; filtered UNIQUE index `UQ_Role_SystemAdmin (IsSystemAdmin) WHERE IsSystemAdmin = 1` | Pod Lead, Director, etc. are rows here (no Pod Lead flag anywhere). The System Admin row is locked: rename/delete/permission-edit blocked in app; it has implicit all permissions. |
 | Permission | PK `PermissionId`; UNIQUE `Code` | Synced from `contracts/permissions.json` at startup. |
 | RolePermission | PK `(RoleId, PermissionId)`; FKs | |
@@ -674,7 +675,7 @@ erDiagram
 | CorrelationId | uniqueidentifier | no | one per request/SaveChanges |
 
 Indexes: `IX_Audit_Task (TaskId, AuditEventId)`, `IX_Audit_Matter (MatterId, AuditEventId)`, `IX_Audit_Object (ObjectType, ObjectId, AuditEventId)`, `IX_Audit_Time (OccurredAtUtc)`, `IX_Audit_Actor (ActorUserId, AuditEventId)`.
-Permissions: the app login has `INSERT, SELECT` only; `DENY UPDATE, DELETE` (set in `01-init.sql`). Written in the same transaction as the audited change. Retention/purge policy open. Comments and cancel comments are in `TaskComment` (section 5); comment edits also emit `COMMENT_EDITED` audit events. Read-access logging is not implemented (addendum F).
+Permissions (`13-security-hardening.sql`, security review SEC-04): the database roles `mf_app` and `mf_migrator` have `INSERT, SELECT` only, with `DENY UPDATE, DELETE` (and `DENY ALTER` for `mf_app`, which also denies TRUNCATE and trigger changes); the INSTEAD OF trigger rejects UPDATE/DELETE for everybody; the empty `dbo.AuditEventGuard` table references the table so `TRUNCATE TABLE` is impossible even for sysadmin; a database DDL trigger refuses DROP TABLE of the audit tables and DROP/ALTER of the append-only trigger. Written in the same transaction as the audited change. Column text is clipped to the column widths before saving (SEC-20). `dbo.SeedMarker (Name, AppliedAt)` records one-time startup seeds (starter roles, SEC-18). Retention/purge policy open. Comments and cancel comments are in `TaskComment` (section 5); comment edits also emit `COMMENT_EDITED` audit events. Read-access logging is not implemented (addendum F).
 
 ---
 

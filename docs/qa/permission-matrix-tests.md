@@ -92,8 +92,8 @@ Source: `architecture.md` section 6 (catalog 6.3, pipeline 6.1, policies 6.5, CS
 | Search | GET /search | at least one View permission; per-type groups gated | 200 | PM-X-08 |
 | | GET /search/{type} | that type's View permission | 200 | |
 | Intake | POST /intake/parse-email | `Task.Create` | 200 | Also 413 `PAYLOAD_TOO_LARGE`, 415, 400 `EMAIL_PARSE_FAILED` after permission |
-| Audit | GET /audit | `Audit.View` | 200 | |
-| | POST /client-log | authenticated (rate limited) | 204 | Documented exception: confirm PM-X-10 allows it (it is a second `AllowAuthenticated` action; architecture says `/me` is the only one, FND-03) |
+| Audit | GET /audit/events | `Audit.View` | 200 | (path corrected, SEC-27) |
+| | POST /client-log | **does not exist yet** (SEC-27); authenticated (rate limited) when built | 204 | Documented exception: confirm PM-X-10 allows it (it is a second `AllowAuthenticated` action; architecture says `/me` is the only one, FND-03) |
 | Ops | /health/live, /health/ready | anonymous | 200 | No detail leakage |
 
 ## 4. Role x permission seed verification (starter matrix)
@@ -112,7 +112,7 @@ Behavioural role matrix (PM-ROLE-02): for each of Director, Project Manager, Pod
 | POST /tasks, assign, priority, cancel, reopen, complete, steps | allow | allow | allow | allow | allow | allow |
 | PUT /pods/{id}/members | allow | deny | allow | deny | deny | allow |
 | GET /users | allow | deny | deny | deny | deny | allow |
-| GET /audit | allow | deny | deny | deny | deny | allow |
+| GET /audit/events | allow | deny | deny | deny | deny | allow |
 | Dashboard department scope | allow | allow | allow | personal only | personal only | allow |
 | Any `*.Manage` config, roles, users | deny | deny | deny | deny | deny | allow |
 
