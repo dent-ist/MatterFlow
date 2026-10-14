@@ -13,5 +13,10 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\MatterFlow.SharedKernel\MatterFlow.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Configuration\MatterFlow.Configuration.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Shared conformance vectors: linked, never forked (contracts/form-rules.md section 5). -->
+    <None Include="..\..\..\contracts\form-rules.vectors.json" Link="Configuration\Forms\form-rules.vectors.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
