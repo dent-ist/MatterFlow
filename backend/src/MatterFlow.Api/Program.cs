@@ -64,6 +64,7 @@ builder.Services.AddProblemDetails(o =>
         }
     };
 });
+builder.Services.AddApiRateLimiting(builder.Configuration);
 builder.Services.AddMatterFlowOpenApi();
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationResultHandler>();
 
@@ -97,6 +98,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<RequestBodyLimitMiddleware>();
+app.UseMiddleware<QueryLimitMiddleware>();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();

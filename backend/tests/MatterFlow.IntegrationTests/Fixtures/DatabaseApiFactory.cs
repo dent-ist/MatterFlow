@@ -29,6 +29,10 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
         // The factory runs in Development, where the SME starter configuration would otherwise be seeded into every test database.
         builder.UseSetting("Seed:StarterConfiguration:Enabled", seedStarterConfiguration ? "true" : "false");
         builder.UseSetting("Bootstrap:SystemAdmins:0", AdminAccount);
+        // The per-user API budgets (SEC2-03) are sized for people; tests drive many calls as one user, so they are lifted here and
+        // lowered again by the tests that exercise the limiter.
+        foreach (var budget in new[] { "ApiPerMinute", "CommentWritesPerMinute", "TaskWritesPerMinute", "SearchPerMinute", "AdvancedSearchPerMinute", "AuditPerMinute", "DashboardPerMinute" })
+            builder.UseSetting("RateLimits:" + budget, "1000000");
         builder.UseSetting("Dev:Users:0:Username", @"KE\director");
         builder.UseSetting("Dev:Users:0:DisplayName", "Dana Director");
         builder.UseSetting("Dev:Users:0:Roles:0", "Director");
