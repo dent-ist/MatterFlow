@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="NetArchTest.Rules" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MatterFlow.SharedKernel\MatterFlow.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\MatterFlow.Data\MatterFlow.Data.csproj" />
+    <ProjectReference Include="..\..\src\MatterFlow.Api\MatterFlow.Api.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Identity\MatterFlow.Identity.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Audit\MatterFlow.Audit.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Configuration\MatterFlow.Configuration.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Organization\MatterFlow.Organization.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Assets\MatterFlow.Assets.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkflowEngine\MatterFlow.WorkflowEngine.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkManagement\MatterFlow.WorkManagement.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkViews\MatterFlow.WorkViews.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Search\MatterFlow.Search.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Intake\MatterFlow.Intake.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Identity.Contracts\MatterFlow.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Audit.Contracts\MatterFlow.Audit.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Configuration.Contracts\MatterFlow.Configuration.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Organization.Contracts\MatterFlow.Organization.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Assets.Contracts\MatterFlow.Assets.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkflowEngine.Contracts\MatterFlow.WorkflowEngine.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkManagement.Contracts\MatterFlow.WorkManagement.Contracts.csproj" />
+  </ItemGroup>
+</Project>

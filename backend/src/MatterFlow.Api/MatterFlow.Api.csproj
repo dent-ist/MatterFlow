@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <ProjectReference Include="..\MatterFlow.SharedKernel\MatterFlow.SharedKernel.csproj" />
+    <ProjectReference Include="..\MatterFlow.Data\MatterFlow.Data.csproj" />
+    <ProjectReference Include="..\Modules\MatterFlow.Identity\MatterFlow.Identity.csproj" />
+    <ProjectReference Include="..\Modules\MatterFlow.Audit\MatterFlow.Audit.csproj" />
+    <ProjectReference Include="..\Modules\MatterFlow.Configuration\MatterFlow.Configuration.csproj" />
+    <ProjectReference Include="..\Modules\MatterFlow.Organization\MatterFlow.Organization.csproj" />
+    <ProjectReference Include="..\Modules\MatterFlow.Assets\MatterFlow.Assets.csproj" />
+    <ProjectReference Include="..\Modules\MatterFlow.WorkflowEngine\MatterFlow.WorkflowEngine.csproj" />
+    <ProjectReference Include="..\Modules\MatterFlow.WorkManagement\MatterFlow.WorkManagement.csproj" />
+    <ProjectReference Include="..\Modules\MatterFlow.WorkViews\MatterFlow.WorkViews.csproj" />
+    <ProjectReference Include="..\Modules\MatterFlow.Search\MatterFlow.Search.csproj" />
+    <ProjectReference Include="..\Modules\MatterFlow.Intake\MatterFlow.Intake.csproj" />
+  </ItemGroup>
+</Project>

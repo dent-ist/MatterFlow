@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\MatterFlow.SharedKernel\MatterFlow.SharedKernel.csproj" />
+    <ProjectReference Include="..\MatterFlow.WorkManagement.Contracts\MatterFlow.WorkManagement.Contracts.csproj" />
+    <ProjectReference Include="..\MatterFlow.Organization.Contracts\MatterFlow.Organization.Contracts.csproj" />
+    <ProjectReference Include="..\MatterFlow.Assets.Contracts\MatterFlow.Assets.Contracts.csproj" />
+    <ProjectReference Include="..\MatterFlow.WorkflowEngine.Contracts\MatterFlow.WorkflowEngine.Contracts.csproj" />
+    <ProjectReference Include="..\MatterFlow.Configuration.Contracts\MatterFlow.Configuration.Contracts.csproj" />
+    <ProjectReference Include="..\MatterFlow.Identity.Contracts\MatterFlow.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\MatterFlow.Audit.Contracts\MatterFlow.Audit.Contracts.csproj" />
+  </ItemGroup>
+</Project>
