@@ -63,3 +63,12 @@
 - **On server startup**, the app discovers `.sql` files (embedded resources or a configured folder), compares them with the table, and executes the pending ones **in numeric-prefix order**, each in a transaction where SQL Server allows. Already-applied scripts are never re-run.
 - Safeguards: a SQL Server **application lock** (`sp_getapplock`) so multiple instances don't migrate concurrently; **fail startup** on any script error; detect **duplicate prefixes** and **checksum changes of already-applied scripts** (fail loudly); support GO batch separators.
 - Developers add scripts only by appending new files; applied scripts are immutable.
+
+## K. Completing a Task with unresolved steps (decided 2026-10-14)
+
+- The user can click **Complete** on a Task even when workflow steps are unresolved. The app shows a confirmation: *"You have N steps not completed. Do you want to mark them all completed?"*
+- **Confirm** marks all unresolved steps **Completed** (in workflow order for ordered workflows) and then completes the Task, in **one transaction**. **Cancel** leaves everything unchanged.
+- This is **Completed, not Skipped**. Skip stays a per-step action (with the comment rule where configured).
+- **Guard:** a step whose **required inputs are missing** cannot be auto-completed. The dialog lists those steps and the Task stays open until the user fills them in (the user may skip any that are skippable). Only steps with all required inputs satisfied are bulk-completed.
+- Audit: each step completion is recorded individually, sharing one correlation id with the Task completion, flagged as "bulk completed".
+- This supersedes the earlier "every step must be individually resolved before the Task can be completed" assumption (baseline 9.4/9.5, architecture OPEN-05).
