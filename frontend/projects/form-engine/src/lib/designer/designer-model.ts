@@ -339,7 +339,7 @@ export interface Dependent {
 /** Everything that would break if `key` were deleted or renamed. */
 export function dependentsOf(fields: readonly FormField[], key: string): Dependent[] {
   const out: Dependent[] = [];
-  const uses = (rule: RuleNode | undefined): boolean =>
+  const uses = (rule: RuleNode | null | undefined): boolean =>
     !!rule && leavesOf(rule).some((l) => l.field === key);
   for (const f of fields) {
     if (f.key === key) continue;
@@ -459,6 +459,18 @@ function definitionMessage(
       return 'A condition uses an option that is not in the field’s list. Choose one of the current options.';
     case 'INVALID_SECTION':
       return `The section for ${name} must be a different section heading in this form.`;
+    case 'INVALID_FIELD_KEY':
+      return `The key for ${name} is not valid. Use letters, numbers and underscores, starting with a letter.`;
+    case 'UNKNOWN_CONTROL':
+      return `${name} uses a control type that is not supported. Choose another type.`;
+    case 'INVALID_OPTION_KEY':
+      return 'An option key is not valid. Use letters, numbers and underscores.';
+    case 'NO_OPTIONS':
+      return `${name} needs at least one option.`;
+    case 'INVALID_VALIDATION':
+      return `The validation settings for ${name} do not fit together. Check the minimum, maximum and length values.`;
+    case 'INVALID_PATTERN':
+      return 'This pattern uses regular-expression features that are not supported. Use a simpler pattern.';
   }
 }
 
@@ -605,7 +617,7 @@ export function diagnoseDefinition(fields: readonly DesignerField[]): DesignerIs
       }
     }
     const v = f.validation;
-    if (v?.pattern !== undefined && isTextFamily(f.control)) {
+    if (v?.pattern != null && isTextFamily(f.control)) {
       try {
         new RegExp(v.pattern);
       } catch {
@@ -621,12 +633,12 @@ export function diagnoseDefinition(fields: readonly DesignerField[]): DesignerIs
     if (v && (f.control === 'NUMBER' || f.control === 'DATE')) {
       if (f.control === 'DATE') {
         for (const bound of [v.min, v.max]) {
-          if (bound !== undefined && !isDate(bound)) {
+          if (bound != null && !isDate(bound)) {
             push('INVALID_RANGE', 'error', 'validation', 'Enter dates as yyyy-mm-dd.', f.key);
           }
         }
       }
-      if (v.min !== undefined && v.max !== undefined && v.min > v.max) {
+      if (v.min != null && v.max != null && v.min > v.max) {
         push(
           'INVALID_RANGE',
           'error',
