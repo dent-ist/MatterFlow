@@ -52,6 +52,7 @@ public static class IdentityModule
         services.AddScoped<IdentitySeeder>();
         services.AddScoped<PodService>();
         services.AddScoped<IPodDirectory, PodDirectory>();
+        services.AddScoped<IUserDirectory, Application.UserDirectory>();
         services.AddScoped<Application.UserAdministration>();
         services.AddScoped<Application.RoleAdministration>();
 
