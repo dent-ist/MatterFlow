@@ -1,0 +1,128 @@
+/* Workflow designer styles (UX S16). Page-level layout comes from shared page.scss. */
+.wf-status {
+  display: inline-block;
+  padding: 0 var(--mf-s2);
+  border-radius: var(--mf-radius);
+  font-size: var(--mf-fs-sm);
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+
+.wf-status--draft {
+  background: var(--mf-warning-bg);
+  color: var(--mf-warning);
+}
+
+.wf-status--published {
+  background: var(--mf-st-done-bg);
+  color: var(--mf-st-done-fg);
+}
+
+.wf-status--retired {
+  background: var(--mf-st-cancel-bg);
+  color: var(--mf-st-cancel-fg);
+}
+
+.wf-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--mf-s4);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .wf-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.wf-panel {
+  padding: var(--mf-s4);
+  background: var(--mf-surface);
+  border-radius: var(--mf-radius-lg);
+  box-shadow: var(--mf-shadow-1);
+}
+
+.wf-panel h2 {
+  margin: 0 0 var(--mf-s3);
+  font-size: 1.125rem;
+}
+
+.wf-list {
+  display: grid;
+  gap: var(--mf-s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wf-item {
+  display: grid;
+  gap: var(--mf-s2);
+  padding: var(--mf-s3);
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius);
+}
+
+.wf-item__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mf-s2);
+}
+
+.wf-item__title {
+  font-weight: 600;
+}
+
+.wf-item__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s1);
+}
+
+.wf-icon-btn {
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0 var(--mf-s2);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+  color: var(--mf-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.wf-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wf-icon-btn:focus-visible {
+  outline: 3px solid var(--mf-primary);
+  outline-offset: 2px;
+}
+
+.wf-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s4);
+}
+
+.wf-opt {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+}
+
+.wf-preview {
+  padding: var(--mf-s3);
+  border: 1px dashed var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+}
+
+.wf-diff {
+  margin: 0 0 var(--mf-s3);
+  padding-left: var(--mf-s5);
+}
