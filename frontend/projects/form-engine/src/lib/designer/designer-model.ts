@@ -1,4 +1,5 @@
 import { validateDefinition } from '../rules/evaluator';
+import { isPortablePattern } from '../rules/portable-pattern';
 import {
   DefinitionErrorCode,
   FormControl,
@@ -618,14 +619,25 @@ export function diagnoseDefinition(fields: readonly DesignerField[]): DesignerIs
     }
     const v = f.validation;
     if (v?.pattern != null && isTextFamily(f.control)) {
+      let valid = true;
       try {
         new RegExp(v.pattern);
       } catch {
+        valid = false;
         push(
           'INVALID_PATTERN',
           'error',
           'validation',
           'This pattern is not a valid regular expression.',
+          f.key,
+        );
+      }
+      if (valid && !isPortablePattern(v.pattern)) {
+        push(
+          'INVALID_PATTERN',
+          'error',
+          'validation',
+          'This pattern cannot be used: it is outside the supported subset (for example nested repeats such as (a+)+, repeated alternatives such as (a|b)+, or two open-ended repeats in a row).',
           f.key,
         );
       }

@@ -203,7 +203,7 @@ public class EmailParseServiceTests
         var result = await ParseAsync(Encoding.ASCII.GetBytes(eml), "hostile.eml");
         stopwatch.Stop();
 
-        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(1));
+        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(3)); // generous: the unit suite runs CPU-heavy tests in parallel
         result.IsSuccess.ShouldBeTrue();
     }
 

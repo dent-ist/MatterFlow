@@ -1,7 +1,9 @@
 /**
  * The portable regular-expression subset of contracts/form-rules.md section 3.1. A pattern in this subset
  * means the same in JavaScript (no flags) and in .NET (`RegexOptions.ECMAScript`, after the server's `.`/`$`
- * translation), so it can be passed to `new RegExp(pattern)` unchanged.
+ * translation), so it can be passed to `new RegExp(pattern)` unchanged. The subset also excludes the shapes that
+ * backtrack exponentially or with a high polynomial degree (nested quantifiers, quantified alternation, adjacent
+ * unbounded quantifiers), because JavaScript regular expressions have no timeout (security review SEC-05).
  */
 
 const MAX_PATTERN_LENGTH = 200;
@@ -9,10 +11,23 @@ const SYNTAX_CHARS = '^$\\.*+?()[]{}|/-';
 const CLASS_ESCAPES = 'dDwW';
 const SINGLE_ESCAPES: Record<string, number> = { t: 9, n: 10, r: 13, f: 12, v: 11 };
 
-interface Atom {
+/** What a piece of the pattern contains that matters for backtracking. */
+interface Info {
+  /** A quantifier with min != max (`* + ? {n,} {n,m}`). */
+  variable: boolean;
+  /** An alternation (`|`). */
+  alt: boolean;
+}
+
+interface Atom extends Partial<Info> {
   quantifiable: boolean;
   group?: boolean;
-  unbounded?: boolean;
+}
+
+/** A quantifier's bounds; unbounded is `max === Infinity`. */
+interface Quantifier {
+  min: number;
+  max: number;
 }
 
 const isQuantifierStart = (c: string | undefined): boolean => c !== undefined && '*+?{'.includes(c);
@@ -88,25 +103,26 @@ export function isPortablePattern(pattern: unknown): pattern is string {
     }
   };
 
-  /** Parses a quantifier; returns whether it is unbounded, or null when malformed. */
-  const parseQuantifier = (): { unbounded: boolean } | null => {
-    let unbounded: boolean;
+  /** Parses a quantifier (and optional lazy marker); returns its bounds, or null when malformed. */
+  const parseQuantifier = (): Quantifier | null => {
+    let min: number;
+    let max: number;
     const c = p[i];
     if (c === '*' || c === '+' || c === '?') {
       i++;
-      unbounded = c !== '?';
+      min = c === '+' ? 1 : 0;
+      max = c === '?' ? 1 : Infinity;
     } else {
       const m = /^\{(\d{1,3})(,(\d{0,3}))?\}/.exec(p.slice(i));
       if (!m) return null;
-      const low = +m[1];
-      const high = m[2] === undefined ? low : m[3] === '' ? Infinity : +m[3];
-      if (high < low) return null;
+      min = +m[1];
+      max = m[2] === undefined ? min : m[3] === '' ? Infinity : +m[3];
+      if (max < min) return null;
       i += m[0].length;
-      unbounded = high === Infinity;
     }
     if (p[i] === '?') i++;
     if (i < n && isQuantifierStart(p[i])) return null;
-    return { unbounded };
+    return { min, max };
   };
 
   const parseAtom = (): Atom | null => {
@@ -117,10 +133,10 @@ export function isPortablePattern(pattern: unknown): pattern is string {
         if (p[i + 1] !== ':') return null;
         i += 2;
       }
-      const alt = parseAlt();
-      if (!alt || p[i] !== ')') return null;
+      const inner = parseAlt();
+      if (!inner || p[i] !== ')') return null;
       i++;
-      return { quantifiable: true, group: true, unbounded: alt.unbounded };
+      return { quantifiable: true, group: true, variable: inner.variable, alt: inner.alt };
     }
     if (c === '[') return parseClass();
     if (c === '\\') {
@@ -139,34 +155,46 @@ export function isPortablePattern(pattern: unknown): pattern is string {
     return { quantifiable: true };
   };
 
-  const parseSeq = (): { unbounded: boolean } | null => {
-    let unbounded = false;
+  const parseSeq = (): Info | null => {
+    let variable = false;
+    let alt = false;
+    let previousUnbounded = false;
     while (i < n && p[i] !== '|' && p[i] !== ')') {
       const atom = parseAtom();
       if (!atom) return null;
-      unbounded ||= !!atom.unbounded;
+      variable ||= !!atom.variable;
+      alt ||= !!atom.alt;
+      let unbounded = false;
       if (i < n && isQuantifierStart(p[i])) {
         if (!atom.quantifiable) return null;
         const q = parseQuantifier();
         if (!q) return null;
-        if (q.unbounded && atom.group && atom.unbounded) return null;
-        unbounded ||= q.unbounded;
+        // Backtracking hazards (security review SEC-05): a repeated group may not contain a variable-count quantifier
+        // or an alternation, and two unbounded quantifiers may not be directly adjacent.
+        if (atom.group && q.max > 1 && (atom.variable || atom.alt)) return null;
+        unbounded = q.max === Infinity;
+        if (unbounded && previousUnbounded) return null;
+        variable ||= q.min !== q.max;
       }
+      previousUnbounded = unbounded;
     }
-    return { unbounded };
+    return { variable, alt };
   };
 
-  const parseAlt = (): { unbounded: boolean } | null => {
-    let unbounded = false;
+  const parseAlt = (): Info | null => {
+    let variable = false;
+    let alt = false;
     for (;;) {
       const seq = parseSeq();
       if (!seq) return null;
-      unbounded ||= seq.unbounded;
+      variable ||= seq.variable;
+      alt ||= seq.alt;
       if (p[i] === '|') {
         i++;
+        alt = true;
         continue;
       }
-      return { unbounded };
+      return { variable, alt };
     }
   };
 

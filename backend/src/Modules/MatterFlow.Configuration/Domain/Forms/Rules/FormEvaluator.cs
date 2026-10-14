@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -24,7 +25,19 @@ public sealed record FormEvaluationResult(
 /// <summary>The authoritative, pure rule evaluator and value validator (contracts/form-rules.md section 3).</summary>
 public static class FormEvaluator
 {
-    private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(100);
+
+    /// <summary>Total regex time one <see cref="Evaluate"/> call may spend; later pattern checks of the same call count as no match (SEC-05).</summary>
+    private static readonly long RegexBudgetTicks = Stopwatch.Frequency / 2;
+
+    /// <summary>Platform default <c>maxLength</c> (UTF-16 code units) when a text-family field declares none (SEC-21).</summary>
+    public static int DefaultMaxLength(FormControl control) => control switch
+    {
+        FormControl.TextArea => 20_000,
+        FormControl.Url => 2_000,
+        _ => 1_000,
+    };
+
     private static readonly ConcurrentDictionary<string, Regex?> PatternCache = new(StringComparer.Ordinal);
 
     /// <summary>Evaluates visibility, required state and offered options, validates the values and builds the normalized value set.</summary>
@@ -40,6 +53,7 @@ public static class FormEvaluator
         var offered = new List<string>?[fields.Count];
         var errors = new List<FormFieldError>();
         var normalized = new JsonElement?[fields.Count];
+        var regexBudget = new RegexBudget();
 
         foreach (var i in schema.Order)
         {
@@ -81,7 +95,7 @@ public static class FormEvaluator
 
             effective[i] = raw;
             normalized[i] = raw;
-            ValidateValue(def, raw, offered[i], errors);
+            ValidateValue(def, raw, offered[i], errors, regexBudget);
         }
 
         foreach (var key in values.Keys)
@@ -131,7 +145,7 @@ public static class FormEvaluator
         return new FormEvaluationResult(visibleMap, requiredMap, optionMap, errors, FormValues.From(kept));
     }
 
-    private static void ValidateValue(FormFieldDefinition def, JsonElement value, List<string>? offered, List<FormFieldError> errors)
+    private static void ValidateValue(FormFieldDefinition def, JsonElement value, List<string>? offered, List<FormFieldError> errors, RegexBudget regexBudget)
     {
         var validation = def.Validation;
         if (validation is not null)
@@ -142,20 +156,22 @@ public static class FormEvaluator
                 return;
             }
 
-            if (def.Control.IsTextFamily())
-            {
-                var text = value.GetString()!;
-                if (validation.MaxLength is { } max && text.Length > max)
-                {
-                    errors.Add(new FormFieldError(def.Key, FormErrorCode.TooLong, $"Value is longer than {max} characters."));
-                    return;
-                }
+        }
 
-                if (validation.Pattern is { } pattern && !MatchesPattern(pattern, text))
-                {
-                    errors.Add(new FormFieldError(def.Key, FormErrorCode.Pattern, "Value does not match the required pattern."));
-                    return;
-                }
+        if (def.Control.IsTextFamily())
+        {
+            var text = value.GetString()!;
+            var max = validation?.MaxLength ?? DefaultMaxLength(def.Control);
+            if (text.Length > max)
+            {
+                errors.Add(new FormFieldError(def.Key, FormErrorCode.TooLong, $"Value is longer than {max} characters."));
+                return;
+            }
+
+            if (validation?.Pattern is { } pattern && !MatchesPattern(pattern, text, regexBudget))
+            {
+                errors.Add(new FormFieldError(def.Key, FormErrorCode.Pattern, "Value does not match the required pattern."));
+                return;
             }
         }
 
@@ -208,7 +224,7 @@ public static class FormEvaluator
     }
 
     /// <summary>Portable subset (contracts/form-rules.md 3.1), unanchored search. A pattern outside the subset (publish rejects it) or a timeout counts as no match.</summary>
-    private static bool MatchesPattern(string pattern, string text)
+    private static bool MatchesPattern(string pattern, string text, RegexBudget budget)
     {
         var regex = PatternCache.GetOrAdd(pattern, p =>
         {
@@ -223,11 +239,12 @@ public static class FormEvaluator
                 return null;
             }
         });
-        if (regex is null)
+        if (regex is null || budget.Exhausted)
         {
             return false;
         }
 
+        var started = Stopwatch.GetTimestamp();
         try
         {
             return regex.IsMatch(text);
@@ -236,6 +253,18 @@ public static class FormEvaluator
         {
             return false;
         }
+        finally
+        {
+            budget.Spent += Stopwatch.GetTimestamp() - started;
+        }
+    }
+
+    /// <summary>Regex time spent by one evaluation (not thread-safe on purpose: an evaluation is single-threaded).</summary>
+    private sealed class RegexBudget
+    {
+        public long Spent { get; set; }
+
+        public bool Exhausted => Spent >= RegexBudgetTicks;
     }
 
     /// <summary>Rule evaluation over effective values (null = hidden, empty or type-invalid).</summary>

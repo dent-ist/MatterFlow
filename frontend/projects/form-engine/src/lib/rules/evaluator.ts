@@ -415,12 +415,22 @@ const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
  * like the server. A pattern outside the subset is a definition error and never reaches evaluation.
  */
 function safeRegexTest(pattern: string, s: string): boolean {
+  // A definition published before the subset was tightened may still carry a backtracking hazard: never run it
+  // (JavaScript has no regex timeout). The server treats such a pattern as "no match" too.
+  if (!isPortablePattern(pattern)) return false;
   try {
     return new RegExp(pattern).test(s);
   } catch {
-    return true;
+    return false;
   }
 }
+
+/** Platform default `maxLength` of the text family when a field declares none (form-rules.md section 3, step 3.4). */
+export const DEFAULT_MAX_LENGTH: Readonly<Record<string, number>> = {
+  TEXT: 1000,
+  URL: 2000,
+  TEXTAREA: 20000,
+};
 
 /**
  * Evaluate visibility, requiredness, offered options and validation (form-rules.md section 3).
@@ -510,7 +520,8 @@ export function evaluateForm(
     }
     if (fam === 'text') {
       const s = v as string;
-      if (present(val.maxLength) && s.length > val.maxLength) {
+      const limit = present(val.maxLength) ? val.maxLength : DEFAULT_MAX_LENGTH[f.control];
+      if (s.length > limit) {
         fail('TOO_LONG');
         continue;
       }
