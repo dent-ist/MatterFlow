@@ -16,6 +16,11 @@ describe('mf-global-search (header typeahead)', () => {
   let fixture: ComponentFixture<GlobalSearch>;
   let router: Router;
 
+  // The component loads the API client module lazily; warm it so the first typed query is not racing a chunk load.
+  beforeAll(async () => {
+    await import('../../api/generated/api-client');
+  });
+
   const el = (): HTMLElement => fixture.nativeElement;
   const box = (): HTMLInputElement => el().querySelector('input')!;
   const options = (): HTMLElement[] => Array.from(el().querySelectorAll('[role=option]'));

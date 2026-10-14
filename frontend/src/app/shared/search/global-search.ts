@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  Injector,
   computed,
   inject,
   input,
@@ -11,7 +12,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { SearchClient, SearchGroup, SearchHit } from '../../api/generated/api-client';
+import type { SearchGroup, SearchHit } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import {
   SEARCH_ERROR_MESSAGE,
@@ -318,7 +319,7 @@ export class GlobalSearch {
   protected readonly listId = 'mf-global-search-list';
   protected readonly errorMessage = SEARCH_ERROR_MESSAGE;
 
-  private readonly api = inject(SearchClient);
+  private readonly injector = inject(Injector);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStore);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -514,7 +515,10 @@ export class GlobalSearch {
     const id = this.requestId;
     try {
       const types = SEARCH_TYPES.filter((t) => this.auth.has(t.permission)).map((t) => t.type);
-      const result = await firstValueFrom(this.api.search(text, types, this.perType()));
+      // The generated API client module is large; load it on first search so it stays out of the initial bundle.
+      const { SearchClient } = await import('../../api/generated/api-client');
+      const api = this.injector.get(SearchClient);
+      const result = await firstValueFrom(api.search(text, types, this.perType()));
       if (id !== this.requestId) return;
       this.response.set(result.groups.filter((g) => searchTypeInfo(g.type)));
       this.state.set('ready');
