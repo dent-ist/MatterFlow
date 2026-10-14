@@ -224,9 +224,7 @@ export class DynamicForm {
         label: fieldLabel(field),
         required: ev.required[field.key] === true,
         isInput,
-        items: (field.options ?? [])
-          .filter((o) => !offered || offered.includes(o.key))
-          .map((o) => ({ label: o.label?.trim() || o.key, value: o.key })),
+        items: this.itemsFor(field, offered),
         model: this.toModel(field, raw),
         text: readOnly ? this.toText(field, raw) : '',
         error:
@@ -238,6 +236,20 @@ export class DynamicForm {
     }
     return rows;
   });
+
+  /** Option lists keep the same array while their content is unchanged, so the select controls do not rebuild (NG0956, UAT2-23). */
+  private readonly itemCache = new Map<string, { signature: string; items: FieldRow['items'] }>();
+
+  private itemsFor(field: FormField, offered: readonly string[] | undefined): FieldRow['items'] {
+    const items = (field.options ?? [])
+      .filter((o) => !offered || offered.includes(o.key))
+      .map((o) => ({ label: o.label?.trim() || o.key, value: o.key }));
+    const signature = JSON.stringify(items);
+    const cached = this.itemCache.get(field.key);
+    if (cached?.signature === signature) return cached.items;
+    this.itemCache.set(field.key, { signature, items });
+    return items;
+  }
 
   /**
    * Validate for submit: reveals every error and returns the evaluation. Focuses the first

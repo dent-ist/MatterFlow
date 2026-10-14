@@ -59,9 +59,9 @@ const toChoice = (a: AssetLookupItem): Choice => ({
           <a class="ap__link" [href]="'/assets/' + c.id" (click)="openAsset($event, c.id)">{{
             c.label
           }}</a>
-          <span class="ap__detail">{{ c.detail }}</span>
+          <span class="ap__detail">{{ ' ' }}{{ c.detail }}</span>
           @if (c.reference) {
-            <span class="ap__detail">{{ c.reference }}</span>
+            <span class="ap__detail">{{ ' ' }}{{ c.reference }}</span>
           }
           @if (c.inactive) {
             <span class="ap__tag">inactive</span>
@@ -73,9 +73,9 @@ const toChoice = (a: AssetLookupItem): Choice => ({
     } @else if (chosen(); as c) {
       <div class="ap__chosen" data-chosen>
         <span>{{ c.label }}</span>
-        <span class="ap__detail">{{ c.detail }}</span>
+        <span class="ap__detail">{{ ' ' }}{{ c.detail }}</span>
         @if (c.reference) {
-          <span class="ap__detail">{{ c.reference }}</span>
+          <span class="ap__detail">{{ ' ' }}{{ c.reference }}</span>
         }
         @if (c.inactive) {
           <span class="ap__tag">inactive</span>
@@ -129,9 +129,9 @@ const toChoice = (a: AssetLookupItem): Choice => ({
                 [class.ap__option--active]="i === active()"
                 (mousedown)="$event.preventDefault(); choose(o)"
               >
-                {{ o.label }} <span class="ap__detail">{{ o.detail }}</span>
+                {{ o.label }} <span class="ap__detail">{{ ' ' }}{{ o.detail }}</span>
                 @if (o.reference) {
-                  <span class="ap__detail">{{ o.reference }}</span>
+                  <span class="ap__detail">{{ ' ' }}{{ o.reference }}</span>
                 }
                 @if (o.inactive) {
                   <span class="ap__tag">inactive</span>

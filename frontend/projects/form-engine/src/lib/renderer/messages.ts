@@ -70,7 +70,13 @@ const QUESTION_START =
 
 /** A label written as a question ("What is driving the due date?"), which reads badly after "Select". */
 function isQuestion(label: string): boolean {
-  return label.trim().endsWith('?') || QUESTION_START.test(label.trim());
+  const text = label.trim();
+  // "Collected by", "Delivered via": a participle reads badly after "Select a".
+  return (
+    text.endsWith('?') ||
+    QUESTION_START.test(text) ||
+    /^[a-z]+(ed|ing)\s+(by|on|via|to|for|in)\b/i.test(text)
+  );
 }
 
 /** Label as it reads inside a sentence: no closing punctuation, first letter lower-cased unless it starts an acronym. */
