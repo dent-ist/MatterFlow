@@ -1,0 +1,217 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "MatterFlow API",
+    "version": "v1"
+  },
+  "paths": {
+    "/api/v1/system/ping": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "SystemPing",
+        "parameters": [
+          {
+            "name": "message",
+            "in": "query",
+            "schema": {
+              "maxLength": 50,
+              "minLength": 0,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiFieldError": {
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiProblemDetails": {
+        "required": [
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "code": {
+            "enum": [
+              "VALIDATION_FAILED",
+              "FORM_VALIDATION_FAILED",
+              "INVALID_NUMBER_FORMAT",
+              "UNAUTHENTICATED",
+              "ACCESS_PENDING",
+              "ACCOUNT_DISABLED",
+              "PERMISSION_DENIED",
+              "NOT_FOUND",
+              "CONCURRENCY_CONFLICT",
+              "DUPLICATE_NUMBER",
+              "DUPLICATE_NAME",
+              "MATTER_INACTIVE",
+              "MATTER_HAS_OPEN_TASKS",
+              "CLIENT_INACTIVE",
+              "PROJECT_INACTIVE",
+              "TASK_NOT_EDITABLE",
+              "INVALID_STATUS_TRANSITION",
+              "COMPLETION_BLOCKED",
+              "CANCEL_COMMENT_REQUIRED",
+              "STEP_ORDER_VIOLATION",
+              "STEP_NOT_SKIPPABLE",
+              "SKIP_COMMENT_REQUIRED",
+              "CROSS_MATTER_REFERENCE",
+              "IMMUTABLE_FIELD",
+              "WORKFLOW_NOT_ELIGIBLE",
+              "WORKFLOW_NOT_PUBLISHED",
+              "FORM_NOT_PUBLISHED",
+              "PUBLISH_VALIDATION_FAILED",
+              "LAST_ADMIN",
+              "EMAIL_PARSE_FAILED",
+              "PAYLOAD_TOO_LARGE",
+              "HOLD_COMMENT_REQUIRED",
+              "UNSUPPORTED_MEDIA_TYPE",
+              "INTERNAL_ERROR"
+            ],
+            "type": "string",
+            "description": "Stable machine-readable error code."
+          },
+          "traceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errors": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ApiFieldError"
+              }
+            }
+          },
+          "meta": {
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        }
+      },
+      "PingResponse": {
+        "required": [
+          "status",
+          "serverTimeUtc",
+          "timeZoneId",
+          "timeZoneFromRequest",
+          "localTime",
+          "timeZoneAbbreviation",
+          "echo"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "serverTimeUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timeZoneId": {
+            "type": "string"
+          },
+          "timeZoneFromRequest": {
+            "type": "boolean"
+          },
+          "localTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timeZoneAbbreviation": {
+            "type": "string"
+          },
+          "echo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "System"
+    }
+  ]
+}

@@ -13,5 +13,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\MatterFlow.SharedKernel\MatterFlow.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\MatterFlow.Data\MatterFlow.Data.csproj" />
   </ItemGroup>
 </Project>
