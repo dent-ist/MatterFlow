@@ -53,6 +53,12 @@ public static class ErrorCodes
     /// <summary>A published or retired form version cannot be edited (create a new draft instead).</summary>
     public const string FormVersionImmutable = "FORM_VERSION_IMMUTABLE";
 
+    /// <summary>A new Asset cannot use an inactive Asset Type.</summary>
+    public const string AssetTypeInactive = "ASSET_TYPE_INACTIVE";
+
+    /// <summary>An inactive Asset cannot be edited; reactivate it first.</summary>
+    public const string AssetInactive = "ASSET_INACTIVE";
+
     /// <summary>Transport-level codes for responses not produced by a feature.</summary>
     public const string UnsupportedMediaType = "UNSUPPORTED_MEDIA_TYPE";
 
