@@ -78,7 +78,7 @@ flowchart LR
   OUT[New Outlook] -. drag/drop or paste .-> U
 ```
 
-- **Hosting:** one IIS site, ASP.NET Core Module in-process, framework-dependent publish (`win-x64`). The Angular production build is copied into `wwwroot/`; ASP.NET serves static files and falls back to `index.html` for client routes (`MapFallbackToFile`, excluding `/api`).
+- **Hosting:** one IIS site, ASP.NET Core Module in-process, framework-dependent publish (`win-x64`). The Angular production build is copied into `wwwroot/`; ASP.NET serves static files and falls back to `index.html` for client routes (`Hosting/SpaHosting.cs`: GET/HEAD without a file extension, excluding `/api`, `/health` and `/openapi`).
 - **Authentication:** IIS Windows Authentication enabled, Anonymous disabled. The app uses `IISServerDefaults.AuthenticationScheme`. HTTPS only (HSTS). The site must be in the browser's Intranet zone for silent sign-in (deployment checklist item).
 - **Database access:** app-pool identity (gMSA) with integrated security. Two SQL roles: `mf_app` (DML, EXEC, **no DDL**, **audit table INSERT/SELECT only**) for normal operation and `mf_migrator` (DDL) for the schema runner. In small installs one login may hold both, but the audit DENY must remain (section 9). The runner runs with the migrator connection string (`ConnectionStrings:Migrations`), falling back to the app connection string if unset.
 - **Dev/test:** `Auth:Provider=Dev` (cross-platform, SQL Server in Docker, `ng serve` with a proxy to the API so the browser sees one origin). The Dev provider is an allow-list: it starts only when `ASPNETCORE_ENVIRONMENT` is `Development` or `Test`, and any other environment name is rejected at startup (security review SEC-10). The `?devUser=` query form works in Development only.
@@ -240,7 +240,7 @@ Details:
 6. **Fail-fast:** any error (discovery, checksum, lock, script) throws `SchemaMigrationException` with script name, batch number, SQL error number and line; the host exits with non-zero code, Windows Event Log/Serilog gets the full message, and no HTTP traffic is served. The failing script's transaction is rolled back.
 7. **Multi-instance behavior:** only one instance migrates; others wait on the lock. With a single IIS node (the Phase 1 target) the lock is a safeguard for overlapping app-pool recycles.
 8. **Options (`Migrations:*`):** `Enabled` (default true), `ScriptsFolder` (default null = embedded), `LockTimeoutSeconds` (300), `CommandTimeoutSeconds` (600), `ConnectionStringName` (`Migrations`).
-9. **Dev/test:** the same runner is used by local dev, integration tests (against the Testcontainers database) and CI, so there is exactly one way to create a schema. A CLI shim `dotnet run --project MatterFlow.Api -- migrate-only` runs migrations and exits (used by deploy scripts to migrate before swapping binaries, optional).
+9. **Dev/test:** the same runner is used by local dev, integration tests (against the Testcontainers database) and CI, so there is exactly one way to create a schema. The CLI switch `dotnet MatterFlow.Api.dll --migrate-only` (or `MATTERFLOW_MIGRATE_ONLY=true`) runs migrations with the `Migrations` connection and exits 0/1 without starting the web host (used by deploy scripts and the DBA to migrate before swapping binaries; implemented in `Hosting/MigrateOnlyCommand.cs`, procedure in `docs/runbook.md` section 7).
 
 ### 4.4 Authoring rules (in `db/scripts/README.md`)
 

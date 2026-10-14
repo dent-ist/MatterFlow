@@ -1,0 +1,47 @@
+name: publish
+
+# Builds the deployable package (API publish output with the Angular build in wwwroot, web.config and the settings template) and keeps it as
+# a workflow artifact. Runs on every push to dev and on demand. Deployment itself is manual (docs/runbook.md sections 5 and 7).
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  CI: true
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build the package (win-x64, framework-dependent)
+        run: deploy/publish.sh "$GITHUB_WORKSPACE/artifacts/publish" win-x64
+      - name: Check the package contents
+        run: |
+          test -f artifacts/publish/MatterFlow.Api.dll
+          test -f artifacts/publish/web.config
+          test -f artifacts/publish/wwwroot/index.html
+          test -f artifacts/publish/appsettings.Production.template.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: matterflow-publish-${{ github.sha }}
+          path: artifacts/publish
+          if-no-files-found: error
+          retention-days: 30

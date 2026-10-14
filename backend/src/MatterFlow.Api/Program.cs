@@ -1,11 +1,16 @@
 using System.Text.Json.Serialization;
 using MatterFlow.Api;
+using MatterFlow.Api.Hosting;
 using MatterFlow.Api.Http;
 using MatterFlow.Api.OpenApi;
 using MatterFlow.Api.Security;
 using MatterFlow.Data.SchemaMigrations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+
+// `--migrate-only` (or MATTERFLOW_MIGRATE_ONLY=true): apply the schema scripts and exit without starting the web host (docs/runbook.md section 7).
+if (MigrateOnlyCommand.IsRequested(args))
+    return await MigrateOnlyCommand.RunAsync(args);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,7 +40,11 @@ builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
     o.SerializerOptions.NumberHandling = JsonNumberHandling.Strict; // keeps numbers as plain integers in the OpenAPI schemas
 });
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks().AddCheck<ReadinessHealthCheck>("database", tags: [ReadinessHealthCheck.Tag]);
+// The Angular build is served from wwwroot on the same origin when it is deployed there (Hosting/SpaHosting.cs).
+var serveSpa = SpaHosting.IsEnabled(builder.Configuration, builder.Environment);
+if (serveSpa)
+    builder.Services.AddMatterFlowSpaCompression();
 // Policies (e.g. Audit.View) are registered by the Identity/authorization module; the host only enables the middleware.
 builder.Services.AddAuthorization();
 builder.Services.AddSchemaMigrations(builder.Configuration);
@@ -91,6 +100,8 @@ app.UseMiddleware<RequestBodyLimitMiddleware>();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+if (serveSpa)
+    app.UseMatterFlowStaticFiles();
 
 app.UseMiddleware<RequestForgeryGuard>();
 app.UseAuthentication();
@@ -100,10 +111,14 @@ app.UseRateLimiter();
 if (app.Environment.IsDevelopment())
     app.MapOpenApi("/openapi/{documentName}.json").AllowAnonymous();
 
-app.MapHealthChecks("/health/live").AllowAnonymous();
+app.MapHealthChecks("/health/live", new() { Predicate = r => !r.Tags.Contains(ReadinessHealthCheck.Tag) }).AllowAnonymous();
+app.MapHealthChecks("/health/ready", ReadinessHealthCheck.EndpointOptions()).AllowAnonymous();
 app.MapControllers();
+if (serveSpa)
+    app.MapMatterFlowSpaFallback();
 
 app.Run();
+return 0;
 
 // Exposed for WebApplicationFactory<Program> in integration tests.
 public partial class Program;
