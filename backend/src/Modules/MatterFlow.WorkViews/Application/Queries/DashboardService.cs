@@ -19,7 +19,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// block and two small lists), never a read per row. It reuses <see cref="TaskQueueRules"/> so every number agrees with the Task Queue the user lands
 /// on, and each number carries the Task Queue query that lists exactly the counted Tasks. Phase 1 has no per-record visibility (addendum E).
 /// </summary>
-public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, IPermissionChecker permissions)
+public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, IPermissionChecker permissions, DashboardCache cache)
 {
     public async Task<Result<DashboardSummary>> GetAsync(DashboardQuery query, CancellationToken ct)
     {
@@ -29,6 +29,13 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
 
         var queueClock = QueueClock.Create(clock.UtcNow, timeZone);
         var today = queueClock.Today;
+
+        // The permission is read before the cache so a user who lost (or gained) the department view never sees an answer computed under the other right.
+        var department = permissions.Has(Permissions.Dashboard.ViewDepartment);
+        var cacheKey = $"{me}|{query.PeriodDays}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{(department ? 1 : 0)}";
+        if (cache.TryGet(cacheKey, out var cached))
+            return cached;
+
         var from = DashboardRules.PeriodStart(today, query.PeriodDays);
         var fromUtc = queueClock.StartOfDayUtc(from);
         var dueSoonDay = today.AddDays(TaskQueueRules.DueSoonDays);
@@ -40,7 +47,6 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         var openDueSoon = open.Where(dueSoon).Where(Not(overdue));
 
         // Department figures need Dashboard.ViewDepartment; without it the caller gets only the personal block and empty department blocks (SEC2-05).
-        var department = permissions.Has(Permissions.Dashboard.ViewDepartment);
 
         // Headline counts: one statement with a scalar subquery per number.
         var head = !department ? null : await tasks.Select(_ => new
@@ -123,7 +129,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         head ??= new { Open = 0, Unassigned = 0, Overdue = 0, OnHold = 0, DueSoon = 0, AsapOpen = 0, Completed = 0, Created = 0 };
         mine ??= new { Open = 0, Overdue = 0, DueSoon = 0, Created = 0 };
 
-        return new DashboardSummary(
+        var summary = new DashboardSummary(
             new DashboardPeriod(query.PeriodDays, from, today),
             queueClock.ZoneId,
             DateTime.SpecifyKind(queueClock.NowUtc, DateTimeKind.Utc),
@@ -147,6 +153,8 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
                 new DashboardCount(mine.Overdue, DashboardRules.Open("assignee=" + me, "overdue=true")),
                 new DashboardCount(mine.DueSoon, DashboardRules.Open("assignee=" + me, "asap=false", "overdue=false", "dueTo=" + DashboardRules.Date(dueSoonDay))),
                 new DashboardCount(mine.Created, DashboardRules.Join(["creator=" + me, DashboardRules.Created(from)]))));
+        cache.Set(cacheKey, summary);
+        return summary;
     }
 
     /// <summary>Open Tasks per age band; the band edges are the viewer's local midnights so the drill-through (createdFrom/createdTo) lists the same Tasks.</summary>

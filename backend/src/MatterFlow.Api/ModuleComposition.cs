@@ -35,7 +35,7 @@ public static class ModuleComposition
         services.AddAssetsModule();
         services.AddWorkflowEngineModule();
         services.AddWorkManagementModule();
-        services.AddWorkViewsModule();
+        services.AddWorkViewsModule(configuration);
         services.AddSearchModule();
         services.AddIntakeModule();
         services.AddStarterConfigurationSeeding();

@@ -13,7 +13,8 @@ namespace MatterFlow.IntegrationTests.Fixtures;
 /// Test users are chosen with the <c>X-Dev-User</c> header. A test-only controller supplies permission-protected endpoints until the
 /// feature controllers exist.
 /// </summary>
-public sealed class DatabaseApiFactory(string connectionString, string? environment = null, bool seedStarterConfiguration = false) : WebApplicationFactory<Program>
+public sealed class DatabaseApiFactory(string connectionString, string? environment = null, bool seedStarterConfiguration = false, int dashboardCacheSeconds = 0, int? readTimeoutSeconds = null)
+    : WebApplicationFactory<Program>
 {
     public const string AdminAccount = @"ke\kekim";
 
@@ -33,6 +34,10 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
         // lowered again by the tests that exercise the limiter.
         foreach (var budget in new[] { "ApiPerMinute", "CommentWritesPerMinute", "TaskWritesPerMinute", "SearchPerMinute", "AdvancedSearchPerMinute", "AuditPerMinute", "DashboardPerMinute" })
             builder.UseSetting("RateLimits:" + budget, "1000000");
+        // The 15-second dashboard cache would show tests a stale dashboard right after they changed data; tests that exercise the cache switch it on.
+        builder.UseSetting("Dashboard:CacheSeconds", dashboardCacheSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        if (readTimeoutSeconds is { } timeout)
+            builder.UseSetting("Queries:ReadCommandTimeoutSeconds", timeout.ToString(System.Globalization.CultureInfo.InvariantCulture));
         builder.UseSetting("Dev:Users:0:Username", @"KE\director");
         builder.UseSetting("Dev:Users:0:DisplayName", "Dana Director");
         builder.UseSetting("Dev:Users:0:Roles:0", "Director");

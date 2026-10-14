@@ -9,4 +9,7 @@
     <ProjectReference Include="..\MatterFlow.Identity\MatterFlow.Identity.csproj" />
     <ProjectReference Include="..\..\MatterFlow.Data\MatterFlow.Data.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MatterFlow.UnitTests" />
+  </ItemGroup>
 </Project>

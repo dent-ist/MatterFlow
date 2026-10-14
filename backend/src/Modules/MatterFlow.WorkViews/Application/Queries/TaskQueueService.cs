@@ -230,7 +230,11 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
     private IQueryable<WorkTask> ApplyFilter(IQueryable<WorkTask> rows, TaskQueueFilter f, QueueClock c)
     {
         if (f.Text is { } text)
-            rows = rows.Where(t => t.Title.Contains(text) || t.Number.Contains(text));
+        {
+            var pattern = TextMatch.ContainsPattern(text);
+            rows = rows.Where(t => EF.Functions.Like(EF.Functions.Collate(t.Title.ToLower(), TextMatch.Collation), pattern, TextMatch.Escape)
+                || EF.Functions.Like(EF.Functions.Collate(t.Number.ToLower(), TextMatch.Collation), pattern, TextMatch.Escape));
+        }
 
         if (f.Statuses.Count > 0)
         {
@@ -307,7 +311,11 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
             rows = overdue ? rows.Where(TaskQueueRules.Overdue(c)) : rows.Where(Not(TaskQueueRules.Overdue(c)));
 
         if (f.Requestor is { } requestor)
-            rows = rows.Where(t => t.RequestorName.Contains(requestor) || (t.RequestorEmail != null && t.RequestorEmail.Contains(requestor)));
+        {
+            var pattern = TextMatch.ContainsPattern(requestor);
+            rows = rows.Where(t => EF.Functions.Like(EF.Functions.Collate(t.RequestorName.ToLower(), TextMatch.Collation), pattern, TextMatch.Escape)
+                || (t.RequestorEmail != null && EF.Functions.Like(EF.Functions.Collate(t.RequestorEmail.ToLower(), TextMatch.Collation), pattern, TextMatch.Escape)));
+        }
 
         if (f.CompletedFrom is { } completedFrom)
         {
