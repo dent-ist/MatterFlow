@@ -1,3 +1,4 @@
+using MatterFlow.Audit.Application;
 using MatterFlow.Audit.Contracts;
 using MatterFlow.Audit.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +14,8 @@ public static class AuditModule
     {
         services.AddAuditServices();
         services.TryAddScoped<IAuditReader, AuditReader>();
+        services.TryAddScoped<IAuditDisplayLookup, NullAuditDisplayLookup>();
+        services.TryAddScoped<AuditSearchService>();
         services.AddControllers().AddApplicationPart(typeof(AuditModule).Assembly);
         return services;
     }
