@@ -171,7 +171,7 @@ export class CustomFieldsEditor {
     }
     .cf-title {
       margin: 0 0 var(--mf-s2);
-      font-size: var(--mf-fs-h2);
+      font-size: var(--mf-fs-h3);
     }
   `,
 })

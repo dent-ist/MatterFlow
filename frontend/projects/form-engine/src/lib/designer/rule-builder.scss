@@ -66,25 +66,8 @@ select[aria-invalid='true'] {
   border-color: var(--mf-danger, #b91c1c);
 }
 
-.rb__btn {
-  min-height: 2.25rem;
-  padding: 0.25rem 0.75rem;
-  border: 1px solid var(--mf-border-strong, #9ca3af);
-  border-radius: var(--mf-radius, 4px);
-  background: var(--mf-surface, #fff);
-  color: var(--mf-text, #111827);
-  font: inherit;
-  cursor: pointer;
-
-  &:disabled {
-    color: var(--mf-text-disabled, #6b7280);
-    cursor: not-allowed;
-  }
-}
-
 select:focus-visible,
-input:focus-visible,
-.rb__btn:focus-visible {
+input:focus-visible {
   outline: 2px solid var(--mf-focus, #1d4ed8);
   outline-offset: 2px;
 }

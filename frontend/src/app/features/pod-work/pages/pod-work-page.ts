@@ -143,7 +143,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
                       <td>
                         <button
                           type="button"
-                          class="wp-button"
+                          class="mf-btn"
                           [attr.aria-pressed]="state().filters.assignee.includes(m.userId)"
                           [attr.aria-label]="'Show tasks of ' + m.displayName"
                           (click)="toggleMember(m.userId)"

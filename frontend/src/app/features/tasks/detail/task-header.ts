@@ -37,13 +37,13 @@ const BLOCKED_TEXT: Readonly<Record<string, string>> = {
           </h1>
           <div class="pg-actions">
             @if (t.allowedActions.canEdit) {
-              <button type="button" class="th__btn" data-edit (click)="edit()">Edit</button>
+              <button type="button" class="mf-btn" data-edit (click)="edit()">Edit</button>
             }
             @if (items().length > 0) {
               <div class="menu">
                 <button
                   type="button"
-                  class="th__btn th__btn--primary"
+                  class="mf-btn mf-btn--primary"
                   data-status-menu
                   aria-haspopup="menu"
                   [attr.aria-expanded]="open()"
@@ -158,25 +158,6 @@ const BLOCKED_TEXT: Readonly<Record<string, string>> = {
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
-    }
-    .th__btn {
-      min-height: var(--mf-target-min);
-      padding: 0 var(--mf-s4);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      cursor: pointer;
-    }
-    .th__btn--primary {
-      border-color: var(--mf-primary, var(--mf-link));
-      background: var(--mf-primary, var(--mf-link));
-      color: var(--mf-primary-contrast, #fff);
-    }
-    .th__btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
     }
     .menu {
       position: relative;

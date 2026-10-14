@@ -69,7 +69,9 @@ const COMPLETED_WINDOW_DAYS = 90;
           <p class="wp-help" data-help>
             @if (windowed()) {
               Showing tasks completed or cancelled in the last 90 days, newest first.
-              <button type="button" class="wp-link-button" (click)="showOlder()">Show older</button>
+              <button type="button" class="mf-btn mf-btn--text" (click)="showOlder()">
+                Show older
+              </button>
             } @else {
               Completed and cancelled tasks, newest first.
             }

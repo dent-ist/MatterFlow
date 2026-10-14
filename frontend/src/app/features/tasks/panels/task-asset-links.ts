@@ -42,7 +42,7 @@ export const ASSETS_CLOSED_NOTE =
       <header class="tl__head">
         <h2 class="tl__title">Assets ({{ items().length }})</h2>
         @if (editable() && !linking()) {
-          <button type="button" class="tl__btn" data-link-open (click)="openLinking()">
+          <button type="button" class="mf-btn" data-link-open (click)="openLinking()">
             Link asset
           </button>
         }
@@ -80,13 +80,13 @@ export const ASSETS_CLOSED_NOTE =
           <div class="tl__buttons">
             <button
               type="submit"
-              class="tl__btn tl__btn--primary"
+              class="mf-btn mf-btn--primary"
               data-link-submit
               [disabled]="busy() || pickedAssetId() === null"
             >
               Link asset
             </button>
-            <button type="button" class="tl__btn" data-link-cancel (click)="closeLinking()">
+            <button type="button" class="mf-btn" data-link-cancel (click)="closeLinking()">
               Cancel
             </button>
           </div>
@@ -173,7 +173,7 @@ export const ASSETS_CLOSED_NOTE =
                         @if (editable()) {
                           <button
                             type="button"
-                            class="tl__btn"
+                            class="mf-btn"
                             data-unlink
                             [disabled]="busy()"
                             (click)="askUnlink(a)"
@@ -284,25 +284,6 @@ export const ASSETS_CLOSED_NOTE =
     .tl__buttons {
       display: flex;
       gap: var(--mf-s2);
-    }
-    .tl__btn {
-      min-height: var(--mf-target-min, 2rem);
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      cursor: pointer;
-    }
-    .tl__btn--primary {
-      background: var(--mf-primary);
-      border-color: var(--mf-primary);
-      color: #fff;
-    }
-    .tl__btn:disabled {
-      opacity: 0.5;
-      cursor: default;
     }
     .tl__tag {
       margin-left: var(--mf-s2);

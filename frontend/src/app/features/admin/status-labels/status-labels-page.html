@@ -83,7 +83,7 @@
                 <span>{{ row.displayLabel }}</span>
                 <button
                   type="button"
-                  class="link"
+                  class="mf-btn mf-btn--text"
                   *mfHasPermission="'StatusLabel.Manage'"
                   [attr.aria-label]="'Rename ' + row.displayLabel"
                   (click)="startEdit(row)"

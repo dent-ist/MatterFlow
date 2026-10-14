@@ -33,7 +33,9 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
       <p class="wl-sort" data-sort-note>
         @if (sort(); as s) {
           Sorted by {{ sortLabel() }} ({{ dir() === 'desc' ? 'descending' : 'ascending' }}).
-          <button type="button" class="wl-link" (click)="resetSort.emit()">Reset sort</button>
+          <button type="button" class="mf-btn mf-btn--text" (click)="resetSort.emit()">
+            Reset sort
+          </button>
         } @else {
           <span title="Choosing a column header sorts by it and replaces this order.">
             {{ defaultOrder() }}
@@ -55,7 +57,7 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
       <div class="wl-alert" role="alert">
         Something went wrong. Try again.
         <mf-error-reference />
-        <button type="button" class="wl-retry" (click)="retry.emit()">Retry</button>
+        <button type="button" class="mf-btn wl-retry" (click)="retry.emit()">Retry</button>
       </div>
     }
 
@@ -95,7 +97,7 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
       <div class="wl-empty" data-empty>
         @if (filtered()) {
           <p>No tasks match these filters.</p>
-          <button type="button" class="wl-button" (click)="clearFilters.emit()">
+          <button type="button" class="mf-btn wl-button" (click)="clearFilters.emit()">
             Clear filters
           </button>
         } @else {

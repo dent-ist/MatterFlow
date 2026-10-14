@@ -53,7 +53,7 @@
               <span class="movers" *mfHasPermission="'AssetType.Manage'">
                 <button
                   type="button"
-                  class="icon-btn"
+                  class="mf-btn mf-btn--icon"
                   [attr.aria-label]="'Move ' + r.name + ' up'"
                   [disabled]="busy() || !canMove(i, -1)"
                   (click)="move(i, -1)"
@@ -63,7 +63,7 @@
                 </button>
                 <button
                   type="button"
-                  class="icon-btn"
+                  class="mf-btn mf-btn--icon"
                   [attr.aria-label]="'Move ' + r.name + ' down'"
                   [disabled]="busy() || !canMove(i, 1)"
                   (click)="move(i, 1)"
@@ -107,7 +107,7 @@
                 }
                 <button
                   type="button"
-                  class="link"
+                  class="mf-btn mf-btn--text"
                   *mfHasPermission="'AssetType.Manage'"
                   [attr.aria-label]="'Rename ' + r.name"
                   (click)="startRename(r)"
@@ -136,6 +136,7 @@
                     label="Delete"
                     size="small"
                     severity="danger"
+                    styleClass="mf-btn--solid"
                     (onClick)="confirmDelete(r)"
                     data-confirm-delete
                   />
@@ -149,7 +150,7 @@
               } @else {
                 <button
                   type="button"
-                  class="link danger"
+                  class="mf-btn mf-btn--text mf-btn--danger"
                   *mfHasPermission="'AssetType.Manage'"
                   [disabled]="busy()"
                   [attr.aria-label]="'Delete ' + r.name"

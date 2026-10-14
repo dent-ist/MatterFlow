@@ -214,7 +214,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   styles: `
     .pg-subtitle {
       margin: 0;
-      font-size: var(--mf-fs-h2);
+      font-size: var(--mf-fs-h3);
     }
     /* Actions stay inside the cell: the column shrinks to its buttons and they never wrap over the next row (UXR-05). */
     td.pg-row-actions {

@@ -41,9 +41,7 @@
   font: inherit;
 }
 
-.fb-button,
-.fb-view,
-.fb-clear {
+.fb-view {
   min-height: var(--mf-row-h);
   padding: 0 var(--mf-s3);
   border: 1px solid var(--mf-border-strong);
@@ -136,12 +134,4 @@
   background: transparent;
   color: inherit;
   cursor: pointer;
-}
-
-.fb-clear {
-  min-height: var(--mf-row-h-compact);
-  border: 0;
-  background: transparent;
-  color: var(--mf-link);
-  text-decoration: underline;
 }

@@ -13,7 +13,7 @@
 @if (conflict()) {
   <p class="error" role="alert" data-conflict>
     Someone else changed this task type.
-    <button type="button" class="link" (click)="reload()" data-reload>
+    <button type="button" class="mf-btn mf-btn--text" (click)="reload()" data-reload>
       Reload the latest version
     </button>
     (your unsaved edits will be discarded).
@@ -168,7 +168,7 @@
           [disabled]="busy() || (!isNew() && !dirty())"
           data-save
         />
-        <a class="link" routerLink="/admin/task-types">Cancel</a>
+        <a class="mf-btn mf-btn--text" routerLink="/admin/task-types">Cancel</a>
       </div>
     </form>
   }

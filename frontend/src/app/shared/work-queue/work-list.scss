@@ -17,16 +17,6 @@
   font-size: var(--mf-fs-sm);
 }
 
-.wl-link {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--mf-link);
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
 .wl-sr {
   position: absolute;
   width: 1px;
@@ -47,18 +37,6 @@
   border-radius: var(--mf-radius);
   background: var(--mf-danger-bg);
   color: var(--mf-danger);
-}
-
-.wl-retry,
-.wl-button {
-  min-height: var(--mf-row-h-compact);
-  padding: 0 var(--mf-s4);
-  border: 1px solid var(--mf-border-strong);
-  border-radius: var(--mf-radius);
-  background: var(--mf-surface);
-  color: var(--mf-text);
-  font: inherit;
-  cursor: pointer;
 }
 
 .wl-empty {

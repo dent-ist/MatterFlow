@@ -59,7 +59,7 @@
                   <span class="muted">{{ formVersion(t) }}</span>
                 }
                 <a
-                  class="link"
+                  class="mf-btn mf-btn--text"
                   [routerLink]="['/admin/task-types', t.id, 'form']"
                   [attr.aria-label]="'Design the request form of ' + t.name"
                   >Design</a
@@ -68,11 +68,11 @@
               <td data-eligible-count>{{ t.eligibleWorkflowIds.length }}</td>
               <td data-default>{{ workflowName(t.defaultWorkflowDefinitionId) }}</td>
               <td class="actions">
-                <a class="link" [routerLink]="['/admin/task-types', t.id]">Edit</a>
+                <a class="mf-btn mf-btn--text" [routerLink]="['/admin/task-types', t.id]">Edit</a>
                 @if (t.isActive) {
                   <button
                     type="button"
-                    class="link danger"
+                    class="mf-btn mf-btn--text mf-btn--danger"
                     [disabled]="busy()"
                     [attr.aria-label]="'Deactivate ' + t.name"
                     (click)="askDeactivate(t)"
@@ -83,7 +83,7 @@
                 } @else {
                   <button
                     type="button"
-                    class="link"
+                    class="mf-btn mf-btn--text"
                     [disabled]="busy()"
                     [attr.aria-label]="'Activate ' + t.name"
                     (click)="setActive(t, true)"

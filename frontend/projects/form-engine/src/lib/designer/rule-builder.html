@@ -11,7 +11,7 @@
       This rule uses a structure the builder can't edit. Summary: {{ summary() }}.
     </p>
     @if (!readOnly()) {
-      <button type="button" class="rb__btn" (click)="resetRule()">
+      <button type="button" class="mf-btn rb__btn" (click)="resetRule()">
         Replace with a new condition
       </button>
     }
@@ -51,7 +51,7 @@
                 @if (!readOnly()) {
                   <button
                     type="button"
-                    class="rb__btn"
+                    class="mf-btn rb__btn"
                     [attr.aria-label]="'Remove ' + group.label"
                     (click)="removeGroup(group.path)"
                   >
@@ -69,7 +69,7 @@
               @if (!readOnly()) {
                 <button
                   type="button"
-                  class="rb__btn"
+                  class="mf-btn rb__btn"
                   [disabled]="eligible().length === 0"
                   (click)="addCondition(group.path)"
                 >
@@ -86,7 +86,7 @@
       <div class="rb__actions">
         <button
           type="button"
-          class="rb__btn"
+          class="mf-btn rb__btn"
           [disabled]="eligible().length === 0"
           (click)="addCondition([])"
         >
@@ -94,7 +94,7 @@
         </button>
         <button
           type="button"
-          class="rb__btn"
+          class="mf-btn rb__btn"
           [disabled]="eligible().length === 0"
           (click)="addGroup()"
         >
@@ -201,7 +201,7 @@
     @if (!readOnly()) {
       <button
         type="button"
-        class="rb__btn"
+        class="mf-btn rb__btn"
         [attr.aria-label]="'Remove condition ' + leaf.label"
         [disabled]="!canRemoveLeaf()"
         (click)="remove(leaf.path)"

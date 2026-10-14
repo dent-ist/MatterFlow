@@ -82,7 +82,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
         <div class="dt__head">
           <h2 id="details-h" class="dt__title">Details</h2>
           @if (!editing() && t.allowedActions.canEdit) {
-            <button type="button" class="btn" data-edit-details (click)="startEdit()">
+            <button type="button" class="mf-btn" data-edit-details (click)="startEdit()">
               Edit details
             </button>
           }
@@ -310,12 +310,17 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
             }
 
             <div class="dt__actions">
-              <button type="submit" class="btn btn--primary" data-save [disabled]="store.busy()">
+              <button
+                type="submit"
+                class="mf-btn mf-btn--primary"
+                data-save
+                [disabled]="store.busy()"
+              >
                 Save changes
               </button>
               <button
                 type="button"
-                class="btn"
+                class="mf-btn"
                 data-cancel
                 [disabled]="store.busy()"
                 (click)="cancelEdit()"
@@ -403,7 +408,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
     }
     .dt__title {
       margin: 0;
-      font-size: var(--mf-fs-h2);
+      font-size: var(--mf-fs-h3);
     }
     .dt__sub {
       margin: var(--mf-s4) 0 var(--mf-s2);
@@ -434,25 +439,6 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
     }
     .warn {
       color: var(--mf-warning);
-    }
-    .btn {
-      min-height: var(--mf-target-min);
-      padding: 0 var(--mf-s4);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      cursor: pointer;
-    }
-    .btn--primary {
-      border-color: var(--mf-primary, var(--mf-link));
-      background: var(--mf-primary, var(--mf-link));
-      color: var(--mf-primary-contrast, #fff);
-    }
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
     }
   `,
 })

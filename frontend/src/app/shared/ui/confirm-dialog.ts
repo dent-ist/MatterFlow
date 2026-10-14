@@ -33,6 +33,7 @@ import { DialogFocus } from './dialog-focus';
           <p-button
             [label]="confirmLabel()"
             [severity]="danger() ? 'danger' : 'primary'"
+            [styleClass]="danger() ? 'mf-btn--solid' : ''"
             [disabled]="busy()"
             (onClick)="confirmed.emit()"
           />

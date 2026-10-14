@@ -6,6 +6,55 @@ import Aura from '@primeuix/themes/aura';
  * Brand primary #1F4E9C, focus ring #B45309 (2px solid, 2px offset), 4px radius, Segoe UI stack.
  */
 export const MfPreset = definePreset(Aura, {
+  components: {
+    // Button variants (UXR-04): primary = filled brand; secondary = white outline; danger = red outline (the red fill is the
+    // `mf-btn--solid` class, used only in confirm dialogs); text = link style. One size: 14 px label, 32 px high (src/styles/_buttons.scss).
+    button: {
+      root: {
+        paddingX: '0.75rem',
+        paddingY: '0.375rem',
+        fontSize: '0.875rem',
+        label: { fontWeight: '600' },
+        sm: { fontSize: '0.875rem', paddingX: '0.75rem', paddingY: '0.375rem' },
+        secondary: {
+          background: '#FFFFFF',
+          hoverBackground: '{surface.100}',
+          activeBackground: '{surface.200}',
+          borderColor: '#6B7280',
+          hoverBorderColor: '#6B7280',
+          activeBorderColor: '#6B7280',
+          color: '#1B1F27',
+          hoverColor: '#1B1F27',
+          activeColor: '#1B1F27',
+          focusRing: { color: '#B45309', shadow: 'none' },
+        },
+        danger: {
+          background: '#FFFFFF',
+          hoverBackground: '{red.50}',
+          activeBackground: '{red.100}',
+          borderColor: '{red.500}',
+          hoverBorderColor: '{red.600}',
+          activeBorderColor: '{red.700}',
+          color: '{red.500}',
+          hoverColor: '{red.700}',
+          activeColor: '{red.800}',
+          focusRing: { color: '#B45309', shadow: 'none' },
+        },
+      },
+      text: {
+        secondary: {
+          color: '#1F4E9C',
+          hoverBackground: '{primary.100}',
+          activeBackground: '{primary.200}',
+        },
+        danger: {
+          color: '{red.500}',
+          hoverBackground: '{red.50}',
+          activeBackground: '{red.100}',
+        },
+      },
+    },
+  },
   primitive: {
     borderRadius: { none: '0', xs: '2px', sm: '4px', md: '4px', lg: '8px', xl: '8px' },
     // Danger buttons and text follow the theme danger token (--mf-danger #B42318, 6.5:1 on white) instead of Aura's #ef4444 (3.8:1).

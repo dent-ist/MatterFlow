@@ -207,7 +207,12 @@
         </p>
         <div class="ttf__dialog-actions">
           <p-button label="Cancel" severity="secondary" (onClick)="closeDialog()" />
-          <p-button label="Retire version" severity="danger" (onClick)="confirmRetire()" />
+          <p-button
+            label="Retire version"
+            severity="danger"
+            styleClass="mf-btn--solid"
+            (onClick)="confirmRetire()"
+          />
         </div>
       </div>
     }
@@ -228,7 +233,12 @@
         <p>You have unsaved changes to this draft. Opening another version discards them.</p>
         <div class="ttf__dialog-actions">
           <p-button label="Keep editing" severity="secondary" (onClick)="closeDialog()" />
-          <p-button label="Discard changes" severity="danger" (onClick)="confirmDiscard()" />
+          <p-button
+            label="Discard changes"
+            severity="danger"
+            styleClass="mf-btn--solid"
+            (onClick)="confirmDiscard()"
+          />
         </div>
       </div>
     }

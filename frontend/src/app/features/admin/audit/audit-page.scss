@@ -105,37 +105,6 @@
   gap: var(--mf-s2);
 }
 
-.au-primary,
-.au-secondary {
-  min-height: var(--mf-row-h);
-  padding: 0 var(--mf-s4);
-  border-radius: var(--mf-radius);
-  font: inherit;
-  cursor: pointer;
-}
-
-.au-primary {
-  border: 1px solid var(--mf-primary);
-  background: var(--mf-primary);
-  color: var(--mf-on-primary, #fff);
-}
-
-.au-secondary {
-  border: 1px solid var(--mf-border-strong);
-  background: var(--mf-surface);
-  color: var(--mf-text);
-}
-
-.au-link {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--mf-link);
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
 .au-linkout {
   color: var(--mf-link);
 }

@@ -2,6 +2,7 @@
  * Global styles. Design tokens (--mf-*) are loaded from docs/ux/tokens.css via angular.json "styles".
  * PrimeNG theming (Aura preset) is configured in app.config.ts.
  */
+@use './styles/buttons';
 @import 'primeicons/primeicons.css';
 
 html,
@@ -37,12 +38,7 @@ a:not([class]) {
   color: var(--mf-link);
 }
 
-/* Small buttons stay readable and easy to hit (UAT2-22: they rendered at about 11px and under 32px tall). */
+/* Targets are at least 32px (UAT2-22). */
 :root {
   --mf-target-min: 32px;
-}
-
-.p-button.p-button-sm {
-  min-height: 2rem;
-  font-size: 0.875rem;
 }

@@ -62,7 +62,7 @@
           (input)="onActorInput($any($event.target).value)"
         />
         @if (draft().actor) {
-          <button type="button" class="au-link" (click)="clearActor()">
+          <button type="button" class="mf-btn mf-btn--text" (click)="clearActor()">
             Clear actor ({{ draft().actor?.displayName }})
           </button>
         }
@@ -137,8 +137,8 @@
       />
     </div>
     <div class="au-buttons">
-      <button type="submit" class="au-primary" data-apply>Apply filters</button>
-      <button type="button" class="au-secondary" data-reset (click)="reset()">Reset</button>
+      <button type="submit" class="mf-btn mf-btn--primary" data-apply>Apply filters</button>
+      <button type="button" class="mf-btn" data-reset (click)="reset()">Reset</button>
     </div>
   </form>
   @if (dateError()) {
@@ -148,7 +148,7 @@
   @if (applied().correlationId) {
     <p class="au-banner" role="note" data-operation-banner>
       Showing the events of one operation.
-      <button type="button" class="au-link" (click)="reset()">Show all events</button>
+      <button type="button" class="mf-btn mf-btn--text" (click)="reset()">Show all events</button>
     </p>
   }
 
@@ -170,7 +170,7 @@
     <div class="au-alert" role="alert" data-error>
       We couldn't load the audit log.
       <mf-error-reference />
-      <button type="button" class="au-secondary" (click)="retry()">Retry</button>
+      <button type="button" class="mf-btn" (click)="retry()">Retry</button>
     </div>
   } @else if (state() === 'loading') {
     <p class="au-state" role="status" aria-busy="true" data-loading>Loading audit events...</p>
@@ -178,7 +178,7 @@
     <div class="au-state" data-empty>
       @if (filtered()) {
         <p>No audit events match these filters.</p>
-        <button type="button" class="au-secondary" (click)="reset()">Clear filters</button>
+        <button type="button" class="mf-btn" (click)="reset()">Clear filters</button>
       } @else {
         <p>No audit events have been recorded yet.</p>
       }
@@ -231,7 +231,11 @@
                 <td colspan="2">
                   <strong>{{ g.items.length }} events in one operation</strong>
                   <span class="au-muted"> (for example: {{ g.items[0].summary }})</span>
-                  <button type="button" class="au-link" (click)="showOperation(g.items[0])">
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text"
+                    (click)="showOperation(g.items[0])"
+                  >
                     Show only this operation
                   </button>
                 </td>
@@ -263,7 +267,7 @@
       @if (nextCursor() !== null) {
         <button
           type="button"
-          class="au-secondary"
+          class="mf-btn"
           data-load-more
           [disabled]="loadingMore()"
           (click)="loadMore()"
@@ -337,7 +341,7 @@
             <span class="au-mono">{{ item.correlationId }}</span>
             @if (item.correlationEventCount > 1) {
               ({{ item.correlationEventCount }} events)
-              <button type="button" class="au-link" (click)="showOperation(item)">
+              <button type="button" class="mf-btn mf-btn--text" (click)="showOperation(item)">
                 Show all events of this operation
               </button>
             }

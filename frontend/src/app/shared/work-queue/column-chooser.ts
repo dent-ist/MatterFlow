@@ -9,7 +9,7 @@ import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
     <div class="cc">
       <button
         type="button"
-        class="cc-button"
+        class="mf-btn cc-button"
         [attr.aria-controls]="open() ? 'cc-panel' : null"
         [attr.aria-expanded]="open()"
         (click)="open.set(!open())"
@@ -64,16 +64,6 @@ import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
   styles: `
     .cc {
       position: relative;
-    }
-    .cc-button {
-      min-height: var(--mf-row-h-compact);
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      cursor: pointer;
     }
     .cc-panel {
       position: absolute;

@@ -264,7 +264,7 @@ describe('AuditPage', () => {
     await settle(fixture);
     expect(el().querySelectorAll('tr[data-event]')).toHaveLength(4);
 
-    el().querySelector<HTMLElement>('[data-group="bulk"] button.au-link')!.click();
+    el().querySelector<HTMLElement>('[data-group="bulk"] button.mf-btn--text')!.click();
     await settle(fixture);
     expect(lastCall()[7]).toBe('bulk');
     expect(el().querySelector('[data-operation-banner]')).not.toBeNull();

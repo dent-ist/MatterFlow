@@ -91,7 +91,7 @@ import { TaskDetailStore } from './task-detail.store';
             </p>
             <button
               type="button"
-              class="btn btn--primary"
+              class="mf-btn mf-btn--primary"
               data-complete-task-button
               aria-describedby="wf-complete-note"
               [disabled]="!c.permitted || store.busy()"
@@ -107,7 +107,7 @@ import { TaskDetailStore } from './task-detail.store';
   styles: `
     .wf__title {
       margin: 0 0 var(--mf-s1);
-      font-size: var(--mf-fs-h2);
+      font-size: var(--mf-fs-h3);
     }
     .wf__mode {
       margin-left: var(--mf-s2);
@@ -160,25 +160,6 @@ import { TaskDetailStore } from './task-detail.store';
     }
     .wf__complete p {
       margin: 0;
-    }
-    .btn {
-      min-height: var(--mf-target-min);
-      padding: 0 var(--mf-s4);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      cursor: pointer;
-    }
-    .btn--primary {
-      border-color: var(--mf-primary, var(--mf-link));
-      background: var(--mf-primary, var(--mf-link));
-      color: var(--mf-primary-contrast, #fff);
-    }
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
     }
   `,
 })

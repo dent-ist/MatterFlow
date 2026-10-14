@@ -120,7 +120,6 @@
   gap: 0.125rem;
 }
 
-.fd__btn,
 .fd__icon,
 .fd__link {
   min-height: 2.25rem;
@@ -152,6 +151,7 @@
 
 .fd__palette-list .fd__btn {
   width: 100%;
+  justify-content: flex-start;
   text-align: left;
 }
 

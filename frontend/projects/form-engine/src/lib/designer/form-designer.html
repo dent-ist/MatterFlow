@@ -11,7 +11,7 @@
             <li>
               <button
                 type="button"
-                class="fd__btn"
+                class="mf-btn fd__btn"
                 [attr.data-add]="c.control"
                 [attr.aria-label]="'Add ' + c.label"
                 (click)="add(c.control)"
@@ -313,7 +313,7 @@
                   </li>
                 }
               </ul>
-              <button type="button" class="fd__btn" (click)="addOption()">Add option</button>
+              <button type="button" class="mf-btn fd__btn" (click)="addOption()">Add option</button>
               @for (m of msgs('options'); track m) {
                 <p class="fd__error">{{ m }}</p>
               }
@@ -589,7 +589,7 @@
     } @else {
       <mf-dynamic-form [definition]="previewDefinition()" [values]="previewValues()" />
       <div class="fd__test">
-        <button type="button" class="fd__btn" (click)="testSubmit()">Test submit</button>
+        <button type="button" class="mf-btn fd__btn" (click)="testSubmit()">Test submit</button>
         <span class="fd__hint">Server re-validates on submission.</span>
       </div>
     }

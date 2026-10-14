@@ -70,7 +70,12 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
             }
           </select>
         </label>
-        <button type="button" class="refresh" (click)="load()" [disabled]="state() === 'loading'">
+        <button
+          type="button"
+          class="mf-btn refresh"
+          (click)="load()"
+          [disabled]="state() === 'loading'"
+        >
           <i class="pi pi-refresh" aria-hidden="true"></i> Refresh
         </button>
         @if (updated(); as u) {
@@ -91,7 +96,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
         <div class="alert" role="alert" data-error>
           <span>The dashboard could not be loaded.</span>
           <mf-error-reference />
-          <button type="button" (click)="load()">Retry</button>
+          <button type="button" class="mf-btn" (click)="load()">Retry</button>
         </div>
       }
       @default {
@@ -264,9 +269,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       font-size: var(--mf-fs-sm);
       color: var(--mf-text-muted);
     }
-    select,
-    .refresh,
-    .alert button {
+    select {
       min-height: 32px;
       padding: 0 var(--mf-s3);
       font: inherit;
@@ -275,10 +278,6 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       border: 1px solid var(--mf-border-strong);
       border-radius: var(--mf-radius);
       cursor: pointer;
-    }
-    .refresh:disabled {
-      color: var(--mf-text-disabled);
-      cursor: default;
     }
     .updated {
       font-size: var(--mf-fs-sm);

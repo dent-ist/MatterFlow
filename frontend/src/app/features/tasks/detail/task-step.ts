@@ -131,18 +131,24 @@ export function valuesPatch(
           <div class="step__actions">
             @if (canAct()) {
               @if (s.status === 'PENDING') {
-                <button type="button" class="btn" data-start [disabled]="busy()" (click)="start()">
+                <button
+                  type="button"
+                  class="mf-btn"
+                  data-start
+                  [disabled]="busy()"
+                  (click)="start()"
+                >
                   Start step
                 </button>
               }
               @if (schema()) {
-                <button type="button" class="btn" data-save [disabled]="busy()" (click)="save()">
+                <button type="button" class="mf-btn" data-save [disabled]="busy()" (click)="save()">
                   Save inputs
                 </button>
               }
               <button
                 type="button"
-                class="btn btn--primary"
+                class="mf-btn mf-btn--primary"
                 data-complete
                 [disabled]="busy()"
                 (click)="complete()"
@@ -151,7 +157,7 @@ export function valuesPatch(
               </button>
               <button
                 type="button"
-                class="btn"
+                class="mf-btn"
                 data-skip
                 [disabled]="busy() || !s.isSkippable"
                 [attr.aria-describedby]="s.isSkippable ? null : 'step-noskip-' + s.stepInstanceId"
@@ -168,7 +174,7 @@ export function valuesPatch(
             @if (canReopen()) {
               <button
                 type="button"
-                class="btn"
+                class="mf-btn"
                 data-reopen
                 [disabled]="busy()"
                 (click)="reopenOpen.set(true)"
@@ -318,25 +324,6 @@ export function valuesPatch(
       margin: 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
-    }
-    .btn {
-      min-height: var(--mf-target-min);
-      padding: 0 var(--mf-s4);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      cursor: pointer;
-    }
-    .btn--primary {
-      border-color: var(--mf-primary, var(--mf-link));
-      background: var(--mf-primary, var(--mf-link));
-      color: var(--mf-primary-contrast, #fff);
-    }
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
     }
     .error {
       margin: 0;

@@ -110,14 +110,19 @@ const RENDER_CACHE_LIMIT = 1000;
                       <div class="tc__actions">
                         <button
                           type="button"
-                          class="tc__primary"
+                          class="mf-btn mf-btn--primary"
                           data-save-edit
                           [disabled]="saving() || isBlank(editDraft())"
                           (click)="saveEdit(c)"
                         >
                           Save changes
                         </button>
-                        <button type="button" data-cancel-edit (click)="cancelEdit()">
+                        <button
+                          type="button"
+                          class="mf-btn"
+                          data-cancel-edit
+                          (click)="cancelEdit()"
+                        >
                           Cancel
                         </button>
                       </div>
@@ -162,10 +167,19 @@ const RENDER_CACHE_LIMIT = 1000;
                     @if (!readOnly() && (c.canEdit || c.canDelete)) {
                       <div class="tc__actions">
                         @if (c.canEdit) {
-                          <button type="button" data-edit (click)="startEdit(c)">Edit</button>
+                          <button type="button" class="mf-btn" data-edit (click)="startEdit(c)">
+                            Edit
+                          </button>
                         }
                         @if (c.canDelete) {
-                          <button type="button" data-delete (click)="askDelete(c)">Delete</button>
+                          <button
+                            type="button"
+                            class="mf-btn mf-btn--danger"
+                            data-delete
+                            (click)="askDelete(c)"
+                          >
+                            Delete
+                          </button>
                         }
                       </div>
                     }
@@ -183,6 +197,7 @@ const RENDER_CACHE_LIMIT = 1000;
                 }
                 <button
                   type="button"
+                  class="mf-btn"
                   data-load-more
                   [disabled]="loadingMore()"
                   (click)="loadMore()"
@@ -213,7 +228,7 @@ const RENDER_CACHE_LIMIT = 1000;
           }
           <button
             type="submit"
-            class="tc__primary"
+            class="mf-btn mf-btn--primary"
             data-post
             [disabled]="posting() || isBlank(draft())"
           >
@@ -260,9 +275,7 @@ const RENDER_CACHE_LIMIT = 1000;
       display: inline-flex;
       gap: var(--mf-s1);
     }
-    .tc__order button,
-    .tc__actions button,
-    .tc__composer button {
+    .tc__order button {
       min-height: var(--mf-target-min, 2rem);
       padding: 0 var(--mf-s3);
       border: 1px solid var(--mf-border-strong);
@@ -276,14 +289,9 @@ const RENDER_CACHE_LIMIT = 1000;
       background: var(--mf-selected-bg);
       font-weight: 600;
     }
-    .tc button.tc__primary {
-      background: var(--mf-primary);
-      border-color: var(--mf-primary);
-      color: #fff;
-    }
-    .tc button:disabled {
-      opacity: 0.5;
-      cursor: default;
+    .tc__order button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
     }
     .tc__list {
       display: grid;
@@ -343,16 +351,6 @@ const RENDER_CACHE_LIMIT = 1000;
       display: grid;
       gap: var(--mf-s2);
       justify-items: start;
-    }
-    .tc__more button {
-      min-height: var(--mf-target-min, 2rem);
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      cursor: pointer;
     }
     .tc__edited {
       margin: var(--mf-s1) 0 0;

@@ -110,43 +110,6 @@
   gap: var(--mf-s1);
 }
 
-.icon-btn {
-  min-width: var(--mf-target-min);
-  min-height: var(--mf-target-min);
-  border: 1px solid var(--mf-border-strong);
-  border-radius: var(--mf-radius);
-  background: var(--mf-surface);
-  color: var(--mf-text);
-  cursor: pointer;
-
-  &:disabled {
-    color: var(--mf-text-disabled);
-    cursor: default;
-    opacity: 0.6;
-  }
-}
-
-.link {
-  margin-left: var(--mf-s2);
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--mf-link);
-  cursor: pointer;
-  text-decoration: underline;
-  font: inherit;
-
-  &.danger {
-    margin-left: 0;
-    color: var(--mf-danger);
-  }
-
-  &:disabled {
-    color: var(--mf-text-disabled);
-    cursor: default;
-  }
-}
-
 .tag {
   margin-left: var(--mf-s2);
   font-size: var(--mf-fs-xs);

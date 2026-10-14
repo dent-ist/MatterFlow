@@ -55,7 +55,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
         </div>
         <button
           type="button"
-          class="fb-button"
+          class="mf-btn fb-button"
           [attr.aria-controls]="open() ? 'fb-panel' : null"
           [attr.aria-expanded]="open()"
           (click)="open.set(!open())"
@@ -237,7 +237,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
             </li>
           }
           <li>
-            <button type="button" class="fb-clear" (click)="clearAll.emit()">
+            <button type="button" class="mf-btn mf-btn--text fb-clear" (click)="clearAll.emit()">
               Clear all filters
             </button>
           </li>

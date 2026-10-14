@@ -79,8 +79,8 @@ type Command = 'bold' | 'italic' | 'insertUnorderedList' | 'insertOrderedList';
             (input)="linkText.set($any($event.target).value); linkError.set(false)"
             (keydown.escape)="closeLink()"
           />
-          <button type="submit" class="rte__small">Add link</button>
-          <button type="button" class="rte__small" (click)="closeLink()">Cancel</button>
+          <button type="submit" class="mf-btn">Add link</button>
+          <button type="button" class="mf-btn" (click)="closeLink()">Cancel</button>
           @if (linkError()) {
             <span class="rte__error" role="alert" [id]="linkId + '-error'" data-link-error
               >That address can't be used as a link. Use one that starts with http://, https:// or
@@ -177,16 +177,6 @@ type Command = 'bold' | 'italic' | 'insertUnorderedList' | 'insertOrderedList';
       background: var(--mf-surface);
       color: var(--mf-text);
       font: inherit;
-    }
-    .rte__small {
-      min-height: 2rem;
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      cursor: pointer;
     }
     .rte__error {
       flex-basis: 100%;
