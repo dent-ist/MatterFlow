@@ -1,0 +1,283 @@
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, firstValueFrom } from 'rxjs';
+import {
+  StepActionResponse,
+  TaskCompletionCheck,
+  TaskResponse,
+  TaskStepInstance,
+  TaskWorkflowClient,
+  TasksClient,
+} from '../../../api/generated/api-client';
+import { ApiError } from '../../../core/http/api-error';
+import { NotificationService } from '../../../core/notify/notification.service';
+
+export type DetailState = 'loading' | 'ready' | 'error' | 'notFound' | 'forbidden';
+export type TaskTab = 'details' | 'workflow' | 'comments' | 'assets' | 'activity';
+export const TASK_TABS: readonly TaskTab[] = [
+  'details',
+  'workflow',
+  'comments',
+  'assets',
+  'activity',
+];
+
+/** The dialog currently asking the user to confirm or explain a status change. */
+export type ActionDialog =
+  | { kind: 'reason'; action: 'HOLD' | 'CANCEL' }
+  | { kind: 'reopen' }
+  | { kind: 'complete'; check: TaskCompletionCheck };
+
+export type ActResult = { ok: true; task: TaskResponse } | { ok: false; error: unknown };
+
+/** Menu label per transition action (UX: Start / Resume / On hold / Cancel / Reopen / Complete). */
+export const ACTION_LABELS: Readonly<Record<string, string>> = {
+  START: 'Start',
+  RESUME: 'Resume',
+  HOLD: 'Put on hold',
+  COMPLETE: 'Complete',
+  CANCEL: 'Cancel task',
+  REOPEN: 'Reopen',
+};
+
+const isStepResponse = (r: TaskResponse | StepActionResponse): r is StepActionResponse =>
+  'affectedStepInstanceIds' in r;
+
+/**
+ * State of one Task detail screen (provided by the page, so every child shares it): the loaded Task, the concurrency
+ * banner, and every write. Each write sends the `rowVersion` last read and replaces the Task with the server's answer;
+ * a failed write refreshes the data unless the user must fix their input or must decide about a conflict.
+ */
+@Injectable()
+export class TaskDetailStore {
+  private readonly tasks = inject(TasksClient);
+  private readonly workflows = inject(TaskWorkflowClient);
+  private readonly notify = inject(NotificationService);
+
+  readonly taskId = signal(0);
+  readonly state = signal<DetailState>('loading');
+  readonly task = signal<TaskResponse | null>(null);
+  /** True after a 409 CONCURRENCY_CONFLICT: show the reload banner. */
+  readonly conflict = signal(false);
+  readonly busy = signal(false);
+  /** Non-blocking warnings of the last write (for example USER_NOT_IN_POD). */
+  readonly warnings = signal<string[]>([]);
+  readonly tab = signal<TaskTab>('details');
+  readonly editing = signal(false);
+  readonly dirty = signal(false);
+  readonly dialog = signal<ActionDialog | null>(null);
+  /** Step the user asked to jump to (from the complete dialog); the workflow tab scrolls to it and focuses it. */
+  readonly focusStepId = signal<number | null>(null);
+
+  readonly closed = computed(() => {
+    const s = this.task()?.status;
+    return s === 'COMPLETED' || s === 'CANCELLED';
+  });
+
+  async load(id: number = this.taskId()): Promise<void> {
+    if (id !== this.taskId()) {
+      this.taskId.set(id);
+      this.task.set(null);
+    }
+    this.state.set('loading');
+    this.conflict.set(false);
+    this.warnings.set([]);
+    this.editing.set(false);
+    this.dirty.set(false);
+    try {
+      this.task.set(await firstValueFrom(this.tasks.getTask(id)));
+      this.state.set('ready');
+    } catch (err) {
+      this.state.set(
+        err instanceof ApiError
+          ? err.status === 404
+            ? 'notFound'
+            : err.status === 403
+              ? 'forbidden'
+              : 'error'
+          : 'error',
+      );
+    }
+  }
+
+  /** Quiet refresh that keeps the current screen (used after a failed write). */
+  private async refresh(): Promise<void> {
+    try {
+      this.task.set(await firstValueFrom(this.tasks.getTask(this.taskId())));
+    } catch {
+      /* the next explicit load reports it */
+    }
+  }
+
+  /** Runs one write against the current Task; the call receives the Task as last read (for its rowVersion). */
+  async act(
+    call: (task: TaskResponse) => Observable<TaskResponse | StepActionResponse>,
+  ): Promise<ActResult> {
+    const current = this.task();
+    if (!current) return { ok: false, error: null };
+    this.busy.set(true);
+    try {
+      const response = await firstValueFrom(call(current));
+      const task = isStepResponse(response) ? response.task : response;
+      this.task.set(task);
+      this.warnings.set(task.warnings ?? []);
+      this.conflict.set(false);
+      return { ok: true, task };
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.code === 'CONCURRENCY_CONFLICT') this.conflict.set(true);
+        else if (!error.hasFieldErrors && error.status !== 400) await this.refresh();
+      }
+      return { ok: false, error };
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  // ---- status actions (header menu, banners, workflow tab)
+
+  async requestAction(action: string): Promise<void> {
+    switch (action) {
+      case 'START':
+      case 'RESUME': {
+        const result = await this.act((t) =>
+          this.tasks.changeTaskStatus(t.taskId, {
+            rowVersion: t.rowVersion,
+            status: 'IN_PROGRESS',
+          }),
+        );
+        if (result.ok) this.notify.success(`${result.task.taskNumber} is In Progress.`);
+        break;
+      }
+      case 'HOLD':
+      case 'CANCEL':
+        this.dialog.set({ kind: 'reason', action });
+        break;
+      case 'REOPEN':
+        this.dialog.set({ kind: 'reopen' });
+        break;
+      case 'COMPLETE':
+        await this.beginComplete();
+        break;
+    }
+  }
+
+  /** Hold or cancel with the mandatory comment. Returns the failure so the dialog can show server field errors. */
+  async submitReason(action: 'HOLD' | 'CANCEL', comment: string): Promise<ActResult> {
+    const result = await this.act((t) =>
+      action === 'HOLD'
+        ? this.tasks.changeTaskStatus(t.taskId, {
+            rowVersion: t.rowVersion,
+            status: 'ON_HOLD',
+            comment,
+          })
+        : this.tasks.cancelTask(t.taskId, { rowVersion: t.rowVersion, comment }),
+    );
+    if (result.ok) {
+      this.dialog.set(null);
+      this.notify.success(
+        action === 'HOLD'
+          ? `${result.task.taskNumber} is On Hold.`
+          : `${result.task.taskNumber} cancelled.`,
+      );
+    } else if (this.conflict()) {
+      this.dialog.set(null);
+    }
+    return result;
+  }
+
+  async confirmReopen(): Promise<void> {
+    const result = await this.act((t) =>
+      this.tasks.reopenTask(t.taskId, { rowVersion: t.rowVersion }),
+    );
+    if (result.ok) this.notify.success(`${result.task.taskNumber} is back In Progress.`);
+    this.dialog.set(null);
+  }
+
+  /** Complete: straight through when every step is resolved, otherwise the bulk-complete or blocked dialog (addendum K). */
+  async beginComplete(): Promise<void> {
+    const t = this.task();
+    if (!t) return;
+    let check: TaskCompletionCheck;
+    try {
+      check = await firstValueFrom(this.tasks.getTaskCompletionCheck(t.taskId));
+    } catch {
+      return;
+    }
+    if (check.isReady) {
+      const result = await this.act((x) =>
+        this.tasks.completeTask(x.taskId, {
+          rowVersion: x.rowVersion,
+          completeUnresolvedSteps: false,
+        }),
+      );
+      if (result.ok) this.notify.success(`${result.task.taskNumber} completed.`);
+      return;
+    }
+    this.dialog.set({ kind: 'complete', check });
+  }
+
+  async confirmBulkComplete(): Promise<void> {
+    const result = await this.act((t) =>
+      this.tasks.completeTask(t.taskId, {
+        rowVersion: t.rowVersion,
+        completeUnresolvedSteps: true,
+      }),
+    );
+    if (result.ok) {
+      this.dialog.set(null);
+      this.notify.success(`${result.task.taskNumber} completed.`);
+      return;
+    }
+    if (result.error instanceof ApiError && result.error.code === 'COMPLETION_BLOCKED') {
+      // A step lost its inputs (or another user changed it): show the blocked list from a fresh check.
+      try {
+        const check = await firstValueFrom(this.tasks.getTaskCompletionCheck(this.taskId()));
+        this.dialog.set({ kind: 'complete', check });
+      } catch {
+        this.dialog.set(null);
+      }
+    } else {
+      this.dialog.set(null);
+    }
+  }
+
+  closeDialog(): void {
+    this.dialog.set(null);
+  }
+
+  /** Jumps to a step in the Workflow tab (links in the blocked-completion dialog). */
+  showStep(stepInstanceId: number): void {
+    this.dialog.set(null);
+    this.tab.set('workflow');
+    this.focusStepId.set(stepInstanceId);
+  }
+
+  // ---- step actions
+
+  stepAction(
+    step: TaskStepInstance,
+    action: 'start' | 'save' | 'complete' | 'skip' | 'reopen',
+    payload: { values?: Record<string, unknown>; comment?: string } = {},
+  ): Promise<ActResult> {
+    return this.act((t) => {
+      const rowVersion = t.workflow.rowVersion;
+      const id = step.stepInstanceId;
+      const values = payload.values as Record<string, never> | undefined;
+      switch (action) {
+        case 'start':
+          return this.workflows.startTaskStep(t.taskId, id, { rowVersion });
+        case 'save':
+          return this.workflows.saveTaskStepValues(t.taskId, id, { rowVersion, values });
+        case 'complete':
+          return this.workflows.completeTaskStep(t.taskId, id, { rowVersion, values });
+        case 'skip':
+          return this.workflows.skipTaskStep(t.taskId, id, {
+            rowVersion,
+            comment: payload.comment,
+          });
+        case 'reopen':
+          return this.workflows.reopenTaskStep(t.taskId, id, { rowVersion });
+      }
+    });
+  }
+}

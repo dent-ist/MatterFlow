@@ -18,5 +18,9 @@ export const TASKS_ROUTES: Routes = [
     ],
     loadComponent: () => import('./create/create-task-page').then((m) => m.CreateTaskPage),
   },
-  { path: ':id', component: PlaceholderPage, data: { title: 'Task' } },
+  {
+    path: ':id',
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./detail/task-detail-page').then((m) => m.TaskDetailPage),
+  },
 ];
