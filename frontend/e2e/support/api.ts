@@ -42,10 +42,15 @@ export class Api {
     readonly user: string,
   ) {}
 
-  static async as(user: string = ADMIN_USER): Promise<Api> {
+  /** `timeZone` is sent as `X-Time-Zone`, the way the app does for the viewer's browser zone. */
+  static async as(user: string = ADMIN_USER, options: { timeZone?: string } = {}): Promise<Api> {
     const ctx = await request.newContext({
       baseURL: BASE_URL,
-      extraHTTPHeaders: { 'X-Dev-User': user, 'X-MatterFlow-Client': 'web' },
+      extraHTTPHeaders: {
+        'X-Dev-User': user,
+        'X-MatterFlow-Client': 'web',
+        ...(options.timeZone ? { 'X-Time-Zone': options.timeZone } : {}),
+      },
     });
     return new Api(ctx, user);
   }

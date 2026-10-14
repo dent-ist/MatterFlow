@@ -35,6 +35,7 @@ export interface WorkflowResult {
   name: string;
   versionId: number;
   stepTitles: string[];
+  stepIds: number[];
 }
 
 export interface TaskTypeResult {
@@ -161,7 +162,8 @@ export class Seeder {
   }
 
   async pod(name: string | undefined, memberUserIds: number[]): Promise<Json> {
-    const pod = await this.admin.post('/api/v1/pods', { name: name ?? `E2E Pod ${uid()}` });
+    const created = await this.admin.post('/api/v1/pods', { name: name ?? `E2E Pod ${uid()}` });
+    const pod = created.pod;
     if (memberUserIds.length > 0) {
       await this.admin.post(`/api/v1/pods/${pod.podId}/members`, { userIds: memberUserIds });
     }
@@ -182,10 +184,12 @@ export class Seeder {
     );
   }
 
-  async step(spec: StepSpec = {}): Promise<number> {
-    if (spec.stepDefinitionId) return spec.stepDefinitionId;
+  /** Creates a step definition; the title gets a unique suffix because active step titles must be unique. */
+  async step(spec: StepSpec = {}): Promise<{ id: number; title: string }> {
+    const title = `${spec.title ?? 'Step'} ${uid()}`;
+    if (spec.stepDefinitionId) return { id: spec.stepDefinitionId, title: spec.title ?? title };
     const created = await this.admin.post('/api/v1/step-definitions', {
-      title: spec.title ?? `E2E step ${uid()}`,
+      title,
       description: null,
       instructions: spec.instructions ?? null,
     });
@@ -194,7 +198,7 @@ export class Seeder {
         { key: 'result', label: 'Result', control: 'TEXT', required: true },
       ]);
     }
-    return created.stepDefinitionId;
+    return { id: created.stepDefinitionId, title };
   }
 
   /** Creates and publishes a workflow (version 1) from step specs. */
@@ -207,10 +211,11 @@ export class Seeder {
       Array.from({ length: opts.stepCount ?? 3 }, (_, i) => ({ title: `Step ${i + 1}` }));
     const placements: Json[] = [];
     const titles: string[] = [];
+    const stepIds: number[] = [];
     for (const spec of specs) {
-      const title = `${spec.title ?? 'Step'} ${uid()}`; // step titles are unique among active steps
-      const id = await this.step({ ...spec, title });
+      const { id, title } = await this.step(spec);
       titles.push(title);
+      stepIds.push(id);
       placements.push({
         sourceStepDefinitionId: id,
         isSkippable: spec.isSkippable ?? false,
@@ -236,7 +241,40 @@ export class Seeder {
       name,
       versionId: version.workflowVersionId,
       stepTitles: titles,
+      stepIds,
     };
+  }
+
+  /**
+   * Publishes the next version of a workflow with the given step definitions in the given order (all required, no skipping),
+   * which retires the previous published version. Returns the new version id.
+   */
+  async publishNextVersion(
+    workflow: Pick<WorkflowResult, 'workflowDefinitionId'>,
+    stepDefinitionIds: number[],
+    ordered = true,
+  ): Promise<number> {
+    const id = workflow.workflowDefinitionId;
+    const draft = await this.admin.post(`/api/v1/workflows/${id}/versions`, {});
+    const saved = await this.admin.put(
+      `/api/v1/workflows/${id}/versions/${draft.version.workflowVersionId}`,
+      {
+        isOrdered: ordered,
+        steps: stepDefinitionIds.map((sourceStepDefinitionId) => ({
+          sourceStepDefinitionId,
+          isSkippable: false,
+          skipCommentRequired: false,
+        })),
+        rowVersion: draft.version.rowVersion,
+      },
+    );
+    await this.admin.post(
+      `/api/v1/workflows/${id}/versions/${draft.version.workflowVersionId}/publish`,
+      {
+        rowVersion: saved.version.rowVersion,
+      },
+    );
+    return draft.version.workflowVersionId;
   }
 
   async taskType(opts: {

@@ -12,14 +12,14 @@ export class StepPanel {
   ) {
     this.root = page
       .locator('[data-step-id]')
-      .filter({ has: page.getByRole('heading', { name: new RegExp(title) }) });
+      .filter({ has: page.getByRole('heading', { name: new RegExp(`\\. ${title}(\\s|$)`) }) });
   }
 
   get state(): Locator {
     return this.root.locator('[data-state]');
   }
   get toggle(): Locator {
-    return this.root.getByRole('button', { name: new RegExp(`^\\d+\\. ${this.title}`) });
+    return this.root.getByRole('button', { name: new RegExp(`^\\d+\\. ${this.title}(\\s|$)`) });
   }
   get startButton(): Locator {
     return this.root.locator('[data-start]');

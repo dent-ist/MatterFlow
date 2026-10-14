@@ -66,6 +66,11 @@ export class CreateTaskPage {
     return this.workflows.getByRole('radio', { name: new RegExp(name) });
   }
 
+  /** The label line of a workflow choice (name, version, step count, ordered or not). */
+  workflowLabel(name: string): Locator {
+    return this.workflows.locator('label').filter({ hasText: name });
+  }
+
   /** The field rendered by the form engine for a request-form field key. */
   field(key: string): Locator {
     return this.page.locator(`[data-field="${key}"]`);
