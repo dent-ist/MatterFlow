@@ -79,7 +79,7 @@ export function toServerField(f: DesignerField, filterable: ReadonlySet<string>)
  */
 @Injectable()
 export class AssetTypeFormDesignerApi extends FormDesignerApi {
-  private readonly forms = inject(FormsClient);
+  protected readonly forms = inject(FormsClient);
   private readonly types = inject(AssetTypesClient);
   private readonly definitions = new Map<string, number>();
   private readonly rowVersions = new Map<number, string>();
@@ -182,10 +182,16 @@ export class AssetTypeFormDesignerApi extends FormDesignerApi {
   private async definitionOf(ownerId: string): Promise<number> {
     const known = this.definitions.get(ownerId);
     if (known !== undefined) return known;
+    const definitionId = await this.findDefinitionId(ownerId);
+    this.definitions.set(ownerId, definitionId);
+    return definitionId;
+  }
+
+  /** The form definition of the owner; subclasses for other owner kinds override it. */
+  protected async findDefinitionId(ownerId: string): Promise<number> {
     const definition = await firstValueFrom(
       this.forms.findFormDefinition(FormOwnerKind.AssetType, Number(ownerId)),
     );
-    this.definitions.set(ownerId, definition.formDefinitionId);
     return definition.formDefinitionId;
   }
 

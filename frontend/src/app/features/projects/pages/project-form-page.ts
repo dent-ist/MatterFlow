@@ -8,9 +8,11 @@ import {
   input,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
+import type { ServerFieldError } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
 import {
   MatterResponse,
@@ -20,6 +22,7 @@ import {
 } from '../../../api/generated/api-client';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { metaNumber, serverFormErrors } from '../../../shared/forms/api-errors';
+import { CustomFieldsEditor, splitFormErrors } from '../../../shared/ui/custom-fields';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { TextField } from '../../../shared/ui/text-field';
@@ -36,7 +39,7 @@ function matterOption(m: MatterResponse): PickerOption {
  */
 @Component({
   selector: 'mf-project-form-page',
-  imports: [RouterLink, Button, TextField, EntityPicker],
+  imports: [RouterLink, CustomFieldsEditor, Button, TextField, EntityPicker],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -107,6 +110,13 @@ function matterOption(m: MatterResponse): PickerOption {
           [(value)]="description"
         />
 
+        <mf-custom-fields-editor
+          [versionId]="customVersionId()"
+          [values]="customValues()"
+          [serverErrors]="customErrors()"
+          (touched)="customTouched.set(true)"
+        />
+
         <div class="pg-actions">
           <p-button
             type="submit"
@@ -138,6 +148,11 @@ export class ProjectFormPage implements HasUnsavedChanges {
   protected readonly name = signal('');
   protected readonly description = signal('');
   protected readonly busy = signal(false);
+  private readonly customEditor = viewChild(CustomFieldsEditor);
+  protected readonly customVersionId = signal<number | null>(null);
+  protected readonly customValues = signal<Record<string, unknown>>({});
+  protected readonly customErrors = signal<ServerFieldError[]>([]);
+  protected readonly customTouched = signal(false);
   protected readonly submitted = signal(false);
   protected readonly serverErrors = signal<Record<string, string>>({});
   protected readonly summary = signal<string[]>([]);
@@ -168,7 +183,10 @@ export class ProjectFormPage implements HasUnsavedChanges {
       const preselected = this.matterId();
       untracked(() => {
         if (id !== undefined) void this.load();
-        else if (preselected) void this.preselectMatter(Number(preselected));
+        else {
+          void this.loadCustomForm();
+          if (preselected) void this.preselectMatter(Number(preselected));
+        }
       });
     });
   }
@@ -177,9 +195,33 @@ export class ProjectFormPage implements HasUnsavedChanges {
     if (this.saved) return false;
     const o = this.original();
     if (this.isEdit()) {
-      return !!o && (this.name() !== o.name || this.description() !== (o.description ?? ''));
+      return (
+        !!o &&
+        (this.name() !== o.name ||
+          this.description() !== (o.description ?? '') ||
+          this.customTouched())
+      );
     }
-    return this.name().trim() !== '' || this.description().trim() !== '';
+    return this.name().trim() !== '' || this.description().trim() !== '' || this.customTouched();
+  }
+
+  /** The published custom-field form to render when creating (editing uses the one on the record). */
+  private async loadCustomForm(): Promise<void> {
+    try {
+      const form = await firstValueFrom(this.api.getProjectCustomFieldForm());
+      this.customVersionId.set(form.publishedFormVersionId ?? null);
+    } catch {
+      this.customVersionId.set(null); // no custom fields section
+    }
+  }
+
+  private applyCustom(record: {
+    publishedFormVersionId?: number;
+    formValues?: Record<string, unknown>;
+  }): void {
+    this.customVersionId.set(record.publishedFormVersionId ?? null);
+    this.customValues.set({ ...(record.formValues ?? {}) });
+    this.customTouched.set(false);
   }
 
   @HostListener('window:beforeunload', ['$event'])
@@ -198,6 +240,7 @@ export class ProjectFormPage implements HasUnsavedChanges {
     try {
       const project = await firstValueFrom(this.api.getProject(Number(this.projectId())));
       this.original.set(project);
+      this.applyCustom(project);
       this.name.set(project.name);
       this.description.set(project.description ?? '');
       this.matter.set({
@@ -230,6 +273,9 @@ export class ProjectFormPage implements HasUnsavedChanges {
     const problems: string[] = [];
     if (!this.matter()) problems.push('Select a matter.');
     if (this.name().trim() === '') problems.push('Enter a project name.');
+    this.customErrors.set([]);
+    const custom = this.customEditor()?.collect(this.isEdit() ? this.customValues() : undefined);
+    if (custom?.invalid) problems.push('Complete the highlighted custom fields.');
     if (problems.length > 0) {
       this.summary.set(problems);
       return;
@@ -243,6 +289,7 @@ export class ProjectFormPage implements HasUnsavedChanges {
             this.api.updateProject(Number(this.projectId()), {
               name: this.name().trim(),
               description,
+              formValues: custom?.values,
               rowVersion: this.original()!.rowVersion,
             }),
           )
@@ -251,14 +298,20 @@ export class ProjectFormPage implements HasUnsavedChanges {
               matterId: this.matter()!.id,
               name: this.name().trim(),
               description,
+              formValues: custom?.values,
             }),
           );
       this.saved = true;
+      if (saved.droppedFields.length > 0) {
+        this.notify.info(`Hidden custom values were not saved: ${saved.droppedFields.join(', ')}.`);
+      }
       this.notify.success(`Project ${saved.name} saved`);
       await this.router.navigate(['/projects', saved.projectId]);
     } catch (err) {
       const errors = serverFormErrors(err);
-      this.serverErrors.set(errors.fields);
+      const split = splitFormErrors(errors.fields);
+      this.serverErrors.set(split.base);
+      this.customErrors.set(split.form);
       this.summary.set(errors.summary);
       this.conflict.set(errors.conflict);
       this.existingId.set(metaNumber(err, 'existingId'));

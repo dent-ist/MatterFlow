@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Organization.Application;
 
-public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskGuard taskGuard)
+public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskGuard taskGuard, CustomFieldValues custom)
 {
     public static readonly string[] SortFields = ["matterRef", "name", "clientNumber", "createdAt"];
 
@@ -63,13 +63,15 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
         return OrganizationSupport.Page(items.Select(r => ToResponse(r, null)).ToList(), total, page);
     }
 
-    public async Task<Result<MatterResponse>> GetAsync(int id, CancellationToken ct)
+    public async Task<Result<MatterResponse>> GetAsync(int id, CancellationToken ct) => await GetAsync(id, [], ct);
+
+    private async Task<Result<MatterResponse>> GetAsync(int id, IReadOnlyList<string> dropped, CancellationToken ct)
     {
         var row = await Rows().Where(r => r.Matter.Id == id).SingleOrDefaultAsync(ct);
         if (row is null)
             return OrganizationSupport.NotFound("Matter");
 
-        return ToResponse(row, await taskGuard.CountOpenTasksAsync(id, ct));
+        return ToResponse(row, await taskGuard.CountOpenTasksAsync(id, ct), await custom.ReadAsync(CustomFieldTarget.Matter, id, ct), dropped);
     }
 
     /// <summary>Resolves <c>343-12</c> / <c>00343-00012</c> to the Matter.</summary>
@@ -81,7 +83,7 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
         var row = await Rows().Where(r => r.Matter.ClientNumber == clientNumber && r.Matter.MatterNumber == matterNumber).SingleOrDefaultAsync(ct);
         return row is null
             ? OrganizationSupport.NotFound("Matter")
-            : ToResponse(row, await taskGuard.CountOpenTasksAsync(row.Matter.Id, ct));
+            : ToResponse(row, await taskGuard.CountOpenTasksAsync(row.Matter.Id, ct), await custom.ReadAsync(CustomFieldTarget.Matter, row.Matter.Id, ct), []);
     }
 
     public async Task<Result<MatterResponse>> CreateAsync(CreateMatterRequest request, CancellationToken ct)
@@ -109,6 +111,10 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
         if (existing is not null)
             return DuplicateNumber(client.ClientNumber, number.Value, existing);
 
+        var plan = await custom.PlanCreateAsync(CustomFieldTarget.Matter, request.FormValues, ct);
+        if (plan.IsFailure)
+            return plan.Error!;
+
         var matter = new Matter
         {
             ClientId = client.Id,
@@ -127,22 +133,40 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
             Summary = $"Matter {client.ClientNumber}-{number.Value} created.",
         });
 
-        try
+        IReadOnlyList<string> dropped = [];
+        await using (var transaction = await db.Database.BeginTransactionAsync(ct))
         {
-            await db.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateException ex) when (OrganizationSupport.IsUniqueViolation(ex, OrganizationSupport.MatterNumberUnique))
-        {
-            db.ChangeTracker.Clear();
-            return DuplicateNumber(client.ClientNumber, number.Value, await FindIdAsync(client.Id, number.Value, null, ct));
-        }
-        catch (DbUpdateException ex) when (OrganizationSupport.IsForeignKeyViolation(ex))
-        {
-            db.ChangeTracker.Clear();
-            return OrganizationSupport.ConcurrencyError(); // the Client's number changed between the read and the insert
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex) when (OrganizationSupport.IsUniqueViolation(ex, OrganizationSupport.MatterNumberUnique))
+            {
+                db.ChangeTracker.Clear();
+                return DuplicateNumber(client.ClientNumber, number.Value, await FindIdAsync(client.Id, number.Value, null, ct));
+            }
+            catch (DbUpdateException ex) when (OrganizationSupport.IsForeignKeyViolation(ex))
+            {
+                db.ChangeTracker.Clear();
+                return OrganizationSupport.ConcurrencyError(); // the Client's number changed between the read and the insert
+            }
+
+            if (plan.Value is { } formPlan)
+            {
+                var saved = await custom.SaveAsync(CustomFieldTarget.Matter, matter.Id, matter.Id, formPlan, ct);
+                if (saved.IsFailure)
+                {
+                    db.ChangeTracker.Clear();
+                    return saved.Error!;
+                }
+
+                dropped = saved.Value;
+            }
+
+            await transaction.CommitAsync(ct);
         }
 
-        return await GetAsync(matter.Id, ct);
+        return await GetAsync(matter.Id, dropped, ct);
     }
 
     public async Task<Result<MatterResponse>> UpdateAsync(int id, UpdateMatterRequest request, CancellationToken ct)
@@ -155,11 +179,40 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
         if (version.IsFailure)
             return version.Error!;
 
+        var plan = await custom.PlanUpdateAsync(CustomFieldTarget.Matter, id, request.FormValues, ct);
+        if (plan.IsFailure)
+            return plan.Error!;
+
         matter.Name = request.Name.Trim();
         matter.IsSensitive = request.IsSensitive;
         OrganizationSupport.TrackOriginalRowVersion(db, matter, request.RowVersion);
-        await db.SaveChangesAsync(ct);
-        return await GetAsync(id, ct);
+
+        IReadOnlyList<string> dropped = [];
+        try
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            await db.SaveChangesAsync(ct);
+            if (plan.Value is { } formPlan)
+            {
+                var saved = await custom.SaveAsync(CustomFieldTarget.Matter, id, id, formPlan, ct);
+                if (saved.IsFailure)
+                {
+                    db.ChangeTracker.Clear();
+                    return saved.Error!;
+                }
+
+                dropped = saved.Value;
+            }
+
+            await transaction.CommitAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            db.ChangeTracker.Clear();
+            return OrganizationSupport.ConcurrencyError();
+        }
+
+        return await GetAsync(id, dropped, ct);
     }
 
     /// <summary>Changes the Matter number (needs Matter.EditNumber at the API). Writes MATTER_NUMBER_CHANGED.</summary>
@@ -279,7 +332,7 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
             && BusinessNumber.TryParse(parts[1], out matterNumber);
     }
 
-    private static MatterResponse ToResponse(MatterRow r, int? openTaskCount) => new(
+    private static MatterResponse ToResponse(MatterRow r, int? openTaskCount, CustomFieldView? view = null, IReadOnlyList<string>? dropped = null) => new(
         r.Matter.Id,
         r.Matter.ClientId,
         r.Matter.ClientNumber.Value,
@@ -292,6 +345,10 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
         r.Matter.IsSensitive,
         r.ProjectCount,
         openTaskCount,
+        view?.FormVersionId,
+        view?.PublishedFormVersionId,
+        view?.Values,
+        dropped ?? [],
         OrganizationSupport.Encode(r.Matter.RowVersion),
         OrganizationSupport.Utc(r.Matter.CreatedAtUtc),
         OrganizationSupport.Utc(r.Matter.ModifiedAtUtc));

@@ -8,14 +8,17 @@ import {
   input,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
+import type { ServerFieldError } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
 import { ClientResponse, ClientsClient } from '../../../api/generated/api-client';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { metaNumber, serverFormErrors } from '../../../shared/forms/api-errors';
+import { CustomFieldsEditor, splitFormErrors } from '../../../shared/ui/custom-fields';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { NumberInput, numberProblem } from '../../../shared/ui/number-input';
@@ -26,7 +29,15 @@ type LoadState = 'loading' | 'ready' | 'error';
 /** Create and edit a Client (UX S05). The number is locked on edit; "Change number" is a restricted, audited action. */
 @Component({
   selector: 'mf-client-form-page',
-  imports: [RouterLink, Button, NumberInput, TextField, ConfirmDialog, HasPermissionDirective],
+  imports: [
+    RouterLink,
+    CustomFieldsEditor,
+    Button,
+    NumberInput,
+    TextField,
+    ConfirmDialog,
+    HasPermissionDirective,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -132,6 +143,13 @@ type LoadState = 'loading' | 'ready' | 'error';
           </fieldset>
         }
 
+        <mf-custom-fields-editor
+          [versionId]="customVersionId()"
+          [values]="customValues()"
+          [serverErrors]="customErrors()"
+          (touched)="customTouched.set(true)"
+        />
+
         <div class="pg-actions">
           <p-button
             type="submit"
@@ -181,6 +199,11 @@ export class ClientFormPage implements HasUnsavedChanges {
   protected readonly name = signal('');
   protected readonly isActive = signal(true);
   protected readonly busy = signal(false);
+  private readonly customEditor = viewChild(CustomFieldsEditor);
+  protected readonly customVersionId = signal<number | null>(null);
+  protected readonly customValues = signal<Record<string, unknown>>({});
+  protected readonly customErrors = signal<ServerFieldError[]>([]);
+  protected readonly customTouched = signal(false);
   protected readonly submitted = signal(false);
   protected readonly serverErrors = signal<Record<string, string>>({});
   protected readonly summary = signal<string[]>([]);
@@ -198,7 +221,11 @@ export class ClientFormPage implements HasUnsavedChanges {
 
   constructor() {
     effect(() => {
-      if (this.clientId() !== undefined) untracked(() => void this.load());
+      const id = this.clientId();
+      untracked(() => {
+        if (id !== undefined) void this.load();
+        else void this.loadCustomForm();
+      });
     });
   }
 
@@ -206,9 +233,30 @@ export class ClientFormPage implements HasUnsavedChanges {
     if (this.saved) return false;
     const o = this.original();
     if (this.isEdit()) {
-      return !!o && (this.name() !== o.name || this.isActive() !== o.isActive);
+      return (
+        !!o && (this.name() !== o.name || this.isActive() !== o.isActive || this.customTouched())
+      );
     }
-    return this.number().trim() !== '' || this.name().trim() !== '';
+    return this.number().trim() !== '' || this.name().trim() !== '' || this.customTouched();
+  }
+
+  /** The published custom-field form to render when creating (editing uses the one on the record). */
+  private async loadCustomForm(): Promise<void> {
+    try {
+      const form = await firstValueFrom(this.api.getClientCustomFieldForm());
+      this.customVersionId.set(form.publishedFormVersionId ?? null);
+    } catch {
+      this.customVersionId.set(null); // no custom fields section
+    }
+  }
+
+  private applyCustom(record: {
+    publishedFormVersionId?: number;
+    formValues?: Record<string, unknown>;
+  }): void {
+    this.customVersionId.set(record.publishedFormVersionId ?? null);
+    this.customValues.set({ ...(record.formValues ?? {}) });
+    this.customTouched.set(false);
   }
 
   @HostListener('window:beforeunload', ['$event'])
@@ -243,6 +291,9 @@ export class ClientFormPage implements HasUnsavedChanges {
       if (problem) problems.push(problem);
     }
     if (this.name().trim() === '') problems.push('Enter a client name.');
+    this.customErrors.set([]);
+    const custom = this.customEditor()?.collect(this.isEdit() ? this.customValues() : undefined);
+    if (custom?.invalid) problems.push('Complete the highlighted custom fields.');
     if (problems.length > 0) {
       this.summary.set(problems);
       return;
@@ -255,13 +306,21 @@ export class ClientFormPage implements HasUnsavedChanges {
             this.api.updateClient(Number(this.clientId()), {
               name: this.name().trim(),
               isActive: this.isActive(),
+              formValues: custom?.values,
               rowVersion: this.original()!.rowVersion,
             }),
           )
         : await firstValueFrom(
-            this.api.createClient({ clientNumber: this.number().trim(), name: this.name().trim() }),
+            this.api.createClient({
+              clientNumber: this.number().trim(),
+              name: this.name().trim(),
+              formValues: custom?.values,
+            }),
           );
       this.saved = true;
+      if (saved.droppedFields.length > 0) {
+        this.notify.info(`Hidden custom values were not saved: ${saved.droppedFields.join(', ')}.`);
+      }
       this.notify.success(`Client ${saved.clientNumber} saved`);
       await this.router.navigate(['/clients', saved.clientId]);
     } catch (err) {
@@ -321,13 +380,16 @@ export class ClientFormPage implements HasUnsavedChanges {
 
   private apply(client: ClientResponse): void {
     this.original.set(client);
+    this.applyCustom(client);
     this.name.set(client.name);
     this.isActive.set(client.isActive);
   }
 
   private showServerError(err: unknown): void {
     const errors = serverFormErrors(err);
-    this.serverErrors.set(errors.fields);
+    const split = splitFormErrors(errors.fields);
+    this.serverErrors.set(split.base);
+    this.customErrors.set(split.form);
     this.summary.set(errors.summary);
     this.conflict.set(errors.conflict);
     this.existingId.set(metaNumber(err, 'existingId'));

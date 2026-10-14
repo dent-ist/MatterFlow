@@ -41,7 +41,7 @@ internal static class ListFilters
 /// <summary>Clients: the firm's client list with their zero-padded numbers.</summary>
 [ApiController]
 [Route("api/v1/clients")]
-public class ClientsController(ClientService clients) : ControllerBase
+public class ClientsController(ClientService clients, CustomFieldValues customFields) : ControllerBase
 {
     /// <summary>Lists Clients. <c>q</c> accepts a number (<c>343</c> or <c>00343</c>) or a name fragment. Sort: clientNumber (default), name, createdAt.</summary>
     [HttpGet(Name = "ListClients")]
@@ -54,6 +54,13 @@ public class ClientsController(ClientService clients) : ControllerBase
 
         return this.ToActionResult(await clients.ListAsync(query, cancellationToken));
     }
+
+    /// <summary>The published custom-field form version to render on the create and edit screens (null when the form has no published version).</summary>
+    [HttpGet("custom-fields", Name = "GetClientCustomFieldForm")]
+    [Authorize(Policy = OrganizationPolicies.ClientView)]
+    [ProducesResponseType<CustomFieldFormResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> CustomFieldForm(CancellationToken cancellationToken) =>
+        Ok(new CustomFieldFormResponse(await customFields.PublishedVersionAsync(CustomFieldTarget.Client, cancellationToken)));
 
     /// <summary>Gets one Client.</summary>
     [HttpGet("{clientId:int}", Name = "GetClient")]
@@ -89,7 +96,7 @@ public class ClientsController(ClientService clients) : ControllerBase
 /// <summary>Matters: unique per Client, displayed as <c>00343-00012</c>.</summary>
 [ApiController]
 [Route("api/v1/matters")]
-public class MattersController(MatterService matters) : ControllerBase
+public class MattersController(MatterService matters, CustomFieldValues customFields) : ControllerBase
 {
     /// <summary>Lists Matters. <c>q</c> accepts <c>343-12</c>, <c>00343-00012</c>, a client or matter number, or a name fragment. Sort: matterRef (default), name, clientNumber, createdAt.</summary>
     [HttpGet(Name = "ListMatters")]
@@ -109,6 +116,13 @@ public class MattersController(MatterService matters) : ControllerBase
     [ProducesResponseType<MatterResponse>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> Lookup([FromQuery(Name = "ref")] string? reference, CancellationToken cancellationToken) =>
         this.ToActionResult(await matters.LookupAsync(reference, cancellationToken));
+
+    /// <summary>The published custom-field form version to render on the create and edit screens (null when the form has no published version).</summary>
+    [HttpGet("custom-fields", Name = "GetMatterCustomFieldForm")]
+    [Authorize(Policy = OrganizationPolicies.MatterView)]
+    [ProducesResponseType<CustomFieldFormResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> CustomFieldForm(CancellationToken cancellationToken) =>
+        Ok(new CustomFieldFormResponse(await customFields.PublishedVersionAsync(CustomFieldTarget.Matter, cancellationToken)));
 
     /// <summary>Gets one Matter, including its open Task count.</summary>
     [HttpGet("{matterId:int}", Name = "GetMatter")]
@@ -151,7 +165,7 @@ public class MattersController(MatterService matters) : ControllerBase
 /// <summary>Projects: flat containers of Tasks within a Matter.</summary>
 [ApiController]
 [Route("api/v1/projects")]
-public class ProjectsController(ProjectService projects) : ControllerBase
+public class ProjectsController(ProjectService projects, CustomFieldValues customFields) : ControllerBase
 {
     /// <summary>Lists Projects (use <c>matterId</c> for one Matter's Projects). Sort: name (default), matterRef, createdAt.</summary>
     [HttpGet(Name = "ListProjects")]
@@ -164,6 +178,13 @@ public class ProjectsController(ProjectService projects) : ControllerBase
 
         return this.ToActionResult(await projects.ListAsync(query, cancellationToken));
     }
+
+    /// <summary>The published custom-field form version to render on the create and edit screens (null when the form has no published version).</summary>
+    [HttpGet("custom-fields", Name = "GetProjectCustomFieldForm")]
+    [Authorize(Policy = OrganizationPolicies.ProjectView)]
+    [ProducesResponseType<CustomFieldFormResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> CustomFieldForm(CancellationToken cancellationToken) =>
+        Ok(new CustomFieldFormResponse(await customFields.PublishedVersionAsync(CustomFieldTarget.Project, cancellationToken)));
 
     /// <summary>Gets one Project.</summary>
     [HttpGet("{projectId:int}", Name = "GetProject")]

@@ -8,9 +8,11 @@ import {
   input,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
+import type { ServerFieldError } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
 import {
   ClientResponse,
@@ -21,6 +23,7 @@ import {
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { metaNumber, serverFormErrors } from '../../../shared/forms/api-errors';
+import { CustomFieldsEditor, splitFormErrors } from '../../../shared/ui/custom-fields';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { normalizeNumber } from '../../../shared/pipes/matter-ref.pipe';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -39,6 +42,7 @@ function clientOption(c: ClientResponse): PickerOption {
   selector: 'mf-matter-form-page',
   imports: [
     RouterLink,
+    CustomFieldsEditor,
     Button,
     NumberInput,
     TextField,
@@ -157,6 +161,13 @@ function clientOption(c: ClientResponse): PickerOption {
           </span>
         </label>
 
+        <mf-custom-fields-editor
+          [versionId]="customVersionId()"
+          [values]="customValues()"
+          [serverErrors]="customErrors()"
+          (touched)="customTouched.set(true)"
+        />
+
         <div class="pg-actions">
           <p-button
             type="submit"
@@ -210,6 +221,11 @@ export class MatterFormPage implements HasUnsavedChanges {
   protected readonly name = signal('');
   protected readonly isSensitive = signal(false);
   protected readonly busy = signal(false);
+  private readonly customEditor = viewChild(CustomFieldsEditor);
+  protected readonly customVersionId = signal<number | null>(null);
+  protected readonly customValues = signal<Record<string, unknown>>({});
+  protected readonly customErrors = signal<ServerFieldError[]>([]);
+  protected readonly customTouched = signal(false);
   protected readonly submitted = signal(false);
   protected readonly serverErrors = signal<Record<string, string>>({});
   protected readonly summary = signal<string[]>([]);
@@ -249,7 +265,10 @@ export class MatterFormPage implements HasUnsavedChanges {
       const preselected = this.clientId();
       untracked(() => {
         if (id !== undefined) void this.load();
-        else if (preselected) void this.preselectClient(Number(preselected));
+        else {
+          void this.loadCustomForm();
+          if (preselected) void this.preselectClient(Number(preselected));
+        }
       });
     });
   }
@@ -258,9 +277,31 @@ export class MatterFormPage implements HasUnsavedChanges {
     if (this.saved) return false;
     const o = this.original();
     if (this.isEdit()) {
-      return !!o && (this.name() !== o.name || this.isSensitive() !== o.isSensitive);
+      return (
+        !!o &&
+        (this.name() !== o.name || this.isSensitive() !== o.isSensitive || this.customTouched())
+      );
     }
-    return this.number().trim() !== '' || this.name().trim() !== '';
+    return this.number().trim() !== '' || this.name().trim() !== '' || this.customTouched();
+  }
+
+  /** The published custom-field form to render when creating (editing uses the one on the record). */
+  private async loadCustomForm(): Promise<void> {
+    try {
+      const form = await firstValueFrom(this.api.getMatterCustomFieldForm());
+      this.customVersionId.set(form.publishedFormVersionId ?? null);
+    } catch {
+      this.customVersionId.set(null); // no custom fields section
+    }
+  }
+
+  private applyCustom(record: {
+    publishedFormVersionId?: number;
+    formValues?: Record<string, unknown>;
+  }): void {
+    this.customVersionId.set(record.publishedFormVersionId ?? null);
+    this.customValues.set({ ...(record.formValues ?? {}) });
+    this.customTouched.set(false);
   }
 
   @HostListener('window:beforeunload', ['$event'])
@@ -279,6 +320,7 @@ export class MatterFormPage implements HasUnsavedChanges {
     try {
       const matter = await firstValueFrom(this.api.getMatter(Number(this.matterId())));
       this.original.set(matter);
+      this.applyCustom(matter);
       this.name.set(matter.name);
       this.isSensitive.set(matter.isSensitive);
       this.state.set('ready');
@@ -310,6 +352,9 @@ export class MatterFormPage implements HasUnsavedChanges {
       if (problem) problems.push(problem);
     }
     if (this.name().trim() === '') problems.push('Enter a matter name.');
+    this.customErrors.set([]);
+    const custom = this.customEditor()?.collect(this.isEdit() ? this.customValues() : undefined);
+    if (custom?.invalid) problems.push('Complete the highlighted custom fields.');
     if (problems.length > 0) {
       this.summary.set(problems);
       return;
@@ -322,6 +367,7 @@ export class MatterFormPage implements HasUnsavedChanges {
             this.api.updateMatter(Number(this.matterId()), {
               name: this.name().trim(),
               isSensitive: this.isSensitive(),
+              formValues: custom?.values,
               rowVersion: this.original()!.rowVersion,
             }),
           )
@@ -331,14 +377,20 @@ export class MatterFormPage implements HasUnsavedChanges {
               matterNumber: this.number().trim(),
               name: this.name().trim(),
               isSensitive: this.isSensitive(),
+              formValues: custom?.values,
             }),
           );
       this.saved = true;
+      if (saved.droppedFields.length > 0) {
+        this.notify.info(`Hidden custom values were not saved: ${saved.droppedFields.join(', ')}.`);
+      }
       this.notify.success(`Matter ${saved.matterRef} saved`);
       await this.router.navigate(['/matters', saved.matterId]);
     } catch (err) {
       const errors = serverFormErrors(err);
-      this.serverErrors.set(errors.fields);
+      const split = splitFormErrors(errors.fields);
+      this.serverErrors.set(split.base);
+      this.customErrors.set(split.form);
       this.summary.set(errors.summary);
       this.conflict.set(errors.conflict);
       this.existingId.set(metaNumber(err, 'existingId'));

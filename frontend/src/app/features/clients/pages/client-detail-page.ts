@@ -21,6 +21,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
+import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { EntityActivity } from '../../../shared/ui/entity-activity';
 import { MatterRef } from '../../../shared/ui/matter-ref';
@@ -39,6 +40,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     MatterRef,
     EntityActivity,
     LocalTimePipe,
+    CustomFieldsView,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -181,6 +183,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                   <dd>{{ c.modifiedAtUtc | localTime }}</dd>
                 }
               </dl>
+              <mf-custom-fields-view [versionId]="c.formVersionId" [values]="c.formValues ?? {}" />
             }
             @case ('activity') {
               <mf-entity-activity objectType="Client" [objectId]="c.clientId" />
