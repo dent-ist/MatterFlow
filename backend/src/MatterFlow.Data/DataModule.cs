@@ -1,9 +1,33 @@
+using MatterFlow.SharedKernel.Identity;
+using MatterFlow.SharedKernel.Time;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MatterFlow.Data;
 
 public static class DataModule
 {
-    /// <summary>Registers data-access services. The DbContext registration is added with the first persistence work.</summary>
-    public static IServiceCollection AddDataModule(this IServiceCollection services) => services;
+    public const string ConnectionStringName = "MatterFlow";
+
+    /// <summary>
+    /// Registers the DbContext (SQL Server, connection string <c>ConnectionStrings:MatterFlow</c>, resolved lazily so the host
+    /// and unit tests start without a database) and the audit-column interceptor. Also registers fallbacks for
+    /// <see cref="IClock"/> and <see cref="ICurrentUser"/>; the Identity module's registration (added later) wins.
+    /// </summary>
+    public static IServiceCollection AddDataModule(this IServiceCollection services)
+    {
+        services.TryAddSingleton<IClock, SystemClock>();
+        services.TryAddScoped<ICurrentUser, SystemCurrentUser>();
+        services.AddScoped<AuditColumnsInterceptor>();
+        services.AddDbContext<MatterFlowDbContext>((sp, options) =>
+        {
+            var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString(ConnectionStringName)
+                ?? throw new InvalidOperationException($"Connection string 'ConnectionStrings:{ConnectionStringName}' is not configured.");
+            options.UseSqlServer(connectionString);
+            options.AddInterceptors(sp.GetRequiredService<AuditColumnsInterceptor>());
+        });
+        return services;
+    }
 }

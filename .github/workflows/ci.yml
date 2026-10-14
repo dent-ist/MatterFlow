@@ -32,6 +32,8 @@ jobs:
         run: dotnet restore
       - name: Build
         run: dotnet build --no-restore -c Release -warnaserror
+      - name: OpenAPI drift check
+        run: git diff --exit-code -- ../contracts/openapi/v1.json
       - name: Format check
         run: dotnet format --no-restore --verify-no-changes
       - name: Unit, architecture, schema and smoke integration tests
@@ -63,5 +65,9 @@ jobs:
         run: npm run format:check
       - name: Unit tests (Vitest)
         run: npm test
+      - name: API client drift check
+        run: |
+          npm run api:generate
+          git diff --exit-code -- src/app/api/generated
       - name: Production build
         run: npm run build

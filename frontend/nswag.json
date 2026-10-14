@@ -1,0 +1,43 @@
+{
+  "runtime": "Net100",
+  "defaultVariables": null,
+  "documentGenerator": {
+    "fromDocument": {
+      "json": "../contracts/openapi/v1.json",
+      "url": "",
+      "output": null,
+      "newLineBehavior": "LF"
+    }
+  },
+  "codeGenerators": {
+    "openApiToTypeScriptClient": {
+      "className": "{controller}Client",
+      "moduleName": "",
+      "namespace": "",
+      "typeScriptVersion": 5.9,
+      "template": "Angular",
+      "promiseType": "Promise",
+      "httpClass": "HttpClient",
+      "withCredentials": false,
+      "useSingletonProvider": true,
+      "injectionTokenType": "InjectionToken",
+      "rxJsVersion": 7.8,
+      "dateTimeType": "String",
+      "nullValue": "Undefined",
+      "generateClientClasses": true,
+      "generateClientInterfaces": true,
+      "generateOptionalParameters": true,
+      "exportTypes": true,
+      "wrapDtoExceptions": false,
+      "typeStyle": "Interface",
+      "enumStyle": "Enum",
+      "useLeafType": false,
+      "markOptionalProperties": true,
+      "generateCloneMethod": false,
+      "generateDefaultValues": false,
+      "operationGenerationMode": "MultipleClientsFromFirstTagAndOperationId",
+      "newLineBehavior": "LF",
+      "output": "src/app/api/generated/api-client.ts"
+    }
+  }
+}
