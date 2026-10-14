@@ -71,6 +71,9 @@ public static class ErrorCodes
 
     public const string InternalError = "INTERNAL_ERROR";
     public const string TooManyRequests = "TOO_MANY_REQUESTS";
+
+    /// <summary>A read query ran longer than the read command timeout and was cancelled (503); narrow the filters and retry.</summary>
+    public const string QueryTimeout = "QUERY_TIMEOUT";
     public const string MethodNotAllowed = "METHOD_NOT_ALLOWED";
 
     /// <summary>Every code, in declaration order. Used to emit the OpenAPI enum.</summary>

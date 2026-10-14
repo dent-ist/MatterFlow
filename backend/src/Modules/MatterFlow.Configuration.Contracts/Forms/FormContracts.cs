@@ -250,4 +250,13 @@ public interface IFormValueStore
 
     /// <summary>The owner's stored values for the definition, or null when none were saved.</summary>
     Task<StoredFormValues?> GetAsync(FormValueOwnerKind ownerKind, long ownerId, int formDefinitionId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The stored values of several owners of one kind in a single read, keyed by owner id. Each owner is asked for its own definition
+    /// (<paramref name="owners"/> pairs an owner id with the form definition id, as <see cref="GetAsync"/> takes them); owners without saved values are absent.
+    /// </summary>
+    Task<IReadOnlyDictionary<long, StoredFormValues>> GetManyAsync(
+        FormValueOwnerKind ownerKind,
+        IReadOnlyCollection<(long OwnerId, int FormDefinitionId)> owners,
+        CancellationToken cancellationToken = default);
 }

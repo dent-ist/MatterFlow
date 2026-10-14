@@ -277,6 +277,36 @@ public sealed class AuditSearchApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Facets_are_exactly_the_distinct_values_of_the_trail_in_order_however_often_they_repeat()
+    {
+        // The skip scan visits each value once: many events of few types, plus types that sort around the seeded ones.
+        for (var i = 0; i < 40; i++)
+            await InsertAsync("2026-10-01T10:00:00Z", i % 2 == 0 ? "ZZ_LAST" : "AA_FIRST", i % 3 == 0 ? "Zebra" : "Aardvark", i.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        await InsertAsync("2026-10-01T10:00:00Z", "MM_MIDDLE", "Mongoose", "1");
+
+        var facets = await _admin.GetFromJsonAsync<JsonElement>("/api/v1/audit/facets");
+
+        var expectedObjects = await _factory.WithDbAsync(db => db.Database.SqlQueryRaw<string>("SELECT DISTINCT ObjectType AS Value FROM dbo.AuditEvent ORDER BY ObjectType").ToListAsync());
+        var expectedEvents = await _factory.WithDbAsync(db => db.Database.SqlQueryRaw<string>("SELECT DISTINCT EventType AS Value FROM dbo.AuditEvent ORDER BY EventType").ToListAsync());
+        facets.GetProperty("objectTypes").EnumerateArray().Select(e => e.GetString()).ShouldBe(expectedObjects);
+        facets.GetProperty("eventTypes").EnumerateArray().Select(e => e.GetString()).ShouldBe(expectedEvents);
+        expectedObjects.ShouldContain("Mongoose");
+        expectedEvents.ShouldContain("MM_MIDDLE");
+    }
+
+    [Fact]
+    public async Task Text_search_ignores_case_in_the_summary_and_the_field_key()
+    {
+        await InsertAsync("2026-10-01T10:00:00Z", "FIELD_CHANGED", "Doc", "11", summary: "Renamed to Quarterly REPORT", field: "Title");
+        await InsertAsync("2026-10-01T10:01:00Z", "FIELD_CHANGED", "Doc", "12", summary: "Unrelated", field: "BillingCode");
+
+        Ids(await SearchAsync("?q=quarterly%20report")).ShouldBe(["11"]);
+        Ids(await SearchAsync("?q=QUARTERLY")).ShouldBe(["11"]);
+        Ids(await SearchAsync("?q=billingcode")).ShouldBe(["12"]);
+        Ids(await SearchAsync("?q=BILLINGCODE")).ShouldBe(["12"]);
+    }
+
+    [Fact]
     public async Task Object_labels_resolve_through_contracts_and_stay_null_for_unknown_objects()
     {
         // The seeded user is a "User" object: its label is the display name; an unknown Task id has no label.

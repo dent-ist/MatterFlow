@@ -123,6 +123,26 @@ internal sealed class FormValueStore(DbContext db, FormSchemaLoader loader, IAud
         return set is null ? null : ToStored(set);
     }
 
+    public async Task<IReadOnlyDictionary<long, StoredFormValues>> GetManyAsync(
+        FormValueOwnerKind ownerKind,
+        IReadOnlyCollection<(long OwnerId, int FormDefinitionId)> owners,
+        CancellationToken cancellationToken = default)
+    {
+        if (owners.Count == 0)
+        {
+            return new Dictionary<long, StoredFormValues>();
+        }
+
+        var ids = owners.Select(o => o.OwnerId).Distinct().ToList();
+        var wanted = owners.ToHashSet();
+        var sets = await db.Set<FormValueSet>().AsNoTracking()
+            .Where(s => s.OwnerKind == ownerKind && ids.Contains(s.OwnerId))
+            .ToListAsync(cancellationToken);
+        return sets
+            .Where(s => wanted.Contains((s.OwnerId, s.FormDefinitionId)))
+            .ToDictionary(s => s.OwnerId, ToStored);
+    }
+
     private static StoredFormValues ToStored(FormValueSet set) =>
         new(set.FormDefinitionId, set.FormVersionId, FormValuesJson.Read(set.ValuesJson), Convert.ToBase64String(set.RowVersion));
 

@@ -7163,6 +7163,7 @@
               "UNSUPPORTED_MEDIA_TYPE",
               "INTERNAL_ERROR",
               "TOO_MANY_REQUESTS",
+              "QUERY_TIMEOUT",
               "METHOD_NOT_ALLOWED"
             ],
             "type": "string",

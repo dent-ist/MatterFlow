@@ -2,6 +2,7 @@ using MatterFlow.Identity.Authorization;
 using MatterFlow.Identity.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.IntegrationTests.Fixtures;
 
@@ -33,6 +34,16 @@ public class TestProtectedController : ControllerBase
     [HttpPut("workflows")]
     [RequirePermission(Permissions.Workflow.Manage)]
     public IActionResult UpdateWorkflow() => NoContent();
+
+    /// <summary>Runs a statement that outlives its 1-second command timeout, to see the error mapping of read timeouts (503 QUERY_TIMEOUT).</summary>
+    [HttpGet("slow-read")]
+    [RequirePermission(Permissions.Task.View)]
+    public async Task<IActionResult> SlowRead([FromServices] DbContext db, CancellationToken cancellationToken)
+    {
+        db.Database.SetCommandTimeout(1);
+        await db.Database.ExecuteSqlRawAsync("WAITFOR DELAY '00:00:04'", cancellationToken);
+        return Ok();
+    }
 
     /// <summary>No explicit policy: must fall back to the fail-closed default.</summary>
     [HttpGet("no-policy")]

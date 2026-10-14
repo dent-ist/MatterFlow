@@ -30,7 +30,7 @@ Resolution notes for `security-review-2.md`. Each entry: the fix, the commit, th
 - **Fix.** `ApiRateLimiting` adds per-user fixed-window budgets (partition = signed-in user) chained behind the intake limiter: all API calls 1,200/min, comment writes 30/min, other task writes 120/min, search typeahead 180/min, advanced search 60/min, audit browser 60/min, dashboard 60/min. Rejections are 429 with `Retry-After` and the problem-details body `TOO_MANY_REQUESTS`. All values are configurable under `RateLimits:*` (0 switches one off). `QueryLimitMiddleware` rejects API calls whose query string exceeds 4,096 characters or 100 values (repeated keys count) with 400 `QUERY_TOO_LARGE`.
 - **Commit.** `5f15637`.
 - **Tests.** `ApiRateLimitingTests` (each budget, `Retry-After`, per-user isolation, query caps).
-- **Deferred.** The short output cache for the dashboard and the 15 s `CommandTimeout` on read queries: a cache needs a per-user, per-time-zone key and invalidation rules the product owner should agree on, and the budget already bounds the cost (60 calls/min/user). Tracked as follow-up.
+- **Deferred, done in the performance pass (ticket 64).** The dashboard has a 15 s output cache keyed by user, period, time zone, local date and the Dashboard.ViewDepartment right (`Dashboard:CacheSeconds`, 0 = off; it expires, it is not invalidated, so a figure can be up to 15 s old), and the Task queues, search, audit browser and dashboard reads run with a 15 s command timeout (`Queries:ReadCommandTimeoutSeconds`), answered as 503 `QUERY_TIMEOUT`. Tests: `PerformanceRound1Tests`, `DashboardCacheTests`.
 
 ## SEC2-04 Medium: ASSET_REF and USER_REF validation (SEC-12)
 
@@ -76,7 +76,7 @@ Resolution notes for `security-review-2.md`. Each entry: the fix, the commit, th
 - **Commit.** `bcdbaf8`.
 - **Fix.** `GET .../comments` takes `skip` and `take` (default and maximum 200, was a silent 1,000 cut). A comment accepts at most 50 edits and a Task at most 2,000 comments (409 `COMMENT_LIMIT`), which bounds the revision list and the thread.
 - **Test.** `TaskCommentsApiTests.Sec2_10_...`.
-- **Deferred.** The Task detail page still loads the first 200 comments only (it did not page before either); a "load more" control is a UI task.
+- **Deferred, done in the performance pass (ticket 64).** The Comments tab shows "Showing n of total" and a Load more button that fetches the next page (`skip`/`take`); a reload after a post, edit or delete keeps what was loaded. Tests: `task-comments.spec.ts` (long threads).
 
 ## SEC2-11 Low: read models and view permissions
 
@@ -88,7 +88,7 @@ Resolution notes for `security-review-2.md`. Each entry: the fix, the commit, th
 ## SEC2-12 Info: link display
 
 - **Fix (server).** Links with credentials (`https://google.com@evil.com`) and links containing bidi control characters are no longer kept as links (the text stays). `CommentHtmlHostileInputTests.Links_with_credentials_...`.
-- **Deferred.** Showing the real host next to the link text in the Angular comment view: pure presentation, no security boundary left once the server drops the deceptive forms.
+- **Deferred, done in the performance pass (ticket 64).** The comment view shows the real host (with a non-default port, internationalized names in punycode) in parentheses after every http(s) link and a warning mark for credentials in the address, direction-control characters and link text that names another site. Tests: `rich-text.spec.ts` (decorateLinks), `task-comments.spec.ts` (links).
 
 ## SEC2-13 Info: operational notes (no code change)
 

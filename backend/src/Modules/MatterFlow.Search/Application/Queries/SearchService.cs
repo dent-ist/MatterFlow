@@ -308,7 +308,11 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions)
         }
 
         if (filter?.Requestor is { } requestor)
-            rows = rows.Where(r => r.Requestor.Contains(requestor) || (r.RequestorEmail != null && r.RequestorEmail.Contains(requestor)));
+        {
+            var pattern = "%" + SearchTerm.EscapeLike(requestor.ToLowerInvariant()) + "%";
+            rows = rows.Where(r => EF.Functions.Like(EF.Functions.Collate(r.Requestor.ToLower(), "Latin1_General_100_BIN2"), pattern, SearchTerm.Escape)
+                || (r.RequestorEmail != null && EF.Functions.Like(EF.Functions.Collate(r.RequestorEmail.ToLower(), "Latin1_General_100_BIN2"), pattern, SearchTerm.Escape)));
+        }
 
         if (term is null)
             return RankedQuery.Rank(rows, [], requireMatch: false);
@@ -316,8 +320,9 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions)
         var tiers = new List<Tier<TaskRow>>();
         tiers.AddRange(RankedQuery.EqualTier<TaskRow>(SearchRanking.Exact, r => r.Number, term.TaskNumber));
         tiers.AddRange(RankedQuery.AnyLike<TaskRow>(SearchRanking.StartsWith, r => r.Number, [term.TaskPrefix]));
-        tiers.AddRange(RankedQuery.TextTiers<TaskRow>(r => r.Title, term));
-        tiers.AddRange(RankedQuery.TextTiers<TaskRow>(r => r.Requestor, term).Select(t => t with { Rank = Math.Max(t.Rank, SearchRanking.StartsWith) }));
+        // Binary path: the Task table is the second largest, and the case-insensitive collation scan costs about five times more CPU per request.
+        tiers.AddRange(RankedQuery.TextTiers<TaskRow>(r => r.Title, term, binary: true));
+        tiers.AddRange(RankedQuery.TextTiers<TaskRow>(r => r.Requestor, term, binary: true).Select(t => t with { Rank = Math.Max(t.Rank, SearchRanking.StartsWith) }));
         tiers.AddRange(RelatedTiers<TaskRow>(r => r.MatterRef, term));
         return RankedQuery.Rank(rows, tiers, requireMatch: true);
     }

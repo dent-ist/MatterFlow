@@ -421,7 +421,7 @@ Keys and constraints:
 - UNIQUE `UQ_Task_IdMatter (TaskId, MatterId)` - target of the `TaskAsset` composite FK.
 - `FK_Task_Project_SameMatter (ProjectId, MatterId) -> Project (ProjectId, MatterId)`: SQL Server skips a composite FK when any column is NULL, so Tasks without a Project are valid while a Project of another Matter is rejected.
 - `TR_Task_Immutable` (AFTER UPDATE): raises error if `MatterId`, `TaskTypeId`, `FormVersionId` or `TaskNumber` changed (defense in depth; the API has no such input).
-- Indexes (queue/My Work/Pod Work/dashboard/search): `IX_Task_Queue (StatusCode, PriorityId, DueSortKey, CreatedAt) INCLUDE (MatterId, AssignedUserId, AssignedPodId)`; `IX_Task_AssignedUser (AssignedUserId, StatusCode) INCLUDE (PriorityId, DueSortKey)`; `IX_Task_Pod (AssignedPodId, StatusCode) INCLUDE (AssignedUserId, PriorityId)`; `IX_Task_Matter (MatterId, StatusCode)`; `IX_Task_Project (ProjectId) WHERE ProjectId IS NOT NULL`; `IX_Task_Creator (CreatedByUserId, CreatedAt)`; `IX_Task_Type (TaskTypeId, StatusCode)`; `IX_Task_Completed (CompletedAt) WHERE CompletedAt IS NOT NULL`; `IX_Task_Title (Title)` for prefix search; `IX_Task_Requestor (RequestorName)`.
+- Indexes (queue/My Work/Pod Work/dashboard/search): `IX_Task_Queue (StatusCode, PriorityId, DueSortKey, CreatedAt) INCLUDE (MatterId, AssignedUserId, AssignedPodId, TaskTypeId, DueDate, DueAtUtc)`; `IX_Task_AssignedUser (AssignedUserId, StatusCode) INCLUDE (PriorityId, DueSortKey, DueDate, DueAtUtc, CreatedAt, StatusChangedAt)`; `IX_Task_Pod (AssignedPodId, StatusCode) INCLUDE (AssignedUserId, PriorityId, DueSortKey, DueDate, DueAtUtc, CreatedAt)` (widened by `18-performance-indexes.sql` so the overdue rule, which reads `DueDate` and `DueAtUtc`, is answered from the index); `IX_Task_Matter (MatterId, StatusCode)`; `IX_Task_Project (ProjectId) WHERE ProjectId IS NOT NULL`; `IX_Task_Creator (CreatedByUserId, CreatedAt)`; `IX_Task_Type (TaskTypeId, StatusCode)`; `IX_Task_Completed (CompletedAt) WHERE CompletedAt IS NOT NULL`; `IX_Task_Title (Title)` for prefix search; `IX_Task_Requestor (RequestorName)`.
 - Immutable Workflow: the Task's workflow is `WorkflowInstance.WorkflowVersionId` (1:1 by `TaskId`), protected the same way (section 7).
 - No attachment table, no source-email table, no global Task custom field definitions exist.
 
@@ -451,7 +451,7 @@ Lookup (`Name` UNIQUE, `SortOrder`, `IsActive`), seeded: Source, Destination, Su
 | Column | Type | Notes |
 |---|---|---|
 | TaskCommentId | bigint identity | PK |
-| TaskId | bigint | FK -> Task; index `IX_TaskComment_Task (TaskId, CreatedAt) WHERE IsDeleted = 0` |
+| TaskId | bigint | FK -> Task; indexes `IX_TaskComment_Task (TaskId, CreatedAt) WHERE IsDeleted = 0` (the thread) and `IX_TaskComment_TaskAll (TaskId)` (the 2,000-comment limit counts deleted comments too; script 18) |
 | AuthorUserId | int | FK -> AppUser |
 | BodyHtml | nvarchar(max) | basic formatting only (bold, italic, lists, links), **sanitized server-side** before storage; no attachments; internal only |
 | Purpose | varchar(20) | null or `'CANCEL'` (mandatory cancel comment) |
@@ -717,7 +717,7 @@ Permissions (`13-security-hardening.sql`, security review SEC-04): the database 
 | Dashboard counts by status/Pod/Type/Priority | `IX_Task_Queue`, `IX_Task_Pod`, `IX_Task_Type`, `IX_Task_Completed` |
 | Matter detail (projects, tasks, assets) | `IX_Task_Matter`, `IX_Project` unique name index, `IX_Asset_Matter` |
 | Lookup by `343` / `00343-00012` / `343-12` | `UQ_Client_Number`, `UQ_Matter_Ref` after padding |
-| Global search by name/title/reference | `IX_Client_Name`, `IX_Matter_Name`, `IX_Task_Title`, `IX_Asset_Name`, `IX_Asset_ExternalRef` (prefix seeks, bounded contains scans at this scale) |
+| Global search by name/title/reference | `IX_Client_Name`, `IX_Matter_Name`, `IX_Task_Title`, `IX_Asset_Name`, `IX_Asset_ExternalRef` (prefix seeks; contains is a scan, compared as `LOWER(column) COLLATE Latin1_General_100_BIN2` for Assets, Tasks and the audit text, about five times cheaper than the case-insensitive collation; see `docs/qa/performance-round-1.md`) |
 | Custom-field filters | `IX_CFI_*` |
 | Task Activity tab | `IX_Audit_Task` |
 | Permission check | `IX_UserRole_Role`, PK lookups, cached per user |

@@ -425,18 +425,24 @@ internal sealed class WorkflowInstanceService(
     }
 
     /// <summary>Submit-mode validation of each step's stored values; steps without an input form are valid.</summary>
-    private async Task<Result<Dictionary<int, FormSubmissionResult>>> InputChecksAsync(IEnumerable<StepInstanceRecord> steps, CancellationToken cancellationToken)
+    private async Task<Result<Dictionary<int, FormSubmissionResult>>> InputChecksAsync(
+        IEnumerable<StepInstanceRecord> steps,
+        CancellationToken cancellationToken,
+        IReadOnlyDictionary<long, StoredFormValues>? preloaded = null)
     {
         var results = new Dictionary<int, FormSubmissionResult>();
-        foreach (var step in steps)
+        var list = steps.ToList();
+        // One read for the stored values of all the steps (the caller may already hold them).
+        var storedByStep = preloaded ?? await StoredValuesAsync(list, cancellationToken);
+        foreach (var step in list)
         {
-            if (step.InputFormVersionId is not { } formVersionId || step.InputFormDefinitionId is not { } definitionId)
+            if (step.InputFormVersionId is not { } formVersionId || step.InputFormDefinitionId is null)
             {
                 results[step.Id] = new FormSubmissionResult(0, 0, [], NoValues, [], []);
                 continue;
             }
 
-            var stored = await valueStore.GetAsync(FormValueOwnerKind.StepInstance, step.Id, definitionId, cancellationToken);
+            storedByStep.TryGetValue(step.Id, out var stored);
             var result = await validator.ValidateAsync(formVersionId, stored?.Values ?? NoValues, new FormSubmissionOptions { Mode = FormSubmissionMode.Submit }, cancellationToken);
             if (result.IsFailure)
             {
@@ -447,6 +453,13 @@ internal sealed class WorkflowInstanceService(
         }
 
         return results;
+    }
+
+    /// <summary>The stored input values of the steps that have an input form, in one read.</summary>
+    private async Task<IReadOnlyDictionary<long, StoredFormValues>> StoredValuesAsync(IEnumerable<StepInstanceRecord> steps, CancellationToken cancellationToken)
+    {
+        var owners = steps.Where(s => s.InputFormDefinitionId is not null).Select(s => ((long)s.Id, s.InputFormDefinitionId!.Value)).ToList();
+        return await valueStore.GetManyAsync(FormValueOwnerKind.StepInstance, owners, cancellationToken);
     }
 
     // ---- mapping
@@ -478,7 +491,8 @@ internal sealed class WorkflowInstanceService(
             .Where(v => v.Id == record.WorkflowVersionId)
             .Select(v => new { v.WorkflowDefinitionId, v.VersionNo })
             .SingleAsync(cancellationToken);
-        var inputs = await InputChecksAsync(record.Steps.Where(s => !IsResolved(s)), cancellationToken);
+        var storedByStep = await StoredValuesAsync(record.Steps, cancellationToken);
+        var inputs = await InputChecksAsync(record.Steps.Where(s => !IsResolved(s)), cancellationToken, storedByStep);
         if (inputs.IsFailure)
         {
             return Result<WorkflowInstanceView>.Failure(inputs.Error!);
@@ -488,9 +502,7 @@ internal sealed class WorkflowInstanceService(
         var views = new List<StepInstanceView>();
         foreach (var s in record.Steps.OrderBy(s => s.SequenceNo))
         {
-            var stored = s.InputFormDefinitionId is { } definitionId
-                ? await valueStore.GetAsync(FormValueOwnerKind.StepInstance, s.Id, definitionId, cancellationToken)
-                : null;
+            storedByStep.TryGetValue(s.Id, out var stored);
             var resolved = IsResolved(s);
             views.Add(new StepInstanceView(
                 s.Id,

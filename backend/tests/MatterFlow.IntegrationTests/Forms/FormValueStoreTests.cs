@@ -84,6 +84,31 @@ public sealed class FormValueStoreTests(SqlServerFixture sql) : IAsyncLifetime
         _factory.WithDbAsync(db => db.Set<CustomFieldIndex>().AsNoTracking().Where(i => i.OwnerKind == kind && i.OwnerId == ownerId).OrderBy(i => i.Id).ToListAsync());
 
     [Fact]
+    public async Task GetMany_returns_the_values_of_several_owners_in_one_read_and_only_for_the_asked_definition()
+    {
+        var (definitionId, versionId) = await PublishAsync("TaskType", 8, RequestForm);
+        var (otherDefinitionId, otherVersionId) = await PublishAsync("TaskType", 9, RequestForm);
+        var store = new Func<IServiceProvider, IFormValueStore>(sp => sp.GetRequiredService<IFormValueStore>());
+        foreach (var (owner, volume) in new[] { (201L, 1), (202L, 2), (203L, 3) })
+            (await InScopeAsync(sp => store(sp).SaveAsync(FormValueOwnerKind.Task, owner, versionId, Values($$"""{"volume":{{volume}}}"""))))
+                .IsSuccess.ShouldBeTrue();
+        (await InScopeAsync(sp => store(sp).SaveAsync(FormValueOwnerKind.Task, 204, otherVersionId, Values("""{"volume":4}""")))).IsSuccess.ShouldBeTrue();
+
+        var many = await InScopeAsync(sp => store(sp).GetManyAsync(
+            FormValueOwnerKind.Task,
+            [(201, definitionId), (202, definitionId), (204, definitionId), (205, definitionId), (204, otherDefinitionId)]));
+
+        many.Keys.Order().ToList().ShouldBe([201L, 202L, 204L], "203 was not asked for, 205 has no values, and 204 only counts under the definition it was saved for");
+        many[201].Values["volume"].GetDecimal().ShouldBe(1m);
+        many[202].FormVersionId.ShouldBe(versionId);
+        many[204].FormDefinitionId.ShouldBe(otherDefinitionId);
+        many[204].Values["volume"].GetDecimal().ShouldBe(4m);
+
+        (await InScopeAsync(sp => store(sp).GetManyAsync(FormValueOwnerKind.Task, []))).ShouldBeEmpty();
+        (await InScopeAsync(sp => store(sp).GetManyAsync(FormValueOwnerKind.StepInstance, [(201, definitionId)]))).ShouldBeEmpty("a different owner kind");
+    }
+
+    [Fact]
     public async Task Values_round_trip_with_the_version_they_were_saved_under_and_stay_pinned_for_tasks()
     {
         var (definitionId, v1) = await PublishAsync("TaskType", 7, RequestForm);

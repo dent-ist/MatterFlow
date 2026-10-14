@@ -20,7 +20,11 @@ builder.Services.AddHsts(o => o.MaxAge = TimeSpan.FromDays(365));
 
 builder.Services.AddMatterFlowModules(builder.Configuration, builder.Environment);
 builder.Services
-    .AddControllers(o => o.Filters.Add<ErrorResultFilter>())
+    .AddControllers(o =>
+    {
+        o.Filters.Add<ErrorResultFilter>();
+        o.Filters.Add<ReadQueryTimeoutFilter>();
+    })
     .AddApplicationPart(typeof(Program).Assembly)
     .AddJsonOptions(o =>
     {
@@ -65,6 +69,7 @@ builder.Services.AddProblemDetails(o =>
     };
 });
 builder.Services.AddApiRateLimiting(builder.Configuration);
+builder.Services.Configure<MatterFlow.SharedKernel.Paging.ReadQueryOptions>(builder.Configuration.GetSection(MatterFlow.SharedKernel.Paging.ReadQueryOptions.SectionName));
 builder.Services.AddMatterFlowOpenApi();
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationResultHandler>();
 
