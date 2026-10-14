@@ -5,8 +5,9 @@ on:
     branches: [dev]
   pull_request:
 
+# A newer push to the same branch / PR supersedes the run in progress.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -18,35 +19,72 @@ env:
   CI: true
 
 jobs:
+  # Fast feedback: build with warnings as errors, drift and style checks, tests that need no database.
   backend:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: global.json
-      - name: Restore
-        run: dotnet restore
+      - uses: ./.github/actions/setup-dotnet
       - name: Build
         run: dotnet build --no-restore -c Release -warnaserror
       - name: OpenAPI drift check
         run: git diff --exit-code -- ../contracts/openapi/v1.json
       - name: Format check
         run: dotnet format --no-restore --verify-no-changes
-      - name: Unit, architecture, schema and smoke integration tests
-        run: dotnet test --no-build -c Release --collect:"XPlat Code Coverage" --results-directory ../TestResults
+      - name: Unit and architecture tests
+        run: |
+          for project in MatterFlow.UnitTests MatterFlow.ArchitectureTests; do
+            dotnet test "tests/$project" --no-build -c Release \
+              --logger "trx;LogFileName=$project.trx" --results-directory ../TestResults/quick
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: backend-test-results
+          name: backend-test-results-quick
+          path: TestResults
+          if-no-files-found: ignore
+
+  # Testcontainers suites: a real SQL Server 2022 in Docker (about 5 minutes). Runs in parallel with `backend`.
+  backend-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Pre-pull SQL Server image (retries on registry hiccups)
+        working-directory: .
+        run: |
+          # Pulling from mcr.microsoft.com is faster than restoring a ~1.5 GB image from the Actions cache, so no cache step.
+          for attempt in 1 2 3; do
+            docker pull mcr.microsoft.com/mssql/server:2022-latest && exit 0
+            echo "::warning::docker pull failed (attempt $attempt)"; sleep 10
+          done
+          exit 1
+      - name: Build
+        run: dotnet build --no-restore -c Release -warnaserror
+      - name: Integration and schema tests
+        run: |
+          for project in MatterFlow.IntegrationTests MatterFlow.SchemaTests; do
+            dotnet test "tests/$project" --no-build -c Release \
+              --logger "trx;LogFileName=$project.trx" --results-directory ../TestResults/integration
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results-integration
           path: TestResults
           if-no-files-found: ignore
 
   frontend:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: frontend
@@ -58,7 +96,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - name: Install
-        run: npm ci
+        run: npm ci || (sleep 15 && npm ci)
       - name: Lint
         run: npm run lint
       - name: Format check

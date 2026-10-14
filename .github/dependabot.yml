@@ -1,0 +1,31 @@
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      nuget-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Angular is pinned to v21 (see README); major upgrades are manual.
+      - dependency-name: "@angular/*"
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directories: [/, /.github/actions/setup-dotnet]
+    schedule:
+      interval: weekly
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]
