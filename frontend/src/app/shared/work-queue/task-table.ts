@@ -1,4 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  afterNextRender,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -27,8 +39,11 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './task-table.scss',
   template: `
-    <p class="wt-hint" data-scroll-hint>Scroll sideways to see every column.</p>
+    <p class="wt-hint" data-scroll-hint [class.wt-hint--show]="overflowing()">
+      Scroll sideways to see every column.
+    </p>
     <div
+      #wrap
       class="wt-wrap"
       role="region"
       tabindex="0"
@@ -60,7 +75,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
               </th>
             }
             @if (showAssign()) {
-              <th scope="col">Actions</th>
+              <th scope="col" class="wt-actions">Actions</th>
             }
           </tr>
         </thead>
@@ -72,7 +87,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                   <td><span class="wt-bone"></span></td>
                 }
                 @if (showAssign()) {
-                  <td><span class="wt-bone"></span></td>
+                  <td class="wt-actions"><span class="wt-bone"></span></td>
                 }
               </tr>
             }
@@ -86,7 +101,12 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                       <span class="wt-mono">{{ row.taskNumber }}</span>
                     }
                     @case ('title') {
-                      <a class="wt-title" [routerLink]="['/tasks', row.taskId]">{{ row.title }}</a>
+                      <a
+                        class="wt-title"
+                        [routerLink]="['/tasks', row.taskId]"
+                        [attr.title]="row.title"
+                        >{{ row.title }}</a
+                      >
                     }
                     @case ('matter') {
                       <mf-matter-ref
@@ -198,14 +218,12 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                       } @else if (row.isOverdue || due.kind === 'overdue') {
                         <span class="wt-due wt-due--overdue">
                           <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-                          {{ due.dateText }}
-                          <strong>{{ due.badge ?? 'Overdue' }}</strong>
+                          {{ due.dateText }} · <strong>{{ due.badge ?? 'Overdue' }}</strong>
                         </span>
                       } @else if (due.kind === 'soon') {
                         <span class="wt-due wt-due--soon">
                           <i class="pi pi-clock" aria-hidden="true"></i>
-                          {{ due.dateText }}
-                          <strong>Due soon</strong>
+                          {{ due.dateText }} · <strong>Due soon</strong>
                         </span>
                       } @else {
                         <span class="wt-due" [class.wt-due--closed]="due.kind === 'closed'">{{
@@ -237,7 +255,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                 </td>
               }
               @if (showAssign()) {
-                <td>
+                <td class="wt-actions">
                   @if (canAssign(row)) {
                     <button
                       type="button"
@@ -261,6 +279,10 @@ export class TaskTable {
   private readonly clock = inject(Clock);
   private readonly auth = inject(AuthStore);
   private readonly zone = inject(USER_TIME_ZONE);
+  private readonly wrap = viewChild<ElementRef<HTMLElement>>('wrap');
+
+  /** True while the table is wider than its box, so the "Scroll sideways" hint only appears when it is needed (UAT2-21). */
+  protected readonly overflowing = signal(false);
 
   readonly rows = input.required<readonly TaskQueueRow[]>();
   /** Keys of the columns to show, in table order. */
@@ -278,6 +300,22 @@ export class TaskTable {
   readonly assignToMe = output<TaskQueueRow>();
   /** A row changed from the table (an inline edit): the optimistic row, then the server's row or the original again. */
   readonly rowChange = output<TaskQueueRow>();
+
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      const el = this.wrap()?.nativeElement;
+      if (!el) return;
+      const measure = () => this.overflowing.set(el.scrollWidth > el.clientWidth + 1);
+      measure();
+      if (typeof ResizeObserver === 'undefined') return;
+      const observer = new ResizeObserver(measure);
+      observer.observe(el);
+      const table = el.querySelector('table');
+      if (table) observer.observe(table);
+      destroyRef.onDestroy(() => observer.disconnect());
+    });
+  }
 
   protected readonly skeleton = SKELETON_ROWS;
   protected readonly shownColumns = computed<ColumnDef[]>(() => {

@@ -20,9 +20,11 @@ import {
   QueueState,
   ViewContext,
   dateDaysAgo,
+  emptyFilters,
   emptyState,
-  hasFilters,
+  filterCount,
   parseQueueState,
+  sameSet,
   toQueryParams,
 } from './queue-filters';
 import { WorkListState } from './work-list';
@@ -61,7 +63,15 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
 
   protected readonly userId = computed(() => this.auth.profile()?.userId ?? null);
   protected readonly prefs = signal<TablePrefs>({ columns: [], density: 'comfortable' });
-  protected readonly filtered = computed(() => hasFilters(this.state().filters));
+  /** The status set the page starts on, shown quietly (no chip, no count) while it is unchanged. */
+  protected readonly defaultStatus = computed(() => this.defaultFilters().status);
+  /** True when the user has set something beyond the page's default view; drives the "No tasks match these filters" empty state. */
+  protected readonly filtered = computed(() => {
+    const f = this.state().filters;
+    const wanted = this.defaultStatus();
+    const quiet = wanted.length > 0 && sameSet(f.status, wanted);
+    return filterCount(f) - (quiet ? 1 : 0) > 0;
+  });
 
   /** Names of the things the active chips refer to, learned from the rows on screen. */
   protected readonly chipNames = computed<ChipNames>(() => {
@@ -117,6 +127,11 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
         if (this.shouldLoad(state)) void this.load(state);
       });
     });
+  }
+
+  /** The filters "Clear all filters" returns to: none, except on the Task Queue, which starts on All open. */
+  protected defaultFilters(): QueueFilters {
+    return emptyFilters();
   }
 
   /** False to skip loading for this URL state (the Task Queue redirects a bare URL to its default view first). */
@@ -181,7 +196,12 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   }
 
   protected clearFilters(): void {
-    this.navigate({ ...emptyState(), view: this.state().view, podId: this.state().podId });
+    this.navigate({
+      ...emptyState(),
+      filters: this.defaultFilters(),
+      view: this.state().view,
+      podId: this.state().podId,
+    });
   }
 
   protected sortBy(field: string): void {

@@ -51,13 +51,13 @@ describe('WorkList', () => {
     expect(el().textContent).toContain('Showing 1-50 of 312');
     expect(el().querySelector('[role="status"]')!.textContent).toContain('Showing 1-50 of 312');
 
-    const sizes = Array.from(el().querySelectorAll('.wl-size option')).map((o) =>
+    const sizes = Array.from(el().querySelectorAll('.mf-pager__size option')).map((o) =>
       o.textContent?.trim(),
     );
     expect(sizes).toEqual(['25', '50', '100']);
     const emitted: number[] = [];
     fixture.componentInstance.pageSizeChange.subscribe((n) => emitted.push(n));
-    const select = el().querySelector<HTMLSelectElement>('.wl-size select')!;
+    const select = el().querySelector<HTMLSelectElement>('.mf-pager__size select')!;
     select.value = '100';
     select.dispatchEvent(new Event('change'));
     expect(emitted).toEqual([100]);

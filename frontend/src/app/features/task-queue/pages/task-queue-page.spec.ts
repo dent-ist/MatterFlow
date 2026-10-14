@@ -151,7 +151,8 @@ describe('TaskQueuePage', () => {
     expect(el.querySelector('tbody a')!.getAttribute('href')).toBe('/tasks/1042');
     expect(el.textContent).toContain('Showing 1-2 of 2');
     const chips = Array.from(el.querySelectorAll('.fb-chip')).map((c) => c.textContent?.trim());
-    expect(chips).toEqual(['Status: Open', 'Priority: Critical']);
+    // The default "Status: Open" is not repeated as a chip (UXR-10).
+    expect(chips).toEqual(['Priority: Critical']);
   });
 
   it('removing a chip and Clear all filters update the URL and reload; clearing does not bounce back to All open', async () => {
@@ -163,10 +164,11 @@ describe('TaskQueuePage', () => {
 
     el.querySelector<HTMLButtonElement>('.fb-clear')!.click();
     await settle();
-    expect(query()).toEqual({});
+    // Clear all returns to the quiet default (All open), without redirecting through the bare-URL default.
+    expect(query()).toEqual({ status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'] });
     expect(getTaskQueue).toHaveBeenCalledTimes(3);
     expect(lastArgs()[ARG.overdue]).toBeUndefined();
-    expect(router().url).toBe('/tasks');
+    expect(lastArgs()[ARG.status]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
   });
 
   it('sorts by a column header, flips the direction, and resets to the default order', async () => {
@@ -263,7 +265,7 @@ describe('TaskQueuePage', () => {
     expect(query()['page']).toBe('2');
     expect(lastArgs()[ARG.page]).toBe(2);
 
-    const size = el.querySelector<HTMLSelectElement>('.wl-size select')!;
+    const size = el.querySelector<HTMLSelectElement>('.mf-pager__size select')!;
     size.value = '25';
     size.dispatchEvent(new Event('change'));
     await settle();
@@ -298,7 +300,7 @@ describe('TaskQueuePage', () => {
     expect(el.querySelectorAll('tbody tr').length).toBe(1);
   });
 
-  it('says "No tasks yet." with Create task when permitted, and "No tasks match these filters." when filtered', async () => {
+  it('says "No open tasks." with Create task when permitted, and "No tasks match these filters." when filtered', async () => {
     let el = await open('/tasks?status=NEW', { rows: [] });
     // Filters are set, so the filtered message applies.
     expect(el.querySelector('[data-empty]')!.textContent).toContain(
@@ -308,7 +310,7 @@ describe('TaskQueuePage', () => {
     TestBed.resetTestingModule();
     el = await open('/tasks?sort=due', { rows: [] });
     const empty = el.querySelector('[data-empty]')!;
-    expect(empty.textContent).toContain('No tasks yet.');
+    expect(empty.textContent).toContain('No open tasks.');
     expect(empty.textContent).toContain('Create task');
   });
 

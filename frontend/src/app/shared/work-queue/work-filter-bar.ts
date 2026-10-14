@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   computed,
   inject,
   input,
@@ -22,13 +21,14 @@ import {
   filterCount,
 } from './queue-filters';
 import { DateInput } from 'form-engine';
+import { SearchBox } from '../ui/search-box';
+
+export { SEARCH_DEBOUNCE_MS } from '../ui/search-box';
 
 export interface PodOption {
   id: number;
   name: string;
 }
-
-export const SEARCH_DEBOUNCE_MS = 300;
 
 /**
  * Search, quick views, filter panel and removable chips shared by Task Queue, My Work and Pod Work (UX 5.2, S03). It never owns the
@@ -37,24 +37,20 @@ export const SEARCH_DEBOUNCE_MS = 300;
 @Component({
   selector: 'mf-work-filter-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DateInput],
+  imports: [DateInput, SearchBox],
   styleUrl: './work-filter-bar.scss',
   template: `
     <div class="fb">
       <div class="fb-row">
-        <div class="fb-field fb-search" role="search">
-          <label for="fb-q">Search title or ref</label>
-          <input
-            id="fb-q"
-            class="fb-input"
-            type="search"
-            autocomplete="off"
-            placeholder="TSK-1042 or dedup"
-            [value]="filters().q"
-            (input)="onSearch($any($event.target).value)"
-            (keydown.enter)="flushSearch($any($event.target).value)"
-          />
-        </div>
+        <mf-search-box
+          class="fb-search"
+          role="search"
+          inputId="fb-q"
+          label="Search title or ref"
+          placeholder="TSK-1042 or dedup"
+          [value]="filters().q"
+          (searchChange)="update({ q: $event })"
+        />
         <button
           type="button"
           class="mf-btn fb-button"
@@ -63,7 +59,10 @@ export const SEARCH_DEBOUNCE_MS = 300;
           (click)="open.set(!open())"
         >
           <i class="pi pi-filter" aria-hidden="true"></i>
-          Filters ({{ count() }})
+          Filters
+          @if (count() > 0) {
+            <span class="fb-count" data-filter-count>({{ count() }})</span>
+          }
         </button>
       </div>
 
@@ -250,7 +249,6 @@ export const SEARCH_DEBOUNCE_MS = 300;
 })
 export class WorkFilterBar {
   protected readonly lookups = inject(LookupStore);
-  private readonly destroyRef = inject(DestroyRef);
 
   readonly filters = input.required<QueueFilters>();
   readonly names = input.required<ChipNames>();
@@ -258,6 +256,11 @@ export class WorkFilterBar {
   readonly userId = input<number | null>(null);
   readonly viewContext = input<ViewContext>({ userId: null, primaryPodId: null, recentFrom: '' });
   readonly showViews = input(false);
+  /**
+   * The status set the page starts on ("All open" on the Task Queue). While the status filter equals it, it is not shown as a chip
+   * and not counted, and "Clear all filters" only appears once something else is set (UXR-10).
+   */
+  readonly defaultStatus = input<readonly string[]>([]);
   /** Parts of the panel to leave out: `status`, `pod`, `assignee`. */
   readonly hidden = input<readonly string[]>([]);
 
@@ -268,8 +271,24 @@ export class WorkFilterBar {
   protected readonly open = signal(false);
   protected readonly views = BUILT_IN_VIEWS;
   protected readonly statuses = ALL_STATUSES;
-  protected readonly count = computed(() => filterCount(this.filters()));
-  protected readonly chips = computed(() => buildChips(this.filters(), this.names()));
+  /** True while the status filter is the page's default, which is then shown quietly or not at all. */
+  private readonly quietStatus = computed(() => {
+    const wanted = this.defaultStatus();
+    const current = this.filters().status;
+    return (
+      wanted.length > 0 &&
+      wanted.length === current.length &&
+      wanted.every((code) => current.includes(code))
+    );
+  });
+  protected readonly count = computed(
+    () => filterCount(this.filters()) - (this.quietStatus() ? 1 : 0),
+  );
+  protected readonly chips = computed(() =>
+    buildChips(this.filters(), this.names()).filter(
+      (chip) => !(this.quietStatus() && chip.key.startsWith('status:')),
+    ),
+  );
   protected readonly activeView = computed(() =>
     this.showViews() ? activeBuiltIn(this.filters(), this.viewContext()) : null,
   );
@@ -283,29 +302,8 @@ export class WorkFilterBar {
     return f.assignee.length > 0 || f.unassigned ? 'other' : 'any';
   });
 
-  private timer: ReturnType<typeof setTimeout> | null = null;
-
   constructor() {
     void this.lookups.ensureLoaded();
-    this.destroyRef.onDestroy(() => this.cancelSearch());
-  }
-
-  protected onSearch(text: string): void {
-    this.cancelSearch();
-    this.timer = setTimeout(() => {
-      this.timer = null;
-      this.update({ q: text.trim() });
-    }, SEARCH_DEBOUNCE_MS);
-  }
-
-  protected flushSearch(text: string): void {
-    this.cancelSearch();
-    this.update({ q: text.trim() });
-  }
-
-  private cancelSearch(): void {
-    if (this.timer !== null) clearTimeout(this.timer);
-    this.timer = null;
   }
 
   protected update(patch: Partial<QueueFilters>): void {

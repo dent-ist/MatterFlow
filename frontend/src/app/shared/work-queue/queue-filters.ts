@@ -406,7 +406,7 @@ function range(from: string | null, to: string | null): string {
   return from && to ? `${a} to ${b}` : from ? `from ${a}` : `until ${b}`;
 }
 
-function sameSet(a: readonly string[], b: readonly string[]): boolean {
+export function sameSet(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && b.every((x) => a.includes(x));
 }
 

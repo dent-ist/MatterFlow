@@ -77,7 +77,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
       @if (data(); as d) {
         <ul class="wp-summary" aria-label="Pod summary" data-summary>
           <li>
-            Unassigned to a person <strong>{{ d.summary.unassignedToPerson }}</strong>
+            Unassigned <strong>{{ d.summary.unassignedToPerson }}</strong>
           </li>
           <li>
             Assigned <strong>{{ d.summary.assigned }}</strong>
@@ -209,10 +209,10 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
   protected readonly tabs = computed<WorkTab[]>(() => {
     const counts = this.data()?.counts;
     return [
-      { key: 'queue', label: 'Pod queue (unassigned to person)', count: counts?.queue ?? null },
+      { key: 'queue', label: 'Unassigned', count: counts?.queue ?? null },
       { key: 'members', label: 'By member', count: counts?.members ?? null },
-      { key: 'attention', label: 'Overdue & On Hold', count: counts?.attention ?? null },
-      { key: 'all', label: 'All Pod tasks', count: counts?.all ?? null },
+      { key: 'attention', label: 'Overdue and on hold', count: counts?.attention ?? null },
+      { key: 'all', label: 'All pod tasks', count: counts?.all ?? null },
     ];
   });
 
@@ -262,6 +262,12 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
   protected override loaded(data: PodWorkData): void {
     this.podOptions.set(data.pods.map((p) => ({ id: p.podId, name: p.name })));
     if (data.pod) saveLastPod(this.userId(), data.pod.podId);
+    else if (this.state().podId === null) {
+      // No Pod chosen or remembered: open the user's primary pod, or their only pod (UXR-30).
+      const mine = data.pods.filter((p) => p.isMember);
+      const pick = mine.find((p) => p.isPrimary) ?? (mine.length === 1 ? mine[0] : null);
+      if (pick) this.navigate({ ...this.state(), podId: pick.podId }, true);
+    }
   }
 
   protected override podName(id: number): string | null {

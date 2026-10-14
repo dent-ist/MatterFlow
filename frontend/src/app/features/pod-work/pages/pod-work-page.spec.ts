@@ -124,13 +124,13 @@ describe('PodWorkPage', () => {
     expect(lastArgs()[ARG.podId]).toBeUndefined();
     expect(lastArgs()[ARG.view]).toBe('queue');
     expect(el.querySelector('mf-work-tabs')).not.toBeNull();
-    expect(tab(el, 'Pod queue').getAttribute('aria-selected')).toBe('true');
+    expect(tab(el, 'Unassigned').getAttribute('aria-selected')).toBe('true');
   });
 
   it('shows the Pod summary and a count on every tab', async () => {
     const el = await open('/pods/work?x=1');
     const summary = el.querySelector('[data-summary]')!.textContent!.replace(/\s+/g, ' ');
-    expect(summary).toContain('Unassigned to a person 6');
+    expect(summary).toContain('Unassigned 6');
     expect(summary).toContain('Assigned 31');
     expect(summary).toContain('Overdue 3');
     expect(summary).toContain('On Hold 4');
@@ -139,10 +139,10 @@ describe('PodWorkPage', () => {
       t.textContent?.replace(/\s+/g, ' ').trim(),
     );
     expect(tabs).toEqual([
-      'Pod queue (unassigned to person) (6)',
+      'Unassigned (6)',
       'By member (31)',
-      'Overdue & On Hold (7)',
-      'All Pod tasks (37)',
+      'Overdue and on hold (7)',
+      'All pod tasks (37)',
     ]);
   });
 
@@ -181,7 +181,7 @@ describe('PodWorkPage', () => {
 
   it('switches tabs through the URL and drops the member selection', async () => {
     const el = await open('/pods/work?podId=5&assignee=9');
-    tab(el, 'Overdue & On Hold').click();
+    tab(el, 'Overdue and on hold').click();
     await settle();
 
     expect(query()['view']).toBe('attention');

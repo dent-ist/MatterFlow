@@ -76,22 +76,14 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
         (rowChange)="rowChange.emit($event)"
       />
       @if (rows().length > 0) {
-        <div class="wl-foot">
-          <label class="wl-size">
-            Rows per page
-            <select [value]="pageSize()" (change)="pageSizeChange.emit(+$any($event.target).value)">
-              @for (size of sizes; track size) {
-                <option [value]="size" [selected]="size === pageSize()">{{ size }}</option>
-              }
-            </select>
-          </label>
-          <mf-pager
-            [page]="page()"
-            [pageSize]="pageSize()"
-            [total]="total()"
-            (pageChange)="pageChange.emit($event)"
-          />
-        </div>
+        <mf-pager
+          [page]="page()"
+          [pageSize]="pageSize()"
+          [pageSizes]="sizes"
+          [total]="total()"
+          (pageChange)="pageChange.emit($event)"
+          (pageSizeChange)="pageSizeChange.emit($event)"
+        />
       }
     } @else if (state() === 'ready') {
       <div class="wl-empty" data-empty>

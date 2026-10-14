@@ -86,6 +86,35 @@ describe('TaskTable', () => {
     expect(el().querySelector('tbody tr')!.classList).toContain('wt-row--overdue');
   });
 
+  it('keeps the due date on one line: date, a dot and the overdue text (UXR-09)', async () => {
+    await create(
+      [aRow({ isAsap: false, isOverdue: true, dueDate: '2026-10-10', status: 'IN_PROGRESS' })],
+      ['due'],
+    );
+    expect(cell('due').textContent!.replace(/\s+/g, ' ').trim()).toBe('Oct 10, 2026 · Overdue 4d');
+    expect(cell('due').querySelector('.wt-due')).not.toBeNull();
+  });
+
+  it('gives the title its full text as a tooltip because the cell shows at most two lines', async () => {
+    await create([aRow({ title: 'A very long title '.repeat(10) })], ['ref', 'title']);
+    const link = cell('title').querySelector('a.wt-title')!;
+    expect(link.getAttribute('title')).toBe('A very long title '.repeat(10));
+  });
+
+  it('marks the Actions column so it can stay visible while the table scrolls', async () => {
+    await create([aRow({ assignedUser: undefined, status: 'NEW' })], ['ref', 'title'], {
+      showAssign: true,
+    });
+    expect(el().querySelector('th.wt-actions')).not.toBeNull();
+    expect(el().querySelector('td.wt-actions .wt-action')).not.toBeNull();
+  });
+
+  it('keeps the "Scroll sideways" hint in the page but visible only when the table overflows', async () => {
+    await create([aRow()], ['ref', 'title']);
+    const hint = el().querySelector('[data-scroll-hint]')!;
+    expect(hint.classList).not.toContain('wt-hint--show');
+  });
+
   it('shows "Due soon" with a clock icon and a timed due date in the viewer zone', async () => {
     await create(
       [

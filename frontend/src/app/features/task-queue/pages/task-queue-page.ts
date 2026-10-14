@@ -10,6 +10,7 @@ import {
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import {
   BuiltInViewKey,
+  QueueFilters,
   QueueState,
   builtInFilters,
   emptyState,
@@ -49,6 +50,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
       [userId]="userId()"
       [viewContext]="viewContext()"
       [showViews]="true"
+      [defaultStatus]="defaultStatus()"
       (filtersChange)="setFilters($event)"
       (viewSelect)="applyView($event)"
       (clearAll)="clearFilters()"
@@ -66,7 +68,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
       [dir]="state().dir"
       [filtered]="filtered()"
       caption="Task Queue"
-      emptyText="No tasks yet."
+      emptyText="No open tasks."
       (sortChange)="sortBy($event)"
       (resetSort)="resetSort()"
       (pageChange)="goToPage($event)"
@@ -109,6 +111,10 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
       );
     }
     void this.loadPods();
+  }
+
+  protected override defaultFilters(): QueueFilters {
+    return builtInFilters('allOpen', this.viewContext());
   }
 
   protected override shouldLoad(state: QueueState): boolean {

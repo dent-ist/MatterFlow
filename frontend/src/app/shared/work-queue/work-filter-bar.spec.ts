@@ -101,6 +101,38 @@ describe('WorkFilterBar', () => {
     expect(el().querySelector('.fb-button')!.textContent).toContain('Filters (2)');
   });
 
+  it('shows the default status quietly: no chip, no count, no Clear link (UXR-10)', async () => {
+    await create(
+      { ...emptyFilters(), status: [...OPEN_STATUSES] },
+      { defaultStatus: [...OPEN_STATUSES] },
+    );
+    expect(el().querySelector('.fb-chips')).toBeNull();
+    expect(el().querySelector('.fb-clear')).toBeNull();
+    expect(el().querySelector('.fb-button')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      'Filters',
+    );
+  });
+
+  it('counts and shows only what differs from the default status', async () => {
+    await create(
+      { ...emptyFilters(), status: [...OPEN_STATUSES], priority: [1] },
+      { defaultStatus: [...OPEN_STATUSES] },
+    );
+    const chips = Array.from(el().querySelectorAll('.fb-chip')).map((c) => c.textContent?.trim());
+    expect(chips).toEqual(['Priority: P1']);
+    expect(el().querySelector('.fb-button')!.textContent).toContain('Filters (1)');
+    expect(el().querySelector('.fb-clear')).not.toBeNull();
+  });
+
+  it('shows a changed status as a chip even when a default status is set', async () => {
+    await create(
+      { ...emptyFilters(), status: ['COMPLETED'] },
+      { defaultStatus: [...OPEN_STATUSES] },
+    );
+    expect(el().querySelector('.fb-chip')!.textContent).toContain('Status: COMPLETED');
+    expect(el().querySelector('.fb-button')!.textContent).toContain('Filters (1)');
+  });
+
   it('opens and closes the filter panel and tells assistive technology', async () => {
     await create();
     const button = el().querySelector<HTMLButtonElement>('.fb-button')!;

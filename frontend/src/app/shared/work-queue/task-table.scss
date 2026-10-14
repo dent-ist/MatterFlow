@@ -18,6 +18,7 @@
   box-shadow: var(--mf-shadow-1);
 }
 
+/* Shown only while the table really is wider than the screen (measured in the component). */
 .wt-hint {
   display: none;
   margin: 0 0 var(--mf-s1);
@@ -25,11 +26,11 @@
   font-size: var(--mf-fs-sm);
 }
 
-@media (max-width: 1100px) {
-  .wt-hint {
-    display: block;
-  }
+.wt-hint--show {
+  display: block;
+}
 
+@media (max-width: 1100px) {
   /* The first column stays in view while the rest scrolls. */
   .wt th:first-child,
   .wt td:first-child {
@@ -124,9 +125,49 @@ th[aria-sort='descending'] .wt-sort {
   white-space: nowrap;
 }
 
+/* Title takes the spare width, never less than 220 px, and wraps to at most two lines (UXR-09). */
+.wt td[data-col='title'],
+.wt th[data-col='title'] {
+  min-width: 220px;
+  max-width: 420px;
+}
+
 .wt-title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
   color: var(--mf-link);
   font-weight: 600;
+}
+
+/* Short, fixed-content columns never wrap: the Status badge, Priority, Due, Ref and dates stay whole. */
+.wt td[data-col='ref'],
+.wt td[data-col='priority'],
+.wt td[data-col='status'],
+.wt td[data-col='due'],
+.wt td[data-col='age'],
+.wt td[data-col='created'],
+.wt td[data-col='updated'],
+.wt td[data-col='matter'] {
+  white-space: nowrap;
+}
+
+/* Pod Work's "Assign to me" stays reachable while the rest scrolls sideways. */
+.wt th.wt-actions,
+.wt td.wt-actions {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--mf-surface);
+  box-shadow: -1px 0 0 var(--mf-border);
+  white-space: nowrap;
+}
+
+.wt th.wt-actions {
+  background: var(--mf-surface-alt);
 }
 
 .wt-muted {
@@ -153,11 +194,13 @@ th[aria-sort='descending'] .wt-sort {
   font-size: var(--mf-fs-sm);
 }
 
+/* One line: "Oct 12, 2026 · Overdue 2d" (UXR-09). */
 .wt-due {
   display: inline-flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--mf-s1);
+  white-space: nowrap;
 }
 
 .wt-due--overdue {
