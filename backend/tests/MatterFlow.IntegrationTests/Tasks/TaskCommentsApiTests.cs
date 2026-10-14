@@ -211,6 +211,28 @@ public sealed class TaskCommentsApiTests(SqlServerFixture sql) : IAsyncLifetime
         (await _h.AuditAsync("COMMENT_ADDED")).ShouldBeEmpty();
     }
 
+    [Theory]
+    [InlineData("<pre>", 2500)]
+    [InlineData("<listing>", 2000)]
+    [InlineData("<div>", 4000)]
+    [InlineData("<span>", 3000)]
+    public async Task Sec2_01_deeply_nested_markup_is_rejected_fast_and_the_host_survives(string tag, int count)
+    {
+        var taskId = TaskId(await _h.CreateTaskAsync(_w));
+        var body = string.Concat(Enumerable.Repeat(tag, count));
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var problem = await ProblemAsync(await _h.Admin.PostAsJsonAsync(Url(taskId), new { bodyHtml = body }), HttpStatusCode.BadRequest, "VALIDATION_FAILED");
+        watch.ElapsedMilliseconds.ShouldBeLessThan(1500);
+        problem.GetProperty("errors").GetRawText().ShouldContain("TOO_COMPLEX");
+
+        var comment = await PostAsync(taskId, "<p>still alive</p>");
+        var edit = await ProblemAsync(
+            await _h.Admin.PutAsJsonAsync(Url(taskId, comment.GetProperty("commentId").GetInt64()), new { bodyHtml = body, rowVersion = comment.GetProperty("rowVersion").GetString() }),
+            HttpStatusCode.BadRequest,
+            "VALIDATION_FAILED");
+        edit.GetProperty("errors").GetRawText().ShouldContain("TOO_COMPLEX");
+    }
+
     [Fact]
     public async Task Edit_uses_optimistic_concurrency()
     {

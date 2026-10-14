@@ -22,6 +22,9 @@ public sealed class TaskCommentService(
     IClock clock,
     IUserDirectory users)
 {
+    /// <summary>Stable validation code for comment markup beyond the structural caps (SEC2-01).</summary>
+    public const string TooComplexCode = "TOO_COMPLEX";
+
     private const int MaxListed = 1000;
 
     public async Task<Result<TaskCommentListResponse>> ListAsync(long taskId, bool newestFirst, CancellationToken ct)
@@ -219,6 +222,9 @@ public sealed class TaskCommentService(
     {
         if (html is { Length: > CommentHtml.MaxLength })
             return Error.Validation("bodyHtml", "TOO_LONG", $"A comment can have at most {CommentHtml.MaxLength} characters.");
+
+        if (CommentHtmlGuard.IsTooComplex(html))
+            return Error.Validation("bodyHtml", TooComplexCode, "The comment has too many tags or is nested too deeply. Simplify the formatting and try again.");
 
         var clean = CommentHtml.Sanitize(html);
         if (clean.Length == 0)
