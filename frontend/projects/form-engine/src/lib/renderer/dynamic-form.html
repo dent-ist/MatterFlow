@@ -237,7 +237,7 @@
                 }
               }
             }
-            @if (row.field.helpText) {
+            @if (row.field.helpText && !readOnly()) {
               <p class="mf-field__help" [id]="helpId(row)">{{ row.field.helpText }}</p>
             }
             @if (row.error) {

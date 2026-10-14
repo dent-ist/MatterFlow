@@ -1,6 +1,6 @@
 <header class="head">
   <div>
-    <h1>Priorities</h1>
+    <h1>Priorities &amp; Status Labels</h1>
     <p class="muted">Order from most to least urgent. Users see labels, not numbers.</p>
   </div>
   <nav class="tabs" aria-label="Priorities and status labels">
@@ -201,6 +201,11 @@
                   class="link danger"
                   *mfHasPermission="'Priority.Manage'"
                   [disabled]="busy() || p.isDefault"
+                  [attr.title]="
+                    p.isDefault
+                      ? 'The default priority can\'t be deleted. Choose another default first.'
+                      : null
+                  "
                   [attr.aria-label]="'Delete ' + p.label"
                   (click)="askDelete(p)"
                   data-delete

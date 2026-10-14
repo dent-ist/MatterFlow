@@ -26,7 +26,9 @@
   <div class="mf-user" data-testid="user-menu">
     <span class="mf-user-name">{{ auth.displayName() }}</span>
     @if (auth.profile()?.windowsAccount; as account) {
-      <span class="mf-user-account">{{ account }}</span>
+      @if (account !== auth.displayName()) {
+        <span class="mf-user-account">{{ account }}</span>
+      }
     }
   </div>
 </header>

@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -41,7 +41,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-task-type-form-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormDesigner, Button, Dialog, FormsModule, DatePipe],
+  imports: [FormDesigner, Button, Dialog, FormsModule, LocalTimePipe],
   templateUrl: './task-type-form-page.html',
   styleUrl: './task-type-form-page.scss',
 })

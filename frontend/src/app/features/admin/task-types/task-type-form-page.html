@@ -122,7 +122,7 @@
                         : 'Retired'
                   }}
                 </td>
-                <td>{{ v.updatedAtUtc | date: 'medium' }}</td>
+                <td>{{ v.updatedAtUtc | localTime }}</td>
                 <td>{{ v.note ?? '' }}</td>
               </tr>
             }

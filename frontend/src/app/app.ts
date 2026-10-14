@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Toast } from 'primeng/toast';
 import { LeaveConfirmHost } from './shared/guards/leave-confirm-host';
+import { LeaveConfirmService } from './shared/guards/unsaved-changes.guard';
 import { DevAuthBanner } from './shared/layout/dev-auth-banner';
 
 /** Root: dev-auth banner (stub provider only), routed content, global toast host. */
@@ -13,7 +14,11 @@ import { DevAuthBanner } from './shared/layout/dev-auth-banner';
     <mf-dev-auth-banner />
     <router-outlet />
     <p-toast position="bottom-right" />
-    <mf-leave-confirm-host />
+    @defer (when leaveConfirm.open()) {
+      <mf-leave-confirm-host />
+    }
   `,
 })
-export class App {}
+export class App {
+  protected readonly leaveConfirm = inject(LeaveConfirmService);
+}

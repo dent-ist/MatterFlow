@@ -18,7 +18,7 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
- * Admin: Task link labels, i.e. the roles an Asset can have on a Task (Source, Destination, Subject, Result, ...). Add, rename,
+ * Admin: Asset link roles, i.e. the roles an Asset can have on a Task (Source, Destination, Subject, Result, ...). Add, rename,
  * deactivate, reorder (drag or arrows) and delete when unused. Needs `AssetType.Manage`.
  */
 @Component({
@@ -73,7 +73,9 @@ export class AssetLinkRolesPage implements OnInit {
     } catch (e) {
       const error = e instanceof ApiError ? e : null;
       if (error?.code === 'CONCURRENCY_CONFLICT') {
-        this.failure.set('Someone else changed the link labels. The list was reloaded; try again.');
+        this.failure.set(
+          'Someone else changed the asset link roles. The list was reloaded; try again.',
+        );
         await this.load();
       } else if (fail && error) {
         fail(error);
@@ -104,7 +106,7 @@ export class AssetLinkRolesPage implements OnInit {
     if (created) {
       this.rows.set([...this.rows(), created]);
       this.newName.set('');
-      this.announcement.set(`Link label ${created.name} added.`);
+      this.announcement.set(`Asset link role ${created.name} added.`);
       this.notify.success('Saved.');
     }
   }
