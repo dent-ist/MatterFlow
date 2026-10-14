@@ -528,7 +528,7 @@ Editing values of a resolved step requires reopening it first (this is the only 
 
 | From \ To | NEW | IN_PROGRESS | ON_HOLD | COMPLETED | CANCELLED |
 |---|---|---|---|---|---|
-| **NEW** | - | manual `Task.ChangeStatus`; **auto** on assigning a user; **auto** on first step action | manual `Task.ChangeStatus` | X (must be IN_PROGRESS first) | `Task.Cancel` + comment |
+| **NEW** | - | manual `Task.ChangeStatus`; **auto** on assigning a user | manual `Task.ChangeStatus` | X (must be IN_PROGRESS first) | `Task.Cancel` + comment |
 | **IN_PROGRESS** | X | - | manual `Task.ChangeStatus` | `Task.Complete` + completion rule | `Task.Cancel` + comment |
 | **ON_HOLD** | X | manual `Task.ChangeStatus` ("resume") | - | X (resume first) | `Task.Cancel` + comment |
 | **COMPLETED** | X | `Task.Reopen` (matter active) or **auto** on step reopen | X | - | X (reopen first) |
@@ -538,7 +538,7 @@ Rules:
 1. **Completion rule:** every `StepInstance` is resolved (`COMPLETED`, or `SKIPPED` where skippable), checked inside the transaction under the Task lock. Failure → 409 `COMPLETION_BLOCKED` listing unresolved step ids. No approval gate.
 2. **Cancel:** allowed from NEW, IN_PROGRESS, ON_HOLD regardless of step state; requires a non-empty `comment`, stored as a `TaskComment` with `Purpose='CANCEL'` and referenced by the audit event.
 3. **Reopen (Completed/Cancelled → In Progress):** requires the Matter to be active (409 `MATTER_INACTIVE`); no reason; clears `CompletedAt`. Reopening a step on a COMPLETED Task performs the same transition in the same transaction and writes both audit events (`STEP_REOPENED`, `TASK_STATUS_CHANGED` with cause `STEP_REOPEN`); it needs `Workflow.StepReopen`, not `Task.Reopen`. Reopening a step on a CANCELLED task is not allowed (reopen the task first). Reopening a step on a COMPLETED task also requires an active Matter.
-4. **Auto start:** assigning a user (not Pod-only) to a NEW Task moves it to IN_PROGRESS. Unassigning never reverts. The first step action (start/save/complete/skip) on a NEW Task moves it to IN_PROGRESS (assumption A-5).
+4. **Auto start:** assigning a user (not Pod-only) to a NEW Task moves it to IN_PROGRESS. Unassigning never reverts. Step actions on a NEW Task are allowed and do NOT change its status (product owner decision; assignment is the only auto-start trigger; assumption A-5).
 5. **Editability:** the table below. "Edit" means any field/value change on the Task.
 
 | Operation | NEW | IN_PROGRESS | ON_HOLD | COMPLETED | CANCELLED |
@@ -799,7 +799,7 @@ Rules of engagement: contract PRs first; at most one open DB script PR per strea
 | A-2 | Users' browsers (Edge/Chrome) are domain-joined and the site is in the Intranet zone, so Negotiate works silently. |
 | A-3 | The firm timezone is one IANA/Windows zone configured in `Firm:TimeZoneId`; changing it later does not recompute `OverdueAfterUtc` automatically (a maintenance script would). |
 | A-4 | Microsoft AD profile lookup (display name, email) is permitted for the app-pool identity; otherwise users show as `DOMAIN\sam` until an admin edits names. |
-| A-5 | The first step action on a NEW Task moves it to IN_PROGRESS (the matrix is otherwise strict). |
+| A-5 | Step actions on a NEW Task are allowed and do not change its status; only assigning a user auto-starts a Task (product owner decision). |
 | A-6 | Step actions are blocked while a Task is ON_HOLD; Completed -> Cancelled and ON_HOLD -> COMPLETED require going through IN_PROGRESS. |
 | A-7 | Comments (add/edit/delete own) are allowed in every Task status and even on inactive Matters. |
 | A-8 | `RequestedAt` (email sent time) is stored on Task as optional metadata; no other email data is retained. |
