@@ -1,0 +1,297 @@
+<div class="pods__head">
+  <div>
+    <h1 class="pods__title">Pods</h1>
+    <p class="pods__muted">
+      Pod leads are a role. Assign the Pod Lead role under Users &amp; Roles.
+    </p>
+  </div>
+  <p-button
+    *mfHasPermission="'Pod.Manage'"
+    label="New Pod"
+    icon="pi pi-plus"
+    (onClick)="newPod()"
+  />
+</div>
+
+<p class="pods__live" role="status" aria-live="polite" data-live>{{ announce() }}</p>
+
+@if (editorOpen()) {
+  <section class="pods__editor" aria-labelledby="pods-editor-title" data-editor>
+    <div class="pods__editor-head">
+      <h2 id="pods-editor-title">{{ isNew() ? 'New Pod' : 'Edit Pod' }}</h2>
+      <p-button label="Back to Pods" severity="secondary" [text]="true" (onClick)="close()" />
+    </div>
+
+    @if (failure()) {
+      <div class="pods__banner" role="alert" data-failure>
+        {{ failure() }}
+        @if (!isNew()) {
+          <p-button label="Reload" size="small" severity="secondary" (onClick)="reload()" />
+        }
+      </div>
+    }
+
+    <div class="pods__form">
+      <label class="pods__field">
+        <span>Name <span aria-hidden="true">*</span></span>
+        <input
+          type="text"
+          data-name
+          maxlength="100"
+          [value]="name()"
+          [attr.aria-invalid]="nameError() ? 'true' : null"
+          [attr.aria-describedby]="nameError() ? 'pods-name-error' : null"
+          [disabled]="!auth.has('Pod.Manage')"
+          (input)="onName($event)"
+        />
+        @if (nameError()) {
+          <span class="pods__error" id="pods-name-error" data-name-error>{{ nameError() }}</span>
+        }
+      </label>
+      <label class="pods__field">
+        <span>Description</span>
+        <textarea
+          data-description
+          rows="2"
+          maxlength="500"
+          [value]="description()"
+          [disabled]="!auth.has('Pod.Manage')"
+          (input)="onDescription($event)"
+        ></textarea>
+      </label>
+      @if (!isNew()) {
+        <label class="pods__check">
+          <input
+            type="checkbox"
+            data-active
+            [checked]="isActive()"
+            [disabled]="!auth.has('Pod.Manage')"
+            (change)="onActive($event)"
+          />
+          <span>Active</span>
+        </label>
+      }
+      @if (deactivating()) {
+        <p class="pods__notice" data-deactivate-note>
+          A deactivated pod keeps its members and history. It is no longer offered for new
+          assignments.
+        </p>
+      }
+      @if (confirmDeactivate()) {
+        <div class="pods__banner" role="alert" data-confirm-deactivate>
+          Deactivate pod '{{ name().trim() }}'? Tasks that already reference it keep it.
+        </div>
+      }
+      <div class="pods__actions" *mfHasPermission="'Pod.Manage'">
+        <p-button
+          [label]="confirmDeactivate() ? 'Deactivate pod' : 'Save'"
+          [severity]="confirmDeactivate() ? 'danger' : 'primary'"
+          [disabled]="busy()"
+          (onClick)="save()"
+        />
+        @if (confirmDeactivate()) {
+          <p-button label="Cancel" severity="secondary" (onClick)="confirmDeactivate.set(false)" />
+        }
+      </div>
+    </div>
+
+    @if (!isNew()) {
+      <h3 class="pods__subtitle">Members ({{ members().length }})</h3>
+      @if (members().length === 0) {
+        <p class="pods__muted" data-no-members>No members yet.</p>
+      } @else {
+        <table class="pods__table" data-members>
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Roles</th>
+              <th scope="col">Primary pod</th>
+              <th scope="col"><span class="pods__sr">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (member of members(); track member.userId) {
+              <tr [attr.data-member]="member.userId">
+                <td>
+                  {{ member.displayName }}
+                  @if (!member.isActive) {
+                    <span class="pods__chip pods__chip--off">Disabled</span>
+                  }
+                </td>
+                <td>
+                  @for (role of member.roles; track role) {
+                    <span class="pods__chip" data-role>{{ role }}</span>
+                  }
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    class="pods__star"
+                    data-primary
+                    [attr.aria-pressed]="member.isPrimary"
+                    [attr.aria-label]="
+                      (member.isPrimary ? 'Clear primary pod for ' : 'Make primary pod for ') +
+                      member.displayName
+                    "
+                    [disabled]="busy() || !auth.has('Pod.ManageMembers') || !detail()!.pod.isActive"
+                    (click)="togglePrimary(member)"
+                  >
+                    <i [class]="member.isPrimary ? 'pi pi-star-fill' : 'pi pi-star'"></i>
+                  </button>
+                </td>
+                <td>
+                  <p-button
+                    *mfHasPermission="'Pod.ManageMembers'"
+                    label="Remove"
+                    size="small"
+                    severity="secondary"
+                    [attr.data-remove]="member.userId"
+                    [ariaLabel]="'Remove ' + member.displayName"
+                    [disabled]="busy()"
+                    (onClick)="removeMember(member)"
+                  />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+
+      <div *mfHasPermission="'Pod.ManageMembers'" class="pods__add">
+        @if (detail()!.pod.isActive) {
+          <label class="pods__field">
+            <span>Add members</span>
+            <input
+              type="search"
+              data-candidate-search
+              placeholder="Search by name or e-mail"
+              [value]="candidateQuery()"
+              (input)="onCandidateQuery($event)"
+            />
+          </label>
+          @if (availableCandidates().length > 0) {
+            <ul class="pods__candidates" data-candidates>
+              @for (candidate of availableCandidates(); track candidate.userId) {
+                <li>
+                  <label>
+                    <input
+                      type="checkbox"
+                      [attr.data-candidate]="candidate.userId"
+                      [checked]="selected().includes(candidate.userId)"
+                      (change)="toggleSelected(candidate.userId, $event)"
+                    />
+                    {{ candidate.displayName }}
+                    @if (candidate.email) {
+                      <span class="pods__muted">({{ candidate.email }})</span>
+                    }
+                  </label>
+                </li>
+              }
+            </ul>
+            <p-button
+              label="Add selected"
+              icon="pi pi-user-plus"
+              [disabled]="busy() || selected().length === 0"
+              (onClick)="addSelected()"
+            />
+          }
+        } @else {
+          <p class="pods__muted" data-inactive-note>
+            This pod is inactive. Reactivate it to add members.
+          </p>
+        }
+      </div>
+    }
+  </section>
+} @else {
+  <div class="pods__filters">
+    <label class="pods__field">
+      <span>Search</span>
+      <input type="search" data-search [value]="search()" (input)="onSearch($event)" />
+    </label>
+    <label class="pods__field">
+      <span>Status</span>
+      <select data-status [value]="status()" (change)="onStatus($event)">
+        <option value="all">All</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </label>
+  </div>
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="pods__muted" data-loading>Loading pods...</p>
+    }
+    @case ('error') {
+      <div class="pods__banner" role="alert" data-error>
+        Pods could not be loaded.
+        <p-button label="Retry" size="small" severity="secondary" (onClick)="load()" />
+      </div>
+    }
+    @default {
+      @if (pods().length === 0) {
+        <p class="pods__muted" data-empty>
+          No pods match.
+          @if (auth.has('Pod.Manage')) {
+            Create one with New Pod.
+          }
+        </p>
+      } @else {
+        <table class="pods__table" data-pods>
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Members</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="pods__sr">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (pod of pods(); track pod.podId) {
+              <tr [attr.data-pod]="pod.podId">
+                <td>
+                  <strong>{{ pod.name }}</strong>
+                  @if (pod.description) {
+                    <div class="pods__muted">{{ pod.description }}</div>
+                  }
+                </td>
+                <td>{{ pod.memberCount }}</td>
+                <td>{{ pod.isActive ? 'Active' : 'Inactive' }}</td>
+                <td>
+                  <p-button
+                    label="Edit"
+                    size="small"
+                    severity="secondary"
+                    [attr.data-edit]="pod.podId"
+                    [ariaLabel]="'Edit ' + pod.name"
+                    (onClick)="edit(pod)"
+                  />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <div class="pods__pager">
+          <span>Showing {{ pods().length }} of {{ total() }}</span>
+          @if (pageCount() > 1) {
+            <p-button
+              label="Previous"
+              size="small"
+              severity="secondary"
+              [disabled]="page() <= 1"
+              (onClick)="goTo(page() - 1)"
+            />
+            <p-button
+              label="Next"
+              size="small"
+              severity="secondary"
+              [disabled]="page() >= pageCount()"
+              (onClick)="goTo(page() + 1)"
+            />
+          }
+        </div>
+      }
+    }
+  }
+}

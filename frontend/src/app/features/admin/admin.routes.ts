@@ -29,7 +29,12 @@ export const ADMIN_ROUTES: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'users' },
   page('users', 'Users & Roles', 'User.View', 'User.Manage', 'Role.Manage'),
   page('roles', 'Roles & Permissions', 'Role.Manage'),
-  page('pods', 'Pods', 'Pod.Manage', 'Pod.ManageMembers'),
+  {
+    path: 'pods',
+    canActivate: [permissionGuard('Pod.Manage', 'Pod.ManageMembers')],
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./pods/pods-page').then((m) => m.PodsPage),
+  },
   taskTypeForms('task-types'),
   taskTypeForms('task-types/:ownerId/form'),
   page('steps', 'Step Library', 'Workflow.Manage'),

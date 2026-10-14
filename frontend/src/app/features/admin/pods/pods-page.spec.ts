@@ -1,0 +1,319 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MessageService } from 'primeng/api';
+import { of, throwError } from 'rxjs';
+
+import {
+  PagedResultOfPodSummary,
+  PodDetail,
+  PodMemberDto,
+  PodsClient,
+  PodSummary,
+} from '../../../api/generated/api-client';
+import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
+import { AuthStore } from '../../../core/auth/auth.store';
+import { Permission } from '../../../core/auth/permissions';
+import { ApiError } from '../../../core/http/api-error';
+import { PodsPage } from './pods-page';
+
+const summary = (podId: number, name: string, extra: Partial<PodSummary> = {}): PodSummary => ({
+  podId,
+  name,
+  description: undefined,
+  isActive: true,
+  memberCount: 0,
+  rowVersion: `rv${podId}`,
+  ...extra,
+});
+
+const member = (userId: number, displayName: string, extra: Partial<PodMemberDto> = {}) => ({
+  userId,
+  displayName,
+  email: undefined,
+  isActive: true,
+  isPrimary: false,
+  roles: [],
+  ...extra,
+});
+
+const detailOf = (pod: PodSummary, members: PodMemberDto[] = []): PodDetail => ({
+  pod: { ...pod, memberCount: members.length },
+  members,
+});
+
+describe('PodsPage', () => {
+  let fixture: ComponentFixture<PodsPage>;
+  let api: {
+    [K in keyof PodsClient]: ReturnType<typeof vi.fn>;
+  };
+  const podA = summary(1, 'Pod A', { memberCount: 2, description: 'Processing' });
+  const podB = summary(2, 'Pod B', { isActive: false });
+
+  const el = (): HTMLElement => fixture.nativeElement;
+  const q = <T extends HTMLElement = HTMLElement>(sel: string): T => el().querySelector<T>(sel)!;
+
+  async function settle(ms = 0): Promise<void> {
+    for (let i = 0; i < 3; i++) {
+      await new Promise((r) => setTimeout(r, ms));
+      fixture.detectChanges();
+    }
+    await fixture.whenStable();
+  }
+
+  async function click(sel: string): Promise<void> {
+    const target = q(sel);
+    (target.tagName === 'BUTTON' ? target : target.querySelector('button')!).click();
+    await settle();
+  }
+
+  async function type(sel: string, value: string, wait = 0): Promise<void> {
+    const input = q<HTMLInputElement | HTMLTextAreaElement>(sel);
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+    await settle(wait);
+  }
+
+  const text = (sel: string): string => q(sel).textContent!.replace(/\s+/g, ' ').trim();
+
+  async function create(...permissions: Permission[]): Promise<void> {
+    TestBed.configureTestingModule({
+      providers: [
+        MessageService,
+        provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
+        { provide: PodsClient, useValue: api },
+      ],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
+    fixture = TestBed.createComponent(PodsPage);
+    await settle();
+  }
+
+  async function openEditor(podId = 1): Promise<void> {
+    await click(`[data-edit="${podId}"]`);
+  }
+
+  beforeEach(() => {
+    const page: PagedResultOfPodSummary = { items: [podA, podB], total: 2, page: 1, pageSize: 25 };
+    api = {
+      listPods: vi.fn(() => of(page)),
+      getPod: vi.fn((id: number) =>
+        of(
+          detailOf(id === 1 ? podA : podB, [
+            member(7, 'Tariq M.', { roles: ['Data Technician', 'Pod Lead'], isPrimary: true }),
+            member(8, 'Sam K.'),
+          ]),
+        ),
+      ),
+      createPod: vi.fn((body: { name: string }) => of(detailOf(summary(3, body.name)))),
+      updatePod: vi.fn((id: number, body: { name: string; isActive: boolean }) =>
+        of(detailOf(summary(id, body.name, { isActive: body.isActive }))),
+      ),
+      addPodMembers: vi.fn(() =>
+        of(detailOf(podA, [member(7, 'Tariq M.'), member(9, 'Priya L.')])),
+      ),
+      removePodMember: vi.fn(() => of(undefined)),
+      setPrimaryPod: vi.fn(() => of(detailOf(podA, [member(7, 'Tariq M.', { isPrimary: false })]))),
+      findPodMemberCandidates: vi.fn(() =>
+        of([
+          { userId: 7, displayName: 'Tariq M.', email: undefined },
+          { userId: 9, displayName: 'Priya L.', email: 'priya@example.com' },
+        ]),
+      ),
+      listUserPods: vi.fn(),
+      listMyPods: vi.fn(),
+    } as typeof api;
+  });
+
+  it('lists pods with member counts and status, and offers New Pod to managers only', async () => {
+    await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
+
+    expect(text('[data-pod="1"]')).toContain('Pod A');
+    expect(text('[data-pod="1"]')).toContain('2');
+    expect(text('[data-pod="1"]')).toContain('Active');
+    expect(text('[data-pod="2"]')).toContain('Inactive');
+    expect(el().textContent).toContain('New Pod');
+    expect(el().textContent).toContain('Pod leads are a role');
+  });
+
+  it('hides New Pod, Save and member controls without the manage permissions', async () => {
+    await create('Pod.View');
+
+    expect(el().textContent).not.toContain('New Pod');
+    await openEditor();
+    expect(q<HTMLInputElement>('[data-name]').disabled).toBe(true);
+    expect(el().textContent).not.toContain('Save');
+    expect(el().querySelector('[data-remove]')).toBeNull();
+    expect(el().querySelector('[data-candidate-search]')).toBeNull();
+    expect(q<HTMLButtonElement>('[data-primary]').disabled).toBe(true);
+  });
+
+  it('filters the list through the API by search text and status', async () => {
+    await create('Pod.View', 'Pod.Manage');
+
+    await type('[data-search]', 'alp', 250);
+    expect(api.listPods).toHaveBeenLastCalledWith('alp', undefined, 1, 25);
+
+    const select = q<HTMLSelectElement>('[data-status]');
+    select.value = 'inactive';
+    select.dispatchEvent(new Event('change'));
+    await settle();
+    expect(api.listPods).toHaveBeenLastCalledWith('alp', false, 1, 25);
+  });
+
+  it('requires a name, then creates the pod and opens it for member management', async () => {
+    await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
+    await click('p-button');
+
+    await click('.pods__actions p-button');
+    expect(text('[data-name-error]')).toBe('Enter a pod name.');
+    expect(api.createPod).not.toHaveBeenCalled();
+
+    await type('[data-name]', '  Pod C ');
+    await type('[data-description]', 'New work');
+    await click('.pods__actions p-button');
+
+    expect(api.createPod).toHaveBeenCalledWith({ name: 'Pod C', description: 'New work' });
+    expect(text('#pods-editor-title')).toBe('Edit Pod');
+    expect(text('[data-live]')).toBe('Pod created.');
+    expect(text('[data-no-members]')).toBe('No members yet.');
+  });
+
+  it('maps a duplicate-name conflict to the name field', async () => {
+    api['createPod'].mockReturnValueOnce(
+      throwError(
+        () =>
+          new ApiError(
+            409,
+            'DUPLICATE_NAME',
+            'A pod named x already exists.',
+            undefined,
+            new HttpErrorResponse({ status: 409 }),
+          ),
+      ),
+    );
+    await create('Pod.View', 'Pod.Manage');
+    await click('p-button');
+    await type('[data-name]', 'Pod A');
+
+    await click('.pods__actions p-button');
+
+    expect(text('[data-name-error]')).toBe("A pod named 'Pod A' already exists.");
+    expect(q('[data-name]').getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('shows members with their roles as read-only chips and no lead control', async () => {
+    await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
+    await openEditor();
+
+    const row = q('[data-member="7"]');
+    expect(Array.from(row.querySelectorAll('[data-role]')).map((r) => r.textContent)).toEqual([
+      'Data Technician',
+      'Pod Lead',
+    ]);
+    expect(q('[data-primary]').getAttribute('aria-pressed')).toBe('true');
+    expect(el().textContent!.toLowerCase()).not.toContain('make lead');
+  });
+
+  it('removes a member and sets or clears a primary pod', async () => {
+    await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
+    await openEditor();
+
+    await click('[data-member="7"] [data-primary]');
+    expect(api.setPrimaryPod).toHaveBeenCalledWith(1, 7, { isPrimary: false });
+
+    await click('[data-remove="7"]');
+    expect(api.removePodMember).toHaveBeenCalledWith(1, 7);
+    expect(api.getPod).toHaveBeenCalledTimes(2);
+  });
+
+  it('adds several members found by typeahead, skipping people already in the pod', async () => {
+    api['getPod'].mockReturnValueOnce(of(detailOf(podA, [member(7, 'Tariq M.')])));
+    await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
+    await openEditor();
+
+    await type('[data-candidate-search]', 'ri', 250);
+    expect(api.findPodMemberCandidates).toHaveBeenCalledWith('ri');
+    expect(el().querySelector('[data-candidate="7"]')).toBeNull();
+
+    q<HTMLInputElement>('[data-candidate="9"]').click();
+    await settle();
+    await click('.pods__add p-button');
+
+    expect(api.addPodMembers).toHaveBeenCalledWith(1, { userIds: [9] });
+    expect(text('[data-live]')).toBe('Member added.');
+    expect(el().querySelector('[data-candidates]')).toBeNull();
+  });
+
+  it('asks before deactivating, then sends the row version with isActive false', async () => {
+    await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
+    await openEditor();
+
+    q<HTMLInputElement>('[data-active]').click();
+    await settle();
+    expect(text('[data-deactivate-note]')).toContain('keeps its members and history');
+
+    await click('.pods__actions p-button');
+    expect(api.updatePod).not.toHaveBeenCalled();
+    expect(text('[data-confirm-deactivate]')).toContain("Deactivate pod 'Pod A'?");
+
+    await click('.pods__actions p-button');
+    expect(api.updatePod).toHaveBeenCalledWith(1, {
+      name: 'Pod A',
+      description: 'Processing',
+      isActive: false,
+      rowVersion: 'rv1',
+    });
+    expect(el().querySelector('[data-confirm-deactivate]')).toBeNull();
+  });
+
+  it('does not allow adding members to an inactive pod', async () => {
+    await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
+    await openEditor(2);
+
+    expect(text('[data-inactive-note]')).toContain('Reactivate it to add members');
+    expect(el().querySelector('[data-candidate-search]')).toBeNull();
+  });
+
+  it('offers a reload after a concurrency conflict', async () => {
+    api['updatePod'].mockReturnValueOnce(
+      throwError(
+        () =>
+          new ApiError(
+            409,
+            'CONCURRENCY_CONFLICT',
+            'changed',
+            undefined,
+            new HttpErrorResponse({ status: 409 }),
+          ),
+      ),
+    );
+    await create('Pod.View', 'Pod.Manage');
+    await openEditor();
+    await type('[data-name]', 'Pod Alpha');
+
+    await click('.pods__actions p-button');
+    expect(text('[data-failure]')).toContain('Someone else changed this pod');
+
+    await click('[data-failure] p-button');
+    expect(api.getPod).toHaveBeenCalledTimes(2);
+    expect(el().querySelector('[data-failure]')).toBeNull();
+  });
+
+  it('reports unsaved edits through the leave guard contract', async () => {
+    await create('Pod.View', 'Pod.Manage');
+    await openEditor();
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+
+    await type('[data-name]', 'Changed');
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+  });
+
+  it('shows a retryable error when the list cannot be loaded', async () => {
+    api['listPods'].mockReturnValueOnce(throwError(() => new Error('down')));
+    await create('Pod.View');
+
+    expect(el().querySelector('[data-error]')).not.toBeNull();
+    await click('[data-error] p-button');
+    expect(el().querySelector('[data-pods]')).not.toBeNull();
+  });
+});

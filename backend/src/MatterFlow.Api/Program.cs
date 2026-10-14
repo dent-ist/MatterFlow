@@ -10,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMatterFlowModules(builder.Configuration, builder.Environment);
 builder.Services
-    .AddControllers()
+    .AddControllers(o => o.Filters.Add<ErrorResultFilter>())
     .AddApplicationPart(typeof(Program).Assembly)
     .AddJsonOptions(o =>
     {
