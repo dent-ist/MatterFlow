@@ -17,6 +17,7 @@ public enum TaskOperation
     /// <summary>Step start, save, complete, skip.</summary>
     StepAction,
 
+    /// <summary>Reopen a resolved step. Allowed wherever step actions are (New, In Progress) and on a Completed task (which moves back to In Progress).</summary>
     StepReopen,
 
     /// <summary>Add a comment; edit or delete one's own comment.</summary>
@@ -30,7 +31,7 @@ public static class TaskEditability
         TaskOperation.EditDetails or TaskOperation.AssignOrPrioritize or TaskOperation.LinkAssets =>
             status is TaskStatusCode.New or TaskStatusCode.InProgress or TaskStatusCode.OnHold,
         TaskOperation.StepAction => status is TaskStatusCode.New or TaskStatusCode.InProgress,
-        TaskOperation.StepReopen => status is TaskStatusCode.InProgress or TaskStatusCode.Completed,
+        TaskOperation.StepReopen => status is TaskStatusCode.New or TaskStatusCode.InProgress or TaskStatusCode.Completed,
         TaskOperation.Comment => true,
         _ => throw new ArgumentOutOfRangeException(nameof(operation)),
     };

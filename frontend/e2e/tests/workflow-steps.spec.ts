@@ -318,7 +318,7 @@ test.describe('Completing a task with open steps (addendum K)', () => {
 });
 
 test.describe('Known application defects (docs/qa/e2e-findings.md)', () => {
-  test.fixme('E2E-F1: a resolved step of a New task offers Reopen, as the API allows it', async ({
+  test('E2E-F1: a resolved step of a New task offers Reopen, as the API allows it', async ({
     page,
     seed,
     admin,

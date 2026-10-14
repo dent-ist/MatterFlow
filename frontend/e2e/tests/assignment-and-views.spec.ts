@@ -60,7 +60,7 @@ test.describe('Assignment by a technician (SCN-006)', () => {
 });
 
 test.describe('Known application defects (docs/qa/e2e-findings.md)', () => {
-  test.fixme('E2E-F2: a technician can reassign a task without a Pod to a colleague from Edit details', async ({
+  test('E2E-F2: a technician can reassign a task without a Pod to a colleague from Edit details', async ({
     seed,
     asUser,
   }) => {
@@ -73,11 +73,12 @@ test.describe('Known application defects (docs/qa/e2e-findings.md)', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await page.getByRole('button', { name: 'Edit details' }).click();
-    await expect(
-      page
-        .getByLabel('Assignee', { exact: true })
-        .getByRole('option', { name: colleague.username }),
-    ).toBeAttached();
+    // Any active user can be chosen (the same lookup as Create Task), not only members of the task's Pod.
+    await page.getByRole('button', { name: 'Change' }).click();
+    await page.getByRole('combobox', { name: 'Assignee' }).fill(colleague.username);
+    await page.getByRole('option', { name: colleague.username }).click();
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(detail.assignee).toContainText(colleague.username);
   });
 });
 

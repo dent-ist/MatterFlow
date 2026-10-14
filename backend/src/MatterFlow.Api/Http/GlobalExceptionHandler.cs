@@ -1,5 +1,6 @@
 using MatterFlow.SharedKernel.Results;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Api.Http;
@@ -18,6 +19,13 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
                 ErrorCodes.ConcurrencyConflict,
                 "Concurrency conflict",
                 "The record was changed by someone else. Reload and try again."),
+            // A deadlock victim (SQL error 1205) rolled back cleanly and the same call succeeds when repeated: tell the client to retry (E2E-F3).
+            _ when IsDeadlock(exception) => Problems.Create(
+                httpContext,
+                StatusCodes.Status409Conflict,
+                ErrorCodes.ConcurrencyConflict,
+                "Concurrency conflict",
+                "Another change was in progress at the same moment. Try again."),
             _ => null,
         };
 
@@ -33,5 +41,17 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
 
         httpContext.Response.StatusCode = problem.Status ?? StatusCodes.Status500InternalServerError;
         return await problemDetails.TryWriteAsync(new ProblemDetailsContext { HttpContext = httpContext, ProblemDetails = problem, Exception = exception });
+    }
+
+    /// <summary>True when the exception, or one wrapped inside it, is SQL Server error 1205 (chosen as the deadlock victim).</summary>
+    public static bool IsDeadlock(Exception exception)
+    {
+        for (var ex = exception; ex is not null; ex = ex.InnerException)
+        {
+            if (ex is SqlException { Number: 1205 })
+                return true;
+        }
+
+        return false;
     }
 }

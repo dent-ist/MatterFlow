@@ -339,30 +339,69 @@ public sealed class WorkflowAdminService(
             rows.Add(row);
         }
 
-        await using var tx = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync(ct) : null;
-        try
+        // A SQL Server deadlock (error 1205) rolls the transaction back and is safe to repeat: the unit of work is run once more from a clean
+        // change tracker. The audit entry is queued only once: a failed save puts it back in the buffer, so the retry must not add it again.
+        var auditQueued = false;
+        for (var attempt = 1; ; attempt++)
         {
-            version.IsOrdered = request.IsOrdered;
-            db.Entry(version).State = EntityState.Modified; // always touch the row so the row version moves for concurrent editors
-            db.Set<WorkflowVersionStep>().RemoveRange(version.Steps.ToList());
-            audit.Write(new AuditEntry
+            await using var tx = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync(ct) : null;
+            try
             {
-                EventType = "WORKFLOW_DRAFT_SAVED",
-                ObjectType = ObjectType,
-                ObjectId = WorkflowSupport.Text(workflowId),
-                Summary = $"v{version.VersionNo}: {rows.Count} step(s), {(request.IsOrdered ? "ordered" : "unordered")}",
-            });
-            await db.SaveChangesAsync(ct);
-            db.Set<WorkflowVersionStep>().AddRange(rows);
-            await db.SaveChangesAsync(ct);
-            if (tx is not null)
-            {
-                await tx.CommitAsync(ct);
+                version.IsOrdered = request.IsOrdered;
+                db.Entry(version).State = EntityState.Modified; // always touch the row so the row version moves for concurrent editors
+                db.Set<WorkflowVersionStep>().RemoveRange(version.Steps.ToList());
+                await db.SaveChangesAsync(ct);
+                if (!auditQueued)
+                {
+                    audit.Write(new AuditEntry
+                    {
+                        EventType = "WORKFLOW_DRAFT_SAVED",
+                        ObjectType = ObjectType,
+                        ObjectId = WorkflowSupport.Text(workflowId),
+                        Summary = $"v{version.VersionNo}: {rows.Count} step(s), {(request.IsOrdered ? "ordered" : "unordered")}",
+                    });
+                    auditQueued = true;
+                }
+
+                db.Set<WorkflowVersionStep>().AddRange(rows);
+                await db.SaveChangesAsync(ct);
+                if (tx is not null)
+                {
+                    await tx.CommitAsync(ct);
+                }
+
+                break;
             }
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return WorkflowSupport.Concurrency();
+            catch (DbUpdateConcurrencyException)
+            {
+                return WorkflowSupport.Concurrency();
+            }
+            catch (Exception ex) when (attempt == 1 && tx is not null && WorkflowSupport.IsDeadlock(ex))
+            {
+                await tx.RollbackAsync(CancellationToken.None);
+                db.ChangeTracker.Clear();
+                var reloaded = await LoadVersionAsync(workflowId, versionId, ct);
+                if (reloaded.IsFailure)
+                {
+                    return Result<WorkflowVersionDetail>.Failure(reloaded.Error!);
+                }
+
+                version = reloaded.Value;
+                if (version.Status != WorkflowVersionStatus.Draft)
+                {
+                    return Immutable(version);
+                }
+
+                if (WorkflowSupport.ExpectVersion(db, version, request.RowVersion) is { } changed)
+                {
+                    return changed;
+                }
+
+                foreach (var row in rows)
+                {
+                    row.Id = 0;
+                }
+            }
         }
 
         return await ReadVersionAsync(version, ct);
