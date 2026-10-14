@@ -7639,6 +7639,83 @@ export class TaskActivityClient implements ITaskActivityClient {
     }
 }
 
+export interface IDashboardClient {
+    /**
+     * @param periodDays (optional) 
+     * @return OK
+     */
+    getDashboard(periodDays?: number | undefined): Observable<DashboardSummary>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class DashboardClient implements IDashboardClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param periodDays (optional) 
+     * @return OK
+     */
+    getDashboard(periodDays?: number | undefined): Observable<DashboardSummary> {
+        let url_ = this.baseUrl + "/api/v1/dashboard?";
+        if (periodDays === null)
+            throw new globalThis.Error("The parameter 'periodDays' cannot be null.");
+        else if (periodDays !== undefined)
+            url_ += "periodDays=" + encodeURIComponent("" + periodDays) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetDashboard(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetDashboard(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<DashboardSummary>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<DashboardSummary>;
+        }));
+    }
+
+    protected processGetDashboard(response: HttpResponseBase): Observable<DashboardSummary> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DashboardSummary;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface ITaskQueueClient {
     /**
      * @param q (optional) 
@@ -9829,6 +9906,90 @@ export interface CreateWorkflowRequest {
 
 export interface CustomFieldFormResponse {
     publishedFormVersionId: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface DashboardAgingBucket {
+    key: string;
+    label: string;
+    minDays: number;
+    maxDays: number | undefined;
+    count: number;
+    query: string;
+
+    [key: string]: any;
+}
+
+export interface DashboardBreakdownItem {
+    id: number | undefined;
+    code: string | undefined;
+    label: string;
+    count: number;
+    query: string | undefined;
+    isOther: boolean;
+
+    [key: string]: any;
+}
+
+export interface DashboardCount {
+    count: number;
+    query: string;
+
+    [key: string]: any;
+}
+
+export interface DashboardMine {
+    open: DashboardCount;
+    overdue: DashboardCount;
+    dueSoon: DashboardCount;
+    createdByMe: DashboardCount;
+
+    [key: string]: any;
+}
+
+export interface DashboardPeriod {
+    days: number;
+    from: string;
+    to: string;
+
+    [key: string]: any;
+}
+
+export interface DashboardRecentTask {
+    taskId: number;
+    taskNumber: string;
+    title: string;
+    matterId: number;
+    matterRef: string;
+    matterName: string;
+    status: string;
+    statusLabel: string;
+    atUtc: string;
+
+    [key: string]: any;
+}
+
+export interface DashboardSummary {
+    period: DashboardPeriod;
+    timeZone: string;
+    generatedAtUtc: string;
+    open: DashboardCount;
+    unassigned: DashboardCount;
+    overdue: DashboardCount;
+    onHold: DashboardCount;
+    dueSoon: DashboardCount;
+    asapOpen: DashboardCount;
+    completed: DashboardCount;
+    created: DashboardCount;
+    byPod: DashboardBreakdownItem[];
+    byTaskType: DashboardBreakdownItem[];
+    byPriority: DashboardBreakdownItem[];
+    byStatus: DashboardBreakdownItem[];
+    aging: DashboardAgingBucket[];
+    recentlyCreated: DashboardRecentTask[];
+    recentlyCompleted: DashboardRecentTask[];
+    mine: DashboardMine;
 
     [key: string]: any;
 }
