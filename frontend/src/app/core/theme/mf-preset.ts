@@ -8,6 +8,20 @@ import Aura from '@primeuix/themes/aura';
 export const MfPreset = definePreset(Aura, {
   primitive: {
     borderRadius: { none: '0', xs: '2px', sm: '4px', md: '4px', lg: '8px', xl: '8px' },
+    // Danger buttons and text follow the theme danger token (--mf-danger #B42318, 6.5:1 on white) instead of Aura's #ef4444 (3.8:1).
+    red: {
+      50: '#FDECEA',
+      100: '#FADBD7',
+      200: '#F4B6AE',
+      300: '#EC8B80',
+      400: '#D9534A',
+      500: '#B42318',
+      600: '#9A1D14',
+      700: '#7F1710',
+      800: '#64120D',
+      900: '#4A0E0A',
+      950: '#300906',
+    },
   },
   semantic: {
     primary: {

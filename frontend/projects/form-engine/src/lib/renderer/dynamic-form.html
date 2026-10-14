@@ -84,7 +84,7 @@
                   />
                 </div>
               } @else {
-                <div class="mf-field__value" [attr.aria-labelledby]="row.id + '-label'">
+                <div class="mf-field__value">
                   {{ row.text }}
                 </div>
               }
@@ -150,6 +150,7 @@
                 @case ('SELECT') {
                   <p-select
                     [inputId]="row.id"
+                    [ariaLabel]="row.label"
                     [options]="row.items"
                     optionLabel="label"
                     optionValue="value"
@@ -163,6 +164,7 @@
                 @case ('MULTISELECT') {
                   <p-multiselect
                     [inputId]="row.id"
+                    [ariaLabel]="row.label"
                     [options]="row.items"
                     optionLabel="label"
                     optionValue="value"
@@ -173,25 +175,33 @@
                   />
                 }
                 @case ('DATE') {
-                  <p-datepicker
+                  <mf-date-input
                     [inputId]="row.id"
-                    dateFormat="yy-mm-dd"
-                    [showIcon]="true"
+                    [label]="row.label"
+                    [value]="$any(row.model)"
                     [invalid]="!!row.error"
-                    [ngModel]="row.model"
-                    (ngModelChange)="setValue(row.field, $event)"
+                    [describedBy]="dateDescribedBy(row)"
+                    (valueChange)="setValue(row.field, $event)"
+                    (textInvalid)="setDateInvalid(row.field, $event)"
                   />
+                  <p class="mf-field__help" [id]="hintId(row)">
+                    Format: yyyy-mm-dd, or 10/14/2026, or Oct 14, 2026.
+                  </p>
                 }
                 @case ('DATETIME') {
-                  <p-datepicker
+                  <mf-date-input
                     [inputId]="row.id"
-                    dateFormat="yy-mm-dd"
-                    [showTime]="true"
-                    [showIcon]="true"
+                    [label]="row.label"
+                    [withTime]="true"
+                    [value]="$any(row.model)"
                     [invalid]="!!row.error"
-                    [ngModel]="row.model"
-                    (ngModelChange)="setValue(row.field, $event)"
+                    [describedBy]="dateDescribedBy(row)"
+                    (valueChange)="setValue(row.field, $event)"
+                    (textInvalid)="setDateInvalid(row.field, $event)"
                   />
+                  <p class="mf-field__help" [id]="hintId(row)">
+                    Format: yyyy-mm-dd hh:mm (local time), or 10/14/2026 2:30 PM.
+                  </p>
                 }
                 @case ('ASSET_REF') {
                   @if (pickerFor(row); as picker) {

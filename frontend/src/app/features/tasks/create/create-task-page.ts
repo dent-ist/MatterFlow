@@ -12,7 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { DynamicForm } from 'form-engine';
+import { DynamicForm, errorSummary } from 'form-engine';
 import type { FormDefinition, ServerFieldError } from 'form-engine';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
@@ -209,6 +209,8 @@ export class CreateTaskPage implements HasUnsavedChanges {
   protected readonly serverErrors = signal<Record<string, string>>({});
   protected readonly serverMessage = signal('');
   protected readonly summary = signal<string[]>([]);
+  /** True while the summary lists validation problems, which then follow the fields as they are fixed (UAT2-17). */
+  private readonly summaryIsLive = signal(false);
   protected readonly emailFilled = signal(false);
   private saved = false;
   private schemaTurn = 0;
@@ -307,6 +309,22 @@ export class CreateTaskPage implements HasUnsavedChanges {
       const matterId = Number(this.matterId());
       const projectId = Number(this.projectId());
       untracked(() => void this.prefillContext(matterId, projectId));
+    });
+
+    // After a failed submit the summary drops each problem as the person fixes it, and disappears when none is left.
+    effect(() => {
+      const errors = Object.values(this.clientErrors());
+      const evaluation = this.requestForm()?.evaluation();
+      const fields = this.definition()?.fields ?? [];
+      untracked(() => {
+        if (!this.summaryIsLive()) return;
+        const lines = [...errors, ...(evaluation ? errorSummary(fields, evaluation.errors) : [])];
+        if (this.schemaState() === 'loading' || this.schemaState() === 'error') {
+          lines.push(...this.summary().filter((m) => m.startsWith('The request details have not')));
+        }
+        this.summary.set(lines);
+        if (lines.length === 0) this.summaryIsLive.set(false);
+      });
     });
 
     // The Asset picker of ASSET_REF request fields offers the assets of the chosen Matter only.
@@ -577,13 +595,20 @@ export class CreateTaskPage implements HasUnsavedChanges {
     let formInvalid = false;
     const form = this.requestForm();
     if (form && this.definition()) {
-      formInvalid = form.validate().errors.length > 0;
-      if (formInvalid) problems.push('Complete the highlighted request details.');
+      const evaluation = form.validate();
+      formInvalid = evaluation.errors.length > 0;
+      if (formInvalid) {
+        const lines = errorSummary(this.definition()?.fields ?? [], evaluation.errors);
+        problems.push(
+          ...(lines.length > 0 ? lines : ['Complete the highlighted request details.']),
+        );
+      }
     }
     if (this.schemaState() === 'loading' || this.schemaState() === 'error') {
       problems.push('The request details have not loaded. Retry them before creating the task.');
     }
     if (problems.length > 0) {
+      this.summaryIsLive.set(true);
       this.summary.set(problems);
       this.focusSummary();
       return;
@@ -646,6 +671,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
       );
     }
     if (err instanceof ApiError && err.status === 409) this.serverMessage.set(err.message);
+    this.summaryIsLive.set(false);
     this.summary.set(messages);
     this.focusSummary();
   }

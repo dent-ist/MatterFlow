@@ -13,6 +13,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
+import { DialogFocus } from '../../../shared/ui/dialog-focus';
 import {
   DefinitionDiff,
   DesignerDefinition,
@@ -41,7 +42,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-task-type-form-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormDesigner, Button, Dialog, FormsModule, LocalTimePipe],
+  imports: [FormDesigner, Button, Dialog, DialogFocus, FormsModule, LocalTimePipe],
   templateUrl: './task-type-form-page.html',
   styleUrl: './task-type-form-page.scss',
 })

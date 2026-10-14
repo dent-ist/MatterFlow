@@ -1,4 +1,5 @@
 import { ParamMap } from '@angular/router';
+import { formatDateOnly } from '../../core/time/time';
 
 /**
  * Filter, sort and paging state shared by the Task Queue, My Work and Pod Work. It round-trips through the URL query string
@@ -398,8 +399,11 @@ export function buildChips(f: QueueFilters, names: ChipNames): FilterChip[] {
   return chips;
 }
 
+/** "Oct 1, 2026 to Oct 16, 2026": chips read dates the way the rest of the app does, not as ISO (UAT2-20). */
 function range(from: string | null, to: string | null): string {
-  return from && to ? `${from} to ${to}` : from ? `from ${from}` : `until ${to}`;
+  const a = from ? formatDateOnly(from) : '';
+  const b = to ? formatDateOnly(to) : '';
+  return from && to ? `${a} to ${b}` : from ? `from ${a}` : `until ${b}`;
 }
 
 function sameSet(a: readonly string[], b: readonly string[]): boolean {

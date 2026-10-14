@@ -8,10 +8,12 @@ export interface PodChoices {
 }
 
 /**
- * The Pods to offer in a filter: the user's own Pods and, with `includeAll` (Pod.View), every active Pod. Never rejects: the Pod
+ * The Pods to offer in a filter: with `includeAll` (the caller has Pod.View) the user's own Pods and every active Pod; without it none. Never rejects: the Pod
  * filter and "My Pod" are conveniences, and the list works without them.
  */
 export async function loadPodChoices(api: PodsClient, includeAll: boolean): Promise<PodChoices> {
+  // `GET /me/pods` needs Pod.View too: without it there is nothing to ask (and no 403 in the console, UAT2-19).
+  if (!includeAll) return { options: [], primaryPodId: null };
   try {
     const mine = await firstValueFrom(api.listMyPods());
     const byId = new Map(mine.map((p) => [p.podId, p.name] as const));

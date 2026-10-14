@@ -11,6 +11,7 @@ internal static class WorkflowSupport
     private const int SqlDuplicateKey = 2601;
     private const int SqlUniqueConstraint = 2627;
     private const int SqlForeignKey = 547;
+    private const int SqlDeadlockVictim = 1205;
 
     public static string Text(int value) => value.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
@@ -99,6 +100,20 @@ internal static class WorkflowSupport
         return Uri.TryCreate(text.Value, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https"
             ? text
             : Error.Validation(field, "INVALID_URL", "Enter a full web address starting with http:// or https://.");
+    }
+
+    /// <summary>True when the exception (or one inside it) is a SQL Server deadlock: error 1205, the victim's transaction was rolled back and may be repeated.</summary>
+    public static bool IsDeadlock(Exception exception)
+    {
+        for (var ex = exception; ex is not null; ex = ex.InnerException)
+        {
+            if (ex is SqlException { Number: SqlDeadlockVictim })
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static bool IsDuplicateKey(DbUpdateException ex) =>

@@ -9,6 +9,7 @@ import { DefinitionErrorCode, FormErrorCode, FormField } from '../rules/types';
 export const FORM_MESSAGES: Readonly<Record<string, string>> = {
   'REQUIRED.enter': 'Enter {label}.',
   'REQUIRED.select': 'Select {label}.',
+  'REQUIRED.selectQuestion': 'Select an option for: {label}.',
   'INVALID_TYPE.default': 'Enter a valid {label}.',
   'INVALID_TYPE.URL': 'Enter a valid web address starting with http:// or https://.',
   'INVALID_TYPE.NUMBER': 'Enter a number.',
@@ -64,6 +65,36 @@ const SELECT_CONTROLS = new Set([
   'DATETIME',
 ]);
 
+const QUESTION_START =
+  /^(what|which|who|whom|whose|when|where|why|how|is|are|do|does|did|can|should|will)\b/i;
+
+/** A label written as a question ("What is driving the due date?"), which reads badly after "Select". */
+function isQuestion(label: string): boolean {
+  const text = label.trim();
+  // "Collected by", "Delivered via": a participle reads badly after "Select a".
+  return (
+    text.endsWith('?') ||
+    QUESTION_START.test(text) ||
+    /^[a-z]+(ed|ing)\s+(by|on|via|to|for|in)\b/i.test(text)
+  );
+}
+
+/** Label as it reads inside a sentence: no closing punctuation, first letter lower-cased unless it starts an acronym. */
+function inSentence(label: string): string {
+  const text = label.trim().replace(/[?.:!\s]+$/, '');
+  if (!text) return text;
+  const second = text.charAt(1);
+  const acronym =
+    second !== '' && second === second.toUpperCase() && second !== second.toLowerCase();
+  return acronym || /\d/.test(text.charAt(0)) ? text : text.charAt(0).toLowerCase() + text.slice(1);
+}
+
+/** "a category", "an option"; plural-looking labels and questions get no article. */
+function withArticle(phrase: string): string {
+  if (!phrase || (/s$/i.test(phrase) && !/ss$/i.test(phrase))) return phrase;
+  return `${/^[aeiou]/i.test(phrase) ? 'an' : 'a'} ${phrase}`;
+}
+
 function fill(template: string, params: Readonly<Record<string, string | number>>): string {
   return template.replace(/\{(\w+)\}/g, (whole, name: string) =>
     name in params ? String(params[name]) : whole,
@@ -73,8 +104,11 @@ function fill(template: string, params: Readonly<Record<string, string | number>
 /** Message key (see FORM_MESSAGES) a field error resolves to, per contracts/form-rules.md section 7. */
 export function validationMessageKey(field: FormField, code: FormErrorCode): string {
   switch (code) {
-    case 'REQUIRED':
-      return SELECT_CONTROLS.has(field.control) ? 'REQUIRED.select' : 'REQUIRED.enter';
+    case 'REQUIRED': {
+      const select = SELECT_CONTROLS.has(field.control);
+      if (select && isQuestion(fieldLabel(field))) return 'REQUIRED.selectQuestion';
+      return select ? 'REQUIRED.select' : 'REQUIRED.enter';
+    }
     case 'INVALID_TYPE': {
       const specific = `INVALID_TYPE.${field.control}`;
       return specific in FORM_MESSAGES ? specific : 'INVALID_TYPE.default';
@@ -99,8 +133,10 @@ export function validationMessage(field: FormField, code: FormErrorCode): string
     return field.validation.patternMessage;
   }
   const { min, max, maxLength } = field.validation ?? {};
-  return fill(FORM_MESSAGES[validationMessageKey(field, code)], {
-    label: fieldLabel(field),
+  const key = validationMessageKey(field, code);
+  const phrase = inSentence(fieldLabel(field));
+  return fill(FORM_MESSAGES[key], {
+    label: key === 'REQUIRED.select' ? withArticle(phrase) : phrase,
     min: min ?? '',
     max: max ?? '',
     maxLength: maxLength ?? 0,
@@ -113,4 +149,17 @@ export function definitionMessage(
   params: { field?: string; cycle?: string } = {},
 ): string {
   return fill(FORM_MESSAGES[code], { field: params.field ?? 'A field', cycle: params.cycle ?? '' });
+}
+
+/** One summary line per invalid field, naming it: "Approximate size (GB): Enter a number." (UAT2-10). Form order is kept. */
+export function errorSummary(
+  fields: readonly FormField[],
+  errors: readonly { fieldKey: string; code: FormErrorCode }[],
+): string[] {
+  const lines: string[] = [];
+  for (const field of fields) {
+    const error = errors.find((e) => e.fieldKey === field.key);
+    if (error) lines.push(`${fieldLabel(field)}: ${validationMessage(field, error.code)}`);
+  }
+  return lines;
 }

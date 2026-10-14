@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 vi.setConfig({ testTimeout: 60000 });
 import { of } from 'rxjs';
 import { apiError, settle } from '../../../shared/testing/org-testing';
+import { UsersLookupClient } from '../../../api/generated/api-client';
 import { aTask, allowed, click, mountTaskPage, q, transition } from './task-detail-testing';
 
 const type = async (
@@ -69,7 +70,8 @@ describe('Details tab', () => {
     expect((q(el, '#td-due-time') as HTMLInputElement).value).toBe('15:00');
     expect(q(el, 'label[for=td-due-time]')!.textContent).toMatch(/Time \(.+\)/);
     expect(q(el, '#td-pod')).not.toBeNull();
-    expect(q(el, '#td-assignee')).not.toBeNull();
+    // The assignee is chosen with the user picker (any active user), not a list of the Pod's members.
+    expect(q(el, 'mf-entity-picker')).not.toBeNull();
     // Matter, Task Type and Workflow stay read-only
     expect(q(el, '[data-locked-fields]')).not.toBeNull();
     expect(q(el, '#td-matter')).toBeNull();
@@ -200,5 +202,42 @@ describe('Details tab', () => {
       userId: 9,
     });
     expect(q(el, '[data-warning]')!.textContent).toContain("isn't a member of the assigned Pod");
+  });
+
+  it('lets a user with Task.Assign pick any active user, as Create Task does (E2E-F2, UAT2-13)', async () => {
+    const { fixture, el, fakes } = await mountTaskPage(
+      aTask(),
+      ['Task.View', 'Task.Edit', 'Task.Assign'],
+      {
+        tasks: { updateTask: vi.fn().mockReturnValue(of(aTask({ rowVersion: 'RV2' }))) },
+      },
+    );
+    await click(fixture, q(el, '[data-edit-details]'));
+    await click(fixture, q(el, '[data-chosen] button'));
+    await type(fixture, el, '#td-assignee', 'Coll');
+    await new Promise((r) => setTimeout(r, 300));
+    await settle(fixture);
+    const lookup = TestBed.inject(UsersLookupClient).lookupUsers as ReturnType<typeof vi.fn>;
+    expect(lookup).toHaveBeenCalledWith('Coll', 8);
+    const option = q(el, '[role=option]')!;
+    expect(option.textContent).toContain('Colleague C.');
+    option.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    await settle(fixture);
+    await click(fixture, q(el, '[data-save]'));
+
+    expect(fakes.tasks['assignTask']).toHaveBeenCalledWith(
+      1042,
+      expect.objectContaining({ userId: 20 }),
+    );
+  });
+
+  it('warns, without blocking, when the due date is in the past (UAT2-16)', async () => {
+    const { fixture, el } = await mountTaskPage(aTask({ dueDate: '2099-10-30' }));
+    await click(fixture, q(el, '[data-edit-details]'));
+    expect(q(el, '[data-past-due]')).toBeNull();
+
+    await type(fixture, el, '#td-due-date', '2020-01-02');
+    expect(q(el, '[data-past-due]')!.textContent).toContain('already passed');
+    expect((q(el, '[data-save]') as HTMLButtonElement).disabled).toBe(false);
   });
 });

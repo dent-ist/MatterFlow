@@ -33,6 +33,8 @@ interface SearchOption {
   hit?: SearchHit;
 }
 
+const MORE_CHARS_HINT = 'Type at least 2 characters to search.';
+
 interface DisplayGroup {
   type: string;
   label: string;
@@ -92,6 +94,9 @@ interface DisplayGroup {
             @case ('empty') {
               <p class="mf-gs__note" data-state="empty">{{ emptyMessage() }}</p>
             }
+            @case ('hint') {
+              <p class="mf-gs__note" data-state="hint">{{ MORE_CHARS_HINT }}</p>
+            }
           }
           @if (groups().length > 0 || panelState() === 'empty') {
             <ul class="mf-gs__list" role="listbox" [id]="listId" aria-label="Search results">
@@ -128,7 +133,7 @@ interface DisplayGroup {
                               @if (part.match) {
                                 <mark>{{ part.text }}</mark>
                               } @else {
-                                {{ part.text }}
+                                <span>{{ part.text }}</span>
                               }
                             }
                           </span>
@@ -363,16 +368,26 @@ export class GlobalSearch {
     this.open() ? (this.options()[this.activeIndex()]?.id ?? null) : null,
   );
 
-  protected readonly panelState = computed<'loading' | 'error' | 'empty' | 'results'>(() => {
-    if (this.state() === 'loading') return 'loading';
-    if (this.state() === 'error') return 'error';
-    return this.groups().length === 0 ? 'empty' : 'results';
-  });
+  /** One character that is not a digit: too short to search, so say so instead of showing nothing (UAT2-08). */
+  protected readonly needsMore = computed(
+    () => this.trimmed().length === 1 && !isSearchable(this.query()),
+  );
+  protected readonly MORE_CHARS_HINT = MORE_CHARS_HINT;
+
+  protected readonly panelState = computed<'loading' | 'error' | 'empty' | 'results' | 'hint'>(
+    () => {
+      if (this.needsMore()) return 'hint';
+      if (this.state() === 'loading') return 'loading';
+      if (this.state() === 'error') return 'error';
+      return this.groups().length === 0 ? 'empty' : 'results';
+    },
+  );
 
   protected readonly emptyMessage = computed(() => noResultsMessage(this.trimmed()));
 
   /** What assistive technology hears when the popup content changes. */
   protected readonly announcement = computed(() => {
+    if (this.open() && this.needsMore()) return MORE_CHARS_HINT;
     if (!this.open() || !this.searchable()) return '';
     switch (this.panelState()) {
       case 'loading':
@@ -419,7 +434,7 @@ export class GlobalSearch {
     if (!isSearchable(value)) {
       this.state.set('idle');
       this.response.set([]);
-      this.open.set(false);
+      this.open.set(value.trim().length === 1);
       return;
     }
     this.state.set('loading');

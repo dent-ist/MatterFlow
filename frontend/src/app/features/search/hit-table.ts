@@ -54,7 +54,7 @@ import { StatusBadge } from '../../shared/ui/status-badge';
                   @if (part.match) {
                     <mark>{{ part.text }}</mark>
                   } @else {
-                    {{ part.text }}
+                    <span>{{ part.text }}</span>
                   }
                 }
               </a>

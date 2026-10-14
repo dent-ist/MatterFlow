@@ -218,9 +218,14 @@
   gap: var(--mf-s1);
   margin: var(--mf-s4) 0 var(--mf-s3);
   border-bottom: 1px solid var(--mf-border);
+  /* Narrow screens: the strip scrolls sideways instead of overflowing the page (UAT2-24). */
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .pg-tabs button {
+  flex: none;
+  white-space: nowrap;
   padding: var(--mf-s2) var(--mf-s4);
   border: 0;
   border-bottom: 3px solid transparent;

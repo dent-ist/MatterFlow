@@ -19,6 +19,7 @@ import {
 import { AuthStore } from '../../../core/auth/auth.store';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
+import { fieldLabel, friendlyText } from '../../../shared/ui/audit-format';
 import { AuditGroup, auditObjectRoute, auditObjectText, groupByCorrelation } from './audit-links';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -209,6 +210,8 @@ export class AuditPage implements OnDestroy {
   protected isGroupOpen = (group: AuditGroup) => this.openGroups().has(group.key);
   protected route = auditObjectRoute;
   protected objectText = auditObjectText;
+  protected friendly = friendlyText;
+  protected fieldName = fieldLabel;
 
   protected valueText(value: string | undefined, truncated: boolean): string {
     if (value === undefined || value === null || value === '') return '(empty)';

@@ -57,7 +57,7 @@
           role="combobox"
           aria-autocomplete="list"
           [attr.aria-expanded]="actorMatches().length > 0"
-          aria-controls="au-actor-list"
+          [attr.aria-controls]="actorMatches().length > 0 ? 'au-actor-list' : null"
           [value]="actorQuery()"
           (input)="onActorInput($any($event.target).value)"
         />
@@ -283,7 +283,7 @@
         type="button"
         class="au-toggle"
         [attr.aria-expanded]="isOpen(item)"
-        [attr.aria-controls]="'au-detail-' + item.auditEventId"
+        [attr.aria-controls]="isOpen(item) ? 'au-detail-' + item.auditEventId : null"
         [attr.aria-label]="
           (isOpen(item) ? 'Hide' : 'Show') + ' details of event ' + item.auditEventId
         "
@@ -300,7 +300,7 @@
       <time [attr.datetime]="item.occurredAtUtc">{{ item.occurredAtUtc | localTime }}</time>
     </td>
     <td>{{ item.actor.displayName }}</td>
-    <td>{{ item.summary }}</td>
+    <td>{{ friendly(item.summary) }}</td>
     <td>
       @if (route(item); as link) {
         <a class="au-linkout" [routerLink]="link">{{ objectText(item) }}</a>
@@ -318,7 +318,10 @@
           <dd class="au-mono">{{ item.eventType }}</dd>
           @if (item.fieldKey) {
             <dt>Field</dt>
-            <dd class="au-mono">{{ item.fieldKey }}</dd>
+            <dd>
+              {{ fieldName(item.fieldKey) }}
+              <span class="au-mono au-muted">({{ item.fieldKey }})</span>
+            </dd>
           }
           <dt>Old value</dt>
           <dd class="au-value" data-old>{{ valueText(item.oldValue, item.oldValueTruncated) }}</dd>

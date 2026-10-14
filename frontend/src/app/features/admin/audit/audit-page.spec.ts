@@ -330,7 +330,7 @@ describe('audit links', () => {
   it('labels an object by its resolved name or by type and id', () => {
     expect(auditObjectText(anItem())).toBe('Task: TSK-1042 Process Smith custodians');
     expect(auditObjectText(anItem({ object: { type: 'Role', id: '2', label: undefined } }))).toBe(
-      'Role 2',
+      'Role #2',
     );
   });
 

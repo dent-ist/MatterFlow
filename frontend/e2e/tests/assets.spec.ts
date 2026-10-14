@@ -69,9 +69,7 @@ test.describe('Linking assets to a task (SCN-016)', () => {
     const picker = panel.getByRole('combobox', { name: 'Asset to link' });
 
     await picker.fill(foreign.displayName);
-    await expect(
-      page.getByRole('listbox').getByText('No assets in this matter match.'),
-    ).toBeVisible();
+    await expect(page.getByRole('listbox').getByText('No assets match.')).toBeVisible();
     await expect(page.getByRole('option', { name: new RegExp(foreign.displayName) })).toHaveCount(
       0,
     );

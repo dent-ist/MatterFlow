@@ -47,7 +47,7 @@ const BLOCKED_TEXT: Readonly<Record<string, string>> = {
                   data-status-menu
                   aria-haspopup="menu"
                   [attr.aria-expanded]="open()"
-                  aria-controls="task-status-menu"
+                  [attr.aria-controls]="open() ? 'task-status-menu' : null"
                   [disabled]="store.busy()"
                   (click)="toggle()"
                   (keydown)="onMenuKey($event)"

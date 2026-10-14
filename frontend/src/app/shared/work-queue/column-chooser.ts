@@ -10,7 +10,7 @@ import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
       <button
         type="button"
         class="cc-button"
-        aria-controls="cc-panel"
+        [attr.aria-controls]="open() ? 'cc-panel' : null"
         [attr.aria-expanded]="open()"
         (click)="open.set(!open())"
       >

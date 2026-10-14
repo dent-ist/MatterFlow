@@ -5,6 +5,7 @@
   "messages": {
     "REQUIRED.enter": "Enter {label}.",
     "REQUIRED.select": "Select {label}.",
+    "REQUIRED.selectQuestion": "Select an option for: {label}.",
     "INVALID_TYPE.default": "Enter a valid {label}.",
     "INVALID_TYPE.URL": "Enter a valid web address starting with http:// or https://.",
     "INVALID_TYPE.NUMBER": "Enter a number.",

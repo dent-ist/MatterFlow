@@ -16,7 +16,7 @@ public class TaskEditabilityTests
     [InlineData(TaskOperation.AssignOrPrioritize, Y, Y, Y, No, No)]
     [InlineData(TaskOperation.LinkAssets, Y, Y, Y, No, No)]
     [InlineData(TaskOperation.StepAction, Y, Y, No, No, No)]
-    [InlineData(TaskOperation.StepReopen, No, Y, No, Y, No)]
+    [InlineData(TaskOperation.StepReopen, Y, Y, No, Y, No)]
     [InlineData(TaskOperation.Comment, Y, Y, Y, Y, Y)]
     public void Editability_table(TaskOperation op, bool n, bool p, bool h, bool c, bool x)
     {

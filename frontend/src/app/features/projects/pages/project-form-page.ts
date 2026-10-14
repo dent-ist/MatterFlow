@@ -24,7 +24,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { metaNumber, serverFormErrors } from '../../../shared/forms/api-errors';
 import {
   CustomFieldsEditor,
-  customFieldsProblem,
+  customFieldsProblems,
   splitFormErrors,
 } from '../../../shared/ui/custom-fields';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
@@ -279,8 +279,7 @@ export class ProjectFormPage implements HasUnsavedChanges {
     if (this.name().trim() === '') problems.push('Enter a project name.');
     this.customErrors.set([]);
     const custom = this.customEditor()?.collect(this.isEdit() ? this.customValues() : undefined);
-    const customProblem = customFieldsProblem(custom);
-    if (customProblem) problems.push(customProblem);
+    problems.push(...customFieldsProblems(custom));
     if (problems.length > 0) {
       this.summary.set(problems);
       return;

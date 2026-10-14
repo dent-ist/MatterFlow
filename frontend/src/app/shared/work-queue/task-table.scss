@@ -4,8 +4,51 @@
 
 .wt-wrap {
   overflow-x: auto;
-  background: var(--mf-surface);
+  background:
+    /* Edge shadows that only show where more columns are hidden: the scroll affordance (UAT2-21). */
+    linear-gradient(to right, var(--mf-surface) 30%, transparent) left center / 24px 100% no-repeat
+      local,
+    linear-gradient(to left, var(--mf-surface) 30%, transparent) right center / 24px 100% no-repeat
+      local,
+    radial-gradient(farthest-side at 0 50%, rgb(0 0 0 / 28%), transparent) left center / 10px 100%
+      no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgb(0 0 0 / 28%), transparent) right center / 10px
+      100% no-repeat scroll,
+    var(--mf-surface);
   box-shadow: var(--mf-shadow-1);
+}
+
+.wt-hint {
+  display: none;
+  margin: 0 0 var(--mf-s1);
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+@media (max-width: 1100px) {
+  .wt-hint {
+    display: block;
+  }
+
+  /* The first column stays in view while the rest scrolls. */
+  .wt th:first-child,
+  .wt td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--mf-surface);
+    box-shadow: 1px 0 0 var(--mf-border);
+  }
+
+  .wt th:first-child {
+    background: var(--mf-surface-alt);
+  }
+
+  .wt-row--overdue td:first-child {
+    box-shadow:
+      inset 4px 0 0 var(--mf-due-overdue),
+      1px 0 0 var(--mf-border);
+  }
 }
 
 .wt-dim {

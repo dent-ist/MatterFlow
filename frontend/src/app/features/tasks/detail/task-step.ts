@@ -58,7 +58,7 @@ export function valuesPatch(
           class="step__toggle"
           [id]="'step-btn-' + s.stepInstanceId"
           [attr.aria-expanded]="open()"
-          [attr.aria-controls]="'step-body-' + s.stepInstanceId"
+          [attr.aria-controls]="open() ? 'step-body-' + s.stepInstanceId : null"
           (click)="open.set(!open())"
         >
           <i class="pi" [class]="locked() ? 'pi-lock' : status().icon" aria-hidden="true"></i>

@@ -120,6 +120,23 @@ public sealed class TaskWorkflowApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_new_task_offers_step_reopen_exactly_when_the_endpoint_allows_it_E2E_F1()
+    {
+        var task = await WithFirstStepDoneAsync();
+        Status(task).ShouldBe("NEW");
+        var step = StepIds(task)[0];
+
+        // Step actions are allowed on a New task, so the UI flag and the endpoint agree that reopen is allowed too.
+        task.GetProperty("allowedActions").GetProperty("canExecuteSteps").GetBoolean().ShouldBeTrue();
+        task.GetProperty("allowedActions").GetProperty("canReopenSteps").GetBoolean().ShouldBeTrue();
+
+        var reopened = await _h.StepAsync(task, step, "reopen");
+
+        StepStatus(reopened, step).ShouldBe("IN_PROGRESS");
+        Status(reopened).ShouldBe("NEW");
+    }
+
+    [Fact]
     public async Task Reopening_a_step_of_a_completed_task_moves_the_task_back_to_in_progress_and_audits_both()
     {
         var completed = await _h.ReachAsync(_w, "COMPLETED");

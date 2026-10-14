@@ -151,6 +151,34 @@ describe('Workflow tab: ordered stepper', () => {
   });
 });
 
+describe('Workflow tab: read-only viewers (UAT2-18)', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('explains the disabled Complete task button instead of describing a dialog the viewer cannot reach', async () => {
+    const { el } = await mountTaskPage(
+      aTask({
+        workflow: { steps: orderedSteps() } as never,
+        allowedActions: allowed({
+          canExecuteSteps: false,
+          transitions: [
+            transition('COMPLETE', { permitted: false, blockedReason: 'PERMISSION_DENIED' }),
+          ],
+        }),
+      }),
+      ['Task.View'],
+      {},
+      'workflow',
+    );
+
+    const block = q(el, '[data-complete-task]')!;
+    expect(block.textContent).toContain("you don't have permission to complete it");
+    expect(block.textContent).not.toContain('You will be asked');
+    const button = q(el, '[data-complete-task-button]') as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    expect(button.getAttribute('aria-describedby')).toBe('wf-complete-note');
+  });
+});
+
 describe('Workflow tab: step actions and skip rules', () => {
   afterEach(() => TestBed.resetTestingModule());
 

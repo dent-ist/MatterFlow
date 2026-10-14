@@ -13,7 +13,6 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Checkbox } from 'primeng/checkbox';
-import { DatePicker } from 'primeng/datepicker';
 import { InputNumber } from 'primeng/inputnumber';
 import { InputText } from 'primeng/inputtext';
 import { MultiSelect } from 'primeng/multiselect';
@@ -31,6 +30,7 @@ import {
   FormEvaluation,
   FormField,
 } from '../rules/types';
+import { DateInput } from './date-input';
 import { fieldLabel, validationMessage } from './messages';
 import {
   MF_ASSET_PICKER,
@@ -128,7 +128,7 @@ let nextInstance = 0;
     Select,
     RadioButton,
     MultiSelect,
-    DatePicker,
+    DateInput,
     ReferencePickerHost,
   ],
   templateUrl: './dynamic-form.html',
@@ -165,6 +165,11 @@ export class DynamicForm {
     this.values();
     return {};
   });
+  /** DATE/DATETIME fields whose typed text is not a date; kept so the user sees it and the form can refuse it. */
+  private readonly badDates = linkedSignal<ReadonlySet<string>>(() => {
+    this.values();
+    return new Set<string>();
+  });
   private readonly touched = signal<ReadonlySet<string>>(new Set());
   private readonly submitted = signal(false);
 
@@ -177,8 +182,14 @@ export class DynamicForm {
     if (this.definitionErrors().length) return EMPTY_EVALUATION;
     const ev = this.evaluate(this.draft());
     const bad = this.badNumbers();
+    const badDates = this.badDates();
     const extra: FormError[] = this.definition()
-      .fields.filter((f) => f.control === 'NUMBER' && ev.visible[f.key] && f.key in bad)
+      .fields.filter(
+        (f) =>
+          ev.visible[f.key] &&
+          ((f.control === 'NUMBER' && f.key in bad) ||
+            ((f.control === 'DATE' || f.control === 'DATETIME') && badDates.has(f.key))),
+      )
       .map((f) => ({ fieldKey: f.key, code: 'INVALID_TYPE' as const }));
     if (!extra.length) return ev;
     const keys = new Set(extra.map((e) => e.fieldKey));
@@ -213,9 +224,7 @@ export class DynamicForm {
         label: fieldLabel(field),
         required: ev.required[field.key] === true,
         isInput,
-        items: (field.options ?? [])
-          .filter((o) => !offered || offered.includes(o.key))
-          .map((o) => ({ label: o.label?.trim() || o.key, value: o.key })),
+        items: this.itemsFor(field, offered),
         model: this.toModel(field, raw),
         text: readOnly ? this.toText(field, raw) : '',
         error:
@@ -227,6 +236,20 @@ export class DynamicForm {
     }
     return rows;
   });
+
+  /** Option lists keep the same array while their content is unchanged, so the select controls do not rebuild (NG0956, UAT2-23). */
+  private readonly itemCache = new Map<string, { signature: string; items: FieldRow['items'] }>();
+
+  private itemsFor(field: FormField, offered: readonly string[] | undefined): FieldRow['items'] {
+    const items = (field.options ?? [])
+      .filter((o) => !offered || offered.includes(o.key))
+      .map((o) => ({ label: o.label?.trim() || o.key, value: o.key }));
+    const signature = JSON.stringify(items);
+    const cached = this.itemCache.get(field.key);
+    if (cached?.signature === signature) return cached.items;
+    this.itemCache.set(field.key, { signature, items });
+    return items;
+  }
 
   /**
    * Validate for submit: reveals every error and returns the evaluation. Focuses the first
@@ -290,7 +313,37 @@ export class DynamicForm {
     this.setValue(field, isNumber ? Number(trimmed) : null);
   }
 
+  protected setDateInvalid(field: FormField, invalid: boolean): void {
+    this.badDates.update((set) => {
+      if (set.has(field.key) === invalid) return set;
+      const next = new Set(set);
+      if (invalid) next.add(field.key);
+      else next.delete(field.key);
+      return next;
+    });
+  }
+
+  protected hintId(row: FieldRow): string {
+    return `${row.id}-hint`;
+  }
+
+  protected dateDescribedBy(row: FieldRow): string {
+    return [
+      this.hintId(row),
+      row.field.helpText ? this.helpId(row) : '',
+      row.error ? this.errorId(row) : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
+
   private messageFor(field: FormField, code: FormErrorCode): string {
+    if (field.control === 'DATE' && code === 'INVALID_TYPE') {
+      return 'Enter a valid date, for example 2026-10-14 or 10/14/2026.';
+    }
+    if (field.control === 'DATETIME' && code === 'INVALID_TYPE') {
+      return 'Enter a valid date and time, for example 2026-10-14 14:30.';
+    }
     if (field.control === 'NUMBER' && code === 'INVALID_TYPE') {
       return 'Enter a number, for example 250.5';
     }

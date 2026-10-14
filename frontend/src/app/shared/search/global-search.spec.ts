@@ -77,6 +77,18 @@ describe('mf-global-search (header typeahead)', () => {
     );
   });
 
+  it('tells the user a single non-digit character is too short instead of showing nothing (UAT2-08)', async () => {
+    await create();
+    await type('a');
+    expect(api.search).not.toHaveBeenCalled();
+    expect(el().querySelector('[data-state=hint]')?.textContent).toContain('at least 2 characters');
+    expect(live()).toContain('at least 2 characters');
+
+    await type('3');
+    expect(el().querySelector('[data-state=hint]')).toBeNull();
+    expect(api.search).toHaveBeenCalled();
+  });
+
   it('shows hits grouped Matters, Clients, Tasks in the UX order and skips empty groups', async () => {
     await create();
     await type('343');
@@ -94,7 +106,8 @@ describe('mf-global-search (header typeahead)', () => {
     expect(text[0]).toContain('Merger Review');
     expect(text[0]).toContain('Acme Corp');
     expect(text[0]).toContain('Sensitive');
-    expect(text[1]).toContain('00343 Acme Corp');
+    expect(text[1]).toContain('00343');
+    expect(text[1]).toContain('Acme Corp');
     expect(text[2]).toContain('TSK-1042');
     expect(text.at(-1)).toBe('View all results for "343"');
   });

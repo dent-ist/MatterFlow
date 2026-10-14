@@ -3,14 +3,17 @@ import {
   Component,
   OnDestroy,
   computed,
+  effect,
   inject,
   input,
   model,
   signal,
+  untracked,
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { UsersLookupClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { ReferenceNames } from '../../../core/lookups/reference-names';
 
 interface Choice {
   id: number;
@@ -174,13 +177,32 @@ export class UserPicker implements OnDestroy {
   protected readonly options = signal<Choice[]>([]);
   protected readonly active = signal(-1);
   private readonly picked = signal<Choice | null>(null);
+  /** Name of a value that was set from outside (a stored form value), looked up once. */
+  private readonly resolved = signal<Choice | null>(null);
+  private readonly names = inject(ReferenceNames);
   private timer: ReturnType<typeof setTimeout> | undefined;
   private sequence = 0;
 
   protected readonly chosen = computed(() => {
+    const id = this.value();
     const pick = this.picked();
-    return pick && pick.id === this.value() ? pick : null;
+    if (pick && pick.id === id) return pick;
+    const known = this.resolved();
+    return known && known.id === id ? known : null;
   });
+
+  constructor() {
+    // A stored value shows the person's name, not "User 7" (UAT2-01).
+    effect(() => {
+      const id = this.value();
+      untracked(() => {
+        if (!id || this.picked()?.id === id || this.resolved()?.id === id) return;
+        void this.names.user(id).then((label) => {
+          if (label && this.value() === id) this.resolved.set({ id, label });
+        });
+      });
+    });
+  }
 
   ngOnDestroy(): void {
     clearTimeout(this.timer);

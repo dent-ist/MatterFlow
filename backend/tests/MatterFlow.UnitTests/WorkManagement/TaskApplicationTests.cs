@@ -132,8 +132,8 @@ public class TaskActionRulesTests
     }
 
     [Theory]
-    [InlineData(TaskStatusCode.New, true, true, true, false)]
-    [InlineData(TaskStatusCode.InProgress, true, true, true, false)]
+    [InlineData(TaskStatusCode.New, true, true, true, true)]
+    [InlineData(TaskStatusCode.InProgress, true, true, true, true)]
     [InlineData(TaskStatusCode.OnHold, true, true, false, false)]
     [InlineData(TaskStatusCode.Completed, false, false, false, true)]
     [InlineData(TaskStatusCode.Cancelled, false, false, false, false)]
@@ -145,7 +145,7 @@ public class TaskActionRulesTests
         actions.CanAssign.ShouldBe(assign);
         actions.CanSetPriority.ShouldBe(assign);
         actions.CanExecuteSteps.ShouldBe(execute);
-        actions.CanReopenSteps.ShouldBe(reopenSteps || status == TaskStatusCode.InProgress);
+        actions.CanReopenSteps.ShouldBe(reopenSteps);
         actions.CanComment.ShouldBeTrue();
     }
 

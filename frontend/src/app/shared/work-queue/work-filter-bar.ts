@@ -56,7 +56,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
         <button
           type="button"
           class="fb-button"
-          aria-controls="fb-panel"
+          [attr.aria-controls]="open() ? 'fb-panel' : null"
           [attr.aria-expanded]="open()"
           (click)="open.set(!open())"
         >
