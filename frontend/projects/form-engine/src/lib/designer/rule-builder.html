@@ -1,0 +1,213 @@
+<div
+  class="rb"
+  role="group"
+  [attr.aria-labelledby]="uid + '-legend'"
+  [attr.data-rule-builder]="legend()"
+>
+  <p class="rb__legend" [id]="uid + '-legend'">{{ legend() }}</p>
+
+  @if (!supported()) {
+    <p class="rb__note">
+      This rule uses a structure the builder can't edit. Summary: {{ summary() }}.
+    </p>
+    @if (!readOnly()) {
+      <button type="button" class="rb__btn" (click)="resetRule()">
+        Replace with a new condition
+      </button>
+    }
+  } @else {
+    @if (children().length > 1 || children()[0]?.group) {
+      <div class="rb__match">
+        <label [for]="uid + '-match'">Match</label>
+        <select
+          [id]="uid + '-match'"
+          [disabled]="readOnly()"
+          [value]="matchOp()"
+          (change)="setMatch([], $any($event.target).value)"
+        >
+          <option value="and" [selected]="matchOp() === 'and'">ALL of these</option>
+          <option value="or" [selected]="matchOp() === 'or'">ANY of these</option>
+        </select>
+      </div>
+    }
+
+    <ul class="rb__list">
+      @for (child of children(); track $index) {
+        <li class="rb__item">
+          @if (child.leaf; as leaf) {
+            <ng-container *ngTemplateOutlet="leafTpl; context: { $implicit: leaf }" />
+          } @else if (child.group; as group) {
+            <div class="rb__group" role="group" [attr.aria-label]="group.label">
+              <div class="rb__match">
+                <label [for]="group.id + '-match'">{{ group.label }}: match</label>
+                <select
+                  [id]="group.id + '-match'"
+                  [disabled]="readOnly()"
+                  (change)="setMatch(group.path, $any($event.target).value)"
+                >
+                  <option value="and" [selected]="group.op === 'and'">ALL of these</option>
+                  <option value="or" [selected]="group.op === 'or'">ANY of these</option>
+                </select>
+                @if (!readOnly()) {
+                  <button
+                    type="button"
+                    class="rb__btn"
+                    [attr.aria-label]="'Remove ' + group.label"
+                    (click)="removeGroup(group.path)"
+                  >
+                    Remove group
+                  </button>
+                }
+              </div>
+              <ul class="rb__list">
+                @for (leaf of group.leaves; track $index) {
+                  <li class="rb__item">
+                    <ng-container *ngTemplateOutlet="leafTpl; context: { $implicit: leaf }" />
+                  </li>
+                }
+              </ul>
+              @if (!readOnly()) {
+                <button
+                  type="button"
+                  class="rb__btn"
+                  [disabled]="eligible().length === 0"
+                  (click)="addCondition(group.path)"
+                >
+                  Add condition to {{ group.label }}
+                </button>
+              }
+            </div>
+          }
+        </li>
+      }
+    </ul>
+
+    @if (!readOnly()) {
+      <div class="rb__actions">
+        <button
+          type="button"
+          class="rb__btn"
+          [disabled]="eligible().length === 0"
+          (click)="addCondition([])"
+        >
+          Add condition
+        </button>
+        <button
+          type="button"
+          class="rb__btn"
+          [disabled]="eligible().length === 0"
+          (click)="addGroup()"
+        >
+          Add group
+        </button>
+      </div>
+    }
+
+    <p class="rb__summary" [attr.data-summary]="legend()">
+      <span class="rb__summary-label">In plain words:</span> {{ summary() }}
+    </p>
+  }
+
+  @if (issues().length) {
+    <ul class="rb__errors" [id]="uid + '-errors'">
+      @for (msg of issues(); track msg) {
+        <li><span aria-hidden="true">&#9888;</span> {{ msg }}</li>
+      }
+    </ul>
+  }
+</div>
+
+<ng-template #leafTpl let-leaf>
+  <div class="rb__leaf" role="group" [attr.aria-label]="'Condition ' + leaf.label">
+    <select
+      [id]="leaf.id + '-field'"
+      [attr.aria-label]="'Condition ' + leaf.label + ' field'"
+      [attr.aria-invalid]="leaf.missing ? 'true' : null"
+      [disabled]="readOnly()"
+      (change)="changeField(leaf, $any($event.target).value)"
+    >
+      @if (leaf.missing) {
+        <option [value]="leaf.fieldKey" selected>Missing field ({{ leaf.fieldKey }})</option>
+      }
+      @for (f of eligible(); track f.key) {
+        <option [value]="f.key" [selected]="f.key === leaf.fieldKey">{{ fieldName(f) }}</option>
+      }
+    </select>
+
+    <select
+      [id]="leaf.id + '-op'"
+      [attr.aria-label]="'Condition ' + leaf.label + ' comparison'"
+      [disabled]="readOnly() || leaf.missing"
+      (change)="changeOp(leaf, $any($event.target).value)"
+    >
+      @for (o of leaf.ops; track o.op) {
+        <option [value]="o.op" [selected]="o.op === leaf.op">{{ o.label }}</option>
+      }
+    </select>
+
+    @if (leaf.kind === 'scalar') {
+      @if (leaf.isOptionField) {
+        <select
+          [id]="leaf.id + '-value'"
+          [attr.aria-label]="'Condition ' + leaf.label + ' value'"
+          [disabled]="readOnly()"
+          (change)="changeScalar(leaf, $any($event.target).value)"
+        >
+          @if (!leaf.options.length) {
+            <option value="" selected>No options yet</option>
+          }
+          @for (o of leaf.options; track o.key) {
+            <option [value]="o.key" [selected]="o.key === leaf.scalar">{{ o.label }}</option>
+          }
+        </select>
+      } @else {
+        <input
+          [id]="leaf.id + '-value'"
+          [attr.aria-label]="'Condition ' + leaf.label + ' value'"
+          [type]="leaf.isNumeric ? 'number' : leaf.isDate ? 'date' : 'text'"
+          [value]="leaf.scalar"
+          [disabled]="readOnly()"
+          (change)="changeScalar(leaf, $any($event.target).value)"
+        />
+      }
+    } @else if (leaf.kind === 'list') {
+      @if (leaf.isOptionField) {
+        <fieldset class="rb__choices" [disabled]="readOnly()">
+          <legend class="rb__sr">Condition {{ leaf.label }} values</legend>
+          @for (o of leaf.options; track o.key) {
+            <label>
+              <input
+                type="checkbox"
+                [checked]="isSelected(leaf, o.key)"
+                (change)="toggleListOption(leaf, o.key, $any($event.target).checked)"
+              />
+              {{ o.label }}
+            </label>
+          }
+        </fieldset>
+      } @else {
+        <input
+          type="text"
+          [id]="leaf.id + '-value'"
+          [attr.aria-label]="'Condition ' + leaf.label + ' values, separated by commas'"
+          placeholder="Values, separated by commas"
+          [value]="leaf.list.join(', ')"
+          [disabled]="readOnly()"
+          (change)="changeList(leaf, $any($event.target).value)"
+        />
+      }
+    }
+
+    @if (!readOnly()) {
+      <button
+        type="button"
+        class="rb__btn"
+        [attr.aria-label]="'Remove condition ' + leaf.label"
+        [disabled]="!canRemoveLeaf()"
+        (click)="remove(leaf.path)"
+      >
+        Remove
+      </button>
+    }
+  </div>
+</ng-template>

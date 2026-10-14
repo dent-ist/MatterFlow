@@ -1,0 +1,175 @@
+import { DOCUMENT } from '@angular/common';
+import { TestBed } from '@angular/core/testing';
+import { ComponentFixture } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+
+import {
+  UNSAVED_CHANGES_MESSAGE,
+  unsavedChangesGuard,
+} from '../../../shared/guards/unsaved-changes.guard';
+import { FormDesignerApi } from './form-designer-api';
+import { InMemoryFormDesignerApi } from './in-memory-form-designer-api';
+import { TaskTypeFormPage } from './task-type-form-page';
+
+describe('TaskTypeFormPage', () => {
+  let fixture: ComponentFixture<TaskTypeFormPage>;
+  let api: InMemoryFormDesignerApi;
+  const el = (): HTMLElement => fixture.nativeElement;
+  const q = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = el()): T =>
+    root.querySelector<T>(sel)!;
+
+  async function settle(): Promise<void> {
+    for (let i = 0; i < 3; i++) {
+      await new Promise((r) => setTimeout(r));
+      fixture.detectChanges();
+    }
+    await fixture.whenStable();
+  }
+
+  const button = (label: string, root: ParentNode = el()): HTMLButtonElement | undefined =>
+    Array.from(root.querySelectorAll<HTMLButtonElement>('p-button button')).find(
+      (b) => b.textContent!.trim() === label,
+    );
+
+  async function press(label: string, root: ParentNode = el()): Promise<void> {
+    button(label, root)!.click();
+    await settle();
+  }
+
+  beforeEach(async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        InMemoryFormDesignerApi,
+        { provide: FormDesignerApi, useExisting: InMemoryFormDesignerApi },
+      ],
+    });
+    api = TestBed.inject(InMemoryFormDesignerApi);
+    fixture = TestBed.createComponent(TaskTypeFormPage);
+    await settle();
+  });
+
+  it('opens the published version read-only with a Create new draft action', async () => {
+    expect(q('[data-status]').textContent).toContain('Published v1');
+    expect(q('[data-readonly-banner]').textContent).toContain("can't be edited");
+    expect(el().querySelector('[data-add]')).toBeNull();
+    expect(button('Save draft')).toBeUndefined();
+    expect(button('Publish...')).toBeUndefined();
+    expect(button('Create new draft')).toBeDefined();
+    // The baseline example is shown and works in the preview.
+    expect(el().querySelector('mf-dynamic-form [data-field="requires_ocr"]')).not.toBeNull();
+  });
+
+  it('creates a draft from the published version, edits and saves it', async () => {
+    await press('Create new draft');
+    expect(q('[data-status]').textContent).toContain('Draft v2');
+    expect(q('[data-status]').textContent).toContain('published: v1');
+    expect(el().querySelector('[data-add]')).not.toBeNull();
+    expect(button('Save draft')!.disabled).toBe(true);
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+
+    q('[data-add="TEXT"]').click();
+    await settle();
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+    expect(button('Save draft')!.disabled).toBe(false);
+
+    await press('Save draft');
+    expect(q('[role=status]:not(.fd__sr)').textContent).toContain('Draft v2 saved.');
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+    const saved = await new Promise<number>((resolve) =>
+      api.getVersion('data-processing', 'v2').subscribe((v) => resolve(v.definition.fields.length)),
+    );
+    expect(saved).toBe(5);
+  });
+
+  it('publishes through a dialog that shows the diff, then locks the version', async () => {
+    await press('Create new draft');
+    q('[data-add="TEXT"]').click();
+    await settle();
+    await press('Save draft');
+    await press('Publish...');
+
+    const dialog = q('[data-dialog="publish"]', document.body);
+    expect(dialog.textContent).toContain('Added: Text');
+    expect(dialog.textContent).toContain('Existing tasks keep form version 1');
+    expect(dialog.textContent).toContain("Published versions can't be edited.");
+
+    await press('Publish version 2', document.body);
+    expect(q('[data-status]').textContent).toContain('Published v2');
+    expect(q('[data-readonly-banner]')).not.toBeNull();
+    const rows = Array.from(el().querySelectorAll('.ttf__table tbody tr')).map((r) =>
+      r.textContent!.replace(/\s+/g, ' '),
+    );
+    expect(rows[0]).toContain('Published');
+    expect(rows[1]).toContain('Retired');
+  });
+
+  it('blocks publishing while the definition has errors', async () => {
+    await press('Create new draft');
+    q('[data-add="SELECT"]').click();
+    await settle();
+    for (let i = 0; i < 2; i++) {
+      q<HTMLButtonElement>('button[aria-label^="Remove option"]').click();
+      await settle();
+    }
+    expect(q('[data-issue="EMPTY_OPTIONS"]').textContent).toContain('Add at least one option.');
+    expect(button('Publish...')!.disabled).toBe(true);
+  });
+
+  it('asks before discarding unsaved changes when switching versions', async () => {
+    await press('Create new draft');
+    q('[data-add="TEXT"]').click();
+    await settle();
+    const v1 = Array.from(el().querySelectorAll<HTMLButtonElement>('.ttf__link')).find(
+      (b) => b.textContent!.trim() === 'v1',
+    )!;
+    v1.click();
+    await settle();
+    expect(q('[data-dialog="discard"]', document.body)).not.toBeNull();
+    await press('Keep editing', document.body);
+    expect(q('[data-status]').textContent).toContain('Draft v2');
+
+    v1.click();
+    await settle();
+    await press('Discard changes', document.body);
+    expect(q('[data-status]').textContent).toContain('Published v1');
+  });
+
+  it('retires a published version after confirmation', async () => {
+    await press('Retire version');
+    expect(q('[data-dialog="retire"]', document.body)).not.toBeNull();
+    await press('Retire version', document.body.querySelector('[data-dialog="retire"]')!);
+    expect(q('[data-status]').textContent).toContain('Retired v1');
+  });
+});
+
+describe('unsavedChangesGuard', () => {
+  function run(dirty: boolean, answer: boolean): { result: unknown; asked: boolean } {
+    let asked = false;
+    const doc = {
+      defaultView: {
+        confirm: (message: string) => {
+          asked = true;
+          expect(message).toBe(UNSAVED_CHANGES_MESSAGE);
+          return answer;
+        },
+      },
+    };
+    TestBed.configureTestingModule({ providers: [{ provide: DOCUMENT, useValue: doc }] });
+    const result = TestBed.runInInjectionContext(() =>
+      unsavedChangesGuard({ hasUnsavedChanges: () => dirty }, null!, null!, null!),
+    );
+    return { result, asked };
+  }
+
+  it('lets clean screens go without asking', () => {
+    expect(run(false, false)).toEqual({ result: true, asked: false });
+  });
+
+  it('asks when dirty and honours the answer', () => {
+    TestBed.resetTestingModule();
+    expect(run(true, false)).toEqual({ result: false, asked: true });
+    TestBed.resetTestingModule();
+    expect(run(true, true)).toEqual({ result: true, asked: true });
+  });
+});

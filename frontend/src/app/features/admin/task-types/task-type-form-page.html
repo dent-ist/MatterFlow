@@ -1,0 +1,216 @@
+<header class="ttf__head">
+  <div>
+    <h1 class="ttf__title">Task Types &amp; Forms</h1>
+    @if (owner(); as o) {
+      <p class="ttf__crumb">
+        Task Type: {{ o.name }} &gt; Form
+        @if (current(); as c) {
+          <span class="ttf__status" data-status>
+            {{ title(c) }}
+            @if (published() && c.status === 'DRAFT') {
+              (published: v{{ published()!.versionNo }})
+            }
+          </span>
+        }
+      </p>
+    }
+  </div>
+
+  @if (state() === 'ready' && current()) {
+    <div class="ttf__actions">
+      @if (!readOnly()) {
+        <p-button
+          label="Save draft"
+          severity="secondary"
+          [disabled]="!dirty() || busy()"
+          (onClick)="saveDraft()"
+        />
+        <p-button label="Publish..." [disabled]="!canPublish()" (onClick)="openPublish()" />
+      } @else {
+        @if (current()!.status === 'PUBLISHED') {
+          <p-button
+            label="Retire version"
+            severity="secondary"
+            [disabled]="busy()"
+            (onClick)="openRetire()"
+          />
+        }
+        @if (!hasDraft()) {
+          <p-button label="Create new draft" [disabled]="busy()" (onClick)="createDraft()" />
+        }
+      }
+    </div>
+  }
+</header>
+
+<p class="ttf__live" role="status" aria-live="polite">{{ notice() }}</p>
+@if (failure()) {
+  <p class="ttf__error" role="alert">{{ failure() }}</p>
+}
+
+@switch (state()) {
+  @case ('loading') {
+    <p class="ttf__muted">Loading the form...</p>
+  }
+  @case ('error') {
+    <p-button label="Retry" icon="pi pi-refresh" (onClick)="retry()" />
+  }
+  @case ('ready') {
+    @if (!current()) {
+      <p class="ttf__muted">This task type has no form yet.</p>
+      <p-button label="Create new draft" (onClick)="createDraft()" />
+    } @else {
+      @if (readOnly()) {
+        <p class="ttf__banner" data-readonly-banner>
+          Version {{ current()!.versionNo }} is
+          {{ current()!.status === 'PUBLISHED' ? 'published' : 'retired' }}
+          and can't be edited.
+          @if (hasDraft()) {
+            Open the draft to keep editing.
+          } @else {
+            Use Create new draft to make changes.
+          }
+        </p>
+      }
+      @if (!readOnly() && errorCount() > 0) {
+        <p class="ttf__muted">
+          Fix {{ errorCount() }} {{ errorCount() === 1 ? 'error' : 'errors' }} before publishing.
+        </p>
+      }
+
+      <mf-form-designer
+        [definition]="working()"
+        [saved]="current()!.definition"
+        [readOnly]="readOnly()"
+        (definitionChange)="onChange($event)"
+      />
+
+      <section class="ttf__versions" aria-labelledby="ttf-versions-h">
+        <h2 id="ttf-versions-h" class="ttf__h2">Versions</h2>
+        <table class="ttf__table">
+          <caption class="ttf__sr">
+            Form versions
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Version</th>
+              <th scope="col">Status</th>
+              <th scope="col">Updated</th>
+              <th scope="col">Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (v of versions(); track v.id) {
+              <tr [class.is-current]="v.id === current()!.id">
+                <th scope="row">
+                  <button
+                    type="button"
+                    class="ttf__link"
+                    [attr.aria-current]="v.id === current()!.id ? 'true' : null"
+                    (click)="open(v.id, $any($event.target))"
+                  >
+                    v{{ v.versionNo }}
+                  </button>
+                </th>
+                <td>
+                  {{
+                    v.status === 'DRAFT'
+                      ? 'Draft'
+                      : v.status === 'PUBLISHED'
+                        ? 'Published'
+                        : 'Retired'
+                  }}
+                </td>
+                <td>{{ v.updatedAtUtc | date: 'medium' }}</td>
+                <td>{{ v.note ?? '' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
+  }
+}
+
+<p-dialog
+  [visible]="dialogOpen()"
+  (visibleChange)="onVisibleChange($event)"
+  [modal]="true"
+  [draggable]="false"
+  [closable]="true"
+  [focusOnShow]="true"
+  [style]="{ width: '34rem', maxWidth: '95vw' }"
+  [header]="
+    dialog() === 'publish'
+      ? 'Publish version ' + current()?.versionNo
+      : dialog() === 'retire'
+        ? 'Retire version ' + current()?.versionNo
+        : 'Discard unsaved changes?'
+  "
+>
+  @switch (dialog()) {
+    @case ('publish') {
+      <div class="ttf__dialog" data-dialog="publish">
+        @if (diff(); as d) {
+          @if (d.added.length + d.changed.length + d.removed.length === 0) {
+            <p>No field changes compared with the published version.</p>
+          } @else {
+            <ul class="ttf__diff">
+              @if (d.added.length) {
+                <li>Added: {{ labels(d.added) }}</li>
+              }
+              @if (d.changed.length) {
+                <li>Changed: {{ labels(d.changed) }}</li>
+              }
+              @if (d.removed.length) {
+                <li>Removed: {{ labels(d.removed) }}</li>
+              }
+            </ul>
+          }
+        }
+        <p>
+          @if (published(); as p) {
+            Existing tasks keep form version {{ p.versionNo }}. New tasks will use version
+            {{ current()?.versionNo }}.
+          } @else {
+            New tasks will use version {{ current()?.versionNo }}.
+          }
+          Published versions can't be edited.
+        </p>
+        <label for="ttf-note">Version note (optional)</label>
+        <textarea
+          id="ttf-note"
+          rows="2"
+          [ngModel]="publishNote()"
+          (ngModelChange)="publishNote.set($event)"
+        ></textarea>
+        <div class="ttf__dialog-actions">
+          <p-button label="Cancel" severity="secondary" (onClick)="closeDialog()" />
+          <p-button
+            [label]="'Publish version ' + current()?.versionNo"
+            [disabled]="busy()"
+            (onClick)="confirmPublish()"
+          />
+        </div>
+      </div>
+    }
+    @case ('retire') {
+      <div class="ttf__dialog" data-dialog="retire">
+        <p>New tasks can't use a retired version. Existing tasks keep it.</p>
+        <div class="ttf__dialog-actions">
+          <p-button label="Cancel" severity="secondary" (onClick)="closeDialog()" />
+          <p-button label="Retire version" severity="danger" (onClick)="confirmRetire()" />
+        </div>
+      </div>
+    }
+    @case ('discard') {
+      <div class="ttf__dialog" data-dialog="discard">
+        <p>You have unsaved changes to this draft. Opening another version discards them.</p>
+        <div class="ttf__dialog-actions">
+          <p-button label="Keep editing" severity="secondary" (onClick)="closeDialog()" />
+          <p-button label="Discard changes" severity="danger" (onClick)="confirmDiscard()" />
+        </div>
+      </div>
+    }
+  }
+</p-dialog>
