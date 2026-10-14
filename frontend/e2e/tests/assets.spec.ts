@@ -23,17 +23,21 @@ test.describe('Linking assets to a task (SCN-016)', () => {
       await page.getByRole('option', { name: new RegExp(displayName) }).click();
       await panel.locator('[data-link-role]').selectOption({ label: relationship });
       await panel.locator('[data-link-submit]').click();
-      await expect(panel.locator(`tr[data-asset-id]`).filter({ hasText: displayName })).toBeVisible();
+      await expect(
+        panel.locator(`tr[data-asset-id]`).filter({ hasText: displayName }),
+      ).toBeVisible();
     };
 
     await link(source.displayName, 'Source');
     await link(target.displayName, 'Destination');
     await expect(panel.getByRole('heading', { name: 'Assets (2)' })).toBeVisible();
-    await expect(panel.locator(`tr[data-asset-id="${source.assetId}"] [data-role-select]`)).toHaveValue(
-      /\d+/,
-    );
+    await expect(
+      panel.locator(`tr[data-asset-id="${source.assetId}"] [data-role-select]`),
+    ).toHaveValue(/\d+/);
 
-    await panel.locator(`tr[data-asset-id="${target.assetId}"] [data-role-select]`).selectOption({ label: 'Result' });
+    await panel
+      .locator(`tr[data-asset-id="${target.assetId}"] [data-role-select]`)
+      .selectOption({ label: 'Result' });
     await expect
       .poll(async () => {
         const links = await admin.get(`/api/v1/tasks/${task.taskId}/assets`);
@@ -48,7 +52,10 @@ test.describe('Linking assets to a task (SCN-016)', () => {
     await expect(panel.getByRole('heading', { name: 'Assets (1)' })).toBeVisible();
   });
 
-  test('SCN-016: the asset picker never offers assets of another matter', async ({ page, seed }) => {
+  test('SCN-016: the asset picker never offers assets of another matter', async ({
+    page,
+    seed,
+  }) => {
     const world = await seed.world();
     const other = await seed.matter();
     const mine = await seed.asset(world.matter, `Mine ${uid()}`);
@@ -62,8 +69,12 @@ test.describe('Linking assets to a task (SCN-016)', () => {
     const picker = panel.getByRole('combobox', { name: 'Asset to link' });
 
     await picker.fill(foreign.displayName);
-    await expect(page.getByRole('listbox').getByText('No assets in this matter match.')).toBeVisible();
-    await expect(page.getByRole('option', { name: new RegExp(foreign.displayName) })).toHaveCount(0);
+    await expect(
+      page.getByRole('listbox').getByText('No assets in this matter match.'),
+    ).toBeVisible();
+    await expect(page.getByRole('option', { name: new RegExp(foreign.displayName) })).toHaveCount(
+      0,
+    );
 
     await picker.fill(mine.displayName);
     await expect(page.getByRole('option', { name: new RegExp(mine.displayName) })).toBeVisible();
@@ -80,9 +91,17 @@ test.describe('Linking assets to a task (SCN-016)', () => {
     const b1 = await seed.asset(other);
     const task = await seed.task(world);
 
-    expect((await admin.raw('POST', `/api/v1/tasks/${task.taskId}/assets`, { assetId: a1.assetId })).status).toBe(201);
-    expect((await admin.raw('POST', `/api/v1/tasks/${task.taskId}/assets`, { assetId: a2.assetId })).status).toBe(201);
-    const rejected = await admin.raw('POST', `/api/v1/tasks/${task.taskId}/assets`, { assetId: b1.assetId });
+    expect(
+      (await admin.raw('POST', `/api/v1/tasks/${task.taskId}/assets`, { assetId: a1.assetId }))
+        .status,
+    ).toBe(201);
+    expect(
+      (await admin.raw('POST', `/api/v1/tasks/${task.taskId}/assets`, { assetId: a2.assetId }))
+        .status,
+    ).toBe(201);
+    const rejected = await admin.raw('POST', `/api/v1/tasks/${task.taskId}/assets`, {
+      assetId: b1.assetId,
+    });
     expect([400, 409]).toContain(rejected.status);
     expect(rejected.body.code).toBe('CROSS_MATTER_REFERENCE');
 
@@ -96,7 +115,10 @@ test.describe('Linking assets to a task (SCN-016)', () => {
     const asset = await seed.asset(world.matter);
     const task = await seed.task(world);
     await admin.post(`/api/v1/tasks/${task.taskId}/assets`, { assetId: asset.assetId });
-    await admin.post(`/api/v1/tasks/${task.taskId}/cancel`, { rowVersion: task.rowVersion, comment: 'Closed for test' });
+    await admin.post(`/api/v1/tasks/${task.taskId}/cancel`, {
+      rowVersion: task.rowVersion,
+      comment: 'Closed for test',
+    });
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);

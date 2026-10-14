@@ -15,12 +15,16 @@ test.describe('Access Pending and role grant', () => {
     const pendingPage = await asUser(newcomer.username);
     await pendingPage.goto('/');
     await expect(pendingPage).toHaveURL(/\/access-pending$/);
-    await expect(pendingPage.getByRole('heading', { name: 'Your access is pending' })).toBeVisible();
+    await expect(
+      pendingPage.getByRole('heading', { name: 'Your access is pending' }),
+    ).toBeVisible();
     await expect(pendingPage.locator('main')).toContainText(newcomer.username);
     await pendingPage.goto('/tasks');
     await expect(pendingPage).toHaveURL(/\/access-pending$/);
     await pendingPage.getByRole('button', { name: 'Check again' }).click();
-    await expect(pendingPage.getByRole('status').filter({ hasText: 'Still pending' })).toBeVisible();
+    await expect(
+      pendingPage.getByRole('status').filter({ hasText: 'Still pending' }),
+    ).toBeVisible();
 
     // The administrator finds the user under Pending access and grants a role.
     await page.goto('/admin/users');
@@ -42,10 +46,17 @@ test.describe('Access Pending and role grant', () => {
     await expect(pendingPage.getByRole('heading', { name: 'Task Queue', level: 1 })).toBeVisible();
   });
 
-  test('a disabled account is told so instead of being offered a way in', async ({ seed, asUser, admin }) => {
+  test('a disabled account is told so instead of being offered a way in', async ({
+    seed,
+    asUser,
+    admin,
+  }) => {
     const user = await seed.user(['Data Technician'], 'disabled');
     const detail = await admin.get(`/api/v1/users/${user.userId}`);
-    await admin.put(`/api/v1/users/${user.userId}/status`, { isActive: false, rowVersion: detail.rowVersion });
+    await admin.put(`/api/v1/users/${user.userId}/status`, {
+      isActive: false,
+      rowVersion: detail.rowVersion,
+    });
 
     const page = await asUser(user.username);
     await page.goto('/');
@@ -69,12 +80,16 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
 
     await page.goto('/tasks');
     await expect(page.getByRole('heading', { name: 'Task Queue', level: 1 })).toBeVisible();
-    await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Task Queue' })).toBeVisible();
+    await expect(
+      page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Task Queue' }),
+    ).toBeVisible();
     await expect(page.getByRole('list', { name: 'Administration' })).toHaveCount(0);
 
     for (const url of ['/admin/task-types', '/admin/workflows', '/admin/users', '/admin/audit']) {
       await page.goto(url);
-      await expect(page.getByRole('heading', { name: "You don't have permission to view this." })).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: "You don't have permission to view this." }),
+      ).toBeVisible();
     }
   });
 
@@ -92,15 +107,31 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
       const wfId = world.workflow.workflowDefinitionId;
       const attempts: [string, string, unknown][] = [
         ['POST', '/api/v1/task-types', { name: `Denied ${uid()}`, description: null }],
-        ['PUT', `/api/v1/task-types/${world.taskType.id}`, { name: 'Renamed', rowVersion: 'AAAAAAAAAAA=' }],
+        [
+          'PUT',
+          `/api/v1/task-types/${world.taskType.id}`,
+          { name: 'Renamed', rowVersion: 'AAAAAAAAAAA=' },
+        ],
         ['POST', '/api/v1/step-definitions', { title: `Denied step ${uid()}` }],
-        ['PUT', `/api/v1/step-definitions/${step}`, { title: 'Renamed step', rowVersion: 'AAAAAAAAAAA=' }],
+        [
+          'PUT',
+          `/api/v1/step-definitions/${step}`,
+          { title: 'Renamed step', rowVersion: 'AAAAAAAAAAA=' },
+        ],
         ['POST', `/api/v1/step-definitions/${step}/deactivate`, { rowVersion: 'AAAAAAAAAAA=' }],
         ['POST', '/api/v1/workflows', { name: `Denied wf ${uid()}`, isOrdered: true }],
         ['POST', `/api/v1/workflows/${wfId}/versions`, {}],
-        ['POST', `/api/v1/workflows/${wfId}/versions/${world.workflow.versionId}/retire`, { rowVersion: 'AAAAAAAAAAA=' }],
+        [
+          'POST',
+          `/api/v1/workflows/${wfId}/versions/${world.workflow.versionId}/retire`,
+          { rowVersion: 'AAAAAAAAAAA=' },
+        ],
         ['POST', '/api/v1/priorities', { label: `Denied ${uid()}`, color: '#000000' }],
-        ['POST', '/api/v1/roles', { name: `Denied role ${uid()}`, description: null, permissionCodes: [] }],
+        [
+          'POST',
+          '/api/v1/roles',
+          { name: `Denied role ${uid()}`, description: null, permissionCodes: [] },
+        ],
         ['PUT', `/api/v1/users/${tech.userId}/roles`, { roleIds: [1], rowVersion: 'AAAAAAAAAAA=' }],
         ['POST', '/api/v1/pods', { name: `Denied pod ${uid()}` }],
         ['POST', '/api/v1/asset-types', { name: `Denied type ${uid()}` }],
@@ -116,13 +147,18 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
       const stored = await admin.get(`/api/v1/task-types/${world.taskType.id}`);
       expect(stored.name).toBe(world.taskType.name);
       const me = await admin.get(`/api/v1/users/${tech.userId}`);
-      expect(me.roles.map((r: { name: string } | string) => (typeof r === 'string' ? r : r.name))).toEqual(['Data Technician']);
+      expect(
+        me.roles.map((r: { name: string } | string) => (typeof r === 'string' ? r : r.name)),
+      ).toEqual(['Data Technician']);
     } finally {
       await asTech.dispose();
     }
   });
 
-  test('SCN-019: a view-only role cannot create tasks and the UI does not offer it', async ({ seed, asUser }) => {
+  test('SCN-019: a view-only role cannot create tasks and the UI does not offer it', async ({
+    seed,
+    asUser,
+  }) => {
     const role = await seed.role(['Task.View', 'Matter.View', 'Client.View'], 'E2E viewer');
     const viewer = await seed.user([role.name], 'viewer');
     const page = await asUser(viewer.username);
@@ -132,7 +168,9 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
     await expect(page.getByRole('button', { name: 'Create Task' })).toHaveCount(0);
 
     await page.goto('/tasks/new');
-    await expect(page.getByRole('heading', { name: "You don't have permission to view this." })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: "You don't have permission to view this." }),
+    ).toBeVisible();
 
     const asViewer = await Api.as(viewer.username);
     try {
@@ -156,7 +194,15 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
     asUser,
   }) => {
     const role = await seed.role(
-      ['Task.View', 'Task.Create', 'Task.Edit', 'Matter.View', 'Client.View', 'Project.View', 'Pod.View'],
+      [
+        'Task.View',
+        'Task.Create',
+        'Task.Edit',
+        'Matter.View',
+        'Client.View',
+        'Project.View',
+        'Pod.View',
+      ],
       'E2E no-assign',
     );
     const user = await seed.user([role.name], 'noassign');

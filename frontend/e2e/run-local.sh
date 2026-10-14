@@ -34,6 +34,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
+mkdir -p "$root/artifacts"
+[ -d "$root/frontend/node_modules" ] || (cd "$root/frontend" && npm ci)
+
 if [ "${E2E_SKIP_BUILD:-0}" != "1" ] || [ ! -x "$publish_dir/MatterFlow.Api" ]; then
   echo "==> Build and publish (Angular build inside wwwroot)"
   SKIP_FRONTEND_INSTALL=1 "$root/deploy/publish.sh" "$publish_dir" "$rid"
@@ -80,6 +83,7 @@ echo "==> Playwright"
 cd "$root/frontend"
 if [ -z "${E2E_CHROMIUM_PATH:-}" ] && [ -x /opt/pw-browsers/chromium-1194/chrome-linux/chrome ]; then
   export E2E_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome
+  export E2E_NO_SANDBOX=1 # the preinstalled browser runs as root in the sandbox container
 fi
 export E2E_BASE_URL="http://127.0.0.1:$api_port"
 npx playwright test "$@"

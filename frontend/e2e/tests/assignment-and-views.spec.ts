@@ -59,6 +59,28 @@ test.describe('Assignment by a technician (SCN-006)', () => {
   });
 });
 
+test.describe('Known application defects (docs/qa/e2e-findings.md)', () => {
+  test.fixme('E2E-F2: a technician can reassign a task without a Pod to a colleague from Edit details', async ({
+    seed,
+    asUser,
+  }) => {
+    const tech = await seed.user(['Data Technician'], 'tech');
+    const colleague = await seed.user(['Data Technician'], 'colleague');
+    const world = await seed.world();
+    const task = await seed.task(world, { assignedUserId: tech.userId });
+
+    const page = await asUser(tech.username);
+    const detail = new TaskDetailPage(page);
+    await detail.open(task.taskId);
+    await page.getByRole('button', { name: 'Edit details' }).click();
+    await expect(
+      page
+        .getByLabel('Assignee', { exact: true })
+        .getByRole('option', { name: colleague.username }),
+    ).toBeAttached();
+  });
+});
+
 test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
   test('SCN-007: My Work lists my tasks from every Pod and none of anybody else', async ({
     seed,

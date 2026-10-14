@@ -31,7 +31,9 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     await expect(page.locator('[data-review]')).toBeVisible();
     await page.getByRole('button', { name: 'Fill the task' }).click();
 
-    await expect(create.title).toHaveValue('Process the Jones mailbox into the Smith workspace by end of day');
+    await expect(create.title).toHaveValue(
+      'Process the Jones mailbox into the Smith workspace by end of day',
+    );
     await expect(create.description).toHaveValue(/Please process the Jones mailbox/);
     await expect(create.requestorName).toHaveValue('Linda Cho');
     await expect(create.requestorEmail).toHaveValue('linda.cho@example-firm.test');
@@ -45,7 +47,11 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     await expect(create.title).toHaveValue('Process Jones mailbox (edited)');
   });
 
-  test('SCN-017: a pasted email becomes a real task once matter and type are chosen', async ({ page, seed, admin }) => {
+  test('SCN-017: a pasted email becomes a real task once matter and type are chosen', async ({
+    page,
+    seed,
+    admin,
+  }) => {
     const world = await seed.world();
     const create = new CreateTaskPage(page);
     await create.open();
@@ -68,22 +74,30 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     const create = new CreateTaskPage(page);
     await create.open();
 
-    await page.getByLabel('Choose an .eml or .msg file').setInputFiles(path.join(SAMPLES, '03-multipart-attachment.eml'));
+    await page
+      .getByLabel('Choose an .eml or .msg file')
+      .setInputFiles(path.join(SAMPLES, '03-multipart-attachment.eml'));
     await expect(page.locator('[data-review]')).toBeVisible();
     await page.getByRole('button', { name: 'Fill the task' }).click();
 
     await expect(create.title).toHaveValue('Search term report attached');
     await expect(create.requestorName).toHaveValue('Raj Patel');
     await expect(create.requestorEmail).toHaveValue('raj.patel@example-firm.test');
-    await expect(create.description).toHaveValue(/Report attached\. Hit counts are in the second tab\./);
+    await expect(create.description).toHaveValue(
+      /Report attached\. Hit counts are in the second tab\./,
+    );
     await expect(create.description).not.toHaveValue(/report\.xlsx/);
     await expect(page.locator('[data-source-sent]')).toContainText('Oct 14, 2026');
   });
 
-  test('SCN-017: a plain email file keeps the time of the Date header in the viewer time zone', async ({ page }) => {
+  test('SCN-017: a plain email file keeps the time of the Date header in the viewer time zone', async ({
+    page,
+  }) => {
     const create = new CreateTaskPage(page);
     await create.open();
-    await page.getByLabel('Choose an .eml or .msg file').setInputFiles(path.join(SAMPLES, '01-plain.eml'));
+    await page
+      .getByLabel('Choose an .eml or .msg file')
+      .setInputFiles(path.join(SAMPLES, '01-plain.eml'));
     await page.getByRole('button', { name: 'Fill the task' }).click();
 
     await expect(create.title).toHaveValue('Production volume 7 - request for load file');
@@ -91,7 +105,9 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     await expect(page.locator('[data-source-sent]')).toContainText('9:15 AM');
   });
 
-  test('SCN-017: every sample email parses through the API to subject, sender and body', async ({ admin }) => {
+  test('SCN-017: every sample email parses through the API to subject, sender and body', async ({
+    admin,
+  }) => {
     const expected: Record<string, { subject: RegExp; from: RegExp }> = {
       '01-plain.eml': { subject: /^Production volume 7/, from: /^jane\.doe@/ },
       '02-html-only.eml': { subject: /./, from: /@example-firm\.test$/ },
@@ -100,7 +116,11 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
       '05-forwarded-chain.eml': { subject: /^FW: FW:/, from: /^maria\.gomez@/ },
     };
     for (const [file, want] of Object.entries(expected)) {
-      const parsed = await admin.upload('/api/v1/intake/parse-email', 'file', path.join(SAMPLES, file));
+      const parsed = await admin.upload(
+        '/api/v1/intake/parse-email',
+        'file',
+        path.join(SAMPLES, file),
+      );
       expect(parsed.status, file).toBe(200);
       expect(parsed.body.subject, file).toMatch(want.subject);
       expect(parsed.body.fromEmail, file).toMatch(want.from);
@@ -109,7 +129,9 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     }
   });
 
-  test('the paste box needs text and the file box refuses something that is not an email', async ({ page }) => {
+  test('the paste box needs text and the file box refuses something that is not an email', async ({
+    page,
+  }) => {
     const create = new CreateTaskPage(page);
     await create.open();
     await expect(create.fillFromPasted).toBeDisabled();

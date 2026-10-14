@@ -10,7 +10,7 @@
     "test": "ng test frontend --watch=false && ng test form-engine --watch=false",
     "lint": "eslint \"{src,projects}/**/*.{ts,html}\"",
     "api:generate": "nswag run nswag.json",
-    "format:check": "prettier --check \"{src,projects}/**/*.{ts,html,scss}\"",
+    "format:check": "prettier --check \"{src,projects,e2e}/**/*.{ts,html,scss}\"",
     "e2e": "bash e2e/run-local.sh",
     "e2e:run": "playwright test -c e2e/playwright.config.ts",
     "e2e:report": "playwright show-report playwright-report",

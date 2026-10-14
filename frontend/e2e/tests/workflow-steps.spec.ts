@@ -316,3 +316,25 @@ test.describe('Completing a task with open steps (addendum K)', () => {
     await detail.expectStatus('Completed');
   });
 });
+
+test.describe('Known application defects (docs/qa/e2e-findings.md)', () => {
+  test.fixme('E2E-F1: a resolved step of a New task offers Reopen, as the API allows it', async ({
+    page,
+    seed,
+    admin,
+  }) => {
+    const world = await seed.world({ stepCount: 2 });
+    const task = await seed.task(world);
+    const api = new TaskApi(admin, task.taskId);
+    await api.completeSteps(1);
+    expect((await api.stepAction(1, 'reopen')).status).toBe(200);
+    await api.completeSteps(1);
+
+    const detail = new TaskDetailPage(page);
+    await detail.open(task.taskId);
+    await detail.showTab('Workflow');
+    const step = detail.step(world.workflow.stepTitles[0]);
+    await step.expand();
+    await expect(step.reopenButton).toBeVisible();
+  });
+});

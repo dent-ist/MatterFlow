@@ -7,7 +7,10 @@ const comments = (page: Page) => page.getByRole('region', { name: 'Comments' });
 const activity = (page: Page) => page.getByRole('region', { name: 'Activity' });
 
 test.describe('Comments and history (SCN-018)', () => {
-  test('SCN-018: a rich text comment shows its author, time and formatting', async ({ page, seed }) => {
+  test('SCN-018: a rich text comment shows its author, time and formatting', async ({
+    page,
+    seed,
+  }) => {
     const world = await seed.world();
     const task = await seed.task(world);
     const detail = new TaskDetailPage(page);
@@ -34,7 +37,10 @@ test.describe('Comments and history (SCN-018)', () => {
     const comment = panel.locator('[data-comment-id]');
     await expect(comment).toHaveCount(1);
     await expect(comment.locator('.tc__author')).toHaveText('ke\\kekim');
-    await expect(comment.locator('time').first()).toHaveAttribute('datetime', /^\d{4}-\d{2}-\d{2}T/);
+    await expect(comment.locator('time').first()).toHaveAttribute(
+      'datetime',
+      /^\d{4}-\d{2}-\d{2}T/,
+    );
     await expect(comment.locator('[data-body] :is(b, strong)')).toHaveText('Urgent');
     await expect(comment.locator('[data-body] :is(i, em)')).toHaveText('load file');
     await expect(comment.locator('[data-body] li')).toHaveText('first item');
@@ -42,10 +48,16 @@ test.describe('Comments and history (SCN-018)', () => {
     await expect(editor).toHaveText('');
   });
 
-  test('SCN-018: editing keeps the earlier text in the edit history', async ({ page, seed, admin }) => {
+  test('SCN-018: editing keeps the earlier text in the edit history', async ({
+    page,
+    seed,
+    admin,
+  }) => {
     const world = await seed.world();
     const task = await seed.task(world);
-    await admin.post(`/api/v1/tasks/${task.taskId}/comments`, { bodyHtml: '<p>First draft of the note</p>' });
+    await admin.post(`/api/v1/tasks/${task.taskId}/comments`, {
+      bodyHtml: '<p>First draft of the note</p>',
+    });
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await detail.showTab('Comments');
@@ -67,7 +79,9 @@ test.describe('Comments and history (SCN-018)', () => {
   test('SCN-018: a comment can be deleted after confirming', async ({ page, seed, admin }) => {
     const world = await seed.world();
     const task = await seed.task(world);
-    await admin.post(`/api/v1/tasks/${task.taskId}/comments`, { bodyHtml: '<p>Remove me later</p>' });
+    await admin.post(`/api/v1/tasks/${task.taskId}/comments`, {
+      bodyHtml: '<p>Remove me later</p>',
+    });
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await detail.showTab('Comments');
@@ -83,7 +97,11 @@ test.describe('Comments and history (SCN-018)', () => {
     await expect(panel.locator('[data-empty]')).toBeVisible();
   });
 
-  test('SCN-018: scripts and event handlers in a comment never reach the page', async ({ page, seed, admin }) => {
+  test('SCN-018: scripts and event handlers in a comment never reach the page', async ({
+    page,
+    seed,
+    admin,
+  }) => {
     const world = await seed.world();
     const task = await seed.task(world);
     await admin.post(`/api/v1/tasks/${task.taskId}/comments`, {
@@ -96,7 +114,9 @@ test.describe('Comments and history (SCN-018)', () => {
     const body = comments(page).locator('[data-body]');
     await expect(body).toContainText('Safe text');
     await expect(body.locator('script, img[onerror], [onclick]')).toHaveCount(0);
-    expect(await page.evaluate(() => (window as unknown as { __pwned?: number }).__pwned)).toBeUndefined();
+    expect(
+      await page.evaluate(() => (window as unknown as { __pwned?: number }).__pwned),
+    ).toBeUndefined();
   });
 
   test('SCN-018: the activity feed lists comments, status and workflow events with who and when', async ({
@@ -109,7 +129,9 @@ test.describe('Comments and history (SCN-018)', () => {
     const api = new TaskApi(admin, task.taskId);
     await api.start();
     await api.completeSteps(1);
-    await admin.post(`/api/v1/tasks/${task.taskId}/comments`, { bodyHtml: '<p>Activity check</p>' });
+    await admin.post(`/api/v1/tasks/${task.taskId}/comments`, {
+      bodyHtml: '<p>Activity check</p>',
+    });
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
