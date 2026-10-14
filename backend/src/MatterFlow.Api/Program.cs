@@ -3,11 +3,12 @@ using MatterFlow.Api;
 using MatterFlow.Api.Http;
 using MatterFlow.Api.OpenApi;
 using MatterFlow.Data.SchemaMigrations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddMatterFlowModules();
+builder.Services.AddMatterFlowModules(builder.Configuration, builder.Environment);
 builder.Services
     .AddControllers()
     .AddApplicationPart(typeof(Program).Assembly)
@@ -48,21 +49,32 @@ builder.Services.AddProblemDetails(o =>
     };
 });
 builder.Services.AddMatterFlowOpenApi();
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationResultHandler>();
 
 var app = builder.Build();
 
 // Schema scripts run before the host listens, so no request can hit an old schema (architecture 4.3).
 // Skipped when the build-time OpenAPI generator (GetDocument.Insider) starts the app only to read its API description.
 if (System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name != "GetDocument.Insider")
+{
     await app.Services.RunSchemaMigrationsAsync();
+
+    // Startup seeds (permission catalog, starter roles, dev users) need the migrated schema (architecture 4.3, 4.6).
+    if (app.Services.GetRequiredService<MigrationsOptions>().Enabled)
+        await app.Services.RunModuleSeedsAsync();
+}
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-if (app.Environment.IsDevelopment())
-    app.MapOpenApi("/openapi/{documentName}.json");
+app.UseMiddleware<RequestForgeryGuard>();
+app.UseAuthentication();
+app.UseAuthorization();
 
-app.MapHealthChecks("/health/live");
+if (app.Environment.IsDevelopment())
+    app.MapOpenApi("/openapi/{documentName}.json").AllowAnonymous();
+
+app.MapHealthChecks("/health/live").AllowAnonymous();
 app.MapControllers();
 
 app.Run();

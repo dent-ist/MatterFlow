@@ -1,12 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 using MatterFlow.Api.Http;
 using MatterFlow.SharedKernel.Time;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MatterFlow.Api.Controllers;
 
 /// <summary>Pipeline-proof endpoint: exercises routing, model validation, ProblemDetails, time-zone resolution and OpenAPI/NSwag generation.</summary>
 [ApiController]
+[AllowAnonymous]
 [Route("api/v1/system")]
 public class SystemController(IClock clock, IUserTimeZone timeZone) : ControllerBase
 {

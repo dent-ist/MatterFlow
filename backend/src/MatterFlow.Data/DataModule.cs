@@ -21,6 +21,8 @@ public static class DataModule
         services.TryAddSingleton<IClock, SystemClock>();
         services.TryAddScoped<ICurrentUser, SystemCurrentUser>();
         services.AddScoped<AuditColumnsInterceptor>();
+        // Modules cannot reference Data (dependency rules), so they take the plain DbContext, which resolves to the shared context.
+        services.AddScoped<DbContext>(sp => sp.GetRequiredService<MatterFlowDbContext>());
         services.AddDbContext<MatterFlowDbContext>((sp, options) =>
         {
             var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString(ConnectionStringName)

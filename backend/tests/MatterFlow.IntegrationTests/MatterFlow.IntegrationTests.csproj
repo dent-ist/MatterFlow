@@ -10,8 +10,12 @@
     <PackageReference Include="Shouldly" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers.MsSql" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\MatterFlow.Api\MatterFlow.Api.csproj" />
+    <ProjectReference Include="..\..\src\MatterFlow.Data\MatterFlow.Data.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Identity\MatterFlow.Identity.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Identity.Contracts\MatterFlow.Identity.Contracts.csproj" />
   </ItemGroup>
 </Project>

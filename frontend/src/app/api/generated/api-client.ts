@@ -97,6 +97,77 @@ export class SystemClient implements ISystemClient {
     }
 }
 
+export interface IMeClient {
+    /**
+     * @return OK
+     */
+    getMe(): Observable<MeResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class MeClient implements IMeClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    getMe(): Observable<MeResponse> {
+        let url_ = this.baseUrl + "/api/v1/me";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMe(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMe(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MeResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MeResponse>;
+        }));
+    }
+
+    protected processGetMe(response: HttpResponseBase): Observable<MeResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MeResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface ApiFieldError {
     code: string;
     message: string;
@@ -115,6 +186,21 @@ export interface ApiProblemDetails {
     traceId?: string | undefined;
     errors?: { [key: string]: ApiFieldError[]; } | undefined;
     meta?: any | undefined;
+
+    [key: string]: any;
+}
+
+export interface MeResponse {
+    userId: number;
+    displayName: string;
+    status: string;
+    isPending: boolean;
+    windowsAccount: string | undefined;
+    email: string | undefined;
+    registeredAtUtc: string;
+    roles: string[];
+    permissions: string[];
+    isSystemAdmin: boolean;
 
     [key: string]: any;
 }

@@ -3,6 +3,7 @@ using MatterFlow.Audit;
 using MatterFlow.Configuration;
 using MatterFlow.Data;
 using MatterFlow.Identity;
+using MatterFlow.Identity.Seeding;
 using MatterFlow.Intake;
 using MatterFlow.Organization;
 using MatterFlow.Search;
@@ -18,10 +19,10 @@ namespace MatterFlow.Api;
 /// </summary>
 public static class ModuleComposition
 {
-    public static IServiceCollection AddMatterFlowModules(this IServiceCollection services)
+    public static IServiceCollection AddMatterFlowModules(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         services.AddDataModule();
-        services.AddIdentityModule();
+        services.AddIdentityModule(configuration, environment);
         services.AddAuditModule();
         services.AddConfigurationModule();
         services.AddOrganizationModule();
@@ -32,5 +33,11 @@ public static class ModuleComposition
         services.AddSearchModule();
         services.AddIntakeModule();
         return services;
+    }
+
+    /// <summary>Runs every module's idempotent startup seed. Call after schema migrations, before the host listens.</summary>
+    public static async Task RunModuleSeedsAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
+    {
+        await services.SeedIdentityAsync(cancellationToken);
     }
 }

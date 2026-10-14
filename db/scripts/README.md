@@ -33,4 +33,4 @@ EF Core maps entities for data access only; there are no EF migrations. The star
 
 ## Status
 
-`01-init.sql` exists (schema conventions and `dbo.TaskNumberSeq`). Real tables arrive in later scripts.
+`01-init.sql` (schema conventions, `dbo.TaskNumberSeq`) and `02-identity-authz.sql` (AppUser, UserIdentity, Role, Permission, RolePermission, UserRole, System Admin role row) exist. Real tables arrive in later scripts.
