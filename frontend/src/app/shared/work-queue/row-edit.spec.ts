@@ -1,0 +1,262 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of, throwError } from 'rxjs';
+import {
+  PodsClient,
+  TaskQueueRow,
+  TasksClient,
+  UsersLookupClient,
+} from '../../api/generated/api-client';
+import { FakeMeApi, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
+import { AuthStore } from '../../core/auth/auth.store';
+import { Permission } from '../../core/auth/permissions';
+import { apiError } from '../../core/lookups/lookups-testing';
+import { NotificationService } from '../../core/notify/notification.service';
+import { InlineField } from './inline-edit';
+import { RowEdit } from './row-edit';
+import { aRow, provideLookups } from './work-queue-testing';
+
+const taskOf = (row: TaskQueueRow, patch: Record<string, unknown> = {}) => ({
+  taskId: row.taskId,
+  taskNumber: row.taskNumber,
+  status: row.status,
+  statusLabel: row.statusLabel,
+  priority: row.priority,
+  assignedPod: row.assignedPod,
+  assignedUser: row.assignedUser,
+  isAsap: true,
+  isOverdue: false,
+  statusChangedAtUtc: row.statusChangedAtUtc,
+  rowVersion: 'NEW-VERSION',
+  ...patch,
+});
+
+describe('RowEdit', () => {
+  let fixture: ComponentFixture<RowEdit>;
+  let tasks: Record<string, ReturnType<typeof vi.fn>>;
+  let pods: { getPod: ReturnType<typeof vi.fn> };
+  let users: { lookupUsers: ReturnType<typeof vi.fn> };
+  let notify: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
+  let emitted: TaskQueueRow[];
+  const el = () => fixture.nativeElement as HTMLElement;
+  const trigger = () => el().querySelector<HTMLButtonElement>('[data-inline-trigger]')!;
+  const option = (id: string) => el().querySelector<HTMLButtonElement>(`[data-option="${id}"]`)!;
+
+  async function create(
+    field: InlineField,
+    row: TaskQueueRow,
+    permissions: Permission[] = [
+      'Task.SetPriority',
+      'Task.Assign',
+      'Task.ChangeStatus',
+      'Pod.View',
+    ],
+  ) {
+    tasks = {
+      setTaskPriority: vi.fn(() =>
+        of(taskOf(row, { priority: { priorityId: 3, label: 'Low', color: 'low', sortOrder: 3 } })),
+      ),
+      assignTask: vi.fn(() =>
+        of(
+          taskOf(row, {
+            status: 'IN_PROGRESS',
+            statusLabel: 'In Progress',
+            assignedUser: { userId: 4, displayName: 'Sam Kim', isActive: true },
+          }),
+        ),
+      ),
+      changeTaskStatus: vi.fn(() =>
+        of(taskOf(row, { status: 'IN_PROGRESS', statusLabel: 'In Progress' })),
+      ),
+      getTask: vi.fn(() => of(taskOf(row, { rowVersion: 'FRESH' }))),
+    };
+    pods = {
+      getPod: vi.fn(() =>
+        of({
+          members: [
+            { userId: 4, displayName: 'Sam Kim', isActive: true },
+            { userId: 5, displayName: 'Gone Away', isActive: false },
+          ],
+        }),
+      ),
+    };
+    users = { lookupUsers: vi.fn(() => of([{ userId: 8, displayName: 'Any Person' }])) };
+    notify = { success: vi.fn(), error: vi.fn() };
+    TestBed.configureTestingModule({
+      providers: [
+        ...provideLookups(),
+        provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
+        { provide: TasksClient, useValue: tasks },
+        { provide: PodsClient, useValue: pods },
+        { provide: UsersLookupClient, useValue: users },
+        { provide: NotificationService, useValue: notify },
+      ],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
+    fixture = TestBed.createComponent(RowEdit);
+    fixture.componentRef.setInput('field', field);
+    fixture.componentRef.setInput('row', row);
+    emitted = [];
+    fixture.componentInstance.rowChange.subscribe((r) => emitted.push(r));
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  async function open() {
+    trigger().click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await new Promise((r) => setTimeout(r));
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  async function pick(id: string) {
+    option(id).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  it('shows the value with a chevron and an accessible name that includes the current value', async () => {
+    await create('priority', aRow());
+    expect(trigger().getAttribute('aria-label')).toBe(
+      'Change priority of TSK-1042, currently Critical',
+    );
+    expect(trigger().getAttribute('aria-haspopup')).toBe('true');
+    expect(trigger().querySelector('.pi-chevron-down')).not.toBeNull();
+    expect(el().textContent).toContain('Critical');
+  });
+
+  it('priority: shows the new priority at once, then the server row, and toasts', async () => {
+    await create('priority', aRow());
+    await open();
+    expect(option('2')).not.toBeNull();
+    expect(option('1').getAttribute('aria-checked')).toBe('true');
+    await pick('3');
+
+    expect(tasks['setTaskPriority']).toHaveBeenCalledWith(1042, {
+      rowVersion: 'AAAA',
+      priorityId: 3,
+    });
+    expect(emitted[0].priority.priorityId).toBe(3);
+    expect(emitted[0].rowVersion).toBe('AAAA');
+    expect(emitted[1].rowVersion).toBe('NEW-VERSION');
+    expect(notify.success).toHaveBeenCalledTimes(1);
+  });
+
+  it('puts the old value back and toasts when the save fails', async () => {
+    await create('priority', aRow());
+    tasks['setTaskPriority'].mockReturnValue(throwError(() => new Error('boom')));
+    await open();
+    await pick('3');
+
+    expect(emitted).toHaveLength(2);
+    expect(emitted[1]).toEqual(aRow());
+    expect(notify.error).toHaveBeenCalled();
+  });
+
+  it('refreshes the row from the server after a rowVersion conflict', async () => {
+    await create('priority', aRow());
+    tasks['setTaskPriority'].mockReturnValue(
+      throwError(() => apiError(409, 'CONCURRENCY_CONFLICT', 'changed')),
+    );
+    await open();
+    await pick('3');
+
+    expect(notify.error).toHaveBeenCalledWith(expect.stringContaining('refreshed'));
+    expect(tasks['getTask']).toHaveBeenCalledWith(1042);
+    expect(emitted.at(-1)!.rowVersion).toBe('FRESH');
+  });
+
+  it('assignee: offers the active members of the Pod and Unassigned, and applies the choice', async () => {
+    await create('assignee', aRow({ status: 'NEW' }));
+    await open();
+    expect(pods.getPod).toHaveBeenCalledWith(5);
+    expect(users.lookupUsers).not.toHaveBeenCalled();
+    expect(option('none')).not.toBeNull();
+    expect(option('4')).not.toBeNull();
+    expect(option('5')).toBeNull();
+
+    await pick('4');
+    expect(tasks['assignTask']).toHaveBeenCalledWith(1042, {
+      rowVersion: 'AAAA',
+      podId: 5,
+      userId: 4,
+    });
+    // A New task starts at once, and the final row follows the server.
+    expect(emitted[0].status).toBe('IN_PROGRESS');
+    expect(emitted[0].assignedUser?.displayName).toBe('Sam Kim');
+    expect(emitted[1].status).toBe('IN_PROGRESS');
+    expect(notify.success).toHaveBeenCalledWith(expect.stringContaining('moved to In Progress'));
+  });
+
+  it('assignee without a Pod searches all users', async () => {
+    await create('assignee', aRow({ assignedPod: undefined, assignedUser: undefined }));
+    await open();
+    expect(pods.getPod).not.toHaveBeenCalled();
+    expect(option('8')).not.toBeNull();
+    expect(option('none')).toBeNull();
+  });
+
+  it('assignee: Unassigned sends no user and keeps the Pod', async () => {
+    await create('assignee', aRow());
+    tasks['assignTask'].mockReturnValue(of(taskOf(aRow(), { assignedUser: undefined })));
+    await open();
+    await pick('none');
+    expect(tasks['assignTask']).toHaveBeenCalledWith(1042, {
+      rowVersion: 'AAAA',
+      podId: 5,
+      userId: undefined,
+    });
+    expect(emitted[0].assignedUser).toBeUndefined();
+  });
+
+  it('status: lists only allowed transitions and Start goes straight to In Progress', async () => {
+    await create('status', aRow({ status: 'NEW', statusLabel: 'New' }));
+    await open();
+    expect(
+      Array.from(el().querySelectorAll('[data-option]')).map((o) => o.getAttribute('data-option')),
+    ).toEqual(['START', 'HOLD']);
+    await pick('START');
+    expect(tasks['changeTaskStatus']).toHaveBeenCalledWith(1042, {
+      rowVersion: 'AAAA',
+      status: 'IN_PROGRESS',
+    });
+    expect(emitted[0].status).toBe('IN_PROGRESS');
+  });
+
+  it('shows Reopen disabled with the reason when the matter is inactive', async () => {
+    await create('status', aRow({ status: 'CANCELLED', matterIsActive: false }), ['Task.Reopen']);
+    await open();
+    expect(option('REOPEN').getAttribute('aria-disabled')).toBe('true');
+    expect(el().textContent).toContain('Matter is inactive');
+    await pick('REOPEN');
+    expect(el().querySelector('mf-inline-status-flow')).toBeNull();
+  });
+
+  it('Escape closes the menu and returns focus to the trigger; opening is keyboard operable', async () => {
+    await create('priority', aRow());
+    trigger().focus();
+    trigger().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(trigger().getAttribute('aria-expanded')).toBe('true');
+
+    option('1').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+    expect(el().querySelector('[role="menu"]')).toBeNull();
+    expect(document.activeElement).toBe(trigger());
+  });
+
+  it('does not let clicks and keys inside the control reach the row', async () => {
+    await create('priority', aRow());
+    const reached = vi.fn();
+    document.body.addEventListener('click', reached);
+    document.body.addEventListener('keydown', reached);
+    document.body.appendChild(el());
+    await open();
+    option('1').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    expect(reached).not.toHaveBeenCalled();
+    document.body.removeEventListener('click', reached);
+    document.body.removeEventListener('keydown', reached);
+  });
+});

@@ -158,6 +158,13 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     }
   }
 
+  /** Swaps one row in place (an inline edit); the list is not reloaded. */
+  protected replaceRow(row: TaskQueueRow): void {
+    this.data.update((d) =>
+      d ? { ...d, items: d.items.map((r) => (r.taskId === row.taskId ? row : r)) } : d,
+    );
+  }
+
   // ---- URL
 
   protected navigate(next: QueueState, replaceUrl = false): void {

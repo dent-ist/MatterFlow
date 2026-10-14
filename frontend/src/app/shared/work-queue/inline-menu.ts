@@ -1,0 +1,341 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  HostListener,
+  inject,
+  input,
+  OnDestroy,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
+
+export interface MenuOption {
+  id: string;
+  label: string;
+  /** Muted text after the label (for a status action: the status it leads to). */
+  hint?: string;
+  selected?: boolean;
+  disabled?: boolean;
+  /** Why a disabled option cannot be used; read out with the option. */
+  reason?: string;
+}
+
+let nextId = 0;
+
+/**
+ * A value in a table cell that opens a small menu (inline edit). The projected content is the current value; a chevron
+ * marks it as changeable. A button with `aria-haspopup`; Enter, Space or Arrow Down opens, arrows move, Enter or Space picks,
+ * Esc closes and returns focus. The list is fixed-positioned from the trigger so the table's scroll container does not clip it.
+ * Clicks and keys inside never reach the row.
+ */
+@Component({
+  selector: 'mf-inline-menu',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <button
+      #trigger
+      type="button"
+      class="im-trigger"
+      data-inline-trigger
+      aria-haspopup="true"
+      [attr.aria-expanded]="open()"
+      [attr.aria-controls]="open() ? uid + '-pop' : null"
+      [attr.aria-label]="label()"
+      [attr.aria-busy]="busy() ? 'true' : null"
+      [disabled]="busy()"
+      (click)="toggle($event)"
+      (keydown)="onTriggerKey($event)"
+    >
+      <ng-content />
+      <i
+        class="pi"
+        [class]="busy() ? 'pi-spin pi-spinner' : 'pi-chevron-down'"
+        aria-hidden="true"
+      ></i>
+    </button>
+    @if (open()) {
+      <div
+        #pop
+        class="im-pop"
+        role="group"
+        [id]="uid + '-pop'"
+        [attr.aria-label]="menuLabel()"
+        [style.top.px]="pos().top"
+        [style.left.px]="pos().left"
+        (click)="$event.stopPropagation()"
+        (keydown)="onPopKey($event)"
+      >
+        @if (searchable()) {
+          <input
+            #search
+            type="text"
+            class="im-search"
+            autocomplete="off"
+            [attr.aria-label]="searchLabel()"
+            [value]="query()"
+            (input)="onSearch($event)"
+          />
+        }
+        <div role="menu" class="im-list" [attr.aria-label]="menuLabel()">
+          @if (loading()) {
+            <p class="im-note" role="status">Loading...</p>
+          } @else if (options().length === 0) {
+            <p class="im-note" role="status">{{ emptyText() }}</p>
+          }
+          @for (o of options(); track o.id) {
+            <button
+              type="button"
+              role="menuitemradio"
+              class="im-item"
+              [attr.data-option]="o.id"
+              [attr.aria-checked]="o.selected ? 'true' : 'false'"
+              [attr.aria-disabled]="o.disabled ? 'true' : null"
+              [attr.aria-describedby]="o.reason ? uid + '-r-' + o.id : null"
+              (click)="pick(o)"
+            >
+              <i
+                class="pi"
+                [class.pi-check]="o.selected"
+                aria-hidden="true"
+                style="width: 1rem"
+              ></i>
+              <span>{{ o.label }}</span>
+              @if (o.hint) {
+                <span class="im-hint">{{ o.hint }}</span>
+              }
+            </button>
+            @if (o.reason) {
+              <span class="im-reason" [id]="uid + '-r-' + o.id">{{ o.reason }}</span>
+            }
+          }
+        </div>
+      </div>
+    }
+  `,
+  styles: `
+    :host {
+      display: inline-block;
+    }
+    .im-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      min-height: 1.75rem;
+      padding: 0 var(--mf-s1);
+      border: 1px solid transparent;
+      border-radius: var(--mf-radius);
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .im-trigger:hover:not(:disabled),
+    .im-trigger:focus-visible,
+    .im-trigger[aria-expanded='true'] {
+      border-color: var(--mf-border-strong);
+      background: var(--mf-surface-alt);
+    }
+    .im-trigger:disabled {
+      cursor: progress;
+      opacity: 0.7;
+    }
+    .im-trigger .pi {
+      color: var(--mf-text-muted);
+      font-size: 0.7rem;
+    }
+    .im-pop {
+      position: fixed;
+      z-index: 1100;
+      min-width: 14rem;
+      max-width: 22rem;
+      max-height: 16rem;
+      overflow-y: auto;
+      padding: var(--mf-s1);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface);
+      box-shadow: var(--mf-shadow-1);
+    }
+    .im-search {
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 2rem;
+      margin-bottom: var(--mf-s1);
+      padding: 0 var(--mf-s2);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface);
+      color: var(--mf-text);
+      font: inherit;
+    }
+    .im-item {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      width: 100%;
+      min-height: var(--mf-target-min, 2rem);
+      padding: 0 var(--mf-s2);
+      border: 0;
+      background: transparent;
+      color: var(--mf-text);
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .im-item:hover:not([aria-disabled='true']),
+    .im-item:focus-visible {
+      background: var(--mf-surface-alt);
+    }
+    .im-item[aria-disabled='true'] {
+      color: var(--mf-text-muted);
+      cursor: not-allowed;
+    }
+    .im-item[aria-checked='true'] {
+      font-weight: 600;
+    }
+    .im-hint,
+    .im-note,
+    .im-reason {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+    .im-note {
+      margin: 0;
+      padding: var(--mf-s2);
+    }
+    .im-reason {
+      display: block;
+      padding: 0 var(--mf-s2) var(--mf-s2) 1.75rem;
+    }
+  `,
+})
+export class InlineMenu implements OnDestroy {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  /** Accessible name of the trigger: what it changes and the current value. */
+  readonly label = input.required<string>();
+  readonly menuLabel = input('Options');
+  readonly options = input.required<readonly MenuOption[]>();
+  readonly searchable = input(false);
+  readonly searchLabel = input('Search');
+  readonly emptyText = input('No matches.');
+  readonly loading = input(false);
+  readonly busy = input(false);
+
+  readonly opened = output<void>();
+  readonly searched = output<string>();
+  readonly picked = output<MenuOption>();
+
+  protected readonly uid = `im-${nextId++}`;
+  protected readonly open = signal(false);
+  protected readonly query = signal('');
+  protected readonly pos = signal({ top: 0, left: 0 });
+  private readonly trigger = viewChild.required<ElementRef<HTMLButtonElement>>('trigger');
+
+  ngOnDestroy(): void {
+    document.removeEventListener('scroll', this.onScroll, true);
+  }
+
+  protected toggle(event: Event): void {
+    event.stopPropagation();
+    if (this.open()) this.close(true);
+    else this.show();
+  }
+
+  show(): void {
+    const rect = this.trigger().nativeElement.getBoundingClientRect();
+    const below = rect.bottom + 4;
+    const flip = below + 260 > window.innerHeight && rect.top > 260;
+    this.pos.set({
+      top: flip ? Math.max(4, rect.top - 4 - 256) : below,
+      left: Math.max(4, Math.min(rect.left, window.innerWidth - 240)),
+    });
+    this.query.set('');
+    this.open.set(true);
+    document.addEventListener('scroll', this.onScroll, true);
+    this.opened.emit();
+    setTimeout(() => this.focusFirst());
+  }
+
+  focusTrigger(): void {
+    this.trigger().nativeElement.focus();
+  }
+
+  close(returnFocus: boolean): void {
+    if (!this.open()) return;
+    this.open.set(false);
+    document.removeEventListener('scroll', this.onScroll, true);
+    if (returnFocus) this.trigger().nativeElement.focus();
+  }
+
+  protected pick(o: MenuOption): void {
+    if (o.disabled) return;
+    this.close(true);
+    this.picked.emit(o);
+  }
+
+  protected onSearch(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.query.set(value);
+    this.searched.emit(value);
+  }
+
+  protected onTriggerKey(event: KeyboardEvent): void {
+    event.stopPropagation();
+    if (event.key === 'ArrowDown' && !this.open()) {
+      event.preventDefault();
+      this.show();
+    }
+  }
+
+  protected onPopKey(event: KeyboardEvent): void {
+    event.stopPropagation();
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.close(true);
+    } else if (event.key === 'Tab') {
+      this.close(false);
+    } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const items = this.focusables();
+      const index = items.indexOf(document.activeElement as HTMLElement);
+      const step = event.key === 'ArrowDown' ? 1 : -1;
+      items[(index + step + items.length) % items.length]?.focus();
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  protected onDocumentClick(event: Event): void {
+    if (this.open() && !this.host.nativeElement.contains(event.target as Node)) this.close(false);
+  }
+
+  @HostListener('window:resize')
+  protected onViewportChange(): void {
+    this.close(false);
+  }
+
+  /** Scrolling anywhere but the list itself (the table scrolls sideways) would leave the fixed list behind. */
+  private readonly onScroll = (event: Event): void => {
+    if (!this.host.nativeElement.contains(event.target as Node)) this.close(false);
+  };
+
+  private focusables(): HTMLElement[] {
+    return Array.from(
+      this.host.nativeElement.querySelectorAll<HTMLElement>(
+        '.im-search, .im-item:not([aria-disabled="true"])',
+      ),
+    );
+  }
+
+  private focusFirst(): void {
+    const root = this.host.nativeElement;
+    const target =
+      root.querySelector<HTMLElement>('.im-search') ??
+      root.querySelector<HTMLElement>('.im-item[aria-checked="true"]') ??
+      root.querySelector<HTMLElement>('.im-item:not([aria-disabled="true"])');
+    target?.focus();
+  }
+}

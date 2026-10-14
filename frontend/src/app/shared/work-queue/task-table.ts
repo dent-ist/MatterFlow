@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TaskQueueRow } from '../../api/generated/api-client';
+import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { formatInstantDate } from '../../core/time/time';
 import { DueStatePipe } from '../pipes/due-label.pipe';
@@ -8,18 +9,20 @@ import { LocalTimePipe } from '../pipes/local-time.pipe';
 import { PriorityBadge } from '../ui/priority-badge';
 import { StatusBadge } from '../ui/status-badge';
 import { WORK_COLUMNS, ColumnDef, Density } from './column-prefs';
+import { InlineField, canEditField } from './inline-edit';
 import { SortDirection } from './queue-filters';
+import { RowEdit } from './row-edit';
 
 const SKELETON_ROWS = [0, 1, 2, 3, 4];
 
 /**
  * The table behind Task Queue, My Work and Pod Work (UX 5.2, S02 to S04): a real `<table>` with sortable header buttons that
  * announce `aria-sort`, a due cell that never relies on color alone (ASAP pill, "Overdue 4d" text with an alert icon, "Due soon"
- * with a clock icon), a sensitive-matter marker, and five skeleton rows while loading. Rows are read-only; the title opens the Task.
+ * with a clock icon), a sensitive-matter marker, and five skeleton rows while loading. The title opens the Task. Status, Priority and Assignee are inline editors for users who may change them (`mf-row-edit`).
  */
 @Component({
   selector: 'mf-task-table',
-  imports: [RouterLink, DueStatePipe, LocalTimePipe, PriorityBadge, StatusBadge],
+  imports: [RouterLink, DueStatePipe, LocalTimePipe, PriorityBadge, RowEdit, StatusBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './task-table.scss',
   template: `
@@ -144,11 +147,19 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                       }
                     }
                     @case ('priority') {
-                      <mf-priority-badge
-                        [priorityId]="row.priority.priorityId"
-                        [label]="row.priority.label"
-                        [color]="row.priority.color"
-                      />
+                      @if (editable('priority', row)) {
+                        <mf-row-edit
+                          field="priority"
+                          [row]="row"
+                          (rowChange)="rowChange.emit($event)"
+                        />
+                      } @else {
+                        <mf-priority-badge
+                          [priorityId]="row.priority.priorityId"
+                          [label]="row.priority.label"
+                          [color]="row.priority.color"
+                        />
+                      }
                     }
                     @case ('pod') {
                       @if (row.assignedPod; as pod) {
@@ -158,7 +169,13 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                       }
                     }
                     @case ('assignee') {
-                      @if (row.assignedUser; as user) {
+                      @if (editable('assignee', row)) {
+                        <mf-row-edit
+                          field="assignee"
+                          [row]="row"
+                          (rowChange)="rowChange.emit($event)"
+                        />
+                      } @else if (row.assignedUser; as user) {
                         {{ user.displayName }}
                         @if (!user.isActive) {
                           <span class="wt-muted">(inactive)</span>
@@ -196,7 +213,15 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                       }
                     }
                     @case ('status') {
-                      <mf-status-badge [code]="row.status" [label]="row.statusLabel" />
+                      @if (editable('status', row)) {
+                        <mf-row-edit
+                          field="status"
+                          [row]="row"
+                          (rowChange)="rowChange.emit($event)"
+                        />
+                      } @else {
+                        <mf-status-badge [code]="row.status" [label]="row.statusLabel" />
+                      }
                     }
                     @case ('age') {
                       {{ ageDays(row) }}d
@@ -233,6 +258,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
 })
 export class TaskTable {
   private readonly clock = inject(Clock);
+  private readonly auth = inject(AuthStore);
   private readonly zone = inject(USER_TIME_ZONE);
 
   readonly rows = input.required<readonly TaskQueueRow[]>();
@@ -249,6 +275,8 @@ export class TaskTable {
 
   readonly sortChange = output<string>();
   readonly assignToMe = output<TaskQueueRow>();
+  /** A row changed from the table (an inline edit): the optimistic row, then the server's row or the original again. */
+  readonly rowChange = output<TaskQueueRow>();
 
   protected readonly skeleton = SKELETON_ROWS;
   protected readonly shownColumns = computed<ColumnDef[]>(() => {
@@ -273,6 +301,10 @@ export class TaskTable {
 
   private effectiveDir(field: string): SortDirection {
     return this.dir() ?? (field === 'created' || field === 'completed' ? 'desc' : 'asc');
+  }
+
+  protected editable(field: InlineField, row: TaskQueueRow): boolean {
+    return canEditField(field, row, (p) => this.auth.has(p));
   }
 
   protected canAssign(row: TaskQueueRow): boolean {

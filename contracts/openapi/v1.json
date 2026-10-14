@@ -11795,6 +11795,7 @@
           "matterRef",
           "matterName",
           "matterIsSensitive",
+          "matterIsActive",
           "clientId",
           "clientName",
           "projectId",
@@ -11844,6 +11845,9 @@
             "type": "string"
           },
           "matterIsSensitive": {
+            "type": "boolean"
+          },
+          "matterIsActive": {
             "type": "boolean"
           },
           "clientId": {

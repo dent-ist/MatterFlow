@@ -69,6 +69,7 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
         [showAssign]="showAssign()"
         (sortChange)="sortChange.emit($event)"
         (assignToMe)="assignToMe.emit($event)"
+        (rowChange)="rowChange.emit($event)"
       />
       @if (rows().length > 0) {
         <div class="wl-foot">
@@ -130,6 +131,7 @@ export class WorkList {
   readonly retry = output<void>();
   readonly clearFilters = output<void>();
   readonly assignToMe = output<TaskQueueRow>();
+  readonly rowChange = output<TaskQueueRow>();
 
   protected readonly sizes = PAGE_SIZES;
   protected readonly sortLabel = computed(() => SORT_LABELS[this.sort() ?? ''] ?? this.sort());

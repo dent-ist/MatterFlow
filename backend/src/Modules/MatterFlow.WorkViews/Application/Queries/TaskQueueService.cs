@@ -413,6 +413,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                 MatterRef = m.MatterRef,
                 MatterName = m.Name,
                 MatterIsSensitive = m.IsSensitive,
+                MatterIsActive = m.IsActive,
                 ClientId = c.Id,
                 ClientName = c.Name,
                 ProjectName = pr == null ? null : pr.Name,
@@ -463,6 +464,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                 d.MatterRef,
                 d.MatterName,
                 d.MatterIsSensitive,
+                d.MatterIsActive,
                 d.ClientId,
                 d.ClientName,
                 t.ProjectId,
@@ -548,6 +550,8 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         public string MatterName { get; init; } = string.Empty;
 
         public bool MatterIsSensitive { get; init; }
+
+        public bool MatterIsActive { get; init; }
 
         public int ClientId { get; init; }
 

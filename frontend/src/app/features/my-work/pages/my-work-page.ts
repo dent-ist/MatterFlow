@@ -103,6 +103,7 @@ const COMPLETED_WINDOW_DAYS = 90;
         (densityChange)="setDensity($event)"
         (retry)="load()"
         (clearFilters)="clearFilters()"
+        (rowChange)="replaceRow($event)"
       >
         @if (tab() === 'active' && auth.has('Pod.View')) {
           <a empty-action class="wp-link" routerLink="/pods/work">Check Pod Work</a>

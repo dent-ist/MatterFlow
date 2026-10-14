@@ -181,6 +181,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
           (densityChange)="setDensity($event)"
           (retry)="load()"
           (clearFilters)="clearFilters()"
+          (rowChange)="replaceRow($event)"
           (assignToMe)="assignToMe($event)"
         />
       </div>

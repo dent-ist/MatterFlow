@@ -14,6 +14,7 @@ export function aRow(overrides: Partial<TaskQueueRow> = {}): TaskQueueRow {
     matterRef: '00343-00012',
     matterName: 'Merger Review',
     matterIsSensitive: false,
+    matterIsActive: true,
     clientId: 1,
     clientName: 'Acme Corp',
     projectId: undefined,

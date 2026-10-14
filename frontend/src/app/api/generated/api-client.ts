@@ -11368,6 +11368,7 @@ export interface TaskQueueRow {
     matterRef: string;
     matterName: string;
     matterIsSensitive: boolean;
+    matterIsActive: boolean;
     clientId: number;
     clientName: string;
     projectId: number | undefined;

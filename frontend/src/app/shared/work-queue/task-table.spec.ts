@@ -1,6 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { TaskQueueRow } from '../../api/generated/api-client';
+import { AuthStore } from '../../core/auth/auth.store';
+import { FakeMeApi, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
+import { Permission } from '../../core/auth/permissions';
 import { aRow, provideClock, provideLookups } from './work-queue-testing';
 import { TaskTable } from './task-table';
 
@@ -12,14 +16,18 @@ describe('TaskTable', () => {
     rows: TaskQueueRow[],
     columns: string[],
     inputs: Record<string, unknown> = {},
+    permissions: Permission[] = [],
   ) {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        MessageService,
+        provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         ...provideLookups(),
         ...provideClock('2026-10-14T15:00:00Z', 'America/Chicago'),
       ],
     });
+    await TestBed.inject(AuthStore).ensureLoaded();
     fixture = TestBed.createComponent(TaskTable);
     fixture.componentRef.setInput('rows', rows);
     fixture.componentRef.setInput('columns', columns);
@@ -242,5 +250,36 @@ describe('TaskTable', () => {
     await create([aRow()], ['ref', 'title'], { caption: 'Task Queue' });
     expect(el().querySelector('caption')!.textContent?.trim()).toBe('Task Queue');
     expect(el().querySelectorAll('th[scope="col"]').length).toBe(2);
+  });
+
+  describe('inline editing', () => {
+    it('shows plain values when the user has no permission to change them', async () => {
+      await create([aRow()], ['priority', 'assignee', 'status']);
+      expect(el().querySelector('mf-row-edit')).toBeNull();
+      expect(el().querySelector('[data-inline-trigger]')).toBeNull();
+    });
+
+    it('turns Status, Priority and Assignee into editors for a user who may change them', async () => {
+      await create([aRow()], ['priority', 'assignee', 'status'], {}, [
+        'Task.SetPriority',
+        'Task.Assign',
+        'Task.ChangeStatus',
+      ]);
+      expect(cell('priority').querySelector('[data-inline-trigger]')).not.toBeNull();
+      expect(cell('assignee').querySelector('[data-inline-trigger]')).not.toBeNull();
+      expect(cell('status').querySelector('[data-inline-trigger]')).not.toBeNull();
+    });
+
+    it('edits only what the permissions allow and never a closed task assignee or priority', async () => {
+      await create(
+        [aRow({ status: 'COMPLETED', statusLabel: 'Completed' })],
+        ['priority', 'assignee', 'status'],
+        {},
+        ['Task.SetPriority', 'Task.Assign', 'Task.Reopen'],
+      );
+      expect(cell('priority').querySelector('[data-inline-trigger]')).toBeNull();
+      expect(cell('assignee').querySelector('[data-inline-trigger]')).toBeNull();
+      expect(cell('status').querySelector('[data-inline-trigger]')).not.toBeNull();
+    });
   });
 });

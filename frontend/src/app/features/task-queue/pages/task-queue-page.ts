@@ -74,6 +74,7 @@ import { WorkList } from '../../../shared/work-queue/work-list';
       (densityChange)="setDensity($event)"
       (retry)="load()"
       (clearFilters)="clearFilters()"
+      (rowChange)="replaceRow($event)"
     >
       <p-button
         empty-action

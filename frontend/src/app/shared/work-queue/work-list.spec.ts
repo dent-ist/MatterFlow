@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { TaskQueueRow } from '../../api/generated/api-client';
 import { WorkTab, WorkTabs } from './work-tabs';
 import { WorkList } from './work-list';
+import { FakeMeApi, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
 import { aRow, provideClock, provideLookups } from './work-queue-testing';
 
 describe('WorkList', () => {
@@ -11,7 +12,12 @@ describe('WorkList', () => {
 
   async function create(rows: TaskQueueRow[], inputs: Record<string, unknown> = {}) {
     TestBed.configureTestingModule({
-      providers: [provideRouter([]), ...provideLookups(), ...provideClock('2026-10-14T15:00:00Z')],
+      providers: [
+        provideRouter([]),
+        provideFakeMe(new FakeMeApi(withPermissions())),
+        ...provideLookups(),
+        ...provideClock('2026-10-14T15:00:00Z'),
+      ],
     });
     fixture = TestBed.createComponent(WorkList);
     fixture.componentRef.setInput('rows', rows);

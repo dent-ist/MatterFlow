@@ -23,6 +23,7 @@ public sealed record TaskQueueRow(
     [property: Required] string MatterRef,
     [property: Required] string MatterName,
     [property: Required] bool MatterIsSensitive,
+    [property: Required] bool MatterIsActive,
     [property: Required] int ClientId,
     [property: Required] string ClientName,
     int? ProjectId,
