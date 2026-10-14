@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "start:api": "ng serve --configuration api",
     "watch": "ng build --watch --configuration development",
     "test": "ng test frontend --watch=false && ng test form-engine --watch=false",
     "lint": "eslint \"{src,projects}/**/*.{ts,html}\"",

@@ -7,6 +7,8 @@ export interface NavItem {
   path: string;
   /** Visible when the user holds ANY of these; empty = every active user. (UX Appendix C) */
   permissions: Permission[];
+  /** Shows the pending-users count next to the label. */
+  pendingBadge?: boolean;
 }
 
 /** Left navigation (UX 2.1). Items are hidden, never disabled, without the matching View permission. */
@@ -28,6 +30,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     icon: 'pi pi-id-card',
     path: '/admin/users',
     permissions: ['User.View', 'User.Manage', 'Role.Manage'],
+    pendingBadge: true,
   },
   {
     label: 'Pods',
