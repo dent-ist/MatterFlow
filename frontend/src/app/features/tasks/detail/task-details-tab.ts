@@ -41,6 +41,7 @@ import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { splitFormErrors } from '../../../shared/ui/custom-fields';
 import { TaskDetailStore } from './task-detail.store';
 import { valuesPatch } from './task-step';
+import { MatterRef } from '../../../shared/ui/matter-ref';
 
 interface EditModel {
   title: string;
@@ -72,7 +73,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
  */
 @Component({
   selector: 'mf-task-details-tab',
-  imports: [DynamicForm, LocalTimePipe, DueLabelPipe, EntityPicker],
+  imports: [DynamicForm, LocalTimePipe, DueLabelPipe, EntityPicker, MatterRef],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', '../../../shared/ui/form-field.scss'],
@@ -387,7 +388,13 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
           </h3>
           <dl class="pg-dl">
             <dt>Matter</dt>
-            <dd>{{ t.matter.matterRef }} {{ t.matter.name }}</dd>
+            <dd>
+              <mf-matter-ref
+                [value]="t.matter.matterRef"
+                [link]="['/matters', t.matter.matterId]"
+              />
+              {{ t.matter.name }}
+            </dd>
             <dt>Task type</dt>
             <dd>{{ t.taskType.name }}</dd>
             <dt>Workflow</dt>

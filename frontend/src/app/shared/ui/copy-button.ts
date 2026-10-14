@@ -41,6 +41,9 @@ import {
       font: inherit;
       cursor: pointer;
     }
+    .mf-copy .pi {
+      font-size: var(--mf-fs-lg);
+    }
     .mf-copy:hover {
       background: var(--mf-surface-alt);
     }

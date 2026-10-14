@@ -32,6 +32,7 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { normalizeNumber } from '../../../shared/pipes/matter-ref.pipe';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
+import { MatterRef } from '../../../shared/ui/matter-ref';
 import { NumberInput, numberProblem } from '../../../shared/ui/number-input';
 import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
@@ -55,6 +56,7 @@ function clientOption(c: ClientResponse): PickerOption {
     EntityPicker,
     ConfirmDialog,
     HasPermissionDirective,
+    MatterRef,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -111,8 +113,8 @@ function clientOption(c: ClientResponse): PickerOption {
             <span class="pg-label">Matter number</span>
             <span class="pg-mono" data-locked-number>{{ original()?.matterNumber }}</span>
             <span class="pg-reason"
-              >Combined reference: <span class="pg-mono">{{ original()?.matterRef }}</span></span
-            >
+              >Combined reference: <mf-matter-ref [value]="original()?.matterRef" [copy]="false"
+            /></span>
             <p-button
               *mfHasPermission="'Matter.EditNumber'"
               label="Change number"

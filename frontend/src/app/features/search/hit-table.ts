@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SearchHit } from '../../api/generated/api-client';
 import { highlightParts } from '../../shared/search/search-meta';
-import { CopyButton } from '../../shared/ui/copy-button';
+import { MatterRef } from '../../shared/ui/matter-ref';
 import { StatusBadge } from '../../shared/ui/status-badge';
 import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
 
@@ -12,7 +12,7 @@ import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
  */
 @Component({
   selector: 'mf-search-hit-table',
-  imports: [ActiveBadge, SensitiveBadge, RouterLink, CopyButton, StatusBadge],
+  imports: [ActiveBadge, SensitiveBadge, RouterLink, MatterRef, StatusBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   styles: `
@@ -64,8 +64,7 @@ import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
             <td>
               @if (hit.type !== 'client' && hit.matterRef) {
                 <span class="hit-matter">
-                  <span class="pg-mono">{{ hit.matterRef }}</span>
-                  <mf-copy-button [text]="hit.matterRef" label="matter number" />
+                  <mf-matter-ref [value]="hit.matterRef" />
                   @if (hit.isSensitive) {
                     <mf-sensitive-badge />
                   }

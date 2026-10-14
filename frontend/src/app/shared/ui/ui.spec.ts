@@ -32,6 +32,22 @@ describe('mf-matter-ref and mf-copy-button', () => {
     expect(el.querySelector('[role=status]')?.textContent).toBe('Copied');
   });
 
+  it('links to the Matter with the themed link colour and can hide the copy button', async () => {
+    const fixture = TestBed.createComponent(MatterRef);
+    fixture.componentRef.setInput('value', '343-12');
+    fixture.componentRef.setInput('link', ['/matters', 5]);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    const link = el.querySelector('a.mf-ref') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('/matters/5');
+    expect(link.textContent).toBe('00343-00012');
+    expect(el.querySelector('mf-copy-button')).not.toBeNull();
+
+    fixture.componentRef.setInput('copy', false);
+    await fixture.whenStable();
+    expect(el.querySelector('mf-copy-button')).toBeNull();
+  });
+
   it('has an accessible name and stays unchanged if the clipboard is blocked', async () => {
     writeText.mockRejectedValue(new Error('denied'));
     const fixture = TestBed.createComponent(CopyButton);

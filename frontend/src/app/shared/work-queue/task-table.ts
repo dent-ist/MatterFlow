@@ -6,6 +6,7 @@ import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { formatInstantDate } from '../../core/time/time';
 import { DueStatePipe } from '../pipes/due-label.pipe';
 import { LocalTimePipe } from '../pipes/local-time.pipe';
+import { MatterRef } from '../ui/matter-ref';
 import { PriorityBadge } from '../ui/priority-badge';
 import { StatusBadge } from '../ui/status-badge';
 import { WORK_COLUMNS, ColumnDef, Density } from './column-prefs';
@@ -22,7 +23,15 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
  */
 @Component({
   selector: 'mf-task-table',
-  imports: [RouterLink, DueStatePipe, LocalTimePipe, PriorityBadge, RowEdit, StatusBadge],
+  imports: [
+    RouterLink,
+    MatterRef,
+    DueStatePipe,
+    LocalTimePipe,
+    PriorityBadge,
+    RowEdit,
+    StatusBadge,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './task-table.scss',
   template: `
@@ -88,12 +97,12 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                       <a class="wt-title" [routerLink]="['/tasks', row.taskId]">{{ row.title }}</a>
                     }
                     @case ('matter') {
-                      <a
-                        class="wt-mono wt-link"
-                        [routerLink]="['/matters', row.matterId]"
-                        [title]="row.matterName"
-                        >{{ row.matterRef }}</a
-                      >
+                      <mf-matter-ref
+                        [value]="row.matterRef"
+                        [link]="['/matters', row.matterId]"
+                        [copy]="false"
+                        [hint]="row.matterName"
+                      />
                       @if (row.matterIsSensitive) {
                         <i
                           class="pi pi-exclamation-triangle wt-sensitive"
