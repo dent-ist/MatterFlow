@@ -35,45 +35,52 @@ Resolution notes for `security-review-2.md`. Each entry: the fix, the commit, th
 ## SEC2-04 Medium: ASSET_REF and USER_REF validation (SEC-12)
 
 - **Fix.** New extension point `IFormReferenceValidator` (+ `FormReferenceContext`, `FormReferenceCodes`) in `Configuration.Contracts`; `FormSubmissionOptions.References` / `FormSaveOptions.References` switch the checks on. The forms validator and the value store call `FormReferenceChecks` after the pure evaluator, only for visible, valid, changed fields (stored legacy values never block an unrelated edit). `AssetReferenceValidator` (Assets) requires an existing, active Asset of the same Matter (`INVALID_REFERENCE`, `CROSS_MATTER_REFERENCE`). `UserReferenceValidator` (Configuration, through `IUserDirectory`) requires an existing, active user. A reference field without a registered validator fails closed. Wired into Task create/update (Matter of the Task), step value saves (Matter from `StepActionContext`), Asset forms (Asset's Matter) and the Client/Matter/Project custom fields (no Matter scope, existence and active only). Completion-time re-validation of stored step values does not pass a context, so a later deactivation never blocks a Task.
-- **Commit.** see git log (`SEC2-04`).
+- **Commit.** `2121aee`.
 - **Tests.** `TaskReferenceFieldsApiTests` (same Matter OK, other Matter, nonexistent, inactive asset, nonexistent and disabled user, update only checks changed fields).
 - **Deferred.** Step forms save Draft values, so a step created before this fix may still hold an unchecked reference until it is edited; no data migration was done.
 
 ## SEC2-05 Low: `Dashboard.ViewDepartment`
 
+- **Commit.** `c009581`.
 - **Fix.** Enforced. Without the permission the response keeps its shape but every department block is empty or zero; only `mine` is filled. Documents (permission matrix, UX spec, traceability) already describe this rule.
 - **Test.** `DashboardApiTests.Sec2_05_...`.
 - **Product decision.** The seeded Data Technician and Data Scientist roles do not hold `Dashboard.ViewDepartment`, so they now see only their own block, as the matrix says.
 
 ## SEC2-06 Low: activity sentences and masking
 
+- **Commit.** `bcdbaf8` (sentence), `c009581` (masking).
 - **Fix.** Without `Audit.View` a field-change sentence names the field only ("Requestor email changed"). `AuditValueGuard` now also runs on the activity feed (`AuditReader`) and on `GET /audit/events`. Status and assignment sentences keep their values: they are the point of the timeline and FND-04 gives them to `Task.View`.
 - **Test.** `TaskActivityApiTests.Sec2_06_...`.
 - **Deferred.** The search-style summary of non-task audit events is unchanged.
 
 ## SEC2-07 Low: Cancel / On Hold reasons
 
+- **Commit.** `bcdbaf8`.
 - **Fix.** Editing any comment with a non-NORMAL purpose is 409 `COMMENT_NOT_EDITABLE`; `canEdit` is false for them.
 - **Test.** `TaskCommentsApiTests.Sec2_07_...`.
 
 ## SEC2-08 Low: bulk completion row version
 
+- **Commit.** `bcdbaf8`.
 - **Fix.** `GET /tasks/{id}/completion` returns `workflowRowVersion`; `POST /tasks/{id}/complete` with `completeUnresolvedSteps=true` requires `workflowRowVersion` (400 `VALIDATION_FAILED` if missing) and answers 409 `CONCURRENCY_CONFLICT` when the workflow changed since the check. OpenAPI and the generated client were regenerated; the Task detail store sends the version of the check the user confirmed and, on a conflict, shows the fresh list again.
 - **Tests.** `TaskLifecycleApiTests.Sec2_08_...`, `task-detail-page.spec.ts` (confirm payload, stale confirmation).
 
 ## SEC2-09 Low: `9999-12-31`
 
+- **Commit.** `c009581`.
 - **Fix.** `QueueClock.EndOfDayUtc` and the audit search clamp the exclusive upper bound for the last representable day instead of overflowing.
 - **Test.** `Sec2ReadModelAndDateTests.Sec2_09_...` (queue, my work, pod work, audit search).
 
 ## SEC2-10 Low: comment threads and revisions
 
+- **Commit.** `bcdbaf8`.
 - **Fix.** `GET .../comments` takes `skip` and `take` (default and maximum 200, was a silent 1,000 cut). A comment accepts at most 50 edits and a Task at most 2,000 comments (409 `COMMENT_LIMIT`), which bounds the revision list and the thread.
 - **Test.** `TaskCommentsApiTests.Sec2_10_...`.
 - **Deferred.** The Task detail page still loads the first 200 comments only (it did not page before either); a "load more" control is a UI task.
 
 ## SEC2-11 Low: read models and view permissions
 
+- **Commit.** `bcdbaf8` (assets), `c009581` (search).
 - **Fix.** Linked assets show a generic name, no type and no external reference without `Asset.View`; the inactive-asset conflict message does not name the asset. Search hits omit Matter reference, name and the project secondary line without `Matter.View`.
 - **Tests.** `Sec2ReadModelAndDateTests.Sec2_11_...`.
 - **Deferred.** A search term that matches a Matter number still finds the related records without `Matter.View` (the match itself is the leak; the displayed text is not). Documented rather than changed: all starter roles hold every View permission.
@@ -91,5 +98,10 @@ Resolution notes for `security-review-2.md`. Each entry: the fix, the commit, th
 
 ## SEC2-14 Info: assignee lookup
 
+- **Commit.** `c009581`.
 - **Fix.** `GET /users/lookup` lists only active users that hold a role (not Access Pending). The assignment rule in `ValidateAssigneesAsync` still accepts any active user by id, as designed.
 - **Test.** `UsersLookupApiTests.Sec2_14_...`.
+
+## Verification
+
+Backend: `dotnet build -warnaserror` and `dotnet format --verify-no-changes` clean; Architecture 35, Unit 1,019, Schema 52, Integration 556 tests pass. Frontend: lint, prettier and production build pass; `ng test frontend` has two failures in `work-filter-bar.spec.ts` (`#fb-q` not found), a file this work does not touch.
