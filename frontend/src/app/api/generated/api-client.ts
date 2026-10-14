@@ -4455,6 +4455,1152 @@ export class ProjectsClient implements IProjectsClient {
     }
 }
 
+export interface IStepDefinitionsClient {
+    /**
+     * @param q (optional) 
+     * @param isActive (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    listStepDefinitions(q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary>;
+    /**
+     * @return Created
+     */
+    createStepDefinition(body: CreateStepDefinitionRequest): Observable<StepDefinitionDetail>;
+    /**
+     * @return OK
+     */
+    getStepDefinition(id: number): Observable<StepDefinitionDetail>;
+    /**
+     * @return OK
+     */
+    updateStepDefinition(id: number, body: UpdateStepDefinitionRequest): Observable<StepDefinitionDetail>;
+    /**
+     * @return OK
+     */
+    deactivateStepDefinition(id: number, body: StepActiveRequest): Observable<StepDefinitionDetail>;
+    /**
+     * @return OK
+     */
+    activateStepDefinition(id: number, body: StepActiveRequest): Observable<StepDefinitionDetail>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class StepDefinitionsClient implements IStepDefinitionsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param q (optional) 
+     * @param isActive (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    listStepDefinitions(q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary> {
+        let url_ = this.baseUrl + "/api/v1/step-definitions?";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (isActive === null)
+            throw new globalThis.Error("The parameter 'isActive' cannot be null.");
+        else if (isActive !== undefined)
+            url_ += "IsActive=" + encodeURIComponent("" + isActive) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "Page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListStepDefinitions(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListStepDefinitions(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultOfStepDefinitionSummary>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultOfStepDefinitionSummary>;
+        }));
+    }
+
+    protected processListStepDefinitions(response: HttpResponseBase): Observable<PagedResultOfStepDefinitionSummary> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfStepDefinitionSummary;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createStepDefinition(body: CreateStepDefinitionRequest): Observable<StepDefinitionDetail> {
+        let url_ = this.baseUrl + "/api/v1/step-definitions";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateStepDefinition(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateStepDefinition(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<StepDefinitionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<StepDefinitionDetail>;
+        }));
+    }
+
+    protected processCreateStepDefinition(response: HttpResponseBase): Observable<StepDefinitionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StepDefinitionDetail;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getStepDefinition(id: number): Observable<StepDefinitionDetail> {
+        let url_ = this.baseUrl + "/api/v1/step-definitions/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetStepDefinition(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetStepDefinition(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<StepDefinitionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<StepDefinitionDetail>;
+        }));
+    }
+
+    protected processGetStepDefinition(response: HttpResponseBase): Observable<StepDefinitionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StepDefinitionDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateStepDefinition(id: number, body: UpdateStepDefinitionRequest): Observable<StepDefinitionDetail> {
+        let url_ = this.baseUrl + "/api/v1/step-definitions/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateStepDefinition(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateStepDefinition(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<StepDefinitionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<StepDefinitionDetail>;
+        }));
+    }
+
+    protected processUpdateStepDefinition(response: HttpResponseBase): Observable<StepDefinitionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StepDefinitionDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    deactivateStepDefinition(id: number, body: StepActiveRequest): Observable<StepDefinitionDetail> {
+        let url_ = this.baseUrl + "/api/v1/step-definitions/{id}/deactivate";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeactivateStepDefinition(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeactivateStepDefinition(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<StepDefinitionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<StepDefinitionDetail>;
+        }));
+    }
+
+    protected processDeactivateStepDefinition(response: HttpResponseBase): Observable<StepDefinitionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StepDefinitionDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    activateStepDefinition(id: number, body: StepActiveRequest): Observable<StepDefinitionDetail> {
+        let url_ = this.baseUrl + "/api/v1/step-definitions/{id}/activate";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processActivateStepDefinition(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processActivateStepDefinition(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<StepDefinitionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<StepDefinitionDetail>;
+        }));
+    }
+
+    protected processActivateStepDefinition(response: HttpResponseBase): Observable<StepDefinitionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StepDefinitionDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IWorkflowsClient {
+    /**
+     * @param q (optional) 
+     * @param isActive (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    listWorkflows(q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary>;
+    /**
+     * @return Created
+     */
+    createWorkflow(body: CreateWorkflowRequest): Observable<WorkflowDetail>;
+    /**
+     * @return OK
+     */
+    listPublishedWorkflows(): Observable<PublishedWorkflowSummary[]>;
+    /**
+     * @return OK
+     */
+    getWorkflow(id: number): Observable<WorkflowDetail>;
+    /**
+     * @return OK
+     */
+    updateWorkflow(id: number, body: UpdateWorkflowRequest): Observable<WorkflowDetail>;
+    /**
+     * @return OK
+     */
+    getPublishedWorkflow(id: number): Observable<WorkflowVersionSnapshot>;
+    /**
+     * @return Created
+     */
+    createWorkflowDraft(id: number, body: CreateWorkflowDraftRequest): Observable<WorkflowVersionDetail>;
+    /**
+     * @return OK
+     */
+    getWorkflowVersion(id: number, versionId: number): Observable<WorkflowVersionDetail>;
+    /**
+     * @return OK
+     */
+    saveWorkflowDraft(id: number, versionId: number, body: SaveWorkflowDraftRequest): Observable<WorkflowVersionDetail>;
+    /**
+     * @return No Content
+     */
+    discardWorkflowDraft(id: number, versionId: number): Observable<void>;
+    /**
+     * @return OK
+     */
+    publishWorkflowVersion(id: number, versionId: number, body: WorkflowVersionActionRequest): Observable<WorkflowVersionDetail>;
+    /**
+     * @return OK
+     */
+    retireWorkflowVersion(id: number, versionId: number, body: WorkflowVersionActionRequest): Observable<WorkflowVersionDetail>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class WorkflowsClient implements IWorkflowsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param q (optional) 
+     * @param isActive (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    listWorkflows(q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary> {
+        let url_ = this.baseUrl + "/api/v1/workflows?";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (isActive === null)
+            throw new globalThis.Error("The parameter 'isActive' cannot be null.");
+        else if (isActive !== undefined)
+            url_ += "IsActive=" + encodeURIComponent("" + isActive) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "Page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListWorkflows(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListWorkflows(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultOfWorkflowSummary>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultOfWorkflowSummary>;
+        }));
+    }
+
+    protected processListWorkflows(response: HttpResponseBase): Observable<PagedResultOfWorkflowSummary> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfWorkflowSummary;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createWorkflow(body: CreateWorkflowRequest): Observable<WorkflowDetail> {
+        let url_ = this.baseUrl + "/api/v1/workflows";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateWorkflow(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateWorkflow(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WorkflowDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WorkflowDetail>;
+        }));
+    }
+
+    protected processCreateWorkflow(response: HttpResponseBase): Observable<WorkflowDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WorkflowDetail;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    listPublishedWorkflows(): Observable<PublishedWorkflowSummary[]> {
+        let url_ = this.baseUrl + "/api/v1/workflows/published";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListPublishedWorkflows(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListPublishedWorkflows(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PublishedWorkflowSummary[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PublishedWorkflowSummary[]>;
+        }));
+    }
+
+    protected processListPublishedWorkflows(response: HttpResponseBase): Observable<PublishedWorkflowSummary[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PublishedWorkflowSummary[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getWorkflow(id: number): Observable<WorkflowDetail> {
+        let url_ = this.baseUrl + "/api/v1/workflows/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetWorkflow(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetWorkflow(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WorkflowDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WorkflowDetail>;
+        }));
+    }
+
+    protected processGetWorkflow(response: HttpResponseBase): Observable<WorkflowDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WorkflowDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateWorkflow(id: number, body: UpdateWorkflowRequest): Observable<WorkflowDetail> {
+        let url_ = this.baseUrl + "/api/v1/workflows/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateWorkflow(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateWorkflow(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WorkflowDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WorkflowDetail>;
+        }));
+    }
+
+    protected processUpdateWorkflow(response: HttpResponseBase): Observable<WorkflowDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WorkflowDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getPublishedWorkflow(id: number): Observable<WorkflowVersionSnapshot> {
+        let url_ = this.baseUrl + "/api/v1/workflows/{id}/published";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetPublishedWorkflow(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetPublishedWorkflow(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WorkflowVersionSnapshot>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WorkflowVersionSnapshot>;
+        }));
+    }
+
+    protected processGetPublishedWorkflow(response: HttpResponseBase): Observable<WorkflowVersionSnapshot> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WorkflowVersionSnapshot;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createWorkflowDraft(id: number, body: CreateWorkflowDraftRequest): Observable<WorkflowVersionDetail> {
+        let url_ = this.baseUrl + "/api/v1/workflows/{id}/versions";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateWorkflowDraft(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateWorkflowDraft(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WorkflowVersionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WorkflowVersionDetail>;
+        }));
+    }
+
+    protected processCreateWorkflowDraft(response: HttpResponseBase): Observable<WorkflowVersionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WorkflowVersionDetail;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getWorkflowVersion(id: number, versionId: number): Observable<WorkflowVersionDetail> {
+        let url_ = this.baseUrl + "/api/v1/workflows/{id}/versions/{versionId}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (versionId === undefined || versionId === null)
+            throw new globalThis.Error("The parameter 'versionId' must be defined.");
+        url_ = url_.replace("{versionId}", encodeURIComponent("" + versionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetWorkflowVersion(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetWorkflowVersion(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WorkflowVersionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WorkflowVersionDetail>;
+        }));
+    }
+
+    protected processGetWorkflowVersion(response: HttpResponseBase): Observable<WorkflowVersionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WorkflowVersionDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    saveWorkflowDraft(id: number, versionId: number, body: SaveWorkflowDraftRequest): Observable<WorkflowVersionDetail> {
+        let url_ = this.baseUrl + "/api/v1/workflows/{id}/versions/{versionId}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (versionId === undefined || versionId === null)
+            throw new globalThis.Error("The parameter 'versionId' must be defined.");
+        url_ = url_.replace("{versionId}", encodeURIComponent("" + versionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSaveWorkflowDraft(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSaveWorkflowDraft(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WorkflowVersionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WorkflowVersionDetail>;
+        }));
+    }
+
+    protected processSaveWorkflowDraft(response: HttpResponseBase): Observable<WorkflowVersionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WorkflowVersionDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    discardWorkflowDraft(id: number, versionId: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/workflows/{id}/versions/{versionId}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (versionId === undefined || versionId === null)
+            throw new globalThis.Error("The parameter 'versionId' must be defined.");
+        url_ = url_.replace("{versionId}", encodeURIComponent("" + versionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDiscardWorkflowDraft(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDiscardWorkflowDraft(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDiscardWorkflowDraft(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    publishWorkflowVersion(id: number, versionId: number, body: WorkflowVersionActionRequest): Observable<WorkflowVersionDetail> {
+        let url_ = this.baseUrl + "/api/v1/workflows/{id}/versions/{versionId}/publish";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (versionId === undefined || versionId === null)
+            throw new globalThis.Error("The parameter 'versionId' must be defined.");
+        url_ = url_.replace("{versionId}", encodeURIComponent("" + versionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processPublishWorkflowVersion(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processPublishWorkflowVersion(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WorkflowVersionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WorkflowVersionDetail>;
+        }));
+    }
+
+    protected processPublishWorkflowVersion(response: HttpResponseBase): Observable<WorkflowVersionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WorkflowVersionDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    retireWorkflowVersion(id: number, versionId: number, body: WorkflowVersionActionRequest): Observable<WorkflowVersionDetail> {
+        let url_ = this.baseUrl + "/api/v1/workflows/{id}/versions/{versionId}/retire";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (versionId === undefined || versionId === null)
+            throw new globalThis.Error("The parameter 'versionId' must be defined.");
+        url_ = url_.replace("{versionId}", encodeURIComponent("" + versionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processRetireWorkflowVersion(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processRetireWorkflowVersion(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WorkflowVersionDetail>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WorkflowVersionDetail>;
+        }));
+    }
+
+    protected processRetireWorkflowVersion(response: HttpResponseBase): Observable<WorkflowVersionDetail> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WorkflowVersionDetail;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface AddPodMembersRequest {
     userIds: number[];
 
@@ -4589,6 +5735,29 @@ export interface CreateProjectRequest {
     matterId?: number;
     name: string;
     description?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface CreateStepDefinitionRequest {
+    title: string;
+    description?: string | undefined;
+    instructions?: string | undefined;
+    documentationUrl?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface CreateWorkflowDraftRequest {
+    fromVersionId?: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface CreateWorkflowRequest {
+    name: string;
+    description?: string | undefined;
+    isOrdered?: boolean;
 
     [key: string]: any;
 }
@@ -4785,8 +5954,26 @@ export interface PagedResultOfProjectResponse {
     [key: string]: any;
 }
 
+export interface PagedResultOfStepDefinitionSummary {
+    items: StepDefinitionSummary[];
+    total: number;
+    page: number;
+    pageSize: number;
+
+    [key: string]: any;
+}
+
 export interface PagedResultOfUserSummaryDto {
     items: UserSummaryDto[];
+    total: number;
+    page: number;
+    pageSize: number;
+
+    [key: string]: any;
+}
+
+export interface PagedResultOfWorkflowSummary {
+    items: WorkflowSummary[];
     total: number;
     page: number;
     pageSize: number;
@@ -4885,6 +6072,19 @@ export interface ProjectResponse {
     [key: string]: any;
 }
 
+export interface PublishedWorkflowSummary {
+    workflowDefinitionId: number;
+    name: string;
+    description: string | undefined;
+    workflowVersionId: number;
+    versionNo: number;
+    isOrdered: boolean;
+    stepCount: number;
+    publishedAtUtc: string;
+
+    [key: string]: any;
+}
+
 export interface ReorderRequest {
     ids: number[];
 
@@ -4931,6 +6131,14 @@ export interface SaveRoleRequest {
     [key: string]: any;
 }
 
+export interface SaveWorkflowDraftRequest {
+    isOrdered: boolean;
+    steps: WorkflowStepPlacement[];
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface SetActiveRequest {
     isActive?: boolean;
     rowVersion: string;
@@ -4963,6 +6171,50 @@ export interface StatusLabelView {
     displayLabel: string;
     sortOrder: number;
     rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface StepActiveRequest {
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface StepDefinitionDetail {
+    stepDefinitionId: number;
+    title: string;
+    description: string | undefined;
+    instructions: string | undefined;
+    documentationUrl: string | undefined;
+    isActive: boolean;
+    formDefinitionId: number | undefined;
+    publishedFormVersionId: number | undefined;
+    draftFormFieldCount: number;
+    usage: StepUsage[];
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface StepDefinitionSummary {
+    stepDefinitionId: number;
+    title: string;
+    description: string | undefined;
+    documentationUrl: string | undefined;
+    isActive: boolean;
+    usedInVersions: number;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface StepUsage {
+    workflowDefinitionId: number;
+    workflowName: string;
+    workflowVersionId: number;
+    versionNo: number;
+    status: WorkflowVersionStatus;
 
     [key: string]: any;
 }
@@ -5024,10 +6276,30 @@ export interface UpdateStatusLabelRequest {
     [key: string]: any;
 }
 
+export interface UpdateStepDefinitionRequest {
+    title: string;
+    description?: string | undefined;
+    instructions?: string | undefined;
+    documentationUrl?: string | undefined;
+    isActive: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface UpdateUserProfileRequest {
     displayName: string;
     email: string | undefined;
     rowVersion: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface UpdateWorkflowRequest {
+    name: string;
+    description?: string | undefined;
+    isActive: boolean;
+    rowVersion: string;
 
     [key: string]: any;
 }
@@ -5102,6 +6374,114 @@ export interface ValidateFormValuesResponse {
     [key: string]: any;
 }
 
+export interface WorkflowDetail {
+    workflow: WorkflowSummary;
+    versions: WorkflowVersionSummary[];
+
+    [key: string]: any;
+}
+
+export interface WorkflowStepPlacement {
+    sourceStepDefinitionId: number;
+    isSkippable?: boolean;
+    skipCommentRequired?: boolean;
+
+    [key: string]: any;
+}
+
+export interface WorkflowStepSnapshot {
+    workflowVersionStepId: number;
+    sequenceNo: number;
+    sourceStepDefinitionId: number;
+    title: string;
+    description: string | undefined;
+    instructions: string | undefined;
+    documentationUrl: string | undefined;
+    stepFormVersionId: number | undefined;
+    isSkippable: boolean;
+    skipCommentRequired: boolean;
+
+    [key: string]: any;
+}
+
+export interface WorkflowSummary {
+    workflowDefinitionId: number;
+    name: string;
+    description: string | undefined;
+    isActive: boolean;
+    publishedVersionId: number | undefined;
+    publishedVersionNo: number | undefined;
+    publishedStepCount: number | undefined;
+    draftVersionId: number | undefined;
+    draftVersionNo: number | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface WorkflowVersionActionRequest {
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface WorkflowVersionDetail {
+    workflowDefinitionId: number;
+    workflowName: string;
+    version: WorkflowVersionSummary;
+    steps: WorkflowVersionStepModel[];
+
+    [key: string]: any;
+}
+
+export interface WorkflowVersionSnapshot {
+    workflowDefinitionId: number;
+    name: string;
+    workflowVersionId: number;
+    versionNo: number;
+    status: WorkflowVersionStatus;
+    isOrdered: boolean;
+    steps: WorkflowStepSnapshot[];
+
+    [key: string]: any;
+}
+
+export enum WorkflowVersionStatus {
+    Draft = "Draft",
+    Published = "Published",
+    Retired = "Retired",
+}
+
+export interface WorkflowVersionStepModel {
+    workflowVersionStepId: number;
+    sequenceNo: number;
+    sourceStepDefinitionId: number;
+    title: string;
+    description: string | undefined;
+    instructions: string | undefined;
+    documentationUrl: string | undefined;
+    stepFormVersionId: number | undefined;
+    isSkippable: boolean;
+    skipCommentRequired: boolean;
+    sourceStepActive: boolean;
+
+    [key: string]: any;
+}
+
+export interface WorkflowVersionSummary {
+    workflowVersionId: number;
+    versionNo: number;
+    status: WorkflowVersionStatus;
+    isOrdered: boolean;
+    stepCount: number;
+    createdAtUtc: string;
+    publishedAtUtc: string | undefined;
+    publishedByUserId: number | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export enum ApiProblemDetailsCode {
     VALIDATION_FAILED = "VALIDATION_FAILED",
     FORM_VALIDATION_FAILED = "FORM_VALIDATION_FAILED",
@@ -5141,6 +6521,8 @@ export enum ApiProblemDetailsCode {
     DEFAULT_REQUIRED = "DEFAULT_REQUIRED",
     FORM_DRAFT_EXISTS = "FORM_DRAFT_EXISTS",
     FORM_VERSION_IMMUTABLE = "FORM_VERSION_IMMUTABLE",
+    WORKFLOW_DRAFT_EXISTS = "WORKFLOW_DRAFT_EXISTS",
+    WORKFLOW_VERSION_IMMUTABLE = "WORKFLOW_VERSION_IMMUTABLE",
     UNSUPPORTED_MEDIA_TYPE = "UNSUPPORTED_MEDIA_TYPE",
     INTERNAL_ERROR = "INTERNAL_ERROR",
 }

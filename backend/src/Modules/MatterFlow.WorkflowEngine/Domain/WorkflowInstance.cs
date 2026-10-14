@@ -63,7 +63,7 @@ public sealed class WorkflowInstance
     public IReadOnlyList<StepInstance> Steps => _steps;
 
     /// <summary>Instantiate: one PENDING step per definition (architecture 8.1).</summary>
-    public static Result<WorkflowInstance> Create(bool isOrdered, IEnumerable<StepDefinition> definitions)
+    public static Result<WorkflowInstance> Create(bool isOrdered, IEnumerable<StepSpec> definitions)
     {
         ArgumentNullException.ThrowIfNull(definitions);
         return Rehydrate(isOrdered, definitions.Select(d => new StepSnapshot(d, StepStatus.Pending, false, null)));

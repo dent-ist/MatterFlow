@@ -8,9 +8,9 @@ namespace MatterFlow.UnitTests.WorkflowEngine;
 internal static class Wf
 {
     /// <summary>Steps 1..n with ids equal to their sequence; all skippable with optional comment unless overridden.</summary>
-    public static WorkflowInstance Build(bool ordered, int n = 5, Func<int, StepDefinition>? factory = null)
+    public static WorkflowInstance Build(bool ordered, int n = 5, Func<int, StepSpec>? factory = null)
     {
-        factory ??= i => new StepDefinition(i, i, IsSkippable: true, SkipCommentRequired: false);
+        factory ??= i => new StepSpec(i, i, IsSkippable: true, SkipCommentRequired: false);
         var result = WorkflowInstance.Create(ordered, Enumerable.Range(1, n).Select(factory));
         result.IsSuccess.ShouldBeTrue();
         return result.Value;
@@ -56,7 +56,7 @@ public class WorkflowInstanceCreationTests
     [Fact]
     public void Rehydrate_rejects_inconsistent_snapshots()
     {
-        var d = new StepDefinition(1, 1, true, false);
+        var d = new StepSpec(1, 1, true, false);
         WorkflowInstance.Rehydrate(true, [new(d, StepStatus.Completed, false, null)]).ShouldFail(ErrorCodes.ValidationFailed);
         WorkflowInstance.Rehydrate(true, [new(d, StepStatus.Pending, true, null)]).ShouldFail(ErrorCodes.ValidationFailed);
         WorkflowInstance.Rehydrate(true, [new(d, (StepStatus)99, false, null)]).ShouldFail(ErrorCodes.ValidationFailed);
@@ -276,7 +276,7 @@ public class StepStateMachineTests
 public class SkipRulesTests
 {
     private static WorkflowInstance Wfl(bool skippable, bool commentRequired) =>
-        Wf.Build(true, 1, i => new StepDefinition(i, i, skippable, commentRequired));
+        Wf.Build(true, 1, i => new StepSpec(i, i, skippable, commentRequired));
 
     [Theory]
     [InlineData(null)]
@@ -343,7 +343,7 @@ public class SkipRulesTests
     [Fact]
     public void Skip_check_order_is_state_then_ordering_then_skippable_then_comment()
     {
-        var wf = Wf.Build(true, 2, i => new StepDefinition(i, i, false, true));
+        var wf = Wf.Build(true, 2, i => new StepSpec(i, i, false, true));
         wf.Skip(2, null).ShouldFail(ErrorCodes.StepOrderViolation);
         wf.Skip(1, null).ShouldFail(ErrorCodes.StepNotSkippable);
     }
@@ -684,7 +684,7 @@ public class WorkflowPropertyTests
         for (var run = 0; run < 60; run++)
         {
             var n = rng.Next(1, 7);
-            var wf = Wf.Build(ordered, n, i => new StepDefinition(i, i, rng.Next(3) != 0, rng.Next(2) == 0));
+            var wf = Wf.Build(ordered, n, i => new StepSpec(i, i, rng.Next(3) != 0, rng.Next(2) == 0));
             var missing = Enumerable.Range(1, n).Where(_ => rng.Next(4) == 0).ToArray();
             var inputs = StepInputCheck.MissingFor(missing);
 

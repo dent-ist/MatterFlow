@@ -39,15 +39,15 @@ public sealed class StepInputCheck : IStepInputCheck
 }
 
 /// <summary>Immutable per-step configuration copied from the published workflow version.</summary>
-public sealed record StepDefinition(int StepId, int Sequence, bool IsSkippable, bool SkipCommentRequired);
+public sealed record StepSpec(int StepId, int Sequence, bool IsSkippable, bool SkipCommentRequired);
 
 /// <summary>Persisted state of a step used to rebuild a <see cref="WorkflowInstance"/>.</summary>
-public sealed record StepSnapshot(StepDefinition Definition, StepStatus Status, bool HasBeenResolved, string? SkipComment);
+public sealed record StepSnapshot(StepSpec Definition, StepStatus Status, bool HasBeenResolved, string? SkipComment);
 
 /// <summary>A step within a workflow instance. State only changes through <see cref="WorkflowInstance"/>.</summary>
 public sealed class StepInstance
 {
-    internal StepInstance(StepDefinition definition, StepStatus status, bool hasBeenResolved, string? skipComment)
+    internal StepInstance(StepSpec definition, StepStatus status, bool hasBeenResolved, string? skipComment)
     {
         Definition = definition;
         Status = status;
@@ -55,7 +55,7 @@ public sealed class StepInstance
         SkipComment = skipComment;
     }
 
-    public StepDefinition Definition { get; }
+    public StepSpec Definition { get; }
 
     public int StepId => Definition.StepId;
 

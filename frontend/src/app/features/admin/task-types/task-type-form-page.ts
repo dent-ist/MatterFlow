@@ -46,6 +46,10 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   /** Route parameter `ownerId`; the unparameterised route shows the seeded Data Processing type. */
   readonly ownerId = input('data-processing');
 
+  /** Screen title and the owner's kind in the breadcrumb; routes for other owners (Step Library) set them through route data. */
+  readonly heading = input('Task Types & Forms');
+  readonly ownerLabel = input('Task Type');
+
   private readonly api = inject(FormDesignerApi);
 
   protected readonly state = signal<LoadState>('loading');

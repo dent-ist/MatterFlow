@@ -103,6 +103,27 @@ public sealed class FormDefinitionResolver(DbContext db, IAuditWriter audit) : I
         return version is null ? Error.NotFound($"Form version {formVersionId} does not exist.") : version;
     }
 
+    public async Task<FormOwnerState> GetOwnerStateAsync(FormOwnerKind ownerKind, int? ownerId, CancellationToken cancellationToken = default)
+    {
+        var definitionId = CheckOwner(ownerKind, ownerId) is null ? await FindIdAsync(ownerKind, ownerId, cancellationToken) : null;
+        if (definitionId is null)
+        {
+            return new FormOwnerState(null, null, null, 0);
+        }
+
+        var versions = await db.Set<FormVersion>().AsNoTracking()
+            .Where(v => v.FormDefinitionId == definitionId && v.Status != FormVersionStatus.Retired)
+            .Select(v => new { v.Id, v.VersionNo, v.Status, FieldCount = v.Fields.Count })
+            .ToListAsync(cancellationToken);
+        var published = versions.FirstOrDefault(v => v.Status == FormVersionStatus.Published);
+        var draft = versions.FirstOrDefault(v => v.Status == FormVersionStatus.Draft);
+        return new FormOwnerState(
+            definitionId,
+            published is null ? null : new FormVersionRef(definitionId.Value, published.Id, published.VersionNo, published.Status),
+            draft?.Id,
+            draft?.FieldCount ?? 0);
+    }
+
     /// <summary>The definition id of an owner, or null.</summary>
     public async Task<int?> FindIdAsync(FormOwnerKind kind, int? ownerId, CancellationToken cancellationToken) =>
         await db.Set<FormDefinition>().AsNoTracking()
