@@ -9,6 +9,9 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
+import { TaskActivity } from '../panels/task-activity';
+import { TaskAssetLinks } from '../panels/task-asset-links';
+import { TaskComments } from '../panels/task-comments';
 import { TaskActionDialogs } from './task-action-dialogs';
 import { TASK_TABS, TaskDetailStore, TaskTab } from './task-detail.store';
 import { TaskDetailsTab } from './task-details-tab';
@@ -23,12 +26,20 @@ const isTab = (v: unknown): v is TaskTab => TASK_TABS.includes(v as TaskTab);
 
 /**
  * Task detail (UX S10, `/tasks/:id`): header with the status actions, banners (conflict, closed, sensitive, hold or cancel
- * reason), and the Details / Workflow / Comments / Assets / Activity tabs. The Comments, Assets and Activity panels are
- * placeholders until the panel components are wired in.
+ * reason), and the Details / Workflow / Comments / Assets / Activity tabs.
  */
 @Component({
   selector: 'mf-task-detail-page',
-  imports: [RouterLink, TaskHeader, TaskDetailsTab, TaskWorkflowTab, TaskActionDialogs],
+  imports: [
+    RouterLink,
+    TaskHeader,
+    TaskDetailsTab,
+    TaskWorkflowTab,
+    TaskActionDialogs,
+    TaskComments,
+    TaskAssetLinks,
+    TaskActivity,
+  ],
   providers: [TaskDetailStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -148,16 +159,18 @@ const isTab = (v: unknown): v is TaskTab => TASK_TABS.includes(v as TaskTab);
                 <mf-task-workflow-tab />
               }
               @case ('comments') {
-                <!-- PANEL SLOT: Comments panel (features/tasks/panels) replaces this block -->
-                <div class="pg-state" data-placeholder="comments">Comments are coming soon.</div>
+                <mf-task-comments [taskId]="t.taskId" />
               }
               @case ('assets') {
-                <!-- PANEL SLOT: Assets panel (features/tasks/panels) replaces this block -->
-                <div class="pg-state" data-placeholder="assets">Linked assets are coming soon.</div>
+                <mf-task-asset-links
+                  [taskId]="t.taskId"
+                  [matterId]="t.matter.matterId"
+                  [readOnly]="store.closed()"
+                  [taskStatus]="t.status"
+                />
               }
               @case ('activity') {
-                <!-- PANEL SLOT: Activity panel (features/tasks/panels) replaces this block -->
-                <div class="pg-state" data-placeholder="activity">Activity is coming soon.</div>
+                <mf-task-activity [taskId]="t.taskId" />
               }
             }
           </div>

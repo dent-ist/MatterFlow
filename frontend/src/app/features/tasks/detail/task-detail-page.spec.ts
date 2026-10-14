@@ -326,14 +326,19 @@ describe('TaskDetailPage complete', () => {
 describe('TaskDetailPage tabs and states', () => {
   afterEach(() => TestBed.resetTestingModule());
 
-  it('has the five tabs, with placeholder slots for Comments, Assets and Activity', async () => {
+  it('has the five tabs, with the Comments, Assets and Activity panels mounted on demand', async () => {
     const { fixture, el } = await mountTaskPage(aTask());
     expect(Array.from(el.querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim())).toEqual(
       ['Details', 'Workflow (1/3)', 'Comments', 'Assets', 'Activity'],
     );
-    for (const name of ['comments', 'assets', 'activity']) {
+    const panels: Record<string, string> = {
+      comments: 'mf-task-comments',
+      assets: 'mf-task-asset-links',
+      activity: 'mf-task-activity',
+    };
+    for (const [name, selector] of Object.entries(panels)) {
       await click(fixture, q(el, `#task-tab-${name}`));
-      expect(q(el, `[data-placeholder=${name}]`)!.textContent).toContain('coming soon');
+      expect(q(el, selector)).not.toBeNull();
     }
   });
 
