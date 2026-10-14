@@ -1,0 +1,65 @@
+<a class="mf-skip" href="#mf-main" (click)="skipToMain($event)">Skip to main content</a>
+
+<header class="mf-header">
+  <a class="mf-logo" routerLink="/" aria-label="MatterFlow home">MatterFlow</a>
+
+  <div class="mf-search" role="search">
+    <i class="pi pi-search" aria-hidden="true"></i>
+    <input
+      #searchInput
+      pInputText
+      type="search"
+      class="mf-search-input"
+      aria-label="Search clients, matters, tasks, assets"
+      placeholder="Search clients, matters, tasks, assets... (Ctrl+K)"
+      (keydown.enter)="search(searchInput.value)"
+    />
+  </div>
+
+  <p-button
+    *mfHasPermission="'Task.Create'"
+    label="Create Task"
+    icon="pi pi-plus"
+    (onClick)="createTask()"
+  />
+
+  <div class="mf-user" data-testid="user-menu">
+    <span class="mf-user-name">{{ auth.displayName() }}</span>
+    @if (auth.profile()?.windowsAccount; as account) {
+      <span class="mf-user-account">{{ account }}</span>
+    }
+  </div>
+</header>
+
+<div class="mf-body">
+  <nav class="mf-nav" aria-label="Main">
+    <ul>
+      @for (item of navItems(); track item.path) {
+        <li>
+          <a [routerLink]="item.path" routerLinkActive="mf-active" [title]="item.label">
+            <i [class]="item.icon" aria-hidden="true"></i>
+            <span class="mf-nav-label">{{ item.label }}</span>
+          </a>
+        </li>
+      }
+    </ul>
+    @if (adminItems().length > 0) {
+      <hr />
+      <p class="mf-nav-heading" id="mf-admin-heading">Administration</p>
+      <ul aria-labelledby="mf-admin-heading">
+        @for (item of adminItems(); track item.path) {
+          <li>
+            <a [routerLink]="item.path" routerLinkActive="mf-active" [title]="item.label">
+              <i [class]="item.icon" aria-hidden="true"></i>
+              <span class="mf-nav-label">{{ item.label }}</span>
+            </a>
+          </li>
+        }
+      </ul>
+    }
+  </nav>
+
+  <main id="mf-main" #main tabindex="-1" class="mf-main">
+    <router-outlet />
+  </main>
+</div>
