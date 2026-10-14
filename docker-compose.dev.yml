@@ -9,7 +9,7 @@ services:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: "MatterFlow_Dev1!"
     ports:
-      - "1433:1433"
+      - "127.0.0.1:1433:1433" # loopback only: the sa password above is public (security review SEC-19)
     volumes:
       - matterflow-sql-data:/var/opt/mssql
     healthcheck:

@@ -412,17 +412,20 @@ public sealed record TaskCompletionCheck(
 
 // ---- step actions
 
-/// <summary>Starts a step. <c>rowVersion</c> is the workflow's, optional.</summary>
+/// <summary>Starts a step. <c>rowVersion</c> is the workflow's and required.</summary>
 public sealed class StartStepRequest
 {
-    /// <summary>The workflow <c>rowVersion</c> last read (from the Task's workflow); a mismatch is 409 CONCURRENCY_CONFLICT. Omit to skip the early check.</summary>
-    public string? RowVersion { get; init; }
+    /// <summary>The workflow (or link) <c>rowVersion</c> last read; a mismatch is 409 CONCURRENCY_CONFLICT.</summary>
+    [Required]
+    public string RowVersion { get; init; } = string.Empty;
 }
 
 /// <summary>Saves draft values and/or the skip comment of an unresolved step.</summary>
 public sealed class SaveStepValuesRequest
 {
-    public string? RowVersion { get; init; }
+    /// <summary>The workflow (or link) <c>rowVersion</c> last read; a mismatch is 409 CONCURRENCY_CONFLICT.</summary>
+    [Required]
+    public string RowVersion { get; init; } = string.Empty;
 
     /// <summary>Patch of the step's input values keyed by field key (type-checked, required not enforced).</summary>
     public Dictionary<string, JsonElement>? Values { get; init; }
@@ -435,7 +438,9 @@ public sealed class SaveStepValuesRequest
 /// <summary>Completes a step, saving optional values first. All required inputs must be present.</summary>
 public sealed class CompleteStepRequest
 {
-    public string? RowVersion { get; init; }
+    /// <summary>The workflow (or link) <c>rowVersion</c> last read; a mismatch is 409 CONCURRENCY_CONFLICT.</summary>
+    [Required]
+    public string RowVersion { get; init; } = string.Empty;
 
     public Dictionary<string, JsonElement>? Values { get; init; }
 }
@@ -443,7 +448,9 @@ public sealed class CompleteStepRequest
 /// <summary>Skips a skippable step; a comment is required when the step says so.</summary>
 public sealed class SkipStepRequest
 {
-    public string? RowVersion { get; init; }
+    /// <summary>The workflow (or link) <c>rowVersion</c> last read; a mismatch is 409 CONCURRENCY_CONFLICT.</summary>
+    [Required]
+    public string RowVersion { get; init; } = string.Empty;
 
     [StringLength(2000)]
     public string? Comment { get; init; }
@@ -452,7 +459,9 @@ public sealed class SkipStepRequest
 /// <summary>Reopens a completed or skipped step.</summary>
 public sealed class ReopenStepRequest
 {
-    public string? RowVersion { get; init; }
+    /// <summary>The workflow (or link) <c>rowVersion</c> last read; a mismatch is 409 CONCURRENCY_CONFLICT.</summary>
+    [Required]
+    public string RowVersion { get; init; } = string.Empty;
 }
 
 /// <summary>Result of a step action: the whole updated Task (status, allowed actions, workflow).</summary>

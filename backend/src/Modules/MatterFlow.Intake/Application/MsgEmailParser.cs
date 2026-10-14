@@ -11,7 +11,7 @@ internal static class MsgEmailParser
 
     public static bool HasOleSignature(ReadOnlySpan<byte> head) => head.StartsWith(OleSignature);
 
-    public static ParsedEmailResponse Parse(Stream content)
+    public static ParsedEmailResponse Parse(Stream content, CancellationToken cancellationToken = default)
     {
         using var message = new Storage.Message(content, FileAccess.Read);
         if (message.Type is not (MessageType.Email or MessageType.EmailClearSigned or MessageType.EmailEncryptedAndMaybeSigned or MessageType.Unknown))
@@ -28,7 +28,7 @@ internal static class MsgEmailParser
 
         var text = message.BodyText;
         if (string.IsNullOrWhiteSpace(text))
-            text = HtmlToText.Convert(message.BodyHtml);
+            text = HtmlToText.Convert(message.BodyHtml, cancellationToken: cancellationToken);
 
         var body = EmailText.Body(text, warnings);
         if (body.Length == 0)

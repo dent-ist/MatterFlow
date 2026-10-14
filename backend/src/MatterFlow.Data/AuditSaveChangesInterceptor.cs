@@ -299,6 +299,9 @@ public sealed class AuditSaveChangesInterceptor(
             events.Add(created);
         }
 
+        foreach (var created in events)
+            created.ClipToColumnLimits();
+
         pending.Created.AddRange(events);
         return events;
     }

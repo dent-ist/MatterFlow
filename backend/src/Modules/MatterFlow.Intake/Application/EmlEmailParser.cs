@@ -30,7 +30,7 @@ internal static class EmlEmailParser
         if (string.IsNullOrWhiteSpace(text))
         {
             var html = message.HtmlBody;
-            text = string.IsNullOrWhiteSpace(html) ? string.Empty : HtmlToText.Convert(html);
+            text = string.IsNullOrWhiteSpace(html) ? string.Empty : HtmlToText.Convert(html, cancellationToken: cancellationToken);
         }
 
         var body = EmailText.Body(text, warnings);
@@ -80,6 +80,49 @@ internal static class EmlEmailParser
 
     private static bool IsPlausible(DateTimeOffset date) =>
         date.Year is >= 1990 and <= 2100;
+
+    private static readonly HashSet<string> DecodedHeaders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "subject", "from", "sender", "reply-to", "to", "cc", "date", "received", "content-type", "content-transfer-encoding", "content-disposition",
+    };
+
+    /// <summary>
+    /// True when one of the top-level headers that this service decodes (subject, sender, date, ...) is longer than
+    /// <paramref name="maxBytes"/> once its folded lines are joined. MimeKit decodes header values lazily and not cancellably, so a
+    /// multi-megabyte Subject costs seconds of CPU; other (never decoded) headers may be any size (SEC-02). Linear in the header block.
+    /// </summary>
+    public static bool HasOversizedDecodedHeader(ReadOnlySpan<byte> message, int maxBytes)
+    {
+        var position = 0;
+        var current = false;
+        var currentLength = 0;
+        while (position < message.Length)
+        {
+            var end = message[position..].IndexOf((byte)'\n');
+            var line = end < 0 ? message[position..] : message.Slice(position, end);
+            position = end < 0 ? message.Length : position + end + 1;
+
+            if (line.Length > 0 && line[^1] == (byte)'\r')
+                line = line[..^1];
+            if (line.Length == 0)
+                return false; // end of the header block
+
+            if (line[0] is (byte)' ' or (byte)'\t')
+            {
+                if (current && (currentLength += line.Length) > maxBytes)
+                    return true;
+                continue;
+            }
+
+            var colon = line.IndexOf((byte)':');
+            current = colon > 0 && DecodedHeaders.Contains(System.Text.Encoding.Latin1.GetString(line[..Math.Min(colon, 40)]));
+            currentLength = line.Length;
+            if (current && currentLength > maxBytes)
+                return true;
+        }
+
+        return false;
+    }
 
     /// <summary>True when the bytes look like an RFC 822 message: plain text (no NULs) whose first line is a header field or an mbox "From " line.</summary>
     public static bool LooksLikeMessage(ReadOnlySpan<byte> head)

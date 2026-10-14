@@ -9,7 +9,8 @@ import {
   PermissionGroupDto,
   RoleDetailDto,
   RoleSummaryDto,
-  SaveRoleRequest,
+  CreateRoleRequest,
+  UpdateRoleRequest,
   UserCountsDto,
   UserDetailDto,
   UserListQuery,
@@ -247,7 +248,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
     return r ? of(this.roleDetail(r)) : fail(404, 'NOT_FOUND', 'The role does not exist.');
   }
 
-  createRole(request: SaveRoleRequest): Observable<RoleDetailDto> {
+  createRole(request: CreateRoleRequest): Observable<RoleDetailDto> {
     if (this.nameTaken(request.name)) {
       return fail(409, 'DUPLICATE_NAME', 'A role with this name already exists.');
     }
@@ -263,7 +264,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
     return of(this.roleDetail(role));
   }
 
-  updateRole(roleId: number, request: SaveRoleRequest): Observable<RoleDetailDto> {
+  updateRole(roleId: number, request: UpdateRoleRequest): Observable<RoleDetailDto> {
     const r = this.role(roleId);
     if (!r) return fail(404, 'NOT_FOUND', 'The role does not exist.');
     if (r.isSystemAdmin) {

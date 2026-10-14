@@ -32,6 +32,9 @@ public sealed class TaskAssetLinksApiTests(SqlServerFixture sql) : IAsyncLifetim
 
     public async Task DisposeAsync() => await _factory.DisposeAsync();
 
+    /// <summary>A well-formed row version for requests rejected before the concurrency check (the token is mandatory, SEC-09).</summary>
+    private const string AnyRowVersion = "AAAAAAAAB9E=";
+
     private static string Url(long taskId, int? assetId = null) => $"/api/v1/tasks/{taskId}/assets" + (assetId is null ? string.Empty : $"/{assetId}");
 
     private async Task<int> CreateAssetAsync(int matterId, string? name = null)
@@ -148,10 +151,10 @@ public sealed class TaskAssetLinksApiTests(SqlServerFixture sql) : IAsyncLifetim
             HttpStatusCode.Conflict,
             "CONCURRENCY_CONFLICT");
 
-        var cleared = await OkAsync(await _h.Admin.PutAsJsonAsync(Url(taskId, asset), new { assetLinkRoleId = (int?)null }));
+        var cleared = await OkAsync(await _h.Admin.PutAsJsonAsync(Url(taskId, asset), new { assetLinkRoleId = (int?)null, rowVersion = changed.GetProperty("rowVersion").GetString() }));
         cleared.GetProperty("assetLinkRoleId").ValueKind.ShouldBe(JsonValueKind.Null);
-        await ProblemAsync(await _h.Admin.PutAsJsonAsync(Url(taskId, asset), new { assetLinkRoleId = 999_999 }), HttpStatusCode.BadRequest, "VALIDATION_FAILED");
-        await ProblemAsync(await _h.Admin.PutAsJsonAsync(Url(taskId, 424_242), new { assetLinkRoleId = roles["Source"] }), HttpStatusCode.NotFound, "NOT_FOUND");
+        await ProblemAsync(await _h.Admin.PutAsJsonAsync(Url(taskId, asset), new { assetLinkRoleId = 999_999, rowVersion = cleared.GetProperty("rowVersion").GetString() }), HttpStatusCode.BadRequest, "VALIDATION_FAILED");
+        await ProblemAsync(await _h.Admin.PutAsJsonAsync(Url(taskId, 424_242), new { assetLinkRoleId = roles["Source"], rowVersion = cleared.GetProperty("rowVersion").GetString() }), HttpStatusCode.NotFound, "NOT_FOUND");
 
         (await _h.Admin.DeleteAsync(Url(taskId, asset))).StatusCode.ShouldBe(HttpStatusCode.NoContent);
         (await LinksAsync(taskId)).ShouldBeEmpty();
@@ -182,7 +185,7 @@ public sealed class TaskAssetLinksApiTests(SqlServerFixture sql) : IAsyncLifetim
 
         var problem = await ProblemAsync(await LinkAsync(taskId, spare), HttpStatusCode.Conflict, "TASK_NOT_EDITABLE");
         problem.GetProperty("meta").GetProperty("taskStatus").GetString().ShouldBe(status);
-        await ProblemAsync(await _h.Admin.PutAsJsonAsync(Url(taskId, linked), new { assetLinkRoleId = roles["Result"] }), HttpStatusCode.Conflict, "TASK_NOT_EDITABLE");
+        await ProblemAsync(await _h.Admin.PutAsJsonAsync(Url(taskId, linked), new { assetLinkRoleId = roles["Result"], rowVersion = AnyRowVersion }), HttpStatusCode.Conflict, "TASK_NOT_EDITABLE");
         await ProblemAsync(await _h.Admin.DeleteAsync(Url(taskId, linked)), HttpStatusCode.Conflict, "TASK_NOT_EDITABLE");
 
         var list = await OkAsync(await _h.Admin.GetAsync(Url(taskId)));
@@ -226,7 +229,7 @@ public sealed class TaskAssetLinksApiTests(SqlServerFixture sql) : IAsyncLifetim
         foreach (var client in new[] { nothing, viewer, onlyEdit, onlyLink, allBut })
         {
             await ForbiddenAsync(await LinkAsync(taskId, spare, null, client));
-            await ForbiddenAsync(await client.PutAsJsonAsync(Url(taskId, asset), new { assetLinkRoleId = (int?)null }));
+            await ForbiddenAsync(await client.PutAsJsonAsync(Url(taskId, asset), new { assetLinkRoleId = (int?)null, rowVersion = AnyRowVersion }));
             await ForbiddenAsync(await client.DeleteAsync(Url(taskId, asset)));
         }
 

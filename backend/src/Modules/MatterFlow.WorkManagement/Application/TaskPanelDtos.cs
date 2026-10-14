@@ -118,8 +118,9 @@ public sealed class ChangeTaskAssetRoleRequest
     /// <summary>The new role, or null to clear it. A role must be active unless it is the one already set.</summary>
     public int? AssetLinkRoleId { get; init; }
 
-    /// <summary>The link's <c>rowVersion</c> last read; optional.</summary>
-    public string? RowVersion { get; init; }
+    /// <summary>The workflow (or link) <c>rowVersion</c> last read; a mismatch is 409 CONCURRENCY_CONFLICT.</summary>
+    [Required]
+    public string RowVersion { get; init; } = string.Empty;
 }
 
 // ---- activity

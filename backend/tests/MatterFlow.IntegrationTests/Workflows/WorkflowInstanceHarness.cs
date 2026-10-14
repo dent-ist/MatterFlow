@@ -71,8 +71,8 @@ public sealed class WorkflowInstanceHarness
             var definitionId = step.GetProperty("formDefinitionId").GetInt32();
             var draft = await OkAsync(await _admin.PostAsync($"/api/v1/forms/{definitionId}/versions", Raw("{}")), HttpStatusCode.Created);
             var versionId = draft.GetProperty("version").GetProperty("formVersionId").GetInt32();
-            (await _admin.PutAsync($"/api/v1/forms/{definitionId}/versions/{versionId}", Raw(InputFormFields))).StatusCode.ShouldBe(HttpStatusCode.OK);
-            (await _admin.PostAsync($"/api/v1/forms/{definitionId}/versions/{versionId}/publish", null)).StatusCode.ShouldBe(HttpStatusCode.OK);
+            (await FormDraftApi.SaveAsync(_admin, definitionId, versionId, InputFormFields)).StatusCode.ShouldBe(HttpStatusCode.OK);
+            (await FormDraftApi.PublishAsync(_admin, definitionId, versionId)).StatusCode.ShouldBe(HttpStatusCode.OK);
         }
 
         return step.GetProperty("stepDefinitionId").GetInt32();

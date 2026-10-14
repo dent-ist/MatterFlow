@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { DesignerField } from 'form-engine';
-import { Observable, catchError, from, map, switchMap, throwError } from 'rxjs';
+import { Observable, catchError, from, map, of, switchMap, throwError } from 'rxjs';
 import {
   FormFieldModel,
   FormVersionDetail,
@@ -50,6 +50,14 @@ export class StepFormDesignerApi extends FormDesignerApi {
   /** Row versions of the versions loaded so far, sent back on save and publish for concurrency. */
   private readonly rowVersions = new Map<string, string>();
 
+  /** The row version the designer last saw; the server requires one on every save and publish, so read it when it was never loaded. */
+  private rowVersionOf(versionId: string): Observable<string> {
+    const known = this.rowVersions.get(versionId);
+    return known !== undefined
+      ? of(known)
+      : this.forms.getFormVersionSchema(Number(versionId)).pipe(map((d) => d.version.rowVersion));
+  }
+
   override getOwner(ownerId: string): Observable<FormOwner> {
     return this.steps
       .getStepDefinition(Number(ownerId))
@@ -89,10 +97,14 @@ export class StepFormDesignerApi extends FormDesignerApi {
   ): Observable<FormVersion> {
     return this.definitionId(ownerId).pipe(
       switchMap((id) =>
-        this.forms.saveFormDraft(id, Number(versionId), {
-          fields: definition.fields.map(toWire),
-          rowVersion: this.rowVersions.get(versionId),
-        }),
+        this.rowVersionOf(versionId).pipe(
+          switchMap((rowVersion) =>
+            this.forms.saveFormDraft(id, Number(versionId), {
+              fields: definition.fields.map(toWire),
+              rowVersion,
+            }),
+          ),
+        ),
       ),
       map((d) => this.toVersion(d)),
     );
@@ -101,7 +113,11 @@ export class StepFormDesignerApi extends FormDesignerApi {
   override publish(ownerId: string, versionId: string): Observable<FormVersion> {
     return this.definitionId(ownerId).pipe(
       switchMap((id) =>
-        this.forms.publishFormVersion(id, Number(versionId), this.rowVersions.get(versionId)),
+        this.rowVersionOf(versionId).pipe(
+          switchMap((rowVersion) =>
+            this.forms.publishFormVersion(id, Number(versionId), rowVersion),
+          ),
+        ),
       ),
       map((d) => this.toVersion(d)),
     );

@@ -1,6 +1,7 @@
 using MatterFlow.Audit.Contracts;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
+using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Time;
 using Microsoft.Data.SqlClient;
@@ -12,7 +13,7 @@ namespace MatterFlow.Identity.Application;
 /// Roles and role-permission assignment from the catalog. The built-in System Admin role is read-only and undeletable;
 /// a role can be deleted only while unused. Every change is audited and drops all cached effective permissions.
 /// </summary>
-public sealed class RoleAdministration(DbContext db, IUserAccessInvalidator invalidator, IAuditWriter audit, IClock clock)
+public sealed class RoleAdministration(DbContext db, IUserAccessInvalidator invalidator, IAuditWriter audit, ICurrentUser currentUser, IPermissionChecker callerPermissions, IClock clock)
 {
     public async Task<IReadOnlyList<RoleSummaryDto>> ListAsync(CancellationToken ct)
     {
@@ -48,7 +49,7 @@ public sealed class RoleAdministration(DbContext db, IUserAccessInvalidator inva
             .ToList();
     }
 
-    public async Task<Result<RoleDetailDto>> CreateAsync(SaveRoleRequest request, CancellationToken ct)
+    public async Task<Result<RoleDetailDto>> CreateAsync(CreateRoleRequest request, CancellationToken ct)
     {
         var name = request.Name.Trim();
         if (await NameTakenAsync(name, null, ct))
@@ -56,6 +57,8 @@ public sealed class RoleAdministration(DbContext db, IUserAccessInvalidator inva
         var permissions = await ResolvePermissionsAsync(request.PermissionCodes, ct);
         if (permissions.IsFailure)
             return permissions.Error!;
+        if (CheckGrantable(permissions.Value) is { } notGrantable)
+            return notGrantable;
 
         var role = new Role { Name = name, Description = Blank(request.Description), IsActive = true };
         foreach (var p in permissions.Value)
@@ -77,14 +80,14 @@ public sealed class RoleAdministration(DbContext db, IUserAccessInvalidator inva
         return await ToDetailAsync(role, ct);
     }
 
-    public async Task<Result<RoleDetailDto>> UpdateAsync(int roleId, SaveRoleRequest request, CancellationToken ct)
+    public async Task<Result<RoleDetailDto>> UpdateAsync(int roleId, UpdateRoleRequest request, CancellationToken ct)
     {
         var role = await db.Set<Role>().Include(r => r.Permissions).ThenInclude(rp => rp.Permission).FirstOrDefaultAsync(r => r.Id == roleId, ct);
         if (role is null)
             return NotFoundRole();
         if (role.IsSystemAdmin)
             return SystemRoleLocked();
-        if (request.RowVersion is not null && request.RowVersion != Convert.ToBase64String(role.RowVersion))
+        if (request.RowVersion != Convert.ToBase64String(role.RowVersion))
             return Error.Conflict(ErrorCodes.ConcurrencyConflict, "The role was changed by someone else. Reload and try again.");
 
         var name = request.Name.Trim();
@@ -97,6 +100,8 @@ public sealed class RoleAdministration(DbContext db, IUserAccessInvalidator inva
         var wantedIds = wanted.Value.Select(p => p.Id).ToHashSet();
         var removed = role.Permissions.Where(rp => !wantedIds.Contains(rp.PermissionId)).ToList();
         var added = wanted.Value.Where(p => role.Permissions.All(rp => rp.PermissionId != p.Id)).ToList();
+        if (CheckGrantable(added) is { } notGrantable)
+            return notGrantable;
 
         role.Name = name; // field changes (name, description) are written by [Audited] Role
         role.Description = Blank(request.Description);
@@ -177,6 +182,21 @@ public sealed class RoleAdministration(DbContext db, IUserAccessInvalidator inva
         return unknown.Count > 0
             ? Error.Validation("permissionCodes", "UNKNOWN_PERMISSION", $"Unknown permission code(s): {string.Join(", ", unknown)}.")
             : found;
+    }
+
+    /// <summary>
+    /// "No grant above own level" (SEC-01): unless the caller is a System Admin, every permission newly added to a role must be one the
+    /// caller holds. Otherwise a role manager could add <c>User.Manage</c> or <c>Role.Manage</c> to a role they hold and escalate.
+    /// </summary>
+    private Error? CheckGrantable(IEnumerable<Permission> added)
+    {
+        if (currentUser.IsSystemAdmin)
+            return null;
+
+        var unheld = added.Select(p => p.Code).Where(c => !callerPermissions.Has(c)).Order(StringComparer.Ordinal).ToList();
+        return unheld.Count == 0
+            ? null
+            : Error.Forbidden($"You cannot grant permissions you do not hold yourself: {string.Join(", ", unheld)}.");
     }
 
     private Task<bool> NameTakenAsync(string name, int? exceptRoleId, CancellationToken ct) =>

@@ -136,8 +136,9 @@ public sealed record SaveFormDraftRequest
     /// <summary>Change notes (max 500).</summary>
     public string? Notes { get; init; }
 
-    /// <summary>The draft's <c>rowVersion</c> as last read; a mismatch is 409 CONCURRENCY_CONFLICT.</summary>
-    public string? RowVersion { get; init; }
+    /// <summary>The draft's <c>rowVersion</c> as last read (required, SEC-09); a mismatch is 409 CONCURRENCY_CONFLICT.</summary>
+    [Required]
+    public required string RowVersion { get; init; }
 }
 
 /// <summary>Request to start a new draft.</summary>

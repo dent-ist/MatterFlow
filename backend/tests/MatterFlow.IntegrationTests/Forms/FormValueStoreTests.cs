@@ -45,9 +45,9 @@ public sealed class FormValueStoreTests(SqlServerFixture sql) : IAsyncLifetime
         var definition = definitionId ?? (await ensure.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("formDefinitionId").GetInt32();
         var draft = await _admin.PostAsync($"/api/v1/forms/{definition}/versions", new StringContent("{}", Encoding.UTF8, "application/json"));
         var versionId = (await draft.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("version").GetProperty("formVersionId").GetInt32();
-        var saved = await _admin.PutAsync($"/api/v1/forms/{definition}/versions/{versionId}", new StringContent(fieldsJson, Encoding.UTF8, "application/json"));
+        var saved = await FormDraftApi.SaveAsync(_admin, definition, versionId, fieldsJson);
         saved.EnsureSuccessStatusCode();
-        (await _admin.PostAsync($"/api/v1/forms/{definition}/versions/{versionId}/publish", null)).EnsureSuccessStatusCode();
+        (await FormDraftApi.PublishAsync(_admin, definition, versionId)).EnsureSuccessStatusCode();
         return (definition, versionId);
     }
 

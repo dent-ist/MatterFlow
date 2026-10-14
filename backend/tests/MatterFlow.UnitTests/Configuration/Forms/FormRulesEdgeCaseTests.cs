@@ -197,11 +197,69 @@ public class FormRulesEdgeCaseTests
     }
 
     [Fact]
-    public void Long_input_does_not_hang_and_timeout_counts_as_no_match()
+    public void Slow_but_portable_pattern_times_out_as_no_match_and_does_not_hang()
     {
-        var schema = Schema("""[{"key":"t","control":"TEXT","validation":{"pattern":"^(a|aa)*b$"}}]""");
-        var result = Run(schema, $"{{\"t\":\"{new string('a', 40)}\"}}");
+        // Polynomial (n^5) backtracking is still in the subset (separated unbounded quantifiers); the timeout is the backstop.
+        var schema = Schema("""[{"key":"t","control":"TEXT","validation":{"pattern":"^.*a.*a.*a.*a.*a.*b$"}}]""");
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = Run(schema, $"{{\"t\":\"{new string('a', 400)}\"}}");
+        stopwatch.Stop();
+
         Codes(result).ShouldBe(["t:PATTERN"]);
+        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public void Regex_time_is_budgeted_per_evaluation_not_per_field()
+    {
+        // SEC-05 reproduction: 40 fields x 250 ms took 10 s. The budget (0.5 s) skips the remaining checks of the same evaluation.
+        var fields = string.Join(',', Enumerable.Range(0, 40).Select(i => $$$"""{"key":"f{{{i}}}","control":"TEXT","validation":{"pattern":"^.*a.*a.*a.*a.*a.*b$"}}"""));
+        var schema = Schema($"[{fields}]");
+        var values = string.Join(',', Enumerable.Range(0, 40).Select(i => $"\"f{i}\":\"{new string('a', 400)}\""));
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = Run(schema, $"{{{values}}}");
+        stopwatch.Stop();
+
+        result.Errors.Count.ShouldBe(40);
+        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(1.5));
+    }
+
+    [Theory]
+    [InlineData("(a|aa)+$")]
+    [InlineData("^(\\w|\\d)+$")]
+    [InlineData("(a?){30}a{30}")]
+    [InlineData("^(a+)+$")]
+    [InlineData("^(a*)*$")]
+    [InlineData("^(a{1,5}){1,5}$")]
+    [InlineData("^(?:png|jpg)*$")]
+    [InlineData("^a*a*b$")]
+    [InlineData("^[A-Z]+[0-9]*$")]
+    public void Backtracking_hazard_patterns_are_rejected_at_publish(string pattern)
+    {
+        PortablePattern.TryTranslate(pattern, out _).ShouldBeFalse(pattern);
+
+        var fields = $"{{\"fields\":[{{\"key\":\"t\",\"control\":\"TEXT\",\"validation\":{{\"pattern\":{System.Text.Json.JsonSerializer.Serialize(pattern)}}}}}]}}";
+        FormSchema.Compile(FormSchemaJson.ParseFields(fields)).Errors.Select(e => e.Code).ShouldContain(FormDefinitionErrorCode.InvalidPattern);
+    }
+
+    [Theory]
+    [InlineData("^(\\d{3}-){2}\\d{4}$")]
+    [InlineData("^(?:png|jpg)?\\.[a-z]{3}$")]
+    [InlineData("^(a+)?b$")]
+    [InlineData("^\\d+\\.\\d+$")]
+    [InlineData("^[A-Z]+\\d{1,10}$")]
+    [InlineData("^.*foo.*bar.*$")]
+    public void Safe_shapes_stay_in_the_subset(string pattern) => PortablePattern.TryTranslate(pattern, out _).ShouldBeTrue(pattern);
+
+    [Fact]
+    public void Text_without_max_length_is_capped_by_the_platform_default()
+    {
+        var schema = Schema("""[{"key":"t","control":"TEXT"},{"key":"a","control":"TEXTAREA"},{"key":"u","control":"TEXT","validation":{"maxLength":5000}}]""");
+
+        Codes(Run(schema, $"{{\"t\":\"{new string('x', 1000)}\",\"a\":\"{new string('x', 20000)}\",\"u\":\"{new string('x', 4000)}\"}}")).ShouldBeEmpty();
+        Codes(Run(schema, $"{{\"t\":\"{new string('x', 1001)}\",\"a\":\"{new string('x', 20001)}\"}}")).ShouldBe(["a:TOO_LONG", "t:TOO_LONG"]);
     }
 
     [Fact]

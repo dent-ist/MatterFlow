@@ -25,7 +25,7 @@ public class FormRulesVectorTests
     public void Vector_file_has_expected_contract_version_and_size()
     {
         Document.Value.RootElement.GetProperty("contractVersion").GetInt32().ShouldBe(1);
-        Document.Value.RootElement.GetProperty("vectors").GetArrayLength().ShouldBe(152);
+        Document.Value.RootElement.GetProperty("vectors").GetArrayLength().ShouldBe(171);
     }
 
     [Theory]

@@ -8,6 +8,14 @@ namespace MatterFlow.Audit.Contracts;
 public interface IAuditWriter
 {
     void Write(AuditEntry entry);
+
+    /// <summary>
+    /// Drops entries that are queued but not yet saved. Used when a failed unit of work is retried from scratch, so the entries re-queued by
+    /// the failed save do not describe changes that never happened.
+    /// </summary>
+    void DiscardPending()
+    {
+    }
 }
 
 /// <summary>Correlation id shared by every audit event of one request/operation (a bulk action's many events share one id).</summary>

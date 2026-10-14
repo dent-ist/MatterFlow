@@ -6,6 +6,7 @@ using MatterFlow.Configuration.Domain.Forms.Rules;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Time;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Configuration.Application.Forms;
@@ -556,7 +557,7 @@ public sealed class FormAdminService(
     {
         if (string.IsNullOrEmpty(rowVersion))
         {
-            return true;
+            return false; // a row version is mandatory on every update (SEC-09)
         }
 
         try
@@ -632,5 +633,5 @@ public sealed class FormAdminService(
     private static string Text(int id) => id.ToString(CultureInfo.InvariantCulture);
 
     private static bool IsDuplicateKey(DbUpdateException ex) =>
-        ex.InnerException?.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) == true;
+        ex.GetBaseException() is SqlException { Number: 2601 or 2627 }; // error numbers, not message text: the message is localized
 }

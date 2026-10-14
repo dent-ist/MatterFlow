@@ -98,20 +98,20 @@ public sealed class TaskPermissionMatrixTests(SqlServerFixture sql) : IAsyncLife
                 return new(HttpMethod.Post, $"/api/v1/tasks/{TaskId(task)}/reopen", new { rowVersion = RowVersion(task) }, HttpStatusCode.OK);
             case "step-start":
                 task = await _h.CreateTaskAsync(_w, ordered: false);
-                return new(HttpMethod.Post, $"/api/v1/tasks/{TaskId(task)}/workflow/steps/{StepIds(task)[0]}/start", new { }, HttpStatusCode.OK);
+                return new(HttpMethod.Post, $"/api/v1/tasks/{TaskId(task)}/workflow/steps/{StepIds(task)[0]}/start", new { rowVersion = WorkflowRowVersion(task) }, HttpStatusCode.OK);
             case "step-values":
                 task = await _h.CreateTaskAsync(_w, ordered: false);
-                return new(HttpMethod.Post, $"/api/v1/tasks/{TaskId(task)}/workflow/steps/{StepIds(task)[0]}/values", new { values = new { } }, HttpStatusCode.OK);
+                return new(HttpMethod.Post, $"/api/v1/tasks/{TaskId(task)}/workflow/steps/{StepIds(task)[0]}/values", new { values = new { }, rowVersion = WorkflowRowVersion(task) }, HttpStatusCode.OK);
             case "step-complete":
                 task = await _h.CreateTaskAsync(_w, ordered: false);
-                return new(HttpMethod.Post, $"/api/v1/tasks/{TaskId(task)}/workflow/steps/{StepIds(task)[0]}/complete", new { }, HttpStatusCode.OK);
+                return new(HttpMethod.Post, $"/api/v1/tasks/{TaskId(task)}/workflow/steps/{StepIds(task)[0]}/complete", new { rowVersion = WorkflowRowVersion(task) }, HttpStatusCode.OK);
             case "step-skip":
                 task = await _h.CreateTaskAsync(_w, ordered: false);
-                return new(HttpMethod.Post, $"/api/v1/tasks/{TaskId(task)}/workflow/steps/{StepIds(task)[1]}/skip", new { }, HttpStatusCode.OK);
+                return new(HttpMethod.Post, $"/api/v1/tasks/{TaskId(task)}/workflow/steps/{StepIds(task)[1]}/skip", new { rowVersion = WorkflowRowVersion(task) }, HttpStatusCode.OK);
             case "step-reopen":
                 task = await _h.CreateTaskAsync(_w, ordered: false);
                 task = await _h.StepAsync(task, StepIds(task)[0], "complete");
-                return new(HttpMethod.Post, $"/api/v1/tasks/{TaskId(task)}/workflow/steps/{StepIds(task)[0]}/reopen", new { }, HttpStatusCode.OK);
+                return new(HttpMethod.Post, $"/api/v1/tasks/{TaskId(task)}/workflow/steps/{StepIds(task)[0]}/reopen", new { rowVersion = WorkflowRowVersion(task) }, HttpStatusCode.OK);
             default:
                 throw new ArgumentOutOfRangeException(nameof(operation));
         }

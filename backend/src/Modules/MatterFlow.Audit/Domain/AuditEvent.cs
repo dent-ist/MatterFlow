@@ -34,6 +34,34 @@ public sealed class AuditEvent : Entity<long>
 
     public Guid CorrelationId { get; set; }
 
+    /// <summary>Column widths of <c>dbo.AuditEvent</c> (03-audit.sql); text longer than these would fail the save with SQL error 2628.</summary>
+    public const int MaxEventTypeLength = 64;
+
+    public const int MaxObjectTypeLength = 40;
+
+    public const int MaxObjectIdLength = 40;
+
+    public const int MaxFieldKeyLength = 100;
+
+    public const int MaxSummaryLength = 500;
+
+    /// <summary>
+    /// Cuts the bounded text columns to their width (security review SEC-20). An audit write that fails fails the business operation by
+    /// design, so a long variable summary (for example a list of dropped field keys) must never be able to break a legitimate save.
+    /// Cut text ends with "..." so a reader can tell it was shortened.
+    /// </summary>
+    public void ClipToColumnLimits()
+    {
+        EventType = Clip(EventType, MaxEventTypeLength)!;
+        ObjectType = Clip(ObjectType, MaxObjectTypeLength)!;
+        ObjectId = Clip(ObjectId, MaxObjectIdLength)!;
+        FieldKey = Clip(FieldKey, MaxFieldKeyLength);
+        Summary = Clip(Summary, MaxSummaryLength);
+    }
+
+    private static string? Clip(string? value, int max) =>
+        value is null || value.Length <= max ? value : string.Concat(value.AsSpan(0, max - 3), "..."); // ASCII: several of these columns are VARCHAR
+
     /// <summary>Log-safe description: identifiers only, never the old/new values (architecture section 14).</summary>
     public string ToLogString() =>
         $"AuditEvent {Id} {EventType} {ObjectType}/{ObjectId} field={FieldKey ?? "-"} correlation={CorrelationId} values={Redaction.Masked}";

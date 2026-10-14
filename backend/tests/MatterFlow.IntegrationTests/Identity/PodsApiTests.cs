@@ -337,4 +337,26 @@ public sealed class PodsApiTests(SqlServerFixture sql) : IAsyncLifetime
         (await JsonAsync(await As(Admin).GetAsync("/api/v1/pods/member-candidates")))
             .EnumerateArray().Select(u => u.GetProperty("userId").GetInt32()).ShouldNotContain(leaver);
     }
+
+    [Fact]
+    public async Task Pod_members_show_email_and_roles_only_to_callers_who_may_see_the_directory()
+    {
+        var (podId, _) = await CreatePodAsync("Pod Visible");
+        var adminId = await ProvisionAsync(Admin);
+        var viewerId = await ProvisionAsync(@"KEiewer");
+        await AddMembersAsync(podId, adminId);
+        (await As(Admin).PutAsJsonAsync($"/api/v1/users/{adminId}", new { displayName = "Kim Admin", email = "kim@firm.test", rowVersion = (await JsonAsync(await As(Admin).GetAsync($"/api/v1/users/{adminId}"))).GetProperty("rowVersion").GetString() }))
+            .StatusCode.ShouldBe(HttpStatusCode.OK);
+        await _factory.GrantRoleAsync(@"KEiewer", await _factory.CreateRoleAsync("Pod Viewer", Permissions.Pod.View));
+        viewerId.ShouldBeGreaterThan(0);
+
+        var asAdmin = (await JsonAsync(await As(Admin).GetAsync($"/api/v1/pods/{podId}"))).GetProperty("members")[0];
+        var asViewer = (await JsonAsync(await As(@"KEiewer").GetAsync($"/api/v1/pods/{podId}"))).GetProperty("members")[0];
+
+        asAdmin.GetProperty("email").GetString().ShouldBe("kim@firm.test");
+        asAdmin.GetProperty("roles").EnumerateArray().Select(r => r.GetString()).ShouldContain("System Admin");
+        asViewer.GetProperty("displayName").GetString().ShouldBe("Kim Admin");
+        asViewer.GetProperty("email").ValueKind.ShouldBe(JsonValueKind.Null);
+        asViewer.GetProperty("roles").GetArrayLength().ShouldBe(0);
+    }
 }

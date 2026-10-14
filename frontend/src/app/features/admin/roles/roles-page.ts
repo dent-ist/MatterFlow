@@ -167,12 +167,13 @@ export class RolesPage implements OnInit {
       name,
       description: this.draftDescription().trim() || undefined,
       permissionCodes: [...this.draftCodes()].sort(),
-      rowVersion: this.selected()?.rowVersion,
     };
     try {
       const current = this.selected();
       const saved = current
-        ? await firstValueFrom(this.api.updateRole(current.roleId, request))
+        ? await firstValueFrom(
+            this.api.updateRole(current.roleId, { ...request, rowVersion: current.rowVersion }),
+          )
         : await firstValueFrom(this.api.createRole(request));
       this.selected.set(saved);
       this.draftCodes.set(new Set(saved.permissionCodes));

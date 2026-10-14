@@ -136,6 +136,12 @@ public interface IFormDefinitionResolver
     Task<Result<int>> EnsureDefinitionAsync(FormOwnerKind ownerKind, int? ownerId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// The definition id of the owner's form, or null when it has none. Never creates anything: use it on read paths (a GET must not write
+    /// to the database or the audit trail; security review SEC-22).
+    /// </summary>
+    Task<int?> FindDefinitionIdAsync(FormOwnerKind ownerKind, int? ownerId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// The owner's current PUBLISHED version. Failure: NOT_FOUND when the owner has no form definition,
     /// FORM_NOT_PUBLISHED when it has no published version.
     /// </summary>

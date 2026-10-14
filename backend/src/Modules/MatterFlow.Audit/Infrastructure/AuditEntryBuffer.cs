@@ -23,6 +23,8 @@ public sealed class AuditEntryBuffer : IAuditWriter
             _entries.Add(entry);
     }
 
+    public void DiscardPending() => Drain();
+
     public IReadOnlyList<AuditEntry> Drain()
     {
         lock (_gate)

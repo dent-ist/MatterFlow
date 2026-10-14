@@ -15,8 +15,8 @@ interface Vector {
 const vectors = (vectorFile as unknown as { vectors: Vector[] }).vectors;
 
 describe('form-rules conformance vectors', () => {
-  it('loads the contract vectors (152: 89 evaluation, 63 definition-invalid)', () => {
-    expect(vectors.length).toBe(152);
+  it('loads the contract vectors (171: 97 evaluation, 74 definition-invalid)', () => {
+    expect(vectors.length).toBe(171);
   });
 
   for (const vec of vectors) {

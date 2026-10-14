@@ -266,9 +266,10 @@ public sealed class AssetService(
             return AssetSupport.NotFound("Asset");
 
         var matter = await matters.FindAsync(row.Asset.MatterId, ct);
-        var definition = await forms.EnsureDefinitionAsync(FormOwnerKind.AssetType, row.Asset.AssetTypeId, ct);
-        var stored = definition.IsSuccess
-            ? await valueStore.GetAsync(FormValueOwnerKind.Asset, row.Asset.Id, definition.Value, ct)
+        // Read path: never create the definition here (a GET that writes would bypass the CSRF guard, SEC-22).
+        var definitionId = await forms.FindDefinitionIdAsync(FormOwnerKind.AssetType, row.Asset.AssetTypeId, ct);
+        var stored = definitionId is { } existing
+            ? await valueStore.GetAsync(FormValueOwnerKind.Asset, row.Asset.Id, existing, ct)
             : null;
         var published = await forms.GetPublishedVersionAsync(FormOwnerKind.AssetType, row.Asset.AssetTypeId, ct);
 

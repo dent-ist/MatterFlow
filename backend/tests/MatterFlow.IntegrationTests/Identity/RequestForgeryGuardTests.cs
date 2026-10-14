@@ -84,6 +84,38 @@ public class RequestForgeryGuardTests(NoDatabaseApiFactory factory) : IClassFixt
             .ToString().ShouldContain("not allowed in the Production");
     }
 
+    [Theory]
+    [InlineData("Staging")]
+    [InlineData("UAT")]
+    public void Dev_provider_cannot_be_enabled_in_any_other_named_environment(string environment)
+    {
+        using var other = new NoDatabaseApiFactory().WithWebHostBuilder(b =>
+        {
+            b.UseEnvironment(environment);
+            b.UseSetting("Auth:Provider", "Dev");
+        });
+
+        Should.Throw<Exception>(() => other.CreateClient())
+            .ToString().ShouldContain("only allowed in the Development and Test");
+    }
+
+    [Fact]
+    public async Task Dev_query_form_is_disabled_outside_development()
+    {
+        using var test = new NoDatabaseApiFactory().WithWebHostBuilder(b =>
+        {
+            b.UseEnvironment("Test");
+            b.UseSetting("Auth:Provider", "Dev");
+        });
+
+        var viaQuery = await test.CreateClient().GetAsync(@"/api/v1/me?devUser=KE%5Cattacker");
+        var viaHeader = new HttpRequestMessage(HttpMethod.Get, "/api/v1/me");
+        viaHeader.Headers.Add("X-Dev-User", @"KEttacker");
+
+        viaQuery.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        (await test.CreateClient().SendAsync(viaHeader)).StatusCode.ShouldNotBe(HttpStatusCode.Unauthorized);
+    }
+
     [Fact]
     public async Task Production_defaults_to_windows_negotiate_without_a_dev_scheme()
     {

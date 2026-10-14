@@ -110,7 +110,7 @@ public sealed class TaskAtomicityTests(SqlServerFixture sql) : IAsyncLifetime
             "IF EXISTS (SELECT 1 FROM inserted i JOIN deleted d ON d.TaskId = i.TaskId WHERE d.StatusCode = 'COMPLETED' AND i.StatusCode = 'IN_PROGRESS')");
 
         var url = $"/api/v1/tasks/{TaskId(completed)}/workflow/steps/{step}/reopen";
-        var response = await _h.Admin.PostAsJsonAsync(url, new { });
+        var response = await _h.Admin.PostAsJsonAsync(url, new { rowVersion = WorkflowRowVersion(completed) });
 
         response.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
         (await CountsAsync()).ShouldBe(before);
@@ -120,7 +120,8 @@ public sealed class TaskAtomicityTests(SqlServerFixture sql) : IAsyncLifetime
         (await _h.AuditAsync(TaskId(completed))).ShouldNotContain(e => e.EventType == "STEP_REOPENED");
 
         await RemoveFailureAsync("TR_Inject_Reopen");
-        var ok = await OkAsync(await _h.Admin.PostAsJsonAsync(url, new { }));
+        var current = await _h.GetTaskAsync(TaskId(completed));
+        var ok = await OkAsync(await _h.Admin.PostAsJsonAsync(url, new { rowVersion = WorkflowRowVersion(current) }));
         ok.GetProperty("task").GetProperty("status").GetString().ShouldBe("IN_PROGRESS");
     }
 

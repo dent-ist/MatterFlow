@@ -120,7 +120,7 @@ falling back to `ConnectionStrings:Default`; the application uses `ConnectionStr
 
 | Setting | Meaning |
 |---|---|
-| `Auth:Provider` | `Windows` (IIS, production) or `Dev`. Unset means `Dev` in Development and `Windows` elsewhere; `Dev` is refused in Production. |
+| `Auth:Provider` | `Windows` (IIS, production) or `Dev`. Unset means `Dev` in Development and `Windows` elsewhere; `Dev` is only allowed when `ASPNETCORE_ENVIRONMENT` is `Development` or `Test` (allow-list; any other name, including Staging and UAT, is refused at startup). |
 | `X-Dev-User` header | With the Dev provider, names the calling user (for example `KE\alice`); the query form `?devUser=` also works. Unknown names are provisioned like a first login. |
 | `Auth:Dev:DefaultUser` | User signed in when a request names none (what the browser gets). Empty means 401. |
 | `Dev:Users` | Optional seeded users: `[{ "Username": "KE\\alice", "DisplayName": "Alice", "Email": "...", "Roles": ["..."] }]` (Dev provider only). |

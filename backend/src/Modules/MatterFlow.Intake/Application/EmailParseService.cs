@@ -41,6 +41,9 @@ public sealed class EmailParseService(IOptions<IntakeOptions> options, IUserTime
         if (extension.Equals(".msg", StringComparison.OrdinalIgnoreCase) && !isMsg)
             return ParseFailed("The file is not a valid .msg email.");
 
+        if (!isMsg && EmlEmailParser.HasOversizedDecodedHeader(buffer, Options.MaxHeaderBytes))
+            return ParseFailed("The message headers are unusually large.");
+
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(Options.ParseTimeout);
         try
@@ -50,7 +53,7 @@ public sealed class EmailParseService(IOptions<IntakeOptions> options, IUserTime
                     () =>
                     {
                         using var stream = new MemoryStream(buffer, writable: false);
-                        return isMsg ? MsgEmailParser.Parse(stream) : EmlEmailParser.Parse(stream, timeout.Token);
+                        return isMsg ? MsgEmailParser.Parse(stream, timeout.Token) : EmlEmailParser.Parse(stream, timeout.Token);
                     },
                     timeout.Token)
                 .WaitAsync(timeout.Token);

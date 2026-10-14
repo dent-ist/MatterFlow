@@ -159,8 +159,8 @@ public sealed class TaskHarness
             var definitionId = created.GetProperty("formDefinitionId").GetInt32();
             var draft = await OkAsync(await Admin.PostAsync($"/api/v1/forms/{definitionId}/versions", Json("{}")), HttpStatusCode.Created);
             var versionId = draft.GetProperty("version").GetProperty("formVersionId").GetInt32();
-            await OkAsync(await Admin.PutAsync($"/api/v1/forms/{definitionId}/versions/{versionId}", Json(RequestFormFields)));
-            await OkAsync(await Admin.PostAsync($"/api/v1/forms/{definitionId}/versions/{versionId}/publish", null));
+            await OkAsync(await FormDraftApi.SaveAsync(Admin, definitionId, versionId, RequestFormFields));
+            await OkAsync(await FormDraftApi.PublishAsync(Admin, definitionId, versionId));
         }
 
         return taskTypeId;
@@ -242,7 +242,11 @@ public sealed class TaskHarness
 
     public async Task<JsonElement> StepAsync(JsonElement task, int stepInstanceId, string action, object? body = null, HttpClient? client = null, HttpStatusCode expected = HttpStatusCode.OK)
     {
-        var response = await (client ?? Admin).PostAsJsonAsync($"/api/v1/tasks/{TaskId(task)}/workflow/steps/{stepInstanceId}/{action}", body ?? new { });
+        // The workflow row version is mandatory on every step action (security review SEC-09); tests that do not care send the current one.
+        var payload = System.Text.Json.JsonSerializer.SerializeToNode(body ?? new { })!.AsObject();
+        if (!payload.ContainsKey("rowVersion"))
+            payload["rowVersion"] = WorkflowRowVersion(task);
+        var response = await (client ?? Admin).PostAsJsonAsync($"/api/v1/tasks/{TaskId(task)}/workflow/steps/{stepInstanceId}/{action}", payload);
         var result = await OkAsync(response, expected);
         return expected == HttpStatusCode.OK ? result.GetProperty("task") : result;
     }

@@ -32,7 +32,15 @@ public static class PortablePattern
         return false;
     }
 
-    private readonly record struct Atom(bool Quantifiable, bool IsGroup, bool Unbounded);
+    /// <summary>What a piece of the pattern contains that matters for backtracking: a quantifier with min != max, or an alternation.</summary>
+    private readonly record struct Info(bool Variable, bool Alternation);
+
+    private readonly record struct Atom(bool Quantifiable, bool IsGroup, Info Inner);
+
+    private readonly record struct Quantifier(int Min, int Max)
+    {
+        public bool Unbounded => Max == int.MaxValue;
+    }
 
     private sealed class Parser
     {
@@ -54,9 +62,9 @@ public static class PortablePattern
 
         private static bool IsDigit(char c) => c is >= '0' and <= '9';
 
-        private bool? ParseAlt()
+        private Info? ParseAlt()
         {
-            var unbounded = false;
+            var info = new Info(false, false);
             while (true)
             {
                 if (ParseSeq() is not { } seq)
@@ -64,21 +72,24 @@ public static class PortablePattern
                     return null;
                 }
 
-                unbounded |= seq;
+                info = new Info(info.Variable || seq.Variable, info.Alternation || seq.Alternation);
                 if (_i < _p.Length && _p[_i] == '|')
                 {
                     _out.Append('|');
                     _i++;
+                    info = info with { Alternation = true };
                     continue;
                 }
 
-                return unbounded;
+                return info;
             }
         }
 
-        private bool? ParseSeq()
+        private Info? ParseSeq()
         {
-            var unbounded = false;
+            var variable = false;
+            var alternation = false;
+            var previousUnbounded = false;
             while (_i < _p.Length && _p[_i] != '|' && _p[_i] != ')')
             {
                 if (ParseAtom() is not { } atom)
@@ -86,24 +97,36 @@ public static class PortablePattern
                     return null;
                 }
 
-                unbounded |= atom.Unbounded;
+                variable |= atom.Inner.Variable;
+                alternation |= atom.Inner.Alternation;
+                var unbounded = false;
                 if (_i < _p.Length && IsQuantifierStart(_p[_i]))
                 {
-                    if (!atom.Quantifiable || ParseQuantifier() is not { } quantifierUnbounded)
+                    if (!atom.Quantifiable || ParseQuantifier() is not { } quantifier)
                     {
                         return null;
                     }
 
-                    if (quantifierUnbounded && atom.IsGroup && atom.Unbounded)
+                    // Backtracking hazards (security review SEC-05): a repeated group may not contain a variable-count quantifier or an
+                    // alternation, and two unbounded quantifiers may not be directly adjacent.
+                    if (atom.IsGroup && quantifier.Max > 1 && (atom.Inner.Variable || atom.Inner.Alternation))
                     {
                         return null;
                     }
 
-                    unbounded |= quantifierUnbounded;
+                    unbounded = quantifier.Unbounded;
+                    if (unbounded && previousUnbounded)
+                    {
+                        return null;
+                    }
+
+                    variable |= quantifier.Min != quantifier.Max;
                 }
+
+                previousUnbounded = unbounded;
             }
 
-            return unbounded;
+            return new Info(variable, alternation);
         }
 
         private Atom? ParseAtom()
@@ -120,21 +143,21 @@ public static class PortablePattern
                 case '^':
                     _i++;
                     _out.Append('^');
-                    return new Atom(false, false, false);
+                    return new Atom(false, false, default);
                 case '$':
                     _i++;
                     _out.Append(EndOfInput);
-                    return new Atom(false, false, false);
+                    return new Atom(false, false, default);
                 case '.':
                     _i++;
                     _out.Append(AnyCharacter);
-                    return new Atom(true, false, false);
+                    return new Atom(true, false, default);
                 case '*' or '+' or '?' or '{' or '}' or ']':
                     return null;
                 default:
                     _i++;
                     _out.Append(c);
-                    return new Atom(true, false, false);
+                    return new Atom(true, false, default);
             }
         }
 
@@ -175,13 +198,13 @@ public static class PortablePattern
             if (e is 'b' or 'B')
             {
                 _out.Append('\\').Append(e);
-                return new Atom(false, false, false);
+                return new Atom(false, false, default);
             }
 
             if ("dDwWtnrfv".Contains(e, StringComparison.Ordinal) || SyntaxChars.Contains(e, StringComparison.Ordinal))
             {
                 _out.Append('\\').Append(e);
-                return new Atom(true, false, false);
+                return new Atom(true, false, default);
             }
 
             return null;
@@ -258,7 +281,7 @@ public static class PortablePattern
 
                     _i++;
                     _out.Append(_p, start, _i - start);
-                    return new Atom(true, false, false);
+                    return new Atom(true, false, default);
                 }
 
                 if (c == '[')
@@ -311,39 +334,40 @@ public static class PortablePattern
             }
         }
 
-        /// <summary>Parses a quantifier (and optional lazy marker); returns whether it is unbounded, or null when malformed.</summary>
-        private bool? ParseQuantifier()
+        /// <summary>Parses a quantifier (and optional lazy marker); returns its bounds, or null when malformed.</summary>
+        private Quantifier? ParseQuantifier()
         {
             var start = _i;
-            bool unbounded;
+            int min;
+            int max;
             var c = _p[_i];
             if (c is '*' or '+' or '?')
             {
                 _i++;
-                unbounded = c != '?';
+                min = c == '+' ? 1 : 0;
+                max = c == '?' ? 1 : int.MaxValue;
             }
             else
             {
                 _i++;
-                if (!ReadCount(out var low))
+                if (!ReadCount(out min))
                 {
                     return null;
                 }
 
-                var high = low;
+                max = min;
                 if (_i < _p.Length && _p[_i] == ',')
                 {
                     _i++;
-                    high = ReadCount(out var parsedHigh) ? parsedHigh : int.MaxValue;
+                    max = ReadCount(out var parsedHigh) ? parsedHigh : int.MaxValue;
                 }
 
-                if (_i >= _p.Length || _p[_i] != '}' || high < low)
+                if (_i >= _p.Length || _p[_i] != '}' || max < min)
                 {
                     return null;
                 }
 
                 _i++;
-                unbounded = high == int.MaxValue;
             }
 
             if (_i < _p.Length && _p[_i] == '?')
@@ -357,7 +381,7 @@ public static class PortablePattern
             }
 
             _out.Append(_p, start, _i - start);
-            return unbounded;
+            return new Quantifier(min, max);
         }
 
         /// <summary>Reads 1 to 3 ASCII digits; false (nothing consumed) when none.</summary>

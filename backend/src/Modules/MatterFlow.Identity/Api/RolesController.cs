@@ -33,7 +33,7 @@ public class RolesController(RoleAdministration roles) : ControllerBase
     [HttpPost("roles", Name = "CreateRole")]
     [RequirePermission(Permissions.Role.Manage)]
     [ProducesResponseType<RoleDetailDto>(StatusCodes.Status201Created, "application/json")]
-    public async Task<IActionResult> Create([FromBody] SaveRoleRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateRoleRequest request, CancellationToken cancellationToken)
     {
         var result = await roles.CreateAsync(request, cancellationToken);
         return result.IsFailure
@@ -45,7 +45,7 @@ public class RolesController(RoleAdministration roles) : ControllerBase
     [HttpPut("roles/{roleId:int}", Name = "UpdateRole")]
     [RequirePermission(Permissions.Role.Manage)]
     [ProducesResponseType<RoleDetailDto>(StatusCodes.Status200OK, "application/json")]
-    public async Task<IActionResult> Update(int roleId, [FromBody] SaveRoleRequest request, CancellationToken cancellationToken) =>
+    public async Task<IActionResult> Update(int roleId, [FromBody] UpdateRoleRequest request, CancellationToken cancellationToken) =>
         this.ToActionResult(await roles.UpdateAsync(roleId, request, cancellationToken));
 
     /// <summary>Deletes an unused role (409 <c>ROLE_IN_USE</c> while users hold it; System Admin cannot be deleted).</summary>

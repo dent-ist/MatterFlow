@@ -15,6 +15,7 @@ public static class IntakeModule
         services.AddOptions<IntakeOptions>().BindConfiguration(IntakeOptions.SectionName);
 
         services.AddScoped<EmailParseService>();
+        services.AddIntakeRateLimiting();
         services.AddIntakeOpenApi();
         return services;
     }

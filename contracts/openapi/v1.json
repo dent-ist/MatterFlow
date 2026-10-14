@@ -1250,6 +1250,7 @@
           {
             "name": "rowVersion",
             "in": "query",
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -2318,17 +2319,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveRoleRequest"
+                "$ref": "#/components/schemas/CreateRoleRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveRoleRequest"
+                "$ref": "#/components/schemas/CreateRoleRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveRoleRequest"
+                "$ref": "#/components/schemas/CreateRoleRequest"
               }
             }
           },
@@ -2398,17 +2399,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveRoleRequest"
+                "$ref": "#/components/schemas/UpdateRoleRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveRoleRequest"
+                "$ref": "#/components/schemas/UpdateRoleRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveRoleRequest"
+                "$ref": "#/components/schemas/UpdateRoleRequest"
               }
             }
           },
@@ -6770,7 +6771,9 @@
               "ASSET_TYPE_INACTIVE",
               "ASSET_INACTIVE",
               "UNSUPPORTED_MEDIA_TYPE",
-              "INTERNAL_ERROR"
+              "INTERNAL_ERROR",
+              "TOO_MANY_REQUESTS",
+              "METHOD_NOT_ALLOWED"
             ],
             "type": "string",
             "description": "Stable machine-readable error code."
@@ -7347,6 +7350,9 @@
         }
       },
       "ChangeTaskAssetRoleRequest": {
+        "required": [
+          "rowVersion"
+        ],
         "type": "object",
         "properties": {
           "assetLinkRoleId": {
@@ -7357,10 +7363,7 @@
             "format": "int32"
           },
           "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           }
         }
       },
@@ -7464,13 +7467,13 @@
         }
       },
       "CompleteStepRequest": {
+        "required": [
+          "rowVersion"
+        ],
         "type": "object",
         "properties": {
           "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           },
           "values": {
             "type": [
@@ -7731,6 +7734,31 @@
               "null",
               "object"
             ]
+          }
+        }
+      },
+      "CreateRoleRequest": {
+        "required": [
+          "name",
+          "description",
+          "permissionCodes"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "permissionCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -9604,13 +9632,13 @@
         }
       },
       "ReopenStepRequest": {
+        "required": [
+          "rowVersion"
+        ],
         "type": "object",
         "properties": {
           "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           }
         }
       },
@@ -9722,7 +9750,8 @@
       },
       "SaveFormDraftRequest": {
         "required": [
-          "fields"
+          "fields",
+          "rowVersion"
         ],
         "type": "object",
         "properties": {
@@ -9739,53 +9768,18 @@
             ]
           },
           "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
-      "SaveRoleRequest": {
-        "required": [
-          "name",
-          "description",
-          "permissionCodes",
-          "rowVersion"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
             "type": "string"
-          },
-          "description": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "permissionCodes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
           }
         }
       },
       "SaveStepValuesRequest": {
+        "required": [
+          "rowVersion"
+        ],
         "type": "object",
         "properties": {
           "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           },
           "values": {
             "type": [
@@ -9896,10 +9890,7 @@
             "type": "boolean"
           },
           "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           }
         }
       },
@@ -9918,21 +9909,18 @@
             }
           },
           "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           }
         }
       },
       "SkipStepRequest": {
+        "required": [
+          "rowVersion"
+        ],
         "type": "object",
         "properties": {
           "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           },
           "comment": {
             "maxLength": 2000,
@@ -9945,13 +9933,13 @@
         }
       },
       "StartStepRequest": {
+        "required": [
+          "rowVersion"
+        ],
         "type": "object",
         "properties": {
           "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           }
         }
       },
@@ -11917,6 +11905,35 @@
           }
         }
       },
+      "UpdateRoleRequest": {
+        "required": [
+          "name",
+          "description",
+          "permissionCodes",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "permissionCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateStatusLabelRequest": {
         "required": [
           "displayLabel",
@@ -12139,10 +12156,7 @@
             ]
           },
           "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           }
         }
       },

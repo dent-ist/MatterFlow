@@ -33,6 +33,8 @@ public static class Problems
         StatusCodes.Status409Conflict => ErrorCodes.ConcurrencyConflict,
         StatusCodes.Status413PayloadTooLarge => ErrorCodes.PayloadTooLarge,
         StatusCodes.Status415UnsupportedMediaType => ErrorCodes.UnsupportedMediaType,
+        StatusCodes.Status405MethodNotAllowed => ErrorCodes.MethodNotAllowed,
+        StatusCodes.Status429TooManyRequests => ErrorCodes.TooManyRequests,
         _ => ErrorCodes.InternalError,
     };
 

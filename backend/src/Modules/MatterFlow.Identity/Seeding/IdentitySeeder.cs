@@ -69,11 +69,24 @@ public sealed class IdentitySeeder(
         await db.SaveChangesAsync(ct);
     }
 
-    /// <summary>Creates the starter roles only when no non-system role exists, so admin edits are never overwritten.</summary>
+    private const string StarterRolesMarker = "StarterRoles";
+
+    /// <summary>
+    /// Creates the starter roles once (recorded in <c>dbo.SeedMarker</c>), so admin edits are never overwritten and deleting every custom
+    /// role does not bring the starters back (security review SEC-18). A database that already has non-system roles but no marker (installed
+    /// before the marker existed) is marked without creating anything.
+    /// </summary>
     public async Task SeedStarterRolesAsync(CancellationToken ct)
     {
-        if (await db.Set<Role>().AnyAsync(r => !r.IsSystemAdmin, ct))
+        var marked = await db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.SeedMarker WHERE Name = {StarterRolesMarker}").SingleAsync(ct) > 0;
+        if (marked)
             return;
+
+        if (await db.Set<Role>().AnyAsync(r => !r.IsSystemAdmin, ct))
+        {
+            await MarkSeededAsync(ct);
+            return;
+        }
 
         var permissionIds = await db.Set<Permission>().Where(p => p.IsActive).ToDictionaryAsync(p => p.Code, p => p.Id, StringComparer.Ordinal, ct);
         foreach (var starter in StarterRoles.All)
@@ -91,8 +104,14 @@ public sealed class IdentitySeeder(
         }
 
         await db.SaveChangesAsync(ct);
+        await MarkSeededAsync(ct);
         logger.LogInformation("Seeded {Count} starter roles.", StarterRoles.All.Count);
     }
+
+    private async Task MarkSeededAsync(CancellationToken ct) =>
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"IF NOT EXISTS (SELECT 1 FROM dbo.SeedMarker WHERE Name = {StarterRolesMarker}) INSERT dbo.SeedMarker (Name) VALUES ({StarterRolesMarker})",
+            ct);
 
     /// <summary>Creates users from <c>Dev:Users</c> with their roles. Existing identities are left untouched.</summary>
     public async Task SeedDevUsersAsync(CancellationToken ct)

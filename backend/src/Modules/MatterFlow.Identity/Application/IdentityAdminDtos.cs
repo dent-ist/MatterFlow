@@ -38,16 +38,16 @@ public sealed record UserCountsDto([property: Required] int Pending, [property: 
 
 public sealed record SetUserRolesRequest(
     [Required] int[] RoleIds,
-    string? RowVersion);
+    [Required] string RowVersion);
 
 public sealed record SetUserActiveRequest(
     [Required] bool IsActive,
-    string? RowVersion);
+    [Required] string RowVersion);
 
 public sealed record UpdateUserProfileRequest(
     [Required, StringLength(200, MinimumLength = 1)] string DisplayName,
     [StringLength(320), EmailAddress] string? Email,
-    string? RowVersion);
+    [Required] string RowVersion);
 
 /// <summary>One row of the roles list.</summary>
 public sealed record RoleSummaryDto(
@@ -67,11 +67,18 @@ public sealed record RoleDetailDto(
     [property: Required] string[] PermissionCodes,
     [property: Required] string RowVersion);
 
-public sealed record SaveRoleRequest(
+/// <summary>Creates a role (a new record has no row version yet).</summary>
+public sealed record CreateRoleRequest(
+    [Required, StringLength(100, MinimumLength = 1)] string Name,
+    [StringLength(500)] string? Description,
+    [Required] string[] PermissionCodes);
+
+/// <summary>Edits a role; the row version is mandatory so two administrators cannot silently overwrite each other (SEC-09).</summary>
+public sealed record UpdateRoleRequest(
     [Required, StringLength(100, MinimumLength = 1)] string Name,
     [StringLength(500)] string? Description,
     [Required] string[] PermissionCodes,
-    string? RowVersion);
+    [Required] string RowVersion);
 
 public sealed record PermissionItemDto([property: Required] string Code, [property: Required] string Description);
 

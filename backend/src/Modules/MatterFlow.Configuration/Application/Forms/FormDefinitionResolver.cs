@@ -3,6 +3,7 @@ using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.Configuration.Domain.Forms;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.SharedKernel.Results;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Configuration.Application.Forms;
@@ -63,7 +64,7 @@ public sealed class FormDefinitionResolver(DbContext db, IAuditWriter audit) : I
             await db.SaveChangesAsync(cancellationToken);
             return definition.Id;
         }
-        catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) == true)
+        catch (DbUpdateException ex) when (ex.GetBaseException() is SqlException { Number: 2601 or 2627 })
         {
             // Lost a race with another creator of the same definition: it exists now.
             db.Entry(definition).State = EntityState.Detached;
@@ -123,6 +124,9 @@ public sealed class FormDefinitionResolver(DbContext db, IAuditWriter audit) : I
             draft?.Id,
             draft?.FieldCount ?? 0);
     }
+
+    public Task<int?> FindDefinitionIdAsync(FormOwnerKind ownerKind, int? ownerId, CancellationToken cancellationToken = default) =>
+        FindIdAsync(ownerKind, ownerId, cancellationToken);
 
     /// <summary>The definition id of an owner, or null.</summary>
     public async Task<int?> FindIdAsync(FormOwnerKind kind, int? ownerId, CancellationToken cancellationToken) =>

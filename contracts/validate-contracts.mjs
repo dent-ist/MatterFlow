@@ -78,6 +78,8 @@ export function validate(schema, data, root, path = '$') {
 const INPUT_CONTROLS = new Set(['TEXT', 'TEXTAREA', 'NUMBER', 'CHECKBOX', 'SELECT', 'RADIO', 'MULTISELECT', 'DATE', 'DATETIME', 'URL', 'ASSET_REF', 'USER_REF']);
 const OPTION_CONTROLS = new Set(['SELECT', 'RADIO', 'MULTISELECT']);
 const MAX_DEPTH = 3;
+/** Platform default `maxLength` of the text family when a field declares none (form-rules.md section 3, step 3.4). */
+const DEFAULT_MAX_LENGTH = { TEXT: 1000, URL: 2000, TEXTAREA: 20000 };
 const FAMILY = { TEXT: 'text', TEXTAREA: 'text', URL: 'text', NUMBER: 'number', DATE: 'date', DATETIME: 'datetime', CHECKBOX: 'checkbox', SELECT: 'single', RADIO: 'single', MULTISELECT: 'multi', ASSET_REF: 'ref', USER_REF: 'ref' };
 const EQ_SET = ['eq', 'neq', 'in', 'notIn', 'isEmpty', 'isNotEmpty'];
 const ORDERED = [...EQ_SET, 'gt', 'gte', 'lt', 'lte'];
@@ -146,31 +148,33 @@ export function isPortablePattern(p) {
       prevSingle = code;
     }
   };
+  // A quantifier's bounds. Unbounded is max = Infinity.
   const parseQuant = () => {
-    let unbounded;
+    let min, max;
     const c = p[i];
-    if (c === '*' || c === '+' || c === '?') { i++; unbounded = c !== '?'; }
+    if (c === '*' || c === '+' || c === '?') { i++; min = c === '+' ? 1 : 0; max = c === '?' ? 1 : Infinity; }
     else {
       const m = /^\{(\d{1,3})(,(\d{0,3}))?\}/.exec(p.slice(i));
       if (!m) return null;
-      const lo = +m[1], hi = m[2] === undefined ? lo : m[3] === '' ? Infinity : +m[3];
-      if (hi < lo) return null;
+      min = +m[1];
+      max = m[2] === undefined ? min : m[3] === '' ? Infinity : +m[3];
+      if (max < min) return null;
       i += m[0].length;
-      unbounded = hi === Infinity;
     }
     if (p[i] === '?') i++;
     if (i < n && '*+?{'.includes(p[i])) return null;
-    return { unbounded };
+    return { min, max };
   };
+  // Atoms carry `variable` (contains a quantifier with min != max) and `alt` (contains `|`) up from group contents.
   const parseAtom = () => {
     const c = p[i];
     if (c === '(') {
       i++;
       if (p[i] === '?') { if (p[i + 1] !== ':') return null; i += 2; }
-      const alt = parseAlt();
-      if (!alt || p[i] !== ')') return null;
+      const inner = parseAlt();
+      if (!inner || p[i] !== ')') return null;
       i++;
-      return { quantifiable: true, group: true, unbounded: alt.unbounded };
+      return { quantifiable: true, group: true, variable: inner.variable, alt: inner.alt };
     }
     if (c === '[') return parseClass();
     if (c === '\\') {
@@ -186,29 +190,37 @@ export function isPortablePattern(p) {
     return { quantifiable: true };
   };
   const parseSeq = () => {
-    let unbounded = false;
+    let variable = false, alt = false, previousUnbounded = false;
     while (i < n && p[i] !== '|' && p[i] !== ')') {
       const atom = parseAtom();
       if (!atom) return null;
-      unbounded ||= !!atom.unbounded;
+      variable ||= !!atom.variable;
+      alt ||= !!atom.alt;
+      let unbounded = false;
       if (i < n && '*+?{'.includes(p[i])) {
         if (!atom.quantifiable) return null;
         const q = parseQuant();
         if (!q) return null;
-        if (q.unbounded && atom.group && atom.unbounded) return null;
-        unbounded ||= q.unbounded;
+        // Backtracking hazards (security review SEC-05): a repeated group may not contain a variable-count quantifier or an
+        // alternation, and two unbounded quantifiers may not be directly adjacent.
+        if (atom.group && q.max > 1 && (atom.variable || atom.alt)) return null;
+        unbounded = q.max === Infinity;
+        if (unbounded && previousUnbounded) return null;
+        variable ||= q.min !== q.max;
       }
+      previousUnbounded = unbounded;
     }
-    return { unbounded };
+    return { variable, alt };
   };
   const parseAlt = () => {
-    let unbounded = false;
+    let variable = false, alt = false;
     for (;;) {
       const s = parseSeq();
       if (!s) return null;
-      unbounded ||= s.unbounded;
-      if (p[i] === '|') { i++; continue; }
-      return { unbounded };
+      variable ||= s.variable;
+      alt ||= s.alt;
+      if (p[i] === '|') { i++; alt = true; continue; }
+      return { variable, alt };
     }
   };
   return parseAlt() !== null && i === n;
@@ -392,7 +404,8 @@ export function evaluate(fields, values, mode = 'submit') {
     const v = p.value, val = f.validation ?? {}, fam = FAMILY[f.control];
     if ((fam === 'number' || fam === 'date') && ((present(val.min) && v < val.min) || (present(val.max) && v > val.max))) { fail('OUT_OF_RANGE'); continue; }
     if (fam === 'text') {
-      if (present(val.maxLength) && v.length > val.maxLength) { fail('TOO_LONG'); continue; }
+      const limit = present(val.maxLength) ? val.maxLength : DEFAULT_MAX_LENGTH[f.control];
+      if (v.length > limit) { fail('TOO_LONG'); continue; }
       if (present(val.pattern) && !new RegExp(val.pattern).test(v)) { fail('PATTERN'); continue; }
     }
     if (fam === 'single' && !opts.get(f.key).includes(v)) fail('OPTION_NOT_ALLOWED');

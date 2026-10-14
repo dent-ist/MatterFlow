@@ -27,10 +27,10 @@ public sealed record PodDetail(
 /// <summary>A member of a Pod.</summary>
 /// <param name="UserId">Application user id.</param>
 /// <param name="DisplayName">Display name.</param>
-/// <param name="Email">E-mail, if known.</param>
+/// <param name="Email">E-mail, if known; null for callers without <c>User.View</c> or <c>Pod.Manage</c>.</param>
 /// <param name="IsActive">False for a disabled user.</param>
 /// <param name="IsPrimary">True when this Pod is the user's primary Pod.</param>
-/// <param name="Roles">Names of the user's active roles (read-only chips; a Pod Lead holds the Pod Lead role).</param>
+/// <param name="Roles">Names of the user's active roles (read-only chips; a Pod Lead holds the Pod Lead role); empty for callers without <c>User.View</c> or <c>Pod.Manage</c>.</param>
 public sealed record PodMemberDto(
     [property: Required] int UserId,
     [property: Required] string DisplayName,

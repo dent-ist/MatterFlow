@@ -3,6 +3,7 @@ using MatterFlow.Audit.Contracts;
 using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.Configuration.Domain.Forms;
 using MatterFlow.SharedKernel.Results;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Configuration.Application.Forms;
@@ -159,7 +160,7 @@ internal sealed class FormValueStore(DbContext db, FormSchemaLoader loader, IAud
     }
 
     private static bool IsDuplicateKey(DbUpdateException ex) =>
-        ex.InnerException?.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) == true;
+        ex.GetBaseException() is SqlException { Number: 2601 or 2627 }; // error numbers, not message text: the message is localized
 }
 
 /// <summary>Reads the stored JSON object of a value column.</summary>

@@ -54,8 +54,8 @@ public sealed class TaskWorkflowApiTests(SqlServerFixture sql) : IAsyncLifetime
         var task = await _h.CreateTaskAsync(_w, ordered: true);
         var steps = StepIds(task);
 
-        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, steps[2], "complete"), new { }), HttpStatusCode.Conflict, "STEP_ORDER_VIOLATION");
-        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, steps[1], "start"), new { }), HttpStatusCode.Conflict, "STEP_ORDER_VIOLATION");
+        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, steps[2], "complete"), new { rowVersion = WorkflowRowVersion(task) }), HttpStatusCode.Conflict, "STEP_ORDER_VIOLATION");
+        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, steps[1], "start"), new { rowVersion = WorkflowRowVersion(task) }), HttpStatusCode.Conflict, "STEP_ORDER_VIOLATION");
         StepStatus(await _h.GetTaskAsync(TaskId(task)), steps[2]).ShouldBe("PENDING");
 
         var started = await _h.StepAsync(task, steps[0], "start");
@@ -69,7 +69,7 @@ public sealed class TaskWorkflowApiTests(SqlServerFixture sql) : IAsyncLifetime
         var task = await _h.CreateTaskAsync(_w, ordered: true);
         var first = StepIds(task)[0];
 
-        var problem = await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, first, "complete"), new { }), HttpStatusCode.BadRequest, "FORM_VALIDATION_FAILED");
+        var problem = await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, first, "complete"), new { rowVersion = WorkflowRowVersion(task) }), HttpStatusCode.BadRequest, "FORM_VALIDATION_FAILED");
         problem.GetProperty("errors").TryGetProperty("form:note", out _).ShouldBeTrue();
 
         var saved = await _h.StepAsync(task, first, "values", new { values = new { has_extra = true } });
@@ -90,14 +90,14 @@ public sealed class TaskWorkflowApiTests(SqlServerFixture sql) : IAsyncLifetime
         var steps = StepIds(task);
 
         // Step 2 is skippable but needs a comment.
-        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, steps[1], "skip"), new { }), HttpStatusCode.BadRequest, "SKIP_COMMENT_REQUIRED");
-        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, steps[1], "skip"), new { comment = "   " }), HttpStatusCode.BadRequest, "SKIP_COMMENT_REQUIRED");
+        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, steps[1], "skip"), new { rowVersion = WorkflowRowVersion(task) }), HttpStatusCode.BadRequest, "SKIP_COMMENT_REQUIRED");
+        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, steps[1], "skip"), new { rowVersion = WorkflowRowVersion(task), comment = "   " }), HttpStatusCode.BadRequest, "SKIP_COMMENT_REQUIRED");
         var skipped = await _h.StepAsync(task, steps[1], "skip", new { comment = "Not needed for this client" });
         StepStatus(skipped, steps[1]).ShouldBe("SKIPPED");
         skipped.GetProperty("workflow").GetProperty("steps")[1].GetProperty("skipComment").GetString().ShouldBe("Not needed for this client");
 
         // Step 3 is not skippable.
-        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, steps[2], "skip"), new { comment = "please" }), HttpStatusCode.Conflict, "STEP_NOT_SKIPPABLE");
+        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(skipped, steps[2], "skip"), new { rowVersion = WorkflowRowVersion(skipped), comment = "please" }), HttpStatusCode.Conflict, "STEP_NOT_SKIPPABLE");
     }
 
     [Fact]
@@ -126,7 +126,7 @@ public sealed class TaskWorkflowApiTests(SqlServerFixture sql) : IAsyncLifetime
         var step = StepIds(completed)[0];
 
         // Other step actions stay blocked on a completed task.
-        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(completed, step, "start"), new { }), HttpStatusCode.Conflict, "TASK_NOT_EDITABLE");
+        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(completed, step, "start"), new { rowVersion = WorkflowRowVersion(completed) }), HttpStatusCode.Conflict, "TASK_NOT_EDITABLE");
 
         var response = await OkAsync(await _h.Admin.PostAsJsonAsync(StepUrl(completed, step, "reopen"), new { rowVersion = WorkflowRowVersion(completed) }));
 
@@ -149,7 +149,7 @@ public sealed class TaskWorkflowApiTests(SqlServerFixture sql) : IAsyncLifetime
         var completed = await _h.ReachAsync(_w, "COMPLETED");
         await _h.SetMatterActiveAsync(_w.MatterId, false);
 
-        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(completed, StepIds(completed)[0], "reopen"), new { }), HttpStatusCode.Conflict, "MATTER_INACTIVE");
+        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(completed, StepIds(completed)[0], "reopen"), new { rowVersion = WorkflowRowVersion(completed) }), HttpStatusCode.Conflict, "MATTER_INACTIVE");
 
         var after = await _h.GetTaskAsync(TaskId(completed));
         Status(after).ShouldBe("COMPLETED");
@@ -167,7 +167,7 @@ public sealed class TaskWorkflowApiTests(SqlServerFixture sql) : IAsyncLifetime
             var step = StepIds(task)[0];
             foreach (var action in new[] { "start", "values", "complete", "skip", "reopen" })
             {
-                var problem = await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, step, action), new { comment = "x", values = new { } }), HttpStatusCode.Conflict, "TASK_NOT_EDITABLE");
+                var problem = await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, step, action), new { rowVersion = WorkflowRowVersion(task), comment = "x", values = new { } }), HttpStatusCode.Conflict, "TASK_NOT_EDITABLE");
                 problem.GetProperty("meta").GetProperty("taskStatus").GetString().ShouldBe(Status(task) == "ON_HOLD" ? "OnHold" : "Cancelled");
             }
         }
@@ -188,14 +188,14 @@ public sealed class TaskWorkflowApiTests(SqlServerFixture sql) : IAsyncLifetime
         foreach (var action in new[] { "start", "values", "complete", "skip", "reopen" })
         {
             var client = action == "reopen" ? noReopen : noExecute;
-            await ProblemAsync(await client.PostAsJsonAsync(StepUrl(task, steps[0], action), new { }), HttpStatusCode.Forbidden, "PERMISSION_DENIED");
+            await ProblemAsync(await client.PostAsJsonAsync(StepUrl(task, steps[0], action), new { rowVersion = WorkflowRowVersion(task) }), HttpStatusCode.Forbidden, "PERMISSION_DENIED");
         }
 
         StepStatus(await _h.GetTaskAsync(TaskId(task)), steps[0]).ShouldBe("PENDING");
         (await _h.AuditAsync(TaskId(task))).ShouldNotContain(e => e.EventType.StartsWith("STEP_"));
 
         // The users still work with the permission they do hold.
-        (await noReopen.PostAsJsonAsync(StepUrl(task, steps[0], "start"), new { })).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await noReopen.PostAsJsonAsync(StepUrl(task, steps[0], "start"), new { rowVersion = WorkflowRowVersion(task) })).StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     [Fact]
@@ -209,8 +209,8 @@ public sealed class TaskWorkflowApiTests(SqlServerFixture sql) : IAsyncLifetime
         var ok = await _h.StepAsync(started, steps[1], "start", new { rowVersion = WorkflowRowVersion(started) });
         StepStatus(ok, steps[1]).ShouldBe("IN_PROGRESS");
 
-        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, 999999, "start"), new { }), HttpStatusCode.NotFound, "NOT_FOUND");
-        await ProblemAsync(await _h.Admin.PostAsJsonAsync($"/api/v1/tasks/999999/workflow/steps/{steps[0]}/start", new { }), HttpStatusCode.NotFound, "NOT_FOUND");
+        await ProblemAsync(await _h.Admin.PostAsJsonAsync(StepUrl(ok, 999999, "start"), new { rowVersion = WorkflowRowVersion(ok) }), HttpStatusCode.NotFound, "NOT_FOUND");
+        await ProblemAsync(await _h.Admin.PostAsJsonAsync($"/api/v1/tasks/999999/workflow/steps/{steps[0]}/start", new { rowVersion = WorkflowRowVersion(ok) }), HttpStatusCode.NotFound, "NOT_FOUND");
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public sealed class TaskWorkflowApiTests(SqlServerFixture sql) : IAsyncLifetime
         var task = await _h.CreateTaskAsync(_w, ordered: true);
         var first = StepIds(task)[0];
 
-        var saved = await OkAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, first, "values"), new { values = new { has_extra = false, extra = "hidden" } }));
+        var saved = await OkAsync(await _h.Admin.PostAsJsonAsync(StepUrl(task, first, "values"), new { rowVersion = WorkflowRowVersion(task), values = new { has_extra = false, extra = "hidden" } }));
 
         saved.GetProperty("droppedFields").EnumerateArray().Select(e => e.GetString()).ShouldBe(["extra"]);
         saved.GetProperty("affectedStepInstanceIds").GetArrayLength().ShouldBe(1);

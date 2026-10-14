@@ -54,6 +54,14 @@ public static class SchemaMigrationExtensions
         }
 
         var configuration = services.GetRequiredService<IConfiguration>();
+        if (configuration.GetConnectionString(options.ConnectionStringName) is null)
+        {
+            loggerFactory.CreateLogger("MatterFlow.SchemaMigrations").LogWarning(
+                "ConnectionStrings:{Name} is not set, so schema scripts run with the application's own connection, which then needs DDL rights. "
+                + "Use a separate migration login (member of mf_migrator) in production so the application identity stays DML-only (docs/runbook.md section 3).",
+                options.ConnectionStringName);
+        }
+
         var connectionString = configuration.GetConnectionString(options.ConnectionStringName)
             ?? configuration.GetConnectionString("Default")
             ?? throw new SchemaMigrationException(
