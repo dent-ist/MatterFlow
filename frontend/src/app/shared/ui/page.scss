@@ -1,0 +1,251 @@
+/* Shared screen styles for Organization pages (lists, forms, details); components pull this in via styleUrl. */
+:host {
+  display: block;
+}
+
+.pg-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mf-s3);
+  margin-bottom: var(--mf-s4);
+}
+
+.pg-title {
+  margin: 0;
+  font-size: var(--mf-fs-h1);
+}
+
+.pg-crumbs {
+  margin: 0 0 var(--mf-s1);
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.pg-crumbs a {
+  color: var(--mf-link);
+}
+
+.pg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s2);
+}
+
+.pg-muted {
+  color: var(--mf-text-muted);
+}
+
+.pg-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--mf-s4);
+  margin-bottom: var(--mf-s3);
+}
+
+.pg-filter {
+  display: grid;
+  gap: var(--mf-s1);
+}
+
+.pg-filter label {
+  font-weight: 600;
+  font-size: var(--mf-fs-sm);
+}
+
+.pg-input {
+  min-height: var(--mf-row-h);
+  min-width: 240px;
+  padding: 0 var(--mf-s3);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+  color: var(--mf-text);
+  font: inherit;
+}
+
+.pg-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-1);
+}
+
+.pg-table th,
+.pg-table td {
+  padding: var(--mf-s2) var(--mf-s3);
+  border-bottom: 1px solid var(--mf-border);
+  text-align: left;
+  height: var(--mf-row-h);
+}
+
+.pg-table th {
+  background: var(--mf-surface-alt);
+  font-weight: 600;
+}
+
+.pg-table th button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pg-mono {
+  font-family: var(--mf-font-mono);
+}
+
+.pg-link {
+  color: var(--mf-link);
+}
+
+.pg-chip {
+  display: inline-block;
+  padding: 0 var(--mf-s2);
+  border-radius: var(--mf-radius);
+  font-size: var(--mf-fs-sm);
+  background: var(--mf-st-done-bg);
+  color: var(--mf-st-done-fg);
+}
+
+.pg-chip--inactive {
+  background: var(--mf-st-cancel-bg);
+  color: var(--mf-st-cancel-fg);
+}
+
+.pg-chip--sensitive {
+  margin-left: var(--mf-s2);
+  background: var(--mf-warning-bg);
+  color: var(--mf-warning);
+}
+
+.pg-label {
+  font-weight: 600;
+  font-size: var(--mf-fs-sm);
+}
+
+.pg-state {
+  padding: var(--mf-s5);
+  background: var(--mf-surface);
+  border: 1px dashed var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  text-align: center;
+}
+
+.pg-alert {
+  margin: 0 0 var(--mf-s3);
+  padding: var(--mf-s3) var(--mf-s4);
+  border-radius: var(--mf-radius);
+  border: 1px solid var(--mf-danger);
+  background: var(--mf-danger-bg);
+  color: var(--mf-danger);
+}
+
+.pg-banner {
+  margin: 0 0 var(--mf-s3);
+  padding: var(--mf-s3) var(--mf-s4);
+  border-radius: var(--mf-radius);
+  border: 1px solid var(--mf-warning);
+  background: var(--mf-warning-bg);
+  color: var(--mf-warning);
+}
+
+.pg-form {
+  display: grid;
+  gap: var(--mf-s4);
+  max-width: 640px;
+  padding: var(--mf-s5);
+  background: var(--mf-surface);
+  border-radius: var(--mf-radius-lg);
+  box-shadow: var(--mf-shadow-1);
+}
+
+.pg-form fieldset {
+  display: grid;
+  gap: var(--mf-s2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pg-form legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.pg-radio {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+}
+
+.pg-summary {
+  margin: 0;
+  padding: var(--mf-s3) var(--mf-s4);
+  border-radius: var(--mf-radius);
+  border: 1px solid var(--mf-danger);
+  background: var(--mf-danger-bg);
+  color: var(--mf-danger);
+}
+
+.pg-summary ul {
+  margin: var(--mf-s1) 0 0;
+  padding-left: var(--mf-s5);
+}
+
+.pg-dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--mf-s2) var(--mf-s5);
+  margin: 0;
+}
+
+.pg-dl dt {
+  font-weight: 600;
+}
+
+.pg-dl dd {
+  margin: 0;
+}
+
+.pg-tabs {
+  display: flex;
+  gap: var(--mf-s1);
+  margin: var(--mf-s4) 0 var(--mf-s3);
+  border-bottom: 1px solid var(--mf-border);
+}
+
+.pg-tabs button {
+  padding: var(--mf-s2) var(--mf-s4);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--mf-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.pg-tabs button[aria-selected='true'] {
+  border-bottom-color: var(--mf-primary);
+  font-weight: 600;
+}
+
+.pg-reason {
+  margin: var(--mf-s1) 0 0;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.pg-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

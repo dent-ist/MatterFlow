@@ -1,0 +1,305 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
+import { MessageService } from 'primeng/api';
+import { MattersClient, ProjectsClient } from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
+import { Permission } from '../../../core/auth/permissions';
+import {
+  FakeMeApi,
+  aMatter,
+  aProject,
+  apiError,
+  buttonByLabel,
+  ok,
+  pageOfMatters,
+  pageOfProjects,
+  provideFakeMe,
+  settle,
+  withPermissions,
+} from '../../../shared/testing/org-testing';
+import { ProjectDetailPage } from './project-detail-page';
+import { ProjectFormPage } from './project-form-page';
+import { ProjectsListPage } from './projects-list-page';
+
+type Mock = ReturnType<typeof vi.fn>;
+
+describe('Projects pages', () => {
+  let projects: Record<
+    'listProjects' | 'getProject' | 'createProject' | 'updateProject' | 'setProjectActive',
+    Mock
+  >;
+  let matters: Record<'getMatter' | 'listMatters', Mock>;
+  let navigate: Mock;
+  let navigateByUrl: Mock;
+
+  async function configure(permissions: Permission[]): Promise<void> {
+    projects = {
+      listProjects: vi
+        .fn()
+        .mockReturnValue(
+          ok(
+            pageOfProjects(aProject(), aProject({ projectId: 4, name: 'Review', isActive: false })),
+          ),
+        ),
+      getProject: vi.fn().mockReturnValue(ok(aProject())),
+      createProject: vi.fn().mockReturnValue(ok(aProject({ projectId: 11 }))),
+      updateProject: vi.fn().mockReturnValue(ok(aProject({ name: 'Renamed' }))),
+      setProjectActive: vi.fn().mockReturnValue(ok(aProject({ isActive: false }))),
+    };
+    matters = {
+      getMatter: vi.fn().mockReturnValue(ok(aMatter())),
+      listMatters: vi
+        .fn()
+        .mockReturnValue(
+          ok(
+            pageOfMatters(
+              aMatter(),
+              aMatter({ matterId: 8, matterRef: '00001-00003', name: 'Old', isActive: false }),
+            ),
+          ),
+        ),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        MessageService,
+        provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
+        { provide: ProjectsClient, useValue: projects },
+        { provide: MattersClient, useValue: matters },
+      ],
+    });
+    const router = TestBed.inject(Router);
+    navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true) as never;
+    navigateByUrl = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true) as never;
+    await TestBed.inject(AuthStore).ensureLoaded();
+  }
+
+  describe('list', () => {
+    async function create(permissions: Permission[], inputs: Record<string, string> = {}) {
+      await configure(permissions);
+      const fixture = TestBed.createComponent(ProjectsListPage);
+      for (const [k, v] of Object.entries(inputs)) fixture.componentRef.setInput(k, v);
+      await settle(fixture);
+      return fixture;
+    }
+
+    it('lists projects with their matter reference and archived state', async () => {
+      const fixture = await create(['Project.View', 'Project.Create']);
+      const rows = fixture.nativeElement.querySelectorAll('tbody tr');
+
+      expect(rows).toHaveLength(2);
+      expect(rows[0].querySelector('a')?.getAttribute('href')).toBe('/projects/3');
+      expect(rows[0].querySelector('.mf-ref')?.textContent).toBe('00343-00012');
+      expect(rows[1].textContent).toContain('Archived');
+      expect(projects.listProjects).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+        true,
+        1,
+        25,
+        undefined,
+      );
+    });
+
+    it('filters by matter from the URL, shows a removable chip and keeps the matter when creating', async () => {
+      const fixture = await create(['Project.View', 'Project.Create'], {
+        matterId: '7',
+        q: 'cust',
+      });
+
+      expect(projects.listProjects).toHaveBeenLastCalledWith('cust', 7, true, 1, 25, undefined);
+      expect(fixture.nativeElement.querySelector('[data-matter-chip]')?.textContent).toContain(
+        '00343-00012 Merger Review',
+      );
+      buttonByLabel(fixture.nativeElement, 'New Project')!.click();
+      expect(navigateByUrl).toHaveBeenCalledWith('/projects/new?matterId=7');
+      fixture.nativeElement.querySelector('[data-matter-chip] button').click();
+      expect(navigate).toHaveBeenCalledWith([], {
+        queryParams: { matterId: null, page: null },
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('hides New Project without Project.Create and handles empty results', async () => {
+      const fixture = await create(['Project.View']);
+      expect(buttonByLabel(fixture.nativeElement, 'New Project')).toBeUndefined();
+
+      projects.listProjects.mockReturnValue(ok(pageOfProjects()));
+      fixture.componentRef.setInput('q', 'zzz');
+      await settle(fixture);
+      expect(fixture.nativeElement.querySelector('[data-empty=filtered]')).not.toBeNull();
+    });
+  });
+
+  describe('form', () => {
+    let fixture: ComponentFixture<ProjectFormPage>;
+    const el = (): HTMLElement => fixture.nativeElement;
+
+    async function create(inputs: Record<string, string>, permissions: Permission[]) {
+      await configure(permissions);
+      fixture = TestBed.createComponent(ProjectFormPage);
+      for (const [k, v] of Object.entries(inputs)) fixture.componentRef.setInput(k, v);
+      await settle(fixture);
+    }
+
+    function type(selector: string, value: string): void {
+      const input = el().querySelector<HTMLInputElement>(selector)!;
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+    }
+
+    async function submit(): Promise<void> {
+      el().querySelector('form')!.dispatchEvent(new Event('submit'));
+      await settle(fixture);
+    }
+
+    it('creates in the launching matter, with the matter prefilled and locked', async () => {
+      await create({ matterId: '7' }, ['Project.View', 'Project.Create']);
+
+      expect(matters.getMatter).toHaveBeenCalledWith(7);
+      expect(el().querySelector('[data-chosen]')?.textContent).toContain(
+        '00343-00012 Merger Review',
+      );
+      expect(el().querySelector('.mf-picker__change')).toBeNull();
+
+      type('#project-name', ' Custodian Processing ');
+      type('#project-description', 'Intake');
+      await submit();
+
+      expect(projects.createProject).toHaveBeenCalledWith({
+        matterId: 7,
+        name: 'Custodian Processing',
+        description: 'Intake',
+      });
+      expect(navigate).toHaveBeenCalledWith(['/projects', 11]);
+    });
+
+    it('lets the user pick a matter when not launched from one, and requires it', async () => {
+      await create({}, ['Project.View', 'Project.Create']);
+      await submit();
+      expect(el().querySelector('[data-summary]')?.textContent).toContain('Select a matter.');
+      expect(el().querySelector('[data-summary]')?.textContent).toContain('Enter a project name.');
+
+      type('#project-matter', '343-12');
+      await new Promise((r) => setTimeout(r, 300));
+      await settle(fixture);
+      expect(matters.listMatters).toHaveBeenCalledWith(
+        '343-12',
+        undefined,
+        undefined,
+        undefined,
+        1,
+        8,
+        undefined,
+      );
+      expect(el().textContent).toContain('00001-00003 Old');
+      expect(el().querySelectorAll('.mf-picker__tag')).toHaveLength(1); // the inactive matter is marked
+    });
+
+    it('maps a duplicate name to the field', async () => {
+      await create({ matterId: '7' }, ['Project.View', 'Project.Create']);
+      projects.createProject.mockReturnValue(
+        apiError(409, {
+          status: 409,
+          code: 'DUPLICATE_NAME',
+          errors: {
+            name: [
+              {
+                code: 'DUPLICATE_NAME',
+                message: "A project named 'X' already exists in this matter.",
+              },
+            ],
+          },
+          meta: { existingId: 3 },
+        }),
+      );
+      type('#project-name', 'X');
+      await submit();
+
+      expect(el().querySelector('#project-name-error')?.textContent).toContain(
+        "A project named 'X' already exists in this matter.",
+      );
+      expect(el().querySelector('[data-summary] a')?.getAttribute('href')).toBe('/projects/3');
+    });
+
+    it('edits name and description with the row version; the matter stays locked', async () => {
+      await create({ projectId: '3' }, ['Project.View', 'Project.Edit']);
+
+      expect(el().querySelector('.mf-picker__change')).toBeNull();
+      expect(el().querySelector<HTMLInputElement>('#project-name')!.value).toBe(
+        'Custodian Processing',
+      );
+      type('#project-name', 'Renamed');
+      type('#project-description', '');
+      await submit();
+
+      expect(projects.updateProject).toHaveBeenCalledWith(3, {
+        name: 'Renamed',
+        description: undefined,
+        rowVersion: 'CCCC',
+      });
+    });
+  });
+
+  describe('detail', () => {
+    let fixture: ComponentFixture<ProjectDetailPage>;
+    const el = (): HTMLElement => fixture.nativeElement;
+
+    async function create(permissions: Permission[], project = aProject()) {
+      await configure(permissions);
+      projects.getProject.mockReturnValue(ok(project));
+      fixture = TestBed.createComponent(ProjectDetailPage);
+      fixture.componentRef.setInput('projectId', '3');
+      await settle(fixture);
+    }
+
+    it('shows the project in its matter and a flat tasks placeholder', async () => {
+      await create(['Project.View']);
+
+      expect(el().querySelector('h1')?.textContent).toContain('Custodian Processing');
+      expect(el().querySelector('[data-matter] .mf-ref')?.textContent).toBe('00343-00012');
+      expect(el().querySelector('[data-placeholder=tasks]')).not.toBeNull();
+      expect(buttonByLabel(el(), 'Archive')).toBeUndefined();
+      expect(buttonByLabel(el(), 'Edit')).toBeUndefined();
+    });
+
+    it('archives after confirmation, explaining that existing tasks keep the project', async () => {
+      await create(['Project.View', 'Project.Archive']);
+
+      buttonByLabel(el(), 'Archive')!.click();
+      await settle(fixture);
+      const dialog = document.body.querySelector('p-dialog') as HTMLElement;
+      expect(dialog.querySelector('[data-toggle-body]')?.textContent).toContain(
+        "Existing tasks keep this project, but new tasks can't select it.",
+      );
+      buttonByLabel(dialog, 'Archive')!.click();
+      await settle(fixture);
+
+      expect(projects.setProjectActive).toHaveBeenCalledWith(3, {
+        isActive: false,
+        rowVersion: 'CCCC',
+      });
+      expect(el().querySelector('[data-archived-banner]')).not.toBeNull();
+    });
+
+    it('offers Restore for an archived project', async () => {
+      await create(['Project.View', 'Project.Archive'], aProject({ isActive: false }));
+
+      expect(el().querySelector('[data-archived-banner]')?.textContent).toContain(
+        "new tasks can't select it",
+      );
+      expect(buttonByLabel(el(), 'Restore')).toBeDefined();
+    });
+
+    it('shows a not-found state', async () => {
+      await create(['Project.View']);
+      projects.getProject.mockReturnValue(apiError(404, { status: 404, code: 'NOT_FOUND' }));
+      await fixture.componentInstance.load();
+      await settle(fixture);
+
+      expect(el().querySelector('[role=alert]')?.textContent).toContain(
+        "couldn't find that project",
+      );
+    });
+  });
+});
