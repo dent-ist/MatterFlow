@@ -19,7 +19,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { COMMENT_MAX_TEXT, htmlToText, isBlankHtml } from './rich-text';
+import { COMMENT_MAX_TEXT, decorateLinks, htmlToText, isBlankHtml } from './rich-text';
 import { RichTextEditor } from './rich-text-editor';
 
 export const COMMENTS_INTERNAL_NOTE = 'Internal only. Visible to people who can view tasks.';
@@ -27,6 +27,10 @@ export const COMMENTS_PRIVILEGE_NOTE =
   'Privilege reminder: comments are saved with the task. Do not record anything that should not be stored here.';
 export const COMMENT_DELETE_BODY =
   'Delete this comment? It will be hidden from view but kept in the audit record.';
+/** The server returns at most this many comments per request (`take`); longer threads are fetched page by page (SEC2-10). */
+export const COMMENTS_PAGE_SIZE = 200;
+
+const RENDER_CACHE_LIMIT = 1000;
 
 /**
  * The Comments tab of a Task (UX S10): the thread, a basic rich-text composer, and edit / delete of one's own comments.
@@ -44,7 +48,7 @@ export const COMMENT_DELETE_BODY =
   template: `
     <section class="tc" aria-label="Comments">
       <header class="tc__head">
-        <h2 class="tc__title">Comments ({{ items().length }})</h2>
+        <h2 class="tc__title">Comments ({{ total() }})</h2>
         <div class="tc__order" role="group" aria-label="Order">
           <button
             type="button"
@@ -169,6 +173,24 @@ export const COMMENT_DELETE_BODY =
                 </li>
               }
             </ol>
+            @if (items().length < total()) {
+              <div class="tc__more" data-more>
+                <p class="tc__muted" data-more-note>
+                  Showing {{ items().length }} of {{ total() }} comments.
+                </p>
+                @if (moreError()) {
+                  <p class="tc__alert" role="alert" data-more-error>{{ moreError() }}</p>
+                }
+                <button
+                  type="button"
+                  data-load-more
+                  [disabled]="loadingMore()"
+                  (click)="loadMore()"
+                >
+                  {{ loadingMore() ? 'Loading...' : 'Load more comments' }}
+                </button>
+              </div>
+            }
           }
         }
       }
@@ -307,6 +329,31 @@ export const COMMENT_DELETE_BODY =
     .tc__body a {
       color: var(--mf-link);
     }
+    .tc__body :where(.tc__host) {
+      margin-left: var(--mf-s1);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+    .tc__body :where(.tc__warn) {
+      margin-left: var(--mf-s1);
+      color: var(--mf-danger-text, var(--mf-danger));
+      cursor: help;
+    }
+    .tc__more {
+      display: grid;
+      gap: var(--mf-s2);
+      justify-items: start;
+    }
+    .tc__more button {
+      min-height: var(--mf-target-min, 2rem);
+      padding: 0 var(--mf-s3);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface);
+      color: var(--mf-text);
+      font: inherit;
+      cursor: pointer;
+    }
     .tc__edited {
       margin: var(--mf-s1) 0 0;
       color: var(--mf-text-muted);
@@ -380,9 +427,14 @@ export class TaskComments {
   private readonly api = inject(TaskCommentsClient);
   private readonly auth = inject(AuthStore);
   private readonly notify = inject(NotificationService);
+  private readonly rendered = new Map<string, string>();
 
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly items = signal<TaskCommentResponse[]>([]);
+  /** All comments of the Task (the thread can be longer than the part shown). */
+  protected readonly total = signal(0);
+  protected readonly loadingMore = signal(false);
+  protected readonly moreError = signal('');
   protected readonly newestFirst = signal(false);
 
   protected readonly draft = signal('');
@@ -429,6 +481,29 @@ export class TaskComments {
     void this.load();
   }
 
+  /** Appends the next page of a thread longer than the first one (the server caps a request at 200 comments). */
+  protected async loadMore(): Promise<void> {
+    if (this.loadingMore()) return;
+    const taskId = this.taskId();
+    const newestFirst = this.newestFirst();
+    this.loadingMore.set(true);
+    this.moreError.set('');
+    try {
+      const list = await firstValueFrom(
+        this.api.listTaskComments(taskId, newestFirst, this.items().length, COMMENTS_PAGE_SIZE),
+      );
+      // The thread or its order changed while the page was on its way: that answer no longer fits.
+      if (taskId !== this.taskId() || newestFirst !== this.newestFirst()) return;
+      this.items.update((current) => [...current, ...list.items]);
+      this.total.set(list.total);
+      this.countChange.emit(list.total);
+    } catch {
+      this.moreError.set("Couldn't load more comments. Try again.");
+    } finally {
+      this.loadingMore.set(false);
+    }
+  }
+
   protected async post(event?: Event): Promise<void> {
     event?.preventDefault();
     if (this.posting() || isBlankHtml(this.draft())) return;
@@ -442,7 +517,7 @@ export class TaskComments {
       await firstValueFrom(this.api.addTaskComment(this.taskId(), { bodyHtml: this.draft() }));
       this.draft.set('');
       this.notify.success('Comment posted.');
-      await this.load();
+      await this.load(this.items().length);
       this.changed.emit();
     } catch (error) {
       // The typed text stays in the composer.
@@ -477,7 +552,7 @@ export class TaskComments {
       this.editingId.set(null);
       this.historyId.set(null);
       this.notify.success('Saved.');
-      await this.load();
+      await this.load(this.items().length);
       this.changed.emit();
     } catch (error) {
       this.editError.set(
@@ -503,12 +578,12 @@ export class TaskComments {
       await firstValueFrom(this.api.deleteTaskComment(this.taskId(), comment.commentId));
       this.deleteOpen.set(false);
       this.deleting = null;
-      await this.load();
+      await this.load(this.items().length);
       this.changed.emit();
     } catch (error) {
       this.deleteOpen.set(false);
       this.notify.error("Couldn't delete the comment.", messageOf(error));
-      await this.load();
+      await this.load(this.items().length);
     } finally {
       this.saving.set(false);
     }
@@ -532,21 +607,45 @@ export class TaskComments {
   }
 
   /**
-   * Links in a comment open in a new tab (the server already added rel="noopener noreferrer"). The input is the server-sanitized body;
-   * Angular's own sanitizer still runs on the result when it is bound to innerHTML.
+   * Links in a comment open in a new tab (the server already added rel="noopener noreferrer") and show the host they really go to; a link that
+   * looks deceptive gets a warning mark (SEC2-12). The input is the server-sanitized body; Angular's own sanitizer still runs on the result when
+   * it is bound to innerHTML.
    */
   protected render(html: string): string {
-    return html.replace(/<a /g, '<a target="_blank" ');
+    // The template calls this on every change detection pass for every comment on screen; parsing the body each time would cost a DOM parse per
+    // comment per pass on a long thread, so the result is remembered per body text.
+    let decorated = this.rendered.get(html);
+    if (decorated === undefined) {
+      if (this.rendered.size >= RENDER_CACHE_LIMIT) this.rendered.clear();
+      decorated = decorateLinks(html);
+      this.rendered.set(html, decorated);
+    }
+    return decorated;
   }
 
-  private async load(): Promise<void> {
+  /**
+   * Loads the first page and, with `keep` (after a post, edit or delete: the number on screen before), as many further pages as it takes to
+   * show at least that many comments again. The first request carries no paging arguments: the server's default page is the first 200.
+   */
+  private async load(keep = 0): Promise<void> {
     const taskId = this.taskId();
+    const newestFirst = this.newestFirst();
     try {
-      const list = await firstValueFrom(this.api.listTaskComments(taskId, this.newestFirst()));
-      if (taskId !== this.taskId()) return;
-      this.items.set(list.items);
+      const first = await firstValueFrom(this.api.listTaskComments(taskId, newestFirst));
+      let items = first.items;
+      while (items.length < keep && items.length < first.total) {
+        const next = await firstValueFrom(
+          this.api.listTaskComments(taskId, newestFirst, items.length, COMMENTS_PAGE_SIZE),
+        );
+        if (next.items.length === 0) break;
+        items = [...items, ...next.items];
+      }
+      if (taskId !== this.taskId() || newestFirst !== this.newestFirst()) return;
+      this.items.set(items);
+      this.total.set(first.total);
+      this.moreError.set('');
       this.state.set('ready');
-      this.countChange.emit(list.total);
+      this.countChange.emit(first.total);
     } catch {
       if (taskId === this.taskId()) this.state.set('error');
     }

@@ -339,4 +339,147 @@ describe('TaskComments', () => {
     await settle(fixture);
     expect(el().querySelector('[data-comment-id]')).not.toBeNull();
   });
+
+  describe('long threads (SEC2-10)', () => {
+    const PAGE = 20;
+    const thread = (from: number, count: number) =>
+      Array.from({ length: count }, (_, i) => aComment({ commentId: from + i }));
+
+    /** A fake server whose pages hold at most 20 comments (the real one 200): skip and take cut the thread of `total` comments. */
+    function serve(total: number): void {
+      api.listTaskComments.mockImplementation((_id: number, _newest?: boolean, skip = 0) =>
+        ok({ items: thread(skip + 1, Math.max(0, Math.min(PAGE, total - skip))), total }),
+      );
+    }
+
+    const shown = (): number => el().querySelectorAll('[data-comment-id]').length;
+
+    it('shows how many of the comments are on screen and loads the next page on request', async () => {
+      await create([]);
+      serve(50);
+      q<HTMLButtonElement>('[data-order=newest]').click();
+      await settle(fixture);
+
+      expect(q('h2').textContent).toContain('Comments (50)');
+      expect(shown()).toBe(20);
+      expect(q('[data-more-note]').textContent).toContain('Showing 20 of 50 comments.');
+      expect(api.listTaskComments).toHaveBeenLastCalledWith(42, true);
+
+      q<HTMLButtonElement>('[data-load-more]').click();
+      await settle(fixture);
+      expect(api.listTaskComments).toHaveBeenLastCalledWith(42, true, 20, 200);
+      expect(shown()).toBe(40);
+      expect(q('[data-more-note]').textContent).toContain('Showing 40 of 50 comments.');
+
+      q<HTMLButtonElement>('[data-load-more]').click();
+      await settle(fixture);
+      expect(shown()).toBe(50);
+      expect(el().querySelector('[data-more]')).toBeNull();
+      const ids = Array.from(el().querySelectorAll('[data-comment-id]')).map((e) =>
+        e.getAttribute('data-comment-id'),
+      );
+      expect(new Set(ids).size).toBe(50);
+    });
+
+    it('offers no button when the whole thread fits the first page', async () => {
+      await create([aComment(), aComment({ commentId: 2 })]);
+      expect(el().querySelector('[data-more]')).toBeNull();
+      expect(q('h2').textContent).toContain('Comments (2)');
+    });
+
+    it('reports the total to the host and keeps the loaded part after posting a comment', async () => {
+      await create([]);
+      serve(50);
+      q<HTMLButtonElement>('[data-order=newest]').click();
+      await settle(fixture);
+      q<HTMLButtonElement>('[data-load-more]').click();
+      await settle(fixture);
+      expect(shown()).toBe(40);
+
+      const counts: number[] = [];
+      fixture.componentInstance.countChange.subscribe((n) => counts.push(n));
+      serve(51);
+      typeComment('<p>One more</p>');
+      await settle(fixture);
+      q<HTMLButtonElement>('[data-post]').click();
+      await settle(fixture);
+
+      expect(shown()).toBe(40);
+      expect(counts).toEqual([51]);
+      expect(q('[data-more-note]').textContent).toContain('Showing 40 of 51 comments.');
+    });
+
+    it('starts over from the first page when the order changes', async () => {
+      await create([]);
+      serve(50);
+      q<HTMLButtonElement>('[data-order=newest]').click();
+      await settle(fixture);
+      q<HTMLButtonElement>('[data-load-more]').click();
+      await settle(fixture);
+      expect(shown()).toBe(40);
+
+      q<HTMLButtonElement>('[data-order=oldest]').click();
+      await settle(fixture);
+      expect(shown()).toBe(20);
+      expect(api.listTaskComments).toHaveBeenLastCalledWith(42, false);
+    });
+
+    it('keeps what is shown and offers to try again when the next page fails', async () => {
+      await create([]);
+      serve(50);
+      q<HTMLButtonElement>('[data-order=newest]').click();
+      await settle(fixture);
+
+      api.listTaskComments.mockReturnValue(apiError(500, { status: 500, title: 'x' }));
+      q<HTMLButtonElement>('[data-load-more]').click();
+      await settle(fixture);
+      expect(q('[data-more-error]').textContent).toContain(
+        "Couldn't load more comments. Try again.",
+      );
+      expect(shown()).toBe(20);
+
+      serve(50);
+      q<HTMLButtonElement>('[data-load-more]').click();
+      await settle(fixture);
+      expect(shown()).toBe(40);
+      expect(el().querySelector('[data-more-error]')).toBeNull();
+    });
+  });
+
+  describe('links (SEC2-12)', () => {
+    it('shows the real host next to a link and opens it in a new tab', async () => {
+      await create([
+        aComment({
+          bodyHtml: '<p>See <a href="https://docs.example.com:8443/a/b?x=1">the memo</a>.</p>',
+        }),
+      ]);
+
+      const link = q<HTMLAnchorElement>('[data-body] a');
+      expect(link.getAttribute('target')).toBe('_blank');
+      expect(link.getAttribute('href')).toBe('https://docs.example.com:8443/a/b?x=1');
+      expect(q('[data-body] .tc__host').textContent).toBe('(docs.example.com:8443)');
+      expect(el().querySelector('.tc__warn')).toBeNull();
+    });
+
+    it('marks a link whose address hides a user name, and one whose text names another site', async () => {
+      await create([
+        aComment({
+          commentId: 1,
+          bodyHtml: '<p><a href="https://google.com@evil.example/login">google.com</a></p>',
+        }),
+        aComment({
+          commentId: 2,
+          bodyHtml: '<p><a href="https://evil.example/">www.bank.com</a></p>',
+        }),
+      ]);
+
+      const [first, second] = Array.from(el().querySelectorAll('[data-comment-id]'));
+      expect(first.querySelector('.tc__host')?.textContent).toBe('(evil.example)');
+      expect(first.querySelector('.tc__warn')?.getAttribute('title')).toContain(
+        'user name or password',
+      );
+      expect(second.querySelector('.tc__warn')?.getAttribute('title')).toContain('different site');
+      expect(second.querySelector('.tc__warn')?.getAttribute('role')).toBe('img');
+    });
+  });
 });
