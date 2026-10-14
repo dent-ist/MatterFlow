@@ -65,14 +65,26 @@ public sealed class DeadlockMappingTests(SqlServerFixture sql)
         // Each now waits for the row the other holds; SQL Server's deadlock monitor picks one as the victim within a few seconds.
         var first = Run(a, "UPDATE dbo.DeadlockProbe SET V = 2 WHERE Id = 2;", ta);
         var second = Run(b, "UPDATE dbo.DeadlockProbe SET V = 2 WHERE Id = 1;", tb);
-        var done = await Task.WhenAny(first, second).WaitAsync(TimeSpan.FromSeconds(60));
-        var victim = (await Should.ThrowAsync<SqlException>(async () => await done));
+        // The victim fails with 1205 and releases its locks, which lets the other statement finish: collect both outcomes.
+        var outcomes = await Task.WhenAll(Outcome(first), Outcome(second)).WaitAsync(TimeSpan.FromSeconds(60));
+        var victim = outcomes.OfType<SqlException>().Single();
 
-        // The victim's transaction is already gone; rolling back the survivor lets its blocked statement finish.
         await TryRollbackAsync(ta);
         await TryRollbackAsync(tb);
-        await Task.WhenAll(first.ContinueWith(_ => { }), second.ContinueWith(_ => { }));
         return victim;
+    }
+
+    private static async Task<Exception?> Outcome(Task task)
+    {
+        try
+        {
+            await task;
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return ex;
+        }
     }
 
     private static async Task TryRollbackAsync(SqlTransaction transaction)
