@@ -80,7 +80,7 @@ public sealed class TaskAtomicityTests(SqlServerFixture sql) : IAsyncLifetime
         var before = await CountsAsync();
         await InstallFailureAsync("TR_Inject_Complete", "Task", "AFTER UPDATE", "IF EXISTS (SELECT 1 FROM inserted WHERE StatusCode = 'COMPLETED')");
 
-        var request = new { completeUnresolvedSteps = true, rowVersion = RowVersion(task) };
+        var request = new { completeUnresolvedSteps = true, rowVersion = RowVersion(task), workflowRowVersion = WorkflowRowVersion(task) };
         var response = await _h.Admin.PostAsJsonAsync($"/api/v1/tasks/{TaskId(task)}/complete", request);
 
         response.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);

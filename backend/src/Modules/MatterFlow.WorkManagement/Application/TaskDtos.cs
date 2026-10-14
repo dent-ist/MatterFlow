@@ -331,6 +331,12 @@ public sealed class CompleteTaskRequest
 
     /// <summary>When true, every unresolved step with all required inputs is completed in the same transaction. Needs Workflow.Execute.</summary>
     public bool CompleteUnresolvedSteps { get; init; }
+
+    /// <summary>
+    /// With <see cref="CompleteUnresolvedSteps"/>: the <c>workflowRowVersion</c> of the completion check the user confirmed. Required then; a
+    /// mismatch (someone started a step or saved values since) is 409 CONCURRENCY_CONFLICT and nothing is completed (SEC2-08).
+    /// </summary>
+    public string? WorkflowRowVersion { get; init; }
 }
 
 /// <summary>Cancels the Task with the mandatory comment.</summary>
@@ -408,7 +414,8 @@ public sealed record TaskCompletionCheck(
     [property: Required] bool CanBulkComplete,
     [property: Required] IReadOnlyList<TaskStepRef> Unresolved,
     [property: Required] IReadOnlyList<TaskStepRef> BulkCompletable,
-    [property: Required] IReadOnlyList<TaskStepRef> Blocked);
+    [property: Required] IReadOnlyList<TaskStepRef> Blocked,
+    [property: Required] string WorkflowRowVersion);
 
 // ---- step actions
 

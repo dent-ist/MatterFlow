@@ -234,6 +234,50 @@ public sealed class TaskCommentsApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Sec2_07_cancel_and_hold_reasons_cannot_be_edited()
+    {
+        var task = await _h.ReachAsync(_w, "CANCELLED");
+        var reason = (await ListAsync(TaskId(task))).Single(c => c.GetProperty("purpose").GetString() == "CANCEL");
+        reason.GetProperty("canEdit").GetBoolean().ShouldBeFalse();
+        reason.GetProperty("canDelete").GetBoolean().ShouldBeFalse();
+
+        await ProblemAsync(
+            await _h.Admin.PutAsJsonAsync(Url(TaskId(task), reason.GetProperty("commentId").GetInt64()), new { bodyHtml = "<p>Rewritten</p>", rowVersion = reason.GetProperty("rowVersion").GetString() }),
+            HttpStatusCode.Conflict,
+            "COMMENT_NOT_EDITABLE");
+        (await ListAsync(TaskId(task))).Single(c => c.GetProperty("purpose").GetString() == "CANCEL").GetProperty("bodyHtml").GetString()!.ShouldContain("No longer needed");
+    }
+
+    [Fact]
+    public async Task Sec2_10_threads_are_paged_and_edits_per_comment_are_capped()
+    {
+        var taskId = TaskId(await _h.CreateTaskAsync(_w));
+        for (var i = 1; i <= 5; i++)
+            await PostAsync(taskId, $"<p>note {i}</p>");
+
+        var page = await OkAsync(await _h.Admin.GetAsync(Url(taskId) + "?skip=1&take=2"));
+        page.GetProperty("total").GetInt32().ShouldBe(5);
+        page.GetProperty("items").EnumerateArray().Select(c => c.GetProperty("bodyHtml").GetString()).ShouldBe(["<p>note 2</p>", "<p>note 3</p>"]);
+        await ProblemAsync(await _h.Admin.GetAsync(Url(taskId) + "?take=201"), HttpStatusCode.BadRequest, "VALIDATION_FAILED");
+        await ProblemAsync(await _h.Admin.GetAsync(Url(taskId) + "?skip=-1"), HttpStatusCode.BadRequest, "VALIDATION_FAILED");
+
+        var comment = await PostAsync(taskId, "<p>v0</p>");
+        var commentId = comment.GetProperty("commentId").GetInt64();
+        var version = comment.GetProperty("rowVersion").GetString();
+        for (var i = 1; i <= MatterFlow.WorkManagement.Application.TaskCommentService.MaxEditsPerComment; i++)
+        {
+            var edited = await OkAsync(await _h.Admin.PutAsJsonAsync(Url(taskId, commentId), new { bodyHtml = $"<p>v{i}</p>", rowVersion = version }));
+            version = edited.GetProperty("rowVersion").GetString();
+        }
+
+        await ProblemAsync(
+            await _h.Admin.PutAsJsonAsync(Url(taskId, commentId), new { bodyHtml = "<p>one too many</p>", rowVersion = version }),
+            HttpStatusCode.Conflict,
+            "COMMENT_LIMIT");
+        (await OkAsync(await _h.Admin.GetAsync(Url(taskId, commentId) + "/revisions"))).GetProperty("items").GetArrayLength().ShouldBe(MatterFlow.WorkManagement.Application.TaskCommentService.MaxEditsPerComment);
+    }
+
+    [Fact]
     public async Task Edit_uses_optimistic_concurrency()
     {
         var taskId = TaskId(await _h.CreateTaskAsync(_w));

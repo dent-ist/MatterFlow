@@ -217,10 +217,14 @@ export class TaskDetailStore {
   }
 
   async confirmBulkComplete(): Promise<void> {
+    // The server completes only the steps the user was shown: it compares the workflow version of the completion check (SEC2-08).
+    const shown = this.dialog();
+    const workflowRowVersion = shown?.kind === 'complete' ? shown.check.workflowRowVersion : '';
     const result = await this.act((t) =>
       this.tasks.completeTask(t.taskId, {
         rowVersion: t.rowVersion,
         completeUnresolvedSteps: true,
+        workflowRowVersion,
       }),
     );
     if (result.ok) {
@@ -228,8 +232,11 @@ export class TaskDetailStore {
       this.notify.success(`${result.task.taskNumber} completed.`);
       return;
     }
-    if (result.error instanceof ApiError && result.error.code === 'COMPLETION_BLOCKED') {
-      // A step lost its inputs (or another user changed it): show the blocked list from a fresh check.
+    if (
+      result.error instanceof ApiError &&
+      (result.error.code === 'COMPLETION_BLOCKED' || result.error.code === 'CONCURRENCY_CONFLICT')
+    ) {
+      // A step lost its inputs or another user changed the workflow: show the list again from a fresh check.
       try {
         const check = await firstValueFrom(this.tasks.getTaskCompletionCheck(this.taskId()));
         this.dialog.set({ kind: 'complete', check });

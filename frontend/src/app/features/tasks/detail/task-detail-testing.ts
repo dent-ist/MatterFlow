@@ -192,6 +192,7 @@ export const aCheck = (overrides: Partial<TaskCompletionCheck> = {}): TaskComple
     { stepInstanceId: 103, sequenceNo: 3, title: 'OCR' },
   ],
   blocked: [],
+  workflowRowVersion: 'WRV1',
   ...overrides,
 });
 

@@ -4969,6 +4969,22 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "take",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -8053,6 +8069,12 @@
           },
           "completeUnresolvedSteps": {
             "type": "boolean"
+          },
+          "workflowRowVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -11466,7 +11488,8 @@
           "canBulkComplete",
           "unresolved",
           "bulkCompletable",
-          "blocked"
+          "blocked",
+          "workflowRowVersion"
         ],
         "type": "object",
         "properties": {
@@ -11493,6 +11516,9 @@
             "items": {
               "$ref": "#/components/schemas/TaskStepRef"
             }
+          },
+          "workflowRowVersion": {
+            "type": "string"
           }
         }
       },

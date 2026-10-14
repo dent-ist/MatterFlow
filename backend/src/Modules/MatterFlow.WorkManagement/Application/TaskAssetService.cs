@@ -57,7 +57,7 @@ public sealed class TaskAssetService(
                 if (asset.MatterId != task.MatterId)
                     return Error.Conflict(ErrorCodes.CrossMatterReference, "That asset belongs to a different matter than the task. Link an asset of the task's matter.");
                 if (!asset.IsActive)
-                    return Error.Conflict(ErrorCodes.AssetInactive, $"'{asset.DisplayName}' is inactive and can't be linked to a task.");
+                    return Error.Conflict(ErrorCodes.AssetInactive, permissions.Has(Permissions.Asset.View) ? $"'{asset.DisplayName}' is inactive and can't be linked to a task." : "That asset is inactive and can't be linked to a task.");
 
                 string? roleName = null;
                 if (request.AssetLinkRoleId is { } roleId)
@@ -188,6 +188,7 @@ public sealed class TaskAssetService(
         var assetMap = (await assets.FindManyAsync([.. rows.Select(r => r.AssetId)], ct)).ToDictionary(a => a.AssetId);
         var roleMap = (await roles.ListAsync(true, ct)).ToDictionary(r => r.Id);
         var people = await users.FindManyAsync([.. rows.Select(r => r.CreatedByUserId).OfType<int>().Distinct()], ct);
+        var canViewAssets = permissions.Has(Permissions.Asset.View);
         return
         [
             .. rows.Select(r =>
@@ -197,11 +198,12 @@ public sealed class TaskAssetService(
                 if (r.AssetLinkRoleId is { } roleId)
                     roleMap.TryGetValue(roleId, out role);
 
+                // Names, types and external references are Asset.View data: a caller with Task.View only sees the link, not the asset (SEC2-11).
                 return new TaskAssetLinkResponse(
                     r.AssetId,
-                    asset?.DisplayName ?? $"Asset {r.AssetId}",
-                    asset?.AssetTypeName ?? string.Empty,
-                    asset?.ExternalReference,
+                    canViewAssets ? asset?.DisplayName ?? $"Asset {r.AssetId}" : $"Asset {r.AssetId}",
+                    canViewAssets ? asset?.AssetTypeName ?? string.Empty : string.Empty,
+                    canViewAssets ? asset?.ExternalReference : null,
                     asset?.IsActive ?? false,
                     r.AssetLinkRoleId,
                     role?.Name,
