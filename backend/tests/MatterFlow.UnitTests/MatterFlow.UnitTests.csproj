@@ -18,6 +18,7 @@
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Identity.Contracts\MatterFlow.Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Organization\MatterFlow.Organization.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Organization.Contracts\MatterFlow.Organization.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkflowEngine\MatterFlow.WorkflowEngine.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- Shared conformance vectors: linked, never forked (contracts/form-rules.md section 5). -->

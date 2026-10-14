@@ -113,6 +113,13 @@ public interface IFormSubmissionValidator
 /// <param name="Status">Lifecycle status.</param>
 public sealed record FormVersionRef(int FormDefinitionId, int FormVersionId, int VersionNo, FormVersionStatus Status);
 
+/// <summary>The design state of one owner's form, as far as another module needs it to decide whether the form can be pinned.</summary>
+/// <param name="FormDefinitionId">The owner's form definition, or null when none exists yet (an empty form).</param>
+/// <param name="Published">The current PUBLISHED version, or null.</param>
+/// <param name="DraftVersionId">The open DRAFT version, or null.</param>
+/// <param name="DraftFieldCount">Number of fields in the open draft (0 when there is none); a draft without fields is "empty".</param>
+public sealed record FormOwnerState(int? FormDefinitionId, FormVersionRef? Published, int? DraftVersionId, int DraftFieldCount);
+
 /// <summary>Finds and provisions form definitions for owners. Owner modules call it when they create a Task Type, Step Definition or Asset Type.</summary>
 public interface IFormDefinitionResolver
 {
@@ -130,6 +137,9 @@ public interface IFormDefinitionResolver
 
     /// <summary>Facts about any version, or NOT_FOUND.</summary>
     Task<Result<FormVersionRef>> GetVersionAsync(int formVersionId, CancellationToken cancellationToken = default);
+
+    /// <summary>Whether the owner's form is published, in draft or empty. Never fails for a missing definition (that is an empty form).</summary>
+    Task<FormOwnerState> GetOwnerStateAsync(FormOwnerKind ownerKind, int? ownerId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Stored values of one owner, with the version they were captured under.</summary>

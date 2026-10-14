@@ -53,6 +53,13 @@ public static class ErrorCodes
     /// <summary>A published or retired form version cannot be edited (create a new draft instead).</summary>
     public const string FormVersionImmutable = "FORM_VERSION_IMMUTABLE";
 
+
+    /// <summary>A workflow already has an open draft version.</summary>
+    public const string WorkflowDraftExists = "WORKFLOW_DRAFT_EXISTS";
+
+    /// <summary>A published or retired workflow version cannot be edited (create a new draft instead).</summary>
+    public const string WorkflowVersionImmutable = "WORKFLOW_VERSION_IMMUTABLE";
+
     /// <summary>Transport-level codes for responses not produced by a feature.</summary>
     public const string UnsupportedMediaType = "UNSUPPORTED_MEDIA_TYPE";
 

@@ -2878,6 +2878,809 @@
           }
         }
       }
+    },
+    "/api/v1/step-definitions": {
+      "get": {
+        "tags": [
+          "StepDefinitions"
+        ],
+        "operationId": "ListStepDefinitions",
+        "parameters": [
+          {
+            "name": "Q",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "IsActive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfStepDefinitionSummary"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "StepDefinitions"
+        ],
+        "operationId": "CreateStepDefinition",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStepDefinitionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStepDefinitionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStepDefinitionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/step-definitions/{id}": {
+      "get": {
+        "tags": [
+          "StepDefinitions"
+        ],
+        "operationId": "GetStepDefinition",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "StepDefinitions"
+        ],
+        "operationId": "UpdateStepDefinition",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStepDefinitionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStepDefinitionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStepDefinitionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/step-definitions/{id}/deactivate": {
+      "post": {
+        "tags": [
+          "StepDefinitions"
+        ],
+        "operationId": "DeactivateStepDefinition",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepActiveRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepActiveRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepActiveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/step-definitions/{id}/activate": {
+      "post": {
+        "tags": [
+          "StepDefinitions"
+        ],
+        "operationId": "ActivateStepDefinition",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepActiveRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepActiveRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepActiveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workflows": {
+      "get": {
+        "tags": [
+          "Workflows"
+        ],
+        "operationId": "ListWorkflows",
+        "parameters": [
+          {
+            "name": "Q",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "IsActive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfWorkflowSummary"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Workflows"
+        ],
+        "operationId": "CreateWorkflow",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkflowRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkflowRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkflowRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workflows/published": {
+      "get": {
+        "tags": [
+          "Workflows"
+        ],
+        "operationId": "ListPublishedWorkflows",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublishedWorkflowSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workflows/{id}": {
+      "get": {
+        "tags": [
+          "Workflows"
+        ],
+        "operationId": "GetWorkflow",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Workflows"
+        ],
+        "operationId": "UpdateWorkflow",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkflowRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkflowRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkflowRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workflows/{id}/published": {
+      "get": {
+        "tags": [
+          "Workflows"
+        ],
+        "operationId": "GetPublishedWorkflow",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowVersionSnapshot"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workflows/{id}/versions": {
+      "post": {
+        "tags": [
+          "Workflows"
+        ],
+        "operationId": "CreateWorkflowDraft",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkflowDraftRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkflowDraftRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkflowDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workflows/{id}/versions/{versionId}": {
+      "get": {
+        "tags": [
+          "Workflows"
+        ],
+        "operationId": "GetWorkflowVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Workflows"
+        ],
+        "operationId": "SaveWorkflowDraft",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveWorkflowDraftRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveWorkflowDraftRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveWorkflowDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Workflows"
+        ],
+        "operationId": "DiscardWorkflowDraft",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workflows/{id}/versions/{versionId}/publish": {
+      "post": {
+        "tags": [
+          "Workflows"
+        ],
+        "operationId": "PublishWorkflowVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkflowVersionActionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkflowVersionActionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkflowVersionActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workflows/{id}/versions/{versionId}/retire": {
+      "post": {
+        "tags": [
+          "Workflows"
+        ],
+        "operationId": "RetireWorkflowVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkflowVersionActionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkflowVersionActionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkflowVersionActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2991,6 +3794,8 @@
               "DEFAULT_REQUIRED",
               "FORM_DRAFT_EXISTS",
               "FORM_VERSION_IMMUTABLE",
+              "WORKFLOW_DRAFT_EXISTS",
+              "WORKFLOW_VERSION_IMMUTABLE",
               "UNSUPPORTED_MEDIA_TYPE",
               "INTERNAL_ERROR"
             ],
@@ -3375,6 +4180,79 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "CreateStepDefinitionRequest": {
+        "required": [
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instructions": {
+            "maxLength": 20000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentationUrl": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CreateWorkflowDraftRequest": {
+        "type": "object",
+        "properties": {
+          "fromVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "CreateWorkflowRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isOrdered": {
+            "type": "boolean"
           }
         }
       },
@@ -4022,6 +4900,35 @@
           }
         }
       },
+      "PagedResultOfStepDefinitionSummary": {
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StepDefinitionSummary"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "PagedResultOfUserSummaryDto": {
         "required": [
           "items",
@@ -4035,6 +4942,35 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/UserSummaryDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfWorkflowSummary": {
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkflowSummary"
             }
           },
           "total": {
@@ -4337,6 +5273,53 @@
           }
         }
       },
+      "PublishedWorkflowSummary": {
+        "required": [
+          "workflowDefinitionId",
+          "name",
+          "description",
+          "workflowVersionId",
+          "versionNo",
+          "isOrdered",
+          "stepCount",
+          "publishedAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "workflowDefinitionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "workflowVersionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "versionNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isOrdered": {
+            "type": "boolean"
+          },
+          "stepCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "publishedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "ReorderRequest": {
         "required": [
           "ids"
@@ -4490,6 +5473,28 @@
           }
         }
       },
+      "SaveWorkflowDraftRequest": {
+        "required": [
+          "isOrdered",
+          "steps",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "isOrdered": {
+            "type": "boolean"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkflowStepPlacement"
+            }
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "SetActiveRequest": {
         "required": [
           "rowVersion"
@@ -4579,6 +5584,163 @@
           },
           "rowVersion": {
             "type": "string"
+          }
+        }
+      },
+      "StepActiveRequest": {
+        "required": [
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "StepDefinitionDetail": {
+        "required": [
+          "stepDefinitionId",
+          "title",
+          "description",
+          "instructions",
+          "documentationUrl",
+          "isActive",
+          "formDefinitionId",
+          "publishedFormVersionId",
+          "draftFormFieldCount",
+          "usage",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "stepDefinitionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instructions": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentationUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "formDefinitionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "publishedFormVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "draftFormFieldCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "usage": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StepUsage"
+            }
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "StepDefinitionSummary": {
+        "required": [
+          "stepDefinitionId",
+          "title",
+          "description",
+          "documentationUrl",
+          "isActive",
+          "usedInVersions",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "stepDefinitionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentationUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "usedInVersions": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "StepUsage": {
+        "required": [
+          "workflowDefinitionId",
+          "workflowName",
+          "workflowVersionId",
+          "versionNo",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "workflowDefinitionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "workflowName": {
+            "type": "string"
+          },
+          "workflowVersionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "versionNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/WorkflowVersionStatus"
           }
         }
       },
@@ -4736,6 +5898,51 @@
           }
         }
       },
+      "UpdateStepDefinitionRequest": {
+        "required": [
+          "title",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instructions": {
+            "maxLength": 20000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentationUrl": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateUserProfileRequest": {
         "required": [
           "displayName",
@@ -4758,6 +5965,35 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "UpdateWorkflowRequest": {
+        "required": [
+          "name",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
           }
         }
       },
@@ -5009,6 +6245,384 @@
             }
           }
         }
+      },
+      "WorkflowDetail": {
+        "required": [
+          "workflow",
+          "versions"
+        ],
+        "type": "object",
+        "properties": {
+          "workflow": {
+            "$ref": "#/components/schemas/WorkflowSummary"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkflowVersionSummary"
+            }
+          }
+        }
+      },
+      "WorkflowStepPlacement": {
+        "required": [
+          "sourceStepDefinitionId"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceStepDefinitionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isSkippable": {
+            "type": "boolean"
+          },
+          "skipCommentRequired": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WorkflowStepSnapshot": {
+        "required": [
+          "workflowVersionStepId",
+          "sequenceNo",
+          "sourceStepDefinitionId",
+          "title",
+          "description",
+          "instructions",
+          "documentationUrl",
+          "stepFormVersionId",
+          "isSkippable",
+          "skipCommentRequired"
+        ],
+        "type": "object",
+        "properties": {
+          "workflowVersionStepId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sequenceNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sourceStepDefinitionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instructions": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentationUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "stepFormVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "isSkippable": {
+            "type": "boolean"
+          },
+          "skipCommentRequired": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WorkflowSummary": {
+        "required": [
+          "workflowDefinitionId",
+          "name",
+          "description",
+          "isActive",
+          "publishedVersionId",
+          "publishedVersionNo",
+          "publishedStepCount",
+          "draftVersionId",
+          "draftVersionNo",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "workflowDefinitionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "publishedVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "publishedVersionNo": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "publishedStepCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "draftVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "draftVersionNo": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkflowVersionActionRequest": {
+        "required": [
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkflowVersionDetail": {
+        "required": [
+          "workflowDefinitionId",
+          "workflowName",
+          "version",
+          "steps"
+        ],
+        "type": "object",
+        "properties": {
+          "workflowDefinitionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "workflowName": {
+            "type": "string"
+          },
+          "version": {
+            "$ref": "#/components/schemas/WorkflowVersionSummary"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkflowVersionStepModel"
+            }
+          }
+        }
+      },
+      "WorkflowVersionSnapshot": {
+        "required": [
+          "workflowDefinitionId",
+          "name",
+          "workflowVersionId",
+          "versionNo",
+          "status",
+          "isOrdered",
+          "steps"
+        ],
+        "type": "object",
+        "properties": {
+          "workflowDefinitionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "workflowVersionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "versionNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/WorkflowVersionStatus"
+          },
+          "isOrdered": {
+            "type": "boolean"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkflowStepSnapshot"
+            }
+          }
+        }
+      },
+      "WorkflowVersionStatus": {
+        "enum": [
+          "Draft",
+          "Published",
+          "Retired"
+        ]
+      },
+      "WorkflowVersionStepModel": {
+        "required": [
+          "workflowVersionStepId",
+          "sequenceNo",
+          "sourceStepDefinitionId",
+          "title",
+          "description",
+          "instructions",
+          "documentationUrl",
+          "stepFormVersionId",
+          "isSkippable",
+          "skipCommentRequired",
+          "sourceStepActive"
+        ],
+        "type": "object",
+        "properties": {
+          "workflowVersionStepId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sequenceNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sourceStepDefinitionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instructions": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentationUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "stepFormVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "isSkippable": {
+            "type": "boolean"
+          },
+          "skipCommentRequired": {
+            "type": "boolean"
+          },
+          "sourceStepActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WorkflowVersionSummary": {
+        "required": [
+          "workflowVersionId",
+          "versionNo",
+          "status",
+          "isOrdered",
+          "stepCount",
+          "createdAtUtc",
+          "publishedAtUtc",
+          "publishedByUserId",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "workflowVersionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "versionNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/WorkflowVersionStatus"
+          },
+          "isOrdered": {
+            "type": "boolean"
+          },
+          "stepCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "publishedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "publishedByUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
       }
     }
   },
@@ -5051,6 +6665,12 @@
     },
     {
       "name": "Projects"
+    },
+    {
+      "name": "StepDefinitions"
+    },
+    {
+      "name": "Workflows"
     }
   ]
 }
