@@ -10,7 +10,11 @@
     "test": "ng test frontend --watch=false && ng test form-engine --watch=false",
     "lint": "eslint \"{src,projects}/**/*.{ts,html}\"",
     "api:generate": "nswag run nswag.json",
-    "format:check": "prettier --check \"{src,projects}/**/*.{ts,html,scss}\""
+    "format:check": "prettier --check \"{src,projects,e2e}/**/*.{ts,html,scss}\"",
+    "e2e": "bash e2e/run-local.sh",
+    "e2e:run": "playwright test -c e2e/playwright.config.ts",
+    "e2e:report": "playwright show-report playwright-report",
+    "e2e:typecheck": "tsc -p e2e/tsconfig.json"
   },
   "engines": {
     "node": ">=22.12"
@@ -34,6 +38,8 @@
     "@angular/build": "^21.2.26",
     "@angular/cli": "^21.2.26",
     "@angular/compiler-cli": "^21.2.0",
+    "@playwright/test": "1.56.1",
+    "@types/node": "^22.20.5",
     "angular-eslint": "^21.4.0",
     "eslint": "^9.39.5",
     "jsdom": "^28.0.0",

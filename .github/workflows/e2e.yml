@@ -1,22 +1,68 @@
 name: e2e
 
-# PLACEHOLDER. Browser end-to-end tests (Playwright) are deferred to the end of the project.
-# This workflow only documents the intended shape and always succeeds. When the suite exists:
-#   1. Start SQL Server:  docker compose -f docker-compose.dev.yml up -d --wait
-#   2. Start the API with the Dev auth provider (see README "Walking skeleton"): dotnet run --project backend/src/MatterFlow.Api &
-#   3. Install browsers: npx playwright install --with-deps chromium  (in frontend/)
-#   4. Run: npx playwright test  (baseURL http://localhost:4200, `npm run start:api` or the built dist served statically)
-#   5. Upload playwright-report/ and traces as artifacts.
-# Then replace the placeholder step below with these steps and add a schedule or a pull_request trigger.
+# Browser end-to-end suite (Playwright, frontend/e2e). It starts a throwaway real stack (SQL Server in Docker, the published API serving the
+# built Angular app on one origin, Dev authentication) and runs the tests against it. The same script is used locally:
+#   frontend/e2e/run-local.sh     (see docs/qa/e2e.md)
+#
+# When it runs: manually, every night against the default branch, and on pull requests that carry the label `e2e`
+# (add the label to run it; new commits to a labeled PR re-run it).
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "43 3 * * *" # 03:43 UTC daily
+  pull_request:
+    types: [labeled, synchronize, reopened]
+
+concurrency:
+  group: e2e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  CI: true
+
 jobs:
-  placeholder:
+  e2e:
+    # Pull requests only run when labeled `e2e`; dispatch and schedule always run.
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'e2e')
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 45
     steps:
-      - run: echo "Playwright e2e is not implemented yet (deferred to the end of the project). See the comments at the top of this workflow."
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci || (sleep 15 && npm ci)
+      - name: Install Chromium for Playwright
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Run the suite (SQL Server container, build, publish, API, tests)
+        working-directory: frontend
+        run: npm run e2e
+      - name: Upload Playwright report, traces, screenshots and videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report-${{ github.run_id }}
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload API log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-api-log-${{ github.run_id }}
+          path: artifacts/e2e-api.log
+          if-no-files-found: ignore
+          retention-days: 14
