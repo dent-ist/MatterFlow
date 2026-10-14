@@ -175,8 +175,7 @@ public sealed class TaskCreateApiTests(SqlServerFixture sql) : IAsyncLifetime
     {
         var noRequestor = _h.NewTask(_w);
         noRequestor["requestorName"] = "  ";
-        var problem = await OkAsync(await _h.Admin.PostAsJsonAsync("/api/v1/tasks", noRequestor), HttpStatusCode.BadRequest);
-        problem.GetProperty("code").GetString().ShouldBe("VALIDATION_FAILED");
+        var problem = await ProblemAsync(await _h.Admin.PostAsJsonAsync("/api/v1/tasks", noRequestor), HttpStatusCode.BadRequest, "VALIDATION_FAILED");
         problem.GetProperty("errors").TryGetProperty("requestorName", out _).ShouldBeTrue();
 
         var badEmail = _h.NewTask(_w, extra: new() { ["requestorEmail"] = "not-an-email" });

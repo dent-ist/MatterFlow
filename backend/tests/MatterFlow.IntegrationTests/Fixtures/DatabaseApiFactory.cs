@@ -2,6 +2,7 @@ using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,7 +13,7 @@ namespace MatterFlow.IntegrationTests.Fixtures;
 /// Test users are chosen with the <c>X-Dev-User</c> header. A test-only controller supplies permission-protected endpoints until the
 /// feature controllers exist.
 /// </summary>
-public sealed class DatabaseApiFactory(string connectionString, string? environment = null) : WebApplicationFactory<Program>
+public sealed class DatabaseApiFactory(string connectionString, string? environment = null, bool seedStarterConfiguration = false) : WebApplicationFactory<Program>
 {
     public const string AdminAccount = @"ke\kekim";
 
@@ -26,7 +27,7 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
         builder.UseSetting("Migrations:Enabled", "true");
         builder.UseSetting("Auth:Provider", "Dev");
         // The factory runs in Development, where the SME starter configuration would otherwise be seeded into every test database.
-        builder.UseSetting("Seed:StarterConfiguration:Enabled", "false");
+        builder.UseSetting("Seed:StarterConfiguration:Enabled", seedStarterConfiguration ? "true" : "false");
         builder.UseSetting("Bootstrap:SystemAdmins:0", AdminAccount);
         builder.UseSetting("Dev:Users:0:Username", @"KE\director");
         builder.UseSetting("Dev:Users:0:DisplayName", "Dana Director");
@@ -36,6 +37,36 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
         builder.ConfigureServices(services => services
             .AddControllers()
             .AddApplicationPart(typeof(DatabaseApiFactory).Assembly));
+    }
+
+    /// <summary>
+    /// Disposes the host and then drops the test database in the background, so a long run does not fill the container's disk with hundreds of
+    /// databases (dropping takes seconds on a slow disk, which a test should not wait for).
+    /// </summary>
+    public override async ValueTask DisposeAsync()
+    {
+        await base.DisposeAsync();
+        _ = DropDatabaseAsync(connectionString);
+    }
+
+    private static async Task DropDatabaseAsync(string connectionString)
+    {
+        try
+        {
+            var builder = new SqlConnectionStringBuilder(connectionString);
+            var database = builder.InitialCatalog;
+            builder.InitialCatalog = "master";
+            builder.Pooling = false;
+            await using var connection = new SqlConnection(builder.ConnectionString);
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = $"ALTER DATABASE [{database}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{database}];";
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception)
+        {
+            // Best effort: the container is thrown away at the end of the run anyway.
+        }
     }
 
     public async Task<T> WithDbAsync<T>(Func<DbContext, Task<T>> action)

@@ -5569,6 +5569,1136 @@ export class ProjectsClient implements IProjectsClient {
     }
 }
 
+export interface ITasksClient {
+    /**
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @param matterId (optional) 
+     * @param projectId (optional) 
+     * @param status (optional) 
+     * @param assigneeId (optional) 
+     * @param podId (optional) 
+     * @param taskTypeId (optional) 
+     * @param priorityId (optional) 
+     * @param q (optional) 
+     * @return OK
+     */
+    listTasks(page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined, matterId?: number | undefined, projectId?: number | undefined, status?: string | undefined, assigneeId?: number | undefined, podId?: number | undefined, taskTypeId?: number | undefined, priorityId?: number | undefined, q?: string | undefined): Observable<PagedResultOfTaskListItem>;
+    /**
+     * @return Created
+     */
+    createTask(body: CreateTaskRequest): Observable<TaskResponse>;
+    /**
+     * @return OK
+     */
+    getTask(taskId: number): Observable<TaskResponse>;
+    /**
+     * @return OK
+     */
+    updateTask(taskId: number, body: UpdateTaskRequest): Observable<TaskResponse>;
+    /**
+     * @return OK
+     */
+    assignTask(taskId: number, body: AssignTaskRequest): Observable<TaskResponse>;
+    /**
+     * @return OK
+     */
+    setTaskPriority(taskId: number, body: SetTaskPriorityRequest): Observable<TaskResponse>;
+    /**
+     * @return OK
+     */
+    changeTaskStatus(taskId: number, body: ChangeTaskStatusRequest): Observable<TaskResponse>;
+    /**
+     * @return OK
+     */
+    completeTask(taskId: number, body: CompleteTaskRequest): Observable<TaskResponse>;
+    /**
+     * @return OK
+     */
+    getTaskCompletionCheck(taskId: number): Observable<TaskCompletionCheck>;
+    /**
+     * @return OK
+     */
+    cancelTask(taskId: number, body: CancelTaskRequest): Observable<TaskResponse>;
+    /**
+     * @return OK
+     */
+    reopenTask(taskId: number, body: ReopenTaskRequest): Observable<TaskResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class TasksClient implements ITasksClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @param matterId (optional) 
+     * @param projectId (optional) 
+     * @param status (optional) 
+     * @param assigneeId (optional) 
+     * @param podId (optional) 
+     * @param taskTypeId (optional) 
+     * @param priorityId (optional) 
+     * @param q (optional) 
+     * @return OK
+     */
+    listTasks(page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined, matterId?: number | undefined, projectId?: number | undefined, status?: string | undefined, assigneeId?: number | undefined, podId?: number | undefined, taskTypeId?: number | undefined, priorityId?: number | undefined, q?: string | undefined): Observable<PagedResultOfTaskListItem> {
+        let url_ = this.baseUrl + "/api/v1/tasks?";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "Page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "Sort=" + encodeURIComponent("" + sort) + "&";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "MatterId=" + encodeURIComponent("" + matterId) + "&";
+        if (projectId === null)
+            throw new globalThis.Error("The parameter 'projectId' cannot be null.");
+        else if (projectId !== undefined)
+            url_ += "ProjectId=" + encodeURIComponent("" + projectId) + "&";
+        if (status === null)
+            throw new globalThis.Error("The parameter 'status' cannot be null.");
+        else if (status !== undefined)
+            url_ += "Status=" + encodeURIComponent("" + status) + "&";
+        if (assigneeId === null)
+            throw new globalThis.Error("The parameter 'assigneeId' cannot be null.");
+        else if (assigneeId !== undefined)
+            url_ += "AssigneeId=" + encodeURIComponent("" + assigneeId) + "&";
+        if (podId === null)
+            throw new globalThis.Error("The parameter 'podId' cannot be null.");
+        else if (podId !== undefined)
+            url_ += "PodId=" + encodeURIComponent("" + podId) + "&";
+        if (taskTypeId === null)
+            throw new globalThis.Error("The parameter 'taskTypeId' cannot be null.");
+        else if (taskTypeId !== undefined)
+            url_ += "TaskTypeId=" + encodeURIComponent("" + taskTypeId) + "&";
+        if (priorityId === null)
+            throw new globalThis.Error("The parameter 'priorityId' cannot be null.");
+        else if (priorityId !== undefined)
+            url_ += "PriorityId=" + encodeURIComponent("" + priorityId) + "&";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListTasks(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListTasks(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultOfTaskListItem>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultOfTaskListItem>;
+        }));
+    }
+
+    protected processListTasks(response: HttpResponseBase): Observable<PagedResultOfTaskListItem> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfTaskListItem;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createTask(body: CreateTaskRequest): Observable<TaskResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateTask(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateTask(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskResponse>;
+        }));
+    }
+
+    protected processCreateTask(response: HttpResponseBase): Observable<TaskResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getTask(taskId: number): Observable<TaskResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetTask(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetTask(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskResponse>;
+        }));
+    }
+
+    protected processGetTask(response: HttpResponseBase): Observable<TaskResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateTask(taskId: number, body: UpdateTaskRequest): Observable<TaskResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateTask(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateTask(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskResponse>;
+        }));
+    }
+
+    protected processUpdateTask(response: HttpResponseBase): Observable<TaskResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    assignTask(taskId: number, body: AssignTaskRequest): Observable<TaskResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/assignment";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAssignTask(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAssignTask(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskResponse>;
+        }));
+    }
+
+    protected processAssignTask(response: HttpResponseBase): Observable<TaskResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setTaskPriority(taskId: number, body: SetTaskPriorityRequest): Observable<TaskResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/priority";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetTaskPriority(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetTaskPriority(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskResponse>;
+        }));
+    }
+
+    protected processSetTaskPriority(response: HttpResponseBase): Observable<TaskResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    changeTaskStatus(taskId: number, body: ChangeTaskStatusRequest): Observable<TaskResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/status";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processChangeTaskStatus(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processChangeTaskStatus(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskResponse>;
+        }));
+    }
+
+    protected processChangeTaskStatus(response: HttpResponseBase): Observable<TaskResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    completeTask(taskId: number, body: CompleteTaskRequest): Observable<TaskResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/complete";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCompleteTask(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCompleteTask(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskResponse>;
+        }));
+    }
+
+    protected processCompleteTask(response: HttpResponseBase): Observable<TaskResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getTaskCompletionCheck(taskId: number): Observable<TaskCompletionCheck> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/completion";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetTaskCompletionCheck(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetTaskCompletionCheck(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskCompletionCheck>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskCompletionCheck>;
+        }));
+    }
+
+    protected processGetTaskCompletionCheck(response: HttpResponseBase): Observable<TaskCompletionCheck> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskCompletionCheck;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    cancelTask(taskId: number, body: CancelTaskRequest): Observable<TaskResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/cancel";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCancelTask(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCancelTask(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskResponse>;
+        }));
+    }
+
+    protected processCancelTask(response: HttpResponseBase): Observable<TaskResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    reopenTask(taskId: number, body: ReopenTaskRequest): Observable<TaskResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/reopen";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processReopenTask(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processReopenTask(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskResponse>;
+        }));
+    }
+
+    protected processReopenTask(response: HttpResponseBase): Observable<TaskResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface ITaskWorkflowClient {
+    /**
+     * @return OK
+     */
+    getTaskWorkflow(taskId: number): Observable<TaskWorkflowResponse>;
+    /**
+     * @return OK
+     */
+    startTaskStep(taskId: number, stepInstanceId: number, body: StartStepRequest): Observable<StepActionResponse>;
+    /**
+     * @return OK
+     */
+    saveTaskStepValues(taskId: number, stepInstanceId: number, body: SaveStepValuesRequest): Observable<StepActionResponse>;
+    /**
+     * @return OK
+     */
+    completeTaskStep(taskId: number, stepInstanceId: number, body: CompleteStepRequest): Observable<StepActionResponse>;
+    /**
+     * @return OK
+     */
+    skipTaskStep(taskId: number, stepInstanceId: number, body: SkipStepRequest): Observable<StepActionResponse>;
+    /**
+     * @return OK
+     */
+    reopenTaskStep(taskId: number, stepInstanceId: number, body: ReopenStepRequest): Observable<StepActionResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class TaskWorkflowClient implements ITaskWorkflowClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    getTaskWorkflow(taskId: number): Observable<TaskWorkflowResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/workflow";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetTaskWorkflow(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetTaskWorkflow(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskWorkflowResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskWorkflowResponse>;
+        }));
+    }
+
+    protected processGetTaskWorkflow(response: HttpResponseBase): Observable<TaskWorkflowResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskWorkflowResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    startTaskStep(taskId: number, stepInstanceId: number, body: StartStepRequest): Observable<StepActionResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/workflow/steps/{stepInstanceId}/start";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        if (stepInstanceId === undefined || stepInstanceId === null)
+            throw new globalThis.Error("The parameter 'stepInstanceId' must be defined.");
+        url_ = url_.replace("{stepInstanceId}", encodeURIComponent("" + stepInstanceId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processStartTaskStep(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processStartTaskStep(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<StepActionResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<StepActionResponse>;
+        }));
+    }
+
+    protected processStartTaskStep(response: HttpResponseBase): Observable<StepActionResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StepActionResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    saveTaskStepValues(taskId: number, stepInstanceId: number, body: SaveStepValuesRequest): Observable<StepActionResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/workflow/steps/{stepInstanceId}/values";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        if (stepInstanceId === undefined || stepInstanceId === null)
+            throw new globalThis.Error("The parameter 'stepInstanceId' must be defined.");
+        url_ = url_.replace("{stepInstanceId}", encodeURIComponent("" + stepInstanceId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSaveTaskStepValues(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSaveTaskStepValues(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<StepActionResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<StepActionResponse>;
+        }));
+    }
+
+    protected processSaveTaskStepValues(response: HttpResponseBase): Observable<StepActionResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StepActionResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    completeTaskStep(taskId: number, stepInstanceId: number, body: CompleteStepRequest): Observable<StepActionResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/workflow/steps/{stepInstanceId}/complete";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        if (stepInstanceId === undefined || stepInstanceId === null)
+            throw new globalThis.Error("The parameter 'stepInstanceId' must be defined.");
+        url_ = url_.replace("{stepInstanceId}", encodeURIComponent("" + stepInstanceId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCompleteTaskStep(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCompleteTaskStep(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<StepActionResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<StepActionResponse>;
+        }));
+    }
+
+    protected processCompleteTaskStep(response: HttpResponseBase): Observable<StepActionResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StepActionResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    skipTaskStep(taskId: number, stepInstanceId: number, body: SkipStepRequest): Observable<StepActionResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/workflow/steps/{stepInstanceId}/skip";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        if (stepInstanceId === undefined || stepInstanceId === null)
+            throw new globalThis.Error("The parameter 'stepInstanceId' must be defined.");
+        url_ = url_.replace("{stepInstanceId}", encodeURIComponent("" + stepInstanceId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSkipTaskStep(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSkipTaskStep(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<StepActionResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<StepActionResponse>;
+        }));
+    }
+
+    protected processSkipTaskStep(response: HttpResponseBase): Observable<StepActionResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StepActionResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    reopenTaskStep(taskId: number, stepInstanceId: number, body: ReopenStepRequest): Observable<StepActionResponse> {
+        let url_ = this.baseUrl + "/api/v1/tasks/{taskId}/workflow/steps/{stepInstanceId}/reopen";
+        if (taskId === undefined || taskId === null)
+            throw new globalThis.Error("The parameter 'taskId' must be defined.");
+        url_ = url_.replace("{taskId}", encodeURIComponent("" + taskId));
+        if (stepInstanceId === undefined || stepInstanceId === null)
+            throw new globalThis.Error("The parameter 'stepInstanceId' must be defined.");
+        url_ = url_.replace("{stepInstanceId}", encodeURIComponent("" + stepInstanceId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processReopenTaskStep(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processReopenTaskStep(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<StepActionResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<StepActionResponse>;
+        }));
+    }
+
+    protected processReopenTaskStep(response: HttpResponseBase): Observable<StepActionResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StepActionResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IStepDefinitionsClient {
     /**
      * @param q (optional) 
@@ -6821,6 +7951,14 @@ export interface AssetTypeResponse {
     [key: string]: any;
 }
 
+export interface AssignTaskRequest {
+    rowVersion: string;
+    podId?: number | undefined;
+    userId?: number | undefined;
+
+    [key: string]: any;
+}
+
 export interface AuditEventDto {
     auditEventId: number;
     occurredAtUtc: string;
@@ -6848,9 +7986,24 @@ export interface AuditEventPage {
     [key: string]: any;
 }
 
+export interface CancelTaskRequest {
+    rowVersion: string;
+    comment: string;
+
+    [key: string]: any;
+}
+
 export interface ChangeNumberRequest {
     number: string;
     rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface ChangeTaskStatusRequest {
+    rowVersion: string;
+    status: string;
+    comment?: string | undefined;
 
     [key: string]: any;
 }
@@ -6868,6 +8021,20 @@ export interface ClientResponse {
     rowVersion: string;
     createdAtUtc: string;
     modifiedAtUtc: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface CompleteStepRequest {
+    rowVersion?: string | undefined;
+    values?: any | undefined;
+
+    [key: string]: any;
+}
+
+export interface CompleteTaskRequest {
+    rowVersion: string;
+    completeUnresolvedSteps?: boolean;
 
     [key: string]: any;
 }
@@ -6952,6 +8119,26 @@ export interface CreateStepDefinitionRequest {
     description?: string | undefined;
     instructions?: string | undefined;
     documentationUrl?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface CreateTaskRequest {
+    matterId: number;
+    projectId?: number | undefined;
+    taskTypeId: number;
+    workflowDefinitionId: number;
+    title: string;
+    description?: string | undefined;
+    requestorName: string;
+    requestorEmail?: string | undefined;
+    requestedAtUtc?: string | undefined;
+    priorityId?: number | undefined;
+    dueDate?: string | undefined;
+    dueTime?: string | undefined;
+    assignedPodId?: number | undefined;
+    assignedUserId?: number | undefined;
+    formValues?: any | undefined;
 
     [key: string]: any;
 }
@@ -7209,6 +8396,15 @@ export interface PagedResultOfStepDefinitionSummary {
     [key: string]: any;
 }
 
+export interface PagedResultOfTaskListItem {
+    items: TaskListItem[];
+    total: number;
+    page: number;
+    pageSize: number;
+
+    [key: string]: any;
+}
+
 export interface PagedResultOfUserSummaryDto {
     items: UserSummaryDto[];
     total: number;
@@ -7335,6 +8531,18 @@ export interface PublishedWorkflowSummary {
     [key: string]: any;
 }
 
+export interface ReopenStepRequest {
+    rowVersion?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface ReopenTaskRequest {
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface ReorderRequest {
     ids: number[];
 
@@ -7381,6 +8589,14 @@ export interface SaveRoleRequest {
     [key: string]: any;
 }
 
+export interface SaveStepValuesRequest {
+    rowVersion?: string | undefined;
+    values?: any | undefined;
+    skipComment?: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface SaveWorkflowDraftRequest {
     isOrdered: boolean;
     steps: WorkflowStepPlacement[];
@@ -7409,6 +8625,13 @@ export interface SetPrimaryPodRequest {
     [key: string]: any;
 }
 
+export interface SetTaskPriorityRequest {
+    rowVersion: string;
+    priorityId: number;
+
+    [key: string]: any;
+}
+
 export interface SetUserActiveRequest {
     isActive: boolean;
     rowVersion: string | undefined;
@@ -7423,11 +8646,33 @@ export interface SetUserRolesRequest {
     [key: string]: any;
 }
 
+export interface SkipStepRequest {
+    rowVersion?: string | undefined;
+    comment?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface StartStepRequest {
+    rowVersion?: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface StatusLabelView {
     code: string;
     displayLabel: string;
     sortOrder: number;
     rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface StepActionResponse {
+    task: TaskResponse;
+    affectedStepInstanceIds: number[];
+    droppedFields: string[];
+    taskStatusChanged: boolean;
 
     [key: string]: any;
 }
@@ -7476,6 +8721,194 @@ export interface StepUsage {
     [key: string]: any;
 }
 
+export interface TaskAllowedActions {
+    canEdit: boolean;
+    canAssign: boolean;
+    canSetPriority: boolean;
+    canComment: boolean;
+    canExecuteSteps: boolean;
+    canReopenSteps: boolean;
+    transitions: TaskTransitionOption[];
+
+    [key: string]: any;
+}
+
+export interface TaskCompletionCheck {
+    isReady: boolean;
+    canBulkComplete: boolean;
+    unresolved: TaskStepRef[];
+    bulkCompletable: TaskStepRef[];
+    blocked: TaskStepRef[];
+
+    [key: string]: any;
+}
+
+export interface TaskListItem {
+    taskId: number;
+    taskNumber: string;
+    title: string;
+    matterId: number;
+    matterRef: string;
+    matterName: string;
+    projectId: number | undefined;
+    projectName: string | undefined;
+    taskTypeId: number;
+    taskTypeName: string;
+    priority: TaskPriorityRef;
+    status: string;
+    statusLabel: string;
+    assignedPod: TaskPodRef | undefined;
+    assignedUser: TaskUserRef | undefined;
+    dueDate: string | undefined;
+    dueAtUtc: string | undefined;
+    isAsap: boolean;
+    isOverdue: boolean;
+    createdAtUtc: string;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface TaskMatterRef {
+    matterId: number;
+    clientId: number;
+    clientNumber: string;
+    matterNumber: string;
+    matterRef: string;
+    name: string;
+    isActive: boolean;
+    isSensitive: boolean;
+
+    [key: string]: any;
+}
+
+export interface TaskPodRef {
+    podId: number;
+    name: string;
+    isActive: boolean;
+
+    [key: string]: any;
+}
+
+export interface TaskPriorityRef {
+    priorityId: number;
+    label: string;
+    color: string;
+    sortOrder: number;
+
+    [key: string]: any;
+}
+
+export interface TaskProjectRef {
+    projectId: number;
+    name: string;
+    isActive: boolean;
+
+    [key: string]: any;
+}
+
+export interface TaskResponse {
+    taskId: number;
+    taskNumber: string;
+    matter: TaskMatterRef;
+    project: TaskProjectRef | undefined;
+    taskType: TaskTypeRef;
+    title: string;
+    description: string | undefined;
+    requestorName: string;
+    requestorEmail: string | undefined;
+    requestedAtUtc: string | undefined;
+    priority: TaskPriorityRef;
+    status: string;
+    statusLabel: string;
+    assignedPod: TaskPodRef | undefined;
+    assignedUser: TaskUserRef | undefined;
+    dueDate: string | undefined;
+    dueTime: string | undefined;
+    dueAtUtc: string | undefined;
+    isAsap: boolean;
+    isOverdue: boolean;
+    timeZone: string;
+    createdBy: TaskUserRef | undefined;
+    createdAtUtc: string;
+    modifiedAtUtc: string | undefined;
+    statusChangedAtUtc: string;
+    completedAtUtc: string | undefined;
+    formVersionId: number | undefined;
+    formVersionNo: number | undefined;
+    formValues: any;
+    workflow: TaskWorkflowResponse;
+    allowedActions: TaskAllowedActions;
+    statusReason: TaskStatusReason | undefined;
+    rowVersion: string;
+    warnings: string[];
+    droppedFields: string[];
+    bulkCompletedStepInstanceIds: number[];
+
+    [key: string]: any;
+}
+
+export interface TaskStatusReason {
+    commentId: number;
+    purpose: string;
+    bodyHtml: string;
+    authorUserId: number;
+    authorName: string;
+    createdAtUtc: string;
+
+    [key: string]: any;
+}
+
+export interface TaskStepInstance {
+    stepInstanceId: number;
+    sequenceNo: number;
+    title: string;
+    description: string | undefined;
+    instructions: string | undefined;
+    documentationUrl: string | undefined;
+    inputFormVersionId: number | undefined;
+    isSkippable: boolean;
+    skipCommentRequired: boolean;
+    status: string;
+    hasBeenResolved: boolean;
+    isCurrent: boolean;
+    isReopenedPrerequisite: boolean;
+    requiredInputsSatisfied: boolean;
+    skipComment: string | undefined;
+    firstResolvedAtUtc: string | undefined;
+    resolvedAtUtc: string | undefined;
+    resolvedByUserId: number | undefined;
+    values: any;
+
+    [key: string]: any;
+}
+
+export interface TaskStepRef {
+    stepInstanceId: number;
+    sequenceNo: number;
+    title: string;
+
+    [key: string]: any;
+}
+
+export interface TaskTransitionOption {
+    action: string;
+    targetStatus: string;
+    requiresComment: boolean;
+    requiredPermission: string;
+    permitted: boolean;
+    blockedReason: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface TaskTypeRef {
+    taskTypeId: number;
+    name: string;
+
+    [key: string]: any;
+}
+
 export interface TaskTypeView {
     id: number;
     name: string;
@@ -7492,6 +8925,41 @@ export interface TaskTypeView {
     isUsable: boolean;
     usabilityIssues: string[];
     rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface TaskUserRef {
+    userId: number;
+    displayName: string;
+    isActive: boolean;
+
+    [key: string]: any;
+}
+
+export interface TaskWorkflowProgress {
+    total: number;
+    pending: number;
+    inProgress: number;
+    completed: number;
+    skipped: number;
+    resolved: number;
+    currentStepInstanceId: number | undefined;
+    reopenedPrerequisiteStepInstanceIds: number[];
+
+    [key: string]: any;
+}
+
+export interface TaskWorkflowResponse {
+    workflowInstanceId: number;
+    workflowDefinitionId: number;
+    workflowName: string;
+    workflowVersionId: number;
+    versionNo: number;
+    isOrdered: boolean;
+    rowVersion: string;
+    progress: TaskWorkflowProgress;
+    steps: TaskStepInstance[];
 
     [key: string]: any;
 }
@@ -7585,6 +9053,25 @@ export interface UpdateStepDefinitionRequest {
     documentationUrl?: string | undefined;
     isActive: boolean;
     rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UpdateTaskRequest {
+    rowVersion: string;
+    matterId?: number | undefined;
+    taskTypeId?: number | undefined;
+    workflowDefinitionId?: number | undefined;
+    projectId?: number | undefined;
+    title: string;
+    description?: string | undefined;
+    requestorName: string;
+    requestorEmail?: string | undefined;
+    requestedAtUtc?: string | undefined;
+    priorityId?: number | undefined;
+    dueDate?: string | undefined;
+    dueTime?: string | undefined;
+    formValues?: any | undefined;
 
     [key: string]: any;
 }

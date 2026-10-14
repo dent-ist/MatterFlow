@@ -318,7 +318,7 @@ public sealed class TaskService
             AssignedUserId = request.AssignedUserId,
             RequestorName = request.RequestorName.Trim(),
             RequestorEmail = TaskSupport.Clean(request.RequestorEmail),
-            RequestedAtUtc = request.RequestedAtUtc,
+            RequestedAtUtc = TaskSupport.ToUtc(request.RequestedAtUtc),
             DueDate = due.Date,
             DueAtUtc = due.AtUtc,
             DueSortKey = due.DueSortKey,
@@ -479,7 +479,7 @@ public sealed class TaskService
         task.Description = description;
         task.RequestorName = requestorName;
         task.RequestorEmail = requestorEmail;
-        task.RequestedAtUtc = request.RequestedAtUtc;
+        task.RequestedAtUtc = TaskSupport.ToUtc(request.RequestedAtUtc);
         task.DueDate = due.Date;
         task.DueAtUtc = due.AtUtc;
         task.DueSortKey = due.DueSortKey;

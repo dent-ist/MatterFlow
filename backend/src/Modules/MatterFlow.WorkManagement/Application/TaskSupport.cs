@@ -64,7 +64,20 @@ internal static class TaskSupport
     }
 
     /// <summary>A short audit value for a nullable date.</summary>
-    public static string? Display(DateTime? value) => value?.ToString("O", CultureInfo.InvariantCulture);
+    public static string? Display(DateTime? value) => ToUtc(value)?.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// A UTC instant at the millisecond precision the columns store: a local time (from an offset in JSON) is converted, an unspecified
+    /// one (read from the database) is taken as UTC.
+    /// </summary>
+    public static DateTime? ToUtc(DateTime? value)
+    {
+        if (value is not { } v)
+            return null;
+
+        var utc = v.Kind == DateTimeKind.Local ? v.ToUniversalTime() : DateTime.SpecifyKind(v, DateTimeKind.Utc);
+        return new DateTime(utc.Ticks - (utc.Ticks % TimeSpan.TicksPerMillisecond), DateTimeKind.Utc);
+    }
 
     public static string? Display(DateOnly? value) => value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 

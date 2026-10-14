@@ -34,7 +34,6 @@ internal static class TaskPolicies
 /// </summary>
 [ApiController]
 [Route("api/v1/tasks")]
-[Produces("application/json")]
 public class TasksController(TaskService tasks, TaskLifecycleService lifecycle) : ControllerBase
 {
     /// <summary>
@@ -164,7 +163,6 @@ public class TasksController(TaskService tasks, TaskLifecycleService lifecycle) 
 /// </summary>
 [ApiController]
 [Route("api/v1/tasks/{taskId:long}/workflow")]
-[Produces("application/json")]
 public class TaskWorkflowController(TaskService tasks, TaskWorkflowService workflow) : ControllerBase
 {
     /// <summary>The Task's workflow instance: steps in order, their states and saved values, progress, current step and reopened prerequisites.</summary>

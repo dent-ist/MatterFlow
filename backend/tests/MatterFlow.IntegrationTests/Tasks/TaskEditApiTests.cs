@@ -174,6 +174,23 @@ public sealed class TaskEditApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task The_requested_time_round_trips_without_phantom_changes_and_offsets_are_normalized_to_utc()
+    {
+        var task = await _h.CreateTaskAsync(_w, extra: new() { ["requestedAtUtc"] = "2030-01-02T03:04:05.678+02:00" });
+        task.GetProperty("requestedAtUtc").GetDateTime().ShouldBe(new DateTime(2030, 1, 2, 1, 4, 5, 678, DateTimeKind.Utc));
+
+        var body = UpdateBody(task, new() { ["requestedAtUtc"] = task.GetProperty("requestedAtUtc").GetDateTime() });
+        var again = await OkAsync(await PutAsync(task, body));
+
+        RowVersion(again).ShouldBe(RowVersion(task));
+        (await _h.AuditAsync(TaskId(task))).ShouldNotContain(e => e.FieldKey == "requestedAt");
+
+        var changed = await OkAsync(await PutAsync(again, UpdateBody(again, new() { ["requestedAtUtc"] = "2030-01-03T00:00:00Z" })));
+        changed.GetProperty("requestedAtUtc").GetDateTime().ShouldBe(new DateTime(2030, 1, 3, 0, 0, 0, DateTimeKind.Utc));
+        (await _h.AuditAsync(TaskId(task))).Count(e => e.FieldKey == "requestedAt").ShouldBe(1);
+    }
+
+    [Fact]
     public async Task A_stale_row_version_is_a_conflict_with_the_current_token()
     {
         var task = await _h.CreateTaskAsync(_w);
