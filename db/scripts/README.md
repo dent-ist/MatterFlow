@@ -20,6 +20,17 @@ EF Core maps entities for data access only; there are no EF migrations. The star
   Scripts seed only structural lookups needed by foreign keys.
 - Destructive changes (drop/rename column) use expand-then-contract across two releases.
 
+## Runner behavior (summary)
+
+- Scripts are embedded into `MatterFlow.Data` at build time and applied at startup in numeric-prefix order,
+  each in one transaction, recorded in `dbo.SchemaMigration` (name, prefix, SHA-256 checksum, time, duration, success).
+- Startup **fails** on: a script error (rolled back, not recorded), a duplicate prefix, a checksum change or removal of an
+  applied script, or a new script numbered lower than the highest applied one. Gaps in numbering are fine.
+- Append-only numbering: always add the next free number; never renumber or edit a merged script.
+- Statements that cannot run in a transaction (e.g. `CREATE DATABASE`) need `-- mf:no-transaction` on the first line.
+- Config (`Migrations:*`): `Enabled` (default true), `ScriptsFolder`, `LockTimeoutSeconds`, `CommandTimeoutSeconds`,
+  `ConnectionStringName` (falls back to `ConnectionStrings:Default`).
+
 ## Status
 
-No scripts exist yet; the first (`01-init.sql`) arrives with the schema work.
+`01-init.sql` exists (schema conventions and `dbo.TaskNumberSeq`). Real tables arrive in later scripts.

@@ -9,7 +9,7 @@ public class ApiSmokeTests(WebApplicationFactory<Program> factory) : IClassFixtu
     [Fact]
     public async Task Liveness_endpoint_responds_ok()
     {
-        var client = factory.CreateClient();
+        var client = factory.WithWebHostBuilder(b => b.UseSetting("Migrations:Enabled", "false")).CreateClient();
         var response = await client.GetAsync("/health/live");
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
