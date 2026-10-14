@@ -8,7 +8,7 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 
@@ -27,14 +27,15 @@ import {
   HasUnsavedChanges,
   LeaveConfirmService,
 } from '../../../shared/guards/unsaved-changes.guard';
-import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ActiveBadge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-table';
+import { isActiveParam } from '../../../shared/ui/list-helpers';
+import { ServerListPage } from '../../../shared/ui/list-query';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { Pager } from '../../../shared/ui/pager';
+import { SearchBox } from '../../../shared/ui/search-box';
 
-type LoadState = 'loading' | 'ready' | 'error';
-type StatusFilter = 'all' | 'active' | 'inactive';
-
-const PAGE_SIZE = 25;
 const SEARCH_DEBOUNCE_MS = 200;
 
 /**
@@ -45,28 +46,36 @@ const SEARCH_DEBOUNCE_MS = 200;
 @Component({
   selector: 'mf-pods-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeader, ConfirmDialog, ErrorReference, Button, HasPermissionDirective, RouterLink],
+  imports: [
+    PageHeader,
+    ConfirmDialog,
+    ActiveBadge,
+    Button,
+    HasPermissionDirective,
+    RouterLink,
+    Pager,
+    SearchBox,
+    StatusFilter,
+    SortHeader,
+    ListState,
+  ],
   templateUrl: './pods-page.html',
   styleUrl: './pods-page.scss',
 })
-export class PodsPage implements OnInit, OnDestroy, HasUnsavedChanges {
+export class PodsPage
+  extends ServerListPage<PodSummary>
+  implements OnInit, OnDestroy, HasUnsavedChanges
+{
   private readonly api = inject(PodsClient);
   private readonly notify = inject(NotificationService);
-  private readonly router = inject(Router);
 
   /** Query parameter `pod`: a pod id or `new`, so a reload or a shared link returns to the same editor. */
   readonly pod = input<string | undefined>(undefined);
   private readonly leaveConfirm = inject(LeaveConfirmService);
   protected readonly auth = inject(AuthStore);
 
-  // ---- list
-  protected readonly state = signal<LoadState>('loading');
-  protected readonly pods = signal<PodSummary[]>([]);
-  protected readonly total = signal(0);
-  protected readonly page = signal(1);
-  protected readonly search = signal('');
-  protected readonly status = signal<StatusFilter>('all');
-  protected readonly pageCount = computed(() => Math.max(1, Math.ceil(this.total() / PAGE_SIZE)));
+  // ---- list (URL state: q, status, page, size, sort)
+  protected readonly defaultSort = 'name';
 
   // ---- editor
   protected readonly editorOpen = signal(false);
@@ -105,11 +114,10 @@ export class PodsPage implements OnInit, OnDestroy, HasUnsavedChanges {
     () => !this.isNew() && !!this.detail()?.pod.isActive && !this.isActive(),
   );
 
-  private searchTimer: ReturnType<typeof setTimeout> | undefined;
   private candidateTimer: ReturnType<typeof setTimeout> | undefined;
 
   ngOnInit(): void {
-    void this.load().then(() => this.openFromUrl());
+    void this.openFromUrl();
   }
 
   private async openFromUrl(): Promise<void> {
@@ -136,7 +144,6 @@ export class PodsPage implements OnInit, OnDestroy, HasUnsavedChanges {
   }
 
   ngOnDestroy(): void {
-    clearTimeout(this.searchTimer);
     clearTimeout(this.candidateTimer);
   }
 
@@ -146,44 +153,16 @@ export class PodsPage implements OnInit, OnDestroy, HasUnsavedChanges {
 
   // ---- list actions
 
-  protected async load(): Promise<void> {
-    this.state.set('loading');
-    try {
-      const status = this.status();
-      const result = await firstValueFrom(
-        this.api.listPods(
-          this.search().trim() || undefined,
-          status === 'all' ? undefined : status === 'active',
-          this.page(),
-          PAGE_SIZE,
-        ),
-      );
-      this.pods.set(result.items);
-      this.total.set(result.total);
-      this.state.set('ready');
-    } catch {
-      this.state.set('error');
-    }
-  }
-
-  protected onSearch(event: Event): void {
-    this.search.set((event.target as HTMLInputElement).value);
-    clearTimeout(this.searchTimer);
-    this.searchTimer = setTimeout(() => {
-      this.page.set(1);
-      void this.load();
-    }, SEARCH_DEBOUNCE_MS);
-  }
-
-  protected onStatus(event: Event): void {
-    this.status.set((event.target as HTMLSelectElement).value as StatusFilter);
-    this.page.set(1);
-    void this.load();
-  }
-
-  protected goTo(page: number): void {
-    this.page.set(Math.min(Math.max(1, page), this.pageCount()));
-    void this.load();
+  protected override fetch() {
+    return firstValueFrom(
+      this.api.listPods(
+        this.q()?.trim() || undefined,
+        isActiveParam(this.statusFilter()),
+        this.pageNumber(),
+        this.pageSize(),
+        this.sort() || undefined,
+      ),
+    );
   }
 
   // ---- editor actions

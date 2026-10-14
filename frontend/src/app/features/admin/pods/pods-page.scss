@@ -98,6 +98,12 @@
 .pods__table {
   width: 100%;
   border-collapse: collapse;
+  background: var(--mf-surface);
+
+  th {
+    background: var(--mf-surface-alt);
+    font-weight: 600;
+  }
 
   th,
   td {

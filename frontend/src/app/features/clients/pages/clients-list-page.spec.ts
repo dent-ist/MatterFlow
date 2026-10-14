@@ -114,7 +114,7 @@ describe('ClientsListPage', () => {
     fixture.componentRef.setInput('q', 'zzz');
     await settle(fixture);
     expect(el.querySelector('[data-empty=filtered]')?.textContent).toContain(
-      'No results match these filters.',
+      'No clients match these filters.',
     );
     expect(buttonByLabel(el, 'Clear filters')).toBeDefined();
   });
@@ -125,7 +125,7 @@ describe('ClientsListPage', () => {
     fixture.componentRef.setInput('sort', 'name');
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector('[role=alert]')?.textContent).toContain('Something went wrong');
+    expect(el.querySelector('[role=alert]')?.textContent).toContain("Couldn't load clients.");
 
     api.listClients.mockReturnValue(ok(pageOfClients(aClient())));
     buttonByLabel(el, 'Retry')!.click();

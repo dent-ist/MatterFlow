@@ -169,7 +169,7 @@ describe('WorkflowsListPage', () => {
     expect(rows[1].textContent).toContain('Not published');
     expect(rows[1].textContent).toContain('Draft');
     expect(rows[1].textContent).toContain('Inactive');
-    expect(api.listWorkflows).toHaveBeenCalledWith(undefined, true, 1, 25);
+    expect(api.listWorkflows).toHaveBeenCalledWith(undefined, undefined, true, 1, 25);
   });
 
   it('shows empty and error states', async () => {
@@ -185,7 +185,7 @@ describe('WorkflowsListPage', () => {
     api.listWorkflows.mockReturnValue(apiError(500, { status: 500, title: 'Error' }));
     fixture.componentRef.setInput('q', 'x');
     await settle(fixture);
-    expect(el.querySelector('[role="alert"]')?.textContent).toContain('Something went wrong');
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain("Couldn't load workflows.");
   });
 });
 

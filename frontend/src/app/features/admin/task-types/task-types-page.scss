@@ -17,10 +17,15 @@
   font-size: var(--mf-fs-xs);
 }
 
-.actions {
-  white-space: nowrap;
+/* Tables span the full content width (UXR-33). */
+:host {
+  max-width: none;
+}
 
-  > * + * {
-    margin-left: var(--mf-s3);
-  }
+.pg-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--mf-s4);
+  margin-bottom: var(--mf-s3);
 }

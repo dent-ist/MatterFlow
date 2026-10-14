@@ -579,7 +579,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
     this.libState.set('loading');
     try {
       const result = await firstValueFrom(
-        this.steps.listStepDefinitions(this.libQ().trim() || undefined, true, 1, 50),
+        this.steps.listStepDefinitions(undefined, this.libQ().trim() || undefined, true, 1, 50),
       );
       if (id !== this.libRequest) return;
       this.library.set(result.items);

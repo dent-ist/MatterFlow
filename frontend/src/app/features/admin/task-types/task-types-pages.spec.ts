@@ -54,6 +54,38 @@ describe('TaskTypesPage', () => {
     ).toBe('/admin/task-types/1/form');
   });
 
+  it('searches, sorts and pages in the browser, hides inactive types by default and names the row actions', async () => {
+    await new Promise<void>((resolve) =>
+      api.create({ name: 'Collection', description: undefined }).subscribe(() => resolve()),
+    );
+    await (fixture.componentInstance as unknown as { load(): Promise<void> }).load();
+    await settle(fixture);
+    const names = () =>
+      Array.from(el().querySelectorAll('tbody tr')).map((r) => r.getAttribute('data-row'));
+
+    expect(names()).toContain('Collection');
+    expect(el().querySelector('th[aria-sort="ascending"]')!.textContent).toContain('Name');
+    expect(names()).toEqual([...names()].sort((a, b) => a!.localeCompare(b!)));
+
+    fixture.componentRef.setInput('sort', '-name');
+    await settle(fixture);
+    expect(names()).toEqual([...names()].sort((a, b) => b!.localeCompare(a!)));
+
+    fixture.componentRef.setInput('q', 'COLLECTION');
+    await settle(fixture);
+    expect(names()).toContain('Collection');
+    const actions = row('Collection').querySelector('.mf-row-actions')!;
+    expect(Array.from(actions.querySelectorAll('[aria-label]')).map((a) => a.ariaLabel)).toEqual([
+      'Design the request form of Collection',
+      'Edit Collection',
+      'Deactivate Collection',
+    ]);
+
+    fixture.componentRef.setInput('q', 'no such type');
+    await settle(fixture);
+    expect(el().querySelector('[data-empty=filtered]')).not.toBeNull();
+  });
+
   it('warns about a type without an eligible workflow and deactivates and reactivates', async () => {
     await new Promise<void>((resolve) =>
       api.create({ name: 'Collection', description: undefined }).subscribe(() => resolve()),
@@ -74,11 +106,16 @@ describe('TaskTypesPage', () => {
     expect(confirm).toBeDefined();
     confirm!.click();
     await settle(fixture);
-    expect(row('Data Processing').textContent).toContain('Inactive');
-    expect(row('Data Processing').querySelector('[data-warning]')).toBeNull();
+    // Inactive types are hidden by the default Active filter; the announcement says what happened.
+    expect(el().querySelector('[data-row="Data Processing"]')).toBeNull();
     expect(el().querySelector('[data-announce]')!.textContent).toContain(
       'Data Processing deactivated.',
     );
+
+    fixture.componentRef.setInput('status', 'all');
+    await settle(fixture);
+    expect(row('Data Processing').textContent).toContain('Inactive');
+    expect(row('Data Processing').querySelector('[data-warning]')).toBeNull();
 
     row('Data Processing').querySelector<HTMLButtonElement>('[data-activate]')!.click();
     await settle(fixture);

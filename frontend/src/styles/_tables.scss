@@ -1,0 +1,36 @@
+/*
+ * Table helpers shared by every list (UXR-12, UXR-05, UXR-37).
+ *   .mf-table-wrap     horizontal scroll container so a wide table never pushes the page sideways
+ *   .mf-col-actions    last column holding row actions: as narrow as its content, right-aligned, never wraps
+ *   .mf-row-actions    the actions inside that cell: at most two tertiary (text) buttons; the danger action is the last one
+ * Every row action needs an accessible name that includes the row ("Edit Access Request"), set with aria-label.
+ */
+.mf-table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+th.mf-col-actions,
+td.mf-col-actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.mf-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--mf-s2);
+  white-space: nowrap;
+}
+
+.mf-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

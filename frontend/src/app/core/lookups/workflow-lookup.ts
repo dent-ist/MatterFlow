@@ -48,7 +48,7 @@ export class HttpWorkflowLookup extends WorkflowLookup {
     const options: WorkflowOption[] = [];
     for (let page = 1; ; page++) {
       const result = await firstValueFrom(
-        this.client.listWorkflows(undefined, undefined, page, 100),
+        this.client.listWorkflows(undefined, undefined, undefined, page, 100),
       );
       for (const w of result.items) {
         options.push({

@@ -92,7 +92,7 @@ describe('StepsListPage', () => {
     expect(rows[0].textContent).toContain('3 versions');
     expect(rows[1].textContent).toContain('Not used');
     expect(rows[1].textContent).toContain('Inactive');
-    expect(api.listStepDefinitions).toHaveBeenCalledWith(undefined, true, 1, 25);
+    expect(api.listStepDefinitions).toHaveBeenCalledWith(undefined, undefined, true, 1, 25);
   });
 
   it('shows an empty state with a way to add the first step', async () => {
@@ -121,7 +121,7 @@ describe('StepsListPage', () => {
     fixture.componentRef.setInput('status', 'all');
     fixture.componentRef.setInput('page', '2');
     await settle(fixture);
-    expect(api.listStepDefinitions).toHaveBeenLastCalledWith('qc', undefined, 2, 25);
+    expect(api.listStepDefinitions).toHaveBeenLastCalledWith(undefined, 'qc', undefined, 2, 25);
   });
 });
 

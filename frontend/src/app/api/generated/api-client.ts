@@ -8811,13 +8811,14 @@ export class PodWorkClient implements IPodWorkClient {
 
 export interface IStepDefinitionsClient {
     /**
+     * @param sort (optional) 
      * @param q (optional) 
      * @param isActive (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    listStepDefinitions(q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary>;
+    listStepDefinitions(sort?: string | undefined, q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary>;
     /**
      * @return Created
      */
@@ -8854,14 +8855,19 @@ export class StepDefinitionsClient implements IStepDefinitionsClient {
     }
 
     /**
+     * @param sort (optional) 
      * @param q (optional) 
      * @param isActive (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    listStepDefinitions(q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary> {
+    listStepDefinitions(sort?: string | undefined, q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary> {
         let url_ = this.baseUrl + "/api/v1/step-definitions?";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "Sort=" + encodeURIComponent("" + sort) + "&";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
         else if (q !== undefined)
@@ -9204,13 +9210,14 @@ export class StepDefinitionsClient implements IStepDefinitionsClient {
 
 export interface IWorkflowsClient {
     /**
+     * @param sort (optional) 
      * @param q (optional) 
      * @param isActive (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    listWorkflows(q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary>;
+    listWorkflows(sort?: string | undefined, q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary>;
     /**
      * @return Created
      */
@@ -9271,14 +9278,19 @@ export class WorkflowsClient implements IWorkflowsClient {
     }
 
     /**
+     * @param sort (optional) 
      * @param q (optional) 
      * @param isActive (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    listWorkflows(q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary> {
+    listWorkflows(sort?: string | undefined, q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary> {
         let url_ = this.baseUrl + "/api/v1/workflows?";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "Sort=" + encodeURIComponent("" + sort) + "&";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
         else if (q !== undefined)

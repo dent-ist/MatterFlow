@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { of, throwError } from 'rxjs';
 
@@ -149,17 +149,45 @@ describe('PodsPage', () => {
     expect(q<HTMLButtonElement>('[data-primary]').disabled).toBe(true);
   });
 
-  it('filters the list through the API by search text and status', async () => {
+  it('lists active pods first and sends the URL state (search, status, page size, sort) to the API', async () => {
     await create('Pod.View', 'Pod.Manage');
+    expect(api.listPods).toHaveBeenLastCalledWith(undefined, true, 1, 25, undefined);
 
-    await type('[data-search]', 'alp', 250);
-    expect(api.listPods).toHaveBeenLastCalledWith('alp', undefined, 1, 25);
+    fixture.componentRef.setInput('q', 'alp');
+    fixture.componentRef.setInput('status', 'inactive');
+    fixture.componentRef.setInput('size', '50');
+    fixture.componentRef.setInput('sort', '-memberCount');
+    await settle();
+    expect(api.listPods).toHaveBeenLastCalledWith('alp', false, 1, 50, '-memberCount');
 
-    const select = q<HTMLSelectElement>('[data-status]');
+    fixture.componentRef.setInput('status', 'all');
+    await settle();
+    expect(api.listPods).toHaveBeenLastCalledWith('alp', undefined, 1, 50, '-memberCount');
+  });
+
+  it('writes search, status and sort changes to the URL, searching as you type', async () => {
+    await create('Pod.View', 'Pod.Manage');
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+    await type('#pods-search', 'alp', 350);
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { q: 'alp', page: null },
+      queryParamsHandling: 'merge',
+    });
+
+    const select = q<HTMLSelectElement>('#pods-status');
     select.value = 'inactive';
     select.dispatchEvent(new Event('change'));
-    await settle();
-    expect(api.listPods).toHaveBeenLastCalledWith('alp', false, 1, 25);
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { status: 'inactive', page: null },
+      queryParamsHandling: 'merge',
+    });
+
+    q<HTMLButtonElement>('th[aria-sort] button').click();
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { sort: '-name', page: null },
+      queryParamsHandling: 'merge',
+    });
   });
 
   it('requires a name, then creates the pod and opens it for member management', async () => {
