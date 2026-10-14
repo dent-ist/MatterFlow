@@ -6920,6 +6920,687 @@ export class TaskWorkflowClient implements ITaskWorkflowClient {
     }
 }
 
+export interface ITaskQueueClient {
+    /**
+     * @param q (optional) 
+     * @param status (optional) 
+     * @param priority (optional) 
+     * @param pod (optional) 
+     * @param assignee (optional) 
+     * @param unassigned (optional) 
+     * @param creator (optional) 
+     * @param client (optional) 
+     * @param matter (optional) 
+     * @param project (optional) 
+     * @param type (optional) 
+     * @param workflow (optional) 
+     * @param createdFrom (optional) 
+     * @param createdTo (optional) 
+     * @param dueFrom (optional) 
+     * @param dueTo (optional) 
+     * @param asap (optional) 
+     * @param overdue (optional) 
+     * @param requestor (optional) 
+     * @param completedFrom (optional) 
+     * @param completedTo (optional) 
+     * @param sort (optional) 
+     * @param dir (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    getTaskQueue(q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class TaskQueueClient implements ITaskQueueClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param q (optional) 
+     * @param status (optional) 
+     * @param priority (optional) 
+     * @param pod (optional) 
+     * @param assignee (optional) 
+     * @param unassigned (optional) 
+     * @param creator (optional) 
+     * @param client (optional) 
+     * @param matter (optional) 
+     * @param project (optional) 
+     * @param type (optional) 
+     * @param workflow (optional) 
+     * @param createdFrom (optional) 
+     * @param createdTo (optional) 
+     * @param dueFrom (optional) 
+     * @param dueTo (optional) 
+     * @param asap (optional) 
+     * @param overdue (optional) 
+     * @param requestor (optional) 
+     * @param completedFrom (optional) 
+     * @param completedTo (optional) 
+     * @param sort (optional) 
+     * @param dir (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    getTaskQueue(q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage> {
+        let url_ = this.baseUrl + "/api/v1/task-queue?";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "q=" + encodeURIComponent("" + q) + "&";
+        if (status === null)
+            throw new globalThis.Error("The parameter 'status' cannot be null.");
+        else if (status !== undefined)
+            status && status.forEach(item => { url_ += "status=" + encodeURIComponent("" + item) + "&"; });
+        if (priority === null)
+            throw new globalThis.Error("The parameter 'priority' cannot be null.");
+        else if (priority !== undefined)
+            priority && priority.forEach(item => { url_ += "priority=" + encodeURIComponent("" + item) + "&"; });
+        if (pod === null)
+            throw new globalThis.Error("The parameter 'pod' cannot be null.");
+        else if (pod !== undefined)
+            pod && pod.forEach(item => { url_ += "pod=" + encodeURIComponent("" + item) + "&"; });
+        if (assignee === null)
+            throw new globalThis.Error("The parameter 'assignee' cannot be null.");
+        else if (assignee !== undefined)
+            assignee && assignee.forEach(item => { url_ += "assignee=" + encodeURIComponent("" + item) + "&"; });
+        if (unassigned === null)
+            throw new globalThis.Error("The parameter 'unassigned' cannot be null.");
+        else if (unassigned !== undefined)
+            url_ += "unassigned=" + encodeURIComponent("" + unassigned) + "&";
+        if (creator === null)
+            throw new globalThis.Error("The parameter 'creator' cannot be null.");
+        else if (creator !== undefined)
+            creator && creator.forEach(item => { url_ += "creator=" + encodeURIComponent("" + item) + "&"; });
+        if (client === null)
+            throw new globalThis.Error("The parameter 'client' cannot be null.");
+        else if (client !== undefined)
+            url_ += "client=" + encodeURIComponent("" + client) + "&";
+        if (matter === null)
+            throw new globalThis.Error("The parameter 'matter' cannot be null.");
+        else if (matter !== undefined)
+            url_ += "matter=" + encodeURIComponent("" + matter) + "&";
+        if (project === null)
+            throw new globalThis.Error("The parameter 'project' cannot be null.");
+        else if (project !== undefined)
+            url_ += "project=" + encodeURIComponent("" + project) + "&";
+        if (type === null)
+            throw new globalThis.Error("The parameter 'type' cannot be null.");
+        else if (type !== undefined)
+            type && type.forEach(item => { url_ += "type=" + encodeURIComponent("" + item) + "&"; });
+        if (workflow === null)
+            throw new globalThis.Error("The parameter 'workflow' cannot be null.");
+        else if (workflow !== undefined)
+            workflow && workflow.forEach(item => { url_ += "workflow=" + encodeURIComponent("" + item) + "&"; });
+        if (createdFrom === null)
+            throw new globalThis.Error("The parameter 'createdFrom' cannot be null.");
+        else if (createdFrom !== undefined)
+            url_ += "createdFrom=" + encodeURIComponent("" + createdFrom) + "&";
+        if (createdTo === null)
+            throw new globalThis.Error("The parameter 'createdTo' cannot be null.");
+        else if (createdTo !== undefined)
+            url_ += "createdTo=" + encodeURIComponent("" + createdTo) + "&";
+        if (dueFrom === null)
+            throw new globalThis.Error("The parameter 'dueFrom' cannot be null.");
+        else if (dueFrom !== undefined)
+            url_ += "dueFrom=" + encodeURIComponent("" + dueFrom) + "&";
+        if (dueTo === null)
+            throw new globalThis.Error("The parameter 'dueTo' cannot be null.");
+        else if (dueTo !== undefined)
+            url_ += "dueTo=" + encodeURIComponent("" + dueTo) + "&";
+        if (asap === null)
+            throw new globalThis.Error("The parameter 'asap' cannot be null.");
+        else if (asap !== undefined)
+            url_ += "asap=" + encodeURIComponent("" + asap) + "&";
+        if (overdue === null)
+            throw new globalThis.Error("The parameter 'overdue' cannot be null.");
+        else if (overdue !== undefined)
+            url_ += "overdue=" + encodeURIComponent("" + overdue) + "&";
+        if (requestor === null)
+            throw new globalThis.Error("The parameter 'requestor' cannot be null.");
+        else if (requestor !== undefined)
+            url_ += "requestor=" + encodeURIComponent("" + requestor) + "&";
+        if (completedFrom === null)
+            throw new globalThis.Error("The parameter 'completedFrom' cannot be null.");
+        else if (completedFrom !== undefined)
+            url_ += "completedFrom=" + encodeURIComponent("" + completedFrom) + "&";
+        if (completedTo === null)
+            throw new globalThis.Error("The parameter 'completedTo' cannot be null.");
+        else if (completedTo !== undefined)
+            url_ += "completedTo=" + encodeURIComponent("" + completedTo) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "sort=" + encodeURIComponent("" + sort) + "&";
+        if (dir === null)
+            throw new globalThis.Error("The parameter 'dir' cannot be null.");
+        else if (dir !== undefined)
+            url_ += "dir=" + encodeURIComponent("" + dir) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetTaskQueue(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetTaskQueue(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskQueuePage>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskQueuePage>;
+        }));
+    }
+
+    protected processGetTaskQueue(response: HttpResponseBase): Observable<TaskQueuePage> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskQueuePage;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IMyWorkClient {
+    /**
+     * @param view (optional) 
+     * @param q (optional) 
+     * @param status (optional) 
+     * @param priority (optional) 
+     * @param pod (optional) 
+     * @param assignee (optional) 
+     * @param unassigned (optional) 
+     * @param creator (optional) 
+     * @param client (optional) 
+     * @param matter (optional) 
+     * @param project (optional) 
+     * @param type (optional) 
+     * @param workflow (optional) 
+     * @param createdFrom (optional) 
+     * @param createdTo (optional) 
+     * @param dueFrom (optional) 
+     * @param dueTo (optional) 
+     * @param asap (optional) 
+     * @param overdue (optional) 
+     * @param requestor (optional) 
+     * @param completedFrom (optional) 
+     * @param completedTo (optional) 
+     * @param sort (optional) 
+     * @param dir (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    getMyWork(view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class MyWorkClient implements IMyWorkClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param view (optional) 
+     * @param q (optional) 
+     * @param status (optional) 
+     * @param priority (optional) 
+     * @param pod (optional) 
+     * @param assignee (optional) 
+     * @param unassigned (optional) 
+     * @param creator (optional) 
+     * @param client (optional) 
+     * @param matter (optional) 
+     * @param project (optional) 
+     * @param type (optional) 
+     * @param workflow (optional) 
+     * @param createdFrom (optional) 
+     * @param createdTo (optional) 
+     * @param dueFrom (optional) 
+     * @param dueTo (optional) 
+     * @param asap (optional) 
+     * @param overdue (optional) 
+     * @param requestor (optional) 
+     * @param completedFrom (optional) 
+     * @param completedTo (optional) 
+     * @param sort (optional) 
+     * @param dir (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    getMyWork(view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage> {
+        let url_ = this.baseUrl + "/api/v1/my-work?";
+        if (view === null)
+            throw new globalThis.Error("The parameter 'view' cannot be null.");
+        else if (view !== undefined)
+            url_ += "view=" + encodeURIComponent("" + view) + "&";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "q=" + encodeURIComponent("" + q) + "&";
+        if (status === null)
+            throw new globalThis.Error("The parameter 'status' cannot be null.");
+        else if (status !== undefined)
+            status && status.forEach(item => { url_ += "status=" + encodeURIComponent("" + item) + "&"; });
+        if (priority === null)
+            throw new globalThis.Error("The parameter 'priority' cannot be null.");
+        else if (priority !== undefined)
+            priority && priority.forEach(item => { url_ += "priority=" + encodeURIComponent("" + item) + "&"; });
+        if (pod === null)
+            throw new globalThis.Error("The parameter 'pod' cannot be null.");
+        else if (pod !== undefined)
+            pod && pod.forEach(item => { url_ += "pod=" + encodeURIComponent("" + item) + "&"; });
+        if (assignee === null)
+            throw new globalThis.Error("The parameter 'assignee' cannot be null.");
+        else if (assignee !== undefined)
+            assignee && assignee.forEach(item => { url_ += "assignee=" + encodeURIComponent("" + item) + "&"; });
+        if (unassigned === null)
+            throw new globalThis.Error("The parameter 'unassigned' cannot be null.");
+        else if (unassigned !== undefined)
+            url_ += "unassigned=" + encodeURIComponent("" + unassigned) + "&";
+        if (creator === null)
+            throw new globalThis.Error("The parameter 'creator' cannot be null.");
+        else if (creator !== undefined)
+            creator && creator.forEach(item => { url_ += "creator=" + encodeURIComponent("" + item) + "&"; });
+        if (client === null)
+            throw new globalThis.Error("The parameter 'client' cannot be null.");
+        else if (client !== undefined)
+            url_ += "client=" + encodeURIComponent("" + client) + "&";
+        if (matter === null)
+            throw new globalThis.Error("The parameter 'matter' cannot be null.");
+        else if (matter !== undefined)
+            url_ += "matter=" + encodeURIComponent("" + matter) + "&";
+        if (project === null)
+            throw new globalThis.Error("The parameter 'project' cannot be null.");
+        else if (project !== undefined)
+            url_ += "project=" + encodeURIComponent("" + project) + "&";
+        if (type === null)
+            throw new globalThis.Error("The parameter 'type' cannot be null.");
+        else if (type !== undefined)
+            type && type.forEach(item => { url_ += "type=" + encodeURIComponent("" + item) + "&"; });
+        if (workflow === null)
+            throw new globalThis.Error("The parameter 'workflow' cannot be null.");
+        else if (workflow !== undefined)
+            workflow && workflow.forEach(item => { url_ += "workflow=" + encodeURIComponent("" + item) + "&"; });
+        if (createdFrom === null)
+            throw new globalThis.Error("The parameter 'createdFrom' cannot be null.");
+        else if (createdFrom !== undefined)
+            url_ += "createdFrom=" + encodeURIComponent("" + createdFrom) + "&";
+        if (createdTo === null)
+            throw new globalThis.Error("The parameter 'createdTo' cannot be null.");
+        else if (createdTo !== undefined)
+            url_ += "createdTo=" + encodeURIComponent("" + createdTo) + "&";
+        if (dueFrom === null)
+            throw new globalThis.Error("The parameter 'dueFrom' cannot be null.");
+        else if (dueFrom !== undefined)
+            url_ += "dueFrom=" + encodeURIComponent("" + dueFrom) + "&";
+        if (dueTo === null)
+            throw new globalThis.Error("The parameter 'dueTo' cannot be null.");
+        else if (dueTo !== undefined)
+            url_ += "dueTo=" + encodeURIComponent("" + dueTo) + "&";
+        if (asap === null)
+            throw new globalThis.Error("The parameter 'asap' cannot be null.");
+        else if (asap !== undefined)
+            url_ += "asap=" + encodeURIComponent("" + asap) + "&";
+        if (overdue === null)
+            throw new globalThis.Error("The parameter 'overdue' cannot be null.");
+        else if (overdue !== undefined)
+            url_ += "overdue=" + encodeURIComponent("" + overdue) + "&";
+        if (requestor === null)
+            throw new globalThis.Error("The parameter 'requestor' cannot be null.");
+        else if (requestor !== undefined)
+            url_ += "requestor=" + encodeURIComponent("" + requestor) + "&";
+        if (completedFrom === null)
+            throw new globalThis.Error("The parameter 'completedFrom' cannot be null.");
+        else if (completedFrom !== undefined)
+            url_ += "completedFrom=" + encodeURIComponent("" + completedFrom) + "&";
+        if (completedTo === null)
+            throw new globalThis.Error("The parameter 'completedTo' cannot be null.");
+        else if (completedTo !== undefined)
+            url_ += "completedTo=" + encodeURIComponent("" + completedTo) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "sort=" + encodeURIComponent("" + sort) + "&";
+        if (dir === null)
+            throw new globalThis.Error("The parameter 'dir' cannot be null.");
+        else if (dir !== undefined)
+            url_ += "dir=" + encodeURIComponent("" + dir) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMyWork(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMyWork(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MyWorkPage>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MyWorkPage>;
+        }));
+    }
+
+    protected processGetMyWork(response: HttpResponseBase): Observable<MyWorkPage> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyWorkPage;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IPodWorkClient {
+    /**
+     * @param podId (optional) 
+     * @param view (optional) 
+     * @param q (optional) 
+     * @param status (optional) 
+     * @param priority (optional) 
+     * @param pod (optional) 
+     * @param assignee (optional) 
+     * @param unassigned (optional) 
+     * @param creator (optional) 
+     * @param client (optional) 
+     * @param matter (optional) 
+     * @param project (optional) 
+     * @param type (optional) 
+     * @param workflow (optional) 
+     * @param createdFrom (optional) 
+     * @param createdTo (optional) 
+     * @param dueFrom (optional) 
+     * @param dueTo (optional) 
+     * @param asap (optional) 
+     * @param overdue (optional) 
+     * @param requestor (optional) 
+     * @param completedFrom (optional) 
+     * @param completedTo (optional) 
+     * @param sort (optional) 
+     * @param dir (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class PodWorkClient implements IPodWorkClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param podId (optional) 
+     * @param view (optional) 
+     * @param q (optional) 
+     * @param status (optional) 
+     * @param priority (optional) 
+     * @param pod (optional) 
+     * @param assignee (optional) 
+     * @param unassigned (optional) 
+     * @param creator (optional) 
+     * @param client (optional) 
+     * @param matter (optional) 
+     * @param project (optional) 
+     * @param type (optional) 
+     * @param workflow (optional) 
+     * @param createdFrom (optional) 
+     * @param createdTo (optional) 
+     * @param dueFrom (optional) 
+     * @param dueTo (optional) 
+     * @param asap (optional) 
+     * @param overdue (optional) 
+     * @param requestor (optional) 
+     * @param completedFrom (optional) 
+     * @param completedTo (optional) 
+     * @param sort (optional) 
+     * @param dir (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage> {
+        let url_ = this.baseUrl + "/api/v1/pod-work?";
+        if (podId === null)
+            throw new globalThis.Error("The parameter 'podId' cannot be null.");
+        else if (podId !== undefined)
+            url_ += "podId=" + encodeURIComponent("" + podId) + "&";
+        if (view === null)
+            throw new globalThis.Error("The parameter 'view' cannot be null.");
+        else if (view !== undefined)
+            url_ += "view=" + encodeURIComponent("" + view) + "&";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "q=" + encodeURIComponent("" + q) + "&";
+        if (status === null)
+            throw new globalThis.Error("The parameter 'status' cannot be null.");
+        else if (status !== undefined)
+            status && status.forEach(item => { url_ += "status=" + encodeURIComponent("" + item) + "&"; });
+        if (priority === null)
+            throw new globalThis.Error("The parameter 'priority' cannot be null.");
+        else if (priority !== undefined)
+            priority && priority.forEach(item => { url_ += "priority=" + encodeURIComponent("" + item) + "&"; });
+        if (pod === null)
+            throw new globalThis.Error("The parameter 'pod' cannot be null.");
+        else if (pod !== undefined)
+            pod && pod.forEach(item => { url_ += "pod=" + encodeURIComponent("" + item) + "&"; });
+        if (assignee === null)
+            throw new globalThis.Error("The parameter 'assignee' cannot be null.");
+        else if (assignee !== undefined)
+            assignee && assignee.forEach(item => { url_ += "assignee=" + encodeURIComponent("" + item) + "&"; });
+        if (unassigned === null)
+            throw new globalThis.Error("The parameter 'unassigned' cannot be null.");
+        else if (unassigned !== undefined)
+            url_ += "unassigned=" + encodeURIComponent("" + unassigned) + "&";
+        if (creator === null)
+            throw new globalThis.Error("The parameter 'creator' cannot be null.");
+        else if (creator !== undefined)
+            creator && creator.forEach(item => { url_ += "creator=" + encodeURIComponent("" + item) + "&"; });
+        if (client === null)
+            throw new globalThis.Error("The parameter 'client' cannot be null.");
+        else if (client !== undefined)
+            url_ += "client=" + encodeURIComponent("" + client) + "&";
+        if (matter === null)
+            throw new globalThis.Error("The parameter 'matter' cannot be null.");
+        else if (matter !== undefined)
+            url_ += "matter=" + encodeURIComponent("" + matter) + "&";
+        if (project === null)
+            throw new globalThis.Error("The parameter 'project' cannot be null.");
+        else if (project !== undefined)
+            url_ += "project=" + encodeURIComponent("" + project) + "&";
+        if (type === null)
+            throw new globalThis.Error("The parameter 'type' cannot be null.");
+        else if (type !== undefined)
+            type && type.forEach(item => { url_ += "type=" + encodeURIComponent("" + item) + "&"; });
+        if (workflow === null)
+            throw new globalThis.Error("The parameter 'workflow' cannot be null.");
+        else if (workflow !== undefined)
+            workflow && workflow.forEach(item => { url_ += "workflow=" + encodeURIComponent("" + item) + "&"; });
+        if (createdFrom === null)
+            throw new globalThis.Error("The parameter 'createdFrom' cannot be null.");
+        else if (createdFrom !== undefined)
+            url_ += "createdFrom=" + encodeURIComponent("" + createdFrom) + "&";
+        if (createdTo === null)
+            throw new globalThis.Error("The parameter 'createdTo' cannot be null.");
+        else if (createdTo !== undefined)
+            url_ += "createdTo=" + encodeURIComponent("" + createdTo) + "&";
+        if (dueFrom === null)
+            throw new globalThis.Error("The parameter 'dueFrom' cannot be null.");
+        else if (dueFrom !== undefined)
+            url_ += "dueFrom=" + encodeURIComponent("" + dueFrom) + "&";
+        if (dueTo === null)
+            throw new globalThis.Error("The parameter 'dueTo' cannot be null.");
+        else if (dueTo !== undefined)
+            url_ += "dueTo=" + encodeURIComponent("" + dueTo) + "&";
+        if (asap === null)
+            throw new globalThis.Error("The parameter 'asap' cannot be null.");
+        else if (asap !== undefined)
+            url_ += "asap=" + encodeURIComponent("" + asap) + "&";
+        if (overdue === null)
+            throw new globalThis.Error("The parameter 'overdue' cannot be null.");
+        else if (overdue !== undefined)
+            url_ += "overdue=" + encodeURIComponent("" + overdue) + "&";
+        if (requestor === null)
+            throw new globalThis.Error("The parameter 'requestor' cannot be null.");
+        else if (requestor !== undefined)
+            url_ += "requestor=" + encodeURIComponent("" + requestor) + "&";
+        if (completedFrom === null)
+            throw new globalThis.Error("The parameter 'completedFrom' cannot be null.");
+        else if (completedFrom !== undefined)
+            url_ += "completedFrom=" + encodeURIComponent("" + completedFrom) + "&";
+        if (completedTo === null)
+            throw new globalThis.Error("The parameter 'completedTo' cannot be null.");
+        else if (completedTo !== undefined)
+            url_ += "completedTo=" + encodeURIComponent("" + completedTo) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "sort=" + encodeURIComponent("" + sort) + "&";
+        if (dir === null)
+            throw new globalThis.Error("The parameter 'dir' cannot be null.");
+        else if (dir !== undefined)
+            url_ += "dir=" + encodeURIComponent("" + dir) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetPodWork(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetPodWork(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PodWorkPage>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PodWorkPage>;
+        }));
+    }
+
+    protected processGetPodWork(response: HttpResponseBase): Observable<PodWorkPage> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PodWorkPage;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IStepDefinitionsClient {
     /**
      * @param q (optional) 
@@ -8560,6 +9241,27 @@ export interface MeResponse {
     [key: string]: any;
 }
 
+export interface MyWorkCounts {
+    active: number;
+    dueSoon: number;
+    completed: number;
+    createdByMe: number;
+
+    [key: string]: any;
+}
+
+export interface MyWorkPage {
+    items: TaskQueueRow[];
+    total: number;
+    page: number;
+    pageSize: number;
+    timeZone: string;
+    view: string;
+    counts: MyWorkCounts;
+
+    [key: string]: any;
+}
+
 export interface PagedResultOfAssetListItem {
     items: AssetListItem[];
     total: number;
@@ -8694,6 +9396,15 @@ export interface PingResponse {
     [key: string]: any;
 }
 
+export interface PodChoice {
+    podId: number;
+    name: string;
+    isMember: boolean;
+    isPrimary: boolean;
+
+    [key: string]: any;
+}
+
 export interface PodDetail {
     pod: PodSummary;
     members: PodMemberDto[];
@@ -8720,6 +9431,18 @@ export interface PodMemberDto {
     [key: string]: any;
 }
 
+export interface PodMemberLoad {
+    userId: number;
+    displayName: string;
+    isActive: boolean;
+    isMember: boolean;
+    open: number;
+    overdue: number;
+    onHold: number;
+
+    [key: string]: any;
+}
+
 export interface PodSummary {
     podId: number;
     name: string;
@@ -8727,6 +9450,40 @@ export interface PodSummary {
     isActive: boolean;
     memberCount: number;
     rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface PodWorkCounts {
+    queue: number;
+    members: number;
+    attention: number;
+    all: number;
+
+    [key: string]: any;
+}
+
+export interface PodWorkPage {
+    items: TaskQueueRow[];
+    total: number;
+    page: number;
+    pageSize: number;
+    timeZone: string;
+    view: string;
+    pod: QueuePod | undefined;
+    pods: PodChoice[];
+    summary: PodWorkSummary;
+    counts: PodWorkCounts;
+    memberLoads: PodMemberLoad[];
+
+    [key: string]: any;
+}
+
+export interface PodWorkSummary {
+    unassignedToPerson: number;
+    assigned: number;
+    overdue: number;
+    onHold: number;
 
     [key: string]: any;
 }
@@ -8772,6 +9529,31 @@ export interface PublishedWorkflowSummary {
     isOrdered: boolean;
     stepCount: number;
     publishedAtUtc: string;
+
+    [key: string]: any;
+}
+
+export interface QueuePod {
+    podId: number;
+    name: string;
+    isActive: boolean;
+
+    [key: string]: any;
+}
+
+export interface QueuePriority {
+    priorityId: number;
+    label: string;
+    color: string;
+    sortOrder: number;
+
+    [key: string]: any;
+}
+
+export interface QueueUser {
+    userId: number;
+    displayName: string;
+    isActive: boolean;
 
     [key: string]: any;
 }
@@ -9048,6 +9830,53 @@ export interface TaskProjectRef {
     projectId: number;
     name: string;
     isActive: boolean;
+
+    [key: string]: any;
+}
+
+export interface TaskQueuePage {
+    items: TaskQueueRow[];
+    total: number;
+    page: number;
+    pageSize: number;
+    timeZone: string;
+
+    [key: string]: any;
+}
+
+export interface TaskQueueRow {
+    taskId: number;
+    taskNumber: string;
+    title: string;
+    matterId: number;
+    matterRef: string;
+    matterName: string;
+    matterIsSensitive: boolean;
+    clientId: number;
+    clientName: string;
+    projectId: number | undefined;
+    projectName: string | undefined;
+    taskTypeId: number;
+    taskTypeName: string;
+    workflowDefinitionId: number;
+    workflowName: string;
+    priority: QueuePriority;
+    status: string;
+    statusLabel: string;
+    assignedPod: QueuePod | undefined;
+    assignedUser: QueueUser | undefined;
+    createdBy: QueueUser | undefined;
+    requestorName: string;
+    dueDate: string | undefined;
+    dueAtUtc: string | undefined;
+    isAsap: boolean;
+    isOverdue: boolean;
+    createdAtUtc: string;
+    updatedAtUtc: string | undefined;
+    completedAtUtc: string | undefined;
+    statusChangedAtUtc: string;
+    workflow: WorkflowProgress;
+    rowVersion: string;
 
     [key: string]: any;
 }
@@ -9429,6 +10258,15 @@ export interface ValidateFormValuesResponse {
 export interface WorkflowDetail {
     workflow: WorkflowSummary;
     versions: WorkflowVersionSummary[];
+
+    [key: string]: any;
+}
+
+export interface WorkflowProgress {
+    stepsTotal: number;
+    stepsResolved: number;
+    currentStepNumber: number | undefined;
+    currentStepName: string | undefined;
 
     [key: string]: any;
 }

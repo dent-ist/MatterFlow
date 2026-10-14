@@ -1,3 +1,4 @@
+using MatterFlow.WorkViews.Application.Queries;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MatterFlow.WorkViews;
@@ -9,6 +10,7 @@ public static class WorkViewsModule
     public static IServiceCollection AddWorkViewsModule(this IServiceCollection services)
     {
         services.AddControllers().AddApplicationPart(typeof(WorkViewsModule).Assembly);
+        services.AddScoped<TaskQueueService>();
         return services;
     }
 }
