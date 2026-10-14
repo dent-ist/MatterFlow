@@ -3,18 +3,11 @@
 <header class="mf-header">
   <a class="mf-logo" routerLink="/" aria-label="MatterFlow home">MatterFlow</a>
 
-  <div class="mf-search" role="search">
-    <i class="pi pi-search" aria-hidden="true"></i>
-    <input
-      #searchInput
-      pInputText
-      type="search"
-      class="mf-search-input"
-      aria-label="Search clients, matters, tasks, assets"
-      placeholder="Search clients, matters, tasks, assets... (Ctrl+K)"
-      (keydown.enter)="search(searchInput.value)"
-    />
-  </div>
+  @if (canSearch()) {
+    <mf-global-search />
+  } @else {
+    <span class="mf-search-spacer"></span>
+  }
 
   <p-button
     *mfHasPermission="'Task.Create'"

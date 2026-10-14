@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkManagement\MatterFlow.WorkManagement.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkflowEngine\MatterFlow.WorkflowEngine.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkViews\MatterFlow.WorkViews.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Search\MatterFlow.Search.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- Shared conformance vectors: linked, never forked (contracts/form-rules.md section 5). -->

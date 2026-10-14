@@ -1,3 +1,4 @@
+using MatterFlow.Search.Application.Queries;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MatterFlow.Search;
@@ -9,6 +10,7 @@ public static class SearchModule
     public static IServiceCollection AddSearchModule(this IServiceCollection services)
     {
         services.AddControllers().AddApplicationPart(typeof(SearchModule).Assembly);
+        services.AddScoped<SearchService>();
         return services;
     }
 }

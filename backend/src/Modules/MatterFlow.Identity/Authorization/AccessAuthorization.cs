@@ -6,10 +6,16 @@ using Microsoft.Extensions.Options;
 
 namespace MatterFlow.Identity.Authorization;
 
-/// <summary>The caller must hold <see cref="Code"/> (System Admin holds every permission).</summary>
+/// <summary>
+/// The caller must hold <see cref="Code"/> (System Admin holds every permission). A policy name may list alternatives separated by
+/// <see cref="AccessPolicies.AnyOfSeparator"/> (<c>Perm:Client.View|Matter.View</c>): holding any one of them is enough (global search).
+/// </summary>
 public sealed class PermissionRequirement(string code) : IAuthorizationRequirement
 {
     public string Code { get; } = code;
+
+    /// <summary>The permission codes of which one is enough.</summary>
+    public IReadOnlyList<string> Alternatives { get; } = code.Split(AccessPolicies.AnyOfSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 }
 
 /// <summary>The caller must be a known, active user. Access Pending users pass (this is the <c>/me</c> gate).</summary>
@@ -22,6 +28,9 @@ public sealed class NonPendingRequirement : IAuthorizationRequirement;
 public static class AccessPolicies
 {
     public const string PermissionPrefix = "Perm:";
+
+    /// <summary>Separates alternative permission codes inside one <c>Perm:</c> policy name (any one of them grants access).</summary>
+    public const char AnyOfSeparator = '|';
     public const string Authenticated = "MatterFlow.Authenticated";
     public const string NonPending = "MatterFlow.NonPending";
 
@@ -72,7 +81,7 @@ public sealed class AccessAuthorizationHandler(IServiceProvider services, Curren
                 case NonPendingRequirement:
                     context.Succeed(requirement);
                     break;
-                case PermissionRequirement p when snapshot.Has(p.Code):
+                case PermissionRequirement p when p.Alternatives.Any(snapshot.Has):
                     context.Succeed(requirement);
                     break;
                 case PermissionRequirement p:

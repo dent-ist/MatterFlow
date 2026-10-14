@@ -40,23 +40,8 @@
   text-decoration: none;
 }
 
-.mf-search {
-  position: relative;
+.mf-search-spacer {
   flex: 1;
-  max-width: 640px;
-
-  i {
-    position: absolute;
-    left: var(--mf-s3);
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--mf-text-muted);
-  }
-}
-
-.mf-search-input {
-  width: 100%;
-  padding-left: 2.25rem;
 }
 
 .mf-user {
