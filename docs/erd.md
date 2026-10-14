@@ -25,7 +25,7 @@
 
 - Schema `dbo`. Tables singular PascalCase. PK `<Entity>Id`: `int IDENTITY` for master/config data, `bigint IDENTITY` for high-volume tables (`Task`, `StepInstance`, `TaskComment`, `AuditEvent`, `CustomFieldIndex`).
 - Standard columns on mutable entities (omitted from the tables below unless special): `CreatedAt datetime2 NOT NULL` (UTC), `CreatedByUserId int NULL FK AppUser`, `ModifiedAt`, `ModifiedByUserId`. `RowVersion rowversion NOT NULL` is listed where present.
-- All timestamps UTC `datetime2(3)` (or `(7)` for `OverdueAfterUtc` where noted). Booleans `bit`. Text `nvarchar`. Business numbers `char(5)`.
+- All timestamps UTC `datetime2(3)` (or `(7)` for `DueSortKey` where noted). Booleans `bit`. Text `nvarchar`. Business numbers `char(5)`.
 - Constraint names: `PK_`, `FK_`, `UQ_`, `CK_`, `IX_`, `DF_`, `TR_`. Cascade deletes are avoided (`NO ACTION`); records are deactivated, not deleted. Child rows that are pure parts of an aggregate (`FormField` of a DRAFT version, `PodMember`) may delete explicitly through the app.
 - JSON columns are `nvarchar(max)` with `CHECK (ISJSON(col) = 1)`.
 - Diagram legend: `PK`, `FK`, `UK`. Type names like `char(5)` are logical; comma-containing types are written with underscores.
@@ -324,7 +324,8 @@ erDiagram
     int AssignedUserId FK
     date DueDate "null = ASAP"
     time DueTime "optional"
-    datetime2 OverdueAfterUtc
+    datetime2 DueAtUtc
+    datetime2 DueSortKey
     nvarchar_max FormValuesJson
     datetime2 StatusChangedAt
     datetime2 CompletedAt
@@ -406,9 +407,9 @@ erDiagram
 | StatusCode | varchar(20) | no | FK -> TaskStatusLabel; default `'NEW'`; CHECK `IN ('NEW','IN_PROGRESS','ON_HOLD','COMPLETED','CANCELLED')` |
 | AssignedPodId | int | yes | FK -> Pod |
 | AssignedUserId | int | yes | FK -> AppUser; no requirement to be a member of the assigned Pod |
-| DueDate | date | yes | null = ASAP, never overdue |
-| DueTime | time(0) | yes | optional; CHECK `DueTime IS NULL OR DueDate IS NOT NULL` |
-| OverdueAfterUtc | datetime2(3) | yes | computed by the app in firm time (date-only = end of that date 23:59:59.999 firm time; with time = that instant); CHECK `(DueDate IS NULL) = (OverdueAfterUtc IS NULL)` |
+| DueDate | date | yes | floating calendar date; null = ASAP, never overdue |
+| DueAtUtc | datetime2(3) | yes | absolute due instant, set only when the user chose a time (addendum M); CHECK `DueAtUtc IS NULL OR DueDate IS NOT NULL` |
+| DueSortKey | datetime2(3) | yes | ordering only: `DueAtUtc`, else `DueDate` 23:59:59 treated as UTC. Exact overdue is computed at query time in the viewer's timezone (addendum M); CHECK `(DueDate IS NULL) = (DueSortKey IS NULL)` |
 | FormValuesJson | nvarchar(max) | yes | values per the pinned Task Type form version; ISJSON check |
 | StatusChangedAt | datetime2(3) | no | |
 | CompletedAt | datetime2(3) | yes | set on COMPLETED, cleared on leaving it |
@@ -419,7 +420,7 @@ Keys and constraints:
 - UNIQUE `UQ_Task_IdMatter (TaskId, MatterId)` - target of the `TaskAsset` composite FK.
 - `FK_Task_Project_SameMatter (ProjectId, MatterId) -> Project (ProjectId, MatterId)`: SQL Server skips a composite FK when any column is NULL, so Tasks without a Project are valid while a Project of another Matter is rejected.
 - `TR_Task_Immutable` (AFTER UPDATE): raises error if `MatterId`, `TaskTypeId`, `FormVersionId` or `TaskNumber` changed (defense in depth; the API has no such input).
-- Indexes (queue/My Work/Pod Work/dashboard/search): `IX_Task_Queue (StatusCode, PriorityId, OverdueAfterUtc, CreatedAt) INCLUDE (MatterId, AssignedUserId, AssignedPodId)`; `IX_Task_AssignedUser (AssignedUserId, StatusCode) INCLUDE (PriorityId, OverdueAfterUtc)`; `IX_Task_Pod (AssignedPodId, StatusCode) INCLUDE (AssignedUserId, PriorityId)`; `IX_Task_Matter (MatterId, StatusCode)`; `IX_Task_Project (ProjectId) WHERE ProjectId IS NOT NULL`; `IX_Task_Creator (CreatedByUserId, CreatedAt)`; `IX_Task_Type (TaskTypeId, StatusCode)`; `IX_Task_Completed (CompletedAt) WHERE CompletedAt IS NOT NULL`; `IX_Task_Title (Title)` for prefix search; `IX_Task_Requestor (RequestorName)`.
+- Indexes (queue/My Work/Pod Work/dashboard/search): `IX_Task_Queue (StatusCode, PriorityId, DueSortKey, CreatedAt) INCLUDE (MatterId, AssignedUserId, AssignedPodId)`; `IX_Task_AssignedUser (AssignedUserId, StatusCode) INCLUDE (PriorityId, DueSortKey)`; `IX_Task_Pod (AssignedPodId, StatusCode) INCLUDE (AssignedUserId, PriorityId)`; `IX_Task_Matter (MatterId, StatusCode)`; `IX_Task_Project (ProjectId) WHERE ProjectId IS NOT NULL`; `IX_Task_Creator (CreatedByUserId, CreatedAt)`; `IX_Task_Type (TaskTypeId, StatusCode)`; `IX_Task_Completed (CompletedAt) WHERE CompletedAt IS NOT NULL`; `IX_Task_Title (Title)` for prefix search; `IX_Task_Requestor (RequestorName)`.
 - Immutable Workflow: the Task's workflow is `WorkflowInstance.WorkflowVersionId` (1:1 by `TaskId`), protected the same way (section 7).
 - No attachment table, no source-email table, no global Task custom field definitions exist.
 
@@ -708,7 +709,7 @@ Permissions: the app login has `INSERT, SELECT` only; `DENY UPDATE, DELETE` (set
 
 | Query | Supporting index |
 |---|---|
-| Task Queue default sort (priority, ASAP first, deadline, oldest) | `IX_Task_Queue`; sort expression `PriorityId order -> (DueDate IS NULL) DESC -> OverdueAfterUtc -> CreatedAt` joined to `Priority.SortOrder` |
+| Task Queue default sort (priority, ASAP first, deadline, oldest) | `IX_Task_Queue`; sort expression `PriorityId order -> (DueDate IS NULL) DESC -> DueSortKey -> CreatedAt` joined to `Priority.SortOrder` |
 | My Work (assigned to me, active) | `IX_Task_AssignedUser` |
 | My Work "Created by me" | `IX_Task_Creator` |
 | Pod Work (assigned to Pod, not individual) | `IX_Task_Pod` |
@@ -735,7 +736,7 @@ Sizing (addendum H): 200-300 users, a few thousand Tasks per year, 200-300 Asset
 | Task Type / Workflow / Matter immutable; Project changeable within Matter | I-3, I-6 |
 | Comments: sanitized rich text, soft delete, edit history, internal only | TaskComment, TaskCommentRevision |
 | Cancel requires comment; reopen rules; step reopen moves Task | `Purpose='CANCEL'`, I-10, I-11; architecture 8.3 |
-| Due date optional with optional time, firm timezone, UTC storage, ASAP never overdue | `DueDate`, `DueTime`, `OverdueAfterUtc` |
+| Due date optional with optional time, firm timezone, UTC storage, ASAP never overdue | `DueDate`, `DueAtUtc`, `DueSortKey` |
 | Pod Lead is a role; no per-Pod lead flag | `PodMember` has no lead column |
 | Phase 1 visibility: `Task.View` sees all; no ACL tables | no ACL/ethical-wall entities |
 | Step library edits do not change published workflows | `WorkflowVersionStep` copies + pinned form version |

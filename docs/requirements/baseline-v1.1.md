@@ -1,5 +1,8 @@
 # eDiscovery Project Request Tracker — Product Requirements Baseline
 
+> **ERRATA (2026-10-14):** This baseline is superseded wherever `decisions-addendum.md` differs. Notably removed or changed: no attachments or source-email storage, no file-upload control, no global Task custom fields, Client/Matter numbers normalized from 1-5 digits to padded 5 chars, bulk-complete of steps, local-time display. Read the addendum first.
+
+
 **Document type:** Product and functional requirements baseline / architecture input  
 **Version:** 1.1  
 **Date:** 2026-10-14  

@@ -78,3 +78,19 @@
 - **Initial System Admin:** `ke\kekim` (`Bootstrap:SystemAdmins`, domain `KE`, SAM `kekim`; match case-insensitively).
 - **Firm timezone: Eastern** (`America/New_York`, Windows id `Eastern Standard Time`; DST-aware). Technicians work across all US timezones. **Due dates and times are entered, displayed and judged for overdue in Eastern Time and always labeled "ET"** regardless of where the user is. Date-only due dates are overdue after 23:59 ET. Timestamps stored in UTC. (Per-user display timezone is a possible later enhancement.)
 - **AD profile lookup (display name, email):** permitted **only if it needs no separate access that IT must provision.** Windows authentication itself supplies only the account identity, not name or email, so a lookup is a separate directory read. Design: optional and **off by default** (`ActiveDirectory:LookupEnabled`), reading with the web app's own identity; on any failure fall back to showing `KE\sam` and let an admin edit the display name and email. Whether the production server's identity can read AD is to be confirmed with IT at deployment; the app must work fully without it.
+
+## M. Local-time display, including due dates (decided 2026-10-14)
+
+**Supersedes the "ET-only" parts of sections G and L.** The product owner prefers each user's **local time** everywhere; technicians work across all US timezones.
+
+- The browser sends its IANA timezone with each request (e.g. `X-Time-Zone: America/Chicago`); the server falls back to `America/New_York` (the firm default, `Firm:TimeZoneId`) if absent or invalid. Timestamps are stored in UTC.
+- **Comments, activity/audit and all other timestamps** display in the viewer's local time with the zone abbreviation.
+- **Due date with a time** is an absolute instant (`DueAtUtc`). The creator enters it in their local zone; every viewer sees it converted to their local zone. Overdue when now is past that instant (same answer for everyone).
+- **Date-only due date** is a floating calendar date (no zone). It is overdue after 23:59:59 on that date **in the viewer's local zone**, so two viewers near midnight may disagree. Accepted trade-off.
+- No due date = ASAP, never overdue; ASAP still sorts above explicit due dates within a priority.
+- Overdue filters, dashboard counts and queue sorting use the **requesting user's** timezone. For sorting, a stored `DueSortKey` (the instant, or the date at 23:59:59 treated as UTC) gives an approximate order; the exact overdue flag is computed at query time. At this scale (a few thousand Tasks a year) query-time evaluation is acceptable.
+- Schema effect: replace `DueTime` + `OverdueAfterUtc` with `DueDate date NULL`, `DueAtUtc datetime2 NULL` (set only when a time is chosen; CHECK it implies `DueDate`), and `DueSortKey datetime2 NULL`.
+
+## N. QA findings resolved by the project manager (2026-10-14)
+
+See `docs/qa/findings.md`. Notable: Completed -> Cancelled is allowed directly (Cancel "at any time"); a NEW Task can be Completed (bulk-complete applies); bulk-complete is all-or-nothing.
