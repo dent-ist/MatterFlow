@@ -46,6 +46,32 @@ const STEP_ROUTES: Routes = [
   },
 ];
 
+/** Workflow designer (UX S16): list, create/edit with version history, and the version page (draft editor or read-only view). */
+const WORKFLOW_ROUTES: Routes = [
+  lazy('workflows', 'Workflow.Manage', () =>
+    import('./workflows/workflows-list-page').then((m) => m.WorkflowsListPage),
+  ),
+  {
+    path: 'workflows/new',
+    canActivate: [permissionGuard('Workflow.Manage')],
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./workflows/workflow-edit-page').then((m) => m.WorkflowEditPage),
+  },
+  {
+    path: 'workflows/:workflowId/versions/:versionId',
+    canActivate: [permissionGuard('Workflow.Manage')],
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () =>
+      import('./workflows/workflow-version-page').then((m) => m.WorkflowVersionPage),
+  },
+  {
+    path: 'workflows/:workflowId',
+    canActivate: [permissionGuard('Workflow.Manage')],
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./workflows/workflow-edit-page').then((m) => m.WorkflowEditPage),
+  },
+];
+
 /** Asset Types > Fields (UX S17): the same designer, backed by the forms endpoints for the Asset Type's form. */
 const assetTypeForm = (path: string): Route => ({
   path,
@@ -81,7 +107,7 @@ export const ADMIN_ROUTES: Routes = [
     loadChildren: () => import('./task-types/task-types.routes').then((m) => m.TASK_TYPE_ROUTES),
   },
   ...STEP_ROUTES,
-  page('workflows', 'Workflows', 'Workflow.Manage'),
+  ...WORKFLOW_ROUTES,
   lazy('asset-types', 'AssetType.Manage', () =>
     import('./asset-types/asset-types-page').then((m) => m.AssetTypesPage),
   ),
