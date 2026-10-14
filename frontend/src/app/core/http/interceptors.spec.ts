@@ -103,6 +103,26 @@ describe('HTTP interceptors', () => {
     );
   });
 
+  it('reads problem+json from Blob error bodies (the generated client requests blobs)', async () => {
+    const { http, ctrl, messages } = setup();
+    let caught: unknown;
+    http
+      .get('/api/v1/priorities', { responseType: 'blob' })
+      .subscribe({ error: (e) => (caught = e) });
+    const body = new Blob([
+      JSON.stringify({ code: 'IN_USE', detail: 'Tasks use this priority.', status: 409 }),
+    ]);
+    ctrl.expectOne('/api/v1/priorities').flush(body, { status: 409, statusText: 'Conflict' });
+    await vi.waitFor(() => expect(caught).toBeInstanceOf(ApiError));
+
+    const err = caught as ApiError;
+    expect(err.code).toBe('IN_USE');
+    expect(err.message).toBe('Tasks use this priority.');
+    expect(messages.add).toHaveBeenCalledWith(
+      expect.objectContaining({ summary: 'Tasks use this priority.' }),
+    );
+  });
+
   it('does not toast field-level validation errors', () => {
     const { http, ctrl, messages } = setup();
     let caught: ApiError | undefined;

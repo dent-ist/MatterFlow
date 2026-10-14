@@ -63,6 +63,12 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     permissions: ['AssetType.Manage'],
   },
   {
+    label: 'Task Link Labels',
+    icon: 'pi pi-link',
+    path: '/admin/asset-link-roles',
+    permissions: ['AssetType.Manage'],
+  },
+  {
     label: 'Custom Fields',
     icon: 'pi pi-sliders-h',
     path: '/admin/custom-fields',

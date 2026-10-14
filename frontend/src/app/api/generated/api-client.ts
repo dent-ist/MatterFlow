@@ -188,6 +188,801 @@ export class AuditEventsClient implements IAuditEventsClient {
     }
 }
 
+export interface IAssetLinkRolesClient {
+    /**
+     * @return OK
+     */
+    listAssetLinkRoles(): Observable<AssetLinkRoleView[]>;
+    /**
+     * @return Created
+     */
+    createAssetLinkRole(body: CreateAssetLinkRoleRequest): Observable<AssetLinkRoleView>;
+    /**
+     * @return OK
+     */
+    updateAssetLinkRole(id: number, body: UpdateAssetLinkRoleRequest): Observable<AssetLinkRoleView>;
+    /**
+     * @return No Content
+     */
+    deleteAssetLinkRole(id: number): Observable<void>;
+    /**
+     * @return OK
+     */
+    reorderAssetLinkRoles(body: ReorderRequest): Observable<AssetLinkRoleView[]>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class AssetLinkRolesClient implements IAssetLinkRolesClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listAssetLinkRoles(): Observable<AssetLinkRoleView[]> {
+        let url_ = this.baseUrl + "/api/v1/asset-link-roles";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListAssetLinkRoles(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListAssetLinkRoles(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetLinkRoleView[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetLinkRoleView[]>;
+        }));
+    }
+
+    protected processListAssetLinkRoles(response: HttpResponseBase): Observable<AssetLinkRoleView[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetLinkRoleView[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createAssetLinkRole(body: CreateAssetLinkRoleRequest): Observable<AssetLinkRoleView> {
+        let url_ = this.baseUrl + "/api/v1/asset-link-roles";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateAssetLinkRole(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateAssetLinkRole(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetLinkRoleView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetLinkRoleView>;
+        }));
+    }
+
+    protected processCreateAssetLinkRole(response: HttpResponseBase): Observable<AssetLinkRoleView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetLinkRoleView;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateAssetLinkRole(id: number, body: UpdateAssetLinkRoleRequest): Observable<AssetLinkRoleView> {
+        let url_ = this.baseUrl + "/api/v1/asset-link-roles/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateAssetLinkRole(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateAssetLinkRole(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetLinkRoleView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetLinkRoleView>;
+        }));
+    }
+
+    protected processUpdateAssetLinkRole(response: HttpResponseBase): Observable<AssetLinkRoleView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetLinkRoleView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    deleteAssetLinkRole(id: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/asset-link-roles/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteAssetLinkRole(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteAssetLinkRole(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteAssetLinkRole(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    reorderAssetLinkRoles(body: ReorderRequest): Observable<AssetLinkRoleView[]> {
+        let url_ = this.baseUrl + "/api/v1/asset-link-roles/order";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processReorderAssetLinkRoles(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processReorderAssetLinkRoles(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetLinkRoleView[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetLinkRoleView[]>;
+        }));
+    }
+
+    protected processReorderAssetLinkRoles(response: HttpResponseBase): Observable<AssetLinkRoleView[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetLinkRoleView[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IPrioritiesClient {
+    /**
+     * @return OK
+     */
+    listPriorities(): Observable<PriorityView[]>;
+    /**
+     * @return Created
+     */
+    createPriority(body: CreatePriorityRequest): Observable<PriorityView>;
+    /**
+     * @return OK
+     */
+    updatePriority(id: number, body: UpdatePriorityRequest): Observable<PriorityView>;
+    /**
+     * @return No Content
+     */
+    deletePriority(id: number): Observable<void>;
+    /**
+     * @return OK
+     */
+    setDefaultPriority(id: number): Observable<PriorityView[]>;
+    /**
+     * @return OK
+     */
+    reorderPriorities(body: ReorderRequest): Observable<PriorityView[]>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class PrioritiesClient implements IPrioritiesClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listPriorities(): Observable<PriorityView[]> {
+        let url_ = this.baseUrl + "/api/v1/priorities";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListPriorities(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListPriorities(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PriorityView[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PriorityView[]>;
+        }));
+    }
+
+    protected processListPriorities(response: HttpResponseBase): Observable<PriorityView[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PriorityView[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createPriority(body: CreatePriorityRequest): Observable<PriorityView> {
+        let url_ = this.baseUrl + "/api/v1/priorities";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreatePriority(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreatePriority(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PriorityView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PriorityView>;
+        }));
+    }
+
+    protected processCreatePriority(response: HttpResponseBase): Observable<PriorityView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PriorityView;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updatePriority(id: number, body: UpdatePriorityRequest): Observable<PriorityView> {
+        let url_ = this.baseUrl + "/api/v1/priorities/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdatePriority(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdatePriority(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PriorityView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PriorityView>;
+        }));
+    }
+
+    protected processUpdatePriority(response: HttpResponseBase): Observable<PriorityView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PriorityView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    deletePriority(id: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/priorities/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeletePriority(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeletePriority(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeletePriority(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setDefaultPriority(id: number): Observable<PriorityView[]> {
+        let url_ = this.baseUrl + "/api/v1/priorities/{id}/default";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetDefaultPriority(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetDefaultPriority(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PriorityView[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PriorityView[]>;
+        }));
+    }
+
+    protected processSetDefaultPriority(response: HttpResponseBase): Observable<PriorityView[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PriorityView[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    reorderPriorities(body: ReorderRequest): Observable<PriorityView[]> {
+        let url_ = this.baseUrl + "/api/v1/priorities/order";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processReorderPriorities(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processReorderPriorities(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PriorityView[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PriorityView[]>;
+        }));
+    }
+
+    protected processReorderPriorities(response: HttpResponseBase): Observable<PriorityView[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PriorityView[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IStatusLabelsClient {
+    /**
+     * @return OK
+     */
+    listStatusLabels(): Observable<StatusLabelView[]>;
+    /**
+     * @return OK
+     */
+    updateStatusLabel(code: string, body: UpdateStatusLabelRequest): Observable<StatusLabelView>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class StatusLabelsClient implements IStatusLabelsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listStatusLabels(): Observable<StatusLabelView[]> {
+        let url_ = this.baseUrl + "/api/v1/status-labels";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListStatusLabels(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListStatusLabels(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<StatusLabelView[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<StatusLabelView[]>;
+        }));
+    }
+
+    protected processListStatusLabels(response: HttpResponseBase): Observable<StatusLabelView[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StatusLabelView[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateStatusLabel(code: string, body: UpdateStatusLabelRequest): Observable<StatusLabelView> {
+        let url_ = this.baseUrl + "/api/v1/status-labels/{code}";
+        if (code === undefined || code === null)
+            throw new globalThis.Error("The parameter 'code' must be defined.");
+        url_ = url_.replace("{code}", encodeURIComponent("" + code));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateStatusLabel(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateStatusLabel(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<StatusLabelView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<StatusLabelView>;
+        }));
+    }
+
+    protected processUpdateStatusLabel(response: HttpResponseBase): Observable<StatusLabelView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StatusLabelView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IMeClient {
     /**
      * @return OK
@@ -1669,6 +2464,16 @@ export interface ApiProblemDetails {
     [key: string]: any;
 }
 
+export interface AssetLinkRoleView {
+    id: number;
+    name: string;
+    sortOrder: number;
+    isActive: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface AuditEventDto {
     auditEventId: number;
     occurredAtUtc: string;
@@ -1696,9 +2501,24 @@ export interface AuditEventPage {
     [key: string]: any;
 }
 
+export interface CreateAssetLinkRoleRequest {
+    name: string;
+    isActive?: boolean;
+
+    [key: string]: any;
+}
+
 export interface CreatePodRequest {
     name: string;
     description?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface CreatePriorityRequest {
+    label: string;
+    color: string;
+    isActive?: boolean;
 
     [key: string]: any;
 }
@@ -1799,6 +2619,24 @@ export interface PodSummary {
     [key: string]: any;
 }
 
+export interface PriorityView {
+    id: number;
+    label: string;
+    sortOrder: number;
+    color: string;
+    isActive: boolean;
+    isDefault: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface ReorderRequest {
+    ids: number[];
+
+    [key: string]: any;
+}
+
 export interface RoleDetailDto {
     roleId: number;
     name: string;
@@ -1851,10 +2689,43 @@ export interface SetUserRolesRequest {
     [key: string]: any;
 }
 
+export interface StatusLabelView {
+    code: string;
+    displayLabel: string;
+    sortOrder: number;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UpdateAssetLinkRoleRequest {
+    name: string;
+    isActive: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface UpdatePodRequest {
     name: string;
     description?: string | undefined;
     isActive: boolean | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UpdatePriorityRequest {
+    label: string;
+    color: string;
+    isActive: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UpdateStatusLabelRequest {
+    displayLabel: string;
     rowVersion: string;
 
     [key: string]: any;
@@ -1955,6 +2826,8 @@ export enum ApiProblemDetailsCode {
     EMAIL_PARSE_FAILED = "EMAIL_PARSE_FAILED",
     PAYLOAD_TOO_LARGE = "PAYLOAD_TOO_LARGE",
     HOLD_COMMENT_REQUIRED = "HOLD_COMMENT_REQUIRED",
+    IN_USE = "IN_USE",
+    DEFAULT_REQUIRED = "DEFAULT_REQUIRED",
     UNSUPPORTED_MEDIA_TYPE = "UNSUPPORTED_MEDIA_TYPE",
     INTERNAL_ERROR = "INTERNAL_ERROR",
 }

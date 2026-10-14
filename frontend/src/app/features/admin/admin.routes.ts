@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+import { Route, Routes } from '@angular/router';
 import { permissionGuard } from '../../core/auth/guards';
 import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
 import { PlaceholderPage } from '../../shared/ui/placeholder-page';
@@ -11,6 +11,12 @@ const page = (path: string, title: string, ...codes: Parameters<typeof permissio
   component: PlaceholderPage,
   data: { title },
 });
+
+const lazy = (
+  path: string,
+  permission: Parameters<typeof permissionGuard>[0],
+  loadComponent: Route['loadComponent'],
+): Route => ({ path, canActivate: [permissionGuard(permission)], loadComponent });
 
 /**
  * Task Types & Forms (UX S14). The form designer talks to `FormDesignerApi`; until the backend
@@ -49,7 +55,14 @@ export const ADMIN_ROUTES: Routes = [
   page('workflows', 'Workflows', 'Workflow.Manage'),
   page('asset-types', 'Asset Types', 'AssetType.Manage'),
   page('custom-fields', 'Custom Fields', 'CustomField.Manage'),
-  page('priorities', 'Priorities', 'Priority.Manage'),
-  page('status-labels', 'Status Labels', 'StatusLabel.Manage'),
+  lazy('priorities', 'Priority.Manage', () =>
+    import('./priorities/priorities-page').then((m) => m.PrioritiesPage),
+  ),
+  lazy('status-labels', 'StatusLabel.Manage', () =>
+    import('./status-labels/status-labels-page').then((m) => m.StatusLabelsPage),
+  ),
+  lazy('asset-link-roles', 'AssetType.Manage', () =>
+    import('./asset-link-roles/asset-link-roles-page').then((m) => m.AssetLinkRolesPage),
+  ),
   page('audit', 'Audit Log', 'Audit.View'),
 ];

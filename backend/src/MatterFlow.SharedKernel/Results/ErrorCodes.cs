@@ -42,6 +42,12 @@ public static class ErrorCodes
     /// <summary>Addendum O: On Hold requires a comment (reason).</summary>
     public const string HoldCommentRequired = "HOLD_COMMENT_REQUIRED";
 
+    /// <summary>A configuration item that tasks or links still reference cannot be deleted; deactivate it instead.</summary>
+    public const string InUse = "IN_USE";
+
+    /// <summary>The default configuration item cannot be deactivated or deleted; choose another default first.</summary>
+    public const string DefaultRequired = "DEFAULT_REQUIRED";
+
     /// <summary>Transport-level codes for responses not produced by a feature.</summary>
     public const string UnsupportedMediaType = "UNSUPPORTED_MEDIA_TYPE";
 
