@@ -797,8 +797,8 @@ Rules of engagement: contract PRs first; at most one open DB script PR per strea
 |---|---|
 | A-1 | Production is a single IIS node (a second node would require swapping `IMemoryCache` permission/form caches for a distributed cache or version stamps). |
 | A-2 | Users' browsers (Edge/Chrome) are domain-joined and the site is in the Intranet zone, so Negotiate works silently. |
-| A-3 | The firm timezone is one IANA/Windows zone configured in `Firm:TimeZoneId`; changing it later does not recompute `OverdueAfterUtc` automatically (a maintenance script would). |
-| A-4 | Microsoft AD profile lookup (display name, email) is permitted for the app-pool identity; otherwise users show as `DOMAIN\sam` until an admin edits names. |
+| A-3 | The firm timezone is Eastern (`America/New_York`) configured in `Firm:TimeZoneId`; users are nationwide, so due dates/times are shown and judged in ET and labeled "ET" (addendum L); changing it later does not recompute `OverdueAfterUtc` automatically (a maintenance script would). |
+| A-4 | AD profile lookup (display name, email) is optional, off by default (`ActiveDirectory:LookupEnabled`), uses the app-pool identity, and is used only if it needs no extra access from IT (addendum L); otherwise users show as `KE\sam` until an admin edits names. |
 | A-5 | Step actions on a NEW Task are allowed and do not change its status; only assigning a user auto-starts a Task (product owner decision). |
 | A-6 | Step actions are blocked while a Task is ON_HOLD; Completed -> Cancelled and ON_HOLD -> COMPLETED require going through IN_PROGRESS. |
 | A-7 | Comments (add/edit/delete own) are allowed in every Task status and even on inactive Matters. |
@@ -818,8 +818,6 @@ Rules of engagement: contract PRs first; at most one open DB script PR per strea
 3. Should step work be allowed while a Task is **On Hold** (assumed blocked)?
 4. Audit **retention/purge** and any legal-hold requirement.
 5. **Backup/RPO/RTO** and expected availability window (proposal: nightly full + 15-minute log backups).
-6. Confirm AD profile enrichment is allowed and which attributes (display name, email).
-7. Confirm the **initial System Admin account(s)** (SAM names) for `Bootstrap:SystemAdmins`.
 8. After the Outlook spike: is an **Outlook add-in** acceptable as follow-up if drag-drop fails in new Outlook?
 9. Should an inactive Client also be blockable only when all its Matters are inactive (assumed), and should Matters be reactivatable by the same permission (assumed `Matter.SetActive`)?
-10. Preferred **firm timezone** value.
+

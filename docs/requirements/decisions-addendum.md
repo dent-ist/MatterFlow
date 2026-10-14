@@ -72,3 +72,9 @@
 - **Guard:** a step whose **required inputs are missing** cannot be auto-completed. The dialog lists those steps and the Task stays open until the user fills them in (the user may skip any that are skippable). Only steps with all required inputs satisfied are bulk-completed.
 - Audit: each step completion is recorded individually, sharing one correlation id with the Task completion, flagged as "bulk completed".
 - This supersedes the earlier "every step must be individually resolved before the Task can be completed" assumption (baseline 9.4/9.5, architecture OPEN-05).
+
+## L. Admin account, timezone, AD lookup (decided 2026-10-14)
+
+- **Initial System Admin:** `ke\kekim` (`Bootstrap:SystemAdmins`, domain `KE`, SAM `kekim`; match case-insensitively).
+- **Firm timezone: Eastern** (`America/New_York`, Windows id `Eastern Standard Time`; DST-aware). Technicians work across all US timezones. **Due dates and times are entered, displayed and judged for overdue in Eastern Time and always labeled "ET"** regardless of where the user is. Date-only due dates are overdue after 23:59 ET. Timestamps stored in UTC. (Per-user display timezone is a possible later enhancement.)
+- **AD profile lookup (display name, email):** permitted **only if it needs no separate access that IT must provision.** Windows authentication itself supplies only the account identity, not name or email, so a lookup is a separate directory read. Design: optional and **off by default** (`ActiveDirectory:LookupEnabled`), reading with the web app's own identity; on any failure fall back to showing `KE\sam` and let an admin edit the display name and email. Whether the production server's identity can read AD is to be confirmed with IT at deployment; the app must work fully without it.
