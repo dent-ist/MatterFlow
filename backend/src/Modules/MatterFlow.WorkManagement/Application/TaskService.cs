@@ -283,7 +283,7 @@ public sealed class TaskService
         FormSubmissionResult? form = null;
         if (type.PublishedFormVersionId is { } formVersionId)
         {
-            var checkedForm = await _validator.ValidateAsync(formVersionId, values, new FormSubmissionOptions { Mode = FormSubmissionMode.Submit }, ct);
+            var checkedForm = await _validator.ValidateAsync(formVersionId, values, new FormSubmissionOptions { Mode = FormSubmissionMode.Submit, References = new FormReferenceContext(request.MatterId) }, ct);
             if (checkedForm.IsFailure)
                 return Result<Created>.Failure(checkedForm.Error!);
             if (checkedForm.Value.ToError() is { } formError)
@@ -338,7 +338,7 @@ public sealed class TaskService
                 task.Id,
                 form.FormVersionId,
                 values,
-                new FormSaveOptions { Mode = FormSubmissionMode.Submit },
+                new FormSaveOptions { Mode = FormSubmissionMode.Submit, References = new FormReferenceContext(task.MatterId) },
                 ct);
             if (saved.IsFailure)
                 return Result<Created>.Failure(saved.Error!);
@@ -535,7 +535,7 @@ public sealed class TaskService
                 task.Id,
                 form.FormVersionId,
                 request.FormValues,
-                new FormSaveOptions { Mode = FormSubmissionMode.Submit, ValidateOnlyChanged = true },
+                new FormSaveOptions { Mode = FormSubmissionMode.Submit, ValidateOnlyChanged = true, References = new FormReferenceContext(task.MatterId) },
                 ct);
             if (saved.IsFailure)
                 return Result<CommandNotes>.Failure(saved.Error!);
@@ -573,6 +573,7 @@ public sealed class TaskService
                 Mode = FormSubmissionMode.Submit,
                 ExistingValues = stored is null ? null : previous,
                 ValidateOnly = stored is null ? null : FormSubmissionOptions.ChangedFieldsOf(patch, previous),
+                References = new FormReferenceContext(task.MatterId),
             },
             ct);
         if (validated.IsFailure)

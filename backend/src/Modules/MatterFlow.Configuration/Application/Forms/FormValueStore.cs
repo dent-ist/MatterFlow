@@ -12,7 +12,7 @@ namespace MatterFlow.Configuration.Application.Forms;
 /// Stores submitted values with the version they were captured under and rewrites the typed filter index in the same transaction
 /// (<see cref="IFormValueStore"/>).
 /// </summary>
-internal sealed class FormValueStore(DbContext db, FormSchemaLoader loader, IAuditWriter audit) : IFormValueStore
+internal sealed class FormValueStore(DbContext db, FormSchemaLoader loader, IAuditWriter audit, IEnumerable<IFormReferenceValidator> referenceValidators) : IFormValueStore
 {
     private const int MaxIndexText = 450;
     private const decimal MaxIndexNumber = 999_999_999_999_999m;
@@ -60,6 +60,7 @@ internal sealed class FormValueStore(DbContext db, FormSchemaLoader loader, IAud
             ExistingValues = existing,
             ValidateOnly = validateOnly,
         });
+        result = await FormReferenceChecks.ApplyAsync(referenceValidators, form, result, validateOnly, options.References, cancellationToken);
         if (result.ToError() is { } invalid)
         {
             return Result<FormSaveOutcome>.Failure(invalid);

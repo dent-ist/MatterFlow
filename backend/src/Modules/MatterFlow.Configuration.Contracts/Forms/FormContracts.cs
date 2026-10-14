@@ -27,11 +27,58 @@ public sealed record FormSubmissionOptions
     /// </summary>
     public bool RequireAllWhenChanged { get; init; }
 
+    /// <summary>
+    /// Enables the existence checks of ASSET_REF and USER_REF values (SEC2-04): the referenced row must exist and be active, and an Asset must
+    /// belong to <see cref="FormReferenceContext.MatterId"/> when that is set. Null skips the checks (for example when re-validating stored
+    /// values at completion time, where a later deactivation must not block the Task).
+    /// </summary>
+    public FormReferenceContext? References { get; init; }
+
     /// <summary>The keys whose submitted value differs from the existing one (compared as JSON text).</summary>
     public static IReadOnlyCollection<string> ChangedFieldsOf(IReadOnlyDictionary<string, JsonElement> submitted, IReadOnlyDictionary<string, JsonElement>? existing) =>
         [.. submitted
             .Where(p => existing is null || !existing.TryGetValue(p.Key, out var old) || old.GetRawText() != p.Value.GetRawText())
             .Select(p => p.Key)];
+}
+
+/// <summary>Where the values being validated live, for reference checks (<see cref="FormSubmissionOptions.References"/>).</summary>
+/// <param name="MatterId">The Matter that owns the Task or object the form belongs to; Assets referenced by the values must belong to it. Null when the owner has no single Matter.</param>
+public sealed record FormReferenceContext(int? MatterId = null);
+
+/// <summary>Stable codes of reference problems.</summary>
+public static class FormReferenceCodes
+{
+    /// <summary>The id does not exist or is inactive.</summary>
+    public const string InvalidReference = "INVALID_REFERENCE";
+
+    /// <summary>The Asset belongs to another Matter than the owner's.</summary>
+    public const string CrossMatterReference = "CROSS_MATTER_REFERENCE";
+}
+
+/// <summary>The kind of row a reference field points to.</summary>
+public enum FormReferenceKind
+{
+    Asset,
+    User,
+}
+
+/// <summary>One reference value to check.</summary>
+/// <param name="FieldKey">The form field.</param>
+/// <param name="Id">The referenced row id.</param>
+public sealed record FormReferenceValue(string FieldKey, long Id);
+
+/// <summary>
+/// Extension point for the reference checks of the forms engine (SEC2-04). The rule evaluator is pure and does not know other modules' tables,
+/// so the module that owns the referenced rows implements this (Assets for ASSET_REF; USER_REF is checked by the Configuration module itself
+/// through the user directory) and registers it in DI.
+/// </summary>
+public interface IFormReferenceValidator
+{
+    /// <summary>The kind of field this validator handles.</summary>
+    FormReferenceKind Kind { get; }
+
+    /// <summary>Returns one error per bad reference (codes in <see cref="FormReferenceCodes"/>); an empty list when all are fine.</summary>
+    Task<IReadOnlyList<FormSubmissionError>> ValidateAsync(IReadOnlyList<FormReferenceValue> references, FormReferenceContext context, CancellationToken cancellationToken = default);
 }
 
 /// <summary>One validation problem of a submitted field.</summary>
@@ -97,7 +144,7 @@ public sealed record FormSubmissionResult(
 /// <summary>
 /// Validates and normalizes submitted values against a stored form version using the authoritative rule evaluator
 /// (architecture 7.4). Called by every write path that stores form values (Tasks, Step Instances, Assets, core objects).
-/// Reference existence checks (ASSET_REF, USER_REF) remain the caller's concern.
+/// Reference checks (ASSET_REF, USER_REF) run when the caller passes <see cref="FormSubmissionOptions.References"/>.
 /// </summary>
 public interface IFormSubmissionValidator
 {
@@ -172,6 +219,9 @@ public sealed record FormSaveOptions
 
     /// <summary>When true the submitted values replace the stored ones instead of patching them.</summary>
     public bool Replace { get; init; }
+
+    /// <summary>Same as <see cref="FormSubmissionOptions.References"/>.</summary>
+    public FormReferenceContext? References { get; init; }
 }
 
 /// <summary>Result of a successful <see cref="IFormValueStore.SaveAsync"/>.</summary>
