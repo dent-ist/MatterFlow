@@ -9,6 +9,10 @@ using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// No `Server: Kestrel` banner (SEC-08). Request bodies are capped by RequestBodyLimitMiddleware (SEC-19).
+builder.WebHost.ConfigureKestrel(o => o.AddServerHeader = false);
+builder.Services.AddHsts(o => o.MaxAge = TimeSpan.FromDays(365));
+
 builder.Services.AddMatterFlowModules(builder.Configuration, builder.Environment);
 builder.Services
     .AddControllers(o => o.Filters.Add<ErrorResultFilter>())
@@ -70,6 +74,12 @@ if (System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name != "GetDocumen
     if (app.Services.GetRequiredService<MigrationsOptions>().Enabled)
         await AuditStoreGuard.VerifyAsync(app.Services);
 }
+
+// HSTS (browsers then refuse plain HTTP for a year) and the security headers come first so that error responses carry them too.
+if (!app.Environment.IsDevelopment())
+    app.UseHsts();
+app.UseMiddleware<SecurityHeadersMiddleware>();
+app.UseMiddleware<RequestBodyLimitMiddleware>();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();

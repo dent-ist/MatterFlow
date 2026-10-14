@@ -24,7 +24,8 @@ secret lives in the repository.
 
 | Key | Purpose |
 |---|---|
-| `ConnectionStrings:MatterFlow` | Application connection (DML + EXEC, no DDL; audit table INSERT/SELECT only). Example: `Server=SQLHOST;Database=MatterFlow;Trusted_Connection=True;TrustServerCertificate=True` |
+| `ConnectionStrings:MatterFlow` | Application connection (DML + EXEC, no DDL; audit table INSERT/SELECT only). Example: `Server=SQLHOST;Database=MatterFlow;Trusted_Connection=True;Encrypt=True;TrustServerCertificate=False` (install a certificate on the SQL Server that the web server trusts; `TrustServerCertificate=True` disables validation of the SQL link and is for development only). |
+| `AllowedHosts` | **Set to the site's real host name(s)**, for example `AllowedHosts=matterflow.firm.local` (semicolon separated). The shipped default allows only `localhost`, `127.0.0.1` and `[::1]`, so an unset value makes every request fail with 400 (host-header attacks and DNS rebinding are refused by design; security review SEC-19). |
 | `ConnectionStrings:Migrations` | Connection used by the schema runner (needs DDL; a member of the `mf_migrator` role). Falls back to `ConnectionStrings:Default` if unset (a warning is logged). Use a different login from `ConnectionStrings:MatterFlow`: the application identity must be DML-only so the audit table stays append-only (architecture section 9, security review SEC-04). |
 | `Security:AllowPrivilegedDatabaseIdentity` | Default `false`. In `Production` the API refuses to start when its own database identity can UPDATE, DELETE or ALTER `dbo.AuditEvent` (for example `sa`, `db_owner`). Set `true` only as a documented, temporary exception. |
 | `Bootstrap:SystemAdmins` | List of accounts that become System Admin at their first sign-in. Set to `["ke\\kekim"]` (domain `KE`, SAM `kekim`; case-insensitive). As an environment variable: `Bootstrap__SystemAdmins__0=ke\kekim`. |
@@ -76,7 +77,7 @@ Set `ASPNETCORE_ENVIRONMENT=Production`.
    HTTPS binding with a trusted certificate.
 2. SQL Server: create the database and logins/roles (section 3).
 3. Publish the API for `win-x64`, copy the Angular build into `wwwroot/`, copy to the site folder.
-4. Set the configuration of section 2 (at least connection strings, `Bootstrap:SystemAdmins`, `Firm:TimeZoneId`).
+4. Set the configuration of section 2 (at least connection strings, `AllowedHosts`, `Bootstrap:SystemAdmins`, `Firm:TimeZoneId`). The API sends HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` and a Content-Security-Policy itself; do not strip them in IIS. In IIS also set `requestFiltering/requestLimits/@maxAllowedContentLength` to 12582912 (12 MB, the email upload ceiling); the API caps every other request body at 2 MB.
 5. Start the site. Check `https://<host>/health/live` (implemented today; `/health/ready` from architecture section 17 is not implemented yet).
 6. Sign in as `ke\kekim`, confirm Administration is visible, then create roles and grant access to staff.
 7. Confirm the site is in the Intranet zone on client machines (no credential prompt).
