@@ -38,7 +38,12 @@ async function open(scenario: string, url = '/') {
 const navLabels = (root: HTMLElement) =>
   Array.from(root.querySelectorAll('nav a')).map((a) => a.textContent?.trim());
 
-describe('App shell with the stub provider', () => {
+// Navigating lazy routes loads sizeable chunks on first use; give the shell tests room when the machine is busy.
+describe('App shell with the stub provider', { timeout: 30_000 }, () => {
+  // These tests query the whole document; start from an empty one so DOM left behind by other spec files in the same worker cannot leak in.
+  beforeEach(() => document.body.replaceChildren());
+  afterEach(() => TestBed.resetTestingModule());
+
   it('creates the root component', async () => {
     TestBed.configureTestingModule({
       providers: [

@@ -33,6 +33,7 @@ describe('WorkFilterBar', () => {
     inputs: Record<string, unknown> = {},
   ) {
     TestBed.configureTestingModule({ providers: [...provideLookups()] });
+    await TestBed.compileComponents(); // the external stylesheet resolves asynchronously; without this the template can be missing under load
     fixture = TestBed.createComponent(WorkFilterBar);
     fixture.componentRef.setInput('filters', filters);
     fixture.componentRef.setInput('names', names);
@@ -46,6 +47,14 @@ describe('WorkFilterBar', () => {
     fixture.componentInstance.clearAll.subscribe(() => cleared++);
     await fixture.whenStable();
     fixture.detectChanges();
+    // The first render can lag behind whenStable on a busy machine: wait for the search box instead of assuming it is there.
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(
+        el().querySelector('#fb-q'),
+        `DIAG html=[${el().outerHTML.slice(0, 300)}] ready=${String(fixture.isStable())} ctor=${fixture.componentInstance?.constructor?.name}`,
+      ).not.toBeNull();
+    });
   }
 
   const openPanel = () => {
@@ -58,7 +67,11 @@ describe('WorkFilterBar', () => {
     input.dispatchEvent(new Event('input'));
   };
 
-  afterEach(() => vi.useRealTimers());
+  beforeEach(() => document.body.replaceChildren());
+  afterEach(() => {
+    vi.useRealTimers();
+    TestBed.resetTestingModule();
+  });
 
   it('debounces the search box and emits the final text once', async () => {
     await create();
