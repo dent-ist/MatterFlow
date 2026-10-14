@@ -1,0 +1,50 @@
+/* MatterFlow design tokens (light theme, Phase 1). Contrast ratios noted are against --mf-surface (#FFFFFF) unless stated. */
+:root {
+  /* Neutrals */
+  --mf-bg: #F5F6F8;            /* app background */
+  --mf-surface: #FFFFFF;       /* cards, tables */
+  --mf-surface-alt: #EEF0F4;   /* table header, zebra hover */
+  --mf-border: #C9CED8;        /* 1.7:1 decorative borders only */
+  --mf-border-strong: #6B7280; /* 4.8:1 input borders (WCAG 1.4.11 >=3:1) */
+  --mf-text: #1B1F27;          /* 16.0:1 */
+  --mf-text-muted: #4B5563;    /* 7.6:1 */
+  --mf-text-disabled: #6B7280; /* 4.8:1 (disabled text exempt, kept legible) */
+  /* Brand / interactive */
+  --mf-primary: #1F4E9C;       /* 7.9:1 on white; white text on it 7.9:1 */
+  --mf-primary-hover: #173C79;
+  --mf-link: #1F4E9C;
+  --mf-focus: #B45309;         /* focus ring colour, 2px solid + 2px offset; >=3:1 on bg and surface */
+  --mf-selected-bg: #E3ECFA;
+  /* Feedback */
+  --mf-danger: #B42318;  --mf-danger-bg: #FDECEA;
+  --mf-warning: #8A4B00; --mf-warning-bg: #FFF4DB;
+  --mf-success: #146C2E; --mf-success-bg: #E5F5EA;
+  --mf-info: #1F4E9C;    --mf-info-bg: #E3ECFA;
+  /* Status badges (text / bg / border) */
+  --mf-st-new-fg: #1F4E9C;        --mf-st-new-bg: #E3ECFA;
+  --mf-st-progress-fg: #0B5E55;   --mf-st-progress-bg: #DDF3EF;
+  --mf-st-hold-fg: #8A4B00;       --mf-st-hold-bg: #FFF4DB;
+  --mf-st-done-fg: #146C2E;       --mf-st-done-bg: #E5F5EA;
+  --mf-st-cancel-fg: #4B5563;     --mf-st-cancel-bg: #ECEEF1;
+  /* Priority badges: default set; admin may override colour but must pass 4.5:1 (validated in designer) */
+  --mf-pr-critical-fg: #FFFFFF;   --mf-pr-critical-bg: #B42318;
+  --mf-pr-high-fg: #5C2E00;       --mf-pr-high-bg: #FFD9A8;
+  --mf-pr-normal-fg: #1B1F27;     --mf-pr-normal-bg: #E3E7EE;
+  --mf-pr-low-fg: #3B4350;        --mf-pr-low-bg: #F1F3F6;
+  /* Due */
+  --mf-due-overdue: #B42318; --mf-due-soon: #8A4B00; --mf-asap: #1F4E9C;
+  /* Typography */
+  --mf-font: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mf-font-mono: Consolas, "Cascadia Mono", monospace; /* matter numbers, task refs */
+  --mf-fs-xs: 12px; --mf-fs-sm: 13px; --mf-fs-md: 14px; --mf-fs-lg: 16px;
+  --mf-fs-h3: 18px; --mf-fs-h2: 22px; --mf-fs-h1: 28px;
+  --mf-lh: 1.45;
+  /* Spacing (4px base) */
+  --mf-s1: 4px; --mf-s2: 8px; --mf-s3: 12px; --mf-s4: 16px; --mf-s5: 24px; --mf-s6: 32px; --mf-s7: 48px;
+  --mf-radius: 4px; --mf-radius-lg: 8px;
+  --mf-row-h: 40px; --mf-row-h-compact: 32px; --mf-target-min: 24px; /* WCAG 2.2 target size, exceeds 2.1 */
+  --mf-shadow-1: 0 1px 2px rgba(0,0,0,.12);
+  --mf-shadow-2: 0 4px 16px rgba(0,0,0,.18);
+}
+:focus-visible { outline: 2px solid var(--mf-focus); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

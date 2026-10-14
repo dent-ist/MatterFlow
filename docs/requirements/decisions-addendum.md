@@ -55,3 +55,11 @@
 - Backend: ASP.NET Core (current LTS), EF Core, SQL Server. Frontend: Angular (current stable) with a mainstream component library chosen in the architecture doc. Same-origin deployment preferred.
 - Auth: Windows Integrated Authentication with JIT zero-permission user provisioning (baseline §6.4). In dev/test, a switchable **development auth provider** is acceptable so the app is runnable off-domain.
 - Initial System Admin is seeded via configuration.
+
+## J. Database migrations (decided 2026-10-14)
+
+- The schema is managed by **hand-written, numbered SQL scripts** (`01-init.sql`, `02-new-table.sql`, `03-....sql`, ...), **not EF Core migrations**. EF Core is used for data access only; no `Add-Migration`.
+- A small **migration table** (e.g. `dbo.SchemaMigration`: script name, numeric prefix, checksum, applied-at UTC, duration, success) records each executed script.
+- **On server startup**, the app discovers `.sql` files (embedded resources or a configured folder), compares them with the table, and executes the pending ones **in numeric-prefix order**, each in a transaction where SQL Server allows. Already-applied scripts are never re-run.
+- Safeguards: a SQL Server **application lock** (`sp_getapplock`) so multiple instances don't migrate concurrently; **fail startup** on any script error; detect **duplicate prefixes** and **checksum changes of already-applied scripts** (fail loudly); support GO batch separators.
+- Developers add scripts only by appending new files; applied scripts are immutable.
