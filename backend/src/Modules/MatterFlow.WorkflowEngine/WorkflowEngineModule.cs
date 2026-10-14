@@ -1,3 +1,4 @@
+using MatterFlow.WorkflowEngine.Application.Instances;
 using MatterFlow.WorkflowEngine.Application.Steps;
 using MatterFlow.WorkflowEngine.Application.Workflows;
 using MatterFlow.WorkflowEngine.Contracts;
@@ -19,6 +20,7 @@ public static class WorkflowEngineModule
         services.AddScoped<StepDefinitionService>();
         services.AddScoped<WorkflowAdminService>();
         services.AddScoped<IWorkflowCatalog, WorkflowCatalog>();
+        services.AddScoped<IWorkflowInstanceService, WorkflowInstanceService>();
         return services;
     }
 }

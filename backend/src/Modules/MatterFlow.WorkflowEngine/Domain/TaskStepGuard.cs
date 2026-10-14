@@ -1,5 +1,6 @@
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Tasks;
+using MatterFlow.WorkflowEngine.Contracts;
 
 namespace MatterFlow.WorkflowEngine.Domain;
 
@@ -11,15 +12,6 @@ public enum StepAction
     Skip,
     Reopen,
     BulkComplete,
-}
-
-/// <summary>Domain effect a permitted step action has on the Task.</summary>
-public enum TaskEffect
-{
-    None,
-
-    /// <summary>Reopening a step on a COMPLETED Task moves it to IN_PROGRESS in the same transaction (cause STEP_REOPEN).</summary>
-    MoveTaskToInProgress,
 }
 
 /// <summary>Task-level guard for step actions (architecture 8.3 rule 5).</summary>
