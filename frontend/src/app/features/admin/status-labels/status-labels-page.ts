@@ -9,6 +9,7 @@ import { LookupStore } from '../../../core/lookups/lookup-store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { StatusBadge } from '../../../shared/ui/status-badge';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -19,7 +20,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-status-labels-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, Button, HasPermissionDirective, StatusBadge],
+  imports: [ErrorReference, FormsModule, RouterLink, Button, HasPermissionDirective, StatusBadge],
   templateUrl: './status-labels-page.html',
   styleUrl: '../admin-lookup.scss',
 })

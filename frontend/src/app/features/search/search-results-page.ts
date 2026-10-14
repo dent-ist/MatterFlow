@@ -21,6 +21,7 @@ import {
   searchableTypes,
 } from '../../shared/search/search-meta';
 import { HitTable } from './hit-table';
+import { ErrorReference } from '../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -43,7 +44,7 @@ interface Section {
  */
 @Component({
   selector: 'mf-search-results-page',
-  imports: [RouterLink, Button, HitTable],
+  imports: [ErrorReference, RouterLink, Button, HitTable],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   template: `
@@ -81,6 +82,7 @@ interface Section {
         @case ('error') {
           <div class="pg-alert" role="alert" data-state="error">
             {{ errorMessage }}
+            <mf-error-reference />
             <p-button label="Try again" severity="secondary" (onClick)="load()" />
           </div>
         }

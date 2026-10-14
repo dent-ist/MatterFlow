@@ -21,6 +21,7 @@ import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
 import { fieldLabel, friendlyText } from '../../../shared/ui/audit-format';
 import { AuditGroup, auditObjectRoute, auditObjectText, groupByCorrelation } from './audit-links';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -58,7 +59,7 @@ const ACTOR_DEBOUNCE_MS = 250;
  */
 @Component({
   selector: 'mf-audit-page',
-  imports: [RouterLink, LocalTimePipe, NgTemplateOutlet],
+  imports: [ErrorReference, RouterLink, LocalTimePipe, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './audit-page.html',
   styleUrl: './audit-page.scss',

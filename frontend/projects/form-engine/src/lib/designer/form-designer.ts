@@ -183,9 +183,9 @@ export class FormDesigner {
 
   protected summary(f: DesignerField): string {
     const parts: string[] = [];
-    if (f.requiredWhen) parts.push('conditionally required');
+    if (f.requiredWhen) parts.push('required when...');
     else if (f.required) parts.push('required');
-    if (f.showWhen) parts.push('conditional');
+    if (f.showWhen) parts.push('shown when...');
     return parts.join(', ');
   }
 

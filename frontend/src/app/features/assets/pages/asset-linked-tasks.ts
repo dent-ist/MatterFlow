@@ -14,6 +14,7 @@ import { firstValueFrom } from 'rxjs';
 import { AssetTaskLink, AssetsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { StatusBadge } from '../../../shared/ui/status-badge';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -23,7 +24,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-asset-linked-tasks',
-  imports: [RouterLink, Button, StatusBadge],
+  imports: [ErrorReference, RouterLink, Button, StatusBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -41,6 +42,7 @@ type LoadState = 'loading' | 'ready' | 'error';
         @case ('error') {
           <div class="pg-alert" role="alert" data-error>
             We couldn't load the linked tasks.
+            <mf-error-reference />
             <p-button label="Retry" severity="secondary" (onClick)="load()" />
           </div>
         }

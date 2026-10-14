@@ -16,22 +16,26 @@ export const ASSETS_ROUTES: Routes = [
       {
         path: '',
         pathMatch: 'full',
+        title: 'Assets',
         loadComponent: () => import('./pages/assets-list-page').then((m) => m.AssetsListPage),
       },
       {
         path: 'new',
+        title: 'New asset',
         canActivate: [permissionGuard('Asset.Create')],
         canDeactivate: [unsavedChangesGuard],
         loadComponent: () => import('./pages/asset-form-page').then((m) => m.AssetFormPage),
       },
       {
         path: ':assetId/edit',
+        title: 'Edit asset',
         canActivate: [permissionGuard('Asset.Edit')],
         canDeactivate: [unsavedChangesGuard],
         loadComponent: () => import('./pages/asset-form-page').then((m) => m.AssetFormPage),
       },
       {
         path: ':assetId',
+        title: 'Asset',
         loadComponent: () => import('./pages/asset-detail-page').then((m) => m.AssetDetailPage),
       },
     ],

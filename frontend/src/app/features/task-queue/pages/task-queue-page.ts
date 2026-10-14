@@ -35,7 +35,7 @@ import { WorkList } from '../../../shared/work-queue/work-list';
       <h1 class="wp-title">Task Queue</h1>
       <p-button
         *mfHasPermission="'Task.Create'"
-        label="Create Task"
+        label="Create task"
         icon="pi pi-plus"
         (onClick)="go('/tasks/new')"
       />
@@ -79,7 +79,7 @@ import { WorkList } from '../../../shared/work-queue/work-list';
       <p-button
         empty-action
         *mfHasPermission="'Task.Create'"
-        label="Create Task"
+        label="Create task"
         icon="pi pi-plus"
         (onClick)="go('/tasks/new')"
       />

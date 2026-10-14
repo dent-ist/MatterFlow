@@ -117,10 +117,20 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     expect(document.querySelector('input[type=search]')?.getAttribute('placeholder')).toContain(
       'Search',
     );
-    expect(document.body.textContent).toContain('Create Task');
+    expect(document.body.textContent).toContain('Create task');
   });
 
-  it('shows the pending-access count badge on Users & Roles for users who can view users', async () => {
+  it('hides the header Create task button on the Create task page itself (UXR-23)', async () => {
+    const { router } = await open('technician', '/tasks');
+    const headerButton = () => document.querySelector('.mf-header p-button');
+    expect(headerButton()).not.toBeNull();
+
+    await router.navigateByUrl('/tasks/new');
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(headerButton()).toBeNull();
+  });
+
+  it('shows the pending-access count badge on Users & roles for users who can view users', async () => {
     configure('director');
     TestBed.configureTestingModule({
       providers: [{ provide: IdentityAdminApi, useClass: InMemoryIdentityAdminApi }],
@@ -132,7 +142,7 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
 
     const badge = document.querySelector('[data-pending-badge]');
     expect(badge?.textContent?.trim()).toBe('2');
-    expect(badge?.closest('a')?.textContent).toContain('Users & Roles');
+    expect(badge?.closest('a')?.textContent).toContain('Users & roles');
   });
 
   it('hides nav items the user has no View permission for', async () => {
@@ -145,14 +155,14 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/');
     expect(navLabels(document.body)).toEqual(['Dashboard', 'My Work', 'Task Queue', 'Clients']);
-    expect(document.body.textContent).not.toContain('Create Task');
+    expect(document.body.textContent).not.toContain('Create task');
   });
 
   it('shows System Admin the Administration section', async () => {
     await open('admin');
     expect(document.body.textContent).toContain('Administration');
-    expect(navLabels(document.body)).toContain('Audit Log');
-    expect(navLabels(document.body)).toContain('Users & Roles');
+    expect(navLabels(document.body)).toContain('Audit log');
+    expect(navLabels(document.body)).toContain('Users & roles');
   });
 
   it('sends a user without the permission to the 403 page', async () => {

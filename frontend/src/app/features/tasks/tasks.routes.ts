@@ -13,6 +13,7 @@ export const TASKS_ROUTES: Routes = [
   },
   {
     path: 'new',
+    title: 'Create task',
     canActivate: [permissionGuard('Task.Create')],
     canDeactivate: [unsavedChangesGuard],
     providers: [
@@ -23,6 +24,7 @@ export const TASKS_ROUTES: Routes = [
   },
   {
     path: ':id',
+    title: 'Task',
     canDeactivate: [unsavedChangesGuard],
     // The request form's ASSET_REF / USER_REF fields show names with a picker (UAT2-01).
     providers: [

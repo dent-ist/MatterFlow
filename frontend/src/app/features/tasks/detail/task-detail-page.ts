@@ -17,6 +17,8 @@ import { TASK_TABS, TaskDetailStore, TaskTab } from './task-detail.store';
 import { TaskDetailsTab } from './task-details-tab';
 import { TaskHeader } from './task-header';
 import { TaskWorkflowTab } from './task-workflow-tab';
+import { PageTitle } from '../../../core/title/page-title';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 const WARNING_TEXT: Readonly<Record<string, string>> = {
   USER_NOT_IN_POD: "The assignee isn't a member of the assigned Pod. The change was saved.",
@@ -31,6 +33,7 @@ const isTab = (v: unknown): v is TaskTab => TASK_TABS.includes(v as TaskTab);
 @Component({
   selector: 'mf-task-detail-page',
   imports: [
+    ErrorReference,
     RouterLink,
     TaskHeader,
     TaskDetailsTab,
@@ -64,6 +67,7 @@ const isTab = (v: unknown): v is TaskTab => TASK_TABS.includes(v as TaskTab);
       @case ('error') {
         <div class="pg-alert" role="alert" data-error>
           We couldn't load this task.
+          <mf-error-reference />
           <button type="button" class="link-btn" (click)="store.load()">Retry</button>
         </div>
       }
@@ -205,6 +209,7 @@ export class TaskDetailPage implements HasUnsavedChanges {
   readonly tab = input<string | undefined>();
 
   protected readonly store = inject(TaskDetailStore);
+  private readonly pageTitle = inject(PageTitle);
   private readonly router = inject(Router);
 
   protected readonly tabs = computed(() => {
@@ -230,6 +235,10 @@ export class TaskDetailPage implements HasUnsavedChanges {
   );
 
   constructor() {
+    effect(() => {
+      const t = this.store.task();
+      if (t) this.pageTitle.set(t.taskNumber + ' ' + t.title);
+    });
     effect(() => {
       const id = Number(this.id());
       untracked(() => void this.store.load(id));

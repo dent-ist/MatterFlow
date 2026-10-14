@@ -30,6 +30,7 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { TextField } from '../../../shared/ui/text-field';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -54,7 +55,7 @@ export function externalReferenceError(text: string): string | null {
  */
 @Component({
   selector: 'mf-asset-form-page',
-  imports: [RouterLink, Button, TextField, EntityPicker, DynamicForm],
+  imports: [ErrorReference, RouterLink, Button, TextField, EntityPicker, DynamicForm],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -64,7 +65,7 @@ export function externalReferenceError(text: string): string | null {
         <p class="pg-crumbs">
           <a routerLink="/assets">Assets</a> &gt; {{ isEdit() ? 'Edit' : 'New' }}
         </p>
-        <h1 class="pg-title">{{ isEdit() ? 'Edit Asset' : 'New Asset' }}</h1>
+        <h1 class="pg-title">{{ isEdit() ? 'Edit asset' : 'New asset' }}</h1>
       </div>
     </header>
 
@@ -73,6 +74,7 @@ export function externalReferenceError(text: string): string | null {
     } @else if (state() === 'error') {
       <div class="pg-alert" role="alert">
         We couldn't load that.
+        <mf-error-reference />
         <p-button label="Retry" severity="secondary" (onClick)="load()" />
       </div>
     } @else {
@@ -183,7 +185,7 @@ export function externalReferenceError(text: string): string | null {
         <div class="pg-actions">
           <p-button
             type="submit"
-            [label]="busy() ? 'Saving...' : 'Save asset'"
+            [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create asset'"
             [disabled]="busy() || (isEdit() && original() && !original()!.isActive)"
           />
           <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />

@@ -8,7 +8,7 @@
   </div>
   <p-button
     *mfHasPermission="'Pod.Manage'"
-    label="New Pod"
+    label="New pod"
     icon="pi pi-plus"
     (onClick)="newPod()"
   />
@@ -19,8 +19,8 @@
 @if (editorOpen()) {
   <section class="pods__editor" aria-labelledby="pods-editor-title" data-editor>
     <div class="pods__editor-head">
-      <h2 id="pods-editor-title">{{ isNew() ? 'New Pod' : 'Edit Pod' }}</h2>
-      <p-button label="Back to Pods" severity="secondary" [text]="true" (onClick)="close()" />
+      <h2 id="pods-editor-title">{{ isNew() ? 'New pod' : 'Edit pod' }}</h2>
+      <p-button label="Back to pods" severity="secondary" [text]="true" (onClick)="close()" />
     </div>
 
     @if (failure()) {
@@ -78,21 +78,12 @@
           assignments.
         </p>
       }
-      @if (confirmDeactivate()) {
-        <div class="pods__banner" role="alert" data-confirm-deactivate>
-          Deactivate pod '{{ name().trim() }}'? Tasks that already reference it keep it.
-        </div>
-      }
       <div class="pods__actions" *mfHasPermission="'Pod.Manage'">
         <p-button
-          [label]="confirmDeactivate() ? 'Deactivate pod' : 'Save'"
-          [severity]="confirmDeactivate() ? 'danger' : 'primary'"
+          [label]="isNew() ? 'Create pod' : 'Save changes'"
           [disabled]="busy()"
           (onClick)="save()"
         />
-        @if (confirmDeactivate()) {
-          <p-button label="Cancel" severity="secondary" (onClick)="confirmDeactivate.set(false)" />
-        }
       </div>
     </div>
 
@@ -230,6 +221,7 @@
     @case ('error') {
       <div class="pods__banner" role="alert" data-error>
         Pods could not be loaded.
+        <mf-error-reference />
         <p-button label="Retry" size="small" severity="secondary" (onClick)="load()" />
       </div>
     }
@@ -238,7 +230,7 @@
         <p class="pods__muted" data-empty>
           No pods match.
           @if (auth.has('Pod.Manage')) {
-            Create one with New Pod.
+            Create one with New pod.
           }
         </p>
       } @else {
@@ -301,3 +293,18 @@
     }
   }
 }
+
+<mf-confirm-dialog
+  title="Deactivate pod?"
+  confirmLabel="Deactivate pod"
+  cancelLabel="Keep active"
+  [danger]="true"
+  [busy]="busy()"
+  [(visible)]="deactivateOpen"
+  (confirmed)="confirmDeactivation()"
+>
+  <p>
+    {{ name().trim() }} will no longer be offered for new assignments. It keeps its members and
+    history, and tasks that already reference it keep it. You can activate it again later.
+  </p>
+</mf-confirm-dialog>

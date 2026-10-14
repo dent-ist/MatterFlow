@@ -55,6 +55,7 @@ import { EmailIntake, EmailPrefill } from '../../../shared/ui/email-intake';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { TextField } from '../../../shared/ui/text-field';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 type SchemaState = 'none' | 'loading' | 'ready' | 'error';
@@ -95,6 +96,7 @@ const matterOption = (m: MatterResponse): PickerOption => ({
 @Component({
   selector: 'mf-create-task-page',
   imports: [
+    ErrorReference,
     RouterLink,
     Button,
     DynamicForm,

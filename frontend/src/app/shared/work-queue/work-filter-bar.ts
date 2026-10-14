@@ -125,7 +125,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
                 [value]="filters().pod.length ? filters().pod[0] : ''"
                 (change)="setPod($any($event.target).value)"
               >
-                <option value="">Any Pod</option>
+                <option value="">Any pod</option>
                 @for (pod of pods(); track pod.id) {
                   <option [value]="pod.id" [selected]="filters().pod[0] === pod.id">
                     {{ pod.name }}

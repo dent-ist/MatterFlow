@@ -101,7 +101,7 @@ const BLOCKED_TEXT: Readonly<Record<string, string>> = {
             {{ { dueDate: t.dueDate, dueAtUtc: t.dueAtUtc } | dueLabel: t.status }}</span
           >
           <span data-pod
-            ><span class="pg-label">Pod:</span> {{ t.assignedPod?.name ?? 'No Pod' }}</span
+            ><span class="pg-label">Pod:</span> {{ t.assignedPod?.name ?? 'No pod' }}</span
           >
           <span data-assignee
             ><span class="pg-label">Assignee:</span>

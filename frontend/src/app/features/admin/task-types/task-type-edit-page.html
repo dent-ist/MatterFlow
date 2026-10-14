@@ -26,6 +26,7 @@
   }
   @case ('error') {
     <p class="error" role="alert">Couldn't load this task type.</p>
+    <mf-error-reference />
     <p-button label="Try again" severity="secondary" (onClick)="retry()" />
   }
   @default {
@@ -163,7 +164,7 @@
       <div class="actions-row">
         <p-button
           type="submit"
-          [label]="isNew() ? 'Create task type' : 'Save'"
+          [label]="isNew() ? 'Create task type' : 'Save changes'"
           [disabled]="busy() || (!isNew() && !dirty())"
           data-save
         />
@@ -172,3 +173,18 @@
     </form>
   }
 }
+
+<mf-confirm-dialog
+  title="Deactivate task type?"
+  confirmLabel="Deactivate task type"
+  cancelLabel="Keep active"
+  [danger]="true"
+  [busy]="busy()"
+  [(visible)]="deactivateOpen"
+  (confirmed)="confirmDeactivate()"
+>
+  <p>
+    This task type will no longer be offered when people create tasks. Existing tasks keep this
+    type, and you can activate it again later.
+  </p>
+</mf-confirm-dialog>

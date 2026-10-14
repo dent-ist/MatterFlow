@@ -225,7 +225,7 @@ describe('TaskQueuePage', () => {
     let el = await open('/tasks?status=NEW', { primaryPod: 5 });
     const myPod = () =>
       Array.from(el.querySelectorAll<HTMLButtonElement>('.fb-view')).find(
-        (b) => b.textContent?.trim() === 'My Pod',
+        (b) => b.textContent?.trim() === 'My pod',
       )!;
     expect(myPod().disabled).toBe(false);
     myPod().click();
@@ -298,7 +298,7 @@ describe('TaskQueuePage', () => {
     expect(el.querySelectorAll('tbody tr').length).toBe(1);
   });
 
-  it('says "No tasks yet." with Create Task when permitted, and "No tasks match these filters." when filtered', async () => {
+  it('says "No tasks yet." with Create task when permitted, and "No tasks match these filters." when filtered', async () => {
     let el = await open('/tasks?status=NEW', { rows: [] });
     // Filters are set, so the filtered message applies.
     expect(el.querySelector('[data-empty]')!.textContent).toContain(
@@ -309,16 +309,16 @@ describe('TaskQueuePage', () => {
     el = await open('/tasks?sort=due', { rows: [] });
     const empty = el.querySelector('[data-empty]')!;
     expect(empty.textContent).toContain('No tasks yet.');
-    expect(empty.textContent).toContain('Create Task');
+    expect(empty.textContent).toContain('Create task');
   });
 
-  it('shows Create Task only with Task.Create', async () => {
+  it('shows Create task only with Task.Create', async () => {
     let el = await open('/tasks?status=NEW');
-    expect(el.querySelector('.wp-head')!.textContent).toContain('Create Task');
+    expect(el.querySelector('.wp-head')!.textContent).toContain('Create task');
 
     TestBed.resetTestingModule();
     el = await open('/tasks?status=NEW', { permissions: ['Task.View'] });
-    expect(el.querySelector('.wp-head')!.textContent).not.toContain('Create Task');
+    expect(el.querySelector('.wp-head')!.textContent).not.toContain('Create task');
   });
 
   it('remembers the chosen columns and density for the user', async () => {

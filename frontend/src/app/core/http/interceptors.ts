@@ -10,6 +10,7 @@ import { Observable, catchError, from, map, mergeMap, of, throwError } from 'rxj
 import { AuthStore } from '../auth/auth.store';
 import { APP_PATHS } from '../auth/guards';
 import { NotificationService } from '../notify/notification.service';
+import { ErrorReferenceStore } from './error-reference-store';
 import { USER_TIME_ZONE } from '../time/clock';
 import { ApiError } from './api-error';
 
@@ -43,7 +44,16 @@ export const problemDetailsInterceptor: HttpInterceptorFn = (req, next) => {
           const apiError = ApiError.from(decoded);
           if (!req.context.get(SKIP_ERROR_TOAST)) {
             const toast = toastFor(apiError);
-            if (toast) injector.get(NotificationService).error(toast.summary, toast.detail);
+            if (toast) {
+              const show = () =>
+                injector.get(NotificationService).error(toast.summary, toast.detail);
+              // A failed page load shows an inline alert with the reference id; hold the toast back so it is not duplicated.
+              if (req.method === 'GET' && toast.detail) {
+                injector.get(ErrorReferenceStore).report(apiError.traceId, show);
+              } else {
+                show();
+              }
+            }
           }
           if (shouldRefreshPermissions(req, apiError)) void refreshAfterDenied(injector);
           return throwError(() => apiError);

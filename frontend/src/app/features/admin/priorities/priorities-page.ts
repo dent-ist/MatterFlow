@@ -18,6 +18,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { hasReadableText, isHexColor } from '../../../shared/ui/color-contrast';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -39,7 +40,7 @@ export const CONTRAST_MESSAGE = 'Text must be readable: 4.5:1 minimum';
 @Component({
   selector: 'mf-priorities-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, Button, HasPermissionDirective, PriorityBadge],
+  imports: [ErrorReference, FormsModule, RouterLink, Button, HasPermissionDirective, PriorityBadge],
   templateUrl: './priorities-page.html',
   styleUrl: '../admin-lookup.scss',
 })

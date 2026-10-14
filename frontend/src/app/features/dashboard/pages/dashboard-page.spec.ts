@@ -206,7 +206,7 @@ describe('DashboardPage', () => {
       podRows.map((r) =>
         [r.querySelector('.name')?.textContent, r.querySelector('.count')?.textContent].join(' '),
       ),
-    ).toEqual(['Pod A 40', 'No Pod 17']);
+    ).toEqual(['Pod A 40', 'No pod 17']);
     expect(podRows[0].querySelector('a')!.getAttribute('href')).toContain('pod=1');
     expect(podRows[1].querySelector('a')).toBeNull();
 

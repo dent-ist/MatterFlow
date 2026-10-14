@@ -21,6 +21,7 @@
   }
   @case ('error') {
     <p class="error" role="alert">Couldn't load status labels.</p>
+    <mf-error-reference />
     <p-button label="Try again" severity="secondary" (onClick)="load()" />
   }
   @default {

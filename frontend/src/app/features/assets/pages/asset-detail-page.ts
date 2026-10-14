@@ -24,6 +24,8 @@ import { CopyButton } from '../../../shared/ui/copy-button';
 import { EntityActivity } from '../../../shared/ui/entity-activity';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { AssetLinkedTasks } from './asset-linked-tasks';
+import { PageTitle } from '../../../core/title/page-title';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type Tab = 'details' | 'tasks' | 'history';
 type LoadState = 'loading' | 'ready' | 'error';
@@ -36,6 +38,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-asset-detail-page',
   imports: [
+    ErrorReference,
     RouterLink,
     Button,
     HasPermissionDirective,
@@ -58,6 +61,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       @case ('error') {
         <div class="pg-alert" role="alert">
           We couldn't find that asset.
+          <mf-error-reference />
           <p-button label="Retry" severity="secondary" (onClick)="load()" />
         </div>
       }
@@ -107,7 +111,7 @@ type LoadState = 'loading' | 'ready' | 'error';
               }
               <p-button
                 *mfHasPermission="'Asset.Edit'"
-                [label]="a.isActive ? 'Set inactive' : 'Reactivate'"
+                [label]="a.isActive ? 'Set inactive' : 'Set active'"
                 severity="secondary"
                 (onClick)="toggleOpen.set(true)"
               />
@@ -194,7 +198,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 
           <mf-confirm-dialog
             [title]="a.isActive ? 'Set asset inactive' : 'Reactivate asset'"
-            [confirmLabel]="a.isActive ? 'Set inactive' : 'Reactivate'"
+            [confirmLabel]="a.isActive ? 'Set inactive' : 'Set active'"
             [danger]="a.isActive"
             [busy]="busy()"
             [(visible)]="toggleOpen"
@@ -227,6 +231,7 @@ export class AssetDetailPage {
   readonly assetId = input.required<string>();
 
   private readonly api = inject(AssetsClient);
+  private readonly pageTitle = inject(PageTitle);
   private readonly forms = inject(FormsClient);
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
@@ -245,6 +250,10 @@ export class AssetDetailPage {
   }));
 
   constructor() {
+    effect(() => {
+      const a = this.asset();
+      if (a) this.pageTitle.set(a.displayName);
+    });
     effect(() => {
       this.assetId();
       untracked(() => void this.load());

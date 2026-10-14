@@ -165,7 +165,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                       @if (row.assignedPod; as pod) {
                         {{ pod.name }}
                       } @else {
-                        <span class="wt-muted">-</span>
+                        <span class="wt-muted">No pod</span>
                       }
                     }
                     @case ('assignee') {

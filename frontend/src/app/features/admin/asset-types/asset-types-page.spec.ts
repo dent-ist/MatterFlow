@@ -148,6 +148,9 @@ describe('AssetTypesPage', () => {
     active.checked = false;
     active.dispatchEvent(new Event('change'));
     await submit();
+    expect(api.updateAssetType).not.toHaveBeenCalled();
+    confirmDeactivation();
+    await settle(fixture);
 
     expect(api.updateAssetType).toHaveBeenCalledWith(4, {
       name: 'Document Bundle',
@@ -156,6 +159,31 @@ describe('AssetTypesPage', () => {
       isActive: false,
       rowVersion: 'TTTT',
     });
+  });
+
+  const confirmDeactivation = (): void => {
+    const confirm = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Deactivate asset type' && b.closest('p-dialog, .p-dialog'),
+    );
+    expect(confirm).toBeDefined();
+    confirm!.click();
+  };
+
+  it('asks before deactivating from the row and names the assets that keep the type', async () => {
+    await create(['AssetType.Manage']);
+
+    buttonByLabel(el(), 'Deactivate')!.click();
+    await settle(fixture);
+    expect(api.updateAssetType).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain('Deactivate asset type?');
+    expect(document.body.textContent).toContain('Keep active');
+    confirmDeactivation();
+    await settle(fixture);
+
+    expect(api.updateAssetType).toHaveBeenCalledWith(
+      4,
+      expect.objectContaining({ isActive: false, rowVersion: 'TTTT' }),
+    );
   });
 
   it('activates and deactivates from the row without deleting anything', async () => {

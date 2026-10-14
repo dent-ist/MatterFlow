@@ -100,7 +100,7 @@ describe('ClientsListPage', () => {
     expect(headers[1].getAttribute('aria-sort')).toBe('none');
   });
 
-  it('shows the empty state with New Client when permitted, and a filtered empty state otherwise', async () => {
+  it('shows the empty state with New client when permitted, and a filtered empty state otherwise', async () => {
     const fixture = await create();
     api.listClients.mockReturnValue(ok(pageOfClients()));
     fixture.componentRef.setInput('page', '1');
@@ -109,7 +109,7 @@ describe('ClientsListPage', () => {
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('[data-empty=none]')?.textContent).toContain('No clients yet');
-    expect(buttonByLabel(el.querySelector('[data-empty=none]')!, 'New Client')).toBeDefined();
+    expect(buttonByLabel(el.querySelector('[data-empty=none]')!, 'New client')).toBeDefined();
 
     fixture.componentRef.setInput('q', 'zzz');
     await settle(fixture);
@@ -133,9 +133,9 @@ describe('ClientsListPage', () => {
     expect(el.querySelector('tbody tr')).not.toBeNull();
   });
 
-  it('hides New Client without Client.Create', async () => {
+  it('hides New client without Client.Create', async () => {
     const fixture = await create(['Client.View']);
 
-    expect(buttonByLabel(fixture.nativeElement, 'New Client')).toBeUndefined();
+    expect(buttonByLabel(fixture.nativeElement, 'New client')).toBeUndefined();
   });
 });

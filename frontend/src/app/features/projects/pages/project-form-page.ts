@@ -30,6 +30,7 @@ import {
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { TextField } from '../../../shared/ui/text-field';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -43,7 +44,7 @@ function matterOption(m: MatterResponse): PickerOption {
  */
 @Component({
   selector: 'mf-project-form-page',
-  imports: [RouterLink, CustomFieldsEditor, Button, TextField, EntityPicker],
+  imports: [ErrorReference, RouterLink, CustomFieldsEditor, Button, TextField, EntityPicker],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -52,7 +53,7 @@ function matterOption(m: MatterResponse): PickerOption {
         <p class="pg-crumbs">
           <a routerLink="/projects">Projects</a> &gt; {{ isEdit() ? 'Edit' : 'New' }}
         </p>
-        <h1 class="pg-title">{{ isEdit() ? 'Edit Project' : 'New Project' }}</h1>
+        <h1 class="pg-title">{{ isEdit() ? 'Edit project' : 'New project' }}</h1>
       </div>
     </header>
 
@@ -61,6 +62,7 @@ function matterOption(m: MatterResponse): PickerOption {
     } @else if (state() === 'error') {
       <div class="pg-alert" role="alert">
         We couldn't load that.
+        <mf-error-reference />
         <p-button label="Retry" severity="secondary" (onClick)="load()" />
       </div>
     } @else {
@@ -124,7 +126,7 @@ function matterOption(m: MatterResponse): PickerOption {
         <div class="pg-actions">
           <p-button
             type="submit"
-            [label]="busy() ? 'Saving...' : 'Save project'"
+            [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create project'"
             [disabled]="busy()"
           />
           <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />

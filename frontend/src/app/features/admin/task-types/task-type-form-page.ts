@@ -30,6 +30,8 @@ import { ApiError } from '../../../core/http/api-error';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { FormDesignerApi, FormOwner, FormVersion, FormVersionSummary } from './form-designer-api';
 import { publishIssuesOf } from './form-mapping';
+import { RouterLink } from '@angular/router';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | null;
 type LoadState = 'loading' | 'ready' | 'error';
@@ -42,7 +44,16 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-task-type-form-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormDesigner, Button, Dialog, DialogFocus, FormsModule, LocalTimePipe],
+  imports: [
+    ErrorReference,
+    RouterLink,
+    FormDesigner,
+    Button,
+    Dialog,
+    DialogFocus,
+    FormsModule,
+    LocalTimePipe,
+  ],
   templateUrl: './task-type-form-page.html',
   styleUrl: './task-type-form-page.scss',
 })
@@ -50,7 +61,9 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   /** Route parameter `ownerId`; the unparameterised route shows the seeded Data Processing type. */
   readonly ownerId = input('data-processing');
   /** Page title and owner label; other owners (Step Library, Asset Types) reuse this page with their own wording through route `data`. */
-  readonly heading = input('Task Types & Forms');
+  readonly heading = input('Task types');
+  /** Where the breadcrumb's first segment leads. */
+  readonly sectionPath = input('/admin/task-types');
   readonly ownerLabel = input('Task Type');
   /** What the form's records are called in copy: tasks for Task Types, assets for Asset Types, records for custom fields. */
   protected readonly recordNoun = computed(() => {

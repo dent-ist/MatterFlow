@@ -1,7 +1,7 @@
 <header class="pg-head">
   <div>
     <p class="pg-crumbs"><a routerLink="/tasks">Tasks</a> &gt; New</p>
-    <h1 class="pg-title">Create Task</h1>
+    <h1 class="pg-title">Create task</h1>
   </div>
 </header>
 
@@ -12,6 +12,7 @@
 } @else if (state() === 'error') {
   <div class="pg-alert" role="alert" data-load-error>
     We couldn't load what is needed to create a task.
+    <mf-error-reference />
     <p-button label="Retry" severity="secondary" (onClick)="load()" />
   </div>
 } @else {
@@ -156,6 +157,7 @@
               } @else if (schemaState() === 'error') {
                 <div class="pg-alert" role="alert" data-schema-error>
                   We couldn't load the request details for this task type.
+                  <mf-error-reference />
                   <p-button label="Retry" severity="secondary" (onClick)="loadSchema()" />
                 </div>
               } @else if (definition(); as def) {

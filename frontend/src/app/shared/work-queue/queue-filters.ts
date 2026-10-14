@@ -423,7 +423,7 @@ export interface BuiltInView {
 export const BUILT_IN_VIEWS: readonly BuiltInView[] = [
   { key: 'allOpen', label: 'All open' },
   { key: 'unassigned', label: 'Unassigned' },
-  { key: 'myPod', label: 'My Pod' },
+  { key: 'myPod', label: 'My pod' },
   { key: 'createdByMe', label: 'Created by me' },
   { key: 'overdue', label: 'Overdue' },
   { key: 'recentlyCompleted', label: 'Recently completed' },

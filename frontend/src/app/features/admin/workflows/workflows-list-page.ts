@@ -20,6 +20,7 @@ import {
   debounced,
 } from '../../../shared/ui/list-helpers';
 import { Pager } from '../../../shared/ui/pager';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -29,7 +30,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-workflows-list-page',
-  imports: [RouterLink, Button, Pager],
+  imports: [ErrorReference, RouterLink, Button, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
   template: `
@@ -87,6 +88,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       @case ('error') {
         <div class="pg-alert" role="alert">
           Something went wrong. Try again.
+          <mf-error-reference />
           <p-button label="Retry" severity="secondary" (onClick)="load()" />
         </div>
       }

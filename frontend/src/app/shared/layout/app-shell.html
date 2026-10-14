@@ -9,12 +9,14 @@
     <span class="mf-search-spacer"></span>
   }
 
-  <p-button
-    *mfHasPermission="'Task.Create'"
-    label="Create Task"
-    icon="pi pi-plus"
-    (onClick)="createTask()"
-  />
+  @if (!onCreateTaskPage()) {
+    <p-button
+      *mfHasPermission="'Task.Create'"
+      label="Create task"
+      icon="pi pi-plus"
+      (onClick)="createTask()"
+    />
+  }
 
   <div class="mf-user" data-testid="user-menu">
     <span class="mf-user-name">{{ auth.displayName() }}</span>

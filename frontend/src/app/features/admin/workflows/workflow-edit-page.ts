@@ -23,6 +23,8 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { LocalTimePipe } from '../../../shared/pipes/local-time.pipe';
 import { TextField } from '../../../shared/ui/text-field';
 import { workflowErrors } from './workflow-errors';
+import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -32,7 +34,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-workflow-edit-page',
-  imports: [RouterLink, Button, TextField, LocalTimePipe],
+  imports: [ConfirmDialog, ErrorReference, RouterLink, Button, TextField, LocalTimePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
   template: `
@@ -50,6 +52,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     } @else if (state() === 'error') {
       <div class="pg-alert" role="alert">
         We couldn't load that workflow.
+        <mf-error-reference />
         <p-button label="Retry" severity="secondary" (onClick)="load()" />
       </div>
     } @else {
@@ -128,7 +131,7 @@ type LoadState = 'loading' | 'ready' | 'error';
         <div class="pg-actions">
           <p-button
             type="submit"
-            [label]="busy() ? 'Saving...' : isEdit() ? 'Save workflow' : 'Create workflow'"
+            [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create workflow'"
             [disabled]="busy()"
           />
           <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
@@ -210,6 +213,21 @@ type LoadState = 'loading' | 'ready' | 'error';
         </section>
       }
     }
+
+    <mf-confirm-dialog
+      title="Deactivate workflow?"
+      confirmLabel="Deactivate workflow"
+      cancelLabel="Keep active"
+      [danger]="true"
+      [busy]="busy()"
+      [(visible)]="deactivateOpen"
+      (confirmed)="confirmDeactivate()"
+    >
+      <p>
+        This workflow will no longer be offered when people create tasks. Tasks already running on
+        it are not changed, and you can activate it again later.
+      </p>
+    </mf-confirm-dialog>
   `,
 })
 export class WorkflowEditPage implements HasUnsavedChanges {
@@ -230,6 +248,7 @@ export class WorkflowEditPage implements HasUnsavedChanges {
   protected readonly isActive = signal(true);
   protected readonly isOrdered = signal(true);
   protected readonly busy = signal(false);
+  protected readonly deactivateOpen = signal(false);
   protected readonly submitted = signal(false);
   protected readonly serverErrors = signal<Record<string, string>>({});
   protected readonly messages = signal<string[]>([]);
@@ -286,11 +305,25 @@ export class WorkflowEditPage implements HasUnsavedChanges {
     }
   }
 
-  protected async save(): Promise<void> {
+  protected confirmDeactivate(): void {
+    this.deactivateOpen.set(false);
+    void this.save(true);
+  }
+
+  protected async save(deactivationConfirmed = false): Promise<void> {
     this.submitted.set(true);
     this.resetErrors();
     if (this.name().trim() === '') {
       this.messages.set(['Enter a name.']);
+      return;
+    }
+    if (
+      !deactivationConfirmed &&
+      this.isEdit() &&
+      this.detail()?.workflow.isActive &&
+      !this.isActive()
+    ) {
+      this.deactivateOpen.set(true);
       return;
     }
     const body = {

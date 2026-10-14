@@ -20,6 +20,7 @@ import {
   debounced,
 } from '../../../shared/ui/list-helpers';
 import { Pager } from '../../../shared/ui/pager';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -29,13 +30,13 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-steps-list-page',
-  imports: [RouterLink, Button, Pager],
+  imports: [ErrorReference, RouterLink, Button, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <header class="pg-head">
       <div>
-        <h1 class="pg-title">Step Library</h1>
+        <h1 class="pg-title">Step library</h1>
         <p class="pg-muted">
           Reusable steps. Workflows copy a step when they are published, so editing a step here
           never changes a published workflow.
@@ -87,6 +88,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       @case ('error') {
         <div class="pg-alert" role="alert">
           Something went wrong. Try again.
+          <mf-error-reference />
           <p-button label="Retry" severity="secondary" (onClick)="load()" />
         </div>
       }

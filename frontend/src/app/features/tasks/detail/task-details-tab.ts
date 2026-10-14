@@ -270,7 +270,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
                   class="mf-field__input"
                   (change)="set('podId', toNumber($any($event.target).value))"
                 >
-                  <option value="" [selected]="model().podId === null">No Pod</option>
+                  <option value="" [selected]="model().podId === null">No pod</option>
                   @for (p of podOptions(); track p.id) {
                     <option [value]="p.id" [selected]="model().podId === p.id">
                       {{ p.label }}
@@ -351,7 +351,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
             <dt>Due</dt>
             <dd>{{ { dueDate: t.dueDate, dueAtUtc: t.dueAtUtc } | dueLabel: t.status }}</dd>
             <dt>Pod</dt>
-            <dd>{{ t.assignedPod?.name ?? 'No Pod' }}</dd>
+            <dd>{{ t.assignedPod?.name ?? 'No pod' }}</dd>
             <dt>Assignee</dt>
             <dd>{{ t.assignedUser?.displayName ?? 'Unassigned' }}</dd>
             <dt>Created</dt>

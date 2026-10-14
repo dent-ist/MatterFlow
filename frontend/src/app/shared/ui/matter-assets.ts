@@ -14,6 +14,7 @@ import { AssetListItem, AssetsClient } from '../../api/generated/api-client';
 import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { StatusFilter, isActiveParam, debounced } from './list-helpers';
 import { Pager } from './pager';
+import { ErrorReference } from './error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -23,7 +24,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-matter-assets',
-  imports: [RouterLink, Button, HasPermissionDirective, Pager],
+  imports: [ErrorReference, RouterLink, Button, HasPermissionDirective, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './page.scss',
   template: `
@@ -57,7 +58,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       </div>
       <p-button
         *mfHasPermission="'Asset.Create'"
-        label="New Asset"
+        label="New asset"
         icon="pi pi-plus"
         severity="secondary"
         (onClick)="newAsset()"
@@ -71,6 +72,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       @case ('error') {
         <div class="pg-alert" role="alert">
           We couldn't load the assets.
+          <mf-error-reference />
           <p-button label="Retry" severity="secondary" (onClick)="load()" />
         </div>
       }

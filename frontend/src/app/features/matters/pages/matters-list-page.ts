@@ -24,13 +24,14 @@ import {
 } from '../../../shared/ui/list-helpers';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { Pager } from '../../../shared/ui/pager';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
 /** Matters list (UX S06): search by `343-12`, `00343-00012`, a number or a name; client and status filters; state lives in the URL. */
 @Component({
   selector: 'mf-matters-list-page',
-  imports: [RouterLink, Button, HasPermissionDirective, Pager, MatterRef],
+  imports: [ErrorReference, RouterLink, Button, HasPermissionDirective, Pager, MatterRef],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -39,7 +40,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       <div class="pg-actions">
         <p-button
           *mfHasPermission="'Matter.Create'"
-          label="New Matter"
+          label="New matter"
           icon="pi pi-plus"
           (onClick)="go('/matters/new')"
         />
@@ -98,6 +99,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       @case ('error') {
         <div class="pg-alert" role="alert">
           Something went wrong. Try again.
+          <mf-error-reference />
           <p-button label="Retry" severity="secondary" (onClick)="load()" />
         </div>
       }
@@ -113,7 +115,7 @@ type LoadState = 'loading' | 'ready' | 'error';
               <p>No matters yet.</p>
               <p-button
                 *mfHasPermission="'Matter.Create'"
-                label="New Matter"
+                label="New matter"
                 (onClick)="go('/matters/new')"
               />
             </div>
@@ -126,7 +128,7 @@ type LoadState = 'loading' | 'ready' | 'error';
             <thead>
               <tr>
                 <th scope="col" [attr.aria-sort]="aria('matterRef')">
-                  <button type="button" (click)="sortBy('matterRef')">Matter ref</button>
+                  <button type="button" (click)="sortBy('matterRef')">Matter reference</button>
                 </th>
                 <th scope="col" [attr.aria-sort]="aria('name')">
                   <button type="button" (click)="sortBy('name')">Name</button>

@@ -26,7 +26,7 @@ export const NAV_ITEMS: NavItem[] = [
 /** Administration section: shown only when at least one entry is permitted. */
 export const ADMIN_NAV_ITEMS: NavItem[] = [
   {
-    label: 'Users & Roles',
+    label: 'Users & roles',
     icon: 'pi pi-id-card',
     path: '/admin/users',
     permissions: ['User.View', 'User.Manage', 'Role.Manage'],
@@ -39,13 +39,13 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     permissions: ['Pod.Manage', 'Pod.ManageMembers'],
   },
   {
-    label: 'Task Types & Forms',
+    label: 'Task types & forms',
     icon: 'pi pi-file-edit',
     path: '/admin/task-types',
     permissions: ['TaskType.Manage'],
   },
   {
-    label: 'Step Library',
+    label: 'Step library',
     icon: 'pi pi-clone',
     path: '/admin/steps',
     permissions: ['Workflow.Manage'],
@@ -57,7 +57,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     permissions: ['Workflow.Manage'],
   },
   {
-    label: 'Asset Types',
+    label: 'Asset types',
     icon: 'pi pi-tags',
     path: '/admin/asset-types',
     permissions: ['AssetType.Manage'],
@@ -69,16 +69,16 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     permissions: ['AssetType.Manage'],
   },
   {
-    label: 'Custom Fields',
+    label: 'Custom fields',
     icon: 'pi pi-sliders-h',
     path: '/admin/custom-fields',
     permissions: ['CustomField.Manage'],
   },
   {
-    label: 'Priorities & Status Labels',
+    label: 'Priorities & status labels',
     icon: 'pi pi-flag',
     path: '/admin/priorities',
     permissions: ['Priority.Manage', 'StatusLabel.Manage'],
   },
-  { label: 'Audit Log', icon: 'pi pi-history', path: '/admin/audit', permissions: ['Audit.View'] },
+  { label: 'Audit log', icon: 'pi pi-history', path: '/admin/audit', permissions: ['Audit.View'] },
 ];

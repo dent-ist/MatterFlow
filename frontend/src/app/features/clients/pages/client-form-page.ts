@@ -27,6 +27,7 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { NumberInput, numberProblem } from '../../../shared/ui/number-input';
 import { TextField } from '../../../shared/ui/text-field';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -34,6 +35,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-client-form-page',
   imports: [
+    ErrorReference,
     RouterLink,
     CustomFieldsEditor,
     Button,
@@ -50,7 +52,7 @@ type LoadState = 'loading' | 'ready' | 'error';
         <p class="pg-crumbs">
           <a routerLink="/clients">Clients</a> &gt; {{ isEdit() ? 'Edit' : 'New' }}
         </p>
-        <h1 class="pg-title">{{ isEdit() ? 'Edit Client' : 'New Client' }}</h1>
+        <h1 class="pg-title">{{ isEdit() ? 'Edit client' : 'New client' }}</h1>
       </div>
     </header>
 
@@ -59,6 +61,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     } @else if (state() === 'error') {
       <div class="pg-alert" role="alert">
         We couldn't load that client.
+        <mf-error-reference />
         <p-button label="Retry" severity="secondary" (onClick)="load()" />
       </div>
     } @else {
@@ -157,7 +160,7 @@ type LoadState = 'loading' | 'ready' | 'error';
         <div class="pg-actions">
           <p-button
             type="submit"
-            [label]="busy() ? 'Saving...' : 'Save client'"
+            [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create client'"
             [disabled]="busy()"
           />
           <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />

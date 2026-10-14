@@ -19,6 +19,7 @@
   }
   @case ('error') {
     <p class="error" role="alert">Couldn't load asset link roles.</p>
+    <mf-error-reference />
     <p-button label="Try again" severity="secondary" (onClick)="load()" />
   }
   @default {

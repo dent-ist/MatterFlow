@@ -219,7 +219,7 @@ describe('built-in views', () => {
     expect(BUILT_IN_VIEWS.map((v) => v.label)).toEqual([
       'All open',
       'Unassigned',
-      'My Pod',
+      'My pod',
       'Created by me',
       'Overdue',
       'Recently completed',

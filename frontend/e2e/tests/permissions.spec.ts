@@ -165,7 +165,7 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
 
     const queue = new TaskQueuePage(page);
     await queue.open();
-    await expect(page.getByRole('button', { name: 'Create Task' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Create task' })).toHaveCount(0);
 
     await page.goto('/tasks/new');
     await expect(

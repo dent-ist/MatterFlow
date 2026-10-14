@@ -18,6 +18,8 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { TaskTypeView, TaskTypesApi } from './task-types-api';
+import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -53,7 +55,7 @@ const key = (m: Model): string =>
 @Component({
   selector: 'mf-task-type-edit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, Button],
+  imports: [ConfirmDialog, ErrorReference, FormsModule, RouterLink, Button],
   templateUrl: './task-type-edit-page.html',
   styleUrls: ['../admin-lookup.scss', './task-type-edit-page.scss'],
 })
@@ -117,6 +119,13 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     } catch {
       this.state.set('error');
     }
+  }
+
+  protected readonly deactivateOpen = signal(false);
+
+  protected confirmDeactivate(): void {
+    this.deactivateOpen.set(false);
+    void this.save(true);
   }
 
   protected retry(): void {
@@ -192,11 +201,15 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     }
   }
 
-  protected async save(): Promise<void> {
+  protected async save(deactivationConfirmed = false): Promise<void> {
     const m = this.model();
     const name = m.name.trim();
     if (!name) {
       this.fieldErrors.set({ name: 'Enter a name.' });
+      return;
+    }
+    if (!deactivationConfirmed && this.taskType()?.isActive && !m.isActive) {
+      this.deactivateOpen.set(true);
       return;
     }
     this.busy.set(true);

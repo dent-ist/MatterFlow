@@ -19,6 +19,7 @@ export const routes: Routes = [
   },
   {
     path: 'error',
+    title: 'Error',
     loadComponent: () => import('./features/system/pages/error-page').then((m) => m.ErrorPage),
   },
   {

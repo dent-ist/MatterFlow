@@ -31,6 +31,7 @@ import { toFormDefinition } from '../../../shared/forms/form-schema';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { WorkflowDiff, diffVersions } from './workflow-diff';
 import { workflowErrors } from './workflow-errors';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -63,7 +64,7 @@ const UNORDERED_TEXT =
  */
 @Component({
   selector: 'mf-workflow-version-page',
-  imports: [RouterLink, Button, ConfirmDialog, DynamicForm],
+  imports: [ErrorReference, RouterLink, Button, ConfirmDialog, DynamicForm],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
   template: `
@@ -72,6 +73,7 @@ const UNORDERED_TEXT =
     } @else if (state() === 'error') {
       <div class="pg-alert" role="alert">
         We couldn't load that workflow version.
+        <mf-error-reference />
         <p-button label="Retry" severity="secondary" (onClick)="load()" />
       </div>
     } @else if (version(); as v) {
@@ -211,6 +213,7 @@ const UNORDERED_TEXT =
               @case ('error') {
                 <p class="pg-alert" role="alert">
                   Couldn't load the step library.
+                  <mf-error-reference />
                   <p-button label="Retry" severity="secondary" (onClick)="loadLibrary()" />
                 </p>
               }

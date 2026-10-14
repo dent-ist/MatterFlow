@@ -4,6 +4,7 @@ import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { FormVersionStatus, FormsClient } from '../../../api/generated/api-client';
 import { CUSTOM_FIELD_OBJECTS } from './custom-field-form-designer-api';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 type FormStatus = 'none' | 'draft' | 'published';
@@ -24,13 +25,13 @@ interface Row {
  */
 @Component({
   selector: 'mf-custom-fields-page',
-  imports: [RouterLink, Button],
+  imports: [ErrorReference, RouterLink, Button],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <header class="pg-head">
       <div>
-        <h1 class="pg-title">Custom Fields</h1>
+        <h1 class="pg-title">Custom fields</h1>
         <p class="pg-muted">
           Extra fields for Clients, Matters and Projects. Fields are versioned: publishing a new
           version never changes values already saved, and existing records stay editable.
@@ -45,6 +46,7 @@ interface Row {
       @case ('error') {
         <div class="pg-alert" role="alert">
           We couldn't load the custom field forms.
+          <mf-error-reference />
           <p-button label="Retry" severity="secondary" (onClick)="load()" />
         </div>
       }

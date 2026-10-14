@@ -122,7 +122,7 @@ describe('Projects pages', () => {
       expect(fixture.nativeElement.querySelector('[data-matter-chip]')?.textContent).toContain(
         '00343-00012 Merger Review',
       );
-      buttonByLabel(fixture.nativeElement, 'New Project')!.click();
+      buttonByLabel(fixture.nativeElement, 'New project')!.click();
       expect(navigateByUrl).toHaveBeenCalledWith('/projects/new?matterId=7');
       fixture.nativeElement.querySelector('[data-matter-chip] button').click();
       expect(navigate).toHaveBeenCalledWith([], {
@@ -131,9 +131,9 @@ describe('Projects pages', () => {
       });
     });
 
-    it('hides New Project without Project.Create and handles empty results', async () => {
+    it('hides New project without Project.Create and handles empty results', async () => {
       const fixture = await create(['Project.View']);
-      expect(buttonByLabel(fixture.nativeElement, 'New Project')).toBeUndefined();
+      expect(buttonByLabel(fixture.nativeElement, 'New project')).toBeUndefined();
 
       projects.listProjects.mockReturnValue(ok(pageOfProjects()));
       fixture.componentRef.setInput('q', 'zzz');
@@ -286,7 +286,7 @@ describe('Projects pages', () => {
       expect(el().querySelector('mf-scoped-tasks [data-create-task]')).toBeNull(); // needs Task.Create
     });
 
-    it('offers Create Task prefilled with the matter and the project', async () => {
+    it('offers Create task prefilled with the matter and the project', async () => {
       await create(['Project.View', 'Task.View', 'Task.Create']);
 
       el().querySelector<HTMLButtonElement>('mf-scoped-tasks [data-create-task] button')!.click();

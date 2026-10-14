@@ -96,7 +96,7 @@ test.describe('Audit log browser (smoke)', () => {
     const task = await seed.task(world, { title: `Audited ${uid()}` });
 
     await page.goto('/admin/audit');
-    await expect(page.getByRole('heading', { name: 'Audit Log', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Audit log', level: 1 })).toBeVisible();
     await page.getByLabel('Object type').selectOption('Task');
     await page.getByLabel('Object id').fill(String(task.taskId));
     await page.getByRole('button', { name: 'Apply filters' }).click();
@@ -132,7 +132,7 @@ test.describe('Audit log browser (smoke)', () => {
 
   test('the log is read only: there is no export, edit or delete action', async ({ page }) => {
     await page.goto('/admin/audit');
-    await expect(page.getByRole('heading', { name: 'Audit Log', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Audit log', level: 1 })).toBeVisible();
     await expect(page.getByRole('button', { name: /export|download|delete|edit/i })).toHaveCount(0);
     await expect(page.getByText("can't be exported")).toBeVisible();
   });
@@ -144,7 +144,7 @@ test.describe('Audit log browser (smoke)', () => {
     const auditor = await seed.user(['Compliance Auditor'], 'auditor');
     const auditorPage = await asUser(auditor.username);
     await auditorPage.goto('/admin/audit');
-    await expect(auditorPage.getByRole('heading', { name: 'Audit Log', level: 1 })).toBeVisible();
+    await expect(auditorPage.getByRole('heading', { name: 'Audit log', level: 1 })).toBeVisible();
     await expect(auditorPage.locator('tr[data-event]').first()).toBeVisible();
 
     const tech = await seed.user(['Data Technician'], 'nolog');

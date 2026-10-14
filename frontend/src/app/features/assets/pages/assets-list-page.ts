@@ -29,6 +29,7 @@ import {
 } from '../../../shared/ui/list-helpers';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { Pager } from '../../../shared/ui/pager';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -38,7 +39,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-assets-list-page',
-  imports: [RouterLink, Button, HasPermissionDirective, Pager, MatterRef],
+  imports: [ErrorReference, RouterLink, Button, HasPermissionDirective, Pager, MatterRef],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -47,7 +48,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       <div class="pg-actions">
         <p-button
           *mfHasPermission="'Asset.Create'"
-          label="New Asset"
+          label="New asset"
           icon="pi pi-plus"
           (onClick)="go('/assets/new' + (matterId() ? '?matterId=' + matterId() : ''))"
         />
@@ -120,6 +121,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       @case ('error') {
         <div class="pg-alert" role="alert">
           Something went wrong. Try again.
+          <mf-error-reference />
           <p-button label="Retry" severity="secondary" (onClick)="load()" />
         </div>
       }

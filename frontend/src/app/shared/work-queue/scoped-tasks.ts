@@ -17,6 +17,7 @@ import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { Pager } from '../ui/pager';
 import { OPEN_STATUSES } from './queue-filters';
 import { TaskTable } from './task-table';
+import { ErrorReference } from '../ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 type StatusScope = 'open' | 'all';
@@ -32,7 +33,7 @@ const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'
  */
 @Component({
   selector: 'mf-scoped-tasks',
-  imports: [Button, HasPermissionDirective, Pager, TaskTable],
+  imports: [ErrorReference, Button, HasPermissionDirective, Pager, TaskTable],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -108,7 +109,7 @@ const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'
         </div>
         <p-button
           *mfHasPermission="'Task.Create'"
-          label="Create Task"
+          label="Create task"
           icon="pi pi-plus"
           severity="secondary"
           data-create-task
@@ -122,6 +123,7 @@ const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'
       @if (state() === 'error') {
         <div class="st-alert" role="alert" data-error>
           We couldn't load the tasks.
+          <mf-error-reference />
           <p-button label="Retry" severity="secondary" (onClick)="load()" />
         </div>
       }

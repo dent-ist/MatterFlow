@@ -25,6 +25,8 @@ import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { EntityActivity } from '../../../shared/ui/entity-activity';
 import { MatterRef } from '../../../shared/ui/matter-ref';
+import { PageTitle } from '../../../core/title/page-title';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type Tab = 'matters' | 'details' | 'activity';
 type LoadState = 'loading' | 'ready' | 'error';
@@ -33,6 +35,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-client-detail-page',
   imports: [
+    ErrorReference,
     RouterLink,
     Button,
     HasPermissionDirective,
@@ -52,6 +55,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       @case ('error') {
         <div class="pg-alert" role="alert">
           We couldn't find that client.
+          <mf-error-reference />
           <p-button label="Retry" severity="secondary" (onClick)="load()" />
         </div>
       }
@@ -119,7 +123,7 @@ type LoadState = 'loading' | 'ready' | 'error';
               <div class="pg-actions" style="margin-bottom: var(--mf-s3)">
                 <p-button
                   *mfHasPermission="'Matter.Create'"
-                  label="New Matter for this client"
+                  label="New matter for this client"
                   icon="pi pi-plus"
                   severity="secondary"
                   [disabled]="!c.isActive"
@@ -219,6 +223,7 @@ export class ClientDetailPage {
   readonly clientId = input.required<string>();
 
   private readonly api = inject(ClientsClient);
+  private readonly pageTitle = inject(PageTitle);
   private readonly mattersApi = inject(MattersClient);
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
@@ -233,6 +238,10 @@ export class ClientDetailPage {
   protected readonly canSeeActivity = computed(() => this.auth.has('Audit.View'));
 
   constructor() {
+    effect(() => {
+      const c = this.client();
+      if (c) this.pageTitle.set(c.clientNumber + ' ' + c.name);
+    });
     effect(() => {
       this.clientId();
       untracked(() => void this.load());

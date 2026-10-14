@@ -86,7 +86,7 @@ describe('MyWorkPage', () => {
     const tabs = Array.from(el.querySelectorAll('[role="tab"]')).map((t) =>
       t.textContent?.replace(/\s+/g, ' ').trim(),
     );
-    expect(tabs).toEqual(['Active (7)', 'Due Soon (2)', 'Completed (5)', 'Created by Me (3)']);
+    expect(tabs).toEqual(['Active (7)', 'Due soon (2)', 'Completed (5)', 'Created by me (3)']);
     expect(tab(el, 'Active').getAttribute('aria-selected')).toBe('true');
     expect(el.querySelector('[role="tabpanel"]')!.getAttribute('aria-labelledby')).toBe(
       'mw-tab-active',
@@ -116,12 +116,12 @@ describe('MyWorkPage', () => {
 
   it('switches tabs through the URL and loads that view', async () => {
     const el = await open('/my-work');
-    tab(el, 'Due Soon').click();
+    tab(el, 'Due soon').click();
     await settle();
 
     expect(query()['view']).toBe('dueSoon');
     expect(lastArgs()[ARG.view]).toBe('dueSoon');
-    expect(tab(el, 'Due Soon').getAttribute('aria-selected')).toBe('true');
+    expect(tab(el, 'Due soon').getAttribute('aria-selected')).toBe('true');
     expect(el.querySelector('[data-help]')!.textContent).toContain('ASAP');
 
     tab(el, 'Active').click();

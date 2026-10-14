@@ -27,6 +27,8 @@ import {
   HasUnsavedChanges,
   LeaveConfirmService,
 } from '../../../shared/guards/unsaved-changes.guard';
+import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 
 type LoadState = 'loading' | 'ready' | 'error';
 type StatusFilter = 'all' | 'active' | 'inactive';
@@ -42,7 +44,7 @@ const SEARCH_DEBOUNCE_MS = 200;
 @Component({
   selector: 'mf-pods-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Button, HasPermissionDirective, RouterLink],
+  imports: [ConfirmDialog, ErrorReference, Button, HasPermissionDirective, RouterLink],
   templateUrl: './pods-page.html',
   styleUrl: './pods-page.scss',
 })
@@ -75,6 +77,7 @@ export class PodsPage implements OnInit, OnDestroy, HasUnsavedChanges {
   protected readonly failure = signal('');
   protected readonly busy = signal(false);
   protected readonly confirmDeactivate = signal(false);
+  protected readonly deactivateOpen = signal(false);
   protected readonly announce = signal('');
 
   // ---- members
@@ -220,6 +223,12 @@ export class PodsPage implements OnInit, OnDestroy, HasUnsavedChanges {
     this.confirmDeactivate.set(false);
   }
 
+  protected confirmDeactivation(): void {
+    this.deactivateOpen.set(false);
+    this.confirmDeactivate.set(true);
+    void this.save();
+  }
+
   protected async save(): Promise<void> {
     const name = this.name().trim();
     if (!name) {
@@ -227,7 +236,7 @@ export class PodsPage implements OnInit, OnDestroy, HasUnsavedChanges {
       return;
     }
     if (this.deactivating() && !this.confirmDeactivate()) {
-      this.confirmDeactivate.set(true);
+      this.deactivateOpen.set(true);
       return;
     }
 

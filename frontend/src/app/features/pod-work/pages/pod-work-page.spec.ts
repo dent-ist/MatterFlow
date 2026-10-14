@@ -153,8 +153,8 @@ describe('PodWorkPage', () => {
       options: Array.from(g.querySelectorAll('option')).map((o) => o.textContent?.trim()),
     }));
     expect(groups).toEqual([
-      { label: 'Your Pods', options: ['Pod A (primary)', 'Pod B'] },
-      { label: 'Other Pods', options: ['Pod C'] },
+      { label: 'Your pods', options: ['Pod A (primary)', 'Pod B'] },
+      { label: 'Other pods', options: ['Pod C'] },
     ]);
     expect(el.querySelector<HTMLSelectElement>('#pw-pod')!.value).toBe('5');
   });

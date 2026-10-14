@@ -126,21 +126,21 @@ describe('PodsPage', () => {
     } as typeof api;
   });
 
-  it('lists pods with member counts and status, and offers New Pod to managers only', async () => {
+  it('lists pods with member counts and status, and offers New pod to managers only', async () => {
     await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
 
     expect(text('[data-pod="1"]')).toContain('Pod A');
     expect(text('[data-pod="1"]')).toContain('2');
     expect(text('[data-pod="1"]')).toContain('Active');
     expect(text('[data-pod="2"]')).toContain('Inactive');
-    expect(el().textContent).toContain('New Pod');
+    expect(el().textContent).toContain('New pod');
     expect(el().textContent).toContain('Pod leads are a role');
   });
 
-  it('hides New Pod, Save and member controls without the manage permissions', async () => {
+  it('hides New pod, Save and member controls without the manage permissions', async () => {
     await create('Pod.View');
 
-    expect(el().textContent).not.toContain('New Pod');
+    expect(el().textContent).not.toContain('New pod');
     await openEditor();
     expect(q<HTMLInputElement>('[data-name]').disabled).toBe(true);
     expect(el().textContent).not.toContain('Save');
@@ -175,7 +175,7 @@ describe('PodsPage', () => {
     await click('.pods__actions p-button');
 
     expect(api.createPod).toHaveBeenCalledWith({ name: 'Pod C', description: 'New work' });
-    expect(text('#pods-editor-title')).toBe('Edit Pod');
+    expect(text('#pods-editor-title')).toBe('Edit pod');
     expect(text('[data-live]')).toBe(''); // the toast confirms the save; no second message
     expect(text('[data-no-members]')).toBe('No members yet.');
   });
@@ -256,16 +256,22 @@ describe('PodsPage', () => {
 
     await click('.pods__actions p-button');
     expect(api.updatePod).not.toHaveBeenCalled();
-    expect(text('[data-confirm-deactivate]')).toContain("Deactivate pod 'Pod A'?");
+    expect(document.body.textContent).toContain('Deactivate pod?');
+    expect(document.body.textContent).toContain('Keep active');
 
-    await click('.pods__actions p-button');
+    const confirm = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Deactivate pod' && b.closest('p-dialog, .p-dialog'),
+    );
+    expect(confirm).toBeDefined();
+    confirm!.click();
+    await settle();
     expect(api.updatePod).toHaveBeenCalledWith(1, {
       name: 'Pod A',
       description: 'Processing',
       isActive: false,
       rowVersion: 'rv1',
     });
-    expect(el().querySelector('[data-confirm-deactivate]')).toBeNull();
+    expect(document.body.textContent).not.toContain('Deactivate pod?');
   });
 
   it('does not allow adding members to an inactive pod', async () => {

@@ -12,13 +12,13 @@ export class ClientFormPage {
     this.number = page.getByRole('textbox', { name: 'Client number' });
     this.numberError = page.locator('#client-number-error');
     this.name = page.getByRole('textbox', { name: 'Client name' });
-    this.save = page.getByRole('button', { name: 'Save client' });
+    this.save = page.getByRole('button', { name: 'Create client' });
     this.summary = page.locator('[data-summary]');
   }
 
   async open(): Promise<void> {
     await this.page.goto('/clients/new');
-    await expect(this.page.getByRole('heading', { name: 'New Client' })).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: 'New client' })).toBeVisible();
   }
 
   async fill(number: string, name: string): Promise<void> {
@@ -47,13 +47,13 @@ export class MatterFormPage {
     this.number = page.getByRole('textbox', { name: 'Matter number' });
     this.name = page.getByRole('textbox', { name: 'Matter name' });
     this.sensitive = page.getByRole('checkbox', { name: /Sensitive matter/ });
-    this.save = page.getByRole('button', { name: 'Save matter' });
+    this.save = page.getByRole('button', { name: 'Create matter' });
     this.summary = page.locator('[data-summary]');
   }
 
   async open(): Promise<void> {
     await this.page.goto('/matters/new');
-    await expect(this.page.getByRole('heading', { name: 'New Matter' })).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: 'New matter' })).toBeVisible();
   }
 
   /** Picks the client by typing its number and choosing the suggestion. */

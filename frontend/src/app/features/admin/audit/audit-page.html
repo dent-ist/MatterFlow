@@ -4,7 +4,7 @@
   </p>
 } @else {
   <header class="au-head">
-    <h1>Audit Log</h1>
+    <h1>Audit log</h1>
     <p class="au-muted">
       Every recorded change, newest first. Times are shown in your time zone ({{ zone }}); the date
       filters use it too. The log is read only and can't be exported.
@@ -169,6 +169,7 @@
   @if (state() === 'error') {
     <div class="au-alert" role="alert" data-error>
       We couldn't load the audit log.
+      <mf-error-reference />
       <button type="button" class="au-secondary" (click)="retry()">Retry</button>
     </div>
   } @else if (state() === 'loading') {

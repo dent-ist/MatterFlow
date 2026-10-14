@@ -12,6 +12,7 @@ import { MessageService } from 'primeng/api';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../auth/auth-testing';
 import { AuthStore } from '../auth/auth.store';
 import { USER_TIME_ZONE } from '../time/clock';
+import { ErrorReferenceStore } from './error-reference-store';
 import { ApiError } from './api-error';
 import {
   CSRF_HEADER,
@@ -101,6 +102,42 @@ describe('HTTP interceptors', () => {
         detail: undefined,
       }),
     );
+  });
+
+  it('holds back the toast for a failed page load so an inline alert can show the reference (UXR-18)', () => {
+    vi.useFakeTimers();
+    try {
+      const { http, ctrl, messages } = setup();
+      http.get('/api/v1/clients').subscribe({ error: () => undefined });
+      ctrl
+        .expectOne('/api/v1/clients')
+        .flush({ status: 500, traceId: '00-ref', title: 'Boom' }, { status: 500, statusText: 'x' });
+      expect(messages.add).not.toHaveBeenCalled();
+      expect(TestBed.inject(ErrorReferenceStore).reference()).toBe('00-ref');
+
+      TestBed.inject(ErrorReferenceStore).claim(); // an inline alert showed it
+      vi.advanceTimersByTime(1000);
+      expect(messages.add).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('still toasts a failed page load when no inline alert claims it', () => {
+    vi.useFakeTimers();
+    try {
+      const { http, ctrl, messages } = setup();
+      http.get('/api/v1/clients').subscribe({ error: () => undefined });
+      ctrl
+        .expectOne('/api/v1/clients')
+        .flush({ status: 500, traceId: '00-ref' }, { status: 500, statusText: 'x' });
+      vi.advanceTimersByTime(1000);
+      expect(messages.add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error', detail: 'Reference: 00-ref' }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('reads problem+json from Blob error bodies (the generated client requests blobs)', async () => {

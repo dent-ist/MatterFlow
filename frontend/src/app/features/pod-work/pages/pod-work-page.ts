@@ -43,7 +43,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
               <option value="" selected>Choose a Pod</option>
             }
             @if (yourPods().length > 0) {
-              <optgroup label="Your Pods">
+              <optgroup label="Your pods">
                 @for (p of yourPods(); track p.podId) {
                   <option [value]="p.podId" [selected]="p.podId === data()?.pod?.podId">
                     {{ p.name }}{{ p.isPrimary ? ' (primary)' : '' }}
@@ -52,7 +52,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
               </optgroup>
             }
             @if (otherPods().length > 0) {
-              <optgroup label="Other Pods">
+              <optgroup label="Other pods">
                 @for (p of otherPods(); track p.podId) {
                   <option [value]="p.podId" [selected]="p.podId === data()?.pod?.podId">
                     {{ p.name }}

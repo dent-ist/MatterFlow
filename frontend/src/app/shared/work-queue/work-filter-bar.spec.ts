@@ -203,7 +203,7 @@ describe('WorkFilterBar', () => {
     expect(buttons.map((b) => b.textContent?.trim())).toEqual([
       'All open',
       'Unassigned',
-      'My Pod',
+      'My pod',
       'Created by me',
       'Overdue',
       'Recently completed',

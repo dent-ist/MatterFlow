@@ -5,6 +5,7 @@ import { ColumnChooser } from './column-chooser';
 import { Density } from './column-prefs';
 import { PAGE_SIZES, SortDirection } from './queue-filters';
 import { TaskTable } from './task-table';
+import { ErrorReference } from '../ui/error-reference';
 
 export type WorkListState = 'loading' | 'ready' | 'error';
 
@@ -24,7 +25,7 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
  */
 @Component({
   selector: 'mf-work-list',
-  imports: [TaskTable, Pager, ColumnChooser],
+  imports: [ErrorReference, TaskTable, Pager, ColumnChooser],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './work-list.scss',
   template: `
@@ -53,6 +54,7 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
     @if (state() === 'error') {
       <div class="wl-alert" role="alert">
         Something went wrong. Try again.
+        <mf-error-reference />
         <button type="button" class="wl-retry" (click)="retry.emit()">Retry</button>
       </div>
     }

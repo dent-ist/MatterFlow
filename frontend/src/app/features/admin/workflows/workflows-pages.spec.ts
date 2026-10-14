@@ -258,7 +258,7 @@ describe('WorkflowEditPage', () => {
     const el: HTMLElement = fixture.nativeElement;
 
     type(el, '#wf-name', 'Std');
-    buttonByLabel(el, 'Save workflow')!.click();
+    buttonByLabel(el, 'Save changes')!.click();
     await settle(fixture);
     expect(api.updateWorkflow).toHaveBeenCalledWith(1, {
       name: 'Std',
@@ -272,7 +272,7 @@ describe('WorkflowEditPage', () => {
       apiError(409, { status: 409, title: 'Conflict', code: 'CONCURRENCY_CONFLICT' }),
     );
     type(el, '#wf-name', 'Std 2');
-    buttonByLabel(el, 'Save workflow')!.click();
+    buttonByLabel(el, 'Save changes')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-conflict]')).not.toBeNull();
   });

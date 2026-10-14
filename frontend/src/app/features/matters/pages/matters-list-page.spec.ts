@@ -108,9 +108,9 @@ describe('MattersListPage', () => {
     });
   });
 
-  it('hides New Matter without Matter.Create', async () => {
+  it('hides New matter without Matter.Create', async () => {
     const fixture = await create(['Matter.View']);
 
-    expect(buttonByLabel(fixture.nativeElement, 'New Matter')).toBeUndefined();
+    expect(buttonByLabel(fixture.nativeElement, 'New matter')).toBeUndefined();
   });
 });

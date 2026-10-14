@@ -184,7 +184,7 @@ describe('Assets pages', () => {
       expect(fixture.nativeElement.querySelector('[data-matter-chip]')?.textContent).toContain(
         '00343-00012 Merger Review',
       );
-      buttonByLabel(fixture.nativeElement, 'New Asset')!.click();
+      buttonByLabel(fixture.nativeElement, 'New asset')!.click();
       expect(navigateByUrl).toHaveBeenCalledWith('/assets/new?matterId=7');
       fixture.nativeElement.querySelector('[data-matter-chip] button').click();
       expect(navigate).toHaveBeenCalledWith([], {
@@ -212,9 +212,9 @@ describe('Assets pages', () => {
       });
     });
 
-    it('hides New Asset without Asset.Create and shows empty and error states', async () => {
+    it('hides New asset without Asset.Create and shows empty and error states', async () => {
       const fixture = await create(['Asset.View']);
-      expect(buttonByLabel(fixture.nativeElement, 'New Asset')).toBeUndefined();
+      expect(buttonByLabel(fixture.nativeElement, 'New asset')).toBeUndefined();
 
       assets.listAssets.mockReturnValue(ok(pageOfAssets()));
       fixture.componentRef.setInput('q', 'zzz');
@@ -426,7 +426,7 @@ describe('Assets pages', () => {
       fixture.componentRef.setInput('assetId', '9');
       await settle(fixture);
       expect(el().querySelector('[data-inactive-banner]')).not.toBeNull();
-      expect(buttonByLabel(el(), 'Save asset')!.disabled).toBe(true);
+      expect(buttonByLabel(el(), 'Save changes')!.disabled).toBe(true);
     });
 
     it('reports unsaved changes and none after a save', async () => {
@@ -558,7 +558,7 @@ describe('Assets pages', () => {
       TestBed.resetTestingModule();
       await create(['Asset.View', 'Asset.Edit'], anAsset({ isActive: false }));
       expect(buttonByLabel(el(), 'Edit')).toBeUndefined();
-      expect(buttonByLabel(el(), 'Reactivate')).toBeDefined();
+      expect(buttonByLabel(el(), 'Set active')).toBeDefined();
       expect(el().querySelector('[data-inactive-banner]')).not.toBeNull();
     });
 

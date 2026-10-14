@@ -144,20 +144,20 @@ describe('StepEditPage', () => {
     expect(el.querySelector('[data-banner]')).toBeNull();
     expect(el.querySelector('[data-inputs-state]')?.textContent).toContain('Save the step first');
 
-    buttonByLabel(el, 'Save step')!.click();
+    buttonByLabel(el, 'Create step')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-summary]')?.textContent).toContain('Enter a title.');
     expect(api.createStepDefinition).not.toHaveBeenCalled();
 
     type('step-title', ' Deduplicate ');
     type('step-url', 'not a url');
-    buttonByLabel(el, 'Save step')!.click();
+    buttonByLabel(el, 'Create step')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-summary]')?.textContent).toContain('http');
     expect(api.createStepDefinition).not.toHaveBeenCalled();
 
     type('step-url', 'https://sharepoint.example.firm/dedupe');
-    buttonByLabel(el, 'Save step')!.click();
+    buttonByLabel(el, 'Create step')!.click();
     await settle(fixture);
     expect(api.createStepDefinition).toHaveBeenCalledWith({
       title: 'Deduplicate',
@@ -202,7 +202,7 @@ describe('StepEditPage', () => {
     title.dispatchEvent(new Event('input'));
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
 
-    buttonByLabel(el, 'Save step')!.click();
+    buttonByLabel(el, 'Save changes')!.click();
     await settle(fixture);
     expect(api.updateStepDefinition).toHaveBeenCalledWith(4, {
       title: 'Dedupe',
@@ -224,7 +224,7 @@ describe('StepEditPage', () => {
     );
     title.value = 'Dedupe 2';
     title.dispatchEvent(new Event('input'));
-    buttonByLabel(el, 'Save step')!.click();
+    buttonByLabel(el, 'Save changes')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-conflict]')).not.toBeNull();
   });
@@ -245,7 +245,7 @@ describe('StepEditPage', () => {
     buttonByLabel(el, 'Deactivate')!.click();
     await settle(fixture);
     const confirm = Array.from(document.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Deactivate' && b.closest('p-dialog, .p-dialog'),
+      (b) => b.textContent?.trim() === 'Deactivate step' && b.closest('p-dialog, .p-dialog'),
     );
     expect(confirm).toBeDefined();
     confirm!.click();

@@ -21,6 +21,7 @@
   }
   @case ('error') {
     <p class="error" role="alert">Couldn't load task types.</p>
+    <mf-error-reference />
     <p-button label="Try again" severity="secondary" (onClick)="load()" />
   }
   @default {
@@ -74,7 +75,7 @@
                     class="link danger"
                     [disabled]="busy()"
                     [attr.aria-label]="'Deactivate ' + t.name"
-                    (click)="setActive(t, false)"
+                    (click)="askDeactivate(t)"
                     data-deactivate
                   >
                     Deactivate
@@ -99,3 +100,18 @@
     }
   }
 }
+
+<mf-confirm-dialog
+  title="Deactivate task type?"
+  confirmLabel="Deactivate task type"
+  cancelLabel="Keep active"
+  [danger]="true"
+  [busy]="busy()"
+  [(visible)]="deactivateOpen"
+  (confirmed)="confirmDeactivate()"
+>
+  <p>
+    {{ deactivateTarget()?.name }} will no longer be offered when people create tasks. Existing
+    tasks keep this type, and you can activate it again later.
+  </p>
+</mf-confirm-dialog>

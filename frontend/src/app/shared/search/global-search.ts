@@ -55,7 +55,7 @@ interface DisplayGroup {
       <i class="pi pi-search" aria-hidden="true"></i>
       <input
         #box
-        class="mf-gs__input p-inputtext"
+        class="mf-gs__input"
         type="search"
         role="combobox"
         autocomplete="off"
@@ -205,9 +205,21 @@ interface DisplayGroup {
       color: var(--mf-text-muted);
       pointer-events: none;
     }
+    /* Styled explicitly (not via PrimeNG's .p-inputtext, whose CSS only loads once a PrimeNG input has rendered), so the box looks the same on every page. */
     .mf-gs__input {
+      box-sizing: border-box;
       width: 100%;
-      padding-left: 2.25rem;
+      min-height: var(--mf-row-h);
+      padding: 0 var(--mf-s3) 0 2.25rem;
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface);
+      color: var(--mf-text);
+      font: inherit;
+    }
+    .mf-gs__input::placeholder {
+      color: var(--mf-text-muted);
+      opacity: 1;
     }
     .mf-gs__panel {
       position: absolute;

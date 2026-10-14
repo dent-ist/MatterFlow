@@ -7,6 +7,8 @@ import { ApiError } from '../../../core/http/api-error';
 import { WorkflowLookup } from '../../../core/lookups/workflow-lookup';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { TaskTypeView, TaskTypesApi } from './task-types-api';
+import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -17,7 +19,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-task-types-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Button],
+  imports: [ConfirmDialog, ErrorReference, RouterLink, Button],
   templateUrl: './task-types-page.html',
   styleUrls: ['../admin-lookup.scss', './task-types-page.scss'],
 })
@@ -32,6 +34,8 @@ export class TaskTypesPage implements OnInit {
   protected readonly busy = signal(false);
   protected readonly failure = signal('');
   protected readonly announcement = signal('');
+  protected readonly deactivateOpen = signal(false);
+  protected readonly deactivateTarget = signal<TaskTypeView | null>(null);
 
   ngOnInit(): void {
     void this.load();
@@ -86,6 +90,17 @@ export class TaskTypesPage implements OnInit {
       return "The request form isn't published: users can't create tasks of this type.";
     }
     return '';
+  }
+
+  protected askDeactivate(t: TaskTypeView): void {
+    this.deactivateTarget.set(t);
+    this.deactivateOpen.set(true);
+  }
+
+  protected async confirmDeactivate(): Promise<void> {
+    const t = this.deactivateTarget();
+    this.deactivateOpen.set(false);
+    if (t) await this.setActive(t, false);
   }
 
   protected async setActive(t: TaskTypeView, isActive: boolean): Promise<void> {

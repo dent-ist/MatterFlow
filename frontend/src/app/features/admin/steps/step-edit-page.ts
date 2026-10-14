@@ -18,6 +18,7 @@ import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { TextField } from '../../../shared/ui/text-field';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -40,14 +41,14 @@ export function isValidDocumentationUrl(value: string): boolean {
  */
 @Component({
   selector: 'mf-step-edit-page',
-  imports: [RouterLink, Button, TextField, ConfirmDialog],
+  imports: [ErrorReference, RouterLink, Button, TextField, ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <header class="pg-head">
       <div>
         <p class="pg-crumbs">
-          <a routerLink="/admin/steps">Step Library</a> &gt; {{ isEdit() ? 'Edit' : 'New' }}
+          <a routerLink="/admin/steps">Step library</a> &gt; {{ isEdit() ? 'Edit' : 'New' }}
         </p>
         <h1 class="pg-title">{{ isEdit() ? 'Edit step' : 'New step' }}</h1>
       </div>
@@ -58,6 +59,7 @@ export function isValidDocumentationUrl(value: string): boolean {
     } @else if (state() === 'error') {
       <div class="pg-alert" role="alert">
         We couldn't load that step.
+        <mf-error-reference />
         <p-button label="Retry" severity="secondary" (onClick)="load()" />
       </div>
     } @else {
@@ -161,7 +163,7 @@ export function isValidDocumentationUrl(value: string): boolean {
         <div class="pg-actions">
           <p-button
             type="submit"
-            [label]="busy() ? 'Saving...' : 'Save step'"
+            [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create step'"
             [disabled]="busy()"
           />
           <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
@@ -187,16 +189,17 @@ export function isValidDocumentationUrl(value: string): boolean {
     }
 
     <mf-confirm-dialog
-      title="Deactivate step"
-      confirmLabel="Deactivate"
+      title="Deactivate step?"
+      confirmLabel="Deactivate step"
+      cancelLabel="Keep active"
       [danger]="true"
       [busy]="busy()"
       [(visible)]="deactivateOpen"
       (confirmed)="deactivate()"
     >
       <p>
-        The step is hidden from new workflow drafts. Published workflows that already use it are not
-        changed.
+        This step will be hidden from new workflow drafts. Published workflows that already use it
+        are not changed, and you can activate it again later.
       </p>
     </mf-confirm-dialog>
   `,

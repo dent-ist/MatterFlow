@@ -14,6 +14,8 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { TextField } from '../../../shared/ui/text-field';
+import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -24,13 +26,13 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-asset-types-page',
-  imports: [RouterLink, Button, TextField],
+  imports: [ConfirmDialog, ErrorReference, RouterLink, Button, TextField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <header class="pg-head">
       <div>
-        <h1 class="pg-title">Asset Types</h1>
+        <h1 class="pg-title">Asset types</h1>
         <p class="pg-muted">
           Each type has its own fields. Fields are versioned; changing them never alters saved
           values.
@@ -44,6 +46,26 @@ type LoadState = 'loading' | 'ready' | 'error';
     </header>
 
     <p class="pg-sr" role="status" aria-live="polite" data-announce>{{ announcement() }}</p>
+
+    <mf-confirm-dialog
+      title="Deactivate asset type?"
+      confirmLabel="Deactivate asset type"
+      cancelLabel="Keep active"
+      [danger]="true"
+      [busy]="busy()"
+      [(visible)]="deactivateOpen"
+      (confirmed)="confirmDeactivate()"
+    >
+      <p>
+        {{ deactivateTarget()?.name }} can't be chosen for new assets.
+        @if (deactivateTarget()?.assetCount; as count) {
+          The {{ count }} existing {{ count === 1 ? 'asset keeps' : 'assets keep' }} this type.
+        } @else {
+          Existing assets keep this type.
+        }
+        You can activate it again later.
+      </p>
+    </mf-confirm-dialog>
 
     @if (editing()) {
       <form class="pg-form" novalidate data-editor (submit)="$event.preventDefault(); save()">
@@ -97,7 +119,7 @@ type LoadState = 'loading' | 'ready' | 'error';
         <div class="pg-actions">
           <p-button
             type="submit"
-            [label]="busy() ? 'Saving...' : 'Save asset type'"
+            [label]="busy() ? 'Saving...' : editingId() ? 'Save changes' : 'Create asset type'"
             [disabled]="busy()"
           />
           <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
@@ -112,6 +134,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       @case ('error') {
         <div class="pg-alert" role="alert">
           We couldn't load the asset types.
+          <mf-error-reference />
           <p-button label="Retry" severity="secondary" (onClick)="load()" />
         </div>
       }
@@ -160,22 +183,24 @@ type LoadState = 'loading' | 'ready' | 'error';
                       t.isActive ? 'Active' : 'Inactive'
                     }}</span>
                   </td>
-                  <td class="pg-actions">
+                  <td class="pg-row-actions">
                     @if (canManage()) {
-                      <p-button
-                        label="Edit"
-                        size="small"
-                        severity="secondary"
-                        [attr.aria-label]="'Edit ' + t.name"
-                        (onClick)="startEdit(t)"
-                      />
-                      <p-button
-                        [label]="t.isActive ? 'Deactivate' : 'Activate'"
-                        size="small"
-                        severity="secondary"
-                        [disabled]="busy()"
-                        (onClick)="toggleActive(t)"
-                      />
+                      <div class="pg-row-actions__inner">
+                        <p-button
+                          label="Edit"
+                          size="small"
+                          severity="secondary"
+                          [attr.aria-label]="'Edit ' + t.name"
+                          (onClick)="startEdit(t)"
+                        />
+                        <p-button
+                          [label]="t.isActive ? 'Deactivate' : 'Activate'"
+                          size="small"
+                          severity="secondary"
+                          [disabled]="busy()"
+                          (onClick)="onToggle(t)"
+                        />
+                      </div>
                     }
                   </td>
                 </tr>
@@ -191,8 +216,18 @@ type LoadState = 'loading' | 'ready' | 'error';
       margin: 0;
       font-size: var(--mf-fs-h2);
     }
-    td.pg-actions {
-      border-bottom: 1px solid var(--mf-border);
+    /* Actions stay inside the cell: the column shrinks to its buttons and they never wrap over the next row (UXR-05). */
+    td.pg-row-actions {
+      width: 1%;
+      white-space: nowrap;
+    }
+    .pg-row-actions__inner {
+      display: flex;
+      gap: var(--mf-s2);
+      justify-content: flex-end;
+    }
+    .pg-table {
+      table-layout: auto;
     }
     td .pg-link {
       margin-left: var(--mf-s3);
@@ -209,6 +244,8 @@ export class AssetTypesPage implements OnInit {
   protected readonly rows = signal<AssetTypeResponse[]>([]);
   protected readonly busy = signal(false);
   protected readonly announcement = signal('');
+  protected readonly deactivateOpen = signal(false);
+  protected readonly deactivateTarget = signal<AssetTypeResponse | null>(null);
 
   protected readonly editing = signal(false);
   protected readonly editingId = signal<number | null>(null);
@@ -278,7 +315,7 @@ export class AssetTypesPage implements OnInit {
     this.summary.set([]);
   }
 
-  protected async save(): Promise<void> {
+  protected async save(deactivationConfirmed = false): Promise<void> {
     this.submitted.set(true);
     this.serverErrors.set({});
     this.summary.set([]);
@@ -288,6 +325,12 @@ export class AssetTypesPage implements OnInit {
     }
 
     const id = this.editingId();
+    const original = this.rows().find((r) => r.assetTypeId === id);
+    if (!deactivationConfirmed && original?.isActive && !this.isActive()) {
+      this.deactivateTarget.set(original);
+      this.deactivateOpen.set(true);
+      return;
+    }
     const description = this.description().trim() || undefined;
     this.busy.set(true);
     try {
@@ -330,6 +373,27 @@ export class AssetTypesPage implements OnInit {
       );
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  /** Activating needs no confirmation; deactivating asks first. */
+  protected onToggle(t: AssetTypeResponse): void {
+    if (!t.isActive) {
+      void this.toggleActive(t);
+      return;
+    }
+    this.deactivateTarget.set(t);
+    this.deactivateOpen.set(true);
+  }
+
+  protected confirmDeactivate(): void {
+    const t = this.deactivateTarget();
+    this.deactivateOpen.set(false);
+    if (!t) return;
+    if (this.editing() && this.editingId() === t.assetTypeId) {
+      void this.save(true);
+    } else {
+      void this.toggleActive(t);
     }
   }
 

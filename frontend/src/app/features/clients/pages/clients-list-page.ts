@@ -23,13 +23,14 @@ import {
   debounced,
 } from '../../../shared/ui/list-helpers';
 import { Pager } from '../../../shared/ui/pager';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
 /** Clients list (UX S05): search by number (padded or not) or name, status filter, sortable, server paged. State lives in the URL. */
 @Component({
   selector: 'mf-clients-list-page',
-  imports: [RouterLink, Button, HasPermissionDirective, Pager],
+  imports: [ErrorReference, RouterLink, Button, HasPermissionDirective, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -38,7 +39,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       <div class="pg-actions">
         <p-button
           *mfHasPermission="'Client.Create'"
-          label="New Client"
+          label="New client"
           icon="pi pi-plus"
           (onClick)="go('/clients/new')"
         />
@@ -86,6 +87,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       @case ('error') {
         <div class="pg-alert" role="alert">
           Something went wrong. Try again.
+          <mf-error-reference />
           <p-button label="Retry" severity="secondary" (onClick)="load()" />
         </div>
       }
@@ -101,7 +103,7 @@ type LoadState = 'loading' | 'ready' | 'error';
               <p>No clients yet.</p>
               <p-button
                 *mfHasPermission="'Client.Create'"
-                label="New Client"
+                label="New client"
                 (onClick)="go('/clients/new')"
               />
             </div>
@@ -114,7 +116,7 @@ type LoadState = 'loading' | 'ready' | 'error';
             <thead>
               <tr>
                 <th scope="col" [attr.aria-sort]="aria('clientNumber')">
-                  <button type="button" (click)="sortBy('clientNumber')">Client No.</button>
+                  <button type="button" (click)="sortBy('clientNumber')">Client number</button>
                 </th>
                 <th scope="col" [attr.aria-sort]="aria('name')">
                   <button type="button" (click)="sortBy('name')">Name</button>

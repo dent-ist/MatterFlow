@@ -111,7 +111,7 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('[data-inactive-banner]')?.textContent).toContain(
       "New tasks can't be created and completed or cancelled tasks can't be reopened.",
     );
-    expect(buttonByLabel(el(), 'Reactivate')).toBeDefined();
+    expect(buttonByLabel(el(), 'Set active')).toBeDefined();
   });
 
   it('has Tasks, Projects and Assets tabs; Tasks needs Task.View, Projects lists the matter projects', async () => {
@@ -140,7 +140,7 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('dl')?.textContent).toContain('Merger Review');
   });
 
-  it('lists the matter tasks in the Tasks tab (open by default, All on request) and offers Create Task', async () => {
+  it('lists the matter tasks in the Tasks tab (open by default, All on request) and offers Create task', async () => {
     await create(['Matter.View', 'Task.View', 'Task.Create'], aMatter({ openTaskCount: 3 }));
 
     expect(tab('Tasks').textContent?.trim()).toBe('Tasks (3 open)');
@@ -196,7 +196,7 @@ describe('MatterDetailPage', () => {
       'displayName',
     );
     expect(el().querySelector('mf-matter-assets tbody a')?.getAttribute('href')).toBe('/assets/9');
-    expect(buttonByLabel(el(), 'New Asset')).toBeDefined();
+    expect(buttonByLabel(el(), 'New asset')).toBeDefined();
 
     const box = el().querySelector<HTMLInputElement>('#matter-asset-search')!;
     box.value = 'contract';
@@ -212,19 +212,19 @@ describe('MatterDetailPage', () => {
       'displayName',
     );
 
-    buttonByLabel(el(), 'New Asset')!.click();
+    buttonByLabel(el(), 'New asset')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/assets/new?matterId=7');
   });
 
-  it('gates Edit, New Project and the activation button by permission', async () => {
+  it('gates Edit, New project and the activation button by permission', async () => {
     await create(['Matter.View']);
     expect(buttonByLabel(el(), 'Edit')).toBeUndefined();
-    expect(buttonByLabel(el(), 'New Project')).toBeUndefined();
+    expect(buttonByLabel(el(), 'New project')).toBeUndefined();
     expect(buttonByLabel(el(), 'Set inactive')).toBeUndefined();
 
     TestBed.resetTestingModule();
     await create(['Matter.View', 'Matter.Edit', 'Project.Create']);
-    buttonByLabel(el(), 'New Project')!.click();
+    buttonByLabel(el(), 'New project')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/projects/new?matterId=7');
     buttonByLabel(el(), 'Edit')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/matters/7/edit');

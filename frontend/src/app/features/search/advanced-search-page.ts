@@ -32,6 +32,7 @@ import { EntityPicker, PickerOption } from '../../shared/ui/entity-picker';
 import { parsePage } from '../../shared/ui/list-helpers';
 import { Pager } from '../../shared/ui/pager';
 import { HitTable } from './hit-table';
+import { ErrorReference } from '../../shared/ui/error-reference';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 type Tri = 'any' | 'true' | 'false';
@@ -68,7 +69,7 @@ const asList = (value: string | string[] | undefined): string[] =>
  */
 @Component({
   selector: 'mf-advanced-search-page',
-  imports: [Button, EntityPicker, HitTable, Pager],
+  imports: [ErrorReference, Button, EntityPicker, HitTable, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   template: `
@@ -225,6 +226,7 @@ const asList = (value: string | string[] | undefined): string[] =>
       @case ('error') {
         <div class="pg-alert" role="alert" data-state="error">
           {{ errorMessage }}
+          <mf-error-reference />
           <p-button label="Try again" severity="secondary" (onClick)="load()" />
         </div>
       }

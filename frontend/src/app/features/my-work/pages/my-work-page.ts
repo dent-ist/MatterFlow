@@ -17,9 +17,9 @@ type TabKey = 'active' | 'dueSoon' | 'completed' | 'createdByMe';
 
 const TAB_LABELS: Readonly<Record<TabKey, string>> = {
   active: 'Active',
-  dueSoon: 'Due Soon',
+  dueSoon: 'Due soon',
   completed: 'Completed',
-  createdByMe: 'Created by Me',
+  createdByMe: 'Created by me',
 };
 
 /** The Completed tab shows tasks closed in the last 90 days unless the user asks for older ones (UX S02). */

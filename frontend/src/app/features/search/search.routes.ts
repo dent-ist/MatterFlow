@@ -7,11 +7,13 @@ export const SEARCH_ROUTES: Routes = [
   {
     path: '',
     pathMatch: 'full',
+    title: 'Search results',
     canActivate: [permissionGuard(...SEARCH_TYPES.map((t) => t.permission))],
     loadComponent: () => import('./search-results-page').then((m) => m.SearchResultsPage),
   },
   {
     path: 'advanced',
+    title: 'Advanced search',
     canActivate: [permissionGuard(...SEARCH_TYPES.map((t) => t.permission))],
     loadComponent: () => import('./advanced-search-page').then((m) => m.AdvancedSearchPage),
   },

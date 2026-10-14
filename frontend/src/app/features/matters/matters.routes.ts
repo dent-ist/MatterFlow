@@ -7,22 +7,26 @@ export const MATTERS_ROUTES: Routes = [
   {
     path: '',
     pathMatch: 'full',
+    title: 'Matters',
     loadComponent: () => import('./pages/matters-list-page').then((m) => m.MattersListPage),
   },
   {
     path: 'new',
+    title: 'New matter',
     canActivate: [permissionGuard('Matter.Create')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./pages/matter-form-page').then((m) => m.MatterFormPage),
   },
   {
     path: ':matterId/edit',
+    title: 'Edit matter',
     canActivate: [permissionGuard('Matter.Edit', 'Matter.EditNumber')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./pages/matter-form-page').then((m) => m.MatterFormPage),
   },
   {
     path: ':matterId',
+    title: 'Matter',
     loadComponent: () => import('./pages/matter-detail-page').then((m) => m.MatterDetailPage),
   },
 ];

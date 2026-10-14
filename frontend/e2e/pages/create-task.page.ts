@@ -1,6 +1,6 @@
 import { expect, Locator, Page } from '@playwright/test';
 
-/** Create Task (UX S09): one page, one call. */
+/** Create task (UX S09): one page, one call. */
 export class CreateTaskPage {
   readonly matter: Locator;
   readonly project: Locator;
@@ -46,7 +46,7 @@ export class CreateTaskPage {
 
   async open(query = ''): Promise<void> {
     await this.page.goto(`/tasks/new${query}`);
-    await expect(this.page.getByRole('heading', { name: 'Create Task', level: 1 })).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: 'Create task', level: 1 })).toBeVisible();
     await expect(this.title).toBeVisible();
   }
 

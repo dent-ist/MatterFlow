@@ -68,6 +68,12 @@ describe('TaskTypesPage', () => {
 
     row('Data Processing').querySelector<HTMLButtonElement>('[data-deactivate]')!.click();
     await settle(fixture);
+    const confirm = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Deactivate task type' && b.closest('p-dialog, .p-dialog'),
+    );
+    expect(confirm).toBeDefined();
+    confirm!.click();
+    await settle(fixture);
     expect(row('Data Processing').textContent).toContain('Inactive');
     expect(row('Data Processing').querySelector('[data-warning]')).toBeNull();
     expect(el().querySelector('[data-announce]')!.textContent).toContain(

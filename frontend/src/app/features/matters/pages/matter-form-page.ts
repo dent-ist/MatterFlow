@@ -34,6 +34,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { NumberInput, numberProblem } from '../../../shared/ui/number-input';
 import { TextField } from '../../../shared/ui/text-field';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -45,6 +46,7 @@ function clientOption(c: ClientResponse): PickerOption {
 @Component({
   selector: 'mf-matter-form-page',
   imports: [
+    ErrorReference,
     RouterLink,
     CustomFieldsEditor,
     Button,
@@ -62,7 +64,7 @@ function clientOption(c: ClientResponse): PickerOption {
         <p class="pg-crumbs">
           <a routerLink="/matters">Matters</a> &gt; {{ isEdit() ? 'Edit' : 'New' }}
         </p>
-        <h1 class="pg-title">{{ isEdit() ? 'Edit Matter' : 'New Matter' }}</h1>
+        <h1 class="pg-title">{{ isEdit() ? 'Edit matter' : 'New matter' }}</h1>
       </div>
     </header>
 
@@ -71,6 +73,7 @@ function clientOption(c: ClientResponse): PickerOption {
     } @else if (state() === 'error') {
       <div class="pg-alert" role="alert">
         We couldn't load that.
+        <mf-error-reference />
         <p-button label="Retry" severity="secondary" (onClick)="load()" />
       </div>
     } @else {
@@ -175,7 +178,7 @@ function clientOption(c: ClientResponse): PickerOption {
         <div class="pg-actions">
           <p-button
             type="submit"
-            [label]="busy() ? 'Saving...' : 'Save matter'"
+            [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create matter'"
             [disabled]="busy()"
           />
           <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />

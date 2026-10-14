@@ -6,23 +6,27 @@ import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
 export const CLIENTS_ROUTES: Routes = [
   {
     path: '',
+    title: 'Clients',
     pathMatch: 'full',
     loadComponent: () => import('./pages/clients-list-page').then((m) => m.ClientsListPage),
   },
   {
     path: 'new',
+    title: 'New client',
     canActivate: [permissionGuard('Client.Create')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./pages/client-form-page').then((m) => m.ClientFormPage),
   },
   {
     path: ':clientId/edit',
+    title: 'Edit client',
     canActivate: [permissionGuard('Client.Edit', 'Client.EditNumber')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./pages/client-form-page').then((m) => m.ClientFormPage),
   },
   {
     path: ':clientId',
+    title: 'Client',
     loadComponent: () => import('./pages/client-detail-page').then((m) => m.ClientDetailPage),
   },
 ];

@@ -21,6 +21,8 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { EntityActivity } from '../../../shared/ui/entity-activity';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
+import { PageTitle } from '../../../core/title/page-title';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type Tab = 'tasks' | 'details' | 'activity';
 type LoadState = 'loading' | 'ready' | 'error';
@@ -29,6 +31,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-project-detail-page',
   imports: [
+    ErrorReference,
     RouterLink,
     Button,
     HasPermissionDirective,
@@ -49,6 +52,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       @case ('error') {
         <div class="pg-alert" role="alert">
           We couldn't find that project.
+          <mf-error-reference />
           <p-button label="Retry" severity="secondary" (onClick)="load()" />
         </div>
       }
@@ -181,6 +185,7 @@ export class ProjectDetailPage {
   readonly projectId = input.required<string>();
 
   private readonly api = inject(ProjectsClient);
+  private readonly pageTitle = inject(PageTitle);
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
@@ -193,6 +198,10 @@ export class ProjectDetailPage {
   protected readonly canSeeActivity = computed(() => this.auth.has('Audit.View'));
 
   constructor() {
+    effect(() => {
+      const p = this.project();
+      if (p) this.pageTitle.set(p.name);
+    });
     effect(() => {
       this.projectId();
       untracked(() => void this.load());

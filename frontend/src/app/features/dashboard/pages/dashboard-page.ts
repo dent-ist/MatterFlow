@@ -21,6 +21,7 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 import { BarItem, BarList } from '../ui/bar-list';
 import { RecentTaskList } from '../ui/recent-task-list';
 import { StatTile } from '../ui/stat-tile';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -40,7 +41,7 @@ const DEFAULT_PERIOD = 30;
 
 function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
   return items.map((i) => ({
-    label: i.label,
+    label: i.label === 'No Pod' ? 'No pod' : i.label, // glossary: "No pod" (the API still sends the Title Case label)
     count: i.count,
     query: i.query ?? null,
     tone: i.code ?? null,
@@ -55,7 +56,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
  */
 @Component({
   selector: 'mf-dashboard-page',
-  imports: [BarList, HasPermissionDirective, RecentTaskList, RouterLink, StatTile],
+  imports: [ErrorReference, BarList, HasPermissionDirective, RecentTaskList, RouterLink, StatTile],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="head">
@@ -89,6 +90,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       @case ('error') {
         <div class="alert" role="alert" data-error>
           <span>The dashboard could not be loaded.</span>
+          <mf-error-reference />
           <button type="button" (click)="load()">Retry</button>
         </div>
       }
@@ -193,7 +195,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                 />
                 <mf-bar-list
                   heading="Open by Task Type"
-                  rowHeading="Task Type"
+                  rowHeading="Task type"
                   [items]="types()"
                   emptyText="No open tasks."
                 />

@@ -28,6 +28,8 @@ import { EntityActivity } from '../../../shared/ui/entity-activity';
 import { MatterAssets } from '../../../shared/ui/matter-assets';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
+import { PageTitle } from '../../../core/title/page-title';
+import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type Tab = 'tasks' | 'projects' | 'assets' | 'details' | 'activity';
 type LoadState = 'loading' | 'ready' | 'error';
@@ -39,6 +41,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-matter-detail-page',
   imports: [
+    ErrorReference,
     RouterLink,
     Button,
     HasPermissionDirective,
@@ -60,6 +63,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       @case ('error') {
         <div class="pg-alert" role="alert">
           We couldn't find that matter.
+          <mf-error-reference />
           <p-button label="Retry" severity="secondary" (onClick)="load()" />
         </div>
       }
@@ -86,14 +90,14 @@ type LoadState = 'loading' | 'ready' | 'error';
             <div class="pg-actions">
               <p-button
                 *mfHasPermission="'Task.Create'"
-                label="Create Task"
+                label="Create task in this matter"
                 icon="pi pi-plus"
                 [disabled]="!m.isActive"
                 (onClick)="go('/tasks/new?matterId=' + m.matterId)"
               />
               <p-button
                 *mfHasPermission="'Project.Create'"
-                label="New Project"
+                label="New project"
                 icon="pi pi-plus"
                 severity="secondary"
                 (onClick)="go('/projects/new?matterId=' + m.matterId)"
@@ -106,7 +110,7 @@ type LoadState = 'loading' | 'ready' | 'error';
               />
               <span *mfHasPermission="'Matter.SetActive'" class="pg-toggle">
                 <p-button
-                  [label]="m.isActive ? 'Set inactive' : 'Reactivate'"
+                  [label]="m.isActive ? 'Set inactive' : 'Set active'"
                   severity="secondary"
                   [disabled]="deactivateBlocked()"
                   [attr.aria-describedby]="deactivateBlocked() ? 'matter-toggle-reason' : null"
@@ -267,7 +271,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 
           <mf-confirm-dialog
             [title]="m.isActive ? 'Set matter inactive' : 'Reactivate matter'"
-            [confirmLabel]="m.isActive ? 'Set inactive' : 'Reactivate'"
+            [confirmLabel]="m.isActive ? 'Set inactive' : 'Set active'"
             [danger]="m.isActive"
             [busy]="busy()"
             [(visible)]="toggleOpen"
@@ -319,6 +323,7 @@ export class MatterDetailPage {
   readonly matterId = input.required<string>();
 
   private readonly api = inject(MattersClient);
+  private readonly pageTitle = inject(PageTitle);
   private readonly projectsApi = inject(ProjectsClient);
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
@@ -341,6 +346,10 @@ export class MatterDetailPage {
   });
 
   constructor() {
+    effect(() => {
+      const m = this.matter();
+      if (m) this.pageTitle.set(m.matterRef + ' ' + m.name);
+    });
     effect(() => {
       this.matterId();
       untracked(() => void this.load());

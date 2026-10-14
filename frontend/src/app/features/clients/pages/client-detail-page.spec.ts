@@ -78,7 +78,7 @@ describe('ClientDetailPage', () => {
 
     expect(buttonByLabel(el(), 'Edit')).toBeUndefined();
     expect(buttonByLabel(el(), 'Set inactive')).toBeUndefined();
-    expect(buttonByLabel(el(), 'New Matter for this client')).toBeUndefined();
+    expect(buttonByLabel(el(), 'New matter for this client')).toBeUndefined();
     expect(matters.listMatters).not.toHaveBeenCalled();
     expect(
       Array.from(el().querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
@@ -88,17 +88,17 @@ describe('ClientDetailPage', () => {
   it('starts a matter for this client, prefilled', async () => {
     await create(['Client.View', 'Matter.View', 'Matter.Create']);
 
-    buttonByLabel(el(), 'New Matter for this client')!.click();
+    buttonByLabel(el(), 'New matter for this client')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/matters/new?clientId=1');
   });
 
-  it('disables New Matter with a visible reason for an inactive client', async () => {
+  it('disables New matter with a visible reason for an inactive client', async () => {
     await create(['Client.View', 'Matter.View', 'Matter.Create']);
     clients.getClient.mockReturnValue(ok(aClient({ isActive: false })));
     await fixture.componentInstance.load();
     await settle(fixture);
 
-    expect(buttonByLabel(el(), 'New Matter for this client')!.disabled).toBe(true);
+    expect(buttonByLabel(el(), 'New matter for this client')!.disabled).toBe(true);
     expect(el().querySelector('[data-inactive-reason]')?.textContent).toContain(
       "new matters can't be created",
     );

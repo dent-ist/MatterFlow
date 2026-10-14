@@ -5,7 +5,7 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { TitleStrategy, provideRouter, withComponentInputBinding } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { providePrimeNG } from 'primeng/config';
 
@@ -19,6 +19,7 @@ import { IdentityAdminApi } from './core/identity-admin/identity-admin-api';
 import { InMemoryIdentityAdminApi } from './core/identity-admin/in-memory-identity-admin-api';
 import { MF_HTTP_INTERCEPTORS } from './core/http/interceptors';
 import { MfPreset } from './core/theme/mf-preset';
+import { MfTitleStrategy } from './core/title/page-title';
 import { environment } from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
@@ -26,6 +27,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withInterceptors(MF_HTTP_INTERCEPTORS)),
+    { provide: TitleStrategy, useExisting: MfTitleStrategy },
     MessageService,
     { provide: APP_ENV, useValue: environment },
     // Provider is chosen by environment.authProvider; the stub needs no backend.
