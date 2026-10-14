@@ -1,0 +1,76 @@
+.ct {
+  display: grid;
+  gap: var(--mf-s4);
+  align-items: start;
+}
+
+.ct__main {
+  display: grid;
+  gap: var(--mf-s3);
+  min-width: 0;
+  max-width: 720px;
+}
+
+.ct__form {
+  max-width: none;
+}
+
+.ct__section {
+  display: grid;
+  gap: var(--mf-s3);
+  padding-bottom: var(--mf-s4);
+  border-bottom: 1px solid var(--mf-border);
+}
+
+.ct__section:last-of-type {
+  border-bottom: 0;
+}
+
+.ct__h {
+  margin: 0;
+  font-size: var(--mf-fs-h2, 1.1rem);
+}
+
+.ct__details {
+  display: grid;
+  gap: var(--mf-s3);
+}
+
+.ct__fieldset {
+  display: grid;
+  gap: var(--mf-s2);
+  margin: 0;
+  padding: var(--mf-s3) 0 0;
+  border: 0;
+  border-top: 1px solid var(--mf-border);
+}
+
+.ct__fieldset legend {
+  padding: 0 var(--mf-s2) 0 0;
+  font-weight: 600;
+}
+
+.ct__due {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--mf-s3);
+}
+
+.ct__card {
+  padding: var(--mf-s4);
+  background: var(--mf-surface);
+  border-radius: var(--mf-radius-lg);
+  box-shadow: var(--mf-shadow-1);
+}
+
+@media (min-width: 1280px) {
+  .ct {
+    grid-template-columns: minmax(0, 720px) 20rem;
+  }
+
+  .ct__aside {
+    position: sticky;
+    top: var(--mf-s4);
+  }
+}
