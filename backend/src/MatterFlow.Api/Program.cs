@@ -116,7 +116,19 @@ app.UseAuthorization();
 app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
+{
     app.MapOpenApi("/openapi/{documentName}.json").AllowAnonymous();
+
+    // Swagger UI over the generated document, Development only. "Try it out" sends the Dev-auth default user and the CSRF guard header.
+    app.UseSwaggerUI(options =>
+    {
+        options.RoutePrefix = "swagger";
+        options.DocumentTitle = "MatterFlow API";
+        options.SwaggerEndpoint("/openapi/v1.json", "MatterFlow v1");
+        options.EnablePersistAuthorization();
+        options.UseRequestInterceptor("(req) => { req.headers['X-MatterFlow-Client'] = 'web'; return req; }");
+    });
+}
 
 app.MapHealthChecks("/health/live", new() { Predicate = r => !r.Tags.Contains(ReadinessHealthCheck.Tag) }).AllowAnonymous();
 app.MapHealthChecks("/health/ready", ReadinessHealthCheck.EndpointOptions()).AllowAnonymous();

@@ -23,16 +23,22 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
     /// <summary>Policy for API responses: nothing may be loaded or framed.</summary>
     public const string ApiContentSecurityPolicy = "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
+    /// <summary>Swagger UI (served only in Development) needs an inline bootstrap script; never applied to the app or the API.</summary>
+    public const string SwaggerContentSecurityPolicy =
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; "
+        + "connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
+
     public const string PermissionsPolicy =
         "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()";
 
     public Task InvokeAsync(HttpContext context)
     {
         var isApi = context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase);
+        var isSwagger = context.Request.Path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase);
         context.Response.OnStarting(() =>
         {
             var headers = context.Response.Headers;
-            headers["Content-Security-Policy"] = isApi ? ApiContentSecurityPolicy : AppContentSecurityPolicy;
+            headers["Content-Security-Policy"] = isApi ? ApiContentSecurityPolicy : isSwagger ? SwaggerContentSecurityPolicy : AppContentSecurityPolicy;
             headers["X-Content-Type-Options"] = "nosniff";
             headers["X-Frame-Options"] = "DENY";
             headers["Referrer-Policy"] = "no-referrer";

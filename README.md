@@ -43,6 +43,7 @@ dotnet build                 # add -warnaserror to match CI
 dotnet test                  # everything: unit, architecture, schema and integration tests (the last two need Docker)
 dotnet test tests/MatterFlow.UnitTests   # fast, no Docker (also tests/MatterFlow.ArchitectureTests)
 dotnet run --project src/MatterFlow.Api   # http://localhost:5080, liveness at /health/live, readiness at /health/ready
+# Swagger UI (Development only): http://localhost:5080/swagger (OpenAPI JSON at /openapi/v1.json)
 dotnet format --verify-no-changes         # style check used by CI
 ```
 
