@@ -207,14 +207,16 @@ public static class FormEvaluator
         return false;
     }
 
-    /// <summary>ECMAScript, unanchored search. An uncompilable pattern or a timeout counts as no match.</summary>
+    /// <summary>Portable subset (contracts/form-rules.md 3.1), unanchored search. A pattern outside the subset (publish rejects it) or a timeout counts as no match.</summary>
     private static bool MatchesPattern(string pattern, string text)
     {
         var regex = PatternCache.GetOrAdd(pattern, p =>
         {
             try
             {
-                return new Regex(p, RegexOptions.ECMAScript, RegexTimeout);
+                return PortablePattern.TryTranslate(p, out var translated)
+                    ? new Regex(translated, RegexOptions.ECMAScript, RegexTimeout)
+                    : null;
             }
             catch (ArgumentException)
             {

@@ -3503,6 +3503,2307 @@
           "INVALID_SECTION"
         ]
       }
+    },
+    {
+      "name": "null-show-when-is-absent",
+      "description": "showWhen null means absent: the field is always shown.",
+      "schema": {
+        "fields": [
+          {
+            "key": "flag",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "note",
+            "control": "TEXT",
+            "showWhen": null
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "flag": true,
+          "note": true
+        },
+        "required": {
+          "flag": false,
+          "note": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "null-required-when-is-absent",
+      "description": "requiredWhen null means absent: only the static flag applies.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "requiredWhen": null
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "note": true
+        },
+        "required": {
+          "note": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "null-available-when-is-absent",
+      "description": "Option availableWhen null means always available.",
+      "schema": {
+        "fields": [
+          {
+            "key": "mode",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "a",
+                "availableWhen": null
+              },
+              {
+                "key": "b"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {
+        "mode": "a"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "mode": true
+        },
+        "required": {
+          "mode": false
+        },
+        "options": {
+          "mode": [
+            "a",
+            "b"
+          ]
+        },
+        "errors": [],
+        "normalized": {
+          "mode": "a"
+        }
+      }
+    },
+    {
+      "name": "null-optional-members-are-absent",
+      "description": "null label, required, section, options, validation members and validation itself behave as if omitted.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "label": null,
+            "required": null,
+            "section": null,
+            "options": null,
+            "validation": {
+              "maxLength": null,
+              "pattern": null,
+              "patternMessage": null
+            }
+          },
+          {
+            "key": "qty",
+            "control": "NUMBER",
+            "validation": {
+              "min": null,
+              "max": null
+            }
+          },
+          {
+            "key": "plain",
+            "control": "TEXT",
+            "validation": null
+          }
+        ]
+      },
+      "values": {
+        "note": "x",
+        "qty": 5,
+        "plain": "y"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "note": true,
+          "qty": true,
+          "plain": true
+        },
+        "required": {
+          "note": false,
+          "qty": false,
+          "plain": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "note": "x",
+          "qty": 5,
+          "plain": "y"
+        }
+      }
+    },
+    {
+      "name": "null-value-for-unknown-key-is-unknown-field",
+      "description": "A submitted key that is not an input field is UNKNOWN_FIELD even when its value is null.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT"
+          }
+        ]
+      },
+      "values": {
+        "ghost": null
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "note": true
+        },
+        "required": {
+          "note": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "ghost",
+            "code": "UNKNOWN_FIELD"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "unknown-key-is-case-sensitive",
+      "description": "Submitted keys match field keys exactly: \"Custodian\" is unknown while \"custodian\" is a field.",
+      "schema": {
+        "fields": [
+          {
+            "key": "custodian",
+            "control": "TEXT"
+          }
+        ]
+      },
+      "values": {
+        "Custodian": "x",
+        "custodian": "y"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "custodian": true
+        },
+        "required": {
+          "custodian": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "Custodian",
+            "code": "UNKNOWN_FIELD"
+          }
+        ],
+        "normalized": {
+          "custodian": "y"
+        }
+      }
+    },
+    {
+      "name": "def-rule-string-is-schema-violation",
+      "description": "A rule that is a JSON string (not an object and not null) is SCHEMA_VIOLATION.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "showWhen": "nope"
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "SCHEMA_VIOLATION"
+        ]
+      }
+    },
+    {
+      "name": "def-rule-array-is-schema-violation",
+      "description": "A rule that is a JSON array is SCHEMA_VIOLATION.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "requiredWhen": []
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "SCHEMA_VIOLATION"
+        ]
+      }
+    },
+    {
+      "name": "def-field-key-uppercase",
+      "description": "Field keys must match ^[a-z][a-z0-9_]{0,63}$: uppercase is INVALID_FIELD_KEY.",
+      "schema": {
+        "fields": [
+          {
+            "key": "Bad",
+            "control": "TEXT"
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_FIELD_KEY"
+        ]
+      }
+    },
+    {
+      "name": "def-field-key-leading-digit",
+      "description": "A field key starting with a digit is INVALID_FIELD_KEY.",
+      "schema": {
+        "fields": [
+          {
+            "key": "1abc",
+            "control": "TEXT"
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_FIELD_KEY"
+        ]
+      }
+    },
+    {
+      "name": "def-field-key-hyphen",
+      "description": "A field key containing a hyphen is INVALID_FIELD_KEY.",
+      "schema": {
+        "fields": [
+          {
+            "key": "my-field",
+            "control": "TEXT"
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_FIELD_KEY"
+        ]
+      }
+    },
+    {
+      "name": "def-field-key-too-long",
+      "description": "A 65-character field key is INVALID_FIELD_KEY.",
+      "schema": {
+        "fields": [
+          {
+            "key": "kaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "control": "TEXT"
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_FIELD_KEY"
+        ]
+      }
+    },
+    {
+      "name": "def-option-key-leading-dash",
+      "description": "Option keys must match ^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$: a leading dash is INVALID_OPTION_KEY.",
+      "schema": {
+        "fields": [
+          {
+            "key": "mode",
+            "control": "SELECT",
+            "options": [
+              {
+                "key": "-x"
+              },
+              {
+                "key": "b"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_OPTION_KEY"
+        ]
+      }
+    },
+    {
+      "name": "def-option-key-with-space",
+      "description": "An option key containing a space is INVALID_OPTION_KEY.",
+      "schema": {
+        "fields": [
+          {
+            "key": "mode",
+            "control": "RADIO",
+            "options": [
+              {
+                "key": "a b"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_OPTION_KEY"
+        ]
+      }
+    },
+    {
+      "name": "def-unknown-control",
+      "description": "A control that is not in the catalog is UNKNOWN_CONTROL.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXTBOX"
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "UNKNOWN_CONTROL"
+        ]
+      }
+    },
+    {
+      "name": "def-unknown-control-is-case-sensitive",
+      "description": "Control names are exact: \"text\" is UNKNOWN_CONTROL.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "text"
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "UNKNOWN_CONTROL"
+        ]
+      }
+    },
+    {
+      "name": "def-select-without-options",
+      "description": "SELECT without options is NO_OPTIONS.",
+      "schema": {
+        "fields": [
+          {
+            "key": "mode",
+            "control": "SELECT"
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "NO_OPTIONS"
+        ]
+      }
+    },
+    {
+      "name": "def-radio-empty-options-array",
+      "description": "RADIO with an empty options array is NO_OPTIONS.",
+      "schema": {
+        "fields": [
+          {
+            "key": "mode",
+            "control": "RADIO",
+            "options": []
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "NO_OPTIONS"
+        ]
+      }
+    },
+    {
+      "name": "def-multiselect-null-options",
+      "description": "MULTISELECT with options null is NO_OPTIONS.",
+      "schema": {
+        "fields": [
+          {
+            "key": "tags",
+            "control": "MULTISELECT",
+            "options": null
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "NO_OPTIONS"
+        ]
+      }
+    },
+    {
+      "name": "options-on-non-option-control-are-ignored",
+      "description": "Options (even invalid or duplicated) on a control that has no options are ignored entirely.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "options": [
+              {
+                "key": "-bad"
+              },
+              {
+                "key": "-bad",
+                "availableWhen": "nope"
+              }
+            ]
+          }
+        ]
+      },
+      "values": {
+        "note": "x"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "note": true
+        },
+        "required": {
+          "note": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "note": "x"
+        }
+      }
+    },
+    {
+      "name": "def-duplicate-field-key-reported-alone",
+      "description": "Duplicate field keys short-circuit every other check, including key shape and references.",
+      "schema": {
+        "fields": [
+          {
+            "key": "Bad",
+            "control": "TEXT"
+          },
+          {
+            "key": "Bad",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "isEmpty",
+              "field": "ghost"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "DUPLICATE_FIELD_KEY"
+        ]
+      }
+    },
+    {
+      "name": "def-multiple-codes-reported-together",
+      "description": "Apart from duplicate field keys, all checks run and every distinct code is reported.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "TEXT",
+            "showWhen": "nope"
+          },
+          {
+            "key": "b",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "eq",
+              "field": "a",
+              "value": "x"
+            },
+            "validation": {
+              "pattern": "(?=x)"
+            }
+          },
+          {
+            "key": "c",
+            "control": "NUMBER",
+            "showWhen": {
+              "op": "contains",
+              "field": "c2",
+              "value": 1
+            }
+          },
+          {
+            "key": "c2",
+            "control": "NUMBER",
+            "showWhen": {
+              "op": "contains",
+              "field": "c",
+              "value": 1
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "CIRCULAR_DEPENDENCY",
+          "INVALID_PATTERN",
+          "OPERATOR_TYPE_MISMATCH",
+          "SCHEMA_VIOLATION"
+        ]
+      }
+    },
+    {
+      "name": "def-self-reference-to-heading-is-invalid-reference-target",
+      "description": "Check order for a leaf is unknown field, non-input target, self reference: a heading referencing itself is INVALID_REFERENCE_TARGET.",
+      "schema": {
+        "fields": [
+          {
+            "key": "h",
+            "control": "SECTION_HEADING",
+            "showWhen": {
+              "op": "isEmpty",
+              "field": "h"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_REFERENCE_TARGET"
+        ]
+      }
+    },
+    {
+      "name": "def-rule-date-literal-impossible-day",
+      "description": "A DATE rule literal must be a real calendar date: 2026-02-30 is LITERAL_TYPE_MISMATCH.",
+      "schema": {
+        "fields": [
+          {
+            "key": "due",
+            "control": "DATE"
+          },
+          {
+            "key": "note",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "gte",
+              "field": "due",
+              "value": "2026-02-30"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "LITERAL_TYPE_MISMATCH"
+        ]
+      }
+    },
+    {
+      "name": "def-rule-literal-beyond-double-range",
+      "description": "A rule literal that is not a finite double (1e999) fails the rule schema: SCHEMA_VIOLATION.",
+      "schema": {
+        "fields": [
+          {
+            "key": "qty",
+            "control": "NUMBER"
+          },
+          {
+            "key": "note",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "gt",
+              "field": "qty",
+              "value": 1e999
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "SCHEMA_VIOLATION"
+        ]
+      }
+    },
+    {
+      "name": "def-number-in-mixed-literals",
+      "description": "Every literal of in/notIn must have the control literal type: [1,\"2\"] on NUMBER is LITERAL_TYPE_MISMATCH.",
+      "schema": {
+        "fields": [
+          {
+            "key": "qty",
+            "control": "NUMBER"
+          },
+          {
+            "key": "note",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "in",
+              "field": "qty",
+              "value": [
+                1,
+                "2"
+              ]
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "LITERAL_TYPE_MISMATCH"
+        ]
+      }
+    },
+    {
+      "name": "def-ref-literal-above-safe-integer",
+      "description": "A reference-id rule literal above 2^53-1 is LITERAL_TYPE_MISMATCH.",
+      "schema": {
+        "fields": [
+          {
+            "key": "owner",
+            "control": "USER_REF"
+          },
+          {
+            "key": "note",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "eq",
+              "field": "owner",
+              "value": 9007199254740992
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "LITERAL_TYPE_MISMATCH"
+        ]
+      }
+    },
+    {
+      "name": "def-section-cycle-between-headings",
+      "description": "Two headings that belong to each other form a cycle: CIRCULAR_DEPENDENCY.",
+      "schema": {
+        "fields": [
+          {
+            "key": "h1",
+            "control": "SECTION_HEADING",
+            "section": "h2"
+          },
+          {
+            "key": "h2",
+            "control": "SECTION_HEADING",
+            "section": "h1"
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "CIRCULAR_DEPENDENCY"
+        ]
+      }
+    },
+    {
+      "name": "heading-may-belong-to-heading",
+      "description": "Nested sections: a heading inside a hidden heading is hidden, and so are its members.",
+      "schema": {
+        "fields": [
+          {
+            "key": "gate",
+            "control": "CHECKBOX"
+          },
+          {
+            "key": "outer",
+            "control": "SECTION_HEADING",
+            "showWhen": {
+              "op": "isTrue",
+              "field": "gate"
+            }
+          },
+          {
+            "key": "inner",
+            "control": "SECTION_HEADING",
+            "section": "outer"
+          },
+          {
+            "key": "note",
+            "control": "TEXT",
+            "section": "inner",
+            "required": true
+          }
+        ]
+      },
+      "values": {
+        "gate": false,
+        "note": "dropped"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "gate": true,
+          "outer": false,
+          "inner": false,
+          "note": false
+        },
+        "required": {
+          "gate": false,
+          "outer": false,
+          "inner": false,
+          "note": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "gate": false
+        }
+      }
+    },
+    {
+      "name": "help-text-required-flag-is-ignored",
+      "description": "required on a non-input control is ignored: the required map is false and nothing is demanded.",
+      "schema": {
+        "fields": [
+          {
+            "key": "tip",
+            "control": "HELP_TEXT",
+            "required": true
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "tip": true
+        },
+        "required": {
+          "tip": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "def-number-min-is-string",
+      "description": "NUMBER bounds must be JSON numbers: min \"5\" is INVALID_VALIDATION.",
+      "schema": {
+        "fields": [
+          {
+            "key": "qty",
+            "control": "NUMBER",
+            "validation": {
+              "min": "5"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_VALIDATION"
+        ]
+      }
+    },
+    {
+      "name": "def-date-min-is-number",
+      "description": "DATE bounds must be yyyy-MM-dd strings: min 3 is INVALID_VALIDATION.",
+      "schema": {
+        "fields": [
+          {
+            "key": "due",
+            "control": "DATE",
+            "validation": {
+              "min": 3
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_VALIDATION"
+        ]
+      }
+    },
+    {
+      "name": "def-date-max-impossible-day",
+      "description": "A DATE bound must be a real calendar date: 2026-02-30 is INVALID_VALIDATION.",
+      "schema": {
+        "fields": [
+          {
+            "key": "due",
+            "control": "DATE",
+            "validation": {
+              "max": "2026-02-30"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_VALIDATION"
+        ]
+      }
+    },
+    {
+      "name": "def-number-min-greater-than-max",
+      "description": "min greater than max is INVALID_VALIDATION.",
+      "schema": {
+        "fields": [
+          {
+            "key": "qty",
+            "control": "NUMBER",
+            "validation": {
+              "min": 10,
+              "max": 5
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_VALIDATION"
+        ]
+      }
+    },
+    {
+      "name": "def-date-min-after-max",
+      "description": "DATE min after max is INVALID_VALIDATION.",
+      "schema": {
+        "fields": [
+          {
+            "key": "due",
+            "control": "DATE",
+            "validation": {
+              "min": "2026-06-01",
+              "max": "2026-05-01"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_VALIDATION"
+        ]
+      }
+    },
+    {
+      "name": "def-max-length-zero",
+      "description": "maxLength must be an integer from 1 to 2147483647: 0 is INVALID_VALIDATION.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "maxLength": 0
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_VALIDATION"
+        ]
+      }
+    },
+    {
+      "name": "def-max-length-fractional",
+      "description": "A fractional maxLength is INVALID_VALIDATION.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "maxLength": 1.5
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_VALIDATION"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-message-too-long",
+      "description": "patternMessage longer than 200 characters is INVALID_VALIDATION.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^a$",
+              "patternMessage": "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_VALIDATION"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-message-empty",
+      "description": "An empty patternMessage is INVALID_VALIDATION.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^a$",
+              "patternMessage": ""
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_VALIDATION"
+        ]
+      }
+    },
+    {
+      "name": "validation-min-equal-max-ok",
+      "description": "min equal to max is allowed and accepts exactly that value.",
+      "schema": {
+        "fields": [
+          {
+            "key": "qty",
+            "control": "NUMBER",
+            "validation": {
+              "min": 5,
+              "max": 5
+            }
+          }
+        ]
+      },
+      "values": {
+        "qty": 5
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "qty": true
+        },
+        "required": {
+          "qty": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "qty": 5
+        }
+      }
+    },
+    {
+      "name": "validation-members-ignored-on-other-controls",
+      "description": "Validation members that do not apply to the control are ignored, whatever their value.",
+      "schema": {
+        "fields": [
+          {
+            "key": "qty",
+            "control": "NUMBER",
+            "validation": {
+              "maxLength": 0,
+              "pattern": "(",
+              "patternMessage": ""
+            }
+          },
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "min": "abc",
+              "max": 3
+            }
+          },
+          {
+            "key": "agree",
+            "control": "CHECKBOX",
+            "validation": {
+              "min": "x",
+              "maxLength": -1,
+              "pattern": "(?="
+            }
+          }
+        ]
+      },
+      "values": {
+        "qty": 7,
+        "note": "x",
+        "agree": false
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "qty": true,
+          "note": true,
+          "agree": true
+        },
+        "required": {
+          "qty": false,
+          "note": false,
+          "agree": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "qty": 7,
+          "note": "x",
+          "agree": false
+        }
+      }
+    },
+    {
+      "name": "validation-max-length-integral-float",
+      "description": "maxLength 5.0 is the integer 5 (a JSON number with integral value).",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "maxLength": 5.0
+            }
+          }
+        ]
+      },
+      "values": {
+        "note": "abcdef"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "note": true
+        },
+        "required": {
+          "note": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "note",
+            "code": "TOO_LONG"
+          }
+        ],
+        "normalized": {
+          "note": "abcdef"
+        }
+      }
+    },
+    {
+      "name": "def-pattern-lookahead",
+      "description": "Lookahead is outside the portable subset: INVALID_PATTERN.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^(?=a)a$"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-lookbehind",
+      "description": "Lookbehind is outside the portable subset.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "(?<=a)b"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-named-group",
+      "description": "Named groups are outside the portable subset.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "(?<year>\\d{4})"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-backreference",
+      "description": "Backreferences are outside the portable subset.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "(a)\\1"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-whitespace-class",
+      "description": "\\s differs between engines and is not allowed; use [ \\t] instead.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "a\\s+b"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-unicode-property",
+      "description": "\\p{..} is not allowed.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "\\p{L}+"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-unicode-escape",
+      "description": "\\uXXXX is not allowed; write the character itself.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "\\u0041"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-inline-flags",
+      "description": "Inline flags such as (?i) are not allowed.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "(?i)abc"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-unclosed-group",
+      "description": "An unbalanced group is INVALID_PATTERN.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "(ab"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-nested-quantifier",
+      "description": "An unbounded quantifier on a group that contains an unbounded quantifier (catastrophic backtracking) is not allowed.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "(a+)+$"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-empty-class",
+      "description": "An empty character class differs between engines and is not allowed.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "[]"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-reversed-range",
+      "description": "A class range whose bounds are reversed is not allowed.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "[z-a]"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-dash-after-range",
+      "description": "A dash that follows a completed class range is ambiguous and not allowed.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "[a-z-9]"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-comma-brace",
+      "description": "A brace that is not a valid quantifier ({n}, {n,}, {n,m}) must be escaped.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "a{,3}"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-empty",
+      "description": "An empty pattern is INVALID_PATTERN (omit the pattern instead).",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": ""
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-too-long",
+      "description": "A pattern longer than 200 characters is INVALID_PATTERN.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "def-pattern-on-textarea",
+      "description": "The pattern rules apply to TEXTAREA like TEXT.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXTAREA",
+            "validation": {
+              "pattern": "(?=x)"
+            }
+          }
+        ]
+      },
+      "values": {},
+      "expected": {
+        "definitionValid": false,
+        "definitionErrors": [
+          "INVALID_PATTERN"
+        ]
+      }
+    },
+    {
+      "name": "pattern-portable-subset-matches",
+      "description": "A pattern using groups, alternation, classes, counted and lazy quantifiers and anchors matches as in both engines.",
+      "schema": {
+        "fields": [
+          {
+            "key": "code",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^(?:[A-Z]{2}|\\d{3,})-[a-z0-9_.-]*?x$"
+            }
+          }
+        ]
+      },
+      "values": {
+        "code": "AB-a_1.x"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "code": true
+        },
+        "required": {
+          "code": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "code": "AB-a_1.x"
+        }
+      }
+    },
+    {
+      "name": "pattern-portable-subset-mismatch",
+      "description": "The same pattern rejects a value with PATTERN.",
+      "schema": {
+        "fields": [
+          {
+            "key": "code",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^(?:[A-Z]{2}|\\d{3,})-[a-z0-9_.-]*?x$"
+            }
+          }
+        ]
+      },
+      "values": {
+        "code": "A-a_1.x"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "code": true
+        },
+        "required": {
+          "code": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "code",
+            "code": "PATTERN"
+          }
+        ],
+        "normalized": {
+          "code": "A-a_1.x"
+        }
+      }
+    },
+    {
+      "name": "pattern-is-unanchored-search",
+      "description": "A pattern without anchors matches anywhere in the value.",
+      "schema": {
+        "fields": [
+          {
+            "key": "note",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "cat"
+            }
+          }
+        ]
+      },
+      "values": {
+        "note": "concatenate"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "note": true
+        },
+        "required": {
+          "note": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "note": "concatenate"
+        }
+      }
+    },
+    {
+      "name": "pattern-dot-excludes-line-terminators",
+      "description": ". matches one UTF-16 code unit except \\n, \\r, U+2028 and U+2029 in both engines (so an astral character is two units).",
+      "schema": {
+        "fields": [
+          {
+            "key": "d_lf",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^a.b$"
+            }
+          },
+          {
+            "key": "d_cr",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^a.b$"
+            }
+          },
+          {
+            "key": "d_ls",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^a.b$"
+            }
+          },
+          {
+            "key": "d_ps",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^a.b$"
+            }
+          },
+          {
+            "key": "d_ok",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^a.b$"
+            }
+          },
+          {
+            "key": "d_astral",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^.$"
+            }
+          }
+        ]
+      },
+      "values": {
+        "d_lf": "a\nb",
+        "d_cr": "a\rb",
+        "d_ls": "a\u2028b",
+        "d_ps": "a\u2029b",
+        "d_ok": "aéb",
+        "d_astral": "😀"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "d_lf": true,
+          "d_cr": true,
+          "d_ls": true,
+          "d_ps": true,
+          "d_ok": true,
+          "d_astral": true
+        },
+        "required": {
+          "d_lf": false,
+          "d_cr": false,
+          "d_ls": false,
+          "d_ps": false,
+          "d_ok": false,
+          "d_astral": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "d_astral",
+            "code": "PATTERN"
+          },
+          {
+            "fieldKey": "d_cr",
+            "code": "PATTERN"
+          },
+          {
+            "fieldKey": "d_lf",
+            "code": "PATTERN"
+          },
+          {
+            "fieldKey": "d_ls",
+            "code": "PATTERN"
+          },
+          {
+            "fieldKey": "d_ps",
+            "code": "PATTERN"
+          }
+        ],
+        "normalized": {
+          "d_lf": "a\nb",
+          "d_cr": "a\rb",
+          "d_ls": "a\u2028b",
+          "d_ps": "a\u2029b",
+          "d_ok": "aéb",
+          "d_astral": "😀"
+        }
+      }
+    },
+    {
+      "name": "pattern-dollar-does-not-match-before-trailing-newline",
+      "description": "$ matches only at the very end of the value, never before a trailing \\n.",
+      "schema": {
+        "fields": [
+          {
+            "key": "with_lf",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^abc$"
+            }
+          },
+          {
+            "key": "plain",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^abc$"
+            }
+          }
+        ]
+      },
+      "values": {
+        "with_lf": "abc\n",
+        "plain": "abc"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "with_lf": true,
+          "plain": true
+        },
+        "required": {
+          "with_lf": false,
+          "plain": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "with_lf",
+            "code": "PATTERN"
+          }
+        ],
+        "normalized": {
+          "with_lf": "abc\n",
+          "plain": "abc"
+        }
+      }
+    },
+    {
+      "name": "pattern-class-escapes-are-ascii",
+      "description": "\\d and \\w are ASCII-only and \\b uses ASCII word characters in both engines.",
+      "schema": {
+        "fields": [
+          {
+            "key": "digits",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^\\d+$"
+            }
+          },
+          {
+            "key": "word",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^\\w+$"
+            }
+          },
+          {
+            "key": "boundary",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "\\bfoo\\b"
+            }
+          },
+          {
+            "key": "plain",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^\\d+$"
+            }
+          }
+        ]
+      },
+      "values": {
+        "digits": "١٢",
+        "word": "café",
+        "boundary": "éfoo",
+        "plain": "123"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "digits": true,
+          "word": true,
+          "boundary": true,
+          "plain": true
+        },
+        "required": {
+          "digits": false,
+          "word": false,
+          "boundary": false,
+          "plain": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "digits",
+            "code": "PATTERN"
+          },
+          {
+            "fieldKey": "word",
+            "code": "PATTERN"
+          }
+        ],
+        "normalized": {
+          "digits": "١٢",
+          "word": "café",
+          "boundary": "éfoo",
+          "plain": "123"
+        }
+      }
+    },
+    {
+      "name": "pattern-lazy-and-counted-quantifiers",
+      "description": "Counted ({n}, {n,}, {n,m}) and lazy quantifiers behave the same in both engines.",
+      "schema": {
+        "fields": [
+          {
+            "key": "a",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^a{2,3}?b$"
+            }
+          },
+          {
+            "key": "b",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^a{2}$"
+            }
+          },
+          {
+            "key": "c",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^a{2,}$"
+            }
+          }
+        ]
+      },
+      "values": {
+        "a": "aab",
+        "b": "aaa",
+        "c": "aaaa"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "a": true,
+          "b": true,
+          "c": true
+        },
+        "required": {
+          "a": false,
+          "b": false,
+          "c": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "b",
+            "code": "PATTERN"
+          }
+        ],
+        "normalized": {
+          "a": "aab",
+          "b": "aaa",
+          "c": "aaaa"
+        }
+      }
+    },
+    {
+      "name": "pattern-ignored-on-non-text-controls",
+      "description": "Patterns are not checked or applied on controls outside the text family.",
+      "schema": {
+        "fields": [
+          {
+            "key": "qty",
+            "control": "NUMBER",
+            "validation": {
+              "pattern": "("
+            }
+          }
+        ]
+      },
+      "values": {
+        "qty": 5
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "qty": true
+        },
+        "required": {
+          "qty": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "qty": 5
+        }
+      }
+    },
+    {
+      "name": "pattern-message-does-not-change-codes",
+      "description": "patternMessage is display text only: the error code is still PATTERN.",
+      "schema": {
+        "fields": [
+          {
+            "key": "digits",
+            "control": "TEXT",
+            "validation": {
+              "pattern": "^\\d+$",
+              "patternMessage": "Use digits only."
+            }
+          }
+        ]
+      },
+      "values": {
+        "digits": "x"
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "digits": true
+        },
+        "required": {
+          "digits": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "digits",
+            "code": "PATTERN"
+          }
+        ],
+        "normalized": {
+          "digits": "x"
+        }
+      }
+    },
+    {
+      "name": "number-exponent-notation-equals-integer",
+      "description": "Numbers are compared by value as IEEE-754 doubles: 1e2 equals 100.",
+      "schema": {
+        "fields": [
+          {
+            "key": "n",
+            "control": "NUMBER"
+          },
+          {
+            "key": "t",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "eq",
+              "field": "n",
+              "value": 100
+            }
+          }
+        ]
+      },
+      "values": {
+        "n": 1e2
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "n": true,
+          "t": true
+        },
+        "required": {
+          "n": false,
+          "t": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "n": 100
+        }
+      }
+    },
+    {
+      "name": "number-integers-beyond-2-53-compare-as-doubles",
+      "description": "Numbers are doubles: 9007199254740993 rounds to 9007199254740992 and compares equal to it.",
+      "schema": {
+        "fields": [
+          {
+            "key": "n",
+            "control": "NUMBER"
+          },
+          {
+            "key": "t",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "eq",
+              "field": "n",
+              "value": 9007199254740992
+            }
+          }
+        ]
+      },
+      "values": {
+        "n": 9007199254740993
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "n": true,
+          "t": true
+        },
+        "required": {
+          "n": false,
+          "t": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "n": 9007199254740992
+        }
+      }
+    },
+    {
+      "name": "number-decimals-compare-as-doubles",
+      "description": "Decimal literals are doubles: 0.10000000000000001 is the same number as 0.1.",
+      "schema": {
+        "fields": [
+          {
+            "key": "n",
+            "control": "NUMBER"
+          },
+          {
+            "key": "t",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "eq",
+              "field": "n",
+              "value": 0.10000000000000001
+            }
+          }
+        ]
+      },
+      "values": {
+        "n": 0.1
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "n": true,
+          "t": true
+        },
+        "required": {
+          "n": false,
+          "t": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "n": 0.1
+        }
+      }
+    },
+    {
+      "name": "number-negative-zero-equals-zero",
+      "description": "-0 is the number zero: it satisfies required and equals 0.",
+      "schema": {
+        "fields": [
+          {
+            "key": "n",
+            "control": "NUMBER",
+            "required": true
+          },
+          {
+            "key": "t",
+            "control": "TEXT",
+            "showWhen": {
+              "op": "eq",
+              "field": "n",
+              "value": 0
+            }
+          }
+        ]
+      },
+      "values": {
+        "n": -0
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "n": true,
+          "t": true
+        },
+        "required": {
+          "n": true,
+          "t": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "n": -0
+        }
+      }
+    },
+    {
+      "name": "number-beyond-double-range-is-invalid-type",
+      "description": "A JSON number that is not a finite double (1e999) is INVALID_TYPE.",
+      "schema": {
+        "fields": [
+          {
+            "key": "n",
+            "control": "NUMBER"
+          }
+        ]
+      },
+      "values": {
+        "n": 1e999
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "n": true
+        },
+        "required": {
+          "n": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "n",
+            "code": "INVALID_TYPE"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "ref-max-safe-integer-is-valid",
+      "description": "Reference ids are integers up to 2^53-1.",
+      "schema": {
+        "fields": [
+          {
+            "key": "asset",
+            "control": "ASSET_REF"
+          }
+        ]
+      },
+      "values": {
+        "asset": 9007199254740991
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "asset": true
+        },
+        "required": {
+          "asset": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "asset": 9007199254740991
+        }
+      }
+    },
+    {
+      "name": "ref-above-max-safe-integer-is-invalid-type",
+      "description": "2^53 is INVALID_TYPE for a reference id.",
+      "schema": {
+        "fields": [
+          {
+            "key": "asset",
+            "control": "ASSET_REF"
+          }
+        ]
+      },
+      "values": {
+        "asset": 9007199254740992
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "asset": true
+        },
+        "required": {
+          "asset": false
+        },
+        "options": {},
+        "errors": [
+          {
+            "fieldKey": "asset",
+            "code": "INVALID_TYPE"
+          }
+        ],
+        "normalized": {}
+      }
+    },
+    {
+      "name": "ref-exponent-integral-is-valid",
+      "description": "3e0 is a JSON number with integral value and is a valid reference id.",
+      "schema": {
+        "fields": [
+          {
+            "key": "asset",
+            "control": "USER_REF"
+          }
+        ]
+      },
+      "values": {
+        "asset": 3e0
+      },
+      "expected": {
+        "definitionValid": true,
+        "visible": {
+          "asset": true
+        },
+        "required": {
+          "asset": false
+        },
+        "options": {},
+        "errors": [],
+        "normalized": {
+          "asset": 3
+        }
+      }
     }
   ]
 }

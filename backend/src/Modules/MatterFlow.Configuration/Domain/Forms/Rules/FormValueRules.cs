@@ -35,6 +35,25 @@ internal static partial class FormValueRules
         return true;
     }
 
+    /// <summary>Option keys match <c>^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$</c>.</summary>
+    public static bool IsValidOptionKey(string key)
+    {
+        if (key.Length is 0 or > 64 || !char.IsAsciiLetterOrDigit(key[0]))
+        {
+            return false;
+        }
+
+        foreach (var c in key)
+        {
+            if (!(char.IsAsciiLetterOrDigit(c) || c is '_' or '.' or '-'))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /// <summary>Absent, null, ASCII-whitespace-only string (including ""), or [].</summary>
     public static bool IsEmpty(JsonElement value) => value.ValueKind switch
     {

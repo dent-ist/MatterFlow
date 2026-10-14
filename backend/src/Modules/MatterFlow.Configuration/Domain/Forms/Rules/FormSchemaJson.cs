@@ -6,7 +6,7 @@ namespace MatterFlow.Configuration.Domain.Forms.Rules;
 public static class FormSchemaJson
 {
     /// <summary>Parses a form fragment into field definitions.</summary>
-    /// <exception cref="FormatException">The JSON is not a well-formed fragment (unknown control, wrong member types).</exception>
+    /// <exception cref="FormatException">The JSON is not a well-formed fragment (wrong member types); an unknown control becomes <see cref="FormControl.Unknown"/>.</exception>
     public static IReadOnlyList<FormFieldDefinition> ParseFields(string json)
     {
         try
@@ -39,14 +39,17 @@ public static class FormSchemaJson
         var controlName = RequiredString(element, "control");
         if (!FormControlExtensions.TryParseWireName(controlName, out var control))
         {
-            throw new FormatException($"Unknown control '{controlName}'.");
+            // Reported by FormSchema.Compile as UNKNOWN_CONTROL (contracts/form-rules.md section 4).
+            control = FormControl.Unknown;
         }
 
         return new FormFieldDefinition(key, control)
         {
             Required = element.TryGetProperty("required", out var required) && required.ValueKind == JsonValueKind.True,
             Section = OptionalString(element, "section"),
-            Validation = element.TryGetProperty("validation", out var validation) ? ParseValidation(validation) : null,
+            Validation = element.TryGetProperty("validation", out var validation) && validation.ValueKind == JsonValueKind.Object
+                ? ParseValidation(validation)
+                : null,
             ShowWhen = OptionalClone(element, "showWhen"),
             RequiredWhen = OptionalClone(element, "requiredWhen"),
             Options = element.TryGetProperty("options", out var options) && options.ValueKind == JsonValueKind.Array
@@ -59,8 +62,25 @@ public static class FormSchemaJson
     private static FormFieldValidation ParseValidation(JsonElement element) => new(
         OptionalClone(element, "min"),
         OptionalClone(element, "max"),
-        element.TryGetProperty("maxLength", out var max) && max.TryGetInt32(out var length) ? length : null,
-        OptionalString(element, "pattern"));
+        ParseMaxLength(element),
+        OptionalString(element, "pattern"),
+        OptionalString(element, "patternMessage"));
+
+    /// <summary>Absent or null is no limit; an integral number 1..int.MaxValue is the limit; anything else becomes 0 (invalid).</summary>
+    private static int? ParseMaxLength(JsonElement element)
+    {
+        if (!element.TryGetProperty("maxLength", out var value) || value.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        if (value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var d) && Math.Floor(d) == d && d is >= 1 and <= int.MaxValue)
+        {
+            return (int)d;
+        }
+
+        return 0;
+    }
 
     private static string RequiredString(JsonElement element, string name) =>
         OptionalString(element, name) ?? throw new FormatException($"Missing string member '{name}'.");
@@ -68,6 +88,7 @@ public static class FormSchemaJson
     private static string? OptionalString(JsonElement element, string name) =>
         element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 
+    /// <summary>JSON null is the same as an omitted member (contracts/form-rules.md section 1).</summary>
     private static JsonElement? OptionalClone(JsonElement element, string name) =>
-        element.TryGetProperty(name, out var value) ? value.Clone() : null;
+        element.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null ? value.Clone() : null;
 }

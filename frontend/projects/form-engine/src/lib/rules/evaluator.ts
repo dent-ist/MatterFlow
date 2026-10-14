@@ -1,3 +1,4 @@
+import { isPortablePattern } from './portable-pattern';
 import {
   DefinitionErrorCode,
   EvaluationMode,
@@ -23,7 +24,16 @@ const INPUT_CONTROLS: ReadonlySet<string> = new Set<InputControl>([
   'ASSET_REF',
   'USER_REF',
 ]);
+const KNOWN_CONTROLS: ReadonlySet<string> = new Set([
+  ...INPUT_CONTROLS,
+  'SECTION_HEADING',
+  'HELP_TEXT',
+]);
 const OPTION_CONTROLS: ReadonlySet<string> = new Set(['SELECT', 'RADIO', 'MULTISELECT']);
+const MAX_SAFE_INTEGER = 9007199254740991;
+
+/** JSON `null` and an omitted member are the same thing (contracts/form-rules.md section 1). */
+const present = <T>(x: T | null | undefined): x is T => x !== undefined && x !== null;
 const MAX_DEPTH = 3;
 
 type Family = 'text' | 'number' | 'date' | 'datetime' | 'checkbox' | 'single' | 'multi' | 'ref';
@@ -56,6 +66,7 @@ const OPS_BY_FAMILY: Record<Family, string[]> = {
 };
 
 const FIELD_KEY_RE = /^[a-z][a-z0-9_]{0,63}$/;
+const OPTION_KEY_RE = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
 const BLANK_RE = /^[\t\n\v\f\r ]*$/;
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const DATETIME_RE = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d{1,7})?Z$/;
@@ -114,7 +125,9 @@ function parseValue(control: string, raw: unknown): Parsed {
       return m && isRealDate(m[1], m[2], m[3]) ? good(raw) : bad;
     }
     case 'ref':
-      return typeof raw === 'number' && Number.isInteger(raw) && raw > 0 ? good(raw) : bad;
+      return typeof raw === 'number' && Number.isInteger(raw) && raw > 0 && raw <= MAX_SAFE_INTEGER
+        ? good(raw)
+        : bad;
     default:
       return bad;
   }
@@ -184,9 +197,12 @@ function* leaves(n: RuleNode): Generator<Leaf> {
 
 function ruleSlots(f: FormField): RuleNode[] {
   const s: RuleNode[] = [];
-  if (f.showWhen !== undefined) s.push(f.showWhen);
-  if (f.requiredWhen !== undefined) s.push(f.requiredWhen);
-  for (const o of f.options ?? []) if (o.availableWhen !== undefined) s.push(o.availableWhen);
+  if (present(f.showWhen)) s.push(f.showWhen);
+  if (present(f.requiredWhen)) s.push(f.requiredWhen);
+  // Options of a control without options are ignored entirely.
+  if (OPTION_CONTROLS.has(f.control)) {
+    for (const o of f.options ?? []) if (present(o.availableWhen)) s.push(o.availableWhen);
+  }
   return s;
 }
 
@@ -244,6 +260,47 @@ function evalRule(n: RuleNode, eff: Map<string, unknown>, byKey: Map<string, For
 
 // ------------------------------------------------------------------ definition validation
 
+function checkValidation(f: FormField, codes: Set<DefinitionErrorCode>): void {
+  const v = f.validation;
+  if (!present(v)) return;
+  const family = FAMILY[f.control];
+  const invalid = (): void => {
+    codes.add('INVALID_VALIDATION');
+  };
+  if (family === 'number' || family === 'date') {
+    const okBound =
+      family === 'number'
+        ? (x: unknown): boolean => typeof x === 'number' && Number.isFinite(x)
+        : isDateString;
+    if (present(v.min) && !okBound(v.min)) invalid();
+    if (present(v.max) && !okBound(v.max)) invalid();
+    if (present(v.min) && present(v.max) && okBound(v.min) && okBound(v.max) && v.min > v.max) {
+      invalid();
+    }
+  }
+  if (family === 'text') {
+    if (
+      present(v.maxLength) &&
+      !(Number.isInteger(v.maxLength) && v.maxLength >= 1 && v.maxLength <= 2147483647)
+    ) {
+      invalid();
+    }
+    if (typeof v.pattern === 'string' && !isPortablePattern(v.pattern)) {
+      codes.add('INVALID_PATTERN');
+    }
+    if (
+      present(v.patternMessage) &&
+      !(
+        typeof v.patternMessage === 'string' &&
+        v.patternMessage.length >= 1 &&
+        v.patternMessage.length <= 200
+      )
+    ) {
+      invalid();
+    }
+  }
+}
+
 /**
  * Publish-time check (form-rules.md section 4). Returns the sorted set of definition error
  * codes; an empty array means the definition is valid and may be evaluated.
@@ -259,9 +316,18 @@ export function validateDefinition(fields: readonly FormField[]): DefinitionErro
 
   const edges = new Map<string, Set<string>>(fields.map((f) => [f.key, new Set<string>()]));
   for (const f of fields) {
-    const optionKeys = (f.options ?? []).map((o) => o.key);
-    if (new Set(optionKeys).size !== optionKeys.length) codes.add('DUPLICATE_OPTION_KEY');
-    if (f.section !== undefined) {
+    if (typeof f.key !== 'string' || !FIELD_KEY_RE.test(f.key)) codes.add('INVALID_FIELD_KEY');
+    if (!KNOWN_CONTROLS.has(f.control)) codes.add('UNKNOWN_CONTROL');
+    if (OPTION_CONTROLS.has(f.control)) {
+      const options = f.options ?? [];
+      if (options.length === 0) codes.add('NO_OPTIONS');
+      if (options.some((o) => !OPTION_KEY_RE.test(o.key))) codes.add('INVALID_OPTION_KEY');
+      if (new Set(options.map((o) => o.key)).size !== options.length) {
+        codes.add('DUPLICATE_OPTION_KEY');
+      }
+    }
+    checkValidation(f, codes);
+    if (present(f.section)) {
       const heading = byKey.get(f.section);
       if (!heading || heading.control !== 'SECTION_HEADING' || heading === f) {
         codes.add('INVALID_SECTION');
@@ -301,7 +367,7 @@ export function validateDefinition(fields: readonly FormField[]): DefinitionErro
             fam === 'number'
               ? typeof x === 'number'
               : fam === 'ref'
-                ? typeof x === 'number' && Number.isInteger(x) && x > 0
+                ? typeof x === 'number' && Number.isInteger(x) && x > 0 && x <= MAX_SAFE_INTEGER
                 : fam === 'date'
                   ? isDateString(x)
                   : typeof x === 'string';
@@ -344,7 +410,10 @@ export function validateDefinition(fields: readonly FormField[]): DefinitionErro
 
 const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
-/** Unanchored ECMAScript search. A pattern that does not compile is not enforced client-side. */
+/**
+ * Unanchored search with a pattern from the portable subset (section 3.1), which `RegExp` evaluates exactly
+ * like the server. A pattern outside the subset is a definition error and never reaches evaluation.
+ */
 function safeRegexTest(pattern: string, s: string): boolean {
   try {
     return new RegExp(pattern).test(s);
@@ -374,14 +443,13 @@ export function evaluateForm(
     if (vis.has(key)) return;
     const f = byKey.get(key)!;
     const deps = new Set<string>();
-    if (f.section !== undefined) deps.add(f.section);
+    if (present(f.section)) deps.add(f.section);
     for (const r of ruleSlots(f)) for (const l of leaves(r)) deps.add(l.field);
     // Guard against cycles in an (invalid) definition: mark visited before recursing.
     vis.set(key, false);
     for (const d of deps) if (byKey.has(d)) resolve(d);
-    const sectionVisible = f.section === undefined || vis.get(f.section) === true;
-    const visible =
-      sectionVisible && (f.showWhen === undefined || evalRule(f.showWhen, eff, byKey));
+    const sectionVisible = !present(f.section) || vis.get(f.section) === true;
+    const visible = sectionVisible && (!present(f.showWhen) || evalRule(f.showWhen, eff, byKey));
     vis.set(key, visible);
     const isInput = INPUT_CONTROLS.has(f.control);
     const p: Parsed = isInput && visible ? parseValue(f.control, vals[key]) : { empty: true };
@@ -391,8 +459,7 @@ export function evaluateForm(
       key,
       isInput &&
         visible &&
-        (f.required === true ||
-          (f.requiredWhen !== undefined && evalRule(f.requiredWhen, eff, byKey))),
+        (f.required === true || (present(f.requiredWhen) && evalRule(f.requiredWhen, eff, byKey))),
     );
   };
   for (const f of fields) resolve(f.key);
@@ -402,7 +469,7 @@ export function evaluateForm(
     opts.set(
       f.key,
       (f.options ?? [])
-        .filter((o) => o.availableWhen === undefined || evalRule(o.availableWhen, eff, byKey))
+        .filter((o) => !present(o.availableWhen) || evalRule(o.availableWhen, eff, byKey))
         .map((o) => o.key),
     );
   }
@@ -432,11 +499,10 @@ export function evaluateForm(
     const val = f.validation ?? {};
     const fam = FAMILY[f.control];
     if (fam === 'number' || fam === 'date') {
-      // Bounds are compared only when they have the field's own JSON type (see
-      // docs/contract-issues-ts.md, issue 2); a mistyped bound is ignored.
+      // Bounds have the field's own JSON type: a definition that mixes them is INVALID_VALIDATION.
       const x = v as number | string;
-      const below = typeof val.min === typeof x && x < (val.min as number | string);
-      const above = typeof val.max === typeof x && x > (val.max as number | string);
+      const below = present(val.min) && x < val.min;
+      const above = present(val.max) && x > val.max;
       if (below || above) {
         fail('OUT_OF_RANGE');
         continue;
@@ -444,11 +510,11 @@ export function evaluateForm(
     }
     if (fam === 'text') {
       const s = v as string;
-      if (val.maxLength !== undefined && s.length > val.maxLength) {
+      if (present(val.maxLength) && s.length > val.maxLength) {
         fail('TOO_LONG');
         continue;
       }
-      if (val.pattern !== undefined && !safeRegexTest(val.pattern, s)) {
+      if (typeof val.pattern === 'string' && !safeRegexTest(val.pattern, s)) {
         fail('PATTERN');
         continue;
       }

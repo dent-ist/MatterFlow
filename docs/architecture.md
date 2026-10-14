@@ -427,42 +427,14 @@ One engine serves six scopes: `TASK_TYPE` (the request form), `STEP` (step input
 
 ### 7.3 Conditional-rule JSON schema
 
-Rules are expression trees. Where used: `FormField.ShowWhenJson` (absent = always shown), `FormField.RequiredWhenJson` (absent = rely on static `IsRequired`), `FormFieldOption.AvailableWhenJson` (absent = always available). Published as `contracts/form-rules.schema.json`:
-
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://matterflow.internal/schemas/form-rule.v1.json",
-  "$ref": "#/$defs/node",
-  "$defs": {
-    "fieldKey": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
-    "scalar":   { "type": ["string", "number", "boolean"] },
-    "node": { "oneOf": [
-      { "$ref": "#/$defs/group" }, { "$ref": "#/$defs/not" },
-      { "$ref": "#/$defs/compare" }, { "$ref": "#/$defs/unary" } ] },
-    "group": { "type": "object", "additionalProperties": false, "required": ["op", "args"],
-      "properties": { "op": { "enum": ["and", "or"] },
-        "args": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/$defs/node" } } } },
-    "not": { "type": "object", "additionalProperties": false, "required": ["op", "arg"],
-      "properties": { "op": { "const": "not" }, "arg": { "$ref": "#/$defs/node" } } },
-    "compare": { "type": "object", "additionalProperties": false, "required": ["op", "field", "value"],
-      "properties": { "op": { "enum": ["eq", "neq", "gt", "gte", "lt", "lte", "in", "notIn", "contains"] },
-        "field": { "$ref": "#/$defs/fieldKey" },
-        "value": { "oneOf": [ { "$ref": "#/$defs/scalar" },
-          { "type": "array", "minItems": 1, "maxItems": 50, "items": { "$ref": "#/$defs/scalar" } } ] } } },
-    "unary": { "type": "object", "additionalProperties": false, "required": ["op", "field"],
-      "properties": { "op": { "enum": ["isEmpty", "isNotEmpty", "isTrue", "isFalse"] },
-        "field": { "$ref": "#/$defs/fieldKey" } } }
-  }
-}
-```
+Rules are expression trees. Where used: `FormField.ShowWhenJson` (absent = always shown), `FormField.RequiredWhenJson` (absent = rely on static `IsRequired`), `FormFieldOption.AvailableWhenJson` (absent = always available); JSON `null` and an omitted member are the same. The normative contract is `contracts/form-rules.md`; the JSON Schema is `contracts/form-rules.schema.json` (root = one rule node). Node kinds: `and`/`or` (`args`, 1..8), `not` (`arg`), scalar comparison `eq neq gt gte lt lte contains` (`field`, scalar `value`), set comparison `in notIn` (`field`, `value` array of 1..50 scalars) and unary `isEmpty isNotEmpty isTrue isFalse` (`field`). Field keys match `^[a-z][a-z0-9_]{0,63}$`.
 
 Example: `{"op":"and","args":[{"op":"isTrue","field":"requires_ocr"},{"op":"neq","field":"ocr_language","value":"eng"}]}`.
 
 Semantics (identical in both implementations, locked by vectors):
-- Value types: CHECKBOX bool; NUMBER decimal; DATE `yyyy-MM-dd`; DATETIME ISO-8601 UTC; SELECT/RADIO option key string; MULTISELECT array of option keys; ASSET_REF/USER_REF integer id; TEXT/TEXTAREA/URL string.
-- `eq/neq/gt/gte/lt/lte` for scalars (strings compare ordinal-ignore-case for `eq/neq`, ordinal for ordering; dates and numbers by type). `in/notIn`: scalar field value is (not) in the literal array. `contains`: MULTISELECT array contains the scalar.
-- `isEmpty`: null, `""` (after trim) or `[]`. `isTrue/isFalse`: boolean fields only.
+- Value types: CHECKBOX bool; NUMBER finite JSON number compared as an IEEE-754 double; DATE `yyyy-MM-dd`; DATETIME `yyyy-MM-ddTHH:mm:ss[.f]Z` (UTC); SELECT/RADIO option key string; MULTISELECT array of distinct option keys; ASSET_REF/USER_REF integer id 1..2^53-1; TEXT/TEXTAREA/URL string. There is no implicit coercion.
+- `eq/neq/in/notIn` on text compare ASCII-case-insensitively (option keys exactly); ordering operators (`gt/gte/lt/lte`) apply to NUMBER and DATE only, never to text. `contains`: MULTISELECT array contains the key.
+- `isEmpty`: null, a string of only ASCII whitespace (including `""`), or `[]`. `isTrue/isFalse`: boolean fields only.
 - A reference to a hidden or absent field reads as `null`. Comparisons against `null` return `false`, except `neq`, `notIn`, `isEmpty` which return `true` (no three-valued logic).
 - Max nesting depth 3 (publish validator, not the schema). A rule may reference only fields in the same form version.
 - `SECTION_HEADING` fields may carry `ShowWhenJson`; fields assigned to that section (`SectionKey`) inherit its hidden state.
@@ -470,7 +442,7 @@ Semantics (identical in both implementations, locked by vectors):
 **Evaluation algorithm** (`evaluate(schema, values) → {visible:{key:bool}, required:{key:bool}, options:{key:[optionKey]}}`):
 1. Topologically order fields by rule dependencies (publish guarantees a DAG; ties keep display order).
 2. For each field in order: `visible = sectionVisible && (showWhen == null || eval(showWhen, effectiveValues))`; hidden fields' values are treated as `null` for later rules; `required = visible && (isRequired || (requiredWhen != null && eval(requiredWhen)))`; option sets filtered by `availableWhen`.
-3. Validation (`validate`): for each visible field: required → non-empty; type check; range/length/regex (regex with timeout on server); selected options must be available; unknown keys rejected; `ASSET_REF` must exist and belong to the Task's Matter (server context), `USER_REF` must be an active user. Hidden fields' submitted values are **dropped** (not persisted, not an error).
+3. Validation (`validate`): for each visible field: required → non-empty; type check; range/length/pattern (portable regex subset, `contracts/form-rules.md` 3.1; timeout on server); selected options must be available; unknown keys rejected; `ASSET_REF` must exist and belong to the Task's Matter (server context), `USER_REF` must be an active user. Hidden fields' submitted values are **dropped** (not persisted, not an error).
 4. Result: normalized values (only visible keys) + `ValidationError[] {fieldKey, code, message}` with codes `REQUIRED, INVALID_TYPE, OUT_OF_RANGE, TOO_LONG, PATTERN, OPTION_NOT_ALLOWED, UNKNOWN_FIELD, REF_INVALID, CROSS_MATTER_REFERENCE`.
 
 ### 7.4 Shared server/client evaluation
@@ -482,7 +454,7 @@ Semantics (identical in both implementations, locked by vectors):
 
 ### 7.5 Publish-time validation
 
-Unique keys/option keys; known control types; SELECT/RADIO/MULTISELECT have at least one option; rule JSON valid against schema and depth ≤ 3; referenced fields exist and are not `SECTION_HEADING`/`HELP_TEXT`; no dependency cycles (including through sections); a field cannot reference itself; type of existing `FieldKey` unchanged from previous versions; defaults valid; regex compiles; `IsFilterable` only on TEXT, NUMBER, CHECKBOX, SELECT, RADIO, MULTISELECT, DATE, DATETIME, URL, ASSET_REF, USER_REF, max 5 per form version; the Task Type has at least one eligible workflow with a published version before a Task Type form is considered "usable".
+Unique keys/option keys; known control types; SELECT/RADIO/MULTISELECT have at least one option; rule JSON valid against schema and depth ≤ 3 (full list of definition codes: `contracts/form-rules.md` section 4); referenced fields exist and are not `SECTION_HEADING`/`HELP_TEXT`; no dependency cycles (including through sections); a field cannot reference itself; type of existing `FieldKey` unchanged from previous versions; defaults valid; `validation` bounds typed to the control and patterns in the portable subset; `IsFilterable` only on TEXT, NUMBER, CHECKBOX, SELECT, RADIO, MULTISELECT, DATE, DATETIME, URL, ASSET_REF, USER_REF, max 5 per form version; the Task Type has at least one eligible workflow with a published version before a Task Type form is considered "usable".
 
 ### 7.6 Storage of values: JSON plus typed filter columns
 

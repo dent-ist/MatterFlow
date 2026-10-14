@@ -153,15 +153,55 @@ public class FormRulesEdgeCaseTests
     }
 
     [Fact]
-    public void Pattern_uses_ecmascript_semantics_and_invalid_or_slow_patterns_do_not_throw()
+    public void Pattern_uses_portable_semantics_and_patterns_outside_the_subset_are_rejected_at_compile_time()
     {
         var schema = Schema("""
-            [{"key":"digits","control":"TEXT","validation":{"pattern":"^\\d+$"}},
-             {"key":"broken","control":"TEXT","validation":{"pattern":"("}}]
+            [{"key":"digits","control":"TEXT","validation":{"pattern":"^\\d+$"}}]
             """);
         Run(schema, """{"digits":"123"}""").Errors.ShouldBeEmpty();
         Codes(Run(schema, "{\"digits\":\"\\u0661\\u0662\"}")).ShouldBe(["digits:PATTERN"]);
-        Codes(Run(schema, """{"broken":"x"}""")).ShouldBe(["broken:PATTERN"]);
+
+        var broken = FormSchema.Compile(FormSchemaJson.ParseFields("""{"fields":[{"key":"broken","control":"TEXT","validation":{"pattern":"("}}]}"""));
+        broken.IsValid.ShouldBeFalse();
+        broken.Errors.Select(e => e.Code).ShouldBe([FormDefinitionErrorCode.InvalidPattern]);
+    }
+
+    [Theory]
+    [InlineData("a.b", true)]
+    [InlineData("^(?:[A-Z]{2}|\\d{3,})-[a-z0-9_.-]*?x$", true)]
+    [InlineData("[a-z-]+", true)]
+    [InlineData("a|", true)]
+    [InlineData("(a+)?", true)]
+    [InlineData("(a+)+", false)]
+    [InlineData("(a*){2,}", false)]
+    [InlineData("a{2,1}", false)]
+    [InlineData("a{1000}", false)]
+    [InlineData("a**", false)]
+    [InlineData("a++", false)]
+    [InlineData("^*", false)]
+    [InlineData("\\bx*", true)]
+    [InlineData("\\b*", false)]
+    [InlineData("[\\b]", false)]
+    [InlineData("[\\d-z]", false)]
+    [InlineData("a)", false)]
+    [InlineData("a]", false)]
+    [InlineData("a}", false)]
+    [InlineData("\\", false)]
+    [InlineData("\\s", false)]
+    [InlineData("\\1", false)]
+    [InlineData("(?=a)", false)]
+    [InlineData("[a", false)]
+    public void Portable_subset_accepts_and_rejects_as_documented(string pattern, bool accepted)
+    {
+        PortablePattern.TryTranslate(pattern, out _).ShouldBe(accepted);
+    }
+
+    [Fact]
+    public void Long_input_does_not_hang_and_timeout_counts_as_no_match()
+    {
+        var schema = Schema("""[{"key":"t","control":"TEXT","validation":{"pattern":"^(a|aa)*b$"}}]""");
+        var result = Run(schema, $"{{\"t\":\"{new string('a', 40)}\"}}");
+        Codes(result).ShouldBe(["t:PATTERN"]);
     }
 
     [Fact]

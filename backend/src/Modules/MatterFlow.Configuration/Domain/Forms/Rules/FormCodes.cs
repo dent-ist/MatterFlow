@@ -29,6 +29,12 @@ public enum FormDefinitionErrorCode
     LiteralTypeMismatch,
     UnknownOptionReference,
     InvalidSection,
+    InvalidFieldKey,
+    UnknownControl,
+    InvalidOptionKey,
+    NoOptions,
+    InvalidValidation,
+    InvalidPattern,
 }
 
 /// <summary>Wire names (<c>UPPER_SNAKE_CASE</c>) of the error codes.</summary>

@@ -1096,6 +1096,19 @@ Create task, Create and add another, Save changes, Save draft, Publish version <
 | Duplicate client number | "Client <00343> already exists." |
 | Duplicate matter number | "Matter <00012> already exists for client <00343>." |
 | Email | "Enter a valid email address." |
+| Form rules: Required (checkbox, choice, date, reference) | "Select <field>." |
+| Form rules: Wrong type, generic | "Enter a valid <field>." |
+| Form rules: Number not a number | "Enter a number." |
+| Form rules: Date not a date | "Enter a valid date." |
+| Form rules: Date and time not valid | "Enter a valid date and time." |
+| Form rules: Out of range (both limits) | "Enter a value from <min> to <max>." |
+| Form rules: Out of range (minimum only) | "Enter a value of <min> or more." |
+| Form rules: Out of range (maximum only) | "Enter a value of <max> or less." |
+| Form rules: Too long | "Use at most <n> characters." |
+| Form rules: Pattern mismatch (no custom message) | "Enter <field> in the expected format." |
+| Form rules: Option not available | "Choose one of the available options." |
+| Form rules: Value for unknown field (server) | "This field is not part of the form." |
+| Form rules (designer, publish-time) | Wording for every definition error code: `contracts/form-rules.messages.json`. Pattern mismatch shows the field's own plain-language message when the admin set one. |
 | URL | "Enter a valid web address starting with http:// or https://." |
 | Requestor name | "Enter the requestor's name." |
 | Matter inactive on create | "This matter is inactive. Choose an active matter." |

@@ -10,13 +10,15 @@ public sealed record FormOptionDefinition(string Key, JsonElement? AvailableWhen
 /// <summary>Per-field validation properties. Properties that do not apply to the control are ignored.</summary>
 /// <param name="Min">Inclusive lower bound: a JSON number (NUMBER) or <c>yyyy-MM-dd</c> string (DATE).</param>
 /// <param name="Max">Inclusive upper bound, same shape as <paramref name="Min"/>.</param>
-/// <param name="MaxLength">Maximum UTF-16 length for the text family.</param>
-/// <param name="Pattern">ECMAScript regular expression (unanchored search) for the text family.</param>
+/// <param name="MaxLength">Maximum UTF-16 length for the text family; a value below 1 is invalid (INVALID_VALIDATION).</param>
+/// <param name="Pattern">Regular expression in the portable subset (contracts/form-rules.md section 3.1; unanchored search) for the text family.</param>
+/// <param name="PatternMessage">Display text (1..200 characters) for the PATTERN error; never changes the code.</param>
 public sealed record FormFieldValidation(
     JsonElement? Min = null,
     JsonElement? Max = null,
     int? MaxLength = null,
-    string? Pattern = null);
+    string? Pattern = null,
+    string? PatternMessage = null);
 
 /// <summary>A form field as the rule engine sees it (fragment of a <c>FormField</c>). List order is display order.</summary>
 public sealed record FormFieldDefinition

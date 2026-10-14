@@ -24,7 +24,7 @@ function resolveRef(root, ref) {
   return ref.slice(2).split('/').reduce((n, k) => n[k], root);
 }
 const typeOf = (v) => v === null ? 'null' : Array.isArray(v) ? 'array' : Number.isInteger(v) ? 'integer' : typeof v;
-const isType = (v, t) => t === 'number' ? typeof v === 'number' : typeOf(v) === t;
+const isType = (v, t) => t === 'number' ? typeof v === 'number' && Number.isFinite(v) : typeOf(v) === t;
 const deepEq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 export function checkSchemaKeywords(schema, path = '#') {
@@ -83,6 +83,12 @@ const EQ_SET = ['eq', 'neq', 'in', 'notIn', 'isEmpty', 'isNotEmpty'];
 const ORDERED = [...EQ_SET, 'gt', 'gte', 'lt', 'lte'];
 const OPS_BY_FAMILY = { text: EQ_SET, number: ORDERED, date: ORDERED, datetime: ['isEmpty', 'isNotEmpty'], checkbox: ['isTrue', 'isFalse', 'isEmpty', 'isNotEmpty'], single: EQ_SET, multi: ['contains', 'isEmpty', 'isNotEmpty'], ref: EQ_SET };
 
+const KNOWN_CONTROLS = new Set([...INPUT_CONTROLS, 'SECTION_HEADING', 'HELP_TEXT']);
+const FIELD_KEY_RE = /^[a-z][a-z0-9_]{0,63}$/;
+const OPTION_KEY_RE = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
+const MAX_SAFE = 9007199254740991;
+const present = (x) => x !== undefined && x !== null;
+
 const BLANK = /^[\t\n\v\f\r ]*$/;
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const DATETIME_RE = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d{1,7})?Z$/;
@@ -95,6 +101,118 @@ function validDate(y, m, d) {
 }
 const isDateStr = (s) => typeof s === 'string' && (m => !!m && validDate(m[1], m[2], m[3]))(DATE_RE.exec(s));
 const foldAscii = (s) => s.replace(/[A-Z]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 32));
+
+
+// ---------------------------------------------------------------- portable pattern subset (form-rules.md section 3.1)
+const SYNTAX_CHARS = '^$\\.*+?()[]{}|/-';
+/** True when `p` uses only the portable regex subset, so JavaScript and .NET (ECMAScript) agree. */
+export function isPortablePattern(p) {
+  if (typeof p !== 'string' || p.length < 1 || p.length > 200) return false;
+  const n = p.length;
+  let i = 0;
+  const single = () => { // one escaped or literal character usable as a class range end; returns its code or null
+    const c = p[i];
+    if (c === undefined || c === ']' || c === '[' || c === '-') return null;
+    if (c !== '\\') { i++; return c.charCodeAt(0); }
+    const e = p[i + 1];
+    if (e === undefined) return null;
+    if ('tnrfv'.includes(e)) { i += 2; return { t: 9, n: 10, r: 13, f: 12, v: 11 }[e]; }
+    if (SYNTAX_CHARS.includes(e)) { i += 2; return e.charCodeAt(0); }
+    return null;
+  };
+  const parseClass = () => {
+    i++;
+    if (p[i] === '^') i++;
+    let items = 0, prevSingle = null;
+    for (;;) {
+      if (i >= n) return null;
+      const c = p[i];
+      if (c === ']') { if (items === 0) return null; i++; return { quantifiable: true }; }
+      if (c === '[') return null;
+      if (c === '-') {
+        const next = p[i + 1];
+        if (items === 0 || next === ']') { i++; items++; prevSingle = null; continue; }
+        if (prevSingle === null) return null;
+        i++;
+        const hi = single();
+        if (hi === null || hi < prevSingle) return null;
+        prevSingle = null;
+        continue;
+      }
+      if (c === '\\' && i + 1 < n && 'dDwW'.includes(p[i + 1])) { i += 2; items++; prevSingle = null; continue; }
+      const code = single();
+      if (code === null) return null;
+      items++;
+      prevSingle = code;
+    }
+  };
+  const parseQuant = () => {
+    let unbounded;
+    const c = p[i];
+    if (c === '*' || c === '+' || c === '?') { i++; unbounded = c !== '?'; }
+    else {
+      const m = /^\{(\d{1,3})(,(\d{0,3}))?\}/.exec(p.slice(i));
+      if (!m) return null;
+      const lo = +m[1], hi = m[2] === undefined ? lo : m[3] === '' ? Infinity : +m[3];
+      if (hi < lo) return null;
+      i += m[0].length;
+      unbounded = hi === Infinity;
+    }
+    if (p[i] === '?') i++;
+    if (i < n && '*+?{'.includes(p[i])) return null;
+    return { unbounded };
+  };
+  const parseAtom = () => {
+    const c = p[i];
+    if (c === '(') {
+      i++;
+      if (p[i] === '?') { if (p[i + 1] !== ':') return null; i += 2; }
+      const alt = parseAlt();
+      if (!alt || p[i] !== ')') return null;
+      i++;
+      return { quantifiable: true, group: true, unbounded: alt.unbounded };
+    }
+    if (c === '[') return parseClass();
+    if (c === '\\') {
+      const e = p[i + 1];
+      if (e === undefined) return null;
+      i += 2;
+      if ('bB'.includes(e)) return { quantifiable: false };
+      return 'dDwWtnrfv'.includes(e) || SYNTAX_CHARS.includes(e) ? { quantifiable: true } : null;
+    }
+    if (c === '^' || c === '$') { i++; return { quantifiable: false }; }
+    if ('*+?{}]'.includes(c)) return null;
+    i++;
+    return { quantifiable: true };
+  };
+  const parseSeq = () => {
+    let unbounded = false;
+    while (i < n && p[i] !== '|' && p[i] !== ')') {
+      const atom = parseAtom();
+      if (!atom) return null;
+      unbounded ||= !!atom.unbounded;
+      if (i < n && '*+?{'.includes(p[i])) {
+        if (!atom.quantifiable) return null;
+        const q = parseQuant();
+        if (!q) return null;
+        if (q.unbounded && atom.group && atom.unbounded) return null;
+        unbounded ||= q.unbounded;
+      }
+    }
+    return { unbounded };
+  };
+  const parseAlt = () => {
+    let unbounded = false;
+    for (;;) {
+      const s = parseSeq();
+      if (!s) return null;
+      unbounded ||= s.unbounded;
+      if (p[i] === '|') { i++; continue; }
+      return { unbounded };
+    }
+  };
+  return parseAlt() !== null && i === n;
+}
 
 /** Parse a raw submitted value. Returns {empty:true} | {ok:true,value} | {ok:false}. No coercion. */
 function parseValue(control, raw) {
@@ -110,7 +228,7 @@ function parseValue(control, raw) {
     case 'multi': return Array.isArray(raw) && raw.every((x) => typeof x === 'string') && new Set(raw).size === raw.length ? good(raw) : bad;
     case 'date': return isDateStr(raw) ? good(raw) : bad;
     case 'datetime': { const m = typeof raw === 'string' && DATETIME_RE.exec(raw); return m && validDate(m[1], m[2], m[3]) ? good(raw) : bad; }
-    case 'ref': return typeof raw === 'number' && Number.isInteger(raw) && raw > 0 ? good(raw) : bad;
+    case 'ref': return typeof raw === 'number' && Number.isInteger(raw) && raw > 0 && raw <= MAX_SAFE ? good(raw) : bad;
   }
   return bad;
 }
@@ -154,10 +272,27 @@ function evalRule(n, eff, byKey) {
 
 function ruleSlots(f) {
   const s = [];
-  if (f.showWhen !== undefined) s.push(f.showWhen);
-  if (f.requiredWhen !== undefined) s.push(f.requiredWhen);
-  for (const o of f.options ?? []) if (o.availableWhen !== undefined) s.push(o.availableWhen);
+  if (present(f.showWhen)) s.push(f.showWhen);
+  if (present(f.requiredWhen)) s.push(f.requiredWhen);
+  if (OPTION_CONTROLS.has(f.control)) for (const o of f.options ?? []) if (present(o.availableWhen)) s.push(o.availableWhen);
   return s;
+}
+
+function checkValidation(f, codes) {
+  const v = f.validation;
+  if (!present(v)) return;
+  const fam = FAMILY[f.control];
+  const bad = () => codes.add('INVALID_VALIDATION');
+  if (fam === 'number' || fam === 'date') {
+    const okBound = fam === 'number' ? (x) => typeof x === 'number' && Number.isFinite(x) : isDateStr;
+    for (const b of ['min', 'max']) if (present(v[b]) && !okBound(v[b])) bad();
+    if (present(v.min) && present(v.max) && okBound(v.min) && okBound(v.max) && v.min > v.max) bad();
+  }
+  if (fam === 'text') {
+    if (present(v.maxLength) && !(Number.isInteger(v.maxLength) && v.maxLength >= 1 && v.maxLength <= 2147483647)) bad();
+    if (typeof v.pattern === 'string' && !isPortablePattern(v.pattern)) codes.add('INVALID_PATTERN');
+    if (present(v.patternMessage) && !(typeof v.patternMessage === 'string' && v.patternMessage.length >= 1 && v.patternMessage.length <= 200)) bad();
+  }
 }
 
 /** Publish-time check. Returns sorted unique list of definition error codes ([] = valid). */
@@ -168,8 +303,16 @@ export function checkDefinition(fields, ruleSchema) {
   if (codes.size) return [...codes];
   const edges = new Map(fields.map((f) => [f.key, new Set()]));
   for (const f of fields) {
-    if (new Set((f.options ?? []).map((o) => o.key)).size !== (f.options ?? []).length) codes.add('DUPLICATE_OPTION_KEY');
-    if (f.section !== undefined) {
+    if (!FIELD_KEY_RE.test(f.key)) codes.add('INVALID_FIELD_KEY');
+    if (!KNOWN_CONTROLS.has(f.control)) codes.add('UNKNOWN_CONTROL');
+    if (OPTION_CONTROLS.has(f.control)) {
+      const opts = f.options ?? [];
+      if (opts.length === 0) codes.add('NO_OPTIONS');
+      if (opts.some((o) => !OPTION_KEY_RE.test(o.key))) codes.add('INVALID_OPTION_KEY');
+      if (new Set(opts.map((o) => o.key)).size !== opts.length) codes.add('DUPLICATE_OPTION_KEY');
+    }
+    checkValidation(f, codes);
+    if (present(f.section)) {
       const h = byKey.get(f.section);
       if (!h || h.control !== 'SECTION_HEADING' || h === f) codes.add('INVALID_SECTION'); else edges.get(f.key).add(h.key);
     }
@@ -187,7 +330,7 @@ export function checkDefinition(fields, ruleSchema) {
         if ('value' in l) {
           const lits = Array.isArray(l.value) ? l.value : [l.value];
           const okLit = (x) => fam === 'number' ? typeof x === 'number'
-            : fam === 'ref' ? Number.isInteger(x) && x > 0
+            : fam === 'ref' ? typeof x === 'number' && Number.isInteger(x) && x > 0 && x <= MAX_SAFE
             : fam === 'date' ? isDateStr(x) : typeof x === 'string';
           if (!lits.every(okLit)) { codes.add('LITERAL_TYPE_MISMATCH'); continue; }
           if (OPTION_CONTROLS.has(t.control) && !lits.every((x) => (t.options ?? []).some((o) => o.key === x))) codes.add('UNKNOWN_OPTION_REFERENCE');
@@ -218,21 +361,21 @@ export function evaluate(fields, values, mode = 'submit') {
     if (vis.has(key)) return;
     const f = byKey.get(key);
     const deps = new Set();
-    if (f.section !== undefined) deps.add(f.section);
+    if (present(f.section)) deps.add(f.section);
     for (const r of ruleSlots(f)) for (const l of leaves(r)) deps.add(l.field);
     for (const d of deps) resolve(d);
-    const sectionVisible = f.section === undefined || vis.get(f.section);
-    const visible = sectionVisible && (f.showWhen === undefined || evalRule(f.showWhen, eff, byKey));
+    const sectionVisible = !present(f.section) || vis.get(f.section);
+    const visible = sectionVisible && (!present(f.showWhen) || evalRule(f.showWhen, eff, byKey));
     vis.set(key, visible);
     let p = { empty: true };
     if (INPUT_CONTROLS.has(f.control) && visible) p = parseValue(f.control, values[key]);
     parsed.set(key, p);
     eff.set(key, p.ok ? p.value : null);
-    req.set(key, INPUT_CONTROLS.has(f.control) && visible && (f.required === true || (f.requiredWhen !== undefined && evalRule(f.requiredWhen, eff, byKey))));
+    req.set(key, INPUT_CONTROLS.has(f.control) && visible && (f.required === true || (present(f.requiredWhen) && evalRule(f.requiredWhen, eff, byKey))));
   };
   for (const f of fields) resolve(f.key);
   for (const f of fields) if (OPTION_CONTROLS.has(f.control)) {
-    opts.set(f.key, (f.options ?? []).filter((o) => o.availableWhen === undefined || evalRule(o.availableWhen, eff, byKey)).map((o) => o.key));
+    opts.set(f.key, (f.options ?? []).filter((o) => !present(o.availableWhen) || evalRule(o.availableWhen, eff, byKey)).map((o) => o.key));
   }
   const errors = [], normalized = {};
   for (const k of Object.keys(values)) {
@@ -247,10 +390,10 @@ export function evaluate(fields, values, mode = 'submit') {
     if (!p.ok) { fail('INVALID_TYPE'); continue; }
     normalized[f.key] = p.value;
     const v = p.value, val = f.validation ?? {}, fam = FAMILY[f.control];
-    if ((fam === 'number' || fam === 'date') && ((val.min !== undefined && v < val.min) || (val.max !== undefined && v > val.max))) { fail('OUT_OF_RANGE'); continue; }
+    if ((fam === 'number' || fam === 'date') && ((present(val.min) && v < val.min) || (present(val.max) && v > val.max))) { fail('OUT_OF_RANGE'); continue; }
     if (fam === 'text') {
-      if (val.maxLength !== undefined && v.length > val.maxLength) { fail('TOO_LONG'); continue; }
-      if (val.pattern !== undefined && !new RegExp(val.pattern).test(v)) { fail('PATTERN'); continue; }
+      if (present(val.maxLength) && v.length > val.maxLength) { fail('TOO_LONG'); continue; }
+      if (present(val.pattern) && !new RegExp(val.pattern).test(v)) { fail('PATTERN'); continue; }
     }
     if (fam === 'single' && !opts.get(f.key).includes(v)) fail('OPTION_NOT_ALLOWED');
     if (fam === 'multi' && !v.every((x) => opts.get(f.key).includes(x))) fail('OPTION_NOT_ALLOWED');
@@ -309,12 +452,13 @@ function main() {
       if (names.has(vec.name)) fail(`duplicate vector name ${vec.name}`);
       names.add(vec.name);
       for (const f of vec.schema.fields) seenControls.add(f.control);
-      const wantsSchemaViolation = vec.expected.definitionValid === false && vec.expected.definitionErrors.includes('SCHEMA_VIOLATION');
-      if (!wantsSchemaViolation) {
+      const wanted = vec.expected.definitionValid === false ? vec.expected.definitionErrors : [];
+      const wantsStructuralError = ['SCHEMA_VIOLATION', 'INVALID_FIELD_KEY', 'INVALID_OPTION_KEY', 'DUPLICATE_FIELD_KEY'].some((c) => wanted.includes(c));
+      if (!wantsStructuralError) {
         for (const f of vec.schema.fields) {
           if (!/^[a-z][a-z0-9_]{0,63}$/.test(f.key)) fail(`${vec.name}: field key "${f.key}" violates fieldKey pattern`);
           for (const r of ruleSlots(f)) validate(schema, r, schema).forEach((m) => fail(`${vec.name}: rule ${m}`));
-          for (const o of f.options ?? []) if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/.test(o.key)) fail(`${vec.name}: option key "${o.key}" violates optionKey pattern`);
+          if (OPTION_CONTROLS.has(f.control)) for (const o of f.options ?? []) if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/.test(o.key)) fail(`${vec.name}: option key "${o.key}" violates optionKey pattern`);
         }
       }
       // 3. reference evaluator must reproduce expected
@@ -335,6 +479,20 @@ function main() {
     for (const c of needCodes) if (!allCodes.includes(c)) fail(`no vector expects ${c}`);
     console.log(`vectors: ${vecFile.vectors.length} (${validCount} evaluation, ${invalidCount} definition-invalid)`);
   }
+
+  // 4. message keys: every field error code and definition error code has at least one message
+  const msgFile = load('form-rules.messages.json');
+  const allowedPh = new Set(msgFile.placeholders);
+  const codeOf = (k) => k.split('.')[0];
+  const msgKeys = Object.keys(msgFile.messages);
+  for (const code of [...schema.$defs.errorCode.enum, ...schema.$defs.definitionErrorCode.enum]) {
+    if (!msgKeys.some((k) => codeOf(k) === code)) fail(`no message key for code ${code}`);
+  }
+  for (const [k, text] of Object.entries(msgFile.messages)) {
+    if (![...schema.$defs.errorCode.enum, ...schema.$defs.definitionErrorCode.enum].includes(codeOf(k))) fail(`message key ${k} names an unknown code`);
+    for (const m of text.matchAll(/\{(\w+)\}/g)) if (!allowedPh.has(m[1])) fail(`message ${k}: unknown placeholder {${m[1]}}`);
+  }
+  console.log(`message keys: ${msgKeys.length}`);
 
   if (problems.length) {
     console.error(`FAILED (${problems.length})`);
