@@ -1,0 +1,29 @@
+From: Raj Patel <raj.patel@example-firm.test>
+To: team@example-firm.test
+Subject: Search term report attached
+Date: Wed, 14 Oct 2026 08:00:00 -0500
+Message-ID: <attach-003@example-firm.test>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="MIXED-BOUNDARY"
+
+--MIXED-BOUNDARY
+Content-Type: multipart/alternative; boundary="ALT-BOUNDARY"
+
+--ALT-BOUNDARY
+Content-Type: text/plain; charset=utf-8
+
+Report attached. Hit counts are in the second tab.
+--ALT-BOUNDARY
+Content-Type: text/html; charset=utf-8
+
+<p>Report attached. <i>Hit counts</i> are in the second tab.</p>
+--ALT-BOUNDARY--
+
+--MIXED-BOUNDARY
+Content-Type: application/octet-stream; name="report.xlsx"
+Content-Disposition: attachment; filename="report.xlsx"
+Content-Transfer-Encoding: base64
+
+UEsDBBQAAAAIAAAAAAAAAAAAAAAAAAAAAAAJAAAAZmFrZS5iaW4AAAAAAAAAAAAAAAA=
+
+--MIXED-BOUNDARY--

@@ -1,0 +1,15 @@
+From: "Doe, Jane" <jane.doe@example-firm.test>
+To: team@example-firm.test
+Subject: HTML only: review set update
+Date: Tue, 13 Oct 2026 14:02:30 +0000
+Message-ID: <html-002@example-firm.test>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<html><head><style>p{color:red}</style><script>alert(1)</script></head>
+<body><h1>Review set update</h1>
+<p>Please add the new custodians to the <b>review set</b>.</p>
+<ul><li>Custodian A</li><li>Custodian B</li></ul>
+<p>See <a href=3D"https://example.test/doc">the tracker</a>.</p>
+</body></html>

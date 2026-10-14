@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { APIRequestContext, request } from '@playwright/test';
 
 export const BASE_URL = process.env['E2E_BASE_URL'] ?? 'http://127.0.0.1:5190';
@@ -65,6 +67,27 @@ export class Api {
       method,
       data: body === undefined ? undefined : JSON.stringify(body),
       headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+    });
+    const text = await response.text();
+    let parsed: Json = text;
+    try {
+      parsed = text ? JSON.parse(text) : null;
+    } catch {
+      /* not JSON */
+    }
+    return { status: response.status(), body: parsed };
+  }
+
+  /** Multipart upload of one local file under the given form field (used for the .eml parser). */
+  async upload(apiPath: string, field: string, filePath: string): Promise<RawResponse> {
+    const response = await this.ctx.post(apiPath, {
+      multipart: {
+        [field]: {
+          name: path.basename(filePath),
+          mimeType: 'application/octet-stream',
+          buffer: fs.readFileSync(filePath),
+        },
+      },
     });
     const text = await response.text();
     let parsed: Json = text;

@@ -1,0 +1,16 @@
+From: Jane Doe <jane.doe@example-firm.test>
+To: Matter Team <team@example-firm.test>
+Subject: Production volume 7 - request for load file
+Date: Mon, 12 Oct 2026 09:15:00 -0400
+Message-ID: <plain-001@example-firm.test>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+
+Hi team,
+
+Please prepare the load file for production volume 7 for matter 10234-0002.
+We need it by Friday.
+
+Thanks,
+Jane
