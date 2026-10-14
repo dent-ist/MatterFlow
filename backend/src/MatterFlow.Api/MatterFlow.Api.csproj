@@ -13,6 +13,10 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <!-- The SME starter configuration is the single source for the optional startup seed (Seed:StarterConfiguration). -->
+    <EmbeddedResource Include="..\..\..\docs\sme\seed-configuration.json" LogicalName="MatterFlow.Seed.seed-configuration.json" Link="Seeding\seed-configuration.json" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\MatterFlow.SharedKernel\MatterFlow.SharedKernel.csproj" />
     <ProjectReference Include="..\MatterFlow.Data\MatterFlow.Data.csproj" />
     <ProjectReference Include="..\Modules\MatterFlow.Identity\MatterFlow.Identity.csproj" />

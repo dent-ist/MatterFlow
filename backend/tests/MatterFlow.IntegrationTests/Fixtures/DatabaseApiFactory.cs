@@ -25,6 +25,8 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
         builder.UseSetting("ConnectionStrings:Default", connectionString);
         builder.UseSetting("Migrations:Enabled", "true");
         builder.UseSetting("Auth:Provider", "Dev");
+        // The factory runs in Development, where the SME starter configuration would otherwise be seeded into every test database.
+        builder.UseSetting("Seed:StarterConfiguration:Enabled", "false");
         builder.UseSetting("Bootstrap:SystemAdmins:0", AdminAccount);
         builder.UseSetting("Dev:Users:0:Username", @"KE\director");
         builder.UseSetting("Dev:Users:0:DisplayName", "Dana Director");

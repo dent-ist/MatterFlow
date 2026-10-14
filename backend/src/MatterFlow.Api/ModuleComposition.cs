@@ -1,3 +1,4 @@
+using MatterFlow.Api.Seeding;
 using MatterFlow.Assets;
 using MatterFlow.Audit;
 using MatterFlow.Configuration;
@@ -33,6 +34,7 @@ public static class ModuleComposition
         services.AddWorkViewsModule();
         services.AddSearchModule();
         services.AddIntakeModule();
+        services.AddStarterConfigurationSeeding();
         return services;
     }
 
@@ -41,5 +43,6 @@ public static class ModuleComposition
     {
         await services.SeedIdentityAsync(cancellationToken);
         await services.SeedConfigurationAsync(cancellationToken);
+        await services.SeedStarterConfigurationAsync(cancellationToken);
     }
 }
