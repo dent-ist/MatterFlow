@@ -26,18 +26,17 @@ internal static class EmlEmailParser
         var (fromName, fromEmail) = Sender(message, warnings);
         var sentAt = SentAt(message, warnings);
 
+        var html = message.HtmlBody; // decoded once: it is the text fallback and the rich description candidate
         var text = message.TextBody;
         if (string.IsNullOrWhiteSpace(text))
-        {
-            var html = message.HtmlBody;
             text = string.IsNullOrWhiteSpace(html) ? string.Empty : HtmlToText.Convert(html, cancellationToken: cancellationToken);
-        }
 
         var body = EmailText.Body(text, warnings);
         if (body.Length == 0)
             warnings.Add("No readable message body was found.");
 
-        return new ParsedEmailResponse(subject, body, fromName, fromEmail, sentAt, EmailSource.Eml, warnings);
+        var bodyHtml = EmailHtml.Clean(html, warnings);
+        return new ParsedEmailResponse(subject, body, fromName, fromEmail, sentAt, EmailSource.Eml, warnings, bodyHtml);
     }
 
     private static (string Name, string Email) Sender(MimeMessage message, List<string> warnings)

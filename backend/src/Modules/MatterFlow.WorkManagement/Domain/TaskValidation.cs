@@ -7,7 +7,7 @@ namespace MatterFlow.WorkManagement.Domain;
 public static class TaskValidation
 {
     public const int TitleMaxLength = 200;
-    public const int DescriptionMaxLength = 20000;
+    public const int DescriptionMaxLength = TaskDescription.MaxTextLength;
     public const int RequestorNameMaxLength = 200;
     public const int EmailMaxLength = 254;
 
@@ -20,10 +20,8 @@ public static class TaskValidation
             : null;
     }
 
-    public static FieldError? ValidateDescription(string? description) =>
-        description is not null && description.Length > DescriptionMaxLength
-            ? new FieldError("TOO_LONG", $"A description may have at most {DescriptionMaxLength} characters.")
-            : null;
+    /// <summary>The description as the request carries it: plain text or HTML (decision R); the error is the one the sanitizing rules give.</summary>
+    public static FieldError? ValidateDescription(string? description) => TaskDescription.Prepare(description).Error;
 
     public static FieldError? ValidateRequestorName(string? name)
     {

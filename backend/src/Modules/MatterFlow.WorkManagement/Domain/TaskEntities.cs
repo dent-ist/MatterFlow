@@ -27,7 +27,10 @@ public class WorkTask : AuditedEntity<long>
 
     public string Title { get; set; } = string.Empty;
 
+    /// <summary>Plain text (<see cref="TaskDescriptionFormat.Text"/>, rows from before decision R) or sanitized HTML.</summary>
     public string? Description { get; set; }
+
+    public TaskDescriptionFormat DescriptionFormat { get; set; } = TaskDescriptionFormat.Text;
 
     public int PriorityId { get; set; }
 

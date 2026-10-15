@@ -16,7 +16,12 @@ public enum EmailSource
 }
 
 /// <summary>JSON body of the paste variant of <c>POST /api/v1/intake/parse-email</c>.</summary>
-public sealed record ParsePastedTextRequest(string? PastedText);
+/// <param name="PastedText">The pasted email as plain text (header block plus body, or just a body). Required.</param>
+/// <param name="PastedHtml">
+/// The same paste as HTML (clipboard <c>text/html</c>), when the browser has it. The header values still come from the text; the HTML is
+/// sanitized and, without its leading header lines, returned as <c>bodyHtml</c> so tables survive. Optional, at most 1,000,000 characters.
+/// </param>
+public sealed record ParsePastedTextRequest(string? PastedText, string? PastedHtml = null);
 
 /// <summary>
 /// The values extracted from an email. Nothing of the email is stored: attachments and their file names are never read, and the
@@ -29,6 +34,10 @@ public sealed record ParsePastedTextRequest(string? PastedText);
 /// <param name="SentAt">Sent date in UTC; null when the email has none or it could not be read.</param>
 /// <param name="Source">Which input produced the values.</param>
 /// <param name="Warnings">Human-readable notes, e.g. a truncated body or a missing sender.</param>
+/// <param name="BodyHtml">
+/// The HTML body, sanitized with the same rules as a Task description (basic formatting and tables, nothing else), when the email has one
+/// that fits the limits; null otherwise, and the caller uses <c>body</c>. Never contains anything the sanitizer allows to run or load.
+/// </param>
 public sealed record ParsedEmailResponse(
     string Subject,
     string Body,
@@ -36,7 +45,8 @@ public sealed record ParsedEmailResponse(
     string FromEmail,
     DateTimeOffset? SentAt,
     EmailSource Source,
-    IReadOnlyList<string> Warnings);
+    IReadOnlyList<string> Warnings,
+    string? BodyHtml = null);
 
 /// <summary>Intake settings (<c>Intake</c> configuration section).</summary>
 public sealed class IntakeOptions

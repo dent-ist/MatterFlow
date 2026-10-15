@@ -92,7 +92,11 @@ internal static class TaskSupport
     public static string? Display(DateOnly? value) => value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
     /// <summary>Validates the free-text fields of a Task; returns a 400 with one entry per bad field, or null.</summary>
-    public static Error? ValidateTexts(string? title, string? description, string? requestorName, string? requestorEmail)
+    public static Error? ValidateTexts(string? title, string? description, string? requestorName, string? requestorEmail) =>
+        ValidateTextsPrepared(title, TaskValidation.ValidateDescription(description), requestorName, requestorEmail);
+
+    /// <summary>As above, with the description already prepared (so a heavy description is sanitized once per request).</summary>
+    public static Error? ValidateTextsPrepared(string? title, FieldError? descriptionError, string? requestorName, string? requestorEmail)
     {
         var errors = new Dictionary<string, IReadOnlyList<FieldError>>();
 
@@ -103,7 +107,7 @@ internal static class TaskSupport
         }
 
         Add("title", TaskValidation.ValidateTitle(title));
-        Add("description", TaskValidation.ValidateDescription(description));
+        Add("description", descriptionError);
         Add("requestorName", TaskValidation.ValidateRequestorName(requestorName));
         Add("requestorEmail", TaskValidation.ValidateRequestorEmail(requestorEmail));
         return errors.Count == 0 ? null : Error.Validation("The task details are not valid.", errors);

@@ -12,6 +12,10 @@ internal sealed class WorkTaskConfiguration : IEntityTypeConfiguration<WorkTask>
         v => v.ToCode(),
         s => ParseStatus(s));
 
+    private static readonly ValueConverter<TaskDescriptionFormat, string> DescriptionFormatConverter = new(
+        v => v.ToCode(),
+        s => TaskDescriptionFormatExtensions.FromCode(s));
+
     private static TaskStatusCode ParseStatus(string code) =>
         TaskStatusCodeExtensions.TryParse(code, out var status) ? status : throw new InvalidOperationException($"Unknown task status code '{code}'.");
 
@@ -27,6 +31,7 @@ internal sealed class WorkTaskConfiguration : IEntityTypeConfiguration<WorkTask>
         b.Property(x => x.Number).HasColumnName("TaskNumber").HasMaxLength(20).IsUnicode(false).IsRequired();
         b.Property(x => x.Title).HasMaxLength(300).IsRequired();
         b.Property(x => x.Description).HasColumnType("nvarchar(max)");
+        b.Property(x => x.DescriptionFormat).HasMaxLength(4).IsUnicode(false).HasConversion(DescriptionFormatConverter);
         b.Property(x => x.Status).HasColumnName("StatusCode").HasMaxLength(20).IsUnicode(false).HasConversion(StatusConverter);
         b.Property(x => x.RequestorName).HasMaxLength(200).IsRequired();
         b.Property(x => x.RequestorEmail).HasMaxLength(320);

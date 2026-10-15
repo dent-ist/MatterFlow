@@ -52,7 +52,7 @@ public class IntakeController(EmailParseService emails) : ControllerBase
     [Authorize(Policy = Policy)]
     [ProducesResponseType<ParsedEmailResponse>(StatusCodes.Status200OK, "application/json")]
     public IActionResult ParseText([FromBody] ParsePastedTextRequest request) =>
-        this.ToActionResult(emails.ParsePastedText(request.PastedText));
+        this.ToActionResult(emails.ParsePastedText(request.PastedText, request.PastedHtml));
 
     /// <summary>
     /// The same pasted-text endpoint on the shared <c>parse-email</c> URL: one route accepts both a multipart upload and a JSON body

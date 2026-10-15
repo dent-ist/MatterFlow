@@ -70,7 +70,7 @@ public sealed class EmailParseService(IOptions<IntakeOptions> options, IUserTime
     }
 
     /// <summary>Parses pasted text (a header block plus body, or just a body).</summary>
-    public Result<ParsedEmailResponse> ParsePastedText(string? pastedText)
+    public Result<ParsedEmailResponse> ParsePastedText(string? pastedText, string? pastedHtml = null)
     {
         if (string.IsNullOrWhiteSpace(pastedText))
             return Error.Validation("pastedText", "REQUIRED", "Paste the email text first.");
@@ -81,7 +81,14 @@ public sealed class EmailParseService(IOptions<IntakeOptions> options, IUserTime
 
         try
         {
-            return PastedTextParser.Parse(pastedText, timeZone.Zone);
+            var parsed = PastedTextParser.Parse(pastedText, timeZone.Zone);
+            if (string.IsNullOrWhiteSpace(pastedHtml))
+                return parsed;
+
+            // The same paste as HTML: sanitized, without the header lines whose values the text parser already took.
+            var warnings = parsed.Warnings.ToList();
+            var bodyHtml = EmailHtml.Clean(pastedHtml, warnings, dropHeaderLines: parsed.Subject.Length > 0 || parsed.FromEmail.Length > 0 || parsed.FromName.Length > 0);
+            return parsed with { BodyHtml = bodyHtml, Warnings = warnings };
         }
         catch (Exception ex) when (ex is RegexMatchTimeoutException or ArgumentException)
         {

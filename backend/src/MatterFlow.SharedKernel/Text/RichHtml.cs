@@ -288,6 +288,25 @@ public static partial class RichHtml
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Removes the embedding and override controls (U+202A to U+202E) from text: they reorder what is shown, so pasted text could display
+    /// a different amount, name or address than it contains. The isolate controls and the plain marks stay (right-to-left scripts use them).
+    /// </summary>
+    private static string StripBidiOverrides(string text)
+    {
+        if (text.AsSpan().IndexOfAnyInRange('\u202A', '\u202E') < 0)
+            return text;
+
+        var sb = new StringBuilder(text.Length);
+        foreach (var c in text)
+        {
+            if (c is < '\u202A' or > '\u202E')
+                sb.Append(c);
+        }
+
+        return sb.ToString();
+    }
+
     private static bool IsBidiControl(char c) => c is (>= '\u202A' and <= '\u202E') or (>= '\u2066' and <= '\u2069') or '\u200E' or '\u200F' or '\u061C';
 
     private static bool IsBlank(string html) => ToPlainText(html).Length == 0;
@@ -341,7 +360,7 @@ public static partial class RichHtml
             if (child is AngleSharp.Dom.IText text)
             {
                 if (!structural || !string.IsNullOrWhiteSpace(text.Data))
-                    output.Append(child.ToHtml());
+                    output.Append(StripBidiOverrides(child.ToHtml()));
                 continue;
             }
 
@@ -416,7 +435,7 @@ public static partial class RichHtml
     [GeneratedRegex("\n+\u0001", RegexOptions.CultureInvariant)]
     private static partial Regex LineBreakBeforeCellMarkPattern();
 
-    [GeneratedRegex("<[^>]*>", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("<[^<>]*>", RegexOptions.CultureInvariant)]
     private static partial Regex TagPattern();
 
     [GeneratedRegex(@"</?(p|br|b|strong|i|em|u|ul|ol|li|a|div|span|font|h[1-6]|table|thead|tbody|tfoot|tr|td|th|caption|colgroup|col|blockquote|pre|img|svg|math|script|style|iframe|object|embed|form|input|button|textarea|select|link|meta|base|html|head|body|title|o:p)(?=[\s/>])|<!--|<!\[|<\?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]

@@ -86,6 +86,7 @@ public sealed class TaskPresenter(
             new TaskTypeRef(t.TaskTypeId, type?.Name ?? string.Empty, type?.IconKey ?? TaskTypeIcons.DefaultKey),
             t.Title,
             t.Description,
+            t.DescriptionFormat.ToCode(),
             t.RequestorName,
             t.RequestorEmail,
             TaskSupport.Utc(t.RequestedAtUtc),

@@ -225,18 +225,19 @@ public sealed class TaskService
                 return setPriority.Error!;
         }
 
-        if (TaskSupport.ValidateTexts(request.Title, request.Description, request.RequestorName, request.RequestorEmail) is { } invalid)
+        var description = TaskDescription.Prepare(request.Description);
+        if (TaskSupport.ValidateTextsPrepared(request.Title, description.Error, request.RequestorName, request.RequestorEmail) is { } invalid)
             return invalid;
 
         var due = TaskDueParser.Parse(request.DueDate, request.DueTime, _timeZone.ToUtc);
         if (due.IsFailure)
             return due.Error!;
 
-        var created = await _tx.RunAsync(token => CreateCoreAsync(request, defaultPriority, due.Value, token), ct);
+        var created = await _tx.RunAsync(token => CreateCoreAsync(request, description.Html, defaultPriority, due.Value, token), ct);
         return created.IsFailure ? created.Error! : await _presenter.GetAsync(created.Value.TaskId, created.Value.Notes, ct);
     }
 
-    private async Task<Result<Created>> CreateCoreAsync(CreateTaskRequest request, PriorityInfo defaultPriority, TaskDue due, CancellationToken ct)
+    private async Task<Result<Created>> CreateCoreAsync(CreateTaskRequest request, string? descriptionHtml, PriorityInfo defaultPriority, TaskDue due, CancellationToken ct)
     {
         // The Matter row lock makes "create a Task" and "deactivate the Matter" mutually exclusive (architecture 10.3).
         await _tx.LockMatterAsync(request.MatterId, ct);
@@ -311,7 +312,8 @@ public sealed class TaskService
             FormVersionId = type.PublishedFormVersionId,
             WorkflowInstanceId = instance.Value,
             Title = request.Title.Trim(),
-            Description = TaskSupport.Clean(request.Description),
+            Description = descriptionHtml,
+            DescriptionFormat = TaskDescriptionFormat.Html,
             PriorityId = priorityId,
             Status = assignment.Status,
             AssignedPodId = request.AssignedPodId,
@@ -374,18 +376,19 @@ public sealed class TaskService
 
     public async Task<Result<TaskResponse>> UpdateAsync(long taskId, UpdateTaskRequest request, CancellationToken ct)
     {
-        if (TaskSupport.ValidateTexts(request.Title, request.Description, request.RequestorName, request.RequestorEmail) is { } invalid)
+        var description = TaskDescription.Prepare(request.Description);
+        if (TaskSupport.ValidateTextsPrepared(request.Title, description.Error, request.RequestorName, request.RequestorEmail) is { } invalid)
             return invalid;
 
         var due = TaskDueParser.Parse(request.DueDate, request.DueTime, _timeZone.ToUtc);
         if (due.IsFailure)
             return due.Error!;
 
-        var updated = await _tx.RunAsync(token => UpdateCoreAsync(taskId, request, due.Value, token), ct);
+        var updated = await _tx.RunAsync(token => UpdateCoreAsync(taskId, request, description.Html, due.Value, token), ct);
         return updated.IsFailure ? updated.Error! : await _presenter.GetAsync(taskId, updated.Value, ct);
     }
 
-    private async Task<Result<CommandNotes>> UpdateCoreAsync(long taskId, UpdateTaskRequest request, TaskDue due, CancellationToken ct)
+    private async Task<Result<CommandNotes>> UpdateCoreAsync(long taskId, UpdateTaskRequest request, string? descriptionHtml, TaskDue due, CancellationToken ct)
     {
         var task = await _tx.LockTaskAsync(taskId, ct);
         if (task is null)
@@ -419,12 +422,26 @@ public sealed class TaskService
         }
 
         var title = request.Title.Trim();
-        var description = TaskSupport.Clean(request.Description);
+
+        // A description saved before decision R is plain text. A client that sends it back unchanged (a title edit, an older client) must not
+        // convert it, so the text stays as it is and nothing is audited; any other value is the sanitized HTML.
+        var sentText = TaskSupport.Clean(request.Description);
+        var keepText = task.DescriptionFormat == TaskDescriptionFormat.Text && sentText is not null && string.Equals(sentText, task.Description, StringComparison.Ordinal);
+        var description = keepText ? task.Description : descriptionHtml;
+        var descriptionFormat = keepText ? TaskDescriptionFormat.Text : TaskDescriptionFormat.Html;
         var requestorName = request.RequestorName.Trim();
         var requestorEmail = TaskSupport.Clean(request.RequestorEmail);
 
         Track("title", task.Title, title);
-        Track("description", task.Description, description);
+        if (!string.Equals(task.Description, description, StringComparison.Ordinal))
+        {
+            // The audit trail keeps what people read (plain text), never markup.
+            changes.Add(("description", AuditText(TaskDescription.ToPlainText(task.Description, task.DescriptionFormat)), AuditText(TaskDescription.ToPlainText(description, descriptionFormat))));
+        }
+        else if (task.Description is null)
+        {
+            descriptionFormat = task.DescriptionFormat;
+        }
         Track("requestorName", task.RequestorName, requestorName);
         Track("requestorEmail", task.RequestorEmail, requestorEmail);
         Track("requestedAt", TaskSupport.Display(task.RequestedAtUtc), TaskSupport.Display(request.RequestedAtUtc));
@@ -478,6 +495,7 @@ public sealed class TaskService
         // Apply.
         task.Title = title;
         task.Description = description;
+        task.DescriptionFormat = descriptionFormat;
         task.RequestorName = requestorName;
         task.RequestorEmail = requestorEmail;
         task.RequestedAtUtc = TaskSupport.ToUtc(request.RequestedAtUtc);
@@ -784,6 +802,9 @@ public sealed class TaskService
         JsonValueKind.Null => null,
         _ => e.GetRawText(),
     };
+
+    /// <summary>The description text kept in an audit row: empty becomes null, and no more than the plain-text limit.</summary>
+    private static string? AuditText(string text) => text.Length == 0 ? null : text.Length <= TaskDescription.MaxTextLength ? text : text[..TaskDescription.MaxTextLength];
 
     private static string Clip(string text) => text.Length <= 500 ? text : text[..500];
 

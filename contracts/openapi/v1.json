@@ -9323,7 +9323,7 @@
             "type": "string"
           },
           "description": {
-            "maxLength": 20000,
+            "maxLength": 300000,
             "minLength": 0,
             "type": [
               "null",
@@ -10902,6 +10902,12 @@
             "items": {
               "type": "string"
             }
+          },
+          "bodyHtml": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -10912,6 +10918,12 @@
         "type": "object",
         "properties": {
           "pastedText": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pastedHtml": {
             "type": [
               "null",
               "string"
@@ -13547,6 +13559,7 @@
           "taskType",
           "title",
           "description",
+          "descriptionFormat",
           "requestorName",
           "requestorEmail",
           "requestedAtUtc",
@@ -13610,6 +13623,9 @@
               "null",
               "string"
             ]
+          },
+          "descriptionFormat": {
+            "type": "string"
           },
           "requestorName": {
             "type": "string"
@@ -14613,7 +14629,7 @@
             "type": "string"
           },
           "description": {
-            "maxLength": 20000,
+            "maxLength": 300000,
             "minLength": 0,
             "type": [
               "null",

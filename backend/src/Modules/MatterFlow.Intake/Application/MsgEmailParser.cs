@@ -34,7 +34,8 @@ internal static class MsgEmailParser
         if (body.Length == 0)
             warnings.Add("No readable message body was found.");
 
-        return new ParsedEmailResponse(subject, body, fromName, fromEmail, sentAt, EmailSource.Msg, warnings);
+        var bodyHtml = EmailHtml.Clean(message.BodyHtml, warnings);
+        return new ParsedEmailResponse(subject, body, fromName, fromEmail, sentAt, EmailSource.Msg, warnings, bodyHtml);
     }
 
     private static (string Name, string Email) Sender(Storage.Message message, List<string> warnings)

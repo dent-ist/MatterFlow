@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using MatterFlow.WorkManagement.Domain;
 
 namespace MatterFlow.WorkManagement.Application;
 
@@ -125,6 +126,7 @@ public sealed record TaskResponse(
     [property: Required] TaskTypeRef TaskType,
     [property: Required] string Title,
     string? Description,
+    [property: Required] string DescriptionFormat,
     [property: Required] string RequestorName,
     string? RequestorEmail,
     DateTime? RequestedAtUtc,
@@ -204,8 +206,11 @@ public sealed class CreateTaskRequest
     [Required, StringLength(200, MinimumLength = 1)]
     public string Title { get; init; } = string.Empty;
 
-    /// <summary>Plain-text description (max 20000).</summary>
-    [StringLength(20000)]
+    /// <summary>
+    /// Description as rich-text HTML (basic formatting and tables, sanitized by the server) or plain text. At most 300000 characters of input;
+    /// the stored HTML at most 100000 characters, 20000 visible characters and 200 table cells (errors TOO_LONG, HTML_TOO_LARGE, TABLE_TOO_LARGE).
+    /// </summary>
+    [StringLength(TaskDescription.MaxInputLength)]
     public string? Description { get; init; }
 
     /// <summary>Who asked for the work (not an app user). Required.</summary>
@@ -265,7 +270,8 @@ public sealed class UpdateTaskRequest
     [Required, StringLength(200, MinimumLength = 1)]
     public string Title { get; init; } = string.Empty;
 
-    [StringLength(20000)]
+    /// <summary>Description as rich-text HTML or plain text, sanitized by the server; see the create request.</summary>
+    [StringLength(TaskDescription.MaxInputLength)]
     public string? Description { get; init; }
 
     [Required, StringLength(200, MinimumLength = 1)]
