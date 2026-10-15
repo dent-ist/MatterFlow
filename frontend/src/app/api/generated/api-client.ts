@@ -2814,9 +2814,10 @@ export class StatusLabelsClient implements IStatusLabelsClient {
 
 export interface ITaskTypesClient {
     /**
+     * @param workflowId (optional) 
      * @return OK
      */
-    listTaskTypes(): Observable<TaskTypeView[]>;
+    listTaskTypes(workflowId?: number | undefined): Observable<TaskTypeView[]>;
     /**
      * @return Created
      */
@@ -2845,10 +2846,15 @@ export class TaskTypesClient implements ITaskTypesClient {
     }
 
     /**
+     * @param workflowId (optional) 
      * @return OK
      */
-    listTaskTypes(): Observable<TaskTypeView[]> {
-        let url_ = this.baseUrl + "/api/v1/task-types";
+    listTaskTypes(workflowId?: number | undefined): Observable<TaskTypeView[]> {
+        let url_ = this.baseUrl + "/api/v1/task-types?";
+        if (workflowId === null)
+            throw new globalThis.Error("The parameter 'workflowId' cannot be null.");
+        else if (workflowId !== undefined)
+            url_ += "workflowId=" + encodeURIComponent("" + workflowId) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -9884,11 +9890,13 @@ export interface IWorkflowsClient {
      * @param sort (optional) 
      * @param q (optional) 
      * @param isActive (optional) 
+     * @param taskTypeId (optional) 
+     * @param stepId (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    listWorkflows(sort?: string | undefined, q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary>;
+    listWorkflows(sort?: string | undefined, q?: string | undefined, isActive?: boolean | undefined, taskTypeId?: number | undefined, stepId?: number | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary>;
     /**
      * @return Created
      */
@@ -9952,11 +9960,13 @@ export class WorkflowsClient implements IWorkflowsClient {
      * @param sort (optional) 
      * @param q (optional) 
      * @param isActive (optional) 
+     * @param taskTypeId (optional) 
+     * @param stepId (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    listWorkflows(sort?: string | undefined, q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary> {
+    listWorkflows(sort?: string | undefined, q?: string | undefined, isActive?: boolean | undefined, taskTypeId?: number | undefined, stepId?: number | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary> {
         let url_ = this.baseUrl + "/api/v1/workflows?";
         if (sort === null)
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
@@ -9970,6 +9980,14 @@ export class WorkflowsClient implements IWorkflowsClient {
             throw new globalThis.Error("The parameter 'isActive' cannot be null.");
         else if (isActive !== undefined)
             url_ += "IsActive=" + encodeURIComponent("" + isActive) + "&";
+        if (taskTypeId === null)
+            throw new globalThis.Error("The parameter 'taskTypeId' cannot be null.");
+        else if (taskTypeId !== undefined)
+            url_ += "TaskTypeId=" + encodeURIComponent("" + taskTypeId) + "&";
+        if (stepId === null)
+            throw new globalThis.Error("The parameter 'stepId' cannot be null.");
+        else if (stepId !== undefined)
+            url_ += "StepId=" + encodeURIComponent("" + stepId) + "&";
         if (page === null)
             throw new globalThis.Error("The parameter 'page' cannot be null.");
         else if (page !== undefined)
@@ -11896,6 +11914,7 @@ export interface StepDefinitionSummary {
     documentationUrl: string | undefined;
     isActive: boolean;
     usedInVersions: number;
+    usedInWorkflows: number;
     tags: string[];
     rowVersion: string;
 
@@ -12705,7 +12724,17 @@ export interface WorkflowSummary {
     publishedStepCount: number | undefined;
     draftVersionId: number | undefined;
     draftVersionNo: number | undefined;
+    taskTypes: WorkflowTaskTypeRef[];
     rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface WorkflowTaskTypeRef {
+    taskTypeId: number;
+    name: string;
+    isActive: boolean;
+    isDefault: boolean;
 
     [key: string]: any;
 }

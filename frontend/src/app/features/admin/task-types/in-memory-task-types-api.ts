@@ -46,9 +46,12 @@ export class InMemoryTaskTypesApi extends TaskTypesApi {
     }),
   ];
 
-  list(): Observable<TaskTypeView[]> {
+  list(workflowId?: number): Observable<TaskTypeView[]> {
     return this.run(() =>
-      [...this.rows].sort((a, b) => a.name.localeCompare(b.name)).map((r) => structuredClone(r)),
+      this.rows
+        .filter((r) => workflowId === undefined || r.eligibleWorkflowIds.includes(workflowId))
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((r) => structuredClone(r)),
     );
   }
 

@@ -1,5 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
+import { AuthStore } from '../../../core/auth/auth.store';
+import { Permission } from '../../../core/auth/permissions';
 import { MessageService } from 'primeng/api';
 import { StubWorkflowLookup, WorkflowLookup } from '../../../core/lookups/workflow-lookup';
 import { InMemoryTaskTypesApi } from './in-memory-task-types-api';
@@ -15,14 +18,23 @@ async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
   await fixture.whenStable();
 }
 
-function configure(): InMemoryTaskTypesApi {
+function configure(...permissions: Permission[]): InMemoryTaskTypesApi {
   const api = new InMemoryTaskTypesApi();
   TestBed.configureTestingModule({
     providers: [
-      provideRouter([]),
+      provideRouter([{ path: '**', children: [] }]),
       { provide: TaskTypesApi, useValue: api },
       { provide: WorkflowLookup, useClass: StubWorkflowLookup },
       { provide: MessageService, useValue: { add: vi.fn() } },
+      provideFakeMe(
+        new FakeMeApi(
+          withPermissions(
+            ...(permissions.length
+              ? permissions
+              : (['TaskType.Manage', 'Workflow.Manage'] as Permission[])),
+          ),
+        ),
+      ),
     ],
   });
   return api;
@@ -36,16 +48,32 @@ describe('TaskTypesPage', () => {
 
   beforeEach(async () => {
     api = configure();
+    await TestBed.inject(AuthStore).ensureLoaded();
     fixture = TestBed.createComponent(TaskTypesPage);
     await settle(fixture);
   });
 
-  it('lists task types with form status, eligible count and the default workflow name', () => {
+  it('lists task types with form status and the eligible workflows as chips, the default marked', () => {
     const r = row('Data Processing');
     expect(r.querySelector('[data-form-status]')!.textContent).toContain('Published');
     expect(r.querySelector('[data-form-status]')!.textContent).toContain('v1');
-    expect(r.querySelector('[data-eligible-count]')!.textContent!.trim()).toBe('2');
-    expect(r.querySelector('[data-default]')!.textContent!.trim()).toBe('Standard Processing');
+    const chips = Array.from(r.querySelectorAll('[data-assoc-chip]'));
+    // The default first, with a star and the text "default"; the other one after it.
+    expect(chips.map((c) => c.getAttribute('data-assoc-chip'))).toEqual([
+      'Standard Processing',
+      'Expedited Processing',
+    ]);
+    expect(chips[0].querySelector('.pi-star-fill')).not.toBeNull();
+    expect(chips[0].querySelector('[data-assoc-default]')!.textContent).toBe('default');
+    expect(chips[1].querySelector('[data-assoc-default]')).toBeNull();
+    // Each chip opens the workflow's page; "Workflows (n)" opens the Workflows tab filtered to the type.
+    expect(chips[0].querySelector('a')!.getAttribute('href')).toBe('/admin/workflows/1');
+    expect(chips[1].querySelector('a')!.getAttribute('href')).toBe('/admin/workflows/2');
+    expect(r.querySelector('[data-assoc-all]')!.textContent!.trim()).toBe('Workflows (2)');
+    expect(r.querySelector('[data-assoc-all]')!.getAttribute('href')).toBe(
+      '/admin/workflows?taskType=1',
+    );
+    expect(r.querySelector('[data-assoc-more]')).toBeNull();
     expect(r.querySelector('[data-warning]')).toBeNull();
     expect(
       r
@@ -102,6 +130,11 @@ describe('TaskTypesPage', () => {
       "No eligible published workflow: users can't create tasks of this type.",
     );
     expect(row('Collection').querySelector('[data-form-status]')!.textContent).toContain('No form');
+    // No workflow at all is said in the Workflows column too, as a warning for an active type.
+    expect(row('Collection').querySelector('[data-assoc-empty]')!.textContent).toContain(
+      'No workflow',
+    );
+    expect(row('Collection').querySelector('.ac__empty--warn')).not.toBeNull();
 
     row('Data Processing').querySelector<HTMLButtonElement>('[data-deactivate]')!.click();
     await settle(fixture);
@@ -125,6 +158,81 @@ describe('TaskTypesPage', () => {
     row('Data Processing').querySelector<HTMLButtonElement>('[data-activate]')!.click();
     await settle(fixture);
     expect(row('Data Processing').textContent).not.toContain('Inactive');
+  });
+});
+
+describe('TaskTypesPage workflow chips and filter', () => {
+  let fixture: ComponentFixture<TaskTypesPage>;
+  let api: InMemoryTaskTypesApi;
+  const el = (): HTMLElement => fixture.nativeElement;
+  const row = (name: string): HTMLElement => el().querySelector(`[data-row="${name}"]`)!;
+  const names = () =>
+    Array.from(el().querySelectorAll('tbody tr')).map((r) => r.getAttribute('data-row'));
+
+  async function create(name: string, eligible: number[], def?: number): Promise<void> {
+    await new Promise<void>((resolve) =>
+      api
+        .create({
+          name,
+          description: undefined,
+          eligibleWorkflowIds: eligible,
+          defaultWorkflowDefinitionId: def,
+        })
+        .subscribe(() => resolve()),
+    );
+  }
+
+  async function open(url = '/admin/task-types'): Promise<void> {
+    api = configure();
+    await TestBed.inject(AuthStore).ensureLoaded();
+    await create('Collection', [1, 2, 3, 4], 3);
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl(url);
+    fixture = TestBed.createComponent(TaskTypesPage);
+    await settle(fixture);
+  }
+
+  it('shows three chips then +n more that opens the Workflows tab filtered to the type', async () => {
+    await open();
+    const r = row('Collection');
+    // The default (Collection and Review) leads, then by name; the fourth is behind "+1 more".
+    expect(
+      Array.from(r.querySelectorAll('[data-assoc-chip]')).map((c) =>
+        c.getAttribute('data-assoc-chip'),
+      ),
+    ).toEqual(['Collection and Review', 'Expedited Processing', 'Production']);
+    const more = r.querySelector<HTMLAnchorElement>('[data-assoc-more]')!;
+    expect(more.textContent!.trim()).toBe('+1 more');
+    expect(more.getAttribute('href')).toMatch(/^\/admin\/workflows\?taskType=\d+$/);
+    expect(r.querySelector('[data-assoc-all]')!.textContent!.trim()).toBe('Workflows (4)');
+  });
+
+  it('limits the list to the types a workflow is eligible for, with a removable chip', async () => {
+    await open('/admin/task-types?workflow=4');
+    expect(names()).toEqual(['Collection']);
+    expect(el().querySelector('[data-filtered-by]')!.textContent).toContain(
+      'Filtered by workflow Production: 1 task type',
+    );
+    const remove = el().querySelector<HTMLButtonElement>(
+      'button[aria-label="Remove filter Workflow: Production"]',
+    )!;
+    expect(remove).not.toBeNull();
+    remove.click();
+    await settle(fixture);
+    expect(TestBed.inject(Router).url).toBe('/admin/task-types');
+    expect(names()).toEqual(['Collection', 'Data Processing']);
+    expect(el().querySelector('[data-assoc-filter]')).toBeNull();
+  });
+
+  it('shows plain chips, not links, without Workflow.Manage', async () => {
+    api = configure('TaskType.Manage');
+    await TestBed.inject(AuthStore).ensureLoaded();
+    fixture = TestBed.createComponent(TaskTypesPage);
+    await settle(fixture);
+    const r = row('Data Processing');
+    expect(r.querySelectorAll('[data-assoc-chip]')).toHaveLength(2);
+    expect(r.querySelector('[data-assoc-chip] a')).toBeNull();
+    expect(r.querySelector('[data-assoc-all]')).toBeNull();
   });
 });
 

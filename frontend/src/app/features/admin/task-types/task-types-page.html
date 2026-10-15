@@ -1,161 +1,161 @@
-<mf-fixed-page>
-  <mf-page-header
-    heading="Task Types & Forms"
-    description="What people can request. Each type has a request form and the workflows it may use. Types are deactivated, never deleted."
-  >
-    <a mfActions class="mf-btn mf-btn--primary" routerLink="/admin/task-types/new" data-new>
-      <i class="pi pi-plus" aria-hidden="true"></i> New task type
-    </a>
-  </mf-page-header>
+<div class="sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
 
-  <div class="sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
+@if (failure()) {
+  <p class="error" role="alert" data-failure>{{ failure() }}</p>
+}
 
-  @if (failure()) {
-    <p class="error" role="alert" data-failure>{{ failure() }}</p>
-  }
+<div class="pg-filters" role="search">
+  <mf-search-box
+    inputId="task-type-search"
+    placeholder="Task type name"
+    [value]="q() ?? ''"
+    (searchChange)="search($event)"
+  />
+  <mf-status-filter
+    inputId="task-type-status"
+    [value]="statusFilter()"
+    (valueChange)="setStatus($event)"
+  />
+</div>
 
-  <div class="pg-filters" role="search">
-    <mf-search-box
-      inputId="task-type-search"
-      placeholder="Task type name"
-      [value]="q() ?? ''"
-      (searchChange)="search($event)"
-    />
-    <mf-status-filter
-      inputId="task-type-status"
-      [value]="statusFilter()"
-      (valueChange)="setStatus($event)"
-    />
-  </div>
+@if (workflowId(); as id) {
+  <mf-assoc-filter
+    [filters]="filters"
+    kind="workflow"
+    [name]="workflowName(id)"
+    [count]="state() === 'ready' ? total() : null"
+    [noun]="{ one: 'task type', many: 'task types' }"
+  />
+}
 
-  <mf-list-state
-    noun="task types"
-    emptyText="No task types yet. Create the first one."
-    [state]="state()"
-    [empty]="rows().length === 0"
-    [filtered]="hasFilter()"
-    [columns]="5"
-    (retry)="load()"
-    (clear)="clear()"
-  >
-    <a mfEmptyAction class="mf-btn mf-btn--primary" routerLink="/admin/task-types/new">
-      <i class="pi pi-plus" aria-hidden="true"></i> New task type
-    </a>
-    <div class="mf-table-wrap" mfScrollArea="Task types list">
-      <div class="mf-scroll">
-        <table class="grid" data-task-types>
-          <caption class="sr-only">
-            Task types
-          </caption>
-          <thead>
-            <tr>
-              <th
-                mfSort="name"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Name
-              </th>
-              <th
-                mfSort="form"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Request form
-              </th>
-              <th
-                mfSort="eligible"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Eligible workflows
-              </th>
-              <th
-                mfSort="default"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Default workflow
-              </th>
-              <th scope="col">Status</th>
-              <th scope="col" class="mf-col-actions"><span class="sr-only">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (t of rows(); track t.id) {
-              <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
-                <td>
-                  <span class="tt-name">
-                    <mf-task-type-icon [iconKey]="t.iconKey" />
-                    <a [routerLink]="['/admin/task-types', t.id]">{{ t.name }}</a>
-                  </span>
-                  @if (warning(t); as w) {
-                    <p class="chip" data-warning>{{ w }}</p>
-                  }
-                </td>
-                <td data-form-status>
-                  {{ formStatus(t) }}
-                  @if (formVersion(t)) {
-                    <span class="muted">{{ formVersion(t) }}</span>
-                  }
-                </td>
-                <td data-eligible-count>{{ t.eligibleWorkflowIds.length }}</td>
-                <td data-default>{{ workflowName(t.defaultWorkflowDefinitionId) }}</td>
-                <td><mf-active-badge [active]="t.isActive" /></td>
-                <td class="mf-col-actions">
-                  <span class="mf-row-actions">
-                    <a
-                      class="mf-btn mf-btn--text"
-                      [routerLink]="['/admin/task-types', t.id, 'form']"
-                      [attr.aria-label]="'Edit the request form of ' + t.name"
-                      >Edit form</a
+<mf-list-state
+  noun="task types"
+  emptyText="No task types yet. Create the first one."
+  [state]="state()"
+  [empty]="rows().length === 0"
+  [filtered]="hasFilter()"
+  [columns]="5"
+  (retry)="load()"
+  (clear)="clear()"
+>
+  <a mfEmptyAction class="mf-btn mf-btn--primary" routerLink="/admin/task-types/new">
+    <i class="pi pi-plus" aria-hidden="true"></i> New task type
+  </a>
+  <div class="mf-table-wrap" mfScrollArea="Task types list">
+    <div class="mf-scroll">
+      <table class="grid" data-task-types>
+        <caption class="sr-only">
+          Task types
+        </caption>
+        <thead>
+          <tr>
+            <th
+              mfSort="name"
+              [sort]="sort()"
+              [defaultSort]="defaultSort"
+              (sorted)="setSort($event)"
+            >
+              Name
+            </th>
+            <th
+              mfSort="form"
+              [sort]="sort()"
+              [defaultSort]="defaultSort"
+              (sorted)="setSort($event)"
+            >
+              Request form
+            </th>
+            <th
+              mfSort="workflows"
+              [sort]="sort()"
+              [defaultSort]="defaultSort"
+              (sorted)="setSort($event)"
+            >
+              Workflows
+            </th>
+            <th scope="col">Status</th>
+            <th scope="col" class="mf-col-actions"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of rows(); track t.id) {
+            <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
+              <td>
+                <span class="tt-name">
+                  <mf-task-type-icon [iconKey]="t.iconKey" />
+                  <a [routerLink]="['/admin/task-types', t.id]">{{ t.name }}</a>
+                </span>
+                @if (warning(t); as w) {
+                  <p class="chip" data-warning>{{ w }}</p>
+                }
+              </td>
+              <td data-form-status>
+                {{ formStatus(t) }}
+                @if (formVersion(t)) {
+                  <span class="muted">{{ formVersion(t) }}</span>
+                }
+              </td>
+              <td data-workflows>
+                <mf-assoc-chips
+                  [items]="chipsFor(t)"
+                  [label]="'Workflows of ' + t.name"
+                  noun="workflows"
+                  [moreLink]="canOpenWorkflows() ? '/admin/workflows' : null"
+                  [moreQuery]="workflowsQuery(t)"
+                  allLabel="Workflows"
+                  emptyText="No workflow"
+                  [emptyWarning]="t.isActive"
+                />
+              </td>
+              <td><mf-active-badge [active]="t.isActive" /></td>
+              <td class="mf-col-actions">
+                <span class="mf-row-actions">
+                  <a
+                    class="mf-btn mf-btn--text"
+                    [routerLink]="['/admin/task-types', t.id, 'form']"
+                    [attr.aria-label]="'Edit the request form of ' + t.name"
+                    >Edit form</a
+                  >
+                  @if (t.isActive) {
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text mf-btn--danger"
+                      [disabled]="busy()"
+                      [attr.aria-label]="'Deactivate ' + t.name"
+                      (click)="askDeactivate(t)"
+                      data-deactivate
                     >
-                    @if (t.isActive) {
-                      <button
-                        type="button"
-                        class="mf-btn mf-btn--text mf-btn--danger"
-                        [disabled]="busy()"
-                        [attr.aria-label]="'Deactivate ' + t.name"
-                        (click)="askDeactivate(t)"
-                        data-deactivate
-                      >
-                        Deactivate
-                      </button>
-                    } @else {
-                      <button
-                        type="button"
-                        class="mf-btn mf-btn--text"
-                        [disabled]="busy()"
-                        [attr.aria-label]="'Activate ' + t.name"
-                        (click)="setActive(t, true)"
-                        data-activate
-                      >
-                        Activate
-                      </button>
-                    }
-                  </span>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+                      Deactivate
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text"
+                      [disabled]="busy()"
+                      [attr.aria-label]="'Activate ' + t.name"
+                      (click)="setActive(t, true)"
+                      data-activate
+                    >
+                      Activate
+                    </button>
+                  }
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
-    <mf-pager
-      [page]="shownPage()"
-      [pageSize]="pageSize()"
-      [pageSizes]="pageSizes"
-      [total]="total()"
-      (pageChange)="goToPage($event)"
-      (pageSizeChange)="setPageSize($event)"
-    />
-  </mf-list-state>
-</mf-fixed-page>
-
+  </div>
+  <mf-pager
+    [page]="shownPage()"
+    [pageSize]="pageSize()"
+    [pageSizes]="pageSizes"
+    [total]="total()"
+    (pageChange)="goToPage($event)"
+    (pageSizeChange)="setPageSize($event)"
+  />
+</mf-list-state>
 <mf-confirm-dialog
   title="Deactivate task type?"
   confirmLabel="Deactivate task type"

@@ -1,8 +1,27 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  Injector,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
-import { WorkflowSummary, WorkflowsClient } from '../../../api/generated/api-client';
+import {
+  StepDefinitionsClient,
+  TaskTypesClient,
+  WorkflowSummary,
+  WorkflowsClient,
+} from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
+import { FilterDef } from '../../../shared/filters/filter-def';
+import { ListFilters } from '../../../shared/filters/list-filters';
+import { AssocChips, AssocItem } from '../assoc-chips';
+import { AssocFilter } from '../assoc-filter';
 import { ActiveBadge, Badge } from '../../../shared/ui/badge';
 import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-table';
 import { isActiveParam } from '../../../shared/ui/list-helpers';
@@ -28,6 +47,8 @@ import { SearchBox } from '../../../shared/ui/search-box';
     StatusFilter,
     SortHeader,
     ListState,
+    AssocChips,
+    AssocFilter,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -48,13 +69,31 @@ import { SearchBox } from '../../../shared/ui/search-box';
       />
     </div>
 
+    @if (taskTypeId() !== undefined) {
+      <mf-assoc-filter
+        [filters]="filters"
+        kind="task type"
+        [name]="taskTypeName()"
+        [count]="state() === 'ready' ? total() : null"
+        [noun]="{ one: 'workflow', many: 'workflows' }"
+      />
+    } @else if (stepId() !== undefined) {
+      <mf-assoc-filter
+        [filters]="filters"
+        kind="step"
+        [name]="stepName()"
+        [count]="state() === 'ready' ? total() : null"
+        [noun]="{ one: 'workflow', many: 'workflows' }"
+      />
+    }
+
     <mf-list-state
       noun="workflows"
       emptyText="No workflows yet. Create the first workflow."
       [state]="state()"
       [empty]="rows().length === 0"
       [filtered]="hasFilter()"
-      [columns]="4"
+      [columns]="5"
       (retry)="load()"
       (clear)="clear()"
     >
@@ -75,6 +114,7 @@ import { SearchBox } from '../../../shared/ui/search-box';
                 >
                   Name
                 </th>
+                <th scope="col">Task types</th>
                 <th scope="col">Latest published</th>
                 <th scope="col">Draft</th>
                 <th scope="col">Status</th>
@@ -92,6 +132,16 @@ import { SearchBox } from '../../../shared/ui/search-box';
                     @if (w.description) {
                       <div class="pg-muted">{{ w.description }}</div>
                     }
+                  </td>
+                  <td data-task-types>
+                    <mf-assoc-chips
+                      [items]="chipsOf(w)"
+                      [label]="'Task types of ' + w.name"
+                      noun="task types"
+                      [moreLink]="canOpenTaskTypes() ? '/admin/task-types' : null"
+                      [moreQuery]="{ workflow: w.workflowDefinitionId }"
+                      emptyText="No task type"
+                    />
                   </td>
                   <td>
                     @if (w.publishedVersionNo) {
@@ -131,8 +181,106 @@ import { SearchBox } from '../../../shared/ui/search-box';
 })
 export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   private readonly api = inject(WorkflowsClient);
+  private readonly injector = inject(Injector);
+  private readonly auth = inject(AuthStore);
 
   protected readonly defaultSort = 'name';
+
+  /**
+   * `?taskType=<id>` (from a task type's Workflows chips) and `?step=<id>` (from a step's "Used in" link): no control, a removable
+   * chip each, shown with a "Filtered by ..." line. The server filters (`taskTypeId`, `stepId`).
+   */
+  protected readonly filters = new ListFilters({
+    screen: 'workflows',
+    noun: 'workflows',
+    defs: computed((): FilterDef[] => [
+      {
+        key: 'taskType',
+        label: 'Task type',
+        type: 'text',
+        noControl: true,
+        normalize: idOnly,
+        valueLabel: () => this.taskTypeName(),
+      },
+      {
+        key: 'step',
+        label: 'Step',
+        type: 'text',
+        noControl: true,
+        normalize: idOnly,
+        valueLabel: () => this.stepName(),
+      },
+    ]),
+  });
+  protected readonly taskTypeId = computed(() => toId(this.filters.text('taskType')));
+  protected readonly stepId = computed(() => toId(this.filters.text('step')));
+  private readonly taskTypeTitle = signal<{ id: number; name: string } | null>(null);
+  private readonly stepTitle = signal<{ id: number; name: string } | null>(null);
+  protected readonly taskTypeName = computed(() => {
+    const id = this.taskTypeId();
+    const known = this.taskTypeTitle();
+    if (known && known.id === id) return known.name;
+    const fromRows = this.rows()
+      .flatMap((w) => w.taskTypes)
+      .find((t) => t.taskTypeId === id);
+    return fromRows?.name ?? `Task type ${id}`;
+  });
+  protected readonly stepName = computed(() => {
+    const known = this.stepTitle();
+    return known && known.id === this.stepId() ? known.name : `Step ${this.stepId()}`;
+  });
+  protected readonly canOpenTaskTypes = computed(() => this.auth.has('TaskType.Manage'));
+
+  constructor() {
+    super();
+    // The names of the filter chips ("Task type: Data Processing"); the id stands in when the record cannot be read.
+    effect(() => {
+      const id = this.taskTypeId();
+      untracked(() => {
+        if (id === undefined || this.taskTypeTitle()?.id === id) return;
+        void firstValueFrom(this.injector.get(TaskTypesClient).getTaskType(id))
+          .then((t) => this.taskTypeTitle.set({ id, name: t.name }))
+          .catch(() => undefined);
+      });
+    });
+    effect(() => {
+      const id = this.stepId();
+      untracked(() => {
+        if (id === undefined || this.stepTitle()?.id === id) return;
+        void firstValueFrom(this.injector.get(StepDefinitionsClient).getStepDefinition(id))
+          .then((s) => this.stepTitle.set({ id, name: s.title }))
+          .catch(() => undefined);
+      });
+    });
+  }
+
+  protected override extraFilters(): Record<string, unknown> {
+    return { taskType: this.taskTypeId() !== undefined, step: this.stepId() !== undefined };
+  }
+
+  protected override watch(): void {
+    this.taskTypeId();
+    this.stepId();
+  }
+
+  /** The task types a workflow is eligible for: the ones it is the default of first, then the active ones by name, the deactivated ones last. */
+  protected chipsOf(w: WorkflowSummary): AssocItem[] {
+    const link = this.canOpenTaskTypes();
+    return [...w.taskTypes]
+      .sort(
+        (a, b) =>
+          Number(b.isDefault) - Number(a.isDefault) ||
+          Number(!a.isActive) - Number(!b.isActive) ||
+          a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+      )
+      .map((t) => ({
+        id: t.taskTypeId,
+        label: t.name,
+        link: link ? ['/admin/task-types', t.taskTypeId] : undefined,
+        isDefault: t.isDefault,
+        inactive: !t.isActive,
+      }));
+  }
 
   protected stepsLabel(count: number | undefined): string {
     return count === 1 ? '1 step' : `${count ?? 0} steps`;
@@ -144,9 +292,21 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
         this.sort() || undefined,
         this.q()?.trim() || undefined,
         isActiveParam(this.statusFilter()),
+        this.taskTypeId(),
+        this.stepId(),
         this.pageNumber(),
         this.pageSize(),
       ),
     );
   }
+}
+
+/** A positive whole number from the address, or undefined. */
+function toId(value: string): number | undefined {
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0 ? id : undefined;
+}
+
+function idOnly(value: string): string | null {
+  return /^\d{1,9}$/.test(value) ? value : null;
 }

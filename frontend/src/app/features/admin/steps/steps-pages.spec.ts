@@ -27,6 +27,7 @@ const summary = (overrides: Partial<StepDefinitionSummary> = {}): StepDefinition
   documentationUrl: undefined,
   isActive: true,
   usedInVersions: 3,
+  usedInWorkflows: 2,
   tags: [],
   rowVersion: 'AAAA',
   ...overrides,
@@ -75,7 +76,13 @@ describe('StepsListPage', () => {
         ok({
           items: [
             summary(),
-            summary({ stepDefinitionId: 5, title: 'OCR', usedInVersions: 0, isActive: false }),
+            summary({
+              stepDefinitionId: 5,
+              title: 'OCR',
+              usedInVersions: 0,
+              usedInWorkflows: 0,
+              isActive: false,
+            }),
           ],
           total: 2,
           page: 1,
@@ -91,7 +98,12 @@ describe('StepsListPage', () => {
     const rows = Array.from(el.querySelectorAll('tbody tr'));
     expect(rows.map((r) => r.getAttribute('data-row'))).toEqual(['Deduplicate', 'OCR']);
     expect(rows[0].querySelector('a')?.getAttribute('href')).toBe('/admin/steps/4');
-    expect(rows[0].textContent).toContain('3 versions');
+    // "Used in n workflows" opens the Workflows tab filtered to the step; 0 says "Not used" (muted, no link).
+    const used = rows[0].querySelector<HTMLAnchorElement>('[data-used-in-link]')!;
+    expect(used.textContent!.trim()).toBe('Used in 2 workflows');
+    expect(used.getAttribute('href')).toBe('/admin/workflows?step=4');
+    expect(rows[1].querySelector('[data-used-in-link]')).toBeNull();
+    expect(rows[1].querySelector('[data-used-in] .pg-muted')!.textContent).toBe('Not used');
     expect(rows[1].textContent).toContain('Not used');
     expect(rows[1].textContent).toContain('Inactive');
     expect(api.listStepDefinitions).toHaveBeenCalledWith(
@@ -314,7 +326,7 @@ describe('StepsListPage tags', () => {
     const el: HTMLElement = fixture.nativeElement;
 
     expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
-      ['Title', 'Description', 'Tags', 'Used in workflows', 'Status'],
+      ['Title', 'Description', 'Tags', 'Used in', 'Status'],
     );
     const first = el.querySelector('tbody tr[data-row="Deduplicate"]')!;
     expect(
@@ -508,7 +520,7 @@ describe('StepEditPage tags', () => {
     expect(el.querySelector('#step-tags-error')?.textContent).toContain('at most 40 characters');
   });
 
-  it('has the Administration > Workflows > Workflow Steps > step breadcrumb', async () => {
+  it('has the Administration > Task Types > Workflow Steps > step breadcrumb', async () => {
     const api = {
       getStepDefinition: vi.fn().mockReturnValue(ok(detail())),
       listStepTags: vi.fn().mockReturnValue(ok([])),
@@ -520,6 +532,6 @@ describe('StepEditPage tags', () => {
     const crumbs = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll('nav[aria-label="Breadcrumb"] li'),
     ).map((li) => li.textContent!.trim());
-    expect(crumbs).toEqual(['Administration', 'Workflows', 'Workflow Steps', 'Deduplicate']);
+    expect(crumbs).toEqual(['Administration', 'Task Types', 'Workflow Steps', 'Deduplicate']);
   });
 });

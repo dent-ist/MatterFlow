@@ -3,7 +3,11 @@ import { Router, provideRouter, withComponentInputBinding } from '@angular/route
 import { RouterTestingHarness } from '@angular/router/testing';
 import { MessageService } from 'primeng/api';
 import { of } from 'rxjs';
-import { StepDefinitionsClient, WorkflowsClient } from '../../../api/generated/api-client';
+import {
+  StepDefinitionsClient,
+  TaskTypesClient,
+  WorkflowsClient,
+} from '../../../api/generated/api-client';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
@@ -13,14 +17,17 @@ import { ADMIN_ROUTES } from '../admin.routes';
 
 const empty = { items: [], total: 0, page: 1, pageSize: 25 };
 
-describe('Workflows page tabs (Workflows, Workflow Steps)', () => {
+describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
   let harness: RouterTestingHarness;
   let steps: {
     listStepDefinitions: ReturnType<typeof vi.fn>;
     listStepTags: ReturnType<typeof vi.fn>;
+    getStepDefinition: ReturnType<typeof vi.fn>;
   };
+  let workflows: { listWorkflows: ReturnType<typeof vi.fn> };
   const el = (): HTMLElement => harness.routeNativeElement as HTMLElement;
   const tabs = (): HTMLElement[] => Array.from(el().querySelectorAll<HTMLElement>('[role="tab"]'));
+  const tabNames = (): string[] => tabs().map((t) => t.textContent!.trim());
   const selected = (): string[] =>
     tabs()
       .filter((t) => t.getAttribute('aria-selected') === 'true')
@@ -31,7 +38,7 @@ describe('Workflows page tabs (Workflows, Workflow Steps)', () => {
     );
 
   async function settle(): Promise<void> {
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
       await new Promise((r) => setTimeout(r));
       harness.detectChanges();
     }
@@ -41,7 +48,9 @@ describe('Workflows page tabs (Workflows, Workflow Steps)', () => {
     steps = {
       listStepDefinitions: vi.fn().mockReturnValue(of(empty)),
       listStepTags: vi.fn().mockReturnValue(of([{ name: 'Relativity', stepCount: 2 }])),
+      getStepDefinition: vi.fn().mockReturnValue(of({ stepDefinitionId: 5, title: 'Load' })),
     };
+    workflows = { listWorkflows: vi.fn().mockReturnValue(of(empty)) };
     TestBed.configureTestingModule({
       providers: [
         provideRouter(
@@ -53,11 +62,14 @@ describe('Workflows page tabs (Workflows, Workflow Steps)', () => {
         ),
         MessageService,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
-        {
-          provide: WorkflowsClient,
-          useValue: { listWorkflows: vi.fn().mockReturnValue(of(empty)) },
-        },
+        { provide: WorkflowsClient, useValue: workflows },
         { provide: StepDefinitionsClient, useValue: steps },
+        {
+          provide: TaskTypesClient,
+          useValue: {
+            getTaskType: vi.fn().mockReturnValue(of({ id: 1, name: 'Data Processing' })),
+          },
+        },
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();
@@ -67,36 +79,59 @@ describe('Workflows page tabs (Workflows, Workflow Steps)', () => {
     return TestBed.inject(Router);
   }
 
-  it('is one navigation item, Workflows, that stays highlighted on the steps URLs', () => {
+  it('is one navigation item, Task Types, that stays highlighted on the workflow and step URLs', () => {
     const labels = ADMIN_NAV_ITEMS.map((i) => i.label);
     expect(labels).toEqual([
       'Users',
       'Pods',
-      'Task Types & Forms',
-      'Workflows',
+      'Task Types',
       'Labels',
       'Assets',
       'Custom Fields',
       'Audit Logs',
     ]);
-    const item = ADMIN_NAV_ITEMS.find((i) => i.label === 'Workflows')!;
-    expect(item.path).toBe('/admin/workflows');
-    expect(item.alsoActive).toEqual(['/admin/steps']);
-    expect(item.permissions).toEqual(['Workflow.Manage']);
-    for (const path of ['/admin/steps', '/admin/steps/new', '/admin/steps/4/form']) {
+    expect(labels).not.toContain('Workflows');
+    expect(labels).not.toContain('Task Types & Forms');
+    const item = ADMIN_NAV_ITEMS.find((i) => i.label === 'Task Types')!;
+    expect(item.path).toBe('/admin/task-types');
+    expect(item.alsoActive).toEqual(['/admin/workflows', '/admin/steps']);
+    // Shown to a person who holds either permission.
+    expect(item.permissions).toEqual(['TaskType.Manage', 'Workflow.Manage']);
+    // One icon rule: every page of the section, on every tab, shows the icon of the menu item.
+    for (const path of [
+      '/admin/task-types',
+      '/admin/workflows',
+      '/admin/workflows/3',
+      '/admin/steps',
+      '/admin/steps/new',
+      '/admin/steps/4/form',
+    ]) {
       expect(iconForPath(path)).toBe(item.icon);
     }
   });
 
-  it('opens the Workflows tab on /admin/workflows with the section icon and breadcrumb', async () => {
-    await open('/admin/workflows', 'Workflow.Manage');
-    expect(el().querySelector('h1')!.textContent).toContain('Workflows');
-    expect(el().querySelector('[data-page-icon]')?.className).toContain('pi-share-alt');
-    expect(tabs().map((t) => t.textContent!.trim())).toEqual(['Workflows', 'Workflow Steps']);
+  it('opens the Task Types tab on /admin/task-types with the section icon, three tabs and the breadcrumb', async () => {
+    await open('/admin/task-types', 'TaskType.Manage', 'Workflow.Manage');
+    expect(el().querySelector('h1')!.textContent).toContain('Task Types');
+    expect(el().querySelector('[data-page-icon]')?.className).toContain('pi-file-edit');
+    expect(tabNames()).toEqual(['Task Types', 'Workflows', 'Workflow Steps']);
+    expect(selected()).toEqual(['Task Types']);
+    expect(crumbs()).toEqual(['Administration', 'Task Types']);
+    expect(el().querySelector('#task-type-search')).not.toBeNull();
+    expect(el().querySelector('#wf-search')).toBeNull();
+    expect(el().querySelector('[data-new]')!.textContent).toContain('New task type');
+    expect(el().querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe(
+      'task-types-admin-tab-task-types',
+    );
+  });
+
+  it('opens the Workflows tab on /admin/workflows with the same icon and its own breadcrumb', async () => {
+    await open('/admin/workflows', 'TaskType.Manage', 'Workflow.Manage');
+    expect(el().querySelector('h1')!.textContent).toContain('Task Types');
+    expect(el().querySelector('[data-page-icon]')?.className).toContain('pi-file-edit');
     expect(selected()).toEqual(['Workflows']);
-    expect(crumbs()).toEqual(['Administration', 'Workflows']);
+    expect(crumbs()).toEqual(['Administration', 'Task Types', 'Workflows']);
     expect(el().querySelector('#wf-search')).not.toBeNull();
-    expect(el().querySelector('#step-search')).toBeNull();
     expect(
       Array.from(el().querySelectorAll('button')).some(
         (b) => b.textContent?.trim() === 'New workflow',
@@ -105,30 +140,37 @@ describe('Workflows page tabs (Workflows, Workflow Steps)', () => {
   });
 
   it('opens the Workflow Steps tab on /admin/steps and keeps the address in step with the tab', async () => {
-    const router = await open('/admin/steps', 'Workflow.Manage');
+    const router = await open('/admin/steps', 'TaskType.Manage', 'Workflow.Manage');
     expect(selected()).toEqual(['Workflow Steps']);
-    expect(crumbs()).toEqual(['Administration', 'Workflows', 'Workflow Steps']);
+    expect(el().querySelector('[data-page-icon]')?.className).toContain('pi-file-edit');
+    expect(crumbs()).toEqual(['Administration', 'Task Types', 'Workflow Steps']);
     expect(el().querySelector('#step-search')).not.toBeNull();
     expect(
       Array.from(el().querySelectorAll('button')).some((b) => b.textContent?.trim() === 'New step'),
     ).toBe(true);
-    expect(el().querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe(
-      'workflows-admin-tab-steps',
-    );
 
-    tabs()[0].click();
+    tabs()[1].click();
     await settle();
     expect(router.url).toBe('/admin/workflows');
     expect(selected()).toEqual(['Workflows']);
 
-    tabs()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    tabs()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
     await settle();
     expect(router.url).toBe('/admin/steps');
-    expect(tabs().map((t) => t.tabIndex)).toEqual([-1, 0]);
+    expect(tabs().map((t) => t.tabIndex)).toEqual([-1, -1, 0]);
+
+    tabs()[2].dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+    await settle();
+    expect(router.url).toBe('/admin/task-types');
+    expect(selected()).toEqual(['Task Types']);
   });
 
   it('hands the tag filter in the address to the step list', async () => {
-    await open('/admin/steps?tags=Relativity&tags=QC&tagMatch=any&q=load', 'Workflow.Manage');
+    await open(
+      '/admin/steps?tags=Relativity&tags=QC&tagMatch=any&q=load',
+      'TaskType.Manage',
+      'Workflow.Manage',
+    );
     expect(steps.listStepDefinitions).toHaveBeenLastCalledWith(
       undefined,
       'load',
@@ -142,10 +184,71 @@ describe('Workflows page tabs (Workflows, Workflow Steps)', () => {
     expect(radios.map((r) => r.checked)).toEqual([false, true]);
   });
 
-  it('needs Workflow.Manage for both tabs', async () => {
-    const router = await open('/admin/steps', 'Pod.Manage');
+  it('opens the Workflows tab filtered by a task type or a step, each with a removable chip', async () => {
+    const router = await open('/admin/workflows?taskType=1', 'TaskType.Manage', 'Workflow.Manage');
+    expect(workflows.listWorkflows).toHaveBeenLastCalledWith(
+      undefined,
+      undefined,
+      true,
+      1,
+      undefined,
+      1,
+      25,
+    );
+    expect(el().querySelector('[data-filtered-by]')!.textContent).toContain(
+      'Filtered by task type Data Processing',
+    );
+    el()
+      .querySelector<HTMLButtonElement>(
+        'button[aria-label="Remove filter Task type: Data Processing"]',
+      )!
+      .click();
+    await settle();
+    expect(router.url).toBe('/admin/workflows');
+    expect(el().querySelector('[data-assoc-filter]')).toBeNull();
+
+    await harness.navigateByUrl('/admin/workflows?step=5');
+    await settle();
+    expect(workflows.listWorkflows).toHaveBeenLastCalledWith(
+      undefined,
+      undefined,
+      true,
+      undefined,
+      5,
+      1,
+      25,
+    );
+    expect(el().querySelector('[data-filtered-by]')!.textContent).toContain(
+      'Filtered by step Load',
+    );
+  });
+
+  it('offers only the tabs the person may use and lands a Workflow.Manage-only person on Workflows', async () => {
+    const router = await open('/admin/task-types', 'Workflow.Manage');
+    expect(tabNames()).toEqual(['Workflows', 'Workflow Steps']);
+    expect(router.url).toBe('/admin/workflows');
+    expect(selected()).toEqual(['Workflows']);
+    expect(crumbs()).toEqual(['Administration', 'Task Types', 'Workflows']);
+    expect(el().querySelector('[data-new]')).toBeNull();
+    // The menu item reaches this person's tabs: either permission shows it.
+    const item = ADMIN_NAV_ITEMS.find((i) => i.label === 'Task Types')!;
+    expect(TestBed.inject(AuthStore).hasAny(item.permissions)).toBe(true);
+  });
+
+  it('offers only Task Types to a TaskType.Manage-only person and sends the other URLs there', async () => {
+    const router = await open('/admin/steps', 'TaskType.Manage');
+    expect(tabNames()).toEqual(['Task Types']);
+    expect(router.url).toBe('/admin/task-types');
+    expect(selected()).toEqual(['Task Types']);
+  });
+
+  it('is forbidden without either permission', async () => {
+    const router = await open('/admin/workflows', 'Pod.Manage');
     expect(router.url).toBe('/403');
-    await harness.navigateByUrl('/admin/workflows');
+    await harness.navigateByUrl('/admin/task-types');
+    await settle();
+    expect(router.url).toBe('/403');
+    await harness.navigateByUrl('/admin/steps');
     await settle();
     expect(router.url).toBe('/403');
   });
@@ -159,9 +262,11 @@ describe('Workflows page tabs (Workflows, Workflow Steps)', () => {
       while (route.firstChild) route = route.firstChild;
       return route.title;
     };
-    await open('/admin/workflows', 'Workflow.Manage');
-    expect(await titleOf('/admin/workflows')).toBe('Workflows');
-    expect(await titleOf('/admin/steps')).toBe('Workflows - Workflow Steps');
+    await open('/admin/task-types', 'TaskType.Manage', 'Workflow.Manage');
+    expect(await titleOf('/admin/task-types')).toBe('Task Types');
+    expect(await titleOf('/admin/workflows')).toBe('Task Types - Workflows');
+    expect(await titleOf('/admin/steps')).toBe('Task Types - Workflow Steps');
     expect(await titleOf('/admin/steps/new')).toBe('New step');
+    expect(await titleOf('/admin/task-types/new')).toBe('New task type');
   });
 });

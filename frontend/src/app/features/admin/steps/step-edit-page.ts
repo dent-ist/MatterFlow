@@ -56,7 +56,7 @@ function sameTags(a: readonly string[], b: readonly string[]): boolean {
     <mf-page-header
       [crumbs]="[
         { label: 'Administration' },
-        { label: 'Workflows', link: '/admin/workflows' },
+        { label: 'Task Types', link: '/admin/task-types' },
         { label: 'Workflow Steps', link: '/admin/steps' },
         { label: isEdit() ? original()?.title || 'Edit' : 'New' },
       ]"

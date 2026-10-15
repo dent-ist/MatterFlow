@@ -101,12 +101,12 @@ import { TagFilter, TagMatch, TagOption } from '../../../shared/ui/tag-filter';
                 <th scope="col">Description</th>
                 <th scope="col">Tags</th>
                 <th
-                  mfSort="usedInVersions"
+                  mfSort="usedInWorkflows"
                   [sort]="sort()"
                   [defaultSort]="defaultSort"
                   (sorted)="setSort($event)"
                 >
-                  Used in workflows
+                  Used in
                 </th>
                 <th scope="col">Status</th>
               </tr>
@@ -121,7 +121,22 @@ import { TagFilter, TagMatch, TagOption } from '../../../shared/ui/tag-filter';
                   </td>
                   <td>{{ s.description }}</td>
                   <td class="st-tags"><mf-tag-chips [tags]="s.tags" [max]="3" /></td>
-                  <td>{{ usage(s) }}</td>
+                  <td data-used-in>
+                    @if (s.usedInWorkflows === 0) {
+                      <span class="pg-muted">Not used</span>
+                    } @else {
+                      <a
+                        class="pg-link"
+                        data-used-in-link
+                        [routerLink]="['/admin/workflows']"
+                        [queryParams]="{ step: s.stepDefinitionId }"
+                        >Used in
+                        {{
+                          s.usedInWorkflows === 1 ? '1 workflow' : s.usedInWorkflows + ' workflows'
+                        }}</a
+                      >
+                    }
+                  </td>
                   <td>
                     <mf-active-badge [active]="s.isActive" />
                   </td>
@@ -193,11 +208,6 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
     } catch {
       this.tagOptions.set([]); // the list itself still works; the filter just has nothing to offer
     }
-  }
-
-  protected usage(step: StepDefinitionSummary): string {
-    if (step.usedInVersions === 0) return 'Not used';
-    return step.usedInVersions === 1 ? '1 version' : `${step.usedInVersions} versions`;
   }
 
   protected override fetch() {

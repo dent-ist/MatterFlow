@@ -5,6 +5,7 @@ import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
 import { AssetTypeFormDesignerApi } from './asset-types/asset-type-form-designer-api';
 import { CustomFieldFormDesignerApi } from './custom-fields/custom-field-form-designer-api';
 import { FormDesignerApi } from './task-types/form-designer-api';
+import { TASK_TYPE_TAB_PROVIDERS } from './task-types/task-types-providers';
 import { StepFormDesignerApi } from './steps/step-form-designer-api';
 
 const lazy = (
@@ -20,15 +21,15 @@ const lazyGuarded = (...args: Parameters<typeof lazy>): Route => ({
   canDeactivate: [unsavedChangesGuard],
 });
 
-/** The Administration breadcrumb prefix of the Workflows section (the step and workflow pages add their own segments after it). */
-const WORKFLOWS_CRUMBS = [
+/** The Administration breadcrumb prefix of the Task Types page (the step pages add `Workflow Steps` and the step after it). */
+const TASK_TYPES_CRUMBS = [
   { label: 'Administration' },
-  { label: 'Workflows', link: '/admin/workflows' },
+  { label: 'Task Types', link: '/admin/task-types' },
 ];
 
 /**
  * Workflow Steps (UX S15): create/edit, and the step's input form in the shared form designer, backed by the Forms endpoints. The step
- * list is the second tab of the Workflows page (`/admin/steps`, see `workflowsStepsMatcher`).
+ * list is the third tab of the Task Types page (`/admin/steps`, see `taskTypesTabsMatcher`).
  */
 const STEP_ROUTES: Routes = [
   {
@@ -48,7 +49,7 @@ const STEP_ROUTES: Routes = [
       heading: 'Workflow Steps',
       ownerLabel: 'Step',
       sectionPath: '/admin/steps',
-      parentCrumbs: WORKFLOWS_CRUMBS,
+      parentCrumbs: TASK_TYPES_CRUMBS,
     },
     loadComponent: () => import('./task-types/task-type-form-page').then((m) => m.TaskTypeFormPage),
   },
@@ -61,7 +62,7 @@ const STEP_ROUTES: Routes = [
   },
 ];
 
-/** Workflow designer (UX S16): create/edit with version history, and the version page (draft editor or read-only view). The list is the first tab of the Workflows page. */
+/** Workflow designer (UX S16): create/edit with version history, and the version page (draft editor or read-only view). The list is the second tab of the Task Types page. */
 const WORKFLOW_ROUTES: Routes = [
   {
     path: 'workflows/new',
@@ -120,9 +121,9 @@ function usersRolesMatcher(segments: UrlSegment[]): UrlMatchResult | null {
     : null;
 }
 
-/** `workflows` and `steps` are the two tabs of one page (the Workflows menu item); `:tab` is the segment. */
-function workflowsStepsMatcher(segments: UrlSegment[]): UrlMatchResult | null {
-  return segments.length === 1 && (segments[0].path === 'workflows' || segments[0].path === 'steps')
+/** `task-types`, `workflows` and `steps` are the three tabs of one page (the Task Types menu item); `:tab` is the segment. */
+function taskTypesTabsMatcher(segments: UrlSegment[]): UrlMatchResult | null {
+  return segments.length === 1 && ['task-types', 'workflows', 'steps'].includes(segments[0].path)
     ? { consumed: segments, posParams: { tab: segments[0] } }
     : null;
 }
@@ -147,20 +148,26 @@ export const ADMIN_ROUTES: Routes = [
     loadComponent: () => import('./pods/pods-page').then((m) => m.PodsPage),
   },
   {
-    path: 'task-types',
-    title: 'Task Types & Forms',
-    canActivate: [permissionGuard('TaskType.Manage')],
-    loadChildren: () => import('./task-types/task-types.routes').then((m) => m.TASK_TYPE_ROUTES),
+    // /admin/task-types, /admin/workflows and /admin/steps are the three tabs of one page; the component stays alive when the tab
+    // changes. Each tab needs its own permission (the page offers only the permitted ones), so the route needs either.
+    matcher: taskTypesTabsMatcher,
+    // Document title = the page name plus the open tab: "Task Types", "Task Types - Workflows", "Task Types - Workflow Steps".
+    title: (route) =>
+      route.params['tab'] === 'workflows'
+        ? 'Task Types - Workflows'
+        : route.params['tab'] === 'steps'
+          ? 'Task Types - Workflow Steps'
+          : 'Task Types',
+    canActivate: [permissionGuard('TaskType.Manage', 'Workflow.Manage')],
+    providers: TASK_TYPE_TAB_PROVIDERS,
+    loadComponent: () =>
+      import('./task-types/task-types-admin-page').then((m) => m.TaskTypesAdminPage),
   },
   {
-    // /admin/workflows and /admin/steps are the two tabs of one page; the component stays alive when the tab changes.
-    matcher: workflowsStepsMatcher,
-    // Document title = the page name plus the open tab: "Workflows", "Workflows - Workflow Steps".
-    title: (route) =>
-      route.params['tab'] === 'steps' ? 'Workflows - Workflow Steps' : 'Workflows',
-    canActivate: [permissionGuard('Workflow.Manage')],
-    loadComponent: () =>
-      import('./workflows/workflows-admin-page').then((m) => m.WorkflowsAdminPage),
+    // Create, edit and the request form of a task type (the list is the first tab above).
+    path: 'task-types',
+    canActivate: [permissionGuard('TaskType.Manage')],
+    loadChildren: () => import('./task-types/task-types.routes').then((m) => m.TASK_TYPE_ROUTES),
   },
   ...STEP_ROUTES,
   ...WORKFLOW_ROUTES,

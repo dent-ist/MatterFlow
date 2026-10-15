@@ -1,7 +1,8 @@
 <mf-page-header
   [heading]="isNew() ? 'New task type' : (taskType()?.name ?? 'Task type')"
   [crumbs]="[
-    { label: 'Task Types & Forms', link: '/admin/task-types' },
+    { label: 'Administration' },
+    { label: 'Task Types', link: '/admin/task-types' },
     { label: isNew() ? 'New' : (taskType()?.name ?? 'Edit') },
   ]"
 />

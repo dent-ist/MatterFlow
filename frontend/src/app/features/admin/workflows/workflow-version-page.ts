@@ -96,6 +96,7 @@ const UNORDERED_TEXT =
       <mf-page-header
         [crumbs]="[
           { label: 'Administration' },
+          { label: 'Task Types', link: '/admin/task-types' },
           { label: 'Workflows', link: '/admin/workflows' },
           { label: v.workflowName, link: ['/admin/workflows', workflowId()] },
           { label: 'v' + v.version.versionNo },

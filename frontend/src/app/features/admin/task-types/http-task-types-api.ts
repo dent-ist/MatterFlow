@@ -13,8 +13,8 @@ import {
 export class HttpTaskTypesApi extends TaskTypesApi {
   private readonly client = inject(TaskTypesClient);
 
-  list(): Observable<TaskTypeView[]> {
-    return this.client.listTaskTypes();
+  list(workflowId?: number): Observable<TaskTypeView[]> {
+    return this.client.listTaskTypes(workflowId);
   }
 
   get(id: number): Observable<TaskTypeView> {

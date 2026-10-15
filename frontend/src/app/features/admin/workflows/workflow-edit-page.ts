@@ -54,6 +54,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     <mf-page-header
       [crumbs]="[
         { label: 'Administration' },
+        { label: 'Task Types', link: '/admin/task-types' },
         { label: 'Workflows', link: '/admin/workflows' },
         { label: isEdit() ? name() || 'Edit' : 'New' },
       ]"

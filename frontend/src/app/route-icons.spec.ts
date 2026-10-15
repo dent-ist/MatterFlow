@@ -16,7 +16,7 @@ async function pagesOf(list: readonly Route[], base: string): Promise<Page[]> {
     let own = (r.path ?? '').replace(/:[A-Za-z]+/g, '1');
     const candidates: string[] = [];
     if (r.matcher) {
-      for (const probe of ['users', 'roles', 'workflows', 'steps']) {
+      for (const probe of ['users', 'roles', 'task-types', 'workflows', 'steps']) {
         if (r.matcher([new UrlSegment(probe, {})], null as never, r)) candidates.push(probe);
       }
     } else candidates.push(own === '**' ? '404' : own);
@@ -44,6 +44,23 @@ describe('page header icons: every routed page belongs to a section with an icon
       expect(iconForPath(item.path)).toBe(item.icon);
       expect(iconForPath(item.path + '/42/edit')).toBe(item.icon);
       for (const also of item.alsoActive ?? []) expect(iconForPath(also)).toBe(item.icon);
+    }
+  });
+
+  it('gives the three Task Types tabs, their create/edit pages and the step and workflow pages one icon', () => {
+    const icon = 'pi pi-file-edit';
+    for (const path of [
+      '/admin/task-types',
+      '/admin/task-types/new',
+      '/admin/task-types/4/form',
+      '/admin/workflows',
+      '/admin/workflows/new',
+      '/admin/workflows/3/versions/7',
+      '/admin/steps',
+      '/admin/steps/new',
+      '/admin/steps/9/form',
+    ]) {
+      expect(iconForPath(path), path).toBe(icon);
     }
   });
 

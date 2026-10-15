@@ -43,18 +43,14 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     permissions: ['Pod.Manage', 'Pod.ManageMembers'],
   },
   {
-    label: 'Task Types & Forms',
+    // One item, three tabs: Task Types, Workflows and Workflow Steps (and the create/edit/form pages under them). Task types lead to
+    // their eligible workflows, which are built from the shared step library. Task Types needs TaskType.Manage, the other two
+    // Workflow.Manage; a person with only Workflow.Manage lands on the Workflows tab.
+    label: 'Task Types',
     icon: 'pi pi-file-edit',
     path: '/admin/task-types',
-    permissions: ['TaskType.Manage'],
-  },
-  {
-    // The Workflows and Workflow Steps tabs (and the step and workflow pages under them).
-    label: 'Workflows',
-    icon: 'pi pi-share-alt',
-    path: '/admin/workflows',
-    alsoActive: ['/admin/steps'],
-    permissions: ['Workflow.Manage'],
+    alsoActive: ['/admin/workflows', '/admin/steps'],
+    permissions: ['TaskType.Manage', 'Workflow.Manage'],
   },
   {
     label: 'Labels',

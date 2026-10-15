@@ -12,7 +12,8 @@ export type { CreateTaskTypeRequest, TaskTypeView, UpdateTaskTypeRequest };
  * `InMemoryTaskTypesApi`. Failures are `ApiError`s (DUPLICATE_NAME, CONCURRENCY_CONFLICT, field errors keyed by DTO property).
  */
 export abstract class TaskTypesApi {
-  abstract list(): Observable<TaskTypeView[]>;
+  /** All task types by name; with `workflowId` only those for which that workflow is eligible. */
+  abstract list(workflowId?: number): Observable<TaskTypeView[]>;
   abstract get(id: number): Observable<TaskTypeView>;
   abstract create(request: CreateTaskTypeRequest): Observable<TaskTypeView>;
   abstract update(id: number, request: UpdateTaskTypeRequest): Observable<TaskTypeView>;

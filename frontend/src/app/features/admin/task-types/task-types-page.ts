@@ -1,32 +1,46 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { FormVersionStatus } from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
-import { WorkflowLookup } from '../../../core/lookups/workflow-lookup';
+import { WorkflowLookup, WorkflowOption } from '../../../core/lookups/workflow-lookup';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { TaskTypeView, TaskTypesApi } from './task-types-api';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-table';
 import { LocalListPage } from '../../../shared/ui/list-query';
-import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
-import { PageHeader } from '../../../shared/ui/page-header';
+import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { FilterDef } from '../../../shared/filters/filter-def';
+import { ListFilters } from '../../../shared/filters/list-filters';
+import { AssocChips, AssocItem } from '../assoc-chips';
+import { AssocFilter } from '../assoc-filter';
 import { Pager } from '../../../shared/ui/pager';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { SearchBox } from '../../../shared/ui/search-box';
 
 /**
- * Admin: Task Types list (UX S14). Name, request form status, eligible workflows, default workflow, with a warning chip for types
- * users can not create Tasks of. A Task Type is never deleted, only deactivated (and reactivated). Needs `TaskType.Manage`.
+ * Admin: the Task Types tab of the Task Types page (UX S14). Name, request form status and the Workflows column: the eligible workflows
+ * as chips linking to the workflow (the default one with a star and the text "default", three chips and then "+n more"; a type with
+ * none says "No workflow"), plus a warning chip for types users can not create Tasks of. `?workflow=<id>` limits the list to the types
+ * a workflow is eligible for (a removable chip). A Task Type is never deleted, only deactivated (and reactivated). Needs
+ * `TaskType.Manage` (the page offers the tab to people who hold it).
  */
 @Component({
   selector: 'mf-task-types-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   imports: [
-    FixedPage,
     ScrollArea,
-    PageHeader,
     ConfirmDialog,
     ActiveBadge,
     RouterLink,
@@ -36,25 +50,66 @@ import { SearchBox } from '../../../shared/ui/search-box';
     SortHeader,
     ListState,
     TaskTypeIcon,
+    AssocChips,
+    AssocFilter,
   ],
   templateUrl: './task-types-page.html',
   styleUrls: ['../admin-lookup.scss', './task-types-page.scss'],
 })
-export class TaskTypesPage extends LocalListPage<TaskTypeView> implements OnInit {
+export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   private readonly api = inject(TaskTypesApi);
   private readonly workflows = inject(WorkflowLookup);
   private readonly notify = inject(NotificationService);
+  private readonly auth = inject(AuthStore);
 
   protected readonly defaultSort = 'name';
-  protected readonly workflowNames = signal<ReadonlyMap<number, string>>(new Map());
+  protected readonly workflowOptions = signal<ReadonlyMap<number, WorkflowOption>>(new Map());
+  protected readonly workflowNames = computed<ReadonlyMap<number, string>>(
+    () => new Map([...this.workflowOptions()].map(([id, w]) => [id, w.name])),
+  );
+
+  /** `?workflow=<id>`: a link from a workflow's page or the Workflows tab. No control; a removable chip. */
+  protected readonly filters = new ListFilters({
+    screen: 'task-types',
+    noun: 'task types',
+    defs: computed((): FilterDef[] => [
+      {
+        key: 'workflow',
+        label: 'Workflow',
+        type: 'text',
+        noControl: true,
+        normalize: (v) => (/^\d{1,9}$/.test(v) ? v : null),
+        valueLabel: (v) => this.workflowName(Number(v)),
+      },
+    ]),
+  });
+  protected readonly workflowId = computed<number | undefined>(() => {
+    const id = Number(this.filters.text('workflow'));
+    return Number.isInteger(id) && id > 0 ? id : undefined;
+  });
+  /** People without Workflow.Manage cannot open a workflow page: the chips are plain text for them. */
+  protected readonly canOpenWorkflows = computed(() => this.auth.has('Workflow.Manage'));
+  /** The workflow chips of every row, built once per load of the rows or of the workflow names. */
+  protected readonly chips = computed(
+    () => new Map(this.all().map((t) => [t.id, this.chipsOf(t)] as const)),
+  );
   protected readonly busy = signal(false);
   protected readonly failure = signal('');
   protected readonly announcement = signal('');
   protected readonly deactivateOpen = signal(false);
   protected readonly deactivateTarget = signal<TaskTypeView | null>(null);
 
-  ngOnInit(): void {
-    void this.load();
+  constructor() {
+    super();
+    // Loads the list, and again when the workflow filter changes.
+    effect(() => {
+      this.workflowId();
+      untracked(() => void this.load());
+    });
+  }
+
+  protected override extraFilters(): Record<string, unknown> {
+    return { workflow: this.workflowId() !== undefined };
   }
 
   protected override searchText(t: TaskTypeView): string {
@@ -69,10 +124,8 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> implements OnInit
     switch (field) {
       case 'form':
         return this.formStatus(t);
-      case 'eligible':
+      case 'workflows':
         return t.eligibleWorkflowIds.length;
-      case 'default':
-        return this.workflowName(t.defaultWorkflowDefinitionId);
       default:
         return t.name;
     }
@@ -82,11 +135,12 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> implements OnInit
     this.state.set('loading');
     try {
       const [rows, workflows] = await Promise.all([
-        firstValueFrom(this.api.list()),
-        firstValueFrom(this.workflows.list()),
+        firstValueFrom(this.api.list(this.workflowId())),
+        // Names are a nicety: without Workflow.Manage the chips fall back to "Workflow 7" and are not links.
+        firstValueFrom(this.workflows.list()).catch((): WorkflowOption[] => []),
       ]);
       this.all.set(rows);
-      this.workflowNames.set(new Map(workflows.map((w) => [w.id, w.name])));
+      this.workflowOptions.set(new Map(workflows.map((w) => [w.id, w])));
       this.state.set('ready');
     } catch {
       this.state.set('error');
@@ -116,6 +170,34 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> implements OnInit
   protected workflowName(id: number | undefined): string {
     if (id === undefined || id === null) return 'None';
     return this.workflowNames().get(id) ?? `Workflow ${id}`;
+  }
+
+  /** The eligible workflows of a type: the default first, then the active ones by name, the deactivated ones last. */
+  private chipsOf(t: TaskTypeView): AssocItem[] {
+    const link = this.canOpenWorkflows();
+    return t.eligibleWorkflowIds
+      .map((id): AssocItem => ({
+        id,
+        label: this.workflowName(id),
+        link: link ? ['/admin/workflows', id] : undefined,
+        isDefault: id === t.defaultWorkflowDefinitionId,
+        inactive: this.workflowOptions().get(id)?.isActive === false,
+      }))
+      .sort(
+        (a, b) =>
+          Number(!!b.isDefault) - Number(!!a.isDefault) ||
+          Number(!!a.inactive) - Number(!!b.inactive) ||
+          a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }),
+      );
+  }
+
+  /** The Workflows tab limited to a type (`?taskType=<id>`). */
+  protected workflowsQuery(t: TaskTypeView): Record<string, number> {
+    return { taskType: t.id };
+  }
+
+  protected chipsFor(t: TaskTypeView): AssocItem[] {
+    return this.chips().get(t.id) ?? [];
   }
 
   protected warning(t: TaskTypeView): string {

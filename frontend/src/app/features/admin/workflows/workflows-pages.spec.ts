@@ -5,6 +5,7 @@ import {
   StepDefinitionSummary,
   StepDefinitionsClient,
   FormsClient,
+  TaskTypesClient,
   WorkflowDetail,
   WorkflowSummary,
   WorkflowVersionDetail,
@@ -37,6 +38,7 @@ const summary = (overrides: Partial<WorkflowSummary> = {}): WorkflowSummary => (
   publishedStepCount: 3,
   draftVersionId: undefined,
   draftVersionNo: undefined,
+  taskTypes: [],
   rowVersion: 'WWWW',
   ...overrides,
 });
@@ -87,6 +89,7 @@ const libStep = (id: number, title: string): StepDefinitionSummary => ({
   documentationUrl: undefined,
   isActive: true,
   usedInVersions: 0,
+  usedInWorkflows: 0,
   tags: [],
   rowVersion: 'S',
 });
@@ -170,7 +173,182 @@ describe('WorkflowsListPage', () => {
     expect(rows[1].textContent).toContain('Not published');
     expect(rows[1].textContent).toContain('Draft');
     expect(rows[1].textContent).toContain('Inactive');
-    expect(api.listWorkflows).toHaveBeenCalledWith(undefined, undefined, true, 1, 25);
+    expect(api.listWorkflows).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+      true,
+      undefined,
+      undefined,
+      1,
+      25,
+    );
+  });
+
+  it('shows the task types of each workflow as chips (default starred, three then +n more) and links', async () => {
+    const ref = (id: number, name: string, isDefault = false, isActive = true) => ({
+      taskTypeId: id,
+      name,
+      isDefault,
+      isActive,
+    });
+    const api = {
+      listWorkflows: vi.fn().mockReturnValue(
+        ok({
+          items: [
+            summary({
+              taskTypes: [
+                ref(1, 'Data Processing', true),
+                ref(2, 'Collection'),
+                ref(3, 'Review'),
+                ref(4, 'Production'),
+                ref(5, 'Legacy', false, false),
+              ],
+            }),
+            summary({ workflowDefinitionId: 2, name: 'Production', taskTypes: [] }),
+          ],
+          total: 2,
+          page: 1,
+          pageSize: 25,
+        }),
+      ),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(WorkflowsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    const first = el.querySelector('[data-row="Standard Processing"]')!;
+    expect(
+      Array.from(first.querySelectorAll('[data-assoc-chip]')).map((c) =>
+        c.getAttribute('data-assoc-chip'),
+      ),
+    ).toEqual(['Data Processing', 'Collection', 'Production']);
+    expect(first.querySelector('[data-assoc-default]')!.textContent).toBe('default');
+    expect(first.querySelector('[data-assoc-more]')!.textContent!.trim()).toBe('+2 more');
+    expect(el.querySelector('[data-row="Production"] [data-assoc-empty]')!.textContent).toContain(
+      'No task type',
+    );
+    expect(first.textContent).toContain('v2 (3 steps)');
+  });
+
+  it('links the task type chips to the task type pages and +n more to the filtered Task Types tab', async () => {
+    const ref = (id: number, name: string) => ({
+      taskTypeId: id,
+      name,
+      isDefault: false,
+      isActive: true,
+    });
+    const api = {
+      listWorkflows: vi.fn().mockReturnValue(
+        ok({
+          items: [summary({ taskTypes: [1, 2, 3, 4].map((i) => ref(i, 'T' + i)) })],
+          total: 1,
+          page: 1,
+          pageSize: 25,
+        }),
+      ),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        MessageService,
+        provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage', 'TaskType.Manage'))),
+        { provide: WorkflowsClient, useValue: api },
+      ],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
+    const fixture = TestBed.createComponent(WorkflowsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('[data-assoc-chip="T2"] a')!.getAttribute('href')).toBe(
+      '/admin/task-types/2',
+    );
+    expect(el.querySelector('[data-assoc-more]')!.getAttribute('href')).toBe(
+      '/admin/task-types?workflow=1',
+    );
+  });
+
+  it('filters by task type and by step from the address, with a removable chip', async () => {
+    const api = {
+      listWorkflows: vi
+        .fn()
+        .mockReturnValue(ok({ items: [summary()], total: 1, page: 1, pageSize: 25 })),
+    };
+    const taskTypes = {
+      getTaskType: vi.fn().mockReturnValue(ok({ id: 7, name: 'Data Processing' })),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: '**', children: [] }]),
+        MessageService,
+        provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage'))),
+        { provide: WorkflowsClient, useValue: api },
+        { provide: TaskTypesClient, useValue: taskTypes },
+      ],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/workflows?taskType=7');
+    const fixture = TestBed.createComponent(WorkflowsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(api.listWorkflows).toHaveBeenLastCalledWith(
+      undefined,
+      undefined,
+      true,
+      7,
+      undefined,
+      1,
+      25,
+    );
+    expect(el.querySelector('[data-filtered-by]')!.textContent).toContain(
+      'Filtered by task type Data Processing: 1 workflow',
+    );
+    const remove = el.querySelector<HTMLButtonElement>(
+      'button[aria-label="Remove filter Task type: Data Processing"]',
+    )!;
+    expect(remove).not.toBeNull();
+    remove.click();
+    await settle(fixture);
+    expect(router.url).toBe('/admin/workflows');
+    expect(el.querySelector('[data-assoc-filter]')).toBeNull();
+    expect(api.listWorkflows).toHaveBeenLastCalledWith(
+      undefined,
+      undefined,
+      true,
+      undefined,
+      undefined,
+      1,
+      25,
+    );
+  });
+
+  it('ignores a task type or step that is not a number', async () => {
+    const api = {
+      listWorkflows: vi
+        .fn()
+        .mockReturnValue(ok({ items: [summary()], total: 1, page: 1, pageSize: 25 })),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: '**', children: [] }]),
+        MessageService,
+        provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage'))),
+        { provide: WorkflowsClient, useValue: api },
+      ],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
+    await TestBed.inject(Router).navigateByUrl('/x?taskType=abc&step=-3');
+    const fixture = TestBed.createComponent(WorkflowsListPage);
+    await settle(fixture);
+    expect(api.listWorkflows).toHaveBeenLastCalledWith(
+      undefined,
+      undefined,
+      true,
+      undefined,
+      undefined,
+      1,
+      25,
+    );
   });
 
   it('shows empty and error states', async () => {

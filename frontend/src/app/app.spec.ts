@@ -184,8 +184,7 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     expect(Array.from(admin.querySelectorAll('li a')).map((a) => a.textContent!.trim())).toEqual([
       'Users',
       'Pods',
-      'Task Types & Forms',
-      'Workflows',
+      'Task Types',
       'Labels',
       'Assets',
       'Custom Fields',
