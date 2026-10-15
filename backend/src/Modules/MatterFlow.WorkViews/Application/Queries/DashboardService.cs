@@ -116,7 +116,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             "Other pods",
             rest => DashboardRules.Open([.. rest.Select(r => "pod=" + r.Id)])).ToList();
         if (byPod.FirstOrDefault(p => p.Id == null) is { Count: > 0 } noPod)
-            podItems.Add(new DashboardBreakdownItem(null, null, "No Pod", noPod.Count, null, false));
+            podItems.Add(new DashboardBreakdownItem(null, null, "No Pod", noPod.Count, DashboardRules.Open("noPod=true"), false));
 
         var typeItems = DashboardRules.TopWithOther(
             byType.Select(t => new DashboardBreakdownItem(t.Id, null, typeNames.GetValueOrDefault(t.Id, "Task Type " + t.Id), t.Count, DashboardRules.Open("type=" + t.Id), false)),

@@ -248,10 +248,11 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
             rows = rows.Where(t => priorities.Contains(t.PriorityId));
         }
 
-        if (f.Pods.Count > 0)
+        if (f.Pods.Count > 0 || f.NoPod)
         {
             var pods = f.Pods.ToList();
-            rows = rows.Where(t => t.AssignedPodId != null && pods.Contains(t.AssignedPodId.Value));
+            var noPod = f.NoPod;
+            rows = rows.Where(t => (noPod && t.AssignedPodId == null) || (t.AssignedPodId != null && pods.Contains(t.AssignedPodId.Value)));
         }
 
         if (f.Assignees.Count > 0 || f.Unassigned)

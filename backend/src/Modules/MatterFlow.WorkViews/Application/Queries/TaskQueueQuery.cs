@@ -15,7 +15,7 @@ public class TaskQueueQuery
     /// <summary>The query parameters every queue accepts.</summary>
     public static readonly IReadOnlyList<string> FilterKeys =
     [
-        "q", "status", "priority", "pod", "assignee", "unassigned", "creator", "client", "matter", "project", "type", "workflow",
+        "q", "status", "priority", "pod", "noPod", "assignee", "unassigned", "creator", "client", "matter", "project", "type", "workflow",
         "createdFrom", "createdTo", "dueFrom", "dueTo", "asap", "overdue", "requestor", "completedFrom", "completedTo",
     ];
 
@@ -37,6 +37,10 @@ public class TaskQueueQuery
     /// <summary>Pod ids the Task is assigned to; repeatable.</summary>
     [FromQuery(Name = "pod")]
     public int[]? Pod { get; init; }
+
+    /// <summary>True: Tasks with no Pod assigned. Combines with <c>pod</c> as OR (a Task in one of those Pods, or in none).</summary>
+    [FromQuery(Name = "noPod")]
+    public bool? NoPod { get; init; }
 
     /// <summary>User ids the Task is assigned to (inactive users included); repeatable. Combines with <c>unassigned</c> as OR.</summary>
     [FromQuery(Name = "assignee")]
@@ -106,7 +110,7 @@ public class TaskQueueQuery
     [FromQuery(Name = "completedTo")]
     public DateOnly? CompletedTo { get; init; }
 
-    /// <summary><c>default</c> (priority, ASAP above due dates, oldest), <c>priority</c>, <c>due</c>, <c>created</c>, <c>number</c>, <c>status</c> or <c>completed</c>.</summary>
+    /// <summary><c>default</c> (priority, ASAP above due dates, oldest), <c>priority</c>, <c>priorityAge</c> (priority, then oldest), <c>due</c>, <c>created</c>, <c>number</c>, <c>status</c> or <c>completed</c>.</summary>
     [FromQuery(Name = "sort"), StringLength(20)]
     public string? Sort { get; init; }
 
@@ -136,7 +140,7 @@ public class MyWorkQuery : TaskQueueQuery
 /// <summary>Pod Work: the queue filters (except <c>pod</c>) plus the Pod and the tab.</summary>
 public class PodWorkQuery : TaskQueueQuery
 {
-    public static readonly IReadOnlyList<string> PodWorkKeys = [.. Keys.Where(k => k != "pod"), "podId", "view"];
+    public static readonly IReadOnlyList<string> PodWorkKeys = [.. Keys.Where(k => k is not ("pod" or "noPod")), "podId", "view"];
 
     /// <summary>The Pod; defaults to the user's primary Pod, else the first Pod they belong to.</summary>
     [FromQuery(Name = "podId")]
@@ -153,6 +157,7 @@ public sealed record TaskQueueFilter(
     IReadOnlyList<TaskStatusCode> Statuses,
     IReadOnlyList<int> Priorities,
     IReadOnlyList<int> Pods,
+    bool NoPod,
     IReadOnlyList<int> Assignees,
     bool Unassigned,
     IReadOnlyList<int> Creators,
@@ -189,6 +194,7 @@ public sealed record TaskQueueFilter(
             statuses,
             Distinct(query.Priority),
             Distinct(query.Pod),
+            query.NoPod == true,
             Distinct(query.Assignee),
             query.Unassigned == true,
             Distinct(query.Creator),

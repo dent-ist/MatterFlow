@@ -5486,6 +5486,13 @@
             }
           },
           {
+            "name": "noPod",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "assignee",
             "in": "query",
             "schema": {
@@ -5739,6 +5746,13 @@
                 "type": "integer",
                 "format": "int32"
               }
+            }
+          },
+          {
+            "name": "noPod",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
             }
           },
           {
@@ -6003,6 +6017,13 @@
                 "type": "integer",
                 "format": "int32"
               }
+            }
+          },
+          {
+            "name": "noPod",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
             }
           },
           {

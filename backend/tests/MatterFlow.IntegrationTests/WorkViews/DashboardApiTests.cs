@@ -234,7 +234,10 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
         pods["Pod A"].ShouldBe(4);
         pods["Pod B"].ShouldBe(3);
         pods["No Pod"].ShouldBe(2 + 11);
-        d.GetProperty("byPod").EnumerateArray().Single(i => i.GetProperty("label").GetString() == "No Pod").GetProperty("query").ValueKind.ShouldBe(JsonValueKind.Null);
+        // "No pod" drills through to exactly the open Tasks without a Pod (the queue's noPod filter).
+        var noPod = d.GetProperty("byPod").EnumerateArray().Single(i => i.GetProperty("label").GetString() == "No Pod");
+        noPod.GetProperty("query").GetString()!.ShouldContain("noPod=true");
+        (await DrillAsync(noPod, NewYork)).Count.ShouldBe(2 + 11);
 
         // Task Types: 13 types hold open Tasks; the top 5 are listed and the rest folded into one "Other" row that drills through with all the folded types.
         var types = d.GetProperty("byTaskType").EnumerateArray().ToList();

@@ -68,6 +68,40 @@ public sealed class TaskQueueApiTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task Sort_priorityAge_is_priority_first_then_oldest_ignoring_due_dates()
+    {
+        var d = await DataAsync();
+        var page = await d.QueueAsync("sort=priorityAge&unassigned=true&pageSize=100");
+        var items = page.GetProperty("items").EnumerateArray().ToList();
+        var keys = items.Select(i => (Priority: i.GetProperty("priority").GetProperty("sortOrder").GetInt32(), Created: i.GetProperty("createdAtUtc").GetDateTime())).ToList();
+        keys.ShouldBe([.. keys.OrderBy(k => k.Priority).ThenBy(k => k.Created)]);
+        // crit-future (due 2099) was created before crit-asap-old: priority then age, not ASAP-before-due.
+        var seeded = d.Seeded(page);
+        seeded.IndexOf("crit-future").ShouldBeLessThan(seeded.IndexOf("crit-asap-old"));
+    }
+
+    [Fact]
+    public async Task NoPod_filter_lists_tasks_without_a_pod_and_combines_with_pod_as_either()
+    {
+        var d = await DataAsync();
+        var noPod = await d.QueueAsync("noPod=true&pageSize=100");
+        noPod.GetProperty("items").EnumerateArray().ShouldAllBe(r => r.GetProperty("assignedPod").ValueKind == JsonValueKind.Null);
+        var titles = TitlesOf(noPod);
+        titles.ShouldContain("crit-asap-old");
+        titles.ShouldContain("mine-soon");
+        titles.ShouldNotContain("poda-queue-1");
+        titles.ShouldNotContain("podb-queue");
+
+        var either = TitlesOf(await d.QueueAsync($"noPod=true&pod={d.PodC}&pageSize=100"));
+        either.ShouldContain("podc-queue");
+        either.ShouldContain("crit-asap-old");
+        either.ShouldNotContain("podb-queue");
+
+        TitlesOf(await d.QueueAsync("noPod=true&unassigned=true&asap=true&q=crit-asap")).ShouldBeSet(["crit-asap-old", "crit-asap-new"]);
+        (await d.QueueAsync("noPod=false&pageSize=100")).GetProperty("total").GetInt32().ShouldBe((await d.QueueAsync("pageSize=100")).GetProperty("total").GetInt32());
+    }
+
+    [Fact]
     public async Task Invalid_sort_direction_page_and_unknown_parameters_are_400()
     {
         var d = await DataAsync();

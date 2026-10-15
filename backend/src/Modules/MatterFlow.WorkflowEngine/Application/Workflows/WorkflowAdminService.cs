@@ -191,6 +191,23 @@ public sealed class WorkflowAdminService(
     /// <summary>Starts the workflow's draft by copying a version (default: the published one, else the newest).</summary>
     public async Task<Result<WorkflowVersionDetail>> CreateDraftAsync(int workflowId, CreateWorkflowDraftRequest request, CancellationToken ct)
     {
+        // A SQL Server deadlock victim (error 1205) is rolled back as a whole and is safe to repeat. Under load (parallel setup of many
+        // workflows) it happened here, and the client got a 409 for a call that succeeds when repeated: run the unit of work once more from
+        // a clean change tracker and without the audit entries the failed save put back. Not inside a caller's transaction (it owns the retry).
+        try
+        {
+            return await CreateDraftOnceAsync(workflowId, request, ct);
+        }
+        catch (Exception ex) when (WorkflowSupport.IsDeadlock(ex) && db.Database.CurrentTransaction is null)
+        {
+            db.ChangeTracker.Clear();
+            audit.DiscardPending();
+            return await CreateDraftOnceAsync(workflowId, request, ct);
+        }
+    }
+
+    private async Task<Result<WorkflowVersionDetail>> CreateDraftOnceAsync(int workflowId, CreateWorkflowDraftRequest request, CancellationToken ct)
+    {
         if (await db.Set<WorkflowDefinition>().AnyAsync(w => w.Id == workflowId, ct) is false)
         {
             return NotFound(workflowId);

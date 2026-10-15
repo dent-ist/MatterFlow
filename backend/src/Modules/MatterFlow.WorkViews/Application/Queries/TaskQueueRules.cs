@@ -59,11 +59,13 @@ public static class TaskQueueRules
     public const string SortNumber = "number";
     public const string SortStatus = "status";
     public const string SortCompleted = "completed";
+    /// <summary>Priority (most urgent first), then oldest first; ignores due dates (the Dashboard's unassigned queue).</summary>
+    public const string SortPriorityAge = "priorityAge";
 
     /// <summary>Due soon: an explicit due date today or within this many days (ASAP excluded, overdue included).</summary>
     public const int DueSoonDays = 2;
 
-    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted];
+    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge];
 
     /// <summary>NEW, IN_PROGRESS or ON_HOLD.</summary>
     public static Expression<Func<WorkTask, bool>> Open { get; } =
@@ -133,6 +135,8 @@ public static class TaskQueueRules
         {
             case SortPriority:
                 return WithDefaultTail(descending ? rows.OrderByDescending(r => r.PrioritySortOrder) : rows.OrderBy(r => r.PrioritySortOrder));
+            case SortPriorityAge:
+                return rows.OrderBy(r => r.PrioritySortOrder).ThenBy(r => r.CreatedAtUtc).ThenBy(r => r.Id);
             case SortStatus:
                 return WithDefaultTail(
                     descending

@@ -230,6 +230,23 @@ public class TaskQueueRulesTests
     }
 
     [Fact]
+    public void Sorting_by_priorityAge_is_priority_then_oldest_and_ignores_due_dates()
+    {
+        var rows = new[]
+        {
+            Row(1, 1, new DateOnly(2026, 1, 1), createdDays: 5),
+            Row(2, 0, new DateOnly(2099, 1, 1), createdDays: 9),   // same priority as 3 but younger than 3: after it
+            Row(3, 0, null, createdDays: 2),                       // ASAP does not jump the queue
+            Row(4, 1, null, createdDays: 1),
+            Row(5, 0, new DateOnly(2000, 1, 1), createdDays: 2),   // same age as 3: the lower id first
+        }.AsQueryable();
+
+        TaskQueueRules.SortFields.ShouldContain(TaskQueueRules.SortPriorityAge);
+        Ids(rows, TaskQueueRules.SortPriorityAge).ShouldBe([3, 5, 2, 4, 1]);
+        TaskQueueRules.DefaultsToDescending(TaskQueueRules.SortPriorityAge).ShouldBeFalse();
+    }
+
+    [Fact]
     public void Sorting_by_due_puts_asap_first_ascending_and_last_descending()
     {
         var rows = new[]
