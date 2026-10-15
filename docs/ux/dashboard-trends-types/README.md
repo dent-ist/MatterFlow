@@ -59,7 +59,7 @@ Default chart measures use the dashboard tokens: Created `#1F4E9C` solid with ci
 
 - Address: `?tab=trends&types=5,7&metric=overdue&all=0&due=overdue,ontime` (only what differs from the default is written). A link opens the same view for anyone who may see the tab. Ticking boxes replaces the address (Back is not filled with every click).
 - Memory: the choices are remembered per user in this browser (`localStorage`, every access in try/catch; the tab works without it). An address with any of these parameters wins over the memory; without them the remembered view is restored and the address is completed.
-- Permission: `Dashboard.ViewDepartment` (the permission of the summary's trend), unchanged by this work.
+- Permission: `Dashboard.View` plus `Dashboard.ViewTrends` (the Trends tab permission). The summary payload no longer carries a `trend`.
 
 ## Data
 
