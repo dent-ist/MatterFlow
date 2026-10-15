@@ -24,6 +24,19 @@ internal sealed class MatterDirectory(DbContext db) : IMatterDirectory
         return row is null ? null : ToSummary(row);
     }
 
+    public async Task<IReadOnlyList<int>> FindIdsMatchingAsync(string text, int limit, CancellationToken cancellationToken = default)
+    {
+        var q = text.Trim();
+        if (q.Length == 0)
+            return [];
+
+        var matters = db.Set<Matter>().AsNoTracking();
+        var found = MatterService.TryParsePair(q, out var clientNumber, out var matterNumber)
+            ? matters.Where(m => m.MatterRef.Contains(q) || m.Name.Contains(q) || (m.ClientNumber == clientNumber && m.MatterNumber == matterNumber))
+            : matters.Where(m => m.MatterRef.Contains(q) || m.Name.Contains(q));
+        return await found.OrderBy(m => m.Id).Select(m => m.Id).Take(limit).ToListAsync(cancellationToken);
+    }
+
     private IQueryable<Row> Query() =>
         from m in db.Set<Matter>().AsNoTracking()
         join c in db.Set<Client>().AsNoTracking() on m.ClientId equals c.Id

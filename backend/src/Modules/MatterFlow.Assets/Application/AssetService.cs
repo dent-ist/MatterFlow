@@ -25,6 +25,9 @@ public sealed class AssetService(
 {
     public static readonly string[] SortFields = ["displayName", "assetType", "createdAt"];
 
+    /// <summary>Most Matters the Matter column filter expands to (they become an <c>IN</c> list).</summary>
+    private const int MatterFilterLimit = 1000;
+
     private static readonly IReadOnlyDictionary<string, JsonElement> NoValues = new Dictionary<string, JsonElement>();
 
     private static readonly Dictionary<string, Func<IQueryable<AssetRow>, bool, bool, IOrderedQueryable<AssetRow>>> Orderings = new()
@@ -49,6 +52,15 @@ public sealed class AssetService(
         if (query.IsActive is { } active)
             rows = rows.Where(r => r.Asset.IsActive == active);
         rows = ApplySearch(rows, query.Q);
+        if (query.Name?.Trim() is { Length: > 0 } name)
+            rows = rows.Where(r => r.Asset.DisplayName.Contains(name));
+        if (query.ExternalReference?.Trim() is { Length: > 0 } reference)
+            rows = rows.Where(r => r.Asset.ExternalReference != null && r.Asset.ExternalReference.Contains(reference));
+        if (query.Matter?.Trim() is { Length: > 0 } matterText)
+        {
+            int[] matterIds = [.. await matters.FindIdsMatchingAsync(matterText, MatterFilterLimit, ct)];
+            rows = rows.Where(r => matterIds.Contains(r.Asset.MatterId));
+        }
 
         var total = await rows.CountAsync(ct);
         var items = await AssetSupport.ApplySort(rows, sort.Count == 0 ? [new SortField("displayName", false)] : sort, Orderings, r => r.Asset.Id)

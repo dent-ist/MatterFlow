@@ -537,6 +537,49 @@ public sealed class AssetsApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Column_filters_match_one_column_each_literally_and_combine()
+    {
+        const string Pages = """{"pages":1}""";
+        var (matterId, typeId, _) = await SetUpAsync(); // 00343-00012 "Merger Review"
+        var otherMatter = await CreateMatterAsync("343", "13");
+        await CreateAssetAsync(matterId, typeId, "Alpha bundle", "https://dms.example/alpha", Pages);
+        await CreateAssetAsync(matterId, typeId, "100% done_set", "WS-8841", Pages);
+        await CreateAssetAsync(otherMatter, typeId, "Bravo bundle", "ds-room-77", Pages);
+        await CreateAssetAsync(otherMatter, typeId, "Alpha elsewhere", null, Pages);
+
+        async Task<string[]> Names(string query) =>
+            [.. (await OkAsync(await As().GetAsync($"/api/v1/assets?sort=displayName&{query}"))).GetProperty("items").EnumerateArray().Select(a => a.GetProperty("displayName").GetString()!)];
+
+        (await Names("name=ALPHA")).ShouldBe(["Alpha bundle", "Alpha elsewhere"]); // case-insensitive, name only
+        (await Names("name=dms")).ShouldBeEmpty(); // "dms" is only in an external reference
+        (await Names("externalReference=ws-88")).ShouldBe(["100% done_set"]);
+        (await Names("externalReference=alpha")).ShouldBe(["Alpha bundle"]); // not the name
+        (await Names("name=100%25")).ShouldBe(["100% done_set"]); // % is literal
+        (await Names("name=%25")).ShouldBe(["100% done_set"]);
+        (await Names("name=_")).ShouldBe(["100% done_set"]); // _ is literal, not "any character"
+        (await Names("name=%5B")).ShouldBeEmpty(); // [ is literal
+
+        // The Matter column: padded reference, the typed pair, a reference fragment, the Matter name.
+        (await Names("matter=00343-00013")).ShouldBe(["Alpha elsewhere", "Bravo bundle"]);
+        (await Names("matter=343-13")).ShouldBe(["Alpha elsewhere", "Bravo bundle"]);
+        (await Names("matter=-00012")).ShouldBe(["100% done_set", "Alpha bundle"]);
+        (await Names("matter=merger")).Length.ShouldBe(4);
+        (await Names("matter=no-such-matter")).ShouldBeEmpty();
+        (await Names("matter=%25")).ShouldBeEmpty(); // a wildcard is not "every matter"
+
+        // Combined with each other, the type and the status.
+        (await Names("matter=343-13&name=alpha")).ShouldBe(["Alpha elsewhere"]);
+        (await Names($"assetTypeId={typeId}&name=bundle&externalReference=ds-")).ShouldBe(["Bravo bundle"]);
+        var total = await OkAsync(await As().GetAsync("/api/v1/assets?isActive=false&name=alpha"));
+        total.GetProperty("total").GetInt32().ShouldBe(0);
+
+        // Too long, and permissions are unchanged.
+        (await As().GetAsync($"/api/v1/assets?matter={new string('x', 201)}")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        var noAccess = await UserWithAsync("nobody-assets", "Task.View");
+        (await noAccess.GetAsync("/api/v1/assets?name=alpha")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task Lookup_is_matter_scoped_requires_a_matter_and_is_limited()
     {
         var (matterId, typeId, _) = await SetUpAsync();

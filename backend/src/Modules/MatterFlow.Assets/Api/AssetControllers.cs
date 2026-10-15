@@ -92,7 +92,9 @@ public class AssetsController(AssetService assets, IAssetDirectory directory, IE
 
     /// <summary>
     /// Lists Assets, usually of one Matter (<c>matterId</c>). <c>q</c> searches the display name, the Asset Type name and the external
-    /// reference. Sort: displayName (default), assetType, createdAt.
+    /// reference. The column filters <c>name</c>, <c>externalReference</c> (fragments of that column only), <c>matter</c> (fragment of the Matter
+    /// reference, the typed pair such as <c>343-12</c>, or the Matter name) and <c>assetTypeId</c> combine with AND. Sort: displayName (default),
+    /// assetType, createdAt.
     /// </summary>
     [HttpGet(Name = "ListAssets")]
     [Authorize(Policy = AssetPolicies.AssetView)]

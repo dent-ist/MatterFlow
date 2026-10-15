@@ -106,7 +106,19 @@ public sealed class AssetListQuery : AssetListQueryBase
     [StringLength(200)]
     public string? Q { get; init; }
 
-    internal static readonly string[] Keys = ["page", "pageSize", "sort", "matterId", "assetTypeId", "isActive", "q"];
+    /// <summary>Column filter: fragment of the display name only.</summary>
+    [StringLength(200)]
+    public string? Name { get; init; }
+
+    /// <summary>Column filter: fragment of the external reference only.</summary>
+    [StringLength(200)]
+    public string? ExternalReference { get; init; }
+
+    /// <summary>Column filter: fragment of the Matter reference (<c>00343-00012</c>, or the typed pair <c>343-12</c>) or of the Matter name.</summary>
+    [StringLength(200)]
+    public string? Matter { get; init; }
+
+    internal static readonly string[] Keys = ["page", "pageSize", "sort", "matterId", "assetTypeId", "isActive", "q", "name", "externalReference", "matter"];
 }
 
 /// <summary>Asset picker lookup filters (always inside one Matter).</summary>

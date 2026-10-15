@@ -32,6 +32,12 @@ public interface IMatterDirectory
 
     /// <summary>Resolves <c>343-12</c> or <c>00343-00012</c> (padded or unpadded) to a Matter, or null when the text is not a pair or no Matter has it.</summary>
     Task<MatterSummary?> ResolveReferenceAsync(string reference, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Ids of the Matters whose reference (<c>00343-00012</c>, or the typed pair <c>343-12</c>) or name contains the text, case-insensitively and
+    /// with the LIKE wildcards matched literally; at most <paramref name="limit"/> ids, lowest id first. Column filters of other modules' lists use it.
+    /// </summary>
+    Task<IReadOnlyList<int>> FindIdsMatchingAsync(string text, int limit, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Read-only lookups of Projects for other modules.</summary>

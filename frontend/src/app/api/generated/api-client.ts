@@ -384,12 +384,15 @@ export interface IAssetsClient {
      * @param assetTypeId (optional) 
      * @param isActive (optional) 
      * @param q (optional) 
+     * @param name (optional) 
+     * @param externalReference (optional) 
+     * @param matter (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listAssets(matterId?: number | undefined, assetTypeId?: number | undefined, isActive?: boolean | undefined, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem>;
+    listAssets(matterId?: number | undefined, assetTypeId?: number | undefined, isActive?: boolean | undefined, q?: string | undefined, name?: string | undefined, externalReference?: string | undefined, matter?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem>;
     /**
      * @return Created
      */
@@ -487,12 +490,15 @@ export class AssetsClient implements IAssetsClient {
      * @param assetTypeId (optional) 
      * @param isActive (optional) 
      * @param q (optional) 
+     * @param name (optional) 
+     * @param externalReference (optional) 
+     * @param matter (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listAssets(matterId?: number | undefined, assetTypeId?: number | undefined, isActive?: boolean | undefined, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem> {
+    listAssets(matterId?: number | undefined, assetTypeId?: number | undefined, isActive?: boolean | undefined, q?: string | undefined, name?: string | undefined, externalReference?: string | undefined, matter?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem> {
         let url_ = this.baseUrl + "/api/v1/assets?";
         if (matterId === null)
             throw new globalThis.Error("The parameter 'matterId' cannot be null.");
@@ -510,6 +516,18 @@ export class AssetsClient implements IAssetsClient {
             throw new globalThis.Error("The parameter 'q' cannot be null.");
         else if (q !== undefined)
             url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (name === null)
+            throw new globalThis.Error("The parameter 'name' cannot be null.");
+        else if (name !== undefined)
+            url_ += "Name=" + encodeURIComponent("" + name) + "&";
+        if (externalReference === null)
+            throw new globalThis.Error("The parameter 'externalReference' cannot be null.");
+        else if (externalReference !== undefined)
+            url_ += "ExternalReference=" + encodeURIComponent("" + externalReference) + "&";
+        if (matter === null)
+            throw new globalThis.Error("The parameter 'matter' cannot be null.");
+        else if (matter !== undefined)
+            url_ += "Matter=" + encodeURIComponent("" + matter) + "&";
         if (page === null)
             throw new globalThis.Error("The parameter 'page' cannot be null.");
         else if (page !== undefined)
