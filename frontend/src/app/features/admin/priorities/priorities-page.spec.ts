@@ -31,6 +31,13 @@ describe('PrioritiesPage', () => {
     await fixture.whenStable();
   }
 
+  /** A button inside the open confirm dialog (it renders in the page body, not in the component). */
+  function dialogButton(label: string): HTMLButtonElement {
+    return Array.from(document.body.querySelectorAll<HTMLButtonElement>('.p-dialog button')).find(
+      (b) => b.textContent!.trim() === label,
+    )!;
+  }
+
   async function click(target: Element | null): Promise<void> {
     (target as HTMLElement).click();
     await settle();
@@ -172,16 +179,24 @@ describe('PrioritiesPage', () => {
 
     it('asks before deleting and explains when a priority is in use', async () => {
       await click(row('Low').querySelector('[data-delete]'));
-      expect(row('Low').textContent).toContain('Delete Low?');
+      const dialog = document.body.querySelector('.p-dialog')!;
+      expect(dialog.textContent).toContain('Delete priority?');
+      expect(dialog.textContent).toContain('Low will be removed');
 
+      // Keep priority closes the dialog and changes nothing.
+      await click(dialogButton('Keep priority'));
+      expect(api.calls).not.toContain('delete:4');
+      expect(labels()).toContain('Low');
+
+      await click(row('Low').querySelector('[data-delete]'));
       api.failNext = apiError(409, 'IN_USE', 'Tasks use this priority.');
-      await click(row('Low').querySelector('[data-confirm-delete] button'));
+      await click(dialogButton('Delete priority'));
 
       expect(labels()).toContain('Low');
       expect(el().querySelector('[data-failure]')!.textContent).toContain('Deactivate it instead');
 
       await click(row('Low').querySelector('[data-delete]'));
-      await click(row('Low').querySelector('[data-confirm-delete] button'));
+      await click(dialogButton('Delete priority'));
       expect(labels()).not.toContain('Low');
     });
 
@@ -203,6 +218,10 @@ describe('PrioritiesPage', () => {
       form.dispatchEvent(new Event('submit'));
       await settle();
       expect(el().querySelector('[data-add-error]')!.textContent).toContain('Enter a label.');
+      const field = el().querySelector<HTMLInputElement>('[data-new-label]')!;
+      expect(field.getAttribute('aria-invalid')).toBe('true');
+      expect(field.getAttribute('aria-describedby')).toBe('add-error');
+      expect(el().querySelector('label[for="new-label"]')!.textContent).toContain('(required)');
 
       await type(el().querySelector<HTMLInputElement>('[data-new-label]')!, 'Muddy');
       const select = el().querySelector<HTMLSelectElement>('#new-color')!;

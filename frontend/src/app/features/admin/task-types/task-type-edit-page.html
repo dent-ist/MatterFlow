@@ -35,7 +35,7 @@
       <section aria-labelledby="tt-general">
         <h2 id="tt-general">General</h2>
         <div class="field">
-          <label for="tt-name">Name (required)</label>
+          <label for="tt-name">Name <span class="mf-req">(required)</span></label>
           <input
             id="tt-name"
             class="text"
@@ -169,7 +169,7 @@
           [disabled]="busy() || (!isNew() && !dirty())"
           data-save
         />
-        <a class="mf-btn mf-btn--text" routerLink="/admin/task-types">Cancel</a>
+        <a class="mf-btn" routerLink="/admin/task-types">Cancel</a>
       </div>
     </form>
   }

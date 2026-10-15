@@ -14,16 +14,8 @@
   <p class="error" role="alert" data-failure>{{ failure() }}</p>
 }
 
-@switch (state()) {
-  @case ('loading') {
-    <p class="muted" data-loading>Loading status labels...</p>
-  }
-  @case ('error') {
-    <p class="error" role="alert">Couldn't load status labels.</p>
-    <mf-error-reference />
-    <p-button label="Try again" severity="secondary" (onClick)="load()" />
-  }
-  @default {
+<mf-list-state noun="status labels" [state]="state()" [columns]="3" (retry)="load()">
+  <div class="mf-table-wrap">
     <table class="grid" data-status-labels>
       <caption class="sr-only">
         Task statuses and their display labels
@@ -96,5 +88,5 @@
         }
       </tbody>
     </table>
-  }
-}
+  </div>
+</mf-list-state>

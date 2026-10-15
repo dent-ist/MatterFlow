@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  OnDestroy,
   OnInit,
   computed,
   inject,
@@ -23,27 +22,29 @@ import {
 import { PendingUsersStore } from '../../../core/identity-admin/pending-users.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { Badge } from '../../../shared/ui/badge';
+import { ListState } from '../../../shared/ui/data-table';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { Pager } from '../../../shared/ui/pager';
+import { SearchBox } from '../../../shared/ui/search-box';
 
 type Tab = Exclude<UserStatusFilter, 'all'>;
 
 const PAGE_SIZE = 25;
-const SEARCH_DEBOUNCE_MS = 250;
 
 /** S12 Admin: Users. Tabs Pending / Active / Inactive, search, paging and the user detail panel with role assignment. */
 @Component({
   selector: 'mf-users-page',
-  imports: [PageHeader, Button, RouterLink, MfDatePipe],
+  imports: [PageHeader, Button, RouterLink, MfDatePipe, SearchBox, ListState, Pager, Badge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './users-page.html',
   styleUrl: './users-page.scss',
 })
-export class UsersPage implements OnInit, OnDestroy {
+export class UsersPage implements OnInit {
   private readonly api = inject(IdentityAdminApi);
   private readonly auth = inject(AuthStore);
   private readonly pending = inject(PendingUsersStore);
   private readonly notify = inject(NotificationService);
-  private searchTimer: ReturnType<typeof setTimeout> | undefined;
 
   protected readonly tabs: { id: Tab; label: string }[] = [
     { id: 'pending', label: 'Pending access' },
@@ -74,6 +75,10 @@ export class UsersPage implements OnInit, OnDestroy {
   protected readonly saving = signal(false);
   protected readonly panelError = signal('');
 
+  protected readonly pageSize = PAGE_SIZE;
+  protected readonly listState = computed<'loading' | 'ready' | 'error'>(() =>
+    this.loadError() ? 'error' : this.loading() && this.users().length === 0 ? 'loading' : 'ready',
+  );
   protected readonly pageCount = computed(() => Math.max(1, Math.ceil(this.total() / PAGE_SIZE)));
   protected readonly dirty = computed(() => {
     const u = this.selected();
@@ -88,10 +93,6 @@ export class UsersPage implements OnInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     await Promise.all([this.loadRoles(), this.reload()]);
-  }
-
-  ngOnDestroy(): void {
-    clearTimeout(this.searchTimer);
   }
 
   /** Pending users are also counted as active by the API; they are listed under Pending only. */
@@ -112,14 +113,10 @@ export class UsersPage implements OnInit, OnDestroy {
     await this.reload();
   }
 
-  protected onSearchInput(value: string): void {
+  /** The shared search box searches live after a pause and at once on Enter (UXR-11). */
+  protected async onSearch(value: string): Promise<void> {
+    if (value === this.search()) return;
     this.search.set(value);
-    clearTimeout(this.searchTimer);
-    this.searchTimer = setTimeout(() => void this.applySearch(), SEARCH_DEBOUNCE_MS);
-  }
-
-  protected async applySearch(): Promise<void> {
-    clearTimeout(this.searchTimer);
     this.page.set(1);
     await this.reload();
   }
@@ -241,7 +238,7 @@ export class UsersPage implements OnInit, OnDestroy {
     }
   }
 
-  private async reload(): Promise<void> {
+  protected async reload(): Promise<void> {
     this.loading.set(true);
     this.loadError.set(false);
     try {

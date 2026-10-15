@@ -16,10 +16,9 @@
 
 @if (editorOpen()) {
   <section class="pods__editor" aria-labelledby="pods-editor-title" data-editor>
-    <div class="pods__editor-head">
-      <h2 id="pods-editor-title">{{ isNew() ? 'New pod' : 'Edit pod' }}</h2>
-      <p-button label="Back to pods" severity="secondary" [text]="true" (onClick)="close()" />
-    </div>
+    <h2 id="pods-editor-title" class="pods__editor-title">
+      {{ isNew() ? 'New pod' : 'Edit pod' }}
+    </h2>
 
     @if (failure()) {
       <div class="pods__banner" role="alert" data-failure>
@@ -30,11 +29,13 @@
       </div>
     }
 
-    <div class="pods__form">
-      <label class="pods__field">
-        <span>Name <span aria-hidden="true">*</span></span>
+    <form class="mf-form-card pods__form" novalidate (submit)="$event.preventDefault(); save()">
+      <div class="pods__field">
+        <label for="pod-name">Name <span class="mf-req">(required)</span></label>
         <input
+          id="pod-name"
           type="text"
+          class="mf-control"
           data-name
           maxlength="100"
           [value]="name()"
@@ -44,20 +45,24 @@
           (input)="onName($event)"
         />
         @if (nameError()) {
-          <span class="pods__error" id="pods-name-error" data-name-error>{{ nameError() }}</span>
+          <p class="mf-form-error" id="pods-name-error" role="alert" data-name-error>
+            <i class="pi pi-exclamation-circle" aria-hidden="true"></i>{{ nameError() }}
+          </p>
         }
-      </label>
-      <label class="pods__field">
-        <span>Description</span>
+      </div>
+      <div class="pods__field">
+        <label for="pod-description">Description</label>
         <textarea
+          id="pod-description"
+          class="mf-control"
           data-description
-          rows="2"
+          rows="3"
           maxlength="500"
           [value]="description()"
           [disabled]="!auth.has('Pod.Manage')"
           (input)="onDescription($event)"
         ></textarea>
-      </label>
+      </div>
       @if (!isNew()) {
         <label class="pods__check">
           <input
@@ -76,92 +81,111 @@
           assignments.
         </p>
       }
-      <div class="pods__actions" *mfHasPermission="'Pod.Manage'">
+      <div class="mf-form-actions pods__actions">
         <p-button
+          *mfHasPermission="'Pod.Manage'"
+          type="submit"
           [label]="isNew() ? 'Create pod' : 'Save changes'"
           [disabled]="busy()"
-          (onClick)="save()"
+        />
+        <p-button
+          [label]="auth.has('Pod.Manage') ? 'Cancel' : 'Back to pods'"
+          severity="secondary"
+          (onClick)="close()"
         />
       </div>
-    </div>
+    </form>
 
     @if (!isNew()) {
       <h3 class="pods__subtitle">Members ({{ members().length }})</h3>
       @if (members().length === 0) {
         <p class="pods__muted" data-no-members>No members yet.</p>
       } @else {
-        <table class="pods__table" data-members>
-          <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Roles</th>
-              <th scope="col">Primary pod</th>
-              <th scope="col"><span class="pods__sr">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (member of members(); track member.userId) {
-              <tr [attr.data-member]="member.userId">
-                <td>
-                  {{ member.displayName }}
-                  @if (!member.isActive) {
-                    <span class="pods__chip pods__chip--off">Disabled</span>
-                  }
-                </td>
-                <td>
-                  @for (role of member.roles; track role) {
-                    <span class="pods__chip" data-role>{{ role }}</span>
-                  }
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    class="pods__star"
-                    data-primary
-                    [attr.aria-pressed]="member.isPrimary"
-                    [attr.aria-label]="
-                      (member.isPrimary ? 'Clear primary pod for ' : 'Make primary pod for ') +
-                      member.displayName
-                    "
-                    [attr.title]="
-                      member.isPrimary ? 'Primary pod: click to clear' : 'Make this the primary pod'
-                    "
-                    [disabled]="busy() || !auth.has('Pod.ManageMembers') || !detail()!.pod.isActive"
-                    (click)="togglePrimary(member)"
-                  >
-                    <i [class]="member.isPrimary ? 'pi pi-star-fill' : 'pi pi-star'"></i>
-                  </button>
-                </td>
-                <td>
-                  <p-button
-                    *mfHasPermission="'Pod.ManageMembers'"
-                    label="Remove"
-                    size="small"
-                    severity="secondary"
-                    [attr.data-remove]="member.userId"
-                    [ariaLabel]="'Remove ' + member.displayName"
-                    [disabled]="busy()"
-                    (onClick)="removeMember(member)"
-                  />
-                </td>
+        <div class="mf-table-wrap">
+          <table class="pods__table" data-members>
+            <caption class="pods__sr">
+              Pod members
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Roles</th>
+                <th scope="col">Primary pod</th>
+                <th scope="col" class="mf-col-actions"><span class="pods__sr">Actions</span></th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (member of members(); track member.userId) {
+                <tr [attr.data-member]="member.userId">
+                  <td>
+                    {{ member.displayName }}
+                    @if (!member.isActive) {
+                      <mf-badge tone="neutral">Disabled</mf-badge>
+                    }
+                  </td>
+                  <td>
+                    @for (role of member.roles; track role) {
+                      <mf-badge tone="info" data-role>{{ role }}</mf-badge>
+                    }
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="pods__star"
+                      data-primary
+                      [attr.aria-pressed]="member.isPrimary"
+                      [attr.aria-label]="
+                        (member.isPrimary ? 'Clear primary pod for ' : 'Make primary pod for ') +
+                        member.displayName
+                      "
+                      [attr.title]="
+                        member.isPrimary
+                          ? 'Primary pod: click to clear'
+                          : 'Make this the primary pod'
+                      "
+                      [disabled]="
+                        busy() || !auth.has('Pod.ManageMembers') || !detail()!.pod.isActive
+                      "
+                      (click)="togglePrimary(member)"
+                    >
+                      <i [class]="member.isPrimary ? 'pi pi-star-fill' : 'pi pi-star'"></i>
+                    </button>
+                  </td>
+                  <td class="mf-col-actions">
+                    <span class="mf-row-actions">
+                      <p-button
+                        *mfHasPermission="'Pod.ManageMembers'"
+                        label="Remove"
+                        [text]="true"
+                        severity="danger"
+                        [attr.data-remove]="member.userId"
+                        [ariaLabel]="'Remove ' + member.displayName"
+                        [disabled]="busy()"
+                        (onClick)="removeMember(member)"
+                      />
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       }
 
       <div *mfHasPermission="'Pod.ManageMembers'" class="pods__add">
         @if (detail()!.pod.isActive) {
-          <label class="pods__field">
-            <span>Add members</span>
+          <div class="pods__field">
+            <label for="pod-candidate-search">Add members</label>
             <input
+              id="pod-candidate-search"
               type="search"
+              class="mf-control"
               data-candidate-search
               placeholder="Search by name or e-mail"
               [value]="candidateQuery()"
               (input)="onCandidateQuery($event)"
             />
-          </label>
+          </div>
           @if (availableCandidates().length > 0) {
             <ul class="pods__candidates" data-candidates>
               @for (candidate of availableCandidates(); track candidate.userId) {

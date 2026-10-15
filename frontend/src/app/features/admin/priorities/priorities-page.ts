@@ -18,10 +18,17 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { hasReadableText, isHexColor } from '../../../shared/ui/color-contrast';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
-import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { ListState } from '../../../shared/ui/data-table';
+import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
+
+/** Moves focus to an invalid field after a failed submit (the message is announced by its role=alert). */
+function focusById(id: string): void {
+  queueMicrotask(() => document.getElementById(id)?.focus());
+}
 
 /** Color choices offered in the picker; `custom` reveals the color input. */
 export const PRIORITY_COLOR_TOKENS = [
@@ -43,7 +50,8 @@ export const CONTRAST_MESSAGE = 'Text must be readable: 4.5:1 minimum';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     PageHeader,
-    ErrorReference,
+    ListState,
+    ConfirmDialog,
     FormsModule,
     RouterLink,
     Button,
@@ -53,7 +61,7 @@ export const CONTRAST_MESSAGE = 'Text must be readable: 4.5:1 minimum';
   templateUrl: './priorities-page.html',
   styleUrl: '../admin-lookup.scss',
 })
-export class PrioritiesPage implements OnInit {
+export class PrioritiesPage implements OnInit, HasUnsavedChanges {
   private readonly api = inject(PrioritiesClient);
   private readonly lookups = inject(LookupStore);
   private readonly notify = inject(NotificationService);
@@ -74,7 +82,8 @@ export class PrioritiesPage implements OnInit {
   protected readonly editingId = signal<number | null>(null);
   protected readonly draftLabel = signal('');
   protected readonly editError = signal('');
-  protected readonly confirmDeleteId = signal<number | null>(null);
+  /** The priority the delete dialog is asking about. */
+  protected readonly deleting = signal<PriorityView | null>(null);
 
   protected readonly newLabel = signal('');
   protected readonly newColor = signal('normal');
@@ -88,6 +97,11 @@ export class PrioritiesPage implements OnInit {
   protected readonly newContrastOk = computed(
     () => this.newColor() !== 'custom' || hasReadableText(this.newCustom()),
   );
+
+  /** An half-typed new label or a rename in progress is unsaved work (UXR-39). */
+  hasUnsavedChanges(): boolean {
+    return this.newLabel().trim().length > 0 || this.editingId() !== null;
+  }
 
   ngOnInit(): void {
     void this.load();
@@ -161,6 +175,7 @@ export class PrioritiesPage implements OnInit {
     this.addError.set('');
     if (!label) {
       this.addError.set('Enter a label.');
+      focusById('new-label');
       return;
     }
     if (!this.newContrastOk()) {
@@ -273,14 +288,16 @@ export class PrioritiesPage implements OnInit {
   // ---- delete
 
   protected askDelete(p: PriorityView): void {
-    this.confirmDeleteId.set(p.id);
+    this.deleting.set(p);
   }
 
   protected cancelDelete(): void {
-    this.confirmDeleteId.set(null);
+    this.deleting.set(null);
   }
 
-  protected async confirmDelete(p: PriorityView): Promise<void> {
+  protected async confirmDelete(): Promise<void> {
+    const p = this.deleting();
+    if (!p) return;
     const done = await this.run(
       async () => {
         await firstValueFrom(this.api.deletePriority(p.id));
@@ -293,7 +310,7 @@ export class PrioritiesPage implements OnInit {
             : e.message,
         ),
     );
-    this.confirmDeleteId.set(null);
+    this.deleting.set(null);
     if (done) {
       this.apply(this.rows().filter((r) => r.id !== p.id));
       this.announcement.set(`${p.label} deleted.`);

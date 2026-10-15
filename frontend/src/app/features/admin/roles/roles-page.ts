@@ -19,6 +19,8 @@ import {
 import { NotificationService } from '../../../core/notify/notification.service';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { SearchBox } from '../../../shared/ui/search-box';
+import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 
 /** The permission that every other permission of the same group needs (Assign requires View), if the catalog has one. */
 export function prerequisiteOf(code: string, all: ReadonlySet<string>): string | undefined {
@@ -30,12 +32,12 @@ export function prerequisiteOf(code: string, all: ReadonlySet<string>): string |
 /** S12 Admin: Roles and permissions. List with member counts, editor with the grouped permission matrix. */
 @Component({
   selector: 'mf-roles-page',
-  imports: [PageHeader, Button, RouterLink, ConfirmDialog],
+  imports: [PageHeader, Button, RouterLink, ConfirmDialog, SearchBox],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './roles-page.html',
   styleUrl: './roles-page.scss',
 })
-export class RolesPage implements OnInit {
+export class RolesPage implements OnInit, HasUnsavedChanges {
   private readonly api = inject(IdentityAdminApi);
   private readonly notify = inject(NotificationService);
 
@@ -74,10 +76,26 @@ export class RolesPage implements OnInit {
       }))
       .filter((g) => g.permissions.length > 0);
   });
+  /** What the editor held when it was opened or last saved; the editor is dirty when the draft differs. */
+  private readonly baseline = signal('');
+  private readonly draftKey = computed(() =>
+    JSON.stringify([
+      this.draftName().trim(),
+      this.draftDescription().trim(),
+      [...this.draftCodes()].sort(),
+    ]),
+  );
+  protected readonly dirty = computed(
+    () => this.editing() && !this.locked() && this.draftKey() !== this.baseline(),
+  );
   protected readonly canDelete = computed(() => {
     const r = this.selected();
     return !!r && !r.isSystemAdmin;
   });
+
+  hasUnsavedChanges(): boolean {
+    return this.dirty();
+  }
 
   async ngOnInit(): Promise<void> {
     try {
@@ -98,6 +116,14 @@ export class RolesPage implements OnInit {
     this.draftName.set('');
     this.draftDescription.set('');
     this.draftCodes.set(new Set());
+    this.baseline.set(this.draftKey());
+    this.resetMessages();
+  }
+
+  /** Closes the editor without saving. */
+  protected cancel(): void {
+    this.editing.set(false);
+    this.selected.set(null);
     this.resetMessages();
   }
 
@@ -110,6 +136,7 @@ export class RolesPage implements OnInit {
       this.draftName.set(detail.name);
       this.draftDescription.set(detail.description ?? '');
       this.draftCodes.set(new Set(detail.permissionCodes));
+      this.baseline.set(this.draftKey());
     } catch {
       this.error.set('We could not load this role. Try again.');
     }
@@ -159,7 +186,8 @@ export class RolesPage implements OnInit {
 
   protected async save(): Promise<void> {
     const name = this.draftName().trim();
-    this.nameError.set(name ? '' : 'Name is required.');
+    this.nameError.set(name ? '' : 'Enter a name.');
+    if (!name) queueMicrotask(() => document.getElementById('role-name')?.focus());
     if (!name || this.locked()) return;
 
     this.saving.set(true);
@@ -178,6 +206,7 @@ export class RolesPage implements OnInit {
         : await firstValueFrom(this.api.createRole(request));
       this.selected.set(saved);
       this.draftCodes.set(new Set(saved.permissionCodes));
+      this.baseline.set(this.draftKey());
       this.roles.set(await firstValueFrom(this.api.listRoles()));
       this.notify.success('Role saved', "Changes apply on each user's next request.");
     } catch (err) {

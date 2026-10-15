@@ -24,6 +24,13 @@ describe('AssetLinkRolesPage', () => {
     await fixture.whenStable();
   }
 
+  /** A button inside the open confirm dialog (it renders in the page body, not in the component). */
+  function dialogButton(label: string): HTMLButtonElement {
+    return Array.from(document.body.querySelectorAll<HTMLButtonElement>('.p-dialog button')).find(
+      (b) => b.textContent!.trim() === label,
+    )!;
+  }
+
   async function click(target: Element | null): Promise<void> {
     (target as HTMLElement).click();
     await settle();
@@ -103,13 +110,16 @@ describe('AssetLinkRolesPage', () => {
 
     it('deletes after confirmation and refuses a role that links use', async () => {
       await click(row('Result').querySelector('[data-delete]'));
+      expect(document.body.querySelector('.p-dialog')!.textContent).toContain(
+        'Delete asset link role?',
+      );
       api.failNext = apiError(409, 'IN_USE', 'Links use this role.');
-      await click(row('Result').querySelector('[data-confirm-delete] button'));
+      await click(dialogButton('Delete role'));
       expect(names()).toContain('Result');
       expect(el().querySelector('[data-failure]')!.textContent).toContain('Deactivate it instead');
 
       await click(row('Result').querySelector('[data-delete]'));
-      await click(row('Result').querySelector('[data-confirm-delete] button'));
+      await click(dialogButton('Delete role'));
       expect(names()).not.toContain('Result');
     });
   });

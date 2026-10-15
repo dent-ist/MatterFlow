@@ -72,18 +72,6 @@
   border: 1px solid var(--mf-border);
   border-radius: var(--mf-radius);
 
-  label {
-    display: block;
-    margin-bottom: var(--mf-s2);
-  }
-
-  input[type='text'],
-  input[type='search'] {
-    display: block;
-    width: 100%;
-    max-width: 480px;
-  }
-
   fieldset {
     margin: var(--mf-s3) 0;
     border: 1px solid var(--mf-border);
@@ -91,9 +79,22 @@
   }
 }
 
+/* Labelled field: bold label above a 40 px control (shared look, styles/_forms.scss). */
+.mf-fld {
+  display: grid;
+  gap: var(--mf-s1);
+  max-width: 480px;
+  margin-bottom: var(--mf-s3);
+
+  label {
+    font-weight: 600;
+  }
+}
+
 .mf-tools {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-end;
   gap: var(--mf-s4);
 }
 
@@ -134,7 +135,13 @@
 
 .mf-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--mf-s2);
+}
+
+/* Delete sits apart from Save and Cancel. */
+.mf-actions__danger {
+  margin-left: auto;
 }
 
 @media (max-width: 960px) {

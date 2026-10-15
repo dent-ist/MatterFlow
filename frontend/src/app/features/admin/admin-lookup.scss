@@ -1,6 +1,8 @@
+@use '../../../styles/form-mixins' as m;
+
+/* Admin lookup lists (priorities, status labels, link roles): full content width like every other table (UXR-33). */
 :host {
   display: block;
-  max-width: 960px;
 }
 
 .tabs {
@@ -106,19 +108,13 @@
   gap: var(--mf-s2);
 }
 
+/* Inline editors inside table rows: the shared control look at the compact height. */
 .text,
 .select {
-  min-height: 32px;
+  @include m.mf-control;
+  @include m.mf-control-states;
+  min-height: var(--mf-row-h-compact);
   padding: 0 var(--mf-s2);
-  border: 1px solid var(--mf-border-strong);
-  border-radius: var(--mf-radius);
-  background: var(--mf-surface);
-  color: var(--mf-text);
-  font: inherit;
-}
-
-.text[aria-invalid='true'] {
-  border-color: var(--mf-danger);
 }
 
 .swatch {
@@ -139,22 +135,48 @@
 }
 
 .actions {
+  width: 1%;
   text-align: right;
-  min-width: 15rem;
   white-space: nowrap;
 }
 
-.confirm {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--mf-s2);
-}
-
+/* Inline "Add" form (UXR-39): a card under the table with labelled fields, one inline error line and the primary button last. */
 .add {
   margin-top: var(--mf-s5);
+  padding: var(--mf-s4) var(--mf-s5);
+  background: var(--mf-surface);
+  border-radius: var(--mf-radius-lg);
+  box-shadow: var(--mf-shadow-1);
 
   h2 {
-    margin: 0 0 var(--mf-s2);
+    margin: 0 0 var(--mf-s3);
     font-size: var(--mf-fs-h3);
   }
+}
+
+.add-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--mf-s3) var(--mf-s4);
+}
+
+.fld {
+  display: grid;
+  gap: var(--mf-s1);
+
+  label {
+    font-weight: 600;
+  }
+
+  .mf-control {
+    min-width: 14rem;
+  }
+}
+
+.add-error {
+  display: block;
+  margin: var(--mf-s2) 0 0;
+  color: var(--mf-danger);
+  font-size: var(--mf-fs-sm);
 }

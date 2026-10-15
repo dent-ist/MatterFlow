@@ -13,6 +13,12 @@ const lazy = (
   loadComponent: Route['loadComponent'],
 ): Route => ({ path, title, canActivate: [permissionGuard(permission)], loadComponent });
 
+/** Like `lazy`, for screens with inline edit rows that can hold unsaved text (priorities, status labels, link roles, roles). */
+const lazyGuarded = (...args: Parameters<typeof lazy>): Route => ({
+  ...lazy(...args),
+  canDeactivate: [unsavedChangesGuard],
+});
+
 /** Step Library (UX S15): list, create/edit, and the step's input form in the shared form designer, backed by the Forms endpoints. */
 const STEP_ROUTES: Routes = [
   lazy('steps', 'Step library', 'Workflow.Manage', () =>
@@ -107,6 +113,7 @@ export const ADMIN_ROUTES: Routes = [
     path: 'roles',
     title: 'Roles',
     canActivate: [permissionGuard('Role.Manage')],
+    canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./roles/roles-page').then((m) => m.RolesPage),
   },
   {
@@ -132,13 +139,13 @@ export const ADMIN_ROUTES: Routes = [
     import('./custom-fields/custom-fields-page').then((m) => m.CustomFieldsPage),
   ),
   customFieldForm('custom-fields/:ownerId/form'),
-  lazy('priorities', 'Priorities', 'Priority.Manage', () =>
+  lazyGuarded('priorities', 'Priorities', 'Priority.Manage', () =>
     import('./priorities/priorities-page').then((m) => m.PrioritiesPage),
   ),
-  lazy('status-labels', 'Status labels', 'StatusLabel.Manage', () =>
+  lazyGuarded('status-labels', 'Status labels', 'StatusLabel.Manage', () =>
     import('./status-labels/status-labels-page').then((m) => m.StatusLabelsPage),
   ),
-  lazy('asset-link-roles', 'Asset link roles', 'AssetType.Manage', () =>
+  lazyGuarded('asset-link-roles', 'Asset link roles', 'AssetType.Manage', () =>
     import('./asset-link-roles/asset-link-roles-page').then((m) => m.AssetLinkRolesPage),
   ),
   lazy('audit', 'Audit log', 'Audit.View', () =>

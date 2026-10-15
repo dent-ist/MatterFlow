@@ -56,6 +56,15 @@ describe('RolesPage', () => {
     await settle();
   };
 
+  /** The shared search box searches on Enter at once (it also searches live after a pause). */
+  const search = async (value: string): Promise<void> => {
+    const input = q<HTMLInputElement>('#role-permission-search');
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    await settle();
+  };
+
   beforeEach(async () => {
     TestBed.configureTestingModule({
       providers: [
@@ -96,7 +105,7 @@ describe('RolesPage', () => {
     expect(q<HTMLInputElement>('[data-perm="Task.View"]').checked).toBe(true);
     expect(q('[data-note]').textContent).toContain('Task.View was also selected');
 
-    await press('Save');
+    await press('Create role');
     const created = api.roles.find((r) => r.name === 'Auditor')!;
     expect(created.permissionCodes.sort()).toEqual(['Task.Assign', 'Task.View']);
     expect(
@@ -115,13 +124,13 @@ describe('RolesPage', () => {
 
   it('filters permissions and copies from another role', async () => {
     await press('New role');
-    await type('[data-filter]', 'pod.');
+    await search('pod.');
     const groups = Array.from(el().querySelectorAll('[data-group]')).map((g) =>
       g.getAttribute('data-group'),
     );
     expect(groups).toEqual(['Pod']);
 
-    await type('[data-filter]', '');
+    await search('');
     const select = q<HTMLSelectElement>('[data-copy]');
     select.value = '6'; // Data Scientist
     select.dispatchEvent(new Event('change'));
@@ -132,12 +141,31 @@ describe('RolesPage', () => {
 
   it('requires a name and reports a duplicate name on the field', async () => {
     await press('New role');
-    await press('Save');
-    expect(q('[data-name-error]').textContent).toContain('Name is required');
+    await press('Create role');
+    expect(q('[data-name-error]').textContent).toContain('Enter a name.');
+    expect(q('#role-name').getAttribute('aria-invalid')).toBe('true');
+    expect(q('#role-name').getAttribute('aria-describedby')).toBe('role-name-error');
 
     await type('[data-name]', 'Pod Lead');
-    await press('Save');
+    await press('Create role');
     expect(q('[data-name-error]').textContent).toContain('already exists');
+  });
+
+  it('marks the name required, offers Cancel after the primary button and tracks unsaved edits', async () => {
+    await press('New role');
+    expect(q('label[for="role-name"]').textContent).toContain('(required)');
+    const labels = Array.from(el().querySelectorAll('.mf-actions p-button')).map((b) =>
+      b.textContent!.trim(),
+    );
+    expect(labels.slice(0, 2)).toEqual(['Create role', 'Cancel']);
+
+    const page = fixture.componentInstance;
+    expect(page.hasUnsavedChanges()).toBe(false);
+    await type('[data-name]', 'Draft');
+    expect(page.hasUnsavedChanges()).toBe(true);
+    await press('Cancel');
+    expect(el().querySelector('[data-editor]')).toBeNull();
+    expect(page.hasUnsavedChanges()).toBe(false);
   });
 
   async function confirmDelete(): Promise<void> {

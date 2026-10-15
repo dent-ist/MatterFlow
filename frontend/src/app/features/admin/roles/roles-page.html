@@ -1,5 +1,6 @@
 <mf-page-header heading="Roles &amp; Permissions">
   <a mfActions routerLink="/admin/users" class="mf-btn">Users</a>
+  <p-button mfActions label="New role" icon="pi pi-plus" (onClick)="startNew()" />
 </mf-page-header>
 
 @if (loadError()) {
@@ -28,7 +29,6 @@
           </li>
         }
       </ul>
-      <p-button label="New role" icon="pi pi-plus" size="small" (onClick)="startNew()" />
     </section>
 
     @if (editing()) {
@@ -42,52 +42,63 @@
           <p class="mf-error" role="alert" data-error>{{ error() }}</p>
         }
 
-        <label>
-          Name
+        <div class="mf-fld">
+          <label for="role-name">Name <span class="mf-req">(required)</span></label>
           <input
+            id="role-name"
             type="text"
+            class="mf-control"
             maxlength="100"
             data-name
             [disabled]="locked()"
             [value]="draftName()"
+            [attr.aria-invalid]="nameError() ? 'true' : null"
+            [attr.aria-describedby]="nameError() ? 'role-name-error' : null"
             (input)="draftName.set($any($event.target).value)"
           />
-        </label>
-        @if (nameError()) {
-          <p class="mf-error" role="alert" data-name-error>{{ nameError() }}</p>
-        }
-        <label>
-          Description
+          @if (nameError()) {
+            <p class="mf-form-error" id="role-name-error" role="alert" data-name-error>
+              <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ nameError() }}
+            </p>
+          }
+        </div>
+        <div class="mf-fld">
+          <label for="role-description">Description</label>
           <input
+            id="role-description"
             type="text"
+            class="mf-control"
             maxlength="500"
             data-description
             [disabled]="locked()"
             [value]="draftDescription()"
             (input)="draftDescription.set($any($event.target).value)"
           />
-        </label>
+        </div>
 
         <div class="mf-tools">
-          <label>
-            Search permissions
-            <input
-              type="search"
-              data-filter
-              [value]="filter()"
-              (input)="filter.set($any($event.target).value)"
-            />
-          </label>
+          <mf-search-box
+            inputId="role-permission-search"
+            label="Search permissions"
+            placeholder="Permission code or description"
+            [value]="filter()"
+            (searchChange)="filter.set($event)"
+          />
           @if (!locked()) {
-            <label>
-              Copy from role
-              <select data-copy (change)="copyFrom($any($event.target).value)">
+            <div class="mf-fld">
+              <label for="role-copy">Copy from role</label>
+              <select
+                id="role-copy"
+                class="mf-control"
+                data-copy
+                (change)="copyFrom($any($event.target).value)"
+              >
                 <option value="">Choose...</option>
                 @for (r of roles(); track r.roleId) {
                   <option [value]="r.roleId">{{ r.name }}</option>
                 }
               </select>
-            </label>
+            </div>
           }
         </div>
 
@@ -116,9 +127,15 @@
         @if (!locked()) {
           <p class="mf-muted">Changes apply on each user's next request.</p>
           <div class="mf-actions">
-            <p-button label="Save" [disabled]="saving()" (onClick)="save()" />
+            <p-button
+              [label]="selected() ? 'Save changes' : 'Create role'"
+              [disabled]="saving()"
+              (onClick)="save()"
+            />
+            <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
             @if (canDelete()) {
               <p-button
+                class="mf-actions__danger"
                 label="Delete role"
                 severity="danger"
                 (onClick)="confirmingDelete.set(true)"

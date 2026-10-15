@@ -1,7 +1,12 @@
 .edit {
   display: grid;
   gap: var(--mf-s5);
+  box-sizing: border-box;
   max-width: 640px;
+  padding: var(--mf-s5);
+  background: var(--mf-surface);
+  border-radius: var(--mf-radius-lg);
+  box-shadow: var(--mf-shadow-1);
 
   h2 {
     margin: 0 0 var(--mf-s2);
@@ -24,8 +29,16 @@
     font-weight: 600;
   }
 
+  /* A full form uses the full-height control (the admin-lookup .text/.select are the compact in-row editors). */
+  .text,
+  .select {
+    min-height: var(--mf-row-h);
+    padding: 0 var(--mf-s3);
+  }
+
   textarea.text {
-    padding: var(--mf-s2);
+    min-height: 0;
+    padding: var(--mf-s2) var(--mf-s3);
   }
 }
 

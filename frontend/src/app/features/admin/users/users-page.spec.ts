@@ -81,7 +81,7 @@ describe('UsersPage', () => {
     await settle();
     expect(rows()).toContain('Dana Director');
 
-    const input = q<HTMLInputElement>('[data-search]');
+    const input = q<HTMLInputElement>('#users-search');
     input.value = 'dana';
     input.dispatchEvent(new Event('input'));
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
@@ -94,15 +94,15 @@ describe('UsersPage', () => {
 
     await press('Grant access'); // first row: Priya Patel
     expect(q('[data-panel] h2').textContent).toContain('Priya Patel');
-    expect(button('Save')!.disabled).toBe(true);
+    expect(button('Save changes')!.disabled).toBe(true);
 
     const role = q<HTMLInputElement>('[data-role="5"]'); // Data Technician
     role.checked = true;
     role.dispatchEvent(new Event('change'));
     await settle();
-    expect(button('Save')!.disabled).toBe(false);
+    expect(button('Save changes')!.disabled).toBe(false);
 
-    await press('Save');
+    await press('Save changes');
     expect(api.users.find((u) => u.userId === 4)!.roleIds).toEqual([5]);
     expect(q('[data-tab="pending"]').textContent).toContain('Pending access (1)');
     expect(TestBed.inject(PendingUsersStore).count()).toBe(1);
@@ -119,7 +119,7 @@ describe('UsersPage', () => {
 
     q<HTMLInputElement>('[data-status-inactive]').click();
     await settle();
-    await press('Save');
+    await press('Save changes');
     expect(q('[data-confirm]').textContent).toContain('assigned until you reassign them');
     expect(api.users.find((u) => u.userId === 2)!.isActive).toBe(true);
 
@@ -139,7 +139,7 @@ describe('UsersPage', () => {
     adminRole.checked = false;
     adminRole.dispatchEvent(new Event('change'));
     await settle();
-    await press('Save');
+    await press('Save changes');
 
     expect(q('[data-panel-error]').textContent).toContain('At least one active System Admin');
     expect(api.users.find((u) => u.userId === 1)!.roleIds).toEqual([1]);
@@ -149,7 +149,7 @@ describe('UsersPage', () => {
     await create('User.View');
     await press('Open');
 
-    expect(button('Save')).toBeUndefined();
+    expect(button('Save changes')).toBeUndefined();
     expect(q<HTMLInputElement>('[data-role="5"]').closest('fieldset')!.disabled).toBe(true);
   });
 });

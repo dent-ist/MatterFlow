@@ -27,7 +27,7 @@ import {
   HasUnsavedChanges,
   LeaveConfirmService,
 } from '../../../shared/guards/unsaved-changes.guard';
-import { ActiveBadge } from '../../../shared/ui/badge';
+import { ActiveBadge, Badge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-table';
 import { isActiveParam } from '../../../shared/ui/list-helpers';
@@ -50,6 +50,7 @@ const SEARCH_DEBOUNCE_MS = 200;
     PageHeader,
     ConfirmDialog,
     ActiveBadge,
+    Badge,
     Button,
     HasPermissionDirective,
     RouterLink,

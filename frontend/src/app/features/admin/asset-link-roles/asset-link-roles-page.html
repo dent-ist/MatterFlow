@@ -9,19 +9,11 @@
   <p class="error" role="alert" data-failure>{{ failure() }}</p>
 }
 
-@switch (state()) {
-  @case ('loading') {
-    <p class="muted" data-loading>Loading asset link roles...</p>
-  }
-  @case ('error') {
-    <p class="error" role="alert">Couldn't load asset link roles.</p>
-    <mf-error-reference />
-    <p-button label="Try again" severity="secondary" (onClick)="load()" />
-  }
-  @default {
-    <p class="muted hint">
-      Drag a row or use the arrows to reorder. Inactive labels aren't offered for new links.
-    </p>
+<mf-list-state noun="asset link roles" [state]="state()" [columns]="4" (retry)="load()">
+  <p class="muted hint">
+    Drag a row or use the arrows to reorder. Inactive labels aren't offered for new links.
+  </p>
+  <div class="mf-table-wrap">
     <table class="grid" data-roles>
       <caption class="sr-only">
         Asset link roles in display order
@@ -124,26 +116,8 @@
                 data-active
               />
             </td>
-            <td class="actions">
-              @if (confirmDeleteId() === r.id) {
-                <span class="confirm" role="group" [attr.aria-label]="'Confirm delete ' + r.name">
-                  Delete {{ r.name }}?
-                  <p-button
-                    label="Delete"
-                    size="small"
-                    severity="danger"
-                    styleClass="mf-btn--solid"
-                    (onClick)="confirmDelete(r)"
-                    data-confirm-delete
-                  />
-                  <p-button
-                    label="Keep"
-                    size="small"
-                    severity="secondary"
-                    (onClick)="cancelDelete()"
-                  />
-                </span>
-              } @else {
+            <td class="actions mf-col-actions">
+              <span class="mf-row-actions">
                 <button
                   type="button"
                   class="mf-btn mf-btn--text mf-btn--danger"
@@ -155,20 +129,22 @@
                 >
                   Delete
                 </button>
-              }
+              </span>
             </td>
           </tr>
         }
       </tbody>
     </table>
+  </div>
 
-    <section class="add" *mfHasPermission="'AssetType.Manage'" aria-labelledby="add-heading">
-      <h2 id="add-heading">Add asset link role</h2>
-      <form class="inline" (submit)="$event.preventDefault(); add()">
-        <label for="new-name">Name (required)</label>
+  <section class="add" *mfHasPermission="'AssetType.Manage'" aria-labelledby="add-heading">
+    <h2 id="add-heading">Add asset link role</h2>
+    <form class="add-form" novalidate (submit)="$event.preventDefault(); add()">
+      <div class="fld">
+        <label for="new-name">Name <span class="mf-req">(required)</span></label>
         <input
           id="new-name"
-          class="text"
+          class="mf-control"
           name="newName"
           maxlength="50"
           [ngModel]="newName()"
@@ -177,11 +153,29 @@
           [attr.aria-describedby]="addError() ? 'add-error' : null"
           data-new-name
         />
-        <p-button type="submit" label="Add asset link role" [disabled]="busy()" />
-      </form>
-      @if (addError()) {
-        <p id="add-error" class="error" role="alert" data-add-error>{{ addError() }}</p>
-      }
-    </section>
-  }
-}
+      </div>
+      <p-button type="submit" label="Add asset link role" icon="pi pi-plus" [disabled]="busy()" />
+    </form>
+    @if (addError()) {
+      <p id="add-error" class="add-error" role="alert" data-add-error>
+        <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ addError() }}
+      </p>
+    }
+  </section>
+</mf-list-state>
+
+<mf-confirm-dialog
+  title="Delete asset link role?"
+  confirmLabel="Delete role"
+  cancelLabel="Keep role"
+  [danger]="true"
+  [busy]="busy()"
+  [visible]="deleting() !== null"
+  (visibleChange)="!$event && cancelDelete()"
+  (confirmed)="confirmDelete()"
+>
+  <p data-delete-body>
+    {{ deleting()?.name }} will be removed from the list. A role that links use can't be deleted;
+    deactivate it instead. This can't be undone.
+  </p>
+</mf-confirm-dialog>

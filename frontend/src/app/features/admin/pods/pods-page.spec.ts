@@ -194,6 +194,15 @@ describe('PodsPage', () => {
     await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
     await click('p-button');
 
+    expect(text('label[for="pod-name"]')).toBe('Name (required)'); // "(required)", not an asterisk
+    expect(q('#pod-name').classList).toContain('mf-control');
+    expect(el().textContent).not.toContain('*');
+    expect(
+      Array.from(el().querySelectorAll('.pods__actions p-button')).map((b) =>
+        b.textContent!.trim(),
+      ),
+    ).toEqual(['Create pod', 'Cancel']);
+
     await click('.pods__actions p-button');
     expect(text('[data-name-error]')).toBe('Enter a pod name.');
     expect(api.createPod).not.toHaveBeenCalled();

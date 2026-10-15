@@ -22,86 +22,82 @@
       </button>
     }
   </div>
-  <label class="mf-search">
-    <span class="mf-sr">Search users</span>
-    <input
-      type="search"
-      data-search
-      placeholder="Search name, e-mail or account"
-      [value]="search()"
-      (input)="onSearchInput($any($event.target).value)"
-      (keydown.enter)="applySearch()"
-    />
-  </label>
+</div>
+
+<div class="mf-search-row" role="search">
+  <mf-search-box
+    inputId="users-search"
+    label="Search users"
+    placeholder="Name, e-mail or account"
+    [value]="search()"
+    (searchChange)="onSearch($event)"
+  />
 </div>
 
 <div class="mf-layout">
-  <section class="mf-list" aria-live="polite">
-    @if (loadError()) {
-      <p class="mf-error" role="alert">We could not load users. Try again.</p>
-    } @else if (loading() && users().length === 0) {
-      <p class="mf-muted">Loading...</p>
-    } @else if (users().length === 0) {
-      <p class="mf-muted" data-empty>
-        {{ tab() === 'pending' ? 'No one is waiting for access.' : 'No users found.' }}
-      </p>
-    } @else {
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Windows account</th>
-            <th scope="col">First seen</th>
-            <th scope="col">Email</th>
-            <th scope="col">Roles</th>
-            <th scope="col"><span class="mf-sr">Actions</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (u of users(); track u.userId) {
-            <tr [attr.data-user]="u.userId" [class.mf-selected]="selected()?.userId === u.userId">
-              <td>
-                {{ u.displayName }}
-                @if (u.isSeededAdmin) {
-                  <span class="mf-chip">Seeded</span>
-                }
-              </td>
-              <td class="mf-mono">{{ u.windowsAccount }}</td>
-              <td>{{ u.registeredAtUtc | mfDate }}</td>
-              <td>{{ u.email }}</td>
-              <td>{{ rolesLabel(u) }}</td>
-              <td>
-                <p-button
-                  [label]="u.isPending && canManage() ? 'Grant access' : 'Open'"
-                  [text]="true"
-                  size="small"
-                  (onClick)="open(u)"
-                />
-              </td>
+  <section class="mf-list">
+    <mf-list-state
+      noun="users"
+      [state]="listState()"
+      [empty]="users().length === 0"
+      [filtered]="search().trim().length > 0"
+      [emptyText]="tab() === 'pending' ? 'No one is waiting for access.' : 'No users found.'"
+      [columns]="6"
+      (retry)="reload()"
+      (clear)="onSearch('')"
+    >
+      <div class="mf-table-wrap">
+        <table>
+          <caption class="mf-sr">
+            Users
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Windows account</th>
+              <th scope="col">First seen</th>
+              <th scope="col">Email</th>
+              <th scope="col">Roles</th>
+              <th scope="col" class="mf-col-actions"><span class="mf-sr">Actions</span></th>
             </tr>
-          }
-        </tbody>
-      </table>
-      @if (pageCount() > 1) {
-        <nav class="mf-pager" aria-label="Pages">
-          <p-button
-            label="Previous"
-            [text]="true"
-            size="small"
-            [disabled]="page() <= 1"
-            (onClick)="goTo(page() - 1)"
-          />
-          <span>Page {{ page() }} of {{ pageCount() }}</span>
-          <p-button
-            label="Next"
-            [text]="true"
-            size="small"
-            [disabled]="page() >= pageCount()"
-            (onClick)="goTo(page() + 1)"
-          />
-        </nav>
-      }
-    }
+          </thead>
+          <tbody>
+            @for (u of users(); track u.userId) {
+              <tr [attr.data-user]="u.userId" [class.mf-selected]="selected()?.userId === u.userId">
+                <td>
+                  {{ u.displayName }}
+                  @if (u.isSeededAdmin) {
+                    <mf-badge tone="info">Seeded</mf-badge>
+                  }
+                </td>
+                <td class="mf-mono">{{ u.windowsAccount }}</td>
+                <td>{{ u.registeredAtUtc | mfDate }}</td>
+                <td>{{ u.email }}</td>
+                <td>{{ rolesLabel(u) }}</td>
+                <td class="mf-col-actions">
+                  <span class="mf-row-actions">
+                    <p-button
+                      [label]="u.isPending && canManage() ? 'Grant access' : 'Open'"
+                      [text]="true"
+                      [ariaLabel]="
+                        (u.isPending && canManage() ? 'Grant access to ' : 'Open ') + u.displayName
+                      "
+                      (onClick)="open(u)"
+                    />
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <mf-pager
+        [page]="page()"
+        [pageSize]="pageSize"
+        [total]="total()"
+        (pageChange)="goTo($event)"
+      />
+    </mf-list-state>
   </section>
 
   @if (selected(); as u) {
@@ -133,26 +129,30 @@
 
       <fieldset [disabled]="!canManage()">
         <legend>Profile</legend>
-        <label>
-          Display name
+        <div class="mf-fld">
+          <label for="user-name">Display name</label>
           <input
+            id="user-name"
             type="text"
+            class="mf-control"
             maxlength="200"
             data-name
             [value]="draftName()"
             (input)="draftName.set($any($event.target).value)"
           />
-        </label>
-        <label>
-          Email
+        </div>
+        <div class="mf-fld">
+          <label for="user-email">Email</label>
           <input
+            id="user-email"
             type="email"
+            class="mf-control"
             maxlength="320"
             data-email
             [value]="draftEmail()"
             (input)="draftEmail.set($any($event.target).value)"
           />
-        </label>
+        </div>
       </fieldset>
 
       <fieldset [disabled]="!canManage()">
@@ -228,17 +228,12 @@
       @if (canManage()) {
         <div class="mf-actions">
           <p-button
-            [label]="confirmDeactivate() ? 'Confirm and save' : 'Save'"
+            [label]="confirmDeactivate() ? 'Confirm and save' : 'Save changes'"
             [disabled]="!dirty() || saving()"
             (onClick)="save()"
           />
           @if (confirmDeactivate()) {
-            <p-button
-              label="Cancel"
-              severity="secondary"
-              [text]="true"
-              (onClick)="setActive(true)"
-            />
+            <p-button label="Cancel" severity="secondary" (onClick)="setActive(true)" />
           }
         </div>
       }

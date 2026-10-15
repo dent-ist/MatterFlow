@@ -9,7 +9,8 @@ import { LookupStore } from '../../../core/lookups/lookup-store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { StatusBadge } from '../../../shared/ui/status-badge';
-import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ListState } from '../../../shared/ui/data-table';
+import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -23,7 +24,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     PageHeader,
-    ErrorReference,
+    ListState,
     FormsModule,
     RouterLink,
     Button,
@@ -33,7 +34,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   templateUrl: './status-labels-page.html',
   styleUrl: '../admin-lookup.scss',
 })
-export class StatusLabelsPage implements OnInit {
+export class StatusLabelsPage implements OnInit, HasUnsavedChanges {
   private readonly api = inject(StatusLabelsClient);
   private readonly lookups = inject(LookupStore);
   private readonly notify = inject(NotificationService);
@@ -47,6 +48,11 @@ export class StatusLabelsPage implements OnInit {
   protected readonly editingCode = signal<string | null>(null);
   protected readonly draft = signal('');
   protected readonly editError = signal('');
+
+  /** A rename in progress is unsaved work. */
+  hasUnsavedChanges(): boolean {
+    return this.editingCode() !== null;
+  }
 
   ngOnInit(): void {
     void this.load();

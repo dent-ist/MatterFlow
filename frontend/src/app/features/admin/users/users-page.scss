@@ -31,11 +31,18 @@
   }
 }
 
-.mf-search {
-  margin-left: auto;
+.mf-search-row {
+  margin-bottom: var(--mf-s3);
+}
 
-  input {
-    min-width: 280px;
+/* Labelled field: bold label above a 40 px control (shared look, styles/_forms.scss). */
+.mf-fld {
+  display: grid;
+  gap: var(--mf-s1);
+  margin-bottom: var(--mf-s3);
+
+  label {
+    font-weight: 600;
   }
 }
 
@@ -85,15 +92,6 @@ tr.mf-selected {
   font-family: var(--mf-font-mono);
 }
 
-.mf-chip {
-  margin-left: var(--mf-s2);
-  padding: 0 var(--mf-s2);
-  font-size: var(--mf-fs-xs);
-  background: var(--mf-info-bg);
-  color: var(--mf-info);
-  border-radius: var(--mf-radius);
-}
-
 .mf-muted {
   color: var(--mf-text-muted);
   padding: var(--mf-s3);
@@ -104,14 +102,6 @@ tr.mf-selected {
   background: var(--mf-danger-bg);
   padding: var(--mf-s3);
   border-radius: var(--mf-radius);
-}
-
-.mf-pager {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--mf-s3);
-  padding: var(--mf-s2);
 }
 
 .mf-panel {
@@ -143,15 +133,8 @@ tr.mf-selected {
     border-radius: var(--mf-radius);
   }
 
-  label {
-    display: block;
-    margin-bottom: var(--mf-s2);
-  }
-
-  label input[type='text'],
-  label input[type='email'] {
-    display: block;
-    width: 100%;
+  label:not(.mf-inline) {
+    font-weight: 600;
   }
 
   .mf-inline {

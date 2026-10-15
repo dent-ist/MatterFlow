@@ -14,10 +14,17 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { ListState } from '../../../shared/ui/data-table';
+import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
+
+/** Moves focus to an invalid field after a failed submit (the message is announced by its role=alert). */
+function focusById(id: string): void {
+  queueMicrotask(() => document.getElementById(id)?.focus());
+}
 
 /**
  * Admin: Asset link roles, i.e. the roles an Asset can have on a Task (Source, Destination, Subject, Result, ...). Add, rename,
@@ -26,11 +33,11 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-asset-link-roles-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeader, ErrorReference, FormsModule, Button, HasPermissionDirective],
+  imports: [PageHeader, ListState, ConfirmDialog, FormsModule, Button, HasPermissionDirective],
   templateUrl: './asset-link-roles-page.html',
   styleUrl: '../admin-lookup.scss',
 })
-export class AssetLinkRolesPage implements OnInit {
+export class AssetLinkRolesPage implements OnInit, HasUnsavedChanges {
   private readonly api = inject(AssetLinkRolesClient);
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
@@ -45,10 +52,16 @@ export class AssetLinkRolesPage implements OnInit {
   protected readonly editingId = signal<number | null>(null);
   protected readonly draftName = signal('');
   protected readonly editError = signal('');
-  protected readonly confirmDeleteId = signal<number | null>(null);
+  /** The role the delete dialog is asking about. */
+  protected readonly deleting = signal<AssetLinkRoleView | null>(null);
   protected readonly newName = signal('');
   protected readonly addError = signal('');
   private dragIndex: number | null = null;
+
+  /** A half-typed new name or a rename in progress is unsaved work (UXR-39). */
+  hasUnsavedChanges(): boolean {
+    return this.newName().trim().length > 0 || this.editingId() !== null;
+  }
 
   ngOnInit(): void {
     void this.load();
@@ -99,6 +112,7 @@ export class AssetLinkRolesPage implements OnInit {
     this.addError.set('');
     if (!name) {
       this.addError.set('Enter a name.');
+      focusById('new-name');
       return;
     }
     const created = await this.run(
@@ -169,14 +183,16 @@ export class AssetLinkRolesPage implements OnInit {
   }
 
   protected askDelete(r: AssetLinkRoleView): void {
-    this.confirmDeleteId.set(r.id);
+    this.deleting.set(r);
   }
 
   protected cancelDelete(): void {
-    this.confirmDeleteId.set(null);
+    this.deleting.set(null);
   }
 
-  protected async confirmDelete(r: AssetLinkRoleView): Promise<void> {
+  protected async confirmDelete(): Promise<void> {
+    const r = this.deleting();
+    if (!r) return;
     const done = await this.run(
       async () => {
         await firstValueFrom(this.api.deleteAssetLinkRole(r.id));
@@ -189,7 +205,7 @@ export class AssetLinkRolesPage implements OnInit {
             : e.message,
         ),
     );
-    this.confirmDeleteId.set(null);
+    this.deleting.set(null);
     if (done) {
       this.rows.set(this.rows().filter((x) => x.id !== r.id));
       this.announcement.set(`${r.name} deleted.`);
