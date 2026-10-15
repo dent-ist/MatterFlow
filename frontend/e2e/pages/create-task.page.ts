@@ -8,6 +8,7 @@ export class CreateTaskPage {
   readonly matter: Locator;
   readonly project: Locator;
   readonly title: Locator;
+  /** The description's rich text editor (a contenteditable textbox named Description). */
   readonly description: Locator;
   readonly chooser: Locator;
   readonly typeChip: Locator;
@@ -32,7 +33,7 @@ export class CreateTaskPage {
     this.matter = page.getByRole('combobox', { name: 'Matter (required)' });
     this.project = page.getByLabel('Project', { exact: true });
     this.title = page.getByRole('textbox', { name: 'Title (required)' });
-    this.description = page.getByRole('textbox', { name: 'Description' });
+    this.description = page.locator('[data-description-field] [role=textbox]');
     this.chooser = page.locator('[data-type-chooser]');
     this.typeChip = page.locator('[data-type-chip]');
     this.changeType = page.getByRole('button', { name: 'Change type' });

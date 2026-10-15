@@ -43,7 +43,7 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     await expect(create.title).toHaveValue(
       'Process the Jones mailbox into the Smith workspace by end of day',
     );
-    await expect(create.description).toHaveValue(/Please process the Jones mailbox/);
+    await expect(create.description).toContainText('Please process the Jones mailbox');
     await expect(create.requestorName).toHaveValue('Linda Cho');
     await expect(create.requestorEmail).toHaveValue('linda.cho@example-firm.test');
     await expect(page.locator('[data-source-sent]')).toContainText('Oct 13, 2026');
@@ -96,10 +96,10 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     await expect(create.title).toHaveValue('Search term report attached');
     await expect(create.requestorName).toHaveValue('Raj Patel');
     await expect(create.requestorEmail).toHaveValue('raj.patel@example-firm.test');
-    await expect(create.description).toHaveValue(
-      /Report attached\. Hit counts are in the second tab\./,
+    await expect(create.description).toContainText(
+      'Report attached. Hit counts are in the second tab.',
     );
-    await expect(create.description).not.toHaveValue(/report\.xlsx/);
+    await expect(create.description).not.toContainText('report.xlsx');
     await expect(page.locator('[data-source-sent]')).toContainText('Oct 14, 2026');
   });
 

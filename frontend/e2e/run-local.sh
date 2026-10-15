@@ -96,4 +96,8 @@ if [ -z "${E2E_CHROMIUM_PATH:-}" ] && [ -x /opt/pw-browsers/chromium-1194/chrome
   export E2E_NO_SANDBOX=1 # the preinstalled browser runs as root in the sandbox container
 fi
 export E2E_BASE_URL="http://127.0.0.1:$api_port"
+# For the few tests that need a row the API can no longer create (a description saved as plain text before rich text, decision R): they run
+# one UPDATE inside this throwaway container and skip themselves when these are not set.
+export E2E_SQL_CONTAINER="$sql_name"
+export E2E_SQL_PASSWORD="$sql_password"
 npx playwright test -c e2e/playwright.config.ts "$@"

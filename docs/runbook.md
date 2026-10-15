@@ -243,6 +243,7 @@ Not exercised yet outside Linux. Tick each on the production-like server and rep
 - [ ] **Deep links and refresh:** pasting `https://<host>/tasks/new` (and refreshing any inner page) opens the app, not a 404; an unknown `/api/...` URL shows a JSON problem body.
 - [ ] **Caching and compression:** after an upgrade, a normal reload shows the new version (index.html is `no-cache`); `main-*.js` transfers compressed (`content-encoding: br` or `gzip`) once.
 - [ ] **Uploads:** an email upload near 12 MB succeeds; a larger one is refused cleanly.
+- [ ] **Rich text description (script 25, decision R):** after the upgrade, an old task still shows its description as it was (plain text with line breaks); paste a table from Outlook into a new task's Description, save, reload: the table is there; paste a table of more than 200 cells: it arrives as text with a notice; no CSP violation in the console. Support note: the database column `Task.DescriptionFormat` is `TEXT` for tasks created before the upgrade and `HTML` after; a description error `HTML_TOO_LARGE`, `TABLE_TOO_LARGE` or `TOO_COMPLEX` means the pasted content is over a limit (100,000 characters of HTML, 200 table cells, nesting 20), not a server fault.
 - [ ] **Upgrade drill:** do section 7.2 once on a copy of production data, including `--migrate-only` run by the DBA account, and the rollback restore of section 7.3.
 - [ ] **Backups:** the nightly and log backups run, and one restore drill succeeded (section 8).
 

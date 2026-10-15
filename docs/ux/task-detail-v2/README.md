@@ -29,7 +29,7 @@ Product-owner request: technicians spend most of their time on the Task page and
 
 ## Important finding
 
-Neither the task description nor the comment sanitizer keeps tables today: the description is stored and shown as plain text, and `CommentHtml` allows only `p br strong b em i u ul ol li a`. The table styles are in place and verified (e2e puts a 12 column table into the container), but real tables will only appear once the backend allows them (and the description becomes rich text). The sanitizer was deliberately not changed here. In the screenshots the pasted email carries a pipe-separated "table" as plain text, which now wraps inside the 40 % panel.
+Neither the task description nor the comment sanitizer kept tables when this was written: the description was plain text, and `CommentHtml` allowed only `p br strong b em i u ul ol li a`. That changed with decision R (issue #80, `docs/ux/rich-description`): descriptions and comments are rich text with safe tables. The sanitizer was deliberately not changed in this round. In the screenshots the pasted email carries a pipe-separated "table" as plain text, which now wraps inside the 40 % panel.
 
 ## Screenshots
 

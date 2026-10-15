@@ -198,8 +198,8 @@ Left nav collapses to icons under 1100 px. Skip link first in DOM. Slim banners 
 ### 5.4 Dialogs
 Modal for confirmations and short forms (<= 5 fields); pages or drawers for larger. Destructive primary buttons use danger style and are not the default focus. Titles state the action; bodies state the consequence; buttons use verbs ("Cancel task", "Keep task"), never OK/Yes/No.
 
-### 5.5 Rich-text comment editor (basic)
-Toolbar: Bold, Italic, Bulleted list, Numbered list, Link. No images, tables, files, colours or mentions. Paste is reduced to this set (other formatting becomes plain text). Link dialog accepts `http(s)` and `mailto:`; links open in a new tab with `rel=noopener noreferrer`. Character counter near the limit [UX-PROPOSAL: 10,000]. The server sanitizes again; the UI renders only sanitized HTML.
+### 5.5 Rich-text editor (comments and Task description)
+Toolbar: Bold, Italic, Bulleted list, Numbered list, Link, Insert table (decision R, issue #80). No images, files, colours, fonts or mentions. **Tables:** Insert table opens a small form (Rows 1-8, Columns 1-8, Header row); with the caret in a table a second toolbar ("Table") offers Row above, Row below, Delete row, Column left, Column right, Delete column, Delete table (merged cells are stretched or shrunk, never duplicated). Tab and Shift+Tab move between cells and, at the first and last cell, leave the editor (no keyboard trap); every table action is announced in a polite live region ("Row added below. Now row 3 of 3, column 2 of 2."). A field holds at most 200 table cells. **Paste and drop:** HTML from Outlook, Word or a web page is rebuilt from the allow-list (paragraphs, bold, italic, underline, lists, http/https/mailto links, tables with merged cells and header scopes); styles, classes, fonts, images and everything else are dropped; a table over 200 cells is pasted as plain text with a notice. Wide tables scroll inside their own box in the editor and in the read view (`mf-rich`). Link dialog accepts `http(s)` and `mailto:`; links open in a new tab with `rel=noopener noreferrer`. Character counter near the limit [UX-PROPOSAL: 10,000]. The server sanitizes again; the UI renders only sanitized HTML.
 
 ### 5.6 Error and system states
 | State | Pattern |
@@ -588,7 +588,7 @@ Type, workflow and matter can't be changed after you create the task.
 | Matter | Yes | Active matters only; if launched from a Matter, prefilled and still changeable until submit | "Select a matter." / "This matter is inactive. Choose an active matter." |
 | Project | No | Lists only projects of selected Matter; clears if Matter changes (with note) | "That project doesn't belong to this matter." |
 | Title | Yes | max 250; prefilled from Subject | "Enter a title." |
-| Description | No | prefilled from Body; plain text (sanitized) [UX-PROPOSAL: plain multi-line for the request description, rich text only in comments] | n/a |
+| Description | No | prefilled from the email's HTML body (tables kept, sanitized) or its plain text; rich text editor (decision R) | n/a |
 | Task type | Yes | active types with >=1 published eligible workflow; types without one are listed disabled "(no workflow available)" | "Select a task type." |
 | Workflow | Yes | exactly one; radio list; default pre-selected if the type has a default but user must see it; current published version per workflow only | "Select a workflow." |
 | Request details | per form | dynamic, conditional: hidden fields are not validated and not submitted; backend re-validates | per field: "Enter <label>." / "<label> must be a number." etc. |
@@ -733,7 +733,7 @@ Comments (5)                                      Oldest first | Newest first
 [ B I | list | numbered | link ]  Add a comment... (Ctrl+Enter to post)    [Post comment]
 Internal only: comments are visible to people who can view tasks.
 ```
-- Rich text with bold/italic/lists/links only (see §5.5); sanitized server-side; no attachments/images/mentions.
+- Rich text with bold/italic/lists/links and tables (see §5.5, decision R); sanitized server-side; no attachments/images/mentions.
 - Authors edit/delete their own comments; edit shows "Edited" marker and "View edit history" (list of previous versions with timestamps); delete is a soft-delete: confirm "Delete this comment? It will be hidden from view but kept in the audit record." then the comment disappears (no tombstone in the thread for others; Activity records "Comment deleted" [UX-PROPOSAL]).
 - Cancel comments appear as comments with a "Cancellation reason" tag.
 - Posting requires `Task.Comment`; users without it see read-only comments.
@@ -1063,7 +1063,7 @@ Prefix `mf-`. Standalone components, OnPush, signals-friendly inputs, a11y built
 | `mf-cancel-task-dialog` | Mandatory comment cancel | `task` | S10 |
 | `mf-confirm-dialog` | Generic confirm with verb buttons and consequence text | `title`, `body`, `confirmLabel`, `danger` | all |
 | `mf-comment-thread` | List, edit/delete own, edit history | `taskId` | S10 |
-| `mf-rich-text-editor` | Basic formatting (B/I/lists/link), sanitize on paste, counter | `value`, `maxLength` | comments, cancel/skip dialogs (plain) |
+| `mf-rich-text-editor` | Basic formatting (B/I/lists/link) and tables, paste/drop clean-up (lazy chunk), counter, live announcements | `value`, `maxLength`, `label`, `placeholder` | comments, Task description (Create, Edit), email intake review |
 | `mf-activity-feed` | Filterable audit events with before/after | `objectRef` | S10, entity details |
 | `mf-email-intake` | Drop zone + paste dialog + file picker + parse review panel | `(parsed)` | S09 |
 | `mf-email-parser` (service) | Deterministic header/body parser | pure functions, unit tested | S09 |

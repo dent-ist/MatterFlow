@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { Api, Json } from './api';
 
 let counter = 0;
@@ -379,6 +380,60 @@ export class Seeder {
       requestorName: 'Rita Requestor',
       ...overrides,
     });
+  }
+
+  /** A task whose description is this HTML (tables included); the server sanitizes it, so what is read back is the clean form. */
+  taskWithDescription(
+    world: Pick<World, 'matter' | 'taskType' | 'workflow'>,
+    descriptionHtml: string,
+    overrides: Json = {},
+  ): Promise<Json> {
+    return this.task(world, { description: descriptionHtml, ...overrides });
+  }
+
+  /** True when the stack's SQL Server container is known (run-local.sh sets it), so `legacyTextTask` can be used. */
+  static canWriteLegacyText(): boolean {
+    return !!process.env['E2E_SQL_CONTAINER'] && !!process.env['E2E_SQL_PASSWORD'];
+  }
+
+  /**
+   * A task whose description is plain text in the old format (`DescriptionFormat = 'TEXT'`), as every task was before descriptions became
+   * rich text. The API only writes HTML now, so the row is switched back with one UPDATE inside the throwaway SQL Server container.
+   */
+  async legacyTextTask(
+    world: Pick<World, 'matter' | 'taskType' | 'workflow'>,
+    text: string,
+    overrides: Json = {},
+  ): Promise<Json> {
+    const container = process.env['E2E_SQL_CONTAINER'];
+    const password = process.env['E2E_SQL_PASSWORD'];
+    if (!container || !password)
+      throw new Error('E2E_SQL_CONTAINER and E2E_SQL_PASSWORD are not set');
+    const task = await this.task(world, { description: 'placeholder', ...overrides });
+    const literal = text.replace(/'/g, "''").replace(/\n/g, "' + NCHAR(10) + N'");
+    execFileSync(
+      'docker',
+      [
+        'exec',
+        container,
+        '/opt/mssql-tools18/bin/sqlcmd',
+        '-C',
+        '-I', // QUOTED_IDENTIFIER on: dbo.Task has filtered indexes
+        '-S',
+        'localhost',
+        '-U',
+        'sa',
+        '-P',
+        password,
+        '-d',
+        'MatterFlow',
+        '-b',
+        '-Q',
+        `UPDATE dbo.Task SET Description = N'${literal}', DescriptionFormat = 'TEXT' WHERE TaskId = ${Number(task.taskId)}`,
+      ],
+      { stdio: 'pipe' },
+    );
+    return this.admin.get(`/api/v1/tasks/${task.taskId}`);
   }
 
   private assetType?: Promise<number>;

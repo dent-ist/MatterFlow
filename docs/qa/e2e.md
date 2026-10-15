@@ -27,6 +27,7 @@ npm run e2e -- -g SCN-015        # any Playwright argument goes through (grep, -
 |---|---|
 | `E2E_API_PORT` | Port of the app and API (default 5190). Use another port when something else already listens there. |
 | `E2E_SKIP_BUILD=1` | Reuse `artifacts/e2e-publish` (skips the npm build and the publish). Saves about a minute when only tests changed. |
+| `E2E_SQL_CONTAINER`, `E2E_SQL_PASSWORD` | Set by the script for the tests: the name of its SQL Server container and the `sa` password. Used by `Seeder.legacyTextTask` (one `UPDATE` that turns a task's description back into old-format plain text); those tests skip themselves when the variables are missing (a stack not started by `run-local.sh`). |
 | `E2E_KEEP_STACK=1` | Leave the container and API running; the script prints how to stop them. Useful with `npm run e2e:run` while writing tests. |
 | `E2E_CHROMIUM_PATH` | Chromium executable. Defaults to `/opt/pw-browsers/chromium-1194/chrome-linux/chrome` when present (the sandbox image), otherwise Playwright's own browser. |
 | `E2E_NO_SANDBOX=1` | Adds `--no-sandbox` (set automatically for the preinstalled browser because it runs as root in a container). |
@@ -93,12 +94,15 @@ Fixtures (from `support/fixtures.ts`):
 | `due-dates` (4) | SCN-015 ASAP is never overdue (queue, header, API); a past date is overdue; the same date-only due date is overdue in `Pacific/Kiritimati` and not in `Etc/GMT+12` (browser `timezoneId` and `X-Time-Zone`); a due time shown in the viewer zone |
 | `assets` (4) | SCN-016 link with relationship, change, unlink; the picker never offers another matter's asset; API `CROSS_MATTER_REFERENCE`; closed task is read only |
 | `email-intake` (6) | SCN-017 pasted Outlook block, pasted block to real task, `.eml` upload with attachment ignored, Date header time, all five sample emails through the API, non-email file |
+| `rich-description` (9) | Issue #80 / decision R: an Outlook table pasted into the Task description is cleaned, saved and still a table after a reload; a hostile paste is neutralised in the editor, on the server and on the page; an `.eml` and a pasted email keep their table (header lines of a paste dropped); a description saved as plain text stays text until its description is edited (needs the SQL container of `run-local.sh`); axe, own-box scrolling and keyboard scrolling of the table in the Details panel; insert, fill, extend and save a table with the keyboard alone; the 200-cell limit (`TABLE_TOO_LARGE`); a pasted table in a comment |
 | `comments-activity` (5) | SCN-018 rich text comment, edit history, delete, script/handler sanitising, activity feed and its filters |
 | `permissions` (7) | Access Pending then role grant, disabled account; SCN-019 no admin menu and the denied page, 13 management calls refused with `PERMISSION_DENIED` and no state change, view-only role, missing `Task.Assign`, read-only task view |
 | `search` (5) | SCN-020 header search by unpadded combined number with related tasks and assets, all spellings find the matter first, matter picker resolves `343-12` style input, matters-only role gets no task or asset groups, empty result |
 | `task-lifecycle` (8) | Start, On Hold needs a reason (UI and server) and blocks the workflow, Cancel needs a comment and Reopen, closed task edit requires reopen, fixed matter/type/workflow, sensitive matter banner on create, task, matter and queue |
 | `swimlane` (20) | Dashboard > Swimlane (issue #72): tab list and per-tab addresses, four lanes with sticky headers, exact counts and own scrolling, card content, Out of office flag, sort, group by priority / assignee / client-matter tree (roles, levels, indentation, counts, collapse, Expand/Collapse all), arrow-key navigation in the tree and between cards, search and filters with count and address sync, Only mine, completed window and remembered choices, drawer peek (focus trap, Esc returns focus), inline status move, priority change with Undo, inline assign, error with Retry, responsive stacking, axe |
 | `dashboard-audit` (7) | Dashboard tiles drill through to the queue with the same filter (my overdue, my open, department ASAP and Unassigned), department section needs its permission; audit log browser smoke (filter by object, event type and text, details, read only, who may open it) |
+
+`rich-description-screens` is not a test: it photographs the rich description at 1366x768 and 375x812 for `docs/ux/rich-description` when `E2E_SCREENSHOTS` names the output folder (with `E2E_AXE_PATH` it also runs axe on every shot).
 
 Baseline 6.4 scenario 3 (Access Pending, role grant, dashboard) is covered by the first test of `permissions`.
 

@@ -1,9 +1,11 @@
 /*
  * Rich text shown as HTML: comment bodies and the task description (class "mf-rich").
  *
- * Tables pasted from an email must stay readable and must never widen the page: every table is its own horizontally scrolling box,
- * also when the sanitized HTML has no wrapper around it (display: block + overflow-x: auto on the table itself; its rows form an
- * anonymous table inside). Cells wrap, borders are visible, rows are zebra-striped and the font is a little smaller.
+ * Tables pasted from an email must stay readable and must never widen the page: every table is its own horizontally scrolling box.
+ * Where the HTML goes through `decorateLinks` (the read views) a wrapper `.mf-rich__scroll` is the box: focusable, named, scrolling;
+ * its table is an ordinary table. Elsewhere (the editor, HTML inserted by hand) the table scrolls itself (display: block +
+ * overflow-x: auto on the table; its rows form an anonymous table inside). Cells wrap, borders are visible, rows are zebra-striped
+ * and the font is a little smaller.
  */
 .mf-rich {
   min-width: 0;
@@ -23,6 +25,27 @@
     white-space: normal;
   }
 
+  .mf-rich__scroll {
+    max-width: 100%;
+    margin: 0 0 var(--mf-s2);
+    overflow-x: auto;
+  }
+
+  .mf-rich__scroll:focus-visible {
+    outline: 2px solid var(--mf-focus, var(--mf-link));
+    outline-offset: 2px;
+  }
+
+  .mf-rich__scroll > table,
+  td table,
+  th table {
+    display: table;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    overflow: visible;
+  }
+
   caption {
     padding: var(--mf-s1) 0;
     text-align: left;
@@ -36,7 +59,9 @@
     border: 1px solid var(--mf-border-strong);
     text-align: left;
     vertical-align: top;
-    overflow-wrap: anywhere;
+    /* Words are not broken in the middle to squeeze a table into a narrow panel: it scrolls sideways instead (break-word keeps the minimum width
+       of a cell at its longest word, `anywhere` would not). */
+    overflow-wrap: break-word;
   }
 
   th {

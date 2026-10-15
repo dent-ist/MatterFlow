@@ -322,7 +322,7 @@ test.describe('Task detail: single page layout', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    // The server's sanitizer keeps no tables today, so the stylesheet is checked on a table put into the rich-text container.
+    // A wide 12-column table is put into the rich-text container, so the stylesheet is checked on a shape no seed data has.
     const result = await page.evaluate(() => {
       const host = document.querySelector<HTMLElement>('[data-description]')!;
       host.insertAdjacentHTML(

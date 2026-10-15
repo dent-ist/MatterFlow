@@ -1,0 +1,32 @@
+From: Linda Cho <linda.cho@example-firm.test>
+To: team@example-firm.test
+Subject: Custodian load list for Harbor Point
+Date: Tue, 13 Oct 2026 09:05:00 -0500
+Message-ID: <table-006@example-firm.test>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="ALT-BOUNDARY"
+
+--ALT-BOUNDARY
+Content-Type: text/plain; charset=utf-8
+
+Please load these custodians today:
+
+Custodian    Size
+Anna Weller  14 GB
+Marcus Okafor  220 GB
+
+Thanks, Linda
+--ALT-BOUNDARY
+Content-Type: text/html; charset=utf-8
+
+<html><head><style>td { color: red; mso-height-source: auto }</style><script>window.__eml = 1</script></head>
+<body onload="window.__eml = 2">
+<p class="MsoNormal">Please load these custodians today:<o:p></o:p></p>
+<table class="MsoTableGrid" border="1" style="border-collapse:collapse">
+<tr><th scope="col">Custodian</th><th scope="col">Size</th></tr>
+<tr><td style="width:150pt"><p class="MsoNormal"><b>Anna Weller</b></p></td><td>14 GB</td></tr>
+<tr><td>Marcus Okafor</td><td onclick="window.__eml = 3">220 GB</td></tr>
+</table>
+<p>Thanks, Linda <img src="https://tracker.example/pixel.gif"></p>
+</body></html>
+--ALT-BOUNDARY--

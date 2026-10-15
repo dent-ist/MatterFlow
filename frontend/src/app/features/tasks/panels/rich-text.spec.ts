@@ -141,6 +141,33 @@ describe('rich text helpers', () => {
     });
   });
 
+  describe('decorateLinks puts each table in a focusable, named scrolling box', () => {
+    it('wraps a table once, as a region the keyboard can reach', () => {
+      const out = decorateLinks('<p>a</p><table><tbody><tr><td>x</td></tr></tbody></table>');
+      const doc = new DOMParser().parseFromString(out, 'text/html');
+      const box = doc.querySelector('.mf-rich__scroll')!;
+      expect(box.getAttribute('role')).toBe('region');
+      expect(box.getAttribute('tabindex')).toBe('0');
+      expect(box.getAttribute('aria-label')).toBe('Table');
+      expect(box.querySelector(':scope > table')).not.toBeNull();
+    });
+
+    it('numbers several tables and leaves a table nested in a cell alone', () => {
+      const out = decorateLinks(
+        '<table><tr><td><table><tr><td>inner</td></tr></table></td></tr></table><table><tr><td>b</td></tr></table>',
+      );
+      const doc = new DOMParser().parseFromString(out, 'text/html');
+      const boxes = Array.from(doc.querySelectorAll('.mf-rich__scroll'));
+      expect(boxes.map((b) => b.getAttribute('aria-label'))).toEqual(['Table 1', 'Table 2']);
+      expect(doc.querySelectorAll('table table').length).toBe(1);
+      expect(doc.querySelector('td .mf-rich__scroll')).toBeNull();
+    });
+
+    it('does not change anything for HTML without tables', () => {
+      expect(decorateLinks('<p>a <b>b</b></p>')).toBe('<p>a <b>b</b></p>');
+    });
+  });
+
   describe('decorateLinks drops what is never rendered', () => {
     it('removes images, frames, forms and styles so a remote image cannot load', () => {
       const out = decorateLinks(

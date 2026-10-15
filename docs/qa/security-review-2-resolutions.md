@@ -105,3 +105,61 @@ Resolution notes for `security-review-2.md`. Each entry: the fix, the commit, th
 ## Verification
 
 Backend: `dotnet build -warnaserror` and `dotnet format --verify-no-changes` clean; Architecture 35, Unit 1,019, Schema 52, Integration 556 tests pass. Frontend: lint, prettier and production build pass; `ng test frontend` has two failures in `work-filter-bar.spec.ts` (`#fb-q` not found), a file this work does not touch.
+
+## Addendum 3: rich text with safe tables (issue #80, decision R)
+
+Descriptions and comments now accept tables, so the sanitizer's allow-list grew for the first time since SEC2-01/02. This note records what is allowed, how it was tested, the adversarial self-review and the residual risks. (The review was done by the developer of the change; no independent reviewer was available in the session. It is written as a checklist so a second pair of eyes can repeat it.)
+
+### What is allowed (server, authoritative: `MatterFlow.SharedKernel.Text.RichHtml`)
+
+| Kind | Allowed | Everything else |
+|---|---|---|
+| Elements | `p br strong b em i u ul ol li a table thead tbody tfoot tr th td caption colgroup col` | unwrapped (text kept) or, for `script style template noscript iframe object embed svg math frame frameset applet textarea select title xmp noembed noframes`, removed with their content |
+| Attributes | `href` on `a` (http, https, mailto; absolute; no credentials; no control or direction characters; **no `< > " `` ` `` ** in the value); `rel="noopener noreferrer"` set by the server; `colspan`, `rowspan` on `td`/`th` (digits only, 2-100, 1 dropped, anything else removed); `scope` on `th` (`row col rowgroup colgroup`, lower-cased) | every other attribute on every element (a per-element policy runs after the sanitizer; `href` on `<b>` and `colspan` on `<p>` are removed) |
+| Text | bidirectional embedding and override controls (U+202A-202E) removed from text | |
+| Structure | tables nested to depth 3, deeper ones flattened to paragraphs; whitespace between table parts dropped; comments, processing instructions and conditional comments never emitted | |
+| Limits | 200 cells per field (`TABLE_TOO_LARGE`), 100,000 stored characters and 300,000 input characters for a description (`HTML_TOO_LARGE`), 20,000 for a comment; tag and depth caps checked by a linear pre-scan before any parser runs (`TOO_COMPLEX`) | |
+| Fixpoint | every result is sanitized again and must equal itself, else the input is refused (`Unstable`), so a browser re-parse of the stored text cannot differ from what was checked | |
+
+The browser adds Angular's own sanitizer on every render and removes images, frames, forms and styles again (`decorateLinks`). The editor rebuilds pasted and dropped HTML from the same allow-list into new elements (nothing from the source is moved over).
+
+### Tests
+
+- `RichHtmlSecurityTests` (unit): a corpus of about 230 hostile inputs (script, style, iframe, svg and math, mXSS patterns including the DOMPurify bypass families with `<mglyph>`, `<noscript>`, `<form>` nesting and `<annotation-xml>`, namespace confusion inside `table`/`caption`/`colgroup`/`select`/`template`, `<base>`, `<meta>`, `javascript:`/`data:`/`vbscript:` URLs with entity and whitespace tricks, attribute smuggling through `colspan`/`rowspan`/`scope`, duplicate attributes, huge and deeply nested tables, foster parenting, CDATA, comments and conditional comments, CSS in attributes) run through all three limit profiles. Each output is re-parsed by an independent AngleSharp parser and checked against its **own** allow-list (elements, per-element attributes, HTML namespace only, no comment or foreign node, safe `href`) and must be a sanitizer fixpoint. A fixed-seed fuzzer (4,000 mutated and recombined inputs, 1,500 generated table grammars) checks the same invariant and that no input is ever `Unstable`. Round-trip tests check `sanitize(sanitize(x)) == sanitize(x)`.
+- `RichHtmlTableTests`: kept structure, implied `tbody`, Outlook clean-up (styles, `mso-*`, `o:p`, conditional comments, fonts, empty spans), every `colspan`/`rowspan`/`scope` value class, nesting depth, 200/201 cells (also nested and across tables), a cell flood refused in under 200 ms, size limits, worst-case timing, plain-text rendering.
+- Existing `CommentHtmlTests` and `CommentHtmlHostileInputTests` (nesting, timing, stack) still pass on the shared implementation.
+- `TaskRichDescriptionApiTests` (integration): create, update, read through the API with a table, hostile HTML, plain text, empty content, every limit error (`HTML_TOO_LARGE`, `TOO_LONG`, `TABLE_TOO_LARGE`, `TOO_COMPLEX`), a legacy text description (unchanged echo is a no-op, title-only edit keeps text, a real edit converts), audit rows hold plain text, comments with tables.
+- `EmailHtmlTests` (unit): `.eml` HTML body with a table kept and scripts, styles and images gone, over-limit and hostile nesting fall back to the text body with a warning, pasted HTML sanitized and its header lines removed.
+- `TaskDescriptionFormatSchemaTests`: script 25 keeps existing rows `TEXT`, check constraint, not null.
+- Frontend: `paste-clean.spec.ts` (Outlook sample, hostile paste, idempotence, depth, 200 cells), editor specs (hostile paste and drop, tables, keyboard), details-tab and create-page specs. Playwright `rich-description.spec.ts` in Chromium: Outlook paste kept through save and reload, hostile paste neutralised in the editor, on the server and on the page (no dialog, `window.__pwn` unset), email file and pasted email keep their table, legacy text unchanged, axe on the table, keyboard table editing, the 200-cell error.
+
+### Findings of the work itself
+
+1. **`href` was allowed on any element** (the sanitizer's attribute list is global). Found by the fuzzer (`<b href=...>`). Harmless but wrong; closed by the per-element policy.
+2. **Markup characters inside an `href` value** (`mailto:a@b.example?subject=<script>`) survived inside a quoted attribute. Not exploitable in the HTML context it is stored for, but it is the building block of mXSS when markup is re-embedded elsewhere. Found by the corpus. Links with `<`, `>`, `"` or `` ` `` in the address are no longer links.
+3. **Direction override characters in text** could reorder pasted figures. Removed from text (they were already refused in links).
+4. The tag-count cap (1,000) was too low for a 200-cell Outlook table (about 8 tags per cell); it is a limit per field kind now (comment 2,500, description 10,000, email 20,000).
+
+### Adversarial self-review (checklist)
+
+| Question | Result |
+|---|---|
+| mXSS: can the parse, serialize, parse round trip change meaning? | Every output is verified a fixpoint at write time; the corpus covers the known families (`<mglyph>`/`<style>` in `<math><mtext><table>`, `<form>` nesting, `<noscript>`, `<svg><desc>`, `<select><template>`). None survives. |
+| Namespace confusion through `svg` or `math` inside a table | Removed with content before the allow-list; output asserted HTML-namespace only. |
+| `<form>`, `<base>`, `<meta>`, `<link>` | Unwrapped or removed, never emitted (corpus, plus `base` plus relative link case). |
+| Attribute value smuggling (`colspan="2 onclick=..."`, duplicate attributes, quotes, newlines) | Span values must be 1-3 ASCII digits; everything else removes the attribute; the output is re-parsed in tests and only the allowed attributes are accepted. |
+| CSS | There is no `style` attribute, no `style` element and no `class` in the output, so no CSS reaches the page. |
+| Entities and encodings (`&#x6A;avascript`, `&colon;`, null bytes, `%3C`) | Decoded by the parser before the scheme check; the scheme check is on the decoded value. |
+| Resource exhaustion (nesting, tag floods, cell floods, huge input, regex) | Linear pre-scan before any parser; depth 20, tags and cells capped; 16 MB parser thread as a backstop; cell floods answered in milliseconds; no unbounded regex (`<[^<>]*>`). |
+| Stored data leaking into other sinks (audit, search, exports) | Audit stores the plain-text rendering; search does not index descriptions. |
+| Client-only protection | None relied on: the server sanitizes on every write; the browser sanitizes on every render. |
+| Dragging content into the editor (not intercepted by the earlier editor, SEC2 section 6) | Now intercepted: drop is rebuilt like a paste; files are refused. |
+
+### Residual risks
+
+- **Parser differences.** The allow-list is applied with AngleSharp; browsers parse differently in rare corners. The fixpoint rule, the plain element set and Angular's sanitizer on render are the answer; no known case. A parser bug in AngleSharp that crashes (not the stack-depth class) would surface as a 500 for that one request, not as stored data.
+- **Cost of a worst-case save.** A description at the caps (10,000 tags nested 20 deep in stacks) takes seconds of CPU on one request thread (measured in `The_worst_case_inside_the_description_caps_stays_within_a_few_seconds`); rate limits (`TaskWritesPerMinute`) bound the abuse by one signed-in user. Not a new class of risk, but a larger one than a 20 KB comment.
+- **Deceptive content, not code.** A table can state anything (wrong amounts, a link whose text names another site). Links show their real host and a warning for mismatches (SEC2-12), bidirectional controls are removed from text, but a table's content is as trustworthy as the person who pasted it, as before.
+- **Privilege.** Pasting a whole email keeps its quoted chain; the privilege reminder stays on intake, the Description and comments, and the audit trail keeps plain text only.
+- **Legacy text descriptions** are displayed escaped and never interpreted as HTML.
+

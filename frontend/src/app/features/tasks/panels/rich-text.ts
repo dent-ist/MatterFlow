@@ -157,6 +157,7 @@ export function decorateLinks(html: string | null | undefined): string {
   // The server never stores these. Dropping them here keeps a remote image (a tracking pixel) from loading even if one were stored, because
   // Angular's own sanitizer would let a plain <img src> through.
   for (const element of Array.from(doc.body.querySelectorAll(NEVER_RENDERED))) element.remove();
+  wrapTables(doc);
   for (const anchor of Array.from(doc.body.querySelectorAll('a'))) {
     anchor.setAttribute('target', '_blank');
 
@@ -193,6 +194,26 @@ export function decorateLinks(html: string | null | undefined): string {
     }
   }
   return doc.body.innerHTML;
+}
+
+/**
+ * Each table (not the ones nested in a cell) goes into its own scrolling box, which the keyboard can reach: a wide table scrolls sideways
+ * inside it instead of widening the page, and a region that scrolls but cannot take focus would be out of reach without a mouse (WCAG 2.1.1;
+ * axe "scrollable-region-focusable"). The box is a named region so a screen reader says what it is.
+ */
+function wrapTables(doc: Document): void {
+  const tables = Array.from(doc.body.querySelectorAll('table')).filter(
+    (table) => table.parentElement?.closest('table') == null,
+  );
+  tables.forEach((table, index) => {
+    const box = doc.createElement('div');
+    box.className = 'mf-rich__scroll';
+    box.setAttribute('role', 'region');
+    box.setAttribute('tabindex', '0');
+    box.setAttribute('aria-label', tables.length > 1 ? `Table ${index + 1}` : 'Table');
+    table.replaceWith(box);
+    box.appendChild(table);
+  });
 }
 
 function hasWhitespaceOrControl(text: string): boolean {

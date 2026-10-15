@@ -337,7 +337,8 @@ erDiagram
     int TaskTypeId FK "immutable"
     int FormVersionId FK "immutable"
     nvarchar_300 Title
-    nvarchar_max Description
+    nvarchar_max Description "sanitized HTML, or plain text for rows before script 25"
+    varchar_4 DescriptionFormat "TEXT or HTML (script 25)"
     nvarchar_200 RequestorName
     nvarchar_320 RequestorEmail
     datetime2 RequestedAt "email sent time"
@@ -422,7 +423,8 @@ erDiagram
 | TaskTypeId | int | no | FK -> TaskType; **immutable** |
 | FormVersionId | int | no | FK -> FormVersion (the Task Type form version at creation); **immutable** |
 | Title | nvarchar(300) | no | |
-| Description | nvarchar(max) | yes | plain text |
+| Description | nvarchar(max) | yes | sanitized rich text (basic formatting and tables, decision R) when `DescriptionFormat = 'HTML'`; plain text when `'TEXT'` |
+| DescriptionFormat | varchar(4) | no | `'TEXT'` (default; every row before script 25, shown escaped) or `'HTML'` (new and edited descriptions); `CK_Task_DescriptionFormat`; script 25 |
 | RequestorName | nvarchar(200) | **no** | required (addendum C). Not an app user. |
 | RequestorEmail | nvarchar(320) | yes | CHECK `RequestorEmail LIKE '%_@_%'` when not null |
 | RequestedAt | datetime2(3) | yes | sent time from the source email, or null |
@@ -476,7 +478,7 @@ Lookup (`Name` UNIQUE, `SortOrder`, `IsActive`), seeded: Source, Destination, Su
 | TaskCommentId | bigint identity | PK |
 | TaskId | bigint | FK -> Task; indexes `IX_TaskComment_Task (TaskId, CreatedAt) WHERE IsDeleted = 0` (the thread) and `IX_TaskComment_TaskAll (TaskId)` (the 2,000-comment limit counts deleted comments too; script 18) |
 | AuthorUserId | int | FK -> AppUser |
-| BodyHtml | nvarchar(max) | basic formatting only (bold, italic, lists, links), **sanitized server-side** before storage; no attachments; internal only |
+| BodyHtml | nvarchar(max) | basic formatting (bold, italic, lists, links) and tables (decision R), **sanitized server-side** before storage; no attachments; internal only |
 | Purpose | varchar(20) | null or `'CANCEL'` (mandatory cancel comment) |
 | IsDeleted, DeletedAt, DeletedByUserId | | **soft delete**: hidden in UI, retained |
 | RowVersion | rowversion | |
