@@ -404,6 +404,7 @@ test.describe('Round 4: administration naming', () => {
       description: 'A new description',
     });
     await page.goto('/admin/audit');
+    await page.getByRole('button', { name: /^Filters/ }).click();
     await page.getByLabel('Object type').selectOption('Task');
     await page.getByLabel('Object id').fill(String(task.taskId));
     await page.getByRole('button', { name: 'Apply filters' }).click();
@@ -442,7 +443,13 @@ test.describe('Round 4: queues, wording and accessibility', () => {
       (await page.getByRole('button', { name: 'Columns' }).boundingBox())!,
     ];
     expect(columns.height).toBe(filters.height);
-    expect(Math.abs(columns.y - filters.y)).toBeLessThan(1);
+    // Columns sits on the title row, Filters on the toolbar row under it.
+    const title = (await page
+      .getByRole('heading', { name: 'Task Queue', level: 1 })
+      .boundingBox())!;
+    expect(Math.abs(columns.y + columns.height / 2 - (title.y + title.height / 2))).toBeLessThan(
+      12,
+    );
 
     const client = await seed.client();
     await page.goto(`/clients/${client.clientId}`);

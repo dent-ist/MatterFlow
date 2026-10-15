@@ -381,6 +381,7 @@ test.describe('Audit Logs browser (smoke)', () => {
 
     await page.goto('/admin/audit');
     await expect(page.getByRole('heading', { name: 'Audit Logs', level: 1 })).toBeVisible();
+    await page.getByRole('button', { name: /^Filters/ }).click(); // the filter form is folded away until asked for
     await page.getByLabel('Object type').selectOption('Task');
     await page.getByLabel('Object id').fill(String(task.taskId));
     await page.getByRole('button', { name: 'Apply filters' }).click();
@@ -403,6 +404,7 @@ test.describe('Audit Logs browser (smoke)', () => {
     const client = await seed.client();
 
     await page.goto('/admin/audit');
+    await page.getByRole('button', { name: /^Filters/ }).click();
     await page.getByLabel('Event type').selectOption('CLIENT_CREATED');
     await page.getByLabel('Search summary or field').fill(client.clientNumber);
     await page.getByRole('button', { name: 'Apply filters' }).click();
