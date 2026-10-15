@@ -45,8 +45,9 @@ test.describe('Task detail: single page layout', () => {
     const comments = await detail.section('Comments').boundingBox();
     const side = await aside.boundingBox();
     expect(side!.x).toBeGreaterThan(workflow!.x + workflow!.width - 1);
-    expect(side!.width).toBeGreaterThan(330);
-    expect(side!.width).toBeLessThan(350);
+    // The Task page asks the layout for a wider panel: clamp(380px, 34vw, 480px).
+    expect(side!.width).toBeGreaterThanOrEqual(380);
+    expect(side!.width).toBeLessThanOrEqual(480);
     expect(comments!.y).toBeGreaterThan(workflow!.y);
     await expect(page.getByRole('navigation', { name: 'Jump to' })).toBeHidden();
 
