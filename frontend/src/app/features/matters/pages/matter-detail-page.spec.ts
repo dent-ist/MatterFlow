@@ -246,11 +246,16 @@ describe('MatterDetailPage', () => {
       undefined,
       true,
       undefined,
+      undefined,
+      undefined,
+      undefined,
       1,
       25,
       'displayName',
     );
-    expect(el().querySelector('mf-matter-assets tbody a')?.getAttribute('href')).toBe('/assets/9');
+    expect(el().querySelector('mf-matter-assets tbody a')?.getAttribute('href')).toBe(
+      '/assets?selected=9',
+    );
     expect(buttonByLabel(el(), 'New asset')).toBeDefined();
 
     const box = el().querySelector<HTMLInputElement>('#matter-asset-search')!;
@@ -262,6 +267,9 @@ describe('MatterDetailPage', () => {
       undefined,
       true,
       'contract',
+      undefined,
+      undefined,
+      undefined,
       1,
       25,
       'displayName',

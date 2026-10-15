@@ -99,6 +99,13 @@
     box-shadow: inset 0 -1px 0 var(--mf-border);
   }
 
+  /* The inline column filters are a second header row: it sticks right under the header row (40 px) and scrolls sideways with it. */
+  .mf-scroll-area thead .mf-filter-row td {
+    position: sticky;
+    top: var(--mf-head-h);
+    z-index: 3;
+  }
+
   /* The first column of a wide table also stays at the left: it is above the other headers where they cross. */
   .mf-scroll-area thead th:first-child {
     z-index: 4;
@@ -106,6 +113,12 @@
 
   /* A subtle shadow under the sticky header once the rows have scrolled under it. */
   .mf-scroll-area[data-scrolled] thead th {
+    box-shadow:
+      inset 0 -1px 0 var(--mf-border),
+      0 4px 6px -3px rgb(0 0 0 / 28%);
+  }
+
+  .mf-scroll-area[data-scrolled] thead .mf-filter-row td {
     box-shadow:
       inset 0 -1px 0 var(--mf-border),
       0 4px 6px -3px rgb(0 0 0 / 28%);
@@ -131,7 +144,8 @@
     scroll-padding-top: 0;
   }
 
-  .mf-scroll-area thead th {
+  .mf-scroll-area thead th,
+  .mf-scroll-area thead .mf-filter-row td {
     position: static;
   }
 }
@@ -166,11 +180,39 @@
   .mf-fill mf-pager {
     display: none !important;
   }
+
+  .mf-scroll-area thead .mf-filter-row td {
+    position: static !important;
+    box-shadow: none !important;
+  }
 }
 
 /* The scroll area is the only scroller: an older inner wrapper (`.mf-scroll`) must not become the scroll container of the sticky headers. */
 .mf-scroll-area > .mf-scroll {
   overflow: visible;
+}
+
+/*
+ * Inline column filters (second header row of a grid, see shared/ui/column-filters.ts). The header row is exactly --mf-head-h tall so the
+ * filter row can stick right under it; each control fills its column.
+ */
+.mf-scroll-area {
+  --mf-head-h: 40px;
+}
+
+.mf-scroll-area thead:has(.mf-filter-row) tr:first-child th {
+  box-sizing: border-box;
+  height: var(--mf-head-h);
+}
+
+.mf-filter-row td {
+  box-sizing: border-box;
+  padding: var(--mf-s1) var(--mf-s2);
+  background: var(--mf-surface-alt);
+  border-bottom: 1px solid var(--mf-border);
+  height: 40px;
+  vertical-align: middle;
+  box-shadow: inset 0 -1px 0 var(--mf-border);
 }
 
 /* The pinned toolbar (search and filters) of a list page is one compact row. */

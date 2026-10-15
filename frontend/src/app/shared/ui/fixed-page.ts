@@ -147,6 +147,20 @@ export class ScrollMemory {
   }
 }
 
+/** True when two addresses (path and query) differ at most in the query parameters named in `ignore` (never true when `ignore` is empty). */
+export function sameListAddress(a: string, b: string, ignore: readonly string[]): boolean {
+  if (ignore.length === 0) return false; // every navigation of an ordinary list starts at the top
+  const strip = (address: string): string => {
+    const at = address.indexOf('?');
+    if (at < 0) return address;
+    const params = new URLSearchParams(address.slice(at + 1));
+    for (const name of ignore) params.delete(name);
+    const rest = params.toString();
+    return rest ? `${address.slice(0, at)}?${rest}` : address.slice(0, at);
+  };
+  return strip(a) === strip(b);
+}
+
 /**
  * The scrolling region of a fixed page: a focusable `role="region"` with an accessible name ("Task list, scrollable") so keyboard users
  * can scroll it, sticky table column headers (see `styles/_fixed-page.scss`), horizontal scrolling inside the same box (the headers
@@ -176,11 +190,17 @@ export class ScrollArea {
   readonly mfScrollArea = input('List');
   /** Anything that changes with the shown list but not with the address; a change scrolls back to the top. */
   readonly resetKey = input<unknown>(undefined);
+  /**
+   * Query parameters that do not change the list (the selected row of a master-detail screen): a navigation that changes only these
+   * keeps the scroll position instead of returning to the top.
+   */
+  readonly keepOn = input<readonly string[]>([]);
 
   protected readonly name = computed(() => `${this.mfScrollArea() || 'List'}, scrollable`);
   protected readonly scrolled = signal(false);
 
   private key = this.memory.key();
+  private lastUrl = this.router.url;
   private observer: MutationObserver | null = null;
   private stopTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -189,9 +209,11 @@ export class ScrollArea {
 
     this.router.events.pipe(takeUntilDestroyed()).subscribe((e) => {
       if (!(e instanceof NavigationEnd)) return;
+      const previous = this.lastUrl;
+      this.lastUrl = e.urlAfterRedirects;
       this.key = this.memory.key();
       if (this.memory.restoring) this.restore(this.memory.saved(this.key));
-      else this.toTop();
+      else if (!sameListAddress(previous, this.lastUrl, this.keepOn())) this.toTop();
     });
 
     let first = true;

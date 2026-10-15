@@ -58,7 +58,7 @@ const toChoice = (a: AssetLookupItem): Choice => ({
     @if (readOnly()) {
       @if (chosen(); as c) {
         <span data-readonly>
-          <a class="ap__link" [href]="'/assets/' + c.id" (click)="openAsset($event, c.id)">{{
+          <a class="ap__link" [href]="'/assets?selected=' + c.id" (click)="openAsset($event, c.id)">{{
             c.label
           }}</a>
           <span class="ap__detail">{{ ' ' }}{{ c.detail }}</span>
@@ -307,7 +307,7 @@ export class AssetPicker implements OnDestroy {
   protected openAsset(event: MouseEvent, id: number): void {
     if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return;
     event.preventDefault();
-    void this.router.navigateByUrl(`/assets/${id}`);
+    void this.router.navigateByUrl(`/assets?selected=${id}`);
   }
 
   protected onFocus(): void {

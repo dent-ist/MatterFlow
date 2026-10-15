@@ -44,7 +44,7 @@ The page header, tabs and toolbar are simply whatever sits above the scroll area
 | Clients | `/clients` | title + New client, search, Status | client grid | [before](before/clients-1366x768.png) / [after](after/clients-1366x768.png) |
 | Matters | `/matters` | title + New matter, search, Status | matter grid | [before](before/matters-1366x768.png) / [after](after/matters-1366x768.png) |
 | Projects | `/projects` | title + New project, search, Status | project grid | [before](before/projects-1366x768.png) / [after](after/projects-1366x768.png) |
-| Assets | `/assets` | title + New asset, search, Type, Status | asset grid | [before](before/assets-1366x768.png) / [after](after/assets-1366x768.png) |
+| Assets | `/assets` | title + New asset, Filters bar (see [assets-screen](../assets-screen/README.md)); the filter row is part of the sticky header | asset grid; the selected asset's details panel (40%) sits below it | [before](before/assets-1366x768.png) / [after](after/assets-1366x768.png) |
 | Client page | `/clients/:id` | breadcrumb, title, Activity, Matters search / Status / Create matter; Details panel scrolls by itself | the client's Matters grid | [before](before/client-matters-1366x768.png) / [after](after/client-matters-1366x768.png) |
 | Matter page | `/matters/:id` | breadcrumb, title and actions, client line, Tasks / Projects / Assets tabs, Show filter; Details panel | the matter's Tasks grid (Projects and Assets tabs likewise) | [before](before/matter-tasks-1366x768.png) / [after](after/matter-tasks-1366x768.png) |
 | Project page | `/projects/:id` | breadcrumb, title, matter line, Show filter; Details panel | the project's Tasks grid | [before](before/project-tasks-1366x768.png) / [after](after/project-tasks-1366x768.png) |

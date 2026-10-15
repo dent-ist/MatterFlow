@@ -1,11 +1,12 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 import { MF_ASSET_PICKER } from 'form-engine';
 import { permissionGuard } from '../../core/auth/guards';
 import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
 import { AssetPicker } from '../../shared/ui/asset-picker';
 
 /**
- * Assets (UX S08). `new` is matched before `:assetId`. ASSET_REF fields of an Asset type's form use the Matter-scoped asset picker;
+ * Assets (UX S08). `new` is matched before `:assetId`, which redirects to `/assets?selected=<id>`. ASSET_REF fields of an Asset type's form use the Matter-scoped asset picker;
  * it is provided here (not app-wide) so the form engine stays out of the initial bundle.
  */
 export const ASSETS_ROUTES: Routes = [
@@ -34,9 +35,14 @@ export const ASSETS_ROUTES: Routes = [
         loadComponent: () => import('./pages/asset-form-page').then((m) => m.AssetFormPage),
       },
       {
+        // The asset page is the list with the asset selected (details below the grid); old links, search results and the
+        // links from Matters and Tasks keep working.
         path: ':assetId',
-        title: 'Asset',
-        loadComponent: () => import('./pages/asset-detail-page').then((m) => m.AssetDetailPage),
+        pathMatch: 'full',
+        redirectTo: ({ params }) =>
+          inject(Router).createUrlTree(['/assets'], {
+            queryParams: { selected: params['assetId'] },
+          }),
       },
     ],
   },

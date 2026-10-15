@@ -121,9 +121,12 @@ type LoadState = 'loading' | 'ready' | 'error';
                 @for (a of rows(); track a.assetId) {
                   <tr>
                     <td>
-                      <a class="pg-link" [routerLink]="['/assets', a.assetId]">{{
-                        a.displayName
-                      }}</a>
+                      <a
+                        class="pg-link"
+                        routerLink="/assets"
+                        [queryParams]="{ selected: a.assetId }"
+                        >{{ a.displayName }}</a
+                      >
                     </td>
                     <td>{{ a.assetTypeName }}</td>
                     <td class="pg-mono">{{ a.externalReference }}</td>
@@ -181,6 +184,9 @@ export class MatterAssets {
           undefined,
           isActiveParam(this.status()),
           this.q().trim() || undefined,
+          undefined,
+          undefined,
+          undefined,
           this.page(),
           this.pageSize,
           'displayName',

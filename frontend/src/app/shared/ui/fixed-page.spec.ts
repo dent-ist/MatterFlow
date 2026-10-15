@@ -3,7 +3,14 @@ import { TestBed } from '@angular/core/testing';
 import { Route, Router, Routes, UrlSegment, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../../app.routes';
-import { FIXED_MODE_QUERY, FixedPage, ScrollArea, ScrollMemory, ShellLayout } from './fixed-page';
+import {
+  FIXED_MODE_QUERY,
+  FixedPage,
+  ScrollArea,
+  ScrollMemory,
+  ShellLayout,
+  sameListAddress,
+} from './fixed-page';
 
 /**
  * Where a URL leads in the real route tree, down to the component (lazy routes are loaded). Only the matching the tests need: static
@@ -102,7 +109,6 @@ const NORMAL_URLS = [
   '/projects/7/edit',
   '/assets/new',
   '/assets/7/edit',
-  '/assets/7',
   '/admin/task-types/new',
   '/admin/task-types/7',
   '/admin/task-types/7/form',
@@ -164,6 +170,20 @@ class Host {
   readonly key = signal(0);
   readonly rows = Array.from({ length: 80 }, (_, i) => i);
 }
+
+/** A master-detail list: the selection is in the query string and does not change the list. */
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FixedPage, ScrollArea],
+  template: `
+    <mf-fixed-page>
+      <div mfScrollArea="Asset list" [keepOn]="['selected']" data-area>
+        <div style="height: 4000px"></div>
+      </div>
+    </mf-fixed-page>
+  `,
+})
+class MasterDetailHost {}
 
 describe('mf-fixed-page and the scroll area', () => {
   async function render() {
@@ -261,5 +281,35 @@ describe('mf-fixed-page and the scroll area', () => {
     memory.save('/tasks?page=2', 0);
     expect(memory.saved('/tasks?page=2')).toBe(0);
     expect(TestBed.inject(Router)).toBeTruthy();
+  });
+
+  it('keeps the position when only a keepOn parameter changes (the selected row), but not for any other change', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([{ path: '**', component: MasterDetailHost }])],
+    });
+    const harness = await RouterTestingHarness.create('/assets?name=a');
+    const area = (harness.routeNativeElement as HTMLElement).querySelector<HTMLElement>(
+      '[data-area]',
+    )!;
+    area.style.height = '200px';
+    area.style.overflow = 'auto';
+    area.scrollTop = 250;
+    await harness.navigateByUrl('/assets?name=a&selected=9');
+    expect(area.scrollTop).toBe(250);
+    await harness.navigateByUrl('/assets?name=a&selected=10');
+    expect(area.scrollTop).toBe(250);
+    await harness.navigateByUrl('/assets?name=a');
+    expect(area.scrollTop).toBe(250);
+    await harness.navigateByUrl('/assets?name=ab&selected=10');
+    expect(area.scrollTop).toBe(0);
+  });
+
+  it('compares addresses without the ignored parameters', () => {
+    expect(sameListAddress('/a?x=1', '/a?x=1', [])).toBe(false); // no ignored parameters: every navigation starts at the top
+    expect(sameListAddress('/a?x=1', '/a?x=1&s=9', ['s'])).toBe(true);
+    expect(sameListAddress('/a', '/a?s=9', ['s'])).toBe(true);
+    expect(sameListAddress('/a?s=1', '/a?s=2', ['s'])).toBe(true);
+    expect(sameListAddress('/a?x=1&s=1', '/a?x=2&s=1', ['s'])).toBe(false);
+    expect(sameListAddress('/a?s=1', '/b?s=1', ['s'])).toBe(false);
   });
 });
