@@ -84,6 +84,17 @@ describe('TaskAssetLinks', () => {
     ]);
   });
 
+  it('puts the list in its own labelled, focusable scroll region and keeps the actions outside it', async () => {
+    await create();
+    const region = q('[data-assets-scroll]');
+    expect(region.getAttribute('role')).toBe('region');
+    expect(region.getAttribute('tabindex')).toBe('0');
+    expect(region.getAttribute('aria-label')).toBe('Linked assets, scrollable');
+    expect(region.querySelector('[data-asset-id="9"] [data-unlink]')).not.toBeNull();
+    expect(region.querySelector('[data-link-open]')).toBeNull(); // the Link asset button stays in the heading row
+    expect(q('section').getAttribute('aria-label')).toBe('Assets');
+  });
+
   it('shows the empty state', async () => {
     await create({ items: [], canEdit: true });
     expect(q('[data-empty]').textContent).toBe('No assets linked.');

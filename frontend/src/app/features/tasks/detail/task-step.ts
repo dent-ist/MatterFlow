@@ -276,6 +276,8 @@ export function valuesPatch(
   `,
   styles: `
     .step {
+      /* The Workflow column can be narrow (60 % of the page, or less after the splitter): rows adapt to the column, not the window. */
+      container-type: inline-size;
       padding: var(--mf-s2) var(--mf-s4);
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius);
@@ -308,7 +310,7 @@ export function valuesPatch(
       gap: var(--mf-s3);
     }
     .step__when {
-      min-width: 11.5rem;
+      min-width: 10.5rem;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
       text-align: right;
@@ -329,7 +331,7 @@ export function valuesPatch(
       border-style: dashed;
       background: var(--mf-surface-alt);
     }
-    @media (max-width: 640px) {
+    @container (max-width: 36rem) {
       .step__row {
         grid-template-columns: minmax(0, 1fr);
         row-gap: var(--mf-s1);

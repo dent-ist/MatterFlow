@@ -107,6 +107,21 @@ export class TaskDetailPage {
     return this.page.locator('[data-section="details"]');
   }
 
+  /** The draggable separator between the left column and the Details panel (from 1100 px). */
+  get splitter(): Locator {
+    return this.page.getByRole('separator', { name: 'Resize Details panel' });
+  }
+
+  /** The "Show latest" select of the Comments panel. */
+  get commentLimit(): Locator {
+    return this.page.getByLabel('Show latest');
+  }
+
+  /** Comments on screen (after the "Show latest" limit). */
+  get commentItems(): Locator {
+    return this.page.locator('[data-comment-id]');
+  }
+
   /** Brings a section into view (Comments load when they come near the visible area) and waits for its heading. */
   async showSection(name: 'Workflow' | 'Comments' | 'Assets'): Promise<void> {
     const heading = this.section(name).locator('[data-section-heading]');
@@ -155,4 +170,14 @@ export class TaskDetailPage {
     if (text !== undefined) await this.dialog.getByRole('textbox').fill(text);
     await this.dialog.getByRole('button', { name: confirmLabel }).click();
   }
+}
+
+/** Opens a task and waits until the header, the steps and the Comments (which load when they come near the screen) are there. */
+export async function busyTaskPage(page: Page, taskId: number): Promise<void> {
+  await page.goto(`/tasks/${taskId}`);
+  await expect(page.locator('[data-task-header]')).toBeVisible();
+  await expect(page.locator('[data-step-id]').first()).toBeVisible();
+  await page.locator('[data-section="comments"] [data-section-heading]').scrollIntoViewIfNeeded();
+  await expect(page.locator('[data-comment-id]').first()).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
 }

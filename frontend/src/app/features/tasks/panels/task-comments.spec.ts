@@ -13,7 +13,7 @@ import {
   withPermissions,
 } from '../../../shared/testing/org-testing';
 import { aComment } from './task-panels-testing';
-import { TaskComments } from './task-comments';
+import { COMMENT_LIMIT_DEFAULT, TaskComments, commentLimitKey } from './task-comments';
 
 describe('TaskComments', () => {
   let api: {
@@ -32,6 +32,23 @@ describe('TaskComments', () => {
     select.value = order;
     select.dispatchEvent(new Event('change'));
   };
+
+  /** Picks an option of the "Show latest" select. */
+  const setLimit = (limit: '3' | '5' | '10' | 'all'): void => {
+    const select = q<HTMLSelectElement>('[data-limit-select]');
+    select.value = limit;
+    select.dispatchEvent(new Event('change'));
+  };
+  /** The ids on screen, in screen order. */
+  const shownIds = (): number[] =>
+    Array.from(el().querySelectorAll('[data-comment-id]')).map((e) =>
+      Number(e.getAttribute('data-comment-id')),
+    );
+  /** Asks the component to load again (the host changes `refresh` when the Task changes). */
+  async function reloadFromServer(): Promise<void> {
+    fixture.componentRef.setInput('refresh', 'RV-' + Math.random());
+    await settle(fixture);
+  }
 
   async function create(
     comments = [aComment()],
@@ -78,6 +95,7 @@ describe('TaskComments', () => {
   }
 
   beforeEach(() => {
+    localStorage.clear();
     Object.defineProperty(document, 'execCommand', {
       value: vi.fn(),
       configurable: true,
@@ -101,7 +119,8 @@ describe('TaskComments', () => {
     expect(items[0].querySelector('time')?.getAttribute('title')).toContain('(UTC)');
     expect(items[0].querySelector('[data-body] strong')?.textContent).toBe('approved');
     expect(items[1].querySelector('[data-body] li')?.textContent).toBe('one');
-    expect(api.listTaskComments).toHaveBeenCalledWith(42, false);
+    // Always newest first: the latest comments are in the first page, the order inside the window is applied on screen.
+    expect(api.listTaskComments).toHaveBeenCalledWith(42, true);
   });
 
   it('reloads quietly when the host changes `refresh` (a status change adds its reason as a comment)', async () => {
@@ -159,8 +178,7 @@ describe('TaskComments', () => {
     TestBed.resetTestingModule();
     await create([aComment(), aComment({ commentId: 2 })]);
     fixture.componentInstance.countChange.subscribe((n) => counts.push(n));
-    setOrder('newest');
-    await settle(fixture);
+    await reloadFromServer();
     expect(counts).toEqual([2]);
     expect(api.listTaskComments).toHaveBeenLastCalledWith(42, true);
   });
@@ -394,14 +412,211 @@ describe('TaskComments', () => {
   it('offers a retry when loading fails', async () => {
     await create();
     api.listTaskComments.mockReturnValue(apiError(500, { status: 500, title: 'x' }));
-    setOrder('newest');
-    await settle(fixture);
+    await reloadFromServer();
     expect(q('[data-load-error]').textContent).toContain('Something went wrong. Try again.');
 
     api.listTaskComments.mockReturnValue(ok({ items: [aComment()], total: 1 }));
     q<HTMLButtonElement>('[data-load-error] button').click();
     await settle(fixture);
     expect(el().querySelector('[data-comment-id]')).not.toBeNull();
+  });
+
+  describe('Show latest (3 / 5 / 10 / All)', () => {
+    /** Twelve comments, id n written n hours into the day (id 12 is the most recent). */
+    const twelve = () =>
+      Array.from({ length: 12 }, (_, i) =>
+        aComment({
+          commentId: i + 1,
+          bodyHtml: `<p>Note number ${i + 1}</p>`,
+          createdAtUtc: `2026-10-13T${String(i + 1).padStart(2, '0')}:00:00Z`,
+        }),
+      );
+
+    it('shows only the 3 most recent comments by default, with a count line and a Show all link', async () => {
+      await create(twelve());
+
+      expect(q('h2').textContent).toContain('Comments (12)');
+      expect(shownIds()).toEqual([10, 11, 12]);
+      expect(q<HTMLSelectElement>('[data-limit-select]').value).toBe('3');
+      expect(q('[data-limit-note]').textContent).toContain('Showing the latest 3 of 12 comments.');
+      expect(q('[data-show-all]').textContent).toContain('Show all');
+      expect(el().querySelector('.tc__show')?.textContent).toContain('Show latest');
+    });
+
+    it('offers 3, 5, 10 and All, and shows the most recent N for each', async () => {
+      await create(twelve());
+      const select = q<HTMLSelectElement>('[data-limit-select]');
+      expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
+        '3',
+        '5',
+        '10',
+        'All',
+      ]);
+
+      setLimit('5');
+      await settle(fixture);
+      expect(shownIds()).toEqual([8, 9, 10, 11, 12]);
+      expect(q('[data-limit-note]').textContent).toContain('Showing the latest 5 of 12');
+
+      setLimit('10');
+      await settle(fixture);
+      expect(shownIds()).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+
+      setLimit('all');
+      await settle(fixture);
+      expect(shownIds().length).toBe(12);
+      expect(el().querySelector('[data-limit-note]')).toBeNull();
+    });
+
+    it('takes the most recent N by date, then lets the sort order order them inside that window', async () => {
+      // The ids do not follow the dates: id 1 is the newest comment.
+      const mixed = [
+        aComment({ commentId: 1, createdAtUtc: '2026-10-14T09:00:00Z' }),
+        aComment({ commentId: 2, createdAtUtc: '2026-10-13T09:00:00Z' }),
+        aComment({ commentId: 3, createdAtUtc: '2026-10-12T09:00:00Z' }),
+        aComment({ commentId: 4, createdAtUtc: '2026-10-11T09:00:00Z' }),
+        aComment({ commentId: 5, createdAtUtc: '2026-10-10T09:00:00Z' }),
+      ];
+      await create(mixed);
+      expect(shownIds()).toEqual([3, 2, 1]); // oldest first inside the window of the latest three
+
+      setOrder('newest');
+      await settle(fixture);
+      expect(shownIds()).toEqual([1, 2, 3]);
+      setLimit('5');
+      await settle(fixture);
+      expect(shownIds()).toEqual([1, 2, 3, 4, 5]);
+    });
+
+    it('lets Show all (the link) show every comment and updates the select', async () => {
+      await create(twelve());
+      q<HTMLButtonElement>('[data-show-all]').click();
+      await settle(fixture);
+      expect(shownIds().length).toBe(12);
+      expect(q<HTMLSelectElement>('[data-limit-select]').value).toBe('all');
+    });
+
+    it('does not show the count line when the whole thread fits the window', async () => {
+      await create(twelve().slice(0, 3));
+      expect(shownIds().length).toBe(3);
+      expect(el().querySelector('[data-limit-note]')).toBeNull();
+    });
+
+    it('searches ALL loaded comments whatever the limit and shows the match count', async () => {
+      await create(twelve());
+      expect(shownIds()).toEqual([10, 11, 12]);
+      const input = q<HTMLInputElement>('#tc-search');
+      input.value = 'number 2';
+      input.dispatchEvent(new Event('input'));
+      await new Promise((r) => setTimeout(r, 400));
+      await settle(fixture);
+
+      expect(shownIds()).toEqual([2]); // outside the latest three
+      expect(q('[data-match-count]').textContent).toContain('1 of 12 comments match');
+      expect(el().querySelector('[data-limit-note]')).toBeNull();
+
+      input.value = '';
+      input.dispatchEvent(new Event('input'));
+      await new Promise((r) => setTimeout(r, 400));
+      await settle(fixture);
+      expect(shownIds()).toEqual([10, 11, 12]);
+      expect(q('[data-limit-note]')).not.toBeNull();
+    });
+
+    it('counts Cancel and On Hold reasons like any other comment', async () => {
+      const list = twelve();
+      list[11] = aComment({
+        commentId: 12,
+        purpose: 'ON_HOLD',
+        purposeLabel: 'On hold reason',
+        canDelete: false,
+        createdAtUtc: '2026-10-13T12:00:00Z',
+      });
+      await create(list);
+      expect(shownIds()).toEqual([10, 11, 12]);
+      expect(el().querySelectorAll('[data-purpose]').length).toBe(1);
+      expect(q('[data-limit-note]').textContent).toContain('3 of 12');
+    });
+
+    it('keeps a newly posted comment visible: it is the latest', async () => {
+      await create(twelve());
+      const added = aComment({
+        commentId: 13,
+        bodyHtml: '<p>Fresh note</p>',
+        createdAtUtc: '2026-10-14T08:00:00Z',
+      });
+      api.listTaskComments.mockReturnValue(ok({ items: [...twelve(), added], total: 13 }));
+      typeComment('<p>Fresh note</p>');
+      await settle(fixture);
+      q<HTMLButtonElement>('[data-post]').click();
+      await settle(fixture);
+
+      expect(shownIds()).toEqual([11, 12, 13]);
+      expect(q('[data-limit-note]').textContent).toContain('Showing the latest 3 of 13');
+    });
+
+    it('remembers the choice per user and restores it', async () => {
+      await create(twelve());
+      const key = commentLimitKey(TestBed.inject(AuthStore).profile()?.userId);
+      setLimit('10');
+      await settle(fixture);
+      expect(localStorage.getItem(key)).toBe('10');
+
+      fixture.destroy();
+      fixture = TestBed.createComponent(TaskComments);
+      fixture.componentRef.setInput('taskId', 42);
+      await settle(fixture);
+      expect(q<HTMLSelectElement>('[data-limit-select]').value).toBe('10');
+      expect(shownIds().length).toBe(10);
+    });
+
+    it('falls back to 3 when storage holds rubbish or cannot be read', async () => {
+      await create(twelve());
+      const key = commentLimitKey(TestBed.inject(AuthStore).profile()?.userId);
+      fixture.destroy();
+      localStorage.setItem(key, '7');
+      fixture = TestBed.createComponent(TaskComments);
+      fixture.componentRef.setInput('taskId', 42);
+      await settle(fixture);
+      expect(q<HTMLSelectElement>('[data-limit-select]').value).toBe(String(COMMENT_LIMIT_DEFAULT));
+
+      fixture.destroy();
+      const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new Error('blocked');
+      });
+      const setSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new Error('blocked');
+      });
+      fixture = TestBed.createComponent(TaskComments);
+      fixture.componentRef.setInput('taskId', 42);
+      await settle(fixture);
+      expect(shownIds().length).toBe(3);
+      setLimit('5'); // still works for this view
+      await settle(fixture);
+      expect(shownIds().length).toBe(5);
+      spy.mockRestore();
+      setSpy.mockRestore();
+    });
+
+    it('marks every comment body as rich text so tables scroll inside their own box (mf-rich)', async () => {
+      await create([
+        aComment({
+          bodyHtml:
+            '<table><tbody><tr><th>Custodian</th><th>Volume</th></tr><tr><td>Anna</td><td>14 GB</td></tr></tbody></table>',
+        }),
+      ]);
+      const body = q('[data-body]');
+      expect(body.classList).toContain('mf-rich');
+      expect(body.querySelector('table')).not.toBeNull();
+    });
+
+    it('puts the thread in its own labelled, focusable scroll region', async () => {
+      await create(twelve());
+      const region = q('[data-comments-scroll]');
+      expect(region.getAttribute('role')).toBe('region');
+      expect(region.getAttribute('tabindex')).toBe('0');
+      expect(region.getAttribute('aria-label')).toBe('Comments list, scrollable');
+    });
   });
 
   describe('long threads (SEC2-10)', () => {
@@ -421,8 +636,8 @@ describe('TaskComments', () => {
     it('shows how many of the comments are on screen and loads the next page on request', async () => {
       await create([]);
       serve(50);
-      setOrder('newest');
-      await settle(fixture);
+      setLimit('all');
+      await reloadFromServer();
 
       expect(q('h2').textContent).toContain('Comments (50)');
       expect(shown()).toBe(20);
@@ -454,8 +669,8 @@ describe('TaskComments', () => {
     it('reports the total to the host and keeps the loaded part after posting a comment', async () => {
       await create([]);
       serve(50);
-      setOrder('newest');
-      await settle(fixture);
+      setLimit('all');
+      await reloadFromServer();
       q<HTMLButtonElement>('[data-load-more]').click();
       await settle(fixture);
       expect(shown()).toBe(40);
@@ -473,26 +688,36 @@ describe('TaskComments', () => {
       expect(q('[data-more-note]').textContent).toContain('Showing 40 of 51 comments.');
     });
 
-    it('starts over from the first page when the order changes', async () => {
+    it('reorders what is loaded without asking the server again when the order changes', async () => {
       await create([]);
       serve(50);
-      setOrder('newest');
-      await settle(fixture);
+      setLimit('all');
+      await reloadFromServer();
       q<HTMLButtonElement>('[data-load-more]').click();
       await settle(fixture);
       expect(shown()).toBe(40);
+      const calls = api.listTaskComments.mock.calls.length;
 
-      setOrder('oldest');
+      setOrder('newest');
       await settle(fixture);
-      expect(shown()).toBe(20);
-      expect(api.listTaskComments).toHaveBeenLastCalledWith(42, false);
+      expect(shown()).toBe(40);
+      expect(api.listTaskComments.mock.calls.length).toBe(calls);
+    });
+
+    it('with a Show latest limit the latest comments are on screen even when the thread is longer than a page', async () => {
+      await create([]);
+      serve(50);
+      await reloadFromServer();
+      expect(shown()).toBe(3);
+      expect(q('[data-limit-note]').textContent).toContain('Showing the latest 3 of 50 comments.');
+      expect(el().querySelector('[data-more]')).toBeNull();
     });
 
     it('keeps what is shown and offers to try again when the next page fails', async () => {
       await create([]);
       serve(50);
-      setOrder('newest');
-      await settle(fixture);
+      setLimit('all');
+      await reloadFromServer();
 
       api.listTaskComments.mockReturnValue(apiError(500, { status: 500, title: 'x' }));
       q<HTMLButtonElement>('[data-load-more]').click();

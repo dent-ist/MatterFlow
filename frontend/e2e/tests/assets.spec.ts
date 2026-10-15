@@ -15,7 +15,7 @@ test.describe('Linking assets to a task (SCN-016)', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await detail.showSection('Assets');
-    const panel = page.getByRole('region', { name: 'Linked assets' });
+    const panel = page.getByRole('region', { name: 'Assets', exact: true });
 
     const link = async (displayName: string, relationship: string) => {
       await panel.locator('[data-link-open]').click();
@@ -64,7 +64,7 @@ test.describe('Linking assets to a task (SCN-016)', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await detail.showSection('Assets');
-    const panel = page.getByRole('region', { name: 'Linked assets' });
+    const panel = page.getByRole('region', { name: 'Assets', exact: true });
     await panel.locator('[data-link-open]').click();
     const picker = panel.getByRole('combobox', { name: 'Asset to link' });
 
@@ -121,7 +121,7 @@ test.describe('Linking assets to a task (SCN-016)', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await detail.showSection('Assets');
-    const panel = page.getByRole('region', { name: 'Linked assets' });
+    const panel = page.getByRole('region', { name: 'Assets', exact: true });
     await expect(panel.locator('[data-closed-note]')).toContainText("can't be changed");
     await expect(panel.locator('[data-link-open]')).toHaveCount(0);
     await expect(panel.locator('[data-unlink]')).toHaveCount(0);

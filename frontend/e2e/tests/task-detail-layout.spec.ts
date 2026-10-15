@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test';
 import { TaskDetailPage } from '../pages/task-detail.page';
 import { expect, test } from '../support/fixtures';
+import { seedBusyTask } from '../support/busy-task';
 import { TaskApi } from '../support/tasks';
 
 const FIVE_STEPS = [
@@ -11,7 +12,7 @@ const FIVE_STEPS = [
   { title: 'Handover' },
 ];
 
-/** The Task page is one page: Workflow and Comments on the left, Details and Assets in the side panel (docs/ux/task-detail). */
+/** The Task page is one page: Workflow with Comments and Assets under it on the left (60 %), Details on the right (40 %, resizable) (docs/ux/task-detail-v2). */
 test.describe('Task detail: single page layout', () => {
   const noHorizontalScroll = async (page: Page): Promise<void> => {
     const overflow = await page.evaluate(
@@ -20,40 +21,352 @@ test.describe('Task detail: single page layout', () => {
     expect(overflow).toBeLessThanOrEqual(0);
   };
 
-  test('1280 px: Workflow and Comments in the main column, Details and Assets in the side panel, no tabs', async ({
+  const box = async (locator: ReturnType<Page['locator']>) => (await locator.boundingBox())!;
+
+  for (const [width, height] of [
+    [1366, 768],
+    [1920, 1080],
+  ] as const) {
+    test(`${width} px: Workflow above Comments | Assets on the left (60 %), Details on the right (40 %), nothing clipped`, async ({
+      page,
+      seed,
+      admin,
+    }) => {
+      const task = await seedBusyTask(seed, admin);
+      await page.setViewportSize({ width, height });
+      const detail = new TaskDetailPage(page);
+      await detail.open(task.taskId);
+      await detail.showSection('Comments');
+      await expect(detail.commentItems.first()).toBeVisible();
+
+      await expect(page.getByRole('tab')).toHaveCount(0);
+      await expect(page.getByRole('heading', { level: 1 })).toContainText(task.title);
+      await expect(
+        page.getByRole('heading', { level: 2, name: /^(Workflow|Comments|Details|Assets)/ }),
+      ).toHaveText([/Workflow/, /Comments/, /Assets/, /Details/]);
+
+      const aside = page.getByRole('complementary', { name: 'Details' });
+      await expect(aside.getByRole('button', { name: 'Edit details' })).toBeVisible();
+      await expect(aside.locator('[data-section="assets"]')).toHaveCount(0);
+
+      const workflow = await box(detail.section('Workflow'));
+      const comments = await box(detail.section('Comments'));
+      const assets = await box(detail.section('Assets'));
+      const side = await box(aside);
+      const layout = await box(page.locator('[data-detail-layout]'));
+
+      // Comments left, Assets right, both under the Workflow, level with each other, each about half of the left column.
+      expect(comments.y).toBeGreaterThan(workflow.y + workflow.height - 1);
+      expect(assets.x).toBeGreaterThan(comments.x + comments.width - 1);
+      expect(Math.abs(assets.y - comments.y)).toBeLessThanOrEqual(1);
+      expect(Math.abs(assets.height - comments.height)).toBeLessThanOrEqual(1);
+      expect(Math.abs(comments.width - assets.width)).toBeLessThanOrEqual(20);
+      // Left column about 60 % of the layout, Details about 40 % and to its right.
+      expect(side.x).toBeGreaterThan(workflow.x + workflow.width - 1);
+      expect(workflow.width / layout.width).toBeGreaterThan(0.56);
+      expect(workflow.width / layout.width).toBeLessThan(0.61);
+      expect(side.width / layout.width).toBeGreaterThan(0.36);
+      expect(side.width / layout.width).toBeLessThan(0.41);
+      await expect(page.getByRole('navigation', { name: 'Jump to' })).toBeHidden();
+
+      // Nothing clipped: no sideways scroll, every step row inside its box, the status badge inside the row.
+      await noHorizontalScroll(page);
+      const clipped = await page.evaluate(() =>
+        Array.from(document.querySelectorAll<HTMLElement>('[data-step-id], [data-comment-id]'))
+          .filter((el) => el.scrollWidth > el.clientWidth + 1)
+          .map((el) => el.getAttribute('data-step-id') ?? el.getAttribute('data-comment-id')),
+      );
+      expect(clipped).toEqual([]);
+      for (const state of await detail.page.locator('[data-step-id] [data-state]').all()) {
+        const row = await box(state.locator('xpath=ancestor::*[@data-step-id]'));
+        const badge = await box(state);
+        expect(badge.x + badge.width).toBeLessThanOrEqual(row.x + row.width + 1);
+      }
+
+      // The Details panel stays in view while the page scrolls.
+      await page.mouse.wheel(0, 600);
+      await expect.poll(async () => (await box(aside)).y).toBeLessThan(120);
+      await noHorizontalScroll(page);
+    });
+  }
+
+  test('the Details panel scrolls by itself when it is taller than the window', async ({
+    page,
+    seed,
+    admin,
+  }) => {
+    const task = await seedBusyTask(seed, admin);
+    await page.setViewportSize({ width: 1366, height: 600 });
+    const detail = new TaskDetailPage(page);
+    await detail.open(task.taskId);
+    const aside = page.getByRole('complementary', { name: 'Details' });
+    const scrolls = await aside.evaluate((el) => el.scrollHeight > el.clientHeight);
+    expect(scrolls).toBe(true);
+    expect(await aside.evaluate((el) => getComputedStyle(el).overflowY)).toBe('auto');
+  });
+
+  test('step rows adapt to the width of the Workflow column: the date moves under the status when it is narrow', async ({
+    page,
+    seed,
+    admin,
+  }) => {
+    const task = await seedBusyTask(seed, admin);
+    await page.setViewportSize({ width: 1366, height: 768 });
+    const detail = new TaskDetailPage(page);
+    await detail.open(task.taskId);
+    const firstStep = page.locator('[data-step-id]').first();
+    const when = firstStep.locator('[data-resolved-at]');
+    const state = firstStep.locator('[data-state]');
+    // At 60 % the date and the status sit on one line, the status at the right.
+    expect(Math.abs((await box(when)).y - (await box(state)).y)).toBeLessThan(12);
+
+    await detail.splitter.focus();
+    await page.keyboard.press('Home'); // left column at its minimum: a narrow Workflow
+    await expect(detail.splitter).toHaveAttribute('aria-valuenow', '35');
+    expect((await box(state)).y).toBeGreaterThan((await box(firstStep.getByRole('heading'))).y);
+    await noHorizontalScroll(page);
+    await detail.splitter.dblclick();
+  });
+
+  test('the splitter: drag (mouse), keyboard, double click, Reset layout, remembered per user', async ({
     page,
     seed,
   }) => {
     const world = await seed.world({ steps: FIVE_STEPS });
     const task = await seed.task(world);
-    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
+    const handle = detail.splitter;
+    await expect(handle).toHaveAttribute('aria-orientation', 'vertical');
+    await expect(handle).toHaveAttribute('aria-valuenow', '60');
+    await expect(handle).toHaveAttribute('aria-valuemin', '35');
+    await expect(handle).toHaveAttribute('aria-valuemax', '70');
+    expect(await handle.evaluate((el) => getComputedStyle(el).cursor)).toBe('col-resize');
 
-    await expect(page.getByRole('tab')).toHaveCount(0);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(task.title);
-    await expect(
-      page.getByRole('heading', { level: 2, name: /^(Workflow|Comments|Details|Assets)/ }),
-    ).toHaveText([/Workflow/, /Comments/, /Details/, /Assets/]);
+    const layout = page.locator('[data-detail-layout]');
+    const leftShare = async () =>
+      (await box(page.locator('[data-detail-left]'))).width / (await box(layout)).width;
 
-    const aside = page.getByRole('complementary', { name: 'Details' });
-    await expect(aside).toBeVisible();
-    await expect(aside.locator('[data-section="assets"]')).toBeVisible();
-    await expect(aside.getByRole('button', { name: 'Edit details' })).toBeVisible();
+    // Drag to about 40 %: the left column shrinks, text selection is off while dragging and back afterwards.
+    const g = await box(layout);
+    const h = await box(handle);
+    const y = h.y + 60;
+    await page.mouse.move(h.x + h.width / 2, y);
+    await page.mouse.down();
+    expect(await page.evaluate(() => document.body.style.userSelect)).toBe('none');
+    await page.mouse.move(g.x + 8 + (g.width - 16) * 0.5, y, { steps: 4 });
+    await page.mouse.move(g.x + 8 + (g.width - 16) * 0.4, y, { steps: 4 });
+    await page.mouse.up();
+    expect(await page.evaluate(() => document.body.style.userSelect)).toBe('');
+    await expect(handle).toHaveAttribute('aria-valuenow', '40');
+    expect(await leftShare()).toBeLessThan(0.42);
+    await expect(page.getByRole('button', { name: 'Reset layout' })).toBeVisible();
 
-    const workflow = await detail.section('Workflow').boundingBox();
-    const comments = await detail.section('Comments').boundingBox();
-    const side = await aside.boundingBox();
-    expect(side!.x).toBeGreaterThan(workflow!.x + workflow!.width - 1);
-    // The Task page asks the layout for a wider panel: clamp(380px, 34vw, 480px).
-    expect(side!.width).toBeGreaterThanOrEqual(380);
-    expect(side!.width).toBeLessThanOrEqual(480);
-    expect(comments!.y).toBeGreaterThan(workflow!.y);
-    await expect(page.getByRole('navigation', { name: 'Jump to' })).toBeHidden();
+    // Remembered: a reload opens at 40 % without a jump.
+    await page.reload();
+    await expect(detail.header).toBeVisible();
+    await expect(handle).toHaveAttribute('aria-valuenow', '40');
 
-    // The side panel stays in view while the page scrolls.
-    await page.mouse.wheel(0, 400);
-    await expect.poll(async () => (await aside.boundingBox())!.y).toBeLessThan(120);
+    // Keyboard.
+    await handle.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(handle).toHaveAttribute('aria-valuenow', '42');
+    await page.keyboard.press('Shift+ArrowRight');
+    await expect(handle).toHaveAttribute('aria-valuenow', '52');
+    await page.keyboard.press('ArrowLeft');
+    await expect(handle).toHaveAttribute('aria-valuenow', '50');
+    await page.keyboard.press('End');
+    await expect(handle).toHaveAttribute('aria-valuenow', '70');
+    await page.keyboard.press('Home');
+    await expect(handle).toHaveAttribute('aria-valuenow', '35');
+    await page.keyboard.press('Enter');
+    await expect(handle).toHaveAttribute('aria-valuenow', '60');
+    expect(await leftShare()).toBeGreaterThan(0.57);
+
+    // Double click and the Reset layout button.
+    await page.keyboard.press('End');
+    await handle.dblclick();
+    await expect(handle).toHaveAttribute('aria-valuenow', '60');
+    await page.keyboard.press('Home');
+    await page.getByRole('button', { name: 'Reset layout' }).click();
+    await expect(handle).toHaveAttribute('aria-valuenow', '60');
+    await expect(page.getByRole('button', { name: 'Reset layout' })).toHaveCount(0);
+    await noHorizontalScroll(page);
+  });
+
+  test('the splitter is hidden below 1100 px', async ({ page, seed }) => {
+    const world = await seed.world({ steps: FIVE_STEPS });
+    const task = await seed.task(world);
+    await page.setViewportSize({ width: 1024, height: 768 });
+    const detail = new TaskDetailPage(page);
+    await detail.open(task.taskId);
+    await expect(detail.splitter).toHaveCount(0);
+    await expect(page.getByRole('navigation', { name: 'Jump to' })).toBeVisible();
+    await noHorizontalScroll(page);
+  });
+
+  test('Comments: only the latest 3 by default, Show latest 3 / 5 / 10 / All is remembered, the sort orders inside the window, search covers all, a new comment stays visible', async ({
+    page,
+    seed,
+    admin,
+  }) => {
+    const task = await seedBusyTask(seed, admin);
+    await page.setViewportSize({ width: 1366, height: 900 });
+    const detail = new TaskDetailPage(page);
+    await detail.open(task.taskId);
+    await detail.showSection('Comments');
+    await expect(detail.commentItems).toHaveCount(3);
+    await expect(detail.section('Comments').getByRole('heading', { level: 2 })).toHaveText(
+      'Comments (12)',
+    );
+    await expect(page.getByText('Showing the latest 3 of 12 comments')).toBeVisible();
+    await expect(detail.commentItems.last()).toContainText('load template agreed');
+    await expect(detail.commentItems.first()).toContainText('Vendor re-sent B-003');
+
+    // The sort order only orders inside the window.
+    await page.getByLabel('Sort comments').selectOption('newest');
+    await expect(detail.commentItems).toHaveCount(3);
+    await expect(detail.commentItems.first()).toContainText('load template agreed');
+    await page.getByLabel('Sort comments').selectOption('oldest');
+
+    for (const [value, count] of [
+      ['5', 5],
+      ['10', 10],
+      ['all', 12],
+    ] as const) {
+      await detail.commentLimit.selectOption(value);
+      await expect(detail.commentItems).toHaveCount(count);
+    }
+    await expect(page.getByText(/Showing the latest/)).toHaveCount(0);
+
+    // Remembered: after a reload the choice is back ("All"), and picking 3 again shows the line and Show all.
+    await page.reload();
+    await detail.showSection('Comments');
+    await expect(detail.commentLimit).toHaveValue('all');
+    await expect(detail.commentItems).toHaveCount(12);
+    await detail.commentLimit.selectOption('3');
+    await expect(detail.commentItems).toHaveCount(3);
+    await page.getByRole('button', { name: 'Show all' }).click();
+    await expect(detail.commentItems).toHaveCount(12);
+    await detail.commentLimit.selectOption('3');
+
+    // Search ignores the limit and shows the match count.
+    await page.getByRole('searchbox', { name: 'Search comments' }).fill('Kicked off');
+    await expect(detail.commentItems).toHaveCount(1);
+    await expect(page.getByText('1 of 12 comments match')).toBeVisible();
+    await page.getByRole('searchbox', { name: 'Search comments' }).fill('');
+    await expect(detail.commentItems).toHaveCount(3);
+
+    // A new comment is the latest, so it stays visible.
+    const composer = detail.section('Comments').locator('[data-composer] [role=textbox]');
+    await composer.click();
+    await page.keyboard.type('Brand new comment');
+    await detail.section('Comments').locator('[data-post]').click();
+    await expect(detail.commentItems.last()).toContainText('Brand new comment');
+    await expect(detail.commentItems).toHaveCount(3);
+    await expect(page.getByText('Showing the latest 3 of 13 comments')).toBeVisible();
+  });
+
+  test('Assets and Comments are labelled scroll regions with their own maximum height (about 60vh)', async ({
+    page,
+    seed,
+    admin,
+  }) => {
+    const task = await seedBusyTask(seed, admin);
+    await page.setViewportSize({ width: 1366, height: 768 });
+    const detail = new TaskDetailPage(page);
+    await detail.open(task.taskId);
+    await detail.showSection('Assets');
+
+    const assets = page.getByRole('region', { name: 'Linked assets, scrollable' });
+    await expect(assets).toBeVisible();
+    await expect(assets).toHaveAttribute('tabindex', '0');
+    await expect(assets.locator('li[data-asset-id]')).toHaveCount(8);
+    const info = await assets.evaluate((el) => ({
+      scrolls: el.scrollHeight > el.clientHeight,
+      max: parseFloat(getComputedStyle(el).maxHeight),
+      height: el.clientHeight,
+    }));
+    expect(info.max).toBeCloseTo(768 * 0.6, 0);
+    expect(info.height).toBeLessThanOrEqual(Math.ceil(info.max));
+    // The list scrolls by itself, the page does not move with it.
+    expect(info.scrolls).toBe(true);
+    const pageY = await page.evaluate(() => window.scrollY);
+    await assets.evaluate((el) => (el.scrollTop = 200));
+    expect(await page.evaluate(() => window.scrollY)).toBe(pageY);
+    // The actions are all there: change role, unlink, link, inside the panel.
+    const last = assets.locator('li[data-asset-id]').last();
+    await last.scrollIntoViewIfNeeded();
+    await expect(last.locator('[data-role-select]')).toBeVisible();
+    await expect(last.locator('[data-unlink]')).toBeVisible();
+    await expect(detail.section('Assets').locator('[data-link-open]')).toBeVisible();
+
+    await assets.focus();
+    await expect(assets).toBeFocused();
+    const comments = page.getByRole('region', { name: 'Comments list, scrollable' });
+    await expect(comments).toHaveAttribute('tabindex', '0');
+    // Both panels stay level (same top and height).
+    const a = await box(detail.section('Assets'));
+    const c = await box(detail.section('Comments'));
+    expect(Math.abs(a.height - c.height)).toBeLessThanOrEqual(1);
+  });
+
+  test('rich-text tables scroll inside their own box and never widen the page', async ({
+    page,
+    seed,
+    admin,
+  }) => {
+    const task = await seedBusyTask(seed, admin);
+    await page.setViewportSize({ width: 1366, height: 768 });
+    const detail = new TaskDetailPage(page);
+    await detail.open(task.taskId);
+    // The server's sanitizer keeps no tables today, so the stylesheet is checked on a table put into the rich-text container.
+    const result = await page.evaluate(() => {
+      const host = document.querySelector<HTMLElement>('[data-description]')!;
+      host.insertAdjacentHTML(
+        'beforeend',
+        '<table id="wide"><thead><tr>' +
+          Array.from({ length: 12 }, (_, i) => `<th>Column ${i + 1}</th>`).join('') +
+          '</tr></thead><tbody>' +
+          Array.from(
+            { length: 3 },
+            () =>
+              '<tr>' +
+              Array.from(
+                { length: 12 },
+                () => '<td>Some long cell text that must wrap nicely</td>',
+              ).join('') +
+              '</tr>',
+          ).join('') +
+          '</tbody></table>',
+      );
+      const table = document.getElementById('wide')!;
+      const cs = getComputedStyle(table);
+      const td = getComputedStyle(table.querySelector('td')!);
+      const th = getComputedStyle(table.querySelector('th')!);
+      const rows = table.querySelectorAll('tbody tr');
+      return {
+        display: cs.display,
+        overflowX: cs.overflowX,
+        scrolls: table.scrollWidth > table.clientWidth,
+        tableWidth: table.getBoundingClientRect().width,
+        hostWidth: host.getBoundingClientRect().width,
+        border: td.borderTopWidth,
+        fontRatio: parseFloat(td.fontSize) / parseFloat(getComputedStyle(host).fontSize),
+        headerBg: th.backgroundColor,
+        zebra:
+          getComputedStyle(rows[1].querySelector('td')!).backgroundColor !==
+          getComputedStyle(rows[0].querySelector('td')!).backgroundColor,
+      };
+    });
+    expect(result.display).toBe('block');
+    expect(result.overflowX).toBe('auto');
+    expect(result.scrolls).toBe(true);
+    expect(result.tableWidth).toBeLessThanOrEqual(result.hostWidth + 1);
+    expect(result.border).toBe('1px');
+    expect(result.fontRatio).toBeLessThan(1);
+    expect(result.zebra).toBe(true);
     await noHorizontalScroll(page);
   });
 

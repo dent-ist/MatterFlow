@@ -24,6 +24,7 @@ import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { DetailLayout } from '../../../shared/ui/detail-layout';
+import { AuthStore } from '../../../core/auth/auth.store';
 
 const WARNING_TEXT: Readonly<Record<string, string>> = {
   USER_NOT_IN_POD: "The assignee isn't a member of the assigned Pod. The change was saved.",
@@ -140,7 +141,7 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
             <div class="pg-banner" role="status" data-warning>{{ w }}</div>
           }
 
-          <mf-detail-layout asideWidth="clamp(380px, 34vw, 480px)">
+          <mf-detail-layout [split]="true" [splitKey]="splitKey()">
             <div mfMain>
               <nav class="jump" aria-label="Jump to" data-jump>
                 <span class="jump__label">Jump to</span>
@@ -158,36 +159,40 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
               <div class="sec" id="task-workflow" data-section="workflow">
                 <mf-task-workflow-tab />
               </div>
+            </div>
 
-              <div
-                class="sec"
-                id="task-comments"
-                data-section="comments"
-                mfInView
-                (inView)="commentsOn.set(true)"
-              >
-                @if (commentsOn()) {
-                  <mf-task-comments [taskId]="t.taskId" [refresh]="t.rowVersion" />
-                } @else {
-                  <section aria-label="Comments">
-                    <h2 class="sec__h" tabindex="-1" data-section-heading>Comments</h2>
-                    <p class="sec__muted" role="status" aria-busy="true">Loading comments...</p>
-                  </section>
-                }
+            <div mfBelow class="below">
+              <div class="bottom">
+                <div
+                  class="sec panel panel--comments"
+                  id="task-comments"
+                  data-section="comments"
+                  mfInView
+                  (inView)="commentsOn.set(true)"
+                >
+                  @if (commentsOn()) {
+                    <mf-task-comments [taskId]="t.taskId" [refresh]="t.rowVersion" />
+                  } @else {
+                    <section aria-label="Comments">
+                      <h2 class="sec__h" tabindex="-1" data-section-heading>Comments</h2>
+                      <p class="sec__muted" role="status" aria-busy="true">Loading comments...</p>
+                    </section>
+                  }
+                </div>
+
+                <div class="sec panel panel--assets" id="task-assets" data-section="assets">
+                  <mf-task-asset-links
+                    [taskId]="t.taskId"
+                    [matterId]="t.matter.matterId"
+                    [readOnly]="store.closed()"
+                    [taskStatus]="t.status"
+                  />
+                </div>
               </div>
             </div>
 
             <div mfAside data-section="details">
               <mf-task-details-tab />
-            </div>
-
-            <div mfAfter id="task-assets" data-section="assets">
-              <mf-task-asset-links
-                [taskId]="t.taskId"
-                [matterId]="t.matter.matterId"
-                [readOnly]="store.closed()"
-                [taskStatus]="t.status"
-              />
             </div>
           </mf-detail-layout>
 
@@ -218,8 +223,47 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
       text-decoration: underline;
       cursor: pointer;
     }
-    .sec + .sec {
-      margin-top: var(--mf-s5);
+    /*
+     * Under the Workflow: Comments and Assets side by side, each half of the main column (30 / 30 of the page by default). When the
+     * column is narrow (container width, so it also follows the splitter) they stack. Each panel's list is its own scroll area, capped
+     * at 60vh (--mf-panel-max) so the two panels stay level; on phones everything flows.
+     */
+    .below {
+      container-type: inline-size;
+    }
+    .bottom {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--mf-s4);
+    }
+    .panel {
+      min-width: 0;
+      padding: var(--mf-s3) var(--mf-s4) var(--mf-s4);
+      border: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface);
+      box-shadow: var(--mf-shadow-1);
+    }
+    @media (min-width: 600px) {
+      .panel--assets {
+        --mf-panel-max: 60vh;
+      }
+    }
+    @media (min-width: 1100px) {
+      .panel--comments {
+        --mf-panel-max: 60vh;
+      }
+    }
+    @container (min-width: 36rem) {
+      .bottom {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
+      }
+    }
+    @media (max-width: 1099.98px) {
+      .bottom {
+        grid-template-columns: minmax(0, 1fr);
+      }
     }
     .sec__h {
       margin: 0 0 var(--mf-s3);
@@ -275,6 +319,12 @@ export class TaskDetailPage implements HasUnsavedChanges {
   private readonly pageTitle = inject(PageTitle);
   private readonly router = inject(Router);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly auth = inject(AuthStore);
+
+  /** Where this person's Details width is remembered (the splitter of the two-column layout). */
+  protected readonly splitKey = computed(
+    () => `mf.task-detail.split.${this.auth.profile()?.userId ?? 'anon'}`,
+  );
 
   /** True once the Comments are near the visible area (or were asked for): they load then, not with the first paint. */
   protected readonly commentsOn = signal(false);

@@ -109,7 +109,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
         <dl class="pg-dl pg-dl--stacked" data-view>
           @if (t.description) {
             <dt>Description</dt>
-            <dd class="pre">{{ t.description }}</dd>
+            <dd class="pre mf-rich" data-description>{{ t.description }}</dd>
           }
           <dt>Requestor</dt>
           <dd>

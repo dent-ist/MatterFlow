@@ -22,6 +22,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { AssetPicker } from '../../../shared/ui/asset-picker';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { Badge } from '../../../shared/ui/badge';
+import { PanelScroll } from '../../../shared/ui/panel-scroll';
 
 export const ASSETS_EMPTY = 'No assets linked.';
 export const ASSETS_CLOSED_NOTE =
@@ -37,10 +38,10 @@ export const ASSETS_CLOSED_NOTE =
  */
 @Component({
   selector: 'mf-task-asset-links',
-  imports: [Badge, AssetPicker, ConfirmDialog],
+  imports: [Badge, AssetPicker, ConfirmDialog, PanelScroll],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="tl" aria-label="Linked assets">
+    <section class="tl" aria-label="Assets">
       <header class="tl__head">
         <h2 class="tl__title" tabindex="-1" data-section-heading>
           {{ canSee() ? 'Assets (' + items().length + ')' : 'Assets' }}
@@ -120,75 +121,77 @@ export const ASSETS_CLOSED_NOTE =
             @if (items().length === 0) {
               <p class="tl__muted" data-empty>{{ emptyText }}</p>
             } @else {
-              <ul class="tl__list" aria-label="Linked assets">
-                @for (a of items(); track a.assetId) {
-                  <li class="tl__item" [attr.data-asset-id]="a.assetId">
-                    <div class="tl__name">
-                      <strong>{{ a.displayName }}</strong>
-                      @if (!a.isActive) {
-                        <mf-badge>Inactive</mf-badge>
-                      }
-                    </div>
-                    @if (a.assetTypeName) {
-                      <p class="tl__meta" data-type>{{ a.assetTypeName }}</p>
-                    }
-                    @if (a.externalReference) {
-                      <p class="tl__meta tl__ref" data-ref>
-                        @if (isUrl(a.externalReference)) {
-                          <a
-                            [href]="a.externalReference"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            >{{ a.externalReference }}</a
-                          >
-                        } @else {
-                          {{ a.externalReference }}
+              <div mfPanelScroll="Linked assets" class="tl__scroll" data-assets-scroll>
+                <ul class="tl__list" aria-label="Linked assets">
+                  @for (a of items(); track a.assetId) {
+                    <li class="tl__item" [attr.data-asset-id]="a.assetId">
+                      <div class="tl__name">
+                        <strong>{{ a.displayName }}</strong>
+                        @if (!a.isActive) {
+                          <mf-badge>Inactive</mf-badge>
                         }
-                      </p>
-                    }
-                    <div class="tl__row">
-                      @if (editable()) {
-                        <select
-                          class="mf-control mf-control--compact"
-                          data-role-select
-                          [attr.aria-label]="'Relationship of ' + a.displayName"
-                          [disabled]="busy()"
-                          (change)="changeRole(a, $event)"
-                        >
-                          <option
-                            value=""
-                            [selected]="
-                              a.assetLinkRoleId === undefined || a.assetLinkRoleId === null
-                            "
-                          >
-                            None
-                          </option>
-                          @for (r of rolesFor(a); track r.id) {
-                            <option [value]="r.id" [selected]="r.id === a.assetLinkRoleId">
-                              {{ r.name }}
-                            </option>
-                          }
-                        </select>
-                        <button
-                          type="button"
-                          class="mf-btn"
-                          data-unlink
-                          [attr.aria-label]="'Remove link to ' + a.displayName"
-                          [disabled]="busy()"
-                          (click)="askUnlink(a)"
-                        >
-                          Remove link
-                        </button>
-                      } @else {
-                        <span class="tl__meta"
-                          >Relationship:
-                          <span data-role>{{ a.assetLinkRoleName ?? 'None' }}</span></span
-                        >
+                      </div>
+                      @if (a.assetTypeName) {
+                        <p class="tl__meta" data-type>{{ a.assetTypeName }}</p>
                       }
-                    </div>
-                  </li>
-                }
-              </ul>
+                      @if (a.externalReference) {
+                        <p class="tl__meta tl__ref" data-ref>
+                          @if (isUrl(a.externalReference)) {
+                            <a
+                              [href]="a.externalReference"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              >{{ a.externalReference }}</a
+                            >
+                          } @else {
+                            {{ a.externalReference }}
+                          }
+                        </p>
+                      }
+                      <div class="tl__row">
+                        @if (editable()) {
+                          <select
+                            class="mf-control mf-control--compact"
+                            data-role-select
+                            [attr.aria-label]="'Relationship of ' + a.displayName"
+                            [disabled]="busy()"
+                            (change)="changeRole(a, $event)"
+                          >
+                            <option
+                              value=""
+                              [selected]="
+                                a.assetLinkRoleId === undefined || a.assetLinkRoleId === null
+                              "
+                            >
+                              None
+                            </option>
+                            @for (r of rolesFor(a); track r.id) {
+                              <option [value]="r.id" [selected]="r.id === a.assetLinkRoleId">
+                                {{ r.name }}
+                              </option>
+                            }
+                          </select>
+                          <button
+                            type="button"
+                            class="mf-btn"
+                            data-unlink
+                            [attr.aria-label]="'Remove link to ' + a.displayName"
+                            [disabled]="busy()"
+                            (click)="askUnlink(a)"
+                          >
+                            Remove link
+                          </button>
+                        } @else {
+                          <span class="tl__meta"
+                            >Relationship:
+                            <span data-role>{{ a.assetLinkRoleName ?? 'None' }}</span></span
+                          >
+                        }
+                      </div>
+                    </li>
+                  }
+                </ul>
+              </div>
             }
             @if (rowError()) {
               <p class="tl__alert" role="alert" data-row-error>{{ rowError() }}</p>
@@ -244,6 +247,10 @@ export const ASSETS_CLOSED_NOTE =
       margin: 0;
       padding: 0;
       list-style: none;
+    }
+    .tl__scroll {
+      margin: 0 calc(var(--mf-s1) * -1);
+      padding: var(--mf-s1);
     }
     .tl__item {
       display: grid;

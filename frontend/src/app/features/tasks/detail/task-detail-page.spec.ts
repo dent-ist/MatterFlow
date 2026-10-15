@@ -434,28 +434,34 @@ describe('TaskDetailPage complete', () => {
 describe('TaskDetailPage layout and states', () => {
   afterEach(() => TestBed.resetTestingModule());
 
-  it('is one page: Workflow and Comments in the main column, Details and Assets in the side panel, no tabs', async () => {
+  it('is one page: Workflow in the main column, Comments and Assets below it, Details in the side panel, no tabs', async () => {
     const { el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
 
     expect(q(el, '[role=tablist]')).toBeNull();
     expect(q(el, '[role=tab]')).toBeNull();
     const main = q(el, '[data-detail-main]')!;
     expect(q(main, '[data-section=workflow] [data-workflow-tab]')).not.toBeNull();
-    expect(q(main, '[data-section=comments] mf-task-comments')).not.toBeNull();
+    // Comments and Assets sit side by side under the Workflow, in the same (left) column.
+    const left = q(el, '[data-detail-left]')!;
+    expect(left.contains(main)).toBe(true);
+    const below = q(left, '[data-detail-below]')!;
+    expect(q(below, '[data-section=comments] mf-task-comments')).not.toBeNull();
+    expect(q(below, '[data-section=assets] mf-task-asset-links')).not.toBeNull();
     const panel = q(el, 'aside[data-detail-panel]')!;
     expect(q(panel, '[data-section=details] [data-details-tab]')).not.toBeNull();
-    expect(q(panel, '[data-section=assets] mf-task-asset-links')).not.toBeNull();
+    expect(q(panel, '[data-section=assets]')).toBeNull();
+    expect(q(el, '[role=separator][aria-label="Resize Details panel"]')).not.toBeNull();
     // Activity is a drawer, not a section.
     expect(q(el, 'mf-task-activity')).toBeNull();
   });
 
-  it('keeps the heading order: one h1, h2 sections Workflow, Comments, Details, Assets', async () => {
+  it('keeps the heading order: one h1, h2 sections Workflow, Comments, Assets, Details', async () => {
     const { el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
     expect(el.querySelectorAll('h1').length).toBe(1);
     const h2 = Array.from(el.querySelectorAll('h2')).map(
       (h) => h.textContent!.replace(/\s+/g, ' ').trim().split(' ')[0],
     );
-    expect(h2).toEqual(['Workflow', 'Comments', 'Details', 'Assets']);
+    expect(h2).toEqual(['Workflow', 'Comments', 'Assets', 'Details']);
     expect(q(el, 'aside')!.getAttribute('aria-labelledby')).toBe(q(el, 'aside h2')!.id);
   });
 

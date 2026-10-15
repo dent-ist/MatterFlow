@@ -57,6 +57,13 @@ describe('Details tab', () => {
     );
   });
 
+  it('shows the description in the rich-text container (mf-rich) so wide tables scroll inside their own box', async () => {
+    const { el } = await mountTaskPage(aTask({ description: 'a | b | c' }), ['Task.View']);
+    const dd = q(el, '[data-description]')!;
+    expect(dd.classList).toContain('mf-rich');
+    expect(dd.textContent).toContain('a | b | c');
+  });
+
   it('Edit details in the panel opens the same form as the header Edit and returns to the page', async () => {
     const { fixture, el } = await mountTaskPage(aTask());
     document.body.appendChild(el);
