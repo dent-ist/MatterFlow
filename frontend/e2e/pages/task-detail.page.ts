@@ -125,8 +125,11 @@ export class TaskDetailPage {
   /** Brings a section into view (Comments load when they come near the visible area) and waits for its heading. */
   async showSection(name: 'Workflow' | 'Comments' | 'Assets'): Promise<void> {
     const heading = this.section(name).locator('[data-section-heading]');
-    await heading.scrollIntoViewIfNeeded();
-    await expect(heading).toBeVisible();
+    // The Comments heading is replaced when the thread starts loading (placeholder, then the real one): retry if it is swapped mid-scroll.
+    await expect(async () => {
+      await heading.scrollIntoViewIfNeeded({ timeout: 2000 });
+      await expect(heading).toBeVisible({ timeout: 2000 });
+    }).toPass();
   }
 
   /** Opens the Activity drawer from the header and returns it. */

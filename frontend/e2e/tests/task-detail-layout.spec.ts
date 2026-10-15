@@ -304,7 +304,7 @@ test.describe('Task detail: single page layout', () => {
 
     await assets.focus();
     await expect(assets).toBeFocused();
-    const comments = page.getByRole('region', { name: 'Comments list, scrollable' });
+    const comments = page.getByRole('region', { name: 'Comment thread, scrollable' });
     await expect(comments).toHaveAttribute('tabindex', '0');
     // Both panels stay level (same top and height).
     const a = await box(detail.section('Assets'));

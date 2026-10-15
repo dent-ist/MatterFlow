@@ -615,7 +615,7 @@ describe('TaskComments', () => {
       const region = q('[data-comments-scroll]');
       expect(region.getAttribute('role')).toBe('region');
       expect(region.getAttribute('tabindex')).toBe('0');
-      expect(region.getAttribute('aria-label')).toBe('Comments list, scrollable');
+      expect(region.getAttribute('aria-label')).toBe('Comment thread, scrollable');
     });
   });
 

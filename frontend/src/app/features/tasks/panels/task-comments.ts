@@ -147,7 +147,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                 {{ visibleItems().length }} of {{ items().length }} comments match.
               </p>
             }
-            <div mfPanelScroll="Comments list" class="tc__scroll" data-comments-scroll>
+            <div mfPanelScroll="Comment thread" class="tc__scroll" data-comments-scroll>
               <ol class="tc__list">
                 @for (c of visibleItems(); track c.commentId) {
                   <li class="tc__item" [attr.data-comment-id]="c.commentId">
