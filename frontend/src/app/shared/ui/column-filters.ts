@@ -204,7 +204,8 @@ export class ColumnSelectFilter {
       class="mf-btn ft"
       [attr.aria-pressed]="open()"
       [attr.aria-expanded]="open()"
-      [attr.aria-controls]="controls()"
+      [attr.aria-controls]="controls() || null"
+      [attr.aria-haspopup]="sheet() ? 'dialog' : null"
       [title]="open() ? 'Hide filters' : 'Show filters'"
       data-filters-toggle
       (click)="toggled.emit()"
@@ -232,6 +233,8 @@ export class FiltersToggle {
   readonly count = input(0);
   /** Id of the filter row the button shows and hides. */
   readonly controls = input('');
+  /** The controls open in a sheet (dialog) instead of the filter row. */
+  readonly sheet = input(false);
   readonly toggled = output<void>();
 }
 

@@ -3,6 +3,18 @@ import { Router } from '@angular/router';
 import { LoadState } from './data-table';
 import { StatusFilter, parsePage, parseStatus } from './list-helpers';
 
+/**
+ * What a list needs from the shared column filters (`ListFilters`, shared/filters/list-filters.ts) without importing them: this file is
+ * reachable from many lazy chunks, and the filters bring their own.
+ */
+export interface ListFiltersLike {
+  activeCount(): number;
+  /** Read by the list's reload effect, so a change of any filter reloads. */
+  values(): unknown;
+  clear(also?: readonly string[]): void;
+  reportResults(total: number): void;
+}
+
 export const PAGE_SIZES = [25, 50, 100] as const;
 
 /** A page size from the URL, limited to the offered sizes. */
@@ -38,11 +50,17 @@ export abstract class ListQueryPage {
     return {};
   }
 
+  /** Pages on the shared column filters return their `ListFilters`: it then drives `hasFilter`, `clear()` and the reload. */
+  protected listFilters(): ListFiltersLike | null {
+    return null;
+  }
+
   protected readonly hasFilter = computed(
     () =>
       !!this.q() ||
       this.statusFilter() !== 'active' ||
-      Object.values(this.extraFilters()).some((v) => !!v),
+      Object.values(this.extraFilters()).some((v) => !!v) ||
+      (this.listFilters()?.activeCount() ?? 0) > 0,
   );
 
   protected search(text: string): void {
@@ -68,6 +86,11 @@ export abstract class ListQueryPage {
   }
 
   protected clear(): void {
+    const shared = this.listFilters();
+    if (shared) {
+      shared.clear(['q']);
+      return;
+    }
     const extras = Object.fromEntries(Object.keys(this.extraFilters()).map((k) => [k, null]));
     this.navigate({ q: null, status: null, page: null, ...extras });
   }
@@ -98,7 +121,7 @@ export abstract class ServerListPage<T> extends ListQueryPage {
 
   /** Read any extra signals the request depends on, so a change reloads the list. */
   protected watch(): void {
-    /* no extra dependencies */
+    this.listFilters()?.values();
   }
 
   constructor() {
@@ -123,6 +146,7 @@ export abstract class ServerListPage<T> extends ListQueryPage {
       this.rows.set(result.items);
       this.total.set(result.total);
       this.state.set('ready');
+      this.listFilters()?.reportResults(result.total);
     } catch {
       if (id === this.requestId) this.state.set('error');
     }

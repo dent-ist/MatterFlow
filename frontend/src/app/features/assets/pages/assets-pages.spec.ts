@@ -1,8 +1,14 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { Router, provideRouter } from '@angular/router';
-import { Observable } from 'rxjs';
+import {
+  ActivatedRoute,
+  ParamMap,
+  Router,
+  convertToParamMap,
+  provideRouter,
+} from '@angular/router';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import {
   AssetTypesClient,
@@ -84,6 +90,16 @@ describe('Assets pages', () => {
   let audit: Record<'listAuditEvents', Mock>;
   let navigate: Mock;
   let navigateByUrl: Mock;
+  /** The query string the page reads its filters from (ListFilters reads the route; the router itself is mocked). */
+  let query$: BehaviorSubject<ParamMap>;
+  const FILTER_PARAMS = ['name', 'typeId', 'matter', 'extref', 'matterId', 'status'];
+
+  function setQuery(inputs: Record<string, string>): void {
+    const next: Record<string, string> = {};
+    for (const k of query$.value.keys) next[k] = query$.value.get(k)!;
+    for (const [k, v] of Object.entries(inputs)) if (FILTER_PARAMS.includes(k)) next[k] = v;
+    query$.next(convertToParamMap(next));
+  }
 
   async function configure(permissions: Permission[]): Promise<void> {
     assets = {
@@ -138,9 +154,22 @@ describe('Assets pages', () => {
       listMatters: vi.fn().mockReturnValue(ok(pageOfMatters(aMatter()))),
     };
     audit = { listAuditEvents: vi.fn().mockReturnValue(ok({ items: [] })) };
+    query$ = new BehaviorSubject<ParamMap>(convertToParamMap({}));
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useFactory: () => {
+            const root = inject(Router).routerState.root;
+            return Object.create(root, {
+              queryParamMap: { value: query$.asObservable() },
+              snapshot: {
+                value: Object.create(root.snapshot, { queryParamMap: { value: query$.value } }),
+              },
+            });
+          },
+        },
         MessageService,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: AssetsClient, useValue: assets },
@@ -172,14 +201,18 @@ describe('Assets pages', () => {
 
     async function create(permissions: Permission[], inputs: Record<string, string> = {}) {
       await configure(permissions);
+      setQuery(inputs);
       fixture = TestBed.createComponent(AssetsListPage);
-      for (const [k, v] of Object.entries(inputs)) fixture.componentRef.setInput(k, v);
+      for (const [k, v] of Object.entries(inputs))
+        if (!FILTER_PARAMS.includes(k) || k === 'status') fixture.componentRef.setInput(k, v);
       await settle(fixture);
       return fixture;
     }
 
     async function setInputs(inputs: Record<string, string>): Promise<void> {
-      for (const [k, v] of Object.entries(inputs)) fixture.componentRef.setInput(k, v);
+      setQuery(inputs);
+      for (const [k, v] of Object.entries(inputs))
+        if (!FILTER_PARAMS.includes(k) || k === 'status') fixture.componentRef.setInput(k, v);
       await settle(fixture);
     }
 
@@ -339,12 +372,16 @@ describe('Assets pages', () => {
         25,
         '-displayName',
       );
-      expect(el().querySelector('[data-matter-chip]')?.textContent).toContain(
-        '00343-00012 Merger Review',
+      expect(el().querySelector('[data-chip="matterId"]')?.textContent).toContain(
+        'Matter: 00343-00012 Merger Review',
       );
       buttonByLabel(el(), 'New asset')!.click();
       expect(navigateByUrl).toHaveBeenCalledWith('/assets/new?matterId=7');
-      el().querySelector<HTMLButtonElement>('[data-matter-chip] button')!.click();
+      const remove = el().querySelector<HTMLButtonElement>('[data-chip="matterId"] button')!;
+      expect(remove.getAttribute('aria-label')).toBe(
+        'Remove filter Matter: 00343-00012 Merger Review',
+      );
+      remove.click();
       expect(navigate).toHaveBeenCalledWith([], {
         queryParams: { matterId: null, page: null },
         queryParamsHandling: 'merge',
@@ -360,16 +397,19 @@ describe('Assets pages', () => {
       expect(navigate).toHaveBeenLastCalledWith([], {
         queryParams: { name: 'relativity', page: null },
         queryParamsHandling: 'merge',
+        replaceUrl: true,
       });
       typeAndEnter('Matter', '343-12');
       expect(navigate).toHaveBeenLastCalledWith([], {
         queryParams: { matter: '343-12', page: null },
         queryParamsHandling: 'merge',
+        replaceUrl: true,
       });
       typeAndEnter('External reference', 'ds-room');
       expect(navigate).toHaveBeenLastCalledWith([], {
         queryParams: { extref: 'ds-room', page: null },
         queryParamsHandling: 'merge',
+        replaceUrl: true,
       });
 
       const type = control<HTMLSelectElement>('Type');
@@ -407,6 +447,7 @@ describe('Assets pages', () => {
       expect(navigate).toHaveBeenLastCalledWith([], {
         queryParams: { name: null, page: null },
         queryParamsHandling: 'merge',
+        replaceUrl: true,
       });
     });
 
@@ -618,7 +659,7 @@ describe('Assets pages', () => {
           replaceUrl: true,
         });
         // Not again for the same asset.
-        fixture.componentRef.setInput('matter', '00343-00099');
+        setQuery({ matter: '00343-00099' });
         await settle(fixture);
         expect(navigate).toHaveBeenCalledTimes(1);
       });

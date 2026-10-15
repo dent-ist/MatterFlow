@@ -21,29 +21,24 @@ import {
   AssetTypesClient,
   AssetsClient,
 } from '../../../api/generated/api-client';
-import { AuthStore } from '../../../core/auth/auth.store';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ActiveBadge } from '../../../shared/ui/badge';
-import {
-  ColumnSelectFilter,
-  ColumnTextFilter,
-  FilterOption,
-  FiltersToggle,
-  readFlag,
-  writeFlag,
-} from '../../../shared/ui/column-filters';
+import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
+import { FilterDef, FilterOption } from '../../../shared/filters/filter-def';
+import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { ListFilters } from '../../../shared/filters/list-filters';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { FIXED_MODE_QUERY, FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
-import { isActiveParam } from '../../../shared/ui/list-helpers';
+import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
 import { AssetDetails } from './asset-details';
 
-/** The Assets filter row is remembered per user (open or closed). */
-const FILTERS_KEY = 'mf.assets.filters.open';
+/** The columns of the grid, in order; the keys the filter definitions point at. */
+const COLUMNS = ['name', 'type', 'matter', 'externalReference', 'status'] as const;
 
 const STATUS_OPTIONS: readonly FilterOption[] = [
   { value: 'active', label: 'Active' },
@@ -76,28 +71,13 @@ export function parseSelected(value: string | null | undefined): number | null {
     MatterRef,
     SortHeader,
     ErrorReference,
-    ColumnTextFilter,
-    ColumnSelectFilter,
-    FiltersToggle,
+    FiltersBar,
+    ColumnFilterRow,
     AssetDetails,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   styles: `
-    .as-bar {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      align-items: center;
-      gap: var(--mf-s2) var(--mf-s3);
-      margin: 0 0 var(--mf-s2);
-    }
-    .as-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      margin-right: auto;
-    }
     .as-table {
       table-layout: fixed;
       min-width: 820px;
@@ -181,43 +161,18 @@ export function parseSelected(value: string | null | undefined): number | null {
           *mfHasPermission="'Asset.Create'"
           label="New asset"
           icon="pi pi-plus"
-          (onClick)="go('/assets/new' + (matterId() ? '?matterId=' + matterId() : ''))"
+          (onClick)="go(newAssetUrl())"
         />
       </mf-page-header>
 
-      <div class="as-bar" data-grid-toolbar>
-        @if (matterId()) {
-          <span class="as-chip" data-matter-chip>
-            Matter: {{ matterChip() }}
-            <button
-              type="button"
-              class="mf-btn mf-btn--text"
-              (click)="clearMatter()"
-              aria-label="Remove matter filter"
-            >
-              Remove
-            </button>
-          </span>
-        }
-        @if (activeCount() > 0) {
-          <button type="button" class="mf-btn mf-btn--text" data-clear-filters (click)="clear()">
-            Clear filters
-          </button>
-        }
-        <mf-filters-toggle
-          controls="asset-filter-row"
-          [open]="filtersOpen()"
-          [count]="activeCount()"
-          (toggled)="toggleFilters()"
-        />
-      </div>
+      <mf-filters-bar [filters]="filters" controls="asset-filter-row" [clearAlso]="['q']" />
 
       <div class="mf-fill as-grid">
         <div
           class="mf-table-wrap"
           mfScrollArea="Assets list"
           [keepOn]="['selected']"
-          [style.scroll-padding-top]="filtersOpen() ? '5.5rem' : null"
+          [style.scroll-padding-top]="filters.rowVisible() ? '5.5rem' : null"
           #scroll
         >
           <div class="mf-scroll">
@@ -254,46 +209,13 @@ export function parseSelected(value: string | null | undefined): number | null {
                   <th scope="col">External reference</th>
                   <th scope="col">Status</th>
                 </tr>
-                @if (filtersOpen()) {
-                  <tr class="mf-filter-row" id="asset-filter-row" data-filter-row>
-                    <td>
-                      <mf-column-text-filter
-                        label="Name"
-                        [value]="name() ?? ''"
-                        (valueChange)="setName($event)"
-                      />
-                    </td>
-                    <td>
-                      <mf-column-select-filter
-                        label="Type"
-                        [options]="typeOptions()"
-                        [value]="typeId() ?? ''"
-                        (valueChange)="setType($event)"
-                      />
-                    </td>
-                    <td>
-                      <mf-column-text-filter
-                        label="Matter"
-                        [value]="matter() ?? ''"
-                        (valueChange)="setMatter($event)"
-                      />
-                    </td>
-                    <td>
-                      <mf-column-text-filter
-                        label="External reference"
-                        [value]="extref() ?? ''"
-                        (valueChange)="setExtRef($event)"
-                      />
-                    </td>
-                    <td>
-                      <mf-column-select-filter
-                        label="Status"
-                        [options]="statusOptions"
-                        [value]="statusFilter()"
-                        (valueChange)="setStatus($event)"
-                      />
-                    </td>
-                  </tr>
+                @if (filters.rowVisible()) {
+                  <tr
+                    mfColumnFilterRow
+                    id="asset-filter-row"
+                    [filters]="filters"
+                    [columns]="columns"
+                  ></tr>
                 }
               </thead>
               <tbody>
@@ -346,8 +268,11 @@ export function parseSelected(value: string | null | undefined): number | null {
                       </tr>
                     } @empty {
                       <tr class="as-state">
-                        <td colspan="5" [attr.data-empty]="activeCount() > 0 ? 'filtered' : 'none'">
-                          @if (activeCount() > 0) {
+                        <td
+                          colspan="5"
+                          [attr.data-empty]="filters.activeCount() > 0 ? 'filtered' : 'none'"
+                        >
+                          @if (filters.activeCount() > 0) {
                             <p>No assets match these filters</p>
                             <p-button
                               label="Clear filters"
@@ -399,48 +324,76 @@ export function parseSelected(value: string | null | undefined): number | null {
   `,
 })
 export class AssetsListPage extends ServerListPage<AssetListItem> {
-  /** Query parameters (bound by the router): `matterId` chip, `typeId`, the text filters and the selection. */
-  readonly matterId = input<string>();
-  readonly typeId = input<string>();
-  readonly name = input<string>();
-  readonly matter = input<string>();
-  readonly extref = input<string>();
+  /** Query parameter (bound by the router): the selection. The filters are read from the URL by `ListFilters`. */
   readonly selected = input<string>();
 
   private readonly api = inject(AssetsClient);
   private readonly typesApi = inject(AssetTypesClient);
   private readonly injector = inject(Injector);
-  private readonly auth = inject(AuthStore);
   private readonly details = viewChild(AssetDetails);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
   private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
 
   protected readonly defaultSort = 'displayName';
-  protected readonly statusOptions = STATUS_OPTIONS;
+  protected readonly columns = COLUMNS;
   protected readonly types = signal<AssetTypeResponse[]>([]);
   protected readonly selectedId = computed(() => parseSelected(this.selected()));
   /** The asset the panel has loaded (its Matter and state are only known once it is there). */
   protected readonly detailLoaded = signal<AssetResponse | null>(null);
 
-  protected readonly typeOptions = computed<FilterOption[]>(() => [
-    { value: '', label: 'All types' },
-    ...this.types().map((t) => ({ value: String(t.assetTypeId), label: t.name })),
-  ]);
-
-  /** Number of filters in force (a text or type filter, a Status other than Active, the Matter chip); shown on the Filters button. */
-  protected readonly activeCount = computed(
-    () =>
-      [this.name(), this.typeId(), this.matter(), this.extref(), this.matterId()].filter(
-        (v) => !!v?.trim(),
-      ).length + (this.statusFilter() !== 'active' ? 1 : 0),
+  protected readonly typeOptions = computed<FilterOption[]>(() =>
+    this.types().map((t) => ({ value: String(t.assetTypeId), label: t.name })),
   );
 
-  protected readonly filtersOpen = signal(false);
-  protected readonly matterChip = computed(() => {
+  protected readonly matterChip = computed((): string => {
     const first = this.rows()[0];
-    return first && String(first.matterId) === this.matterId()
+    const id = this.filters.text('matterId');
+    return first && String(first.matterId) === id
       ? `${first.matterRef} ${first.matterName}`
-      : `Matter ${this.matterId()}`;
+      : `Matter ${id}`;
+  });
+
+  /** Creating from a matter's list keeps the matter. */
+  protected newAssetUrl(): string {
+    const matterId = this.filters.text('matterId');
+    return '/assets/new' + (matterId ? '?matterId=' + matterId : '');
+  }
+
+  /** One definition per filter: the row, the sheet, the chips, the count, the URL and the API arguments all come from it. */
+  private readonly defs = computed((): FilterDef[] => [
+    { key: 'name', label: 'Name', column: 'name', type: 'text' },
+    {
+      key: 'typeId',
+      label: 'Type',
+      column: 'type',
+      type: 'select',
+      allLabel: 'All types',
+      options: this.typeOptions(),
+    },
+    { key: 'matter', label: 'Matter', column: 'matter', type: 'text' },
+    { key: 'extref', label: 'External reference', column: 'externalReference', type: 'text' },
+    {
+      key: 'status',
+      label: 'Status',
+      column: 'status',
+      type: 'select',
+      options: STATUS_OPTIONS,
+      default: 'active',
+    },
+    // `?matterId=` (a link from a matter): no control, a removable chip.
+    {
+      key: 'matterId',
+      label: 'Matter',
+      type: 'text',
+      noControl: true,
+      valueLabel: (): string => this.matterChip(),
+    },
+  ]);
+
+  protected readonly filters: ListFilters = new ListFilters({
+    screen: 'assets',
+    noun: 'assets',
+    defs: this.defs,
   });
 
   /** The user chose the selection in this list (so a row that later leaves the page is not "revealed" by changing the filters). */
@@ -448,22 +401,14 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   private revealTried: number | null = null;
   private lastRevealed = '';
   private focusDetails = false;
-  private storageKey = FILTERS_KEY;
 
   constructor() {
     super();
     void this.loadTypes();
 
-    // The Filters row is remembered per user; it also opens by itself when the address carries filters.
-    effect(() => {
-      const userId = this.auth.profile()?.userId;
-      untracked(() => {
-        this.storageKey = userId ? `${FILTERS_KEY}.${userId}` : FILTERS_KEY;
-        if (readFlag(this.storageKey)) this.filtersOpen.set(true);
-      });
-    });
-    effect(() => {
-      if (this.activeCount() > 0) untracked(() => this.filtersOpen.set(true));
+    // The controls move into the sheet while the grid scrolls sideways.
+    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
+      injector: this.injector,
     });
 
     // Keyboard users who select a row land on the panel heading once the panel is there.
@@ -529,22 +474,8 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     });
   }
 
-  protected override extraFilters() {
-    return {
-      matterId: this.matterId(),
-      typeId: this.typeId(),
-      name: this.name(),
-      matter: this.matter(),
-      extref: this.extref(),
-    };
-  }
-
-  protected override watch(): void {
-    this.matterId();
-    this.typeId();
-    this.name();
-    this.matter();
-    this.extref();
+  protected override listFilters() {
+    return this.filters;
   }
 
   private async loadTypes(): Promise<void> {
@@ -559,64 +490,22 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   }
 
   protected override fetch() {
-    const matterId = Number(this.matterId());
-    const typeId = Number(this.typeId());
+    const matterId = Number(this.filters.text('matterId'));
+    const typeId = Number(this.filters.text('typeId'));
     return firstValueFrom(
       this.api.listAssets(
         Number.isInteger(matterId) && matterId > 0 ? matterId : undefined,
         Number.isInteger(typeId) && typeId > 0 ? typeId : undefined,
-        isActiveParam(this.statusFilter()),
+        isActiveParam(parseStatus(this.filters.text('status'))),
         undefined,
-        this.name()?.trim() || undefined,
-        this.extref()?.trim() || undefined,
-        this.matter()?.trim() || undefined,
+        this.filters.text('name') || undefined,
+        this.filters.text('extref') || undefined,
+        this.filters.text('matter') || undefined,
         this.pageNumber(),
         this.pageSize(),
         this.sort() || undefined,
       ),
     );
-  }
-
-  // ---- filters
-
-  protected toggleFilters(): void {
-    const open = !this.filtersOpen();
-    this.filtersOpen.set(open);
-    writeFlag(this.storageKey, open);
-  }
-
-  protected setName(text: string): void {
-    this.navigate({ name: text || null, page: null });
-  }
-
-  protected setMatter(text: string): void {
-    this.navigate({ matter: text || null, page: null });
-  }
-
-  protected setExtRef(text: string): void {
-    this.navigate({ extref: text || null, page: null });
-  }
-
-  protected setType(typeId: string): void {
-    this.navigate({ typeId: typeId || null, page: null });
-  }
-
-  protected clearMatter(): void {
-    this.navigate({ matterId: null, page: null });
-  }
-
-  /** Clears every filter (and a legacy search text); the selection stays. */
-  protected override clear(): void {
-    this.navigate({
-      q: null,
-      status: null,
-      matterId: null,
-      typeId: null,
-      name: null,
-      matter: null,
-      extref: null,
-      page: null,
-    });
   }
 
   // ---- selection and details panel
