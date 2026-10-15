@@ -265,7 +265,13 @@ test.describe('Dashboard actions and click-through', () => {
     await page.goto('/dashboard');
     await expect(page).toHaveURL(/\/dashboard\?tab=summary/);
     const tabs = page.getByRole('tablist', { name: 'Dashboard views' });
-    await expect(tabs.getByRole('tab')).toHaveText(['Summary', 'Breakdowns', 'Trends']);
+    await expect(tabs.getByRole('tab')).toHaveText([
+      'Summary',
+      'Breakdowns',
+      'Trends',
+      'Swimlane',
+      'Users',
+    ]);
     await expect(tabs.getByRole('tab', { name: 'Summary' })).toHaveAttribute(
       'aria-selected',
       'true',
@@ -325,11 +331,11 @@ test.describe('Dashboard actions and click-through', () => {
     await expect(tabs.getByRole('tab', { name: 'Summary' })).toHaveAttribute('tabindex', '-1');
     await expect(page).toHaveURL(/tab=breakdowns/);
     await page.keyboard.press('End');
-    await expect(tabs.getByRole('tab', { name: 'Trends' })).toBeFocused();
+    await expect(tabs.getByRole('tab', { name: 'Users' })).toBeFocused();
     await page.keyboard.press('ArrowRight');
     await expect(tabs.getByRole('tab', { name: 'Summary' })).toBeFocused();
     await page.keyboard.press('ArrowLeft');
-    await expect(tabs.getByRole('tab', { name: 'Trends' })).toBeFocused();
+    await expect(tabs.getByRole('tab', { name: 'Users' })).toBeFocused();
     await page.keyboard.press('Home');
     await expect(tabs.getByRole('tab', { name: 'Summary' })).toBeFocused();
     // Tab leaves the tab list into the panel (the next tab stop is not another tab).

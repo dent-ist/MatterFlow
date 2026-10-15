@@ -74,13 +74,17 @@ test.describe('swimlane screenshots', () => {
     await page.keyboard.press('Escape');
 
     // Loading skeletons, the capped-lane note and the error state, with the same data.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
     await page.route('**/api/v1/dashboard/swimlane**', async (route) => {
-      await new Promise((r) => setTimeout(r, 1500));
+      await gate;
       await route.continue();
     });
     await page.goto(`${base}&group=none`);
     await expect(page.locator('[data-board][aria-busy="true"]')).toBeVisible();
     await shot('09-loading-1366');
+    release();
+    await ready(page);
     await page.unroute('**/api/v1/dashboard/swimlane**');
 
     await page.route('**/api/v1/dashboard/swimlane**', async (route) => {
@@ -96,6 +100,7 @@ test.describe('swimlane screenshots', () => {
     await lane(page, 'NEW')
       .locator('[data-lane-body]')
       .evaluate((el) => (el.scrollTop = el.scrollHeight));
+    await page.locator('[data-truncated]').scrollIntoViewIfNeeded();
     await expect(page.locator('[data-truncated]')).toBeVisible();
     await shot('10-capped-lane-1366');
     await page.unroute('**/api/v1/dashboard/swimlane**');

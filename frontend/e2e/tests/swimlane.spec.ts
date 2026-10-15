@@ -454,6 +454,72 @@ test.describe('Swimlane tab', () => {
     );
   });
 
+  test('stays quick with 800 cards: a lane draws 40 at a time and "Show all" draws the rest', async ({
+    page,
+  }) => {
+    const priority = { priorityId: 2, label: 'High', color: 'high', rank: 2 };
+    const lanes = ['NEW', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED'].map((status, l) => ({
+      status,
+      label: status,
+      count: 260,
+      total: 260,
+      truncated: true,
+      cards: Array.from({ length: 200 }, (_, i) => ({
+        taskId: l * 1000 + i + 1,
+        ref: `TSK-${l * 1000 + i + 1}`,
+        title: `Synthetic card ${i}`,
+        status,
+        statusLabel: status,
+        priority,
+        assignee: undefined,
+        pod: undefined,
+        clientId: 1 + (i % 12),
+        clientNumber: '00001',
+        clientName: `Client ${i % 12}`,
+        matterId: 1 + (i % 30),
+        matterRef: `00001-${String(1 + (i % 30)).padStart(5, '0')}`,
+        matterName: `Matter ${i % 30}`,
+        matterIsSensitive: false,
+        taskTypeId: 1,
+        taskTypeName: 'Type',
+        taskTypeIconKey: 'file-text',
+        dueDate: undefined,
+        dueAtUtc: undefined,
+        isOverdue: false,
+        isAsap: true,
+        stepsResolved: 0,
+        stepsTotal: 3,
+        createdAtUtc: '2026-10-01T00:00:00Z',
+        completedAtUtc: undefined,
+        rowVersion: 'AAAA',
+      })),
+    }));
+    await page.route('**/api/v1/dashboard/swimlane**', (route) =>
+      route.fulfill({
+        json: {
+          timeZone: 'America/New_York',
+          generatedAtUtc: new Date().toISOString(),
+          completedDays: 7,
+          completedFrom: '2026-10-09',
+          groupBy: 'none',
+          sort: 'priority',
+          laneCap: 200,
+          lanes,
+          groups: [],
+        },
+      }),
+    );
+    await page.goto('/dashboard?tab=swimlane');
+    await expect(cards(page, 'NEW').first()).toBeVisible();
+    await expect(page.locator('mf-swimlane-card')).toHaveCount(160);
+    await expect(lane(page, 'NEW').locator('[data-show-more]')).toHaveText(
+      /Show 40 more of 160 hidden/,
+    );
+    await lane(page, 'NEW').locator('[data-show-all]').click();
+    await expect(cards(page, 'NEW')).toHaveCount(200);
+    await expect(lane(page, 'NEW').locator('[data-truncated]')).toContainText('Showing 200 of 260');
+  });
+
   test('has no axe violations on the board, the tree, a compact board and the drawer', async ({
     page,
   }) => {

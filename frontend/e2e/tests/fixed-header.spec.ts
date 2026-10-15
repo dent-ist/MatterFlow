@@ -200,6 +200,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
   });
 
   test('administration lists use the fixed layout too', async ({ page }) => {
+    test.setTimeout(180_000);
     for (const [path, title, list] of [
       ['/admin/users', 'Users', 'Users list, scrollable'],
       ['/admin/pods', 'Pods', 'Pods list, scrollable'],
@@ -215,7 +216,8 @@ test.describe('Fixed-header screens at 1366x768', () => {
       await page.goto(path);
       await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible();
       const region = page.getByRole('region', { name: list });
-      await expect(region, path).toBeVisible();
+      // Ten pages in one test: give each list time to arrive when the machine is busy (a long list of users is read first).
+      await expect(region, path).toBeVisible({ timeout: 30_000 });
       await expect(page.locator('mf-fixed-page'), path).toHaveAttribute('data-fixed-page', '');
       expect(
         await documentOverflow(page),

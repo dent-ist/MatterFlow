@@ -162,7 +162,7 @@ const EDIT_REFRESH_DELAY_MS = 900;
       grid-template-columns: repeat(4, minmax(17rem, 1fr));
       gap: var(--mf-s3);
       align-items: stretch;
-      height: max(32rem, calc(100vh - 17rem));
+      height: max(30rem, calc(100vh - 22rem));
       overflow-x: auto;
       padding-bottom: var(--mf-s1);
     }
