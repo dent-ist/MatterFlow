@@ -3,6 +3,17 @@ using MatterFlow.WorkflowEngine.Contracts;
 
 namespace MatterFlow.WorkflowEngine.Application.Workflows;
 
+/// <summary>A Task Type that may use a workflow (the Task types column of the Workflows list).</summary>
+/// <param name="TaskTypeId">Task Type id.</param>
+/// <param name="Name">Its display name.</param>
+/// <param name="IsActive">False for a deactivated Task Type.</param>
+/// <param name="IsDefault">True when this workflow is the Task Type's default workflow.</param>
+public sealed record WorkflowTaskTypeRef(
+    [property: Required] int TaskTypeId,
+    [property: Required] string Name,
+    [property: Required] bool IsActive,
+    [property: Required] bool IsDefault);
+
 /// <summary>A workflow in the admin list.</summary>
 /// <param name="WorkflowDefinitionId">Workflow id.</param>
 /// <param name="Name">Name (unique).</param>
@@ -13,6 +24,7 @@ namespace MatterFlow.WorkflowEngine.Application.Workflows;
 /// <param name="PublishedStepCount">Its number of steps.</param>
 /// <param name="DraftVersionId">The open draft, if any.</param>
 /// <param name="DraftVersionNo">Its number.</param>
+/// <param name="TaskTypes">The Task Types this workflow is eligible for, by name (all of them; the screen shows the first few).</param>
 /// <param name="RowVersion">Optimistic-concurrency token (base64).</param>
 public sealed record WorkflowSummary(
     [property: Required] int WorkflowDefinitionId,
@@ -24,6 +36,7 @@ public sealed record WorkflowSummary(
     int? PublishedStepCount,
     int? DraftVersionId,
     int? DraftVersionNo,
+    [property: Required] IReadOnlyList<WorkflowTaskTypeRef> TaskTypes,
     [property: Required] string RowVersion);
 
 /// <summary>A version in a version list.</summary>
@@ -173,7 +186,7 @@ public sealed record WorkflowVersionActionRequest
 /// <summary>Workflow list filters.</summary>
 public sealed class WorkflowListQuery
 {
-    internal static readonly string[] Keys = ["page", "pageSize", "q", "isActive", "sort"];
+    internal static readonly string[] Keys = ["page", "pageSize", "q", "isActive", "sort", "taskTypeId", "stepId"];
 
     /// <summary>Sort fields accepted by <see cref="Sort"/> (prefix with <c>-</c> for descending).</summary>
     internal static readonly string[] SortFields = ["name", "-name"];
@@ -188,6 +201,12 @@ public sealed class WorkflowListQuery
 
     /// <summary>Filter by active state; omit for all.</summary>
     public bool? IsActive { get; init; }
+
+    /// <summary>Only the workflows this Task Type may use (an unknown Task Type has none).</summary>
+    public int? TaskTypeId { get; init; }
+
+    /// <summary>Only the workflows with a version (any status) that contains this library step.</summary>
+    public int? StepId { get; init; }
 
     /// <summary>1-based page.</summary>
     public int? Page { get; init; }

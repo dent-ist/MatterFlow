@@ -28,6 +28,19 @@ public sealed record TaskTypeInfo(
     int? DefaultWorkflowDefinitionId,
     bool IsUsable);
 
+/// <summary>One "this Task Type may use this workflow" link, for the workflow admin screens (which Task Types use a workflow).</summary>
+/// <param name="TaskTypeId">Task Type id.</param>
+/// <param name="TaskTypeName">Its display name.</param>
+/// <param name="TaskTypeIsActive">False for a deactivated Task Type.</param>
+/// <param name="WorkflowDefinitionId">The eligible workflow.</param>
+/// <param name="IsDefault">True when the workflow is the Task Type's default.</param>
+public sealed record TaskTypeWorkflowLink(
+    int TaskTypeId,
+    string TaskTypeName,
+    bool TaskTypeIsActive,
+    int WorkflowDefinitionId,
+    bool IsDefault);
+
 /// <summary>Read access to Task Types for other modules (Task creation, queue filters).</summary>
 public interface ITaskTypeCatalog
 {
@@ -39,4 +52,10 @@ public interface ITaskTypeCatalog
 
     /// <summary>One Task Type (usable or not) with its published form version and eligible workflows, or null when it does not exist.</summary>
     Task<TaskTypeInfo?> GetAsync(int taskTypeId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The Task Type to workflow eligibility links, ordered by Task Type name, in one query. Limit them to the given workflows and/or one
+    /// Task Type; with neither, every link. A Task Type that does not exist yields no links.
+    /// </summary>
+    Task<IReadOnlyList<TaskTypeWorkflowLink>> ListWorkflowLinksAsync(IReadOnlyCollection<int>? workflowIds = null, int? taskTypeId = null, CancellationToken cancellationToken = default);
 }

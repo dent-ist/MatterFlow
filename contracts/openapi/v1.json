@@ -1864,6 +1864,16 @@
           "TaskTypes"
         ],
         "operationId": "ListTaskTypes",
+        "parameters": [
+          {
+            "name": "workflowId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -6985,6 +6995,22 @@
             }
           },
           {
+            "name": "TaskTypeId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "StepId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
             "name": "Page",
             "in": "query",
             "schema": {
@@ -11775,6 +11801,7 @@
           "documentationUrl",
           "isActive",
           "usedInVersions",
+          "usedInWorkflows",
           "tags",
           "rowVersion"
         ],
@@ -11803,6 +11830,10 @@
             "type": "boolean"
           },
           "usedInVersions": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "usedInWorkflows": {
             "type": "integer",
             "format": "int32"
           },
@@ -14860,6 +14891,7 @@
           "publishedStepCount",
           "draftVersionId",
           "draftVersionNo",
+          "taskTypes",
           "rowVersion"
         ],
         "type": "object",
@@ -14915,8 +14947,38 @@
             ],
             "format": "int32"
           },
+          "taskTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkflowTaskTypeRef"
+            }
+          },
           "rowVersion": {
             "type": "string"
+          }
+        }
+      },
+      "WorkflowTaskTypeRef": {
+        "required": [
+          "taskTypeId",
+          "name",
+          "isActive",
+          "isDefault"
+        ],
+        "type": "object",
+        "properties": {
+          "taskTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isDefault": {
+            "type": "boolean"
           }
         }
       },

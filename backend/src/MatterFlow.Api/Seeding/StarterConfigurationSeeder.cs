@@ -280,7 +280,7 @@ public sealed class StarterConfigurationSeeder(
         bool dryRun,
         CancellationToken ct)
     {
-        var existing = (await taskTypes.ListViewsAsync(ct)).GroupBy(t => t.Name, StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
+        var existing = (await taskTypes.ListViewsAsync(null, ct)).GroupBy(t => t.Name, StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
         foreach (var type in data.TaskTypes)
         {
             var fields = StarterFormBuilder.Build(type.Fields);

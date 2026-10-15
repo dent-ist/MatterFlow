@@ -18,12 +18,15 @@ namespace MatterFlow.Configuration.Api;
 [Produces("application/json")]
 public class TaskTypesController(TaskTypeService taskTypes) : ControllerBase
 {
-    /// <summary>Lists all Task Types by name, including inactive ones (historical Tasks still display them; pickers use <c>isUsable</c>).</summary>
+    /// <summary>
+    /// Lists all Task Types by name, including inactive ones (historical Tasks still display them; pickers use <c>isUsable</c>). With
+    /// <c>workflowId</c> only the types for which that workflow is eligible (the Workflows tab links to it).
+    /// </summary>
     [HttpGet(Name = "ListTaskTypes")]
     [Authorize(Policy = ConfigurationPolicies.TaskView)]
     [ProducesResponseType<IReadOnlyList<TaskTypeView>>(StatusCodes.Status200OK, "application/json")]
-    public async Task<ActionResult<IReadOnlyList<TaskTypeView>>> List(CancellationToken cancellationToken) =>
-        Ok(await taskTypes.ListViewsAsync(cancellationToken));
+    public async Task<ActionResult<IReadOnlyList<TaskTypeView>>> List([FromQuery] int? workflowId, CancellationToken cancellationToken) =>
+        Ok(await taskTypes.ListViewsAsync(workflowId, cancellationToken));
 
     /// <summary>One Task Type with its form status and eligible workflows.</summary>
     [HttpGet("{id:int}", Name = "GetTaskType")]

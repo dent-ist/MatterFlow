@@ -98,9 +98,16 @@ public sealed class TaskTypeService(
 
     // ---- read side
 
-    public async Task<IReadOnlyList<TaskTypeView>> ListViewsAsync(CancellationToken ct = default)
+    /// <summary>All Task Types by name; with <paramref name="workflowId"/> only the types that list that workflow as eligible.</summary>
+    public async Task<IReadOnlyList<TaskTypeView>> ListViewsAsync(int? workflowId = null, CancellationToken ct = default)
     {
-        var rows = await db.Set<TaskType>().AsNoTracking().Include(t => t.EligibleWorkflows).OrderBy(t => t.Name).ThenBy(t => t.Id).ToListAsync(ct);
+        var query = db.Set<TaskType>().AsNoTracking().Include(t => t.EligibleWorkflows).AsQueryable();
+        if (workflowId is { } wanted)
+        {
+            query = query.Where(t => t.EligibleWorkflows.Any(e => e.WorkflowDefinitionId == wanted));
+        }
+
+        var rows = await query.OrderBy(t => t.Name).ThenBy(t => t.Id).ToListAsync(ct);
         var facts = await LoadFormFactsAsync(rows.Select(r => r.Id).ToList(), ct);
         return [.. rows.Select(r => ToView(r, facts.GetValueOrDefault(r.Id)))];
     }
@@ -118,12 +125,35 @@ public sealed class TaskTypeService(
         [.. (await ListAsync(false, cancellationToken)).Where(t => t.IsUsable)];
 
     public async Task<IReadOnlyList<TaskTypeInfo>> ListAsync(bool includeInactive, CancellationToken cancellationToken = default) =>
-        [.. (await ListViewsAsync(cancellationToken)).Where(v => includeInactive || v.IsActive).Select(ToInfo)];
+        [.. (await ListViewsAsync(null, cancellationToken)).Where(v => includeInactive || v.IsActive).Select(ToInfo)];
 
     public async Task<TaskTypeInfo?> GetAsync(int taskTypeId, CancellationToken cancellationToken = default)
     {
         var view = await GetViewAsync(taskTypeId, cancellationToken);
         return view.IsSuccess ? ToInfo(view.Value) : null;
+    }
+
+    public async Task<IReadOnlyList<TaskTypeWorkflowLink>> ListWorkflowLinksAsync(
+        IReadOnlyCollection<int>? workflowIds = null, int? taskTypeId = null, CancellationToken cancellationToken = default)
+    {
+        var links = db.Set<TaskTypeWorkflowEligibility>().AsNoTracking().AsQueryable();
+        if (workflowIds is not null)
+        {
+            var wanted = workflowIds.ToList();
+            links = links.Where(l => wanted.Contains(l.WorkflowDefinitionId));
+        }
+
+        if (taskTypeId is { } one)
+        {
+            links = links.Where(l => l.TaskTypeId == one);
+        }
+
+        return await (
+            from l in links
+            join t in db.Set<TaskType>().AsNoTracking() on l.TaskTypeId equals t.Id
+            orderby t.Name, t.Id
+            select new TaskTypeWorkflowLink(t.Id, t.Name, t.IsActive, l.WorkflowDefinitionId, t.DefaultWorkflowDefinitionId == l.WorkflowDefinitionId))
+            .ToListAsync(cancellationToken);
     }
 
     private static TaskTypeInfo ToInfo(TaskTypeView v) =>

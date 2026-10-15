@@ -17,6 +17,7 @@ namespace MatterFlow.WorkflowEngine.Application.Steps;
 /// <param name="DocumentationUrl">Optional documentation link.</param>
 /// <param name="IsActive">False = hidden from new workflow drafts; published versions are untouched.</param>
 /// <param name="UsedInVersions">Number of workflow versions (any status) that contain a copy of this step.</param>
+/// <param name="UsedInWorkflows">Number of distinct workflows with a version (any status) that contains a copy of this step.</param>
 /// <param name="Tags">The step's tags (display names) in the order they were entered.</param>
 /// <param name="RowVersion">Optimistic-concurrency token (base64).</param>
 public sealed record StepDefinitionSummary(
@@ -26,6 +27,7 @@ public sealed record StepDefinitionSummary(
     string? DocumentationUrl,
     [property: Required] bool IsActive,
     [property: Required] int UsedInVersions,
+    [property: Required] int UsedInWorkflows,
     [property: Required] IReadOnlyList<string> Tags,
     [property: Required] string RowVersion);
 
@@ -155,9 +157,9 @@ public sealed class StepDefinitionListQuery
     internal static readonly string[] Keys = ["page", "pageSize", "q", "isActive", "sort", "tags", "tagMatch"];
 
     /// <summary>Sort fields accepted by <see cref="Sort"/> (prefix with <c>-</c> for descending).</summary>
-    internal static readonly string[] SortFields = ["title", "-title", "usedInVersions", "-usedInVersions"];
+    internal static readonly string[] SortFields = ["title", "-title", "usedInVersions", "-usedInVersions", "usedInWorkflows", "-usedInWorkflows"];
 
-    /// <summary>One of <c>title</c> (default), <c>-title</c>, <c>usedInVersions</c> or <c>-usedInVersions</c>.</summary>
+    /// <summary>One of <c>title</c> (default), <c>-title</c>, <c>usedInVersions</c>, <c>-usedInVersions</c>, <c>usedInWorkflows</c> or <c>-usedInWorkflows</c>.</summary>
     [StringLength(30)]
     public string? Sort { get; init; }
 
@@ -269,21 +271,31 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
 
         var total = await steps.CountAsync(ct);
         var page = paging.Value;
+        var usages = db.Set<WorkflowVersionStep>().AsNoTracking();
+        var versionsOfWorkflows = db.Set<WorkflowVersion>().AsNoTracking();
         var withUsage = steps.Select(s => new
         {
             Step = s,
-            Used = db.Set<WorkflowVersionStep>().Count(v => v.SourceStepDefinitionId == s.Id),
+            Used = usages.Count(v => v.SourceStepDefinitionId == s.Id),
+            // Distinct workflows: a workflow with several versions of the step counts once.
+            Workflows = versionsOfWorkflows
+                .Where(wv => usages.Any(v => v.WorkflowVersionId == wv.Id && v.SourceStepDefinitionId == s.Id))
+                .Select(wv => wv.WorkflowDefinitionId)
+                .Distinct()
+                .Count(),
         });
         var ordered = query.Sort switch
         {
             "-title" => withUsage.OrderByDescending(r => r.Step.Title).ThenBy(r => r.Step.Id),
             "usedInVersions" => withUsage.OrderBy(r => r.Used).ThenBy(r => r.Step.Title).ThenBy(r => r.Step.Id),
             "-usedInVersions" => withUsage.OrderByDescending(r => r.Used).ThenBy(r => r.Step.Title).ThenBy(r => r.Step.Id),
+            "usedInWorkflows" => withUsage.OrderBy(r => r.Workflows).ThenBy(r => r.Step.Title).ThenBy(r => r.Step.Id),
+            "-usedInWorkflows" => withUsage.OrderByDescending(r => r.Workflows).ThenBy(r => r.Step.Title).ThenBy(r => r.Step.Id),
             _ => withUsage.OrderBy(r => r.Step.Title).ThenBy(r => r.Step.Id),
         };
         var rows = await ordered.Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
         var tagsByStep = await TagsOfAsync(rows.Select(r => r.Step.Id).ToList(), ct);
-        var items = rows.Select(r => ToSummary(r.Step, r.Used, tagsByStep.GetValueOrDefault(r.Step.Id) ?? [])).ToList();
+        var items = rows.Select(r => ToSummary(r.Step, r.Used, r.Workflows, tagsByStep.GetValueOrDefault(r.Step.Id) ?? [])).ToList();
         return new PagedResult<StepDefinitionSummary>(items, total, page.Page, page.PageSize);
     }
 
@@ -620,8 +632,8 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
         return (t.Value, d.Value, i.Value, u.Value);
     }
 
-    private static StepDefinitionSummary ToSummary(StepDefinition s, int used, IReadOnlyList<string> tags) =>
-        new(s.Id, s.Title, s.Description, s.DocumentationUrl, s.IsActive, used, tags, WorkflowSupport.FormatRowVersion(s.RowVersion));
+    private static StepDefinitionSummary ToSummary(StepDefinition s, int used, int workflows, IReadOnlyList<string> tags) =>
+        new(s.Id, s.Title, s.Description, s.DocumentationUrl, s.IsActive, used, workflows, tags, WorkflowSupport.FormatRowVersion(s.RowVersion));
 
     private async Task<StepDefinitionDetail> ToDetailAsync(StepDefinition step, CancellationToken ct)
     {

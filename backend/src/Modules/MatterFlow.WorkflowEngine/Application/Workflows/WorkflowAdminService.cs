@@ -1,4 +1,5 @@
 using MatterFlow.Audit.Contracts;
+using MatterFlow.Configuration.Contracts;
 using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.SharedKernel.Identity;
@@ -20,6 +21,7 @@ namespace MatterFlow.WorkflowEngine.Application.Workflows;
 public sealed class WorkflowAdminService(
     DbContext db,
     IFormDefinitionResolver forms,
+    ITaskTypeCatalog taskTypes,
     IPermissionChecker permissions,
     ICurrentUser currentUser,
     IClock clock,
@@ -53,6 +55,19 @@ public sealed class WorkflowAdminService(
         if (!string.IsNullOrEmpty(q))
         {
             workflows = workflows.Where(w => w.Name.Contains(q) || (w.Description != null && w.Description.Contains(q)));
+        }
+
+        if (query.TaskTypeId is { } taskTypeId)
+        {
+            var eligible = (await taskTypes.ListWorkflowLinksAsync(taskTypeId: taskTypeId, cancellationToken: ct)).Select(l => l.WorkflowDefinitionId).ToList();
+            workflows = workflows.Where(w => eligible.Contains(w.Id));
+        }
+
+        if (query.StepId is { } stepId)
+        {
+            var versions = db.Set<WorkflowVersion>().AsNoTracking();
+            var usages = db.Set<WorkflowVersionStep>().AsNoTracking();
+            workflows = workflows.Where(w => versions.Any(v => v.WorkflowDefinitionId == w.Id && usages.Any(s => s.WorkflowVersionId == v.Id && s.SourceStepDefinitionId == stepId)));
         }
 
         var total = await workflows.CountAsync(ct);
@@ -664,6 +679,9 @@ public sealed class WorkflowAdminService(
             .Where(v => ids.Contains(v.WorkflowDefinitionId) && v.Status != WorkflowVersionStatus.Retired)
             .Select(v => new { v.Id, v.WorkflowDefinitionId, v.VersionNo, v.Status, StepCount = v.Steps.Count })
             .ToListAsync(ct);
+
+        // One grouped query for the Task Types of every workflow on the page.
+        var links = (await taskTypes.ListWorkflowLinksAsync(ids, cancellationToken: ct)).ToLookup(l => l.WorkflowDefinitionId);
         return
         [
             .. definitions.Select(d =>
@@ -680,6 +698,7 @@ public sealed class WorkflowAdminService(
                     published?.StepCount,
                     draft?.Id,
                     draft?.VersionNo,
+                    [.. links[d.Id].Select(l => new WorkflowTaskTypeRef(l.TaskTypeId, l.TaskTypeName, l.TaskTypeIsActive, l.IsDefault))],
                     WorkflowSupport.FormatRowVersion(d.RowVersion));
             }),
         ];

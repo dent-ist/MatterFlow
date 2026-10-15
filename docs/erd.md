@@ -668,7 +668,7 @@ erDiagram
 | WorkflowInstance | UNIQUE `UQ_WorkflowInstance_Task (TaskId)` (exactly one per Task); FK to the pinned `WorkflowVersion`; `TR_WorkflowInstance_Immutable` blocks changing `TaskId`/`WorkflowVersionId`. The pinned version row cannot be deleted. |
 | StepInstance | UNIQUE `(WorkflowInstanceId, WorkflowVersionStepId)` and `(WorkflowInstanceId, SequenceNo)`; CHECK Status in the four values; CHECK `SkipComment IS NULL OR Status IN ('SKIPPED','IN_PROGRESS')`-style rule is left to the app (a reopened skipped step keeps its comment). `FirstResolvedAt` is set once and drives the ordering guard (re-resolution of a previously resolved step is not blocked by an unresolved earlier step). `ValuesJson` validated against the version's pinned form. No assignee column. Indexes: `IX_StepInstance_Workflow (WorkflowInstanceId, SequenceNo)`, `IX_StepInstance_Status (Status) WHERE Status IN ('PENDING','IN_PROGRESS')` for current-step display. |
 
-`TaskTypeWorkflow` is shown in section 5. Eligible Workflows reference definitions; a Task chooses exactly one at creation.
+`TaskTypeWorkflow` is shown in section 5. Eligible Workflows reference definitions; a Task chooses exactly one at creation. No schema change backs the Task Types page tabs: the cross-links read `TaskTypeWorkflow` (task types of a workflow, workflows of a task type) and `WorkflowVersionStep.SourceStepDefinitionId` through `WorkflowVersion` (workflows that use a step, counted distinct), answered by the existing indexes `IX_TaskTypeWorkflowEligibility_Workflow` and `IX_WVS_Source`.
 
 ---
 
