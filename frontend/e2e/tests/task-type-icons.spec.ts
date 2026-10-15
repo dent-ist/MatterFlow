@@ -125,7 +125,7 @@ test.describe('Task type icons and the type-first Create Task', () => {
     ).toBeVisible();
 
     await page.goto(`/tasks/${task.taskId}`);
-    await expect(page.locator('[data-task-type] svg[data-icon="mail"]')).toBeVisible();
+    await expect(page.locator('[data-title-icon] svg[data-icon="mail"]')).toBeVisible();
     await page.goto(`/tasks?q=${encodeURIComponent(task.title)}`);
     await expect(page.locator('[data-type-icon] svg[data-icon="mail"]').first()).toBeVisible();
   });

@@ -52,7 +52,13 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
       <div class="th" data-task-header>
         <mf-page-header [crumbs]="crumbs()">
           <span mfTitle class="th__title">
-            <!-- TODO: show mf-task-type-icon ([iconKey]="t.taskType.iconKey") here, before the number, once the shared task type icon component is on dev. -->
+            <mf-task-type-icon
+              class="th__icon"
+              size="lg"
+              [iconKey]="t.taskType.iconKey"
+              [attr.title]="t.taskType.name"
+              data-title-icon
+            />
             <span class="pg-mono" data-task-number>{{ t.taskNumber }}</span>
             <span data-task-title>{{ t.title }}</span>
           </span>
@@ -100,8 +106,7 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
               }
             </span>
             <span class="th__type" data-task-type
-              ><mf-task-type-icon [iconKey]="t.taskType.iconKey" />
-              <span class="pg-label">Type:</span> {{ t.taskType.name }}</span
+              ><span class="pg-label">Type:</span> {{ t.taskType.name }}</span
             >
             <span data-due
               ><span class="pg-label">Due:</span>
@@ -171,10 +176,9 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
       gap: var(--mf-s2) var(--mf-s4);
       margin-top: var(--mf-s2);
     }
-    .th__type {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
+    .th__icon {
+      align-self: center;
+      color: var(--mf-text-muted);
     }
     .th__matter {
       display: inline-flex;

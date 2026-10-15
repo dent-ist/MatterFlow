@@ -30,7 +30,7 @@ Product-owner decisions, how it is built, and how to add icons. Screenshots are 
 | Admin Task Types list | before the name |
 | Admin Task Type create/edit | the picker (below) |
 | Task Queue, My Work, Pod Work, matter/project task lists | `sm`, before the title in the Title cell; the type name is its tooltip (the Task type column is hidden by default) |
-| Task detail header | "Type:" item in the header meta line |
+| Task detail header | `lg`, before the task number (the type name is its tooltip and is also in the "Type:" item of the header meta line) |
 | Dashboard "Open by task type" | before the label of each type row (not the combined "Other task types" row) |
 
 ## The admin picker

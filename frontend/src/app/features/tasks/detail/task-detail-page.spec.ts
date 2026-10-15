@@ -123,9 +123,8 @@ describe('TaskDetailPage header', () => {
     expect(q(el, 'mf-status-badge')!.textContent).toContain('In Progress');
     expect(q(el, 'mf-priority-badge')!.textContent).toContain('Critical');
     expect(q(el, '[data-task-type]')!.textContent).toContain('Data Processing');
-    expect(q(el, '[data-task-type] mf-task-type-icon svg')!.getAttribute('aria-hidden')).toBe(
-      'true',
-    );
+    expect(q(el, '[data-title-icon] svg')!.getAttribute('aria-hidden')).toBe('true');
+    expect(q(el, '[data-title-icon]')!.getAttribute('title')).toBe('Data Processing');
     expect(q(el, '[data-due]')!.textContent).toContain('ASAP');
     expect(q(el, '[data-pod]')!.textContent).toContain('Pod A');
     expect(q(el, '[data-assignee]')!.textContent).toContain('Tariq M.');
