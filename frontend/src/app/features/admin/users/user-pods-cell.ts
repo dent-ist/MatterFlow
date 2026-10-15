@@ -427,6 +427,7 @@ export class UserPodsCell implements OnDestroy {
     left: 0,
     maxHeight: null,
   });
+  private scrollTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly popRef = viewChild<ElementRef<HTMLElement>>('pop');
   private readonly trigger = viewChild<ElementRef<HTMLButtonElement>>('trigger');
 
@@ -473,6 +474,7 @@ export class UserPodsCell implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.scrollTimer);
     document.removeEventListener('scroll', this.onScroll, true);
   }
 
@@ -500,17 +502,25 @@ export class UserPodsCell implements OnDestroy {
     this.query.set('');
     this.draft.set(this.original());
     this.open.set(true);
-    document.addEventListener('scroll', this.onScroll, true);
+    // Listen only once the page has settled: the scroll that brought the button into view must not close the popover.
+    this.scrollTimer = setTimeout(
+      () => document.addEventListener('scroll', this.onScroll, true),
+      300,
+    );
     this.opened.emit();
     setTimeout(() => {
       this.place();
-      this.host.nativeElement.querySelector<HTMLElement>('.upc-search')?.focus();
+      // No scrolling to the search box: a page scroll right after opening would close the popover (see onScroll).
+      this.host.nativeElement
+        .querySelector<HTMLElement>('.upc-search')
+        ?.focus({ preventScroll: true });
     });
   }
 
   close(returnFocus: boolean): void {
     if (!this.open()) return;
     this.open.set(false);
+    clearTimeout(this.scrollTimer);
     document.removeEventListener('scroll', this.onScroll, true);
     if (returnFocus) this.trigger()?.nativeElement.focus();
   }
