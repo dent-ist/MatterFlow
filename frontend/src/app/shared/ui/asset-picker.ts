@@ -58,9 +58,12 @@ const toChoice = (a: AssetLookupItem): Choice => ({
     @if (readOnly()) {
       @if (chosen(); as c) {
         <span data-readonly>
-          <a class="ap__link" [href]="'/assets?selected=' + c.id" (click)="openAsset($event, c.id)">{{
-            c.label
-          }}</a>
+          <a
+            class="ap__link"
+            [href]="'/assets?selected=' + c.id"
+            (click)="openAsset($event, c.id)"
+            >{{ c.label }}</a
+          >
           <span class="ap__detail">{{ ' ' }}{{ c.detail }}</span>
           @if (c.reference) {
             <span class="ap__detail">{{ ' ' }}{{ c.reference }}</span>
