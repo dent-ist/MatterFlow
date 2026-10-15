@@ -3,8 +3,19 @@ import { AuditEventDto } from '../../api/generated/api-client';
 /** Fields recorded by the change tracker that mean nothing to a reader (keys, concurrency tokens, timestamps). */
 function isTechnicalField(key: string): boolean {
   return (
-    /(^|[^A-Za-z])Id$/.test(key) || /Id$/.test(key) || key === 'RowVersion' || /Utc$/.test(key)
+    /(^|[^A-Za-z])Id$/.test(key) ||
+    /Id$/.test(key) ||
+    key === 'RowVersion' ||
+    /Utc$/.test(key) ||
+    // Which kind of thing owns a record (a form answer set belongs to a step instance): plumbing, not something a person changed.
+    key === 'OwnerKind' ||
+    key === 'OwnerType'
   );
+}
+
+/** True for a field-level change a reader does not need (keys, concurrency tokens, timestamps, owner plumbing). */
+export function isTechnicalFieldKey(key: string | undefined | null): boolean {
+  return !!key && isTechnicalField(key);
 }
 
 /** Well-known form field keys and what people call them (UAT2-14). Anything else is derived from the key. */
@@ -19,6 +30,10 @@ const KNOWN_FIELDS: Readonly<Record<string, string>> = {
 /** Audit object types whose raw name means nothing to a reader. */
 const OBJECT_TYPES: Readonly<Record<string, string>> = {
   FormValueSet: 'Form answers',
+  StepInstance: 'Workflow step',
+  StepDefinition: 'Step',
+  WorkflowDefinition: 'Workflow',
+  TaskAsset: 'Asset link',
   FormVersion: 'Form version',
   FormDefinition: 'Form',
   TaskStepInstance: 'Task step',
@@ -40,7 +55,11 @@ export function objectTypeLabel(type: string): string {
 /** Replaces internal field keys (`received_datetime`) inside a sentence with their labels. */
 export function friendlyText(text: string | undefined | null): string {
   if (!text) return '';
-  return text.replace(/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/g, (key) => fieldLabel(`form:${key}`));
+  return text
+    .replace(/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/g, (key) => fieldLabel(`form:${key}`))
+    .replace(/\b(?:FormValueSet|StepInstance|TaskStepInstance|TaskAsset)\b/g, (type) =>
+      objectTypeLabel(type).toLowerCase(),
+    );
 }
 
 /** `IsSensitive` -> `Sensitive`, `form:billing_code` -> `Billing code`, `ClientNumber` -> `Client number`. */

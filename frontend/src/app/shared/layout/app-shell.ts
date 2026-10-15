@@ -1,3 +1,4 @@
+import { NgComponentOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,6 +9,7 @@ import {
   untracked,
   viewChild,
   ElementRef,
+  Type,
 } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -19,7 +21,7 @@ import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { SEARCH_TYPES } from '../search/search-meta';
 import { GlobalSearch } from '../search/global-search';
 import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem } from './nav-items';
-import { ShortcutHelp } from './shortcut-help';
+import { ShortcutHelpState } from './shortcut-help-state';
 
 /** Header (logo, persistent global search, Create Task, user), permission-gated left nav, content outlet. */
 @Component({
@@ -31,7 +33,7 @@ import { ShortcutHelp } from './shortcut-help';
     Button,
     GlobalSearch,
     HasPermissionDirective,
-    ShortcutHelp,
+    NgComponentOutlet,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown)': 'onKeydown($event)' },
@@ -49,7 +51,9 @@ export class AppShell {
   protected readonly canSearch = computed(() =>
     SEARCH_TYPES.some((t) => this.auth.has(t.permission)),
   );
-  protected readonly helpOpen = signal(false);
+  private readonly help = inject(ShortcutHelpState);
+  /** The shortcut list loads the first time it is opened. */
+  protected readonly helpHost = signal<Type<unknown> | null>(null);
   protected readonly navItems = computed(() => this.visible(NAV_ITEMS));
   protected readonly adminItems = computed(() => this.visible(ADMIN_NAV_ITEMS));
 
@@ -72,6 +76,18 @@ export class AppShell {
     });
   }
 
+  protected toggleHelp(): void {
+    const open = !this.help.open();
+    if (open && !this.helpHost()) {
+      void import('./shortcut-help').then((m) => {
+        this.helpHost.set(m.ShortcutHelp);
+        this.help.open.set(true);
+      });
+      return;
+    }
+    this.help.open.set(open);
+  }
+
   private visible(items: NavItem[]): NavItem[] {
     return items.filter((i) => this.auth.hasAny(i.permissions));
   }
@@ -91,10 +107,10 @@ export class AppShell {
       const typing =
         !!target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable);
       // Not while typing, and not on top of another dialog (the help itself closes with the same key).
-      const otherDialog = !this.helpOpen() && !!document.querySelector('.p-dialog');
+      const otherDialog = !this.help.open() && !!document.querySelector('.p-dialog');
       if (!typing && !otherDialog) {
         event.preventDefault();
-        this.helpOpen.update((v) => !v);
+        this.toggleHelp();
       }
       return;
     }

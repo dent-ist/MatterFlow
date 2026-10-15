@@ -22,7 +22,14 @@ import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { DateInput } from 'form-engine';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { fieldLabel, friendlyText } from '../../../shared/ui/audit-format';
-import { AuditGroup, auditObjectRoute, auditObjectText, groupByCorrelation } from './audit-links';
+import {
+  AuditGroup,
+  auditObjectRoute,
+  auditObjectText,
+  groupByCorrelation,
+  groupHeadline,
+  splitGroup,
+} from './audit-links';
 import { ListState } from '../../../shared/ui/data-table';
 import { PageHeader } from '../../../shared/ui/page-header';
 
@@ -86,9 +93,11 @@ export class AuditPage implements OnDestroy {
   protected readonly nextCursor = signal<number | null>(null);
   protected readonly state = signal<LoadState>('loading');
   protected readonly loadingMore = signal(false);
-  protected readonly grouped = signal(false);
+  /** Events of one operation are grouped by default: one line per operation, field-level changes on request. */
+  protected readonly grouped = signal(true);
   protected readonly expanded = signal<ReadonlySet<number>>(new Set());
   protected readonly openGroups = signal<ReadonlySet<string>>(new Set());
+  protected readonly openFieldGroups = signal<ReadonlySet<string>>(new Set());
   protected readonly dateError = signal('');
   /** A date field holds text that is not a date (its own message is shown); applying is held back. */
   protected readonly badFrom = signal(false);
@@ -216,6 +225,17 @@ export class AuditPage implements OnDestroy {
     });
   }
 
+  protected toggleFields(group: AuditGroup): void {
+    this.openFieldGroups.update((s) => {
+      const next = new Set(s);
+      if (!next.delete(group.key)) next.add(group.key);
+      return next;
+    });
+  }
+
+  protected isFieldsOpen = (group: AuditGroup) => this.openFieldGroups().has(group.key);
+  protected headline = groupHeadline;
+  protected split = splitGroup;
   protected isOpen = (item: AuditSearchItem) => this.expanded().has(item.auditEventId);
   protected isGroupOpen = (group: AuditGroup) => this.openGroups().has(group.key);
   protected route = auditObjectRoute;
@@ -244,6 +264,7 @@ export class AuditPage implements OnDestroy {
       this.state.set('loading');
       this.expanded.set(new Set());
       this.openGroups.set(new Set());
+      this.openFieldGroups.set(new Set());
     } else {
       this.loadingMore.set(true);
     }

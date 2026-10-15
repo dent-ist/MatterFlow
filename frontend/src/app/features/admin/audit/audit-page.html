@@ -231,8 +231,8 @@
                   </td>
                   <td>{{ g.items[0].actor.displayName }}</td>
                   <td colspan="2">
-                    <strong>{{ g.items.length }} events in one operation</strong>
-                    <span class="au-muted"> (for example: {{ g.items[0].summary }})</span>
+                    <strong data-headline>{{ headline(g) }}</strong>
+                    <span class="au-muted"> ({{ g.items.length }} events in one operation)</span>
                     <button
                       type="button"
                       class="mf-btn mf-btn--text"
@@ -243,10 +243,38 @@
                   </td>
                 </tr>
                 @if (isGroupOpen(g)) {
-                  @for (item of g.items; track item.auditEventId) {
+                  @let parts = split(g);
+                  @for (item of parts.happened; track item.auditEventId) {
                     <ng-container
                       *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: true }"
                     />
+                  }
+                  @if (parts.fields.length > 0) {
+                    @if (parts.happened.length > 0) {
+                      <tr class="au-nested au-fields-toggle">
+                        <td></td>
+                        <td colspan="4">
+                          <button
+                            type="button"
+                            class="mf-btn mf-btn--text"
+                            data-view-changes
+                            [attr.aria-expanded]="isFieldsOpen(g)"
+                            (click)="toggleFields(g)"
+                          >
+                            {{ isFieldsOpen(g) ? 'Hide' : 'View' }}
+                            {{ parts.fields.length }}
+                            {{ parts.fields.length === 1 ? 'field change' : 'field changes' }}
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                    @if (parts.happened.length === 0 || isFieldsOpen(g)) {
+                      @for (item of parts.fields; track item.auditEventId) {
+                        <ng-container
+                          *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: true }"
+                        />
+                      }
+                    }
                   }
                 }
               } @else {

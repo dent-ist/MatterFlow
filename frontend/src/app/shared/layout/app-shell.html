@@ -33,13 +33,15 @@
     data-shortcut-help-button
     aria-label="Keyboard shortcuts"
     title="Keyboard shortcuts (?)"
-    (click)="helpOpen.set(true)"
+    (click)="toggleHelp()"
   >
     <i class="pi pi-question-circle" aria-hidden="true"></i>
   </button>
 </header>
 
-<mf-shortcut-help [(visible)]="helpOpen" />
+@if (helpHost(); as host) {
+  <ng-container *ngComponentOutlet="host" />
+}
 
 <div class="mf-body">
   <nav class="mf-nav" aria-label="Main">

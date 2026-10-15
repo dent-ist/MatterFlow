@@ -41,6 +41,34 @@ public class AuditSummaryComposerTests
     }
 }
 
+public class AuditAssignmentTextTests
+{
+    private static readonly Dictionary<int, string> Users = new() { [9] = "Dana P.", [4] = "Sam K." };
+    private static readonly Dictionary<int, string> Pods = new() { [2] = "Pod A" };
+
+    [Fact]
+    public void Reassigning_names_both_sides() =>
+        AuditAssignmentText.Describe("""{"podId":2,"userId":9}""", """{"podId":2,"userId":4}""", Users, Pods)
+            .ShouldBe("Reassigned from Dana P. (Pod A) to Sam K. (Pod A)");
+
+    [Fact]
+    public void First_assignment_and_unassignment_read_naturally()
+    {
+        AuditAssignmentText.Describe(null, """{"podId":2}""", Users, Pods).ShouldBe("Assigned to Pod A (pod)");
+        AuditAssignmentText.Describe("""{"podId":2,"userId":9}""", """{"podId":2}""", Users, Pods).ShouldBe("Reassigned from Dana P. (Pod A) to Pod A (pod)");
+        AuditAssignmentText.Describe("""{"userId":9}""", null, Users, Pods).ShouldBe("Unassigned from Dana P.");
+        AuditAssignmentText.Describe(null, null, Users, Pods).ShouldBe("Assignment cleared");
+    }
+
+    [Fact]
+    public void Unknown_ids_and_damaged_values_do_not_throw()
+    {
+        AuditAssignmentText.Describe(null, """{"userId":77}""", Users, Pods).ShouldBe("Assigned to an unknown user");
+        AuditAssignmentText.Parse("not json").ShouldBe((null, null));
+        AuditAssignmentText.Parse("[1]").ShouldBe((null, null));
+    }
+}
+
 public class AuditValueGuardTests
 {
     [Theory]

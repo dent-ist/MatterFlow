@@ -9,14 +9,15 @@ namespace MatterFlow.Api.Http;
 
 /// <summary>
 /// Composes the audit browser's display lookups from the owning modules' Contracts (the Audit module itself must not depend on them).
-/// Users, Tasks and Assets are looked up in one call each; Matters and Projects one by one (a page holds at most 200 events).
+/// Users, Tasks and Assets are looked up in one call each; Matters, Projects and Pods one by one (a page holds at most 200 events).
 /// </summary>
 internal sealed class AuditDisplayLookup(
     IUserDirectory users,
     ITaskDirectory tasks,
     IAssetDirectory assets,
     IMatterDirectory matters,
-    IProjectDirectory projects) : IAuditDisplayLookup
+    IProjectDirectory projects,
+    IPodDirectory pods) : IAuditDisplayLookup
 {
     public async Task<IReadOnlyDictionary<int, string>> UserNamesAsync(IReadOnlyCollection<int> userIds, CancellationToken cancellationToken = default)
     {
@@ -25,6 +26,18 @@ internal sealed class AuditDisplayLookup(
 
         var found = await users.FindManyAsync(userIds, cancellationToken);
         return found.ToDictionary(p => p.Key, p => p.Value.DisplayName);
+    }
+
+    public async Task<IReadOnlyDictionary<int, string>> PodNamesAsync(IReadOnlyCollection<int> podIds, CancellationToken cancellationToken = default)
+    {
+        var names = new Dictionary<int, string>();
+        foreach (var id in podIds.Distinct())
+        {
+            if (await pods.FindAsync(id, cancellationToken) is { } pod)
+                names[id] = pod.Name;
+        }
+
+        return names;
     }
 
     public async Task<IReadOnlyDictionary<AuditObjectRef, string>> ObjectLabelsAsync(

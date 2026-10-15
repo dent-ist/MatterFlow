@@ -13,6 +13,13 @@ public interface IAuditDisplayLookup
     /// <summary>Display names of the users that exist, keyed by user id (including inactive users: history keeps their names).</summary>
     Task<IReadOnlyDictionary<int, string>> UserNamesAsync(IReadOnlyCollection<int> userIds, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Names of the Pods that exist (inactive ones too: history keeps their names), keyed by Pod id. Used to word assignment changes
+    /// ("Reassigned from Pod A to Dana P."). The default resolves nothing, so existing implementations keep working.
+    /// </summary>
+    Task<IReadOnlyDictionary<int, string>> PodNamesAsync(IReadOnlyCollection<int> podIds, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyDictionary<int, string>>(new Dictionary<int, string>());
+
     /// <summary>Readable labels (for example <c>TSK-1042 Process Smith custodians</c>) of the objects that can be resolved; the others are absent.</summary>
     Task<IReadOnlyDictionary<AuditObjectRef, string>> ObjectLabelsAsync(
         IReadOnlyCollection<AuditObjectRef> objects,

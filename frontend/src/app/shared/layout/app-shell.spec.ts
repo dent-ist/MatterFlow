@@ -63,6 +63,10 @@ describe('AppShell header search', () => {
 
     (document.activeElement as HTMLElement).blur();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: '?', bubbles: true }));
+    // The list loads on first use.
+    await vi.waitFor(() =>
+      expect(document.body.querySelector('[data-shortcut-help]')).not.toBeNull(),
+    );
     await settle(fixture);
     const help = document.body.querySelector('[data-shortcut-help]');
     expect(help).not.toBeNull();

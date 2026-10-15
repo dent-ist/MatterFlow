@@ -40,6 +40,7 @@ function anItem(overrides: Partial<AuditSearchItem> = {}): AuditSearchItem {
     valuesRedacted: false,
     correlationId: 'aaaa',
     correlationEventCount: 1,
+    taskLabel: undefined,
     ...overrides,
   };
 }
@@ -236,33 +237,52 @@ describe('AuditPage', () => {
     expect(toggle.getAttribute('aria-controls')).toBe('au-detail-100');
   });
 
-  it('groups the events of one operation on request and filters to one operation', async () => {
-    const bulk = { correlationId: 'bulk', correlationEventCount: 3 };
+  it('groups the events of one operation by default, with one line per operation and field changes on request', async () => {
+    const bulk = { correlationId: 'bulk', correlationEventCount: 4 };
     await create(
       ['Audit.View'],
       ok(
         pageOfEvents([
           anItem({ auditEventId: 12, ...bulk, summary: 'Step A completed (bulk)' }),
           anItem({ auditEventId: 11, ...bulk, summary: 'Step B completed (bulk)' }),
-          anItem({ auditEventId: 10, ...bulk, summary: 'Task completed' }),
+          anItem({
+            auditEventId: 10,
+            ...bulk,
+            eventType: 'FIELD_CHANGED',
+            fieldKey: 'OwnerKind',
+            summary: 'Owner kind set to StepInstance',
+          }),
+          anItem({
+            auditEventId: 8,
+            ...bulk,
+            eventType: 'FIELD_CHANGED',
+            fieldKey: 'form:billing_code',
+            summary: 'Billing code set to B-7',
+          }),
           anItem({ auditEventId: 9, correlationId: 'solo', summary: 'Title changed' }),
         ]),
       ),
     );
-    expect(el().querySelectorAll('tr[data-event]')).toHaveLength(4);
-    expect(el().querySelector('[data-group]')).toBeNull();
-
-    click('[data-group-toggle]');
-    await settle(fixture);
-
-    expect(el().querySelector('[data-group="bulk"]')?.textContent).toContain(
-      '3 events in one operation',
+    // Grouped from the start: the operation is one line and the single event stands alone.
+    const group = el().querySelector('[data-group="bulk"]')!;
+    expect(group.querySelector('[data-headline]')?.textContent).toBe(
+      'Step A completed (bulk) and 3 related changes',
     );
-    expect(el().querySelectorAll('tr[data-event]')).toHaveLength(1); // collapsed group + the single event
+    expect(group.textContent).toContain('4 events in one operation');
+    expect(el().querySelectorAll('tr[data-event]')).toHaveLength(1);
 
-    el().querySelector<HTMLElement>('[data-group="bulk"] .au-toggle')!.click();
+    // Opening the operation shows what happened; the field-level changes stay behind "View changes".
+    group.querySelector<HTMLElement>('.au-toggle')!.click();
     await settle(fixture);
-    expect(el().querySelectorAll('tr[data-event]')).toHaveLength(4);
+    expect(el().querySelectorAll('tr[data-event]')).toHaveLength(3);
+    const viewChanges = el().querySelector<HTMLButtonElement>('[data-view-changes]')!;
+    expect(viewChanges.textContent).toContain('View 2 field changes');
+
+    viewChanges.click();
+    await settle(fixture);
+    expect(el().querySelectorAll('tr[data-event]')).toHaveLength(5);
+    expect(el().textContent).toContain('Owner kind set to workflow step');
+    expect(el().textContent).not.toContain('StepInstance');
 
     el().querySelector<HTMLElement>('[data-group="bulk"] button.mf-btn--text')!.click();
     await settle(fixture);
@@ -270,10 +290,40 @@ describe('AuditPage', () => {
     expect(el().querySelector('[data-operation-banner]')).not.toBeNull();
   });
 
+  it('lists every event when grouping is switched off', async () => {
+    const bulk = { correlationId: 'bulk', correlationEventCount: 2 };
+    await create(
+      ['Audit.View'],
+      ok(
+        pageOfEvents([
+          anItem({ auditEventId: 12, ...bulk, summary: 'Step A completed (bulk)' }),
+          anItem({ auditEventId: 11, ...bulk, summary: 'Step B completed (bulk)' }),
+        ]),
+      ),
+    );
+    expect(el().querySelector('[data-group]')).not.toBeNull();
+
+    click('[data-group-toggle]');
+    await settle(fixture);
+
+    expect(el().querySelector('[data-group]')).toBeNull();
+    expect(el().querySelectorAll('tr[data-event]')).toHaveLength(2);
+  });
+
+  it('names the parts of a Task by their Task, not by their number', () => {
+    const item = (type: string, id: string, extra: Record<string, unknown> = {}) =>
+      anItem({ object: { type, id, label: undefined }, ...extra });
+    expect(
+      auditObjectText(item('StepInstance', '40', { taskLabel: 'TSK-1042 Process Smith' })),
+    ).toBe('Workflow step on TSK-1042 Process Smith');
+    expect(auditObjectText(item('FormValueSet', '22'))).toBe('Form answers');
+    expect(auditObjectText(item('Client', '12'))).toBe('Client #12');
+  });
+
   it('pages with the cursor and appends older events', async () => {
     await create(['Audit.View'], ok(pageOfEvents([anItem({ auditEventId: 100 })], 100)));
     api.searchAuditEvents.mockReturnValue(
-      ok(pageOfEvents([anItem({ auditEventId: 99, summary: 'Older' })])),
+      ok(pageOfEvents([anItem({ auditEventId: 99, correlationId: 'older', summary: 'Older' })])),
     );
 
     click('[data-load-more]');

@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ConfirmDialog } from '../ui/confirm-dialog';
+import { ShortcutHelpState } from './shortcut-help-state';
 
 interface Shortcut {
   keys: string[];
@@ -51,7 +52,7 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
       title="Keyboard shortcuts"
       cancelLabel="Close"
       [showConfirm]="false"
-      [(visible)]="visible"
+      [(visible)]="state.open"
     >
       <div data-shortcut-help>
         @for (group of groups; track group.heading) {
@@ -116,5 +117,5 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
 })
 export class ShortcutHelp {
   protected readonly groups = SHORTCUT_GROUPS;
-  readonly visible = model(false);
+  protected readonly state = inject(ShortcutHelpState);
 }

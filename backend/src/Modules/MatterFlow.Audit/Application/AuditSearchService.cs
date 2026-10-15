@@ -44,6 +44,7 @@ public sealed record AuditObjectInfo(string Type, string Id, string? Label);
 /// <param name="ValuesRedacted">True when a value was masked because it is or looks like a secret.</param>
 /// <param name="CorrelationId">Shared by every event of one operation (a bulk action's events).</param>
 /// <param name="CorrelationEventCount">How many events share the correlation id.</param>
+/// <param name="TaskLabel">Readable label of the Task the event is scoped to (for example <c>TSK-1042 Process Smith custodians</c>), when it could be resolved; lets the browser say "Workflow step of TSK-1042" instead of a step id.</param>
 public sealed record AuditSearchItem(
     long AuditEventId,
     DateTime OccurredAtUtc,
@@ -60,7 +61,8 @@ public sealed record AuditSearchItem(
     bool NewValueTruncated,
     bool ValuesRedacted,
     Guid CorrelationId,
-    int CorrelationEventCount);
+    int CorrelationEventCount,
+    string? TaskLabel = null);
 
 /// <summary>A page of the audit browser, newest first.</summary>
 /// <param name="Items">Events, newest first.</param>
@@ -200,9 +202,23 @@ public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display
         if (rows.Count == 0)
             return [];
 
-        var userIds = rows.Where(r => r.ActorUserId is not null).Select(r => r.ActorUserId!.Value).Distinct().ToList();
+        var assignments = rows.Where(r => r.EventType == AuditEventTypes.TaskAssigned).ToList();
+        var assigned = assignments.SelectMany(r => new[] { r.OldValue, r.NewValue }).Select(AuditAssignmentText.Parse).ToList();
+        var userIds = rows
+            .Where(r => r.ActorUserId is not null)
+            .Select(r => r.ActorUserId!.Value)
+            .Concat(assigned.Where(a => a.UserId is not null).Select(a => a.UserId!.Value))
+            .Distinct()
+            .ToList();
         var names = await display.UserNamesAsync(userIds, cancellationToken);
-        var refs = rows.Select(r => new AuditObjectRef(r.ObjectType, r.ObjectId)).Distinct().ToList();
+        var podIds = assigned.Where(a => a.PodId is not null).Select(a => a.PodId!.Value).Distinct().ToList();
+        var pods = podIds.Count == 0 ? new Dictionary<int, string>() : await display.PodNamesAsync(podIds, cancellationToken);
+        // The Tasks the events belong to are labelled too, so a step, comment or form answer can say which Task it is part of.
+        var refs = rows
+            .Select(r => new AuditObjectRef(r.ObjectType, r.ObjectId))
+            .Concat(rows.Where(r => r.TaskId is not null).Select(r => new AuditObjectRef("Task", r.TaskId!.Value.ToString(CultureInfo.InvariantCulture))))
+            .Distinct()
+            .ToList();
         var labels = await display.ObjectLabelsAsync(refs, cancellationToken);
 
         var correlationIds = rows.Select(r => r.CorrelationId).Distinct().ToList();
@@ -213,12 +229,13 @@ public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display
             .Select(g => new { Id = g.Key, Count = g.Count() })
             .ToDictionaryAsync(g => g.Id, g => g.Count, cancellationToken);
 
-        return rows.Select(r => ToItem(r, names, labels, counts)).ToList();
+        return rows.Select(r => ToItem(r, names, pods, labels, counts)).ToList();
     }
 
     private static AuditSearchItem ToItem(
         AuditEvent e,
         IReadOnlyDictionary<int, string> names,
+        IReadOnlyDictionary<int, string> pods,
         IReadOnlyDictionary<AuditObjectRef, string> labels,
         IReadOnlyDictionary<Guid, int> counts)
     {
@@ -230,11 +247,17 @@ public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display
         var summarySecret = AuditValueGuard.LooksLikeSecret(e.Summary);
         var summary = AuditSummaryComposer.Compose(e.EventType, e.FieldKey, oldValue, newValue, summarySecret ? null : e.Summary, redacted);
 
+        if (e.EventType == AuditEventTypes.TaskAssigned && !redacted)
+            summary = AuditAssignmentText.Describe(oldValue, newValue, names, pods);
+
         var actor = e.ActorUserId is { } uid
             ? new AuditActor(uid, names.TryGetValue(uid, out var name) ? name : $"User {uid.ToString(CultureInfo.InvariantCulture)}")
             : new AuditActor(null, "System");
 
         labels.TryGetValue(new AuditObjectRef(e.ObjectType, e.ObjectId), out var label);
+        string? taskLabel = null;
+        if (e.TaskId is { } scopedTask)
+            labels.TryGetValue(new AuditObjectRef("Task", scopedTask.ToString(CultureInfo.InvariantCulture)), out taskLabel);
 
         return new AuditSearchItem(
             e.Id,
@@ -252,7 +275,8 @@ public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display
             newTruncated,
             redacted,
             e.CorrelationId,
-            counts.TryGetValue(e.CorrelationId, out var count) ? count : 1);
+            counts.TryGetValue(e.CorrelationId, out var count) ? count : 1,
+            taskLabel);
     }
 
     private static DateOnly? ParseDay(string? text, string field)

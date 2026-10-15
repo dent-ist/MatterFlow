@@ -11,6 +11,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { TaskActivityClient, TaskActivityItem } from '../../../api/generated/api-client';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { friendlyText } from '../../../shared/ui/audit-format';
 
 interface Filter {
   readonly key: string;
@@ -92,7 +93,7 @@ const PAGE_SIZE = 25;
                   >
                   <div class="ta__what">
                     <span class="ta__actor" data-actor>{{ e.actor?.displayName ?? 'System' }}</span>
-                    <span class="ta__summary" data-summary>{{ e.summary }}</span>
+                    <span class="ta__summary" data-summary>{{ friendly(e.summary) }}</span>
                     @if (hasChanges(e)) {
                       <button
                         type="button"
@@ -228,6 +229,7 @@ const PAGE_SIZE = 25;
   `,
 })
 export class TaskActivity {
+  protected readonly friendly = friendlyText;
   readonly taskId = input.required<number>();
   /** Change the value to reload the timeline. */
   readonly refresh = input(0);

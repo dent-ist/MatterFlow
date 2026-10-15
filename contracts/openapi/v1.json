@@ -7875,6 +7875,12 @@
           "correlationEventCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "taskLabel": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

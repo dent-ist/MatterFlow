@@ -10181,6 +10181,7 @@ export interface AuditSearchItem {
     valuesRedacted: boolean;
     correlationId: string;
     correlationEventCount: number;
+    taskLabel?: string | undefined;
 
     [key: string]: any;
 }

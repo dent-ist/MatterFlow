@@ -1,5 +1,13 @@
 import { AuditEventDto } from '../../api/generated/api-client';
-import { auditValue, describeAuditEvent, fieldLabel, isNoise } from './audit-format';
+import {
+  auditValue,
+  describeAuditEvent,
+  fieldLabel,
+  friendlyText,
+  isNoise,
+  isTechnicalFieldKey,
+  objectTypeLabel,
+} from './audit-format';
 
 const event = (extra: Partial<AuditEventDto>): AuditEventDto =>
   ({
@@ -38,5 +46,13 @@ describe('audit formatting', () => {
   it('hides technical fields', () => {
     expect(isNoise(event({ fieldKey: 'ClientId', newValue: '1' }))).toBe(true);
     expect(isNoise(event({ fieldKey: 'Name', newValue: 'Acme' }))).toBe(false);
+  });
+
+  it('replaces internal names inside a sentence with readable ones', () => {
+    expect(friendlyText('Owner kind set to StepInstance')).toBe('Owner kind set to workflow step');
+    expect(friendlyText('received_datetime changed')).toBe('Received date and time changed');
+    expect(objectTypeLabel('StepInstance')).toBe('Workflow step');
+    expect(isTechnicalFieldKey('OwnerKind')).toBe(true);
+    expect(isTechnicalFieldKey('Name')).toBe(false);
   });
 });
