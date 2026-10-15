@@ -45,6 +45,7 @@ test.describe('users screenshots', () => {
       await shot(`02-pod-filter-${w}`);
       await page.goto(`/dashboard?tab=users&view=coverage&uq=zcov${cov.tag}`);
       await expect(page.locator('[data-coverage-table]')).toBeVisible();
+      await page.locator(`[data-type-name="${cov.typeNames.production}"]`).scrollIntoViewIfNeeded();
       await shot(`07-coverage-${w}`);
     }
 
@@ -78,6 +79,7 @@ test.describe('users screenshots', () => {
     await page.goto(`/dashboard?tab=users&view=coverage&uq=zcov${cov.tag}`);
     await expect(page.locator('[data-coverage-table]')).toBeVisible();
     await page.getByLabel('Colour scale').selectOption('absolute');
+    await page.locator(`[data-type-name="${cov.typeNames.production}"]`).scrollIntoViewIfNeeded();
     await shot('08-coverage-absolute-1366');
     await page.getByRole('button', { name: 'Training gaps' }).click();
     await shot('09-coverage-gaps-1366');
