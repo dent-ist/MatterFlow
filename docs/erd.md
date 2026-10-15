@@ -412,6 +412,7 @@ erDiagram
 | DueAtUtc | datetime2(3) | yes | absolute due instant, set only when the user chose a time (addendum M); CHECK `DueAtUtc IS NULL OR DueDate IS NOT NULL` |
 | DueSortKey | datetime2(3) | yes | ordering only: `DueAtUtc`, else `DueDate` 23:59:59 treated as UTC. Exact overdue is computed at query time in the viewer's timezone (addendum M); CHECK `(DueDate IS NULL) = (DueSortKey IS NULL)` |
 | FormValuesJson | nvarchar(max) | yes | values per the pinned Task Type form version; ISJSON check |
+| AssignedAt | datetime2(3) | yes | when the current `AssignedUserId` was assigned; NULL while no user is assigned; Pod-only changes do not move it (script 20) |
 | StatusChangedAt | datetime2(3) | no | |
 | CompletedAt | datetime2(3) | yes | set on COMPLETED, cleared on leaving it |
 | CreatedAt/By, ModifiedAt/By | | | |
@@ -432,7 +433,7 @@ Fixed 5 rows seeded in `01-init.sql` (`NEW, IN_PROGRESS, ON_HOLD, COMPLETED, CAN
 `PriorityId`; `Label` UNIQUE; `SortOrder` (lower = more urgent); `Color`; `IsActive`; `IsDefault` with filtered UNIQUE `UQ_Priority_Default (IsDefault) WHERE IsDefault = 1`. Seed: Critical(1), High(2), Normal(3, default), Low(4). Deactivation never invalidates historical Tasks (FK stays).
 
 ### TaskType and TaskTypeWorkflow
-`TaskType`: `Name` UNIQUE, `Description`, `DefaultWorkflowDefinitionId` (nullable; must be among the eligible set - app check), `IsActive`. Its request form is the `FormDefinition` with `TaskTypeId = this`. `TaskTypeWorkflow (TaskTypeId, WorkflowDefinitionId)` PK; at most one `IsDefault = 1` per type (filtered unique index `UQ_TTW_Default (TaskTypeId) WHERE IsDefault = 1`). Eligibility refers to the **definition**; the current PUBLISHED version is resolved at Task creation.
+`TaskType`: `Name` UNIQUE, `Description`, `IconKey` (VARCHAR(50) NOT NULL DEFAULT 'file-text'; a key of the curated icon library `contracts/task-type-icons.json`, validated by the application, script 19; see `docs/ux/task-type-icons.md`), `DefaultWorkflowDefinitionId` (nullable; must be among the eligible set - app check), `IsActive`. Its request form is the `FormDefinition` with `TaskTypeId = this`. `TaskTypeWorkflow (TaskTypeId, WorkflowDefinitionId)` PK; at most one `IsDefault = 1` per type (filtered unique index `UQ_TTW_Default (TaskTypeId) WHERE IsDefault = 1`). Eligibility refers to the **definition**; the current PUBLISHED version is resolved at Task creation.
 
 ### AssetLinkRole
 Lookup (`Name` UNIQUE, `SortOrder`, `IsActive`), seeded: Source, Destination, Subject, Result, Related.

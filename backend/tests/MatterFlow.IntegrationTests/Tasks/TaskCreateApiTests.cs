@@ -314,6 +314,7 @@ public sealed class TaskCreateApiTests(SqlServerFixture sql) : IAsyncLifetime
         {
             name = type.GetProperty("name").GetString(),
             description = (string?)null,
+            iconKey = type.GetProperty("iconKey").GetString(),
             isActive = false,
             eligibleWorkflowIds = new[] { _w.OrderedWorkflowId, _w.UnorderedWorkflowId },
             defaultWorkflowDefinitionId = _w.OrderedWorkflowId,

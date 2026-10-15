@@ -41,6 +41,12 @@
               <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
             </p>
           }
+          @if (emailFilled()) {
+            <p class="pg-banner" role="status" data-prefill-note>
+              <i class="pi pi-check-circle" aria-hidden="true"></i>
+              Details from the email are ready. Choose a task type to continue.
+            </p>
+          }
           @if (usableChoices().length === 0) {
             <p class="pg-state" data-type-empty>
               No task types are available yet. Ask an administrator to set up a task type with a

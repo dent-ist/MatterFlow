@@ -211,7 +211,7 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
     const page = await asUser(user.username);
 
     const create = new CreateTaskPage(page);
-    await create.open();
+    await create.open(`?taskType=${world.taskType.id}`);
     await expect(page.locator('[data-no-assign]')).toContainText("You can't assign tasks");
     await expect(create.assignee).toHaveCount(0);
 

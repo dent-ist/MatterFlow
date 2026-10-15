@@ -22,7 +22,9 @@ const PASTED = [
 test.describe('Create a task from an Outlook email (SCN-017)', () => {
   test('SCN-017: pasting an email block fills title, description and requestor and leaves type and workflow open', async ({
     page,
+    seed,
   }) => {
+    const world = await seed.world();
     const create = new CreateTaskPage(page);
     await create.open();
     await create.showEmailPanel();
@@ -32,6 +34,12 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     await expect(page.locator('[data-review]')).toBeVisible();
     await page.getByRole('button', { name: 'Fill the task' }).click();
 
+    // Nothing the email cannot decide is chosen for the user: the type chooser stays up, with a note that the email details are ready.
+    await expect(create.chooser).toBeVisible();
+    await expect(page.locator('[data-prefill-note]')).toContainText('Details from the email');
+    await expect(create.workflows).toHaveCount(0);
+    await create.chooseTaskType(world.taskType.name);
+
     await expect(create.title).toHaveValue(
       'Process the Jones mailbox into the Smith workspace by end of day',
     );
@@ -40,9 +48,7 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     await expect(create.requestorEmail).toHaveValue('linda.cho@example-firm.test');
     await expect(page.locator('[data-source-sent]')).toContainText('Oct 13, 2026');
 
-    // Nothing the email cannot decide is chosen for the user, and everything stays editable.
-    await expect(create.taskType).toHaveValue('');
-    await expect(create.workflows).toHaveCount(0);
+    // The matter is not guessed from the email either, and everything stays editable.
     await expect(page.locator('[data-chosen]')).toHaveCount(0);
     await create.title.fill('Process Jones mailbox (edited)');
     await expect(create.title).toHaveValue('Process Jones mailbox (edited)');
@@ -61,8 +67,8 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     await create.fillFromPasted.click();
     await page.getByRole('button', { name: 'Fill the task' }).click();
 
-    await create.pickMatter(world.matter.matterRef, world.matter.matterRef);
     await create.chooseTaskType(world.taskType.name);
+    await create.pickMatter(world.matter.matterRef, world.matter.matterRef);
     const taskId = await create.create();
 
     const task = await admin.get(`/api/v1/tasks/${taskId}`);
@@ -72,9 +78,13 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     expect(task.requestedAtUtc).toMatch(/^2026-10-13T/);
   });
 
-  test('SCN-017: a saved .eml file is read and its attachment is ignored', async ({ page }) => {
+  test('SCN-017: a saved .eml file is read and its attachment is ignored', async ({
+    page,
+    seed,
+  }) => {
+    const world = await seed.world();
     const create = new CreateTaskPage(page);
-    await create.open();
+    await create.open(`?taskType=${world.taskType.id}`);
     await create.showEmailPanel();
 
     await page
@@ -95,9 +105,11 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
 
   test('SCN-017: a plain email file keeps the time of the Date header in the viewer time zone', async ({
     page,
+    seed,
   }) => {
+    const world = await seed.world();
     const create = new CreateTaskPage(page);
-    await create.open();
+    await create.open(`?taskType=${world.taskType.id}`);
     await create.showEmailPanel();
     await page
       .getByLabel('Choose an .eml or .msg file')
@@ -135,9 +147,11 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
 
   test('the paste box needs text and the file box refuses something that is not an email', async ({
     page,
+    seed,
   }) => {
+    const world = await seed.world();
     const create = new CreateTaskPage(page);
-    await create.open();
+    await create.open(`?taskType=${world.taskType.id}`);
     await create.showEmailPanel();
     await expect(create.fillFromPasted).toBeDisabled();
 

@@ -1,12 +1,18 @@
 import { expect, Locator, Page } from '@playwright/test';
 
-/** Create task (UX S09): one page, one call. */
+/**
+ * Create task (UX S09): type first. The page opens on the grid of Task Type cards (`chooser`); choosing a card reveals the form with
+ * the type as a header chip (`typeChip`). `?taskType=<id>` skips the chooser. Always `chooseTaskType` before touching form fields.
+ */
 export class CreateTaskPage {
   readonly matter: Locator;
   readonly project: Locator;
   readonly title: Locator;
   readonly description: Locator;
-  readonly taskType: Locator;
+  readonly chooser: Locator;
+  readonly typeChip: Locator;
+  readonly changeType: Locator;
+  readonly typeSearch: Locator;
   readonly requestorName: Locator;
   readonly requestorEmail: Locator;
   readonly priority: Locator;
@@ -27,7 +33,10 @@ export class CreateTaskPage {
     this.project = page.getByLabel('Project', { exact: true });
     this.title = page.getByRole('textbox', { name: 'Title (required)' });
     this.description = page.getByRole('textbox', { name: 'Description' });
-    this.taskType = page.getByLabel('Task type (required)');
+    this.chooser = page.locator('[data-type-chooser]');
+    this.typeChip = page.locator('[data-type-chip]');
+    this.changeType = page.getByRole('button', { name: 'Change type' });
+    this.typeSearch = page.getByRole('searchbox', { name: 'Search task types' });
     this.requestorName = page.getByRole('textbox', { name: 'Requestor name (required)' });
     this.requestorEmail = page.getByRole('textbox', { name: 'Requestor email', exact: true });
     this.priority = page.getByLabel('Priority (required)');
@@ -47,7 +56,15 @@ export class CreateTaskPage {
   async open(query = ''): Promise<void> {
     await this.page.goto(`/tasks/new${query}`);
     await expect(this.page.getByRole('heading', { name: 'Create task', level: 1 })).toBeVisible();
-    await expect(this.title).toBeVisible();
+    // Either the chooser or (deep link / prefilled type) the form is up.
+    await expect(this.chooser.or(this.title)).toBeVisible();
+  }
+
+  /** The card of a task type in the chooser (a radio in the "What kind of task is this?" group). */
+  typeCard(name: string): Locator {
+    return this.chooser.getByRole('radio', {
+      name: new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    });
   }
 
   /** The "Quick fill from email" panel starts collapsed (UXR-38); opens it unless it is already open. */
@@ -64,8 +81,10 @@ export class CreateTaskPage {
     await expect(this.page.locator('[data-chosen]').first()).toContainText(matterRef);
   }
 
+  /** Clicks the type's card; the form (with the workflow choice) appears. A no-op when that type is already chosen. */
   async chooseTaskType(name: string): Promise<void> {
-    await this.taskType.selectOption({ label: name });
+    if (!(await this.typeChip.isVisible())) await this.typeCard(name).click();
+    await expect(this.typeChip).toContainText(name);
     await expect(this.workflows).toBeVisible();
   }
 
@@ -91,9 +110,9 @@ export class CreateTaskPage {
     title: string;
     requestor?: string;
   }): Promise<void> {
+    await this.chooseTaskType(opts.taskType);
     await this.pickMatter(opts.typed ?? opts.matterRef, opts.matterRef);
     await this.title.fill(opts.title);
-    await this.chooseTaskType(opts.taskType);
     await this.requestorName.fill(opts.requestor ?? 'Rita Requestor');
   }
 

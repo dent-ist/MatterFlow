@@ -54,10 +54,10 @@ test.describe('Create task: project, workflow and form rules (SCN-004, SCN-005, 
     const project = await seed.project(world.matter, `Project ${uid()}`);
     const create = new CreateTaskPage(page);
     await create.open();
+    await create.chooseTaskType(world.taskType.name);
     await create.pickMatter(world.matter.matterRef, world.matter.matterRef);
     await create.project.selectOption({ label: project.name });
     await create.title.fill(`In project ${uid()}`);
-    await create.chooseTaskType(world.taskType.name);
     await create.requestorName.fill('Rita Requestor');
     const taskId = await create.create();
 
@@ -76,6 +76,7 @@ test.describe('Create task: project, workflow and form rules (SCN-004, SCN-005, 
     const foreign = await seed.project(other, `Foreign ${uid()}`);
     const create = new CreateTaskPage(page);
     await create.open();
+    await create.chooseTaskType(world.taskType.name);
     await create.pickMatter(world.matter.matterRef, world.matter.matterRef);
 
     await expect(create.project.getByRole('option', { name: mine.name })).toBeAttached();

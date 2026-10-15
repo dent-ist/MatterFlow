@@ -72,8 +72,9 @@ test.describe('Search by combined matter number (SCN-020)', () => {
     seed,
   }) => {
     const s = await searchableMatter(seed);
+    const world = await seed.world();
     const create = new CreateTaskPage(page);
-    await create.open();
+    await create.open(`?taskType=${world.taskType.id}`);
     await create.matter.fill(s.typed);
     const option = page.getByRole('option', { name: new RegExp(`^${s.matter.matterRef}\\b`) });
     await expect(option).toBeVisible();

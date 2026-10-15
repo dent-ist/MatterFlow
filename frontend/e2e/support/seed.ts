@@ -282,12 +282,15 @@ export class Seeder {
     workflows: WorkflowResult[];
     defaultIndex?: number;
     fields?: FieldSpec[];
+    iconKey?: string;
+    description?: string;
   }): Promise<TaskTypeResult> {
     const name = opts.name ?? `E2E Type ${uid()}`;
     const ids = opts.workflows.map((w) => w.workflowDefinitionId);
     const created = await this.admin.post('/api/v1/task-types', {
       name,
-      description: null,
+      description: opts.description ?? null,
+      iconKey: opts.iconKey,
       isActive: true,
       eligibleWorkflowIds: ids,
       defaultWorkflowDefinitionId: ids[opts.defaultIndex ?? 0],
