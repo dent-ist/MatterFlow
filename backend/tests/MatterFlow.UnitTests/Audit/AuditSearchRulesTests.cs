@@ -54,8 +54,8 @@ public class AuditAssignmentTextTests
     [Fact]
     public void First_assignment_and_unassignment_read_naturally()
     {
-        AuditAssignmentText.Describe(null, """{"podId":2}""", Users, Pods).ShouldBe("Assigned to Pod A (pod)");
-        AuditAssignmentText.Describe("""{"podId":2,"userId":9}""", """{"podId":2}""", Users, Pods).ShouldBe("Reassigned from Dana P. (Pod A) to Pod A (pod)");
+        AuditAssignmentText.Describe(null, """{"podId":2}""", Users, Pods).ShouldBe("Assigned to Pod A");
+        AuditAssignmentText.Describe("""{"podId":2,"userId":9}""", """{"podId":2}""", Users, Pods).ShouldBe("Reassigned from Dana P. (Pod A) to Pod A");
         AuditAssignmentText.Describe("""{"userId":9}""", null, Users, Pods).ShouldBe("Unassigned from Dana P.");
         AuditAssignmentText.Describe(null, null, Users, Pods).ShouldBe("Assignment cleared");
     }

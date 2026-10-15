@@ -230,15 +230,15 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
         priorities["Low"].ShouldBe(2);
         priorities["Normal"].ShouldBe(_seeds.Count(s => s.IsOpen) - 5);
 
-        // Task Types: 13 types hold open Tasks; the top 5 are listed and the rest folded into one "Other" row that drills through with all the folded types.
+        // Task Types: 13 types hold open Tasks; the top 8 are listed and the rest folded into one "Other" row that drills through with all the folded types.
         var types = d.GetProperty("byTaskType").EnumerateArray().ToList();
-        types.Count.ShouldBe(6);
+        types.Count.ShouldBe(9);
         types.Sum(i => i.GetProperty("count").GetInt32()).ShouldBe(_seeds.Count(s => s.IsOpen));
         var other = types[^1];
         other.GetProperty("isOther").GetBoolean().ShouldBeTrue();
         other.GetProperty("label").GetString().ShouldBe("Other task types");
-        other.GetProperty("query").GetString()!.Split("&type=").Length.ShouldBe(9, "eight folded types in the link");
-        other.GetProperty("count").GetInt32().ShouldBe(8);
+        other.GetProperty("query").GetString()!.Split("&type=").Length.ShouldBe(6, "five folded types in the link");
+        other.GetProperty("count").GetInt32().ShouldBe(5);
         types[0].GetProperty("label").GetString().ShouldBe("Data Processing");
         types[0].GetProperty("count").GetInt32().ShouldBe(Titles(s => s.IsOpen && s.Type == _seeds[0].Type).Length);
 

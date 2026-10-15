@@ -189,7 +189,7 @@ internal static partial class TaskActivityNarrator
         {
             (null, null) => null,
             (not null, null) => user,
-            (null, not null) => $"{pod} (pod)",
+            (null, not null) => pod,
             _ => $"{user} ({pod})",
         };
     }

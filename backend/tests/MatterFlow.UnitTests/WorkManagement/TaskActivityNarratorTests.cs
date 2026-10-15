@@ -52,7 +52,7 @@ public sealed class TaskActivityNarratorTests
         TaskActivityNarrator.Narrate(Event("TASK_ASSIGNED", "assignment", "{\"podId\":null,\"userId\":8}", "{\"podId\":null,\"userId\":null}"), Names)
             .Summary.ShouldBe("Unassigned from Tariq K.");
         TaskActivityNarrator.Narrate(Event("TASK_ASSIGNED", "assignment", null, "{\"podId\":3,\"userId\":null}"), Names)
-            .Summary.ShouldBe("Assigned to Pod A (pod)");
+            .Summary.ShouldBe("Assigned to Pod A");
     }
 
     [Fact]

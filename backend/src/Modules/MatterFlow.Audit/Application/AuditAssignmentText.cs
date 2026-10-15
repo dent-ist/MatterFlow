@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace MatterFlow.Audit.Application;
 
 /// <summary>
-/// Words a task assignment event the way the Task activity timeline does ("Assigned to Dana P. (Pod A)", "Reassigned from Pod A (pod) to
+/// Words a task assignment event the way the Task activity timeline does ("Assigned to Dana P. (Pod A)", "Reassigned from Pod A to
 /// Dana P. (Pod A)", "Unassigned from Dana P. (Pod A)"). The stored old and new values are <c>{"podId":2,"userId":9}</c> documents. Pure.
 /// </summary>
 internal static class AuditAssignmentText
@@ -49,7 +49,7 @@ internal static class AuditAssignmentText
         {
             (null, null) => null,
             (not null, null) => user,
-            (null, not null) => $"{pod} (pod)",
+            (null, not null) => pod,
             _ => $"{user} ({pod})",
         };
     }
