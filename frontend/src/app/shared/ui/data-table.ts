@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { Button } from 'primeng/button';
 import { ErrorReference } from './error-reference';
+import { FixedPage } from './fixed-page';
 import { StatusFilter as StatusFilterValue, ariaSort, nextSort } from './list-helpers';
 
 export type LoadState = 'loading' | 'ready' | 'error';
@@ -73,6 +74,7 @@ export class SortHeader {
 @Component({
   selector: 'mf-status-filter',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.sf--pinned]': 'pinned' },
   template: `
     <div class="sf">
       <label class="sf__label" [for]="inputId()">Status</label>
@@ -101,9 +103,19 @@ export class SortHeader {
     .sf__select {
       min-width: 160px;
     }
+    /* Pinned toolbar of a fixed-header page: the label sits left of the select, so the toolbar is one row. */
+    @media (min-width: 768px) and (min-height: 561px) {
+      :host(.sf--pinned) .sf {
+        grid-auto-flow: column;
+        align-items: center;
+        gap: var(--mf-s2);
+      }
+    }
   `,
 })
 export class StatusFilter {
+  protected readonly pinned = inject(FixedPage, { optional: true }) !== null;
+
   readonly value = input<StatusFilterValue>('active');
   readonly inputId = input.required<string>();
   /** Wording of the middle option ("Inactive", or "Archived" for projects). */
@@ -123,6 +135,8 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
   selector: 'mf-list-state',
   imports: [Button, ErrorReference],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // `mf-fill`: inside a fixed-header page the state fills what is left, so the projected grid scrolls and the pager stays pinned.
+  host: { class: 'mf-fill' },
   template: `
     @switch (state()) {
       @case ('loading') {
@@ -164,9 +178,6 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
     }
   `,
   styles: `
-    :host {
-      display: block;
-    }
     .ls__skeleton {
       display: grid;
       gap: 1px;

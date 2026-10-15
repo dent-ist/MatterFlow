@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
+import { FixedPage } from './fixed-page';
 
 /** Viewport width from which the Details panel sits to the right of the main area. */
 export const DETAIL_WIDE_QUERY = '(min-width: 1100px)';
@@ -15,6 +16,8 @@ export const DETAIL_WIDE_QUERY = '(min-width: 1100px)';
 export const DETAIL_XWIDE_QUERY = '(min-width: 1400px)';
 /** Viewport width from which the collapsed summary starts expanded (tablets and up); phones start collapsed. */
 export const DETAIL_TABLET_QUERY = '(min-width: 600px)';
+/** The same, on a fixed-header page (record pages): only a tall window starts with the summary open, a short one leaves the height to the grid. */
+export const DETAIL_TABLET_TALL_QUERY = '(min-width: 600px) and (min-height: 900px)';
 
 let nextId = 0;
 const PANEL_KEY = 'mf.detail-panel.open';
@@ -56,6 +59,7 @@ function savePanelOpen(open: boolean): void {
   selector: 'mf-detail-layout',
   imports: [NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.dl--fixed]': 'fixed' },
   template: `
     <div
       class="dl"
@@ -197,9 +201,55 @@ function savePanelOpen(open: boolean): void {
       padding: 0;
       border: 0;
     }
+    /*
+     * Inside a fixed-header page (mf-fixed-page) the layout fills what is left under the pinned header: the main area is a column
+     * whose grid scrolls, and the Details panel scrolls inside itself (it does not stick to the window). Narrow screens stack them, the
+     * panel capped to a third of the window so the grid keeps the rest.
+     */
+    @media (min-width: 768px) and (min-height: 561px) {
+      :host(.dl--fixed) {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 0;
+        min-height: 0;
+      }
+      :host(.dl--fixed) .dl {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 0;
+        min-height: 0;
+      }
+      :host(.dl--fixed) .dl--wide {
+        display: grid;
+        grid-template-rows: minmax(0, 1fr);
+        align-items: stretch;
+      }
+      :host(.dl--fixed) .dl__main {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 0;
+        min-height: 0;
+      }
+      :host(.dl--fixed) .dl--wide .dl__aside {
+        position: static;
+        max-height: 100%;
+      }
+      :host(.dl--fixed) .dl:not(.dl--wide) .dl__aside {
+        flex: none;
+        max-height: 35dvh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+      }
+      :host(.dl--fixed) .dl:not(.dl--wide) .dl__after--below {
+        flex: none;
+      }
+    }
   `,
 })
 export class DetailLayout {
+  /** Inside a fixed-header page (see the styles). */
+  protected readonly fixed = inject(FixedPage, { optional: true }) !== null;
+
   readonly heading = input('Details');
   /** Lets the panel collapse between 1100 and 1399 px (see the class comment). */
   readonly collapsible = input(false);
@@ -244,7 +294,10 @@ export class DetailLayout {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
     const wide = window.matchMedia(DETAIL_WIDE_QUERY);
     this.wide.set(wide.matches);
-    this.open.set(window.matchMedia(DETAIL_TABLET_QUERY).matches);
+    // Tablets start with the summary open, but on a fixed-header page only when the window is tall: the grid needs the height.
+    this.open.set(
+      window.matchMedia(this.fixed ? DETAIL_TABLET_TALL_QUERY : DETAIL_TABLET_QUERY).matches,
+    );
     const xwide = window.matchMedia(DETAIL_XWIDE_QUERY);
     this.xwide.set(xwide.matches);
     this.midOpen.set(readPanelOpen());

@@ -6,6 +6,7 @@ import {
   input,
   output,
 } from '@angular/core';
+import { FixedPage } from './fixed-page';
 
 export interface MfTab {
   key: string;
@@ -23,6 +24,7 @@ export interface MfTab {
 @Component({
   selector: 'mf-tabs',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.tabs--pinned]': 'pinned' },
   template: `
     <div class="tabs" role="tablist" [attr.aria-label]="label()">
       @for (t of tabs(); track t.key) {
@@ -90,10 +92,20 @@ export interface MfTab {
       color: var(--mf-text-muted);
       font-weight: 400;
     }
+    /* Pinned under the title of a fixed-header page: tighter, so the grid keeps its height. */
+    @media (min-width: 768px) and (min-height: 561px) {
+      :host(.tabs--pinned) {
+        margin-bottom: var(--mf-s2);
+      }
+      :host(.tabs--pinned) .tab {
+        min-height: 2.5rem;
+      }
+    }
   `,
 })
 export class Tabs {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  protected readonly pinned = inject(FixedPage, { optional: true }) !== null;
 
   readonly tabs = input.required<readonly MfTab[]>();
   readonly selected = input.required<string>();

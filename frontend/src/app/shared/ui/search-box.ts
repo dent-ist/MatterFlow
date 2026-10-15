@@ -11,6 +11,7 @@ import {
   untracked,
 } from '@angular/core';
 import { isSearchable } from '../search/search-meta';
+import { FixedPage } from './fixed-page';
 
 /** Live search waits this long after the last key press (UXR-11). */
 export const SEARCH_DEBOUNCE_MS = 300;
@@ -23,6 +24,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
 @Component({
   selector: 'mf-search-box',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.sb--pinned]': 'pinned' },
   template: `
     <div class="sb">
       <label class="sb__label" [class.sb__label--hidden]="hideLabel()" [for]="inputId()">{{
@@ -132,7 +134,8 @@ export const SEARCH_DEBOUNCE_MS = 300;
       clip-path: inset(50%);
       white-space: nowrap;
     }
-    .sb__hint--float.sb__hint--show {
+    .sb__hint--float.sb__hint--show,
+    :host(.sb--pinned) .sb__hint--show {
       top: calc(100% + var(--mf-s1));
       left: 0;
       z-index: 5;
@@ -148,9 +151,42 @@ export const SEARCH_DEBOUNCE_MS = 300;
       background: var(--mf-surface);
       box-shadow: var(--mf-shadow-1);
     }
+    /* In the pinned toolbar of a fixed-header page: no visible label (the placeholder says what it is, the label stays the accessible name)
+       and no permanent hint line (the hint floats while the box has focus), so the toolbar is one 40 px row. */
+    @media (min-width: 768px) and (min-height: 561px) {
+      :host(.sb--pinned) .sb__label,
+      :host(.sb--pinned) .sb__hint {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+      :host(.sb--pinned) .sb__hint--show {
+        position: absolute;
+        top: calc(100% + var(--mf-s1));
+        left: 0;
+        z-index: 7;
+        width: max-content;
+        max-width: 100%;
+        height: auto;
+        padding: var(--mf-s1) var(--mf-s2);
+        overflow: visible;
+        clip-path: none;
+        white-space: normal;
+        border: 1px solid var(--mf-border-strong);
+        border-radius: var(--mf-radius);
+        background: var(--mf-surface);
+        box-shadow: var(--mf-shadow-1);
+      }
+    }
   `,
 })
 export class SearchBox {
+  /** Inside a fixed-header page the box is compact (see the styles). */
+  protected readonly pinned = inject(FixedPage, { optional: true }) !== null;
+
   /** The committed search text (usually the `q` query parameter). */
   readonly value = input('');
   readonly label = input('Search');

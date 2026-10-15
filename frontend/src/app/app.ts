@@ -12,6 +12,7 @@ import { RouterOutlet } from '@angular/router';
 import { Toast } from 'primeng/toast';
 import { LeaveConfirmService } from './shared/guards/unsaved-changes.guard';
 import { DevAuthBanner } from './shared/layout/dev-auth-banner';
+import { ShellLayout } from './shared/ui/fixed-page';
 import { ToastNoAutofocus } from './shared/ui/toast-no-autofocus';
 import { UndoToast } from './shared/ui/undo-toast';
 
@@ -20,6 +21,8 @@ import { UndoToast } from './shared/ui/undo-toast';
   selector: 'mf-root',
   imports: [RouterOutlet, Toast, DevAuthBanner, NgComponentOutlet, UndoToast, ToastNoAutofocus],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // While a fixed-header grid page is shown the root is exactly one window tall (styles/_fixed-page.scss), so the dev banner and the shell share it.
+  host: { '[class.mf-root--fixed]': 'layout.fixed()' },
   template: `
     <mf-dev-auth-banner />
     <router-outlet />
@@ -31,6 +34,7 @@ import { UndoToast } from './shared/ui/undo-toast';
   `,
 })
 export class App {
+  protected readonly layout = inject(ShellLayout);
   private readonly leaveConfirm = inject(LeaveConfirmService);
   protected readonly leaveHost = signal<Type<unknown> | null>(null);
 

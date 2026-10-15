@@ -22,6 +22,7 @@ import { SEARCH_TYPES } from '../search/search-meta';
 import { GlobalSearch } from '../search/global-search';
 import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem } from './nav-items';
 import { ShortcutHelpState } from './shortcut-help-state';
+import { ShellLayout } from '../ui/fixed-page';
 
 /** Header (logo, persistent global search, Create Task, user), permission-gated left nav, content outlet. */
 @Component({
@@ -36,13 +37,18 @@ import { ShortcutHelpState } from './shortcut-help-state';
     NgComponentOutlet,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:keydown)': 'onKeydown($event)' },
+  host: {
+    '(document:keydown)': 'onKeydown($event)',
+    '[class.mf-shell--fixed]': 'layout.fixed()',
+  },
   templateUrl: './app-shell.html',
   styleUrl: './app-shell.scss',
 })
 export class AppShell {
   protected readonly auth = inject(AuthStore);
   protected readonly pendingUsers = inject(PendingUsersStore);
+  /** True while a fixed-header grid page is on screen: the main area then does not scroll (only the grid does). */
+  protected readonly layout = inject(ShellLayout);
   private readonly router = inject(Router);
   private readonly globalSearch = viewChild(GlobalSearch);
   private readonly main = viewChild<ElementRef<HTMLElement>>('main');

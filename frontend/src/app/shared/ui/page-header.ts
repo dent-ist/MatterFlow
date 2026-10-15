@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { iconForPath } from '../layout/section-icons';
+import { FixedPage } from './fixed-page';
 
 /** One step of the breadcrumb trail; the last one is the current page and has no link. */
 export interface Crumb {
@@ -24,6 +25,7 @@ export interface Crumb {
   selector: 'mf-page-header',
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.ph--compact]': 'compact' },
   template: `
     <header class="ph">
       @if (crumbs().length > 0) {
@@ -52,13 +54,13 @@ export interface Crumb {
           <ng-content select="[mfActions]" />
         </div>
       </div>
-      <p class="ph__desc" data-page-description>
+      <p class="ph__desc" data-page-description [attr.title]="description() || null">
         @if (description()) {
           {{ description() }}
         }
         <ng-content select="[mfDescription]" />
       </p>
-      <ng-content />
+      <div class="ph__extra"><ng-content /></div>
     </header>
   `,
   styles: `
@@ -121,6 +123,63 @@ export interface Crumb {
     .ph__desc:empty {
       display: none;
     }
+    .ph__extra:empty {
+      display: none;
+    }
+    /*
+     * Inside a fixed-header page the header is compact (title, one-line description and actions on ONE row, so the grid keeps its height):
+     * the description sits beside the title and is cut off with an ellipsis (its full text is the tooltip), tabs and other content
+     * go below. Only while the fixed layout is on; on phones and short windows the normal header shows.
+     */
+    @media (min-width: 768px) and (min-height: 561px) {
+      :host(.ph--compact) {
+        /* Above the toolbar and the grid under it, so the popovers of the header (Columns, the sort rule) are not painted under them. */
+        position: relative;
+        z-index: 8;
+        margin-bottom: var(--mf-s2);
+      }
+      :host(.ph--compact) .ph {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        column-gap: var(--mf-s4);
+      }
+      /* Row 1 belongs to the breadcrumb (empty without one) so tabs and other content always land under the title row. */
+      :host(.ph--compact) .ph::before {
+        content: '';
+        grid-column: 1 / -1;
+        grid-row: 1;
+      }
+      :host(.ph--compact) .ph__crumbs {
+        grid-column: 1 / -1;
+        grid-row: 1;
+      }
+      :host(.ph--compact) .ph__row {
+        display: contents;
+      }
+      :host(.ph--compact) .ph__title {
+        grid-column: 1;
+        grid-row: 2;
+        font-size: var(--mf-fs-h2);
+        line-height: 1.3;
+      }
+      :host(.ph--compact) .ph__desc {
+        grid-column: 2;
+        grid-row: 2;
+        margin: 0;
+        overflow: hidden;
+        font-size: var(--mf-fs-sm);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      :host(.ph--compact) .ph__actions {
+        grid-column: 3;
+        grid-row: 2;
+      }
+      :host(.ph--compact) .ph__extra {
+        grid-column: 1 / -1;
+      }
+    }
   `,
 })
 export class PageHeader {
@@ -133,6 +192,9 @@ export class PageHeader {
    * (the one in the left navigation, see `section-icons.ts`); an empty string shows none.
    */
   readonly icon = input<string | null>(null);
+
+  /** Inside a fixed-header page (`mf-fixed-page`) the header is compact. */
+  protected readonly compact = inject(FixedPage, { optional: true }) !== null;
 
   private readonly route = inject(ActivatedRoute);
   private readonly routePath =

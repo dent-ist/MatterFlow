@@ -1,0 +1,265 @@
+import { ChangeDetectionStrategy, Component, Type, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { Route, Router, Routes, UrlSegment, provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { routes } from '../../app.routes';
+import { FIXED_MODE_QUERY, FixedPage, ScrollArea, ScrollMemory, ShellLayout } from './fixed-page';
+
+/**
+ * Where a URL leads in the real route tree, down to the component (lazy routes are loaded). Only the matching the tests need: static
+ * segments, `:params`, `matcher` functions, empty-path wrappers and `loadChildren`.
+ */
+async function componentAt(url: string): Promise<Type<unknown> | null> {
+  const segments = url.split('/').filter(Boolean);
+  return find(routes, segments);
+}
+
+async function childrenOf(route: Route): Promise<Routes> {
+  if (route.children) return route.children;
+  if (route.loadChildren) {
+    const loaded = await route.loadChildren();
+    return Array.isArray(loaded) ? loaded : [];
+  }
+  return [];
+}
+
+async function find(candidates: Routes, segments: string[]): Promise<Type<unknown> | null> {
+  for (const route of candidates) {
+    let rest: string[] | null = null;
+    if (route.matcher) {
+      const url = segments.map((s) => new UrlSegment(s, {}));
+      const result = route.matcher(url, {} as never, route);
+      if (result) rest = segments.slice(result.consumed.length);
+    } else if (route.path === '**') {
+      rest = [];
+    } else {
+      const own = (route.path ?? '').split('/').filter(Boolean);
+      const matches = own.every(
+        (p, i) => segments[i] !== undefined && (p.startsWith(':') || p === segments[i]),
+      );
+      if (matches && own.length <= segments.length) rest = segments.slice(own.length);
+    }
+    if (rest === null) continue;
+    const full = (route.pathMatch ?? 'prefix') === 'full';
+    if (rest.length === 0 && route.component) return route.component;
+    if (rest.length === 0 && route.loadComponent)
+      return (await route.loadComponent()) as Type<unknown>;
+    if (full && rest.length > 0) continue;
+    const found = await find(await childrenOf(route), rest);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** True when the component's template uses `mf-fixed-page` (it is one of the dependencies of its compiled definition). */
+function usesFixedPage(component: Type<unknown>): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const def = (component as any).ɵcmp;
+  const deps = typeof def.dependencies === 'function' ? def.dependencies() : def.dependencies;
+  const defs = typeof def.directiveDefs === 'function' ? def.directiveDefs() : def.directiveDefs;
+  return (
+    (Array.isArray(deps) && deps.includes(FixedPage)) ||
+    (Array.isArray(defs) && defs.some((d: { type?: unknown }) => d.type === FixedPage))
+  );
+}
+
+/** Every route whose main content is a grid or list: the page title, tabs, search and buttons stay put and only the grid scrolls. */
+const FIXED_URLS = [
+  '/tasks',
+  '/my-work',
+  '/pods/work',
+  '/clients',
+  '/matters',
+  '/projects',
+  '/assets',
+  '/clients/7',
+  '/matters/7',
+  '/projects/7',
+  '/admin/users',
+  '/admin/roles',
+  '/admin/pods',
+  '/admin/task-types',
+  '/admin/workflows',
+  '/admin/steps',
+  '/admin/priorities',
+  '/admin/status-labels',
+  '/admin/asset-types',
+  '/admin/asset-types?tab=link-roles',
+  '/admin/custom-fields',
+  '/admin/audit',
+];
+
+/** Screens that keep the normal page scroll: the dashboard, forms, the designers, the task page and the system pages. */
+const NORMAL_URLS = [
+  '/dashboard',
+  '/tasks/new',
+  '/tasks/7',
+  '/clients/new',
+  '/clients/7/edit',
+  '/matters/new',
+  '/matters/7/edit',
+  '/projects/new',
+  '/projects/7/edit',
+  '/assets/new',
+  '/assets/7/edit',
+  '/assets/7',
+  '/admin/task-types/new',
+  '/admin/task-types/7',
+  '/admin/task-types/7/form',
+  '/admin/steps/new',
+  '/admin/steps/7',
+  '/admin/steps/7/form',
+  '/admin/workflows/new',
+  '/admin/workflows/7',
+  '/admin/workflows/7/versions/9',
+  '/403',
+  '/404',
+  '/nowhere',
+];
+
+describe('fixed-header grid screens', () => {
+  it.each(FIXED_URLS)('%s uses the shared fixed layout (mf-fixed-page)', async (url) => {
+    const component = await componentAt(url.split('?')[0]);
+    expect(component, `no route for ${url}`).not.toBeNull();
+    expect(usesFixedPage(component!), `${url} (${component!.name})`).toBe(true);
+  });
+
+  it.each(NORMAL_URLS)('%s keeps the normal page scroll', async (url) => {
+    const component = await componentAt(url);
+    expect(component, `no route for ${url}`).not.toBeNull();
+    expect(usesFixedPage(component!), `${url} (${component!.name})`).toBe(false);
+  });
+
+  it('switches to normal page scrolling below 768 px wide or 561 px high', () => {
+    expect(FIXED_MODE_QUERY).toBe('(min-width: 768px) and (min-height: 561px)');
+  });
+});
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FixedPage, ScrollArea],
+  template: `
+    <mf-fixed-page>
+      <header>Title</header>
+      <div mfScrollArea="Task list" [resetKey]="key()" data-area>
+        <table>
+          <thead>
+            <tr>
+              <th>A</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (n of rows; track n) {
+              <tr>
+                <td>{{ n }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </mf-fixed-page>
+  `,
+})
+class Host {
+  readonly key = signal(0);
+  readonly rows = Array.from({ length: 80 }, (_, i) => i);
+}
+
+describe('mf-fixed-page and the scroll area', () => {
+  async function render() {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([{ path: '**', component: Host }])],
+    });
+    const fixture = TestBed.createComponent(Host);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    return {
+      fixture,
+      el,
+      area: el.querySelector<HTMLElement>('[data-area]')!,
+      host: fixture.componentInstance,
+    };
+  }
+
+  it('marks the page with data-fixed-page and tells the shell while it is on screen', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([{ path: '**', component: Host }])],
+    });
+    const layout = TestBed.inject(ShellLayout);
+    expect(layout.fixed()).toBe(false);
+    const fixture = TestBed.createComponent(Host);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('mf-fixed-page')!.hasAttribute('data-fixed-page')).toBe(true);
+    expect(layout.fixed()).toBe(true);
+    fixture.destroy();
+    expect(layout.fixed()).toBe(false);
+  });
+
+  it('counts pages, so one that replaces another during navigation never leaves the shell unfixed', () => {
+    const layout = TestBed.inject(ShellLayout);
+    const first = layout.register();
+    const second = layout.register();
+    first();
+    expect(layout.fixed()).toBe(true);
+    second();
+    expect(layout.fixed()).toBe(false);
+  });
+
+  it('makes the grid a focusable, named region so keyboard users can scroll it', async () => {
+    const { area } = await render();
+    expect(area.getAttribute('role')).toBe('region');
+    expect(area.getAttribute('tabindex')).toBe('0');
+    expect(area.getAttribute('aria-label')).toBe('Task list, scrollable');
+    expect(area.classList.contains('mf-scroll-area')).toBe(true);
+  });
+
+  it('flags the page and the grid as scrolled once the rows have moved, and clears it at the top', async () => {
+    const { fixture, el, area } = await render();
+    const page = el.querySelector('mf-fixed-page')!;
+    expect(page.hasAttribute('data-scrolled')).toBe(false);
+    area.scrollTop = 120;
+    area.dispatchEvent(new Event('scroll'));
+    fixture.detectChanges();
+    expect(area.hasAttribute('data-scrolled')).toBe(true);
+    expect(page.hasAttribute('data-scrolled')).toBe(true);
+    area.scrollTop = 0;
+    area.dispatchEvent(new Event('scroll'));
+    fixture.detectChanges();
+    expect(area.hasAttribute('data-scrolled')).toBe(false);
+    expect(page.hasAttribute('data-scrolled')).toBe(false);
+  });
+
+  it('returns to the top when the list changes without a navigation (resetKey)', async () => {
+    const { fixture, area, host } = await render();
+    area.scrollTop = 300;
+    host.key.set(1);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(area.scrollTop).toBe(0);
+  });
+
+  it('returns to the top on every ordinary navigation (page, sort, filter and tab changes)', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([{ path: '**', component: Host }])],
+    });
+    const harness = await RouterTestingHarness.create('/list?page=1');
+    const area = (harness.routeNativeElement as HTMLElement).querySelector<HTMLElement>(
+      '[data-area]',
+    )!;
+    area.scrollTop = 250;
+    await harness.navigateByUrl('/list?page=2');
+    expect(area.scrollTop).toBe(0);
+  });
+
+  it('remembers the scroll position per address for Back and Forward', () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const memory = TestBed.inject(ScrollMemory);
+    memory.save('/tasks?page=2', 480);
+    expect(memory.saved('/tasks?page=2')).toBe(480);
+    expect(memory.saved('/tasks?page=3')).toBe(0);
+    memory.save('/tasks?page=2', 0);
+    expect(memory.saved('/tasks?page=2')).toBe(0);
+    expect(TestBed.inject(Router)).toBeTruthy();
+  });
+});

@@ -203,3 +203,29 @@
     white-space: nowrap;
   }
 }
+
+/*
+ * Fixed-header pages (shared/ui/fixed-page.ts): the shell is exactly as tall as the window, the main area does not scroll and the page
+ * inside it fills it. Only when the window is at least 768 x 561 CSS px; smaller windows and zoom keep normal page scrolling.
+ */
+@media (min-width: 768px) and (min-height: 561px) {
+  :host(.mf-shell--fixed) {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  :host(.mf-shell--fixed) .mf-nav {
+    position: static;
+    align-self: stretch;
+    height: auto;
+  }
+
+  :host(.mf-shell--fixed) .mf-main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    padding-block: var(--mf-s3) var(--mf-s2);
+  }
+}

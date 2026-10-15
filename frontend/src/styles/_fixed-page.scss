@@ -1,0 +1,262 @@
+/*
+ * Fixed-header grid pages (see shared/ui/fixed-page.ts). In "fixed mode" the shell's main area does not scroll: the page is a flex
+ * column of pinned parts (header, tabs, toolbar, pager) around ONE scrolling region (`.mf-scroll-area`) with sticky column headers.
+ *
+ * Fixed mode needs a window of at least 768 x 561 CSS px. Below that (phones, short windows, 200% zoom and more) everything here
+ * switches off and the page scrolls normally, so reflow and zoom keep working (WCAG 1.4.10). Keep this query in step with
+ * FIXED_MODE_QUERY in fixed-page.ts.
+ */
+
+/* Both layouts: the scroll area and the grid region helpers. */
+.mf-scroll-area {
+  position: relative;
+  max-width: 100%;
+  overflow-x: auto;
+  /* A focused row or link is never left under the sticky column header. */
+  scroll-padding-top: 3rem;
+  scroll-padding-bottom: 1rem;
+}
+
+.mf-scroll-area:focus-visible {
+  outline: 2px solid var(--mf-focus);
+  outline-offset: -2px;
+}
+
+/* A region that fills what is left of a fixed page and lets its own children fill it (tab panels, tab content components). */
+.mf-fill {
+  display: block;
+}
+
+@media (min-width: 768px) and (min-height: 561px) {
+  /* The root (dev banner + shell) is exactly one window tall, so the shell fills what the banner leaves. */
+  .mf-root--fixed {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .mf-shell--fixed .mf-main > :not(router-outlet) {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  /* `html` raises the specificity above a component's own `:host { display: block }`. */
+  html .mf-fill {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  mf-fixed-page > * {
+    flex: none;
+  }
+
+  /* Pinned parts never shrink, the grid takes the rest. */
+  mf-fixed-page > .mf-fill,
+  mf-fixed-page > mf-list-state,
+  mf-fixed-page > mf-work-list {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .mf-fill > *,
+  mf-list-state > * {
+    flex: none;
+  }
+
+  .mf-fill > .mf-fill,
+  .mf-fill > mf-list-state,
+  mf-list-state > .mf-fill {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  /* The scroll area is as tall as its rows and no taller than the space left; the pager under it is pushed to the bottom edge. */
+  .mf-scroll-area {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  mf-fixed-page > .mf-scroll-area,
+  .mf-fill > .mf-scroll-area,
+  mf-list-state > .mf-scroll-area {
+    flex: 0 1 auto;
+  }
+
+  /* Sticky column headers: the header row stays at the top of the scroll area and scrolls sideways with the columns. */
+  .mf-scroll-area thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--mf-surface-alt);
+    box-shadow: inset 0 -1px 0 var(--mf-border);
+  }
+
+  /* The first column of a wide table also stays at the left: it is above the other headers where they cross. */
+  .mf-scroll-area thead th:first-child {
+    z-index: 4;
+  }
+
+  /* A subtle shadow under the sticky header once the rows have scrolled under it. */
+  .mf-scroll-area[data-scrolled] thead th {
+    box-shadow:
+      inset 0 -1px 0 var(--mf-border),
+      0 4px 6px -3px rgb(0 0 0 / 28%);
+  }
+
+  /* The pager is the pinned bottom bar of the page. */
+  mf-fixed-page mf-pager,
+  .mf-fill mf-pager {
+    display: block;
+    flex: none;
+    margin-top: auto;
+    padding: 0 var(--mf-s3);
+    background: var(--mf-surface);
+    border-top: 1px solid var(--mf-border);
+    box-shadow: 0 -3px 6px -4px rgb(0 0 0 / 18%);
+  }
+}
+
+/* Short and narrow windows: normal page scrolling, nothing pinned. */
+@media (max-width: 767px), (max-height: 560px) {
+  .mf-scroll-area {
+    overflow-y: visible;
+    scroll-padding-top: 0;
+  }
+
+  .mf-scroll-area thead th {
+    position: static;
+  }
+}
+
+/* Printing: the whole grid, not the part that is on screen. */
+@media print {
+  .mf-root--fixed,
+  mf-app-shell.mf-shell--fixed {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .mf-shell--fixed .mf-main,
+  .mf-shell--fixed .mf-main > :not(router-outlet),
+  mf-fixed-page,
+  .mf-fill,
+  mf-list-state,
+  mf-work-list,
+  .mf-scroll-area {
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .mf-scroll-area thead th {
+    position: static !important;
+    box-shadow: none !important;
+  }
+
+  mf-fixed-page mf-pager,
+  .mf-fill mf-pager {
+    display: none !important;
+  }
+}
+
+/* The scroll area is the only scroller: an older inner wrapper (`.mf-scroll`) must not become the scroll container of the sticky headers. */
+.mf-scroll-area > .mf-scroll {
+  overflow: visible;
+}
+
+/* The pinned toolbar (search and filters) of a list page is one compact row. */
+@media (min-width: 768px) and (min-height: 561px) {
+  html mf-fixed-page .pg-filters,
+  html .mf-fill .pg-filters {
+    align-items: center;
+    gap: var(--mf-s2) var(--mf-s4);
+    margin-bottom: var(--mf-s2);
+  }
+
+  html mf-fixed-page .pg-filter,
+  html .mf-fill .pg-filter {
+    display: flex;
+    align-items: center;
+    gap: var(--mf-s2);
+  }
+}
+
+/*
+ * Sticky action bar (Save, Cancel, Publish ...) at the bottom of the viewport, or of the scrolling panel it sits in, so a long form
+ * never hides its buttons. Put it on the `mf-form-actions` row. A card sets `--mf-card-pad` (its padding) so the bar reaches the card's edges.
+ */
+.mf-form-actions--sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-top: var(--mf-s4);
+  margin-inline: calc(-1 * var(--mf-card-pad, 0px));
+  padding: var(--mf-s3) var(--mf-card-pad, 0px);
+  background: var(--mf-surface);
+  border-top: 1px solid var(--mf-border);
+  box-shadow: 0 -4px 6px -4px rgb(0 0 0 / 16%);
+}
+
+/* Record pages: the main column of mf-detail-layout is a flex column and its section / tab area fills it; the section heading is compact. */
+@media (min-width: 768px) and (min-height: 561px) {
+  mf-fixed-page [data-detail-main] > * {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  mf-fixed-page [data-detail-main] > * > * {
+    flex: none;
+  }
+
+  mf-fixed-page [data-detail-main] > * > .mf-fill {
+    flex: 1 1 0;
+  }
+
+  mf-fixed-page [data-detail-main] .pg-section-h {
+    margin: 0 0 var(--mf-s2);
+    font-size: var(--mf-fs-lg);
+  }
+
+  /* Intro lines above a grid are one line (cut off with an ellipsis) instead of a permanent hint block. */
+  .mf-fill > .pg-bar {
+    flex-wrap: nowrap;
+    margin-bottom: var(--mf-s2);
+  }
+
+  .mf-fill .pg-bar__intro,
+  .mf-fill .mf-roles-intro {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mf-fill .mf-roles-bar {
+    flex-wrap: nowrap;
+  }
+
+  /* A form that opens above a list is a panel with its own scroll. */
+  .mf-fill > .pg-form {
+    flex: 0 1 auto;
+    max-height: 45dvh;
+    overflow-y: auto;
+    margin-bottom: var(--mf-s3);
+    overscroll-behavior: contain;
+  }
+}
+
+.mf-form-card,
+.pg-form {
+  --mf-card-pad: var(--mf-s5);
+}
