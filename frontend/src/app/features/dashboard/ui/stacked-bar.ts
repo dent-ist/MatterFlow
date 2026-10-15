@@ -13,15 +13,16 @@ export interface Segment {
 let nextId = 0;
 
 /**
- * Colours of the age bands, light to heavy: fresh, normal, getting old, old. Each is at least 4.5:1 on white and carries white
- * text at 4.5:1 or more; the meaning is in the legend text (label, count, share), not in the colour.
+ * The age bands are an ordered scale, so they use one hue (the brand blue) from light to dark: older is darker, and nothing says "good"
+ * or "bad" (no traffic light; the note under the bar says it is not a service-level target). Every fill carries its own text colour at
+ * 4.5:1 or more, and a 1px brand-blue edge keeps the pale fills visible against the white card (checked in chart-contrast.spec.ts).
  */
-const BAND_COLORS = [
-  'var(--mf-success)',
-  'var(--mf-info)',
-  'var(--mf-warning)',
-  'var(--mf-danger)',
-] as const;
+export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
+  { bg: '#DCE8F8', fg: '#102A54' },
+  { bg: '#A9C6EE', fg: '#102A54' },
+  { bg: '#3B6AB4', fg: '#FFFFFF' },
+  { bg: '#16356B', fg: '#FFFFFF' },
+];
 
 /**
  * One segmented (100% stacked) bar plus a legend (UX `mf-stacked-bar`): the length of a segment is its share of the total. Every segment
@@ -89,7 +90,8 @@ const BAND_COLORS = [
                 routerLink="/tasks"
                 [queryParams]="params(s.query)"
                 [style.flex-grow]="s.count"
-                [style.background]="color($index)"
+                [style.background]="ramp($index).bg"
+                [style.color]="ramp($index).fg"
                 [attr.aria-label]="s.label + ': ' + s.count + ' tasks, ' + share(s.count)"
                 [attr.title]="s.label + ': ' + s.count + ' (' + share(s.count) + ')'"
                 ><span aria-hidden="true">{{ s.count }}</span></a
@@ -106,7 +108,7 @@ const BAND_COLORS = [
                 [queryParams]="params(s.query)"
                 [attr.aria-label]="s.label + ': ' + s.count + ' tasks, ' + share(s.count)"
               >
-                <span class="swatch" aria-hidden="true" [style.background]="color($index)"></span>
+                <span class="swatch" aria-hidden="true" [style.background]="ramp($index).bg"></span>
                 <span class="name">{{ s.label }}</span>
                 <span class="count">{{ s.count }}</span>
                 <span class="pct">{{ share(s.count) }}</span>
@@ -168,7 +170,7 @@ const BAND_COLORS = [
       min-width: 1.75rem;
       flex-basis: 0;
       overflow: hidden;
-      color: #fff;
+      box-shadow: inset 0 0 0 1px var(--mf-primary);
       font-size: var(--mf-fs-sm);
       font-weight: 700;
       font-variant-numeric: tabular-nums;
@@ -202,6 +204,7 @@ const BAND_COLORS = [
       width: 0.875rem;
       height: 0.875rem;
       border-radius: 2px;
+      box-shadow: inset 0 0 0 1px var(--mf-primary);
     }
     .count {
       text-align: right;
@@ -267,7 +270,7 @@ export class StackedBar {
     return sharePercent(count, this.total());
   }
 
-  protected color(index: number): string {
-    return BAND_COLORS[Math.min(index, BAND_COLORS.length - 1)];
+  protected ramp(index: number): { bg: string; fg: string } {
+    return AGE_RAMP[Math.min(index, AGE_RAMP.length - 1)];
   }
 }

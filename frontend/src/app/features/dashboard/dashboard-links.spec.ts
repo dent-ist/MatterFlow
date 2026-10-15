@@ -37,25 +37,25 @@ describe('queueArgsFor', () => {
   it('builds the Task Queue client arguments of a dashboard query, sorted and limited', () => {
     const args = queueArgsFor(
       'status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true',
-      'created',
+      'priorityAge',
       'asc',
       8,
     );
     expect(args[1]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']); // status
-    expect(args[5]).toBe(true); // unassigned
-    expect(args.slice(21)).toEqual(['created', 'asc', 1, 8]);
+    expect(args[6]).toBe(true); // unassigned
+    expect(args.slice(22)).toEqual(['priorityAge', 'asc', 1, 8]);
   });
 
   it('carries overdue and the due-soon window', () => {
     const overdue = queueArgsFor('status=NEW&overdue=true', 'due', 'asc', 6);
-    expect(overdue[17]).toBe(true);
+    expect(overdue[18]).toBe(true);
     const soon = queueArgsFor(
       'status=NEW&asap=false&overdue=false&dueTo=2026-10-16',
       'due',
       'asc',
       6,
     );
-    expect([soon[15], soon[16], soon[17]]).toEqual(['2026-10-16', false, false]);
+    expect([soon[16], soon[17], soon[18]]).toEqual(['2026-10-16', false, false]);
   });
 });
 
@@ -124,7 +124,7 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
       'status=COMPLETED&completedFrom=2026-09-15',
       (s) =>
         expect([s.filters.status, s.filters.completedFrom]).toEqual([['COMPLETED'], '2026-09-15']),
-      ['Status: COMPLETED', 'Closed: from Sep 15, 2026'],
+      ['Status: COMPLETED', 'Completed: from Sep 15, 2026'],
     ],
     [
       'created in the period',
@@ -137,7 +137,7 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
       'createdFrom=2026-10-12&createdTo=2026-10-12',
       (s) =>
         expect([s.filters.createdFrom, s.filters.createdTo]).toEqual(['2026-10-12', '2026-10-12']),
-      ['Created: Oct 12, 2026 to Oct 12, 2026'],
+      ['Created: Oct 12, 2026'],
     ],
     [
       'completed on one day (trend table)',
@@ -147,7 +147,7 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
           '2026-10-12',
           '2026-10-12',
         ]),
-      ['Status: COMPLETED', 'Closed: Oct 12, 2026 to Oct 12, 2026'],
+      ['Status: COMPLETED', 'Completed: Oct 12, 2026'],
     ],
     [
       'pod',

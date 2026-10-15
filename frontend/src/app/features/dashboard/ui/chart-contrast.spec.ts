@@ -1,4 +1,5 @@
 import { contrastRatio } from '../../../shared/ui/color-contrast';
+import { AGE_RAMP } from './stacked-bar';
 
 /**
  * The dashboard's chart colours come from the design tokens (docs/ux/tokens.css, copied here; keep in step). They must stay readable
@@ -28,10 +29,20 @@ const t: Record<string, string> = {
 };
 
 describe('dashboard chart colours', () => {
-  it('age bands carry white text at 4.5:1 and stand out from the card at 3:1', () => {
-    for (const name of ['mf-success', 'mf-info', 'mf-warning', 'mf-danger']) {
-      expect(contrastRatio(t[name], '#FFFFFF'), name).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio(t[name], t['mf-surface']), name).toBeGreaterThanOrEqual(3);
+  it('age bands are one blue hue from light to dark, each text readable on its fill and each fill or its edge visible on the card', () => {
+    const lightness = (hex: string) => contrastRatio(hex, '#FFFFFF');
+    // Darker with age: contrast with white rises from band to band.
+    for (let i = 1; i < AGE_RAMP.length; i++) {
+      expect(lightness(AGE_RAMP[i].bg), `band ${i}`).toBeGreaterThan(lightness(AGE_RAMP[i - 1].bg));
+    }
+    for (const [i, band] of AGE_RAMP.entries()) {
+      expect(contrastRatio(band.fg, band.bg), `text ${i}`).toBeGreaterThanOrEqual(4.5);
+      // The segment edge is the brand blue (1px), the fill is what is left when it is dark enough on its own.
+      const stands = Math.max(
+        contrastRatio(band.bg, t['mf-surface']),
+        contrastRatio(t['mf-primary'], t['mf-surface']),
+      );
+      expect(stands, `edge ${i}`).toBeGreaterThanOrEqual(3);
     }
   });
 

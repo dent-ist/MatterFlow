@@ -2,11 +2,18 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { DashboardTrendPoint } from '../../../api/generated/api-client';
-import { USER_TIME_ZONE } from '../../../core/time/clock';
+import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { BarItem, BarList, sharePercent } from './bar-list';
-import { Segment, StackedBar } from './stacked-bar';
+import { AGE_RAMP, Segment, StackedBar } from './stacked-bar';
 import { StatTile } from './stat-tile';
 import { TrendChart, niceMax } from './trend-chart';
+
+function rgbOf(hex: string): [number, number, number] {
+  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number];
+}
+function toRgb(hex: string): string {
+  return `rgb(${rgbOf(hex).join(', ')})`;
+}
 
 @Component({
   imports: [BarList, StackedBar, TrendChart, StatTile],
@@ -77,10 +84,11 @@ describe('dashboard charts', () => {
   });
 
   describe('bar list', () => {
-    it('sizes each bar by its share of the total and shows the percent as text', () => {
+    it('sizes each bar against the longest one and shows the share of the total as text', () => {
       const rows = Array.from(el.querySelectorAll('mf-bar-list li'));
       expect(rows.map((r) => r.querySelector('.pct')!.textContent)).toEqual(['67%', '33%', '0%']);
-      expect(rows[0].querySelector<HTMLElement>('.bar')!.style.width).toBe('67%');
+      expect(rows[0].querySelector<HTMLElement>('.bar')!.style.width).toBe('100%');
+      expect(rows[1].querySelector<HTMLElement>('.bar')!.style.width).toBe('50%');
     });
 
     it('colours a bar with the given fill and outline, e.g. the priority badge colours', () => {
@@ -112,6 +120,21 @@ describe('dashboard charts', () => {
       expect(segs[0].style.flexGrow).toBe('30');
     });
 
+    it('colours the bands as one blue scale from light to dark, with readable text on each', () => {
+      const segs = Array.from(el.querySelectorAll<HTMLAnchorElement>('mf-stacked-bar .seg'));
+      const fills = segs.map((s) => s.style.background);
+      // 0-2, 8-14 and 15+ days are shown: the first, third and fourth steps of the ramp, never green, amber or red.
+      expect(fills).toEqual([AGE_RAMP[0].bg, AGE_RAMP[2].bg, AGE_RAMP[3].bg].map(toRgb));
+      expect(segs.map((s) => s.style.color)).toEqual(
+        [AGE_RAMP[0].fg, AGE_RAMP[2].fg, AGE_RAMP[3].fg].map(toRgb),
+      );
+      for (const band of AGE_RAMP) {
+        const [r, g, b] = rgbOf(band.bg);
+        expect(b, band.bg).toBeGreaterThan(r); // blue-dominant
+        expect(b, band.bg).toBeGreaterThanOrEqual(g);
+      }
+    });
+
     it('lists every band in a legend with label, count and percent (also the empty one)', () => {
       const rows = Array.from(el.querySelectorAll('mf-stacked-bar .legend li'));
       expect(
@@ -140,15 +163,69 @@ describe('dashboard charts', () => {
   });
 
   describe('trend chart', () => {
-    it('draws an accessible SVG with a text summary and two differently styled series', () => {
-      const svg = el.querySelector('mf-trend-chart svg.chart')!;
-      expect(svg.getAttribute('role')).toBe('img');
-      expect(svg.getAttribute('aria-label')).toContain('7 created, 5 completed');
+    it('draws a chart with a text summary and two differently styled series', () => {
+      const plot = el.querySelector('mf-trend-chart [data-plot]')!;
+      expect(plot.getAttribute('aria-roledescription')).toBe('chart');
+      expect(plot.getAttribute('aria-label')).toContain('7 created, 5 completed');
+      expect(plot.getAttribute('tabindex')).toBe('0');
+      const svg = plot.querySelector('svg.chart')!;
+      expect(svg.getAttribute('aria-hidden')).toBe('true');
       expect(svg.querySelectorAll('polyline').length).toBe(2);
       expect(svg.querySelector('polyline.s-completed')).not.toBeNull();
       // Circles for created, squares for completed: not colour alone.
       expect(svg.querySelectorAll('circle.m-created').length).toBe(3);
       expect(svg.querySelectorAll('rect.m-completed').length).toBe(3);
+    });
+
+    it('shows the values of a day on hover and with the arrow keys, announcing keyboard moves', () => {
+      const plot = el.querySelector<HTMLElement>('mf-trend-chart [data-plot]')!;
+      expect(el.querySelector('[data-tip]')).toBeNull();
+      plot.dispatchEvent(new FocusEvent('focus'));
+      fixture.detectChanges();
+      // Focus starts on the last day.
+      expect(el.querySelector('[data-tip]')!.textContent).toContain('Sat, Oct 3');
+      expect(el.querySelector('[data-tip]')!.textContent).toContain('0 created');
+      expect(el.querySelector('[data-tip]')!.textContent).toContain('1 completed');
+      expect(el.querySelector('[data-readout]')!.textContent).toContain(
+        'Sat, Oct 3: 0 created, 1 completed',
+      );
+
+      plot.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      fixture.detectChanges();
+      expect(el.querySelector('[data-tip]')!.textContent).toContain('Fri, Oct 2');
+      expect(el.querySelector('[data-tip]')!.textContent).toContain('5 created');
+      expect(el.querySelector('[data-readout]')!.textContent).toContain(
+        'Fri, Oct 2: 5 created, 4 completed',
+      );
+
+      plot.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+      fixture.detectChanges();
+      expect(el.querySelector('[data-tip]')!.textContent).toContain('Thu, Oct 1');
+
+      plot.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      fixture.detectChanges();
+      expect(el.querySelector('[data-tip]')).toBeNull();
+
+      // A pointer over the middle of the plot picks the middle day.
+      vi.spyOn(plot, 'getBoundingClientRect').mockReturnValue({
+        left: 0,
+        width: 360,
+        top: 0,
+        height: 190,
+      } as DOMRect);
+      plot.dispatchEvent(
+        Object.assign(new Event('pointermove', { bubbles: true }), { clientX: 188 }),
+      );
+      fixture.detectChanges();
+      expect(el.querySelector('[data-tip]')!.textContent).toContain('Fri, Oct 2');
+    });
+
+    it('marks weekends, and marks today as a partial day only when the series ends today', () => {
+      // 1 Oct 2026 is a Thursday: the 3rd is a Saturday.
+      expect(el.querySelectorAll('mf-trend-chart rect.weekend').length).toBe(1);
+      expect(el.textContent).toContain('Shaded: weekends');
+      expect(el.querySelector('mf-trend-chart polyline.partial')).toBeNull();
+      expect(el.textContent).not.toContain('Dotted: today so far');
     });
 
     it('links the legend totals to the queue', () => {
@@ -187,6 +264,32 @@ describe('dashboard charts', () => {
     });
   });
 
+  describe('trend chart with today in it', () => {
+    it('draws the last segment dotted and says today is a partial day', async () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([]),
+          { provide: USER_TIME_ZONE, useValue: 'UTC' },
+          { provide: Clock, useValue: { now: () => new Date('2026-10-03T15:00:00Z') } },
+        ],
+      });
+      const f = TestBed.createComponent(Host);
+      f.detectChanges();
+      await f.whenStable();
+      const root = f.nativeElement as HTMLElement;
+      expect(root.querySelectorAll('mf-trend-chart polyline.partial').length).toBe(2);
+      expect(root.textContent).toContain('Dotted: today so far');
+      // The solid lines stop the day before.
+      const solid = root.querySelector('mf-trend-chart polyline.s-created:not(.partial)')!;
+      expect(solid.getAttribute('points')!.split(' ').length).toBe(2);
+      const plot = root.querySelector<HTMLElement>('mf-trend-chart [data-plot]')!;
+      plot.dispatchEvent(new FocusEvent('focus'));
+      f.detectChanges();
+      expect(root.querySelector('[data-tip]')!.textContent).toContain('Today so far');
+    });
+  });
+
   describe('stat tile', () => {
     it('tints and marks a needs-attention tile only while the number is above zero', async () => {
       const link = () => el.querySelector<HTMLElement>('mf-stat-tile a')!;
@@ -197,8 +300,10 @@ describe('dashboard charts', () => {
       fixture.componentInstance.value = 0;
       fixture.detectChanges();
       await fixture.whenStable();
+      // At zero the tile is calm: no tint, and no link to an empty list.
+      expect(fixture.nativeElement.querySelector('mf-stat-tile a')).toBeNull();
       expect(
-        fixture.nativeElement.querySelector('mf-stat-tile a').getAttribute('data-tone'),
+        fixture.nativeElement.querySelector('mf-stat-tile [data-zero]').getAttribute('data-tone'),
       ).toBeNull();
     });
   });

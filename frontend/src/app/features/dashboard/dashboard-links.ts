@@ -33,3 +33,21 @@ export function queueArgsFor(query: string, sort: string, dir: 'asc' | 'desc', p
   const state = parseQueueState(convertToParamMap(queueParams(query)));
   return queueArgs({ ...state, sort, dir, page: 1, pageSize });
 }
+
+export type ListKind = 'unassigned' | 'overdue' | 'dueSoon';
+
+/**
+ * The order each dashboard list shows, and "View all" starts with: the unassigned queue by priority and then age (oldest first), the
+ * overdue and due-soon lists by due date (soonest first).
+ */
+export const LIST_ORDER: Record<
+  ListKind,
+  { sort: string; dir: 'asc' | 'desc'; note: string | null }
+> = {
+  unassigned: { sort: 'priorityAge', dir: 'asc', note: 'Highest priority first, then oldest.' },
+  overdue: { sort: 'due', dir: 'asc', note: null },
+  dueSoon: { sort: 'due', dir: 'asc', note: null },
+};
+
+/** The Task Queue query of every open, unassigned task (what the department sees, and what a person with Task.Assign picks work from). */
+export const OPEN_UNASSIGNED_QUERY = 'status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true';

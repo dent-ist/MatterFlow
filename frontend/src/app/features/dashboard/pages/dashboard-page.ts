@@ -2,11 +2,17 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  Injector,
   OnInit,
+  afterNextRender,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
+  viewChildren,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import {
@@ -17,14 +23,16 @@ import {
   TaskQueueRow,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { QuietRequests } from '../../../core/http/interceptors';
 import { LookupStore } from '../../../core/lookups/lookup-store';
+import { UndoService } from '../../../core/notify/undo.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { mfDate } from '../../../core/time/time';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { priorityColors } from '../../../shared/ui/priority-badge';
-import { queueArgsFor } from '../dashboard-links';
+import { LIST_ORDER, ListKind, OPEN_UNASSIGNED_QUERY, queueArgsFor } from '../dashboard-links';
 import { PERIOD_PRESETS, PeriodKey, isPeriodKey, periodDays, presetOf } from '../dashboard-period';
 import { DashboardPrefs } from '../dashboard-prefs';
 import { BarItem, BarList } from '../ui/bar-list';
@@ -36,8 +44,16 @@ import { DashTaskList, PanelState } from '../ui/task-list-panel';
 import { TrendChart } from '../ui/trend-chart';
 
 type LoadState = 'loading' | 'ready' | 'error';
-type ListKind = 'unassigned' | 'overdue' | 'dueSoon';
 type SectionName = 'department' | 'lists' | 'mine' | 'trend' | 'breakdowns' | 'recent';
+
+/** One list panel of the "Tasks to act on" section: what it is called and the Task Queue query behind it. */
+interface PanelSpec {
+  kind: ListKind;
+  heading: string;
+  emptyText: string;
+  viewAllText: string;
+  query: string;
+}
 
 interface ListData {
   state: PanelState;
@@ -91,31 +107,20 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     HasPermissionDirective,
     RecentTaskList,
     RouterLink,
+    NgTemplateOutlet,
     StatTile,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-page-header heading="Dashboard">
       <div mfActions class="controls">
-        <label class="period">
-          <span>Created and completed</span>
-          <select
-            class="mf-control"
-            data-period
-            [value]="period()"
-            (change)="setPeriod($any($event.target).value)"
-          >
-            @for (p of periods; track p.key) {
-              <option [value]="p.key" [selected]="p.key === period()">{{ p.label }}</option>
-            }
-          </select>
-        </label>
         <button
           type="button"
           class="mf-btn refresh"
           data-refresh
+          [attr.aria-disabled]="refreshing() ? 'true' : null"
+          [attr.aria-busy]="refreshing() ? 'true' : null"
           (click)="refresh()"
-          [disabled]="refreshing()"
         >
           <i
             class="pi"
@@ -132,12 +137,34 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       </div>
     </mf-page-header>
 
+    <p class="sr-only" role="status" aria-live="polite" data-dash-live>{{ live() }}</p>
+
     @if (refreshFailed()) {
-      <p class="stale" role="status" data-stale>
+      <div class="stale" role="status" data-stale>
         <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-        The dashboard could not be refreshed. Showing the figures from {{ updated() }}.
-      </p>
+        <span>
+          The dashboard could not be refreshed. Showing the figures from {{ updated() }}.
+          <mf-error-reference />
+        </span>
+        <button type="button" class="mf-btn" data-stale-retry (click)="refresh()">Retry</button>
+      </div>
     }
+
+    <ng-template #periodControl>
+      <label class="period">
+        <span>Created and completed in</span>
+        <select
+          class="mf-control"
+          data-period
+          [value]="period()"
+          (change)="setPeriod($any($event.target).value)"
+        >
+          @for (p of periods; track p.key) {
+            <option [value]="p.key" [selected]="p.key === period()">{{ p.label }}</option>
+          }
+        </select>
+      </label>
+    </ng-template>
 
     @switch (state()) {
       @case ('loading') {
@@ -170,7 +197,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                   <mf-dash-section heading="Department" name="department">
                     <div role="group" aria-labelledby="attn-h" class="group" data-group="attention">
                       <h3 id="attn-h">Needs attention</h3>
-                      <div class="tiles">
+                      <div class="tiles tiles--3">
                         <mf-stat-tile
                           label="Overdue"
                           icon="pi-exclamation-circle"
@@ -184,7 +211,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                         <mf-stat-tile
                           label="Unassigned"
                           icon="pi-user-minus"
-                          tone="warning"
+                          tone="strong"
                           emphasis="attention"
                           linkText="View unassigned tasks"
                           [value]="d.unassigned.count"
@@ -194,28 +221,21 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                         <mf-stat-tile
                           label="On hold"
                           icon="pi-pause-circle"
-                          tone="info"
+                          tone="warning"
                           emphasis="attention"
                           linkText="View tasks on hold"
                           [value]="d.onHold.count"
                           [query]="d.onHold.query"
                           caption="Waiting on something"
                         />
-                        <mf-stat-tile
-                          label="ASAP open"
-                          icon="pi-bolt"
-                          tone="warning"
-                          emphasis="attention"
-                          linkText="View ASAP tasks"
-                          [value]="d.asapOpen.count"
-                          [query]="d.asapOpen.query"
-                          caption="No due date, handle promptly"
-                        />
                       </div>
                     </div>
                     <div role="group" aria-labelledby="ov-h" class="group" data-group="overview">
-                      <h3 id="ov-h">Overview</h3>
-                      <div class="tiles">
+                      <div class="group-head">
+                        <h3 id="ov-h">Overview</h3>
+                        <ng-container *ngTemplateOutlet="periodControl" />
+                      </div>
+                      <div class="tiles tiles--5">
                         <mf-stat-tile
                           label="Open"
                           emphasis="quiet"
@@ -231,6 +251,16 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                           [value]="d.dueSoon.count"
                           [query]="d.dueSoon.query"
                           caption="Next 2 days, excludes ASAP"
+                        />
+                        <mf-stat-tile
+                          label="ASAP open"
+                          icon="pi-bolt"
+                          tone="asap"
+                          emphasis="quiet"
+                          linkText="View ASAP tasks"
+                          [value]="d.asapOpen.count"
+                          [query]="d.asapOpen.query"
+                          caption="No due date, handle promptly"
                         />
                         <mf-stat-tile
                           label="Completed"
@@ -254,47 +284,36 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                 }
                 @case ('lists') {
                   <mf-dash-section heading="Tasks to act on" name="lists" key="lists">
-                    <div class="grid grid--lists" data-lists>
-                      <mf-dash-task-list
-                        kind="unassigned"
-                        heading="Unassigned queue"
-                        emptyText="No unassigned tasks."
-                        viewAllText="View all unassigned tasks"
-                        [rows]="unassignedList().rows"
-                        [total]="unassignedList().total"
-                        [state]="unassignedList().state"
-                        [query]="d.unassigned.query"
-                        (rowChange)="onRowChange('unassigned', $event)"
-                        (retry)="reloadList('unassigned')"
-                      />
-                      <mf-dash-task-list
-                        kind="overdue"
-                        heading="Overdue"
-                        emptyText="Nothing is overdue."
-                        viewAllText="View all overdue tasks"
-                        [rows]="overdueList().rows"
-                        [total]="overdueList().total"
-                        [state]="overdueList().state"
-                        [query]="d.overdue.query"
-                        (retry)="reloadList('overdue')"
-                      />
-                      <mf-dash-task-list
-                        kind="dueSoon"
-                        heading="Due soon"
-                        emptyText="Nothing is due in the next 2 days."
-                        viewAllText="View all tasks due soon"
-                        [rows]="dueSoonList().rows"
-                        [total]="dueSoonList().total"
-                        [state]="dueSoonList().state"
-                        [query]="d.dueSoon.query"
-                        (retry)="reloadList('dueSoon')"
-                      />
+                    <div
+                      class="grid grid--lists"
+                      [class.grid--three]="panels().length === 3"
+                      data-lists
+                    >
+                      @for (panel of panels(); track panel.kind) {
+                        <mf-dash-task-list
+                          [kind]="panel.kind"
+                          [heading]="panel.heading"
+                          [emptyText]="panel.emptyText"
+                          [viewAllText]="panel.viewAllText"
+                          [rows]="listOf(panel.kind).rows"
+                          [total]="listOf(panel.kind).total"
+                          [state]="listOf(panel.kind).state"
+                          [query]="panel.query"
+                          (rowChange)="onRowChange(panel.kind, $event)"
+                          (retry)="reloadList(panel.kind)"
+                        />
+                      }
                     </div>
                   </mf-dash-section>
                 }
                 @case ('mine') {
                   <mf-dash-section heading="Your work" name="mine" key="mine">
                     <a mfSectionActions routerLink="/my-work" class="head-link">Go to My Work</a>
+                    @if (!department() && showMinePeriod()) {
+                      <span mfSectionActions class="head-period">
+                        <ng-container *ngTemplateOutlet="periodControl" />
+                      </span>
+                    }
                     @if (d.mine.open.count === 0) {
                       <div class="nothing" data-nothing-assigned>
                         <p><strong>Nothing assigned to you.</strong></p>
@@ -311,6 +330,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                           <mf-stat-tile
                             label="Created by me"
                             emphasis="quiet"
+                            linkText="View tasks I created"
                             [value]="d.mine.createdByMe.count"
                             [query]="d.mine.createdByMe.query"
                             [caption]="periodCaption()"
@@ -343,6 +363,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                         />
                         <mf-stat-tile
                           label="Created by me"
+                          linkText="View tasks I created"
                           [value]="d.mine.createdByMe.count"
                           [query]="d.mine.createdByMe.query"
                           [caption]="periodCaption()"
@@ -355,9 +376,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                   <mf-dash-section heading="Created and completed" name="trend" key="trend">
                     <mf-trend-chart
                       heading="Tasks created and completed per day"
-                      [caption]="
-                        periodCaption() + '. The period control at the top applies to this chart.'
-                      "
+                      [caption]="periodCaption() + '. Change the period under Overview.'"
                       [points]="d.trend"
                       [createdQuery]="d.created.query"
                       [completedQuery]="d.completed.query"
@@ -444,6 +463,28 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       align-items: center;
       gap: var(--mf-s3);
     }
+    .group-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--mf-s2) var(--mf-s4);
+      margin-bottom: var(--mf-s2);
+    }
+    .group-head h3 {
+      margin: 0;
+    }
+    .head-period {
+      margin-left: auto;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
     .period {
       display: inline-flex;
       align-items: center;
@@ -457,7 +498,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     }
     .stale {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: var(--mf-s2);
       margin: 0 0 var(--mf-s4);
       padding: var(--mf-s2) var(--mf-s3);
@@ -466,6 +507,9 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       border: 1px solid var(--mf-warning);
       border-radius: var(--mf-radius);
       font-size: var(--mf-fs-sm);
+    }
+    .stale span {
+      flex: 1;
     }
     .head-link {
       font-size: var(--mf-fs-sm);
@@ -496,15 +540,38 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     .nothing a {
       color: var(--mf-link);
     }
-    /* Tablet: two columns. Phone: one. */
+    .tiles--3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .tiles--5 {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+    /* Tablet and phone: two columns (a single column only on the narrowest screens). */
+    @media (max-width: 1100px) {
+      .tiles--5 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
     @media (max-width: 900px) {
       .tiles,
+      .tiles--3,
+      .tiles--5,
       .skeletons {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
     @media (max-width: 560px) {
+      .tiles {
+        gap: var(--mf-s2);
+      }
+      .tiles--3 > :first-child {
+        grid-column: 1 / -1;
+      }
+    }
+    @media (max-width: 340px) {
       .tiles,
+      .tiles--3,
+      .tiles--5,
       .skeletons {
         grid-template-columns: minmax(0, 1fr);
       }
@@ -513,9 +580,20 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: var(--mf-s4);
+      align-items: start;
     }
+    /* Task lists: as many columns as fit; with three lists on a tablet the first (the unassigned queue) takes the full row. */
     .grid--lists {
       grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
+      align-items: stretch;
+    }
+    @media (min-width: 561px) and (max-width: 1099px) {
+      .grid--lists {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .grid--three > :first-child {
+        grid-column: 1 / -1;
+      }
     }
     .wide {
       grid-column: 1 / -1;
@@ -575,6 +653,11 @@ export class DashboardPage implements OnInit {
   private readonly auth = inject(AuthStore);
   private readonly lookups = inject(LookupStore);
   private readonly prefs = inject(DashboardPrefs);
+  private readonly undo = inject(UndoService);
+  private readonly quiet = inject(QuietRequests);
+  private readonly injector = inject(Injector);
+  private readonly panelRefs = viewChildren(DashTaskList);
+  private undoSeen = 0;
   private requestId = 0;
   private readonly listIds: Record<ListKind, number> = { unassigned: 0, overdue: 0, dueSoon: 0 };
   private countTimer: ReturnType<typeof setTimeout> | null = null;
@@ -587,6 +670,8 @@ export class DashboardPage implements OnInit {
   protected readonly data = signal<DashboardSummary | null>(null);
   protected readonly refreshing = signal(false);
   protected readonly refreshFailed = signal(false);
+  /** Polite live region: what the last refresh or inline assignment did, for screen readers. */
+  protected readonly live = signal('');
 
   private readonly lists = {
     unassigned: signal<ListData>(EMPTY_LIST),
@@ -598,11 +683,77 @@ export class DashboardPage implements OnInit {
   protected readonly dueSoonList = this.lists.dueSoon.asReadonly();
 
   protected readonly department = computed(() => this.auth.has('Dashboard.ViewDepartment'));
+  protected readonly canAssign = computed(() => this.auth.has('Task.Assign'));
   protected readonly canPodWork = computed(() => this.auth.has('Pod.View'));
   /** Technicians start with their own work; people with the department view start with the department. */
   protected readonly order = computed<SectionName[]>(() =>
-    this.department() ? ['department', 'lists', 'mine', 'trend', 'breakdowns', 'recent'] : ['mine'],
+    this.department()
+      ? ['department', 'lists', 'mine', 'trend', 'breakdowns', 'recent']
+      : this.panels().length > 0
+        ? ['mine', 'lists']
+        : ['mine'],
   );
+
+  /**
+   * The lists of "Tasks to act on". Department people get the department's Unassigned queue, Overdue and Due soon. Everyone else gets
+   * their own Overdue and Due soon (when they have work) and, with Task.Assign, the Unassigned queue to pick work from.
+   */
+  protected readonly panels = computed<PanelSpec[]>(() => {
+    const d = this.data();
+    if (!d) return [];
+    const unassigned = (query: string): PanelSpec => ({
+      kind: 'unassigned',
+      heading: 'Unassigned queue',
+      emptyText: 'No unassigned tasks.',
+      viewAllText: 'View all unassigned tasks',
+      query,
+    });
+    if (this.department()) {
+      return [
+        unassigned(d.unassigned.query),
+        {
+          kind: 'overdue',
+          heading: 'Overdue',
+          emptyText: 'Nothing is overdue.',
+          viewAllText: 'View all overdue tasks',
+          query: d.overdue.query,
+        },
+        {
+          kind: 'dueSoon',
+          heading: 'Due soon',
+          emptyText: 'Nothing is due in the next 2 days.',
+          viewAllText: 'View all tasks due soon',
+          query: d.dueSoon.query,
+        },
+      ];
+    }
+    const panels: PanelSpec[] = [];
+    if (d.mine.open.count > 0) {
+      panels.push(
+        {
+          kind: 'overdue',
+          heading: 'My overdue',
+          emptyText: 'Nothing of yours is overdue.',
+          viewAllText: 'View all my overdue tasks',
+          query: d.mine.overdue.query,
+        },
+        {
+          kind: 'dueSoon',
+          heading: 'My due soon',
+          emptyText: 'Nothing of yours is due in the next 2 days.',
+          viewAllText: 'View all my tasks due soon',
+          query: d.mine.dueSoon.query,
+        },
+      );
+    }
+    if (this.canAssign()) panels.push(unassigned(OPEN_UNASSIGNED_QUERY));
+    return panels;
+  });
+  /** The period only means something where a visible tile counts "created" (everyone's Created by me tile). */
+  protected readonly showMinePeriod = computed(() => {
+    const d = this.data();
+    return !!d && (d.mine.open.count > 0 || d.mine.createdByMe.count > 0);
+  });
 
   protected readonly periodCaption = computed(() => presetOf(this.period()).caption);
   protected readonly updated = computed(() => {
@@ -641,6 +792,16 @@ export class DashboardPage implements OnInit {
 
   constructor() {
     void this.lookups.ensureLoaded();
+    // An Undo of an assignment puts the task back in a list that had already dropped it: read the lists and counts again.
+    this.undoSeen = this.undo.settled();
+    effect(() => {
+      const n = this.undo.settled();
+      untracked(() => {
+        if (n === this.undoSeen) return;
+        this.undoSeen = n;
+        if (this.state() === 'ready') this.load({ silent: true, fresh: true });
+      });
+    });
     this.destroyRef.onDestroy(() => {
       if (this.countTimer) clearTimeout(this.countTimer);
     });
@@ -658,80 +819,84 @@ export class DashboardPage implements OnInit {
     this.refreshNumbers();
   }
 
-  /** The Refresh button: reads everything again now, bypassing the short server cache, and keeps the page where it is. */
+  /** The Refresh button: reads everything again now, bypassing the short server cache, and keeps the page (and the focus) where it is. */
   protected refresh(): void {
-    this.load({ silent: true, fresh: true });
+    // aria-disabled, not disabled: a disabled button would drop the keyboard focus the press had.
+    if (this.refreshing()) return;
+    this.load({ silent: true, fresh: true, announce: true });
   }
 
-  /** Counts only (after a period change or an inline edit): the lists keep what they show. */
-  private refreshNumbers(): void {
-    this.load({ silent: true, fresh: true, lists: false });
+  /** Counts and lists after an inline edit or a period change; the page keeps what it shows until the answer arrives. */
+  private refreshNumbers(lists = false): void {
+    this.load({ silent: true, fresh: true, lists });
   }
 
-  protected load(options: { silent?: boolean; fresh?: boolean; lists?: boolean } = {}): void {
-    const { silent = false, fresh = false, lists = true } = options;
+  protected load(
+    options: { silent?: boolean; fresh?: boolean; lists?: boolean; announce?: boolean } = {},
+  ): void {
+    const { silent = false, fresh = false, lists = true, announce = false } = options;
     const id = ++this.requestId;
-    if (silent && this.data()) this.refreshing.set(true);
+    const background = silent && !!this.data();
+    if (background) this.refreshing.set(true);
     else {
       this.state.set('loading');
       this.refreshFailed.set(false);
     }
     const days = periodDays(this.period(), this.clock.now(), this.zone);
-    this.api
-      .getDashboard(days, fresh ? true : undefined)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (summary) => {
-          if (id !== this.requestId) return;
-          this.data.set(summary);
-          this.state.set('ready');
-          this.refreshing.set(false);
-          this.refreshFailed.set(false);
-          this.lastLoadedAt = this.clock.now().getTime();
-          if (lists && this.department()) this.loadLists(summary, silent);
-        },
-        error: () => {
-          if (id !== this.requestId) return;
-          this.refreshing.set(false);
-          // A failed background refresh keeps the figures on screen; only a first load shows the error state.
-          if (this.data()) this.refreshFailed.set(true);
-          else this.state.set('error');
-        },
-      });
+    // A background read reports its failure in the banner; the generic error toast would say the same thing again, elsewhere.
+    const start = () =>
+      this.api
+        .getDashboard(days, fresh ? true : undefined)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (summary) => {
+            if (id !== this.requestId) return;
+            this.data.set(summary);
+            this.state.set('ready');
+            this.refreshing.set(false);
+            this.refreshFailed.set(false);
+            this.lastLoadedAt = this.clock.now().getTime();
+            if (announce) this.live.set(`Dashboard refreshed. Updated ${this.updated()}.`);
+            if (lists && (this.department() || this.panels().length > 0)) {
+              this.loadLists(silent);
+            }
+          },
+          error: () => {
+            if (id !== this.requestId) return;
+            this.refreshing.set(false);
+            // A failed background refresh keeps the figures on screen; only a first load shows the error state.
+            if (this.data()) this.refreshFailed.set(true);
+            else this.state.set('error');
+          },
+        });
+    if (background) this.quiet.run(start);
+    else start();
   }
 
   // ---- lists
 
-  private loadLists(summary: DashboardSummary, silent: boolean): void {
-    this.fetchList('unassigned', summary.unassigned.query, 'created', 'asc', silent);
-    this.fetchList('overdue', summary.overdue.query, 'due', 'asc', silent);
-    this.fetchList('dueSoon', summary.dueSoon.query, 'due', 'asc', silent);
+  protected listOf(kind: ListKind): ListData {
+    return this.lists[kind]();
+  }
+
+  private loadLists(silent: boolean): void {
+    for (const panel of this.panels()) this.fetchList(panel, silent);
   }
 
   protected reloadList(kind: ListKind): void {
-    const d = this.data();
-    if (!d) return;
-    const spec = {
-      unassigned: [d.unassigned.query, 'created'],
-      overdue: [d.overdue.query, 'due'],
-      dueSoon: [d.dueSoon.query, 'due'],
-    } as const;
-    this.fetchList(kind, spec[kind][0], spec[kind][1], 'asc', false);
+    const panel = this.panels().find((p) => p.kind === kind);
+    if (panel) this.fetchList(panel, false);
   }
 
-  private fetchList(
-    kind: ListKind,
-    query: string,
-    sort: string,
-    dir: 'asc' | 'desc',
-    silent: boolean,
-  ): void {
+  private fetchList(panel: PanelSpec, silent: boolean): void {
+    const { kind, query } = panel;
     const list = this.lists[kind];
     const id = ++this.listIds[kind];
+    const order = LIST_ORDER[kind];
     // A background refresh keeps the rows on screen; only a first load (or a retry) shows the skeleton.
     if (!silent || list().state !== 'ready') list.update((v) => ({ ...v, state: 'loading' }));
     this.queue
-      .getTaskQueue(...queueArgsFor(query, sort, dir, LIST_SIZE[kind]))
+      .getTaskQueue(...queueArgsFor(query, order.sort, order.dir, LIST_SIZE[kind]))
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (page) => {
@@ -747,16 +912,57 @@ export class DashboardPage implements OnInit {
       });
   }
 
-  /** An inline edit changed a row: show it at once and read the counts again shortly (the row stays until the next list refresh). */
+  /**
+   * An inline edit changed a row. While it is only the optimistic or rolled-back row it is shown in place. Once the server has accepted an
+   * assignment (a new row version with a person on it) the task is no longer unassigned: it leaves the queue at once, the counts drop with
+   * it, focus moves to the neighbouring row, and the counts and lists are read again shortly (several quick edits make one read).
+   */
   protected onRowChange(kind: ListKind, row: TaskQueueRow): void {
-    this.lists[kind].update((v) => ({
+    const list = this.lists[kind];
+    const index = list().rows.findIndex((r) => r.taskId === row.taskId);
+    if (index < 0) return;
+    const before = list().rows[index];
+    const committed = row.rowVersion !== before.rowVersion;
+    if (kind === 'unassigned' && row.assignedUser && committed) {
+      this.leaveQueue(kind, index, row);
+    } else {
+      list.update((v) => ({ ...v, rows: v.rows.map((r) => (r.taskId === row.taskId ? row : r)) }));
+    }
+    if (committed) this.scheduleRefresh();
+  }
+
+  private leaveQueue(kind: ListKind, index: number, row: TaskQueueRow): void {
+    const list = this.lists[kind];
+    list.update((v) => ({
       ...v,
-      rows: v.rows.map((r) => (r.taskId === row.taskId ? row : r)),
+      rows: v.rows.filter((r) => r.taskId !== row.taskId),
+      total: Math.max(0, v.total - 1),
     }));
+    // The tile follows at once; the fresh read a moment later replaces it with the server's number.
+    this.data.update((d) =>
+      d ? { ...d, unassigned: { ...d.unassigned, count: Math.max(0, d.unassigned.count - 1) } } : d,
+    );
+    const left = list().total;
+    this.live.set(
+      `${row.taskNumber} assigned to ${row.assignedUser?.displayName ?? 'someone'} and removed from the Unassigned queue. ${left} unassigned ${left === 1 ? 'task' : 'tasks'} left.`,
+    );
+    // The button that had focus is gone: put focus on the row that took its place (or the one above, or the list heading).
+    afterNextRender(
+      () =>
+        this.panelRefs()
+          .find((p) => p.kind() === kind)
+          ?.focusNear(index),
+      {
+        injector: this.injector,
+      },
+    );
+  }
+
+  private scheduleRefresh(): void {
     if (this.countTimer) clearTimeout(this.countTimer);
     this.countTimer = setTimeout(() => {
       this.countTimer = null;
-      this.refreshNumbers();
+      this.refreshNumbers(true);
     }, COUNT_REFRESH_DELAY_MS);
   }
 

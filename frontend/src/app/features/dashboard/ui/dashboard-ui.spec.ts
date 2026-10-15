@@ -15,6 +15,13 @@ import { StatTile } from './stat-tile';
       [value]="17"
       query="status=NEW&status=IN_PROGRESS&unassigned=true"
       caption="No person assigned"
+      linkText="View unassigned tasks"
+    />
+    <mf-stat-tile
+      label="Created by me"
+      [value]="0"
+      query="creator=9"
+      linkText="View tasks I created"
     />
     <mf-bar-list heading="Open by Pod" rowHeading="Pod" [items]="items" />
     <mf-recent-task-list
@@ -64,7 +71,18 @@ describe('dashboard UI', () => {
     expect(tile.textContent).toContain('17');
     expect(tile.textContent).toContain('No person assigned');
     expect(tile.getAttribute('href')).toBe('/tasks?status=NEW&status=IN_PROGRESS&unassigned=true');
-    expect(tile.getAttribute('aria-label')).toContain('Unassigned: 17');
+    // The accessible name is the visible content, so it contains what a voice-control user reads on screen (WCAG 2.5.3).
+    expect(tile.getAttribute('aria-label')).toBeNull();
+    expect(tile.textContent!.replace(/\s+/g, ' ')).toContain('View unassigned tasks');
+  });
+
+  it('renders a tile that counts zero as plain text, not as a link to an empty list', async () => {
+    const el = await render();
+    const tiles = el.querySelectorAll('mf-stat-tile');
+    expect(tiles[1].querySelector('a')).toBeNull();
+    expect(tiles[1].textContent).toContain('Created by me');
+    expect(tiles[1].textContent).not.toContain('View tasks I created');
+    expect(tiles[1].querySelector('[data-zero]')).not.toBeNull();
   });
 
   it('shows every bar with its label and number as text, linking only rows that have a query', async () => {
@@ -77,6 +95,20 @@ describe('dashboard UI', () => {
     ).toEqual(['Pod A 40', 'Pod B 10', 'Other Pods 5', 'Empty Pod 0']);
     expect(rows[0].querySelector('a')!.getAttribute('href')).toBe('/tasks?status=NEW&pod=1');
     expect(rows[2].querySelector('a')).toBeNull();
+  });
+
+  it('scales the bars to the longest one and prints the share of the total beside them', async () => {
+    const el = await render();
+    const rows = Array.from(el.querySelectorAll('mf-bar-list li'));
+    const widths = rows.map((r) => r.querySelector<HTMLElement>('.bar')?.style.width ?? null);
+    // 40 is the longest (a full track), 10 is a quarter of it; the percentages stay shares of 55.
+    expect(widths.slice(0, 2)).toEqual(['100%', '25%']);
+    expect(rows.map((r) => r.querySelector('.pct')!.textContent)).toEqual([
+      '73%',
+      '18%',
+      '9%',
+      '0%',
+    ]);
   });
 
   it('swaps the bars for a table of the same numbers', async () => {
@@ -114,7 +146,8 @@ describe('dashboard UI', () => {
     expect(rows[3].querySelector('.bar')).toBeNull();
     expect(rows[3].textContent).toContain('0');
     expect(rows[0].querySelector('.bar')).not.toBeNull();
-    expect(rows[0].querySelector('.name')!.getAttribute('title')).toBe('Pod A');
+    // Names wrap instead of being cut off (a title is not available to touch or keyboard users).
+    expect(rows[0].querySelector('.name')!.getAttribute('title')).toBeNull();
     const toggle = el.querySelector('mf-bar-list .toggle')!;
     expect(toggle.textContent!.replace(/\s+/g, ' ').trim()).toBe('View as table for Open by Pod');
   });

@@ -13,7 +13,7 @@ let nextId = 0;
   template: `
     <section class="sec" [attr.aria-labelledby]="id" [attr.data-section]="name()">
       <div class="head">
-        <h2 [id]="id">{{ heading() }}</h2>
+        <h2 [id]="id" tabindex="-1" data-skip-target>{{ heading() }}</h2>
         <ng-content select="[mfSectionActions]" />
         @if (key(); as k) {
           <button
@@ -49,6 +49,13 @@ let nextId = 0;
       flex-wrap: wrap;
       gap: var(--mf-s2) var(--mf-s4);
       margin-bottom: var(--mf-s3);
+    }
+    h2:focus {
+      outline: none;
+    }
+    h2:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 2px;
     }
     h2 {
       margin: 0;

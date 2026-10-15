@@ -1,8 +1,10 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { queueParams } from '../dashboard-links';
 
-export type TileTone = 'danger' | 'warning' | 'info' | 'neutral';
+/** `strong` is the neutral attention tone (a dark edge, no colour meaning); `asap` is the blue outlined ASAP treatment of the pattern standard. */
+export type TileTone = 'danger' | 'warning' | 'info' | 'strong' | 'asap' | 'neutral';
 
 /**
  * Dashboard count tile (UX `mf-stat-tile`): a large number, a label and an optional caption, as one link to the Task Queue with the
@@ -10,20 +12,31 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'neutral';
  *
  * `emphasis="attention"` is the "Needs attention" look: a coloured left edge and an icon, and the link text says what it opens
  * ("View overdue tasks"). The tone only applies while the number is above zero; colour is never the only carrier (icon and words).
+ *
+ * The link's accessible name is its visible content (label, number, caption, link text), so a voice-control user can say what they see
+ * (WCAG 2.5.3). A tile that counts zero is not a link: there is nothing to open (DASH-14).
  */
 @Component({
   selector: 'mf-stat-tile',
-  imports: [RouterLink],
+  imports: [RouterLink, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <a
-      class="tile"
-      routerLink="/tasks"
-      [queryParams]="params()"
-      [attr.aria-label]="ariaLabel()"
-      [attr.data-emphasis]="emphasis()"
-      [attr.data-tone]="activeTone()"
-    >
+    @if (value() > 0) {
+      <a
+        class="tile"
+        routerLink="/tasks"
+        [queryParams]="params()"
+        [attr.data-emphasis]="emphasis()"
+        [attr.data-tone]="activeTone()"
+      >
+        <ng-container *ngTemplateOutlet="body; context: { link: true }" />
+      </a>
+    } @else {
+      <div class="tile tile--zero" [attr.data-emphasis]="emphasis()" [attr.data-zero]="'true'">
+        <ng-container *ngTemplateOutlet="body; context: { link: false }" />
+      </div>
+    }
+    <ng-template #body let-link="link">
       <span class="label">
         @if (icon(); as i) {
           <i class="pi" [class]="i" aria-hidden="true"></i>
@@ -34,8 +47,12 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'neutral';
       @if (caption(); as c) {
         <span class="caption">{{ c }}</span>
       }
-      <span class="go" aria-hidden="true">{{ linkText() }} <i class="pi pi-arrow-right"></i></span>
-    </a>
+      @if (link) {
+        <span class="go"
+          >{{ linkText() }} <i class="pi pi-arrow-right" aria-hidden="true"></i
+        ></span>
+      }
+    </ng-template>
   `,
   styles: `
     :host {
@@ -54,7 +71,7 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'neutral';
       color: var(--mf-text);
       text-decoration: none;
     }
-    .tile:hover {
+    a.tile:hover {
       border-color: var(--mf-primary);
       background: var(--mf-selected-bg);
     }
@@ -98,6 +115,9 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'neutral';
     [data-emphasis='quiet'] .value {
       font-size: var(--mf-fs-h2);
     }
+    .tile--zero .value {
+      color: var(--mf-text-muted);
+    }
     [data-tone='danger'] {
       border-left-color: var(--mf-danger);
       background: var(--mf-danger-bg);
@@ -122,7 +142,23 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'neutral';
     [data-tone='info'] .value {
       color: var(--mf-info);
     }
-    [data-tone]:hover {
+    /* Neutral attention: a dark edge on the plain surface (no colour meaning). */
+    [data-tone='strong'] {
+      border-left-color: var(--mf-text);
+    }
+    [data-tone='strong'] .label i {
+      color: var(--mf-text);
+    }
+    /* ASAP: the blue outlined treatment of the pattern standard, never red or amber. */
+    [data-tone='asap'] {
+      border-color: var(--mf-asap, var(--mf-info));
+      border-width: 2px;
+    }
+    [data-tone='asap'] .label i,
+    [data-tone='asap'] .value {
+      color: var(--mf-asap, var(--mf-info));
+    }
+    a[data-tone]:hover {
       border-color: var(--mf-primary);
     }
   `,
@@ -138,15 +174,11 @@ export class StatTile {
   readonly tone = input<TileTone>('neutral');
   readonly emphasis = input<'default' | 'attention' | 'quiet'>('default');
   /** Words after the label of the link, for example "View overdue tasks". */
-  readonly linkText = input('View');
+  readonly linkText = input('View these tasks');
 
   protected readonly params = computed(() => queueParams(this.query()));
   /** Zero is calm: the tone is only shown while there is something to look at. */
   protected readonly activeTone = computed(() =>
     this.value() > 0 && this.tone() !== 'neutral' ? this.tone() : null,
-  );
-  protected readonly ariaLabel = computed(
-    () =>
-      `${this.label()}: ${this.value()}. View ${this.value() === 1 ? 'this task' : 'these tasks'} in the Task Queue.`,
   );
 }

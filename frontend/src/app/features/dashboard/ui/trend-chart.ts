@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DashboardTrendPoint } from '../../../api/generated/api-client';
-import { USER_TIME_ZONE } from '../../../core/time/clock';
-import { mfDate, parseDateOnly } from '../../../core/time/time';
+import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
+import { calendarDayInZone, mfDate, parseDateOnly } from '../../../core/time/time';
 import { queueParams } from '../dashboard-links';
 
 const W = 360;
@@ -121,45 +121,108 @@ function shortDay(date: string): string {
             </table>
           </div>
         } @else {
-          <svg
-            class="chart"
-            [attr.viewBox]="'0 0 ' + w + ' ' + h"
-            role="img"
-            [attr.aria-label]="summary()"
+          <div
+            class="plot"
+            tabindex="0"
+            role="group"
+            aria-roledescription="chart"
+            data-plot
+            [attr.aria-label]="summary() + ' Use the left and right arrow keys to read each day.'"
+            (pointermove)="onPointer($event)"
+            (pointerleave)="clearActive()"
+            (focus)="onFocus()"
+            (blur)="clearActive()"
+            (keydown)="onKey($event)"
           >
-            <title>{{ summary() }}</title>
-            @for (t of ticks(); track t.value) {
-              <line
-                [attr.x1]="left"
-                [attr.x2]="w - right"
-                [attr.y1]="t.y"
-                [attr.y2]="t.y"
-                class="grid"
-              />
-              <text [attr.x]="left - 6" [attr.y]="t.y + 4" text-anchor="end" class="tick">
-                {{ t.value }}
-              </text>
-            }
-            @for (x of xLabels(); track x.date) {
-              <text [attr.x]="x.x" [attr.y]="h - 10" [attr.text-anchor]="x.anchor" class="tick">
-                {{ x.text }}
-              </text>
-            }
-            <polyline class="s-created" [attr.points]="line('created')" />
-            <polyline class="s-completed" [attr.points]="line('completed')" />
-            @if (markers()) {
-              @for (p of coords(); track p.date) {
-                <circle [attr.cx]="p.x" [attr.cy]="p.yCreated" r="3" class="m-created" />
+            <svg class="chart" [attr.viewBox]="'0 0 ' + w + ' ' + h" aria-hidden="true">
+              @for (b of weekendBands(); track b.date) {
                 <rect
-                  [attr.x]="p.x - 3"
-                  [attr.y]="p.yCompleted - 3"
-                  width="6"
-                  height="6"
+                  class="weekend"
+                  [attr.x]="b.x"
+                  [attr.y]="top0"
+                  [attr.width]="b.width"
+                  [attr.height]="plotHeight"
+                />
+              }
+              @for (t of ticks(); track t.value) {
+                <line
+                  [attr.x1]="left"
+                  [attr.x2]="w - right"
+                  [attr.y1]="t.y"
+                  [attr.y2]="t.y"
+                  class="grid"
+                />
+                <text [attr.x]="left - 6" [attr.y]="t.y + 4" text-anchor="end" class="tick">
+                  {{ t.value }}
+                </text>
+              }
+              @for (x of xLabels(); track x.date) {
+                <text [attr.x]="x.x" [attr.y]="h - 10" [attr.text-anchor]="x.anchor" class="tick">
+                  {{ x.text }}
+                </text>
+              }
+              <polyline class="s-created" [attr.points]="line('created')" />
+              <polyline class="s-completed" [attr.points]="line('completed')" />
+              @if (partialToday()) {
+                <polyline class="s-created partial" [attr.points]="partialLine('created')" />
+                <polyline class="s-completed partial" [attr.points]="partialLine('completed')" />
+              }
+              @if (markers()) {
+                @for (p of coords(); track p.date) {
+                  <circle [attr.cx]="p.x" [attr.cy]="p.yCreated" r="3" class="m-created" />
+                  <rect
+                    [attr.x]="p.x - 3"
+                    [attr.y]="p.yCompleted - 3"
+                    width="6"
+                    height="6"
+                    class="m-completed"
+                  />
+                }
+              }
+              @if (activePoint(); as a) {
+                <line
+                  class="rule"
+                  [attr.x1]="a.x"
+                  [attr.x2]="a.x"
+                  [attr.y1]="top0"
+                  [attr.y2]="top0 + plotHeight"
+                />
+                <circle [attr.cx]="a.x" [attr.cy]="a.yCreated" r="5" class="m-created" />
+                <rect
+                  [attr.x]="a.x - 5"
+                  [attr.y]="a.yCompleted - 5"
+                  width="10"
+                  height="10"
                   class="m-completed"
                 />
               }
+            </svg>
+            @if (activePoint(); as a) {
+              <div
+                class="tip"
+                data-tip
+                [class.tip--left]="a.x > w * 0.6"
+                [style.left.%]="(a.x / w) * 100"
+              >
+                <strong>{{ a.heading }}</strong>
+                <span>{{ a.created }} created</span>
+                <span>{{ a.completed }} completed</span>
+                @if (a.partial) {
+                  <span class="tip-note">Today so far</span>
+                }
+              </div>
             }
-          </svg>
+            <p class="sr-only" role="status" aria-live="polite" data-readout>{{ readout() }}</p>
+          </div>
+          <p class="foot">
+            @if (partialToday()) {
+              <span>Dotted: today so far.</span>
+            }
+            @if (hasWeekend()) {
+              <span>Shaded: weekends.</span>
+            }
+            <span>Hover or focus the chart to read a day.</span>
+          </p>
         }
       }
     </section>
@@ -219,6 +282,52 @@ function shortDay(date: string): string {
     }
     .legend a:hover {
       text-decoration: underline;
+    }
+    .plot {
+      position: relative;
+      border-radius: var(--mf-radius);
+    }
+    .tip {
+      position: absolute;
+      top: 0;
+      z-index: 1;
+      display: grid;
+      gap: 1px;
+      padding: var(--mf-s1) var(--mf-s2);
+      transform: translateX(8px);
+      pointer-events: none;
+      white-space: nowrap;
+      font-size: var(--mf-fs-sm);
+      background: var(--mf-surface);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius);
+      box-shadow: var(--mf-shadow-1);
+    }
+    .tip--left {
+      transform: translateX(calc(-100% - 8px));
+    }
+    .tip-note {
+      color: var(--mf-text-muted);
+    }
+    .foot {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--mf-s1) var(--mf-s3);
+      margin: var(--mf-s2) 0 0;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+    }
+    .weekend {
+      fill: var(--mf-surface-alt);
+      opacity: 0.7;
+    }
+    .rule {
+      stroke: var(--mf-text-muted);
+      stroke-width: 1;
+    }
+    .partial {
+      stroke-dasharray: 1 6;
+      stroke-width: 3;
     }
     .chart {
       display: block;
@@ -296,6 +405,7 @@ function shortDay(date: string): string {
 })
 export class TrendChart {
   private readonly zone = inject(USER_TIME_ZONE);
+  private readonly clock = inject(Clock);
 
   readonly heading = input.required<string>();
   readonly points = input.required<readonly DashboardTrendPoint[]>();
@@ -310,6 +420,12 @@ export class TrendChart {
   protected readonly h = H;
   protected readonly left = LEFT;
   protected readonly right = RIGHT;
+  protected readonly top0 = TOP;
+  protected readonly plotHeight = H - TOP - BOTTOM;
+  /** Index of the day shown in the tooltip (hover or arrow keys). */
+  protected readonly active = signal<number | null>(null);
+  /** What the polite live region says; only keyboard moves set it. */
+  protected readonly readout = signal('');
 
   protected readonly totalCreated = computed(() =>
     this.points().reduce((sum, p) => sum + p.created, 0),
@@ -380,8 +496,109 @@ export class TrendChart {
     return `Tasks created and completed per day, ${range}: ${this.totalCreated()} created, ${this.totalCompleted()} completed. Use View as table for each day.`;
   });
 
-  protected line(series: 'created' | 'completed'): string {
+  /** True when the last day of the series is today in the viewer's zone: a partial day, drawn dotted. */
+  protected readonly partialToday = computed(() => {
+    const pts = this.points();
+    if (pts.length < 2) return false;
+    const t = calendarDayInZone(this.clock.now(), this.zone);
+    const today = `${t.year}-${String(t.month).padStart(2, '0')}-${String(t.day).padStart(2, '0')}`;
+    return pts[pts.length - 1].date === today;
+  });
+
+  private readonly step = computed(() => {
+    const n = this.points().length;
+    return n <= 1 ? W - LEFT - RIGHT : (W - LEFT - RIGHT) / (n - 1);
+  });
+
+  protected readonly weekendBands = computed(() => {
+    const step = this.step();
     return this.coords()
+      .filter((p) => isWeekend(p.date))
+      .map((p) => {
+        const x = Math.max(LEFT, p.x - step / 2);
+        const right = Math.min(W - RIGHT, p.x + step / 2);
+        return { date: p.date, x: round(x), width: round(right - x) };
+      });
+  });
+  protected readonly hasWeekend = computed(() => this.weekendBands().length > 0);
+
+  protected readonly activePoint = computed(() => {
+    const i = this.active();
+    const pts = this.points();
+    const c = this.coords();
+    if (i === null || !pts[i]) return null;
+    return {
+      ...c[i],
+      created: pts[i].created,
+      completed: pts[i].completed,
+      heading: dayHeading(pts[i].date),
+      partial: this.partialToday() && i === pts.length - 1,
+    };
+  });
+
+  protected onPointer(event: PointerEvent): void {
+    const n = this.points().length;
+    if (n === 0) return;
+    const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    if (box.width <= 0) return;
+    const x = ((event.clientX - box.left) / box.width) * W;
+    const index = Math.round(((x - LEFT) / (W - LEFT - RIGHT)) * (n - 1));
+    this.active.set(Math.max(0, Math.min(n - 1, index)));
+  }
+
+  protected clearActive(): void {
+    this.active.set(null);
+    this.readout.set('');
+  }
+
+  protected onFocus(): void {
+    if (this.active() === null) this.moveTo(this.points().length - 1, true);
+  }
+
+  protected onKey(event: KeyboardEvent): void {
+    const n = this.points().length;
+    const current = this.active() ?? n - 1;
+    const target =
+      event.key === 'ArrowLeft'
+        ? current - 1
+        : event.key === 'ArrowRight'
+          ? current + 1
+          : event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? n - 1
+              : null;
+    if (event.key === 'Escape') {
+      this.clearActive();
+      return;
+    }
+    if (target === null) return;
+    event.preventDefault();
+    this.moveTo(Math.max(0, Math.min(n - 1, target)), true);
+  }
+
+  private moveTo(index: number, announce: boolean): void {
+    if (index < 0) return;
+    this.active.set(index);
+    const p = this.points()[index];
+    if (announce && p) {
+      const partial = this.partialToday() && index === this.points().length - 1;
+      this.readout.set(
+        `${dayHeading(p.date)}: ${p.created} created, ${p.completed} completed${partial ? ' (today so far)' : ''}.`,
+      );
+    }
+  }
+
+  protected partialLine(series: 'created' | 'completed'): string {
+    return this.coords()
+      .slice(-2)
+      .map((p) => `${round(p.x)},${round(series === 'created' ? p.yCreated : p.yCompleted)}`)
+      .join(' ');
+  }
+
+  protected line(series: 'created' | 'completed'): string {
+    const all = this.coords();
+    return (this.partialToday() ? all.slice(0, -1) : all)
       .map((p) => `${round(p.x)},${round(series === 'created' ? p.yCreated : p.yCompleted)}`)
       .join(' ');
   }
@@ -401,6 +618,21 @@ export class TrendChart {
   protected toggle(): void {
     this.asTable.update((v) => !v);
   }
+}
+
+function isWeekend(date: string): boolean {
+  const d = parseDateOnly(date);
+  if (!d) return false;
+  const weekday = new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay();
+  return weekday === 0 || weekday === 6;
+}
+
+/** "Tue, Oct 13" */
+function dayHeading(date: string): string {
+  const d = parseDateOnly(date);
+  if (!d) return date;
+  const weekday = new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay();
+  return `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][weekday]}, ${MONTHS[d.month - 1]} ${d.day}`;
 }
 
 function round(value: number): number {

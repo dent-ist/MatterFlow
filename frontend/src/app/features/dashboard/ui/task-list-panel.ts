@@ -1,16 +1,24 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  inject,
+  input,
+  output,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TaskQueueRow } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { calendarDayInZone, dayIndex, describeDue } from '../../../core/time/time';
+import { calendarDayInZone, dayIndex, describeDue, parseDateOnly } from '../../../core/time/time';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
-import { queueParamsSorted } from '../dashboard-links';
+import { LIST_ORDER, ListKind, queueParamsSorted } from '../dashboard-links';
 
-export type PanelKind = 'unassigned' | 'overdue' | 'dueSoon';
+export type PanelKind = ListKind;
 export type PanelState = 'loading' | 'ready' | 'error';
 
 let nextId = 0;
@@ -35,11 +43,14 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
   template: `
     <section class="card" [attr.aria-labelledby]="id" [attr.data-panel]="kind()">
       <header>
-        <h3 [id]="id">{{ heading() }}</h3>
+        <h3 [id]="id" tabindex="-1" data-skip-target>{{ heading() }}</h3>
         @if (state() === 'ready' && total() > 0) {
           <span class="count" data-total>{{ total() }}</span>
         }
       </header>
+      @if (orderNote(); as note) {
+        <p class="order" data-order>{{ note }}</p>
+      }
       @switch (state()) {
         @case ('loading') {
           <div class="bones" role="status" aria-busy="true">
@@ -61,19 +72,23 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
               <i class="pi pi-check-circle" aria-hidden="true"></i> {{ emptyText() }}
             </p>
           } @else {
+            @if (rows().length > 2) {
+              <button type="button" class="skip" data-skip (click)="skipList()">
+                Skip {{ heading() }} list
+              </button>
+            }
             <ul>
               @for (row of rows(); track row.taskId) {
                 <li [attr.data-task]="row.taskNumber">
-                  <div class="main">
-                    <a class="ref" [routerLink]="['/tasks', row.taskId]">{{ row.taskNumber }}</a>
-                    <span class="title" [attr.title]="row.title">{{ row.title }}</span>
-                  </div>
+                  <a class="main" [routerLink]="['/tasks', row.taskId]" [attr.title]="row.title">
+                    <span class="ref">{{ row.taskNumber }}</span>
+                    <span class="title">{{ row.title }}</span>
+                  </a>
                   <div class="meta">
                     <mf-matter-ref
                       [value]="row.matterRef"
-                      [link]="['/matters', row.matterId]"
                       [copy]="false"
-                      [hint]="row.matterName"
+                      [attr.title]="row.matterName"
                     />
                     <mf-priority-badge
                       [priorityId]="row.priority.priorityId"
@@ -93,6 +108,9 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
                         <span class="due due--soon" data-due>
                           <i class="pi pi-clock" aria-hidden="true"></i>
                           {{ due.dateText }}
+                          @if (relativeDay(row); as rel) {
+                            · <strong>{{ rel }}</strong>
+                          }
                         </span>
                       }
                     }
@@ -118,7 +136,7 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
             </ul>
           }
           @if (total() > rows().length) {
-            <p class="more">Showing {{ rows().length }} of {{ total() }}.</p>
+            <p class="more" data-more>Showing {{ rows().length }} of {{ total() }}.</p>
           }
           @if (total() > 0) {
             <a class="all" routerLink="/tasks" [queryParams]="allParams()" data-view-all>
@@ -176,6 +194,52 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
       align-items: baseline;
       gap: var(--mf-s2);
       min-width: 0;
+    }
+    a.main {
+      display: flex;
+      align-items: baseline;
+      gap: var(--mf-s2);
+      min-width: 0;
+      color: var(--mf-text);
+      text-decoration: none;
+    }
+    a.main:hover .title {
+      text-decoration: underline;
+    }
+    .order {
+      margin: 0 0 var(--mf-s2);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+    }
+    /* Visible only while it has focus: the keyboard way past a long list. */
+    .skip {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+    .skip:focus {
+      position: static;
+      width: auto;
+      height: auto;
+      margin: 0 0 var(--mf-s2);
+      padding: var(--mf-s1) var(--mf-s2);
+      clip: auto;
+      background: var(--mf-surface);
+      color: var(--mf-link);
+      border: 1px solid var(--mf-link);
+      border-radius: var(--mf-radius);
+      font: inherit;
+      font-size: var(--mf-fs-sm);
+    }
+    h3:focus {
+      outline: none;
+    }
+    h3:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 2px;
     }
     .ref {
       flex: none;
@@ -263,6 +327,7 @@ export class DashTaskList {
   private readonly auth = inject(AuthStore);
   private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly kind = input.required<PanelKind>();
   readonly heading = input.required<string>();
@@ -280,12 +345,30 @@ export class DashTaskList {
   protected readonly id = `mf-dash-list-${nextId++}`;
   protected readonly bones = [1, 2, 3];
 
-  /** "View all" starts with the same order as the list: oldest first for the unassigned queue, soonest due first for the others. */
-  protected readonly allParams = computed(() =>
-    this.kind() === 'unassigned'
-      ? queueParamsSorted(this.query(), 'created', 'asc')
-      : queueParamsSorted(this.query(), 'due', 'asc'),
-  );
+  /** "View all" starts with the same order as the list (see `LIST_ORDER`). */
+  protected readonly allParams = computed(() => {
+    const order = LIST_ORDER[this.kind()];
+    return queueParamsSorted(this.query(), order.sort, order.dir);
+  });
+  protected readonly orderNote = computed(() => LIST_ORDER[this.kind()].note);
+
+  /** Moves focus to the row now at `index` (or the last one), else to the list heading: used after a row has left the list. */
+  focusNear(index: number): void {
+    const links = this.host.nativeElement.querySelectorAll<HTMLElement>('li a.main');
+    const target = links.length ? links[Math.min(Math.max(index, 0), links.length - 1)] : null;
+    (target ?? this.host.nativeElement.querySelector<HTMLElement>('h3'))?.focus();
+  }
+
+  /** Keyboard shortcut past this list: focus the heading of whatever follows it on the page. */
+  protected skipList(): void {
+    const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-skip-target]'));
+    const self = this.host.nativeElement;
+    const next = targets.find(
+      (t) =>
+        !self.contains(t) && !!(self.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING),
+    );
+    next?.focus();
+  }
 
   protected editable(row: TaskQueueRow): boolean {
     return canEditField('assignee', row, (p) => this.auth.has(p));
@@ -294,6 +377,19 @@ export class DashTaskList {
   protected ageText(row: TaskQueueRow): string {
     const days = ageInDays(row.createdAtUtc, this.clock.now(), this.zone);
     return days === 0 ? 'Created today' : days === 1 ? '1 day old' : `${days} days old`;
+  }
+
+  /** "Today" or "Tomorrow" for a task due within two days, so the list can be scanned without reading dates (DASH-18). */
+  protected relativeDay(row: TaskQueueRow): string | null {
+    const today = dayIndex(calendarDayInZone(this.clock.now(), this.zone));
+    const dueDay = row.dueAtUtc
+      ? calendarDayInZone(row.dueAtUtc, this.zone)
+      : row.dueDate
+        ? parseDateOnly(row.dueDate)
+        : null;
+    if (!dueDay) return null;
+    const diff = dayIndex(dueDay) - today;
+    return diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : null;
   }
 
   protected dueOf(row: TaskQueueRow) {

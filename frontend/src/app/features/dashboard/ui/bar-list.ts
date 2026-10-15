@@ -27,8 +27,8 @@ let nextId = 0;
 
 /**
  * Accessible horizontal bar list (UX `BarListChart`): every bar has its label, count and share of the total as text, so color is never
- * the only carrier, and "View as table" swaps the bars for a plain table of the same numbers. A bar's length is its share of the total
- * (a full track would be every task in the list). Rows with a query are links to the Task Queue.
+ * the only carrier, and "View as table" swaps the bars for a plain table of the same numbers. The longest bar fills the track, the others
+ * are in proportion to it, and the percentage next to each is its share of all tasks in the list. Rows with a query are links to the Task Queue.
  */
 @Component({
   selector: 'mf-bar-list',
@@ -106,7 +106,7 @@ let nextId = 0;
     </section>
 
     <ng-template #rowBody let-item>
-      <span class="name" [attr.title]="item.label">{{ item.label }}</span>
+      <span class="name">{{ item.label }}</span>
       <span class="track" aria-hidden="true">
         @if (item.count > 0) {
           <span
@@ -182,11 +182,12 @@ let nextId = 0;
     a.row:hover {
       background: var(--mf-selected-bg);
     }
+    /* Long names wrap to a second line instead of being cut off (a title attribute is not reachable by touch or keyboard). */
     .name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      min-width: 0;
+      overflow-wrap: anywhere;
       font-size: var(--mf-fs-md);
+      line-height: 1.25;
     }
     .track {
       display: block;
@@ -267,14 +268,16 @@ export class BarList {
   protected readonly id = `mf-bars-${nextId++}`;
   protected readonly asTable = signal(false);
   protected readonly total = computed(() => this.items().reduce((sum, i) => sum + i.count, 0));
+  private readonly max = computed(() => Math.max(0, ...this.items().map((i) => i.count)));
 
   protected toggle(): void {
     this.asTable.update((v) => !v);
   }
 
+  /** The longest bar fills the track; the others are in proportion to it. The share of all tasks is printed as text next to the bar. */
   protected width(count: number): number {
-    const total = this.total();
-    return total > 0 ? Math.max(1, Math.round((count / total) * 100)) : 0;
+    const max = this.max();
+    return max > 0 ? Math.max(1, Math.round((count / max) * 100)) : 0;
   }
 
   protected share(count: number): string {
