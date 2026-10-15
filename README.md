@@ -115,6 +115,10 @@ Without a browser, the Dev provider also accepts the `X-Dev-User` header, for ex
 The same flow is covered by an automated test: `backend/tests/MatterFlow.IntegrationTests/Identity/WalkingSkeletonTests.cs`
 (Testcontainers, real SQL Server).
 
+### Extra dev users
+
+`backend/src/MatterFlow.Api/appsettings.Development.json` seeds `KE\user1` to `KE\user10` (role Data Technician) at startup when the Dev auth provider is used. Add or change entries under `Dev:Users` (`Username`, `DisplayName`, `Email`, `Roles`); existing users are never changed. To act as one of them, set `Auth__Dev__DefaultUser='KE\user3'`, or send `X-Dev-User: KE\user3`.
+
 ## Local SQL Server (docker compose)
 
 ```bash
