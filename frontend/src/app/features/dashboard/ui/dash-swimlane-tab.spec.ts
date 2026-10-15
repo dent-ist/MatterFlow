@@ -25,7 +25,8 @@ import { SWIMLANE_REFRESH_MS, DashSwimlaneTab } from './dash-swimlane-tab';
 
 const PERMS: Permission[] = [
   'Task.View',
-  'Dashboard.ViewDepartment',
+  'Dashboard.View',
+  'Dashboard.ViewSwimlane',
   'Task.Assign',
   'Task.SetPriority',
   'Task.ChangeStatus',
@@ -858,7 +859,11 @@ describe('DashSwimlaneTab', () => {
       );
       host.remove();
       TestBed.resetTestingModule();
-      await open(of(board()), '/dashboard?tab=swimlane', ['Task.View', 'Dashboard.ViewDepartment']);
+      await open(of(board()), '/dashboard?tab=swimlane', [
+        'Task.View',
+        'Dashboard.View',
+        'Dashboard.ViewSwimlane',
+      ]);
       expect(host.querySelector('[data-inline-trigger]')).toBeNull();
       expect(text(lane('IN_PROGRESS').querySelector('[data-field="priority"]'))).toContain(
         'Critical',

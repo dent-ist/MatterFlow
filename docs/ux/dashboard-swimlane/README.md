@@ -1,6 +1,6 @@
 # Dashboard > Swimlane tab (issue #72, epic #68)
 
-The fourth Dashboard tab shows every open task, plus the tasks completed or cancelled in the last 7, 14 or 30 days, as cards in four lanes. It is for leads and directors (`Dashboard.ViewDepartment`) and is an operational view only: no per-person completion figures, speed or ranking. Specification: `docs/ux/ux-spec.md`, section S01b. Backend: `GET /api/v1/dashboard/swimlane` (`docs/architecture.md` 8.5).
+The fourth Dashboard tab shows every open task, plus the tasks completed or cancelled in the last 7, 14 or 30 days, as cards in four lanes. It is for leads and directors (`Dashboard.View` + `Dashboard.ViewSwimlane`) and is an operational view only: no per-person completion figures, speed or ranking. Specification: `docs/ux/ux-spec.md`, section S01b. Backend: `GET /api/v1/dashboard/swimlane` (`docs/architecture.md` 8.5).
 
 Screenshots were taken by `frontend/e2e/tests/swimlane-screens.spec.ts` against the real stack (SQL Server in Docker, the published API with Dev auth serving the production Angular build, Chromium) after seeding 160 tasks: 4 clients with 3 matters each, all priorities, New, In Progress, On Hold, Completed and Cancelled tasks, 4 assignees (one of them out of office) and unassigned tasks. Reproduce with:
 

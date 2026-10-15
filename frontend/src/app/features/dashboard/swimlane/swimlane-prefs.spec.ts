@@ -7,7 +7,9 @@ describe('SwimlanePrefs', () => {
   async function prefs(userId = 7) {
     TestBed.configureTestingModule({
       providers: [
-        provideFakeMe(new FakeMeApi({ ...withPermissions('Dashboard.ViewDepartment'), userId })),
+        provideFakeMe(
+          new FakeMeApi({ ...withPermissions('Dashboard.View', 'Dashboard.ViewSwimlane'), userId }),
+        ),
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();
