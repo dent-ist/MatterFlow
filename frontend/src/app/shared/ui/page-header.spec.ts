@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { Crumb, PageHeader, RecordTitle } from './page-header';
 
 @Component({
@@ -77,5 +78,61 @@ describe('mf-page-header', () => {
     expect(h1.querySelector('[data-name]')!.textContent).toBe('Acme Corp');
     expect(h1.querySelector('[data-badge]')!.textContent).toBe('Active');
     expect(h1.textContent).toContain('00343');
+  });
+
+  describe('section icon', () => {
+    @Component({
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      imports: [PageHeader],
+      template: `
+        <mf-page-header heading="Acme" />
+        <mf-page-header heading="Other" icon="pi pi-star" />
+        <mf-page-header heading="Plain" icon="" />
+      `,
+    })
+    class Pages {}
+
+    async function at(url: string) {
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([
+            { path: 'clients/:clientId/edit', component: Pages },
+            { path: 'admin/pods', component: Pages },
+            { path: 'nowhere-in-nav', component: Pages },
+          ]),
+        ],
+      });
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl(url);
+      return harness.routeNativeElement as HTMLElement;
+    }
+    const icons = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll('h1')).map((h) => h.querySelector('i')?.className ?? null);
+
+    it('shows the navigation icon of the section before the title, hidden from assistive technology', async () => {
+      const el = await at('/clients/5/edit');
+      const i = el.querySelector('h1 i')!;
+      expect(i.className).toContain('pi-building');
+      expect(i.getAttribute('aria-hidden')).toBe('true');
+      expect(el.querySelector('h1')!.firstElementChild).toBe(i);
+    });
+
+    it('does not change the text of the heading', async () => {
+      const el = await at('/clients/5/edit');
+      expect(el.querySelector('h1')!.textContent!.trim()).toBe('Acme');
+    });
+
+    it('takes an explicit icon and none for an empty one', async () => {
+      const el = await at('/clients/5/edit');
+      expect(icons(el)).toEqual(['ph__icon pi pi-building', 'ph__icon pi pi-star', null]);
+    });
+
+    it('shows the icon of the section for another route and none outside a section', async () => {
+      expect(icons(await at('/admin/pods'))[0]).toContain('pi-sitemap');
+    });
+
+    it('shows no section icon on a route that belongs to no section', async () => {
+      expect(icons(await at('/nowhere-in-nav'))).toEqual([null, 'ph__icon pi pi-star', null]);
+    });
   });
 });

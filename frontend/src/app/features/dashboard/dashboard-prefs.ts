@@ -14,11 +14,11 @@ const PREFIX = 'mf.dashboard.v2.';
 
 interface Stored {
   period: PeriodKey;
-  tab: DashboardTab;
 }
 
 /**
- * What the Dashboard remembers per user in this browser: the chosen period and the last tab. Storage may be unavailable or blocked
+ * What the Dashboard remembers per user in this browser: the chosen period. (The tab is not remembered: a plain /dashboard link, from the
+ * navigation or shared, always opens Summary.) Storage may be unavailable or blocked
  * (private windows, site data cleared): every access is wrapped, and the page works without it.
  */
 @Injectable({ providedIn: 'root' })
@@ -27,8 +27,6 @@ export class DashboardPrefs {
   private loadedFor: number | null = null;
 
   readonly period = signal<PeriodKey>(DEFAULT_PERIOD);
-  /** The tab used last (opened when the address has no `?tab=`). */
-  readonly tab = signal<DashboardTab>('summary');
 
   /** Reads the saved choices of the signed-in user (once per user). */
   ensureLoaded(): void {
@@ -37,17 +35,10 @@ export class DashboardPrefs {
     this.loadedFor = userId;
     const stored = this.read(userId);
     this.period.set(stored.period);
-    this.tab.set(stored.tab);
   }
 
   setPeriod(key: PeriodKey): void {
     this.period.set(key);
-    this.save();
-  }
-
-  setTab(tab: DashboardTab): void {
-    if (tab === this.tab()) return;
-    this.tab.set(tab);
     this.save();
   }
 
@@ -56,14 +47,13 @@ export class DashboardPrefs {
   }
 
   private read(userId: number): Stored {
-    const fallback: Stored = { period: DEFAULT_PERIOD, tab: 'summary' };
+    const fallback: Stored = { period: DEFAULT_PERIOD };
     try {
       const raw = localStorage.getItem(this.storageKey(userId));
       if (!raw) return fallback;
       const parsed = JSON.parse(raw) as Partial<Stored>;
       return {
         period: isPeriodKey(parsed.period) ? parsed.period : DEFAULT_PERIOD,
-        tab: isDashboardTab(parsed.tab) ? parsed.tab : 'summary',
       };
     } catch {
       return fallback;
@@ -72,7 +62,7 @@ export class DashboardPrefs {
 
   private save(): void {
     try {
-      const stored: Stored = { period: this.period(), tab: this.tab() };
+      const stored: Stored = { period: this.period() };
       localStorage.setItem(this.storageKey(this.loadedFor ?? 0), JSON.stringify(stored));
     } catch {
       /* storage unavailable: the choice lasts until the page is closed */

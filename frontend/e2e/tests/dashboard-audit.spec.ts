@@ -20,7 +20,10 @@ test.describe('Dashboard drill-through', () => {
     const overview = page.getByRole('group', { name: 'Overview', exact: true });
     await expect(overview.getByRole('link', { name: /^Open\s*\d+\b/ })).toBeVisible();
 
-    await overview.getByRole('link', { name: /^ASAP open\s*\d+\b/ }).click();
+    await page
+      .getByRole('group', { name: 'Needs attention' })
+      .getByRole('link', { name: /^ASAP open\s*\d+\b/ })
+      .click();
     await expect(page).toHaveURL(/asap=true/);
     const queue = new TaskQueuePage(page);
     await queue.search(unassigned.title);
@@ -48,9 +51,7 @@ test.describe('Dashboard drill-through', () => {
     await page.goto('/dashboard?tab=trends');
     await expect(page.getByRole('heading', { name: 'Dashboard', level: 1 })).toBeVisible();
     await expect(
-      page.getByText(
-        'Department figures are available to Pod Leads and Directors. Your assigned tasks are in My Work.',
-      ),
+      page.getByText(/Department figures need the department dashboard permission/),
     ).toBeVisible();
     await expect(page.getByRole('tablist')).toHaveCount(0);
     await expect(page.getByRole('group', { name: 'Needs attention' })).toHaveCount(0);
@@ -64,7 +65,7 @@ test.describe('Dashboard actions and click-through', () => {
   const chips = (page: import('@playwright/test').Page) =>
     page.getByRole('list', { name: 'Active filters' });
 
-  test('Needs attention counts open the Task Queue and the filter arrives as a chip; ASAP is an overview tile', async ({
+  test('Needs attention counts open the Task Queue and the filter arrives as a chip; ASAP open is the quiet fourth tile', async ({
     page,
     seed,
     admin,
@@ -83,7 +84,7 @@ test.describe('Dashboard actions and click-through', () => {
     await page.getByRole('button', { name: 'Refresh' }).click();
 
     const attention = page.getByRole('group', { name: 'Needs attention' });
-    await expect(attention.getByRole('link')).toHaveCount(3);
+    await expect(attention.getByRole('link')).toHaveCount(4);
     await attention.getByRole('link', { name: /^Overdue\s*\d+\b/ }).click();
     await expect(page).toHaveURL(/overdue=true/);
     await expect(chips(page)).toContainText('Overdue only');
@@ -93,10 +94,7 @@ test.describe('Dashboard actions and click-through', () => {
     await expect(chips(page)).toContainText('Assignee: Unassigned');
 
     await page.goBack();
-    await page
-      .getByRole('group', { name: 'Overview', exact: true })
-      .getByRole('link', { name: /^ASAP open\s*\d+\b/ })
-      .click();
+    await attention.getByRole('link', { name: /^ASAP open\s*\d+\b/ }).click();
     await expect(chips(page)).toContainText('ASAP only');
 
     await page.goBack();
@@ -248,7 +246,7 @@ test.describe('Dashboard actions and click-through', () => {
     const week = page.waitForRequest(
       (r) => /periodDays=\d+/.test(r.url()) && r.url().includes('/api/v1/dashboard'),
     );
-    await page.getByLabel('Created and completed in').selectOption({ label: 'This week' });
+    await page.getByLabel('Completed and created in').selectOption({ label: 'This week' });
     await week;
     await expect(
       page
@@ -261,7 +259,7 @@ test.describe('Dashboard actions and click-through', () => {
     await expect(page.locator('select[data-period]')).toHaveValue('week');
   });
 
-  test('tabs: the address, reload and a shared link keep the tab, and the last tab is remembered', async ({
+  test('tabs: the address, reload and a shared link keep the tab, and a plain /dashboard link opens Summary', async ({
     page,
   }) => {
     await page.goto('/dashboard');
@@ -285,9 +283,17 @@ test.describe('Dashboard actions and click-through', () => {
       'true',
     );
 
-    // No ?tab= in the address: the last tab used is opened.
+    // No ?tab= in the address: Summary, whatever tab was used last.
     await page.goto('/dashboard');
-    await expect(page).toHaveURL(/tab=breakdowns/);
+    await expect(page).toHaveURL(/tab=summary/);
+    // A tab change is a history entry: Back returns to the previous tab.
+    await tabs.getByRole('tab', { name: 'Trends' }).click();
+    await expect(page).toHaveURL(/tab=trends/);
+    await page.goBack();
+    await expect(tabs.getByRole('tab', { name: 'Summary' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     // A link with ?tab= wins.
     await page.goto('/dashboard?tab=trends');
     await expect(

@@ -1,0 +1,3 @@
+# Page header icons
+
+`contact-sheet.png` shows the page header of 38 screens at 1280 px (individual crops in `headers/`, data in `headers/items.json`). Every H1 starts with the icon its section has in the left navigation. Source of truth: `shared/layout/section-icons.ts` (built from `nav-items.ts` plus Create task `pi-plus`, Search `pi-search`, Access pending `pi-lock`, 403 `pi-ban`, 404 `pi-compass`, error `pi-exclamation-triangle`); `mf-page-header` derives it from the route (optional `icon` input overrides, `""` hides). The icon is `aria-hidden`, so the heading's name and the document title do not change. A unit test walks every route of the app and fails when one has no icon.

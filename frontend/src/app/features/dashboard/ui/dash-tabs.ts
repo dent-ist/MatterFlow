@@ -80,6 +80,13 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
       font-weight: 600;
       border-bottom-color: var(--mf-primary);
     }
+    /* On a phone the three tabs share the width instead of scrolling out of view. */
+    @media (max-width: 480px) {
+      .tab {
+        flex: 1 1 auto;
+        padding: 0 var(--mf-s2);
+      }
+    }
     .tab:focus-visible {
       outline: 2px solid var(--mf-focus);
       outline-offset: -2px;
@@ -123,7 +130,10 @@ export class DashTabs {
         return;
     }
     event.preventDefault();
-    this.host.nativeElement.querySelector<HTMLElement>(`[data-tab="${keys[to]}"]`)?.focus();
+    const tab = this.host.nativeElement.querySelector<HTMLElement>(`[data-tab="${keys[to]}"]`);
+    tab?.focus();
+    // A focused tab that sits past the edge of a scrolling tab list is brought into view.
+    tab?.scrollIntoView?.({ inline: 'nearest', block: 'nearest' });
     this.choose(keys[to]);
   }
 }

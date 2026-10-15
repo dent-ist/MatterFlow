@@ -230,12 +230,14 @@ describe('DashboardPage', () => {
       'Overdue',
       'Unassigned',
       'On hold',
+      'ASAP open',
     ]);
-    expect(tiles.map((t) => text(t.querySelector('.value')))).toEqual(['9', '17', '12']);
+    expect(tiles.map((t) => text(t.querySelector('.value')))).toEqual(['9', '17', '12', '4']);
     expect(tiles.map((t) => text(t.querySelector('.go')))).toEqual([
       'View overdue tasks',
       'View unassigned tasks',
       'View tasks on hold',
+      'View ASAP tasks',
     ]);
     // An icon next to every label, so the tone is never the only signal.
     for (const t of tiles) expect(t.querySelector('.label .pi')).not.toBeNull();
@@ -243,47 +245,83 @@ describe('DashboardPage', () => {
       '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true',
     );
     expect(tiles[0].textContent).toContain('Excludes ASAP tasks');
-    // Colour follows the pattern standard: On hold is the warning amber of its badge, Unassigned is neutral, ASAP is not here at all.
+    // Colour follows the pattern standard: On hold is the warning amber of its badge, Unassigned is neutral, ASAP is the quiet blue outline
+    // (never the red of Overdue, and a smaller number than the three attention tiles).
     expect(tiles.map((t) => t.querySelector('a')!.getAttribute('data-tone'))).toEqual([
       'danger',
       'strong',
       'warning',
+      'asap',
     ]);
-    expect(group.textContent).not.toContain('ASAP open');
+    expect(tiles[3].querySelector('a')!.getAttribute('data-emphasis')).toBe('quiet');
+    expect(tiles[3].querySelector('a')!.getAttribute('href')).toContain('asap=true');
+    expect(tiles[0].querySelector('a')!.getAttribute('data-emphasis')).toBe('attention');
   });
 
-  it('shows the quieter overview row with ASAP as a blue outlined tile and the period control beside it', async () => {
+  it('shows the quieter overview row (no ASAP tile: it is in Needs attention) and the period control beside it', async () => {
     const el = await open();
     const group = el.querySelector('[data-group="overview"]')!;
     const tiles = Array.from(group.querySelectorAll<HTMLElement>('mf-stat-tile'));
     expect(tiles.map((t) => text(t.querySelector('.label')))).toEqual([
       'Open',
       'Due soon',
-      'ASAP open',
       'Completed',
       'Created',
     ]);
-    expect(tiles.map((t) => text(t.querySelector('.value')))).toEqual([
-      '128',
-      '6',
-      '4',
-      '94',
-      '101',
-    ]);
-    expect(tiles[2].querySelector('a')!.getAttribute('data-tone')).toBe('asap');
-    expect(tiles[2].querySelector('a')!.getAttribute('data-emphasis')).toBe('quiet');
+    expect(tiles.map((t) => text(t.querySelector('.value')))).toEqual(['128', '6', '94', '101']);
+    expect(tiles[2].textContent).toContain('Last 30 days');
     expect(tiles[3].textContent).toContain('Last 30 days');
-    expect(tiles[4].textContent).toContain('Last 30 days');
-    expect(tiles[3].querySelector('a')!.getAttribute('href')).toBe(
+    // Every tile has its own small icon next to the label.
+    for (const t of tiles) expect(t.querySelector('.label .pi')).not.toBeNull();
+    expect(tiles[2].querySelector('a')!.getAttribute('href')).toBe(
       '/tasks?status=COMPLETED&completedFrom=2026-09-15',
     );
     // The period control sits in the Overview row, named for what it changes, not in the page header.
     expect(group.querySelector('select[data-period]')).not.toBeNull();
-    expect(text(group.querySelector('label.period'))).toContain('Created and completed in');
+    expect(text(group.querySelector('label.period'))).toContain('Completed and created in');
     expect(el.querySelector('mf-page-header select[data-period]')).toBeNull();
     expect(el.querySelector('[data-updated]')!.textContent).toContain(
       'Updated Oct 14, 2026, 3:42 PM',
     );
+  });
+
+  it('lays Summary out as tiles beside the unassigned queue with Overdue and Due soon in a row below, in this order', async () => {
+    const el = await open();
+    const panel = el.querySelector('[data-tabpanel="summary"] .summary')!;
+    const parts = Array.from(panel.children).map((c) => c.className.split(' ')[0] || c.tagName);
+    expect(parts).toEqual(['summary-tiles', 'summary-main', 'summary-more']);
+    expect(
+      Array.from(panel.querySelectorAll('.summary-main [data-panel]')).map((p) =>
+        p.getAttribute('data-panel'),
+      ),
+    ).toEqual(['unassigned']);
+    expect(
+      Array.from(panel.querySelectorAll('.summary-more [data-panel]')).map((p) =>
+        p.getAttribute('data-panel'),
+      ),
+    ).toEqual(['overdue', 'dueSoon']);
+    // The two tile groups are the first thing in the tile column: Needs attention, then Overview.
+    expect(
+      Array.from(panel.querySelectorAll('.summary-tiles > [data-group]')).map((g) =>
+        g.getAttribute('data-group'),
+      ),
+    ).toEqual(['attention', 'overview']);
+  });
+
+  it('puts focus back on Refresh when Retry in the failed-refresh banner succeeds', async () => {
+    const el = await open();
+    document.body.appendChild(el);
+    getDashboard.mockReturnValueOnce(throwError(() => new Error('down')));
+    el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
+    await settle();
+    const retry = el.querySelector<HTMLButtonElement>('[data-stale-retry]')!;
+    retry.focus();
+    getDashboard.mockReturnValue(of(summary()));
+    retry.click();
+    await settle();
+    expect(el.querySelector('[data-stale]')).toBeNull();
+    expect(document.activeElement).toBe(el.querySelector('[data-refresh]'));
+    el.remove();
   });
 
   it('shows a tile that counts zero as calm text, not a link', async () => {
@@ -386,21 +424,26 @@ describe('DashboardPage', () => {
       el.remove();
     });
 
-    it('remembers the last tab per user and opens it when the address has none', async () => {
+    it('does not remember the tab: a plain /dashboard link opens Summary even after a visit to Trends', async () => {
       let el = await open(of(summary()), ALL, '/dashboard?tab=breakdowns');
       tabButtons(el)[2].click();
       await settle();
-      expect(JSON.parse(localStorage.getItem('mf.dashboard.v2.1') ?? '{}').tab).toBe('trends');
+      expect(JSON.parse(localStorage.getItem('mf.dashboard.v2.1') ?? '{}').tab).toBeUndefined();
 
       TestBed.resetTestingModule();
       el = await open();
-      expect(text(selectedTab(el))).toBe('Trends');
-      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends');
-
-      // An explicit ?tab= wins over the remembered one.
-      TestBed.resetTestingModule();
-      el = await open(of(summary()), ALL, '/dashboard?tab=summary');
       expect(text(selectedTab(el))).toBe('Summary');
+      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=summary');
+    });
+
+    it('adds a history entry for a tab change, so Back returns to the previous tab', async () => {
+      const el = await open();
+      const router = TestBed.inject(Router);
+      const navigate = vi.spyOn(router, 'navigate');
+      tabButtons(el)[1].click();
+      await settle();
+      expect(navigate).toHaveBeenLastCalledWith([], expect.objectContaining({ replaceUrl: false }));
+      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=breakdowns');
     });
 
     it('follows the browser Back and Forward (the address is the source of truth)', async () => {
@@ -462,7 +505,7 @@ describe('DashboardPage', () => {
       await settle();
       expect(el.querySelectorAll('select[data-period]').length).toBe(1);
       expect(el.querySelector('[data-section="trend"] select[data-period]')).not.toBeNull();
-      expect(text(el.querySelector('label.period'))).toContain('Created and completed in');
+      expect(text(el.querySelector('label.period'))).toContain('Completed and created in');
     });
   });
 
@@ -473,7 +516,7 @@ describe('DashboardPage', () => {
       expect(el.querySelector('[data-group]')).toBeNull();
       expect(el.querySelector('[data-error], [data-empty]')).toBeNull();
       expect(text(el.querySelector('[data-limited-note]'))).toBe(
-        'Department figures are available to Pod Leads and Directors. Your assigned tasks are in My Work.',
+        'Department figures need the department dashboard permission; ask a Pod Lead or a Director if you need them. Your assigned tasks are in My Work.',
       );
       expect(el.querySelector('[data-limited-note] a')!.getAttribute('href')).toBe('/my-work');
       // Nothing to pick from without Task.Assign: no lists, no refresh controls, no calls at all.
@@ -562,7 +605,7 @@ describe('DashboardPage', () => {
     const skip = el.querySelector<HTMLButtonElement>('[data-panel="unassigned"] [data-skip]')!;
     expect(text(skip)).toBe('Skip Unassigned queue list');
     skip.click();
-    expect(document.activeElement).toBe(el.querySelector('[data-panel="overdue"] h3'));
+    expect(document.activeElement).toBe(el.querySelector('[data-section="lists-more"] h2'));
     // A one-row list has nothing to skip.
     expect(el.querySelector('[data-panel="overdue"] [data-skip]')).toBeNull();
   });
@@ -730,7 +773,7 @@ describe('DashboardPage', () => {
       'Last quarter',
     ]);
     expect(select.closest('[data-group="overview"]')).not.toBeNull();
-    expect(el.textContent).toContain('Created and completed in');
+    expect(el.textContent).toContain('Completed and created in');
 
     // 14 Oct 2026 is a Wednesday: the week so far is 3 days, the month 14.
     select.value = 'week';

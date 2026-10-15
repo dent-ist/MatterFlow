@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { iconForPath } from '../layout/section-icons';
 
 /** One step of the breadcrumb trail; the last one is the current page and has no link. */
 export interface Crumb {
@@ -42,6 +43,9 @@ export interface Crumb {
       }
       <div class="ph__row">
         <h1 class="ph__title" data-page-title>
+          @if (iconClass(); as ic) {
+            <i class="ph__icon" [class]="ic" aria-hidden="true" data-page-icon></i>
+          }
           <ng-content select="[mfTitle]">{{ heading() }}</ng-content>
         </h1>
         <div class="ph__actions" data-page-actions>
@@ -95,6 +99,13 @@ export interface Crumb {
       line-height: 1.25;
       overflow-wrap: anywhere;
     }
+    /* The section icon: the same one the left navigation shows, neutral, a little smaller than the text, on the baseline. */
+    .ph__icon {
+      margin-right: var(--mf-s2);
+      color: var(--mf-text-muted);
+      font-size: 0.75em;
+      vertical-align: 0.04em;
+    }
     .ph__actions {
       display: flex;
       flex-wrap: wrap;
@@ -117,6 +128,19 @@ export class PageHeader {
   readonly heading = input('');
   readonly crumbs = input<readonly Crumb[]>([]);
   readonly description = input('');
+  /**
+   * PrimeIcons classes shown before the title (decorative, `aria-hidden`). Left out, it is the icon of the section the page belongs to
+   * (the one in the left navigation, see `section-icons.ts`); an empty string shows none.
+   */
+  readonly icon = input<string | null>(null);
+
+  private readonly route = inject(ActivatedRoute);
+  private readonly routePath =
+    '/' + this.route.pathFromRoot.flatMap((r) => r.snapshot.url.map((s) => s.path)).join('/');
+  protected readonly iconClass = computed(() => {
+    const explicit = this.icon();
+    return explicit === null ? iconForPath(this.routePath) : explicit;
+  });
 }
 
 /**
@@ -164,4 +188,23 @@ export class PageHeader {
 export class RecordTitle {
   readonly ref = input('');
   readonly name = input('');
+}
+
+/** The same decorative section icon for the few screens that have their own H1 instead of `mf-page-header` (403, 404, error, access pending). */
+@Component({
+  selector: 'mf-title-icon',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<i [class]="icon()" aria-hidden="true" data-page-icon></i>`,
+  styles: `
+    :host {
+      margin-right: var(--mf-s2);
+      color: var(--mf-text-muted);
+      font-size: 0.75em;
+      vertical-align: 0.04em;
+    }
+  `,
+})
+export class TitleIcon {
+  /** PrimeIcons classes, for example `pi pi-ban`. */
+  readonly icon = input.required<string>();
 }

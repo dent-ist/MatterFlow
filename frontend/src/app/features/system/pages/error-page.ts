@@ -1,15 +1,16 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Button } from 'primeng/button';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { TitleIcon } from '../../../shared/ui/page-header';
 
 /** Shown outside the shell when /me cannot be loaded at all. */
 @Component({
   selector: 'mf-error-page',
-  imports: [Button],
+  imports: [Button, TitleIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="mf-error">
-      <h1>Something went wrong. Try again.</h1>
+      <h1><mf-title-icon icon="pi pi-exclamation-triangle" />Something went wrong. Try again.</h1>
       <p-button label="Retry" icon="pi pi-refresh" (onClick)="retry()" />
     </main>
   `,

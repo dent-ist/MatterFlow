@@ -103,3 +103,27 @@ describe('InlineMenu placement (DASH-11)', () => {
     root.remove();
   });
 });
+
+describe('InlineMenu empty state (DASH3-05)', () => {
+  @Component({
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [InlineMenu],
+    template: `<mf-inline-menu label="Assign" [options]="[]" emptyText="No people found."
+      >Unassigned</mf-inline-menu
+    >`,
+  })
+  class EmptyHost {}
+
+  it('keeps the note out of role="menu" (a menu may only contain items) and still announces it', () => {
+    const fixture = TestBed.createComponent(EmptyHost);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    document.body.appendChild(root);
+    root.querySelector<HTMLButtonElement>('[data-inline-trigger]')!.click();
+    fixture.detectChanges();
+    expect(root.querySelector('[role="menu"]')).toBeNull();
+    const note = root.querySelector('.im-pop [role="status"]')!;
+    expect(note.textContent!.trim()).toBe('No people found.');
+    root.remove();
+  });
+});

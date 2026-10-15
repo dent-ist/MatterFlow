@@ -1,0 +1,268 @@
+[
+ {
+  "label": "Dashboard",
+  "url": "/dashboard?tab=summary",
+  "name": "Dashboard",
+  "icon": "ph__icon pi pi-home",
+  "file": "dashboard.png"
+ },
+ {
+  "label": "My Work",
+  "url": "/my-work",
+  "name": "My Work",
+  "icon": "ph__icon pi pi-user",
+  "file": "my-work.png"
+ },
+ {
+  "label": "Task Queue",
+  "url": "/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD",
+  "name": "Task Queue",
+  "icon": "ph__icon pi pi-list-check",
+  "file": "task-queue.png"
+ },
+ {
+  "label": "Pod Work",
+  "url": "/pods/work",
+  "name": "Pod Work",
+  "icon": "ph__icon pi pi-users",
+  "file": "pod-work.png"
+ },
+ {
+  "label": "Clients",
+  "url": "/clients",
+  "name": "Clients",
+  "icon": "ph__icon pi pi-building",
+  "file": "clients.png"
+ },
+ {
+  "label": "Matters",
+  "url": "/matters",
+  "name": "Matters",
+  "icon": "ph__icon pi pi-briefcase",
+  "file": "matters.png"
+ },
+ {
+  "label": "Projects",
+  "url": "/projects",
+  "name": "Projects",
+  "icon": "ph__icon pi pi-folder",
+  "file": "projects.png"
+ },
+ {
+  "label": "Assets",
+  "url": "/assets",
+  "name": "Assets",
+  "icon": "ph__icon pi pi-database",
+  "file": "assets.png"
+ },
+ {
+  "label": "Admin: Users",
+  "url": "/admin/users",
+  "name": "Users",
+  "icon": "ph__icon pi pi-id-card",
+  "file": "admin-users.png"
+ },
+ {
+  "label": "Admin: Roles tab",
+  "url": "/admin/roles",
+  "name": "Users",
+  "icon": "ph__icon pi pi-id-card",
+  "file": "admin-roles-tab.png"
+ },
+ {
+  "label": "Admin: Pods",
+  "url": "/admin/pods",
+  "name": "Pods",
+  "icon": "ph__icon pi pi-sitemap",
+  "file": "admin-pods.png"
+ },
+ {
+  "label": "Admin: Task Types & Forms",
+  "url": "/admin/task-types",
+  "name": "Task types",
+  "icon": "ph__icon pi pi-file-edit",
+  "file": "admin-task-types-forms.png"
+ },
+ {
+  "label": "Admin: Workflows",
+  "url": "/admin/workflows",
+  "name": "Workflows",
+  "icon": "ph__icon pi pi-share-alt",
+  "file": "admin-workflows.png"
+ },
+ {
+  "label": "Admin: Workflow Steps",
+  "url": "/admin/steps",
+  "name": "Workflow Steps",
+  "icon": "ph__icon pi pi-clone",
+  "file": "admin-workflow-steps.png"
+ },
+ {
+  "label": "Admin: Labels",
+  "url": "/admin/priorities",
+  "name": "Labels",
+  "icon": "ph__icon pi pi-flag",
+  "file": "admin-labels.png"
+ },
+ {
+  "label": "Admin: Status labels",
+  "url": "/admin/status-labels",
+  "name": "Labels",
+  "icon": "ph__icon pi pi-flag",
+  "file": "admin-status-labels.png"
+ },
+ {
+  "label": "Admin: Assets (types)",
+  "url": "/admin/asset-types",
+  "name": "Asset types and link roles",
+  "icon": "ph__icon pi pi-tags",
+  "file": "admin-assets-types-.png"
+ },
+ {
+  "label": "Admin: Custom Fields",
+  "url": "/admin/custom-fields",
+  "name": "Custom Fields",
+  "icon": "ph__icon pi pi-sliders-h",
+  "file": "admin-custom-fields.png"
+ },
+ {
+  "label": "Admin: Audit Logs",
+  "url": "/admin/audit",
+  "name": "Audit Logs",
+  "icon": "ph__icon pi pi-history",
+  "file": "admin-audit-logs.png"
+ },
+ {
+  "label": "Create task",
+  "url": "/tasks/new",
+  "name": "Create task",
+  "icon": "ph__icon pi pi-plus",
+  "file": "create-task.png"
+ },
+ {
+  "label": "New client",
+  "url": "/clients/new",
+  "name": "New client",
+  "icon": "ph__icon pi pi-building",
+  "file": "new-client.png"
+ },
+ {
+  "label": "New matter",
+  "url": "/matters/new",
+  "name": "New matter",
+  "icon": "ph__icon pi pi-briefcase",
+  "file": "new-matter.png"
+ },
+ {
+  "label": "New project",
+  "url": "/projects/new",
+  "name": "New project",
+  "icon": "ph__icon pi pi-folder",
+  "file": "new-project.png"
+ },
+ {
+  "label": "New asset",
+  "url": "/assets/new",
+  "name": "New asset",
+  "icon": "ph__icon pi pi-database",
+  "file": "new-asset.png"
+ },
+ {
+  "label": "New workflow",
+  "url": "/admin/workflows/new",
+  "name": "New workflow",
+  "icon": "ph__icon pi pi-share-alt",
+  "file": "new-workflow.png"
+ },
+ {
+  "label": "New step",
+  "url": "/admin/steps/new",
+  "name": "New step",
+  "icon": "ph__icon pi pi-clone",
+  "file": "new-step.png"
+ },
+ {
+  "label": "Search results",
+  "url": "/search?q=a",
+  "name": "Search results",
+  "icon": "ph__icon pi pi-search",
+  "file": "search-results.png"
+ },
+ {
+  "label": "Advanced search",
+  "url": "/search/advanced",
+  "name": "Advanced search",
+  "icon": "ph__icon pi pi-search",
+  "file": "advanced-search.png"
+ },
+ {
+  "label": "Not found",
+  "url": "/does-not-exist",
+  "name": "We couldn't find that.",
+  "icon": "pi pi-compass",
+  "file": "not-found.png"
+ },
+ {
+  "label": "No access (403)",
+  "url": "/403",
+  "name": "You don't have permission to view this.",
+  "icon": "pi pi-ban",
+  "file": "no-access-403-.png"
+ },
+ {
+  "label": "Client detail",
+  "url": "/clients/54",
+  "name": "01432E2E Client tcatjgb89Active",
+  "icon": "ph__icon pi pi-building",
+  "file": "client-detail.png"
+ },
+ {
+  "label": "Matter detail",
+  "url": "/matters/50",
+  "name": "01432-00012E2E Matter tcfyxgd90Active",
+  "icon": "ph__icon pi pi-briefcase",
+  "file": "matter-detail.png"
+ },
+ {
+  "label": "Project detail",
+  "url": "/projects/1",
+  "name": "E2E Project rzk94th182Active",
+  "icon": "ph__icon pi pi-folder",
+  "file": "project-detail.png"
+ },
+ {
+  "label": "Asset detail",
+  "url": "/assets/5",
+  "name": "E2E Asset qhf6wkz23E2E Asset Type qe3vv0y11Active",
+  "icon": "ph__icon pi pi-database",
+  "file": "asset-detail.png"
+ },
+ {
+  "label": "Task detail",
+  "url": "/tasks/1",
+  "name": "TSK-1E2E Task q381rqe8",
+  "icon": "ph__icon pi pi-list-check",
+  "file": "task-detail.png"
+ },
+ {
+  "label": "Workflow edit",
+  "url": "/admin/workflows/2",
+  "name": "Data Load Only",
+  "icon": "ph__icon pi pi-share-alt",
+  "file": "workflow-edit.png"
+ },
+ {
+  "label": "Step edit",
+  "url": "/admin/steps/208",
+  "name": "Edit step",
+  "icon": "ph__icon pi pi-clone",
+  "file": "step-edit.png"
+ },
+ {
+  "label": "Task type edit",
+  "url": "/admin/task-types/12",
+  "name": "Access Request",
+  "icon": "ph__icon pi pi-file-edit",
+  "file": "task-type-edit.png"
+ }
+]

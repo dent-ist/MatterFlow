@@ -39,18 +39,20 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'strong' | 'asap' | 'neut
     <ng-template #body let-link="link">
       <span class="label">
         @if (icon(); as i) {
-          <i class="pi" [class]="i" aria-hidden="true"></i>
+          <i class="pi chip" [class]="i" aria-hidden="true"></i>
         }
-        {{ label() }}
+        <span class="label-text">{{ label() }}</span>
+        @if (link) {
+          <i class="pi pi-angle-right go-icon" aria-hidden="true"></i>
+        }
       </span>
       <span class="value">{{ value() }}</span>
       @if (caption(); as c) {
-        <span class="caption">{{ c }}</span>
+        <span class="caption" [attr.title]="c">{{ c }}</span>
       }
       @if (link) {
-        <span class="go"
-          >{{ linkText() }} <i class="pi pi-arrow-right" aria-hidden="true"></i
-        ></span>
+        <!-- Part of the link's name (what it opens, for voice control and screen readers); not drawn: the arrow and the hover say it. -->
+        <span class="go">{{ linkText() }}</span>
       }
     </ng-template>
   `,
@@ -59,61 +61,120 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'strong' | 'asap' | 'neut
       display: block;
     }
     .tile {
+      position: relative;
       display: flex;
       flex-direction: column;
-      gap: var(--mf-s1);
+      gap: 2px;
       height: 100%;
       box-sizing: border-box;
-      padding: var(--mf-s3) var(--mf-s4);
+      padding: var(--mf-s3) var(--mf-s3) var(--mf-s3) var(--mf-s4);
       background: var(--mf-surface);
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius-lg);
+      box-shadow: var(--mf-shadow-1);
       color: var(--mf-text);
       text-decoration: none;
+      transition:
+        border-color 120ms,
+        box-shadow 120ms;
     }
     a.tile:hover {
       border-color: var(--mf-primary);
-      background: var(--mf-selected-bg);
+      box-shadow: var(--mf-shadow-2);
     }
     .label {
-      display: inline-flex;
+      display: flex;
       align-items: center;
       gap: var(--mf-s2);
+      min-width: 0;
       font-size: var(--mf-fs-sm);
       font-weight: 600;
       color: var(--mf-text-muted);
     }
+    .label-text {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    /* A small neutral icon chip: the icon carries the meaning with the words, colour only adds to it. */
+    .chip {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface-alt);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+    .go-icon {
+      flex: none;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-md);
+      opacity: 0.55;
+    }
+    a.tile:hover .go-icon {
+      color: var(--mf-link);
+      opacity: 1;
+    }
+    /* Phone: two tiles per row, so the label may wrap instead of being cut and the chevron goes. */
+    @media (max-width: 480px) {
+      .go-icon {
+        display: none;
+      }
+      .label-text {
+        overflow: visible;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.2;
+      }
+      .tile {
+        padding-right: var(--mf-s2);
+      }
+    }
     .value {
-      font-size: var(--mf-fs-h1);
+      margin-top: var(--mf-s1);
+      font-size: 1.75rem;
       font-weight: 700;
       line-height: 1.1;
       font-variant-numeric: tabular-nums;
     }
     .caption {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       font-size: var(--mf-fs-xs);
       color: var(--mf-text-muted);
     }
     .go {
-      margin-top: auto;
-      padding-top: var(--mf-s1);
-      font-size: var(--mf-fs-xs);
-      color: var(--mf-link);
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
     }
-    /* Needs attention: bigger number, a thick coloured edge and a tinted icon chip. */
+    /* Needs attention: a coloured edge and a slightly bigger number. */
     [data-emphasis='attention'] {
-      border-left-width: 6px;
-      padding: var(--mf-s4);
+      border-left-width: 5px;
+      padding-left: calc(var(--mf-s4) - 4px);
     }
     [data-emphasis='attention'] .value {
-      font-size: 2.25rem;
+      font-size: 2rem;
     }
     [data-emphasis='attention'] .label {
       color: var(--mf-text);
-      font-size: var(--mf-fs-md);
     }
     /* Overview: quieter, smaller number. */
     [data-emphasis='quiet'] .value {
-      font-size: var(--mf-fs-h2);
+      font-size: 1.5rem;
+    }
+    .tile--zero {
+      box-shadow: none;
     }
     .tile--zero .value {
       color: var(--mf-text-muted);
@@ -122,23 +183,29 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'strong' | 'asap' | 'neut
       border-left-color: var(--mf-danger);
       background: var(--mf-danger-bg);
     }
-    [data-tone='danger'] .label i,
+    [data-tone='danger'] .chip,
     [data-tone='danger'] .value {
       color: var(--mf-danger);
+    }
+    [data-tone='danger'] .chip {
+      background: var(--mf-surface);
     }
     [data-tone='warning'] {
       border-left-color: var(--mf-warning);
       background: var(--mf-warning-bg);
     }
-    [data-tone='warning'] .label i,
+    [data-tone='warning'] .chip,
     [data-tone='warning'] .value {
       color: var(--mf-warning);
+    }
+    [data-tone='warning'] .chip {
+      background: var(--mf-surface);
     }
     [data-tone='info'] {
       border-left-color: var(--mf-info);
       background: var(--mf-info-bg);
     }
-    [data-tone='info'] .label i,
+    [data-tone='info'] .chip,
     [data-tone='info'] .value {
       color: var(--mf-info);
     }
@@ -146,15 +213,14 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'strong' | 'asap' | 'neut
     [data-tone='strong'] {
       border-left-color: var(--mf-text);
     }
-    [data-tone='strong'] .label i {
+    [data-tone='strong'] .chip {
       color: var(--mf-text);
     }
-    /* ASAP: the blue outlined treatment of the pattern standard, never red or amber. */
+    /* ASAP: the quiet blue outline of the pattern standard, never red or amber, and no coloured edge or tinted fill. */
     [data-tone='asap'] {
       border-color: var(--mf-asap, var(--mf-info));
-      border-width: 2px;
     }
-    [data-tone='asap'] .label i,
+    [data-tone='asap'] .chip,
     [data-tone='asap'] .value {
       color: var(--mf-asap, var(--mf-info));
     }

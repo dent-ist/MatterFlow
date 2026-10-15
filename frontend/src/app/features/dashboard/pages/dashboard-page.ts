@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   Injector,
   OnInit,
   afterNextRender,
@@ -35,7 +36,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
 import { priorityColors } from '../../../shared/ui/priority-badge';
 import { LIST_ORDER, ListKind, OPEN_UNASSIGNED_QUERY, queueArgsFor } from '../dashboard-links';
 import { PERIOD_PRESETS, PeriodKey, isPeriodKey, periodDays, presetOf } from '../dashboard-period';
-import { DASHBOARD_TABS, DashboardPrefs, DashboardTab, isDashboardTab } from '../dashboard-prefs';
+import { DashboardPrefs, DashboardTab, isDashboardTab } from '../dashboard-prefs';
 import { BarItem, BarList } from '../ui/bar-list';
 import { DashSection } from '../ui/dash-section';
 import { DashTab, DashTabs, panelId, tabId } from '../ui/dash-tabs';
@@ -88,8 +89,8 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
 }
 
 /**
- * Dashboard (UX S01, baseline 12.2), organised in three tabs (WAI-ARIA tabs, the selection lives in the address as `?tab=` and the last
- * tab is remembered per user): Summary (Needs attention, Overview, the unassigned queue with inline assignment, Overdue and Due soon),
+ * Dashboard (UX S01, baseline 12.2), organised in three tabs (WAI-ARIA tabs; the selection lives in the address as `?tab=`, each change is
+ * a history entry and a plain /dashboard link opens Summary): Summary (Needs attention, Overview, the unassigned queue with inline assignment, Overdue and Due soon),
  * Breakdowns (open tasks by priority, task type and status, and their age) and Trends (created and completed per day). All three read
  * one shared summary request; only the Summary tab also reads the task lists, and only when it is shown. Everything that counts tasks is
  * a link to `/tasks` carrying the query the API computed for that number. Department figures need `Dashboard.ViewDepartment`; everyone
@@ -150,13 +151,15 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
           The dashboard could not be refreshed. Showing the figures from {{ updated() }}.
           <mf-error-reference />
         </span>
-        <button type="button" class="mf-btn" data-stale-retry (click)="refresh()">Retry</button>
+        <button type="button" class="mf-btn" data-stale-retry (click)="retryRefresh()">
+          Retry
+        </button>
       </div>
     }
 
     <ng-template #periodControl>
       <label class="period">
-        <span>Created and completed in</span>
+        <span>Completed and created in</span>
         <select
           class="mf-control"
           data-period
@@ -170,9 +173,9 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       </label>
     </ng-template>
 
-    <ng-template #listsGrid>
-      <div class="grid grid--lists" [class.grid--three]="panels().length === 3" data-lists>
-        @for (panel of panels(); track panel.kind; let last = $last) {
+    <ng-template #listsGrid let-items let-narrow="narrow">
+      <div class="grid grid--lists" [class.grid--narrow]="narrow" data-lists>
+        @for (panel of items; track panel.kind) {
           <mf-dash-task-list
             [kind]="panel.kind"
             [heading]="panel.heading"
@@ -182,7 +185,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
             [total]="listOf(panel.kind).total"
             [state]="listOf(panel.kind).state"
             [query]="panel.query"
-            [skippable]="!last"
+            [skippable]="panel.kind !== lastKind()"
             (rowChange)="onRowChange(panel.kind, $event)"
             (retry)="reloadList(panel.kind)"
           />
@@ -193,12 +196,18 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     @if (!department()) {
       <!-- Without the department view: no tabs, only what this person may see and a pointer to My Work. -->
       <p class="note" data-limited-note>
-        Department figures are available to Pod Leads and Directors. Your assigned tasks are in
-        <a routerLink="/my-work">My Work</a>.
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        <span>
+          Department figures need the department dashboard permission; ask a Pod Lead or a Director
+          if you need them. Your assigned tasks are in
+          <a routerLink="/my-work">My Work</a>.
+        </span>
       </p>
       @if (panels().length > 0) {
         <mf-dash-section heading="Tasks to act on" name="lists">
-          <ng-container *ngTemplateOutlet="listsGrid" />
+          <ng-container
+            *ngTemplateOutlet="listsGrid; context: { $implicit: panels(), narrow: true }"
+          />
         </mf-dash-section>
       }
     } @else {
@@ -222,6 +231,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
           @if (data(); as d) {
             @if (isEmpty()) {
               <div class="empty" data-empty>
+                <i class="pi pi-inbox empty-icon" aria-hidden="true"></i>
                 <p>No open tasks, and none were created or completed in this period.</p>
                 <div class="empty-period"><ng-container *ngTemplateOutlet="periodControl" /></div>
                 <a *mfHasPermission="'Task.Create'" class="cta" routerLink="/tasks/new">
@@ -239,94 +249,136 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                     [id]="panelId('summary')"
                     [attr.aria-labelledby]="tabId('summary')"
                   >
-                    <div role="group" aria-labelledby="attn-h" class="group" data-group="attention">
-                      <h2 id="attn-h">Needs attention</h2>
-                      <div class="tiles tiles--3">
-                        <mf-stat-tile
-                          label="Overdue"
-                          icon="pi-exclamation-circle"
-                          tone="danger"
-                          emphasis="attention"
-                          linkText="View overdue tasks"
-                          [value]="d.overdue.count"
-                          [query]="d.overdue.query"
-                          caption="Excludes ASAP tasks"
-                        />
-                        <mf-stat-tile
-                          label="Unassigned"
-                          icon="pi-user-minus"
-                          tone="strong"
-                          emphasis="attention"
-                          linkText="View unassigned tasks"
-                          [value]="d.unassigned.count"
-                          [query]="d.unassigned.query"
-                          caption="No person assigned"
-                        />
-                        <mf-stat-tile
-                          label="On hold"
-                          icon="pi-pause-circle"
-                          tone="warning"
-                          emphasis="attention"
-                          linkText="View tasks on hold"
-                          [value]="d.onHold.count"
-                          [query]="d.onHold.query"
-                          caption="Waiting on something"
-                        />
+                    <div class="summary">
+                      <div class="summary-tiles">
+                        <div
+                          role="group"
+                          aria-labelledby="attn-h"
+                          class="group"
+                          data-group="attention"
+                        >
+                          <h2 id="attn-h">Needs attention</h2>
+                          <div class="tiles">
+                            <mf-stat-tile
+                              label="Overdue"
+                              icon="pi-exclamation-circle"
+                              tone="danger"
+                              emphasis="attention"
+                              linkText="View overdue tasks"
+                              [value]="d.overdue.count"
+                              [query]="d.overdue.query"
+                              caption="Excludes ASAP tasks"
+                            />
+                            <mf-stat-tile
+                              label="Unassigned"
+                              icon="pi-user-minus"
+                              tone="strong"
+                              emphasis="attention"
+                              linkText="View unassigned tasks"
+                              [value]="d.unassigned.count"
+                              [query]="d.unassigned.query"
+                              caption="No person assigned"
+                            />
+                            <mf-stat-tile
+                              label="On hold"
+                              icon="pi-pause-circle"
+                              tone="warning"
+                              emphasis="attention"
+                              linkText="View tasks on hold"
+                              [value]="d.onHold.count"
+                              [query]="d.onHold.query"
+                              caption="Waiting on something"
+                            />
+                            <mf-stat-tile
+                              label="ASAP open"
+                              icon="pi-bolt"
+                              tone="asap"
+                              emphasis="quiet"
+                              linkText="View ASAP tasks"
+                              [value]="d.asapOpen.count"
+                              [query]="d.asapOpen.query"
+                              caption="No due date, handle promptly"
+                            />
+                          </div>
+                        </div>
+                        <div
+                          role="group"
+                          aria-labelledby="ov-h"
+                          class="group"
+                          data-group="overview"
+                        >
+                          <div class="group-head">
+                            <h2 id="ov-h">Overview</h2>
+                            <ng-container *ngTemplateOutlet="periodControl" />
+                          </div>
+                          <div class="tiles">
+                            <mf-stat-tile
+                              label="Open"
+                              icon="pi-folder-open"
+                              emphasis="quiet"
+                              linkText="View open tasks"
+                              [value]="d.open.count"
+                              [query]="d.open.query"
+                              caption="New, in progress and on hold"
+                            />
+                            <mf-stat-tile
+                              label="Due soon"
+                              icon="pi-clock"
+                              emphasis="quiet"
+                              linkText="View tasks due soon"
+                              [value]="d.dueSoon.count"
+                              [query]="d.dueSoon.query"
+                              caption="Next 2 days, excludes ASAP"
+                            />
+                            <mf-stat-tile
+                              label="Completed"
+                              icon="pi-check-circle"
+                              emphasis="quiet"
+                              linkText="View completed tasks"
+                              [value]="d.completed.count"
+                              [query]="d.completed.query"
+                              [caption]="periodCaption()"
+                            />
+                            <mf-stat-tile
+                              label="Created"
+                              icon="pi-plus-circle"
+                              emphasis="quiet"
+                              linkText="View created tasks"
+                              [value]="d.created.count"
+                              [query]="d.created.query"
+                              [caption]="periodCaption()"
+                            />
+                          </div>
+                        </div>
                       </div>
+                      @if (panels().length > 0) {
+                        <mf-dash-section
+                          class="summary-main"
+                          heading="Tasks to act on"
+                          name="lists"
+                        >
+                          <ng-container
+                            *ngTemplateOutlet="
+                              listsGrid;
+                              context: { $implicit: mainPanels(), narrow: false }
+                            "
+                          />
+                        </mf-dash-section>
+                      }
+                      @if (morePanels().length > 0) {
+                        <mf-dash-section class="summary-more" heading="Deadlines" name="lists-more">
+                          <ng-container
+                            *ngTemplateOutlet="
+                              listsGrid;
+                              context: {
+                                $implicit: morePanels(),
+                                narrow: morePanels().length === 1,
+                              }
+                            "
+                          />
+                        </mf-dash-section>
+                      }
                     </div>
-                    <div role="group" aria-labelledby="ov-h" class="group" data-group="overview">
-                      <div class="group-head">
-                        <h2 id="ov-h">Overview</h2>
-                        <ng-container *ngTemplateOutlet="periodControl" />
-                      </div>
-                      <div class="tiles tiles--5">
-                        <mf-stat-tile
-                          label="Open"
-                          emphasis="quiet"
-                          linkText="View open tasks"
-                          [value]="d.open.count"
-                          [query]="d.open.query"
-                          caption="New, in progress and on hold"
-                        />
-                        <mf-stat-tile
-                          label="Due soon"
-                          emphasis="quiet"
-                          linkText="View tasks due soon"
-                          [value]="d.dueSoon.count"
-                          [query]="d.dueSoon.query"
-                          caption="Next 2 days, excludes ASAP"
-                        />
-                        <mf-stat-tile
-                          label="ASAP open"
-                          icon="pi-bolt"
-                          tone="asap"
-                          emphasis="quiet"
-                          linkText="View ASAP tasks"
-                          [value]="d.asapOpen.count"
-                          [query]="d.asapOpen.query"
-                          caption="No due date, handle promptly"
-                        />
-                        <mf-stat-tile
-                          label="Completed"
-                          emphasis="quiet"
-                          linkText="View completed tasks"
-                          [value]="d.completed.count"
-                          [query]="d.completed.query"
-                          [caption]="periodCaption()"
-                        />
-                        <mf-stat-tile
-                          label="Created"
-                          emphasis="quiet"
-                          linkText="View created tasks"
-                          [value]="d.created.count"
-                          [query]="d.created.query"
-                          [caption]="periodCaption()"
-                        />
-                      </div>
-                    </div>
-                    <mf-dash-section heading="Tasks to act on" name="lists">
-                      <ng-container *ngTemplateOutlet="listsGrid" />
-                    </mf-dash-section>
                   </div>
                 }
                 @case ('breakdowns') {
@@ -402,24 +454,48 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     </ng-template>
   `,
   styles: `
+    /* A readable measure on wide monitors: the page is left-aligned and stops at 1360px instead of stretching every card. */
     :host {
       display: block;
+      max-width: 1360px;
     }
     .group h2 {
       margin: 0 0 var(--mf-s2);
       font-size: var(--mf-fs-md);
+      text-transform: none;
       color: var(--mf-text-muted);
     }
     .group {
       margin-bottom: var(--mf-s5);
     }
+    /* Summary: tiles on the left and the unassigned queue beside them from 1180px; the other lists in a row below. */
+    .summary {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      column-gap: var(--mf-s5);
+      align-items: start;
+    }
+    .summary-more {
+      grid-column: 1 / -1;
+    }
+    @media (min-width: 1180px) {
+      .summary {
+        grid-template-columns: minmax(0, 452px) minmax(0, 1fr);
+      }
+    }
     .note {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--mf-s2);
       margin: 0 0 var(--mf-s4);
       padding: var(--mf-s3) var(--mf-s4);
       color: var(--mf-text-muted);
       background: var(--mf-surface);
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius-lg);
+    }
+    .note .pi {
+      margin-top: 2px;
     }
     .note a {
       color: var(--mf-link);
@@ -481,44 +557,23 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     .stale span {
       flex: 1;
     }
+    /* Compact fixed-width tiles, left-aligned: they never stretch to fill the row. */
     .tiles,
     .skeletons {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(170px, 220px));
+      justify-content: start;
       gap: var(--mf-s3);
     }
-    .tiles--3 {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-    .tiles--5 {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-    /* Tablet and phone: two columns (a single column only on the narrowest screens). */
-    @media (max-width: 1100px) {
-      .tiles--5 {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-    }
-    @media (max-width: 900px) {
+    @media (max-width: 480px) {
       .tiles,
-      .tiles--3,
-      .tiles--5,
       .skeletons {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-    @media (max-width: 560px) {
-      .tiles {
         gap: var(--mf-s2);
-      }
-      .tiles--3 > :first-child {
-        grid-column: 1 / -1;
       }
     }
     @media (max-width: 340px) {
       .tiles,
-      .tiles--3,
-      .tiles--5,
       .skeletons {
         grid-template-columns: minmax(0, 1fr);
       }
@@ -529,18 +584,13 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       gap: var(--mf-s4);
       align-items: start;
     }
-    /* Task lists: as many columns as fit; with three lists on a tablet the first (the unassigned queue) takes the full row. */
+    /* Task lists: as many columns as fit, never wider than a comfortable list; a single list does not stretch across the page. */
     .grid--lists {
       grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
-      align-items: stretch;
+      align-items: start;
     }
-    @media (min-width: 561px) and (max-width: 1099px) {
-      .grid--lists {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-      .grid--three > :first-child {
-        grid-column: 1 / -1;
-      }
+    .grid--narrow {
+      max-width: 36rem;
     }
     @media (max-width: 900px) {
       .grid:not(.grid--lists) {
@@ -548,9 +598,16 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       }
     }
     .skeleton {
-      height: 7rem;
+      height: 6.25rem;
       background: var(--mf-surface-alt);
+      border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius-lg);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      50% {
+        opacity: 0.55;
+      }
     }
     .alert {
       display: flex;
@@ -562,7 +619,14 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       border: 1px solid var(--mf-danger);
       border-radius: var(--mf-radius);
     }
+    .empty-icon {
+      display: block;
+      margin-bottom: var(--mf-s2);
+      font-size: 2rem;
+      color: var(--mf-text-muted);
+    }
     .empty {
+      max-width: 40rem;
       padding: var(--mf-s6) var(--mf-s4);
       text-align: center;
       color: var(--mf-text-muted);
@@ -603,6 +667,8 @@ export class DashboardPage implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly panelRefs = viewChildren(DashTaskList);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private focusRefreshWhenDone = false;
   private undoSeen = 0;
   private requestId = 0;
   private readonly listIds: Record<ListKind, number> = { unassigned: 0, overdue: 0, dueSoon: 0 };
@@ -640,15 +706,13 @@ export class DashboardPage implements OnInit {
   protected readonly department = computed(() => this.auth.has('Dashboard.ViewDepartment'));
   protected readonly canAssign = computed(() => this.auth.has('Task.Assign'));
 
-  /** The `?tab=` of the address; the tab shown is this one, else the one used last, else Summary. */
+  /** The `?tab=` of the address; the tab shown is this one, else Summary (a plain /dashboard link always opens the page that answers "what needs attention"). */
   private readonly tabParam = toSignal(this.route.queryParamMap.pipe(map((p) => p.get('tab'))), {
     initialValue: this.route.snapshot.queryParamMap.get('tab'),
   });
   protected readonly activeTab = computed<DashboardTab>(() => {
     const fromUrl = this.tabParam();
-    if (isDashboardTab(fromUrl)) return fromUrl;
-    const remembered = this.prefs.tab();
-    return DASHBOARD_TABS.includes(remembered) ? remembered : 'summary';
+    return isDashboardTab(fromUrl) ? fromUrl : 'summary';
   });
 
   /**
@@ -684,6 +748,10 @@ export class DashboardPage implements OnInit {
       },
     ];
   });
+  /** Summary layout: the first list sits beside the tiles, the others (Overdue, Due soon) form a row below. */
+  protected readonly mainPanels = computed(() => this.panels().slice(0, 1));
+  protected readonly morePanels = computed(() => this.panels().slice(1));
+  protected readonly lastKind = computed(() => this.panels().at(-1)?.kind ?? null);
   /** Whether there is anything to refresh: the department figures, or a list of tasks to pick from. */
   protected readonly hasData = computed(() =>
     this.department() ? this.data() !== null : this.panels().length > 0,
@@ -749,7 +817,7 @@ export class DashboardPage implements OnInit {
       const param = this.tabParam();
       const dept = this.department();
       untracked(() => {
-        if (dept && param !== tab) void this.navigateToTab(tab);
+        if (dept && param !== tab) void this.navigateToTab(tab, true);
       });
     });
     // The lists belong to the Summary tab and are read when it is shown (not on the other tabs): arriving on it with older lists reads them.
@@ -778,16 +846,16 @@ export class DashboardPage implements OnInit {
 
   protected selectTab(key: string): void {
     if (!isDashboardTab(key) || key === this.activeTab()) return;
-    this.prefs.setTab(key);
-    void this.navigateToTab(key);
+    // A user's tab change is a history entry (Back returns to the previous tab); only the normalising redirect replaces.
+    void this.navigateToTab(key, false);
   }
 
-  private navigateToTab(tab: DashboardTab): Promise<boolean> {
+  private navigateToTab(tab: DashboardTab, replace: boolean): Promise<boolean> {
     return this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { tab },
       queryParamsHandling: 'merge',
-      replaceUrl: true,
+      replaceUrl: replace,
     });
   }
 
@@ -795,6 +863,12 @@ export class DashboardPage implements OnInit {
     if (!isPeriodKey(value) || value === this.period()) return;
     this.prefs.setPeriod(value as PeriodKey);
     this.refreshNumbers();
+  }
+
+  /** Retry in the failed-refresh banner. When it works the banner (and the focused Retry) goes away, so focus goes back to Refresh. */
+  protected retryRefresh(): void {
+    this.focusRefreshWhenDone = true;
+    this.refresh();
   }
 
   /** The Refresh button: reads everything again now, bypassing the short server cache, and keeps the page (and the focus) where it is. */
@@ -839,6 +913,13 @@ export class DashboardPage implements OnInit {
             this.refreshFailed.set(false);
             this.lastLoadedAt = this.clock.now().getTime();
             if (announce) this.live.set(`Dashboard refreshed. Updated ${this.updated()}.`);
+            if (this.focusRefreshWhenDone) {
+              this.focusRefreshWhenDone = false;
+              afterNextRender(
+                () => this.host.nativeElement.querySelector<HTMLElement>('[data-refresh]')?.focus(),
+                { injector: this.injector },
+              );
+            }
             if (lists) {
               // The lists are part of the Summary tab: read them now when it is shown, else when it is next opened.
               this.summarySeq++;
@@ -851,6 +932,7 @@ export class DashboardPage implements OnInit {
           error: () => {
             if (id !== this.requestId) return;
             this.refreshing.set(false);
+            this.focusRefreshWhenDone = false;
             // A failed background refresh keeps the figures on screen; only a first load shows the error state.
             if (this.data()) this.refreshFailed.set(true);
             else this.state.set('error');

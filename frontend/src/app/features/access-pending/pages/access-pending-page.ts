@@ -14,11 +14,12 @@ import { APP_ENV } from '../../../core/config/app-env';
 import { defaultLandingPath } from '../../../core/auth/guards';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { CopyButton } from '../../../shared/ui/copy-button';
+import { TitleIcon } from '../../../shared/ui/page-header';
 
 /** S21 Access Pending: the only screen a user with zero permissions can reach. */
 @Component({
   selector: 'mf-access-pending-page',
-  imports: [Button, CopyButton, MfDatePipe],
+  imports: [Button, CopyButton, MfDatePipe, TitleIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './access-pending-page.html',
   styleUrl: './access-pending-page.scss',

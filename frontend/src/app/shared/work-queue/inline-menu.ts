@@ -82,39 +82,42 @@ let nextId = 0;
             (input)="onSearch($event)"
           />
         }
-        <div role="menu" class="im-list" [attr.aria-label]="menuLabel()">
-          @if (loading()) {
-            <p class="im-note" role="status">Loading...</p>
-          } @else if (options().length === 0) {
-            <p class="im-note" role="status">{{ emptyText() }}</p>
-          }
-          @for (o of options(); track o.id) {
-            <button
-              type="button"
-              role="menuitemradio"
-              class="im-item"
-              [attr.data-option]="o.id"
-              [attr.aria-checked]="o.selected ? 'true' : 'false'"
-              [attr.aria-disabled]="o.disabled ? 'true' : null"
-              [attr.aria-describedby]="o.reason ? uid + '-r-' + o.id : null"
-              (click)="pick(o)"
-            >
-              <i
-                class="pi"
-                [class.pi-check]="o.selected"
-                aria-hidden="true"
-                style="width: 1rem"
-              ></i>
-              <span>{{ o.label }}</span>
-              @if (o.hint) {
-                <span class="im-hint">{{ o.hint }}</span>
+        <!-- The notes sit outside role="menu": a menu may only contain items (axe aria-required-children). -->
+        @if (loading()) {
+          <p class="im-note" role="status">Loading...</p>
+        } @else if (options().length === 0) {
+          <p class="im-note" role="status">{{ emptyText() }}</p>
+        }
+        @if (options().length > 0) {
+          <div role="menu" class="im-list" [attr.aria-label]="menuLabel()">
+            @for (o of options(); track o.id) {
+              <button
+                type="button"
+                role="menuitemradio"
+                class="im-item"
+                [attr.data-option]="o.id"
+                [attr.aria-checked]="o.selected ? 'true' : 'false'"
+                [attr.aria-disabled]="o.disabled ? 'true' : null"
+                [attr.aria-describedby]="o.reason ? uid + '-r-' + o.id : null"
+                (click)="pick(o)"
+              >
+                <i
+                  class="pi"
+                  [class.pi-check]="o.selected"
+                  aria-hidden="true"
+                  style="width: 1rem"
+                ></i>
+                <span>{{ o.label }}</span>
+                @if (o.hint) {
+                  <span class="im-hint">{{ o.hint }}</span>
+                }
+              </button>
+              @if (o.reason) {
+                <span class="im-reason" [id]="uid + '-r-' + o.id">{{ o.reason }}</span>
               }
-            </button>
-            @if (o.reason) {
-              <span class="im-reason" [id]="uid + '-r-' + o.id">{{ o.reason }}</span>
             }
-          }
-        </div>
+          </div>
+        }
         @if (footnote(); as note) {
           <p class="im-foot" data-menu-note>{{ note }}</p>
         }

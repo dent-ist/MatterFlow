@@ -2,10 +2,10 @@
   <p class="mf-brand">MatterFlow</p>
 
   @if (auth.isDisabled()) {
-    <h1 #heading tabindex="-1">Your account is disabled</h1>
+    <h1 #heading tabindex="-1"><mf-title-icon icon="pi pi-lock" />Your account is disabled</h1>
     <p>Your account is disabled. Contact the administrator.</p>
   } @else {
-    <h1 #heading tabindex="-1">Your access is pending</h1>
+    <h1 #heading tabindex="-1"><mf-title-icon icon="pi pi-lock" />Your access is pending</h1>
     @if (auth.profile(); as p) {
       <p>
         You're signed in as <strong>{{ p.displayName }}</strong>

@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { InputText } from 'primeng/inputtext';
+import { TitleIcon } from '../../../shared/ui/page-header';
 
 @Component({
   selector: 'mf-not-found-page',
-  imports: [RouterLink, InputText],
+  imports: [RouterLink, InputText, TitleIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h1>We couldn't find that.</h1>
+    <h1><mf-title-icon icon="pi pi-compass" />We couldn't find that.</h1>
     <p>The page may have moved, or the link may be wrong.</p>
     <form role="search" (submit)="search($event, q.value)">
       <input
