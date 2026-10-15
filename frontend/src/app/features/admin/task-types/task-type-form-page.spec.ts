@@ -50,6 +50,13 @@ describe('TaskTypeFormPage', () => {
     await settle();
   });
 
+  it('renders when the router leaves parentCrumbs undefined (routes without that data key, e.g. Custom Fields and Task Types)', async () => {
+    fixture.componentRef.setInput('parentCrumbs', undefined);
+    await settle();
+    expect(q('[data-status]').textContent).toContain('Published v1');
+    expect(el().querySelector('nav[aria-label="Breadcrumb"]')).not.toBeNull();
+  });
+
   it('opens the published version read-only with a Create new draft action', async () => {
     expect(q('[data-status]').textContent).toContain('Published v1');
     expect(q('[data-readonly-banner]').textContent).toContain("can't be edited");
