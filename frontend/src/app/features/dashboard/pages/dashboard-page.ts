@@ -39,6 +39,7 @@ import { PERIOD_PRESETS, PeriodKey, isPeriodKey, periodDays, presetOf } from '..
 import { DashboardPrefs, DashboardTab, isDashboardTab } from '../dashboard-prefs';
 import { BarItem, BarList } from '../ui/bar-list';
 import { DashSection } from '../ui/dash-section';
+import { clearedViewParams } from '../swimlane/swimlane-model';
 import { DashSwimlaneTab } from '../ui/dash-swimlane-tab';
 import { DashTab, DashTabs, panelId, tabId } from '../ui/dash-tabs';
 import { DashUsersTab } from '../ui/dash-users-tab';
@@ -121,7 +122,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-page-header heading="Dashboard">
-      @if (hasData()) {
+      @if (hasData() && showHeaderControls()) {
         <div mfActions class="controls">
           <button
             type="button"
@@ -455,7 +456,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                     [id]="panelId('swimlane')"
                     [attr.aria-labelledby]="tabId('swimlane')"
                   >
-                    @defer {
+                    @defer (on immediate) {
                       <mf-dash-swimlane-tab />
                     } @placeholder {
                       <p class="soon-load" role="status">Loading the swimlane board.</p>
@@ -470,7 +471,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                     [id]="panelId('users')"
                     [attr.aria-labelledby]="tabId('users')"
                   >
-                    @defer {
+                    @defer (on immediate) {
                       <mf-dash-users-tab />
                     } @placeholder {
                       <p class="soon-load" role="status">Loading team workload.</p>
@@ -794,6 +795,10 @@ export class DashboardPage implements OnInit {
     this.department() ? this.data() !== null : this.panels().length > 0,
   );
 
+  /** The header's Refresh and "Updated" belong to the summary tabs; the Swimlane tab has its own, and Users none yet. */
+  protected readonly showHeaderControls = computed(
+    () => this.activeTab() !== 'swimlane' && this.activeTab() !== 'users',
+  );
   protected readonly periodCaption = computed(() => presetOf(this.period()).caption);
   protected readonly updated = computed(() => {
     const d = this.data();
@@ -890,7 +895,8 @@ export class DashboardPage implements OnInit {
   private navigateToTab(tab: DashboardTab, replace: boolean): Promise<boolean> {
     return this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { tab },
+      // The Swimlane tab's own parameters (group, sort, filters...) do not follow the person to another tab.
+      queryParams: { tab, ...(tab === 'swimlane' ? {} : clearedViewParams()) },
       queryParamsHandling: 'merge',
       replaceUrl: replace,
     });

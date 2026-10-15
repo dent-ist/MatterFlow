@@ -4,6 +4,7 @@ import { MessageService } from 'primeng/api';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { NEVER, Subject, of, throwError } from 'rxjs';
 import {
+  DashboardBoardClient,
   DashboardClient,
   DashboardSummary,
   PodsClient,
@@ -95,6 +96,33 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
   };
 }
 
+function emptyBoard() {
+  const lane = (status: string, label: string) => ({
+    status,
+    label,
+    count: 0,
+    total: 0,
+    truncated: false,
+    cards: [],
+  });
+  return {
+    timeZone: 'UTC',
+    generatedAtUtc: '2026-10-14T15:42:00Z',
+    completedDays: 7,
+    completedFrom: '2026-10-08',
+    groupBy: 'none',
+    sort: 'priority',
+    laneCap: 200,
+    lanes: [
+      lane('NEW', 'New'),
+      lane('IN_PROGRESS', 'In Progress'),
+      lane('ON_HOLD', 'On Hold'),
+      lane('COMPLETED', 'Completed'),
+    ],
+    groups: [],
+  };
+}
+
 const unassignedRow = aRow({
   taskId: 21,
   taskNumber: 'TSK-21',
@@ -142,6 +170,7 @@ const ALL: Permission[] = [
 describe('DashboardPage', () => {
   let unassignedRows: TaskQueueRow[];
   let getDashboard: ReturnType<typeof vi.fn>;
+  const getDashboardSwimlane = vi.fn(() => of(emptyBoard()));
   let getTaskQueue: ReturnType<typeof vi.fn>;
   let assignTask: ReturnType<typeof vi.fn>;
   let harness: RouterTestingHarness;
@@ -180,6 +209,7 @@ describe('DashboardPage', () => {
         provideRouter([{ path: 'dashboard', component: DashboardPage }]),
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: DashboardClient, useValue: { getDashboard } },
+        { provide: DashboardBoardClient, useValue: { getDashboardSwimlane } },
         { provide: TaskQueueClient, useValue: { getTaskQueue } },
         { provide: TasksClient, useValue: { assignTask } },
         { provide: PodsClient, useValue: {} },
@@ -434,6 +464,41 @@ describe('DashboardPage', () => {
       expect(text(selectedTab(el))).toBe('Users');
       expect(document.activeElement).toBe(selectedTab(el));
       el.remove();
+    });
+
+    it('shows the Swimlane board and the Users placeholder in their own panels, loaded when their tab is chosen', async () => {
+      const el = await open(of(summary()), ALL, '/dashboard?tab=swimlane');
+      expect(text(selectedTab(el))).toBe('Swimlane');
+      expect(el.querySelector('[data-tabpanel="swimlane"] mf-dash-swimlane-tab')).not.toBeNull();
+      expect(el.querySelector('[data-tabpanel="swimlane"]')!.getAttribute('aria-labelledby')).toBe(
+        'mf-dash-tab-swimlane',
+      );
+      // The Swimlane tab brings its own Refresh; the page header's (for the summary figures) steps aside.
+      expect(el.querySelector('mf-page-header [data-refresh]')).toBeNull();
+
+      tabButtons(el)[4].click();
+      await settle();
+      expect(text(selectedTab(el))).toBe('Users');
+      const panel = el.querySelector('[data-tabpanel="users"]')!;
+      expect(text(panel.querySelector('[data-users-soon]'))).toBe('Team workload is coming soon.');
+      expect(el.querySelector('mf-page-header [data-refresh]')).toBeNull();
+      expect(el.querySelector('[data-tabpanel="swimlane"]')).toBeNull();
+
+      tabButtons(el)[0].click();
+      await settle();
+      expect(el.querySelector('mf-page-header [data-refresh]')).not.toBeNull();
+    });
+
+    it('does not carry the Swimlane parameters (group, sort, filters) to another tab', async () => {
+      const el = await open(
+        of(summary()),
+        ALL,
+        '/dashboard?tab=swimlane&group=priority&sort=due&q=acme&mine=true',
+      );
+      expect(TestBed.inject(Router).url).toContain('group=priority');
+      tabButtons(el)[1].click();
+      await settle();
+      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=breakdowns');
     });
 
     it('does not remember the tab: a plain /dashboard link opens Summary even after a visit to Trends', async () => {
