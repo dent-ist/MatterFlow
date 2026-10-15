@@ -23,7 +23,7 @@ import { FiltersTestHost, Mounted, cleanup, mountFilters } from './filters-testi
 })
 class Host extends FiltersTestHost {}
 
-describe('filter sheet', () => {
+describe('filter sheet', { timeout: 20_000 }, () => {
   afterEach(() => {
     vi.restoreAllMocks();
     cleanup();

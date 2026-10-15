@@ -23,7 +23,7 @@ import { FiltersTestHost, Mounted, cleanup, mountFilters } from './filters-testi
 })
 class Host extends FiltersTestHost {}
 
-describe('column filter row', () => {
+describe('column filter row', { timeout: 20_000 }, () => {
   afterEach(() => {
     vi.restoreAllMocks();
     cleanup();

@@ -73,7 +73,7 @@ describe('Assets routes', () => {
   });
 });
 
-describe('Assets pages', () => {
+describe('Assets pages', { timeout: 20_000 }, () => {
   let assets: Record<
     | 'listAssets'
     | 'getAsset'

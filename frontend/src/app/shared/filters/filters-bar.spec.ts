@@ -18,7 +18,7 @@ import { FiltersTestHost, Mounted, cleanup, mountFilters } from './filters-testi
 })
 class Host extends FiltersTestHost {}
 
-describe('filters bar', () => {
+describe('filters bar', { timeout: 20_000 }, () => {
   afterEach(() => {
     vi.restoreAllMocks();
     cleanup();

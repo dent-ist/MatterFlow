@@ -97,6 +97,7 @@ export class ListFilters {
   private storageKey: string;
   private announced: string | null = null;
   private flip = false;
+  private touched = false;
 
   constructor(options: ListFiltersOptions) {
     this.screen = options.screen;
@@ -149,7 +150,7 @@ export class ListFilters {
     });
     this.isDeepLink = computed(() => hasFilterParams(this.defs(), this.params()));
 
-    // The open state is remembered per user; the row also opens by itself when the address carries active filters.
+    // The open state is remembered per user. Once the user has toggled it here, nothing else changes it behind their back.
     this.open.set(readFlag(this.storageKey, this.openByDefault));
     effect(() => {
       const userId = this.auth?.profile()?.userId;
@@ -157,7 +158,7 @@ export class ListFilters {
         this.storageKey = userId
           ? `mf.${this.screen}.filters.open.${userId}`
           : `mf.${this.screen}.filters.open`;
-        if (readFlag(this.storageKey, this.openByDefault)) this.open.set(true);
+        if (!this.touched) this.open.set(readFlag(this.storageKey, this.open()));
       });
     });
     // A link that carries filters (or a change from none to some) shows them in the row. Removing chips never re-opens a closed row.
@@ -262,6 +263,7 @@ export class ListFilters {
       this.sheetOpen.update((v) => !v);
       return;
     }
+    this.touched = true;
     const open = !this.open();
     this.open.set(open);
     writeFlag(this.storageKey, open);

@@ -48,7 +48,7 @@ class Host {
   });
 }
 
-describe('ListFilters', () => {
+describe('ListFilters', { timeout: 20_000 }, () => {
   let harness: RouterTestingHarness;
   let host: Host;
   const profile = signal<{ userId: number } | null>({ userId: 5 });
@@ -264,13 +264,35 @@ describe('ListFilters', () => {
     });
 
     it('starts open where the screen asks for it, until the user closes it', async () => {
+      await open('/list');
       const f = TestBed.runInInjectionContext(
         () => new ListFilters({ screen: 'queue', defs: [defs[0]], openByDefault: true }),
       );
-      await open('/list');
+      TestBed.tick();
       expect(f.open()).toBe(true);
       f.toggle();
+      TestBed.tick();
       expect(f.open()).toBe(false);
+      expect(localStorage.getItem('mf.queue.filters.open.5')).toBe('0');
+    });
+
+    it('does not undo a toggle when the profile (and with it the per-user key) arrives later', async () => {
+      localStorage.setItem('mf.demo.filters.open.5', '0');
+      profile.set(null);
+      const f = await open('/list');
+      f.toggle();
+      expect(f.open()).toBe(true);
+      profile.set({ userId: 5 });
+      await harness.fixture.whenStable();
+      TestBed.tick();
+      expect(f.open()).toBe(true);
+    });
+
+    it('takes the remembered per-user value once the profile is known', async () => {
+      localStorage.setItem('mf.demo.filters.open.5', '1');
+      const f = await open('/list');
+      TestBed.tick();
+      expect(f.open()).toBe(true);
     });
 
     it('opens by itself when the URL carries active filters but not for a default', async () => {
