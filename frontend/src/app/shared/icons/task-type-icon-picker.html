@@ -88,7 +88,7 @@
       data-icon-scroll
     >
       @for (group of groups(); track group.category) {
-        <section class="tip__group" [attr.aria-label]="group.category">
+        <div class="tip__group" role="group" [attr.aria-label]="group.category">
           <h3 class="tip__category">{{ group.category }}</h3>
           <div class="tip__grid">
             @for (icon of group.icons; track icon.key) {
@@ -107,7 +107,7 @@
               </button>
             }
           </div>
-        </section>
+        </div>
       }
     </div>
   </div>
