@@ -218,6 +218,22 @@ describe('dashboard charts', () => {
       );
       fixture.detectChanges();
       expect(el.querySelector('[data-tip]')!.textContent).toContain('Fri, Oct 2');
+
+      // The day is taken from the drawing itself: a drawing that sits to the right of the left edge of its box (offset 220 px) maps
+      // the pointer over ITS middle (x = 220 + 180) to the middle day, not the pointer over the middle of the box.
+      plot.dispatchEvent(new Event('pointerleave'));
+      fixture.detectChanges();
+      vi.spyOn(plot.querySelector('svg')!, 'getBoundingClientRect').mockReturnValue({
+        left: 220,
+        width: 360,
+        top: 0,
+        height: 190,
+      } as DOMRect);
+      plot.dispatchEvent(
+        Object.assign(new Event('pointermove', { bubbles: true }), { clientX: 400 }),
+      );
+      fixture.detectChanges();
+      expect(el.querySelector('[data-tip]')!.textContent).toContain('Fri, Oct 2');
     });
 
     it('marks weekends, and marks today as a partial day only when the series ends today', () => {

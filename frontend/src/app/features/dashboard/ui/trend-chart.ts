@@ -283,8 +283,13 @@ function shortDay(date: string): string {
     .legend a:hover {
       text-decoration: underline;
     }
+    /* The plot box is exactly as wide as the drawing (same aspect ratio as the viewBox), so the pointer position, the cursor line and the
+       tooltip (all in percent of this box) line up with the day under the mouse. A wider box letterboxed the SVG and shifted them. */
     .plot {
       position: relative;
+      width: 100%;
+      max-width: calc(18rem * 360 / 190);
+      margin-inline: auto;
       border-radius: var(--mf-radius);
     }
     .tip {
@@ -539,7 +544,10 @@ export class TrendChart {
   protected onPointer(event: PointerEvent): void {
     const n = this.points().length;
     if (n === 0) return;
-    const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    // Measure the drawing itself (not the surrounding box) so the day under the pointer is the one that is picked.
+    const host = event.currentTarget as HTMLElement;
+    const drawn = host.querySelector('svg')?.getBoundingClientRect();
+    const box = drawn && drawn.width > 0 ? drawn : host.getBoundingClientRect();
     if (box.width <= 0) return;
     const x = ((event.clientX - box.left) / box.width) * W;
     const index = Math.round(((x - LEFT) / (W - LEFT - RIGHT)) * (n - 1));
