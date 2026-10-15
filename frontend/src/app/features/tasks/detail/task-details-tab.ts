@@ -156,6 +156,8 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
           closeAriaLabel="Close without saving"
           [closeOnEscape]="!store.dirty()"
           [mfDialogFocus]="editing()"
+          [focusOnShow]="false"
+          (onShow)="focusTitle()"
           [draggable]="false"
           [resizable]="false"
           [visible]="editing()"
@@ -631,8 +633,18 @@ export class TaskDetailsTab {
     this.formErrors.set([]);
     this.summary.set([]);
     this.store.dirty.set(false);
-    setTimeout(() => document.getElementById('td-title')?.focus());
     void this.loadOptions(t.matter.matterId);
+  }
+
+  /**
+   * Puts the cursor in the Title once the dialog has finished opening, unless the person (or a test) has already moved on to
+   * another field of the form. PrimeNG's own focus-on-show runs after the enter animation and would take focus back from a field
+   * the user already started typing in, which blurred the Assignee picker and closed its list.
+   */
+  protected focusTitle(): void {
+    const active = document.activeElement;
+    if (active && active !== document.body && active.closest('[data-edit-form]')) return;
+    document.getElementById('td-title')?.focus();
   }
 
   private async loadOptions(matterId: number): Promise<void> {

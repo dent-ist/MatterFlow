@@ -55,4 +55,26 @@ describe('DialogFocus', () => {
     other.remove();
     fixture.nativeElement.remove();
   });
+
+  it('finds the opener again when the page re-rendered it while the dialog was open', async () => {
+    const fixture = TestBed.createComponent(Host);
+    document.body.appendChild(fixture.nativeElement);
+    await fixture.whenStable();
+    const opener = fixture.nativeElement.querySelector('#opener') as HTMLButtonElement;
+    opener.focus();
+
+    fixture.componentInstance.open.set(true);
+    await fixture.whenStable();
+    // A save reloads the page's data and replaces the button with a fresh element.
+    const fresh = opener.cloneNode(true) as HTMLButtonElement;
+    opener.replaceWith(fresh);
+    (document.activeElement as HTMLElement | null)?.blur();
+
+    fixture.componentInstance.open.set(false);
+    await fixture.whenStable();
+    await later();
+
+    expect(document.activeElement).toBe(fresh);
+    fixture.nativeElement.remove();
+  });
 });

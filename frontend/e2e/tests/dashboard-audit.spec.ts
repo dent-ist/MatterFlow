@@ -309,7 +309,16 @@ test.describe('Dashboard actions and click-through', () => {
   }) => {
     await page.goto('/dashboard?tab=summary');
     const tabs = page.getByRole('tablist', { name: 'Dashboard views' });
+    // Wait until the page has rendered and the Summary tab is the selected, roving tab stop; arrow keys pressed before the
+    // component is live (parallel load) would go nowhere.
+    await expect(page.locator('[data-group="attention"]')).toBeVisible();
+    await expect(tabs.getByRole('tab', { name: 'Summary' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(tabs.getByRole('tab', { name: 'Summary' })).toHaveAttribute('tabindex', '0');
     await tabs.getByRole('tab', { name: 'Summary' }).focus();
+    await expect(tabs.getByRole('tab', { name: 'Summary' })).toBeFocused();
     await page.keyboard.press('ArrowRight');
     await expect(tabs.getByRole('tab', { name: 'Breakdowns' })).toBeFocused();
     await expect(tabs.getByRole('tab', { name: 'Breakdowns' })).toHaveAttribute('tabindex', '0');

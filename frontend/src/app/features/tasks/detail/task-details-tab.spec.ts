@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 
 vi.setConfig({ testTimeout: 60000 });
+import { By } from '@angular/platform-browser';
+import { Dialog } from 'primeng/dialog';
 import { of } from 'rxjs';
 import { apiError, settle } from '../../../shared/testing/org-testing';
 import { UsersLookupClient } from '../../../api/generated/api-client';
@@ -69,6 +71,30 @@ describe('Details tab', () => {
     expect(q(document.body, '[data-edit-form]')).toBeNull();
     expect(q(el, '[data-view]')).not.toBeNull();
     expect(document.activeElement).toBe(open);
+    el.remove();
+  });
+
+  it('puts the cursor in the Title when Edit opens, but never takes focus back from a field the person moved to (the Assignee list stayed shut)', async () => {
+    const { fixture, el } = await mountTaskPage(aTask());
+    document.body.appendChild(el);
+    await click(fixture, q(el, '[data-edit]'));
+    const waitFor = async (cond: () => boolean): Promise<void> => {
+      for (let i = 0; i < 100 && !cond(); i++) await new Promise((r) => setTimeout(r, 20));
+    };
+    await waitFor(() => document.activeElement?.id === 'td-title');
+    expect(document.activeElement?.id).toBe('td-title');
+
+    // PrimeNG's own focus-on-show runs after the enter animation (jsdom has none) and takes focus from whatever field the person
+    // already moved to; the dialog must leave that to the Title rule above, which yields to a field the person is already in.
+    const dialog = fixture.debugElement
+      .queryAll(By.directive(Dialog))
+      .map((d) => d.componentInstance as Dialog)
+      .find((d) => d.header === 'Edit task details')!;
+    expect(dialog.focusOnShow).toBe(false);
+    const pod = q(document.body, '#td-pod') as HTMLSelectElement;
+    pod.focus();
+    dialog.onShow.emit({});
+    expect(document.activeElement).toBe(pod);
     el.remove();
   });
 

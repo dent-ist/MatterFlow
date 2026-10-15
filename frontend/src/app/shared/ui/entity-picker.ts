@@ -268,7 +268,11 @@ export class EntityPicker implements OnDestroy {
     this.loading.set(true);
     try {
       const found = await this.search()(query.trim());
-      if (id === this.requestId) this.options.set(found);
+      if (id === this.requestId) {
+        this.options.set(found);
+        // The list may have been closed by a blur while the request ran (a dialog moving focus); the person is still typing here.
+        if (this.hasFocus()) this.open.set(true);
+      }
     } catch {
       if (id === this.requestId) this.options.set([]);
     } finally {

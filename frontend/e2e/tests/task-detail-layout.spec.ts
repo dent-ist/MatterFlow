@@ -209,7 +209,9 @@ test.describe('Task detail: single page layout', () => {
     await open.click();
     const dialog = page.getByRole('dialog', { name: 'Edit task details' });
     await expect(dialog).toBeVisible();
-    await dialog.getByLabel('Requestor name (required)').fill('Rita Panel');
+    const requestor = dialog.getByLabel('Requestor name (required)');
+    await requestor.fill('Rita Panel');
+    await expect(requestor).toHaveValue('Rita Panel');
     await dialog.getByRole('button', { name: 'Save changes' }).click();
     await expect(dialog).toBeHidden();
     await expect(page).toHaveURL(new RegExp(`/tasks/${task.taskId}$`));

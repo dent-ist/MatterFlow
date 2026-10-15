@@ -13,6 +13,8 @@ export class DialogFocus {
   readonly open = input<boolean | null | undefined>(false, { alias: 'mfDialogFocus' });
 
   private trigger: HTMLElement | null = null;
+  /** How to find the opener again when the page re-renders it while the dialog is open (a save reloads the page's data). */
+  private triggerSelector: string | null = null;
   private wasOpen = false;
   private observer: MutationObserver | null = null;
 
@@ -29,6 +31,7 @@ export class DialogFocus {
     this.wasOpen = true;
     const active = document.activeElement;
     this.trigger = active instanceof HTMLElement && active !== document.body ? active : null;
+    this.triggerSelector = this.trigger ? selectorFor(this.trigger) : null;
     this.observer?.disconnect();
     // The dialog renders in a portal (document.body), so watch there for the sentinels PrimeNG adds.
     this.observer = new MutationObserver(() => this.cleanSentinels());
@@ -39,14 +42,21 @@ export class DialogFocus {
   private closed(): void {
     if (!this.wasOpen) return;
     this.wasOpen = false;
-    const trigger = this.trigger;
+    const original = this.trigger;
+    const selector = this.triggerSelector;
     this.trigger = null;
+    this.triggerSelector = null;
     setTimeout(() => {
       this.observer?.disconnect();
       this.observer = null;
       // The page may already have moved focus on purpose (for example to the step a dialog link pointed at): leave that alone.
       const active = document.activeElement;
       if (active && active !== document.body && !active.closest('.p-dialog-mask')) return;
+      // The opener may have been replaced by a fresh copy (same id or data attribute) when the page re-rendered after a save.
+      const trigger =
+        original?.isConnected || !selector
+          ? original
+          : (document.querySelector<HTMLElement>(selector) ?? original);
       const target =
         trigger && trigger.isConnected && !trigger.hasAttribute('disabled')
           ? trigger
@@ -65,4 +75,11 @@ export class DialogFocus {
       .querySelectorAll('.p-dialog-mask .p-hidden-focusable[aria-hidden]')
       .forEach((el) => el.removeAttribute('aria-hidden'));
   }
+}
+
+/** A selector that finds an equivalent of `el` again: its id, else its first data-* attribute. */
+function selectorFor(el: HTMLElement): string | null {
+  if (el.id) return `[id="${el.id}"]`;
+  const data = el.getAttributeNames().find((n) => n.startsWith('data-'));
+  return data ? `${el.tagName.toLowerCase()}[${data}]` : null;
 }
