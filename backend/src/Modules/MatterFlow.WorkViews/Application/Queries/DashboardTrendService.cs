@@ -11,7 +11,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// <summary>
 /// Read side of the Dashboard Trends tab (<c>GET /api/v1/dashboard/trend</c>): created and completed per local day for the department and for each
 /// requested Task Type, plus the legend of Task Types with their totals. A fixed number of reads whatever the number of Tasks or types: one read of the
-/// Task Type catalogue and one read per metric of (Task Type, instant) pairs, bucketed into the viewer's local days in memory (the viewer's day edges
+/// Task Type catalogue and one read per metric group (created, completed, tasks with a due date) of (Task Type, instants) rows, bucketed into the viewer's local days in memory (the viewer's day edges
 /// are not UTC days, so SQL cannot group by day). The rules are those of the summary trend, so the <c>all</c> series equals it.
 /// </summary>
 public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, DashboardCache cache)
@@ -46,22 +46,41 @@ public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZ
         var fromUtc = queueClock.StartOfDayUtc(from);
         var tasks = db.Set<WorkTask>().AsNoTracking();
 
-        var created = metric == "completed"
+        var needCreated = metric is null or "created";
+        var needCompleted = metric is null or "completed";
+        var needDue = metric is null or "overdue" or "ontime" or "late";
+        var created = !needCreated
             ? []
             : (await tasks.Where(t => t.CreatedAtUtc >= fromUtc).Select(t => new { t.TaskTypeId, At = t.CreatedAtUtc }).ToListAsync(ct)).Select(r => (r.TaskTypeId, r.At)).ToList();
-        var completed = metric == "created"
+        var completed = !needCompleted
             ? []
             : (await tasks.Where(t => t.Status == TaskStatusCode.Completed && t.StatusChangedAtUtc >= fromUtc).Select(t => new { t.TaskTypeId, At = t.StatusChangedAtUtc }).ToListAsync(ct)).Select(r => (r.TaskTypeId, r.At)).ToList();
 
-        var built = DashboardRules.TrendByTaskType(from, today, created, completed, queueClock.StartOfDayUtc, wanted);
+        // Tasks with a due date that were open at some point of the period: open now, or closed (completed or cancelled) during it. One read, replayed per day in memory.
+        var nowUtc = queueClock.NowUtc;
+        var dueTasks = !needDue
+            ? []
+            : (await tasks
+                .Where(t => (t.DueDate != null || t.DueAtUtc != null) && t.CreatedAtUtc < nowUtc
+                    && (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold || t.StatusChangedAtUtc >= fromUtc))
+                .Select(t => new { t.TaskTypeId, t.CreatedAtUtc, t.DueAtUtc, t.DueDate, t.Status, t.StatusChangedAtUtc })
+                .ToListAsync(ct))
+                .Select(r => new DueTask(r.TaskTypeId, r.CreatedAtUtc, r.DueAtUtc, r.DueDate, r.Status, r.StatusChangedAtUtc))
+                .ToList();
+
+        var built = DashboardRules.TrendByTaskType(from, today, created, completed, dueTasks, queueClock.StartOfDayUtc, nowUtc, wanted);
 
         var types = catalogue
             .Select(t =>
             {
-                var (c, d) = built.Totals.GetValueOrDefault(t.Id);
-                return new DashboardTrendType(t.Id, t.Name, t.IconKey, t.IsActive, c, d, DashboardRules.Created(from) + "&type=" + t.Id, DashboardRules.Completed(from) + "&type=" + t.Id);
+                var n = built.Totals.GetValueOrDefault(t.Id) ?? new TrendTypeTotals(0, 0, 0, 0, 0);
+                return new DashboardTrendType(
+                    t.Id, t.Name, t.IconKey, t.IsActive, n.Created, n.Completed, n.Overdue, n.OnTime, n.Late,
+                    DashboardRules.Created(from) + "&type=" + t.Id,
+                    DashboardRules.Completed(from) + "&type=" + t.Id,
+                    DashboardRules.Overdue + "&type=" + t.Id);
             })
-            .Where(t => t.IsActive || t.Created > 0 || t.Completed > 0)
+            .Where(t => t.IsActive || t.Created > 0 || t.Completed > 0 || t.Overdue > 0)
             .OrderByDescending(t => t.Created).ThenByDescending(t => t.Completed).ThenBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(t => t.Id)
             .ToList();
 
@@ -74,7 +93,8 @@ public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZ
             built.Series,
             types,
             DashboardRules.Created(from),
-            DashboardRules.Completed(from));
+            DashboardRules.Completed(from),
+            DashboardRules.Overdue);
         cache.Set(cacheKey, trend);
         return trend;
     }

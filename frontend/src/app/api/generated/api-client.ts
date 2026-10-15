@@ -11144,11 +11144,23 @@ export interface DashboardTrend {
     timeZone: string;
     generatedAtUtc: string;
     metric: string | undefined;
-    all: DashboardTrendPoint[];
+    all: DashboardTrendDay[];
     byTaskType: DashboardTypeSeries[];
     types: DashboardTrendType[];
     createdQuery: string;
     completedQuery: string;
+    overdueQuery: string;
+
+    [key: string]: any;
+}
+
+export interface DashboardTrendDay {
+    date: string;
+    created: number;
+    completed: number;
+    overdue: number;
+    onTime: number;
+    late: number;
 
     [key: string]: any;
 }
@@ -11168,15 +11180,19 @@ export interface DashboardTrendType {
     isActive: boolean;
     created: number;
     completed: number;
+    overdue: number;
+    onTime: number;
+    late: number;
     createdQuery: string;
     completedQuery: string;
+    overdueQuery: string;
 
     [key: string]: any;
 }
 
 export interface DashboardTypeSeries {
     taskTypeId: number;
-    points: DashboardTrendPoint[];
+    points: DashboardTrendDay[];
 
     [key: string]: any;
 }

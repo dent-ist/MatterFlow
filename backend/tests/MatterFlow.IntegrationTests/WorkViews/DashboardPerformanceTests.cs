@@ -146,9 +146,18 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
         var median = timings.Order().ElementAt(timings.Count / 2);
         output.WriteLine("trend by type ms: " + string.Join(", ", timings) + " statements: " + statements.Count);
         median.ShouldBeLessThan(300, "p50 of the trend by task type at 5,000 Tasks: " + string.Join(", ", timings));
-        statements.Count.ShouldBeLessThanOrEqualTo(3, string.Join("\n---\n", statements)); // catalogue + one read per metric (no read per type)
+        statements.Count.ShouldBeLessThanOrEqualTo(4, string.Join("\n---\n", statements)); // catalogue + created + completed + tasks with a due date (no read per type or per day)
 
-        foreach (var metric in new[] { "created", "completed" })
+        // A full year of overdue snapshots stays as fast.
+        var yearWatch = Stopwatch.StartNew();
+        var year = await OkAsync(await http.GetAsync($"/api/v1/dashboard/trend?periodDays=365&fresh=true&{ids}"));
+        yearWatch.Stop();
+        output.WriteLine("trend 365 days ms: " + yearWatch.ElapsedMilliseconds);
+        yearWatch.ElapsedMilliseconds.ShouldBeLessThan(600);
+        year.GetProperty("all").GetArrayLength().ShouldBe(365);
+        year.GetProperty("all").EnumerateArray().Max(p => p.GetProperty("overdue").GetInt32()).ShouldBeGreaterThan(0);
+
+        foreach (var metric in new[] { "created", "completed", "overdue", "onTime", "late" })
         {
             var sum = trend.GetProperty("byTaskType").EnumerateArray()
                 .Sum(s => s.GetProperty("points").EnumerateArray().Sum(p => p.GetProperty(metric).GetInt32()));

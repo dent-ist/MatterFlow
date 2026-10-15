@@ -24,7 +24,13 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
     private DatabaseApiFactory _factory = null!;
     private TaskHarness _h = null!;
     private int _alpha, _beta, _gamma, _delta, _epsilon;
-    private readonly List<(int Type, DateTime Created, DateTime? Completed)> _seeds = [];
+    private readonly List<Seed> _seeds = [];
+
+    /// <summary>A seeded Task: completed or cancelled instants make it closed; a due date (date-only) or due moment (timed) makes it count in the due-date lines.</summary>
+    private sealed record Seed(int Type, DateTime Created, DateTime? Completed, DateTime? Cancelled = null, DateOnly? DueDate = null, DateTime? DueAt = null)
+    {
+        public string Status => Completed is not null ? "COMPLETED" : Cancelled is not null ? "CANCELLED" : "NEW";
+    }
 
     public async Task InitializeAsync()
     {
@@ -40,25 +46,39 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
         var admin = await _h.UserIdAsync(DatabaseApiFactory.AdminAccount);
 
         DateTime Ago(double days) => _now.AddDays(-days);
+        DateOnly UtcDay(int offset) => DateOnly.FromDateTime(_now).AddDays(offset);
         _seeds.AddRange(
         [
-            (_alpha, Ago(0.01), null), (_alpha, Ago(0.5), null), (_alpha, Ago(1.2), Ago(0.1)), (_alpha, Ago(3.4), Ago(2.3)), (_alpha, Ago(10.6), null), (_alpha, Ago(40), Ago(35)),
-            (_beta, Ago(0.2), Ago(0.2)), (_beta, Ago(2.5), null), (_beta, Ago(2.7), Ago(1.5)), (_beta, Ago(20.3), null), (_beta, Ago(80), null),
-            (_gamma, Ago(5.5), Ago(4.5)), (_gamma, Ago(6.1), null), (_gamma, Ago(200), null),
+            new(_alpha, Ago(0.01), null), new(_alpha, Ago(0.5), null), new(_alpha, Ago(1.2), Ago(0.1)), new(_alpha, Ago(3.4), Ago(2.3)), new(_alpha, Ago(10.6), null), new(_alpha, Ago(40), Ago(35)),
+            new(_beta, Ago(0.2), Ago(0.2)), new(_beta, Ago(2.5), null), new(_beta, Ago(2.7), Ago(1.5)), new(_beta, Ago(20.3), null), new(_beta, Ago(80), null),
+            new(_gamma, Ago(5.5), Ago(4.5)), new(_gamma, Ago(6.1), null), new(_gamma, Ago(200), null),
+
+            // Tasks with a due date (the due-date lines). Hand-computed totals, true in every zone: overdue now alpha 2, beta 1, gamma 0; on time 2; late 2.
+            new(_alpha, Ago(20), null, DueDate: UtcDay(-10)),                                    // open, date-only, long overdue
+            new(_alpha, Ago(15), null, DueDate: UtcDay(-6), DueAt: Ago(6.3)),                    // open, timed, overdue since 6.3 days ago
+            new(_beta, Ago(9), null),                                                            // ASAP: in no due-date line
+            new(_beta, Ago(12), Ago(7.2), DueDate: UtcDay(-9), DueAt: Ago(8.5)),                 // completed late
+            new(_beta, Ago(12), Ago(5.4), DueDate: UtcDay(-5), DueAt: Ago(5)),                   // completed on time
+            new(_gamma, Ago(14), null, Cancelled: Ago(8), DueDate: UtcDay(-9)),                  // cancelled: closes its overdue
+            new(_gamma, Ago(3), null, DueDate: UtcDay(3)),                                       // not due yet
+            new(_alpha, Ago(30), Ago(2.2), DueDate: UtcDay(-6)),                                 // date-only, completed days after the date: late
+            new(_alpha, Ago(30), Ago(3.5), DueDate: UtcDay(-1)),                                 // date-only, completed before the date: on time
+            new(_beta, Ago(2), null, DueDate: UtcDay(0), DueAt: Ago(0.05)),                      // timed, just passed: overdue now
         ]);
         var text = new System.Text.StringBuilder("SET NOCOUNT ON; DECLARE @v INT = (SELECT TOP 1 WorkflowVersionId FROM dbo.WorkflowVersion WHERE WorkflowDefinitionId = "
             + world.OrderedWorkflowId + " AND Status = 'PUBLISHED'); DECLARE @i BIGINT;\n");
-        string Instant(DateTime v) => "'" + v.ToString("yyyy-MM-ddTHH:mm:ss.fff", CultureInfo.InvariantCulture) + "'";
+        string Instant(DateTime? v) => v is { } x ? "'" + x.ToString("yyyy-MM-ddTHH:mm:ss.fff", CultureInfo.InvariantCulture) + "'" : "NULL";
         var n = 0;
-        foreach (var (type, created, completed) in _seeds)
+        foreach (var seed in _seeds)
         {
-            var status = completed is null ? "NEW" : "COMPLETED";
-            var changed = completed ?? created;
+            var changed = seed.Completed ?? seed.Cancelled ?? seed.Created;
+            var dueDate = seed.DueDate is { } d ? "'" + d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + "'" : "NULL";
+            var sortKey = seed.DueDate is null ? "NULL" : seed.DueAt is { } at ? Instant(at) : "DATEADD(MILLISECOND, 86399999, CAST(" + dueDate + " AS DATETIME2(3)))";
             text.Append("INSERT dbo.WorkflowInstance (WorkflowVersionId, IsOrdered) VALUES (@v, 1); SET @i = SCOPE_IDENTITY();\n")
-                .Append("INSERT dbo.Task (MatterId, TaskTypeId, WorkflowInstanceId, Title, PriorityId, StatusCode, RequestorName, StatusChangedAt, CompletedAt, CreatedAt, CreatedByUserId) VALUES (")
-                .Append(CultureInfo.InvariantCulture, $"{world.MatterId}, {type}, @i, N'T{n++}', {priority}, '{status}', N'Requestor', {Instant(changed)}, ")
-                .Append(completed is null ? "NULL" : Instant(changed))
-                .Append(CultureInfo.InvariantCulture, $", {Instant(created)}, {admin});\n");
+                .Append("INSERT dbo.Task (MatterId, TaskTypeId, WorkflowInstanceId, Title, PriorityId, StatusCode, RequestorName, DueDate, DueAtUtc, DueSortKey, StatusChangedAt, CompletedAt, CreatedAt, CreatedByUserId) VALUES (")
+                .Append(CultureInfo.InvariantCulture, $"{world.MatterId}, {seed.Type}, @i, N'T{n++}', {priority}, '{seed.Status}', N'Requestor', {dueDate}, {Instant(seed.DueAt)}, {sortKey}, {Instant(changed)}, ")
+                .Append(seed.Completed is null ? "NULL" : Instant(changed))
+                .Append(CultureInfo.InvariantCulture, $", {Instant(seed.Created)}, {admin});\n");
         }
 
         await _h.ExecuteAsync(text.ToString());
@@ -235,5 +255,119 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
         (await RawAsync(string.Empty, viewer)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         var manager = await _h.UserWithAsync(@"KE\trendfull", "Task.View", "Dashboard.ViewDepartment");
         (await TrendAsync(client: manager)).GetProperty("all").GetArrayLength().ShouldBe(30);
+    }
+
+    // ---- due-date lines: expectations written independently of the service (a snapshot instant per day, the viewer's local date for date-only dues)
+
+    private static DateTime StartOfDayUtc(string zone, DateOnly date) =>
+        TimeZoneInfo.ConvertTimeToUtc(date.ToDateTime(TimeOnly.MinValue), TimeZoneInfo.FindSystemTimeZoneById(zone));
+
+    private bool OverdueAt(Seed s, DateTime snap, string zone)
+    {
+        if (s.DueDate is null || s.Created >= snap)
+            return false;
+        if ((s.Completed ?? s.Cancelled) is { } closed && closed < snap)
+            return false;
+        return s.DueAt is { } at ? at < snap : LocalDate(zone, snap) > s.DueDate;
+    }
+
+    private bool? OnTime(Seed s, string zone)
+    {
+        if (s.Completed is not { } done || s.DueDate is null)
+            return null;
+        return s.DueAt is { } at ? done <= at : LocalDate(zone, done) <= s.DueDate;
+    }
+
+    [Theory]
+    [InlineData(NewYork)]
+    [InlineData(Kiritimati)]
+    [InlineData(PagoPago)]
+    public async Task Overdue_is_an_end_of_day_snapshot_and_on_time_and_late_split_the_completions_in_the_viewers_days(string zone)
+    {
+        const int days = 30;
+        var today = LocalDate(zone, _now);
+        var first = today.AddDays(1 - days);
+        var trend = await TrendAsync($"periodDays={days}&taskTypeIds={_alpha}&taskTypeIds={_beta}&taskTypeIds={_gamma}", zone);
+
+        int[] ExpectedOverdue(Func<Seed, bool> where) => [.. Enumerable.Range(0, days).Select(i =>
+        {
+            var day = first.AddDays(i);
+            var snap = day == today ? _now : StartOfDayUtc(zone, day.AddDays(1));
+            return _seeds.Where(where).Count(s => OverdueAt(s, snap, zone));
+        })];
+
+        int[] ExpectedCompleted(Func<Seed, bool> where, bool onTime) => [.. Enumerable.Range(0, days).Select(i =>
+            _seeds.Where(where).Count(s => OnTime(s, zone) == onTime && LocalDate(zone, s.Completed!.Value) == first.AddDays(i)))];
+
+        Column(trend.GetProperty("all"), "overdue").ShouldBe(ExpectedOverdue(_ => true));
+        Column(trend.GetProperty("all"), "onTime").ShouldBe(ExpectedCompleted(_ => true, true));
+        Column(trend.GetProperty("all"), "late").ShouldBe(ExpectedCompleted(_ => true, false));
+
+        foreach (var series in trend.GetProperty("byTaskType").EnumerateArray())
+        {
+            var id = series.GetProperty("taskTypeId").GetInt32();
+            var points = series.GetProperty("points");
+            Column(points, "overdue").ShouldBe(ExpectedOverdue(s => s.Type == id), "overdue of type " + id);
+            Column(points, "onTime").ShouldBe(ExpectedCompleted(s => s.Type == id, true), "on time of type " + id);
+            Column(points, "late").ShouldBe(ExpectedCompleted(s => s.Type == id, false), "late of type " + id);
+        }
+
+        // The per-type series add up to All for every due-date measure.
+        foreach (var measure in new[] { "overdue", "onTime", "late" })
+        {
+            var sum = new int[days];
+            foreach (var series in trend.GetProperty("byTaskType").EnumerateArray())
+                for (var i = 0; i < days; i++)
+                    sum[i] += Column(series.GetProperty("points"), measure)[i];
+            sum.ShouldBe(Column(trend.GetProperty("all"), measure), measure);
+        }
+    }
+
+    [Theory]
+    [InlineData(NewYork)]
+    [InlineData(Kiritimati)]
+    [InlineData(PagoPago)]
+    public async Task Hand_computed_due_date_totals_hold_in_every_zone_and_today_equals_the_summary_overdue_count_and_the_queue(string zone)
+    {
+        var trend = await TrendAsync("periodDays=30", zone);
+        var types = trend.GetProperty("types").EnumerateArray().ToDictionary(t => t.GetProperty("id").GetInt32());
+
+        // Overdue now: alpha (date-only 10 days back, timed 6 days back), beta (timed, just passed); not the cancelled, future, ASAP or closed ones.
+        types[_alpha].GetProperty("overdue").GetInt32().ShouldBe(2);
+        types[_beta].GetProperty("overdue").GetInt32().ShouldBe(1);
+        types[_gamma].GetProperty("overdue").GetInt32().ShouldBe(0);
+        // Completed on time: beta (5.4 days ago, due 5 days ago) and alpha (date-only, a day early); late: beta (7.2, due 8.5 ago... after it) and alpha (date-only, days late).
+        types.Values.Sum(t => t.GetProperty("onTime").GetInt32()).ShouldBe(2);
+        types.Values.Sum(t => t.GetProperty("late").GetInt32()).ShouldBe(2);
+
+        var all = trend.GetProperty("all");
+        all[29].GetProperty("overdue").GetInt32().ShouldBe(3);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/dashboard");
+        request.Headers.Add("X-Time-Zone", zone);
+        var summary = await OkAsync(await _h.Admin.SendAsync(request));
+        summary.GetProperty("overdue").GetProperty("count").GetInt32().ShouldBe(3);
+
+        foreach (var t in types.Values.Where(t => t.GetProperty("overdue").GetInt32() > 0))
+        {
+            var page = await OkAsync(await _h.Admin.GetAsync("/api/v1/task-queue?pageSize=1&" + t.GetProperty("overdueQuery").GetString()));
+            page.GetProperty("total").GetInt32().ShouldBe(t.GetProperty("overdue").GetInt32());
+        }
+
+        // A closed Task stops being overdue: the cancelled one (due 9 days back, cancelled 8 days back) was overdue only on those days.
+        var gamma = await TrendAsync($"periodDays=30&taskTypeIds={_gamma}", zone);
+        var overdue = Column(gamma.GetProperty("byTaskType")[0].GetProperty("points"), "overdue");
+        overdue[29].ShouldBe(0);
+        overdue.Max().ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task A_due_date_metric_computes_only_that_measure()
+    {
+        var overdue = await TrendAsync("metric=overdue");
+        overdue.GetProperty("all").EnumerateArray().Sum(p => p.GetProperty("created").GetInt32() + p.GetProperty("completed").GetInt32()).ShouldBe(0);
+        Column(overdue.GetProperty("all"), "overdue").Max().ShouldBeGreaterThan(0);
+        foreach (var metric in new[] { "ontime", "late" })
+            (await TrendAsync("metric=" + metric)).GetProperty("metric").GetString().ShouldBe(metric);
     }
 }

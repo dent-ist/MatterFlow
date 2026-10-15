@@ -140,6 +140,8 @@ public class DashboardRulesTests
         DashboardRules.Trend(today, today, [], [], d => d.ToDateTime(TimeOnly.MinValue)).Count.ShouldBe(1);
     }
 
+    private static readonly DateTime Now = new(2026, 10, 14, 20, 0, 0, DateTimeKind.Utc);
+
     [Fact]
     public void TrendByTaskType_splits_the_days_per_type_and_the_types_add_up_to_the_all_series()
     {
@@ -157,7 +159,7 @@ public class DashboardRulesTests
         ];
         (int, DateTime)[] completed = [(2, new DateTime(2026, 10, 13, 5, 0, 0)), (1, new DateTime(2026, 10, 14, 6, 0, 0))];
 
-        var built = DashboardRules.TrendByTaskType(from, today, created, completed, Start, [2, 9]);
+        var built = DashboardRules.TrendByTaskType(from, today, created, completed, [], Start, Now, [2, 9]);
 
         built.All.Select(p => p.Created).ShouldBe([2, 0, 2]);
         built.All.Select(p => p.Completed).ShouldBe([0, 1, 1]);
@@ -165,24 +167,63 @@ public class DashboardRulesTests
         built.Series[0].Points.Select(p => p.Created).ShouldBe([1, 0, 1]);
         built.Series[0].Points.Select(p => p.Completed).ShouldBe([0, 1, 0]);
         built.Series[1].Points.Count.ShouldBe(3, "a requested type without Tasks still has a zero line");
-        built.Series[1].Points.ShouldAllBe(p => p.Created == 0 && p.Completed == 0);
-        built.Totals[1].ShouldBe((1, 1));
-        built.Totals[2].ShouldBe((2, 1));
-        built.Totals[3].ShouldBe((1, 0));
+        built.Series[1].Points.ShouldAllBe(p => p.Created == 0 && p.Completed == 0 && p.Overdue == 0);
+        built.Totals[1].ShouldBe(new TrendTypeTotals(1, 1, 0, 0, 0));
+        built.Totals[2].ShouldBe(new TrendTypeTotals(2, 1, 0, 0, 0));
+        built.Totals[3].ShouldBe(new TrendTypeTotals(1, 0, 0, 0, 0));
         built.Totals.ContainsKey(9).ShouldBeFalse();
 
         // The all series is exactly the existing trend for the same instants.
         var plain = DashboardRules.Trend(from, today, created.Select(c => c.Item2), completed.Select(c => c.Item2), Start);
-        built.All.ShouldBe(plain);
+        built.All.Select(p => (p.Date, p.Created, p.Completed)).ShouldBe(plain.Select(p => (p.Date, p.Created, p.Completed)));
+    }
+
+    [Fact]
+    public void TrendByTaskType_overdue_is_an_end_of_day_snapshot_and_on_time_and_late_split_the_completions()
+    {
+        // Viewer five hours behind UTC; period 12 to 14 Oct, now 14 Oct 15:00 local (20:00 UTC). Snapshots: 13 Oct 05:00, 14 Oct 05:00, now.
+        DateTime Start(DateOnly d) => d.ToDateTime(TimeOnly.MinValue).AddHours(5);
+        var from = new DateOnly(2026, 10, 12);
+        var today = new DateOnly(2026, 10, 14);
+        var old = new DateTime(2026, 10, 1, 12, 0, 0, DateTimeKind.Utc);
+        DateTime U(int day, int hour) => new(2026, 10, day, hour, 0, 0, DateTimeKind.Utc);
+        DateOnly D(int day) => new(2026, 10, day);
+
+        DueTask[] due =
+        [
+            new(1, old, null, D(12), TaskStatusCode.New, old), // A: date-only 12 Oct, open: overdue from the end of the 12th on
+            new(1, old, null, D(14), TaskStatusCode.New, old), // B: due today (date-only): not overdue yet
+            new(2, old, null, D(13), TaskStatusCode.InProgress, old), // C: date-only 13 Oct: overdue on the 13th's snapshot (equal edge) and today
+            new(2, old, U(13, 10), D(13), TaskStatusCode.OnHold, old), // D: timed 13 Oct 10:00 UTC, open: passed before the 13th's end
+            new(1, old, U(12, 12), D(12), TaskStatusCode.Completed, U(13, 12)), // E: completed late; overdue only on the 12th
+            new(1, old, U(13, 12), D(13), TaskStatusCode.Completed, U(13, 10)), // F: completed on time; never overdue
+            new(1, old, null, null, TaskStatusCode.New, old), // G: ASAP: in no line
+            new(1, old, null, D(12), TaskStatusCode.Cancelled, U(13, 4)), // H: cancelled before the first snapshot
+            new(1, U(14, 6), U(12, 0), D(12), TaskStatusCode.New, U(14, 6)), // I: created today after its due: overdue only now
+            new(1, old, null, D(14), TaskStatusCode.Completed, U(14, 12)), // J: date-only 14 Oct, completed on the 14th: on time
+            new(1, old, null, D(13), TaskStatusCode.Completed, U(14, 12)), // K: date-only 13 Oct, completed on the 14th: late, overdue on the 13th's snapshot
+        ];
+
+        var built = DashboardRules.TrendByTaskType(from, today, [], [], due, Start, Now, [1, 2]);
+
+        built.All.Select(p => p.Overdue).ShouldBe([2, 4, 4]);
+        built.Series[0].Points.Select(p => p.Overdue).ShouldBe([2, 2, 2]);
+        built.Series[1].Points.Select(p => p.Overdue).ShouldBe([0, 2, 2]);
+        built.All.Select(p => p.OnTime).ShouldBe([0, 1, 1]);
+        built.All.Select(p => p.Late).ShouldBe([0, 1, 1]);
+        built.Totals[1].ShouldBe(new TrendTypeTotals(0, 0, 2, 2, 2));
+        built.Totals[2].ShouldBe(new TrendTypeTotals(0, 0, 2, 0, 0));
+        for (var i = 0; i < 3; i++)
+            built.Series.Sum(s => s.Points[i].Overdue).ShouldBe(built.All[i].Overdue, "per-type overdue adds up to All on day " + i);
     }
 
     [Fact]
     public void TrendByTaskType_handles_an_empty_period_and_no_requested_types()
     {
         var day = new DateOnly(2026, 10, 14);
-        var single = DashboardRules.TrendByTaskType(day, day, [], [], d => d.ToDateTime(TimeOnly.MinValue), []);
+        var single = DashboardRules.TrendByTaskType(day, day, [], [], [], d => d.ToDateTime(TimeOnly.MinValue), Now, []);
         single.All.Count.ShouldBe(1);
         single.Series.ShouldBeEmpty();
-        DashboardRules.TrendByTaskType(day.AddDays(1), day, [], [], d => d.ToDateTime(TimeOnly.MinValue), [4]).All.ShouldBeEmpty();
+        DashboardRules.TrendByTaskType(day.AddDays(1), day, [], [], [], d => d.ToDateTime(TimeOnly.MinValue), Now, [4]).All.ShouldBeEmpty();
     }
 }

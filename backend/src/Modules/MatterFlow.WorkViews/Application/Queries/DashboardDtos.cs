@@ -88,7 +88,7 @@ public class DashboardTrendQuery
     [FromQuery(Name = "taskTypeIds")]
     public int[]? TaskTypeIds { get; init; }
 
-    /// <summary><c>created</c> or <c>completed</c>: compute only that count (the other is 0 in every point). Omitted: both.</summary>
+    /// <summary><c>created</c>, <c>completed</c>, <c>overdue</c>, <c>ontime</c> or <c>late</c>: compute only that count (the others are 0 in every point). Omitted: all.</summary>
     [FromQuery(Name = "metric")]
     public string? Metric { get; init; }
 
@@ -97,8 +97,20 @@ public class DashboardTrendQuery
     public bool Fresh { get; init; }
 }
 
+/// <summary>
+/// One local day of the Trends tab. <c>Overdue</c> is a snapshot (Tasks overdue and not yet closed at the end of that day, or now for today); the other
+/// counts are events of that day. <c>OnTime</c> and <c>Late</c> are Tasks with a due date completed that day on or before / after it.
+/// </summary>
+public sealed record DashboardTrendDay(
+    [property: Required] DateOnly Date,
+    [property: Required] int Created,
+    [property: Required] int Completed,
+    [property: Required] int Overdue,
+    [property: Required] int OnTime,
+    [property: Required] int Late);
+
 /// <summary>The daily series of one Task Type (same days, same bucketing as <see cref="DashboardTrend.All"/>).</summary>
-public sealed record DashboardTypeSeries([property: Required] int TaskTypeId, [property: Required] IReadOnlyList<DashboardTrendPoint> Points);
+public sealed record DashboardTypeSeries([property: Required] int TaskTypeId, [property: Required] IReadOnlyList<DashboardTrendDay> Points);
 
 /// <summary>One Task Type of the Trends legend with its totals for the period and the Task Queue queries that list exactly those Tasks.</summary>
 /// <param name="IconKey">Key of the type's icon in the icon library.</param>
@@ -109,21 +121,26 @@ public sealed record DashboardTrendType(
     [property: Required] bool IsActive,
     [property: Required] int Created,
     [property: Required] int Completed,
+    [property: Required] int Overdue,
+    [property: Required] int OnTime,
+    [property: Required] int Late,
     [property: Required] string CreatedQuery,
-    [property: Required] string CompletedQuery);
+    [property: Required] string CompletedQuery,
+    [property: Required] string OverdueQuery);
 
 /// <summary>
-/// Created and completed per local day for the whole department (<c>all</c>, equal to the trend of the summary) and for each requested Task Type,
+/// Created, completed, overdue, on-time and late per local day for the whole department (<c>all</c>, equal to the trend of the summary) and for each requested Task Type,
 /// plus the legend: every Task Type that has Tasks in the period or is active, largest first. Counts only, never per person.
 /// </summary>
-/// <param name="Metric">The metric asked for (<c>created</c> or <c>completed</c>) or null for both; the other count is 0 when set.</param>
+/// <param name="Metric">The metric asked for or null for all; the other counts are 0 when set.</param>
 public sealed record DashboardTrend(
     [property: Required] DashboardPeriod Period,
     [property: Required] string TimeZone,
     [property: Required] DateTime GeneratedAtUtc,
     string? Metric,
-    [property: Required] IReadOnlyList<DashboardTrendPoint> All,
+    [property: Required] IReadOnlyList<DashboardTrendDay> All,
     [property: Required] IReadOnlyList<DashboardTypeSeries> ByTaskType,
     [property: Required] IReadOnlyList<DashboardTrendType> Types,
     [property: Required] string CreatedQuery,
-    [property: Required] string CompletedQuery);
+    [property: Required] string CompletedQuery,
+    [property: Required] string OverdueQuery);

@@ -9351,7 +9351,8 @@
           "byTaskType",
           "types",
           "createdQuery",
-          "completedQuery"
+          "completedQuery",
+          "overdueQuery"
         ],
         "type": "object",
         "properties": {
@@ -9374,7 +9375,7 @@
           "all": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DashboardTrendPoint"
+              "$ref": "#/components/schemas/DashboardTrendDay"
             }
           },
           "byTaskType": {
@@ -9394,6 +9395,46 @@
           },
           "completedQuery": {
             "type": "string"
+          },
+          "overdueQuery": {
+            "type": "string"
+          }
+        }
+      },
+      "DashboardTrendDay": {
+        "required": [
+          "date",
+          "created",
+          "completed",
+          "overdue",
+          "onTime",
+          "late"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "created": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onTime": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "late": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -9427,8 +9468,12 @@
           "isActive",
           "created",
           "completed",
+          "overdue",
+          "onTime",
+          "late",
           "createdQuery",
-          "completedQuery"
+          "completedQuery",
+          "overdueQuery"
         ],
         "type": "object",
         "properties": {
@@ -9453,10 +9498,25 @@
             "type": "integer",
             "format": "int32"
           },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onTime": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "late": {
+            "type": "integer",
+            "format": "int32"
+          },
           "createdQuery": {
             "type": "string"
           },
           "completedQuery": {
+            "type": "string"
+          },
+          "overdueQuery": {
             "type": "string"
           }
         }
@@ -9475,7 +9535,7 @@
           "points": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DashboardTrendPoint"
+              "$ref": "#/components/schemas/DashboardTrendDay"
             }
           }
         }
