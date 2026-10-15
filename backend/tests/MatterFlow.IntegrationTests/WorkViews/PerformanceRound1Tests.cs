@@ -19,7 +19,8 @@ namespace MatterFlow.IntegrationTests.WorkViews;
 [Collection(SqlServerCollection.Name)]
 public sealed class PerformanceRound1Tests(SqlServerFixture sql)
 {
-    private static readonly string[] DepartmentViewer = [.. AllTaskPermissions, "Dashboard.ViewDepartment"];
+    private static readonly string[] DepartmentViewer =
+        [.. AllTaskPermissions, "Dashboard.View", "Dashboard.ViewSummary", "Dashboard.ViewBreakdowns", "Dashboard.ViewTrends"];
 
     // ---- dashboard output cache (SEC2-03)
 
@@ -42,17 +43,17 @@ public sealed class PerformanceRound1Tests(SqlServerFixture sql)
     }
 
     [Fact]
-    public async Task A_user_without_the_department_right_never_gets_an_answer_cached_for_someone_with_it()
+    public async Task A_user_with_fewer_tabs_never_gets_an_answer_cached_for_someone_with_more()
     {
         await using var factory = new DatabaseApiFactory(await sql.CreateDatabaseAsync(), dashboardCacheSeconds: 60);
         var h = new TaskHarness(factory);
         var world = await h.CreateWorldAsync();
         var viewer = await h.UserWithAsync(@"KE\dept", DepartmentViewer);
-        var plain = await h.UserWithAsync(@"KE\plain", AllTaskPermissions);
+        var plain = await h.UserWithAsync(@"KE\plain", [.. AllTaskPermissions, "Dashboard.View", "Dashboard.ViewTrends"]);
         await h.CreateTaskAsync(world);
 
         (await OpenCountAsync(viewer)).ShouldBe(1);
-        (await OpenCountAsync(plain)).ShouldBe(0, "SEC2-05: department figures stay empty without Dashboard.ViewDepartment");
+        (await OpenCountAsync(plain)).ShouldBe(0, "the Summary figures stay empty without Dashboard.ViewSummary");
     }
 
     [Fact]

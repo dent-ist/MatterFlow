@@ -27,9 +27,9 @@ public sealed class WorkloadOptions
 }
 
 /// <summary>
-/// Short server-side output cache of the dashboard (security review 2, SEC2-03). One entry per user, period, time zone, local date and department
-/// visibility, so a cached answer is never shown to someone else, never crosses a date change and never outlives a change of the caller's
-/// Dashboard.ViewDepartment right by more than the cache time. Entries expire after <see cref="DashboardOptions.CacheSeconds"/>; expired entries are
+/// Short server-side output cache of the dashboard (security review 2, SEC2-03). One entry per user, period, time zone, local date and visible
+/// sections (Summary, Breakdowns, Trends), so a cached answer is never shown to someone else, never crosses a date change and never outlives a change of the caller's
+/// Dashboard tab rights by more than the cache time. Entries expire after <see cref="DashboardOptions.CacheSeconds"/>; expired entries are
 /// dropped when new ones are added. Only successful results are stored. The cache is per process (each node of a farm keeps its own).
 /// </summary>
 public sealed class DashboardCache(IOptions<DashboardOptions> options, TimeProvider time)

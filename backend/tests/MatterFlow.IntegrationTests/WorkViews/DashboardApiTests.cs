@@ -300,11 +300,13 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task The_trend_is_empty_without_the_department_permission()
+    public async Task The_trend_is_only_in_the_payload_with_Dashboard_ViewTrends()
     {
-        var viewer = await _h.UserWithAsync(@"KE	rendless", "Task.View");
-        var d = await OkAsync(await viewer.GetAsync("/api/v1/dashboard"));
-        d.GetProperty("trend").GetArrayLength().ShouldBe(0);
+        var summaryOnly = await _h.UserWithAsync(@"KE\notrend", "Dashboard.View", "Dashboard.ViewSummary");
+        (await OkAsync(await summaryOnly.GetAsync("/api/v1/dashboard"))).GetProperty("trend").GetArrayLength().ShouldBe(0);
+
+        var trends = await _h.UserWithAsync(@"KE\trender", "Dashboard.View", "Dashboard.ViewTrends");
+        (await OkAsync(await trends.GetAsync("/api/v1/dashboard"))).GetProperty("trend").GetArrayLength().ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -335,33 +337,82 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
             await ProblemAsync(await _h.Admin.GetAsync("/api/v1/dashboard?" + bad), HttpStatusCode.BadRequest, "VALIDATION_FAILED");
     }
 
-    [Fact]
-    public async Task Sec2_05_department_figures_need_Dashboard_ViewDepartment()
+    private static readonly string[] SummaryNames = ["open", "unassigned", "overdue", "onHold", "dueSoon", "asapOpen", "completed", "created"];
+
+    private static int Total(JsonElement d, string list) => d.GetProperty(list).EnumerateArray().Sum(i => i.GetProperty("count").GetInt32());
+
+    private static void ShouldHaveNoSummary(JsonElement d)
     {
-        var admin = await DashboardAsync();
-        admin.GetProperty("open").GetProperty("count").GetInt32().ShouldBeGreaterThan(0);
-
-        var viewer = await _h.UserWithAsync(@"KE\deptless", "Task.View");
-        var d = await OkAsync(await viewer.GetAsync("/api/v1/dashboard"));
-        foreach (var name in new[] { "open", "unassigned", "overdue", "onHold", "dueSoon", "asapOpen", "completed", "created" })
+        foreach (var name in SummaryNames)
             d.GetProperty(name).GetProperty("count").GetInt32().ShouldBe(0, name);
-        foreach (var name in new[] { "byTaskType" })
+    }
+
+    private static void ShouldHaveNoBreakdowns(JsonElement d)
+    {
+        foreach (var name in new[] { "byTaskType", "byPriority", "byStatus", "aging" })
             d.GetProperty(name).GetArrayLength().ShouldBe(0, name);
-        d.GetProperty("byPriority").EnumerateArray().Sum(i => i.GetProperty("count").GetInt32()).ShouldBe(0);
-        d.GetProperty("byStatus").EnumerateArray().Sum(i => i.GetProperty("count").GetInt32()).ShouldBe(0);
-        d.GetProperty("aging").EnumerateArray().Sum(i => i.GetProperty("count").GetInt32()).ShouldBe(0);
-
-        // The removed blocks are gone from the payload for everyone.
-        foreach (var gone in new[] { "byPod", "recentlyCreated", "recentlyCompleted", "mine" })
-            d.TryGetProperty(gone, out _).ShouldBeFalse(gone);
-        (await OkAsync(await _techA.GetAsync("/api/v1/dashboard"))).GetProperty("open").GetProperty("count").GetInt32().ShouldBe(0);
-
-        var manager = await _h.UserWithAsync(@"KE\deptfull", "Task.View", "Dashboard.ViewDepartment");
-        (await OkAsync(await manager.GetAsync("/api/v1/dashboard"))).GetProperty("open").GetProperty("count").GetInt32().ShouldBe(admin.GetProperty("open").GetProperty("count").GetInt32());
     }
 
     [Fact]
-    public async Task A_user_without_task_view_gets_403_and_an_empty_database_gives_zeros()
+    public async Task The_payload_only_carries_the_sections_the_callers_tab_permissions_allow()
+    {
+        var admin = await DashboardAsync();
+        var open = admin.GetProperty("open").GetProperty("count").GetInt32();
+        open.ShouldBeGreaterThan(0);
+        admin.GetProperty("byStatus").GetArrayLength().ShouldBe(3);
+        admin.GetProperty("trend").GetArrayLength().ShouldBeGreaterThan(0);
+
+        // Summary only: the headline numbers, nothing else.
+        var summary = await OkAsync(await (await _h.UserWithAsync(@"KE\onlysummary", "Dashboard.View", "Dashboard.ViewSummary")).GetAsync("/api/v1/dashboard"));
+        summary.GetProperty("open").GetProperty("count").GetInt32().ShouldBe(open);
+        summary.GetProperty("created").GetProperty("count").GetInt32().ShouldBe(admin.GetProperty("created").GetProperty("count").GetInt32());
+        ShouldHaveNoBreakdowns(summary);
+        summary.GetProperty("trend").GetArrayLength().ShouldBe(0);
+
+        // Breakdowns only: the charts, no counts and no trend.
+        var breakdowns = await OkAsync(await (await _h.UserWithAsync(@"KE\onlybreakdowns", "Dashboard.View", "Dashboard.ViewBreakdowns")).GetAsync("/api/v1/dashboard"));
+        ShouldHaveNoSummary(breakdowns);
+        Total(breakdowns, "byStatus").ShouldBe(open);
+        Total(breakdowns, "byPriority").ShouldBe(open);
+        Total(breakdowns, "aging").ShouldBe(open);
+        breakdowns.GetProperty("byTaskType").GetArrayLength().ShouldBeGreaterThan(0);
+        breakdowns.GetProperty("trend").GetArrayLength().ShouldBe(0);
+
+        // Trends only.
+        var trends = await OkAsync(await (await _h.UserWithAsync(@"KE\onlytrends", "Dashboard.View", "Dashboard.ViewTrends")).GetAsync("/api/v1/dashboard"));
+        ShouldHaveNoSummary(trends);
+        ShouldHaveNoBreakdowns(trends);
+        trends.GetProperty("trend").GetArrayLength().ShouldBe(admin.GetProperty("trend").GetArrayLength());
+
+        // The removed blocks are gone from the payload for everyone.
+        foreach (var gone in new[] { "byPod", "recentlyCreated", "recentlyCompleted", "mine" })
+            summary.TryGetProperty(gone, out _).ShouldBeFalse(gone);
+    }
+
+    [Fact]
+    public async Task The_dashboard_needs_Dashboard_View_and_at_least_one_of_the_three_payload_tabs()
+    {
+        // Task.View alone (what everybody had before) is no longer enough; neither is a tab permission without Dashboard.View.
+        var taskViewOnly = await _h.UserWithAsync(@"KE\deptless", "Task.View");
+        (await taskViewOnly.GetAsync("/api/v1/dashboard")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await _techA.GetAsync("/api/v1/dashboard")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+
+        var viewOnly = await _h.UserWithAsync(@"KE\viewonly", "Dashboard.View");
+        (await viewOnly.GetAsync("/api/v1/dashboard")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+
+        var tabWithoutView = await _h.UserWithAsync(@"KE\tabnoview", "Dashboard.ViewSummary", "Dashboard.ViewBreakdowns", "Dashboard.ViewTrends");
+        (await tabWithoutView.GetAsync("/api/v1/dashboard")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+
+        // Swimlane and Users do not open the shared summary payload.
+        var boardTabs = await _h.UserWithAsync(@"KE\boardtabs", "Dashboard.View", "Dashboard.ViewSwimlane", "Dashboard.ViewUsers");
+        (await boardTabs.GetAsync("/api/v1/dashboard")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+
+        var any = await _h.UserWithAsync(@"KE\anytab", "Dashboard.View", "Dashboard.ViewTrends");
+        (await any.GetAsync("/api/v1/dashboard")).StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task A_user_without_the_dashboard_permissions_gets_403_and_an_empty_database_gives_zeros()
     {
         var none = await _h.UserWithAsync(@"KE\nobody", "Matter.View");
         (await none.GetAsync("/api/v1/dashboard")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);

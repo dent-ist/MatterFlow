@@ -53,7 +53,9 @@
         }
 
         <div class="mf-fld">
-          <label for="role-name">Name <span class="mf-req">(required)</span></label>
+          <label for="role-name" class="mf-label"
+            >Name <span class="mf-req">(required)</span></label
+          >
           <input
             id="role-name"
             type="text"
@@ -73,7 +75,7 @@
           }
         </div>
         <div class="mf-fld">
-          <label for="role-description">Description</label>
+          <label for="role-description" class="mf-label">Description</label>
           <input
             id="role-description"
             type="text"
@@ -87,16 +89,22 @@
         </div>
 
         <div class="mf-tools">
-          <mf-search-box
-            inputId="role-permission-search"
-            label="Search permissions"
-            placeholder="Permission code or description"
-            [value]="filter()"
-            (searchChange)="filter.set($event)"
-          />
+          <div class="mf-fld">
+            <label for="role-permission-search" class="mf-label">Search permissions</label>
+            <input
+              id="role-permission-search"
+              type="search"
+              class="mf-control"
+              autocomplete="off"
+              placeholder="Permission code or description"
+              data-search
+              [value]="filter()"
+              (input)="filter.set($any($event.target).value)"
+            />
+          </div>
           @if (!locked()) {
             <div class="mf-fld">
-              <label for="role-copy">Copy from role</label>
+              <label for="role-copy" class="mf-label">Copy from role</label>
               <select
                 id="role-copy"
                 class="mf-control"

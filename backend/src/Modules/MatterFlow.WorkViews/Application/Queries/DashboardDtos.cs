@@ -52,8 +52,9 @@ public sealed record DashboardAgingBucket(
 public sealed record DashboardPeriod([property: Required] int Days, [property: Required] DateOnly From, [property: Required] DateOnly To);
 
 /// <summary>
-/// The operational Dashboard (baseline 12.2). Department-wide for everyone with Task.View (addendum E); overdue and the period are evaluated in
-/// the viewer's time zone (addendum M). Counts are operational facts, never billing or staff productivity measures.
+/// The operational Dashboard (baseline 12.2). Department-wide (addendum E) but redacted by the caller's Dashboard tab permissions: the headline counts
+/// (Open ... Created) need <c>Dashboard.ViewSummary</c>, ByTaskType, ByPriority, ByStatus and Aging need <c>Dashboard.ViewBreakdowns</c>, Trend needs
+/// <c>Dashboard.ViewTrends</c>; what the caller may not see is zero or an empty list. Overdue and the period are evaluated in the viewer's time zone (addendum M). Counts are operational facts, never billing or staff productivity measures.
 /// </summary>
 public sealed record DashboardSummary(
     [property: Required] DashboardPeriod Period,

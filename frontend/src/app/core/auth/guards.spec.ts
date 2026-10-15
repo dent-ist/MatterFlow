@@ -88,6 +88,18 @@ describe('pendingOnlyGuard', () => {
   });
 });
 
+describe('Dashboard route guard', () => {
+  it('sends users without Dashboard.View to /403, even with a tab permission', async () => {
+    setup(withPermissions('Dashboard.ViewSummary'));
+    expect(await run(permissionGuard('Dashboard.View'))).toBe('/403');
+  });
+
+  it('lets users with Dashboard.View through', async () => {
+    setup(withPermissions('Dashboard.View'));
+    expect(await run(permissionGuard('Dashboard.View'))).toBe(true);
+  });
+});
+
 describe('landingGuard', () => {
   it('goes to My Work for users with work', async () => {
     setup(profileOf({ permissions: ['Task.View'], hasWork: true }));
@@ -99,9 +111,19 @@ describe('landingGuard', () => {
     expect(await run(landingGuard)).toBe('/tasks');
   });
 
-  it('goes to Dashboard without Task.View', async () => {
-    setup(profileOf({ permissions: ['Client.View'] }));
+  it('goes to the Dashboard without Task.View only when the user may open it', async () => {
+    setup(profileOf({ permissions: ['Client.View', 'Dashboard.View'] }));
     expect(await run(landingGuard)).toBe('/dashboard');
+  });
+
+  it('never lands on the Dashboard without Dashboard.View: the first permitted screen instead', async () => {
+    setup(profileOf({ permissions: ['Client.View', 'Asset.View'] }));
+    expect(await run(landingGuard)).toBe('/clients');
+  });
+
+  it('keeps My Work and Task Queue ahead of the Dashboard', async () => {
+    setup(profileOf({ permissions: ['Task.View', 'Dashboard.View', 'Dashboard.ViewSummary'] }));
+    expect(await run(landingGuard)).toBe('/tasks');
   });
 
   it('goes to Access Pending for pending users', async () => {

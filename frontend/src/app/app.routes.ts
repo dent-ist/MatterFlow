@@ -30,6 +30,7 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', canActivate: [landingGuard], children: [] },
       {
         path: 'dashboard',
+        canActivate: [permissionGuard('Dashboard.View')],
         loadChildren: () =>
           import('./features/dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES),
       },

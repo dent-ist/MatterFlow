@@ -174,29 +174,54 @@
   border-radius: var(--mf-radius);
 
   fieldset {
+    display: grid;
+    gap: var(--mf-s2);
+    min-width: 0;
     margin: var(--mf-s3) 0;
+    padding: var(--mf-s2) var(--mf-s3) var(--mf-s3);
     border: 1px solid var(--mf-border);
     border-radius: var(--mf-radius);
   }
-}
 
-/* Labelled field: bold label above a 40 px control (shared look, styles/_forms.scss). */
-.mf-fld {
-  display: grid;
-  gap: var(--mf-s1);
-  max-width: 480px;
-  margin-bottom: var(--mf-s3);
-
-  label {
+  legend {
+    padding: 0 var(--mf-s1);
     font-weight: 600;
   }
 }
 
+/*
+ * The form part of the editor is one 640 px column (like .mf-form-card): every label sits above its control, every control fills the
+ * column, and Search permissions and Copy from role share one row (one column on a phone). Labels use the shared .mf-label (14 px bold).
+ */
+.mf-fld {
+  display: grid;
+  gap: var(--mf-s1);
+  align-content: start;
+  min-width: 0;
+  max-width: 640px;
+  margin-bottom: var(--mf-s3);
+
+  .mf-control {
+    box-sizing: border-box;
+    width: 100%;
+  }
+}
+
 .mf-tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--mf-s4);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--mf-s4);
+  max-width: 640px;
+
+  .mf-fld {
+    margin-bottom: var(--mf-s3);
+  }
+}
+
+@media (max-width: 640px) {
+  .mf-tools {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .mf-perm {
@@ -205,7 +230,7 @@
   align-items: flex-start;
 
   strong {
-    margin-right: var(--mf-s2);
+    display: block;
     font-family: var(--mf-font-mono);
     font-size: var(--mf-fs-sm);
   }
@@ -215,9 +240,14 @@
   color: var(--mf-text-muted);
 }
 
+/* Announces what a dependency or a copy changed; takes no room while empty. */
 .mf-live {
-  min-height: 1.5em;
+  margin: 0;
   color: var(--mf-text-muted);
+
+  &:not(:empty) {
+    margin-bottom: var(--mf-s2);
+  }
 }
 
 .mf-info {

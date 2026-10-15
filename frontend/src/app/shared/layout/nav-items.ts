@@ -15,7 +15,7 @@ export interface NavItem {
 
 /** Left navigation (UX 2.1). Items are hidden, never disabled, without the matching View permission. */
 export const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', icon: 'pi pi-home', path: '/dashboard', permissions: [] },
+  { label: 'Dashboard', icon: 'pi pi-home', path: '/dashboard', permissions: ['Dashboard.View'] },
   { label: 'My Work', icon: 'pi pi-user', path: '/my-work', permissions: ['Task.View'] },
   { label: 'Task Queue', icon: 'pi pi-list-check', path: '/tasks', permissions: ['Task.View'] },
   { label: 'Pod Work', icon: 'pi pi-users', path: '/pods/work', permissions: ['Pod.View'] },

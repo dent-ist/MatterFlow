@@ -12,12 +12,42 @@ export const APP_PATHS = {
   taskQueue: '/tasks',
 } as const;
 
-/** Default landing: My Work if the user has pod/assignments, else Task Queue, else Dashboard (UX 2.2). */
+/** Screens a user can land on when they have no Task.View, in navigation order (first permitted wins). */
+const LANDING_FALLBACKS: readonly { path: string; permissions: Permission[] }[] = [
+  { path: APP_PATHS.dashboard, permissions: ['Dashboard.View'] },
+  { path: '/pods/work', permissions: ['Pod.View'] },
+  { path: '/clients', permissions: ['Client.View'] },
+  { path: '/matters', permissions: ['Matter.View'] },
+  { path: '/projects', permissions: ['Project.View'] },
+  { path: '/assets', permissions: ['Asset.View'] },
+  {
+    path: '/admin',
+    permissions: [
+      'User.View',
+      'User.Manage',
+      'Role.Manage',
+      'Pod.Manage',
+      'Pod.ManageMembers',
+      'TaskType.Manage',
+      'Workflow.Manage',
+      'AssetType.Manage',
+      'CustomField.Manage',
+      'Priority.Manage',
+      'StatusLabel.Manage',
+      'Audit.View',
+    ],
+  },
+];
+
+/**
+ * Default landing: My Work if the user has pod/assignments, else Task Queue (UX 2.2). The Dashboard is not for everyone (Dashboard.View), so it
+ * is only a landing page for people without Task.View who hold it; otherwise the first screen they may open.
+ */
 export function defaultLandingPath(store: AuthStore): string {
   if (store.has('Task.View')) {
     return store.profile()?.hasWork ? APP_PATHS.myWork : APP_PATHS.taskQueue;
   }
-  return APP_PATHS.dashboard;
+  return LANDING_FALLBACKS.find((f) => store.hasAny(f.permissions))?.path ?? APP_PATHS.forbidden;
 }
 
 /**

@@ -263,7 +263,7 @@ Screen IDs map to baseline §19 (item number in brackets). Each spec: purpose, l
 ### S01 Dashboard
 
 **Purpose.** Department overview for oversight; drill-through to filtered Task Queue. Not billing, not staff scoring.
-**Who.** Requires `Dashboard.ViewDepartment` for department figures; users without it see "Your work" tiles only (their own assigned counts) [UX-PROPOSAL].
+**Who.** "The Dashboard is not for everyone": it needs `Dashboard.View` (menu item and route; without it the route is the 403 page and the Dashboard item is hidden), and each tab its own permission: Summary `Dashboard.ViewSummary`, Breakdowns `Dashboard.ViewBreakdowns`, Trends `Dashboard.ViewTrends`, Swimlane `Dashboard.ViewSwimlane`, Users `Dashboard.ViewUsers`. A tab permission only has effect together with `Dashboard.View`.
 
 ```text
 Dashboard                                             Period: [Last 30 days v]
@@ -292,7 +292,7 @@ Dashboard                                             Period: [Last 30 days v]
 - Charts use the categorical palette only for Pod/Type bars; every bar has a text value. Priority and status bars reuse badge colours + labels.
 - No per-person productivity chart, no hours, no revenue.
 **States.** Loading: tile skeletons. Empty (no tasks yet): "No tasks yet. Create the first task." with button (needs `Task.Create`). Error: per-widget inline error with Retry so one failing widget does not blank the page.
-**Permission.** Without `Dashboard.ViewDepartment` the department tiles are replaced by "My open tasks / Due soon / Created by me" tiles.
+**Permission.** Only the permitted tabs are shown; the first permitted tab is the default and a link to a forbidden tab falls back to it. With `Dashboard.View` but no tab permission the page shows a short note ("No Dashboard tab is turned on for your role...") with a link to My Work. The server redacts the data of tabs the person may not see (counts, charts, trend). The Unassigned queue (with `Task.Assign`) and the Overdue and Due soon lists belong to Summary. The post-login landing page is never the Dashboard for people without `Dashboard.View` (My Work or the Task Queue, else the first screen they may open).
 **Refresh.** Manual "Refresh" button and "Updated 10:42 AM" caption; no auto-poll in Phase 1 [UX-PROPOSAL].
 
 **Tabs (epic #68).** The page has five tabs (WAI-ARIA tabs, `?tab=` in the address, never remembered): Summary, Breakdowns, Trends, Swimlane and Users, all for `Dashboard.ViewDepartment`. Swimlane is specified below; Users (team workload) is issue #73.
@@ -403,7 +403,7 @@ By member tab:
   Sam K.     5 open | 0 overdue
   Unassigned 6
 ```
-**Pod selector.** Lists the user's Pod memberships first (Primary Pod preselected if set), then, only for users with `Dashboard.ViewDepartment`/`Pod.View` scope, all other Pods under "Other Pods". Last selection remembered. A Pod with no members shows "No members yet".
+**Pod selector.** Lists the user's Pod memberships first (Primary Pod preselected if set), then, only for users with `Pod.View` scope, all other Pods under "Other Pods". Last selection remembered. A Pod with no members shows "No members yet".
 **Behavior.**
 - "Assign to me" is the lightweight self-assign (ordinary assignment, no separate claim concept). Requires `Task.Assign`. On a NEW task it moves to In Progress and says so in the toast: "Assigned to you. Task moved to In Progress."
 - "Assign to..." opens the assignee picker (any active user; cross-Pod allowed; shows each person's Pods and open count; picker warns "Not a member of Pod A" informationally only, since membership is not a rule [baseline OPEN-12]).
@@ -1217,7 +1217,7 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S01-3 Overdue excludes ASAP, Completed, Cancelled.
 - [ ] UAT-S01-4 Open-by Pod/Type/Priority/Status charts have text values and "View as table".
 - [ ] UAT-S01-5 Recently created/completed lists link to tasks.
-- [ ] UAT-S01-6 Without `Dashboard.ViewDepartment`, only personal tiles show.
+- [ ] UAT-S01-6 Without `Dashboard.View` the Dashboard item is hidden and the route is 403; with it but without a tab permission a note points to My Work; each tab appears only with its own permission.
 - [ ] UAT-S01-7 No staff productivity, billing, or export features.
 - [ ] UAT-S01-8 One failing widget shows its own error with Retry.
 - [ ] UAT-S01-9 Swimlane: four lanes with exact counts, groups (priority, assignee, client / matter tree), sort, filters and the completed window; the board and its choices survive a reload and a copied link.
@@ -1469,7 +1469,8 @@ Internal codes fixed: NEW, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED. Rules (ad
 | `TaskType.Manage` | Task Types and form designer |
 | `Workflow.Manage` | Step Library, Workflow designer |
 | `AssetType.Manage`, `CustomField.Manage`, `Priority.Manage`, `StatusLabel.Manage` | respective admin screens |
-| `Dashboard.ViewDepartment` | Department dashboard |
+| `Dashboard.View` | Dashboard nav item and route (403 without it); a tab permission has no effect without it |
+| `Dashboard.ViewSummary` / `ViewBreakdowns` / `ViewTrends` / `ViewSwimlane` / `ViewUsers` | The Summary, Breakdowns, Trends, Swimlane and Users tabs of the Dashboard (and the matching part of the server payload) |
 | `Audit.View` | Audit Logs; old/new values in Activity |
 
 ## Appendix D: UX proposals and open questions for the product owner
@@ -1483,7 +1484,7 @@ Items tagged [UX-PROPOSAL] above need confirmation. Highest impact:
 6. **Zero as a client/matter number** (`0` -> `00000`): allow?
 7. **Number editing:** is "restricted, audited Change number" acceptable for users with edit permission?
 8. **Asset Type changes:** not versioned in baseline; proposed hide-not-delete behavior on removed fields. Link labels (Source/Destination/Subject/Result) configurable (OPEN-14)?
-9. **Dashboard scope** for users without `Dashboard.ViewDepartment` (personal tiles).
+9. **Dashboard scope**: who gets which tab (`Dashboard.View` plus one permission per tab); whether technicians should see the department counts of Summary or only the unassigned queue.
 10. **Task Activity values** visible only with `Audit.View`?
 11. **Inactive Client** behavior (blocks new Matters?).
 12. **Comment deletion** leaves no tombstone in the thread.

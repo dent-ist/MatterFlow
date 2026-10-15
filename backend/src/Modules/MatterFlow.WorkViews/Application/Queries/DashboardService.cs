@@ -28,9 +28,14 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         var queueClock = QueueClock.Create(clock.UtcNow, timeZone);
         var today = queueClock.Today;
 
-        // The permission is read before the cache so a user who lost (or gained) the department view never sees an answer computed under the other right.
-        var department = permissions.Has(Permissions.Dashboard.ViewDepartment);
-        var cacheKey = $"{me}|{query.PeriodDays}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{(department ? 1 : 0)}";
+        // The rights are read before the cache so a user who lost (or gained) a tab never sees an answer computed under other rights. A tab permission
+        // only has effect together with Dashboard.View. What the caller may not see is not computed: the payload carries zeros and empty lists for it.
+        var canView = permissions.Has(Permissions.Dashboard.View);
+        var showSummary = canView && permissions.Has(Permissions.Dashboard.ViewSummary);
+        var showBreakdowns = canView && permissions.Has(Permissions.Dashboard.ViewBreakdowns);
+        var showTrends = canView && permissions.Has(Permissions.Dashboard.ViewTrends);
+        var sections = (showSummary ? 1 : 0) | (showBreakdowns ? 2 : 0) | (showTrends ? 4 : 0);
+        var cacheKey = $"{me}|{query.PeriodDays}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{sections}";
         if (!query.Fresh && cache.TryGet(cacheKey, out var cached))
             return cached;
 
@@ -44,10 +49,8 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         Expression<Func<WorkTask, bool>> dueSoon = t => t.DueDate != null && t.DueDate <= dueSoonDay;
         var openDueSoon = open.Where(dueSoon).Where(Not(overdue));
 
-        // Department figures need Dashboard.ViewDepartment; without it the caller gets empty department blocks (SEC2-05).
-
-        // Headline counts: one statement with a scalar subquery per number.
-        var head = !department ? null : await tasks.Select(_ => new
+        // Headline counts (Summary tab): one statement with a scalar subquery per number.
+        var head = !showSummary ? null : await tasks.Select(_ => new
         {
             Open = open.Count(),
             Unassigned = open.Count(t => t.AssignedUserId == null),
@@ -59,13 +62,14 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             Created = tasks.Count(t => t.CreatedAtUtc >= fromUtc),
         }).FirstOrDefaultAsync(ct);
 
-        var departmentOpen = department ? open : open.Where(_ => false);
+        // Breakdowns tab: open Tasks by status, priority and type, and their age.
+        var departmentOpen = showBreakdowns ? open : open.Where(_ => false);
         var byStatus = await departmentOpen.GroupBy(t => t.Status).Select(g => new { Status = g.Key, Count = g.Count() }).ToListAsync(ct);
         var byPriority = await departmentOpen.GroupBy(t => t.PriorityId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct);
         var byType = await departmentOpen.GroupBy(t => t.TaskTypeId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct);
 
-        var aging = await AgingAsync(departmentOpen, queueClock, ct);
-        var trend = department ? await TrendAsync(tasks, queueClock, from, fromUtc, ct) : [];
+        IReadOnlyList<DashboardAgingBucket> aging = showBreakdowns ? await AgingAsync(departmentOpen, queueClock, ct) : [];
+        var trend = showTrends ? await TrendAsync(tasks, queueClock, from, fromUtc, ct) : [];
 
         var statusLabels = await db.Set<TaskStatusLabel>().AsNoTracking().ToDictionaryAsync(l => l.StatusCode, l => l.DisplayLabel, ct);
         var priorityRows = await db.Set<Priority>().AsNoTracking().OrderBy(p => p.SortOrder).Select(p => new { p.Id, p.Label, p.IsActive }).ToListAsync(ct);
@@ -75,6 +79,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         string StatusLabel(string code) => statusLabels.GetValueOrDefault(code, code);
 
         var statusItems = new[] { TaskStatusCode.New, TaskStatusCode.InProgress, TaskStatusCode.OnHold }
+            .Where(_ => showBreakdowns)
             .Select(s => new DashboardBreakdownItem(
                 null,
                 s.ToCode(),
@@ -86,6 +91,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
 
         var priorityCounts = byPriority.ToDictionary(p => p.Id, p => p.Count);
         var priorityItems = priorityRows
+            .Where(_ => showBreakdowns)
             .Where(p => p.IsActive || priorityCounts.ContainsKey(p.Id))
             .Select(p => new DashboardBreakdownItem(p.Id, null, p.Label, priorityCounts.GetValueOrDefault(p.Id), DashboardRules.Open("priority=" + p.Id), false))
             .ToList();

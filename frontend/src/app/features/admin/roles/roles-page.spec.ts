@@ -56,12 +56,11 @@ describe('RolesPage', () => {
     await settle();
   };
 
-  /** The shared search box searches on Enter at once (it also searches live after a pause). */
+  /** The permission filter applies as you type. */
   const search = async (value: string): Promise<void> => {
     const input = q<HTMLInputElement>('#role-permission-search');
     input.value = value;
     input.dispatchEvent(new Event('input'));
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await settle();
   };
 
@@ -120,6 +119,46 @@ describe('RolesPage', () => {
 
     expect(q<HTMLInputElement>('[data-perm="Task.Complete"]').checked).toBe(false);
     expect(q('[data-note]').textContent).toContain('Task.Complete was also cleared');
+  });
+
+  it('selecting a Dashboard tab permission selects Dashboard.View; clearing View clears every tab with one short note', async () => {
+    await press('New role');
+    await check('Dashboard.ViewSwimlane', true);
+    expect(q<HTMLInputElement>('[data-perm="Dashboard.View"]').checked).toBe(true);
+    expect(q('[data-note]').textContent).toContain(
+      'Dashboard.View was also selected because Dashboard.ViewSwimlane needs it.',
+    );
+
+    await check('Dashboard.ViewSummary', true);
+    await check('Dashboard.ViewUsers', true);
+    await check('Dashboard.View', false);
+
+    for (const tab of ['Summary', 'Swimlane', 'Users', 'Breakdowns', 'Trends']) {
+      expect(q<HTMLInputElement>(`[data-perm="Dashboard.View${tab}"]`).checked).toBe(false);
+    }
+    expect(q('[data-note]').textContent).toBe(
+      'Dashboard.ViewSummary, Dashboard.ViewSwimlane, Dashboard.ViewUsers were also cleared because they need Dashboard.View.',
+    );
+  });
+
+  it('keeps the Dashboard dependency rule independent of other groups', async () => {
+    await press('New role');
+    await check('Task.View', true);
+    await check('Dashboard.ViewTrends', true);
+    await check('Dashboard.View', false);
+    expect(q<HTMLInputElement>('[data-perm="Task.View"]').checked).toBe(true);
+    expect(q<HTMLInputElement>('[data-perm="Dashboard.ViewTrends"]').checked).toBe(false);
+  });
+
+  it('lines the form fields up in one column: same left edge and width for name, description, search and copy', async () => {
+    await press('New role');
+    const fields = ['[data-name]', '[data-description]', '#role-permission-search', '[data-copy]'];
+    for (const sel of fields) expect(q(sel).classList.contains('mf-control')).toBe(true);
+    // Every control sits in an .mf-fld whose label is a shared .mf-label above it.
+    for (const sel of fields) {
+      const wrap = q(sel).closest('.mf-fld')!;
+      expect(wrap.querySelector('label.mf-label')).not.toBeNull();
+    }
   });
 
   it('filters permissions and copies from another role', async () => {

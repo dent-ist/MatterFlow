@@ -1,10 +1,34 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { AuthStore } from '../../core/auth/auth.store';
+import { Permission } from '../../core/auth/permissions';
 import { DEFAULT_PERIOD, PeriodKey, isPeriodKey } from './dashboard-period';
 
 /** The tabs of the Dashboard, in display order. The value is the `?tab=` query parameter. */
 export const DASHBOARD_TABS = ['summary', 'breakdowns', 'trends', 'swimlane', 'users'] as const;
 export type DashboardTab = (typeof DASHBOARD_TABS)[number];
+
+/**
+ * The permission each tab needs (in addition to Dashboard.View, which opens the Dashboard at all). The page shows only the tabs the person holds;
+ * a new tab is added here and in DASHBOARD_TABS and plugs into the page's tab switch.
+ */
+export const DASHBOARD_TAB_PERMISSIONS: Record<DashboardTab, Permission> = {
+  summary: 'Dashboard.ViewSummary',
+  breakdowns: 'Dashboard.ViewBreakdowns',
+  trends: 'Dashboard.ViewTrends',
+  swimlane: 'Dashboard.ViewSwimlane',
+  users: 'Dashboard.ViewUsers',
+};
+
+export const DASHBOARD_TAB_LABELS: Record<DashboardTab, string> = {
+  summary: 'Summary',
+  breakdowns: 'Breakdowns',
+  trends: 'Trends',
+  swimlane: 'Swimlane',
+  users: 'Users',
+};
+
+/** The tabs that read the shared summary request (the others read their own endpoint). */
+export const SUMMARY_DATA_TABS: readonly DashboardTab[] = ['summary', 'breakdowns', 'trends'];
 
 export function isDashboardTab(value: unknown): value is DashboardTab {
   return typeof value === 'string' && (DASHBOARD_TABS as readonly string[]).includes(value);

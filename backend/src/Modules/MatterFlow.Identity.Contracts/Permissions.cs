@@ -185,11 +185,29 @@ public static class Permissions
         public const string Manage = "StatusLabel.Manage";
     }
 
-    /// <summary>Dashboard permissions.</summary>
+    /// <summary>
+    /// Dashboard permissions. <see cref="View"/> opens the Dashboard (navigation item and route); each tab permission shows one tab and only has effect together
+    /// with <see cref="View"/> (the role editor selects and clears them together, the server requires both).
+    /// </summary>
     public static class Dashboard
     {
-        /// <summary>View the department dashboard.</summary>
-        public const string ViewDepartment = "Dashboard.ViewDepartment";
+        /// <summary>Open the Dashboard. Needed for every tab.</summary>
+        public const string View = "Dashboard.View";
+
+        /// <summary>Summary tab: the headline tiles, the unassigned queue, and the overdue and due soon lists.</summary>
+        public const string ViewSummary = "Dashboard.ViewSummary";
+
+        /// <summary>Breakdowns tab: open Tasks by priority, task type and status, and their age.</summary>
+        public const string ViewBreakdowns = "Dashboard.ViewBreakdowns";
+
+        /// <summary>Trends tab: Tasks created and completed per day.</summary>
+        public const string ViewTrends = "Dashboard.ViewTrends";
+
+        /// <summary>Swimlane tab: the board of every open Task by status.</summary>
+        public const string ViewSwimlane = "Dashboard.ViewSwimlane";
+
+        /// <summary>Users tab: team workload per person.</summary>
+        public const string ViewUsers = "Dashboard.ViewUsers";
     }
 
     /// <summary>Audit permissions.</summary>
@@ -243,7 +261,12 @@ public static class Permissions
         CustomField.Manage,
         Priority.Manage,
         StatusLabel.Manage,
-        Dashboard.ViewDepartment,
+        Dashboard.View,
+        Dashboard.ViewSummary,
+        Dashboard.ViewBreakdowns,
+        Dashboard.ViewTrends,
+        Dashboard.ViewSwimlane,
+        Dashboard.ViewUsers,
         Audit.View,
     ];
 }

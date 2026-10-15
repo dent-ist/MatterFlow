@@ -88,7 +88,8 @@ Source: `architecture.md` section 6 (catalog 6.3, pipeline 6.1, policies 6.5, CS
 | | POST/PUT /asset-link-roles | `AssetType.Manage` (assumed) | 201/200 | Ownership of this permission is not stated: FND-03 |
 | Views | GET /views/my-work | `Task.View` | 200 | |
 | | GET /views/pod-work | `Task.View` and `Pod.View` | 200 | Which Pods may be selected: FND-16 |
-| | GET /views/dashboard | `Task.View`; department scope needs `Dashboard.ViewDepartment` | 200 | Without it: personal figures only, not 403 (UAT-S01-6) |
+| | GET /dashboard | `Dashboard.View` and any of `Dashboard.ViewSummary`, `ViewBreakdowns`, `ViewTrends`; the payload is redacted per tab permission | 200 | Without them: 403; a tab permission without `Dashboard.View`: 403; sections the caller may not see are zero/empty (UAT-S01-6) |
+| | GET /dashboard/swimlane, /dashboard/workload | `Dashboard.View` + `Dashboard.ViewSwimlane`, `Dashboard.View` + `Dashboard.ViewUsers` | 200 | Either missing: 403 |
 | Search | GET /search | at least one View permission; per-type groups gated | 200 | PM-X-08 |
 | | GET /search/{type} | that type's View permission | 200 | |
 | Intake | POST /intake/parse-email | `Task.Create` | 200 | Also 413 `PAYLOAD_TOO_LARGE`, 415, 400 `EMAIL_PARSE_FAILED` after permission |

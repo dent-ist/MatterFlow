@@ -159,13 +159,19 @@ const soonRow = aRow({
   isAsap: false,
 });
 
-const ALL: Permission[] = [
-  'Task.View',
-  'Dashboard.ViewDepartment',
-  'Task.Create',
-  'Task.Assign',
-  'Pod.View',
+const TABS: Permission[] = [
+  'Dashboard.ViewSummary',
+  'Dashboard.ViewBreakdowns',
+  'Dashboard.ViewTrends',
+  'Dashboard.ViewSwimlane',
+  'Dashboard.ViewUsers',
 ];
+/** Every Dashboard right (the Director). */
+const DASH: Permission[] = ['Dashboard.View', ...TABS];
+/** The three tabs that read the summary payload. */
+const DATA_TABS: Permission[] = ['Dashboard.View', ...TABS.slice(0, 3)];
+
+const ALL: Permission[] = ['Task.View', ...DASH, 'Task.Create', 'Task.Assign', 'Pod.View'];
 
 describe('DashboardPage', () => {
   let unassignedRows: TaskQueueRow[];
@@ -592,57 +598,113 @@ describe('DashboardPage', () => {
     });
   });
 
-  describe('without Dashboard.ViewDepartment', () => {
-    it('shows no tabs and no department figures, the friendly note with a link to My Work, and no summary request', async () => {
-      const el = await open(of(summary()), ['Task.View']);
+  describe('permissions', () => {
+    const tabLabels = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll('[role="tab"]')).map((t) => text(t));
+    const selected = (el: HTMLElement) =>
+      text(el.querySelector('[role="tab"][aria-selected="true"]'));
+
+    it('with Dashboard.View but no tab permission shows the friendly note with a link to My Work, no tabs and no requests', async () => {
+      const el = await open(of(summary()), ['Task.View', 'Dashboard.View']);
       expect(el.querySelector('[role="tablist"]')).toBeNull();
       expect(el.querySelector('[data-group]')).toBeNull();
       expect(el.querySelector('[data-error], [data-empty]')).toBeNull();
-      expect(text(el.querySelector('[data-limited-note]'))).toBe(
-        'Department figures need the department dashboard permission; ask a Pod Lead or a Director if you need them. Your assigned tasks are in My Work.',
+      expect(text(el.querySelector('[data-no-tabs-note]'))).toBe(
+        'No Dashboard tab is turned on for your role. Ask an administrator to add one (Summary, Breakdowns, Trends, Swimlane or Users) to your role. Your assigned tasks are in My Work.',
       );
-      expect(el.querySelector('[data-limited-note] a')!.getAttribute('href')).toBe('/my-work');
-      // Nothing to pick from without Task.Assign: no lists, no refresh controls, no calls at all.
-      expect(el.querySelector('[data-panel]')).toBeNull();
+      expect(text(el.querySelector('[data-no-tabs-note]'))).not.toContain('Department figures');
+      expect(el.querySelector('[data-no-tabs-note] a')!.getAttribute('href')).toBe('/my-work');
       expect(el.querySelector('[data-refresh]')).toBeNull();
       expect(getDashboard).not.toHaveBeenCalled();
       expect(getTaskQueue).not.toHaveBeenCalled();
       expect(TestBed.inject(Router).url).toBe('/dashboard');
     });
 
-    it('with Task.Assign shows only the Unassigned queue (organisation wide, assignable) and the note', async () => {
-      const el = await open(of(summary()), ['Task.View', 'Task.Assign'], '/dashboard?tab=trends');
-      expect(el.querySelector('[data-limited-note]')).not.toBeNull();
-      const kinds = Array.from(el.querySelectorAll('[data-panel]')).map((p) =>
-        p.getAttribute('data-panel'),
-      );
-      expect(kinds).toEqual(['unassigned']);
+    it('a tab permission without Dashboard.View shows nothing (the route guard sends such a user to 403)', async () => {
+      const el = await open(of(summary()), ['Task.View', 'Dashboard.ViewSummary']);
       expect(el.querySelector('[role="tablist"]')).toBeNull();
+      expect(el.querySelector('[data-no-tabs-note]')).not.toBeNull();
       expect(getDashboard).not.toHaveBeenCalled();
-      expect(
-        el
-          .querySelector<HTMLAnchorElement>('[data-panel="unassigned"] [data-view-all]')!
-          .getAttribute('href'),
-      ).toBe(
-        '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true&sort=priorityAge&dir=asc',
-      );
-      expect(el.querySelector('[data-panel="unassigned"] [data-assign-me]')).not.toBeNull();
-      // No period control: nothing here uses it. The Refresh button is there, with a time.
-      expect(el.querySelector('select[data-period]')).toBeNull();
-      expect(el.querySelector('[data-refresh]')).not.toBeNull();
-      expect(text(el.querySelector('[data-updated]'))).toContain('Updated Oct 14, 2026, 3:45 PM');
-      // The address is left alone (no ?tab= is added for a page without tabs).
-      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends');
     });
 
-    it('refreshes the queue with the button and announces it', async () => {
-      const el = await open(of(summary()), ['Task.View', 'Task.Assign']);
-      expect(getTaskQueue).toHaveBeenCalledTimes(1);
+    it('shows only the permitted tabs; the first one is the default and the address follows', async () => {
+      const el = await open(of(summary()), [
+        'Task.View',
+        'Dashboard.View',
+        'Dashboard.ViewTrends',
+        'Dashboard.ViewBreakdowns',
+      ]);
+      expect(tabLabels(el)).toEqual(['Breakdowns', 'Trends']);
+      expect(selected(el)).toBe('Breakdowns');
+      expect(el.querySelector('[data-tabpanel="breakdowns"]')).not.toBeNull();
+      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=breakdowns');
+    });
+
+    it('a deep link to a forbidden tab falls back to the first permitted tab', async () => {
+      const el = await open(
+        of(summary()),
+        ['Task.View', 'Dashboard.View', 'Dashboard.ViewSummary', 'Dashboard.ViewTrends'],
+        '/dashboard?tab=swimlane',
+      );
+      expect(tabLabels(el)).toEqual(['Summary', 'Trends']);
+      expect(selected(el)).toBe('Summary');
+      expect(el.querySelector('[data-tabpanel="swimlane"]')).toBeNull();
+      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=summary');
+    });
+
+    it('Swimlane and Users only: no summary request, the board tab opens at once', async () => {
+      const el = await open(
+        of(summary()),
+        ['Dashboard.View', 'Dashboard.ViewSwimlane', 'Dashboard.ViewUsers'],
+        '/dashboard?tab=users',
+      );
+      expect(tabLabels(el)).toEqual(['Swimlane', 'Users']);
+      expect(selected(el)).toBe('Users');
+      expect(el.querySelector('[data-tabpanel="users"]')).not.toBeNull();
+      expect(getDashboard).not.toHaveBeenCalled();
+      expect(el.querySelector('[data-refresh]')).toBeNull();
+    });
+
+    it('Summary tab with Task.Assign shows the Unassigned queue; without it only Overdue and Due soon', async () => {
+      let el = await open(of(summary()), [
+        'Task.View',
+        'Task.Assign',
+        'Dashboard.View',
+        'Dashboard.ViewSummary',
+      ]);
+      expect(
+        Array.from(el.querySelectorAll('[data-panel]')).map((p) => p.getAttribute('data-panel')),
+      ).toEqual(['unassigned', 'overdue', 'dueSoon']);
+      TestBed.resetTestingModule();
+      el = await open(of(summary()), ['Task.View', 'Dashboard.View', 'Dashboard.ViewSummary']);
+      expect(
+        Array.from(el.querySelectorAll('[data-panel]')).map((p) => p.getAttribute('data-panel')),
+      ).toEqual(['overdue', 'dueSoon']);
+    });
+
+    it('Breakdowns or Trends only do not read the task lists', async () => {
+      await open(of(summary()), [
+        'Task.View',
+        'Task.Assign',
+        'Dashboard.View',
+        'Dashboard.ViewBreakdowns',
+      ]);
+      expect(getDashboard).toHaveBeenCalledTimes(1);
+      expect(getTaskQueue).not.toHaveBeenCalled();
+    });
+
+    it('refreshes the Summary lists with the button and announces it', async () => {
+      const el = await open(of(summary()), [
+        'Task.View',
+        'Task.Assign',
+        'Dashboard.View',
+        'Dashboard.ViewSummary',
+      ]);
+      const before = getTaskQueue.mock.calls.length;
       el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
       await settle();
-      expect(getTaskQueue).toHaveBeenCalledTimes(2);
+      expect(getTaskQueue.mock.calls.length).toBeGreaterThan(before);
       expect(text(el.querySelector('[data-dash-live]'))).toContain('Dashboard refreshed');
-      expect(getDashboard).not.toHaveBeenCalled();
     });
   });
 
@@ -694,7 +756,7 @@ describe('DashboardPage', () => {
   });
 
   it('shows the Unassigned queue only to people who may assign, and then with the assignee editor', async () => {
-    const el = await open(of(summary()), ['Task.View', 'Dashboard.ViewDepartment']);
+    const el = await open(of(summary()), ['Task.View', ...DASH]);
     expect(el.querySelector('[data-panel="unassigned"]')).toBeNull();
     expect(
       Array.from(el.querySelectorAll('[data-panel]')).map((p) => p.getAttribute('data-panel')),
@@ -1009,13 +1071,13 @@ describe('DashboardPage', () => {
       created: count(0, 'createdFrom=2026-09-15'),
       completed: count(0, 'status=COMPLETED&completedFrom=2026-09-15'),
     });
-    // Without Dashboard.ViewDepartment the server returns zeros for the department: that must not read as "no tasks".
-    let el = await open(of(empty), ['Task.View']);
+    // Without Dashboard.ViewSummary the server returns zeros for the counts: that must not read as "no tasks".
+    let el = await open(of(empty), ['Task.View', 'Dashboard.View', 'Dashboard.ViewTrends']);
     expect(el.querySelector('[data-empty]')).toBeNull();
-    expect(el.querySelector('[data-limited-note]')).not.toBeNull();
+    expect(el.querySelector('[role="tablist"]')).not.toBeNull();
 
     TestBed.resetTestingModule();
-    el = await open(of(empty), ['Task.View', 'Dashboard.ViewDepartment']);
+    el = await open(of(empty), ['Task.View', ...DATA_TABS]);
     expect(el.querySelector('[data-empty]')!.textContent).toContain('No open tasks');
     // A quiet period is not "no tasks ever": the period can be widened right there.
     expect(el.querySelector('[data-empty] select[data-period]')).not.toBeNull();
@@ -1023,7 +1085,7 @@ describe('DashboardPage', () => {
     expect(el.querySelector('a[href="/tasks/new"]')).toBeNull();
 
     TestBed.resetTestingModule();
-    el = await open(of(empty), ['Task.View', 'Task.Create', 'Dashboard.ViewDepartment']);
+    el = await open(of(empty), ['Task.View', 'Task.Create', ...DATA_TABS]);
     expect(el.querySelector('a[href="/tasks/new"]')!.textContent).toContain(
       'Create the first task',
     );

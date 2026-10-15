@@ -154,8 +154,20 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     };
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/');
-    expect(navLabels(document.body)).toEqual(['Dashboard', 'My Work', 'Task Queue', 'Clients']);
+    expect(navLabels(document.body)).toEqual(['My Work', 'Task Queue', 'Clients']);
     expect(document.body.textContent).not.toContain('Create task');
+  });
+
+  it('shows the Dashboard item only with Dashboard.View', async () => {
+    configure('technician');
+    const stub = TestBed.inject(MeApi) as StubMeApi;
+    stub.scenarios['technician'] = {
+      ...stub.scenarios['technician'],
+      permissions: ['Task.View', 'Dashboard.View'],
+    };
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/');
+    expect(navLabels(document.body)).toEqual(['Dashboard', 'My Work', 'Task Queue']);
   });
 
   it('shows System Admin the Administration section', async () => {

@@ -41,22 +41,24 @@ test.describe('Dashboard drill-through', () => {
     await queue.expectListed(unassigned.title);
   });
 
-  test('a person without the department permission sees no tabs and no figures, only a note with a link to My Work', async ({
+  test('a person with Dashboard.View but no tab permission sees only a note with a link to My Work', async ({
     seed,
     asUser,
   }) => {
-    const role = await seed.role(['Task.View', 'Matter.View', 'Client.View'], 'E2E dash viewer');
-    const user = await seed.user([role.name], 'dashviewer');
+    const role = await seed.role(
+      ['Task.View', 'Matter.View', 'Client.View', 'Dashboard.View'],
+      'E2E dash no tabs',
+    );
+    const user = await seed.user([role.name], 'dashnotabs');
     const page = await asUser(user.username);
     await page.goto('/dashboard?tab=trends');
     await expect(page.getByRole('heading', { name: 'Dashboard', level: 1 })).toBeVisible();
-    await expect(
-      page.getByText(/Department figures need the department dashboard permission/),
-    ).toBeVisible();
+    await expect(page.locator('[data-no-tabs-note]')).toContainText(
+      'No Dashboard tab is turned on for your role',
+    );
     await expect(page.getByRole('tablist')).toHaveCount(0);
     await expect(page.getByRole('group', { name: 'Needs attention' })).toHaveCount(0);
-    await expect(page.getByRole('region', { name: 'Tasks to act on' })).toHaveCount(0);
-    await page.getByRole('link', { name: 'My Work', exact: true }).first().click();
+    await page.locator('[data-no-tabs-note]').getByRole('link', { name: 'My Work' }).click();
     await expect(page).toHaveURL(/\/my-work/);
   });
 });
@@ -204,26 +206,21 @@ test.describe('Dashboard actions and click-through', () => {
     await expect(page.locator('[data-tip]')).not.toContainText('Today so far');
   });
 
-  test('a technician sees the note and, with Task.Assign, only the unassigned queue (no tabs, no figures, no period control)', async ({
+  test('a technician has the Summary tab only, with the unassigned queue (no other tabs)', async ({
     seed,
     asUser,
   }) => {
     const tech = await seed.user(['Data Technician'], 'dashtech');
     const world = await seed.world();
-    await seed.task(world, {
-      title: `Mine late ${uid()}`,
-      assignedUserId: tech.userId,
-      dueDate: dateInZone(FIRM_ZONE, -2),
-    });
     await seed.task(world, { title: `Pool ${uid()}` });
 
     const page = await asUser(tech.username);
     await page.goto('/dashboard');
-    await expect(page.locator('[data-limited-note]')).toContainText('Your assigned tasks are in');
+    await expect(page.getByRole('tab')).toHaveText(['Summary']);
     await expect(page.locator('[data-panel="unassigned"]')).toBeVisible();
-    await expect(page.locator('[data-panel="overdue"]')).toHaveCount(0);
-    await expect(page.getByRole('tablist')).toHaveCount(0);
-    await expect(page.locator('select[data-period]')).toHaveCount(0);
+    await expect(page.locator('[data-no-tabs-note]')).toHaveCount(0);
+    await page.goto('/dashboard?tab=swimlane');
+    await expect(page).toHaveURL(/tab=summary/);
   });
 
   test('overdue and due-soon lists link to the sorted queue', async ({ page, seed }) => {
@@ -307,7 +304,7 @@ test.describe('Dashboard actions and click-through', () => {
     ).toBeVisible();
     // An unknown tab falls back to a valid one.
     await page.goto('/dashboard?tab=nonsense');
-    await expect(page).toHaveURL(/tab=(summary|breakdowns|trends)$/);
+    await expect(page).toHaveURL(/tab=summary$/);
   });
 
   test('tabs work with the keyboard: arrows move and select, Home and End jump, only the selected tab is a tab stop', async ({

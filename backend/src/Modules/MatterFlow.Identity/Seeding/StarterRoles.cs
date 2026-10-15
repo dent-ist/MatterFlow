@@ -42,18 +42,25 @@ public static class StarterRoles
         Permissions.Client.EditNumber, Permissions.Matter.EditNumber, Permissions.Matter.SetActive,
     ];
 
+    /// <summary>Technicians: open the Dashboard and its Summary tab (the unassigned queue to pick work from). Everything else on it is for leads and directors.</summary>
+    private static readonly string[] DashboardSummaryOnly = [Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary];
+
     public static IReadOnlyList<StarterRole> All { get; } =
     [
         new("Director", "Department head: full operational access plus oversight.",
             [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
-                Permissions.User.View, Permissions.Dashboard.ViewDepartment, Permissions.Audit.View]),
-        new("Project Manager", "Manages clients, matters and projects and the department dashboard.",
-            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Dashboard.ViewDepartment]),
-        new("Pod Lead", "Leads a pod: manages pod members and the department dashboard.",
-            [..Everyone, ..ClientMatterEdit, ..ProjectManage, Permissions.Pod.Manage, Permissions.Pod.ManageMembers, Permissions.Dashboard.ViewDepartment]),
+                Permissions.User.View, Permissions.Audit.View,
+                Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewBreakdowns, Permissions.Dashboard.ViewTrends,
+                Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers]),
+        new("Project Manager", "Manages clients, matters and projects; sees the Dashboard summary and swimlane.",
+            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage,
+                Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane]),
+        new("Pod Lead", "Leads a pod: manages pod members; sees the Dashboard summary, swimlane and team workload.",
+            [..Everyone, ..ClientMatterEdit, ..ProjectManage, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
+                Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers]),
         new("Data Technician", "Works tasks and manages projects.",
-            [..Everyone, ..ProjectManage]),
+            [..Everyone, ..ProjectManage, ..DashboardSummaryOnly]),
         new("Data Scientist", "Works tasks; read access to projects.",
-            [..Everyone]),
+            [..Everyone, ..DashboardSummaryOnly]),
     ];
 }

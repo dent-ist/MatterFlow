@@ -207,9 +207,34 @@
       "description": "Manage task status labels"
     },
     {
-      "code": "Dashboard.ViewDepartment",
-      "group": "Oversight",
-      "description": "View the department dashboard"
+      "code": "Dashboard.View",
+      "group": "Dashboard",
+      "description": "Open the Dashboard (the Dashboard menu item and page). Each tab below also needs its own permission"
+    },
+    {
+      "code": "Dashboard.ViewSummary",
+      "group": "Dashboard",
+      "description": "Summary tab: headline counts, the unassigned queue, and the overdue and due soon lists"
+    },
+    {
+      "code": "Dashboard.ViewBreakdowns",
+      "group": "Dashboard",
+      "description": "Breakdowns tab: open tasks by priority, task type and status, and their age"
+    },
+    {
+      "code": "Dashboard.ViewTrends",
+      "group": "Dashboard",
+      "description": "Trends tab: tasks created and completed per day"
+    },
+    {
+      "code": "Dashboard.ViewSwimlane",
+      "group": "Dashboard",
+      "description": "Swimlane tab: every open task on a board by status"
+    },
+    {
+      "code": "Dashboard.ViewUsers",
+      "group": "Dashboard",
+      "description": "Users tab: team workload per person (open, overdue and due soon tasks)"
     },
     {
       "code": "Audit.View",

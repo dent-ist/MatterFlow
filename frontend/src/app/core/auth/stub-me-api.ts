@@ -25,6 +25,8 @@ const TASK_WORK: Permission[] = [
   'Workflow.StepReopen',
 ];
 
+const DASHBOARD_ALL: Permission[] = PERMISSIONS.filter((p) => p.startsWith('Dashboard.'));
+
 const base = { userId: 1, registeredAtUtc: '2026-10-14T13:05:00Z' };
 
 /** Stub users, mirroring the starter roles (architecture 6.3). Key = scenario id. */
@@ -66,7 +68,7 @@ export const STUB_SCENARIOS: Record<string, MeProfile & { label: string }> = {
       'Asset.Link',
       'Pod.Manage',
       'Pod.ManageMembers',
-      'Dashboard.ViewDepartment',
+      ...DASHBOARD_ALL,
       'Audit.View',
     ],
     isSystemAdmin: false,
@@ -89,6 +91,8 @@ export const STUB_SCENARIOS: Record<string, MeProfile & { label: string }> = {
       'Asset.Create',
       'Asset.Edit',
       'Asset.Link',
+      'Dashboard.View',
+      'Dashboard.ViewSummary',
     ],
     isSystemAdmin: false,
     hasWork: true,

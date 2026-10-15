@@ -44,7 +44,12 @@ export const PERMISSIONS = [
   'CustomField.Manage',
   'Priority.Manage',
   'StatusLabel.Manage',
-  'Dashboard.ViewDepartment',
+  'Dashboard.View',
+  'Dashboard.ViewSummary',
+  'Dashboard.ViewBreakdowns',
+  'Dashboard.ViewTrends',
+  'Dashboard.ViewSwimlane',
+  'Dashboard.ViewUsers',
   'Audit.View',
 ] as const;
 

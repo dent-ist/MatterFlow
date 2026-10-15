@@ -29,6 +29,19 @@ describe('AppShell header search', () => {
     return fixture;
   }
 
+  const navLabels = (fixture: { nativeElement: HTMLElement }): string[] =>
+    Array.from(fixture.nativeElement.querySelectorAll('nav a')).map((a) => a.textContent!.trim());
+
+  it('shows the Dashboard menu item only with Dashboard.View (a tab permission alone is not enough)', async () => {
+    expect(navLabels(await create(['Task.View']))).not.toContain('Dashboard');
+    TestBed.resetTestingModule();
+    expect(navLabels(await create(['Task.View', 'Dashboard.ViewSummary']))).not.toContain(
+      'Dashboard',
+    );
+    TestBed.resetTestingModule();
+    expect(navLabels(await create(['Task.View', 'Dashboard.View']))).toContain('Dashboard');
+  });
+
   it('shows the global search combobox to anyone who may view a searchable type', async () => {
     const fixture = await create(['Task.View']);
     const box = fixture.nativeElement.querySelector('mf-global-search input[role=combobox]');

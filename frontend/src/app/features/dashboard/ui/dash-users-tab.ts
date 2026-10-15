@@ -5,7 +5,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
  *
  * TODO(#73): placeholder registered by the Swimlane work (#72) so the tab exists in the tab list; the real
  * implementation (one card per user, coloured by highest open priority, availability) replaces this component.
- * Lazy-loaded through `@defer` in the dashboard page; shown only with Dashboard.ViewDepartment like the other tabs.
+ * Lazy-loaded through `@defer` in the dashboard page; shown only with Dashboard.View + Dashboard.ViewUsers (the page gates the tab).
  */
 @Component({
   selector: 'mf-dash-users-tab',

@@ -1,6 +1,7 @@
 using MatterFlow.Audit.Contracts;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
+using MatterFlow.Identity.Seeding;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Time;
@@ -43,6 +44,10 @@ public sealed class RoleAdministration(DbContext db, IUserAccessInvalidator inva
     public async Task<IReadOnlyList<PermissionGroupDto>> CatalogAsync(CancellationToken ct)
     {
         var rows = await db.Set<Permission>().AsNoTracking().Where(p => p.IsActive).OrderBy(p => p.Id).ToListAsync(ct);
+
+        // Catalog order (contracts/permissions.json), not insertion order: a permission added by a later release keeps its place in its group.
+        var order = PermissionCatalog.Load().Select((c, i) => (c.Code, i)).ToDictionary(x => x.Code, x => x.i, StringComparer.Ordinal);
+        rows = [.. rows.OrderBy(p => order.GetValueOrDefault(p.Code, int.MaxValue)).ThenBy(p => p.Id)];
         return rows
             .GroupBy(p => p.GroupName)
             .Select(g => new PermissionGroupDto(g.Key, g.Select(p => new PermissionItemDto(p.Code, p.Description)).ToArray()))

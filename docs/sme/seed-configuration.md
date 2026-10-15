@@ -90,7 +90,11 @@ The first five roles match the architecture starter matrix (section 6.3); the la
 | Asset Create/Edit/Link | X | X | X | X | X | X | X | - | - | - |
 | Pod.Manage/ManageMembers | X | X | - | X | - | - | - | - | X | - |
 | User.View | X | X | - | - | - | - | - | - | - | X |
-| Dashboard.ViewDepartment | X | X | X | X | - | - | - | X | - | X |
+| Dashboard.View (open the Dashboard) | X | X | X | X | X | X | X | X | - | X |
+| Dashboard.ViewSummary | X | X | X | X | X | X | X | X | - | X |
+| Dashboard.ViewBreakdowns, ViewTrends | X | X | - | - | - | - | - | X | - | X |
+| Dashboard.ViewSwimlane | X | X | X | X | - | - | - | - | - | - |
+| Dashboard.ViewUsers | X | X | - | X | - | - | - | - | - | - |
 | Audit.View | X | X | - | - | - | - | - | - | - | X |
 | TaskType/Workflow/AssetType/CustomField/Priority/StatusLabel.Manage | X | - | - | - | - | - | - | - | X | - |
 | Role.Manage, User.Manage | X | - | - | - | - | - | - | - | - | - |

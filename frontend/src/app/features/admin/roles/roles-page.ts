@@ -18,7 +18,6 @@ import {
 import { NotificationService } from '../../../core/notify/notification.service';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
-import { SearchBox } from '../../../shared/ui/search-box';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 
 /** The permission that every other permission of the same group needs (Assign requires View), if the catalog has one. */
@@ -31,7 +30,7 @@ export function prerequisiteOf(code: string, all: ReadonlySet<string>): string |
 /** S12 Admin: Roles and permissions. List with member counts, editor with the grouped permission matrix. */
 @Component({
   selector: 'mf-roles-page',
-  imports: [Button, ConfirmDialog, ScrollArea, SearchBox],
+  imports: [Button, ConfirmDialog, ScrollArea],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   templateUrl: './roles-page.html',
@@ -161,9 +160,15 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
       codes.delete(code);
       if (code.endsWith('.View')) {
         const group = code.split('.')[0];
-        for (const other of [...codes].filter((c) => c.startsWith(group + '.'))) {
-          codes.delete(other);
-          notes.push(`${other} was also cleared because it needs ${code}.`);
+        // Catalog order, so the note reads the same however the boxes were ticked.
+        const cleared = [...this.allCodes()].filter(
+          (c) => codes.has(c) && c.startsWith(group + '.'),
+        );
+        for (const other of cleared) codes.delete(other);
+        if (cleared.length === 1) {
+          notes.push(`${cleared[0]} was also cleared because it needs ${code}.`);
+        } else if (cleared.length > 1) {
+          notes.push(`${cleared.join(', ')} were also cleared because they need ${code}.`);
         }
       }
     }

@@ -35,9 +35,17 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { priorityColors } from '../../../shared/ui/priority-badge';
-import { LIST_ORDER, ListKind, OPEN_UNASSIGNED_QUERY, queueArgsFor } from '../dashboard-links';
+import { LIST_ORDER, ListKind, queueArgsFor } from '../dashboard-links';
 import { PERIOD_PRESETS, PeriodKey, isPeriodKey, periodDays, presetOf } from '../dashboard-period';
-import { DashboardPrefs, DashboardTab, isDashboardTab } from '../dashboard-prefs';
+import {
+  DASHBOARD_TABS,
+  DASHBOARD_TAB_LABELS,
+  DASHBOARD_TAB_PERMISSIONS,
+  DashboardPrefs,
+  DashboardTab,
+  SUMMARY_DATA_TABS,
+  isDashboardTab,
+} from '../dashboard-prefs';
 import { BarItem, BarList } from '../ui/bar-list';
 import { DashSection } from '../ui/dash-section';
 import { clearedViewParams } from '../swimlane/swimlane-model';
@@ -98,8 +106,9 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
  * a history entry and a plain /dashboard link opens Summary): Summary (Needs attention, Overview, the unassigned queue with inline assignment, Overdue and Due soon),
  * Breakdowns (open tasks by priority, task type and status, and their age) and Trends (created and completed per day). All three read
  * one shared summary request; only the Summary tab also reads the task lists, and only when it is shown. Everything that counts tasks is
- * a link to `/tasks` carrying the query the API computed for that number. Department figures need `Dashboard.ViewDepartment`; everyone
- * else gets the unassigned queue (with Task.Assign) and a pointer to My Work. The page refreshes itself every five minutes while visible
+ * a link to `/tasks` carrying the query the API computed for that number. The Dashboard needs `Dashboard.View` and each tab its own
+ * `Dashboard.View<Tab>` permission: only permitted tabs are shown (the first one is the default; a link to a forbidden tab falls back to it), and with
+ * none the page says so and points to My Work. The page refreshes itself every five minutes while visible
  * without moving the page. Operational counts only: no billing, hours or per-person scores.
  */
 @Component({
@@ -200,23 +209,18 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       </div>
     </ng-template>
 
-    @if (!department()) {
-      <!-- Without the department view: no tabs, only what this person may see and a pointer to My Work. -->
-      <p class="note" data-limited-note>
+    @if (visibleTabs().length === 0) {
+      <!-- Dashboard.View without any tab permission: nothing to show but a pointer. -->
+      <p class="note" data-no-tabs-note>
         <i class="pi pi-info-circle" aria-hidden="true"></i>
         <span>
-          Department figures need the department dashboard permission; ask a Pod Lead or a Director
-          if you need them. Your assigned tasks are in
-          <a routerLink="/my-work">My Work</a>.
+          No Dashboard tab is turned on for your role. Ask an administrator to add one (Summary,
+          Breakdowns, Trends, Swimlane or Users) to your role.
+          @if (canSeeMyWork()) {
+            Your assigned tasks are in <a routerLink="/my-work" data-my-work-link>My Work</a>.
+          }
         </span>
       </p>
-      @if (panels().length > 0) {
-        <mf-dash-section heading="Tasks to act on" name="lists">
-          <ng-container
-            *ngTemplateOutlet="listsGrid; context: { $implicit: panels(), narrow: true }"
-          />
-        </mf-dash-section>
-      }
     } @else {
       @switch (state()) {
         @case ('loading') {
@@ -449,45 +453,61 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                     </mf-dash-section>
                   </div>
                 }
-                @case ('swimlane') {
-                  <div
-                    class="panel"
-                    role="tabpanel"
-                    data-tabpanel="swimlane"
-                    [id]="panelId('swimlane')"
-                    [attr.aria-labelledby]="tabId('swimlane')"
-                  >
-                    @defer (on immediate) {
-                      <mf-dash-swimlane-tab />
-                    } @placeholder {
-                      <p class="soon-load" role="status">Loading the swimlane board.</p>
-                    }
-                  </div>
-                }
-                @case ('users') {
-                  <div
-                    class="panel"
-                    role="tabpanel"
-                    data-tabpanel="users"
-                    [id]="panelId('users')"
-                    [attr.aria-labelledby]="tabId('users')"
-                  >
-                    @defer (on immediate) {
-                      <mf-dash-users-tab />
-                    } @placeholder {
-                      <p class="soon-load" role="status">Loading team workload.</p>
-                    }
-                  </div>
+                @default {
+                  <ng-container *ngTemplateOutlet="boardPanel" />
                 }
               }
             }
+          } @else {
+            <!-- Only the Swimlane and Users tabs: they read their own endpoints, there is no summary to wait for. -->
+            <ng-container *ngTemplateOutlet="tabList" />
+            <ng-container *ngTemplateOutlet="boardPanel" />
           }
         }
       }
     }
 
+    <ng-template #boardPanel>
+      @switch (activeTab()) {
+        @case ('swimlane') {
+          <div
+            class="panel"
+            role="tabpanel"
+            data-tabpanel="swimlane"
+            [id]="panelId('swimlane')"
+            [attr.aria-labelledby]="tabId('swimlane')"
+          >
+            @defer (on immediate) {
+              <mf-dash-swimlane-tab />
+            } @placeholder {
+              <p class="soon-load" role="status">Loading the swimlane board.</p>
+            }
+          </div>
+        }
+        @case ('users') {
+          <div
+            class="panel"
+            role="tabpanel"
+            data-tabpanel="users"
+            [id]="panelId('users')"
+            [attr.aria-labelledby]="tabId('users')"
+          >
+            @defer (on immediate) {
+              <mf-dash-users-tab />
+            } @placeholder {
+              <p class="soon-load" role="status">Loading team workload.</p>
+            }
+          </div>
+        }
+      }
+    </ng-template>
+
     <ng-template #tabList>
-      <mf-dash-tabs [tabs]="tabs" [selected]="activeTab()" (tabChange)="selectTab($event)">
+      <mf-dash-tabs
+        [tabs]="visibleTabs()"
+        [selected]="activeTab() ?? ''"
+        (tabChange)="selectTab($event)"
+      >
         @if (activeTab() === 'swimlane') {
           <button
             type="button"
@@ -738,13 +758,6 @@ export class DashboardPage implements OnInit {
   protected readonly skeletonTiles = [1, 2, 3, 4, 5, 6, 7, 8];
   protected readonly panelId = panelId;
   protected readonly tabId = tabId;
-  protected readonly tabs: readonly DashTab[] = [
-    { key: 'summary', label: 'Summary' },
-    { key: 'breakdowns', label: 'Breakdowns' },
-    { key: 'trends', label: 'Trends' },
-    { key: 'swimlane', label: 'Swimlane' },
-    { key: 'users', label: 'Users' },
-  ];
   protected readonly period = this.prefs.period;
   protected readonly state = signal<LoadState>('loading');
   protected readonly data = signal<DashboardSummary | null>(null);
@@ -754,8 +767,6 @@ export class DashboardPage implements OnInit {
   protected readonly refreshFailed = signal(false);
   /** Polite live region: what the last refresh or inline assignment did, for screen readers. */
   protected readonly live = signal('');
-  /** When the lists of a person without the department view were last read (they have no summary to carry the time). */
-  private readonly listsReadAt = signal<Date | null>(null);
 
   private readonly lists = {
     unassigned: signal<ListData>(EMPTY_LIST),
@@ -763,21 +774,43 @@ export class DashboardPage implements OnInit {
     dueSoon: signal<ListData>(EMPTY_LIST),
   };
 
-  protected readonly department = computed(() => this.auth.has('Dashboard.ViewDepartment'));
+  /**
+   * The tabs this person may open: Dashboard.View plus the tab's own permission (a tab permission alone has no effect), in display order.
+   * The server enforces the same rules and redacts the payload; this only decides what is shown.
+   */
+  protected readonly visibleTabs = computed<DashTab[]>(() =>
+    this.auth.has('Dashboard.View')
+      ? DASHBOARD_TABS.filter((t) => this.auth.has(DASHBOARD_TAB_PERMISSIONS[t])).map((t) => ({
+          key: t,
+          label: DASHBOARD_TAB_LABELS[t],
+        }))
+      : [],
+  );
+  private readonly allowedTabs = computed(() =>
+    this.visibleTabs().map((t) => t.key as DashboardTab),
+  );
+  /** Whether any shown tab reads the shared summary request. */
+  private readonly needsSummary = computed(() =>
+    this.allowedTabs().some((t) => SUMMARY_DATA_TABS.includes(t)),
+  );
+  protected readonly canSummary = computed(() => this.allowedTabs().includes('summary'));
+  protected readonly canSeeMyWork = computed(() => this.auth.has('Task.View'));
   protected readonly canAssign = computed(() => this.auth.has('Task.Assign'));
 
   /** The `?tab=` of the address; the tab shown is this one, else Summary (a plain /dashboard link always opens the page that answers "what needs attention"). */
   private readonly tabParam = toSignal(this.route.queryParamMap.pipe(map((p) => p.get('tab'))), {
     initialValue: this.route.snapshot.queryParamMap.get('tab'),
   });
-  protected readonly activeTab = computed<DashboardTab>(() => {
+  /** The tab shown: the one in the address when it is permitted, else the first permitted tab (a deep link to a forbidden tab falls back); null without any tab. */
+  protected readonly activeTab = computed<DashboardTab | null>(() => {
     const fromUrl = this.tabParam();
-    return isDashboardTab(fromUrl) ? fromUrl : 'summary';
+    const allowed = this.allowedTabs();
+    return isDashboardTab(fromUrl) && allowed.includes(fromUrl) ? fromUrl : (allowed[0] ?? null);
   });
 
   /**
-   * The lists of "Tasks to act on". The department gets the Unassigned queue (with Task.Assign), Overdue and Due soon. Everyone else gets
-   * only the Unassigned queue to pick work from, when they have Task.Assign (their own work is in My Work).
+   * The lists of "Tasks to act on". Part of the Summary tab (Dashboard.ViewSummary): the Unassigned queue (with Task.Assign), Overdue and Due soon.
+   * Their own work is in My Work.
    */
   protected readonly panels = computed<PanelSpec[]>(() => {
     const unassigned = (query: string): PanelSpec => ({
@@ -787,7 +820,7 @@ export class DashboardPage implements OnInit {
       viewAllText: 'View all unassigned tasks',
       query,
     });
-    if (!this.department()) return this.canAssign() ? [unassigned(OPEN_UNASSIGNED_QUERY)] : [];
+    if (!this.canSummary()) return [];
     const d = this.data();
     if (!d) return [];
     return [
@@ -812,10 +845,8 @@ export class DashboardPage implements OnInit {
   protected readonly mainPanels = computed(() => this.panels().slice(0, 1));
   protected readonly morePanels = computed(() => this.panels().slice(1));
   protected readonly lastKind = computed(() => this.panels().at(-1)?.kind ?? null);
-  /** Whether there is anything to refresh: the department figures, or a list of tasks to pick from. */
-  protected readonly hasData = computed(() =>
-    this.department() ? this.data() !== null : this.panels().length > 0,
-  );
+  /** Whether there is anything to refresh. */
+  protected readonly hasData = computed(() => this.data() !== null);
 
   /** The header's Refresh and "Updated" belong to the summary tabs; the Swimlane tab has its own, and Users none yet. */
   protected readonly showHeaderControls = computed(
@@ -824,18 +855,17 @@ export class DashboardPage implements OnInit {
   protected readonly periodCaption = computed(() => presetOf(this.period()).caption);
   protected readonly updated = computed(() => {
     const d = this.data();
-    if (d) return mfDate(d.generatedAtUtc, this.zone, 'datetime');
-    const at = this.listsReadAt();
-    return at ? mfDate(at, this.zone, 'datetime') : null;
+    return d ? mfDate(d.generatedAtUtc, this.zone, 'datetime') : null;
   });
   /**
-   * Nothing open and nothing created or completed in the period. Only meaningful for people who may see department figures: for everyone
-   * else the server returns zeros for the department, which must not read as "no tasks".
+   * Nothing open and nothing created or completed in the period. Only meaningful with the Summary tab (the counts are redacted to zero for
+   * everyone else, which must not read as "no tasks"), and only when no board tab needs the tab list.
    */
   protected readonly isEmpty = computed(() => {
     const d = this.data();
     return (
-      this.department() &&
+      this.canSummary() &&
+      !this.allowedTabs().some((t) => !SUMMARY_DATA_TABS.includes(t)) &&
       !!d &&
       d.open.count === 0 &&
       d.created.count === 0 &&
@@ -879,9 +909,8 @@ export class DashboardPage implements OnInit {
     effect(() => {
       const tab = this.activeTab();
       const param = this.tabParam();
-      const dept = this.department();
       untracked(() => {
-        if (dept && param !== tab) void this.navigateToTab(tab, true);
+        if (tab && param !== tab) void this.navigateToTab(tab, true);
       });
     });
     // The lists belong to the Summary tab and are read when it is shown (not on the other tabs): arriving on it with older lists reads them.
@@ -889,7 +918,7 @@ export class DashboardPage implements OnInit {
       const tab = this.activeTab();
       const ready = this.state() === 'ready';
       untracked(() => {
-        if (this.department() && tab === 'summary' && ready && this.listsSeq !== this.summarySeq) {
+        if (this.canSummary() && tab === 'summary' && ready && this.listsSeq !== this.summarySeq) {
           this.listsSeq = this.summarySeq;
           this.loadLists(true);
         }
@@ -909,7 +938,8 @@ export class DashboardPage implements OnInit {
   // ---- tabs
 
   protected selectTab(key: string): void {
-    if (!isDashboardTab(key) || key === this.activeTab()) return;
+    if (!isDashboardTab(key) || !this.allowedTabs().includes(key) || key === this.activeTab())
+      return;
     // A user's tab change is a history entry (Back returns to the previous tab); only the normalising redirect replaces.
     void this.navigateToTab(key, false);
   }
@@ -952,8 +982,10 @@ export class DashboardPage implements OnInit {
     options: { silent?: boolean; fresh?: boolean; lists?: boolean; announce?: boolean } = {},
   ): void {
     const { silent = false, fresh = false, lists = true, announce = false } = options;
-    if (!this.department()) {
-      this.loadLimited(silent, announce);
+    if (!this.needsSummary()) {
+      // Only the Swimlane and Users tabs: they read their own endpoints, there is no summary to load.
+      this.state.set('ready');
+      this.refreshFailed.set(false);
       return;
     }
     const id = ++this.requestId;
@@ -1005,17 +1037,6 @@ export class DashboardPage implements OnInit {
         });
     if (background) this.quiet.run(start);
     else start();
-  }
-
-  /** Without the department view there is no summary to read: only the lists (the unassigned queue, with Task.Assign). */
-  private loadLimited(silent: boolean, announce: boolean): void {
-    this.state.set('ready');
-    this.refreshFailed.set(false);
-    this.lastLoadedAt = this.clock.now().getTime();
-    if (this.panels().length === 0) return;
-    this.listsReadAt.set(this.clock.now());
-    if (announce) this.live.set(`Dashboard refreshed. Updated ${this.updated()}.`);
-    this.loadLists(silent);
   }
 
   // ---- lists

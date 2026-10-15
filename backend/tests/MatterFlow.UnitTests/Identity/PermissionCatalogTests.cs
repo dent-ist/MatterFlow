@@ -75,7 +75,22 @@ public class PermissionCatalogTests
         codes.ShouldContain("Matter.SetActive");
         codes.ShouldContain("User.Manage");
         codes.ShouldContain("Role.Manage");
-        codes.Count.ShouldBe(43);
+        codes.Count.ShouldBe(48);
+    }
+
+    [Fact]
+    public void The_Dashboard_group_has_View_and_one_view_permission_per_tab_and_the_old_department_right_is_gone()
+    {
+        var dashboard = Catalog().Where(c => c.Group == "Dashboard").ToList();
+
+        dashboard.Select(c => c.Code).ShouldBe(
+            ["Dashboard.View", "Dashboard.ViewSummary", "Dashboard.ViewBreakdowns", "Dashboard.ViewTrends", "Dashboard.ViewSwimlane", "Dashboard.ViewUsers"]);
+        dashboard.ShouldAllBe(c => c.Description.Length > 20);
+        Catalog().Select(c => c.Code).ShouldNotContain("Dashboard.ViewDepartment");
+
+        // The group sits before Oversight (the roles page lists groups in catalog order).
+        var groups = Catalog().Select(c => c.Group).Distinct().ToList();
+        groups.IndexOf("Dashboard").ShouldBeLessThan(groups.IndexOf("Oversight"));
     }
 
     [Fact]
@@ -122,7 +137,16 @@ public class PermissionCatalogTests
         P("Pod Lead").ShouldNotContain(Permissions.Client.EditNumber);
         P("Data Technician").ShouldContain(Permissions.Project.Archive);
         P("Data Technician").ShouldNotContain(Permissions.Client.Create);
-        P("Data Technician").ShouldNotContain(Permissions.Dashboard.ViewDepartment);
+
+        // Dashboard: Directors see every tab, Pod Leads Summary + Swimlane + Users, Project Managers Summary + Swimlane, technicians Summary only.
+        string[] tabs = [Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewBreakdowns, Permissions.Dashboard.ViewTrends, Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers];
+        foreach (var role in StarterRoles.All)
+            role.Permissions.Intersect(tabs).Any().ShouldBe(role.Permissions.Contains(Permissions.Dashboard.View), $"{role.Name}: a tab permission only has effect with Dashboard.View");
+        tabs.Append(Permissions.Dashboard.View).ShouldBeSubsetOf(P("Director"));
+        P("Pod Lead").Intersect(tabs).ShouldBe([Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers], ignoreOrder: true);
+        P("Project Manager").Intersect(tabs).ShouldBe([Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane], ignoreOrder: true);
+        P("Data Technician").Intersect(tabs).ShouldBe([Permissions.Dashboard.ViewSummary]);
+        P("Data Scientist").Intersect(tabs).ShouldBe([Permissions.Dashboard.ViewSummary]);
         P("Data Scientist").ShouldNotContain(Permissions.Project.Create);
         P("Data Scientist").ShouldContain(Permissions.Asset.Link);
     }

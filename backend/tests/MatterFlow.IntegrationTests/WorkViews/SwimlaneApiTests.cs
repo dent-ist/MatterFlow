@@ -225,11 +225,15 @@ public sealed class SwimlaneApiTests(SqlServerFixture sql)
     }
 
     [Fact]
-    public async Task The_swimlane_needs_Dashboard_ViewDepartment()
+    public async Task The_swimlane_needs_Dashboard_View_and_Dashboard_ViewSwimlane()
     {
         var d = await DataAsync();
 
         (await d.NoDashboardClient.GetAsync("/api/v1/dashboard/swimlane")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await d.ViewOnlyClient.GetAsync("/api/v1/dashboard/swimlane")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await d.TabsWithoutViewClient.GetAsync("/api/v1/dashboard/swimlane")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await d.UsersOnlyClient.GetAsync("/api/v1/dashboard/swimlane")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await d.SwimlaneOnlyClient.GetAsync("/api/v1/dashboard/swimlane")).StatusCode.ShouldBe(HttpStatusCode.OK);
         (await d.TechAClient.GetAsync("/api/v1/dashboard/swimlane")).StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 }

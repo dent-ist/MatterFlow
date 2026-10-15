@@ -118,8 +118,13 @@
         "Pod.Manage",
         "Pod.ManageMembers",
         "User.View",
-        "Dashboard.ViewDepartment",
-        "Audit.View"
+        "Audit.View",
+        "Dashboard.View",
+        "Dashboard.ViewSummary",
+        "Dashboard.ViewBreakdowns",
+        "Dashboard.ViewTrends",
+        "Dashboard.ViewSwimlane",
+        "Dashboard.ViewUsers"
       ]
     },
     {
@@ -154,7 +159,9 @@
         "Asset.Create",
         "Asset.Edit",
         "Asset.Link",
-        "Dashboard.ViewDepartment"
+        "Dashboard.View",
+        "Dashboard.ViewSummary",
+        "Dashboard.ViewSwimlane"
       ]
     },
     {
@@ -190,7 +197,10 @@
         "Asset.Link",
         "Pod.Manage",
         "Pod.ManageMembers",
-        "Dashboard.ViewDepartment"
+        "Dashboard.View",
+        "Dashboard.ViewSummary",
+        "Dashboard.ViewSwimlane",
+        "Dashboard.ViewUsers"
       ]
     },
     {
@@ -219,7 +229,9 @@
         "Workflow.StepReopen",
         "Asset.Create",
         "Asset.Edit",
-        "Asset.Link"
+        "Asset.Link",
+        "Dashboard.View",
+        "Dashboard.ViewSummary"
       ]
     },
     {
@@ -245,7 +257,9 @@
         "Workflow.StepReopen",
         "Asset.Create",
         "Asset.Edit",
-        "Asset.Link"
+        "Asset.Link",
+        "Dashboard.View",
+        "Dashboard.ViewSummary"
       ]
     },
     {
@@ -270,7 +284,9 @@
         "Task.Comment",
         "Asset.Create",
         "Asset.Edit",
-        "Asset.Link"
+        "Asset.Link",
+        "Dashboard.View",
+        "Dashboard.ViewSummary"
       ]
     },
     {
@@ -284,7 +300,10 @@
         "Asset.View",
         "Pod.View",
         "Task.Comment",
-        "Dashboard.ViewDepartment"
+        "Dashboard.View",
+        "Dashboard.ViewSummary",
+        "Dashboard.ViewBreakdowns",
+        "Dashboard.ViewTrends"
       ]
     },
     {
@@ -319,7 +338,10 @@
         "Pod.View",
         "User.View",
         "Audit.View",
-        "Dashboard.ViewDepartment"
+        "Dashboard.View",
+        "Dashboard.ViewSummary",
+        "Dashboard.ViewBreakdowns",
+        "Dashboard.ViewTrends"
       ]
     }
   ],
@@ -365,7 +387,12 @@
     "CustomField.Manage",
     "Priority.Manage",
     "StatusLabel.Manage",
-    "Dashboard.ViewDepartment",
+    "Dashboard.View",
+    "Dashboard.ViewSummary",
+    "Dashboard.ViewBreakdowns",
+    "Dashboard.ViewTrends",
+    "Dashboard.ViewSwimlane",
+    "Dashboard.ViewUsers",
     "Audit.View"
   ],
   "clientFields": [

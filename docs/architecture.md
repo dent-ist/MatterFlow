@@ -365,7 +365,8 @@ Source of truth: `contracts/permissions.json` (code, group, description), genera
 | Assets | `Asset.View/Create/Edit/Link` |
 | Organization | `Pod.View/Manage/ManageMembers`, `User.View/Manage` (access queue, activate/disable, assign roles) |
 | Configuration | `Role.Manage`, `TaskType.Manage`, `Workflow.Manage`, `AssetType.Manage`, `CustomField.Manage`, `Priority.Manage`, `StatusLabel.Manage` |
-| Oversight | `Dashboard.ViewDepartment`, `Audit.View` |
+| Dashboard | `Dashboard.View` (open the Dashboard: menu item and route), `Dashboard.ViewSummary`, `Dashboard.ViewBreakdowns`, `Dashboard.ViewTrends`, `Dashboard.ViewSwimlane`, `Dashboard.ViewUsers` (one per tab; see below) |
+| Oversight | `Audit.View` |
 
 **Starter role matrix** (seeded once, editable; `X` = granted; System Admin implicitly has all):
 
@@ -382,9 +383,15 @@ Source of truth: `contracts/permissions.json` (code, group, description), genera
 | Pod.View | X | X | X | X | X |
 | Pod.Manage/ManageMembers | X | - | X | - | - |
 | User.View | X | - | - | - | - |
-| Dashboard.ViewDepartment | X | X | X | - | - |
+| Dashboard.View | X | X | X | X | X |
+| Dashboard.ViewSummary | X | X | X | X | X |
+| Dashboard.ViewBreakdowns, ViewTrends | X | - | - | - | - |
+| Dashboard.ViewSwimlane | X | X | X | - | - |
+| Dashboard.ViewUsers | X | - | X | - | - |
 | Audit.View | X | - | - | - | - |
 | Role/TaskType/Workflow/AssetType/CustomField/Priority/StatusLabel.Manage, User.Manage | - | - | - | - | - |
+
+**Dashboard permissions ("the Dashboard is not for everyone").** `Dashboard.View` opens the Dashboard (navigation item and route; without it the route is a 403 and the post-login landing page is My Work or the Task Queue). Each tab has its own permission and only has effect together with `Dashboard.View`: the role editor selects `Dashboard.View` when a tab permission is ticked and clears the tab permissions (with a short note) when `Dashboard.View` is cleared, and the server requires both (two stacked `Perm:` policies). Endpoints: `GET /api/v1/dashboard` needs `Dashboard.View` and any of `ViewSummary|ViewBreakdowns|ViewTrends` (`Perm:` any-of syntax) and **redacts the payload on the server**: the headline counts (Open ... Created) only with `ViewSummary`, `byTaskType`/`byPriority`/`byStatus`/`aging` only with `ViewBreakdowns`, `trend` only with `ViewTrends` (zero or empty otherwise, never computed); `GET /dashboard/swimlane` needs `Dashboard.View` + `Dashboard.ViewSwimlane`; `GET /dashboard/workload` needs `Dashboard.View` + `Dashboard.ViewUsers`. The unassigned queue and the overdue and due soon lists belong to the Summary tab. Replaces `Dashboard.ViewDepartment` (migration `24-dashboard-permissions.sql`: `Dashboard.View` to every role, all five tabs to roles that held the old right, `ViewSummary` to roles with `Task.Assign`, old code removed). Seeded roles: Director all tabs; Pod Lead Summary + Swimlane + Users; Project Manager Summary + Swimlane; Data Technician and Data Scientist Summary (the unassigned queue to pick work from). Note: Summary shows department-wide counts (Phase 1 has no per-record visibility); roles that should only see the queue and no counts need a later split.
 
 (Configuration and user management are System Admin only by default.) Whether technicians may create Clients/Matters is an open question (section 19).
 
@@ -545,7 +552,7 @@ Stored fields: `DueDate` (date, optional), `DueTime` (time, optional, requires D
 
 ### 8.5 Dashboard Swimlane and Team workload (epic #68)
 
-Two read endpoints of the WorkViews module for the Dashboard tabs, both `Perm:Dashboard.ViewDepartment`, both evaluated in the viewer's zone (`X-Time-Zone`), both built on `TaskQueueRules` and the Task Queue filter so the numbers agree with the Task Queue (a few grouped reads, no per-row queries; about 5,000 Tasks stay under 300 ms at the median, covered by `BoardPerformanceTests`). They are an operational capacity view, not a performance evaluation: no completion statistics, speed or ranking of people anywhere.
+Two read endpoints of the WorkViews module for the Dashboard tabs, `Perm:Dashboard.View` plus `Perm:Dashboard.ViewSwimlane` (swimlane) or `Perm:Dashboard.ViewUsers` (workload), both evaluated in the viewer's zone (`X-Time-Zone`), both built on `TaskQueueRules` and the Task Queue filter so the numbers agree with the Task Queue (a few grouped reads, no per-row queries; about 5,000 Tasks stay under 300 ms at the median, covered by `BoardPerformanceTests`). They are an operational capacity view, not a performance evaluation: no completion statistics, speed or ranking of people anywhere.
 
 - **`GET /api/v1/dashboard/swimlane`.** Query: `completedDays` (default 7, max 30, counting today in the viewer's zone), `groupBy` (`none` | `priority` | `assignee` | `clientMatter`), `sort` (`priority` default = rank, ASAP above due dates, due ascending, oldest; `due`; `clientMatter`; `created` newest first), `podId`, `assigneeId` (a user id or `unassigned`), `taskTypeId`, `priorityId`, `q` (title or Task number), `overdueOnly` (the Completed lane is then empty), `mine`. Response: four lanes `NEW`, `IN_PROGRESS`, `ON_HOLD`, `COMPLETED` (completed and cancelled Tasks whose last status change is inside the window), each with `count`, `total`, `truncated` and up to 200 `cards` (`laneCap`). A card: `taskId`, `ref`, `title`, `status`/`statusLabel`, `priority {priorityId, label, color, rank}`, `assignee {userId, displayName, isActive, availability {state, outUntil, note}}`, `pod`, `clientId/clientNumber/clientName`, `matterId/matterRef/matterName`, `taskTypeId/taskTypeName/taskTypeIconKey`, `dueDate`, `dueAtUtc`, `isOverdue`, `isAsap`, `stepsResolved/stepsTotal`, `rowVersion` (for the inline menus). `groups` carries exact counts for the requested `groupBy` (`counts` per lane and `count`; `clientMatter` is a tree: client groups with their matters in `children`). Priority colour: `priority.color` is the Priority's badge token (`critical`, `high`, `normal`, `low`, `neutral`) or a `#RRGGBB` override, exactly what the priority badge takes; `rank` is its sort order (lower is more urgent).
 - **Swimlane tab (frontend, issue #72).** `features/dashboard/swimlane/*` and `ui/dash-swimlane-tab.ts`, lazy-loaded through `@defer` in the Dashboard page so the initial bundle is unchanged. `swimlane-model.ts` holds the pure parts (the view and its address mapping, lane layout including the client > matter tree, card edits, the Task Queue link of a capped lane), `swimlane-prefs.ts` the remembered choices, `swimlane-lane.ts` / `swimlane-card.ts` / `swimlane-drawer.ts` / `swimlane-toolbar.ts` the components. Cards reuse `mf-row-edit` (they are mapped to Task Queue rows), `UndoService`, the priority and status badges and `mf-matter-ref`. A lane draws 40 cards at a time; the server caps a lane at 200.
