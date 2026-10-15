@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using MatterFlow.Identity.Authorization;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
+using MatterFlow.SharedKernel.Time;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,8 @@ namespace MatterFlow.Identity.Api;
 /// <summary>One active user for an assignee typeahead: id and display name only.</summary>
 /// <param name="UserId">User id.</param>
 /// <param name="DisplayName">Display name.</param>
-public sealed record UserLookupItem([property: Required] int UserId, [property: Required] string DisplayName);
+/// <param name="Availability">Compact availability right now (state, out until, note) so pickers can mark who is out of office.</param>
+public sealed record UserLookupItem([property: Required] int UserId, [property: Required] string DisplayName, [property: Required] UserAvailabilitySummary Availability);
 
 /// <summary>
 /// Lightweight user lookup for pickers (Create Task assignee). Unlike <c>GET /users</c> (User.View, administration data) it only exposes
@@ -20,7 +22,7 @@ public sealed record UserLookupItem([property: Required] int UserId, [property: 
 [ApiController]
 [Route("api/v1/users/lookup")]
 [Produces("application/json")]
-public class UsersLookupController(DbContext db) : ControllerBase
+public class UsersLookupController(DbContext db, IUserAvailabilityReader availability, IClock clock) : ControllerBase
 {
     /// <summary>Finds active users by display name, ordered by name (at most <paramref name="limit"/>).</summary>
     /// <param name="q">Matches the display name.</param>
@@ -42,8 +44,10 @@ public class UsersLookupController(DbContext db) : ControllerBase
             query = query.Where(u => u.DisplayName.Contains(term));
         }
 
-        return await query.OrderBy(u => u.DisplayName).Take(limit)
-            .Select(u => new UserLookupItem(u.Id, u.DisplayName))
+        var rows = await query.OrderBy(u => u.DisplayName).Take(limit)
+            .Select(u => new { u.Id, u.DisplayName })
             .ToArrayAsync(cancellationToken);
+        var states = await availability.EvaluateAsync(rows.Select(r => r.Id).ToArray(), clock.UtcNow, cancellationToken);
+        return rows.Select(r => new UserLookupItem(r.Id, r.DisplayName, UserAvailabilitySummary.From(states[r.Id]))).ToArray();
     }
 }

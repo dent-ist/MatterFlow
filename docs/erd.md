@@ -206,6 +206,8 @@ erDiagram
   Pod ||--o{ PodMember : "has"
   AppUser ||--o{ PodMember : "belongs to"
   AppUser ||--o| UserPreference : "has"
+  AppUser ||--o| UserAvailability : "has (script 22)"
+  AppUser ||--o{ UserWorkHour : "works (script 22)"
 
   AppUser {
     int UserId PK
@@ -268,6 +270,24 @@ erDiagram
     int UserId PK
     nvarchar_max PreferencesJson
   }
+  UserAvailability {
+    int UserId PK "FK AppUser"
+    varchar_20 Status "AVAILABLE or OUT_OF_OFFICE"
+    date OutOfOfficeFromDate
+    date OutOfOfficeUntilDate "CHECK until >= from"
+    nvarchar_200 Note "plain text"
+    varchar_64 TimeZoneId "IANA; NULL = Firm:TimeZoneId"
+    bit HasCustomWorkHours
+    datetime2 UpdatedAtUtc
+    int UpdatedByUserId FK
+    rowversion RowVersion
+  }
+  UserWorkHour {
+    int UserId PK
+    tinyint DayOfWeek PK "ISO 1 Mon to 7 Sun"
+    time StartTime
+    time EndTime "CHECK End > Start"
+  }
 ```
 
 | Entity | Key columns and constraints | Notes |
@@ -281,6 +301,8 @@ erDiagram
 | Pod | PK `PodId`; UNIQUE `Name` | |
 | PodMember | PK `(PodId, UserId)`; filtered UNIQUE `UQ_PodMember_Primary (UserId) WHERE IsPrimary = 1` | A user can be in many Pods; at most one primary (default filter in Pod Work). No lead flag (Pod Lead is a role). Index `IX_PodMember_User (UserId)`. |
 | UserPreference | PK/FK `UserId`; `PreferencesJson` (column layouts, saved filters) | |
+| UserAvailability | PK/FK `UserId` (script 22); `Status` CHECK `IN ('AVAILABLE','OUT_OF_OFFICE')`; CHECK `OutOfOfficeUntilDate >= OutOfOfficeFromDate` when both set; `Note` nvarchar(200); `TimeZoneId` IANA id or NULL (firm zone); `HasCustomWorkHours`; `UpdatedAtUtc`, `UpdatedByUserId`; `RowVersion` | Optional, at most one row per user; no row = available, default hours, firm zone. Out of office with no dates lasts until the user sets Available again; with dates it runs from the start of the From date (or now) to the end of the Until date in the user's zone. Edited by the user or, on behalf, by `User.Manage`; every change audited (`USER_AVAILABILITY_CHANGED`, `USER_WORK_HOURS_CHANGED`, `USER_TIME_ZONE_CHANGED`). Operational capacity only, never a performance measure. Index `IX_UserAvailability_Status`. |
+| UserWorkHour | PK `(UserId, DayOfWeek)`; FK `UserId`; `DayOfWeek` 1-7 (Monday = 1); CHECK `EndTime > StartTime` | Rows exist only when `UserAvailability.HasCustomWorkHours = 1`: one row per working day, a weekday without a row is a day off (a custom schedule with no rows = no working days). Without custom hours the default Mon-Fri 09:00-17:00 in the user's zone applies. Times are local wall-clock; DST is handled when evaluated. |
 
 Invariant (app): the last active System Admin cannot be disabled or unassigned (`LAST_ADMIN`). Offboarding: set `AppUser.IsActive = 0` and `UserIdentity.IsActive = 0`; assigned Tasks remain assigned until an admin reassigns them manually; the Queue assignee filter includes inactive users.
 

@@ -408,6 +408,17 @@ Windows auth credentials are sent automatically by browsers, so state-changing r
 
 ---
 
+### 6.7 User availability and work hours
+
+Each user may keep an availability profile (`dbo.UserAvailability`, `dbo.UserWorkHour`, script 22; see `docs/erd.md` section 4): `Available` or `Out of office` (optional from/until dates and a plain-text note up to 200 characters), an optional IANA time zone (default `Firm:TimeZoneId`) and weekly work hours (default Mon-Fri 09:00-17:00 in the user's zone). It is operational capacity information: the product never ranks or evaluates people with it (addendum: dashboard counts are not performance metrics).
+
+- **Evaluator.** `UserAvailabilityEvaluator.Evaluate(profile, nowUtc)` (SharedKernel, pure, unit tested for DST, zones, multi-day ranges, work-hour edges and midnight) returns `{ state: AVAILABLE | OUT_OF_OFFICE | OFF_HOURS, outUntilUtc?, note?, nextWorkStartUtc? }`. Out of office wins over everything; without dates it lasts until the user sets Available again; with dates it covers the whole local days From..Until in the user's zone. `OFF_HOURS` is a soft state (outside the work hours, or a weekday without a schedule row), never "unavailable". Work-hour end times are exclusive.
+- **API.** `GET/PUT /api/v1/me/availability` (policy `Task.View`, i.e. every user who can work Tasks edits their own) and `GET/PUT /api/v1/users/{userId}/availability` (`User.Manage`, edit on behalf). The PUT replaces the whole profile (`status, from, until, note, timeZoneId, workHours[]` with `HH:mm` times and ISO weekdays 1-7; `workHours: null` = default schedule, `[]` = no working days) and needs the `rowVersion` of the last read (`NEW` while no profile exists). Stable validation codes: `STATUS_INVALID`, `OOO_RANGE_INVALID`, `WORK_HOURS_INVALID`, `TIMEZONE_UNKNOWN`, `NOTE_TOO_LONG`; a stale version is 409 `CONCURRENCY_CONFLICT`. Setting Available clears the dates and the note.
+- **Audit.** Changes write `USER_AVAILABILITY_CHANGED` ("Set out of office until Oct 20", "Set available"), `USER_WORK_HOURS_CHANGED` and `USER_TIME_ZONE_CHANGED` (`ObjectType = User`, `ObjectId` = the person concerned, actor = whoever edited; on-behalf edits end with "(on behalf)"). An unchanged save writes nothing.
+- **Other modules.** `IUserAvailabilityReader` (Identity.Contracts) evaluates many users with two queries; `GET /users` and `GET /users/lookup` carry the compact `availability { state, outUntil, note }`, and the Dashboard Swimlane and Team workload endpoints use the same evaluator.
+
+---
+
 ## 7. Dynamic forms and custom-field engine
 
 ### 7.1 Scope and metadata model

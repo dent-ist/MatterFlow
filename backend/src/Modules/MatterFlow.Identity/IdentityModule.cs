@@ -56,6 +56,8 @@ public static class IdentityModule
         services.AddScoped<IPodDirectory, PodDirectory>();
         services.AddScoped<IUserDirectory, Application.UserDirectory>();
         services.AddScoped<Application.UserAdministration>();
+        services.AddScoped<Application.UserAvailabilityService>();
+        services.AddScoped<IUserAvailabilityReader>(sp => sp.GetRequiredService<Application.UserAvailabilityService>());
         services.AddScoped<Application.RoleAdministration>();
 
         services.AddScoped<CurrentUser>();

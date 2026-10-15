@@ -3041,6 +3041,270 @@ export class TaskTypesClient implements ITaskTypesClient {
     }
 }
 
+export interface IMyAvailabilityClient {
+    /**
+     * @return OK
+     */
+    getMyAvailability(): Observable<UserAvailabilityDto>;
+    /**
+     * @return OK
+     */
+    saveMyAvailability(body: SaveAvailabilityRequest): Observable<UserAvailabilityDto>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class MyAvailabilityClient implements IMyAvailabilityClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    getMyAvailability(): Observable<UserAvailabilityDto> {
+        let url_ = this.baseUrl + "/api/v1/me/availability";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMyAvailability(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMyAvailability(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserAvailabilityDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserAvailabilityDto>;
+        }));
+    }
+
+    protected processGetMyAvailability(response: HttpResponseBase): Observable<UserAvailabilityDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserAvailabilityDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    saveMyAvailability(body: SaveAvailabilityRequest): Observable<UserAvailabilityDto> {
+        let url_ = this.baseUrl + "/api/v1/me/availability";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSaveMyAvailability(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSaveMyAvailability(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserAvailabilityDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserAvailabilityDto>;
+        }));
+    }
+
+    protected processSaveMyAvailability(response: HttpResponseBase): Observable<UserAvailabilityDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserAvailabilityDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IUserAvailabilityClient {
+    /**
+     * @return OK
+     */
+    getUserAvailability(userId: number): Observable<UserAvailabilityDto>;
+    /**
+     * @return OK
+     */
+    saveUserAvailability(userId: number, body: SaveAvailabilityRequest): Observable<UserAvailabilityDto>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class UserAvailabilityClient implements IUserAvailabilityClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    getUserAvailability(userId: number): Observable<UserAvailabilityDto> {
+        let url_ = this.baseUrl + "/api/v1/users/{userId}/availability";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetUserAvailability(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetUserAvailability(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserAvailabilityDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserAvailabilityDto>;
+        }));
+    }
+
+    protected processGetUserAvailability(response: HttpResponseBase): Observable<UserAvailabilityDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserAvailabilityDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    saveUserAvailability(userId: number, body: SaveAvailabilityRequest): Observable<UserAvailabilityDto> {
+        let url_ = this.baseUrl + "/api/v1/users/{userId}/availability";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSaveUserAvailability(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSaveUserAvailability(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserAvailabilityDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserAvailabilityDto>;
+        }));
+    }
+
+    protected processSaveUserAvailability(response: HttpResponseBase): Observable<UserAvailabilityDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserAvailabilityDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IMeClient {
     /**
      * @return OK
@@ -10417,6 +10681,15 @@ export interface CreateWorkflowRequest {
     [key: string]: any;
 }
 
+export interface CurrentAvailabilityDto {
+    state: string;
+    outUntilUtc: string | undefined;
+    note: string | undefined;
+    nextWorkStartUtc: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface CustomFieldFormResponse {
     publishedFormVersionId: number | undefined;
 
@@ -11024,6 +11297,18 @@ export interface RoleSummaryDto {
     isSystemAdmin: boolean;
     memberCount: number;
     permissionCount: number;
+
+    [key: string]: any;
+}
+
+export interface SaveAvailabilityRequest {
+    status: string;
+    from: string | undefined;
+    until: string | undefined;
+    note: string | undefined;
+    timeZoneId: string | undefined;
+    workHours: WorkHourDto[] | undefined;
+    rowVersion: string;
 
     [key: string]: any;
 }
@@ -11731,6 +12016,32 @@ export interface UpdateWorkflowRequest {
     [key: string]: any;
 }
 
+export interface UserAvailabilityDto {
+    userId: number;
+    status: string;
+    from: string | undefined;
+    until: string | undefined;
+    note: string | undefined;
+    timeZoneId: string | undefined;
+    effectiveTimeZoneId: string;
+    usesDefaultWorkHours: boolean;
+    workHours: WorkHourDto[];
+    current: CurrentAvailabilityDto;
+    updatedAtUtc: string | undefined;
+    updatedByUserId: number | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UserAvailabilitySummary {
+    state: string;
+    outUntil: string | undefined;
+    note: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface UserCountsDto {
     pending: number;
     active: number;
@@ -11761,6 +12072,7 @@ export interface UserDetailDto {
 export interface UserLookupItem {
     userId: number;
     displayName: string;
+    availability: UserAvailabilitySummary;
 
     [key: string]: any;
 }
@@ -11786,6 +12098,7 @@ export interface UserSummaryDto {
     roles: string[];
     registeredAtUtc: string;
     lastLoginAtUtc: string | undefined;
+    availability?: UserAvailabilitySummary | undefined;
 
     [key: string]: any;
 }
@@ -11921,6 +12234,14 @@ export interface WorkflowVersionSummary {
     publishedAtUtc: string | undefined;
     publishedByUserId: number | undefined;
     rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface WorkHourDto {
+    dayOfWeek: number;
+    start: string;
+    end: string;
 
     [key: string]: any;
 }

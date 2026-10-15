@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using MatterFlow.Identity.Contracts;
 
 namespace MatterFlow.Identity.Application;
 
@@ -14,7 +15,8 @@ public sealed record UserSummaryDto(
     [property: Required] bool IsSeededAdmin,
     [property: Required] string[] Roles,
     [property: Required] DateTime RegisteredAtUtc,
-    DateTime? LastLoginAtUtc);
+    DateTime? LastLoginAtUtc,
+    UserAvailabilitySummary? Availability = null);
 
 /// <summary>A user with the data of the detail drawer. Pod membership belongs to the Organization module and is added by that ticket.</summary>
 public sealed record UserDetailDto(

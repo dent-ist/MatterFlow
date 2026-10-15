@@ -64,6 +64,9 @@ password in any setting.
 - Sizing for 300 users (memory, cores, `max server memory`, MAXDOP, file sizes) and what to watch: `docs/qa/performance-round-1.md`, section "Recommendations".
 - Applied scripts are immutable (checksum guard); fix forward with a new script. A `Success=0` row in `dbo.SchemaMigration` blocks startup and
   `--migrate-only` until an operator repairs the database and removes the row.
+- Script `22-user-availability.sql` (epic #68) adds `dbo.UserAvailability` and `dbo.UserWorkHour` (own availability, out-of-office dates, weekly work hours). It only
+  creates tables, so it is safe to apply with the normal upgrade (no data backfill; existing users simply have no row and are treated as available during Mon-Fri
+  09:00-17:00 in the firm zone `Firm:TimeZoneId`). Rollback: the tables can stay; the previous application version ignores them.
 - After migrations the app syncs the permission catalog and starter roles idempotently (architecture 4.6) at every start where it has a database,
   also when `Migrations:Enabled=false`.
 

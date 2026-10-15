@@ -32,7 +32,8 @@ public sealed class UserAdministration(
     IAuditWriter audit,
     ICurrentUser currentUser,
     IPermissionChecker callerPermissions,
-    IClock clock)
+    IClock clock,
+    IUserAvailabilityReader availability)
 {
     /// <summary>Access Pending: active with no effective permission (same rule as <c>AccessSnapshot.IsPending</c>).</summary>
     private static readonly Expression<Func<AppUser, bool>> PendingExpr = u =>
@@ -85,8 +86,9 @@ public sealed class UserAdministration(
             })
             .ToListAsync(ct);
 
+        var states = await availability.EvaluateAsync(rows.Select(r => r.User.Id).ToArray(), clock.UtcNow, ct);
         var items = rows
-            .Select(r => ToSummary(r.User, r.Account, r.LastLogin, !r.HasAccess, r.IsAdmin, r.Roles))
+            .Select(r => ToSummary(r.User, r.Account, r.LastLogin, !r.HasAccess, r.IsAdmin, r.Roles) with { Availability = UserAvailabilitySummary.From(states[r.User.Id]) })
             .ToList();
         return new PagedResult<UserSummaryDto>(items, total, page.Page, page.PageSize);
     }

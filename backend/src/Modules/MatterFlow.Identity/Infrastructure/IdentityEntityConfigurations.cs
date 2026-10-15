@@ -74,3 +74,31 @@ internal sealed class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
         b.HasOne(x => x.Role).WithMany().HasForeignKey(x => x.RoleId).HasConstraintName("FK_UserRole_Role");
     }
 }
+
+internal sealed class UserAvailabilityConfiguration : IEntityTypeConfiguration<UserAvailability>
+{
+    public void Configure(EntityTypeBuilder<UserAvailability> b)
+    {
+        b.ToTable("UserAvailability");
+        b.HasKey(x => x.UserId);
+        b.Property(x => x.Status).HasMaxLength(20).IsUnicode(false).IsRequired();
+        b.Property(x => x.Note).HasMaxLength(200);
+        b.Property(x => x.TimeZoneId).HasMaxLength(64).IsUnicode(false);
+        b.Property(x => x.UpdatedAtUtc).HasColumnName("UpdatedAtUtc");
+        b.Property(x => x.RowVersion).HasColumnName("RowVersion").IsRowVersion().IsRequired();
+        b.HasOne<AppUser>().WithOne().HasForeignKey<UserAvailability>(x => x.UserId).HasConstraintName("FK_UserAvailability_User");
+    }
+}
+
+internal sealed class UserWorkHourConfiguration : IEntityTypeConfiguration<UserWorkHour>
+{
+    public void Configure(EntityTypeBuilder<UserWorkHour> b)
+    {
+        b.ToTable("UserWorkHour");
+        b.HasKey(x => new { x.UserId, x.DayOfWeek });
+        b.Property(x => x.DayOfWeek).HasColumnType("tinyint").HasConversion<byte>();
+        b.Property(x => x.StartTime).HasColumnType("time(0)");
+        b.Property(x => x.EndTime).HasColumnType("time(0)");
+        b.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).HasConstraintName("FK_UserWorkHour_User");
+    }
+}

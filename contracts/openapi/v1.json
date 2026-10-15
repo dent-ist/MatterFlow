@@ -1972,6 +1972,144 @@
         }
       }
     },
+    "/api/v1/me/availability": {
+      "get": {
+        "tags": [
+          "MyAvailability"
+        ],
+        "operationId": "GetMyAvailability",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAvailabilityDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "MyAvailability"
+        ],
+        "operationId": "SaveMyAvailability",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAvailabilityRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAvailabilityRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAvailabilityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAvailabilityDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/availability": {
+      "get": {
+        "tags": [
+          "UserAvailability"
+        ],
+        "operationId": "GetUserAvailability",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAvailabilityDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "UserAvailability"
+        ],
+        "operationId": "SaveUserAvailability",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAvailabilityRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAvailabilityRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAvailabilityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAvailabilityDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/me": {
       "get": {
         "tags": [
@@ -8626,6 +8764,40 @@
           }
         }
       },
+      "CurrentAvailabilityDto": {
+        "required": [
+          "state",
+          "outUntilUtc",
+          "note",
+          "nextWorkStartUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string"
+          },
+          "outUntilUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nextWorkStartUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "CustomFieldFormResponse": {
         "required": [
           "publishedFormVersionId"
@@ -10617,6 +10789,61 @@
           "permissionCount": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "SaveAvailabilityRequest": {
+        "required": [
+          "status",
+          "from",
+          "until",
+          "note",
+          "timeZoneId",
+          "workHours",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "from": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "until": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "timeZoneId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "workHours": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/WorkHourDto"
+            }
+          },
+          "rowVersion": {
+            "type": "string"
           }
         }
       },
@@ -13211,6 +13438,117 @@
           }
         }
       },
+      "UserAvailabilityDto": {
+        "required": [
+          "userId",
+          "status",
+          "from",
+          "until",
+          "note",
+          "timeZoneId",
+          "effectiveTimeZoneId",
+          "usesDefaultWorkHours",
+          "workHours",
+          "current",
+          "updatedAtUtc",
+          "updatedByUserId",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string"
+          },
+          "from": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "until": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "timeZoneId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "effectiveTimeZoneId": {
+            "type": "string"
+          },
+          "usesDefaultWorkHours": {
+            "type": "boolean"
+          },
+          "workHours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkHourDto"
+            }
+          },
+          "current": {
+            "$ref": "#/components/schemas/CurrentAvailabilityDto"
+          },
+          "updatedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "updatedByUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "UserAvailabilitySummary": {
+        "required": [
+          "state",
+          "outUntil",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string"
+          },
+          "outUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "UserCountsDto": {
         "required": [
           "pending",
@@ -13321,7 +13659,8 @@
       "UserLookupItem": {
         "required": [
           "userId",
-          "displayName"
+          "displayName",
+          "availability"
         ],
         "type": "object",
         "properties": {
@@ -13331,6 +13670,9 @@
           },
           "displayName": {
             "type": "string"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/UserAvailabilitySummary"
           }
         }
       },
@@ -13421,6 +13763,16 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "availability": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserAvailabilitySummary"
+              }
+            ]
           }
         }
       },
@@ -13885,6 +14237,26 @@
             "type": "string"
           }
         }
+      },
+      "WorkHourDto": {
+        "required": [
+          "dayOfWeek",
+          "start",
+          "end"
+        ],
+        "type": "object",
+        "properties": {
+          "dayOfWeek": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "start": {
+            "type": "string"
+          },
+          "end": {
+            "type": "string"
+          }
+        }
       }
     }
   },
@@ -13918,6 +14290,12 @@
     },
     {
       "name": "TaskTypes"
+    },
+    {
+      "name": "MyAvailability"
+    },
+    {
+      "name": "UserAvailability"
     },
     {
       "name": "Me"
