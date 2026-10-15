@@ -70,7 +70,7 @@ describe('dueLabel / dueState / mfDate pipes', () => {
   it('computes Overdue in the viewer zone, not UTC', () => {
     // 02:00Z on Oct 29 is still Oct 28 in Chicago (9 PM): not overdue there, overdue in UTC.
     const chicago = setup('America/Chicago', '2026-10-29T02:00:00Z');
-    expect(chicago.due.transform({ dueDate: '2026-10-28' })).toBe('Oct 28, 2026 · Due soon');
+    expect(chicago.due.transform({ dueDate: '2026-10-28' })).toBe('Oct 28, 2026 · Due today');
     const utc = setup('UTC', '2026-10-29T02:00:00Z');
     expect(utc.due.transform({ dueDate: '2026-10-28' })).toBe('Oct 28, 2026 · Overdue 1d');
   });

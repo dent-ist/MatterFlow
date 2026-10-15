@@ -102,6 +102,50 @@ describe('TaskTable', () => {
     expect(link.getAttribute('title')).toBe('A very long title '.repeat(10));
   });
 
+  it('leaves out the client and matter line when the page already says it (hideContext, UXR4-02)', async () => {
+    await create([aRow()], ['ref', 'title'], { hideContext: true });
+    expect(cell('title').querySelector('[data-title-context]')).toBeNull();
+  });
+
+  it('puts the New marker on the line under the title, so it never cuts the title (UXR4-02)', async () => {
+    await create([aRow({ assignedAtUtc: '2026-10-14T10:00:00Z' })], ['ref', 'title'], {
+      newSince: Date.parse('2026-10-13T00:00:00Z'),
+    });
+    const marker = cell('title').querySelector('[data-new-marker]')!;
+    expect(marker.textContent?.trim()).toBe('New');
+    expect(marker.closest('a')).toBeNull();
+    expect(marker.parentElement!.classList).toContain('wt-subline');
+  });
+
+  it('folds Workflow progress under the title and drops Matter and Project when the box is narrow (UXR4-02)', async () => {
+    await create([aRow()], ['ref', 'title', 'matter', 'project', 'progress', 'due', 'status']);
+    const keys = () => Array.from(el().querySelectorAll('th')).map((th) => th.textContent?.trim());
+    expect(keys()).toEqual([
+      'Ref',
+      'Title',
+      'Matter',
+      'Project',
+      'Workflow progress',
+      'Due',
+      'Status',
+    ]);
+    expect(cell('title').querySelector('[data-title-progress]')).toBeNull();
+
+    (fixture.componentInstance as unknown as { boxWidth: { set(n: number): void } }).boxWidth.set(
+      1000,
+    );
+    fixture.detectChanges();
+    expect(keys()).toEqual(['Ref', 'Title', 'Matter', 'Project', 'Due', 'Status']);
+    expect(cell('title').querySelector('[data-title-progress]')!.textContent).toContain(
+      '2 of 6 steps',
+    );
+    (fixture.componentInstance as unknown as { boxWidth: { set(n: number): void } }).boxWidth.set(
+      780,
+    );
+    fixture.detectChanges();
+    expect(keys()).toEqual(['Ref', 'Title', 'Due', 'Status']);
+  });
+
   it('shows the client and matter name in a muted second line under the title', async () => {
     await create([aRow()], ['ref', 'title']);
     const sub = cell('title').querySelector('[data-title-context]')!;

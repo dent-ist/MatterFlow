@@ -18,6 +18,7 @@
 .au-field {
   position: relative;
   display: grid;
+  min-width: 0;
   gap: var(--mf-s1);
 
   label {
@@ -37,7 +38,8 @@
   grid-column: span 2;
 }
 
-@media (max-width: 767px) {
+/* One column below 900 px: the From / To date inputs do not fit three across at tablet width (UXR4-01). */
+@media (max-width: 899px) {
   .au-filters {
     grid-template-columns: minmax(0, 1fr);
   }

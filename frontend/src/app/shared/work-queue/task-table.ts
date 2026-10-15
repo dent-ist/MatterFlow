@@ -28,6 +28,10 @@ import { SortDirection } from './queue-filters';
 import { RowEdit } from './row-edit';
 
 const SKELETON_ROWS = [0, 1, 2, 3, 4];
+/** Box widths (px) under which the lowest-priority columns drop out. */
+const PROGRESS_FOLDS_BELOW = 1100;
+const MATTER_HIDES_BELOW = 960;
+const PROJECT_HIDES_BELOW = 800;
 
 /**
  * The table behind Task Queue, My Work and Pod Work (UX 5.2, S02 to S04): a real `<table>` with sortable header buttons that
@@ -116,28 +120,42 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                           <mf-task-type-icon [iconKey]="row.taskTypeIconKey" size="sm" />
                         </span>
                         <div class="wt-titlebody">
-                          <span class="wt-titleline">
-                            <a
-                              class="wt-title"
-                              [routerLink]="['/tasks', row.taskId]"
-                              [attr.title]="row.title"
-                              >{{ row.title }}</a
-                            >
-                            @if (isNew(row)) {
-                              <span
-                                class="wt-new"
-                                data-new-marker
-                                title="Assigned since your last visit"
-                                >New</span
-                              >
-                            }
-                          </span>
-                          <span
-                            class="wt-sub"
-                            data-title-context
-                            [attr.title]="row.clientName + ' / ' + row.matterName"
-                            >{{ row.clientName }} · {{ row.matterName }}</span
+                          <a
+                            class="wt-title"
+                            [routerLink]="['/tasks', row.taskId]"
+                            [attr.title]="row.title"
+                            >{{ row.title }}</a
                           >
+                          @if (isNew(row) || !hideContext() || foldProgress()) {
+                            <span class="wt-subline">
+                              @if (isNew(row)) {
+                                <span
+                                  class="wt-new"
+                                  data-new-marker
+                                  title="Assigned since your last visit"
+                                  >New</span
+                                >
+                              }
+                              @if (!hideContext()) {
+                                <span
+                                  class="wt-sub"
+                                  data-title-context
+                                  [attr.title]="row.clientName + ' / ' + row.matterName"
+                                  >{{ row.clientName }} · {{ row.matterName }}</span
+                                >
+                              }
+                            </span>
+                          }
+                          @if (foldProgress() && row.workflow.stepsTotal > 0) {
+                            <span
+                              class="wt-sub wt-stepline"
+                              data-title-progress
+                              [attr.title]="progressTitle(row)"
+                              >{{ row.workflow.stepsResolved }} of {{ row.workflow.stepsTotal }}
+                              steps ·
+                              {{ row.workflow.currentStepName ?? 'All steps resolved' }}</span
+                            >
+                          }
                         </div>
                       </div>
                     }
@@ -316,6 +334,9 @@ export class TaskTable {
   private readonly zone = inject(USER_TIME_ZONE);
   private readonly wrap = viewChild<ElementRef<HTMLElement>>('wrap');
 
+  /** Width of the table's box in px (0 until measured); narrow boxes drop the lowest-priority columns instead of scrolling. */
+  protected readonly boxWidth = signal(0);
+
   /** True while the table is wider than its box, so the "Scroll sideways" hint only appears when it is needed (UAT2-21). */
   protected readonly overflowing = signal(false);
 
@@ -332,6 +353,8 @@ export class TaskTable {
   readonly showAssign = input(false);
   /** Instant (ms) of the user's previous visit; tasks created after it get a "New" marker. Null shows no markers (My Work only). */
   readonly newSince = input<number | null>(null);
+  /** Leave out the "Client · Matter" line under the title: on a Matter's or Project's own page the header already says it. */
+  readonly hideContext = input(false);
 
   readonly sortChange = output<string>();
   readonly assignToMe = output<TaskQueueRow>();
@@ -343,7 +366,10 @@ export class TaskTable {
     afterNextRender(() => {
       const el = this.wrap()?.nativeElement;
       if (!el) return;
-      const measure = () => this.overflowing.set(el.scrollWidth > el.clientWidth + 1);
+      const measure = () => {
+        this.boxWidth.set(el.clientWidth);
+        this.overflowing.set(el.scrollWidth > el.clientWidth + 1);
+      };
       measure();
       if (typeof ResizeObserver === 'undefined') return;
       const observer = new ResizeObserver(measure);
@@ -355,10 +381,26 @@ export class TaskTable {
   }
 
   protected readonly skeleton = SKELETON_ROWS;
+  /**
+   * Columns in table order. Below the width thresholds the lowest-priority columns drop out so Status and Due never scroll out of view
+   * (UXR4-02): Workflow progress moves under the title below 1100 px, the Matter column goes below 960 px (the line under the title
+   * still names the client and matter) and Project below 800 px. Unknown width (0, before the first measure or in tests) shows everything.
+   */
   protected readonly shownColumns = computed<ColumnDef[]>(() => {
     const wanted = new Set(this.columns());
-    return WORK_COLUMNS.filter((c) => c.locked || wanted.has(c.key));
+    const width = this.boxWidth();
+    const dropped = new Set<string>();
+    if (width > 0 && width < PROGRESS_FOLDS_BELOW) dropped.add('progress');
+    if (width > 0 && width < MATTER_HIDES_BELOW && !this.hideContext()) dropped.add('matter');
+    if (width > 0 && width < PROJECT_HIDES_BELOW) dropped.add('project');
+    return WORK_COLUMNS.filter((c) => c.locked || (wanted.has(c.key) && !dropped.has(c.key)));
   });
+
+  /** True when the Workflow progress column was asked for but is folded under the title because the table is narrow. */
+  protected readonly foldProgress = computed(
+    () =>
+      this.columns().includes('progress') && !this.shownColumns().some((c) => c.key === 'progress'),
+  );
 
   protected ariaSort(col: ColumnDef): 'ascending' | 'descending' | 'none' | null {
     if (!col.sortField) return null;

@@ -4,6 +4,7 @@
 
 .fb {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--mf-s3);
   margin-bottom: var(--mf-s3);
 }

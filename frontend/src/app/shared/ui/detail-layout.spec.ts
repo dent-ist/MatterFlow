@@ -20,6 +20,18 @@ import { DetailLayout } from './detail-layout';
 })
 class Host {}
 
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DetailLayout],
+  template: `
+    <mf-detail-layout [collapsible]="true">
+      <p mfMain data-m>Main grid</p>
+      <p mfAside data-a>Field values</p>
+    </mf-detail-layout>
+  `,
+})
+class CollapsibleHost {}
+
 /** A `matchMedia` where the wide and tablet queries are on or off. */
 function mockViewport(width: number): void {
   window.matchMedia = ((query: string) => {
@@ -103,6 +115,47 @@ describe('DetailLayout', () => {
     expect(el.querySelector('[data-detail-body]')!.hasAttribute('hidden')).toBe(false);
   });
 
+  describe('collapsible (Matter and Project), UXR4-02', () => {
+    afterEach(() => localStorage.removeItem('mf.detail-panel.open'));
+
+    async function renderCollapsible(width: number) {
+      mockViewport(width);
+      const f = TestBed.createComponent(CollapsibleHost);
+      await settle(f);
+      return { f, el: f.nativeElement as HTMLElement };
+    }
+
+    it('starts collapsed between 1100 and 1399 px with a Details button, and the choice is remembered', async () => {
+      const { f, el } = await renderCollapsible(1280);
+      const layout = el.querySelector('[data-detail-layout]')!;
+      expect(layout.getAttribute('data-layout')).toBe('wide-collapsible');
+      const toggle = el.querySelector<HTMLButtonElement>('[data-detail-toggle]')!;
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      expect(el.querySelector('[data-detail-body]')!.hasAttribute('hidden')).toBe(true);
+      expect(layout.classList).toContain('dl--slim');
+
+      toggle.click();
+      await settle(f);
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      expect(el.querySelector('[data-detail-body]')!.hasAttribute('hidden')).toBe(false);
+      expect(layout.classList).not.toContain('dl--slim');
+      expect(localStorage.getItem('mf.detail-panel.open')).toBe('1');
+      f.destroy();
+
+      const again = await renderCollapsible(1280);
+      expect(again.el.querySelector('[data-detail-toggle]')!.getAttribute('aria-expanded')).toBe(
+        'true',
+      );
+    });
+
+    it('is always open, with no button, from 1400 px', async () => {
+      const { el } = await renderCollapsible(1440);
+      expect(el.querySelector('[data-detail-toggle]')).toBeNull();
+      expect(el.querySelector('[data-detail-body]')!.hasAttribute('hidden')).toBe(false);
+      expect(el.querySelector('[data-detail-layout]')!.getAttribute('data-layout')).toBe('wide');
+    });
+  });
+
   it('uses the wide layout when the browser has no matchMedia', async () => {
     (window as { matchMedia?: unknown }).matchMedia = undefined;
     const el = await render(null);
@@ -153,6 +206,10 @@ describe('ActivityDrawer', () => {
     expect(dialog.getAttribute('aria-modal')).toBe('true');
     expect(dialog.textContent).toContain('Activity: Acme Corp');
     expect(dialog.textContent).toContain('No activity recorded yet.');
+    // Every Activity drawer opens on its Close button (UXR4-20).
+    expect(document.activeElement).toBe(
+      dialog.querySelector('button[aria-label="Close activity"]'),
+    );
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await settle(fixture);

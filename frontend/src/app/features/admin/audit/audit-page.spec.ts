@@ -269,6 +269,8 @@ describe('AuditPage', () => {
       'Step A completed (bulk) and 3 related changes',
     );
     expect(group.textContent).toContain('4 events in one operation');
+    // The group row carries the Object of the first thing that happened (UXR4-15).
+    expect(group.querySelector('[data-group-object]')!.textContent).toContain('Task');
     expect(el().querySelectorAll('tr[data-event]')).toHaveLength(1);
 
     // Opening the operation shows what happened; the field-level changes stay behind "View changes".

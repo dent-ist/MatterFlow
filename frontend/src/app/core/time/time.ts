@@ -210,7 +210,7 @@ export interface DueState {
   label: string;
   /** The date/time part only (empty for ASAP). */
   dateText: string;
-  /** `Overdue 4d` / `Due soon` suffix, when applicable. */
+  /** `Overdue 4d` / `Due today` / `Tomorrow` / `Due soon` suffix, when applicable. */
   badge?: string;
   tooltip?: string;
   overdue: boolean;
@@ -276,11 +276,14 @@ export function describeDue(
     };
   }
   if (dueIdx - today <= DUE_SOON_DAYS) {
+    // The same words as the queues' Due cell: "Due today", "Tomorrow", then "Due soon" (UXR4-18).
+    const badge =
+      dueIdx - today === 0 ? 'Due today' : dueIdx - today === 1 ? 'Tomorrow' : 'Due soon';
     return {
       kind: 'soon',
-      label: `${dateText} · Due soon`,
+      label: `${dateText} · ${badge}`,
       dateText,
-      badge: 'Due soon',
+      badge,
       overdue: false,
       hasTime,
       daysUntil: dueIdx - today,

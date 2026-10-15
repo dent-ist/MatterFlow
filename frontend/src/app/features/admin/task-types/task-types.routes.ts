@@ -32,7 +32,7 @@ export const TASK_TYPE_ROUTES: Routes = [
       {
         path: '',
         pathMatch: 'full',
-        title: 'Task types',
+        title: 'Task Types & Forms',
         loadComponent: () => import('./task-types-page').then((m) => m.TaskTypesPage),
       },
       {
@@ -44,7 +44,11 @@ export const TASK_TYPE_ROUTES: Routes = [
       {
         path: ':ownerId/form',
         title: 'Task type form',
-        data: { heading: 'Task types', ownerLabel: 'Task Type', sectionPath: '/admin/task-types' },
+        data: {
+          heading: 'Task Types & Forms',
+          ownerLabel: 'Task Type',
+          sectionPath: '/admin/task-types',
+        },
         canDeactivate: [unsavedChangesGuard],
         loadComponent: () => import('./task-type-form-page').then((m) => m.TaskTypeFormPage),
       },

@@ -127,6 +127,7 @@ const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'
           [rows]="rows()"
           [columns]="columns()"
           [caption]="caption()"
+          [hideContext]="true"
           [loading]="state() === 'loading'"
           [sort]="sort()"
           [dir]="dir()"

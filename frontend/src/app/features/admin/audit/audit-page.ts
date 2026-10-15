@@ -28,6 +28,7 @@ import {
   auditObjectText,
   groupByCorrelation,
   groupHeadline,
+  groupObjectItem,
   splitGroup,
 } from './audit-links';
 import { ListState } from '../../../shared/ui/data-table';
@@ -235,6 +236,7 @@ export class AuditPage implements OnDestroy {
 
   protected isFieldsOpen = (group: AuditGroup) => this.openFieldGroups().has(group.key);
   protected headline = groupHeadline;
+  protected objectItem = groupObjectItem;
   protected split = splitGroup;
   protected isOpen = (item: AuditSearchItem) => this.expanded().has(item.auditEventId);
   protected isGroupOpen = (group: AuditGroup) => this.openGroups().has(group.key);

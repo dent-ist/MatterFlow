@@ -51,12 +51,20 @@ export interface WorkTab {
     </div>
   `,
   styles: `
+    /* One row that scrolls sideways on a narrow screen, so every tab keeps the baseline underline (UXR4-19). */
     .tabs {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: var(--mf-s1);
+      overflow-x: auto;
+      scrollbar-width: thin;
+      /* Keeps the selected tab's 3 px underline (it overlaps the row's border by 2 px) inside the scrolling box. */
+      margin-bottom: -2px;
+      padding-bottom: 2px;
     }
     .tab {
+      flex: none;
+      white-space: nowrap;
       min-height: var(--mf-row-h);
       padding: 0 var(--mf-s4);
       border: 0;
@@ -77,7 +85,7 @@ export interface WorkTab {
       font-weight: 400;
     }
     .count--zero {
-      color: var(--mf-text-disabled);
+      color: var(--mf-text-muted);
     }
     .count--strong {
       font-weight: 700;

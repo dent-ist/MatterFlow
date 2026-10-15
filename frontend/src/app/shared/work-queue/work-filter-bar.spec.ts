@@ -101,6 +101,14 @@ describe('WorkFilterBar', () => {
     expect(el().querySelector('.fb-button')!.textContent).toContain('Filters (2)');
   });
 
+  it('does not repeat the search term as a chip or count it as a filter (UXR4-18)', async () => {
+    await create({ ...emptyFilters(), q: 'TSK-48' });
+    expect(el().querySelector('.fb-chips')).toBeNull();
+    expect(el().querySelector('.fb-button')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      'Filters',
+    );
+  });
+
   it('shows the default status quietly: no chip, no count, no Clear link (UXR-10)', async () => {
     await create(
       { ...emptyFilters(), status: [...OPEN_STATUSES] },

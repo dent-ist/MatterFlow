@@ -7,7 +7,13 @@
   <p class="mf-error" role="alert">We could not load roles. Try again.</p>
 } @else {
   <div class="mf-layout">
-    <section class="mf-list" aria-label="Roles">
+    <section class="mf-list" [class.mf-list--wide]="!editing()" aria-label="Roles">
+      @if (!editing()) {
+        <p class="mf-role-head" aria-hidden="true">
+          <span>Name</span><span>Description</span><span class="mf-role-head__n">Members</span
+          ><span></span>
+        </p>
+      }
       <ul>
         @for (r of roles(); track r.roleId) {
           <li>
@@ -18,13 +24,17 @@
               [class.mf-active]="selected()?.roleId === r.roleId"
               (click)="edit(r)"
             >
-              <span class="mf-name">{{ r.name }}</span>
-              @if (r.isSystemAdmin) {
-                <span class="mf-chip">Built-in, locked</span>
-              }
+              <span class="mf-namecell">
+                <span class="mf-name">{{ r.name }}</span>
+                @if (r.isSystemAdmin) {
+                  <span class="mf-chip">Built-in, locked</span>
+                }
+              </span>
+              <span class="mf-desc">{{ r.description }}</span>
               <span class="mf-count"
                 >{{ r.memberCount }} {{ r.memberCount === 1 ? 'member' : 'members' }}</span
               >
+              <i class="pi pi-chevron-right mf-go" aria-hidden="true"></i>
             </button>
           </li>
         }

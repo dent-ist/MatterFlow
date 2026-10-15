@@ -87,7 +87,7 @@ describe('describeDue', () => {
       const s = describeDue(due, utc('2026-10-29T03:59:59Z'), NY);
       expect(s.overdue).toBe(false);
       expect(s.kind).toBe('soon');
-      expect(s.label).toBe('Oct 28, 2026 · Due soon');
+      expect(s.label).toBe('Oct 28, 2026 · Due today');
     });
 
     it('becomes overdue at local midnight', () => {
@@ -119,6 +119,14 @@ describe('describeDue', () => {
     it('counts calendar days overdue', () => {
       const s = describeDue(due, utc('2026-11-02T12:00:00Z'), NY);
       expect(s.label).toBe('Oct 28, 2026 · Overdue 5d');
+    });
+
+    it('says "Due today", "Tomorrow" and then "Due soon", the words of the queues (UXR4-18)', () => {
+      expect(describeDue(due, utc('2026-10-28T12:00:00Z'), NY).badge).toBe('Due today');
+      expect(describeDue(due, utc('2026-10-27T12:00:00Z'), NY).label).toBe(
+        'Oct 28, 2026 · Tomorrow',
+      );
+      expect(describeDue(due, utc('2026-10-26T12:00:00Z'), NY).badge).toBe('Due soon');
     });
 
     it('is "Due soon" within two days, plain beyond', () => {

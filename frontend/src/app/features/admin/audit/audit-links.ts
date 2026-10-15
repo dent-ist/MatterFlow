@@ -83,6 +83,11 @@ export function splitGroup(group: AuditGroup): {
   };
 }
 
+/** The event whose object a group row shows: the first thing that happened, else the first change (UXR4-15). */
+export function groupObjectItem(group: AuditGroup): AuditSearchItem {
+  return splitGroup(group).happened[0] ?? group.items[0];
+}
+
 /**
  * One line for a group of events: the first thing that happened ("Step Intake review completed"), "and 2 related changes" for the
  * rest; when the operation only changed fields, the object and the fields ("Matter: 00343-00012 Merger: changed Name, Phone").

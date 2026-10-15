@@ -65,6 +65,10 @@ import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
     .cc {
       position: relative;
     }
+    /* Same height as the Filters button beside it in the toolbar row (UXR4-16). */
+    .cc-button {
+      min-height: var(--mf-row-h);
+    }
     .cc-panel {
       position: absolute;
       right: 0;

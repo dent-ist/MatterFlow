@@ -75,6 +75,15 @@
   }
 }
 
+/* Choosing a type uses the whole width (the card grid, the search and the email strip), not the 720 px form column (UXR4-04). */
+.ct--chooser {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.ct--chooser .ct__main {
+  max-width: none;
+}
+
 /* Type-first: the chooser grid of Task Type cards, and the chosen type as a chip above the form. */
 .ct__chooser {
   display: grid;

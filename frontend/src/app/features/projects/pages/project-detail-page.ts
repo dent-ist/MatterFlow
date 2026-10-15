@@ -98,7 +98,7 @@ type LoadState = 'loading' | 'ready' | 'error';
             </div>
           }
 
-          <mf-detail-layout>
+          <mf-detail-layout [collapsible]="true">
             <section mfMain aria-labelledby="project-tasks-h">
               <h2 id="project-tasks-h" class="pg-section-h">Tasks</h2>
               <mf-scoped-tasks
@@ -113,7 +113,6 @@ type LoadState = 'loading' | 'ready' | 'error';
                 <p-button
                   *mfHasPermission="'Project.Edit'"
                   label="Edit"
-                  icon="pi pi-pencil"
                   severity="secondary"
                   (onClick)="go('/projects/' + p.projectId + '/edit')"
                 />

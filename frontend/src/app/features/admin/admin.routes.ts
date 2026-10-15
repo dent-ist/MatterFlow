@@ -86,7 +86,11 @@ const assetTypeForm = (path: string): Route => ({
   canActivate: [permissionGuard('AssetType.Manage')],
   canDeactivate: [unsavedChangesGuard],
   providers: [{ provide: FormDesignerApi, useClass: AssetTypeFormDesignerApi }],
-  data: { heading: 'Asset types', ownerLabel: 'Asset Type', sectionPath: '/admin/asset-types' },
+  data: {
+    heading: 'Asset Types & Link Roles',
+    ownerLabel: 'Asset Type',
+    sectionPath: '/admin/asset-types',
+  },
   loadComponent: () => import('./task-types/task-type-form-page').then((m) => m.TaskTypeFormPage),
 });
 
@@ -114,7 +118,8 @@ export const ADMIN_ROUTES: Routes = [
   {
     // /admin/users and /admin/roles are the two tabs of one page; the component stays alive when the tab changes.
     matcher: usersRolesMatcher,
-    title: 'Users',
+    // Document title = the page name plus the open tab (UXR4-12): "Users", "Users - Roles".
+    title: (route) => (route.params['tab'] === 'roles' ? 'Users - Roles' : 'Users'),
     canActivate: [permissionGuard('User.View', 'User.Manage', 'Role.Manage')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./users/users-roles-page').then((m) => m.UsersRolesPage),
@@ -134,9 +139,17 @@ export const ADMIN_ROUTES: Routes = [
   },
   ...STEP_ROUTES,
   ...WORKFLOW_ROUTES,
-  lazyGuarded('asset-types', 'Asset types and link roles', 'AssetType.Manage', () =>
-    import('./asset-types/asset-admin-page').then((m) => m.AssetAdminPage),
-  ),
+  {
+    // The Assets set-up page of the Administration menu (not the Assets data list): title = page name plus the open tab.
+    ...lazyGuarded('asset-types', 'Asset Types & Link Roles', 'AssetType.Manage', () =>
+      import('./asset-types/asset-admin-page').then((m) => m.AssetAdminPage),
+    ),
+    title: (route) =>
+      route.queryParams['tab'] === 'link-roles'
+        ? 'Asset Types & Link Roles - Link Roles'
+        : 'Asset Types & Link Roles - Asset Types',
+    runGuardsAndResolvers: 'paramsOrQueryParamsChange',
+  },
   {
     // The old Asset link roles screen is the second tab of the Assets page.
     path: 'asset-link-roles',
@@ -148,10 +161,10 @@ export const ADMIN_ROUTES: Routes = [
     import('./custom-fields/custom-fields-page').then((m) => m.CustomFieldsPage),
   ),
   customFieldForm('custom-fields/:ownerId/form'),
-  lazyGuarded('priorities', 'Priorities', 'Priority.Manage', () =>
+  lazyGuarded('priorities', 'Labels - Priorities', 'Priority.Manage', () =>
     import('./priorities/priorities-page').then((m) => m.PrioritiesPage),
   ),
-  lazyGuarded('status-labels', 'Status labels', 'StatusLabel.Manage', () =>
+  lazyGuarded('status-labels', 'Labels - Status labels', 'StatusLabel.Manage', () =>
     import('./status-labels/status-labels-page').then((m) => m.StatusLabelsPage),
   ),
   lazy('audit', 'Audit Logs', 'Audit.View', () =>

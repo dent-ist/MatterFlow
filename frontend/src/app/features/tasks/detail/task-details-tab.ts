@@ -289,10 +289,10 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
             }
 
             <fieldset class="dt__due">
-              <legend class="mf-field__label">Due</legend>
+              <legend class="dt__sr">Due date and time</legend>
               <div class="dt__due-row">
                 <div class="mf-field">
-                  <label class="mf-field__label" for="td-due-date">Date</label>
+                  <label class="mf-field__label" for="td-due-date">Due date</label>
                   <mf-date-input
                     inputId="td-due-date"
                     label="due date"
@@ -440,9 +440,20 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
       border: 0;
     }
     .dt__due-row {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+      align-items: start;
       gap: var(--mf-s4);
+    }
+    .dt__due-row .mf-field {
+      min-width: 0;
+    }
+    .dt__sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
     }
     .dt__actions {
       display: flex;

@@ -44,19 +44,22 @@ export type WorkListState = 'loading' | 'ready' | 'error';
         (assignToMe)="assignToMe.emit($event)"
         (rowChange)="rowChange.emit($event)"
       />
-      @if (state() === 'ready' && !filtered() && rows().length > 0 && rows().length < 5) {
-        <div class="wl-near" data-near-empty><ng-content select="[near-empty]" /></div>
-      }
-      @if (rows().length > 0) {
-        <mf-pager
-          [page]="page()"
-          [pageSize]="pageSize()"
-          [pageSizes]="sizes"
-          [total]="total()"
-          (pageChange)="pageChange.emit($event)"
-          (pageSizeChange)="pageSizeChange.emit($event)"
-        />
-      }
+      <div class="wl-footrow">
+        @if (state() === 'ready' && !filtered() && rows().length > 0 && rows().length < 5) {
+          <div class="wl-near" data-near-empty><ng-content select="[near-empty]" /></div>
+        }
+        @if (rows().length > 0) {
+          <mf-pager
+            class="wl-pager"
+            [page]="page()"
+            [pageSize]="pageSize()"
+            [pageSizes]="sizes"
+            [total]="total()"
+            (pageChange)="pageChange.emit($event)"
+            (pageSizeChange)="pageSizeChange.emit($event)"
+          />
+        }
+      </div>
     } @else if (state() === 'ready') {
       <div class="wl-empty" data-empty>
         @if (filtered()) {

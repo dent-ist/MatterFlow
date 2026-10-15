@@ -25,6 +25,8 @@ import { EntityActivity } from './entity-activity';
       [dismissableMask]="true"
       closeAriaLabel="Close activity"
       [mfDialogFocus]="visible()"
+      [focusOnShow]="false"
+      (onShow)="focusClose()"
       [draggable]="false"
       [resizable]="false"
       [visible]="visible()"
@@ -53,6 +55,11 @@ import { EntityActivity } from './entity-activity';
   `,
 })
 export class ActivityDrawer {
+  /** Every Activity drawer opens with focus on its Close button, whether or not its content has loaded yet (UXR4-20). */
+  protected focusClose(): void {
+    document.querySelector<HTMLElement>('.mf-drawer button[aria-label="Close activity"]')?.focus();
+  }
+
   /** Audit `ObjectType`, for example `Client`. */
   readonly objectType = input<string | null>(null);
   readonly objectId = input<number | string | null>(null);

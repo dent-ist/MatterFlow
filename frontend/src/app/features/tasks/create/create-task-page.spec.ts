@@ -318,6 +318,27 @@ describe('CreateTaskPage', () => {
     expect(field(many, '[data-type-none]')).not.toBeNull();
   });
 
+  it('ranks name matches before description matches and ignores hyphens ("dedup" finds De-duplication)', async () => {
+    const types = [
+      ...Array.from({ length: 12 }, (_, i) => aType({ id: i + 1, name: `Filler ${i + 1}` })),
+      aType({ id: 20, name: 'Zebra review', description: 'Includes dedup of mailboxes' }),
+      aType({ id: 21, name: 'De-duplication' }),
+    ];
+    const h = await create({ types });
+    await type(h, '[data-type-search]', 'dedup');
+    const names = Array.from(h.el.querySelectorAll('[data-type-card] .ct__card-name')).map((e) =>
+      e.textContent?.trim(),
+    );
+    expect(names).toEqual(['De-duplication', 'Zebra review']);
+  });
+
+  it('uses the whole page width while the type is being chosen, not the 720 px form column (UXR4-04)', async () => {
+    const h = await create({});
+    expect(field(h, '.ct').classList).toContain('ct--chooser');
+    await pickType(h);
+    expect(field(h, '.ct').classList).not.toContain('ct--chooser');
+  });
+
   it('preselects the default workflow and renders the type form with its conditional rules', async () => {
     const h = await create({ inputs: { matterId: '7' } });
     expect(field(h, '[data-request-details]')).toBeNull();

@@ -231,7 +231,7 @@
                       }}</time>
                     </td>
                     <td>{{ g.items[0].actor.displayName }}</td>
-                    <td colspan="2">
+                    <td>
                       <strong data-headline>{{ headline(g) }}</strong>
                       <span class="au-muted"> ({{ g.items.length }} events in one operation)</span>
                       <button
@@ -241,6 +241,14 @@
                       >
                         Show only this operation
                       </button>
+                    </td>
+                    <td data-group-object>
+                      @let first = objectItem(g);
+                      @if (route(first); as link) {
+                        <a class="au-linkout" [routerLink]="link">{{ objectText(first) }}</a>
+                      } @else {
+                        {{ objectText(first) }}
+                      }
                     </td>
                   </tr>
                   @if (isGroupOpen(g)) {

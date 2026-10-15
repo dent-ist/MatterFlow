@@ -28,7 +28,10 @@ type AssetAdminTab = 'types' | 'link-roles';
   imports: [PageHeader, Tabs, AssetTypesPage, AssetLinkRolesPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-page-header heading="Asset types and link roles" />
+    <mf-page-header
+      heading="Asset Types & Link Roles"
+      [crumbs]="[{ label: 'Administration' }, { label: 'Assets' }]"
+    />
     <mf-tabs
       label="Asset set-up"
       idPrefix="assets-admin"

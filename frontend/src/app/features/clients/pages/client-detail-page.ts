@@ -106,7 +106,6 @@ type LoadState = 'loading' | 'ready' | 'error';
                 <p-button
                   *mfHasPermission="'Client.Edit'"
                   label="Edit"
-                  icon="pi pi-pencil"
                   severity="secondary"
                   (onClick)="go('/clients/' + c.clientId + '/edit')"
                 />

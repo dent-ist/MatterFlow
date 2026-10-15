@@ -56,7 +56,22 @@
   font: inherit;
 }
 
+/* The "That's everything" line and the pager share one row instead of the line floating between the table and a full pager (UXR4-19). */
+.wl-footrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 var(--mf-s4);
+}
+
+.wl-pager {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .wl-near {
-  margin: var(--mf-s3) 0;
+  flex: 1 1 18rem;
+  margin: var(--mf-s2) 0;
   color: var(--mf-text-muted);
 }

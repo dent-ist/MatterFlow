@@ -147,14 +147,22 @@ th[aria-sort='descending'] .wt-sort {
   min-width: 0;
 }
 
-.wt-titleline {
+.wt-subline {
   display: flex;
   align-items: baseline;
   gap: var(--mf-s2);
   min-width: 0;
 }
 
+/* The step line shown under the title when the Workflow progress column is folded away (narrow tables). */
+.wt-stepline {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .wt-sub {
+  min-width: 0;
   overflow: hidden;
   color: var(--mf-text-muted);
   font-size: var(--mf-fs-sm);
@@ -182,12 +190,12 @@ th[aria-sort='descending'] .wt-sort {
 
 .wt td[data-col='assignee'] mf-row-edit {
   display: block;
-  max-width: 9rem;
+  max-width: 8rem;
 }
 
 .wt-clip {
   display: block;
-  max-width: 9rem;
+  max-width: 8rem;
   overflow: hidden;
   text-overflow: ellipsis;
 }

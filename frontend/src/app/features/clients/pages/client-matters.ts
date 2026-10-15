@@ -45,9 +45,9 @@ import { SearchBox } from '../../../shared/ui/search-box';
     .cm-bar .pg-filters {
       margin-bottom: 0;
     }
-    /* Lines the button up with the search input (the filters have a label row above their controls). */
+    /* Lines the button up with the search input (a label row above the controls, and a 40 px input against a 32 px button). */
     .cm-create {
-      margin-top: 1.5rem;
+      margin-top: calc(1.5rem + (var(--mf-row-h) - 32px) / 2);
     }
   `,
   template: `

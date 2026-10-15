@@ -45,6 +45,7 @@ let nextId = 0;
   styles: `
     .mf-pager {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: flex-end;
       gap: var(--mf-s2);

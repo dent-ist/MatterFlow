@@ -53,7 +53,7 @@ interface DisplayGroup {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'onDocumentClick($event)', '(focusout)': 'onFocusOut($event)' },
   template: `
-    <div class="mf-gs" role="search">
+    <div class="mf-gs" role="search" aria-label="Search MatterFlow">
       <i class="pi pi-search" aria-hidden="true"></i>
       <input
         #box

@@ -194,13 +194,38 @@ export class CreateTaskPage implements HasUnsavedChanges {
     () => this.usableChoices().length > TYPE_SEARCH_THRESHOLD,
   );
   protected readonly typeQuery = signal('');
+  /**
+   * The types matching every typed word in name or description, best first: matches in the name before description-only ones, word starts
+   * before the middle of a word. Hyphens and punctuation are ignored ("dedup" finds "De-duplication"). Ties keep the list order.
+   */
   protected readonly shownChoices = computed(() => {
     const words = this.typeQuery().toLowerCase().split(/\s+/).filter(Boolean);
     if (words.length === 0) return this.usableChoices();
-    return this.usableChoices().filter((c) => {
-      const text = `${c.type.name} ${c.type.description ?? ''}`.toLowerCase();
-      return words.every((w) => text.includes(w));
-    });
+    const squash = (t: string) => t.replace(/[^\p{L}\p{N}]+/gu, '');
+    const rank = (name: string, description: string): number | null => {
+      const nameSquashed = squash(name);
+      const nameWords = name.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+      const text = `${name} ${description}`;
+      const textSquashed = squash(text);
+      let total = 0;
+      for (const w of words) {
+        const ws = squash(w);
+        if (nameWords.some((n) => n.startsWith(w)) || nameSquashed.startsWith(ws)) total += 0;
+        else if (name.includes(w) || nameSquashed.includes(ws)) total += 1;
+        else if (text.includes(w) || textSquashed.includes(ws)) total += 2;
+        else return null;
+      }
+      return total;
+    };
+    return this.usableChoices()
+      .map((c, index) => ({
+        c,
+        index,
+        r: rank(c.type.name.toLowerCase(), (c.type.description ?? '').toLowerCase()),
+      }))
+      .filter((x) => x.r !== null)
+      .sort((x, y) => (x.r as number) - (y.r as number) || x.index - y.index)
+      .map((x) => x.c);
   });
   /** Roving tab stop of the card grid: the focused card, else the first shown. */
   protected readonly focusedType = signal<number | null>(null);

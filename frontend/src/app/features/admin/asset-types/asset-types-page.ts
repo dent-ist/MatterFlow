@@ -17,6 +17,8 @@ import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ActiveBadge } from '../../../shared/ui/badge';
+import { StatusFilter } from '../../../shared/ui/data-table';
+import { SearchBox } from '../../../shared/ui/search-box';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -27,7 +29,16 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-asset-types-page',
-  imports: [ActiveBadge, ConfirmDialog, ErrorReference, RouterLink, Button, TextField],
+  imports: [
+    ActiveBadge,
+    ConfirmDialog,
+    ErrorReference,
+    RouterLink,
+    Button,
+    SearchBox,
+    StatusFilter,
+    TextField,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -122,6 +133,20 @@ type LoadState = 'loading' | 'ready' | 'error';
       </form>
     }
 
+    <div class="pg-filters" role="search">
+      <mf-search-box
+        inputId="asset-type-search"
+        placeholder="Asset type name"
+        [value]="q()"
+        (searchChange)="onSearch($event)"
+      />
+      <mf-status-filter
+        inputId="asset-type-status"
+        [value]="statusFilter()"
+        (valueChange)="onStatus($event)"
+      />
+    </div>
+
     @switch (state()) {
       @case ('loading') {
         <div class="pg-state" role="status" aria-busy="true">Loading asset types...</div>
@@ -135,7 +160,13 @@ type LoadState = 'loading' | 'ready' | 'error';
       }
       @case ('ready') {
         @if (rows().length === 0) {
-          <div class="pg-state" data-empty>No asset types yet.</div>
+          <div class="pg-state" data-empty>
+            {{
+              q() || statusFilter() !== 'all'
+                ? 'No asset types match these filters.'
+                : 'No asset types yet.'
+            }}
+          </div>
         } @else {
           <div class="mf-table-wrap">
             <div class="mf-scroll">
@@ -237,6 +268,9 @@ export class AssetTypesPage implements OnInit {
   protected readonly canManage = computed(() => this.auth.has('AssetType.Manage'));
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<AssetTypeResponse[]>([]);
+  /** The same toolbar as the other admin lists: a search box and a status filter (UXR4-13). Everything is shown until narrowed. */
+  protected readonly q = signal('');
+  protected readonly statusFilter = signal<'active' | 'inactive' | 'all'>('all');
   protected readonly busy = signal(false);
   protected readonly announcement = signal('');
   protected readonly deactivateOpen = signal(false);
@@ -267,14 +301,31 @@ export class AssetTypesPage implements OnInit {
   async load(): Promise<void> {
     this.state.set('loading');
     try {
+      const status = this.statusFilter();
       const page = await firstValueFrom(
-        this.api.listAssetTypes(undefined, undefined, 1, 100, 'sortOrder'),
+        this.api.listAssetTypes(
+          this.q().trim() || undefined,
+          status === 'all' ? undefined : status === 'active',
+          1,
+          100,
+          'sortOrder',
+        ),
       );
       this.rows.set(page.items);
       this.state.set('ready');
     } catch {
       this.state.set('error');
     }
+  }
+
+  protected onSearch(value: string): void {
+    this.q.set(value);
+    void this.load();
+  }
+
+  protected onStatus(value: string): void {
+    this.statusFilter.set(value === 'active' || value === 'inactive' ? value : 'all');
+    void this.load();
   }
 
   protected startCreate(): void {

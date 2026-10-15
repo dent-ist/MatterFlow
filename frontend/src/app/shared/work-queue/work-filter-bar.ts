@@ -304,12 +304,13 @@ export class WorkFilterBar {
       wanted.every((code) => current.includes(code))
     );
   });
+  /** The search term is shown in the search box beside, so it is neither a chip nor part of the "Filters (n)" count (UXR4-18). */
   protected readonly count = computed(
-    () => filterCount(this.filters()) - (this.quietStatus() ? 1 : 0),
+    () => filterCount(this.filters()) - (this.quietStatus() ? 1 : 0) - (this.filters().q ? 1 : 0),
   );
   protected readonly chips = computed(() =>
     buildChips(this.filters(), this.names()).filter(
-      (chip) => !(this.quietStatus() && chip.key.startsWith('status:')),
+      (chip) => chip.key !== 'q' && !(this.quietStatus() && chip.key.startsWith('status:')),
     ),
   );
   protected readonly activeView = computed(() =>

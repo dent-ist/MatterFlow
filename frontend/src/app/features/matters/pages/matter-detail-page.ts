@@ -143,7 +143,7 @@ type LoadState = 'loading' | 'ready' | 'error';
             </div>
           }
 
-          <mf-detail-layout>
+          <mf-detail-layout [collapsible]="true">
             <div mfMain>
               <mf-tabs
                 label="Matter sections"
@@ -223,7 +223,6 @@ type LoadState = 'loading' | 'ready' | 'error';
                 <p-button
                   *mfHasPermission="'Matter.Edit'"
                   label="Edit"
-                  icon="pi pi-pencil"
                   severity="secondary"
                   (onClick)="go('/matters/' + m.matterId + '/edit')"
                 />

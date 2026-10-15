@@ -7,6 +7,50 @@ import Aura from '@primeuix/themes/aura';
  */
 export const MfPreset = definePreset(Aura, {
   components: {
+    // Toasts (UXR4-21): Aura's success/info/warn/error text is a mid-tone green/blue/yellow/red on a pale tint (below 4.5:1). Dark text
+    // of the same hue on the same kind of tint is 7:1 or better, the detail line is the normal text colour.
+    toast: {
+      success: {
+        background: '#E6F4EA',
+        borderColor: '#9ED2AD',
+        color: '#14532D',
+        detailColor: '#1B1F27',
+        closeButton: {
+          hoverBackground: '#CDE9D5',
+          focusRing: { color: '#B45309', shadow: 'none' },
+        },
+      },
+      info: {
+        background: '#E3ECFA',
+        borderColor: '#9DB9E6',
+        color: '#173C79',
+        detailColor: '#1B1F27',
+        closeButton: {
+          hoverBackground: '#C5D6F2',
+          focusRing: { color: '#B45309', shadow: 'none' },
+        },
+      },
+      warn: {
+        background: '#FEF3C7',
+        borderColor: '#EBC663',
+        color: '#78350F',
+        detailColor: '#1B1F27',
+        closeButton: {
+          hoverBackground: '#FCE79A',
+          focusRing: { color: '#B45309', shadow: 'none' },
+        },
+      },
+      error: {
+        background: '#FDECEA',
+        borderColor: '#F4B6AE',
+        color: '#7F1710',
+        detailColor: '#1B1F27',
+        closeButton: {
+          hoverBackground: '#FADBD7',
+          focusRing: { color: '#B45309', shadow: 'none' },
+        },
+      },
+    },
     // Button variants (UXR-04): primary = filled brand; secondary = white outline; danger = red outline (the red fill is the
     // `mf-btn--solid` class, used only in confirm dialogs); text = link style. One size: 14 px label, 32 px high (src/styles/_buttons.scss).
     button: {

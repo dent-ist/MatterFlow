@@ -50,7 +50,7 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
   template: `
     @if (store.task(); as t) {
       <div class="th" data-task-header>
-        <mf-page-header [crumbs]="crumbs()">
+        <mf-page-header [crumbs]="crumbs()" icon="">
           <span mfTitle class="th__title">
             <mf-task-type-icon
               class="th__icon"
