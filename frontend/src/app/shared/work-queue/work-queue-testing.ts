@@ -21,6 +21,7 @@ export function aRow(overrides: Partial<TaskQueueRow> = {}): TaskQueueRow {
     projectName: undefined,
     taskTypeId: 2,
     taskTypeName: 'Data Processing',
+    taskTypeIconKey: 'cpu-2',
     workflowDefinitionId: 3,
     workflowName: 'Ordered flow',
     priority: { priorityId: 1, label: 'Critical', color: 'critical', sortOrder: 1 },

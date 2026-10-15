@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { queueParams } from '../dashboard-links';
 
 /** One bar: a text label, its number, and the Task Queue query it drills into (null: not linkable). */
@@ -14,6 +15,8 @@ export interface BarItem {
   /** Explicit bar fill and outline (CSS colours), for example the badge colours of a priority. */
   fill?: string | null;
   outline?: string | null;
+  /** Task Type icon key (task type breakdown only); drawn before the label, neutral colour. */
+  iconKey?: string | null;
 }
 
 /** "42%", or "<1%" for a small non-zero share; no decimals, so a list can add up to 99 or 101. */
@@ -32,7 +35,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-bar-list',
-  imports: [RouterLink, NgTemplateOutlet],
+  imports: [RouterLink, NgTemplateOutlet, TaskTypeIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="card" [attr.aria-labelledby]="id + '-h'">
@@ -70,6 +73,9 @@ let nextId = 0;
                 <tr>
                   <th scope="row">
                     @if (item.query; as q) {
+                      @if (item.iconKey) {
+                        <mf-task-type-icon [iconKey]="item.iconKey" size="sm" />
+                      }
                       <a routerLink="/tasks" [queryParams]="params(q)">{{ item.label }}</a>
                     } @else {
                       {{ item.label }}
@@ -106,7 +112,12 @@ let nextId = 0;
     </section>
 
     <ng-template #rowBody let-item>
-      <span class="name">{{ item.label }}</span>
+      <span class="name">
+        @if (item.iconKey) {
+          <mf-task-type-icon class="ti" [iconKey]="item.iconKey" size="sm" />
+        }
+        {{ item.label }}</span
+      >
       <span class="track" aria-hidden="true">
         @if (item.count > 0) {
           <span
@@ -188,6 +199,10 @@ let nextId = 0;
       overflow-wrap: anywhere;
       font-size: var(--mf-fs-md);
       line-height: 1.25;
+    }
+    .ti {
+      margin-right: var(--mf-s1);
+      color: var(--mf-text-muted);
     }
     .track {
       display: block;

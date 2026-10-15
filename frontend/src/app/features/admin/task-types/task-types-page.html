@@ -88,7 +88,10 @@
           @for (t of rows(); track t.id) {
             <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
               <td>
-                <a [routerLink]="['/admin/task-types', t.id]">{{ t.name }}</a>
+                <span class="tt-name">
+                  <mf-task-type-icon [iconKey]="t.iconKey" />
+                  <a [routerLink]="['/admin/task-types', t.id]">{{ t.name }}</a>
+                </span>
                 @if (warning(t); as w) {
                   <p class="chip" data-warning>{{ w }}</p>
                 }

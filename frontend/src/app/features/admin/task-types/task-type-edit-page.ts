@@ -22,12 +22,15 @@ import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { PageTitle } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { DEFAULT_TASK_TYPE_ICON } from '../../../shared/icons/task-type-icon';
+import { TaskTypeIconPicker } from '../../../shared/icons/task-type-icon-picker';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
 interface Model {
   name: string;
   description: string;
+  iconKey: string;
   isActive: boolean;
   eligible: number[];
   defaultWorkflow: number | null;
@@ -36,6 +39,7 @@ interface Model {
 const EMPTY: Model = {
   name: '',
   description: '',
+  iconKey: DEFAULT_TASK_TYPE_ICON,
   isActive: true,
   eligible: [],
   defaultWorkflow: null,
@@ -57,7 +61,15 @@ const key = (m: Model): string =>
 @Component({
   selector: 'mf-task-type-edit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeader, ConfirmDialog, ErrorReference, FormsModule, RouterLink, Button],
+  imports: [
+    PageHeader,
+    ConfirmDialog,
+    ErrorReference,
+    FormsModule,
+    RouterLink,
+    Button,
+    TaskTypeIconPicker,
+  ],
   templateUrl: './task-type-edit-page.html',
   styleUrls: ['../admin-lookup.scss', './task-type-edit-page.scss'],
 })
@@ -144,6 +156,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     return {
       name: t.name,
       description: t.description ?? '',
+      iconKey: t.iconKey,
       isActive: t.isActive,
       eligible: [...t.eligibleWorkflowIds],
       defaultWorkflow: t.defaultWorkflowDefinitionId ?? null,
@@ -216,6 +229,10 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
       this.fieldErrors.set({ name: 'Enter a name.' });
       return;
     }
+    if (!m.iconKey) {
+      this.fieldErrors.set({ iconKey: 'Choose an icon.' });
+      return;
+    }
     if (!deactivationConfirmed && this.taskType()?.isActive && !m.isActive) {
       this.deactivateOpen.set(true);
       return;
@@ -232,6 +249,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
           this.api.create({
             name,
             description,
+            iconKey: m.iconKey,
             isActive: m.isActive,
             eligibleWorkflowIds: m.eligible,
             defaultWorkflowDefinitionId,
@@ -245,6 +263,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
           this.api.update(current.id, {
             name,
             description,
+            iconKey: m.iconKey,
             isActive: m.isActive,
             eligibleWorkflowIds: m.eligible,
             defaultWorkflowDefinitionId,

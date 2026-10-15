@@ -85,6 +85,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     query: i.query ?? null,
     tone: i.code ?? null,
     muted: i.isOther,
+    iconKey: i.iconKey ?? null,
   }));
 }
 

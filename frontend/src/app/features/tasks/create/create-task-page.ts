@@ -49,7 +49,9 @@ import { toFormDefinition } from '../../../shared/forms/form-schema';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
+import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { GridNav } from '../../../shared/ui/grid-nav';
 import { splitFormErrors } from '../../../shared/ui/custom-fields';
 import { EmailIntake, EmailPrefill } from '../../../shared/ui/email-intake';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
@@ -65,6 +67,8 @@ export const TITLE_MAX = 200;
 const DESCRIPTION_MAX = 20000;
 const REQUESTOR_NAME_MAX = 200;
 const REQUESTOR_EMAIL_MAX = 254;
+/** More types than this and the chooser shows a search box. */
+export const TYPE_SEARCH_THRESHOLD = 12;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface WorkflowChoice {
@@ -89,7 +93,9 @@ const matterOption = (m: MatterResponse): PickerOption => ({
 });
 
 /**
- * Create Task (UX S09): one page, one call. Matter and Project, the request (Title, Description, Task Type, the type's request form,
+ * Create Task (UX S09): one page, one call, type first. The page opens on a grid of Task Type cards (icon, name, short description);
+ * choosing one reveals the form with the type as a header chip and a "Change type" action. `?taskType=<id>` skips the chooser.
+ * The form holds Matter and Project, the request (Title, Description, Task Type, the type's request form,
  * eligible Workflow), who is asking, and priority, due date and assignment (each gated by its own permission). The optional
  * "Quick fill from email" panel only prefills; manual entry always works. Matter, Task Type and Workflow cannot change later, so a
  * summary repeats them before submit.
@@ -106,6 +112,8 @@ const matterOption = (m: MatterResponse): PickerOption => ({
     EntityPicker,
     TextField,
     ConfirmDialog,
+    GridNav,
+    TaskTypeIcon,
     PriorityBadge,
     MfDatePipe,
   ],
@@ -122,6 +130,8 @@ export class CreateTaskPage implements HasUnsavedChanges {
   /** Query parameters: prefill the Matter (and Project) when launched from their pages. */
   readonly matterId = input<string>();
   readonly projectId = input<string>();
+  /** Query parameter `taskType=<id>`: deep link that skips the type chooser (ignored when it is not a type the user may use). */
+  readonly taskType = input<string>();
 
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
@@ -176,7 +186,29 @@ export class CreateTaskPage implements HasUnsavedChanges {
       })
       .sort((a, b) => a.type.name.localeCompare(b.type.name));
   });
-  protected readonly anyUsableType = computed(() => this.typeChoices().some((c) => c.usable));
+  /** What the chooser offers: active types the user can actually create Tasks of (published form and at least one eligible workflow). */
+  protected readonly usableChoices = computed(() => this.typeChoices().filter((c) => c.usable));
+  /** Above this many types the chooser gets a search box. */
+  protected readonly searchableAbove = TYPE_SEARCH_THRESHOLD;
+  protected readonly showTypeSearch = computed(
+    () => this.usableChoices().length > TYPE_SEARCH_THRESHOLD,
+  );
+  protected readonly typeQuery = signal('');
+  protected readonly shownChoices = computed(() => {
+    const words = this.typeQuery().toLowerCase().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return this.usableChoices();
+    return this.usableChoices().filter((c) => {
+      const text = `${c.type.name} ${c.type.description ?? ''}`.toLowerCase();
+      return words.every((w) => text.includes(w));
+    });
+  });
+  /** Roving tab stop of the card grid: the focused card, else the first shown. */
+  protected readonly focusedType = signal<number | null>(null);
+  protected readonly cardTabStop = computed(() => {
+    const shown = this.shownChoices();
+    const focused = this.focusedType();
+    return shown.some((c) => c.type.id === focused) ? focused : (shown[0]?.type.id ?? null);
+  });
 
   // --- form state --------------------------------------------------------------------------------
   protected readonly matter = signal<PickerOption | null>(null);
@@ -207,7 +239,6 @@ export class CreateTaskPage implements HasUnsavedChanges {
   protected readonly seed = signal<Record<string, unknown>>({});
   protected readonly formValues = signal<Record<string, unknown>>({});
   protected readonly formErrors = signal<ServerFieldError[]>([]);
-  protected readonly pendingType = signal<number | null>(null);
   protected readonly confirmTypeOpen = signal(false);
 
   // --- submit state --------------------------------------------------------------------------------
@@ -221,6 +252,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
   protected readonly emailFilled = signal(false);
   private saved = false;
   private schemaTurn = 0;
+  private deepLinkApplied = false;
 
   // --- derived -------------------------------------------------------------------------------------
   protected readonly selectedChoice = computed(
@@ -315,6 +347,19 @@ export class CreateTaskPage implements HasUnsavedChanges {
   constructor() {
     void this.load();
 
+    // `?taskType=<id>` skips the chooser, once the types are known.
+    effect(() => {
+      const wanted = Number(this.taskType());
+      const ready = this.state() === 'ready';
+      untracked(() => {
+        if (!ready || this.deepLinkApplied || !Number.isInteger(wanted) || wanted <= 0) return;
+        this.deepLinkApplied = true;
+        if (this.typeId() === null && this.usableChoices().some((c) => c.type.id === wanted)) {
+          this.applyType(wanted);
+        }
+      });
+    });
+
     // Prefill from the Matter / Project the user came from.
     effect(() => {
       const matterId = Number(this.matterId());
@@ -352,7 +397,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
       this.description().trim() !== '' ||
       this.requestorName().trim() !== '' ||
       this.requestorEmail().trim() !== '' ||
-      this.typeId() !== null ||
+      Object.keys(this.formValues()).length > 0 ||
       this.dueDate() !== '' ||
       this.podId() !== null ||
       this.assignee() !== null ||
@@ -473,27 +518,34 @@ export class CreateTaskPage implements HasUnsavedChanges {
 
   // --- task type, workflow, request form -------------------------------------------------------------------
 
-  protected onTypeChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const next = select.value ? Number(select.value) : null;
-    if (next === this.typeId()) return;
+  /** A card was chosen: the form appears, with the type as its header chip. */
+  protected chooseType(id: number): void {
+    if (id === this.typeId()) return;
+    this.applyType(id);
+    this.typeQuery.set('');
+    setTimeout(() => document.getElementById('ct-matter')?.focus());
+  }
+
+  /** "Change type": back to the chooser. Values entered in the type's request form are lost, so ask first when there are any. */
+  protected changeType(): void {
     if (Object.keys(this.formValues()).length > 0) {
-      select.value = this.typeId() === null ? '' : String(this.typeId()); // stay on the current type until confirmed
-      this.pendingType.set(next);
       this.confirmTypeOpen.set(true);
       return;
     }
-    this.applyType(next);
+    this.backToChooser();
   }
 
   protected confirmTypeChange(): void {
     this.confirmTypeOpen.set(false);
-    this.applyType(this.pendingType());
-    this.pendingType.set(null);
+    this.backToChooser();
   }
 
-  protected keepType(): void {
-    this.pendingType.set(null);
+  private backToChooser(): void {
+    this.applyType(null);
+    this.focusedType.set(null);
+    setTimeout(() =>
+      document.querySelector<HTMLElement>('[data-type-card][tabindex="0"]')?.focus(),
+    );
   }
 
   private applyType(id: number | null): void {
@@ -703,7 +755,9 @@ export class CreateTaskPage implements HasUnsavedChanges {
     this.assignee.set(null);
     this.applyType(null);
     this.summary.set([]);
-    setTimeout(() => document.getElementById('ct-title')?.focus());
+    setTimeout(() =>
+      document.querySelector<HTMLElement>('[data-type-card][tabindex="0"]')?.focus(),
+    );
   }
 
   protected cancel(): void {

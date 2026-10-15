@@ -134,7 +134,15 @@ th[aria-sort='descending'] .wt-sort {
 }
 
 .wt-titlecell {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mf-s2);
+  min-width: 0;
+}
+
+.wt-titlebody {
   display: grid;
+  flex: 1;
   gap: 2px;
   min-width: 0;
 }
@@ -182,6 +190,13 @@ th[aria-sort='descending'] .wt-sort {
   max-width: 9rem;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* The Task Type icon sits before the title; neutral colour, it never replaces the name (also in the Task type column and the detail). */
+.wt-typeicon {
+  flex: none;
+  padding-top: 1px;
+  color: var(--mf-text-muted);
 }
 
 .wt-title {

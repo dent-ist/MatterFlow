@@ -29,3 +29,9 @@
   gap: var(--mf-s4);
   margin-bottom: var(--mf-s3);
 }
+
+.tt-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mf-s2);
+}

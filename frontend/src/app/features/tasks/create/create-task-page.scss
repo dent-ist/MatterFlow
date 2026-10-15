@@ -74,3 +74,88 @@
     top: var(--mf-s4);
   }
 }
+
+/* Type-first: the chooser grid of Task Type cards, and the chosen type as a chip above the form. */
+.ct__chooser {
+  display: grid;
+  gap: var(--mf-s3);
+}
+
+.ct__search {
+  max-width: 24rem;
+}
+
+.ct__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--mf-s3);
+}
+
+.ct__card-type {
+  display: grid;
+  justify-items: start;
+  align-content: start;
+  gap: var(--mf-s2);
+  min-height: 7rem;
+  padding: var(--mf-s4);
+  color: var(--mf-text);
+  text-align: left;
+  font: inherit;
+  background: var(--mf-surface);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius-lg);
+  box-shadow: var(--mf-shadow-1);
+  cursor: pointer;
+}
+
+.ct__card-type:hover {
+  background: var(--mf-selected-bg);
+  border-color: var(--mf-primary);
+}
+
+.ct__card-type:focus-visible {
+  outline: 2px solid var(--mf-focus);
+  outline-offset: 2px;
+}
+
+.ct__card-name {
+  font-weight: 600;
+  font-size: var(--mf-fs-lg);
+}
+
+.ct__card-desc {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.ct__chip {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s3);
+  padding: var(--mf-s2) var(--mf-s3);
+  background: var(--mf-surface);
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius-lg);
+}
+
+.ct__chip-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.ct__chip-label {
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-xs);
+}
+
+@media (max-width: 480px) {
+  .ct__cards {
+    grid-template-columns: 1fr;
+  }
+}

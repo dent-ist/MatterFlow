@@ -12,6 +12,7 @@ import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-tab
 import { LocalListPage } from '../../../shared/ui/list-query';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
+import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { SearchBox } from '../../../shared/ui/search-box';
 
 /**
@@ -31,6 +32,7 @@ import { SearchBox } from '../../../shared/ui/search-box';
     StatusFilter,
     SortHeader,
     ListState,
+    TaskTypeIcon,
   ],
   templateUrl: './task-types-page.html',
   styleUrls: ['../admin-lookup.scss', './task-types-page.scss'],
@@ -143,6 +145,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> implements OnInit
         this.api.update(t.id, {
           name: t.name,
           description: t.description,
+          iconKey: t.iconKey,
           isActive,
           eligibleWorkflowIds: t.eligibleWorkflowIds,
           defaultWorkflowDefinitionId: t.defaultWorkflowDefinitionId,

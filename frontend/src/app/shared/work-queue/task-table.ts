@@ -16,6 +16,7 @@ import { TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { mfDate } from '../../core/time/time';
+import { TaskTypeIcon } from '../icons/task-type-icon';
 import { DueStatePipe } from '../pipes/due-label.pipe';
 import { MfDatePipe } from '../pipes/mf-date.pipe';
 import { MatterRef } from '../ui/matter-ref';
@@ -35,7 +36,16 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
  */
 @Component({
   selector: 'mf-task-table',
-  imports: [RouterLink, MatterRef, DueStatePipe, MfDatePipe, PriorityBadge, RowEdit, StatusBadge],
+  imports: [
+    TaskTypeIcon,
+    RouterLink,
+    MatterRef,
+    DueStatePipe,
+    MfDatePipe,
+    PriorityBadge,
+    RowEdit,
+    StatusBadge,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './task-table.scss',
   template: `
@@ -101,30 +111,34 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                       <span class="wt-mono">{{ row.taskNumber }}</span>
                     }
                     @case ('title') {
-                      <!-- TODO: show mf-task-type-icon before the title once the shared task type icon component is on dev. -->
                       <div class="wt-titlecell">
-                        <span class="wt-titleline">
-                          <a
-                            class="wt-title"
-                            [routerLink]="['/tasks', row.taskId]"
-                            [attr.title]="row.title"
-                            >{{ row.title }}</a
-                          >
-                          @if (isNew(row)) {
-                            <span
-                              class="wt-new"
-                              data-new-marker
-                              title="Assigned since your last visit"
-                              >New</span
-                            >
-                          }
+                        <span class="wt-typeicon" [attr.title]="row.taskTypeName" data-type-icon>
+                          <mf-task-type-icon [iconKey]="row.taskTypeIconKey" size="sm" />
                         </span>
-                        <span
-                          class="wt-sub"
-                          data-title-context
-                          [attr.title]="row.clientName + ' / ' + row.matterName"
-                          >{{ row.clientName }} · {{ row.matterName }}</span
-                        >
+                        <div class="wt-titlebody">
+                          <span class="wt-titleline">
+                            <a
+                              class="wt-title"
+                              [routerLink]="['/tasks', row.taskId]"
+                              [attr.title]="row.title"
+                              >{{ row.title }}</a
+                            >
+                            @if (isNew(row)) {
+                              <span
+                                class="wt-new"
+                                data-new-marker
+                                title="Assigned since your last visit"
+                                >New</span
+                              >
+                            }
+                          </span>
+                          <span
+                            class="wt-sub"
+                            data-title-context
+                            [attr.title]="row.clientName + ' / ' + row.matterName"
+                            >{{ row.clientName }} · {{ row.matterName }}</span
+                          >
+                        </div>
                       </div>
                     }
                     @case ('matter') {

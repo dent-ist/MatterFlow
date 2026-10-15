@@ -30,6 +30,7 @@ export class InMemoryTaskTypesApi extends TaskTypesApi {
       id: 1,
       name: 'Data Processing',
       description: 'Process and load collected data.',
+      iconKey: 'cpu-2',
       isActive: true,
       defaultWorkflowDefinitionId: 1,
       eligibleWorkflowIds: [1, 2],
@@ -67,6 +68,7 @@ export class InMemoryTaskTypesApi extends TaskTypesApi {
         id,
         name,
         description: request.description?.trim() || undefined,
+        iconKey: this.checkIcon(request.iconKey, true),
         isActive: request.isActive ?? true,
         defaultWorkflowDefinitionId: request.defaultWorkflowDefinitionId,
         eligibleWorkflowIds: eligible,
@@ -101,6 +103,7 @@ export class InMemoryTaskTypesApi extends TaskTypesApi {
         ...current,
         name,
         description: request.description?.trim() || undefined,
+        iconKey: this.checkIcon(request.iconKey, false),
         isActive: request.isActive,
         defaultWorkflowDefinitionId: request.defaultWorkflowDefinitionId,
         eligibleWorkflowIds: eligible,
@@ -128,6 +131,17 @@ export class InMemoryTaskTypesApi extends TaskTypesApi {
       throw problem(409, 'DUPLICATE_NAME', message, { name: [{ code: 'DUPLICATE', message }] });
     }
     return name;
+  }
+
+  private checkIcon(key: string | undefined, allowOmitted: boolean): string {
+    if (key === undefined && allowOmitted) return 'file-text';
+    if (!key || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(key)) {
+      const message = key ? 'Choose an icon from the library.' : 'Choose an icon.';
+      throw problem(400, 'VALIDATION_FAILED', message, {
+        iconKey: [{ code: key ? 'UNKNOWN_ICON' : 'REQUIRED', message }],
+      });
+    }
+    return key;
   }
 
   private check(ids: number[], defaultId: number | undefined): number[] {

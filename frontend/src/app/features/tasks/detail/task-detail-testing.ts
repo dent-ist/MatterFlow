@@ -129,7 +129,7 @@ export function aTask(all: Partial<TaskResponse> = {}): TaskResponse {
       isSensitive: false,
     },
     project: undefined,
-    taskType: { taskTypeId: 5, name: 'Data Processing' },
+    taskType: { taskTypeId: 5, name: 'Data Processing', iconKey: 'cpu-2' },
     title: 'Process Smith custodians',
     description: 'Process the custodians.',
     requestorName: 'Jane Roe',

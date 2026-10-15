@@ -1,0 +1,80 @@
+<button
+  type="button"
+  class="tip__trigger"
+  [id]="inputId()"
+  aria-haspopup="dialog"
+  [attr.aria-invalid]="invalid() ? 'true' : null"
+  [attr.aria-describedby]="describedBy()"
+  (click)="open()"
+  data-icon-trigger
+>
+  <mf-task-type-icon [iconKey]="value()" size="lg" />
+  <span class="tip__current">
+    <span class="tip__name" data-icon-current>{{ current()?.label ?? value() }}</span>
+    <span class="tip__hint">Change icon</span>
+  </span>
+</button>
+
+<p-dialog
+  header="Choose an icon"
+  [modal]="true"
+  [closable]="true"
+  closeAriaLabel="Close dialog"
+  [mfDialogFocus]="visible()"
+  [draggable]="false"
+  [resizable]="false"
+  [(visible)]="visible"
+  [style]="{ width: '52rem', maxWidth: '95vw' }"
+>
+  <div class="tip__body" data-icon-dialog>
+    <div class="tip__search">
+      <label for="tip-search">Search icons</label>
+      <input
+        id="tip-search"
+        class="tip__input"
+        type="search"
+        autocomplete="off"
+        placeholder="For example: email, review, production"
+        [value]="query()"
+        (input)="onQuery($event)"
+        data-icon-search
+      />
+    </div>
+    <p class="tip__status" role="status" aria-live="polite" data-icon-count>
+      @if (loadFailed()) {
+        The icons could not be loaded.
+      } @else {
+        {{ matchCount() }} {{ matchCount() === 1 ? 'icon' : 'icons' }}
+      }
+    </p>
+    @if (loadFailed()) {
+      <button type="button" class="tip__retry" (click)="loadCatalog()">Try again</button>
+    } @else if (matchCount() === 0) {
+      <p class="tip__empty" data-icon-empty>No icon matches "{{ query() }}". Try another word.</p>
+    }
+    <div class="tip__scroll" role="radiogroup" aria-label="Icons" mfGridNav>
+      @for (group of groups(); track group.category) {
+        <section class="tip__group" [attr.aria-label]="group.category">
+          <h3 class="tip__category">{{ group.category }}</h3>
+          <div class="tip__grid">
+            @for (icon of group.icons; track icon.key) {
+              <button
+                type="button"
+                role="radio"
+                class="tip__item"
+                [attr.aria-checked]="icon.key === value()"
+                [attr.tabindex]="icon.key === tabStop() ? 0 : -1"
+                [attr.data-key]="icon.key"
+                (click)="pick(icon.key)"
+                (focus)="activeKey.set(icon.key)"
+              >
+                <mf-task-type-icon [iconKey]="icon.key" size="lg" />
+                <span class="tip__label">{{ icon.label }}</span>
+              </button>
+            }
+          </div>
+        </section>
+      }
+    </div>
+  </div>
+</p-dialog>

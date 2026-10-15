@@ -54,6 +54,25 @@
           }
         </div>
         <div class="field">
+          <label id="tt-icon-label" for="tt-icon"
+            >Icon <span class="mf-req">(required)</span></label
+          >
+          <mf-task-type-icon-picker
+            inputId="tt-icon"
+            [value]="model().iconKey"
+            (valueChange)="patch({ iconKey: $event })"
+            [invalid]="!!fieldErrors()['iconKey']"
+            describedBy="tt-icon-help"
+          />
+          <p id="tt-icon-help" class="muted hint">
+            Shown next to the task type's name in lists, on task pages and when people choose a
+            type. Several types may share an icon.
+          </p>
+          @if (fieldErrors()['iconKey']) {
+            <p class="error" role="alert" data-icon-error>{{ fieldErrors()['iconKey'] }}</p>
+          }
+        </div>
+        <div class="field">
           <label for="tt-description">Description</label>
           <textarea
             id="tt-description"

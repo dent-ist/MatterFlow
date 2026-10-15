@@ -4,6 +4,7 @@ import {
   TaskResponse,
   TaskTransitionOption,
 } from '../../../api/generated/api-client';
+import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { DueLabelPipe } from '../../../shared/pipes/due-label.pipe';
 import { MatterRef } from '../../../shared/ui/matter-ref';
@@ -43,7 +44,7 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
  */
 @Component({
   selector: 'mf-task-header',
-  imports: [PageHeader, RowEdit, MatterRef, PriorityBadge, StatusBadge, DueLabelPipe],
+  imports: [TaskTypeIcon, PageHeader, RowEdit, MatterRef, PriorityBadge, StatusBadge, DueLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -98,6 +99,10 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
                 />
               }
             </span>
+            <span class="th__type" data-task-type
+              ><mf-task-type-icon [iconKey]="t.taskType.iconKey" />
+              <span class="pg-label">Type:</span> {{ t.taskType.name }}</span
+            >
             <span data-due
               ><span class="pg-label">Due:</span>
               {{ { dueDate: t.dueDate, dueAtUtc: t.dueAtUtc } | dueLabel: t.status }}</span
@@ -165,6 +170,11 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
       align-items: center;
       gap: var(--mf-s2) var(--mf-s4);
       margin-top: var(--mf-s2);
+    }
+    .th__type {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
     }
     .th__matter {
       display: inline-flex;
