@@ -87,6 +87,14 @@ export const MfPreset = definePreset(Aura, {
       950: '#081630',
     },
     focusRing: { width: '2px', style: 'solid', color: '#B45309', offset: '2px', shadow: 'none' },
+    // One control look (UXR-25): 14 px text, 40 px high (the min-height is in styles/_forms.scss) and the same focus ring as the
+    // native controls (.mf-control), so a p-select next to a native select cannot be told apart.
+    formField: {
+      fontSize: '0.875rem',
+      paddingX: '0.75rem',
+      paddingY: '0.5rem',
+      focusRing: { width: '2px', style: 'solid', color: '#B45309', offset: '2px', shadow: 'none' },
+    },
     colorScheme: {
       light: {
         primary: {

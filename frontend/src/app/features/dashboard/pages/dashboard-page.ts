@@ -72,7 +72,11 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       <div mfActions class="controls">
         <label class="period">
           <span>Period</span>
-          <select [value]="period()" (change)="setPeriod($any($event.target).value)">
+          <select
+            class="mf-control"
+            [value]="period()"
+            (change)="setPeriod($any($event.target).value)"
+          >
             @for (p of periods; track p.days) {
               <option [value]="p.days" [selected]="p.days === period()">{{ p.label }}</option>
             }
@@ -264,16 +268,6 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       gap: var(--mf-s2);
       font-size: var(--mf-fs-sm);
       color: var(--mf-text-muted);
-    }
-    select {
-      min-height: 32px;
-      padding: 0 var(--mf-s3);
-      font: inherit;
-      color: var(--mf-text);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      cursor: pointer;
     }
     .updated {
       font-size: var(--mf-fs-sm);

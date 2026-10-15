@@ -1,0 +1,86 @@
+/*
+ * Form controls (UXR-16, UXR-25): one look for every native input, select and textarea, and the values the PrimeNG controls are themed to
+ * (core/theme/mf-preset.ts): 40 px high, 14 px text, 1 px strong border, 4 px radius, and the one focus ring from tokens.css
+ * (2 px solid --mf-focus, 2 px offset). Use `.mf-control` in templates; `--compact` (32 px) only inside table rows and toolbars.
+ *
+ *   .mf-control        input, select, textarea
+ *   .mf-label          bold label above a control (13 px in filter bars: add .mf-label--sm)
+ *   .mf-req            the "(required)" marker after a label; optional fields are not marked
+ *   .mf-form-card      white card surface for a page form, 640 px at most
+ *   .mf-form-actions   buttons at the end of a page form: primary first, then Cancel
+ *   .mf-form-error     inline field error with icon
+ */
+@use './form-mixins' as m;
+
+.mf-control {
+  @include m.mf-control;
+  @include m.mf-control-states;
+}
+
+textarea.mf-control {
+  min-height: 0;
+  padding: var(--mf-s2) var(--mf-s3);
+  resize: vertical;
+}
+
+.mf-control--compact {
+  min-height: var(--mf-row-h-compact);
+  padding: 0 var(--mf-s2);
+}
+
+.mf-label {
+  font-weight: 600;
+  font-size: var(--mf-fs-md);
+}
+
+.mf-label--sm {
+  font-size: var(--mf-fs-sm);
+}
+
+.mf-req {
+  font-weight: 400;
+  color: var(--mf-text-muted);
+}
+
+.mf-form-card {
+  display: grid;
+  gap: var(--mf-s4);
+  box-sizing: border-box;
+  max-width: 640px;
+  padding: var(--mf-s5);
+  background: var(--mf-surface);
+  border-radius: var(--mf-radius-lg);
+  box-shadow: var(--mf-shadow-1);
+}
+
+.mf-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s2);
+  align-items: center;
+}
+
+.mf-form-error {
+  margin: 0;
+  color: var(--mf-danger);
+  font-size: var(--mf-fs-sm);
+}
+
+/* PrimeNG form controls match the native ones: same height, 14 px text (font size comes from the preset). */
+.p-inputtext,
+.p-select,
+.p-multiselect,
+.p-inputnumber-input {
+  min-height: var(--mf-row-h);
+  box-sizing: border-box;
+}
+
+.p-select,
+.p-multiselect {
+  align-items: center;
+}
+
+.p-select-label,
+.p-multiselect-label {
+  font-size: var(--mf-fs-md);
+}

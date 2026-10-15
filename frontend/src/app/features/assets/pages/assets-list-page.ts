@@ -61,7 +61,7 @@ import { SearchBox } from '../../../shared/ui/search-box';
         <label for="asset-type-filter">Type</label>
         <select
           id="asset-type-filter"
-          class="pg-input"
+          class="mf-control pg-input"
           [value]="typeId() ?? ''"
           (change)="setType($any($event.target).value)"
         >

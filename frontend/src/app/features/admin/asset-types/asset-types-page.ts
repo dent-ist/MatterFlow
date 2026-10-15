@@ -95,7 +95,7 @@ type LoadState = 'loading' | 'ready' | 'error';
           <label for="type-order">Order</label>
           <input
             id="type-order"
-            class="pg-input"
+            class="mf-control pg-input"
             type="number"
             step="1"
             [value]="sortOrder()"

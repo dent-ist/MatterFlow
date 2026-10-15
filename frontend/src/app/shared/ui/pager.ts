@@ -12,6 +12,7 @@ let nextId = 0;
         <label class="mf-pager__size" [for]="sizeId">
           Rows per page
           <select
+            class="mf-control mf-control--compact"
             [id]="sizeId"
             [value]="pageSize()"
             (change)="pageSizeChange.emit(+$any($event.target).value)"
@@ -55,15 +56,6 @@ let nextId = 0;
       align-items: center;
       gap: var(--mf-s2);
       margin-right: auto;
-    }
-    .mf-pager__size select {
-      min-height: 32px;
-      padding: 0 var(--mf-s2);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
     }
   `,
 })

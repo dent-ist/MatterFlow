@@ -122,7 +122,7 @@ export interface PodOption {
               <label for="fb-pod">Pod</label>
               <select
                 id="fb-pod"
-                class="fb-input"
+                class="mf-control fb-input"
                 [value]="filters().pod.length ? filters().pod[0] : ''"
                 (change)="setPod($any($event.target).value)"
               >
@@ -140,7 +140,7 @@ export interface PodOption {
               <label for="fb-assignee">Assignee</label>
               <select
                 id="fb-assignee"
-                class="fb-input"
+                class="mf-control fb-input"
                 [value]="assigneeValue()"
                 (change)="setAssignee($any($event.target).value)"
               >
@@ -157,7 +157,7 @@ export interface PodOption {
             <label for="fb-asap">ASAP</label>
             <select
               id="fb-asap"
-              class="fb-input"
+              class="mf-control fb-input"
               [value]="triState(filters().asap)"
               (change)="update({ asap: fromTriState($any($event.target).value) })"
             >
@@ -170,7 +170,7 @@ export interface PodOption {
             <label for="fb-overdue">Overdue</label>
             <select
               id="fb-overdue"
-              class="fb-input"
+              class="mf-control fb-input"
               [value]="triState(filters().overdue)"
               (change)="update({ overdue: fromTriState($any($event.target).value) })"
             >

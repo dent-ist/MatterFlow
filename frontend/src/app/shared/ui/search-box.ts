@@ -28,7 +28,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
       <label class="sb__label" [for]="inputId()">{{ label() }}</label>
       <div class="sb__field">
         <input
-          class="sb__input"
+          class="mf-control sb__input"
           type="search"
           autocomplete="off"
           [id]="inputId()"
@@ -70,16 +70,9 @@ export const SEARCH_DEBOUNCE_MS = 300;
       display: flex;
     }
     .sb__input {
-      box-sizing: border-box;
       width: 100%;
       min-width: 240px;
-      min-height: var(--mf-row-h);
-      padding: 0 calc(var(--mf-s3) + 24px) 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
+      padding-right: calc(var(--mf-s3) + 24px);
     }
     /* The browser draws its own clear glyph on type=search; ours replaces it. */
     .sb__input::-webkit-search-cancel-button {

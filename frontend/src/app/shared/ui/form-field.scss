@@ -1,3 +1,5 @@
+@use '../../../styles/form-mixins' as forms;
+
 :host {
   display: block;
 }
@@ -18,22 +20,18 @@
 }
 
 .mf-field__input {
-  min-height: var(--mf-row-h);
-  padding: 0 var(--mf-s3);
-  border: 1px solid var(--mf-border-strong);
-  border-radius: var(--mf-radius);
-  background: var(--mf-surface);
-  color: var(--mf-text);
-  font: inherit;
+  @include forms.mf-control;
+  @include forms.mf-control-states;
+}
+
+textarea.mf-field__input {
+  min-height: 0;
+  padding: var(--mf-s2) var(--mf-s3);
 }
 
 .mf-field__input--mono {
   font-family: var(--mf-font-mono);
   max-width: 160px;
-}
-
-.mf-field__input[aria-invalid='true'] {
-  border-color: var(--mf-danger);
 }
 
 .mf-field__preview,

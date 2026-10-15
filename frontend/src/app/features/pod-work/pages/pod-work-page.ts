@@ -35,7 +35,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
           <label for="pw-pod">Pod</label>
           <select
             id="pw-pod"
-            class="wp-select"
+            class="mf-control wp-select"
             [value]="data()?.pod?.podId ?? ''"
             (change)="selectPod($any($event.target).value)"
           >

@@ -104,7 +104,7 @@ const asList = (value: string | string[] | undefined): string[] =>
             <label for="adv-q">Text</label>
             <input
               id="adv-q"
-              class="pg-input"
+              class="mf-control pg-input"
               type="search"
               [placeholder]="textHint()"
               [value]="formQ()"
@@ -135,7 +135,7 @@ const asList = (value: string | string[] | undefined): string[] =>
               <label for="adv-asset-type">Asset type</label>
               <select
                 id="adv-asset-type"
-                class="pg-input"
+                class="mf-control pg-input"
                 [value]="formAssetType()"
                 (change)="formAssetType.set($any($event.target).value)"
               >
@@ -151,7 +151,7 @@ const asList = (value: string | string[] | undefined): string[] =>
               <label for="adv-active">Status</label>
               <select
                 id="adv-active"
-                class="pg-input"
+                class="mf-control pg-input"
                 [value]="formActive()"
                 (change)="formActive.set($any($event.target).value)"
               >
@@ -166,7 +166,7 @@ const asList = (value: string | string[] | undefined): string[] =>
               <label for="adv-sensitive">Sensitive matter</label>
               <select
                 id="adv-sensitive"
-                class="pg-input"
+                class="mf-control pg-input"
                 [value]="formSensitive()"
                 (change)="formSensitive.set($any($event.target).value)"
               >
@@ -197,7 +197,7 @@ const asList = (value: string | string[] | undefined): string[] =>
               <label for="adv-requestor">Requestor</label>
               <input
                 id="adv-requestor"
-                class="pg-input"
+                class="mf-control pg-input"
                 type="text"
                 placeholder="Name or email"
                 [value]="formRequestor()"

@@ -35,7 +35,7 @@ type LoadState = 'loading' | 'ready' | 'error';
         <input
           #searchBox
           id="matter-asset-search"
-          class="pg-input"
+          class="mf-control pg-input"
           type="search"
           placeholder="Name, type or reference"
           [value]="q()"
@@ -48,7 +48,7 @@ type LoadState = 'loading' | 'ready' | 'error';
         <label for="matter-asset-status">Status</label>
         <select
           id="matter-asset-status"
-          class="pg-input"
+          class="mf-control pg-input"
           [value]="status()"
           (change)="setStatus($any($event.target).value)"
         >

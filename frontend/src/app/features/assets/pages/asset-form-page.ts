@@ -122,7 +122,7 @@ export function externalReferenceError(text: string): string | null {
           } @else {
             <select
               id="asset-type"
-              class="pg-input"
+              class="mf-control pg-input"
               [attr.aria-invalid]="typeError() ? 'true' : null"
               [value]="typeId() ?? ''"
               (change)="chooseType($any($event.target).value)"

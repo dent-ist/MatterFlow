@@ -67,6 +67,7 @@ export const ASSETS_CLOSED_NOTE =
           <div class="tl__field">
             <label for="tl-role">Relationship</label>
             <select
+              class="mf-control"
               id="tl-role"
               data-link-role
               [value]="pickedRoleId() ?? ''"
@@ -147,6 +148,7 @@ export const ASSETS_CLOSED_NOTE =
                       <td>
                         @if (editable()) {
                           <select
+                            class="mf-control mf-control--compact"
                             data-role-select
                             [attr.aria-label]="'Relationship of ' + a.displayName"
                             [disabled]="busy()"
@@ -272,15 +274,6 @@ export const ASSETS_CLOSED_NOTE =
     .tl__field label {
       font-size: var(--mf-fs-sm);
       color: var(--mf-text-muted);
-    }
-    .tl select {
-      min-height: var(--mf-row-h);
-      padding: 0 var(--mf-s2);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
     }
     .tl__buttons {
       display: flex;

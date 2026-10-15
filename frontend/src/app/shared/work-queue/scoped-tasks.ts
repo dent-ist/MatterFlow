@@ -55,15 +55,6 @@ const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'
       font-weight: 600;
       font-size: var(--mf-fs-sm);
     }
-    .st-filter select {
-      min-height: var(--mf-row-h);
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-    }
     .st-state {
       padding: var(--mf-s5) var(--mf-s4);
       text-align: center;
@@ -98,6 +89,7 @@ const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'
         <div class="st-filter">
           <label [for]="id + '-status'">Show</label>
           <select
+            class="mf-control"
             [id]="id + '-status'"
             data-status-filter
             [value]="scope()"

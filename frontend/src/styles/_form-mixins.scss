@@ -1,0 +1,25 @@
+/* Mixins behind the form control look (see _forms.scss); component stylesheets use them so nothing global is emitted twice. */
+@mixin mf-control {
+  box-sizing: border-box;
+  min-height: var(--mf-row-h);
+  padding: 0 var(--mf-s3);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+  color: var(--mf-text);
+  font: inherit;
+  font-size: var(--mf-fs-md);
+  line-height: 1.4;
+}
+
+@mixin mf-control-states {
+  &[aria-invalid='true'] {
+    border-color: var(--mf-danger);
+  }
+
+  &:disabled {
+    background: var(--mf-surface-alt);
+    color: var(--mf-text-disabled);
+    cursor: not-allowed;
+  }
+}

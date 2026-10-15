@@ -197,7 +197,7 @@ const UNORDERED_TEXT =
             <label class="pg-label" for="wf-lib-search">Search steps</label>
             <input
               id="wf-lib-search"
-              class="pg-input"
+              class="mf-control pg-input"
               type="search"
               placeholder="Title or description"
               (input)="searchLibrary($any($event.target).value)"

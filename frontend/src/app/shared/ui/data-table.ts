@@ -77,7 +77,7 @@ export class SortHeader {
     <div class="sf">
       <label class="sf__label" [for]="inputId()">Status</label>
       <select
-        class="sf__select"
+        class="mf-control sf__select"
         [id]="inputId()"
         [value]="value()"
         (change)="valueChange.emit($any($event.target).value)"
@@ -98,15 +98,7 @@ export class SortHeader {
       font-size: var(--mf-fs-sm);
     }
     .sf__select {
-      box-sizing: border-box;
-      min-height: var(--mf-row-h);
       min-width: 160px;
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
     }
   `,
 })
