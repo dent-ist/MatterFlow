@@ -1,3 +1,4 @@
+using MatterFlow.Audit.Contracts;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
 using MatterFlow.SharedKernel.Identity;
@@ -9,10 +10,10 @@ using Microsoft.EntityFrameworkCore;
 namespace MatterFlow.Identity.Pods;
 
 /// <summary>
-/// Pod administration. Changes are audited field by field by the Data layer (<c>[Audited]</c> on Pod and PodMember) in the same
-/// transaction as the change. Membership never restricts Task assignment; this service only maintains the data.
+/// Pod administration. Changes to a Pod are audited field by field by the Data layer (<c>[Audited]</c> on Pod); membership changes are
+/// audited as readable events ("Added Jamal Okafor to Processing Pod") written here, in the same transaction as the change. Membership never restricts Task assignment; this service only maintains the data.
 /// </summary>
-public sealed class PodService(DbContext db, IPermissionChecker permissions)
+public sealed partial class PodService(DbContext db, IPermissionChecker permissions, IAuditWriter audit)
 {
     private const int UniqueIndexViolation = 2601;
     private const int UniqueConstraintViolation = 2627;
@@ -119,7 +120,7 @@ public sealed class PodService(DbContext db, IPermissionChecker permissions)
             return new Error(ErrorType.Conflict, ErrorCodes.PodInactive, $"Pod '{pod.Name}' is inactive. Reactivate it before adding members.");
 
         var wanted = userIds.Distinct().ToList();
-        var users = await db.Set<AppUser>().Where(u => wanted.Contains(u.Id)).Select(u => new { u.Id, u.IsActive }).ToListAsync(ct);
+        var users = await db.Set<AppUser>().Where(u => wanted.Contains(u.Id)).Select(u => new { u.Id, u.IsActive, u.DisplayName }).ToListAsync(ct);
         var missing = wanted.Except(users.Select(u => u.Id)).ToList();
         if (missing.Count > 0)
             return Error.Validation("userIds", "UNKNOWN_USER", $"Unknown user id(s): {string.Join(", ", missing)}.");
@@ -130,7 +131,10 @@ public sealed class PodService(DbContext db, IPermissionChecker permissions)
 
         var existing = pod.Members.Select(m => m.UserId).ToHashSet();
         foreach (var userId in wanted.Where(id => !existing.Contains(id)))
+        {
             pod.Members.Add(new PodMember { UserId = userId });
+            audit.Write(MemberAdded(pod, users.Single(u => u.Id == userId).DisplayName));
+        }
 
         try
         {
@@ -147,7 +151,8 @@ public sealed class PodService(DbContext db, IPermissionChecker permissions)
 
     public async Task<Result> RemoveMemberAsync(int podId, int userId, CancellationToken ct)
     {
-        var member = await db.Set<PodMember>().SingleOrDefaultAsync(m => m.PodId == podId && m.UserId == userId, ct);
+        var member = await db.Set<PodMember>().Include(m => m.Pod).Include(m => m.User)
+            .SingleOrDefaultAsync(m => m.PodId == podId && m.UserId == userId, ct);
         if (member is null)
         {
             return await db.Set<Pod>().AnyAsync(p => p.Id == podId, ct)
@@ -155,6 +160,7 @@ public sealed class PodService(DbContext db, IPermissionChecker permissions)
                 : NotFound(podId);
         }
 
+        audit.Write(MemberRemoved(member.Pod, member.User.DisplayName, member.IsPrimary));
         db.Set<PodMember>().Remove(member);
         await db.SaveChangesAsync(ct);
         return Result.Success();
@@ -162,7 +168,7 @@ public sealed class PodService(DbContext db, IPermissionChecker permissions)
 
     public async Task<Result<PodDetail>> SetPrimaryAsync(int podId, int userId, bool isPrimary, CancellationToken ct)
     {
-        var memberships = await db.Set<PodMember>().Include(m => m.Pod).Where(m => m.UserId == userId).ToListAsync(ct);
+        var memberships = await db.Set<PodMember>().Include(m => m.Pod).Include(m => m.User).Where(m => m.UserId == userId).ToListAsync(ct);
         var target = memberships.SingleOrDefault(m => m.PodId == podId);
         if (target is null)
         {
@@ -187,11 +193,113 @@ public sealed class PodService(DbContext db, IPermissionChecker permissions)
             }
 
             target.IsPrimary = isPrimary;
+            audit.Write(PrimaryChanged(target.Pod, target.User.DisplayName, isPrimary, others.Select(o => o.Pod.Name).FirstOrDefault()));
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
         }
 
         return await GetAsync(podId, ct);
+    }
+
+    /// <summary>
+    /// Replaces the Pods a user belongs to and the primary Pod in one transaction (inline edit on the Users grid). Pods the user already
+    /// belongs to may be inactive and stay; only active Pods can be newly assigned or made primary. At most one primary. When
+    /// <paramref name="expectedPodIds"/> is given and the user's memberships differ (someone else changed them), the call is a 409.
+    /// </summary>
+    public async Task<Result<IReadOnlyList<UserPodDto>>> SetUserPodsAsync(
+        int userId,
+        IReadOnlyCollection<int> podIds,
+        int? primaryPodId,
+        IReadOnlyCollection<int>? expectedPodIds,
+        int? expectedPrimaryPodId,
+        CancellationToken ct)
+    {
+        var user = await db.Set<AppUser>().Where(u => u.Id == userId).Select(u => new { u.Id, u.DisplayName, u.IsActive }).SingleOrDefaultAsync(ct);
+        if (user is null)
+            return Error.NotFound($"User {userId} was not found.");
+
+        var wanted = podIds.Distinct().ToList();
+        if (primaryPodId is { } primary && !wanted.Contains(primary))
+            return Error.Validation("primaryPodId", "NOT_SELECTED", "The primary Pod must be one of the Pods the user belongs to.");
+
+        var pods = await db.Set<Pod>().Where(p => wanted.Contains(p.Id)).ToListAsync(ct);
+        var unknown = wanted.Except(pods.Select(p => p.Id)).ToList();
+        if (unknown.Count > 0)
+            return Error.Validation("podIds", "UNKNOWN_POD", $"Unknown Pod id(s): {string.Join(", ", unknown)}.");
+
+        var memberships = await db.Set<PodMember>().Include(m => m.Pod).Where(m => m.UserId == userId).ToListAsync(ct);
+        if (expectedPodIds is not null
+            && (!expectedPodIds.ToHashSet().SetEquals(memberships.Select(m => m.PodId))
+                || memberships.FirstOrDefault(m => m.IsPrimary)?.PodId != expectedPrimaryPodId))
+        {
+            return Error.Conflict(ErrorCodes.ConcurrencyConflict, $"The Pods of {user.DisplayName} were changed by someone else. Reload and try again.");
+        }
+
+        var existing = memberships.Select(m => m.PodId).ToHashSet();
+        var added = pods.Where(p => !existing.Contains(p.Id)).OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        var removed = memberships.Where(m => !wanted.Contains(m.PodId)).OrderBy(m => m.Pod.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        var currentPrimary = memberships.FirstOrDefault(m => m.IsPrimary);
+
+        if (added.Count > 0 && !user.IsActive)
+            return Error.Validation("userId", "USER_INACTIVE", $"{user.DisplayName} is disabled and cannot be added to Pods.");
+
+        var inactive = added.FirstOrDefault(p => !p.IsActive);
+        if (inactive is not null)
+            return new Error(ErrorType.Conflict, ErrorCodes.PodInactive, $"Pod '{inactive.Name}' is inactive and cannot be newly assigned.");
+
+        if (primaryPodId is { } newPrimary && currentPrimary?.PodId != newPrimary && !pods.Single(p => p.Id == newPrimary).IsActive)
+            return new Error(ErrorType.Conflict, ErrorCodes.PodInactive, $"Pod '{pods.Single(p => p.Id == newPrimary).Name}' is inactive and cannot be a primary Pod.");
+
+        var primaryChanged = currentPrimary?.PodId != primaryPodId;
+        if (added.Count == 0 && removed.Count == 0 && !primaryChanged)
+            return await GetUserPodsAsync(userId, true, ct);
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        foreach (var gone in removed)
+        {
+            audit.Write(MemberRemoved(gone.Pod, user.DisplayName, gone.IsPrimary));
+            db.Set<PodMember>().Remove(gone);
+        }
+
+        foreach (var pod in added)
+        {
+            db.Set<PodMember>().Add(new PodMember { PodId = pod.Id, UserId = userId });
+            audit.Write(MemberAdded(pod, user.DisplayName));
+        }
+
+        // A primary that is being removed is already gone with its row; a primary that stays but changes is cleared first (one primary per user).
+        var oldPrimaryName = currentPrimary?.Pod.Name;
+        if (currentPrimary is not null && primaryChanged && wanted.Contains(currentPrimary.PodId))
+            currentPrimary.IsPrimary = false;
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+            if (primaryChanged && primaryPodId is { } id)
+            {
+                var target = await db.Set<PodMember>().SingleAsync(m => m.PodId == id && m.UserId == userId, ct);
+                target.IsPrimary = true;
+                audit.Write(PrimaryChanged(pods.Single(p => p.Id == id), user.DisplayName, true, oldPrimaryName));
+                await db.SaveChangesAsync(ct);
+            }
+            else if (primaryChanged && currentPrimary is not null && wanted.Contains(currentPrimary.PodId))
+            {
+                audit.Write(PrimaryChanged(currentPrimary.Pod, user.DisplayName, false, null));
+                await db.SaveChangesAsync(ct);
+            }
+
+            await transaction.CommitAsync(ct);
+        }
+        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        {
+            // A concurrent request changed the same memberships between the read and the write.
+            db.ChangeTracker.Clear();
+            audit.DiscardPending();
+            return Error.Conflict(ErrorCodes.ConcurrencyConflict, $"The Pods of {user.DisplayName} were changed by someone else. Reload and try again.");
+        }
+
+        db.ChangeTracker.Clear();
+        return await GetUserPodsAsync(userId, true, ct);
     }
 
     public async Task<Result<IReadOnlyList<UserPodDto>>> GetUserPodsAsync(int userId, bool includeInactive, CancellationToken ct)
@@ -255,6 +363,45 @@ public sealed class PodService(DbContext db, IPermissionChecker permissions)
 
     private static PodSummary ToSummary(Pod pod, int memberCount) =>
         new(pod.Id, pod.Name, pod.Description, pod.IsActive, memberCount, Convert.ToBase64String(pod.RowVersion));
+
+    private static AuditEntry MemberAdded(Pod pod, string userName) => new()
+    {
+        EventType = "POD_MEMBER_ADDED",
+        ObjectType = "Pod",
+        ObjectId = pod.Id.ToString(),
+        FieldKey = "member",
+        NewValue = userName,
+        Summary = $"Added {userName} to {PodLabel(pod.Name)}",
+    };
+
+    private static AuditEntry MemberRemoved(Pod pod, string userName, bool wasPrimary) => new()
+    {
+        EventType = "POD_MEMBER_REMOVED",
+        ObjectType = "Pod",
+        ObjectId = pod.Id.ToString(),
+        FieldKey = "member",
+        OldValue = userName,
+        Summary = $"Removed {userName} from {PodLabel(pod.Name)}" + (wasPrimary ? " (it was their primary pod)" : string.Empty),
+    };
+
+    private static AuditEntry PrimaryChanged(Pod pod, string userName, bool isPrimary, string? previousPrimaryName) => new()
+    {
+        EventType = isPrimary ? "POD_PRIMARY_SET" : "POD_PRIMARY_CLEARED",
+        ObjectType = "Pod",
+        ObjectId = pod.Id.ToString(),
+        FieldKey = "primary",
+        OldValue = isPrimary ? previousPrimaryName : userName,
+        NewValue = isPrimary ? userName : null,
+        Summary = isPrimary
+            ? $"Set {PodLabel(pod.Name)} as the primary pod of {userName}" + (previousPrimaryName is null ? string.Empty : $" (was {PodLabel(previousPrimaryName)})")
+            : $"Cleared {PodLabel(pod.Name)} as the primary pod of {userName}",
+    };
+
+    /// <summary>"Processing Pod" for a pod named "Processing"; a name that already says "Pod" ("Pod A", "Intake pod") is left alone.</summary>
+    private static string PodLabel(string name) => PodWord().IsMatch(name) ? name : $"{name} Pod";
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\bpod\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex PodWord();
 
     private static Result<string> ValidateName(string? name)
     {

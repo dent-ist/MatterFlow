@@ -106,3 +106,21 @@ public sealed record SetPrimaryPodRequest
     [Required]
     public bool? IsPrimary { get; init; }
 }
+
+/// <summary>Replace a user's Pod memberships and primary Pod.</summary>
+public sealed record SetUserPodsRequest
+{
+    /// <summary>Every Pod the user should belong to afterwards (0 to 100). Pods not listed are removed.</summary>
+    [Required, MaxLength(100)]
+    public int[] PodIds { get; init; } = [];
+
+    /// <summary>The primary Pod; must be in <c>podIds</c>. Omit for no primary Pod.</summary>
+    public int? PrimaryPodId { get; init; }
+
+    /// <summary>The Pods the editor last read. When sent and the user's memberships differ now, the call is a 409 <c>CONCURRENCY_CONFLICT</c>.</summary>
+    [MaxLength(100)]
+    public int[]? ExpectedPodIds { get; init; }
+
+    /// <summary>The primary Pod the editor last read (with <c>expectedPodIds</c>); omit if there was none.</summary>
+    public int? ExpectedPrimaryPodId { get; init; }
+}

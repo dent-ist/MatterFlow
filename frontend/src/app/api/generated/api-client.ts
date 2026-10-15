@@ -3447,6 +3447,10 @@ export interface IPodsClient {
     /**
      * @return OK
      */
+    setUserPods(userId: number, body: SetUserPodsRequest): Observable<UserPodDto[]>;
+    /**
+     * @return OK
+     */
     listMyPods(): Observable<UserPodDto[]>;
 }
 
@@ -3966,6 +3970,63 @@ export class PodsClient implements IPodsClient {
     }
 
     protected processListUserPods(response: HttpResponseBase): Observable<UserPodDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserPodDto[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setUserPods(userId: number, body: SetUserPodsRequest): Observable<UserPodDto[]> {
+        let url_ = this.baseUrl + "/api/v1/users/{userId}/pods";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetUserPods(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetUserPods(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserPodDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserPodDto[]>;
+        }));
+    }
+
+    protected processSetUserPods(response: HttpResponseBase): Observable<UserPodDto[]> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -11846,6 +11907,15 @@ export interface SetUserActiveRequest {
     [key: string]: any;
 }
 
+export interface SetUserPodsRequest {
+    podIds: number[];
+    primaryPodId?: number | undefined;
+    expectedPodIds?: number[] | undefined;
+    expectedPrimaryPodId?: number | undefined;
+
+    [key: string]: any;
+}
+
 export interface SetUserRolesRequest {
     roleIds: number[];
     rowVersion: string;
@@ -12652,6 +12722,7 @@ export interface UserSummaryDto {
     roles: string[];
     registeredAtUtc: string;
     lastLoginAtUtc: string | undefined;
+    pods: UserPodDto[];
     availability?: UserAvailabilitySummary | undefined;
 
     [key: string]: any;

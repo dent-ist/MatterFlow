@@ -2573,6 +2573,58 @@
             }
           }
         }
+      },
+      "put": {
+        "tags": [
+          "Pods"
+        ],
+        "operationId": "SetUserPods",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserPodsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserPodsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserPodsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserPodDto"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/me/pods": {
@@ -11599,6 +11651,47 @@
           }
         }
       },
+      "SetUserPodsRequest": {
+        "required": [
+          "podIds"
+        ],
+        "type": "object",
+        "properties": {
+          "podIds": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "primaryPodId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "expectedPodIds": {
+            "maxItems": 100,
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "expectedPrimaryPodId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "SetUserRolesRequest": {
         "required": [
           "roleIds",
@@ -14633,7 +14726,8 @@
           "isSeededAdmin",
           "roles",
           "registeredAtUtc",
-          "lastLoginAtUtc"
+          "lastLoginAtUtc",
+          "pods"
         ],
         "type": "object",
         "properties": {
@@ -14684,6 +14778,12 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "pods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserPodDto"
+            }
           },
           "availability": {
             "oneOf": [

@@ -159,7 +159,7 @@ MatterFlow/
 │   │   │       ├── clients/  matters/  projects/  assets/
 │   │   │       ├── tasks/ { create/, detail/ { details, workflow, comments, assets, activity } }
 │   │   │       ├── intake/  search/
-│   │   │       └── admin/ { users-roles, pods, priorities, status-labels, task-types, forms-custom-fields,
+│   │   │       └── admin/ { users-roles-pods (one page, three tabs), priorities, status-labels, task-types, forms-custom-fields,
 │   │   │                    step-library, workflows, asset-types, asset-link-roles, audit }
 │   │   └── environments/
 │   └── e2e/                                     # Playwright (deferred to the end of the build, section 15)
@@ -587,6 +587,8 @@ Frontend (`features/dashboard/ui`): `dash-trends-tab.ts` (lazy through `@defer`,
 - The audit browser (`GET /audit/search`) returns readable summaries, actor names and object labels. The Audit module cannot reference the modules that own those names (Identity already depends on Audit), so it asks `IAuditDisplayLookup` (Audit.Contracts) whose implementation lives in the host (`MatterFlow.Api`) and composes the other modules' Contracts. Secrets and tokens are never returned: values of secret-named fields and credential-looking text are masked (`[REDACTED]`). `17-audit-indexes.sql` adds `IX_Audit_EventType`.
 - Read access logging is out of scope (addendum F). Config changes (roles, forms, workflows, priorities, labels) are audited through the interceptor plus explicit publish events.
 - No `TaskAssignmentHistory`/`TaskStatusHistory` tables: the Activity tab and any history UI read `AuditEvent`.
+- **Pod assignment of a user (Users grid, Pods column).** `PUT /api/v1/users/{userId}/pods` (`Perm:Pod.ManageMembers`) replaces the Pods a user belongs to and the primary Pod in one transaction: body `{ podIds, primaryPodId?, expectedPodIds?, expectedPrimaryPodId? }`, response all of the user's Pods (inactive ones too). Rules: `primaryPodId` must be in `podIds` (400 `VALIDATION_FAILED`, one primary at most), unknown Pod ids are a 400, a Pod the user is already in may be inactive and stays, but an inactive Pod cannot be newly assigned or made primary (409 `POD_INACTIVE`), a disabled user cannot be added to Pods (400), and when `expectedPodIds` is sent and the user's memberships (or primary) differ now the call is a 409 `CONCURRENCY_CONFLICT` (nothing changes). A no-op call succeeds. `GET /users` returns each listed user's `pods` (`UserPodDto`: id, name, isActive, isPrimary; one extra query per page, no N+1).
+- **Pod membership audit.** `PodMember.IsPrimary` is `[AuditExplicit]`; membership changes (the Pod endpoints and the batch endpoint above) write readable events on the Pod (`ObjectType` `Pod`, `ObjectId` the Pod id) in the same transaction: `POD_MEMBER_ADDED` "Added Jamal Okafor to Processing Pod", `POD_MEMBER_REMOVED` "Removed Jamal Okafor from Processing Pod (it was their primary pod)", `POD_PRIMARY_SET` "Set Review Pod as the primary pod of Jamal Okafor (was Processing Pod)", `POD_PRIMARY_CLEARED`. A Pod's own fields (name, description, active) stay field-level `FIELD_CHANGED` events. The events of one batch call share one correlation id.
 
 ---
 
@@ -622,7 +624,7 @@ Frontend (`features/dashboard/ui`): `dash-trends-tab.ts` (lazy through `@defer`,
 
 | Area | Endpoints |
 |---|---|
-| Identity | `GET /me`; `GET/PUT /users`, `PUT /users/{id}/roles`, `GET/POST/PUT /roles`, `GET /permissions`, `GET/POST/PUT /pods`, `PUT /pods/{id}/members` |
+| Identity | `GET /me`; `GET/PUT /users`, `PUT /users/{id}/roles`, `GET/POST/PUT /roles`, `GET /permissions`, `GET/POST/PUT /pods`, `PUT /pods/{id}/members`, `GET/PUT /users/{id}/pods` |
 | Organization | `/clients`, `/matters`, `/projects` (CRUD, `lookup?ref=343-12`), `POST /matters/{id}/active` |
 | Assets | `/asset-types`, `/matters/{id}/assets`, `/assets/{id}` |
 | Config | `/priorities`, `/status-labels`, `/task-types`, `/task-types/{id}/workflows`, `/asset-link-roles` |

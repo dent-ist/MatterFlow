@@ -31,5 +31,7 @@ public class PodMember
 
     public AppUser User { get; set; } = null!;
 
+    /// <summary>Audited by explicit, readable events written by <c>PodService</c> ("Set Processing Pod as the primary pod of ...").</summary>
+    [AuditExplicit]
     public bool IsPrimary { get; set; }
 }

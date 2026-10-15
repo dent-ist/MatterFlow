@@ -126,6 +126,22 @@ public class PodsController(PodService pods, CurrentUser currentUser) : Controll
     public async Task<IActionResult> ListUserPods(int userId, [FromQuery] bool includeInactive = false, CancellationToken cancellationToken = default) =>
         PodResults.From(await pods.GetUserPodsAsync(userId, includeInactive, cancellationToken), r => Ok(r.ToArray()));
 
+    /// <summary>
+    /// Replaces the Pods a user belongs to and the primary Pod in one transaction (the inline editor of the Users grid). Pods the user is
+    /// already in may be inactive and stay; only active Pods can be newly assigned or made primary. One primary at most. Returns all of the
+    /// user's Pods (including inactive ones).
+    /// </summary>
+    /// <param name="userId">User id.</param>
+    /// <param name="request">The Pods the user should belong to, the primary one, and optionally the state last read (409 when it changed).</param>
+    /// <param name="cancellationToken">Request cancellation.</param>
+    [HttpPut("~/api/v1/users/{userId:int}/pods", Name = "SetUserPods")]
+    [RequirePermission(Permissions.Pod.ManageMembers)]
+    [ProducesResponseType<UserPodDto[]>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> SetUserPods(int userId, [FromBody] SetUserPodsRequest request, CancellationToken cancellationToken) =>
+        PodResults.From(
+            await pods.SetUserPodsAsync(userId, request.PodIds, request.PrimaryPodId, request.ExpectedPodIds, request.ExpectedPrimaryPodId, cancellationToken),
+            r => Ok(r.ToArray()));
+
     /// <summary>Lists the signed-in user's own Pods (active only), primary Pod flagged.</summary>
     /// <param name="cancellationToken">Request cancellation.</param>
     [HttpGet("~/api/v1/me/pods", Name = "ListMyPods")]

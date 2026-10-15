@@ -290,9 +290,122 @@ public sealed class PodsApiTests(SqlServerFixture sql) : IAsyncLifetime
         events.ShouldAllBe(e => e.ActorUserId == admin);
         events.ShouldContain(e => e.ObjectType == "Pod" && e.ObjectId == id.ToString() && e.FieldKey == "Name" && e.NewValue == "Pod A");
         events.ShouldContain(e => e.ObjectType == "Pod" && e.FieldKey == "IsActive" && e.OldValue == "true" && e.NewValue == "false");
-        events.ShouldContain(e => e.ObjectType == "PodMember" && e.ObjectId == $"{id}-{user}" && e.FieldKey == "IsPrimary" && e.NewValue == "false" && e.OldValue == null); // added
-        events.ShouldContain(e => e.ObjectType == "PodMember" && e.ObjectId == $"{id}-{user}" && e.FieldKey == "IsPrimary" && e.NewValue == "true");
-        events.ShouldContain(e => e.ObjectType == "PodMember" && e.ObjectId == $"{id}-{user}" && e.FieldKey == "IsPrimary" && e.OldValue == "true" && e.NewValue == null); // removed
+        events.ShouldNotContain(e => e.ObjectType == "PodMember"); // membership is audited by readable Pod events, not raw field changes
+
+        var summaries = events.Where(e => e.EventType.StartsWith("POD_", StringComparison.Ordinal)).Select(e => (e.EventType, e.Summary)).ToList();
+        summaries.ShouldBe(
+        [
+            ("POD_MEMBER_ADDED", @"Added KE\tariq to Pod A"),
+            ("POD_PRIMARY_SET", @"Set Pod A as the primary pod of KE\tariq"),
+            ("POD_MEMBER_REMOVED", @"Removed KE\tariq from Pod A (it was their primary pod)"),
+        ]);
+    }
+
+    private async Task<JsonElement> SetUserPodsAsync(int userId, object body, HttpStatusCode expected = HttpStatusCode.OK)
+    {
+        var response = await As(Admin).PutAsJsonAsync($"/api/v1/users/{userId}/pods", body);
+        response.StatusCode.ShouldBe(expected);
+        return await JsonAsync(response);
+    }
+
+    [Fact]
+    public async Task Setting_a_users_pods_replaces_memberships_and_the_primary_in_one_call()
+    {
+        var user = await ProvisionAsync(@"KE\jamal");
+        var (processing, _) = await CreatePodAsync("Processing");
+        var (review, _) = await CreatePodAsync("Review");
+        var (intake, _) = await CreatePodAsync("Intake");
+
+        var first = await SetUserPodsAsync(user, new { podIds = new[] { processing, review }, primaryPodId = processing });
+        first.EnumerateArray().Select(p => (p.GetProperty("name").GetString(), p.GetProperty("isPrimary").GetBoolean())).ShouldBe([("Processing", true), ("Review", false)]);
+
+        // Move the primary to a new pod and drop one in the same call.
+        var second = await SetUserPodsAsync(user, new { podIds = new[] { review, intake }, primaryPodId = intake, expectedPodIds = new[] { processing, review }, expectedPrimaryPodId = processing });
+        second.EnumerateArray().Select(p => (p.GetProperty("name").GetString(), p.GetProperty("isPrimary").GetBoolean())).ShouldBe([("Intake", true), ("Review", false)]);
+
+        // Same state again is a no-op that still succeeds; clearing everything works.
+        await SetUserPodsAsync(user, new { podIds = new[] { review, intake }, primaryPodId = intake });
+        (await SetUserPodsAsync(user, new { podIds = Array.Empty<int>() })).GetArrayLength().ShouldBe(0);
+        (await UserPodNamesAsync(user, "?includeInactive=true")).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Setting_a_users_pods_validates_the_request()
+    {
+        var user = await ProvisionAsync(@"KE\jamal");
+        var (a, _) = await CreatePodAsync("Pod A");
+        var (b, rowVersionB) = await CreatePodAsync("Pod B");
+
+        // The primary must be one of the selected pods.
+        (await JsonAsync(await As(Admin).PutAsJsonAsync($"/api/v1/users/{user}/pods", new { podIds = new[] { a }, primaryPodId = b }))).GetProperty("code").GetString().ShouldBe("VALIDATION_FAILED");
+        (await As(Admin).PutAsJsonAsync($"/api/v1/users/{user}/pods", new { podIds = new[] { 9999 } })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await As(Admin).PutAsJsonAsync("/api/v1/users/9999/pods", new { podIds = new[] { a } })).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+
+        // A user in an inactive pod keeps it; the pod cannot be newly assigned or made primary.
+        await SetUserPodsAsync(user, new { podIds = new[] { a, b }, primaryPodId = a });
+        (await As(Admin).PutAsJsonAsync($"/api/v1/pods/{b}", new { name = "Pod B", isActive = false, rowVersion = rowVersionB })).StatusCode.ShouldBe(HttpStatusCode.OK);
+        var kept = await SetUserPodsAsync(user, new { podIds = new[] { a, b }, primaryPodId = a });
+        kept.GetArrayLength().ShouldBe(2);
+        var other = await ProvisionAsync(@"KE\other");
+        (await JsonAsync(await As(Admin).PutAsJsonAsync($"/api/v1/users/{other}/pods", new { podIds = new[] { b } }))).GetProperty("code").GetString().ShouldBe("POD_INACTIVE");
+        (await JsonAsync(await As(Admin).PutAsJsonAsync($"/api/v1/users/{user}/pods", new { podIds = new[] { a, b }, primaryPodId = b }))).GetProperty("code").GetString().ShouldBe("POD_INACTIVE");
+        (await UserPodNamesAsync(user, "?includeInactive=true")).ShouldBe(["Pod A", "Pod B"]);
+    }
+
+    [Fact]
+    public async Task Setting_a_users_pods_is_a_conflict_when_the_memberships_changed_meanwhile()
+    {
+        var user = await ProvisionAsync(@"KE\jamal");
+        var (a, _) = await CreatePodAsync("Pod A");
+        var (b, _) = await CreatePodAsync("Pod B");
+        await SetUserPodsAsync(user, new { podIds = new[] { a }, primaryPodId = a });
+        await AddMembersAsync(b, user); // someone else
+
+        var conflict = await As(Admin).PutAsJsonAsync($"/api/v1/users/{user}/pods", new { podIds = new[] { a }, primaryPodId = a, expectedPodIds = new[] { a }, expectedPrimaryPodId = a });
+        conflict.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await JsonAsync(conflict)).GetProperty("code").GetString().ShouldBe("CONCURRENCY_CONFLICT");
+        (await UserPodNamesAsync(user)).ShouldBe(["Pod A", "Pod B"]);
+    }
+
+    [Fact]
+    public async Task Setting_a_users_pods_needs_Pod_ManageMembers_and_is_audited_readably()
+    {
+        var user = await ProvisionAsync(@"KE\jamal");
+        var (a, _) = await CreatePodAsync("Processing");
+        var (b, _) = await CreatePodAsync("Review");
+
+        (await As(@"KE\scientist").PutAsJsonAsync($"/api/v1/users/{user}/pods", new { podIds = new[] { a } })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+
+        await SetUserPodsAsync(user, new { podIds = new[] { a, b }, primaryPodId = a });
+        await SetUserPodsAsync(user, new { podIds = new[] { b }, primaryPodId = b });
+
+        var events = await _factory.WithDbAsync(db => db.Set<AuditEvent>().Where(e => e.EventType.StartsWith("POD_")).OrderBy(e => e.Id).ToListAsync());
+        events.Select(e => e.Summary).ShouldBe(
+        [
+            @"Added KE\jamal to Processing Pod",
+            @"Added KE\jamal to Review Pod",
+            @"Set Processing Pod as the primary pod of KE\jamal",
+            @"Removed KE\jamal from Processing Pod (it was their primary pod)",
+            @"Set Review Pod as the primary pod of KE\jamal (was Processing Pod)",
+        ], ignoreOrder: true);
+        events.Select(e => e.CorrelationId).Distinct().Count().ShouldBe(2); // one operation per call
+    }
+
+    [Fact]
+    public async Task The_users_list_returns_each_users_pods_including_inactive_ones()
+    {
+        var user = await ProvisionAsync(@"KE\jamal");
+        var other = await ProvisionAsync(@"KE\other");
+        var (a, _) = await CreatePodAsync("Pod A");
+        var (b, _) = await CreatePodAsync("Pod B");
+        await SetUserPodsAsync(user, new { podIds = new[] { a, b }, primaryPodId = b });
+        (await As(Admin).PutAsJsonAsync($"/api/v1/pods/{a}", new { name = "Pod A", isActive = false, rowVersion = (await JsonAsync(await As(Admin).GetAsync($"/api/v1/pods/{a}"))).GetProperty("pod").GetProperty("rowVersion").GetString() })).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var list = await JsonAsync(await As(Admin).GetAsync("/api/v1/users?status=all&pageSize=100"));
+        var rows = list.GetProperty("items").EnumerateArray().ToDictionary(u => u.GetProperty("userId").GetInt32());
+        rows[user].GetProperty("pods").EnumerateArray().Select(p => (p.GetProperty("name").GetString(), p.GetProperty("isActive").GetBoolean(), p.GetProperty("isPrimary").GetBoolean()))
+            .ShouldBe([("Pod A", false, false), ("Pod B", true, true)]);
+        rows[other].GetProperty("pods").GetArrayLength().ShouldBe(0);
     }
 
     [Fact]

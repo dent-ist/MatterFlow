@@ -1,9 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using MatterFlow.Identity.Contracts;
+using MatterFlow.Identity.Pods;
 
 namespace MatterFlow.Identity.Application;
 
-/// <summary>One row of the users list.</summary>
+/// <summary>One row of the users list. <c>Pods</c> are all of the person's Pods (inactive ones too), by name, with the primary one flagged.</summary>
 public sealed record UserSummaryDto(
     [property: Required] int UserId,
     [property: Required] string DisplayName,
@@ -16,6 +17,7 @@ public sealed record UserSummaryDto(
     [property: Required] string[] Roles,
     [property: Required] DateTime RegisteredAtUtc,
     DateTime? LastLoginAtUtc,
+    [property: Required] UserPodDto[] Pods,
     UserAvailabilitySummary? Availability = null);
 
 /// <summary>A user with the data of the detail drawer. Pod membership belongs to the Organization module and is added by that ticket.</summary>

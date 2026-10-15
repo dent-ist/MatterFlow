@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using MatterFlow.Audit.Contracts;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
+using MatterFlow.Identity.Pods;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
@@ -87,8 +88,18 @@ public sealed class UserAdministration(
             .ToListAsync(ct);
 
         var states = await availability.EvaluateAsync(rows.Select(r => r.User.Id).ToArray(), clock.UtcNow, ct);
+
+        // One query for the whole page (no N+1): every membership of the listed users, by Pod name.
+        var userIds = rows.Select(r => r.User.Id).ToList();
+        var podRows = await db.Set<PodMember>().AsNoTracking()
+            .Where(m => userIds.Contains(m.UserId))
+            .OrderBy(m => m.Pod.Name)
+            .Select(m => new { m.UserId, Pod = new UserPodDto(m.PodId, m.Pod.Name, m.Pod.IsActive, m.IsPrimary) })
+            .ToListAsync(ct);
+        var podsByUser = podRows.ToLookup(p => p.UserId, p => p.Pod);
+
         var items = rows
-            .Select(r => ToSummary(r.User, r.Account, r.LastLogin, !r.HasAccess, r.IsAdmin, r.Roles) with { Availability = UserAvailabilitySummary.From(states[r.User.Id]) })
+            .Select(r => ToSummary(r.User, r.Account, r.LastLogin, !r.HasAccess, r.IsAdmin, r.Roles, podsByUser[r.User.Id].ToArray()) with { Availability = UserAvailabilitySummary.From(states[r.User.Id]) })
             .ToList();
         return new PagedResult<UserSummaryDto>(items, total, page.Page, page.PageSize);
     }
@@ -308,8 +319,6 @@ public sealed class UserAdministration(
         return await GetAsync(userId, ct);
     }
 
-    // Extension point (Pods ticket): pod membership assignment for a user is added by the Organization module, not here.
-
     private async Task<bool> WouldLoseLastAdminAsync(int userId, CancellationToken ct)
     {
         var activeAdmins = await db.Set<UserRole>()
@@ -340,7 +349,7 @@ public sealed class UserAdministration(
 
     private static DateTime Utc(DateTime value) => DateTime.SpecifyKind(value, DateTimeKind.Utc);
 
-    private static UserSummaryDto ToSummary(AppUser u, string? account, DateTime? lastLogin, bool pending, bool admin, List<string> roles) => new(
+    private static UserSummaryDto ToSummary(AppUser u, string? account, DateTime? lastLogin, bool pending, bool admin, List<string> roles, UserPodDto[] pods) => new(
         u.Id,
         u.DisplayName,
         u.Email,
@@ -351,7 +360,8 @@ public sealed class UserAdministration(
         u.BootstrapAppliedAt is not null,
         roles.ToArray(),
         Utc(u.CreatedAtUtc),
-        lastLogin is { } login ? Utc(login) : null);
+        lastLogin is { } login ? Utc(login) : null,
+        pods);
 
     private static string EscapeLike(string value) =>
         value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("%", "\\%", StringComparison.Ordinal).Replace("_", "\\_", StringComparison.Ordinal).Replace("[", "\\[", StringComparison.Ordinal);
