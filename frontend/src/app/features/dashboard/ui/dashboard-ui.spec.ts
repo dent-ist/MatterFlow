@@ -40,6 +40,7 @@ class Host {
     { label: 'Pod A', count: 40, query: 'status=NEW&pod=1' },
     { label: 'Pod B', count: 10, query: 'status=NEW&pod=2' },
     { label: 'Other Pods', count: 5, query: null, muted: true },
+    { label: 'Empty Pod', count: 0, query: 'status=NEW&pod=3' },
   ];
 }
 
@@ -73,7 +74,7 @@ describe('dashboard UI', () => {
       rows.map((r) =>
         [r.querySelector('.name')?.textContent, r.querySelector('.count')?.textContent].join(' '),
       ),
-    ).toEqual(['Pod A 40', 'Pod B 10', 'Other Pods 5']);
+    ).toEqual(['Pod A 40', 'Pod B 10', 'Other Pods 5', 'Empty Pod 0']);
     expect(rows[0].querySelector('a')!.getAttribute('href')).toBe('/tasks?status=NEW&pod=1');
     expect(rows[2].querySelector('a')).toBeNull();
   });
@@ -92,7 +93,7 @@ describe('dashboard UI', () => {
           r.querySelector('td')?.textContent?.trim(),
         ].join(' '),
       ),
-    ).toEqual(['Pod A 40', 'Pod B 10', 'Other Pods 5']);
+    ).toEqual(['Pod A 40', 'Pod B 10', 'Other Pods 5', 'Empty Pod 0']);
     expect(el.querySelector('mf-bar-list .bars')).toBeNull();
     expect(toggle().textContent).toContain('View as bars');
   });
@@ -105,5 +106,16 @@ describe('dashboard UI', () => {
     expect(link.textContent).toContain('Process custodians');
     expect(link.textContent).toContain('00343-00012');
     expect(link.textContent).toContain('Oct 14, 2026');
+  });
+
+  it('draws no bar for a zero count, titles each label and names the table link by its list', async () => {
+    const el = await render();
+    const rows = Array.from(el.querySelectorAll('mf-bar-list li'));
+    expect(rows[3].querySelector('.bar')).toBeNull();
+    expect(rows[3].textContent).toContain('0');
+    expect(rows[0].querySelector('.bar')).not.toBeNull();
+    expect(rows[0].querySelector('.name')!.getAttribute('title')).toBe('Pod A');
+    const toggle = el.querySelector('mf-bar-list .toggle')!;
+    expect(toggle.textContent!.replace(/\s+/g, ' ').trim()).toBe('View as table for Open by Pod');
   });
 });

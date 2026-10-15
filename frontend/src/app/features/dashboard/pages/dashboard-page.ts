@@ -289,8 +289,20 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     .tiles,
     .skeletons {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: var(--mf-s3);
+    }
+    @media (max-width: 900px) {
+      .tiles,
+      .skeletons {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 420px) {
+      .tiles,
+      .skeletons {
+        grid-template-columns: minmax(0, 1fr);
+      }
     }
     .grid {
       display: grid;

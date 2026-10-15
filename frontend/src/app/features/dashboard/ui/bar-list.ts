@@ -29,7 +29,8 @@ let nextId = 0;
         <h2 [id]="id + '-h'">{{ heading() }}</h2>
         @if (items().length > 0) {
           <button type="button" class="toggle" [attr.aria-pressed]="asTable()" (click)="toggle()">
-            {{ asTable() ? 'View as bars' : 'View as table' }}
+            {{ asTable() ? 'View as bars' : 'View as table'
+            }}<span class="sr-only"> for {{ heading() }}</span>
           </button>
         }
       </header>
@@ -39,33 +40,35 @@ let nextId = 0;
       @if (items().length === 0) {
         <p class="empty">{{ emptyText() }}</p>
       } @else if (asTable()) {
-        <table>
-          <caption class="sr-only">
-            {{
-              heading()
-            }}
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">{{ rowHeading() }}</th>
-              <th scope="col" class="num">Tasks</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (item of items(); track $index) {
+        <div class="mf-scroll">
+          <table>
+            <caption class="sr-only">
+              {{
+                heading()
+              }}
+            </caption>
+            <thead>
               <tr>
-                <th scope="row">
-                  @if (item.query; as q) {
-                    <a routerLink="/tasks" [queryParams]="params(q)">{{ item.label }}</a>
-                  } @else {
-                    {{ item.label }}
-                  }
-                </th>
-                <td class="num">{{ item.count }}</td>
+                <th scope="col">{{ rowHeading() }}</th>
+                <th scope="col" class="num">Tasks</th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (item of items(); track $index) {
+                <tr>
+                  <th scope="row">
+                    @if (item.query; as q) {
+                      <a routerLink="/tasks" [queryParams]="params(q)">{{ item.label }}</a>
+                    } @else {
+                      {{ item.label }}
+                    }
+                  </th>
+                  <td class="num">{{ item.count }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       } @else {
         <ul class="bars">
           @for (item of items(); track $index) {
@@ -90,14 +93,16 @@ let nextId = 0;
     </section>
 
     <ng-template #rowBody let-item>
-      <span class="name">{{ item.label }}</span>
+      <span class="name" [attr.title]="item.label">{{ item.label }}</span>
       <span class="track" aria-hidden="true">
-        <span
-          class="bar"
-          [class.muted]="item.muted"
-          [style.width.%]="width(item.count)"
-          [style.background]="item.muted ? null : color(item.tone)"
-        ></span>
+        @if (item.count > 0) {
+          <span
+            class="bar"
+            [class.muted]="item.muted"
+            [style.width.%]="width(item.count)"
+            [style.background]="item.muted ? null : color(item.tone)"
+          ></span>
+        }
       </span>
       <span class="count">{{ item.count }}</span>
     </ng-template>
@@ -150,7 +155,7 @@ let nextId = 0;
     }
     .row {
       display: grid;
-      grid-template-columns: minmax(6rem, 10rem) 1fr 3rem;
+      grid-template-columns: minmax(6rem, 14rem) 1fr 3rem;
       align-items: center;
       gap: var(--mf-s3);
       padding: var(--mf-s1) var(--mf-s2);
