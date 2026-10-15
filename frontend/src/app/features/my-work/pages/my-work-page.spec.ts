@@ -93,6 +93,15 @@ describe('MyWorkPage', () => {
     );
   });
 
+  it('opens on the tab the user last used when the URL names none', async () => {
+    localStorage.setItem('mf.work-view.v1.my-work.1', JSON.stringify({ view: 'dueSoon' }));
+    await open('/my-work');
+
+    expect(query()['view']).toBe('dueSoon');
+    expect(getMyWork).toHaveBeenCalledTimes(1);
+    expect(lastArgs()[ARG.view]).toBe('dueSoon');
+  });
+
   it('lists my tasks with priority, matter, workflow progress, due and status', async () => {
     const el = await open('/my-work');
     const headers = Array.from(el.querySelectorAll('thead th')).map((h) => h.textContent?.trim());

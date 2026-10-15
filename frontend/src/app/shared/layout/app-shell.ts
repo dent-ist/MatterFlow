@@ -19,6 +19,7 @@ import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { SEARCH_TYPES } from '../search/search-meta';
 import { GlobalSearch } from '../search/global-search';
 import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem } from './nav-items';
+import { ShortcutHelp } from './shortcut-help';
 
 /** Header (logo, persistent global search, Create Task, user), permission-gated left nav, content outlet. */
 @Component({
@@ -30,6 +31,7 @@ import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem } from './nav-items';
     Button,
     GlobalSearch,
     HasPermissionDirective,
+    ShortcutHelp,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown)': 'onKeydown($event)' },
@@ -47,6 +49,7 @@ export class AppShell {
   protected readonly canSearch = computed(() =>
     SEARCH_TYPES.some((t) => this.auth.has(t.permission)),
   );
+  protected readonly helpOpen = signal(false);
   protected readonly navItems = computed(() => this.visible(NAV_ITEMS));
   protected readonly adminItems = computed(() => this.visible(ADMIN_NAV_ITEMS));
 
@@ -83,6 +86,18 @@ export class AppShell {
   }
 
   protected onKeydown(event: KeyboardEvent): void {
+    if (event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      const target = event.target as HTMLElement | null;
+      const typing =
+        !!target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable);
+      // Not while typing, and not on top of another dialog (the help itself closes with the same key).
+      const otherDialog = !this.helpOpen() && !!document.querySelector('.p-dialog');
+      if (!typing && !otherDialog) {
+        event.preventDefault();
+        this.helpOpen.update((v) => !v);
+      }
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
       this.globalSearch()?.focus();

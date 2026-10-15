@@ -52,4 +52,32 @@ describe('AppShell header search', () => {
       fixture.nativeElement.querySelector('mf-global-search input'),
     );
   });
+
+  it('opens the shortcut list with ? and lists Ctrl+K, but not while typing', async () => {
+    const fixture = await create(['Matter.View']);
+    const input = fixture.nativeElement.querySelector('mf-global-search input') as HTMLInputElement;
+    input.focus();
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: '?', bubbles: true }));
+    await settle(fixture);
+    expect(document.body.querySelector('[data-shortcut-help]')).toBeNull();
+
+    (document.activeElement as HTMLElement).blur();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: '?', bubbles: true }));
+    await settle(fixture);
+    const help = document.body.querySelector('[data-shortcut-help]');
+    expect(help).not.toBeNull();
+    expect(help!.textContent).toContain('Ctrl');
+    expect(help!.textContent).toContain('Search matters');
+    expect(document.body.querySelector('[role=dialog]')!.textContent).toContain(
+      'Keyboard shortcuts',
+    );
+  });
+
+  it('has a Keyboard shortcuts button for people who do not know the key', async () => {
+    const fixture = await create(['Matter.View']);
+    const button = fixture.nativeElement.querySelector(
+      '[data-shortcut-help-button]',
+    ) as HTMLButtonElement;
+    expect(button.getAttribute('aria-label')).toBe('Keyboard shortcuts');
+  });
 });

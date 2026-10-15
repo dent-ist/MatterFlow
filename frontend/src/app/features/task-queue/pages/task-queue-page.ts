@@ -16,6 +16,7 @@ import {
   emptyState,
   queueArgs,
 } from '../../../shared/work-queue/queue-filters';
+import { isBareState } from '../../../shared/work-queue/last-view';
 import { loadPodChoices } from '../../../shared/work-queue/pod-options';
 import { QueuePageBase } from '../../../shared/work-queue/queue-page';
 import { PodOption, WorkFilterBar } from '../../../shared/work-queue/work-filter-bar';
@@ -97,7 +98,7 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
   protected readonly pods = signal<PodOption[]>([]);
   private readonly primary = signal<number | null>(null);
 
-  /** A bare `/tasks` is sent to "All open" before anything loads. */
+  /** A bare `/tasks` is sent to the last view, or "All open", before anything loads. */
   private pendingDefault = false;
 
   constructor() {
@@ -105,8 +106,12 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
     const keys = this.route.snapshot?.queryParamMap?.keys ?? [];
     if (keys.length === 0) {
       this.pendingDefault = true;
+      // The view the user last used, or All open.
       this.navigate(
-        { ...emptyState(), filters: builtInFilters('allOpen', this.viewContext()) },
+        this.lastView() ?? {
+          ...emptyState(),
+          filters: builtInFilters('allOpen', this.viewContext()),
+        },
         true,
       );
     }
@@ -119,7 +124,7 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
 
   protected override shouldLoad(state: QueueState): boolean {
     if (this.pendingDefault) {
-      if (state.filters.status.length === 0) return false;
+      if (isBareState(state)) return false;
       this.pendingDefault = false;
     }
     return true;

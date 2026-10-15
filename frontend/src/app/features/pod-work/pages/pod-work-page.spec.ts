@@ -179,6 +179,20 @@ describe('PodWorkPage', () => {
     expect(lastArgs()[ARG.podId]).toBe(6);
   });
 
+  it('opens on the only Pod of a user who is a member of exactly one', async () => {
+    const only = [
+      { podId: 6, name: 'Pod B', isMember: true, isPrimary: false },
+      { podId: 7, name: 'Pod C', isMember: false, isPrimary: false },
+    ];
+    await open('/pods/work', {
+      response: of(podPage([], { pod: undefined, pods: only })),
+    });
+    // The first answer names no Pod, so the page asks again for the user's only Pod.
+    expect(query()['podId']).toBe('6');
+    expect(getPodWork).toHaveBeenCalledTimes(2);
+    expect(lastArgs()[ARG.podId]).toBe(6);
+  });
+
   it('switches tabs through the URL and drops the member selection', async () => {
     const el = await open('/pods/work?podId=5&assignee=9');
     tab(el, 'Overdue and on hold').click();

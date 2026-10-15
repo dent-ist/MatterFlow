@@ -144,6 +144,27 @@ describe('TaskQueuePage', () => {
     expect(lastArgs()[ARG.status]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
   });
 
+  it('opens a bare /tasks on the view the user last used, with one request', async () => {
+    localStorage.setItem(
+      'mf.work-view.v1.queue.1',
+      JSON.stringify({ status: ['NEW'], overdue: 'true', sort: 'due', dir: 'desc' }),
+    );
+    await open('/tasks');
+
+    expect(query()['status']).toBe('NEW');
+    expect(query()['overdue']).toBe('true');
+    expect(getTaskQueue).toHaveBeenCalledTimes(1);
+    expect(lastArgs()[ARG.status]).toEqual(['NEW']);
+    expect(lastArgs()[ARG.sort]).toBe('due');
+  });
+
+  it('remembers the view it loaded, but not the search text', async () => {
+    await open('/tasks?status=NEW&q=abc&priority=2');
+
+    const saved = JSON.parse(localStorage.getItem('mf.work-view.v1.queue.1')!);
+    expect(saved).toEqual({ status: ['NEW'], priority: ['2'] });
+  });
+
   it('lists the rows with the range, opens the task from the title and shows the chips of the URL', async () => {
     const el = await open('/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&priority=1');
 

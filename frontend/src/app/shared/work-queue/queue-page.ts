@@ -27,6 +27,7 @@ import {
   sameSet,
   toQueryParams,
 } from './queue-filters';
+import { loadLastView, saveLastView } from './last-view';
 import { WorkListState } from './work-list';
 
 /** What every queue response has in common. */
@@ -140,6 +141,11 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     return true;
   }
 
+  /** The view this user last looked at on this screen (Task Queue, My Work), for a visit with no query string. */
+  protected lastView(): QueueState | null {
+    return this.pageKey === 'pod-work' ? null : loadLastView(this.pageKey, this.userId());
+  }
+
   /** Fetches one page for the state. */
   protected abstract fetch(state: QueueState): Observable<TData>;
 
@@ -167,6 +173,7 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
       if (id !== this.requestId) return;
       this.data.set(result);
       this.loadState.set('ready');
+      if (this.pageKey !== 'pod-work') saveLastView(this.pageKey, this.userId(), state);
       this.loaded(result);
     } catch {
       if (id === this.requestId) this.loadState.set('error');

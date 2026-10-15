@@ -26,7 +26,20 @@
       }
     }
   </div>
+
+  <button
+    type="button"
+    class="mf-btn mf-btn--icon mf-help-btn"
+    data-shortcut-help-button
+    aria-label="Keyboard shortcuts"
+    title="Keyboard shortcuts (?)"
+    (click)="helpOpen.set(true)"
+  >
+    <i class="pi pi-question-circle" aria-hidden="true"></i>
+  </button>
 </header>
+
+<mf-shortcut-help [(visible)]="helpOpen" />
 
 <div class="mf-body">
   <nav class="mf-nav" aria-label="Main">

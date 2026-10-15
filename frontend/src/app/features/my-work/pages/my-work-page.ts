@@ -7,6 +7,7 @@ import {
   PodsClient,
 } from '../../../api/generated/api-client';
 import { dateDaysAgo, QueueState, queueArgs } from '../../../shared/work-queue/queue-filters';
+import { isBareState } from '../../../shared/work-queue/last-view';
 import { loadPodChoices } from '../../../shared/work-queue/pod-options';
 import { QueuePageBase } from '../../../shared/work-queue/queue-page';
 import { PodOption, WorkFilterBar } from '../../../shared/work-queue/work-filter-bar';
@@ -151,9 +152,27 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
 
   constructor() {
     super('my-work');
+    const keys = this.route.snapshot?.queryParamMap?.keys ?? [];
+    const remembered = keys.length === 0 ? this.lastView() : null;
+    if (remembered) {
+      // Open on the tab and filters the user last used.
+      this.pendingRemembered = true;
+      this.navigate(remembered, true);
+    }
     void loadPodChoices(this.podsApi, this.auth.has('Pod.View')).then((c) =>
       this.pods.set(c.options),
     );
+  }
+
+  /** The remembered view is applied once, before anything loads. */
+  private pendingRemembered = false;
+
+  protected override shouldLoad(state: QueueState): boolean {
+    if (this.pendingRemembered) {
+      if (isBareState(state)) return false;
+      this.pendingRemembered = false;
+    }
+    return true;
   }
 
   protected override podName(id: number): string | null {
