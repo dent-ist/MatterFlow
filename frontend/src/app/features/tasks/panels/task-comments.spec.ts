@@ -26,6 +26,12 @@ describe('TaskComments', () => {
   let fixture: ComponentFixture<TaskComments>;
   const el = (): HTMLElement => fixture.nativeElement;
   const q = <T extends HTMLElement>(selector: string): T => el().querySelector<T>(selector)!;
+  /** Picks an option of the single "Sort comments" dropdown. */
+  const setOrder = (order: 'oldest' | 'newest'): void => {
+    const select = q<HTMLSelectElement>('[data-order-select]');
+    select.value = order;
+    select.dispatchEvent(new Event('change'));
+  };
 
   async function create(
     comments = [aComment()],
@@ -110,13 +116,50 @@ describe('TaskComments', () => {
     expect(el().querySelectorAll('[data-comment-id]').length).toBe(2);
   });
 
+  it('has one sort dropdown (oldest/newest first) instead of two buttons', async () => {
+    await create([aComment()]);
+    const select = q<HTMLSelectElement>('[data-order-select]');
+    expect(select.getAttribute('aria-label')).toBe('Sort comments');
+    expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
+      'Oldest first',
+      'Newest first',
+    ]);
+    expect(el().querySelector('button[data-order]')).toBeNull();
+  });
+
+  it('filters the loaded comments by author and text from the search box', async () => {
+    await create([
+      aComment({ commentId: 1, bodyHtml: '<p>Run the <strong>dedupe</strong> first</p>' }),
+      aComment({ commentId: 2, bodyHtml: '<p>Vendor confirmed delivery</p>' }),
+    ]);
+    const input = q<HTMLInputElement>('#tc-search');
+    expect(input).not.toBeNull();
+    input.value = 'DEDUPE';
+    input.dispatchEvent(new Event('input'));
+    await new Promise((r) => setTimeout(r, 400));
+    await settle(fixture);
+    expect(el().querySelectorAll('[data-comment-id]').length).toBe(1);
+    expect(q('[data-match-count]').textContent).toContain('1 of 2');
+
+    input.value = 'nothing like this';
+    input.dispatchEvent(new Event('input'));
+    await new Promise((r) => setTimeout(r, 400));
+    await settle(fixture);
+    expect(el().querySelectorAll('[data-comment-id]').length).toBe(0);
+    expect(q('[data-no-match]').textContent).toContain('No comments match');
+
+    el().querySelector<HTMLButtonElement>('[data-no-match] button')!.click();
+    await settle(fixture);
+    expect(el().querySelectorAll('[data-comment-id]').length).toBe(2);
+  });
+
   it('reports the number of comments to the host', async () => {
     api = undefined as never;
     const counts: number[] = [];
     TestBed.resetTestingModule();
     await create([aComment(), aComment({ commentId: 2 })]);
     fixture.componentInstance.countChange.subscribe((n) => counts.push(n));
-    el().querySelector<HTMLButtonElement>('[data-order=newest]')!.click();
+    setOrder('newest');
     await settle(fixture);
     expect(counts).toEqual([2]);
     expect(api.listTaskComments).toHaveBeenLastCalledWith(42, true);
@@ -351,7 +394,7 @@ describe('TaskComments', () => {
   it('offers a retry when loading fails', async () => {
     await create();
     api.listTaskComments.mockReturnValue(apiError(500, { status: 500, title: 'x' }));
-    q<HTMLButtonElement>('[data-order=newest]').click();
+    setOrder('newest');
     await settle(fixture);
     expect(q('[data-load-error]').textContent).toContain('Something went wrong. Try again.');
 
@@ -378,7 +421,7 @@ describe('TaskComments', () => {
     it('shows how many of the comments are on screen and loads the next page on request', async () => {
       await create([]);
       serve(50);
-      q<HTMLButtonElement>('[data-order=newest]').click();
+      setOrder('newest');
       await settle(fixture);
 
       expect(q('h2').textContent).toContain('Comments (50)');
@@ -411,7 +454,7 @@ describe('TaskComments', () => {
     it('reports the total to the host and keeps the loaded part after posting a comment', async () => {
       await create([]);
       serve(50);
-      q<HTMLButtonElement>('[data-order=newest]').click();
+      setOrder('newest');
       await settle(fixture);
       q<HTMLButtonElement>('[data-load-more]').click();
       await settle(fixture);
@@ -433,13 +476,13 @@ describe('TaskComments', () => {
     it('starts over from the first page when the order changes', async () => {
       await create([]);
       serve(50);
-      q<HTMLButtonElement>('[data-order=newest]').click();
+      setOrder('newest');
       await settle(fixture);
       q<HTMLButtonElement>('[data-load-more]').click();
       await settle(fixture);
       expect(shown()).toBe(40);
 
-      q<HTMLButtonElement>('[data-order=oldest]').click();
+      setOrder('oldest');
       await settle(fixture);
       expect(shown()).toBe(20);
       expect(api.listTaskComments).toHaveBeenLastCalledWith(42, false);
@@ -448,7 +491,7 @@ describe('TaskComments', () => {
     it('keeps what is shown and offers to try again when the next page fails', async () => {
       await create([]);
       serve(50);
-      q<HTMLButtonElement>('[data-order=newest]').click();
+      setOrder('newest');
       await settle(fixture);
 
       api.listTaskComments.mockReturnValue(apiError(500, { status: 500, title: 'x' }));

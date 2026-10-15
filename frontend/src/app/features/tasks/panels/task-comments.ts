@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   input,
@@ -18,6 +19,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { SearchBox } from '../../../shared/ui/search-box';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { COMMENT_MAX_TEXT, decorateLinks, htmlToText, isBlankHtml } from './rich-text';
 import { RichTextEditor } from './rich-text-editor';
@@ -43,29 +45,34 @@ const RENDER_CACHE_LIMIT = 1000;
  */
 @Component({
   selector: 'mf-task-comments',
-  imports: [MfDatePipe, RichTextEditor, ConfirmDialog],
+  imports: [MfDatePipe, RichTextEditor, ConfirmDialog, SearchBox],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="tc" aria-label="Comments">
       <header class="tc__head">
         <h2 class="tc__title" tabindex="-1" data-section-heading>Comments ({{ total() }})</h2>
-        <div class="tc__order" role="group" aria-label="Order">
-          <button
-            type="button"
-            data-order="oldest"
-            [attr.aria-pressed]="!newestFirst()"
-            (click)="setOrder(false)"
+        <div class="tc__tools">
+          <mf-search-box
+            class="tc__search"
+            inputId="tc-search"
+            label="Search comments"
+            placeholder="Search comments"
+            [hideLabel]="true"
+            [hintOnFocus]="true"
+            hint="Searches the author and the text of the comments loaded here."
+            [value]="query()"
+            (searchChange)="query.set($event)"
+          />
+          <select
+            class="mf-control tc__sort"
+            data-order-select
+            aria-label="Sort comments"
+            [value]="newestFirst() ? 'newest' : 'oldest'"
+            (change)="setOrder($any($event.target).value === 'newest')"
           >
-            Oldest first
-          </button>
-          <button
-            type="button"
-            data-order="newest"
-            [attr.aria-pressed]="newestFirst()"
-            (click)="setOrder(true)"
-          >
-            Newest first
-          </button>
+            <option value="oldest">Oldest first</option>
+            <option value="newest">Newest first</option>
+          </select>
         </div>
       </header>
 
@@ -82,9 +89,19 @@ const RENDER_CACHE_LIMIT = 1000;
         @default {
           @if (items().length === 0) {
             <p class="tc__muted" data-empty>No comments yet.</p>
+          } @else if (visibleItems().length === 0) {
+            <p class="tc__muted" data-no-match role="status">
+              No comments match "{{ query() }}".
+              <button type="button" class="tc__link" (click)="query.set('')">Clear search</button>
+            </p>
           } @else {
+            @if (query()) {
+              <p class="tc__muted" data-match-count role="status">
+                {{ visibleItems().length }} of {{ items().length }} comments match.
+              </p>
+            }
             <ol class="tc__list">
-              @for (c of items(); track c.commentId) {
+              @for (c of visibleItems(); track c.commentId) {
                 <li class="tc__item" [attr.data-comment-id]="c.commentId">
                   <div class="tc__meta">
                     <strong class="tc__author">{{ c.author.displayName }}</strong>
@@ -288,27 +305,19 @@ const RENDER_CACHE_LIMIT = 1000;
       outline: 2px solid var(--mf-focus);
       outline-offset: 2px;
     }
-    .tc__order {
-      display: inline-flex;
-      gap: var(--mf-s1);
+    .tc__tools {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s2);
     }
-    .tc__order button {
-      min-height: var(--mf-target-min, 2rem);
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      cursor: pointer;
+    .tc__search {
+      width: 16rem;
+      max-width: 100%;
     }
-    .tc__order button[aria-pressed='true'] {
-      background: var(--mf-selected-bg);
-      font-weight: 600;
-    }
-    .tc__order button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
+    .tc__sort {
+      width: auto;
+      min-width: 9.5rem;
     }
     .tc__list {
       display: grid;
@@ -461,6 +470,16 @@ export class TaskComments {
   protected readonly loadingMore = signal(false);
   protected readonly moreError = signal('');
   protected readonly newestFirst = signal(false);
+  /** The search text; filters the comments already loaded (a thread is loaded in full, in pages of 200). */
+  protected readonly query = signal('');
+  protected readonly visibleItems = computed(() => {
+    const q = this.query().trim().toLowerCase();
+    const all = this.items();
+    if (!q) return all;
+    return all.filter((c) =>
+      (c.author.displayName + ' ' + htmlToText(c.bodyHtml)).toLowerCase().includes(q),
+    );
+  });
 
   protected readonly draft = signal('');
   protected readonly posting = signal(false);
