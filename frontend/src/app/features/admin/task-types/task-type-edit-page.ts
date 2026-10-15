@@ -20,6 +20,7 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { TaskTypeView, TaskTypesApi } from './task-types-api';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { PageTitle } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -68,6 +69,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
   private readonly lookup = inject(WorkflowLookup);
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
+  private readonly pageTitle = inject(PageTitle);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly taskType = signal<TaskTypeView | null>(null);
@@ -95,6 +97,11 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     effect(() => {
       const id = this.id();
       untracked(() => void this.load(id));
+    });
+    // The tab title names the record, like the detail pages do (UXR2-17).
+    effect(() => {
+      const name = this.taskType()?.name;
+      if (name) this.pageTitle.set(name);
     });
   }
 

@@ -49,7 +49,7 @@ describe('TaskTypesPage', () => {
     expect(r.querySelector('[data-warning]')).toBeNull();
     expect(
       r
-        .querySelector<HTMLAnchorElement>('a[aria-label^="Design the request form"]')!
+        .querySelector<HTMLAnchorElement>('a[aria-label^="Edit the request form"]')!
         .getAttribute('href'),
     ).toBe('/admin/task-types/1/form');
   });
@@ -76,8 +76,7 @@ describe('TaskTypesPage', () => {
     expect(names()).toContain('Collection');
     const actions = row('Collection').querySelector('.mf-row-actions')!;
     expect(Array.from(actions.querySelectorAll('[aria-label]')).map((a) => a.ariaLabel)).toEqual([
-      'Design the request form of Collection',
-      'Edit Collection',
+      'Edit the request form of Collection',
       'Deactivate Collection',
     ]);
 

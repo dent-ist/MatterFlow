@@ -26,6 +26,7 @@ import { workflowErrors } from './workflow-errors';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { Badge, BadgeTone, workflowStatusTone } from '../../../shared/ui/badge';
+import { PageTitle } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -247,6 +248,7 @@ export class WorkflowEditPage implements HasUnsavedChanges {
   private readonly api = inject(WorkflowsClient);
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
+  private readonly pageTitle = inject(PageTitle);
 
   protected readonly published = WorkflowVersionStatus.Published;
   protected readonly isEdit = computed(() => this.workflowId() !== undefined);
@@ -274,6 +276,10 @@ export class WorkflowEditPage implements HasUnsavedChanges {
     effect(() => {
       if (this.workflowId() !== undefined) untracked(() => void this.load());
       else untracked(() => this.state.set('ready'));
+    });
+    effect(() => {
+      const name = this.detail()?.workflow?.name;
+      if (name) this.pageTitle.set(name);
     });
   }
 

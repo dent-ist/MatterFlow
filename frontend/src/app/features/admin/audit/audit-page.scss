@@ -6,10 +6,11 @@
   color: var(--mf-text-muted);
 }
 
+/* A fixed grid: every label and control share a row line, whatever hints sit below a field (UXR2-06). */
 .au-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
   gap: var(--mf-s3) var(--mf-s4);
   margin-bottom: var(--mf-s3);
 }
@@ -26,12 +27,24 @@
 
   input,
   select {
-    min-width: 180px;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
   }
 }
 
-.au-wide input {
-  min-width: 260px;
+.au-wide {
+  grid-column: span 2;
+}
+
+@media (max-width: 767px) {
+  .au-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .au-wide {
+    grid-column: auto;
+  }
 }
 
 .au-hint {
@@ -73,6 +86,7 @@
 }
 
 .au-buttons {
+  grid-column: 1 / -1;
   display: flex;
   gap: var(--mf-s2);
 }

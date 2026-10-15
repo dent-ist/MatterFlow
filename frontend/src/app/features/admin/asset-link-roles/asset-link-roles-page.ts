@@ -131,6 +131,7 @@ export class AssetLinkRolesPage implements OnInit, HasUnsavedChanges {
     this.editingId.set(r.id);
     this.draftName.set(r.name);
     this.editError.set('');
+    setTimeout(() => document.getElementById('rename-' + r.id)?.focus());
   }
 
   protected cancelRename(): void {

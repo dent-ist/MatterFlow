@@ -11,7 +11,7 @@
 
 <mf-list-state noun="asset link roles" [state]="state()" [columns]="4" (retry)="load()">
   <p class="muted hint">
-    Drag a row or use the arrows to reorder. Inactive labels aren't offered for new links.
+    Drag a row or use the arrows to reorder. Inactive roles aren't offered for new links.
   </p>
   <div class="mf-table-wrap">
     <div class="mf-scroll">
@@ -24,7 +24,7 @@
             <th scope="col">Order</th>
             <th scope="col">Name</th>
             <th scope="col">Active</th>
-            <th scope="col"><span class="sr-only">Actions</span></th>
+            <th scope="col" class="mf-col-actions"><span class="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>
@@ -96,16 +96,6 @@
                   @if (!r.isActive) {
                     <span class="muted tag">Inactive</span>
                   }
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--text"
-                    *mfHasPermission="'AssetType.Manage'"
-                    [attr.aria-label]="'Rename ' + r.name"
-                    (click)="startRename(r)"
-                    data-rename
-                  >
-                    Rename
-                  </button>
                 }
               </td>
               <td>
@@ -121,6 +111,17 @@
               </td>
               <td class="actions mf-col-actions">
                 <span class="mf-row-actions">
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text"
+                    *mfHasPermission="'AssetType.Manage'"
+                    [disabled]="busy()"
+                    [attr.aria-label]="'Rename ' + r.name"
+                    (click)="startRename(r)"
+                    data-rename
+                  >
+                    Rename
+                  </button>
                   <button
                     type="button"
                     class="mf-btn mf-btn--text mf-btn--danger"

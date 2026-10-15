@@ -50,6 +50,9 @@ describe('audit formatting', () => {
 
   it('replaces internal names inside a sentence with readable ones', () => {
     expect(friendlyText('Owner kind set to StepInstance')).toBe('Owner kind set to workflow step');
+    expect(friendlyText('AssetType 8 and 3 related changes')).toBe(
+      'Asset type 8 and 3 related changes',
+    );
     expect(friendlyText('received_datetime changed')).toBe('Received date and time changed');
     expect(objectTypeLabel('StepInstance')).toBe('Workflow step');
     expect(isTechnicalFieldKey('OwnerKind')).toBe(true);

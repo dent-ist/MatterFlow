@@ -107,14 +107,8 @@
                   <a
                     class="mf-btn mf-btn--text"
                     [routerLink]="['/admin/task-types', t.id, 'form']"
-                    [attr.aria-label]="'Design the request form of ' + t.name"
-                    >Design</a
-                  >
-                  <a
-                    class="mf-btn mf-btn--text"
-                    [routerLink]="['/admin/task-types', t.id]"
-                    [attr.aria-label]="'Edit ' + t.name"
-                    >Edit</a
+                    [attr.aria-label]="'Edit the request form of ' + t.name"
+                    >Edit form</a
                   >
                   @if (t.isActive) {
                     <button

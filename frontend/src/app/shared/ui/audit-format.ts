@@ -57,8 +57,12 @@ export function friendlyText(text: string | undefined | null): string {
   if (!text) return '';
   return text
     .replace(/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/g, (key) => fieldLabel(`form:${key}`))
-    .replace(/\b(?:FormValueSet|StepInstance|TaskStepInstance|TaskAsset)\b/g, (type) =>
-      objectTypeLabel(type).toLowerCase(),
+    .replace(
+      /\b(?:FormValueSet|StepInstance|TaskStepInstance|TaskAsset|AssetType|AssetLinkRole|StepDefinition|WorkflowDefinition|TaskType|StatusLabel|CustomField)\b/g,
+      (type, offset: number) => {
+        const label = objectTypeLabel(type);
+        return offset === 0 ? label : label.toLowerCase();
+      },
     );
 }
 

@@ -17,9 +17,12 @@
 }
 
 .pods__live {
-  min-height: 1.25rem;
   margin: 0 0 0.5rem;
   color: var(--mf-success-text, #166534);
+
+  &:empty {
+    margin: 0;
+  }
 }
 
 .pods__filters,

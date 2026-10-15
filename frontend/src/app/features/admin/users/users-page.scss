@@ -66,6 +66,12 @@
   background: var(--mf-surface);
   border: 1px solid var(--mf-border);
   border-radius: var(--mf-radius);
+
+  /* An empty state draws its own dashed box: no second border around it (UXR2-18). */
+  &:has([data-empty]) {
+    background: none;
+    border-color: transparent;
+  }
 }
 
 table {

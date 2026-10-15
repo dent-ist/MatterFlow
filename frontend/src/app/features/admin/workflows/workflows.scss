@@ -19,6 +19,11 @@
   box-shadow: var(--mf-shadow-1);
 }
 
+/* Stacked cards keep a gap between them (UXR2-18). */
+.wf-panel {
+  margin-top: var(--mf-s4);
+}
+
 .wf-panel h2 {
   margin: 0 0 var(--mf-s3);
   font-size: 1.125rem;

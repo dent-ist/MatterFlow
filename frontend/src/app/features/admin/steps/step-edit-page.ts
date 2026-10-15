@@ -19,6 +19,7 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { PageTitle } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -211,6 +212,7 @@ export class StepEditPage implements HasUnsavedChanges {
   private readonly api = inject(StepDefinitionsClient);
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
+  private readonly pageTitle = inject(PageTitle);
 
   protected readonly isEdit = computed(() => this.stepId() !== undefined);
   protected readonly state = signal<LoadState>('ready');
@@ -255,6 +257,10 @@ export class StepEditPage implements HasUnsavedChanges {
   constructor() {
     effect(() => {
       if (this.stepId() !== undefined) untracked(() => void this.load());
+    });
+    effect(() => {
+      const title = this.original()?.title;
+      if (title) this.pageTitle.set(title);
     });
   }
 

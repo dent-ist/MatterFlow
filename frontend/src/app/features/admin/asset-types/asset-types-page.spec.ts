@@ -140,7 +140,7 @@ describe('AssetTypesPage', () => {
   it('edits a type with its row version and active flag', async () => {
     await create(['AssetType.Manage']);
 
-    el().querySelector<HTMLElement>('p-button[aria-label="Edit Document Set"] button')!.click();
+    el().querySelector<HTMLElement>('button[aria-label="Edit Document Set"]')!.click();
     await settle(fixture);
     expect((el().querySelector('#type-name') as HTMLInputElement).value).toBe('Document Set');
     type('#type-name', 'Document Bundle');
