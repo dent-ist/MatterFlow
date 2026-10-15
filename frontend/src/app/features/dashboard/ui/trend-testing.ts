@@ -7,13 +7,13 @@ import {
 /** Test data of the Trends tab: three days, four task types (one inactive with a completion, one active without tasks). */
 const DATES = ['2026-10-12', '2026-10-13', '2026-10-14'];
 
-type Cols = {
+interface Cols {
   created: number[];
   completed: number[];
   overdue: number[];
   onTime: number[];
   late: number[];
-};
+}
 
 const COLS: Record<number, Cols> = {
   5: {

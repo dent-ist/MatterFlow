@@ -275,7 +275,7 @@ describe('DashTrendsTab', () => {
     expect(lines().length).toBe(4);
     expect(url()).toBe('/trends?due=overdue,ontime');
     expect(text(el.querySelector('h3'))).toBe(
-      'Tasks created, completed, overdue at the end of the day and completed on time per day',
+      'Tasks created, completed, overdue and on time per day',
     );
     expect(stored().due).toEqual(['overdue', 'onTime']);
     // Overdue now, with a link to the queue's overdue filter.

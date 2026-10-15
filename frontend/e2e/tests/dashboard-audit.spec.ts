@@ -345,7 +345,10 @@ test.describe('Dashboard actions and click-through', () => {
   }) => {
     const calls: string[] = [];
     page.on('request', (r) => {
-      if (r.url().includes('/api/v1/dashboard')) calls.push(r.url());
+      // The summary only: the Trends tab reads its own series (/api/v1/dashboard/trend) when it is shown.
+      if (r.url().includes('/api/v1/dashboard') && !r.url().includes('/api/v1/dashboard/')) {
+        calls.push(r.url());
+      }
     });
     await page.goto('/dashboard');
     await expect(page.locator('[data-group="attention"]')).toBeVisible();

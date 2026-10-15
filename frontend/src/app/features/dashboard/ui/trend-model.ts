@@ -47,19 +47,19 @@ export const MEASURE_INFO: Record<Measure, MeasureInfo> = {
   overdue: {
     label: 'Overdue',
     word: 'overdue',
-    heading: 'overdue at the end of the day',
+    heading: 'overdue',
     totalNote: 'Overdue now',
   },
   onTime: {
     label: 'On time',
     word: 'completed on time',
-    heading: 'completed on time',
+    heading: 'on time',
     totalNote: 'Completed on time in the period',
   },
   late: {
     label: 'Completed late',
     word: 'completed late',
-    heading: 'completed late',
+    heading: 'late',
     totalNote: 'Completed late in the period',
   },
 };
@@ -345,14 +345,20 @@ export function buildView(
 export function chartHeading(measures: readonly Measure[]): string {
   const unique = MEASURES.filter((m) => measures.includes(m));
   if (unique.length === 0) return 'Tasks per day';
+  if (unique.length === 1) {
+    switch (unique[0]) {
+      case 'overdue':
+        return 'Overdue tasks at the end of each day';
+      case 'onTime':
+        return 'Tasks completed on time per day';
+      case 'late':
+        return 'Tasks completed late per day';
+      default:
+        return `Tasks ${MEASURE_INFO[unique[0]].heading} per day`;
+    }
+  }
   const words = unique.map((m) => MEASURE_INFO[m].heading);
-  const list =
-    words.length === 1
-      ? words[0]
-      : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
-  return unique.length === 1 && unique[0] === 'overdue'
-    ? 'Overdue tasks at the end of each day'
-    : `Tasks ${list} per day`;
+  return `Tasks ${words.slice(0, -1).join(', ')} and ${words[words.length - 1]} per day`;
 }
 
 // ---- the legend

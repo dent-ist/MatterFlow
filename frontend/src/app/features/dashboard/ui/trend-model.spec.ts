@@ -198,7 +198,7 @@ describe('trend model', () => {
       expect(chartHeading(['created'])).toBe('Tasks created per day');
       expect(chartHeading(['overdue'])).toBe('Overdue tasks at the end of each day');
       expect(chartHeading(['created', 'completed', 'overdue'])).toBe(
-        'Tasks created, completed and overdue at the end of the day per day',
+        'Tasks created, completed and overdue per day',
       );
       expect(chartHeading([])).toBe('Tasks per day');
     });

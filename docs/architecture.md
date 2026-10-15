@@ -560,6 +560,20 @@ Two read endpoints of the WorkViews module for the Dashboard tabs, `Perm:Dashboa
 
 ---
 
+### 8.6 Dashboard Trends: task types and due dates
+
+`GET /api/v1/dashboard/trend` (WorkViews, `DashboardTrendService`, `Perm:Dashboard.ViewDepartment`, the permission the summary's trend needs; evaluated in the viewer's zone via `X-Time-Zone`) feeds the Trends tab. Query: `periodDays` (1 to 365, default 30), `taskTypeIds` (repeat the parameter; at most 8, otherwise 400 `TOO_MANY_TYPES`; an id that is not a Task Type, 400 `UNKNOWN_TASK_TYPE`; active and inactive types are accepted, duplicates collapse), `metric` (`created`, `completed`, `overdue`, `ontime` or `late` computes only that count, the others are 0; omitted computes all), `fresh` (skips the short `DashboardCache`, which stores trend answers too under their own key per user, period, zone, local date, metric and type set). Unknown parameters are 400 like everywhere else on the Dashboard.
+
+Response: `all` (one `DashboardTrendDay` per local day of the period: `created`, `completed`, `overdue`, `onTime`, `late`), `byTaskType` (the same days per requested type, in the requested order, zeros for a type without Tasks), `types` (the legend: every Task Type that is active or has Tasks created, completed or overdue in the period, with `created`, `completed`, `overdue` (now), `onTime`, `late`, its `iconKey`, `isActive` and the Task Queue queries `createdQuery`, `completedQuery`, `overdueQuery` that list exactly those Tasks; largest `created` first) and the department queries. The per-type series add up to `all` for every measure, and `all.created` / `all.completed` equal the `trend` of the summary (same day assignment: `QueueClock.StartOfDayUtc` edges, so DST days and half-hour zones work).
+
+Measures. *Created* and *Completed* are events of the local day (completed = status `COMPLETED`, by its last status change). *Overdue* is a snapshot: for each local day, the Tasks that at the end of that day (for today: now) were created, had a due moment that had passed and were not yet closed. A timed due is the instant `DueAtUtc`; a date-only due passes after 23:59:59 of that date in the viewer's zone (addendum M, the same rule as `TaskQueueRules.Overdue`, so today's value equals the Overdue tile). Closed means `COMPLETED` or `CANCELLED` from the Task's last status change. Tasks without a due date (ASAP) are in no due-date measure. *On time* / *Late* count, per local day, the Tasks with a due date completed that day on or before / after their due moment (date-only: on or before the end of the due date locally).
+
+Approximations (documented in the UI help text): the status history is not replayed, so a Task that is open now counts as open for its whole life (a reopened Task is overdue in the days it was actually closed), and the current due date is used for every day, so editing a due date changes the past. Neither needs an audit read.
+
+Cost. A fixed number of statements whatever the number of Tasks, types or days: the Task Type catalogue, then one read each of (type, created instant), (type, completed instant) and the Tasks with a due date that were open at some time in the period (type, created, due, status, last change). The days are assigned in memory (`DashboardRules.TrendByTaskType`: binary search of the day edges; the overdue snapshots by a difference array, one increment per Task and a prefix sum per series), because the viewer's day edges are not UTC days and a date-only due depends on the viewer's date. `DashboardPerformanceTests` covers it at 5,000 Tasks spread over 8 types (median under 300 ms for 90 days with 8 types, at most 4 statements, a 365 day period under 600 ms).
+
+Frontend (`features/dashboard/ui`): `dash-trends-tab.ts` (lazy through `@defer`, so the initial bundle is unchanged; owns the choices, the address, the memory and the request), `trend-legend.ts` (the legend that is also the control: Due dates group, Task types group), `trend-chart.ts` (the SVG chart, tooltip, read-out and table), `trend-model.ts` (pure: measures, line styles, palette, address and storage mapping, lines, legend rows, Task Queue day queries), `trend-prefs.ts` (localStorage), `trend-sample.ts` (line sample). The address carries `types`, `metric`, `all=0` and `due`; the page clears them when another tab is shown.
+
 ## 9. Audit strategy
 
 **Decision: hybrid, transactional.**
@@ -615,7 +629,7 @@ Two read endpoints of the WorkViews module for the Dashboard tabs, `Perm:Dashboa
 | Forms | `/forms/{definitionId}`, `/forms/{definitionId}/versions`, `POST .../versions/{id}/publish`, `POST .../versions/{id}/clone`, `GET /forms/versions/{id}/schema` |
 | Workflow config | `/step-definitions`, `/workflows`, `/workflows/{id}/versions`, `POST .../publish` |
 | Tasks | `POST/GET /tasks`, `GET/PUT /tasks/{id}`, status/assignment/priority actions, `/tasks/{id}/assets`, `/tasks/{id}/comments`, `/tasks/{id}/workflow`, step actions, `/tasks/{id}/activity` |
-| Views | `GET /my-work`, `/pod-work`, `/dashboard`, `/dashboard/swimlane`, `/dashboard/workload` (section 8.5); Task Queue = `GET /tasks` with filters |
+| Views | `GET /my-work`, `/pod-work`, `/dashboard`, `/dashboard/trend`, `/dashboard/swimlane`, `/dashboard/workload` (sections 8.5 and 8.6); Task Queue = `GET /tasks` with filters |
 | Search | `GET /search?q=` (grouped), `GET /search/{type}` (paged) |
 | Intake | `POST /intake/parse-email` (multipart), no persistence |
 | Audit | `GET /audit/events` (one object, chronological), `GET /audit/search` (browser: object, actor, event type, date range in the viewer's zone, free text, correlation; cursor paging newest first, page size at most 200), `GET /audit/facets` |

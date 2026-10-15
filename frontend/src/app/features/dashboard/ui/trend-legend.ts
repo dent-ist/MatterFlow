@@ -289,6 +289,7 @@ export const SEARCH_ABOVE = 8;
     }
     .list {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       gap: 0;
       margin: 0;
       padding: 0;
