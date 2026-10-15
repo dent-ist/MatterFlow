@@ -4,7 +4,7 @@ import path from 'node:path';
 import { CreateTaskPage } from '../pages/create-task.page';
 import { TaskDetailPage } from '../pages/task-detail.page';
 import { Api } from '../support/api';
-import { axeViolations } from '../support/axe';
+import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 
 /**
@@ -342,6 +342,8 @@ test.describe('My profile: accessibility (axe wcag2a, wcag2aa, wcag21aa)', () =>
     { name: '1366x768', width: 1366, height: 768 },
     { name: '375', width: 375, height: 812 },
   ];
+
+  test.skip(!axeAvailable(), 'axe-core is not installed (npm ci) and E2E_AXE_PATH is not set');
 
   for (const size of SIZES) {
     test(`profile, header menu, dialogs and the Users list are clean at ${size.name}`, async ({

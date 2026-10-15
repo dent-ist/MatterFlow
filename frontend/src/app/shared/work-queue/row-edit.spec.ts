@@ -287,7 +287,9 @@ describe('RowEdit', () => {
     await create('assignee', aRow({ status: 'NEW' }));
     await open();
     expect(pods.getPod).toHaveBeenCalledWith(5);
-    expect(users.lookupUsers).not.toHaveBeenCalled();
+    // The Pod list does not use the lookup for its people; it is read once only to mark who is out of office.
+    expect(users.lookupUsers).toHaveBeenCalledTimes(1);
+    expect(users.lookupUsers).toHaveBeenCalledWith(undefined, 50);
     expect(option('none')).not.toBeNull();
     expect(option('4')).not.toBeNull();
     expect(option('5')).toBeNull();
@@ -305,6 +307,27 @@ describe('RowEdit', () => {
     expect(emitted[0].assignedUser?.displayName).toBe('Sam Kim');
     expect(emitted[1].status).toBe('IN_PROGRESS');
     expect(undo.current()?.message).toContain('moved to In Progress');
+  });
+
+  it('assignee: flags a Pod member who is out of office and still lets them be chosen', async () => {
+    await create('assignee', aRow({ status: 'NEW' }));
+    users.lookupUsers.mockReturnValue(
+      of([
+        {
+          userId: 4,
+          displayName: 'Sam Kim',
+          availability: { state: 'OUT_OF_OFFICE', outUntil: '2099-03-21T04:00:00Z' },
+        },
+      ]),
+    );
+    await open();
+    await new Promise((r) => setTimeout(r));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const flag = option('4')!.querySelector('[data-option-flag]');
+    expect(flag?.textContent).toMatch(/Out of office until Mar 2[01], 2099/);
+    await pick('4');
+    expect(tasks['assignTask']).toHaveBeenCalled();
   });
 
   it('assignee: "Assign to me" appears only when asked for and only for an unassigned task, and assigns the signed-in user', async () => {
