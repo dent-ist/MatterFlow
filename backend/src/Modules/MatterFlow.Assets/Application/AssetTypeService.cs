@@ -32,6 +32,8 @@ public sealed class AssetTypeService(DbContext db, IFormDefinitionResolver forms
         var q = query.Q?.Trim();
         if (!string.IsNullOrEmpty(q))
             types = types.Where(t => t.Name.Contains(q));
+        if (query.Name?.Trim() is { Length: > 0 } name)
+            types = types.Where(t => t.Name.Contains(name));
 
         var total = await types.CountAsync(ct);
         var ordered = AssetSupport.ApplySort(types, sort.Count == 0 ? [new SortField("sortOrder", false), new SortField("name", false)] : sort, Orderings, t => t.Id);

@@ -580,6 +580,37 @@ public sealed class AssetsApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Asset_type_filter_takes_several_types_and_asset_types_filter_by_name()
+    {
+        var (matterId, typeId, _) = await SetUpAsync(); // "Document Set"
+        var roomType = (await CreateTypeAsync("Data Room")).GetProperty("assetTypeId").GetInt32();
+        var thirdType = (await CreateTypeAsync("100% Laptop_Kit")).GetProperty("assetTypeId").GetInt32();
+        await CreateAssetAsync(matterId, typeId, "Alpha", formValues: """{"pages":1}""");
+        await CreateAssetAsync(matterId, roomType, "Bravo");
+        await CreateAssetAsync(matterId, thirdType, "Charlie");
+
+        async Task<string[]> Names(string query) =>
+            [.. (await OkAsync(await As().GetAsync($"/api/v1/assets?matterId={matterId}&sort=displayName&{query}"))).GetProperty("items").EnumerateArray().Select(a => a.GetProperty("displayName").GetString()!)];
+
+        (await Names($"assetTypeId={typeId}")).ShouldBe(["Alpha"]); // one type still works
+        (await Names($"assetTypeId={typeId}&assetTypeId={roomType}")).ShouldBe(["Alpha", "Bravo"]); // any of several
+        (await Names($"assetTypeId={roomType}&assetTypeId={roomType}")).ShouldBe(["Bravo"]);
+        (await Names($"assetTypeId={typeId}&assetTypeId={thirdType}&name=char")).ShouldBe(["Charlie"]); // combined
+        (await Names("assetTypeId=999999")).ShouldBeEmpty();
+        (await As().GetAsync($"/api/v1/assets?assetTypeId=abc")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        async Task<string[]> TypeNames(string query) =>
+            [.. (await OkAsync(await As().GetAsync($"/api/v1/asset-types?{query}"))).GetProperty("items").EnumerateArray().Select(a => a.GetProperty("name").GetString()!)];
+
+        (await TypeNames("name=data")).ShouldBe(["Data Room"]);
+        (await TypeNames("name=100%25")).ShouldBe(["100% Laptop_Kit"]);
+        (await TypeNames("name=%25")).ShouldBe(["100% Laptop_Kit"]);
+        (await TypeNames("name=_")).ShouldBe(["100% Laptop_Kit"]);
+        (await TypeNames("name=document&q=set")).ShouldBe(["Document Set"]);
+        (await TypeNames("name=zzz")).ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task Lookup_is_matter_scoped_requires_a_matter_and_is_limited()
     {
         var (matterId, typeId, _) = await SetUpAsync();

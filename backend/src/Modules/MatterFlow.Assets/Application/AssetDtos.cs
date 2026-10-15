@@ -68,10 +68,14 @@ public sealed class AssetTypeListQuery : AssetListQueryBase
     [StringLength(200)]
     public string? Q { get; init; }
 
+    /// <summary>Column filter: fragment of the name (same as <c>q</c>; both apply when both are given).</summary>
+    [StringLength(200)]
+    public string? Name { get; init; }
+
     /// <summary>Filter by active state.</summary>
     public bool? IsActive { get; init; }
 
-    internal static readonly string[] Keys = ["page", "pageSize", "sort", "q", "isActive"];
+    internal static readonly string[] Keys = ["page", "pageSize", "sort", "q", "name", "isActive"];
 }
 
 /// <summary>Paging and sort parameters shared by the Asset list endpoints.</summary>
@@ -96,8 +100,8 @@ public sealed class AssetListQuery : AssetListQueryBase
     /// <summary>Only Assets of this Matter.</summary>
     public int? MatterId { get; init; }
 
-    /// <summary>Only Assets of this Asset Type.</summary>
-    public int? AssetTypeId { get; init; }
+    /// <summary>Only Assets of these Asset Types (repeat the parameter: <c>assetTypeId=1&amp;assetTypeId=2</c>).</summary>
+    public int[]? AssetTypeId { get; init; }
 
     /// <summary>Filter by active state.</summary>
     public bool? IsActive { get; init; }

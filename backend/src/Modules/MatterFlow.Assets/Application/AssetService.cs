@@ -47,8 +47,11 @@ public sealed class AssetService(
         var rows = Rows();
         if (query.MatterId is { } matterId)
             rows = rows.Where(r => r.Asset.MatterId == matterId);
-        if (query.AssetTypeId is { } typeId)
-            rows = rows.Where(r => r.Asset.AssetTypeId == typeId);
+        if (query.AssetTypeId is { Length: > 0 } typeIds)
+        {
+            int[] types = [.. typeIds.Distinct()];
+            rows = rows.Where(r => types.Contains(r.Asset.AssetTypeId));
+        }
         if (query.IsActive is { } active)
             rows = rows.Where(r => r.Asset.IsActive == active);
         rows = ApplySearch(rows, query.Q);

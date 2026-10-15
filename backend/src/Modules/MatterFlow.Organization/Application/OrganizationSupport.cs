@@ -34,7 +34,15 @@ public sealed class ClientListQuery : OrgListQuery
     /// <summary>Filter by active state.</summary>
     public bool? IsActive { get; init; }
 
-    internal static readonly string[] Keys = ["page", "pageSize", "sort", "q", "isActive"];
+    /// <summary>Column filter: digits that the 5-digit client number contains (<c>343</c> finds 00343 and 13430). Anything but digits finds nothing.</summary>
+    [StringLength(200)]
+    public string? ClientNumber { get; init; }
+
+    /// <summary>Column filter: fragment of the name only.</summary>
+    [StringLength(200)]
+    public string? Name { get; init; }
+
+    internal static readonly string[] Keys = ["page", "pageSize", "sort", "q", "isActive", "clientNumber", "name"];
 }
 
 /// <summary>Matter list filters.</summary>
@@ -53,7 +61,19 @@ public sealed class MatterListQuery : OrgListQuery
     /// <summary>Filter by the sensitivity flag.</summary>
     public bool? IsSensitive { get; init; }
 
-    internal static readonly string[] Keys = ["page", "pageSize", "sort", "q", "clientId", "isActive", "isSensitive"];
+    /// <summary>Column filter: the Matter reference (<c>00343-00012</c>, a fragment, or the typed pair <c>343-12</c>, which also finds <c>343-120</c> as you type).</summary>
+    [StringLength(200)]
+    public string? MatterRef { get; init; }
+
+    /// <summary>Column filter: fragment of the Matter name only.</summary>
+    [StringLength(200)]
+    public string? Name { get; init; }
+
+    /// <summary>Column filter: fragment of the Client name, or digits that the Client number contains.</summary>
+    [StringLength(200)]
+    public string? Client { get; init; }
+
+    internal static readonly string[] Keys = ["page", "pageSize", "sort", "q", "clientId", "isActive", "isSensitive", "matterRef", "name", "client"];
 }
 
 /// <summary>Project list filters.</summary>
@@ -69,7 +89,15 @@ public sealed class ProjectListQuery : OrgListQuery
     /// <summary>Filter by active state (false = archived).</summary>
     public bool? IsActive { get; init; }
 
-    internal static readonly string[] Keys = ["page", "pageSize", "sort", "q", "matterId", "isActive"];
+    /// <summary>Column filter: fragment of the Project name only.</summary>
+    [StringLength(200)]
+    public string? Name { get; init; }
+
+    /// <summary>Column filter: fragment of the Matter reference or name, or the typed pair <c>343-12</c>.</summary>
+    [StringLength(200)]
+    public string? Matter { get; init; }
+
+    internal static readonly string[] Keys = ["page", "pageSize", "sort", "q", "matterId", "isActive", "name", "matter"];
 }
 
 /// <summary>Audit event type codes written by the Organization module.</summary>

@@ -45,6 +45,16 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
             }
         }
 
+        // Column filters (each box searches its own column, parameterised Contains; % and _ are literal).
+        if (query.Name?.Trim() is { Length: > 0 } name)
+            rows = rows.Where(r => r.Project.Name.Contains(name));
+        if (query.Matter?.Trim() is { Length: > 0 } matter)
+        {
+            rows = MatterService.TryParsePair(matter, out var pairClient, out var pairMatter)
+                ? rows.Where(r => r.MatterRef == $"{pairClient}-{pairMatter}" || r.MatterRef.Contains(matter) || r.MatterName.Contains(matter))
+                : rows.Where(r => r.MatterRef.Contains(matter) || r.MatterName.Contains(matter));
+        }
+
         var total = await rows.CountAsync(ct);
         var items = await OrganizationSupport.ApplySort(rows, sort.Count == 0 ? [new SortField("name", false)] : sort, Orderings, r => r.Project.Id)
             .Skip(page.Skip)

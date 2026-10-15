@@ -1,8 +1,10 @@
+using System.Data;
 using MatterFlow.Audit.Contracts;
 using MatterFlow.Organization.Domain;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.ValueObjects;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Organization.Application;
@@ -35,6 +37,27 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
             clients = BusinessNumber.TryParse(q, out var number)
                 ? clients.Where(c => c.ClientNumber == number || c.Name.Contains(q))
                 : clients.Where(c => c.Name.Contains(q));
+        }
+
+        // Column filters (each box searches its own column, parameterised; % and _ are literal).
+        if (query.Name?.Trim() is { Length: > 0 } name)
+            clients = clients.Where(c => c.Name.Contains(name));
+        if (query.ClientNumber?.Trim() is { Length: > 0 } numberText)
+        {
+            // The number column is a value-converted type that LINQ cannot search by fragment: digits only, so the LIKE pattern needs no escaping.
+            var pattern = "%" + numberText + "%";
+            if (MatterService.IsDigits(numberText))
+            {
+                // A named parameter (not the interpolated form): EF's own @p0 numbering would collide inside the composed query.
+                var ids = db.Database.SqlQueryRaw<int>(
+                    "SELECT ClientId AS Value FROM dbo.Client WHERE ClientNumber LIKE @numberPattern",
+                    new SqlParameter("numberPattern", SqlDbType.VarChar, 8) { Value = pattern });
+                clients = clients.Where(c => ids.Contains(c.Id));
+            }
+            else
+            {
+                clients = clients.Where(_ => false);
+            }
         }
 
         var total = await clients.CountAsync(ct);

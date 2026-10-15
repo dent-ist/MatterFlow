@@ -100,13 +100,14 @@ export class SystemClient implements ISystemClient {
 export interface IAssetTypesClient {
     /**
      * @param q (optional) 
+     * @param name (optional) 
      * @param isActive (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listAssetTypes(q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetTypeResponse>;
+    listAssetTypes(q?: string | undefined, name?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetTypeResponse>;
     /**
      * @return Created
      */
@@ -136,18 +137,23 @@ export class AssetTypesClient implements IAssetTypesClient {
 
     /**
      * @param q (optional) 
+     * @param name (optional) 
      * @param isActive (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listAssetTypes(q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetTypeResponse> {
+    listAssetTypes(q?: string | undefined, name?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetTypeResponse> {
         let url_ = this.baseUrl + "/api/v1/asset-types?";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
         else if (q !== undefined)
             url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (name === null)
+            throw new globalThis.Error("The parameter 'name' cannot be null.");
+        else if (name !== undefined)
+            url_ += "Name=" + encodeURIComponent("" + name) + "&";
         if (isActive === null)
             throw new globalThis.Error("The parameter 'isActive' cannot be null.");
         else if (isActive !== undefined)
@@ -392,7 +398,7 @@ export interface IAssetsClient {
      * @param sort (optional) 
      * @return OK
      */
-    listAssets(matterId?: number | undefined, assetTypeId?: number | undefined, isActive?: boolean | undefined, q?: string | undefined, name?: string | undefined, externalReference?: string | undefined, matter?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem>;
+    listAssets(matterId?: number | undefined, assetTypeId?: number[] | undefined, isActive?: boolean | undefined, q?: string | undefined, name?: string | undefined, externalReference?: string | undefined, matter?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem>;
     /**
      * @return Created
      */
@@ -498,7 +504,7 @@ export class AssetsClient implements IAssetsClient {
      * @param sort (optional) 
      * @return OK
      */
-    listAssets(matterId?: number | undefined, assetTypeId?: number | undefined, isActive?: boolean | undefined, q?: string | undefined, name?: string | undefined, externalReference?: string | undefined, matter?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem> {
+    listAssets(matterId?: number | undefined, assetTypeId?: number[] | undefined, isActive?: boolean | undefined, q?: string | undefined, name?: string | undefined, externalReference?: string | undefined, matter?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem> {
         let url_ = this.baseUrl + "/api/v1/assets?";
         if (matterId === null)
             throw new globalThis.Error("The parameter 'matterId' cannot be null.");
@@ -507,7 +513,7 @@ export class AssetsClient implements IAssetsClient {
         if (assetTypeId === null)
             throw new globalThis.Error("The parameter 'assetTypeId' cannot be null.");
         else if (assetTypeId !== undefined)
-            url_ += "AssetTypeId=" + encodeURIComponent("" + assetTypeId) + "&";
+            assetTypeId && assetTypeId.forEach(item => { url_ += "AssetTypeId=" + encodeURIComponent("" + item) + "&"; });
         if (isActive === null)
             throw new globalThis.Error("The parameter 'isActive' cannot be null.");
         else if (isActive !== undefined)
@@ -5068,12 +5074,14 @@ export interface IClientsClient {
     /**
      * @param q (optional) 
      * @param isActive (optional) 
+     * @param clientNumber (optional) 
+     * @param name (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listClients(q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfClientResponse>;
+    listClients(q?: string | undefined, isActive?: boolean | undefined, clientNumber?: string | undefined, name?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfClientResponse>;
     /**
      * @return Created
      */
@@ -5112,12 +5120,14 @@ export class ClientsClient implements IClientsClient {
     /**
      * @param q (optional) 
      * @param isActive (optional) 
+     * @param clientNumber (optional) 
+     * @param name (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listClients(q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfClientResponse> {
+    listClients(q?: string | undefined, isActive?: boolean | undefined, clientNumber?: string | undefined, name?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfClientResponse> {
         let url_ = this.baseUrl + "/api/v1/clients?";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
@@ -5127,6 +5137,14 @@ export class ClientsClient implements IClientsClient {
             throw new globalThis.Error("The parameter 'isActive' cannot be null.");
         else if (isActive !== undefined)
             url_ += "IsActive=" + encodeURIComponent("" + isActive) + "&";
+        if (clientNumber === null)
+            throw new globalThis.Error("The parameter 'clientNumber' cannot be null.");
+        else if (clientNumber !== undefined)
+            url_ += "ClientNumber=" + encodeURIComponent("" + clientNumber) + "&";
+        if (name === null)
+            throw new globalThis.Error("The parameter 'name' cannot be null.");
+        else if (name !== undefined)
+            url_ += "Name=" + encodeURIComponent("" + name) + "&";
         if (page === null)
             throw new globalThis.Error("The parameter 'page' cannot be null.");
         else if (page !== undefined)
@@ -5462,12 +5480,15 @@ export interface IMattersClient {
      * @param clientId (optional) 
      * @param isActive (optional) 
      * @param isSensitive (optional) 
+     * @param matterRef (optional) 
+     * @param name (optional) 
+     * @param client (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listMatters(q?: string | undefined, clientId?: number | undefined, isActive?: boolean | undefined, isSensitive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfMatterResponse>;
+    listMatters(q?: string | undefined, clientId?: number | undefined, isActive?: boolean | undefined, isSensitive?: boolean | undefined, matterRef?: string | undefined, name?: string | undefined, client?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfMatterResponse>;
     /**
      * @return Created
      */
@@ -5517,12 +5538,15 @@ export class MattersClient implements IMattersClient {
      * @param clientId (optional) 
      * @param isActive (optional) 
      * @param isSensitive (optional) 
+     * @param matterRef (optional) 
+     * @param name (optional) 
+     * @param client (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listMatters(q?: string | undefined, clientId?: number | undefined, isActive?: boolean | undefined, isSensitive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfMatterResponse> {
+    listMatters(q?: string | undefined, clientId?: number | undefined, isActive?: boolean | undefined, isSensitive?: boolean | undefined, matterRef?: string | undefined, name?: string | undefined, client?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfMatterResponse> {
         let url_ = this.baseUrl + "/api/v1/matters?";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
@@ -5540,6 +5564,18 @@ export class MattersClient implements IMattersClient {
             throw new globalThis.Error("The parameter 'isSensitive' cannot be null.");
         else if (isSensitive !== undefined)
             url_ += "IsSensitive=" + encodeURIComponent("" + isSensitive) + "&";
+        if (matterRef === null)
+            throw new globalThis.Error("The parameter 'matterRef' cannot be null.");
+        else if (matterRef !== undefined)
+            url_ += "MatterRef=" + encodeURIComponent("" + matterRef) + "&";
+        if (name === null)
+            throw new globalThis.Error("The parameter 'name' cannot be null.");
+        else if (name !== undefined)
+            url_ += "Name=" + encodeURIComponent("" + name) + "&";
+        if (client === null)
+            throw new globalThis.Error("The parameter 'client' cannot be null.");
+        else if (client !== undefined)
+            url_ += "Client=" + encodeURIComponent("" + client) + "&";
         if (page === null)
             throw new globalThis.Error("The parameter 'page' cannot be null.");
         else if (page !== undefined)
@@ -5986,12 +6022,14 @@ export interface IProjectsClient {
      * @param q (optional) 
      * @param matterId (optional) 
      * @param isActive (optional) 
+     * @param name (optional) 
+     * @param matter (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listProjects(q?: string | undefined, matterId?: number | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfProjectResponse>;
+    listProjects(q?: string | undefined, matterId?: number | undefined, isActive?: boolean | undefined, name?: string | undefined, matter?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfProjectResponse>;
     /**
      * @return Created
      */
@@ -6031,12 +6069,14 @@ export class ProjectsClient implements IProjectsClient {
      * @param q (optional) 
      * @param matterId (optional) 
      * @param isActive (optional) 
+     * @param name (optional) 
+     * @param matter (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listProjects(q?: string | undefined, matterId?: number | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfProjectResponse> {
+    listProjects(q?: string | undefined, matterId?: number | undefined, isActive?: boolean | undefined, name?: string | undefined, matter?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfProjectResponse> {
         let url_ = this.baseUrl + "/api/v1/projects?";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
@@ -6050,6 +6090,14 @@ export class ProjectsClient implements IProjectsClient {
             throw new globalThis.Error("The parameter 'isActive' cannot be null.");
         else if (isActive !== undefined)
             url_ += "IsActive=" + encodeURIComponent("" + isActive) + "&";
+        if (name === null)
+            throw new globalThis.Error("The parameter 'name' cannot be null.");
+        else if (name !== undefined)
+            url_ += "Name=" + encodeURIComponent("" + name) + "&";
+        if (matter === null)
+            throw new globalThis.Error("The parameter 'matter' cannot be null.");
+        else if (matter !== undefined)
+            url_ += "Matter=" + encodeURIComponent("" + matter) + "&";
         if (page === null)
             throw new globalThis.Error("The parameter 'page' cannot be null.");
         else if (page !== undefined)

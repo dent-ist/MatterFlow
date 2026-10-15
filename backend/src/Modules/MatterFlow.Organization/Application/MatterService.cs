@@ -39,18 +39,9 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
         var q = query.Q?.Trim();
         if (!string.IsNullOrEmpty(q))
         {
-            if (TryParsePair(q, out var clientNumber, out var matterNumber))
+            if (TryParsePair(q, out _, out _))
             {
-                // Search-as-you-type: `343-99` also finds matters whose unpadded number starts with 99 (00343-99999), besides the exact 00343-00099.
-                var typed = q[(q.IndexOf('-', StringComparison.Ordinal) + 1)..].Trim().TrimStart('0');
-                var prefixes = Enumerable.Range(0, BusinessNumber.Length - typed.Length + 1)
-                    .Select(zeros => clientNumber.Value + "-" + new string('0', zeros) + typed)
-                    .Concat(Enumerable.Repeat("#", BusinessNumber.Length))
-                    .Take(BusinessNumber.Length)
-                    .ToArray(); // "#" never matches; fixed arity keeps the query translatable
-                rows = rows.Where(r => (r.Matter.ClientNumber == clientNumber && r.Matter.MatterNumber == matterNumber)
-                    || (typed.Length > 0 && (r.Matter.MatterRef.StartsWith(prefixes[0]) || r.Matter.MatterRef.StartsWith(prefixes[1])
-                        || r.Matter.MatterRef.StartsWith(prefixes[2]) || r.Matter.MatterRef.StartsWith(prefixes[3]) || r.Matter.MatterRef.StartsWith(prefixes[4]))));
+                rows = ApplyMatterRef(rows, q);
             }
             else if (BusinessNumber.TryParse(q, out var number))
             {
@@ -61,6 +52,19 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
             {
                 rows = rows.Where(r => r.Matter.Name.Contains(q) || r.ClientName.Contains(q));
             }
+        }
+
+        // Column filters (each box searches its own column, parameterised Contains; % and _ are literal).
+        if (query.MatterRef?.Trim() is { Length: > 0 } matterRef)
+            rows = ApplyMatterRef(rows, matterRef);
+        if (query.Name?.Trim() is { Length: > 0 } name)
+            rows = rows.Where(r => r.Matter.Name.Contains(name));
+        if (query.Client?.Trim() is { Length: > 0 } client)
+        {
+            // The Client number is a value-converted column; the first 5 characters of the computed Matter reference are the same text.
+            rows = IsDigits(client)
+                ? rows.Where(r => r.ClientName.Contains(client) || r.Matter.MatterRef.Substring(0, BusinessNumber.Length).Contains(client))
+                : rows.Where(r => r.ClientName.Contains(client));
         }
 
         var total = await rows.CountAsync(ct);
@@ -82,6 +86,32 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
 
         return ToResponse(row, await taskGuard.CountOpenTasksAsync(id, ct), await custom.ReadAsync(CustomFieldTarget.Matter, id, ct), dropped);
     }
+
+    /// <summary>
+    /// The Matter reference column filter. A typed pair (<c>343-12</c>) finds the exact reference and, as you type, references whose unpadded
+    /// number starts with what was typed (<c>343-99</c> also finds 00343-99999); anything else is a fragment of the reference.
+    /// </summary>
+    private static IQueryable<MatterRow> ApplyMatterRef(IQueryable<MatterRow> rows, string text)
+    {
+        if (!TryParsePair(text, out var clientNumber, out var matterNumber))
+            return rows.Where(r => r.Matter.MatterRef.Contains(text));
+
+        var second = text[(text.IndexOf('-', StringComparison.Ordinal) + 1)..].Trim();
+        if (second.Length == BusinessNumber.Length)
+            return rows.Where(r => r.Matter.ClientNumber == clientNumber && r.Matter.MatterNumber == matterNumber); // a full padded reference is exact
+
+        var typed = second.TrimStart('0');
+        var prefixes = Enumerable.Range(0, BusinessNumber.Length - typed.Length + 1)
+            .Select(zeros => clientNumber.Value + "-" + new string('0', zeros) + typed)
+            .Concat(Enumerable.Repeat("#", BusinessNumber.Length))
+            .Take(BusinessNumber.Length)
+            .ToArray(); // "#" never matches; fixed arity keeps the query translatable
+        return rows.Where(r => (r.Matter.ClientNumber == clientNumber && r.Matter.MatterNumber == matterNumber)
+            || (typed.Length > 0 && (r.Matter.MatterRef.StartsWith(prefixes[0]) || r.Matter.MatterRef.StartsWith(prefixes[1])
+                || r.Matter.MatterRef.StartsWith(prefixes[2]) || r.Matter.MatterRef.StartsWith(prefixes[3]) || r.Matter.MatterRef.StartsWith(prefixes[4]))));
+    }
+
+    internal static bool IsDigits(string text) => text.Length > 0 && text.All(c => c is >= '0' and <= '9');
 
     /// <summary>Resolves <c>343-12</c> / <c>00343-00012</c> to the Matter.</summary>
     public async Task<Result<MatterResponse>> LookupAsync(string? reference, CancellationToken ct)
