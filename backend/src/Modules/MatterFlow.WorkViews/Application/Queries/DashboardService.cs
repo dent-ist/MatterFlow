@@ -33,7 +33,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         // The permission is read before the cache so a user who lost (or gained) the department view never sees an answer computed under the other right.
         var department = permissions.Has(Permissions.Dashboard.ViewDepartment);
         var cacheKey = $"{me}|{query.PeriodDays}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{(department ? 1 : 0)}";
-        if (cache.TryGet(cacheKey, out var cached))
+        if (!query.Fresh && cache.TryGet(cacheKey, out var cached))
             return cached;
 
         var from = DashboardRules.PeriodStart(today, query.PeriodDays);
@@ -77,6 +77,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         var byType = await departmentOpen.GroupBy(t => t.TaskTypeId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct);
 
         var aging = await AgingAsync(departmentOpen, queueClock, ct);
+        var trend = department ? await TrendAsync(tasks, queueClock, from, fromUtc, ct) : [];
 
         var statusLabels = await db.Set<TaskStatusLabel>().AsNoTracking().ToDictionaryAsync(l => l.StatusCode, l => l.DisplayLabel, ct);
         var priorityRows = await db.Set<Priority>().AsNoTracking().OrderBy(p => p.SortOrder).Select(p => new { p.Id, p.Label, p.IsActive }).ToListAsync(ct);
@@ -112,14 +113,16 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
                 DashboardRules.Open("pod=" + p.Id),
                 false)),
             DashboardRules.TopN,
-            "Other Pods").ToList();
+            "Other pods",
+            rest => DashboardRules.Open([.. rest.Select(r => "pod=" + r.Id)])).ToList();
         if (byPod.FirstOrDefault(p => p.Id == null) is { Count: > 0 } noPod)
             podItems.Add(new DashboardBreakdownItem(null, null, "No Pod", noPod.Count, null, false));
 
         var typeItems = DashboardRules.TopWithOther(
             byType.Select(t => new DashboardBreakdownItem(t.Id, null, typeNames.GetValueOrDefault(t.Id, "Task Type " + t.Id), t.Count, DashboardRules.Open("type=" + t.Id), false)),
-            DashboardRules.TopN,
-            "Other Task Types");
+            DashboardRules.TopTypes,
+            "Other task types",
+            rest => DashboardRules.Open([.. rest.Select(r => "type=" + r.Id)]));
 
         IReadOnlyList<DashboardRecentTask> recentlyCreated = department ? await RecentAsync(tasks, null, t => t.CreatedAtUtc, t => t.CreatedAtUtc, statusLabels, ct) : [];
         IReadOnlyList<DashboardRecentTask> recentlyCompleted = department
@@ -146,6 +149,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             priorityItems,
             statusItems,
             aging,
+            trend,
             recentlyCreated,
             recentlyCompleted,
             new DashboardMine(
@@ -170,18 +174,27 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         var (l1, u1) = edges[1];
         var (l2, u2) = edges[2];
         var (l3, u3) = edges[3];
-        var (l4, u4) = edges[4];
         var counts = await open.Select(_ => new
         {
             B0 = open.Count(t => t.CreatedAtUtc >= l0 && t.CreatedAtUtc < u0),
             B1 = open.Count(t => t.CreatedAtUtc >= l1 && t.CreatedAtUtc < u1),
             B2 = open.Count(t => t.CreatedAtUtc >= l2 && t.CreatedAtUtc < u2),
             B3 = open.Count(t => t.CreatedAtUtc >= l3 && t.CreatedAtUtc < u3),
-            B4 = open.Count(t => t.CreatedAtUtc >= l4 && t.CreatedAtUtc < u4),
         }).FirstOrDefaultAsync(ct);
 
-        int[] values = counts is null ? [0, 0, 0, 0, 0] : [counts.B0, counts.B1, counts.B2, counts.B3, counts.B4];
+        int[] values = counts is null ? [0, 0, 0, 0] : [counts.B0, counts.B1, counts.B2, counts.B3];
         return [.. bands.Select((b, i) => new DashboardAgingBucket(b.Key, b.Label, b.MinDays, b.MaxDays, values[i], DashboardRules.Aging(b, today)))];
+    }
+
+    /// <summary>
+    /// Created and completed per local day. Two reads of one timestamp column each (covered by the CreatedAt / StatusChanged indexes); the days are
+    /// assigned in memory because the viewer's day edges are not UTC days. The totals equal the Created and Completed counts of the same period.
+    /// </summary>
+    private static async Task<IReadOnlyList<DashboardTrendPoint>> TrendAsync(IQueryable<WorkTask> tasks, QueueClock queueClock, DateOnly from, DateTime fromUtc, CancellationToken ct)
+    {
+        var created = await tasks.Where(t => t.CreatedAtUtc >= fromUtc).Select(t => t.CreatedAtUtc).ToListAsync(ct);
+        var completed = await tasks.Where(t => t.Status == TaskStatusCode.Completed && t.StatusChangedAtUtc >= fromUtc).Select(t => t.StatusChangedAtUtc).ToListAsync(ct);
+        return DashboardRules.Trend(from, queueClock.Today, created, completed, queueClock.StartOfDayUtc);
     }
 
     private async Task<IReadOnlyList<DashboardRecentTask>> RecentAsync(

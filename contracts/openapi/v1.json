@@ -5414,6 +5414,13 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "fresh",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -8811,6 +8818,7 @@
           "byPriority",
           "byStatus",
           "aging",
+          "trend",
           "recentlyCreated",
           "recentlyCompleted",
           "mine"
@@ -8881,6 +8889,12 @@
               "$ref": "#/components/schemas/DashboardAgingBucket"
             }
           },
+          "trend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardTrendPoint"
+            }
+          },
           "recentlyCreated": {
             "type": "array",
             "items": {
@@ -8895,6 +8909,28 @@
           },
           "mine": {
             "$ref": "#/components/schemas/DashboardMine"
+          }
+        }
+      },
+      "DashboardTrendPoint": {
+        "required": [
+          "date",
+          "created",
+          "completed"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "created": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

@@ -6,11 +6,15 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// <summary>The Dashboard request: how many days back "created" and "completed" look.</summary>
 public class DashboardQuery
 {
-    public static readonly IReadOnlyList<string> Keys = ["periodDays"];
+    public static readonly IReadOnlyList<string> Keys = ["periodDays", "fresh"];
 
     /// <summary>Length of the period in days, counting today (default 30, 1 to 365).</summary>
     [FromQuery(Name = "periodDays"), Range(1, DashboardRules.MaxPeriodDays)]
     public int PeriodDays { get; init; } = DashboardRules.DefaultPeriodDays;
+
+    /// <summary>True: skip the short server-side cache and compute the figures now (the Refresh button and a refresh after an edit on the page).</summary>
+    [FromQuery(Name = "fresh")]
+    public bool Fresh { get; init; }
 }
 
 /// <summary>
@@ -28,6 +32,9 @@ public sealed record DashboardBreakdownItem(
     [property: Required] int Count,
     string? Query,
     [property: Required] bool IsOther);
+
+/// <summary>One local calendar day of the period: Tasks created that day and Tasks completed that day (counts only, never per person).</summary>
+public sealed record DashboardTrendPoint([property: Required] DateOnly Date, [property: Required] int Created, [property: Required] int Completed);
 
 /// <summary>An age band of open Tasks (calendar days since creation in the viewer's zone). Informational, not an SLA.</summary>
 /// <param name="MaxDays">Null for the open-ended last band.</param>
@@ -82,6 +89,7 @@ public sealed record DashboardSummary(
     [property: Required] IReadOnlyList<DashboardBreakdownItem> ByPriority,
     [property: Required] IReadOnlyList<DashboardBreakdownItem> ByStatus,
     [property: Required] IReadOnlyList<DashboardAgingBucket> Aging,
+    [property: Required] IReadOnlyList<DashboardTrendPoint> Trend,
     [property: Required] IReadOnlyList<DashboardRecentTask> RecentlyCreated,
     [property: Required] IReadOnlyList<DashboardRecentTask> RecentlyCompleted,
     [property: Required] DashboardMine Mine);

@@ -8054,9 +8054,10 @@ export class TaskActivityClient implements ITaskActivityClient {
 export interface IDashboardClient {
     /**
      * @param periodDays (optional) 
+     * @param fresh (optional) 
      * @return OK
      */
-    getDashboard(periodDays?: number | undefined): Observable<DashboardSummary>;
+    getDashboard(periodDays?: number | undefined, fresh?: boolean | undefined): Observable<DashboardSummary>;
 }
 
 @Injectable({
@@ -8074,14 +8075,19 @@ export class DashboardClient implements IDashboardClient {
 
     /**
      * @param periodDays (optional) 
+     * @param fresh (optional) 
      * @return OK
      */
-    getDashboard(periodDays?: number | undefined): Observable<DashboardSummary> {
+    getDashboard(periodDays?: number | undefined, fresh?: boolean | undefined): Observable<DashboardSummary> {
         let url_ = this.baseUrl + "/api/v1/dashboard?";
         if (periodDays === null)
             throw new globalThis.Error("The parameter 'periodDays' cannot be null.");
         else if (periodDays !== undefined)
             url_ += "periodDays=" + encodeURIComponent("" + periodDays) + "&";
+        if (fresh === null)
+            throw new globalThis.Error("The parameter 'fresh' cannot be null.");
+        else if (fresh !== undefined)
+            url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -10475,9 +10481,18 @@ export interface DashboardSummary {
     byPriority: DashboardBreakdownItem[];
     byStatus: DashboardBreakdownItem[];
     aging: DashboardAgingBucket[];
+    trend: DashboardTrendPoint[];
     recentlyCreated: DashboardRecentTask[];
     recentlyCompleted: DashboardRecentTask[];
     mine: DashboardMine;
+
+    [key: string]: any;
+}
+
+export interface DashboardTrendPoint {
+    date: string;
+    created: number;
+    completed: number;
 
     [key: string]: any;
 }

@@ -15,6 +15,9 @@ public static class DashboardRules
     public const int DefaultPeriodDays = 30;
     public const int MaxPeriodDays = 365;
     public const int TopN = 8;
+
+    /// <summary>Task Types shown individually before the rest is folded into "Other task types".</summary>
+    public const int TopTypes = 5;
     public const int RecentCount = 10;
 
     public static readonly IReadOnlyList<AgingBand> AgingBands =
@@ -22,8 +25,7 @@ public static class DashboardRules
         new("0-2", "0-2 days", 0, 2),
         new("3-7", "3-7 days", 3, 7),
         new("8-14", "8-14 days", 8, 14),
-        new("15-30", "15-30 days", 15, 30),
-        new("30+", "Over 30 days", 31, null),
+        new("15+", "15+ days", 15, null),
     ];
 
     /// <summary>The Task Queue status filter for open Tasks.</summary>
@@ -71,7 +73,11 @@ public static class DashboardRules
     /// Keeps the <paramref name="top"/> largest items (ties by label) and folds the rest into one "Other" row without a drill-through (the Task
     /// Queue cannot express "all but these"). Items with a count of zero are dropped. The result is ordered largest first, "Other" last.
     /// </summary>
-    public static IReadOnlyList<DashboardBreakdownItem> TopWithOther(IEnumerable<DashboardBreakdownItem> items, int top, string otherLabel)
+    public static IReadOnlyList<DashboardBreakdownItem> TopWithOther(
+        IEnumerable<DashboardBreakdownItem> items,
+        int top,
+        string otherLabel,
+        Func<IReadOnlyList<DashboardBreakdownItem>, string?>? restQuery = null)
     {
         ArgumentNullException.ThrowIfNull(items);
         var ordered = items.Where(i => i.Count > 0).OrderByDescending(i => i.Count).ThenBy(i => i.Label, StringComparer.CurrentCultureIgnoreCase).ToList();
@@ -80,8 +86,47 @@ public static class DashboardRules
 
         var kept = ordered.Take(top).ToList();
         var rest = ordered.Skip(top).Sum(i => i.Count);
-        kept.Add(new DashboardBreakdownItem(null, null, otherLabel, rest, null, true));
+        var folded = ordered.Skip(top).ToList();
+        kept.Add(new DashboardBreakdownItem(null, null, otherLabel, rest, restQuery?.Invoke(folded), true));
         return kept;
+    }
+
+    /// <summary>
+    /// The daily series of a period: one point per local day from <paramref name="from"/> to <paramref name="today"/> (both inclusive), counting the given
+    /// instants into the local day they fall in. <paramref name="startOfDayUtc"/> maps a local date to the UTC instant it starts, so DST days work.
+    /// </summary>
+    public static IReadOnlyList<DashboardTrendPoint> Trend(
+        DateOnly from,
+        DateOnly today,
+        IEnumerable<DateTime> created,
+        IEnumerable<DateTime> completed,
+        Func<DateOnly, DateTime> startOfDayUtc)
+    {
+        ArgumentNullException.ThrowIfNull(created);
+        ArgumentNullException.ThrowIfNull(completed);
+        ArgumentNullException.ThrowIfNull(startOfDayUtc);
+        var days = today.DayNumber - from.DayNumber + 1;
+        if (days <= 0)
+            return [];
+
+        var edges = Enumerable.Range(0, days + 1).Select(i => startOfDayUtc(from.AddDays(i)).Ticks).ToArray();
+        var createdCounts = new int[days];
+        var completedCounts = new int[days];
+
+        void Count(IEnumerable<DateTime> instants, int[] into)
+        {
+            foreach (var instant in instants)
+            {
+                var found = Array.BinarySearch(edges, instant.Ticks);
+                var day = found >= 0 ? found : ~found - 1;
+                if (day >= 0 && day < days)
+                    into[day]++;
+            }
+        }
+
+        Count(created, createdCounts);
+        Count(completed, completedCounts);
+        return [.. Enumerable.Range(0, days).Select(i => new DashboardTrendPoint(from.AddDays(i), createdCounts[i], completedCounts[i]))];
     }
 
     private static IEnumerable<string> StatusParams(params TaskStatusCode[] statuses) => statuses.Select(s => "status=" + s.ToCode());

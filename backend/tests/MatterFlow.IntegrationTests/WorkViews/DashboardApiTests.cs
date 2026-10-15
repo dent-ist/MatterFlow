@@ -236,15 +236,15 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
         pods["No Pod"].ShouldBe(2 + 11);
         d.GetProperty("byPod").EnumerateArray().Single(i => i.GetProperty("label").GetString() == "No Pod").GetProperty("query").ValueKind.ShouldBe(JsonValueKind.Null);
 
-        // Task Types: 13 types hold open Tasks; the top 8 are listed and the rest folded into one "Other" row with no drill-through.
+        // Task Types: 13 types hold open Tasks; the top 5 are listed and the rest folded into one "Other" row that drills through with all the folded types.
         var types = d.GetProperty("byTaskType").EnumerateArray().ToList();
-        types.Count.ShouldBe(9);
+        types.Count.ShouldBe(6);
         types.Sum(i => i.GetProperty("count").GetInt32()).ShouldBe(_seeds.Count(s => s.IsOpen));
         var other = types[^1];
         other.GetProperty("isOther").GetBoolean().ShouldBeTrue();
-        other.GetProperty("label").GetString().ShouldBe("Other Task Types");
-        other.GetProperty("query").ValueKind.ShouldBe(JsonValueKind.Null);
-        other.GetProperty("count").GetInt32().ShouldBe(5);
+        other.GetProperty("label").GetString().ShouldBe("Other task types");
+        other.GetProperty("query").GetString()!.Split("&type=").Length.ShouldBe(9, "eight folded types in the link");
+        other.GetProperty("count").GetInt32().ShouldBe(8);
         types[0].GetProperty("label").GetString().ShouldBe("Data Processing");
         types[0].GetProperty("count").GetInt32().ShouldBe(Titles(s => s.IsOpen && s.Type == _seeds[0].Type).Length);
 
@@ -264,21 +264,60 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
     {
         var d = await DashboardAsync(zone: zone);
         var buckets = d.GetProperty("aging").EnumerateArray().ToList();
-        buckets.Select(b => b.GetProperty("key").GetString()).ShouldBe(["0-2", "3-7", "8-14", "15-30", "30+"]);
+        buckets.Select(b => b.GetProperty("key").GetString()).ShouldBe(["0-2", "3-7", "8-14", "15+"]);
 
         var today = LocalDate(zone, _now);
-        int[] expected = [0, 0, 0, 0, 0];
+        int[] expected = [0, 0, 0, 0];
         foreach (var s in _seeds.Where(s => s.IsOpen))
         {
             var age = today.DayNumber - LocalDate(zone, s.CreatedAtUtc).DayNumber;
-            expected[age <= 2 ? 0 : age <= 7 ? 1 : age <= 14 ? 2 : age <= 30 ? 3 : 4]++;
+            expected[age <= 2 ? 0 : age <= 7 ? 1 : age <= 14 ? 2 : 3]++;
         }
 
         buckets.Select(b => b.GetProperty("count").GetInt32()).ShouldBe(expected);
         buckets.Sum(b => b.GetProperty("count").GetInt32()).ShouldBe(d.GetProperty("open").GetProperty("count").GetInt32());
-        expected.ShouldBe([_seeds.Count(s => s.IsOpen && s.CreatedAtUtc > _now.AddDays(-2.5)), 2, 1, 1, 2], "0-2 days, then 5/6 days, 11 days, 22 days, 45/100 days");
+        expected.ShouldBe([_seeds.Count(s => s.IsOpen && s.CreatedAtUtc > _now.AddDays(-2.5)), 2, 1, 3], "0-2 days, then 5/6 days, 11 days, 22/45/100 days");
         foreach (var bucket in buckets)
             await DrillAsync(bucket, zone);
+    }
+
+    [Theory]
+    [InlineData(NewYork)]
+    [InlineData(Kiritimati)]
+    [InlineData(PagoPago)]
+    public async Task The_trend_has_one_point_per_day_and_its_totals_equal_the_created_and_completed_counts(string zone)
+    {
+        foreach (var days in new[] { 1, 7, 30, 60 })
+        {
+            var d = await DashboardAsync("periodDays=" + days, zone);
+            var trend = d.GetProperty("trend").EnumerateArray().ToList();
+            trend.Count.ShouldBe(days);
+            var today = LocalDate(zone, _now);
+            trend[^1].GetProperty("date").GetString().ShouldBe(today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            trend[0].GetProperty("date").GetString().ShouldBe(today.AddDays(1 - days).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            trend.Sum(p => p.GetProperty("created").GetInt32()).ShouldBe(d.GetProperty("created").GetProperty("count").GetInt32());
+            trend.Sum(p => p.GetProperty("completed").GetInt32()).ShouldBe(d.GetProperty("completed").GetProperty("count").GetInt32());
+        }
+
+        // Created today in the viewer's zone is counted on the last point.
+        var week = await DashboardAsync("periodDays=7", zone);
+        var expectedToday = _seeds.Count(s => LocalDate(zone, s.CreatedAtUtc) == LocalDate(zone, _now));
+        week.GetProperty("trend").EnumerateArray().Last().GetProperty("created").GetInt32().ShouldBe(expectedToday);
+    }
+
+    [Fact]
+    public async Task The_trend_is_empty_without_the_department_permission()
+    {
+        var viewer = await _h.UserWithAsync(@"KE	rendless", "Task.View");
+        var d = await OkAsync(await viewer.GetAsync("/api/v1/dashboard"));
+        d.GetProperty("trend").GetArrayLength().ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task Fresh_is_accepted_and_unknown_parameters_are_still_rejected()
+    {
+        (await DashboardAsync("fresh=true")).GetProperty("open").GetProperty("count").GetInt32().ShouldBeGreaterThan(0);
+        (await _h.Admin.GetAsync("/api/v1/dashboard?bogus=1")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
     [Fact]
@@ -382,6 +421,7 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
         d.GetProperty("byPod").GetArrayLength().ShouldBe(0);
         d.GetProperty("byTaskType").GetArrayLength().ShouldBe(0);
         d.GetProperty("byStatus").GetArrayLength().ShouldBe(3);
-        d.GetProperty("aging").GetArrayLength().ShouldBe(5);
+        d.GetProperty("aging").GetArrayLength().ShouldBe(4);
+        d.GetProperty("trend").EnumerateArray().Sum(p => p.GetProperty("created").GetInt32() + p.GetProperty("completed").GetInt32()).ShouldBe(0);
     }
 }
