@@ -165,6 +165,28 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     expect(navLabels(document.body)).toContain('Users & roles');
   });
 
+  it('groups the Administration items and lets a group collapse', async () => {
+    await open('admin');
+    const toggles = Array.from(
+      document.body.querySelectorAll<HTMLButtonElement>('.mf-nav-group-toggle'),
+    );
+    expect(toggles.map((t) => t.textContent!.trim())).toEqual([
+      'People',
+      'Work set-up',
+      'Data set-up',
+      'Oversight',
+    ]);
+    const oversight = toggles[3];
+    expect(oversight.getAttribute('aria-expanded')).toBe('true');
+    oversight.click();
+    await new Promise((r) => setTimeout(r));
+    expect(oversight.getAttribute('aria-expanded')).toBe('false');
+    expect(
+      document.body.querySelector('#' + oversight.getAttribute('aria-controls'))!.classList,
+    ).toContain('mf-collapsed');
+    localStorage.removeItem('mf.nav.collapsed.v1');
+  });
+
   it('sends a user without the permission to the 403 page', async () => {
     const { router, harness } = await open('technician', '/admin/users');
     expect(router.url).toBe('/403');

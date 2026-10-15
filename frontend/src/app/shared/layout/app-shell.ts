@@ -20,8 +20,21 @@ import { PendingUsersStore } from '../../core/identity-admin/pending-users.store
 import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { SEARCH_TYPES } from '../search/search-meta';
 import { GlobalSearch } from '../search/global-search';
-import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem } from './nav-items';
+import { ADMIN_GROUPS, ADMIN_NAV_ITEMS, AdminGroupId, NAV_ITEMS, NavItem } from './nav-items';
 import { ShortcutHelpState } from './shortcut-help-state';
+
+const COLLAPSED_KEY = 'mf.nav.collapsed.v1';
+
+function loadCollapsed(): AdminGroupId[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(COLLAPSED_KEY) ?? '[]') as unknown;
+    return Array.isArray(raw)
+      ? raw.filter((g): g is AdminGroupId => ADMIN_GROUPS.some((a) => a.id === g))
+      : [];
+  } catch {
+    return [];
+  }
+}
 
 /** Header (logo, persistent global search, Create Task, user), permission-gated left nav, content outlet. */
 @Component({
@@ -56,6 +69,15 @@ export class AppShell {
   protected readonly helpHost = signal<Type<unknown> | null>(null);
   protected readonly navItems = computed(() => this.visible(NAV_ITEMS));
   protected readonly adminItems = computed(() => this.visible(ADMIN_NAV_ITEMS));
+  /** Administration items grouped; empty groups are left out. */
+  protected readonly adminGroups = computed(() =>
+    ADMIN_GROUPS.map((g) => ({
+      ...g,
+      items: this.adminItems().filter((i) => i.group === g.id),
+    })).filter((g) => g.items.length > 0),
+  );
+  /** Groups the user has collapsed; remembered in this browser only. */
+  protected readonly collapsed = signal<AdminGroupId[]>(loadCollapsed());
 
   /** The global "Create task" button is redundant on the Create Task page itself (UXR-23). */
   private readonly url = signal(this.router.url);
@@ -74,6 +96,22 @@ export class AppShell {
     effect(() => {
       if (this.auth.has('User.View')) untracked(() => void this.pendingUsers.refresh());
     });
+  }
+
+  protected isCollapsed(id: AdminGroupId): boolean {
+    return this.collapsed().includes(id);
+  }
+
+  protected toggleGroup(id: AdminGroupId): void {
+    const next = this.isCollapsed(id)
+      ? this.collapsed().filter((g) => g !== id)
+      : [...this.collapsed(), id];
+    this.collapsed.set(next);
+    try {
+      localStorage.setItem(COLLAPSED_KEY, JSON.stringify(next));
+    } catch {
+      // Storage may be blocked; the choice then lasts for this visit only.
+    }
   }
 
   protected toggleHelp(): void {

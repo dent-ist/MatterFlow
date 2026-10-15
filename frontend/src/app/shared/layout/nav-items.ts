@@ -9,7 +9,19 @@ export interface NavItem {
   permissions: Permission[];
   /** Shows the pending-users count next to the label. */
   pendingBadge?: boolean;
+  /** Administration group the item sits under. */
+  group?: AdminGroupId;
 }
+
+export type AdminGroupId = 'people' | 'work' | 'data' | 'oversight';
+
+/** Administration groups, in menu order (UXR-22). */
+export const ADMIN_GROUPS: { id: AdminGroupId; label: string }[] = [
+  { id: 'people', label: 'People' },
+  { id: 'work', label: 'Work set-up' },
+  { id: 'data', label: 'Data set-up' },
+  { id: 'oversight', label: 'Oversight' },
+];
 
 /** Left navigation (UX 2.1). Items are hidden, never disabled, without the matching View permission. */
 export const NAV_ITEMS: NavItem[] = [
@@ -29,6 +41,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     label: 'Users & roles',
     icon: 'pi pi-id-card',
     path: '/admin/users',
+    group: 'people',
     permissions: ['User.View', 'User.Manage', 'Role.Manage'],
     pendingBadge: true,
   },
@@ -36,49 +49,63 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     label: 'Pods',
     icon: 'pi pi-sitemap',
     path: '/admin/pods',
+    group: 'people',
     permissions: ['Pod.Manage', 'Pod.ManageMembers'],
   },
   {
     label: 'Task types & forms',
     icon: 'pi pi-file-edit',
     path: '/admin/task-types',
+    group: 'work',
     permissions: ['TaskType.Manage'],
   },
   {
     label: 'Step library',
     icon: 'pi pi-clone',
     path: '/admin/steps',
+    group: 'work',
     permissions: ['Workflow.Manage'],
   },
   {
     label: 'Workflows',
     icon: 'pi pi-share-alt',
     path: '/admin/workflows',
+    group: 'work',
     permissions: ['Workflow.Manage'],
   },
   {
     label: 'Asset types',
     icon: 'pi pi-tags',
     path: '/admin/asset-types',
+    group: 'data',
     permissions: ['AssetType.Manage'],
   },
   {
     label: 'Asset link roles',
     icon: 'pi pi-link',
     path: '/admin/asset-link-roles',
+    group: 'data',
     permissions: ['AssetType.Manage'],
   },
   {
     label: 'Custom fields',
     icon: 'pi pi-sliders-h',
     path: '/admin/custom-fields',
+    group: 'data',
     permissions: ['CustomField.Manage'],
   },
   {
     label: 'Priorities & status labels',
     icon: 'pi pi-flag',
     path: '/admin/priorities',
+    group: 'work',
     permissions: ['Priority.Manage', 'StatusLabel.Manage'],
   },
-  { label: 'Audit log', icon: 'pi pi-history', path: '/admin/audit', permissions: ['Audit.View'] },
+  {
+    label: 'Audit log',
+    icon: 'pi pi-history',
+    path: '/admin/audit',
+    group: 'oversight',
+    permissions: ['Audit.View'],
+  },
 ];

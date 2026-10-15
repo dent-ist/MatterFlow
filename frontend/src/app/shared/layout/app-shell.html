@@ -55,27 +55,56 @@
         </li>
       }
     </ul>
-    @if (adminItems().length > 0) {
+    @if (adminGroups().length > 0) {
       <hr />
       <p class="mf-nav-heading" id="mf-admin-heading">Administration</p>
-      <ul aria-labelledby="mf-admin-heading">
-        @for (item of adminItems(); track item.path) {
-          <li>
-            <a [routerLink]="item.path" routerLinkActive="mf-active" [title]="item.label">
-              <i [class]="item.icon" aria-hidden="true"></i>
-              <span class="mf-nav-label">{{ item.label }}</span>
-              @if (item.pendingBadge && pendingUsers.count() > 0) {
-                <span
-                  class="mf-badge"
-                  data-pending-badge
-                  [attr.aria-label]="pendingUsers.count() + ' users waiting for access'"
-                  >{{ pendingUsers.count() }}</span
+      @for (group of adminGroups(); track group.id) {
+        <div class="mf-nav-group">
+          <button
+            type="button"
+            class="mf-nav-group-toggle"
+            [attr.aria-expanded]="!isCollapsed(group.id)"
+            [attr.aria-controls]="'mf-nav-group-' + group.id"
+            (click)="toggleGroup(group.id)"
+          >
+            <i
+              class="pi"
+              [class.pi-chevron-down]="!isCollapsed(group.id)"
+              [class.pi-chevron-right]="isCollapsed(group.id)"
+              aria-hidden="true"
+            ></i>
+            <span class="mf-nav-label">{{ group.label }}</span>
+          </button>
+          <ul
+            [id]="'mf-nav-group-' + group.id"
+            [attr.aria-label]="'Administration: ' + group.label"
+            [class.mf-collapsed]="isCollapsed(group.id)"
+          >
+            @for (item of group.items; track item.path) {
+              <li>
+                <a
+                  [routerLink]="item.path"
+                  routerLinkActive="mf-active"
+                  [title]="item.label"
+                  [attr.aria-label]="
+                    item.pendingBadge && pendingUsers.count() > 0
+                      ? item.label + ', ' + pendingUsers.count() + ' users waiting for access'
+                      : null
+                  "
                 >
-              }
-            </a>
-          </li>
-        }
-      </ul>
+                  <i [class]="item.icon" aria-hidden="true"></i>
+                  <span class="mf-nav-label">{{ item.label }}</span>
+                  @if (item.pendingBadge && pendingUsers.count() > 0) {
+                    <span class="mf-badge" data-pending-badge aria-hidden="true">{{
+                      pendingUsers.count()
+                    }}</span>
+                  }
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      }
     }
   </nav>
 
