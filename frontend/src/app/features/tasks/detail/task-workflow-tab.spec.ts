@@ -1,4 +1,7 @@
+import { By } from '@angular/platform-browser';
 import { TestBed } from '@angular/core/testing';
+import { AssetPickerContext } from '../../../shared/ui/asset-picker';
+import { TaskStep } from './task-step';
 
 vi.setConfig({ testTimeout: 60000 });
 import { of } from 'rxjs';
@@ -466,6 +469,32 @@ describe('Workflow tab: step input form', () => {
     await click(fixture, q(el, '[data-step-id="301"] [data-complete]'));
     expect(fakes.workflow['completeTaskStep']).toHaveBeenCalledTimes(1);
     expect(fakes.workflow['completeTaskStep'].mock.calls[0][2].values).toEqual({ items_in: 12400 });
+  });
+
+  it("gives a step's asset inputs the task's matter, so the asset picker is not stuck on 'Choose a matter first'", async () => {
+    const steps = [
+      aStep({
+        stepInstanceId: 301,
+        sequenceNo: 1,
+        title: 'Workspace',
+        status: 'IN_PROGRESS',
+        isCurrent: true,
+        inputFormVersionId: 12,
+      }),
+    ];
+    const { fixture } = await mountWorkflow(aTask({ workflow: { steps } as never }), {
+      forms: {
+        getFormVersionSchema: vi.fn().mockReturnValue(
+          of({
+            fields: [
+              { key: 'workspace_asset', control: 'ASSET_REF', label: 'Workspace', options: [] },
+            ],
+          }),
+        ),
+      },
+    });
+    const step = fixture.debugElement.query(By.directive(TaskStep));
+    expect(step.injector.get(AssetPickerContext).matterId()).toBe(7);
   });
 
   it('maps server field errors of the form onto the fields', async () => {

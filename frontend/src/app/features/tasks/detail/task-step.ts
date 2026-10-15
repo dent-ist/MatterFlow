@@ -19,6 +19,7 @@ import { toFormDefinition } from '../../../shared/forms/form-schema';
 import { splitFormErrors } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { TaskDetailStore } from './task-detail.store';
+import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { Badge, BadgeTone } from '../../../shared/ui/badge';
 
 const STATUS_TEXT: Readonly<Record<string, { text: string; icon: string; tone: BadgeTone }>> = {
@@ -49,6 +50,8 @@ export function valuesPatch(
 @Component({
   selector: 'mf-task-step',
   imports: [Badge, DynamicForm, ConfirmDialog, MfDatePipe],
+  // The step's asset inputs (ASSET_REF) offer the assets of the task's own matter.
+  providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let s = step();
@@ -407,6 +410,7 @@ export class TaskStep {
 
   protected readonly store = inject(TaskDetailStore);
   private readonly forms = inject(FormsClient);
+  private readonly pickerContext = inject(AssetPickerContext);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly dynamicForm = viewChild(DynamicForm);
 
@@ -491,6 +495,7 @@ export class TaskStep {
   });
 
   constructor() {
+    effect(() => this.pickerContext.matterId.set(this.store.task()?.matter.matterId ?? null));
     effect(() => {
       const s = this.step();
       const focus = this.focusRequested();
