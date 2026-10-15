@@ -1,2 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <!-- Rich-text sanitizing shared by task comments, task descriptions and email intake (MIT; AngleSharp-based allow-list sanitizer) -->
+    <PackageReference Include="HtmlSanitizer" />
+  </ItemGroup>
 </Project>

@@ -2,6 +2,7 @@ using MatterFlow.Audit.Contracts;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
+using MatterFlow.SharedKernel.Text;
 using MatterFlow.SharedKernel.Time;
 using MatterFlow.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -245,14 +246,19 @@ public sealed class TaskCommentService(
         if (html is { Length: > CommentHtml.MaxLength })
             return Error.Validation("bodyHtml", "TOO_LONG", $"A comment can have at most {CommentHtml.MaxLength} characters.");
 
-        if (CommentHtmlGuard.IsTooComplex(html))
-            return Error.Validation("bodyHtml", TooComplexCode, "The comment has too many tags or is nested too deeply. Simplify the formatting and try again.");
+        var problem = RichHtml.TrySanitize(html, RichHtmlLimits.Comment, out var clean);
+        switch (problem)
+        {
+            case RichHtmlProblem.TooComplex or RichHtmlProblem.Unstable:
+                return Error.Validation("bodyHtml", TooComplexCode, "The comment has too many tags or is nested too deeply. Simplify the formatting and try again.");
+            case RichHtmlProblem.TooManyCells:
+                return Error.Validation("bodyHtml", "TABLE_TOO_LARGE", $"A table can have at most {RichHtmlLimits.Comment.MaxTableCells} cells.");
+            case RichHtmlProblem.TooLarge:
+                return Error.Validation("bodyHtml", "TOO_LONG", $"A comment can have at most {CommentHtml.MaxLength} characters.");
+        }
 
-        var clean = CommentHtml.Sanitize(html);
         if (clean.Length == 0)
             return Error.Validation("bodyHtml", "REQUIRED", "Write a comment before posting.");
-        if (clean.Length > CommentHtml.MaxLength)
-            return Error.Validation("bodyHtml", "TOO_LONG", $"A comment can have at most {CommentHtml.MaxLength} characters.");
 
         return clean;
     }

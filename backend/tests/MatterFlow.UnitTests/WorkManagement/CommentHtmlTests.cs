@@ -7,7 +7,7 @@ namespace MatterFlow.UnitTests.WorkManagement;
 /// <summary>Comment sanitizing (decision D): the allow-list, links, and a battery of XSS payloads that must never survive.</summary>
 public sealed partial class CommentHtmlTests
 {
-    private static readonly string[] AllowedTags = ["p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "a"];
+    private static readonly string[] AllowedTags = ["p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "a", "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption", "colgroup", "col"];
 
     [Theory]
     [InlineData("<p>Hello <strong>bold</strong>, <em>italic</em> and <u>under</u></p>")]
@@ -141,7 +141,7 @@ public sealed partial class CommentHtmlTests
             result.ShouldNotContain(forbidden, Case.Insensitive, $"{payload} => {result}");
 
         foreach (var attribute in AttributePattern().Matches(result).Select(m => m.Groups["name"].Value.ToLowerInvariant()))
-            new[] { "href", "rel" }.ShouldContain(attribute, $"attribute '{attribute}' leaked from: {payload} => {result}");
+            new[] { "href", "rel", "colspan", "rowspan", "scope" }.ShouldContain(attribute, $"attribute '{attribute}' leaked from: {payload} => {result}");
 
         // Idempotent: re-sanitizing stored output never changes it (so edits cannot reintroduce anything).
         CommentHtml.Sanitize(result).ShouldBe(result, $"not idempotent: {payload}");
