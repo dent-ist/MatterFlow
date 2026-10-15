@@ -9,6 +9,7 @@ import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-tab
 import { isActiveParam } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { MatterRef } from '../../../shared/ui/matter-ref';
+import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
 import { SearchBox } from '../../../shared/ui/search-box';
@@ -17,6 +18,8 @@ import { SearchBox } from '../../../shared/ui/search-box';
 @Component({
   selector: 'mf-matters-list-page',
   imports: [
+    FixedPage,
+    ScrollArea,
     PageHeader,
     ActiveBadge,
     SensitiveBadge,
@@ -33,126 +36,130 @@ import { SearchBox } from '../../../shared/ui/search-box';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <mf-page-header heading="Matters">
-      <p-button
-        mfActions
-        *mfHasPermission="'Matter.Create'"
-        label="New matter"
-        icon="pi pi-plus"
-        (onClick)="go('/matters/new')"
-      />
-    </mf-page-header>
+    <mf-fixed-page>
+      <mf-page-header heading="Matters">
+        <p-button
+          mfActions
+          *mfHasPermission="'Matter.Create'"
+          label="New matter"
+          icon="pi pi-plus"
+          (onClick)="go('/matters/new')"
+        />
+      </mf-page-header>
 
-    <div class="pg-filters" role="search">
-      <mf-search-box
-        inputId="matter-search"
-        placeholder="343-12, 00343-00012 or name"
-        [value]="q() ?? ''"
-        (searchChange)="search($event)"
-      />
-      <mf-status-filter
-        inputId="matter-status"
-        [value]="statusFilter()"
-        (valueChange)="setStatus($event)"
-      />
-      @if (clientId()) {
-        <div class="pg-filter">
-          <span class="pg-label">Client</span>
-          <span data-client-chip>
-            {{ clientChip() }}
-            <button type="button" (click)="clearClient()" aria-label="Remove client filter">
-              Remove
-            </button>
-          </span>
-        </div>
-      }
-    </div>
-
-    <mf-list-state
-      noun="matters"
-      [state]="state()"
-      [empty]="rows().length === 0"
-      [filtered]="hasFilter()"
-      [columns]="5"
-      (retry)="load()"
-      (clear)="clear()"
-    >
-      <p-button
-        mfEmptyAction
-        *mfHasPermission="'Matter.Create'"
-        label="New matter"
-        (onClick)="go('/matters/new')"
-      />
-      <div class="mf-table-wrap">
-        <div class="mf-scroll">
-          <table class="pg-table">
-            <caption class="pg-sr">
-              Matters
-            </caption>
-            <thead>
-              <tr>
-                <th
-                  mfSort="matterRef"
-                  [sort]="sort()"
-                  [defaultSort]="defaultSort"
-                  (sorted)="setSort($event)"
-                >
-                  Matter reference
-                </th>
-                <th
-                  mfSort="name"
-                  [sort]="sort()"
-                  [defaultSort]="defaultSort"
-                  (sorted)="setSort($event)"
-                >
-                  Name
-                </th>
-                <th
-                  mfSort="clientNumber"
-                  [sort]="sort()"
-                  [defaultSort]="defaultSort"
-                  (sorted)="setSort($event)"
-                >
-                  Client
-                </th>
-                <th scope="col">Projects</th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (m of rows(); track m.matterId) {
-                <tr>
-                  <td><mf-matter-ref [value]="m.matterRef" [link]="['/matters', m.matterId]" /></td>
-                  <td>
-                    {{ m.name }}
-                    @if (m.isSensitive) {
-                      <mf-sensitive-badge />
-                    }
-                  </td>
-                  <td>
-                    <a class="pg-link" [routerLink]="['/clients', m.clientId]"
-                      ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
-                    >
-                  </td>
-                  <td>{{ m.projectCount }}</td>
-                  <td>
-                    <mf-active-badge [active]="m.isActive" />
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+      <div class="pg-filters" role="search">
+        <mf-search-box
+          inputId="matter-search"
+          placeholder="343-12, 00343-00012 or name"
+          [value]="q() ?? ''"
+          (searchChange)="search($event)"
+        />
+        <mf-status-filter
+          inputId="matter-status"
+          [value]="statusFilter()"
+          (valueChange)="setStatus($event)"
+        />
+        @if (clientId()) {
+          <div class="pg-filter">
+            <span class="pg-label">Client</span>
+            <span data-client-chip>
+              {{ clientChip() }}
+              <button type="button" (click)="clearClient()" aria-label="Remove client filter">
+                Remove
+              </button>
+            </span>
+          </div>
+        }
       </div>
-      <mf-pager
-        [page]="pageNumber()"
-        [pageSize]="pageSize()"
-        [pageSizes]="pageSizes"
-        [total]="total()"
-        (pageChange)="goToPage($event)"
-        (pageSizeChange)="setPageSize($event)"
-      />
-    </mf-list-state>
+
+      <mf-list-state
+        noun="matters"
+        [state]="state()"
+        [empty]="rows().length === 0"
+        [filtered]="hasFilter()"
+        [columns]="5"
+        (retry)="load()"
+        (clear)="clear()"
+      >
+        <p-button
+          mfEmptyAction
+          *mfHasPermission="'Matter.Create'"
+          label="New matter"
+          (onClick)="go('/matters/new')"
+        />
+        <div class="mf-table-wrap" mfScrollArea="Matters list">
+          <div class="mf-scroll">
+            <table class="pg-table">
+              <caption class="pg-sr">
+                Matters
+              </caption>
+              <thead>
+                <tr>
+                  <th
+                    mfSort="matterRef"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Matter reference
+                  </th>
+                  <th
+                    mfSort="name"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Name
+                  </th>
+                  <th
+                    mfSort="clientNumber"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Client
+                  </th>
+                  <th scope="col">Projects</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (m of rows(); track m.matterId) {
+                  <tr>
+                    <td>
+                      <mf-matter-ref [value]="m.matterRef" [link]="['/matters', m.matterId]" />
+                    </td>
+                    <td>
+                      {{ m.name }}
+                      @if (m.isSensitive) {
+                        <mf-sensitive-badge />
+                      }
+                    </td>
+                    <td>
+                      <a class="pg-link" [routerLink]="['/clients', m.clientId]"
+                        ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
+                      >
+                    </td>
+                    <td>{{ m.projectCount }}</td>
+                    <td>
+                      <mf-active-badge [active]="m.isActive" />
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <mf-pager
+          [page]="pageNumber()"
+          [pageSize]="pageSize()"
+          [pageSizes]="pageSizes"
+          [total]="total()"
+          (pageChange)="goToPage($event)"
+          (pageSizeChange)="setPageSize($event)"
+        />
+      </mf-list-state>
+    </mf-fixed-page>
   `,
 })
 export class MattersListPage extends ServerListPage<MatterResponse> {

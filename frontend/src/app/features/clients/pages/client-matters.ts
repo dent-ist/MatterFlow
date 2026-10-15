@@ -9,6 +9,7 @@ import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-tab
 import { isActiveParam } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { MatterRef } from '../../../shared/ui/matter-ref';
+import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { Pager } from '../../../shared/ui/pager';
 import { SearchBox } from '../../../shared/ui/search-box';
 
@@ -21,6 +22,7 @@ import { SearchBox } from '../../../shared/ui/search-box';
   selector: 'mf-client-matters',
   imports: [
     Button,
+    ScrollArea,
     HasPermissionDirective,
     ActiveBadge,
     SensitiveBadge,
@@ -32,6 +34,7 @@ import { SearchBox } from '../../../shared/ui/search-box';
     ListState,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
   styles: `
     .cm-bar {
@@ -48,6 +51,16 @@ import { SearchBox } from '../../../shared/ui/search-box';
     /* Lines the button up with the search input (a label row above the controls, and a 40 px input against a 32 px button). */
     .cm-create {
       margin-top: calc(1.5rem + (var(--mf-row-h) - 32px) / 2);
+    }
+    /* Pinned above the grid of a fixed-header page the search has no label row, so the button sits on the same line. */
+    @media (min-width: 768px) and (min-height: 561px) {
+      .cm-bar {
+        align-items: center;
+        margin-bottom: var(--mf-s2);
+      }
+      .cm-create {
+        margin-top: 0;
+      }
     }
   `,
   template: `
@@ -98,7 +111,7 @@ import { SearchBox } from '../../../shared/ui/search-box';
         (retry)="load()"
         (clear)="clear()"
       >
-        <div class="mf-table-wrap">
+        <div class="mf-table-wrap" mfScrollArea="Matters list">
           <div class="mf-scroll">
             <table class="pg-table">
               <caption class="pg-sr">

@@ -24,6 +24,7 @@ import { ClientMatters } from './client-matters';
 import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ActiveBadge } from '../../../shared/ui/badge';
+import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -36,6 +37,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-client-detail-page',
   imports: [
+    FixedPage,
     PageHeader,
     RecordTitle,
     ActiveBadge,
@@ -52,121 +54,126 @@ type LoadState = 'loading' | 'ready' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    @switch (state()) {
-      @case ('loading') {
-        <div class="pg-state" role="status" aria-busy="true">Loading the client...</div>
-      }
-      @case ('error') {
-        <div class="pg-alert" role="alert">
-          We couldn't find that client.
-          <mf-error-reference />
-          <p-button label="Retry" severity="secondary" (onClick)="load()" />
-        </div>
-      }
-      @case ('ready') {
-        @if (client(); as c) {
-          <mf-page-header
-            [crumbs]="[
-              { label: 'Clients', link: '/clients' },
-              { label: c.clientNumber + ' ' + c.name },
-            ]"
-          >
-            <mf-record-title mfTitle [ref]="c.clientNumber" [name]="c.name">
-              <mf-active-badge [active]="c.isActive" />
-            </mf-record-title>
-            @if (canSeeActivity()) {
-              <p-button
-                mfActions
-                label="Activity"
-                icon="pi pi-history"
-                severity="secondary"
-                data-activity-button
-                (onClick)="setActivityOpen(true)"
-              />
-            }
-          </mf-page-header>
-
-          <mf-detail-layout>
-            <section mfMain aria-labelledby="client-matters-h">
-              <h2 id="client-matters-h" class="pg-section-h">Matters</h2>
-              <mf-client-matters
-                [clientId]="c.clientId"
-                [clientName]="c.name"
-                [clientActive]="c.isActive"
-                [q]="q()"
-                [status]="status()"
-                [page]="page()"
-                [size]="size()"
-                [sort]="sort()"
-              />
-            </section>
-
-            <div mfAside>
-              <div class="pg-panel-actions">
+    <mf-fixed-page>
+      @switch (state()) {
+        @case ('loading') {
+          <div class="pg-state" role="status" aria-busy="true">Loading the client...</div>
+        }
+        @case ('error') {
+          <div class="pg-alert" role="alert">
+            We couldn't find that client.
+            <mf-error-reference />
+            <p-button label="Retry" severity="secondary" (onClick)="load()" />
+          </div>
+        }
+        @case ('ready') {
+          @if (client(); as c) {
+            <mf-page-header
+              [crumbs]="[
+                { label: 'Clients', link: '/clients' },
+                { label: c.clientNumber + ' ' + c.name },
+              ]"
+            >
+              <mf-record-title mfTitle [ref]="c.clientNumber" [name]="c.name">
+                <mf-active-badge [active]="c.isActive" />
+              </mf-record-title>
+              @if (canSeeActivity()) {
                 <p-button
-                  *mfHasPermission="'Client.Edit'"
-                  label="Edit"
+                  mfActions
+                  label="Activity"
+                  icon="pi pi-history"
                   severity="secondary"
-                  (onClick)="go('/clients/' + c.clientId + '/edit')"
+                  data-activity-button
+                  (onClick)="setActivityOpen(true)"
                 />
-                <p-button
-                  *mfHasPermission="'Client.Edit'"
-                  [label]="c.isActive ? 'Set inactive' : 'Set active'"
-                  severity="secondary"
-                  (onClick)="toggleOpen.set(true)"
+              }
+            </mf-page-header>
+
+            <mf-detail-layout>
+              <section mfMain aria-labelledby="client-matters-h">
+                <h2 id="client-matters-h" class="pg-section-h">Matters</h2>
+                <mf-client-matters
+                  [clientId]="c.clientId"
+                  [clientName]="c.name"
+                  [clientActive]="c.isActive"
+                  [q]="q()"
+                  [status]="status()"
+                  [page]="page()"
+                  [size]="size()"
+                  [sort]="sort()"
+                />
+              </section>
+
+              <div mfAside>
+                <div class="pg-panel-actions">
+                  <p-button
+                    *mfHasPermission="'Client.Edit'"
+                    label="Edit"
+                    severity="secondary"
+                    (onClick)="go('/clients/' + c.clientId + '/edit')"
+                  />
+                  <p-button
+                    *mfHasPermission="'Client.Edit'"
+                    [label]="c.isActive ? 'Set inactive' : 'Set active'"
+                    severity="secondary"
+                    (onClick)="toggleOpen.set(true)"
+                  />
+                </div>
+                <dl class="pg-dl pg-dl--stacked">
+                  <dt>Client number</dt>
+                  <dd class="pg-mono">{{ c.clientNumber }}</dd>
+                  <dt>Name</dt>
+                  <dd>{{ c.name }}</dd>
+                  <dt>Status</dt>
+                  <dd><mf-active-badge [active]="c.isActive" /></dd>
+                  <dt>Created</dt>
+                  <dd>{{ c.createdAtUtc | mfDate }}</dd>
+                  @if (c.modifiedAtUtc) {
+                    <dt>Last changed</dt>
+                    <dd>{{ c.modifiedAtUtc | mfDate }}</dd>
+                  }
+                </dl>
+                <mf-custom-fields-view
+                  [versionId]="c.formVersionId"
+                  [values]="c.formValues ?? {}"
                 />
               </div>
-              <dl class="pg-dl pg-dl--stacked">
-                <dt>Client number</dt>
-                <dd class="pg-mono">{{ c.clientNumber }}</dd>
-                <dt>Name</dt>
-                <dd>{{ c.name }}</dd>
-                <dt>Status</dt>
-                <dd><mf-active-badge [active]="c.isActive" /></dd>
-                <dt>Created</dt>
-                <dd>{{ c.createdAtUtc | mfDate }}</dd>
-                @if (c.modifiedAtUtc) {
-                  <dt>Last changed</dt>
-                  <dd>{{ c.modifiedAtUtc | mfDate }}</dd>
-                }
-              </dl>
-              <mf-custom-fields-view [versionId]="c.formVersionId" [values]="c.formValues ?? {}" />
-            </div>
-          </mf-detail-layout>
+            </mf-detail-layout>
 
-          @if (canSeeActivity()) {
-            <mf-activity-drawer
-              objectType="Client"
-              [objectId]="c.clientId"
-              [name]="c.name"
-              [visible]="activityOpen()"
-              (visibleChange)="setActivityOpen($event)"
-            />
-          }
-
-          <mf-confirm-dialog
-            [title]="c.isActive ? 'Set client inactive' : 'Set client active'"
-            [confirmLabel]="c.isActive ? 'Set inactive' : 'Set active'"
-            [danger]="c.isActive"
-            [busy]="busy()"
-            [(visible)]="toggleOpen"
-            (confirmed)="toggleActive()"
-          >
-            @if (c.isActive) {
-              <p data-toggle-body>
-                Set {{ c.clientNumber }} {{ c.name }} inactive? New matters can't be created for an
-                inactive client. Its existing matters and tasks keep working.
-              </p>
-            } @else {
-              <p data-toggle-body>
-                Set {{ c.clientNumber }} {{ c.name }} active? New matters can be created for it
-                again.
-              </p>
+            @if (canSeeActivity()) {
+              <mf-activity-drawer
+                objectType="Client"
+                [objectId]="c.clientId"
+                [name]="c.name"
+                [visible]="activityOpen()"
+                (visibleChange)="setActivityOpen($event)"
+              />
             }
-          </mf-confirm-dialog>
+
+            <mf-confirm-dialog
+              [title]="c.isActive ? 'Set client inactive' : 'Set client active'"
+              [confirmLabel]="c.isActive ? 'Set inactive' : 'Set active'"
+              [danger]="c.isActive"
+              [busy]="busy()"
+              [(visible)]="toggleOpen"
+              (confirmed)="toggleActive()"
+            >
+              @if (c.isActive) {
+                <p data-toggle-body>
+                  Set {{ c.clientNumber }} {{ c.name }} inactive? New matters can't be created for
+                  an inactive client. Its existing matters and tasks keep working.
+                </p>
+              } @else {
+                <p data-toggle-body>
+                  Set {{ c.clientNumber }} {{ c.name }} active? New matters can be created for it
+                  again.
+                </p>
+              }
+            </mf-confirm-dialog>
+          }
         }
       }
-    }
+    </mf-fixed-page>
   `,
 })
 export class ClientDetailPage {

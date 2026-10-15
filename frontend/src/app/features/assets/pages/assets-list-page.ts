@@ -14,6 +14,7 @@ import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-tab
 import { isActiveParam } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { MatterRef } from '../../../shared/ui/matter-ref';
+import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
 import { SearchBox } from '../../../shared/ui/search-box';
@@ -25,6 +26,8 @@ import { SearchBox } from '../../../shared/ui/search-box';
 @Component({
   selector: 'mf-assets-list-page',
   imports: [
+    FixedPage,
+    ScrollArea,
     PageHeader,
     ActiveBadge,
     RouterLink,
@@ -40,122 +43,126 @@ import { SearchBox } from '../../../shared/ui/search-box';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <mf-page-header heading="Assets">
-      <p-button
-        mfActions
-        *mfHasPermission="'Asset.Create'"
-        label="New asset"
-        icon="pi pi-plus"
-        (onClick)="go('/assets/new' + (matterId() ? '?matterId=' + matterId() : ''))"
-      />
-    </mf-page-header>
+    <mf-fixed-page>
+      <mf-page-header heading="Assets">
+        <p-button
+          mfActions
+          *mfHasPermission="'Asset.Create'"
+          label="New asset"
+          icon="pi pi-plus"
+          (onClick)="go('/assets/new' + (matterId() ? '?matterId=' + matterId() : ''))"
+        />
+      </mf-page-header>
 
-    <div class="pg-filters" role="search">
-      <mf-search-box
-        inputId="asset-search"
-        placeholder="Name, type or external reference"
-        [value]="q() ?? ''"
-        (searchChange)="search($event)"
-      />
-      <div class="pg-filter">
-        <label for="asset-type-filter">Type</label>
-        <select
-          id="asset-type-filter"
-          class="mf-control pg-input"
-          [value]="typeId() ?? ''"
-          (change)="setType($any($event.target).value)"
-        >
-          <option value="">All types</option>
-          @for (t of types(); track t.assetTypeId) {
-            <option [value]="t.assetTypeId">{{ t.name }}</option>
-          }
-        </select>
-      </div>
-      <mf-status-filter
-        inputId="asset-status"
-        [value]="statusFilter()"
-        (valueChange)="setStatus($event)"
-      />
-      @if (matterId()) {
+      <div class="pg-filters" role="search">
+        <mf-search-box
+          inputId="asset-search"
+          placeholder="Name, type or external reference"
+          [value]="q() ?? ''"
+          (searchChange)="search($event)"
+        />
         <div class="pg-filter">
-          <span class="pg-label">Matter</span>
-          <span data-matter-chip>
-            {{ matterChip() }}
-            <button type="button" (click)="clearMatter()" aria-label="Remove matter filter">
-              Remove
-            </button>
-          </span>
+          <label for="asset-type-filter">Type</label>
+          <select
+            id="asset-type-filter"
+            class="mf-control pg-input"
+            [value]="typeId() ?? ''"
+            (change)="setType($any($event.target).value)"
+          >
+            <option value="">All types</option>
+            @for (t of types(); track t.assetTypeId) {
+              <option [value]="t.assetTypeId">{{ t.name }}</option>
+            }
+          </select>
         </div>
-      }
-    </div>
-
-    <mf-list-state
-      noun="assets"
-      [state]="state()"
-      [empty]="rows().length === 0"
-      [filtered]="hasFilter()"
-      [columns]="5"
-      (retry)="load()"
-      (clear)="clear()"
-    >
-      <div class="mf-table-wrap">
-        <div class="mf-scroll">
-          <table class="pg-table">
-            <caption class="pg-sr">
-              Assets
-            </caption>
-            <thead>
-              <tr>
-                <th
-                  mfSort="displayName"
-                  [sort]="sort()"
-                  [defaultSort]="defaultSort"
-                  (sorted)="setSort($event)"
-                >
-                  Name
-                </th>
-                <th
-                  mfSort="assetType"
-                  [sort]="sort()"
-                  [defaultSort]="defaultSort"
-                  (sorted)="setSort($event)"
-                >
-                  Type
-                </th>
-                <th scope="col">Matter</th>
-                <th scope="col">External reference</th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (a of rows(); track a.assetId) {
-                <tr>
-                  <td>
-                    <a class="pg-link" [routerLink]="['/assets', a.assetId]">{{ a.displayName }}</a>
-                  </td>
-                  <td>{{ a.assetTypeName }}</td>
-                  <td>
-                    <mf-matter-ref [value]="a.matterRef" [link]="['/matters', a.matterId]" />
-                  </td>
-                  <td class="pg-mono">{{ a.externalReference }}</td>
-                  <td>
-                    <mf-active-badge [active]="a.isActive" />
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+        <mf-status-filter
+          inputId="asset-status"
+          [value]="statusFilter()"
+          (valueChange)="setStatus($event)"
+        />
+        @if (matterId()) {
+          <div class="pg-filter">
+            <span class="pg-label">Matter</span>
+            <span data-matter-chip>
+              {{ matterChip() }}
+              <button type="button" (click)="clearMatter()" aria-label="Remove matter filter">
+                Remove
+              </button>
+            </span>
+          </div>
+        }
       </div>
-      <mf-pager
-        [page]="pageNumber()"
-        [pageSize]="pageSize()"
-        [pageSizes]="pageSizes"
-        [total]="total()"
-        (pageChange)="goToPage($event)"
-        (pageSizeChange)="setPageSize($event)"
-      />
-    </mf-list-state>
+
+      <mf-list-state
+        noun="assets"
+        [state]="state()"
+        [empty]="rows().length === 0"
+        [filtered]="hasFilter()"
+        [columns]="5"
+        (retry)="load()"
+        (clear)="clear()"
+      >
+        <div class="mf-table-wrap" mfScrollArea="Assets list">
+          <div class="mf-scroll">
+            <table class="pg-table">
+              <caption class="pg-sr">
+                Assets
+              </caption>
+              <thead>
+                <tr>
+                  <th
+                    mfSort="displayName"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Name
+                  </th>
+                  <th
+                    mfSort="assetType"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Type
+                  </th>
+                  <th scope="col">Matter</th>
+                  <th scope="col">External reference</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (a of rows(); track a.assetId) {
+                  <tr>
+                    <td>
+                      <a class="pg-link" [routerLink]="['/assets', a.assetId]">{{
+                        a.displayName
+                      }}</a>
+                    </td>
+                    <td>{{ a.assetTypeName }}</td>
+                    <td>
+                      <mf-matter-ref [value]="a.matterRef" [link]="['/matters', a.matterId]" />
+                    </td>
+                    <td class="pg-mono">{{ a.externalReference }}</td>
+                    <td>
+                      <mf-active-badge [active]="a.isActive" />
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <mf-pager
+          [page]="pageNumber()"
+          [pageSize]="pageSize()"
+          [pageSizes]="pageSizes"
+          [total]="total()"
+          (pageChange)="goToPage($event)"
+          (pageSizeChange)="setPageSize($event)"
+        />
+      </mf-list-state>
+    </mf-fixed-page>
   `,
 })
 export class AssetsListPage extends ServerListPage<AssetListItem> {

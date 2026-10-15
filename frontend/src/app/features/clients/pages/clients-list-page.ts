@@ -8,6 +8,7 @@ import { ActiveBadge } from '../../../shared/ui/badge';
 import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-table';
 import { isActiveParam } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
+import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
 import { SearchBox } from '../../../shared/ui/search-box';
@@ -16,6 +17,8 @@ import { SearchBox } from '../../../shared/ui/search-box';
 @Component({
   selector: 'mf-clients-list-page',
   imports: [
+    FixedPage,
+    ScrollArea,
     PageHeader,
     ActiveBadge,
     RouterLink,
@@ -30,101 +33,103 @@ import { SearchBox } from '../../../shared/ui/search-box';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <mf-page-header heading="Clients">
-      <p-button
-        mfActions
-        *mfHasPermission="'Client.Create'"
-        label="New client"
-        icon="pi pi-plus"
-        (onClick)="go('/clients/new')"
-      />
-    </mf-page-header>
+    <mf-fixed-page>
+      <mf-page-header heading="Clients">
+        <p-button
+          mfActions
+          *mfHasPermission="'Client.Create'"
+          label="New client"
+          icon="pi pi-plus"
+          (onClick)="go('/clients/new')"
+        />
+      </mf-page-header>
 
-    <div class="pg-filters" role="search">
-      <mf-search-box
-        inputId="client-search"
-        placeholder="343 or Acme"
-        [value]="q() ?? ''"
-        (searchChange)="search($event)"
-      />
-      <mf-status-filter
-        inputId="client-status"
-        [value]="statusFilter()"
-        (valueChange)="setStatus($event)"
-      />
-    </div>
-
-    <mf-list-state
-      noun="clients"
-      [state]="state()"
-      [empty]="rows().length === 0"
-      [filtered]="hasFilter()"
-      [columns]="4"
-      (retry)="load()"
-      (clear)="clear()"
-    >
-      <p-button
-        mfEmptyAction
-        *mfHasPermission="'Client.Create'"
-        label="New client"
-        (onClick)="go('/clients/new')"
-      />
-      <div class="mf-table-wrap">
-        <div class="mf-scroll">
-          <table class="pg-table">
-            <caption class="pg-sr">
-              Clients
-            </caption>
-            <thead>
-              <tr>
-                <th
-                  mfSort="clientNumber"
-                  [sort]="sort()"
-                  [defaultSort]="defaultSort"
-                  (sorted)="setSort($event)"
-                >
-                  Client number
-                </th>
-                <th
-                  mfSort="name"
-                  [sort]="sort()"
-                  [defaultSort]="defaultSort"
-                  (sorted)="setSort($event)"
-                >
-                  Name
-                </th>
-                <th scope="col">Matters</th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (c of rows(); track c.clientId) {
-                <tr>
-                  <td class="pg-mono">
-                    <a class="pg-link" [routerLink]="['/clients', c.clientId]">{{
-                      c.clientNumber
-                    }}</a>
-                  </td>
-                  <td>{{ c.name }}</td>
-                  <td>{{ c.matterCount }}</td>
-                  <td>
-                    <mf-active-badge [active]="c.isActive" />
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+      <div class="pg-filters" role="search">
+        <mf-search-box
+          inputId="client-search"
+          placeholder="343 or Acme"
+          [value]="q() ?? ''"
+          (searchChange)="search($event)"
+        />
+        <mf-status-filter
+          inputId="client-status"
+          [value]="statusFilter()"
+          (valueChange)="setStatus($event)"
+        />
       </div>
-      <mf-pager
-        [page]="pageNumber()"
-        [pageSize]="pageSize()"
-        [pageSizes]="pageSizes"
-        [total]="total()"
-        (pageChange)="goToPage($event)"
-        (pageSizeChange)="setPageSize($event)"
-      />
-    </mf-list-state>
+
+      <mf-list-state
+        noun="clients"
+        [state]="state()"
+        [empty]="rows().length === 0"
+        [filtered]="hasFilter()"
+        [columns]="4"
+        (retry)="load()"
+        (clear)="clear()"
+      >
+        <p-button
+          mfEmptyAction
+          *mfHasPermission="'Client.Create'"
+          label="New client"
+          (onClick)="go('/clients/new')"
+        />
+        <div class="mf-table-wrap" mfScrollArea="Clients list">
+          <div class="mf-scroll">
+            <table class="pg-table">
+              <caption class="pg-sr">
+                Clients
+              </caption>
+              <thead>
+                <tr>
+                  <th
+                    mfSort="clientNumber"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Client number
+                  </th>
+                  <th
+                    mfSort="name"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Name
+                  </th>
+                  <th scope="col">Matters</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (c of rows(); track c.clientId) {
+                  <tr>
+                    <td class="pg-mono">
+                      <a class="pg-link" [routerLink]="['/clients', c.clientId]">{{
+                        c.clientNumber
+                      }}</a>
+                    </td>
+                    <td>{{ c.name }}</td>
+                    <td>{{ c.matterCount }}</td>
+                    <td>
+                      <mf-active-badge [active]="c.isActive" />
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <mf-pager
+          [page]="pageNumber()"
+          [pageSize]="pageSize()"
+          [pageSizes]="pageSizes"
+          [total]="total()"
+          (pageChange)="goToPage($event)"
+          (pageSizeChange)="setPageSize($event)"
+        />
+      </mf-list-state>
+    </mf-fixed-page>
   `,
 })
 export class ClientsListPage extends ServerListPage<ClientResponse> {

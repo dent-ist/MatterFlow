@@ -25,6 +25,7 @@ import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
 import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ActiveBadge } from '../../../shared/ui/badge';
+import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -36,6 +37,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-project-detail-page',
   imports: [
+    FixedPage,
     PageHeader,
     RecordTitle,
     ActiveBadge,
@@ -53,129 +55,134 @@ type LoadState = 'loading' | 'ready' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    @switch (state()) {
-      @case ('loading') {
-        <div class="pg-state" role="status" aria-busy="true">Loading the project...</div>
-      }
-      @case ('error') {
-        <div class="pg-alert" role="alert">
-          We couldn't find that project.
-          <mf-error-reference />
-          <p-button label="Retry" severity="secondary" (onClick)="load()" />
-        </div>
-      }
-      @case ('ready') {
-        @if (project(); as p) {
-          <mf-page-header
-            [crumbs]="[
-              { label: 'Matters', link: '/matters' },
-              { label: p.matterRef, link: ['/matters', p.matterId] },
-              { label: p.name },
-            ]"
-          >
-            <mf-record-title mfTitle [name]="p.name">
-              <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
-            </mf-record-title>
-            @if (canSeeActivity()) {
-              <p-button
-                mfActions
-                label="Activity"
-                icon="pi pi-history"
-                severity="secondary"
-                data-activity-button
-                (onClick)="setActivityOpen(true)"
-              />
-            }
-            <p class="pg-muted" data-matter>
-              Matter: <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />
-              {{ p.matterName }}
-            </p>
-          </mf-page-header>
-
-          @if (!p.isActive) {
-            <div class="pg-banner" role="note" data-archived-banner>
-              This project is archived. Existing tasks keep it, but new tasks can't select it.
-            </div>
-          }
-
-          <mf-detail-layout [collapsible]="true">
-            <section mfMain aria-labelledby="project-tasks-h">
-              <h2 id="project-tasks-h" class="pg-section-h">Tasks</h2>
-              <mf-scoped-tasks
-                [matterId]="p.matterId"
-                [projectId]="p.projectId"
-                [canCreate]="p.isActive"
-              />
-            </section>
-
-            <div mfAside>
-              <div class="pg-panel-actions">
+    <mf-fixed-page>
+      @switch (state()) {
+        @case ('loading') {
+          <div class="pg-state" role="status" aria-busy="true">Loading the project...</div>
+        }
+        @case ('error') {
+          <div class="pg-alert" role="alert">
+            We couldn't find that project.
+            <mf-error-reference />
+            <p-button label="Retry" severity="secondary" (onClick)="load()" />
+          </div>
+        }
+        @case ('ready') {
+          @if (project(); as p) {
+            <mf-page-header
+              [crumbs]="[
+                { label: 'Matters', link: '/matters' },
+                { label: p.matterRef, link: ['/matters', p.matterId] },
+                { label: p.name },
+              ]"
+            >
+              <mf-record-title mfTitle [name]="p.name">
+                <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
+              </mf-record-title>
+              @if (canSeeActivity()) {
                 <p-button
-                  *mfHasPermission="'Project.Edit'"
-                  label="Edit"
+                  mfActions
+                  label="Activity"
+                  icon="pi pi-history"
                   severity="secondary"
-                  (onClick)="go('/projects/' + p.projectId + '/edit')"
+                  data-activity-button
+                  (onClick)="setActivityOpen(true)"
                 />
-                <p-button
-                  *mfHasPermission="'Project.Archive'"
-                  [label]="p.isActive ? 'Archive' : 'Restore'"
-                  severity="secondary"
-                  (onClick)="toggleOpen.set(true)"
+              }
+              <p class="pg-muted" data-matter>
+                Matter: <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />
+                {{ p.matterName }}
+              </p>
+            </mf-page-header>
+
+            @if (!p.isActive) {
+              <div class="pg-banner" role="note" data-archived-banner>
+                This project is archived. Existing tasks keep it, but new tasks can't select it.
+              </div>
+            }
+
+            <mf-detail-layout [collapsible]="true">
+              <section mfMain aria-labelledby="project-tasks-h">
+                <h2 id="project-tasks-h" class="pg-section-h">Tasks</h2>
+                <mf-scoped-tasks
+                  [matterId]="p.matterId"
+                  [projectId]="p.projectId"
+                  [canCreate]="p.isActive"
+                />
+              </section>
+
+              <div mfAside>
+                <div class="pg-panel-actions">
+                  <p-button
+                    *mfHasPermission="'Project.Edit'"
+                    label="Edit"
+                    severity="secondary"
+                    (onClick)="go('/projects/' + p.projectId + '/edit')"
+                  />
+                  <p-button
+                    *mfHasPermission="'Project.Archive'"
+                    [label]="p.isActive ? 'Archive' : 'Restore'"
+                    severity="secondary"
+                    (onClick)="toggleOpen.set(true)"
+                  />
+                </div>
+                <dl class="pg-dl pg-dl--stacked">
+                  <dt>Name</dt>
+                  <dd>{{ p.name }}</dd>
+                  <dt>Description</dt>
+                  <dd>{{ p.description || 'No description' }}</dd>
+                  <dt>Matter</dt>
+                  <dd>
+                    <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />
+                    {{ p.matterName }}
+                  </dd>
+                  <dt>Status</dt>
+                  <dd><mf-active-badge [active]="p.isActive" inactiveLabel="Archived" /></dd>
+                  <dt>Created</dt>
+                  <dd>{{ p.createdAtUtc | mfDate }}</dd>
+                  @if (p.modifiedAtUtc) {
+                    <dt>Last changed</dt>
+                    <dd>{{ p.modifiedAtUtc | mfDate }}</dd>
+                  }
+                </dl>
+                <mf-custom-fields-view
+                  [versionId]="p.formVersionId"
+                  [values]="p.formValues ?? {}"
                 />
               </div>
-              <dl class="pg-dl pg-dl--stacked">
-                <dt>Name</dt>
-                <dd>{{ p.name }}</dd>
-                <dt>Description</dt>
-                <dd>{{ p.description || 'No description' }}</dd>
-                <dt>Matter</dt>
-                <dd>
-                  <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />
-                  {{ p.matterName }}
-                </dd>
-                <dt>Status</dt>
-                <dd><mf-active-badge [active]="p.isActive" inactiveLabel="Archived" /></dd>
-                <dt>Created</dt>
-                <dd>{{ p.createdAtUtc | mfDate }}</dd>
-                @if (p.modifiedAtUtc) {
-                  <dt>Last changed</dt>
-                  <dd>{{ p.modifiedAtUtc | mfDate }}</dd>
-                }
-              </dl>
-              <mf-custom-fields-view [versionId]="p.formVersionId" [values]="p.formValues ?? {}" />
-            </div>
-          </mf-detail-layout>
+            </mf-detail-layout>
 
-          @if (canSeeActivity()) {
-            <mf-activity-drawer
-              objectType="Project"
-              [objectId]="p.projectId"
-              [name]="p.name"
-              [visible]="activityOpen()"
-              (visibleChange)="setActivityOpen($event)"
-            />
-          }
-
-          <mf-confirm-dialog
-            [title]="p.isActive ? 'Archive project' : 'Restore project'"
-            [confirmLabel]="p.isActive ? 'Archive' : 'Restore'"
-            [danger]="p.isActive"
-            [busy]="busy()"
-            [(visible)]="toggleOpen"
-            (confirmed)="toggleActive()"
-          >
-            @if (p.isActive) {
-              <p data-toggle-body>
-                Archive {{ p.name }}? Existing tasks keep this project, but new tasks can't select
-                it.
-              </p>
-            } @else {
-              <p data-toggle-body>Restore {{ p.name }}? New tasks can select it again.</p>
+            @if (canSeeActivity()) {
+              <mf-activity-drawer
+                objectType="Project"
+                [objectId]="p.projectId"
+                [name]="p.name"
+                [visible]="activityOpen()"
+                (visibleChange)="setActivityOpen($event)"
+              />
             }
-          </mf-confirm-dialog>
+
+            <mf-confirm-dialog
+              [title]="p.isActive ? 'Archive project' : 'Restore project'"
+              [confirmLabel]="p.isActive ? 'Archive' : 'Restore'"
+              [danger]="p.isActive"
+              [busy]="busy()"
+              [(visible)]="toggleOpen"
+              (confirmed)="toggleActive()"
+            >
+              @if (p.isActive) {
+                <p data-toggle-body>
+                  Archive {{ p.name }}? Existing tasks keep this project, but new tasks can't select
+                  it.
+                </p>
+              } @else {
+                <p data-toggle-body>Restore {{ p.name }}? New tasks can select it again.</p>
+              }
+            </mf-confirm-dialog>
+          }
         }
       }
-    }
+    </mf-fixed-page>
   `,
 })
 export class ProjectDetailPage {

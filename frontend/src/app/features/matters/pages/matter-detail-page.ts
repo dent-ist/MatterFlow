@@ -32,6 +32,7 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
 import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
 import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 
@@ -46,6 +47,8 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-matter-detail-page',
   imports: [
+    FixedPage,
+    ScrollArea,
     PageHeader,
     RecordTitle,
     ActiveBadge,
@@ -67,270 +70,279 @@ type LoadState = 'loading' | 'ready' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    @switch (state()) {
-      @case ('loading') {
-        <div class="pg-state" role="status" aria-busy="true">Loading the matter...</div>
-      }
-      @case ('error') {
-        <div class="pg-alert" role="alert">
-          We couldn't find that matter.
-          <mf-error-reference />
-          <p-button label="Retry" severity="secondary" (onClick)="load()" />
-        </div>
-      }
-      @case ('ready') {
-        @if (matter(); as m) {
-          <mf-page-header
-            [crumbs]="[
-              { label: 'Matters', link: '/matters' },
-              { label: m.matterRef + ' ' + m.name },
-            ]"
-          >
-            <mf-record-title mfTitle [name]="m.name">
-              <mf-matter-ref mfRef [value]="m.matterRef" />
-              <mf-active-badge [active]="m.isActive" />
-            </mf-record-title>
-            @if (canSeeActivity()) {
+    <mf-fixed-page>
+      @switch (state()) {
+        @case ('loading') {
+          <div class="pg-state" role="status" aria-busy="true">Loading the matter...</div>
+        }
+        @case ('error') {
+          <div class="pg-alert" role="alert">
+            We couldn't find that matter.
+            <mf-error-reference />
+            <p-button label="Retry" severity="secondary" (onClick)="load()" />
+          </div>
+        }
+        @case ('ready') {
+          @if (matter(); as m) {
+            <mf-page-header
+              [crumbs]="[
+                { label: 'Matters', link: '/matters' },
+                { label: m.matterRef + ' ' + m.name },
+              ]"
+            >
+              <mf-record-title mfTitle [name]="m.name">
+                <mf-matter-ref mfRef [value]="m.matterRef" />
+                <mf-active-badge [active]="m.isActive" />
+              </mf-record-title>
+              @if (canSeeActivity()) {
+                <p-button
+                  mfActions
+                  label="Activity"
+                  icon="pi pi-history"
+                  severity="secondary"
+                  data-activity-button
+                  (onClick)="setActivityOpen(true)"
+                />
+              }
               <p-button
                 mfActions
-                label="Activity"
-                icon="pi pi-history"
+                *mfHasPermission="'Project.Create'"
+                label="New project"
+                icon="pi pi-plus"
                 severity="secondary"
-                data-activity-button
-                (onClick)="setActivityOpen(true)"
+                (onClick)="go('/projects/new?matterId=' + m.matterId)"
+              />
+              <p-button
+                mfActions
+                *mfHasPermission="'Task.Create'"
+                label="Create task in this matter"
+                icon="pi pi-plus"
+                [disabled]="!m.isActive"
+                (onClick)="go('/tasks/new?matterId=' + m.matterId)"
+              />
+              <p class="pg-muted" data-client>
+                Client:
+                <a class="pg-link" [routerLink]="['/clients', m.clientId]"
+                  ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
+                >
+              </p>
+            </mf-page-header>
+
+            @if (m.isSensitive) {
+              <div class="pg-banner" role="note" data-sensitive-banner>
+                <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                <strong> Sensitive matter.</strong> Handle its tasks and assets with extra care.
+                This flag is a warning only and does not restrict who can see them.
+              </div>
+            }
+            @if (!m.isActive) {
+              <div class="pg-banner" role="note" data-inactive-banner>
+                This matter is inactive. New tasks can't be created and completed or cancelled tasks
+                can't be reopened.
+              </div>
+            }
+            @if (!m.clientIsActive) {
+              <div class="pg-banner" role="note" data-client-inactive-banner>
+                The client {{ m.clientNumber }} is inactive.
+              </div>
+            }
+
+            <mf-detail-layout [collapsible]="true">
+              <div mfMain>
+                <mf-tabs
+                  label="Matter sections"
+                  idPrefix="matter"
+                  [tabs]="tabs()"
+                  [selected]="current()"
+                  (tabChange)="select($event)"
+                />
+                <div
+                  class="mf-fill"
+                  role="tabpanel"
+                  id="matter-panel"
+                  [attr.aria-labelledby]="'matter-tab-' + current()"
+                >
+                  @switch (current()) {
+                    @case ('tasks') {
+                      <mf-scoped-tasks
+                        [matterId]="m.matterId"
+                        [canCreate]="m.isActive"
+                        [showCreate]="false"
+                      />
+                    }
+                    @case ('projects') {
+                      @if (projects().length === 0) {
+                        <div class="pg-state" data-empty="projects">
+                          No projects in this matter yet.
+                        </div>
+                      } @else {
+                        <div class="mf-scroll" mfScrollArea="Projects list">
+                          <table class="pg-table">
+                            <caption class="pg-sr">
+                              Projects of
+                              {{
+                                m.matterRef
+                              }}
+                            </caption>
+                            <thead>
+                              <tr>
+                                <th scope="col">Name</th>
+                                <th scope="col">Description</th>
+                                <th scope="col">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              @for (p of projects(); track p.projectId) {
+                                <tr>
+                                  <td>
+                                    <a class="pg-link" [routerLink]="['/projects', p.projectId]">{{
+                                      p.name
+                                    }}</a>
+                                  </td>
+                                  <td>{{ p.description }}</td>
+                                  <td>
+                                    <mf-active-badge
+                                      [active]="p.isActive"
+                                      inactiveLabel="Archived"
+                                    />
+                                  </td>
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        </div>
+                      }
+                    }
+                    @case ('assets') {
+                      @if (canSeeAssets()) {
+                        <mf-matter-assets [matterId]="m.matterId" />
+                      } @else {
+                        <div class="pg-state" data-no-access="assets">
+                          You don't have permission to view assets.
+                        </div>
+                      }
+                    }
+                  }
+                </div>
+              </div>
+
+              <div mfAside>
+                <div class="pg-panel-actions">
+                  <p-button
+                    *mfHasPermission="'Matter.Edit'"
+                    label="Edit"
+                    severity="secondary"
+                    (onClick)="go('/matters/' + m.matterId + '/edit')"
+                  />
+                  <p-button
+                    *mfHasPermission="'Matter.SetActive'"
+                    [label]="m.isActive ? 'Set inactive' : 'Set active'"
+                    severity="secondary"
+                    [disabled]="deactivateBlocked()"
+                    [attr.aria-describedby]="deactivateBlocked() ? 'matter-toggle-reason' : null"
+                    (onClick)="toggleOpen.set(true)"
+                  />
+                </div>
+                @if (deactivateBlocked()) {
+                  <p
+                    *mfHasPermission="'Matter.SetActive'"
+                    class="pg-reason"
+                    id="matter-toggle-reason"
+                    data-toggle-reason
+                  >
+                    <i class="pi pi-info-circle" aria-hidden="true"></i>
+                    This matter has {{ m.openTaskCount }} tasks that aren't Completed or Cancelled.
+                    Finish or cancel them first.
+                  </p>
+                }
+                <dl class="pg-dl pg-dl--stacked">
+                  <dt>Matter reference</dt>
+                  <dd><mf-matter-ref [value]="m.matterRef" /></dd>
+                  <dt>Client</dt>
+                  <dd>
+                    <a class="pg-link" [routerLink]="['/clients', m.clientId]"
+                      ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
+                    >
+                  </dd>
+                  <dt>Matter number</dt>
+                  <dd class="pg-mono">{{ m.matterNumber }}</dd>
+                  <dt>Name</dt>
+                  <dd>{{ m.name }}</dd>
+                  <dt>Status</dt>
+                  <dd><mf-active-badge [active]="m.isActive" /></dd>
+                  <dt>Sensitive</dt>
+                  <dd data-sensitive-value>
+                    @if (m.isSensitive) {
+                      <mf-sensitive-badge /> <span class="pg-muted">Warning only</span>
+                    } @else {
+                      No
+                    }
+                  </dd>
+                  <dt>Created</dt>
+                  <dd>{{ m.createdAtUtc | mfDate }}</dd>
+                  @if (m.modifiedAtUtc) {
+                    <dt>Last changed</dt>
+                    <dd>{{ m.modifiedAtUtc | mfDate }}</dd>
+                  }
+                </dl>
+                <mf-custom-fields-view
+                  [versionId]="m.formVersionId"
+                  [values]="m.formValues ?? {}"
+                />
+              </div>
+            </mf-detail-layout>
+
+            @if (canSeeActivity()) {
+              <mf-activity-drawer
+                objectType="Matter"
+                [objectId]="m.matterId"
+                [name]="m.name"
+                [visible]="activityOpen()"
+                (visibleChange)="setActivityOpen($event)"
               />
             }
-            <p-button
-              mfActions
-              *mfHasPermission="'Project.Create'"
-              label="New project"
-              icon="pi pi-plus"
-              severity="secondary"
-              (onClick)="go('/projects/new?matterId=' + m.matterId)"
-            />
-            <p-button
-              mfActions
-              *mfHasPermission="'Task.Create'"
-              label="Create task in this matter"
-              icon="pi pi-plus"
-              [disabled]="!m.isActive"
-              (onClick)="go('/tasks/new?matterId=' + m.matterId)"
-            />
-            <p class="pg-muted" data-client>
-              Client:
-              <a class="pg-link" [routerLink]="['/clients', m.clientId]"
-                ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
-              >
-            </p>
-          </mf-page-header>
 
-          @if (m.isSensitive) {
-            <div class="pg-banner" role="note" data-sensitive-banner>
-              <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-              <strong> Sensitive matter.</strong> Handle its tasks and assets with extra care. This
-              flag is a warning only and does not restrict who can see them.
-            </div>
-          }
-          @if (!m.isActive) {
-            <div class="pg-banner" role="note" data-inactive-banner>
-              This matter is inactive. New tasks can't be created and completed or cancelled tasks
-              can't be reopened.
-            </div>
-          }
-          @if (!m.clientIsActive) {
-            <div class="pg-banner" role="note" data-client-inactive-banner>
-              The client {{ m.clientNumber }} is inactive.
-            </div>
-          }
-
-          <mf-detail-layout [collapsible]="true">
-            <div mfMain>
-              <mf-tabs
-                label="Matter sections"
-                idPrefix="matter"
-                [tabs]="tabs()"
-                [selected]="current()"
-                (tabChange)="select($event)"
-              />
-              <div
-                role="tabpanel"
-                id="matter-panel"
-                [attr.aria-labelledby]="'matter-tab-' + current()"
-              >
-                @switch (current()) {
-                  @case ('tasks') {
-                    <mf-scoped-tasks
-                      [matterId]="m.matterId"
-                      [canCreate]="m.isActive"
-                      [showCreate]="false"
-                    />
-                  }
-                  @case ('projects') {
-                    @if (projects().length === 0) {
-                      <div class="pg-state" data-empty="projects">
-                        No projects in this matter yet.
-                      </div>
-                    } @else {
-                      <div class="mf-scroll">
-                        <table class="pg-table">
-                          <caption class="pg-sr">
-                            Projects of
-                            {{
-                              m.matterRef
-                            }}
-                          </caption>
-                          <thead>
-                            <tr>
-                              <th scope="col">Name</th>
-                              <th scope="col">Description</th>
-                              <th scope="col">Status</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            @for (p of projects(); track p.projectId) {
-                              <tr>
-                                <td>
-                                  <a class="pg-link" [routerLink]="['/projects', p.projectId]">{{
-                                    p.name
-                                  }}</a>
-                                </td>
-                                <td>{{ p.description }}</td>
-                                <td>
-                                  <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
-                                </td>
-                              </tr>
-                            }
-                          </tbody>
-                        </table>
-                      </div>
-                    }
-                  }
-                  @case ('assets') {
-                    @if (canSeeAssets()) {
-                      <mf-matter-assets [matterId]="m.matterId" />
-                    } @else {
-                      <div class="pg-state" data-no-access="assets">
-                        You don't have permission to view assets.
-                      </div>
-                    }
-                  }
-                }
-              </div>
-            </div>
-
-            <div mfAside>
-              <div class="pg-panel-actions">
-                <p-button
-                  *mfHasPermission="'Matter.Edit'"
-                  label="Edit"
-                  severity="secondary"
-                  (onClick)="go('/matters/' + m.matterId + '/edit')"
-                />
-                <p-button
-                  *mfHasPermission="'Matter.SetActive'"
-                  [label]="m.isActive ? 'Set inactive' : 'Set active'"
-                  severity="secondary"
-                  [disabled]="deactivateBlocked()"
-                  [attr.aria-describedby]="deactivateBlocked() ? 'matter-toggle-reason' : null"
-                  (onClick)="toggleOpen.set(true)"
-                />
-              </div>
-              @if (deactivateBlocked()) {
-                <p
-                  *mfHasPermission="'Matter.SetActive'"
-                  class="pg-reason"
-                  id="matter-toggle-reason"
-                  data-toggle-reason
-                >
-                  <i class="pi pi-info-circle" aria-hidden="true"></i>
-                  This matter has {{ m.openTaskCount }} tasks that aren't Completed or Cancelled.
-                  Finish or cancel them first.
+            <mf-confirm-dialog
+              [title]="m.isActive ? 'Set matter inactive' : 'Reactivate matter'"
+              [confirmLabel]="m.isActive ? 'Set inactive' : 'Set active'"
+              [danger]="m.isActive"
+              [busy]="busy()"
+              [(visible)]="toggleOpen"
+              (confirmed)="toggleActive()"
+            >
+              @if (m.isActive) {
+                <p data-toggle-body>
+                  Set {{ m.matterRef }} inactive? New tasks can't be created and completed or
+                  cancelled tasks can't be reopened until it's active again.
+                </p>
+              } @else {
+                <p data-toggle-body>
+                  Reactivate {{ m.matterRef }}? New tasks can be created for it again.
                 </p>
               }
-              <dl class="pg-dl pg-dl--stacked">
-                <dt>Matter reference</dt>
-                <dd><mf-matter-ref [value]="m.matterRef" /></dd>
-                <dt>Client</dt>
-                <dd>
-                  <a class="pg-link" [routerLink]="['/clients', m.clientId]"
-                    ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
-                  >
-                </dd>
-                <dt>Matter number</dt>
-                <dd class="pg-mono">{{ m.matterNumber }}</dd>
-                <dt>Name</dt>
-                <dd>{{ m.name }}</dd>
-                <dt>Status</dt>
-                <dd><mf-active-badge [active]="m.isActive" /></dd>
-                <dt>Sensitive</dt>
-                <dd data-sensitive-value>
-                  @if (m.isSensitive) {
-                    <mf-sensitive-badge /> <span class="pg-muted">Warning only</span>
-                  } @else {
-                    No
-                  }
-                </dd>
-                <dt>Created</dt>
-                <dd>{{ m.createdAtUtc | mfDate }}</dd>
-                @if (m.modifiedAtUtc) {
-                  <dt>Last changed</dt>
-                  <dd>{{ m.modifiedAtUtc | mfDate }}</dd>
-                }
-              </dl>
-              <mf-custom-fields-view [versionId]="m.formVersionId" [values]="m.formValues ?? {}" />
-            </div>
-          </mf-detail-layout>
+            </mf-confirm-dialog>
 
-          @if (canSeeActivity()) {
-            <mf-activity-drawer
-              objectType="Matter"
-              [objectId]="m.matterId"
-              [name]="m.name"
-              [visible]="activityOpen()"
-              (visibleChange)="setActivityOpen($event)"
-            />
+            <mf-confirm-dialog
+              title="Can't set this matter inactive"
+              cancelLabel="Close"
+              [showConfirm]="false"
+              [(visible)]="blockedOpen"
+            >
+              <p data-blocked-body>
+                This matter has {{ blockedCount() }} tasks that aren't Completed or Cancelled.
+                Finish or cancel them first.
+              </p>
+              <p-button
+                *mfHasPermission="'Task.View'"
+                label="View open tasks"
+                severity="secondary"
+                (onClick)="go('/tasks?matterId=' + m.matterId)"
+              />
+            </mf-confirm-dialog>
           }
-
-          <mf-confirm-dialog
-            [title]="m.isActive ? 'Set matter inactive' : 'Reactivate matter'"
-            [confirmLabel]="m.isActive ? 'Set inactive' : 'Set active'"
-            [danger]="m.isActive"
-            [busy]="busy()"
-            [(visible)]="toggleOpen"
-            (confirmed)="toggleActive()"
-          >
-            @if (m.isActive) {
-              <p data-toggle-body>
-                Set {{ m.matterRef }} inactive? New tasks can't be created and completed or
-                cancelled tasks can't be reopened until it's active again.
-              </p>
-            } @else {
-              <p data-toggle-body>
-                Reactivate {{ m.matterRef }}? New tasks can be created for it again.
-              </p>
-            }
-          </mf-confirm-dialog>
-
-          <mf-confirm-dialog
-            title="Can't set this matter inactive"
-            cancelLabel="Close"
-            [showConfirm]="false"
-            [(visible)]="blockedOpen"
-          >
-            <p data-blocked-body>
-              This matter has {{ blockedCount() }} tasks that aren't Completed or Cancelled. Finish
-              or cancel them first.
-            </p>
-            <p-button
-              *mfHasPermission="'Task.View'"
-              label="View open tasks"
-              severity="secondary"
-              (onClick)="go('/tasks?matterId=' + m.matterId)"
-            />
-          </mf-confirm-dialog>
         }
       }
-    }
+    </mf-fixed-page>
   `,
 })
 export class MatterDetailPage {

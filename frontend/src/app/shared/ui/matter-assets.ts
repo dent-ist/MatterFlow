@@ -13,6 +13,7 @@ import { firstValueFrom } from 'rxjs';
 import { AssetListItem, AssetsClient } from '../../api/generated/api-client';
 import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { StatusFilter, isActiveParam, debounced } from './list-helpers';
+import { ScrollArea } from './fixed-page';
 import { Pager } from './pager';
 import { ErrorReference } from './error-reference';
 import { ActiveBadge } from './badge';
@@ -25,8 +26,17 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-matter-assets',
-  imports: [ActiveBadge, ErrorReference, RouterLink, Button, HasPermissionDirective, Pager],
+  imports: [
+    ActiveBadge,
+    ErrorReference,
+    RouterLink,
+    Button,
+    HasPermissionDirective,
+    Pager,
+    ScrollArea,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   styleUrl: './page.scss',
   template: `
     <div class="pg-filters" role="search">
@@ -90,7 +100,11 @@ type LoadState = 'loading' | 'ready' | 'error';
             }
           </div>
         } @else {
-          <div class="mf-scroll">
+          <div
+            class="mf-scroll"
+            mfScrollArea="Assets list"
+            [resetKey]="q() + '|' + status() + '|' + page()"
+          >
             <table class="pg-table">
               <caption class="pg-sr">
                 Assets of this matter
