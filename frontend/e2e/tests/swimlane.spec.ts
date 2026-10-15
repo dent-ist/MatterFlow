@@ -510,7 +510,8 @@ test.describe('Swimlane tab', () => {
       }),
     );
     await page.goto('/dashboard?tab=swimlane');
-    await expect(cards(page, 'NEW').first()).toBeVisible();
+    // 800 synthetic cards are slow to draw on a busy machine.
+    await expect(cards(page, 'NEW').first()).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('mf-swimlane-card')).toHaveCount(160);
     await expect(lane(page, 'NEW').locator('[data-show-more]')).toHaveText(
       /Show 40 more of 160 hidden/,

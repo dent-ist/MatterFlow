@@ -98,7 +98,8 @@ test.describe('Dashboard permissions', () => {
     await page.locator('button.mf-role', { hasText: role.name }).click();
     const group = page.locator('[data-group="Dashboard"]');
     await expect(group.locator('legend')).toHaveText('Dashboard');
-    await expect(group.locator('[data-perm]')).toHaveCount(6);
+    await expect(group.locator('[data-perm]')).toHaveCount(7);
+    await expect(group.locator('[data-perm="Dashboard.ViewCoverage"]')).toBeAttached();
 
     await group.locator('[data-perm="Dashboard.ViewSwimlane"]').check();
     await expect(group.locator('[data-perm="Dashboard.View"]')).toBeChecked();

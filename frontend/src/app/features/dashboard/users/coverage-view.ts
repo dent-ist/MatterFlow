@@ -531,7 +531,14 @@ const dayNumber = (iso: string) => Date.parse(iso + 'T00:00:00Z') / 86_400_000;
         var(--mf-surface) 0 5px,
         var(--mf-border) 5px 7px
       );
+    }
+    .sw--zero {
       border-style: dashed;
+    }
+    /* A dashed inner edge marks a zero without changing the table's own borders. */
+    .cell--zero {
+      outline: 1px dashed var(--mf-border-strong);
+      outline-offset: -3px;
     }
     .sw--gap {
       color: var(--mf-text);
@@ -637,9 +644,6 @@ const dayNumber = (iso: string) => Date.parse(iso + 'T00:00:00Z') / 86_400_000;
       min-width: 5.5rem;
       height: 2.75rem;
       text-align: center;
-    }
-    .cell--zero {
-      border-bottom-style: solid;
     }
     .cell--gap {
       background: repeating-linear-gradient(
