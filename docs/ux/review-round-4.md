@@ -168,3 +168,10 @@ Status of every finding after the fix round (branch `dev`). Screenshots of each 
 | UXR4-23 | No change | Information only. 58 chunks load in about 1 s on localhost; revisit with a real-network performance check. |
 
 Not in the review but found while fixing: the dashboard "Age of open tasks" bar (`a.seg` with `role="listitem"`) is reported as a minor best-practice `aria-allowed-role`; left as is.
+
+### 10.3 Verification of the fixes
+
+- **Playwright e2e** (`frontend/e2e/run-local.sh`, real SQL Server 2022 in Docker, published API, Chromium): final code, run 1 (fresh build) **158 passed, 0 failed, 0 flaky (2.9 min)**; run 2 (`E2E_SKIP_BUILD=1`) **158 passed, 0 failed, 0 flaky (2.8 min)**. The suite grew from 121 to 158 tests (`ux-round-4.spec.ts` has one scenario per finding).
+- **Frontend:** `npm test` 100 + 10 files, 1039 + 307 tests passed; `ng build form-engine` ok; lint and prettier clean; production build initial total 669.46 kB (budget 700 kB).
+- **Backend:** unit 1050 passed, architecture 35 passed, schema 54 passed (includes the new script 21); integration tests for the touched areas (dashboard, task type icons, audit, activity, seeding, task types) 107 passed; `dotnet format --verify-no-changes` clean. Script 21 was also checked by hand on a throwaway SQL Server (a `brand-slack`, `server-2`, `fingerprint-scan` and an unknown `brand-` key moved to `message-2`, `server`, `hash` and `file-text`; other keys untouched).
+- **Axe** (wcag2a, wcag2aa, wcag21aa plus best-practice, 36 touched screens and states incl. the icon picker, Edit dialog, toast and 375/768/1024/1280/1440 widths): 0 violations except the minor `aria-allowed-role` on the dashboard age bar (`.seg`, not part of this review). `landmark-unique` and the My Work and toast contrast hits are gone. No page-level horizontal scroll on any of them.
