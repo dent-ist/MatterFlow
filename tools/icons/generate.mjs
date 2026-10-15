@@ -24,6 +24,7 @@ const tablerVersion = JSON.parse(readFileSync(join(tabler, 'package.json'), 'utf
 
 const icons = [];
 const seen = new Set();
+const labels = new Set();
 const problems = [];
 for (const category of Object.keys(ICONS)) {
   if (!CATEGORIES.includes(category)) problems.push(`Unknown category ${category}`);
@@ -31,6 +32,9 @@ for (const category of Object.keys(ICONS)) {
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(key) || key.length > 50) problems.push(`Bad key ${key}`);
     if (seen.has(key)) problems.push(`Duplicate key ${key}`);
     seen.add(key);
+    if (labels.has(label.toLowerCase())) problems.push(`Duplicate label ${label}`);
+    labels.add(label.toLowerCase());
+    if (/slack|outlook|ipad|iphone|microsoft|google|amazon|facebook|twitter|whatsapp|dropbox|apple|android|windows/i.test(`${key} ${label} ${keywords}`) || key.startsWith('brand-')) problems.push(`Trademarked name in ${key}`);
     const file = join(tabler, 'icons', 'outline', `${key}.svg`);
     if (!existsSync(file)) {
       problems.push(`Not in Tabler outline set: ${key}`);

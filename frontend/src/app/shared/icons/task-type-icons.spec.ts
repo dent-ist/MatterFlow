@@ -50,6 +50,16 @@ describe('Task type icon library data', () => {
     }
   });
 
+  it('has no trademarked brand logos and no repeated labels (UXR4-10)', () => {
+    const labels = TASK_TYPE_ICON_CATALOG.map((i) => i.label.toLowerCase());
+    expect(labels.filter((l, i) => labels.indexOf(l) !== i)).toEqual([]);
+    expect(TASK_TYPE_ICON_CATALOG.filter((i) => i.key.startsWith('brand-'))).toEqual([]);
+    expect(Object.keys(TASK_TYPE_ICON_PATHS).filter((k) => k.startsWith('brand-'))).toEqual([]);
+    expect(TASK_TYPE_ICON_CATALOG.length).toBe(300);
+    const text = TASK_TYPE_ICON_CATALOG.map((i) => `${i.label} ${i.keywords}`).join(' ');
+    expect(text).not.toMatch(/slack|outlook|ipad|iphone|microsoft|google|amazon|whatsapp|dropbox/i);
+  });
+
   it('finds icons by label, key or keyword, all words required', () => {
     const icon = {
       key: 'user-search',

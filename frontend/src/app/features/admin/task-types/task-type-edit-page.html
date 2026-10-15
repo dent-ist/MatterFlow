@@ -1,7 +1,7 @@
 <mf-page-header
   [heading]="isNew() ? 'New task type' : (taskType()?.name ?? 'Task type')"
   [crumbs]="[
-    { label: 'Task types', link: '/admin/task-types' },
+    { label: 'Task Types & Forms', link: '/admin/task-types' },
     { label: isNew() ? 'New' : (taskType()?.name ?? 'Edit') },
   ]"
 />
@@ -59,6 +59,7 @@
           >
           <mf-task-type-icon-picker
             inputId="tt-icon"
+            labelId="tt-icon-label"
             [value]="model().iconKey"
             (valueChange)="patch({ iconKey: $event })"
             [invalid]="!!fieldErrors()['iconKey']"

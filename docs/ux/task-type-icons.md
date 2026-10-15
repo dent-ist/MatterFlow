@@ -11,7 +11,7 @@ Product-owner decisions, how it is built, and how to add icons. Screenshots are 
    - `?taskType=<id>` skips the chooser (ignored when the id is not a type the user may use).
    - The "Fill from email" panel keeps working on the chooser page; a note says the email details are ready and are applied when the type is chosen.
    - Only active types that can be used for new Tasks (published request form and an eligible workflow) are offered.
-   - More than 12 usable types: a search box (name and description). No types: an empty state that tells the user to ask an administrator.
+   - More than 12 usable types: a search box (name and description; matches in the name come first, word starts before the middle of a word, and hyphens are ignored so "dedup" finds "De-duplication"). While a type is being chosen the grid and the email strip use the whole page width. No types: an empty state that tells the user to ask an administrator.
    - Keyboard: the cards are one radio group. Tab enters it (one tab stop), arrows, Home and End move, Enter or Space chooses. Chosen type is never picked by the arrows alone.
    - "Create and add another" keeps the chosen type (and Matter, Project, Priority and Pod); the type can still be changed with the chip.
 2. **Neutral colour.** Icons are drawn in the surrounding text colour (`currentColor`). There is no per-type colour.
@@ -35,9 +35,24 @@ Product-owner decisions, how it is built, and how to add icons. Screenshots are 
 
 ## The admin picker
 
-The edit page has a required **Icon** field. The button shows the current icon and its name; it opens a dialog with a search box
-(label, key, keywords and category are searched, every word must match), the icons grouped by category, each with a visible
-label. It is a radio group with one tab stop; arrows move by position, Enter or Space picks and closes. The current icon is checked.
+The edit page has a required **Icon** field. The button shows the current icon and its name; its accessible name is the field label plus
+its own visible text ("Icon (required) Document Change icon"). It opens a tall dialog (most of the window height) with a search box,
+a row of **category buttons** (All and the 12 categories, each with the number of icons it holds for the current search; they filter the
+grid) and the icons grouped by category, each with a visible label. It is a radio group with one tab stop; arrows move by position, Enter
+or Space picks and closes. The current icon is checked. Every way of closing (pick, Esc, the X, a click outside) returns focus to the button.
+
+**Search** (label, key, keywords and category; every word must match) lists matches best first, as one group: a whole label, then a whole word
+of the label, key or keywords, then the start of a label word, then the start of a key or keyword word, then any substring. "tar" therefore
+finds Predictive coding (TAR keyword) and Target before Star and Rocket, where it only sits inside "start".
+
+## No brand logos (round 4 decision)
+
+The library contains **no trademarked third-party logos** (the 23 `brand-*` icons of the first release were removed) and no two icons share a
+label (the generator refuses duplicates and any brand name, trademark word or `brand-` key in the catalog). Generic icons took their places
+(cloud storage, shared folder, video meeting, screen sharing, social media, website, forwarded message, ...), so the library is still 300 icons.
+Two near-identical icons were replaced as well (`server-2` by `server-cog`, `fingerprint-scan` by `hash`). Script `21-task-type-icon-retire-brands.sql`
+moves any Task Type that still stored one of the removed keys to its generic replacement (`server-2` to `server`, `fingerprint-scan` to `hash`),
+so every stored value stays in the allow-list; the shipped seeds never used them.
 
 ## Categories and counts (300 icons)
 
@@ -74,7 +89,7 @@ The eight EDRM stages come first (in the order Identification to Presentation), 
 
 ## Adding or changing icons
 
-1. Edit `tools/icons/catalog.mjs`: add `[key, label, keywords]` to a category. The key must be a name in the Tabler outline set. Never rename or remove a key that has shipped (it is stored on Task Types); to retire an icon, keep it.
+1. Edit `tools/icons/catalog.mjs`: add `[key, label, keywords]` to a category. The key must be a name in the Tabler outline set. Never rename or remove a key that has shipped (it is stored on Task Types); to retire an icon, keep it, or remove it together with a numbered script that moves the rows using it (see script 21). The generator also refuses duplicate labels and trademarked names.
 2. `npm ci --prefix tools/icons && node tools/icons/generate.mjs` (prints the count per category).
 3. Commit the three generated files together with the catalog. No database script is needed.
 4. `cd frontend && npx ng test frontend --watch=false` and the backend unit tests check that both sides agree.

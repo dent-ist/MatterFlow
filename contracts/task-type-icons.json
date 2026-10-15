@@ -498,10 +498,10 @@
       "keywords": "forensics examiner forensic examine"
     },
     {
-      "key": "fingerprint-scan",
-      "label": "Forensic fingerprint",
+      "key": "hash",
+      "label": "Hash check",
       "category": "Collection",
-      "keywords": "forensic hash md5 sha verification"
+      "keywords": "hash checksum md5 sha verification forensic"
     },
     {
       "key": "fingerprint",
@@ -780,6 +780,12 @@
       "keywords": "edit modify change"
     },
     {
+      "key": "flag-check",
+      "label": "Flagged responsive",
+      "category": "Review",
+      "keywords": "responsive relevance flag yes"
+    },
+    {
       "key": "world-search",
       "label": "Foreign language",
       "category": "Review",
@@ -868,12 +874,6 @@
       "label": "Redaction removal",
       "category": "Review",
       "keywords": "remove redaction erase"
-    },
-    {
-      "key": "flag-check",
-      "label": "Responsive",
-      "category": "Review",
-      "keywords": "responsive relevance flag yes"
     },
     {
       "key": "thumb-up",
@@ -1326,34 +1326,16 @@
       "keywords": "witness testimony stand"
     },
     {
-      "key": "brand-android",
-      "label": "Android",
-      "category": "Data & systems",
-      "keywords": "android google phone"
-    },
-    {
       "key": "api",
       "label": "API",
       "category": "Data & systems",
       "keywords": "api integration endpoint"
     },
     {
-      "key": "brand-apple",
-      "label": "Apple",
+      "key": "app-window",
+      "label": "Application",
       "category": "Data & systems",
-      "keywords": "apple mac ios icloud"
-    },
-    {
-      "key": "brand-aws",
-      "label": "AWS",
-      "category": "Data & systems",
-      "keywords": "amazon aws s3 cloud"
-    },
-    {
-      "key": "brand-azure",
-      "label": "Azure",
-      "category": "Data & systems",
-      "keywords": "azure microsoft cloud"
+      "keywords": "application software program window desktop app"
     },
     {
       "key": "cloud",
@@ -1366,6 +1348,24 @@
       "label": "Cloud computing",
       "category": "Data & systems",
       "keywords": "cloud compute hosting"
+    },
+    {
+      "key": "cloud-search",
+      "label": "Cloud drive search",
+      "category": "Data & systems",
+      "keywords": "cloud drive sync file storage workspace search"
+    },
+    {
+      "key": "cloud-network",
+      "label": "Cloud network",
+      "category": "Data & systems",
+      "keywords": "cloud network tenant virtual environment"
+    },
+    {
+      "key": "cloud-data-connection",
+      "label": "Cloud storage",
+      "category": "Data & systems",
+      "keywords": "cloud storage bucket object store hosting"
     },
     {
       "key": "terminal-2",
@@ -1392,28 +1392,16 @@
       "keywords": "desktop workstation computer pc"
     },
     {
-      "key": "brand-dropbox",
-      "label": "Dropbox",
-      "category": "Data & systems",
-      "keywords": "dropbox file sharing"
-    },
-    {
-      "key": "brand-google-drive",
-      "label": "Google Drive",
-      "category": "Data & systems",
-      "keywords": "google drive workspace gsuite"
-    },
-    {
       "key": "device-laptop",
       "label": "Laptop",
       "category": "Data & systems",
       "keywords": "laptop notebook computer"
     },
     {
-      "key": "brand-office",
-      "label": "Microsoft 365",
+      "key": "device-mobile-code",
+      "label": "Mobile app",
       "category": "Data & systems",
-      "keywords": "office 365 microsoft sharepoint exchange m365"
+      "keywords": "mobile app application phone software"
     },
     {
       "key": "device-mobile",
@@ -1422,16 +1410,22 @@
       "keywords": "mobile phone smartphone cell"
     },
     {
+      "key": "devices",
+      "label": "Multiple devices",
+      "category": "Data & systems",
+      "keywords": "devices computers phones multiple endpoints"
+    },
+    {
       "key": "network",
       "label": "Network",
       "category": "Data & systems",
       "keywords": "network lan infrastructure"
     },
     {
-      "key": "brand-onedrive",
-      "label": "OneDrive",
+      "key": "file-type-doc",
+      "label": "Office file",
       "category": "Data & systems",
-      "keywords": "onedrive microsoft 365 sharepoint"
+      "keywords": "office word processing document suite"
     },
     {
       "key": "cloud-lock",
@@ -1446,10 +1440,16 @@
       "keywords": "server host file server"
     },
     {
-      "key": "server-2",
-      "label": "Servers",
+      "key": "server-cog",
+      "label": "Server settings",
       "category": "Data & systems",
-      "keywords": "servers infrastructure datacenter"
+      "keywords": "servers infrastructure datacenter configuration"
+    },
+    {
+      "key": "cloud-share",
+      "label": "Shared cloud drive",
+      "category": "Data & systems",
+      "keywords": "shared drive cloud sharing collaboration site"
     },
     {
       "key": "code",
@@ -1464,16 +1464,22 @@
       "keywords": "table spreadsheet structured"
     },
     {
+      "key": "folder-cog",
+      "label": "Synced folder",
+      "category": "Data & systems",
+      "keywords": "synced folder file sharing sync"
+    },
+    {
       "key": "device-tablet",
       "label": "Tablet",
       "category": "Data & systems",
-      "keywords": "tablet ipad"
+      "keywords": "tablet"
     },
     {
       "key": "device-mobile-message",
       "label": "Text messages",
       "category": "Data & systems",
-      "keywords": "sms text messages imessage mobile"
+      "keywords": "sms text messages mobile"
     },
     {
       "key": "device-watch",
@@ -1488,16 +1494,16 @@
       "keywords": "webhook integration callback"
     },
     {
-      "key": "brand-windows",
-      "label": "Windows",
-      "category": "Data & systems",
-      "keywords": "windows microsoft pc"
-    },
-    {
       "key": "speakerphone",
       "label": "Announcement",
       "category": "Communication",
       "keywords": "announce broadcast"
+    },
+    {
+      "key": "broadcast",
+      "label": "Broadcast post",
+      "category": "Communication",
+      "keywords": "broadcast post microblog public feed"
     },
     {
       "key": "phone-call",
@@ -1506,10 +1512,16 @@
       "keywords": "call voice voip"
     },
     {
+      "key": "message-2",
+      "label": "Channel message",
+      "category": "Communication",
+      "keywords": "channel workspace chat message"
+    },
+    {
       "key": "message-circle",
       "label": "Chat",
       "category": "Communication",
-      "keywords": "chat teams slack messaging"
+      "keywords": "chat teams messaging"
     },
     {
       "key": "messages",
@@ -1518,16 +1530,10 @@
       "keywords": "conversations chat threads"
     },
     {
-      "key": "brand-discord",
-      "label": "Discord",
-      "category": "Communication",
-      "keywords": "discord chat"
-    },
-    {
       "key": "mail",
       "label": "Email",
       "category": "Communication",
-      "keywords": "email mail message outlook"
+      "keywords": "email mail message"
     },
     {
       "key": "at",
@@ -1536,10 +1542,10 @@
       "keywords": "email address at domain"
     },
     {
-      "key": "brand-facebook",
-      "label": "Facebook",
+      "key": "message-code",
+      "label": "Encoded message",
       "category": "Communication",
-      "keywords": "facebook social media"
+      "keywords": "encoded encrypted coded messaging international"
     },
     {
       "key": "mail-forward",
@@ -1548,10 +1554,10 @@
       "keywords": "forward email transmit"
     },
     {
-      "key": "brand-gmail",
-      "label": "Gmail",
+      "key": "message-share",
+      "label": "Forwarded message",
       "category": "Communication",
-      "keywords": "gmail google mail"
+      "keywords": "forwarded message mobile chat share"
     },
     {
       "key": "inbox",
@@ -1560,16 +1566,10 @@
       "keywords": "inbox mailbox"
     },
     {
-      "key": "brand-instagram",
-      "label": "Instagram",
+      "key": "phone-incoming",
+      "label": "Incoming call",
       "category": "Communication",
-      "keywords": "instagram social media"
-    },
-    {
-      "key": "brand-linkedin",
-      "label": "LinkedIn",
-      "category": "Communication",
-      "keywords": "linkedin social professional"
+      "keywords": "incoming call voip inbound"
     },
     {
       "key": "calendar-event",
@@ -1584,16 +1584,16 @@
       "keywords": "message chat note"
     },
     {
-      "key": "brand-teams",
-      "label": "Microsoft Teams",
-      "category": "Communication",
-      "keywords": "teams microsoft chat meeting"
-    },
-    {
       "key": "bell",
       "label": "Notification",
       "category": "Communication",
       "keywords": "notification bell alert"
+    },
+    {
+      "key": "mail-opened",
+      "label": "Opened email",
+      "category": "Communication",
+      "keywords": "opened read email webmail"
     },
     {
       "key": "phone",
@@ -1602,40 +1602,46 @@
       "keywords": "phone call telephone"
     },
     {
+      "key": "message-report",
+      "label": "Reported message",
+      "category": "Communication",
+      "keywords": "reported flagged encrypted ephemeral messaging"
+    },
+    {
+      "key": "device-desktop-share",
+      "label": "Screen sharing",
+      "category": "Communication",
+      "keywords": "screen share presentation remote meeting"
+    },
+    {
       "key": "send",
       "label": "Send",
       "category": "Communication",
       "keywords": "send message outbound"
     },
     {
-      "key": "brand-signal",
-      "label": "Signal",
+      "key": "mail-share",
+      "label": "Shared email",
       "category": "Communication",
-      "keywords": "signal encrypted messaging"
+      "keywords": "shared email forward messaging"
     },
     {
-      "key": "brand-skype",
-      "label": "Skype",
+      "key": "share",
+      "label": "Shared post",
       "category": "Communication",
-      "keywords": "skype call chat"
+      "keywords": "shared post social media sharing"
     },
     {
-      "key": "brand-slack",
-      "label": "Slack",
+      "key": "social",
+      "label": "Social media",
       "category": "Communication",
-      "keywords": "slack chat channel"
+      "keywords": "social media network profile posts"
     },
     {
       "key": "headset",
       "label": "Support",
       "category": "Communication",
       "keywords": "support help desk headset"
-    },
-    {
-      "key": "brand-telegram",
-      "label": "Telegram",
-      "category": "Communication",
-      "keywords": "telegram messaging"
     },
     {
       "key": "message-dots",
@@ -1650,28 +1656,22 @@
       "keywords": "fast urgent email"
     },
     {
-      "key": "brand-wechat",
-      "label": "WeChat",
+      "key": "device-computer-camera",
+      "label": "Video meeting",
       "category": "Communication",
-      "keywords": "wechat china messaging"
+      "keywords": "video meeting conference call webcam recording"
     },
     {
-      "key": "brand-whatsapp",
-      "label": "WhatsApp",
+      "key": "headphones",
+      "label": "Voice chat",
       "category": "Communication",
-      "keywords": "whatsapp mobile chat"
+      "keywords": "voice chat audio headset community"
     },
     {
-      "key": "brand-x",
-      "label": "X (Twitter)",
+      "key": "world-www",
+      "label": "Website",
       "category": "Communication",
-      "keywords": "x twitter social media"
-    },
-    {
-      "key": "brand-zoom",
-      "label": "Zoom",
-      "category": "Communication",
-      "keywords": "zoom meeting video"
+      "keywords": "website web page online professional profile"
     },
     {
       "key": "key",

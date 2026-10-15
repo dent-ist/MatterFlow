@@ -5,13 +5,17 @@
   aria-haspopup="dialog"
   [attr.aria-invalid]="invalid() ? 'true' : null"
   [attr.aria-describedby]="describedBy()"
+  [attr.aria-labelledby]="buttonLabelledBy()"
   (click)="open()"
+  #trigger
   data-icon-trigger
 >
   <mf-task-type-icon [iconKey]="value()" size="lg" />
   <span class="tip__current">
-    <span class="tip__name" data-icon-current>{{ current()?.label ?? value() }}</span>
-    <span class="tip__hint">Change icon</span>
+    <span class="tip__name" [id]="nameId()" data-icon-current>{{
+      current()?.label ?? value()
+    }}</span>
+    <span class="tip__hint" [id]="hintId()">Change icon</span>
   </span>
 </button>
 
@@ -24,7 +28,8 @@
   [draggable]="false"
   [resizable]="false"
   [(visible)]="visible"
-  [style]="{ width: '52rem', maxWidth: '95vw' }"
+  (onHide)="onHide()"
+  [style]="{ width: '60rem', maxWidth: '95vw' }"
 >
   <div class="tip__body" data-icon-dialog>
     <div class="tip__search">
@@ -40,6 +45,28 @@
         data-icon-search
       />
     </div>
+    <div class="tip__cats" role="group" aria-label="Show category" data-icon-categories>
+      <button
+        type="button"
+        class="tip__chip"
+        [attr.aria-pressed]="category() === ''"
+        data-category=""
+        (click)="setCategory('')"
+      >
+        All <span class="tip__n">{{ totalCount() }}</span>
+      </button>
+      @for (c of categoryButtons(); track c.name) {
+        <button
+          type="button"
+          class="tip__chip"
+          [attr.aria-pressed]="category() === c.name"
+          [attr.data-category]="c.name"
+          (click)="setCategory(c.name)"
+        >
+          {{ c.name }} <span class="tip__n">{{ c.count }}</span>
+        </button>
+      }
+    </div>
     <p class="tip__status" role="status" aria-live="polite" data-icon-count>
       @if (loadFailed()) {
         The icons could not be loaded.
@@ -52,7 +79,14 @@
     } @else if (matchCount() === 0) {
       <p class="tip__empty" data-icon-empty>No icon matches "{{ query() }}". Try another word.</p>
     }
-    <div class="tip__scroll" role="radiogroup" aria-label="Icons" mfGridNav>
+    <div
+      class="tip__scroll"
+      role="radiogroup"
+      aria-label="Icons"
+      mfGridNav
+      #scroller
+      data-icon-scroll
+    >
       @for (group of groups(); track group.category) {
         <section class="tip__group" [attr.aria-label]="group.category">
           <h3 class="tip__category">{{ group.category }}</h3>
