@@ -135,9 +135,6 @@ export interface PodOption {
         </button>
       }
       <span class="grow"></span>
-      @if (updated(); as u) {
-        <span class="updated" data-updated>Updated {{ u }}</span>
-      }
       <button
         type="button"
         class="mf-btn"
@@ -148,21 +145,6 @@ export interface PodOption {
       >
         <i class="pi pi-info-circle" aria-hidden="true"></i>
         Legend and help
-      </button>
-      <button
-        type="button"
-        class="mf-btn"
-        data-refresh-users
-        [attr.aria-disabled]="refreshing() ? 'true' : null"
-        [attr.aria-busy]="refreshing() ? 'true' : null"
-        (click)="refresh.emit()"
-      >
-        <i
-          class="pi"
-          [class]="refreshing() ? 'pi-spin pi-spinner' : 'pi-refresh'"
-          aria-hidden="true"
-        ></i>
-        Refresh
       </button>
     </div>
 
@@ -255,10 +237,11 @@ export interface PodOption {
       color: var(--mf-primary);
       font-weight: 600;
     }
-    .updated {
-      align-self: center;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
+    /* The search input is as tall as the other (compact) controls on the line. */
+    .search ::ng-deep .sb__input {
+      min-height: var(--mf-row-h-compact);
+      height: var(--mf-row-h-compact);
+      padding-block: 0;
     }
     .legend {
       display: grid;
@@ -321,9 +304,6 @@ export interface PodOption {
       .fld select {
         width: 100%;
       }
-      .updated {
-        display: none;
-      }
     }
   `,
 })
@@ -342,14 +322,11 @@ export class UsersToolbar {
   readonly pods = input<PodOption[]>([]);
   readonly priorities = input<readonly WorkloadPriority[]>([]);
   readonly thresholds = input<WorkloadThresholds | null>(null);
-  readonly updated = input<string | null>(null);
-  readonly refreshing = input(false);
 
   readonly filtersChange = output<Partial<UsersFilters>>();
   readonly sortChange = output<UserSort>();
   readonly densityChange = output<Density>();
   readonly layoutChange = output<Layout>();
-  readonly refresh = output<void>();
 
   protected readonly legendOpen = signal(false);
   protected readonly count = computed(() => filterCount(this.filters()));

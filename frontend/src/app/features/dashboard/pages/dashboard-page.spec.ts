@@ -496,6 +496,10 @@ describe('DashboardPage', () => {
       expect(text(selectedTab(el))).toBe('Users');
       const panel = el.querySelector('[data-tabpanel="users"]')!;
       expect(panel.querySelector('mf-dash-users-tab')).not.toBeNull();
+      const usersIcon = el.querySelector<HTMLButtonElement>('mf-dash-tabs [data-refresh-users]')!;
+      expect(usersIcon.getAttribute('aria-label')).toBe('Refresh team workload');
+      expect(usersIcon.textContent!.trim()).toBe('');
+      expect(el.querySelector('mf-dash-tabs [data-refresh-board]')).toBeNull();
       expect(el.querySelector('mf-page-header [data-refresh]')).toBeNull();
       expect(el.querySelector('[data-tabpanel="swimlane"]')).toBeNull();
 

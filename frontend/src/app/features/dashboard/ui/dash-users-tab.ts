@@ -11,6 +11,7 @@ import {
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -145,13 +146,10 @@ const EDIT_REFRESH_DELAY_MS = 900;
         [pods]="podOptions()"
         [priorities]="board()?.priorities ?? []"
         [thresholds]="board()?.thresholds ?? null"
-        [updated]="updated()"
-        [refreshing]="refreshing()"
         (filtersChange)="patchFilters($event)"
         (sortChange)="setSort($event)"
         (densityChange)="setDensity($event)"
         (layoutChange)="setLayout($event)"
-        (refresh)="refresh()"
       />
 
       <p class="sr-only" role="status" aria-live="polite" data-users-live>{{ live() }}</p>
@@ -390,7 +388,10 @@ export class DashUsersTab implements OnInit {
   protected readonly canCoverage = computed(() => this.auth.has('Dashboard.ViewCoverage'));
   protected readonly state = signal<LoadState>('loading');
   protected readonly board = signal<WorkloadBoard | null>(null);
-  protected readonly refreshing = signal(false);
+  /** True while a refresh is running (the Dashboard's tab row shows it on its refresh icon). */
+  readonly refreshing = computed(() => this.reading() || (this.coverage()?.refreshing() ?? false));
+  private readonly reading = signal(false);
+  private readonly coverage = viewChild(CoverageView);
   protected readonly refreshFailed = signal(false);
   protected readonly live = signal('');
   protected readonly bones = [1, 2, 3, 4, 5, 6];
@@ -551,7 +552,12 @@ export class DashUsersTab implements OnInit {
 
   // ---- loading
 
-  protected refresh(): void {
+  /** Reads the board (or the coverage matrix) again now; the Dashboard's refresh icon in the tab row calls this. */
+  refresh(): void {
+    if (this.view() === 'coverage') {
+      this.coverage()?.refresh();
+      return;
+    }
     if (this.refreshing()) return;
     this.load({ silent: true, announce: true });
   }
@@ -560,7 +566,7 @@ export class DashUsersTab implements OnInit {
     const { silent = false, announce = false } = options;
     const id = ++this.requestId;
     const background = silent && !!this.board();
-    if (background) this.refreshing.set(true);
+    if (background) this.reading.set(true);
     else {
       this.state.set('loading');
       this.refreshFailed.set(false);
@@ -575,7 +581,7 @@ export class DashUsersTab implements OnInit {
             if (id !== this.requestId) return;
             this.board.set(board);
             this.state.set('ready');
-            this.refreshing.set(false);
+            this.reading.set(false);
             this.refreshFailed.set(false);
             this.lastLoadedAt = this.clock.now().getTime();
             if (announce) {
@@ -586,7 +592,7 @@ export class DashUsersTab implements OnInit {
           },
           error: (error: unknown) => {
             if (id !== this.requestId) return;
-            this.refreshing.set(false);
+            this.reading.set(false);
             if (error instanceof ApiError && error.status === 403) {
               this.state.set('forbidden');
               return;

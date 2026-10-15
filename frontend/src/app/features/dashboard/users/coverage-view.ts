@@ -208,24 +208,6 @@ const dayNumber = (iso: string) => Date.parse(iso + 'T00:00:00Z') / 86_400_000;
         <i class="pi pi-filter" aria-hidden="true"></i>Training gaps
       </button>
       <span class="grow"></span>
-      @if (updated(); as u) {
-        <span class="updated" data-updated>Updated {{ u }}</span>
-      }
-      <button
-        type="button"
-        class="mf-btn"
-        data-refresh-coverage
-        [attr.aria-disabled]="refreshing() ? 'true' : null"
-        [attr.aria-busy]="refreshing() ? 'true' : null"
-        (click)="refresh()"
-      >
-        <i
-          class="pi"
-          [class]="refreshing() ? 'pi-spin pi-spinner' : 'pi-refresh'"
-          aria-hidden="true"
-        ></i>
-        Refresh
-      </button>
     </div>
 
     @if (rangeProblem(); as problem) {
@@ -483,10 +465,11 @@ const dayNumber = (iso: string) => Date.parse(iso + 'T00:00:00Z') / 86_400_000;
       color: var(--mf-primary);
       font-weight: 600;
     }
-    .updated {
-      align-self: center;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
+    /* The search input is as tall as the other (compact) controls on the line. */
+    .search ::ng-deep .sb__input {
+      min-height: var(--mf-row-h-compact);
+      height: var(--mf-row-h-compact);
+      padding-block: 0;
     }
     .sr-only {
       position: absolute;
@@ -789,9 +772,6 @@ const dayNumber = (iso: string) => Date.parse(iso + 'T00:00:00Z') / 86_400_000;
         min-width: 9rem;
         max-width: 10rem;
       }
-      .updated {
-        display: none;
-      }
     }
   `,
 })
@@ -829,7 +809,8 @@ export class CoverageView implements OnInit {
   protected readonly gapsOnly = signal(false);
   protected readonly state = signal<LoadState>('loading');
   protected readonly board = signal<CoverageBoard | null>(null);
-  protected readonly refreshing = signal(false);
+  /** True while a refresh is running (the Dashboard's tab row shows it on its refresh icon). */
+  readonly refreshing = signal(false);
   protected readonly refreshFailed = signal(false);
   protected readonly live = signal('');
   protected readonly activeR = signal(0);
@@ -954,7 +935,8 @@ export class CoverageView implements OnInit {
 
   // ---- loading
 
-  protected refresh(): void {
+  /** Reads the matrix again now; the Dashboard's refresh icon (in the tab row) and the failed-refresh Retry call this. */
+  refresh(): void {
     if (this.refreshing()) return;
     this.load({ silent: true, announce: true });
   }

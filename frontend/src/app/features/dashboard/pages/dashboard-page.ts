@@ -511,6 +511,24 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
         [selected]="activeTab() ?? ''"
         (tabChange)="selectTab($event)"
       >
+        @if (activeTab() === 'users') {
+          <button
+            type="button"
+            class="mf-btn mf-btn--icon"
+            data-refresh-users
+            aria-label="Refresh team workload"
+            title="Refresh team workload"
+            [attr.aria-disabled]="users()?.refreshing() ? 'true' : null"
+            [attr.aria-busy]="users()?.refreshing() ? 'true' : null"
+            (click)="users()?.refresh()"
+          >
+            <i
+              class="pi"
+              [class]="users()?.refreshing() ? 'pi-spin pi-spinner' : 'pi-refresh'"
+              aria-hidden="true"
+            ></i>
+          </button>
+        }
         @if (activeTab() === 'swimlane') {
           <button
             type="button"
@@ -767,6 +785,8 @@ export class DashboardPage implements OnInit {
   protected readonly refreshing = signal(false);
   /** The Swimlane tab, when it is on screen: its refresh icon sits in the tab row. */
   protected readonly swimlane = viewChild(DashSwimlaneTab);
+  /** The Users tab, when it is on screen: its refresh icon sits in the tab row too. */
+  protected readonly users = viewChild(DashUsersTab);
   protected readonly refreshFailed = signal(false);
   /** Polite live region: what the last refresh or inline assignment did, for screen readers. */
   protected readonly live = signal('');

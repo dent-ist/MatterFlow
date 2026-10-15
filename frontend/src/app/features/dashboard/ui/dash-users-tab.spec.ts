@@ -172,6 +172,11 @@ describe('DashUsersTab', () => {
     return host;
   }
 
+  /** The Dashboard's refresh icon (in the tab row) calls the tab's refresh(). */
+  function refreshTab() {
+    (harness.routeDebugElement!.componentInstance as DashUsersTab).refresh();
+  }
+
   async function settle() {
     for (let i = 0; i < 4; i++) {
       await new Promise((r) => setTimeout(r));
@@ -446,7 +451,7 @@ describe('DashUsersTab', () => {
     it('keeps the cards when a background refresh fails and says so with Retry', async () => {
       await open();
       getWorkload.mockReturnValue(throwError(() => new Error('down')));
-      q<HTMLButtonElement>('[data-refresh-users]').click();
+      refreshTab();
       await settle();
       expect(qa('[data-user-card]').length).toBe(6);
       expect(text(q('[data-users-stale]'))).toContain('could not be refreshed');
@@ -803,7 +808,7 @@ describe('DashUsersTab', () => {
           }),
         ),
       );
-      q<HTMLButtonElement>('[data-refresh-coverage]').click();
+      refreshTab();
       await settle();
       expect(text(q('[data-coverage-empty]'))).toContain('No training gaps');
     });
@@ -931,7 +936,7 @@ describe('DashUsersTab', () => {
       await open(of(board()), '/dashboard?tab=users&view=coverage', COV);
       expect(qa('[data-type-name]').length).toBe(3);
       getCoverage.mockReturnValue(throwError(() => new Error('down')));
-      q<HTMLButtonElement>('[data-refresh-coverage]').click();
+      refreshTab();
       await settle();
       expect(qa('[data-type-name]').length).toBe(3);
       expect(text(q('[data-coverage-stale]'))).toContain('could not be refreshed');
