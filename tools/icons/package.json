@@ -1,0 +1,12 @@
+{
+  "name": "matterflow-icon-tools",
+  "private": true,
+  "description": "Build-time tooling only: generates the curated Task Type icon library from Tabler Icons. Never a runtime dependency.",
+  "type": "module",
+  "scripts": {
+    "generate": "node generate.mjs"
+  },
+  "devDependencies": {
+    "@tabler/icons": "3.49.0"
+  }
+}

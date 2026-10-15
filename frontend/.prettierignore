@@ -1,1 +1,2 @@
 src/app/api/generated/
+src/app/shared/icons/*.generated.ts

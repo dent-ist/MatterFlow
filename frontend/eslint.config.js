@@ -5,7 +5,7 @@ const tseslint = require('typescript-eslint');
 const angular = require('angular-eslint');
 
 module.exports = defineConfig([
-  { ignores: ['src/app/api/generated/**'] },
+  { ignores: ['src/app/api/generated/**', 'src/app/shared/icons/*.generated.ts'] },
   {
     files: ['**/*.ts'],
     extends: [
