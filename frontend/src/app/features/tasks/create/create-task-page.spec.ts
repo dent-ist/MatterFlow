@@ -1,3 +1,4 @@
+import { EMAIL_PANEL_STORAGE_KEY } from '../../../shared/ui/email-intake';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -511,7 +512,22 @@ describe('CreateTaskPage', () => {
   });
 
   describe('Quick fill from email', () => {
+    afterEach(() => localStorage.removeItem(EMAIL_PANEL_STORAGE_KEY));
+
+    it('is collapsed by default behind a Fill from email button, essentials first', async () => {
+      localStorage.removeItem(EMAIL_PANEL_STORAGE_KEY);
+      const h = await create();
+
+      expect(field(h, '#ei-paste')).toBeNull();
+      expect(field(h, '[data-email-toggle]')!.textContent).toContain('Fill from email');
+      const order = Array.from(
+        h.el.querySelectorAll('#ct-matter, #ct-type, #ct-title, #ct-requestor-name'),
+      ).map((e) => e.id);
+      expect(order).toEqual(['ct-matter', 'ct-type', 'ct-title', 'ct-requestor-name']);
+    });
+
     it('prefills title, description and requestor, all still editable', async () => {
+      localStorage.setItem(EMAIL_PANEL_STORAGE_KEY, '1');
       const h = await create({ inputs: { matterId: '7' } });
 
       const paste = field<HTMLTextAreaElement>(h, '#ei-paste');

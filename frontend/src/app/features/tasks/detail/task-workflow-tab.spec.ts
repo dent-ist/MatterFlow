@@ -244,7 +244,8 @@ describe('Workflow tab: step actions and skip rules', () => {
       workflow: { skipTaskStep: vi.fn().mockReturnValue(of(stepResponse(aTask()))) },
     });
     await click(fixture, q(el, '[data-step-id="103"] [data-skip]'));
-    expect(q(body(), 'label[for="skip-comment-103"]')!.textContent).toContain('(optional)');
+    // Optional fields are not labelled (UXR-16): only a required comment says "(required)".
+    expect(q(body(), 'label[for="skip-comment-103"]')!.textContent).not.toContain('(required)');
     await click(fixture, dialogButton('Skip step')!);
     expect(fakes.workflow['skipTaskStep']).toHaveBeenCalledWith(1042, 103, {
       rowVersion: 'WF1',

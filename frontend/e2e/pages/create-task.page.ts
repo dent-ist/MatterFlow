@@ -24,17 +24,17 @@ export class CreateTaskPage {
 
   constructor(readonly page: Page) {
     this.matter = page.getByRole('combobox', { name: 'Matter (required)' });
-    this.project = page.getByLabel('Project (optional)');
+    this.project = page.getByLabel('Project', { exact: true });
     this.title = page.getByRole('textbox', { name: 'Title (required)' });
     this.description = page.getByRole('textbox', { name: 'Description' });
     this.taskType = page.getByLabel('Task type (required)');
     this.requestorName = page.getByRole('textbox', { name: 'Requestor name (required)' });
-    this.requestorEmail = page.getByRole('textbox', { name: 'Requestor email (optional)' });
+    this.requestorEmail = page.getByRole('textbox', { name: 'Requestor email', exact: true });
     this.priority = page.getByLabel('Priority (required)');
-    this.dueDate = page.getByLabel('Due date (optional)');
-    this.dueTime = page.getByLabel('Time (optional)');
-    this.pod = page.getByLabel('Pod (optional)');
-    this.assignee = page.getByRole('combobox', { name: 'Assignee (optional)' });
+    this.dueDate = page.getByLabel('Due date', { exact: true });
+    this.dueTime = page.getByLabel('Time', { exact: true });
+    this.pod = page.getByLabel('Pod', { exact: true });
+    this.assignee = page.getByRole('combobox', { name: 'Assignee', exact: true });
     this.submit = page.getByRole('button', { name: 'Create task', exact: true });
     this.summary = page.locator('[data-summary]');
     this.workflows = page.locator('[data-workflows]');
@@ -48,6 +48,13 @@ export class CreateTaskPage {
     await this.page.goto(`/tasks/new${query}`);
     await expect(this.page.getByRole('heading', { name: 'Create task', level: 1 })).toBeVisible();
     await expect(this.title).toBeVisible();
+  }
+
+  /** The "Quick fill from email" panel starts collapsed (UXR-38); opens it unless it is already open. */
+  async showEmailPanel(): Promise<void> {
+    const toggle = this.page.getByRole('button', { name: 'Fill from email' });
+    if (await toggle.isVisible()) await toggle.click();
+    await expect(this.pasteBox).toBeVisible();
   }
 
   /** Types a matter reference (padded or not) and picks the suggestion that starts with the full reference. */

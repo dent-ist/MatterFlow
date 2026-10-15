@@ -90,4 +90,40 @@ describe('mf-entity-picker', () => {
     expect(el().querySelector('[role=alert]')?.textContent).toContain('Select a client.');
     expect(input().getAttribute('aria-invalid')).toBe('true');
   });
+
+  describe('focus (UAT2-03)', () => {
+    const later = (): Promise<void> => new Promise((r) => setTimeout(r, 5));
+
+    it('keeps keyboard focus in the picker after a keyboard pick: it lands on Change', async () => {
+      document.body.appendChild(el());
+      try {
+        await type('a');
+        input().focus();
+        input().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+        input().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+        fixture.detectChanges();
+        await later();
+
+        expect(fixture.componentInstance.selected()).toEqual(acme);
+        expect(document.activeElement).toBe(el().querySelector('.mf-picker__change'));
+      } finally {
+        el().remove();
+      }
+    });
+
+    it('returns focus to the search box after Change', async () => {
+      document.body.appendChild(el());
+      try {
+        fixture.componentRef.setInput('selected', acme);
+        fixture.detectChanges();
+        el().querySelector<HTMLButtonElement>('.mf-picker__change')!.click();
+        fixture.detectChanges();
+        await later();
+
+        expect(document.activeElement).toBe(input());
+      } finally {
+        el().remove();
+      }
+    });
+  });
 });

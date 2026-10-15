@@ -49,6 +49,26 @@ const FIELD_LABELS: Record<FieldKey, string> = {
   requestorEmail: 'Requestor email',
 };
 
+/** localStorage key of the panel's last open/closed choice. */
+export const EMAIL_PANEL_STORAGE_KEY = 'mf.emailIntake.open';
+
+function readOpenChoice(): boolean | null {
+  try {
+    const value = localStorage.getItem(EMAIL_PANEL_STORAGE_KEY);
+    return value === '1' ? true : value === '0' ? false : null;
+  } catch {
+    return null; // storage blocked (private window, site data cleared): use the default
+  }
+}
+
+function writeOpenChoice(open: boolean): void {
+  try {
+    localStorage.setItem(EMAIL_PANEL_STORAGE_KEY, open ? '1' : '0');
+  } catch {
+    // not remembered; the panel still works
+  }
+}
+
 const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose a file instead.";
 
 /**
@@ -69,12 +89,16 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
           <h2 class="ei__title" id="ei-title">Quick fill from email</h2>
           <button
             type="button"
-            class="ei__toggle"
+            class="mf-btn"
+            data-email-toggle
             [attr.aria-expanded]="open()"
             [attr.aria-controls]="open() ? 'ei-body' : null"
-            (click)="open.set(!open())"
+            (click)="toggle()"
           >
-            {{ open() ? 'Hide' : 'Show' }}
+            @if (!open()) {
+              <i class="pi pi-envelope" aria-hidden="true"></i>
+            }
+            {{ open() ? 'Hide' : 'Fill from email' }}
           </button>
         </div>
 
@@ -290,8 +314,11 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
 export class EmailIntake {
   /** What the form holds now, so non-empty fields default to Keep in the review. */
   readonly existing = input<EmailIntakeExisting>({});
-  /** Start expanded. The panel remembers nothing itself; the host may persist the choice. */
-  readonly expanded = input(true);
+  /**
+   * Start expanded? Collapsed by default (UXR-38): the essentials of the form come first. The person's last choice, made with the
+   * Fill from email / Hide button, is remembered in this browser and wins over this default.
+   */
+  readonly expanded = input(false);
 
   /** The reviewed values to put into the form. */
   readonly prefill = output<EmailPrefill>();
@@ -303,7 +330,7 @@ export class EmailIntake {
   private readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
 
   protected readonly allowed = computed(() => this.auth.has('Task.Create'));
-  protected readonly open = linkedSignal(() => this.expanded());
+  protected readonly open = linkedSignal(() => readOpenChoice() ?? this.expanded());
   protected readonly phase = signal<Phase>('idle');
   protected readonly error = signal('');
   protected readonly dragging = signal(false);
@@ -335,6 +362,12 @@ export class EmailIntake {
       ? 'Enter a valid email address.'
       : null;
   });
+
+  protected toggle(): void {
+    const next = !this.open();
+    this.open.set(next);
+    writeOpenChoice(next);
+  }
 
   protected replaceLabel(key: FieldKey): string {
     const hasExisting = !!this.existing()[key]?.trim();

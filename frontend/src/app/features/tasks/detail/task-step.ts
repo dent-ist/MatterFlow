@@ -204,7 +204,9 @@ export function valuesPatch(
           <div class="skip">
             <label [for]="'skip-comment-' + s.stepInstanceId">
               Comment
-              <span class="req">{{ s.skipCommentRequired ? '(required)' : '(optional)' }}</span>
+              @if (s.skipCommentRequired) {
+                <span class="req">(required)</span>
+              }
             </label>
             <textarea
               [id]="'skip-comment-' + s.stepInstanceId"

@@ -35,7 +35,7 @@ test.describe('Access Pending and role grant', () => {
     await row.getByRole('button', { name: 'Grant access' }).click();
     const panel = page.getByRole('complementary', { name: 'User details' });
     await panel.getByRole('checkbox', { name: 'Data Technician' }).check();
-    await panel.getByRole('button', { name: 'Save', exact: true }).click();
+    await panel.getByRole('button', { name: 'Save changes', exact: true }).click();
     await expect(panel.locator('[data-permissions-stale]')).toHaveCount(0);
     await expect(row).toHaveCount(0);
 

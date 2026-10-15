@@ -1,8 +1,10 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   OnDestroy,
   computed,
+  inject,
   input,
   model,
   signal,
@@ -43,7 +45,14 @@ export type PickerSearch = (query: string) => Promise<PickerOption[]>;
             <mf-badge>Inactive</mf-badge>
           }
           @if (!locked()) {
-            <button type="button" class="mf-picker__change" (click)="clear()">Change</button>
+            <button
+              type="button"
+              class="mf-picker__change"
+              [id]="inputId() + '-change'"
+              (click)="clear()"
+            >
+              Change
+            </button>
           }
         </div>
       } @else {
@@ -184,6 +193,7 @@ export class EntityPicker implements OnDestroy {
     return parts.length ? parts.join(' ') : null;
   });
 
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private timer: ReturnType<typeof setTimeout> | undefined;
   private requestId = 0;
 
@@ -218,15 +228,29 @@ export class EntityPicker implements OnDestroy {
   }
 
   protected choose(option: PickerOption): void {
+    const hadFocus = this.hasFocus();
     this.selected.set(option);
     this.text.set('');
     this.options.set([]);
     this.open.set(false);
     this.active.set(-1);
+    // The input is replaced by the chosen text and its Change button: keep keyboard focus in the picker (UAT2-03).
+    if (hadFocus) this.focusLater(`${this.inputId()}-change`);
   }
 
   protected clear(): void {
     this.selected.set(null);
+    this.focusLater(this.inputId());
+  }
+
+  private hasFocus(): boolean {
+    const active = document.activeElement;
+    return !!active && this.host.nativeElement.contains(active);
+  }
+
+  /** Focuses an element of the picker once the view has re-rendered. */
+  private focusLater(id: string): void {
+    setTimeout(() => this.host.nativeElement.querySelector<HTMLElement>(`[id="${id}"]`)?.focus());
   }
 
   protected close(): void {

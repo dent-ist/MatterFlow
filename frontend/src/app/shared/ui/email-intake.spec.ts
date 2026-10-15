@@ -12,7 +12,12 @@ import {
   settle,
   withPermissions,
 } from '../testing/org-testing';
-import { EmailIntake, EmailPrefill, MAX_EMAIL_FILE_BYTES } from './email-intake';
+import {
+  EMAIL_PANEL_STORAGE_KEY,
+  EmailIntake,
+  EmailPrefill,
+  MAX_EMAIL_FILE_BYTES,
+} from './email-intake';
 
 type Mock = ReturnType<typeof vi.fn>;
 
@@ -28,6 +33,9 @@ const parsed = (overrides: Partial<ParsedEmailResponse> = {}): ParsedEmailRespon
 });
 
 describe('EmailIntake', () => {
+  beforeEach(() => localStorage.removeItem(EMAIL_PANEL_STORAGE_KEY));
+  afterEach(() => localStorage.removeItem(EMAIL_PANEL_STORAGE_KEY));
+
   let api: Record<'parseEmailText' | 'parseEmailFile', Mock>;
   let fixture: ComponentFixture<EmailIntake>;
   let emitted: EmailPrefill[];
@@ -51,7 +59,10 @@ describe('EmailIntake', () => {
     });
     await TestBed.inject(AuthStore).ensureLoaded();
     fixture = TestBed.createComponent(EmailIntake);
-    for (const [k, v] of Object.entries(inputs)) fixture.componentRef.setInput(k, v);
+    // Most tests work inside the panel, so they start it open; the collapsed default has its own tests below.
+    for (const [k, v] of Object.entries({ expanded: true, ...inputs })) {
+      fixture.componentRef.setInput(k, v);
+    }
     emitted = [];
     fixture.componentInstance.prefill.subscribe((p) => emitted.push(p));
     await settle(fixture);
@@ -379,12 +390,56 @@ describe('EmailIntake', () => {
     });
   });
 
-  it('can start collapsed and be opened', async () => {
-    await create(['Task.Create'], { expanded: false });
+  describe('collapsed by default and remembered (UXR-38)', () => {
+    const toggle = (): HTMLButtonElement => q<HTMLButtonElement>('[data-email-toggle]');
 
-    expect(el().querySelector('textarea')).toBeNull();
-    q<HTMLButtonElement>('.ei__toggle').click();
-    await settle(fixture);
-    expect(el().querySelector('textarea')).toBeTruthy();
+    it('starts collapsed with a Fill from email button, and opens', async () => {
+      await create(['Task.Create'], { expanded: false });
+
+      expect(el().querySelector('textarea')).toBeNull();
+      expect(toggle().textContent).toContain('Fill from email');
+      expect(toggle().getAttribute('aria-expanded')).toBe('false');
+      toggle().click();
+      await settle(fixture);
+      expect(el().querySelector('textarea')).toBeTruthy();
+      expect(toggle().textContent!.trim()).toBe('Hide');
+    });
+
+    it('remembers the last choice in this browser', async () => {
+      await create(['Task.Create'], { expanded: false });
+      toggle().click();
+      await settle(fixture);
+      expect(localStorage.getItem(EMAIL_PANEL_STORAGE_KEY)).toBe('1');
+
+      TestBed.resetTestingModule();
+      await create(['Task.Create'], { expanded: false });
+      expect(el().querySelector('textarea')).toBeTruthy();
+
+      toggle().click(); // hide again
+      await settle(fixture);
+      expect(localStorage.getItem(EMAIL_PANEL_STORAGE_KEY)).toBe('0');
+      TestBed.resetTestingModule();
+      await create(['Task.Create'], { expanded: true });
+      expect(el().querySelector('textarea')).toBeNull();
+    });
+
+    it('still works when storage is blocked', async () => {
+      const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new Error('blocked');
+      });
+      const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new Error('blocked');
+      });
+      try {
+        await create(['Task.Create'], { expanded: false });
+        expect(el().querySelector('textarea')).toBeNull();
+        toggle().click();
+        await settle(fixture);
+        expect(el().querySelector('textarea')).toBeTruthy();
+      } finally {
+        spy.mockRestore();
+        set.mockRestore();
+      }
+    });
   });
 });

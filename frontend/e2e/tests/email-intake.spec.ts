@@ -25,6 +25,7 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
   }) => {
     const create = new CreateTaskPage(page);
     await create.open();
+    await create.showEmailPanel();
 
     await create.pasteBox.fill(PASTED);
     await create.fillFromPasted.click();
@@ -55,6 +56,7 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     const world = await seed.world();
     const create = new CreateTaskPage(page);
     await create.open();
+    await create.showEmailPanel();
     await create.pasteBox.fill(PASTED);
     await create.fillFromPasted.click();
     await page.getByRole('button', { name: 'Fill the task' }).click();
@@ -73,6 +75,7 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
   test('SCN-017: a saved .eml file is read and its attachment is ignored', async ({ page }) => {
     const create = new CreateTaskPage(page);
     await create.open();
+    await create.showEmailPanel();
 
     await page
       .getByLabel('Choose an .eml or .msg file')
@@ -95,6 +98,7 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
   }) => {
     const create = new CreateTaskPage(page);
     await create.open();
+    await create.showEmailPanel();
     await page
       .getByLabel('Choose an .eml or .msg file')
       .setInputFiles(path.join(SAMPLES, '01-plain.eml'));
@@ -134,6 +138,7 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
   }) => {
     const create = new CreateTaskPage(page);
     await create.open();
+    await create.showEmailPanel();
     await expect(create.fillFromPasted).toBeDisabled();
 
     await page.getByLabel('Choose an .eml or .msg file').setInputFiles({
