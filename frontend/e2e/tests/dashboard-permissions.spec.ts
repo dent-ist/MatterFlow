@@ -57,7 +57,10 @@ test.describe('Dashboard permissions', () => {
     expect(body.open.count).toBe(0);
     expect(body.created.count).toBe(0);
     expect(body.byStatus.length).toBe(3);
-    expect(body.trend.length).toBeGreaterThan(0);
+    // The trend is its own endpoint (Dashboard.ViewTrends), not part of the summary payload.
+    expect(body.trend).toBeUndefined();
+    const trend = await (await page.request.get('/api/v1/dashboard/trend')).json();
+    expect(trend.all.length).toBe(30);
     expect((await page.request.get('/api/v1/dashboard/swimlane')).status()).toBe(403);
     expect((await page.request.get('/api/v1/dashboard/workload')).status()).toBe(403);
   });
@@ -82,7 +85,8 @@ test.describe('Dashboard permissions', () => {
     expect(body.byStatus).toEqual([]);
     expect(body.byPriority).toEqual([]);
     expect(body.aging).toEqual([]);
-    expect(body.trend).toEqual([]);
+    expect(body.trend).toBeUndefined();
+    expect((await page.request.get('/api/v1/dashboard/trend')).status()).toBe(403);
   });
 
   test('the role editor has a Dashboard section: a tab permission selects Dashboard.View, clearing View clears the tabs with a note', async ({
