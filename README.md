@@ -71,6 +71,18 @@ npm run format:check         # Prettier
 
 Design tokens come from `docs/ux/tokens.css` (loaded through `angular.json` styles); PrimeNG uses the Aura preset.
 
+## Run everything with one command (local development)
+
+From the repository root (needs Docker, .NET 10 SDK and Node 22.12+):
+
+```
+npm install        # root helper tools (concurrently, cross-env)
+npm run setup      # frontend dependencies and the form-engine library (first time, and after dependency changes)
+npm start          # starts SQL Server (Docker), then the API on :5080 and the Angular dev server on :4200
+```
+
+`npm start` sets the development environment variables itself (local Docker connection string, initial admin `KE\kekim`, Dev auth, starter data) and stops both servers on Ctrl+C. Other scripts: `npm run db:up`, `db:down`, `db:reset` (deletes the database volume), `api`, `web`, `form-engine`. Open http://localhost:4200 (Swagger at http://localhost:5080/swagger).
+
 ## Walking skeleton: run it end to end
 
 Login -> Access Pending -> admin grants a role -> dashboard (baseline 6.4 scenario 3). Needs Docker for SQL Server 2022
