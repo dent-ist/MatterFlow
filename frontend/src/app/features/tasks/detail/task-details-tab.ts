@@ -146,16 +146,13 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
             <dd>{{ t.assignedPod?.name ?? 'No pod' }}</dd>
             <dt>Task type</dt>
             <dd>{{ t.taskType.name }}</dd>
+            <!-- One wrapper div around the dt/dd pairs is valid in a dl: Created and Last updated share one row. -->
             <div class="dt__pair">
-              <div class="dt__pair-item">
-                <dt>Created</dt>
-                <dd>{{ t.createdBy?.displayName ?? 'Unknown' }}, {{ t.createdAtUtc | mfDate }}</dd>
-              </div>
+              <dt>Created</dt>
+              <dd>{{ t.createdBy?.displayName ?? 'Unknown' }}, {{ t.createdAtUtc | mfDate }}</dd>
               @if (t.modifiedAtUtc) {
-                <div class="dt__pair-item">
-                  <dt>Last updated</dt>
-                  <dd>{{ t.modifiedAtUtc | mfDate }}</dd>
-                </div>
+                <dt class="dt__pair-gap">Last updated</dt>
+                <dd>{{ t.modifiedAtUtc | mfDate }}</dd>
               }
             </div>
           </dl>
@@ -476,13 +473,11 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
       grid-column: 1 / -1;
       display: flex;
       flex-wrap: wrap;
-      gap: var(--mf-s1) var(--mf-s5);
-    }
-    .dt__pair-item {
-      display: inline-flex;
-      flex-wrap: wrap;
-      gap: var(--mf-s1) var(--mf-s2);
       align-items: baseline;
+      gap: var(--mf-s1) var(--mf-s2);
+    }
+    .dt__pair-gap {
+      margin-left: var(--mf-s4);
     }
     .dt__request {
       margin-left: var(--mf-s3);
