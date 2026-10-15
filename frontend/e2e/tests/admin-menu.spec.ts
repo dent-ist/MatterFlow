@@ -42,7 +42,7 @@ test.describe('Administration menu and tabbed admin pages', () => {
     await page.goto('/admin/asset-link-roles');
     await expect(page).toHaveURL(/\/admin\/asset-types\?tab=link-roles$/);
     await expect(
-      page.getByRole('heading', { name: 'Asset types and link roles', level: 1 }),
+      page.getByRole('heading', { name: 'Asset Types & Link Roles', level: 1 }),
     ).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Asset Link Roles' })).toHaveAttribute(
       'aria-selected',

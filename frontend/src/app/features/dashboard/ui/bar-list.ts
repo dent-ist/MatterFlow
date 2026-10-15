@@ -114,7 +114,7 @@ let nextId = 0;
     <ng-template #rowBody let-item>
       <span class="namecell">
         @if (item.iconKey) {
-          <mf-task-type-icon class="ti" [iconKey]="item.iconKey" size="sm" />
+          <mf-task-type-icon class="ti" [iconKey]="item.iconKey" size="md" />
         }
         <span class="name">{{ item.label }}</span>
       </span>

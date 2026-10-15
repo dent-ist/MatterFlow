@@ -125,3 +125,46 @@ Run against Testcontainers SQL Server 2022: integration tests for the touched mo
 ## 9. Cleanup
 
 The API process, the `r4-sql` container and the e2e containers were stopped. Scratch scripts (seed, walks, axe) are in the session scratchpad `r4/` folder and are not committed.
+
+## 10. Round 4 fixes
+
+Status of every finding after the fix round (branch `dev`). Screenshots of each fixed screen are in `docs/ux/review-round-4/fixes/` (named `uxr4-NN-...`). Regression tests: `frontend/e2e/tests/ux-round-4.spec.ts` (one scenario per finding) plus unit specs next to the changed components.
+
+### 10.1 Product-owner decisions (answers to section 8)
+
+1. **Users tab default (UXR4-14):** unchanged. It opens on "Pending access" only while someone is waiting, otherwise on Active. The "N waiting for access" cue and the status line stay.
+2. **Brand logos (UXR4-10):** removed. The icon library has no trademarked third-party logos; the 23 `brand-*` icons were replaced by generic ones (cloud storage, cloud network, cloud drive search, shared folder, video meeting, screen sharing, social media, website, forwarded message, ...), so it is still 300 icons with the same per-category counts. The contract (`contracts/task-type-icons.json`), the API allow-list, the generator and the frontend catalog are regenerated together; the generator now also refuses duplicate labels and trademarked names. New script `21-task-type-icon-retire-brands.sql` (script 16 stays unused) moves any Task Type that stored a removed key to its generic replacement, so every stored `IconKey` stays valid; the API refuses a retired key with `UNKNOWN_ICON`. The allow-list parity tests pass unchanged.
+3. **Admin-editable search keywords:** not built. Icon search keeps its built-in keywords; the Create Task chooser search covers name and description, with name matches first.
+4. **Chooser grouping by category:** not needed now; not built.
+5. **Task detail H1:** shows the task type icon only (the section icon is no longer drawn there; the breadcrumb gives the section).
+6. **Matter page priority:** Status and Due win over the Details panel between 1100 and 1399 px. The Details panel can be collapsed there (it starts collapsed and the choice is remembered); from 1400 px it is always open at 340 px. The matter and project Tasks grids no longer repeat "Client · Matter" under the title.
+
+### 10.2 Per finding
+
+| Finding | Status | What changed |
+| --- | --- | --- |
+| UXR4-01 | Fixed | Users: the flex column no longer lets the list grow to its widest row at 375 px (no page scroll; the table scrolls inside its wrapper). Audit Logs: filter grid cells have `min-width: 0` and the grid is one column below 900 px. Both are in the e2e overflow check (Users, Roles, Audit at 375 and 768). |
+| UXR4-02 | Fixed | The work table measures its box. Below 1100 px Workflow progress moves under the title ("2 of 6 steps · Dedup"), below 960 px the Matter column drops (the line under the title still names client and matter), below 800 px Project drops. My Work and Task Queue fit at 1280 and 1024 px, the matter Tasks grid at 1280 px, with Status and Due fully visible (e2e asserts no inner scroll). The "New" pill moved to the line under the title, so it can no longer ellipsize it. Matter and project grids drop the repeated context line (`hideContext`). The Details panel is collapsible between 1100 and 1399 px (see 10.1). Below about 860 px (tablet portrait) wide tables still scroll sideways inside their wrapper with the hint, as before. A user who picked the Workflow progress or Matter column still gets them on wide screens. |
+| UXR4-03 | Fixed | Task header passes `icon=""`: only the task type icon is shown, also at 375 px. |
+| UXR4-04 | Fixed (part deferred) | While choosing a type the page is one full-width column (cards and email strip). "Recently used" first is deferred (needs per-user history). |
+| UXR4-05 | Fixed | Roles is a full-width list with Name, Description, Members and a chevron; it narrows to the old 280 px list while a role is open for editing. |
+| UXR4-06 | Fixed | Create and Edit both say "Due date" and "Time (zone)"; the Edit dialog uses a two-column grid so the labels sit on one line and the time input stays inside its column. |
+| UXR4-07 | Fixed | Dialog is 60 rem wide and the grid area is 90 vh minus the chrome (about 500 px at 1280x800, 410 px at 375x700, up from 310 and 3 rows); sticky category buttons (All plus 12, each with a count that follows the search) filter the grid; the live result count stays. |
+| UXR4-08 | Fixed | The picker explicitly returns focus to the Icon button after the dialog hides, in addition to `mfDialogFocus`. I could not reproduce the loss in dev (Esc from the search box and from an icon both returned focus), so the e2e covers click, Enter, Esc and Esc from the search box. |
+| UXR4-09 | Fixed | Icon search ranks: whole label, whole word, label word start, key/keyword word start, then substring ("tar" lists Predictive coding (keyword TAR) and Target before Star and Rocket); while typing the matches are one best-first list. Chooser search ranks name matches first and ignores hyphens ("dedup" finds "De-duplication"). |
+| UXR4-10 | Fixed | See 10.1 item 2; "Server/Servers", "Signal", "Cloud/OneDrive", "Responsive" (twice, now "Flagged responsive") and "Hash value/Forensic fingerprint" are gone or distinct, and a unit test fails on any repeated label. |
+| UXR4-11 | Fixed | The Icon button is named by `aria-labelledby` = field label + its own visible text ("Icon (required) Document Change icon"). |
+| UXR4-12 | Fixed | H1 = menu label: "Task Types & Forms" (also breadcrumb and form-page crumb), "Workflows", "Workflow Steps", "Labels", "Custom Fields", "Audit Logs", "Users". Document title = page plus open tab: "Users" / "Users - Roles", "Labels - Priorities" / "Labels - Status labels", "Asset Types & Link Roles - Asset Types" / "... - Link Roles". The menu label stays "Assets" for the administration item (it sits under the Administration heading, with a different icon); its page has the breadcrumb "Administration > Assets" and the H1 "Asset Types & Link Roles", so it cannot be mistaken for the Assets data list. Case rule: Title Case for section names that are menu labels, sentence case for everything else. |
+| UXR4-13 | Partly fixed | Asset Types has the same search box and status filter as the other lists (server side, everything shown until narrowed). Custom Fields (five fixed objects) keeps no toolbar. The add pattern is unchanged: header action for top-level lists, a button inside the tab for tabbed pages, the inline add card for Labels and Link Roles; one pattern for all would be a larger redesign and is deferred. |
+| UXR4-14 | Decision | Unchanged, see 10.1. |
+| UXR4-15 | Fixed | A grouped audit row has its own Object cell (link to the object of the first thing that happened). The Activity drawer and the audit log no longer say "(pod)" (`Assigned to Analytics Pod`); backend narrator, audit text and their tests changed. |
+| UXR4-16 | Fixed | Columns is as high as Filters (40 px); Create matter is vertically centred on the search input; the pencil is gone from Edit (icons on create actions only). |
+| UXR4-17 | Fixed (part deferred) | The dashboard lists the top 8 task types (was 5) before "Other task types", and the type icons are the 20 px size. A drill-through for the "Other" row is deferred (the Task Queue cannot express "all but these"). |
+| UXR4-18 | Fixed | Header due line says "Due today" and "Tomorrow" like the queues (then "Due soon"); the search term is no longer a chip and no longer counts in "Filters (n)". |
+| UXR4-19 | Fixed | My Work tabs stay on one row (they scroll sideways inside their strip on a phone) with the underline under every tab; the "That's everything on your plate" line shares the row with the pager. |
+| UXR4-20 | Fixed | Every Activity drawer opens with focus on its Close button. |
+| UXR4-21 | Fixed | The zero count uses the muted text colour (7.6:1); toasts (success, info, warn, error) use dark text of the same hue on the pale tint (7:1 or better). |
+| UXR4-22 | Fixed | The global search region is named "Search MatterFlow", so it is a distinct landmark from page-level search regions. |
+| UXR4-23 | No change | Information only. 58 chunks load in about 1 s on localhost; revisit with a real-network performance check. |
+
+Not in the review but found while fixing: the dashboard "Age of open tasks" bar (`a.seg` with `role="listitem"`) is reported as a minor best-practice `aria-allowed-role`; left as is.

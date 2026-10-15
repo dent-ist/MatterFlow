@@ -41,7 +41,7 @@ export class CreateTaskPage {
     this.requestorEmail = page.getByRole('textbox', { name: 'Requestor email', exact: true });
     this.priority = page.getByLabel('Priority (required)');
     this.dueDate = page.getByLabel('Due date', { exact: true });
-    this.dueTime = page.getByLabel('Time', { exact: true });
+    this.dueTime = page.getByLabel(/^Time \(/);
     this.pod = page.getByLabel('Pod', { exact: true });
     this.assignee = page.getByRole('combobox', { name: 'Assignee', exact: true });
     this.submit = page.getByRole('button', { name: 'Create task', exact: true });

@@ -6,6 +6,14 @@ import { uid } from '../support/seed';
 test.describe('Detail pages: main area, Details panel and Activity drawer', () => {
   const panel = (page: Page) => page.getByRole('complementary', { name: 'Details' });
 
+  /** Between 1100 and 1399 px a Matter's or Project's Details panel starts collapsed to a slim "Details" button (UXR4-02). */
+  async function showDetails(page: Page): Promise<void> {
+    const toggle = panel(page).getByRole('button', { name: 'Details' });
+    if ((await toggle.count()) > 0 && (await toggle.getAttribute('aria-expanded')) === 'false') {
+      await toggle.click();
+    }
+  }
+
   async function noHorizontalScroll(page: Page): Promise<void> {
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -110,6 +118,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(
       page.getByRole('link', { name: task.taskRef ?? task.title }).first(),
     ).toBeVisible();
+    await showDetails(page);
     await expect(panel(page)).toContainText('Sensitive');
     await expect(panel(page).getByRole('button', { name: 'Edit' })).toBeVisible();
     // One task is open, so deactivation is disabled and says why.
@@ -122,6 +131,42 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(panel(page)).toBeVisible();
   });
 
+  test('Matter at 1280 px: the Details panel starts collapsed so the Tasks grid gets the width; the choice is remembered; from 1400 px it is always open', async ({
+    page,
+    seed,
+  }) => {
+    const world = await seed.world();
+    await seed.task(world);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`/matters/${world.matter.matterId}`);
+
+    const toggle = panel(page).getByRole('button', { name: 'Details' });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(panel(page).getByRole('button', { name: 'Edit' })).toBeHidden();
+    const grid = page.locator('.wt-wrap');
+    await expect(grid).toBeVisible();
+    const collapsedWidth = (await grid.boundingBox())!.width;
+    // Status and Due are not scrolled out of view: the table is not wider than its box.
+    expect(await grid.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(panel(page).getByRole('button', { name: 'Edit' })).toBeVisible();
+    expect((await grid.boundingBox())!.width).toBeLessThan(collapsedWidth - 200);
+
+    await page.reload();
+    await expect(panel(page).getByRole('button', { name: 'Details' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    await toggle.click(); // leave the stored choice as it was for later tests of this worker
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(panel(page).getByRole('button', { name: 'Details' })).toHaveCount(0);
+    await expect(panel(page).getByRole('button', { name: 'Edit' })).toBeVisible();
+    expect((await panel(page).boundingBox())!.width).toBeGreaterThan(330);
+  });
+
   test('Project: Tasks grid in the main area; Archive and Restore from the Details panel', async ({
     page,
     seed,
@@ -132,6 +177,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await page.goto(`/projects/${project.projectId}`);
 
     await expect(page.getByRole('heading', { level: 1 })).toContainText(project.name);
+    await showDetails(page);
     await panel(page).getByRole('button', { name: 'Archive' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Archive' }).click();
     await expect(panel(page).getByRole('button', { name: 'Restore' })).toBeVisible();
