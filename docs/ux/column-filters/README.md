@@ -2,7 +2,11 @@
 
 Issue #76 (Batch 1 of epic #75). Implements the pattern standard of `docs/ux/column-filters-review.md` (section 4) with the product manager's decisions of the epic, as reusable parts, and proves it by moving the Assets screen onto them (no visible change at 1366x768; the filter row is now a sheet where it could not work before).
 
-Screenshots (1366x768 and 375x812) are in `screenshots/`: `assets-filters-closed`, `assets-filters-open`, `assets-filters-active`, `assets-chips-row-closed`, `assets-sheet-375`, `assets-sheet-active-375`, `control-multiselect`, `control-daterange`, `control-numberrange`, `control-user`, `more-filters`, `restored-notice`.
+Screenshots are in `screenshots/` (`<name>-<width>x<height>.png`):
+
+- Assets, 1366x768: `assets-filters-closed`, `assets-filters-open`, `assets-filters-active` (row open, values in the cells), `assets-chips-row-closed` (chips instead), `assets-print` (print rendering with the "Filters: ..." line).
+- Assets, 375x812: `assets-closed`, `assets-sheet`, `assets-sheet-filtered`, `assets-chips`.
+- The controls, from a throwaway build in which Assets carried one demo filter of every type (not committed): `controls-row`, `control-multiselect`, `control-user`, `control-daterange` (with presets), `control-numberrange`, `more-filters` (1366x768) and `sheet-all-controls`, `sheet-all-controls-scrolled` (375x812, every control expanded).
 
 ## Anatomy
 
@@ -108,7 +112,7 @@ Useful options: `openByDefault`, `visibleColumns` (a signal of the shown column 
 
 - Unit (Vitest): `shared/filters/*.spec.ts` for the definitions (parse/serialise round trips, defaults, explicit empty), date presets (Monday weeks, month and year ends, time zones), `ListFilters` (URL, replace vs push, clear, presets, chips, hidden columns, print line, open state incl. blocked storage, sheet mode, restored notice, announcements), `queue-defs` (link contract against `QueueFilters` for 12 dashboard and search link shapes), every control, the popover, the control dispatcher, the row (span, stacked, empty cells), the bar (toggle, Clear, chips, More filters, live region, print line, `/`), the sheet (modal, focus trap and return, Esc order, live apply). `assets-pages.spec.ts` was adapted: the page reads its filters from the route, so the spec feeds a fake route; expectations changed only for `replaceUrl` on text filters and the chip button name.
 - E2E: `e2e/tests/column-filters.spec.ts` on Assets (chips, live region, keyboard order, Enter and Esc, `/`, sheet at 375 px, sheet on an overflowing grid, print line with `emulateMedia`, axe closed/open/filtered/chips/sheet). The existing `assets-screen.spec.ts` and `assets.spec.ts` pass unchanged.
-- Screenshots: `E2E_SCREENSHOTS=docs/ux/column-filters/screenshots frontend/e2e/run-local.sh -g "column filters screenshots"`.
+- Screenshots of Assets: `E2E_SCREENSHOTS=docs/ux/column-filters/screenshots frontend/e2e/run-local.sh -g "column filters screenshots"` (`e2e/tests/column-filters-screens.spec.ts`).
 
 ## Decisions and deferred
 

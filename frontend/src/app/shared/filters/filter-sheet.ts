@@ -137,9 +137,15 @@ const FOCUSABLE =
       font-size: var(--mf-fs-sm);
       font-weight: 600;
     }
+    /* 44 px targets (the row's controls are 32 px). */
     .fs-field ::ng-deep .mf-control,
-    .fs-field ::ng-deep .mf-btn {
+    .fs-field ::ng-deep .mf-btn,
+    .fs-field ::ng-deep .ms-opt {
       min-height: 44px;
+    }
+    .fs-field ::ng-deep .ms-opt input {
+      width: 20px;
+      height: 20px;
     }
     .fs-foot {
       display: flex;

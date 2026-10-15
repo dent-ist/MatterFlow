@@ -1034,6 +1034,7 @@ Prefix `mf-`. Standalone components, OnPush, signals-friendly inputs, a11y built
 | `mf-page-header` | Breadcrumb, H1, action slot | `title`, `crumbs[]` | all |
 | `mf-data-table` | Server-paged sortable table with column chooser, density, skeleton/empty/error | `columns`, `rows`, `sort`, `page`, `state` | S02-S04, lists |
 | `mf-filter-bar` / `mf-filter-drawer` / `mf-filter-chip` | Filters with URL state | `filterDefs`, `(change)` | S02-S04, S11 |
+| `mf-filters-bar` / `mf-column-filter-row` / `mf-filter-chips` / `mf-filter-sheet` (shared/filters) | Inline column filters generated from one `FilterDef[]` with URL state (`ListFilters`); see docs/ux/column-filters/README.md | `filters`, `columns`, `controls` | Assets (more screens: epic #75) |
 | `mf-task-table` | Task columns, default sort, inline edit hooks on top of data-table | `scope`, `columnsPreset` | S02-S04, Matter/Project |
 | `mf-status-badge` | Lifecycle badge from code + label map | `code` | tasks everywhere |
 | `mf-priority-badge` | Priority label + glyph | `priority` | tasks |
