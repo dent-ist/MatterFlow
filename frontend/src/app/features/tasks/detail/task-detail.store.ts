@@ -8,6 +8,7 @@ import {
   TaskWorkflowClient,
   TasksClient,
 } from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 
@@ -52,6 +53,7 @@ export class TaskDetailStore {
   private readonly tasks = inject(TasksClient);
   private readonly workflows = inject(TaskWorkflowClient);
   private readonly notify = inject(NotificationService);
+  private readonly auth = inject(AuthStore);
 
   readonly taskId = signal(0);
   readonly state = signal<DetailState>('loading');
@@ -67,6 +69,25 @@ export class TaskDetailStore {
   readonly dialog = signal<ActionDialog | null>(null);
   /** Step the user asked to jump to (from the complete dialog); the workflow tab scrolls to it and focuses it. */
   readonly focusStepId = signal<number | null>(null);
+
+  /**
+   * True for a user who may look at tasks but change nothing in them (Read-Only Observer): the page says so once and leaves out
+   * edit-oriented copy and disabled actions. Commenting alone does not count as editing.
+   */
+  readonly viewOnly = computed(
+    () =>
+      !this.auth.hasAny([
+        'Task.Edit',
+        'Task.Assign',
+        'Task.SetPriority',
+        'Task.ChangeStatus',
+        'Task.Complete',
+        'Task.Cancel',
+        'Task.Reopen',
+        'Workflow.Execute',
+        'Workflow.StepReopen',
+      ]),
+  );
 
   readonly closed = computed(() => {
     const s = this.task()?.status;

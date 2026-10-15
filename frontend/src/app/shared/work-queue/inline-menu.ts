@@ -144,7 +144,7 @@ let nextId = 0;
     }
     .im-trigger .pi {
       color: var(--mf-text-muted);
-      font-size: 0.7rem;
+      font-size: 0.875rem;
     }
     .im-pop {
       position: fixed;

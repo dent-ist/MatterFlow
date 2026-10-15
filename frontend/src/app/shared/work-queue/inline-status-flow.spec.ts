@@ -6,6 +6,7 @@ import { apiError } from '../../core/lookups/lookups-testing';
 import { TaskDetailStore } from '../../features/tasks/detail/task-detail.store';
 import { InlineStatusFlow } from './inline-status-flow';
 import { StatusAction } from './inline-edit';
+import { FakeMeApi, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
 import { aRow } from './work-queue-testing';
 
 const fullTask = (patch: Record<string, unknown> = {}) => ({
@@ -40,6 +41,7 @@ describe('InlineStatusFlow', () => {
     TestBed.configureTestingModule({
       providers: [
         MessageService,
+        provideFakeMe(new FakeMeApi(withPermissions())),
         { provide: TasksClient, useValue: tasks },
         { provide: TaskWorkflowClient, useValue: {} },
       ],

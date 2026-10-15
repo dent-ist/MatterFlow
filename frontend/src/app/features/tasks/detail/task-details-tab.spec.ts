@@ -57,13 +57,13 @@ describe('Details tab', () => {
         allowedActions: allowed({ canEdit: false, transitions: [transition('REOPEN')] }),
       }),
     );
-    expect(q(el, '[data-edit-details]')).toBeNull();
+    expect(q(el, '[data-edit]')).toBeNull();
     expect(q(el, '[data-readonly-note]')!.textContent).toContain('Reopen it to edit');
   });
 
   it('edit mode shows inputs for the editable fields only, with the due time labelled with the zone', async () => {
     const { fixture, el } = await mountTaskPage(aTask({ dueDate: '2026-10-30', dueTime: '15:00' }));
-    await click(fixture, q(el, '[data-edit-details]'));
+    await click(fixture, q(el, '[data-edit]'));
 
     expect((q(el, '#td-title') as HTMLInputElement).value).toBe('Process Smith custodians');
     expect((q(el, '#td-due-date') as HTMLInputElement).value).toBe('Oct 30, 2026');
@@ -79,7 +79,7 @@ describe('Details tab', () => {
 
   it('validates required fields before calling the server', async () => {
     const { fixture, el, fakes } = await mountTaskPage(aTask());
-    await click(fixture, q(el, '[data-edit-details]'));
+    await click(fixture, q(el, '[data-edit]'));
     await type(fixture, el, '#td-title', '');
     await type(fixture, el, '#td-due-time', '10:00');
     await click(fixture, q(el, '[data-save]'));
@@ -95,7 +95,7 @@ describe('Details tab', () => {
     const { fixture, el, fakes } = await mountTaskPage(aTask(), ['Task.View', 'Task.Edit'], {
       tasks: { updateTask: vi.fn().mockReturnValue(of(saved)) },
     });
-    await click(fixture, q(el, '[data-edit-details]'));
+    await click(fixture, q(el, '[data-edit]'));
     await type(fixture, el, '#td-title', 'New title');
     await type(fixture, el, '#td-due-date', '2026-11-02');
     await type(fixture, el, '#td-due-time', '09:30');
@@ -130,7 +130,7 @@ describe('Details tab', () => {
         ),
       },
     });
-    await click(fixture, q(el, '[data-edit-details]'));
+    await click(fixture, q(el, '[data-edit]'));
     await click(fixture, q(el, '[data-save]'));
 
     expect(q(el, '#td-req-email-error')!.textContent).toContain('That email address looks wrong.');
@@ -146,7 +146,7 @@ describe('Details tab', () => {
         updateTask: vi.fn().mockReturnValue(apiError(409, { code: 'CONCURRENCY_CONFLICT' })),
       },
     });
-    await click(fixture, q(el, '[data-edit-details]'));
+    await click(fixture, q(el, '[data-edit]'));
     await type(fixture, el, '#td-title', 'Mine');
     await click(fixture, q(el, '[data-save]'));
 
@@ -163,7 +163,7 @@ describe('Details tab', () => {
         tasks: { updateTask: vi.fn().mockReturnValue(of(aTask())) },
       },
     );
-    await click(fixture, q(el, '[data-edit-details]'));
+    await click(fixture, q(el, '[data-edit]'));
     expect(fakes.forms.getFormVersionSchema).toHaveBeenCalledWith(3);
     const language = Array.from(
       el.querySelectorAll<HTMLInputElement>('mf-dynamic-form input[type=text]'),
@@ -189,7 +189,7 @@ describe('Details tab', () => {
         },
       },
     );
-    await click(fixture, q(el, '[data-edit-details]'));
+    await click(fixture, q(el, '[data-edit]'));
     const pod = q(el, '#td-pod') as HTMLSelectElement;
     pod.value = '';
     pod.dispatchEvent(new Event('change'));
@@ -212,7 +212,7 @@ describe('Details tab', () => {
         tasks: { updateTask: vi.fn().mockReturnValue(of(aTask({ rowVersion: 'RV2' }))) },
       },
     );
-    await click(fixture, q(el, '[data-edit-details]'));
+    await click(fixture, q(el, '[data-edit]'));
     await click(fixture, q(el, '[data-chosen] button'));
     await type(fixture, el, '#td-assignee', 'Coll');
     await new Promise((r) => setTimeout(r, 300));
@@ -233,7 +233,7 @@ describe('Details tab', () => {
 
   it('warns, without blocking, when the due date is in the past (UAT2-16)', async () => {
     const { fixture, el } = await mountTaskPage(aTask({ dueDate: '2099-10-30' }));
-    await click(fixture, q(el, '[data-edit-details]'));
+    await click(fixture, q(el, '[data-edit]'));
     expect(q(el, '[data-past-due]')).toBeNull();
 
     await type(fixture, el, '#td-due-date', '2020-01-02');

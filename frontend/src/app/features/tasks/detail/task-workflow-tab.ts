@@ -188,9 +188,12 @@ export class TaskWorkflowTab {
     () => this.wf()?.steps.find((s) => s.isCurrent)?.sequenceNo ?? null,
   );
 
-  protected readonly completeOption = computed(
-    () =>
-      this.store.task()?.allowedActions.transitions.find((o) => o.action === 'COMPLETE') ?? null,
+  /** The Complete task block; a view-only user gets no button and no instructions for it (UAT2-18). */
+  protected readonly completeOption = computed(() =>
+    this.store.viewOnly()
+      ? null
+      : (this.store.task()?.allowedActions.transitions.find((o) => o.action === 'COMPLETE') ??
+        null),
   );
 
   /** Why Complete task is disabled, for people who cannot use it (UAT2-18). */
@@ -204,6 +207,11 @@ export class TaskWorkflowTab {
   protected readonly notice = computed(() => {
     const t = this.store.task();
     if (!t) return null;
+    if (this.store.viewOnly()) {
+      return t.status === 'ON_HOLD' || t.status === 'COMPLETED' || t.status === 'CANCELLED'
+        ? `This task is ${t.statusLabel}.`
+        : null;
+    }
     switch (t.status) {
       case 'ON_HOLD':
         return 'This task is On Hold. Resume it before working on its steps.';

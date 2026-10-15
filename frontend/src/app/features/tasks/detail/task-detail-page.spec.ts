@@ -1,9 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 
 vi.setConfig({ testTimeout: 60000 });
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TaskResponse } from '../../../api/generated/api-client';
 import { Permission } from '../../../core/auth/permissions';
+import { UndoService } from '../../../core/notify/undo.service';
+import { TaskDetailStore } from './task-detail.store';
 import { apiError, ok, settle } from '../../../shared/testing/org-testing';
 import {
   aCheck,
@@ -20,17 +22,94 @@ import {
 const PERMS: Permission[] = ['Task.View', 'Task.Edit', 'Workflow.Execute'];
 const body = (): HTMLElement => document.body;
 const menuActions = (el: HTMLElement): string[] =>
-  Array.from(el.querySelectorAll<HTMLElement>('[role=menuitem]')).map((i) => i.dataset['action']!);
+  Array.from(el.querySelectorAll<HTMLElement>('[role=menuitemradio]')).map(
+    (i) => i.dataset['option']!,
+  );
 
 async function openMenu(
   fixture: Awaited<ReturnType<typeof mountTaskPage>>['fixture'],
   el: HTMLElement,
 ): Promise<void> {
-  await click(fixture, q(el, '[data-status-menu]'));
+  await click(fixture, q(el, '[data-status] [data-inline-trigger]'));
 }
 
 describe('TaskDetailPage header', () => {
   afterEach(() => TestBed.resetTestingModule());
+
+  it('has one Edit button and inline Status, Priority and Assignee menus for a user who may change them', async () => {
+    const { el } = await mountTaskPage(aTask(), [...PERMS, 'Task.SetPriority', 'Task.Assign']);
+
+    expect(el.querySelectorAll('[data-edit]').length).toBe(1);
+    expect(q(el, '[data-edit]')!.textContent!.trim()).toBe('Edit');
+    expect(q(el, '[data-edit-details]')).toBeNull();
+    expect(q(el, '[data-status] [data-inline-trigger]')).not.toBeNull();
+    expect(q(el, '[data-priority] [data-inline-trigger]')).not.toBeNull();
+    expect(q(el, '[data-assignee] [data-inline-trigger]')).not.toBeNull();
+    expect(q(el, '[data-view-only]')).toBeNull();
+  });
+
+  it('shows a view-only notice, plain chips and no Edit for a user who can change nothing', async () => {
+    const { el } = await mountTaskPage(
+      aTask({
+        allowedActions: allowed({
+          canEdit: false,
+          canAssign: false,
+          canSetPriority: false,
+          transitions: [
+            transition('COMPLETE', { permitted: false, blockedReason: 'PERMISSION_DENIED' }),
+          ],
+        }),
+      }),
+      ['Task.View'],
+    );
+
+    expect(q(el, '[data-view-only]')!.textContent).toContain(
+      "View only: you don't have permission to edit tasks.",
+    );
+    expect(q(el, '[data-inline-trigger]')).toBeNull();
+    expect(q(el, '[data-edit]')).toBeNull();
+    expect(q(el, 'mf-status-badge')).not.toBeNull();
+  });
+
+  it('changes the priority from the header, shows it at once and offers Undo', async () => {
+    const updated = aTask({
+      priority: { priorityId: 3, label: 'Normal', color: 'normal', sortOrder: 3 },
+      rowVersion: 'RV2',
+    });
+    const setTaskPriority = vi.fn().mockReturnValue(of(updated));
+    const { fixture, el, fakes } = await mountTaskPage(aTask(), [...PERMS, 'Task.SetPriority'], {
+      tasks: { setTaskPriority },
+    });
+    const undo = TestBed.inject(UndoService);
+    undo.dismiss();
+
+    await click(fixture, q(el, '[data-priority] [data-inline-trigger]'));
+    await click(fixture, q(el, '[data-option="3"]'));
+
+    expect(setTaskPriority).toHaveBeenCalledWith(1042, { rowVersion: 'RV1', priorityId: 3 });
+    expect(q(el, '[data-priority]')!.textContent).toContain('Normal');
+    expect(undo.current()?.message).toBe('TSK-1042 priority set to Normal.');
+
+    // Undo uses the version the server returned last.
+    fakes.tasks['getTask'].mockReturnValue(of(updated));
+    setTaskPriority.mockReturnValue(of(aTask({ rowVersion: 'RV3' })));
+    await undo.run();
+    await settle(fixture);
+    expect(setTaskPriority).toHaveBeenLastCalledWith(1042, { rowVersion: 'RV2', priorityId: 1 });
+    expect(q(el, '[data-priority]')!.textContent).toContain('Critical');
+  });
+
+  it('returns focus to Edit when the Details form closes', async () => {
+    const { fixture, el } = await mountTaskPage(aTask());
+    document.body.appendChild(el);
+    await click(fixture, q(el, '[data-edit]'));
+    expect(q(el, '[data-edit]')).toBeNull();
+    fixture.debugElement.injector.get(TaskDetailStore).editing.set(false);
+    await settle(fixture);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(document.activeElement).toBe(q(el, '[data-edit]'));
+    el.remove();
+  });
 
   it('shows number, title, status, priority, ASAP, Pod, assignee, matter and workflow', async () => {
     const { el } = await mountTaskPage(aTask());
@@ -91,7 +170,7 @@ describe('TaskDetailPage header', () => {
     const none = await mountTaskPage(
       aTask({ allowedActions: allowed({ transitions: [denied('COMPLETE')], canEdit: false }) }),
     );
-    expect(q(none.el, '[data-status-menu]')).toBeNull();
+    expect(q(none.el, '[data-status] [data-inline-trigger]')).toBeNull();
     expect(q(none.el, '[data-edit]')).toBeNull();
   });
 
@@ -108,9 +187,9 @@ describe('TaskDetailPage header', () => {
       matter: { ...task.matter, isActive: false },
     });
     await openMenu(fixture, el);
-    const item = q(el, '[data-action=REOPEN]') as HTMLButtonElement;
-    expect(item.disabled).toBe(true);
-    expect(q(el, '.menu__reason')!.textContent).toContain(
+    const item = q(el, '[data-option=REOPEN]') as HTMLButtonElement;
+    expect(item.getAttribute('aria-disabled')).toBe('true');
+    expect(q(el, '.im-reason')!.textContent).toContain(
       "Matter is inactive. This task can't be reopened.",
     );
     expect(q(el, '[data-matter-inactive]')!.textContent).toContain("can't be reopened");
@@ -124,7 +203,7 @@ describe('TaskDetailPage header', () => {
     });
     const { fixture, el, fakes } = await mountTaskPage(task);
     await openMenu(fixture, el);
-    await click(fixture, q(el, '[data-action=RESUME]'));
+    await click(fixture, q(el, '[data-option=RESUME]'));
     expect(fakes.tasks['changeTaskStatus']).toHaveBeenCalledWith(1042, {
       rowVersion: 'RV1',
       status: 'IN_PROGRESS',
@@ -134,7 +213,7 @@ describe('TaskDetailPage header', () => {
   it('On hold needs a reason and sends it', async () => {
     const { fixture, el, fakes } = await mountTaskPage(aTask());
     await openMenu(fixture, el);
-    await click(fixture, q(el, '[data-action=HOLD]'));
+    await click(fixture, q(el, '[data-option=HOLD]'));
 
     await click(fixture, dialogButton('Put on hold')!);
     expect(q(body(), '[data-reason-error]')!.textContent).toContain('Add a reason');
@@ -154,7 +233,7 @@ describe('TaskDetailPage header', () => {
   it('Cancel needs a comment and calls cancel', async () => {
     const { fixture, el, fakes } = await mountTaskPage(aTask());
     await openMenu(fixture, el);
-    await click(fixture, q(el, '[data-action=CANCEL]'));
+    await click(fixture, q(el, '[data-option=CANCEL]'));
     expect(body().querySelector('[data-reason-body]')!.textContent).toContain(
       "Unresolved workflow steps don't block",
     );
@@ -227,7 +306,7 @@ describe('TaskDetailPage complete', () => {
       },
     });
     await openMenu(fixture, el);
-    await click(fixture, q(el, '[data-action=COMPLETE]'));
+    await click(fixture, q(el, '[data-option=COMPLETE]'));
     expect(fakes.tasks['completeTask']).toHaveBeenCalledWith(1042, {
       rowVersion: 'RV1',
       completeUnresolvedSteps: false,
@@ -238,7 +317,7 @@ describe('TaskDetailPage complete', () => {
   it('bulk case: asks "You have N steps not completed", lists them and confirms with completeUnresolvedSteps', async () => {
     const { fixture, el, fakes } = await mountTaskPage(aTask(), PERMS);
     await openMenu(fixture, el);
-    await click(fixture, q(el, '[data-action=COMPLETE]'));
+    await click(fixture, q(el, '[data-option=COMPLETE]'));
 
     expect(q(body(), '[data-bulk-body]')!.textContent!.replace(/\s+/g, ' ')).toContain(
       'You have 2 steps not completed. Do you want to mark them all completed?',
@@ -258,7 +337,7 @@ describe('TaskDetailPage complete', () => {
   it('cancelling the bulk dialog changes nothing', async () => {
     const { fixture, el, fakes } = await mountTaskPage(aTask(), PERMS);
     await openMenu(fixture, el);
-    await click(fixture, q(el, '[data-action=COMPLETE]'));
+    await click(fixture, q(el, '[data-option=COMPLETE]'));
     await click(fixture, dialogButton('Cancel')!);
     expect(fakes.tasks['completeTask']).not.toHaveBeenCalled();
     expect(q(body(), '[data-bulk-body]')).toBeNull();
@@ -274,7 +353,7 @@ describe('TaskDetailPage complete', () => {
       tasks: { getTaskCompletionCheck: vi.fn().mockReturnValue(ok(check)) },
     });
     await openMenu(fixture, el);
-    await click(fixture, q(el, '[data-action=COMPLETE]'));
+    await click(fixture, q(el, '[data-option=COMPLETE]'));
 
     expect(q(body(), '[data-blocked-body]')!.textContent).toContain(
       'These steps need required information first',
@@ -307,7 +386,7 @@ describe('TaskDetailPage complete', () => {
       },
     });
     await openMenu(fixture, el);
-    await click(fixture, q(el, '[data-action=COMPLETE]'));
+    await click(fixture, q(el, '[data-option=COMPLETE]'));
     await click(fixture, dialogButton('Mark all completed and finish task')!);
     expect(q(body(), '[data-blocked-body]')).not.toBeNull();
   });
@@ -326,7 +405,7 @@ describe('TaskDetailPage complete', () => {
       },
     });
     await openMenu(fixture, el);
-    await click(fixture, q(el, '[data-action=COMPLETE]'));
+    await click(fixture, q(el, '[data-option=COMPLETE]'));
     await click(fixture, dialogButton('Mark all completed and finish task')!);
 
     expect(fakes.tasks['completeTask']).toHaveBeenCalledTimes(1);
@@ -340,7 +419,7 @@ describe('TaskDetailPage complete', () => {
       ['Task.View', 'Task.Complete'],
     );
     await openMenu(fixture, el);
-    await click(fixture, q(el, '[data-action=COMPLETE]'));
+    await click(fixture, q(el, '[data-option=COMPLETE]'));
     expect(q(body(), '[data-no-execute]')).not.toBeNull();
     expect(dialogButton('Mark all completed and finish task')).toBeUndefined();
   });
@@ -419,7 +498,7 @@ describe('TaskDetailPage tabs and states', () => {
       },
     });
     await openMenu(fixture, el);
-    await click(fixture, q(el, '[data-action=HOLD]'));
+    await click(fixture, q(el, '[data-option=HOLD]'));
     const area = body().querySelector<HTMLTextAreaElement>('#task-reason')!;
     area.value = 'Because';
     area.dispatchEvent(new Event('input'));
@@ -450,14 +529,14 @@ describe('TaskDetailPage tabs and states', () => {
       },
     });
     await openMenu(fixture, el);
-    await click(fixture, q(el, '[data-action=RESUME]'));
+    await click(fixture, q(el, '[data-option=RESUME]'));
     expect(fakes.tasks['getTask']).toHaveBeenCalledTimes(2);
   });
 
   it('reports unsaved edits to the leave guard', async () => {
     const { fixture, el } = await mountTaskPage(aTask());
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
-    await click(fixture, q(el, '[data-edit-details]'));
+    await click(fixture, q(el, '[data-edit]'));
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
     const title = q(el, '#td-title') as HTMLInputElement;
     title.value = 'New title';

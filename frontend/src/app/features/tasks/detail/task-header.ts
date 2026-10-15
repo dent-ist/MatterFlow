@@ -1,31 +1,58 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   ElementRef,
+  computed,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
-import { TaskTransitionOption } from '../../../api/generated/api-client';
+import {
+  TaskQueueRow,
+  TaskResponse,
+  TaskTransitionOption,
+} from '../../../api/generated/api-client';
+import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { DueLabelPipe } from '../../../shared/pipes/due-label.pipe';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { StatusBadge } from '../../../shared/ui/status-badge';
-import { ACTION_LABELS, TaskDetailStore } from './task-detail.store';
+import { TaskDetailStore } from './task-detail.store';
 import { Crumb, PageHeader } from '../../../shared/ui/page-header';
 
-const BLOCKED_TEXT: Readonly<Record<string, string>> = {
-  MATTER_INACTIVE: "Matter is inactive. This task can't be reopened.",
-};
+/** The fields of a queue row that the inline editors read, taken from the Task. */
+function rowOfTask(t: TaskResponse): TaskQueueRow {
+  return {
+    taskId: t.taskId,
+    taskNumber: t.taskNumber,
+    title: t.title,
+    matterId: t.matter.matterId,
+    matterIsActive: t.matter.isActive,
+    priority: t.priority,
+    status: t.status,
+    statusLabel: t.statusLabel,
+    assignedPod: t.assignedPod,
+    assignedUser: t.assignedUser,
+    isAsap: t.isAsap,
+    isOverdue: t.isOverdue,
+    updatedAtUtc: t.modifiedAtUtc,
+    completedAtUtc: t.completedAtUtc,
+    statusChangedAtUtc: t.statusChangedAtUtc,
+    rowVersion: t.rowVersion,
+  } as TaskQueueRow;
+}
 
 /**
  * Task header (UX S10): number, title, status, priority, due or ASAP, Pod and assignee, Matter reference with copy button
- * and workflow, plus the actions the server allows. The Change status menu lists only the transitions in
- * `allowedActions`; ones the caller lacks permission for are left out, ones blocked by the Matter are disabled with the reason.
+ * and workflow. Status, Priority and Assignee are the same inline menus as in the work tables (`mf-row-edit`) for users who
+ * may change them; the status menu lists only the transitions in `allowedActions` (ones the caller lacks permission for are
+ * left out, ones blocked by the Matter are disabled with the reason). One Edit button opens the Details form for the other
+ * fields. A user who can change nothing sees a "View only" line.
  */
 @Component({
   selector: 'mf-task-header',
-  imports: [PageHeader, MatterRef, PriorityBadge, StatusBadge, DueLabelPipe],
+  imports: [PageHeader, RowEdit, MatterRef, PriorityBadge, StatusBadge, DueLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -36,66 +63,40 @@ const BLOCKED_TEXT: Readonly<Record<string, string>> = {
             <span class="pg-mono" data-task-number>{{ t.taskNumber }}</span>
             <span data-task-title>{{ t.title }}</span>
           </span>
-          <div mfActions class="mf-contents">
-            @if (t.allowedActions.canEdit) {
-              <button type="button" class="mf-btn" data-edit (click)="edit()">Edit</button>
-            }
-            @if (items().length > 0) {
-              <div class="menu">
-                <button
-                  type="button"
-                  class="mf-btn mf-btn--primary"
-                  data-status-menu
-                  aria-haspopup="menu"
-                  [attr.aria-expanded]="open()"
-                  [attr.aria-controls]="open() ? 'task-status-menu' : null"
-                  [disabled]="store.busy()"
-                  (click)="toggle()"
-                  (keydown)="onMenuKey($event)"
-                >
-                  Change status <i class="pi pi-chevron-down" aria-hidden="true"></i>
-                </button>
-                @if (open()) {
-                  <ul
-                    class="menu__list"
-                    id="task-status-menu"
-                    role="menu"
-                    aria-label="Change status"
-                  >
-                    @for (o of items(); track o.action) {
-                      <li role="none">
-                        <button
-                          type="button"
-                          role="menuitem"
-                          class="menu__item"
-                          [attr.data-action]="o.action"
-                          [disabled]="!o.permitted"
-                          [attr.aria-describedby]="o.permitted ? null : 'menu-reason-' + o.action"
-                          (click)="choose(o)"
-                          (keydown)="onMenuKey($event)"
-                        >
-                          {{ label(o) }}
-                        </button>
-                        @if (!o.permitted) {
-                          <span class="menu__reason" [id]="'menu-reason-' + o.action">{{
-                            reason(o)
-                          }}</span>
-                        }
-                      </li>
-                    }
-                  </ul>
-                }
-              </div>
-            }
-          </div>
+          @if (t.allowedActions.canEdit && !store.editing()) {
+            <button mfActions type="button" class="mf-btn" data-edit (click)="edit()">Edit</button>
+          }
 
           <div class="th__meta">
-            <mf-status-badge [code]="t.status" [label]="t.statusLabel" />
-            <mf-priority-badge
-              [priorityId]="t.priority.priorityId"
-              [label]="t.priority.label"
-              [color]="t.priority.color"
-            />
+            <span data-status>
+              @if (statusEditable()) {
+                <mf-row-edit
+                  field="status"
+                  [row]="row()"
+                  [transitions]="items()"
+                  [statusDelegated]="true"
+                  (statusAction)="store.requestAction($event)"
+                />
+              } @else {
+                <mf-status-badge [code]="t.status" [label]="t.statusLabel" />
+              }
+            </span>
+            <span data-priority>
+              @if (priorityEditable()) {
+                <mf-row-edit
+                  field="priority"
+                  [row]="row()"
+                  (rowChange)="override.set({ basis: t, row: $event })"
+                  (taskChange)="saved($event)"
+                />
+              } @else {
+                <mf-priority-badge
+                  [priorityId]="t.priority.priorityId"
+                  [label]="t.priority.label"
+                  [color]="t.priority.color"
+                />
+              }
+            </span>
             <span data-due
               ><span class="pg-label">Due:</span>
               {{ { dueDate: t.dueDate, dueAtUtc: t.dueAtUtc } | dueLabel: t.status }}</span
@@ -105,8 +106,17 @@ const BLOCKED_TEXT: Readonly<Record<string, string>> = {
             >
             <span data-assignee
               ><span class="pg-label">Assignee:</span>
-              {{ t.assignedUser?.displayName ?? 'Unassigned' }}</span
-            >
+              @if (assigneeEditable()) {
+                <mf-row-edit
+                  field="assignee"
+                  [row]="row()"
+                  (rowChange)="override.set({ basis: t, row: $event })"
+                  (taskChange)="saved($event)"
+                />
+              } @else {
+                {{ t.assignedUser?.displayName ?? 'Unassigned' }}
+              }
+            </span>
             <span class="th__matter" data-matter
               ><span class="pg-label">Matter:</span>
               <mf-matter-ref
@@ -126,6 +136,12 @@ const BLOCKED_TEXT: Readonly<Record<string, string>> = {
               ></span
             >
           </div>
+          @if (store.viewOnly()) {
+            <p class="th__view-only" data-view-only>
+              <i class="pi pi-eye" aria-hidden="true"></i>
+              View only: you don't have permission to edit tasks.
+            </p>
+          }
         </mf-page-header>
       </div>
     }
@@ -159,45 +175,8 @@ const BLOCKED_TEXT: Readonly<Record<string, string>> = {
       align-items: center;
       gap: var(--mf-s1);
     }
-    .menu {
-      position: relative;
-    }
-    .menu__list {
-      position: absolute;
-      right: 0;
-      z-index: 5;
-      min-width: 14rem;
-      margin: var(--mf-s1) 0 0;
-      padding: var(--mf-s1);
-      list-style: none;
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-1);
-    }
-    .menu__item {
-      display: block;
-      width: 100%;
-      min-height: var(--mf-target-min);
-      padding: 0 var(--mf-s3);
-      border: 0;
-      background: transparent;
-      color: var(--mf-text);
-      font: inherit;
-      text-align: left;
-      cursor: pointer;
-    }
-    .menu__item:hover:not(:disabled),
-    .menu__item:focus-visible {
-      background: var(--mf-surface-alt);
-    }
-    .menu__item:disabled {
-      color: var(--mf-text-muted);
-      cursor: not-allowed;
-    }
-    .menu__reason {
-      display: block;
-      padding: 0 var(--mf-s3) var(--mf-s2);
+    .th__view-only {
+      margin: var(--mf-s2) 0 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
@@ -206,8 +185,42 @@ const BLOCKED_TEXT: Readonly<Record<string, string>> = {
 export class TaskHeader {
   protected readonly store = inject(TaskDetailStore);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private wasEditing = false;
 
-  protected readonly open = signal(false);
+  constructor() {
+    // The Edit button is hidden while the form is open; when the form closes, focus goes back to it.
+    effect(() => {
+      const editing = this.store.editing();
+      untracked(() => {
+        if (this.wasEditing && !editing) {
+          setTimeout(() =>
+            this.host.nativeElement.querySelector<HTMLElement>('[data-edit]')?.focus(),
+          );
+        }
+        this.wasEditing = editing;
+      });
+    });
+  }
+
+  /** A change made from a chip, shown at once; it only counts while the Task it was made on is still the one on screen. */
+  protected readonly override = signal<{ basis: TaskResponse; row: TaskQueueRow } | null>(null);
+
+  protected readonly row = computed<TaskQueueRow>(() => {
+    const t = this.store.task()!;
+    const o = this.override();
+    return o && o.basis === t ? o.row : rowOfTask(t);
+  });
+
+  // While the Details form is open the chips are plain: a change from here would make the form's version stale.
+  protected readonly statusEditable = computed(
+    () => !this.store.editing() && this.items().length > 0,
+  );
+  protected readonly priorityEditable = computed(
+    () => !this.store.editing() && !!this.store.task()?.allowedActions.canSetPriority,
+  );
+  protected readonly assigneeEditable = computed(
+    () => !this.store.editing() && !!this.store.task()?.allowedActions.canAssign,
+  );
 
   /** `Tasks > 00343-00012 Merger Review > TSK-1`: every segment before the current task is a link. */
   protected readonly crumbs = computed<Crumb[]>(() => {
@@ -227,61 +240,15 @@ export class TaskHeader {
     ),
   );
 
-  protected label(o: TaskTransitionOption): string {
-    return ACTION_LABELS[o.action] ?? o.action;
-  }
-
-  protected reason(o: TaskTransitionOption): string {
-    return BLOCKED_TEXT[o.blockedReason ?? ''] ?? "This action isn't available right now.";
-  }
-
-  protected toggle(): void {
-    this.open.update((v) => !v);
-    if (this.open()) queueMicrotask(() => this.items_()[0]?.focus());
-  }
-
-  protected async choose(o: TaskTransitionOption): Promise<void> {
-    this.open.set(false);
-    this.host.nativeElement.querySelector<HTMLElement>('[data-status-menu]')?.focus();
-    await this.store.requestAction(o.action);
+  /** The server's answer to a Priority or Assignee change (or the refreshed Task after a conflict). */
+  protected saved(task: TaskResponse): void {
+    this.store.task.set(task);
+    this.store.warnings.set(task.warnings ?? []);
+    this.store.conflict.set(false);
   }
 
   protected edit(): void {
     this.store.tab.set('details');
     this.store.editing.set(true);
-  }
-
-  protected onMenuKey(event: KeyboardEvent): void {
-    if (!this.open()) {
-      if (
-        event.key === 'ArrowDown' &&
-        (event.target as HTMLElement).dataset['statusMenu'] !== undefined
-      ) {
-        event.preventDefault();
-        this.toggle();
-      }
-      return;
-    }
-    const list = this.items_().filter((b) => !b.disabled);
-    const index = list.indexOf(document.activeElement as HTMLButtonElement);
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      this.open.set(false);
-      this.host.nativeElement.querySelector<HTMLElement>('[data-status-menu]')?.focus();
-    } else if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      list[(index + 1) % list.length]?.focus();
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      list[(index - 1 + list.length) % list.length]?.focus();
-    } else if (event.key === 'Tab') {
-      this.open.set(false);
-    }
-  }
-
-  private items_(): HTMLButtonElement[] {
-    return Array.from(
-      this.host.nativeElement.querySelectorAll<HTMLButtonElement>('[role=menuitem]'),
-    );
   }
 }

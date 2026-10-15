@@ -11,6 +11,7 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { Permission } from '../../core/auth/permissions';
 import { apiError } from '../../core/lookups/lookups-testing';
 import { NotificationService } from '../../core/notify/notification.service';
+import { UndoService } from '../../core/notify/undo.service';
 import { InlineField } from './inline-edit';
 import { RowEdit } from './row-edit';
 import { aRow, provideLookups } from './work-queue-testing';
@@ -35,7 +36,12 @@ describe('RowEdit', () => {
   let tasks: Record<string, ReturnType<typeof vi.fn>>;
   let pods: { getPod: ReturnType<typeof vi.fn> };
   let users: { lookupUsers: ReturnType<typeof vi.fn> };
-  let notify: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
+  let notify: {
+    success: ReturnType<typeof vi.fn>;
+    error: ReturnType<typeof vi.fn>;
+    info: ReturnType<typeof vi.fn>;
+  };
+  let undo: UndoService;
   let emitted: TaskQueueRow[];
   const el = () => fixture.nativeElement as HTMLElement;
   const trigger = () => el().querySelector<HTMLButtonElement>('[data-inline-trigger]')!;
@@ -80,7 +86,7 @@ describe('RowEdit', () => {
       ),
     };
     users = { lookupUsers: vi.fn(() => of([{ userId: 8, displayName: 'Any Person' }])) };
-    notify = { success: vi.fn(), error: vi.fn() };
+    notify = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
     TestBed.configureTestingModule({
       providers: [
         ...provideLookups(),
@@ -92,6 +98,8 @@ describe('RowEdit', () => {
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();
+    undo = TestBed.inject(UndoService);
+    undo.dismiss();
     fixture = TestBed.createComponent(RowEdit);
     fixture.componentRef.setInput('field', field);
     fixture.componentRef.setInput('row', row);
@@ -140,7 +148,112 @@ describe('RowEdit', () => {
     expect(emitted[0].priority.priorityId).toBe(3);
     expect(emitted[0].rowVersion).toBe('AAAA');
     expect(emitted[1].rowVersion).toBe('NEW-VERSION');
-    expect(notify.success).toHaveBeenCalledTimes(1);
+    // Priority and Assignee offer Undo instead of a plain success toast.
+    expect(notify.success).not.toHaveBeenCalled();
+    expect(undo.current()?.message).toBe('TSK-1042 priority set to Normal.');
+  });
+
+  it('Undo puts the previous priority back with the fresh rowVersion', async () => {
+    await create('priority', aRow());
+    await open();
+    await pick('3');
+    const after = taskOf(aRow(), {
+      priority: { priorityId: 3, label: 'Low', color: 'low', sortOrder: 3 },
+      rowVersion: 'V2',
+    });
+    tasks['getTask'].mockReturnValue(of(after));
+    tasks['setTaskPriority'].mockClear();
+    tasks['setTaskPriority'].mockReturnValue(of(taskOf(aRow(), { rowVersion: 'V3' })));
+
+    await undo.run();
+
+    expect(tasks['setTaskPriority']).toHaveBeenCalledWith(1042, {
+      rowVersion: 'V2',
+      priorityId: 1,
+    });
+    expect(emitted.at(-1)!.rowVersion).toBe('V3');
+    expect(notify.success).toHaveBeenCalledWith('TSK-1042 priority back to Critical.');
+    expect(undo.current()).toBeNull();
+  });
+
+  it('Undo does not overwrite a priority that was changed again', async () => {
+    await create('priority', aRow());
+    await open();
+    await pick('3');
+    tasks['getTask'].mockReturnValue(
+      of(
+        taskOf(aRow(), {
+          priority: { priorityId: 2, label: 'High', color: 'high', sortOrder: 2 },
+          rowVersion: 'V9',
+        }),
+      ),
+    );
+    tasks['setTaskPriority'].mockClear();
+
+    await undo.run();
+
+    expect(tasks['setTaskPriority']).not.toHaveBeenCalled();
+    expect(notify.info).toHaveBeenCalledWith(expect.stringContaining('Not undone'));
+    expect(emitted.at(-1)!.priority.priorityId).toBe(2);
+  });
+
+  it('Undo that hits a rowVersion conflict says so and refreshes the row', async () => {
+    await create('priority', aRow());
+    await open();
+    await pick('3');
+    tasks['getTask'].mockReturnValue(
+      of(
+        taskOf(aRow(), {
+          priority: { priorityId: 3, label: 'Low', color: 'low', sortOrder: 3 },
+          rowVersion: 'V2',
+        }),
+      ),
+    );
+    tasks['setTaskPriority'].mockReturnValue(
+      throwError(() => apiError(409, 'CONCURRENCY_CONFLICT', 'changed')),
+    );
+
+    await undo.run();
+
+    expect(notify.error).toHaveBeenCalledWith(expect.stringContaining("Couldn't undo"));
+    expect(emitted.at(-1)!.rowVersion).toBe('V2');
+  });
+
+  it('Undo of an assignment puts back the previous person', async () => {
+    await create('assignee', aRow());
+    await open();
+    await pick('4');
+    tasks['getTask'].mockReturnValue(
+      of(
+        taskOf(aRow(), {
+          assignedUser: { userId: 4, displayName: 'Sam Kim', isActive: true },
+          rowVersion: 'V2',
+        }),
+      ),
+    );
+    tasks['assignTask'].mockClear();
+    tasks['assignTask'].mockReturnValue(of(taskOf(aRow(), { rowVersion: 'V3' })));
+
+    await undo.run();
+
+    expect(tasks['assignTask']).toHaveBeenCalledWith(1042, {
+      rowVersion: 'V2',
+      podId: 5,
+      userId: aRow().assignedUser?.userId,
+    });
+  });
+
+  it('the Undo offer expires after 8 seconds', async () => {
+    vi.useFakeTimers();
+    try {
+      undo.offer('x', async () => undefined);
+      vi.advanceTimersByTime(7900);
+      expect(undo.current()).not.toBeNull();
+      vi.advanceTimersByTime(200);
+      expect(undo.current()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('puts the old value back and toasts when the save fails', async () => {
@@ -186,7 +299,7 @@ describe('RowEdit', () => {
     expect(emitted[0].status).toBe('IN_PROGRESS');
     expect(emitted[0].assignedUser?.displayName).toBe('Sam Kim');
     expect(emitted[1].status).toBe('IN_PROGRESS');
-    expect(notify.success).toHaveBeenCalledWith(expect.stringContaining('moved to In Progress'));
+    expect(undo.current()?.message).toContain('moved to In Progress');
   });
 
   it('assignee without a Pod searches all users', async () => {

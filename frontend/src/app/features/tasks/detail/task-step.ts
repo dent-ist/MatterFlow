@@ -403,7 +403,8 @@ export class TaskStep {
   /** Why actions are unavailable, when they are (hold, closed, permission). */
   protected readonly blockedReason = computed(() => {
     const task = this.store.task();
-    if (!task || this.locked()) return null;
+    // A view-only user gets the one "View only" line in the header instead of a reason on every step (UAT2-18).
+    if (!task || this.locked() || this.store.viewOnly()) return null;
     const a = task.allowedActions;
     if (!this.resolved() && !a.canExecuteSteps) {
       if (task.status === 'ON_HOLD')

@@ -154,9 +154,11 @@ describe('Workflow tab: ordered stepper', () => {
 describe('Workflow tab: read-only viewers (UAT2-18)', () => {
   afterEach(() => TestBed.resetTestingModule());
 
-  it('explains the disabled Complete task button instead of describing a dialog the viewer cannot reach', async () => {
+  it('shows a view-only user no Complete task block, no instructions to complete and no edit-oriented notice', async () => {
     const { el } = await mountTaskPage(
       aTask({
+        status: 'ON_HOLD',
+        statusLabel: 'On Hold',
         workflow: { steps: orderedSteps() } as never,
         allowedActions: allowed({
           canExecuteSteps: false,
@@ -170,12 +172,31 @@ describe('Workflow tab: read-only viewers (UAT2-18)', () => {
       'workflow',
     );
 
+    expect(q(el, '[data-complete-task]')).toBeNull();
+    expect(q(el, '[data-complete-task-button]')).toBeNull();
+    expect(el.textContent).not.toContain('You will be asked');
+    expect(el.textContent).not.toContain('Resume it');
+    expect(q(el, '[data-view-only]')!.textContent).toContain('View only');
+  });
+
+  it('keeps the explained disabled Complete button for a user who works steps but cannot complete tasks', async () => {
+    const { el } = await mountTaskPage(
+      aTask({
+        workflow: { steps: orderedSteps() } as never,
+        allowedActions: allowed({
+          transitions: [
+            transition('COMPLETE', { permitted: false, blockedReason: 'PERMISSION_DENIED' }),
+          ],
+        }),
+      }),
+      ['Task.View', 'Workflow.Execute'],
+      {},
+      'workflow',
+    );
+
     const block = q(el, '[data-complete-task]')!;
     expect(block.textContent).toContain("you don't have permission to complete it");
-    expect(block.textContent).not.toContain('You will be asked');
-    const button = q(el, '[data-complete-task-button]') as HTMLButtonElement;
-    expect(button.disabled).toBe(true);
-    expect(button.getAttribute('aria-describedby')).toBe('wf-complete-note');
+    expect((q(el, '[data-complete-task-button]') as HTMLButtonElement).disabled).toBe(true);
   });
 });
 

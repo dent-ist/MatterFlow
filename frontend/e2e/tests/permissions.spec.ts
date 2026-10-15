@@ -217,7 +217,7 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await page.getByRole('button', { name: 'Edit details' }).click();
+    await page.locator('[data-task-header] [data-edit]').click();
     await expect(page.getByLabel('Assignee', { exact: true })).toHaveCount(0);
 
     const asUserApi = await Api.as(user.username);
@@ -249,8 +249,9 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
     await expect(detail.titleText).toHaveText(task.title);
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
     await expect(detail.statusMenu).toHaveCount(0);
+    await expect(page.locator('[data-view-only]')).toContainText('View only');
     await detail.showTab('Workflow');
     await expect(page.locator('[data-start], [data-complete], [data-skip]')).toHaveCount(0);
-    await expect(detail.completeTaskButton).toBeDisabled();
+    await expect(detail.completeTaskButton).toHaveCount(0);
   });
 });

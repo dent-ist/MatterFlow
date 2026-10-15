@@ -88,16 +88,14 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
       <section aria-labelledby="details-h" data-details-tab>
         <div class="dt__head">
           <h2 id="details-h" class="dt__title">Details</h2>
-          @if (!editing() && t.allowedActions.canEdit) {
-            <button type="button" class="mf-btn" data-edit-details (click)="startEdit()">
-              Edit details
-            </button>
-          }
         </div>
 
         @if (store.closed()) {
           <p class="pg-muted" data-readonly-note>
-            This task is {{ t.statusLabel }}. Reopen it to edit.
+            This task is {{ t.statusLabel }}.
+            @if (!store.viewOnly()) {
+              Reopen it to edit.
+            }
           </p>
         }
 
@@ -602,10 +600,6 @@ export class TaskDetailsTab {
     }
   }
 
-  protected startEdit(): void {
-    this.store.editing.set(true);
-  }
-
   private beginEdit(): void {
     const t = this.store.task();
     if (!t) return;
@@ -638,6 +632,7 @@ export class TaskDetailsTab {
     this.formErrors.set([]);
     this.summary.set([]);
     this.store.dirty.set(false);
+    setTimeout(() => this.host.nativeElement.querySelector<HTMLElement>('#td-title')?.focus());
     void this.loadOptions(t.matter.matterId);
   }
 

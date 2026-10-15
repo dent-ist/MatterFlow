@@ -89,7 +89,7 @@ export class TaskDetailPage {
     this.assignee = page.locator('[data-assignee]');
     this.pod = page.locator('[data-pod]');
     this.progress = page.locator('[data-progress]').first();
-    this.statusMenu = page.locator('[data-status-menu]');
+    this.statusMenu = page.locator('[data-task-header] [data-status] [data-inline-trigger]');
   }
 
   async open(taskId: number): Promise<void> {
@@ -111,11 +111,11 @@ export class TaskDetailPage {
     await expect(this.header).toContainText(new RegExp(`\\b${label}\\b`));
   }
 
-  /** Opens the Change status menu and returns the item for an action. */
+  /** Opens the status menu in the header and returns the item for an action. */
   async menuItem(action: TaskAction): Promise<Locator> {
     if ((await this.statusMenu.getAttribute('aria-expanded')) !== 'true')
       await this.statusMenu.click();
-    return this.page.locator(`[data-action="${action}"]`);
+    return this.page.locator(`[data-option="${action}"]`);
   }
 
   async chooseAction(action: TaskAction): Promise<void> {

@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   inject,
   input,
   output,
@@ -13,6 +14,7 @@ import {
   PodsClient,
   TaskQueueRow,
   TaskResponse,
+  TaskTransitionOption,
   TasksClient,
   UsersLookupClient,
 } from '../../api/generated/api-client';
@@ -20,10 +22,17 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { ApiError } from '../../core/http/api-error';
 import { LookupStore } from '../../core/lookups/lookup-store';
 import { NotificationService } from '../../core/notify/notification.service';
+import { UndoService } from '../../core/notify/undo.service';
 import { ACTION_LABELS } from '../../features/tasks/detail/task-detail.store';
 import { PriorityBadge } from '../ui/priority-badge';
 import { StatusBadge } from '../ui/status-badge';
-import { InlineField, StatusAction, rowFromTask, statusChoices } from './inline-edit';
+import {
+  InlineField,
+  MATTER_INACTIVE_TEXT,
+  StatusAction,
+  rowFromTask,
+  statusChoices,
+} from './inline-edit';
 import { InlineMenu, MenuOption } from './inline-menu';
 import { InlineStatusFlow } from './inline-status-flow';
 
@@ -33,6 +42,16 @@ interface Person {
 }
 
 const UNASSIGNED = 'none';
+
+/** What an Undo needs to put a Priority or Assignee change back. */
+interface UndoSpec {
+  field: 'priority' | 'assignee';
+  /** The value this edit set (priority id or user id), to notice when someone changed it again. */
+  applied: number | undefined;
+  /** The value to put back. */
+  previous: number | undefined;
+  previousLabel: string;
+}
 /** Changes that need a dialog (reason, confirmation or the unresolved-steps check). */
 const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN'];
 
@@ -101,10 +120,27 @@ export class RowEdit {
   private readonly pods = inject(PodsClient);
   private readonly users = inject(UsersLookupClient);
   private readonly notify = inject(NotificationService);
+  private readonly undoService = inject(UndoService);
+  private destroyed = false;
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => (this.destroyed = true));
+  }
 
   readonly field = input.required<InlineField>();
   readonly row = input.required<TaskQueueRow>();
+  /** True where the page runs the status changes itself (the Task header), so a status pick is only reported. */
+  readonly statusDelegated = input(false);
+  /**
+   * The server's list of allowed transitions, where the page has it (the Task header). It then decides the status choices
+   * instead of the lifecycle matrix and the caller's permissions.
+   */
+  readonly transitions = input<TaskTransitionOption[] | null>(null);
   readonly rowChange = output<TaskQueueRow>();
+  /** The Task as the server returned it after a change (or after a conflict refresh), for screens that show the whole Task. */
+  readonly taskChange = output<TaskResponse>();
+  /** The picked status action when `statusDelegated` is set. */
+  readonly statusAction = output<StatusAction>();
 
   protected readonly busy = signal(false);
   protected readonly loading = signal(false);
@@ -135,7 +171,23 @@ export class RowEdit {
   protected readonly options = computed<MenuOption[]>(() => {
     const r = this.row();
     switch (this.field()) {
-      case 'status':
+      case 'status': {
+        const server = this.transitions();
+        if (server) {
+          return server
+            .filter((o) => o.permitted || o.blockedReason !== 'PERMISSION_DENIED')
+            .map((o) => ({
+              id: o.action,
+              label: ACTION_LABELS[o.action] ?? o.action,
+              hint: this.lookups.statusLabel(o.targetStatus),
+              disabled: !o.permitted,
+              reason: o.permitted
+                ? undefined
+                : o.blockedReason === 'MATTER_INACTIVE'
+                  ? MATTER_INACTIVE_TEXT
+                  : "This action isn't available right now.",
+            }));
+        }
         return statusChoices(r, (p) => this.auth.has(p)).map((c) => ({
           id: c.action,
           label: ACTION_LABELS[c.action] ?? c.action,
@@ -143,6 +195,7 @@ export class RowEdit {
           disabled: !!c.blockedReason,
           reason: c.blockedReason,
         }));
+      }
       case 'priority': {
         const list = this.lookups
           .activePriorities()
@@ -236,6 +289,12 @@ export class RowEdit {
           },
           (rowVersion) => this.tasks.setTaskPriority(r.taskId, { rowVersion, priorityId: id }),
           () => `${r.taskNumber} priority set to ${option.label}.`,
+          {
+            field: 'priority',
+            applied: id,
+            previous: r.priority.priorityId,
+            previousLabel: r.priority.label,
+          },
         );
         return;
       }
@@ -267,11 +326,21 @@ export class RowEdit {
                 (r.status === 'NEW' && t.status !== 'NEW'
                   ? ` Task moved to ${t.statusLabel}.`
                   : ''),
+          {
+            field: 'assignee',
+            applied: userId,
+            previous: r.assignedUser?.userId,
+            previousLabel: r.assignedUser?.displayName ?? 'Unassigned',
+          },
         );
         return;
       }
       case 'status': {
         const action = option.id as StatusAction;
+        if (this.statusDelegated()) {
+          this.statusAction.emit(action);
+          return;
+        }
         if (DIALOG_ACTIONS.includes(action)) {
           this.flow.set(action);
           return;
@@ -292,6 +361,7 @@ export class RowEdit {
     optimistic: Partial<TaskQueueRow>,
     call: (rowVersion: string) => Observable<TaskResponse>,
     success: (task: TaskResponse) => string,
+    undo?: UndoSpec,
   ): Promise<void> {
     const before = this.row();
     this.busy.set(true);
@@ -299,7 +369,9 @@ export class RowEdit {
     try {
       const task = await firstValueFrom(call(before.rowVersion));
       this.rowChange.emit(rowFromTask(before, task));
-      this.notify.success(success(task));
+      this.taskChange.emit(task);
+      if (undo) this.undoService.offer(success(task), () => this.undoChange(task.taskId, undo));
+      else this.notify.success(success(task));
     } catch (error) {
       this.rowChange.emit(before);
       if (error instanceof ApiError && error.code === 'CONCURRENCY_CONFLICT') {
@@ -318,12 +390,66 @@ export class RowEdit {
   protected async onConflict(basis: TaskQueueRow = this.row()): Promise<void> {
     this.notify.error('Someone else changed this task. The row was refreshed.');
     try {
-      this.rowChange.emit(
-        rowFromTask(basis, await firstValueFrom(this.tasks.getTask(basis.taskId))),
-      );
+      const fresh = await firstValueFrom(this.tasks.getTask(basis.taskId));
+      this.rowChange.emit(rowFromTask(basis, fresh));
+      this.taskChange.emit(fresh);
     } catch {
       /* the row stays as it was; the next list load shows the truth */
     }
+  }
+
+  /**
+   * Undo of a Priority or Assignee edit: reads the Task again for its current rowVersion and puts the previous value back,
+   * unless someone has changed that field since (then nothing is overwritten and the user is told). Reports its own outcome.
+   */
+  private async undoChange(taskId: number, spec: UndoSpec): Promise<void> {
+    const name = spec.field === 'priority' ? 'priority' : 'assignee';
+    try {
+      const fresh = await firstValueFrom(this.tasks.getTask(taskId));
+      const current =
+        spec.field === 'priority' ? fresh.priority.priorityId : fresh.assignedUser?.userId;
+      if (current !== spec.applied) {
+        this.showTask(fresh);
+        this.notify.info(`Not undone: the ${name} of ${fresh.taskNumber} was changed since.`);
+        return;
+      }
+      const updated = await firstValueFrom(
+        spec.field === 'priority'
+          ? this.tasks.setTaskPriority(taskId, {
+              rowVersion: fresh.rowVersion,
+              priorityId: spec.previous as number,
+            })
+          : this.tasks.assignTask(taskId, {
+              rowVersion: fresh.rowVersion,
+              podId: fresh.assignedPod?.podId,
+              userId: spec.previous,
+            }),
+      );
+      this.showTask(updated);
+      this.notify.success(`${updated.taskNumber} ${name} back to ${spec.previousLabel}.`);
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'CONCURRENCY_CONFLICT') {
+        this.notify.error(`Couldn't undo: someone else changed this task. Check it and try again.`);
+        try {
+          this.showTask(await firstValueFrom(this.tasks.getTask(taskId)));
+        } catch {
+          /* the next list load shows the truth */
+        }
+      } else if (!(error instanceof ApiError) || error.hasFieldErrors) {
+        this.notify.error(
+          error instanceof ApiError ? error.message : "We couldn't undo that change. Try again.",
+        );
+      } else {
+        // The HTTP layer toasts the failure; add what it means for the Undo.
+        this.notify.error(`Couldn't undo the ${name} change.`);
+      }
+    }
+  }
+
+  private showTask(task: TaskResponse): void {
+    if (this.destroyed) return;
+    this.rowChange.emit(rowFromTask(this.row(), task));
+    this.taskChange.emit(task);
   }
 
   protected flowDone(): void {

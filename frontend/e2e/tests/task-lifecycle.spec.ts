@@ -5,7 +5,7 @@ import { expect, test } from '../support/fixtures';
 import { TaskApi } from '../support/tasks';
 
 test.describe('Status changes and closed tasks', () => {
-  test('Start moves a new task to In Progress and the Change status menu follows the lifecycle', async ({
+  test('Start moves a new task to In Progress and the status menu follows the lifecycle', async ({
     page,
     seed,
   }) => {
@@ -18,9 +18,9 @@ test.describe('Status changes and closed tasks', () => {
     await detail.chooseAction('START');
     await detail.expectStatus('In Progress');
     await detail.statusMenu.click();
-    await expect(page.locator('[data-action="START"]')).toHaveCount(0);
+    await expect(page.locator('[data-option="START"]')).toHaveCount(0);
     for (const action of ['HOLD', 'COMPLETE', 'CANCEL']) {
-      await expect(page.locator(`[data-action="${action}"]`)).toBeVisible();
+      await expect(page.locator(`[data-option="${action}"]`)).toBeVisible();
     }
   });
 
@@ -130,7 +130,7 @@ test.describe('Status changes and closed tasks', () => {
       'Move it back to In Progress to edit',
     );
     await expect(page.locator('[data-readonly-note]')).toContainText('Reopen it to edit');
-    await expect(page.getByRole('button', { name: 'Edit details' })).toHaveCount(0);
+    await expect(page.locator('[data-task-header] [data-edit]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
 
     const refused = await admin.raw('PUT', `/api/v1/tasks/${task.taskId}`, {
@@ -144,7 +144,7 @@ test.describe('Status changes and closed tasks', () => {
     await page.locator('[data-reopen-task]').click();
     await detail.dialog.getByRole('button', { name: 'Reopen' }).click();
     await detail.expectStatus('In Progress');
-    await page.getByRole('button', { name: 'Edit details' }).click();
+    await page.locator('[data-task-header] [data-edit]').click();
     await page.getByLabel('Title (required)').fill('Edited after reopening');
     await page.getByRole('button', { name: 'Save changes' }).click();
     await expect(detail.titleText).toHaveText('Edited after reopening');
@@ -162,7 +162,7 @@ test.describe('Status changes and closed tasks', () => {
     await expect(page.locator('[data-locked-fields]')).toContainText(
       "Can't be changed after creation",
     );
-    await page.getByRole('button', { name: 'Edit details' }).click();
+    await page.locator('[data-task-header] [data-edit]').click();
     await expect(page.getByRole('combobox', { name: /^(Matter|Task type|Workflow)/ })).toHaveCount(
       0,
     );
