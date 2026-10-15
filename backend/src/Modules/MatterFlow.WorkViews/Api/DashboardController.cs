@@ -16,7 +16,7 @@ namespace MatterFlow.WorkViews.Api;
 /// </summary>
 [ApiController]
 [Route("api/v1/dashboard")]
-public class DashboardController(DashboardService dashboard) : ControllerBase
+public class DashboardController(DashboardService dashboard, DashboardTrendService trend) : ControllerBase
 {
     /// <summary>Gets the Dashboard for a period (<c>periodDays</c>, default 30, max 365) that drives the "completed" and "created" counts.</summary>
     [HttpGet(Name = "GetDashboard")]
@@ -27,6 +27,21 @@ public class DashboardController(DashboardService dashboard) : ControllerBase
     {
         FilterParsing.EnsureKnown(Request.Query.Keys, DashboardQuery.Keys).OrThrow();
         return (await dashboard.GetAsync(query, cancellationToken)).OrThrow();
+    }
+
+    /// <summary>
+    /// The Trends tab: created and completed per local day (the viewer's time zone) for all task types (<c>all</c>, equal to the summary trend) and for each
+    /// <c>taskTypeIds</c> (repeat the parameter, at most 8: 400 <c>TOO_MANY_TYPES</c>; an unknown id: 400 <c>UNKNOWN_TASK_TYPE</c>), plus <c>types</c>, the legend
+    /// of every task type with Tasks in the period or still active with its totals and the Task Queue queries that list them. <c>metric</c> (<c>created</c> or
+    /// <c>completed</c>) computes only that count. Needs the department view.
+    /// </summary>
+    [HttpGet("trend", Name = "GetDashboardTrend")]
+    [Authorize(Policy = "Perm:" + Permissions.Dashboard.ViewDepartment)]
+    [ProducesResponseType<DashboardTrend>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<DashboardTrend>> GetTrend([FromQuery] DashboardTrendQuery query, CancellationToken cancellationToken)
+    {
+        FilterParsing.EnsureKnown(Request.Query.Keys, DashboardTrendQuery.Keys).OrThrow();
+        return (await trend.GetAsync(query, cancellationToken)).OrThrow();
     }
 }
 

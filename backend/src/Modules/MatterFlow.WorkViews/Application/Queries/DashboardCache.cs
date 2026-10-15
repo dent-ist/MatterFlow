@@ -27,7 +27,7 @@ public sealed class WorkloadOptions
 }
 
 /// <summary>
-/// Short server-side output cache of the dashboard (security review 2, SEC2-03). One entry per user, period, time zone, local date and visible
+/// Short server-side output cache of the dashboard summary and trend (security review 2, SEC2-03). One entry per user, period, time zone, local date and visible
 /// sections (Summary, Breakdowns, Trends), so a cached answer is never shown to someone else, never crosses a date change and never outlives a change of the caller's
 /// Dashboard tab rights by more than the cache time. Entries expire after <see cref="DashboardOptions.CacheSeconds"/>; expired entries are
 /// dropped when new ones are added. Only successful results are stored. The cache is per process (each node of a farm keeps its own).
@@ -43,24 +43,30 @@ public sealed class DashboardCache(IOptions<DashboardOptions> options, TimeProvi
 
     public bool Enabled => options.Value.CacheSeconds > 0;
 
-    public bool TryGet(string key, out DashboardSummary summary)
+    public bool TryGet(string key, out DashboardSummary summary) => TryGet<DashboardSummary>(key, out summary);
+
+    public void Set(string key, DashboardSummary summary) => Set<DashboardSummary>(key, summary);
+
+    public bool TryGet<T>(string key, out T value)
+        where T : class
     {
         if (Enabled && _entries.TryGetValue(key, out var entry))
         {
-            if (entry.ExpiresAt > time.GetTimestamp())
+            if (entry.ExpiresAt > time.GetTimestamp() && entry.Value is T found)
             {
-                summary = entry.Summary;
+                value = found;
                 return true;
             }
 
             _entries.TryRemove(new KeyValuePair<string, Entry>(key, entry));
         }
 
-        summary = null!;
+        value = null!;
         return false;
     }
 
-    public void Set(string key, DashboardSummary summary)
+    public void Set<T>(string key, T value)
+        where T : class
     {
         if (!Enabled)
             return;
@@ -75,8 +81,8 @@ public sealed class DashboardCache(IOptions<DashboardOptions> options, TimeProvi
             }
         }
 
-        _entries[key] = new Entry(summary, now + (long)(options.Value.CacheSeconds * (double)time.TimestampFrequency));
+        _entries[key] = new Entry(value, now + (long)(options.Value.CacheSeconds * (double)time.TimestampFrequency));
     }
 
-    private sealed record Entry(DashboardSummary Summary, long ExpiresAt);
+    private sealed record Entry(object Value, long ExpiresAt);
 }

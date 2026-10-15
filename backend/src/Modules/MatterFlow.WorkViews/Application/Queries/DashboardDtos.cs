@@ -74,3 +74,56 @@ public sealed record DashboardSummary(
     [property: Required] IReadOnlyList<DashboardAgingBucket> Aging,
     [property: Required] IReadOnlyList<DashboardTrendPoint> Trend);
 
+
+/// <summary>The request of the Trends tab: the period, the Task Types to draw a line for (at most <see cref="DashboardRules.MaxTrendTypes"/>) and optionally one metric.</summary>
+public class DashboardTrendQuery
+{
+    public static readonly IReadOnlyList<string> Keys = ["periodDays", "taskTypeIds", "metric", "fresh"];
+
+    /// <summary>Length of the period in days, counting today (default 30, 1 to 365).</summary>
+    [FromQuery(Name = "periodDays"), Range(1, DashboardRules.MaxPeriodDays)]
+    public int PeriodDays { get; init; } = DashboardRules.DefaultPeriodDays;
+
+    /// <summary>Task Type ids to return a series for (repeat the parameter, at most 8, active or inactive). The <c>all</c> series and the <c>types</c> legend are always returned.</summary>
+    [FromQuery(Name = "taskTypeIds")]
+    public int[]? TaskTypeIds { get; init; }
+
+    /// <summary><c>created</c> or <c>completed</c>: compute only that count (the other is 0 in every point). Omitted: both.</summary>
+    [FromQuery(Name = "metric")]
+    public string? Metric { get; init; }
+
+    /// <summary>True: skip the short server-side cache and compute the figures now.</summary>
+    [FromQuery(Name = "fresh")]
+    public bool Fresh { get; init; }
+}
+
+/// <summary>The daily series of one Task Type (same days, same bucketing as <see cref="DashboardTrend.All"/>).</summary>
+public sealed record DashboardTypeSeries([property: Required] int TaskTypeId, [property: Required] IReadOnlyList<DashboardTrendPoint> Points);
+
+/// <summary>One Task Type of the Trends legend with its totals for the period and the Task Queue queries that list exactly those Tasks.</summary>
+/// <param name="IconKey">Key of the type's icon in the icon library.</param>
+public sealed record DashboardTrendType(
+    [property: Required] int Id,
+    [property: Required] string Name,
+    [property: Required] string IconKey,
+    [property: Required] bool IsActive,
+    [property: Required] int Created,
+    [property: Required] int Completed,
+    [property: Required] string CreatedQuery,
+    [property: Required] string CompletedQuery);
+
+/// <summary>
+/// Created and completed per local day for the whole department (<c>all</c>, equal to the trend of the summary) and for each requested Task Type,
+/// plus the legend: every Task Type that has Tasks in the period or is active, largest first. Counts only, never per person.
+/// </summary>
+/// <param name="Metric">The metric asked for (<c>created</c> or <c>completed</c>) or null for both; the other count is 0 when set.</param>
+public sealed record DashboardTrend(
+    [property: Required] DashboardPeriod Period,
+    [property: Required] string TimeZone,
+    [property: Required] DateTime GeneratedAtUtc,
+    string? Metric,
+    [property: Required] IReadOnlyList<DashboardTrendPoint> All,
+    [property: Required] IReadOnlyList<DashboardTypeSeries> ByTaskType,
+    [property: Required] IReadOnlyList<DashboardTrendType> Types,
+    [property: Required] string CreatedQuery,
+    [property: Required] string CompletedQuery);

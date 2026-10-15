@@ -15,6 +15,11 @@ public static class DashboardRules
     public const int DefaultPeriodDays = 30;
     public const int MaxPeriodDays = 365;
 
+    /// <summary>Most Task Types the Trends tab draws a line for at once.</summary>
+    public const int MaxTrendTypes = 8;
+
+    public static readonly IReadOnlyList<string> TrendMetrics = ["created", "completed"];
+
     /// <summary>Task Types shown individually before the rest is folded into "Other task types".</summary>
     public const int TopTypes = 8;
 
@@ -127,5 +132,69 @@ public static class DashboardRules
         return [.. Enumerable.Range(0, days).Select(i => new DashboardTrendPoint(from.AddDays(i), createdCounts[i], completedCounts[i]))];
     }
 
+    /// <summary>
+    /// The daily series per Task Type: one point per local day from <paramref name="from"/> to <paramref name="today"/>, with the same day assignment as
+    /// <see cref="Trend"/>. Returns the department series (<c>All</c>, the sum of every type, so it equals <see cref="Trend"/> for the same instants), the
+    /// series of each id in <paramref name="wanted"/> (in that order, zeros when the type has no Task) and the in-period totals of every type that has any.
+    /// </summary>
+    public static TrendByType TrendByTaskType(
+        DateOnly from,
+        DateOnly today,
+        IEnumerable<(int TypeId, DateTime At)> created,
+        IEnumerable<(int TypeId, DateTime At)> completed,
+        Func<DateOnly, DateTime> startOfDayUtc,
+        IReadOnlyList<int> wanted)
+    {
+        ArgumentNullException.ThrowIfNull(created);
+        ArgumentNullException.ThrowIfNull(completed);
+        ArgumentNullException.ThrowIfNull(startOfDayUtc);
+        ArgumentNullException.ThrowIfNull(wanted);
+        var days = today.DayNumber - from.DayNumber + 1;
+        if (days <= 0)
+            return new TrendByType([], [.. wanted.Select(id => new DashboardTypeSeries(id, []))], new Dictionary<int, (int, int)>());
+
+        var edges = Enumerable.Range(0, days + 1).Select(i => startOfDayUtc(from.AddDays(i)).Ticks).ToArray();
+        var perType = new Dictionary<int, (int[] Created, int[] Completed)>();
+        var all = (Created: new int[days], Completed: new int[days]);
+
+        (int[] Created, int[] Completed) Row(int id)
+        {
+            if (!perType.TryGetValue(id, out var row))
+                perType[id] = row = (new int[days], new int[days]);
+            return row;
+        }
+
+        void Count(IEnumerable<(int TypeId, DateTime At)> items, bool isCreated)
+        {
+            foreach (var (typeId, at) in items)
+            {
+                var found = Array.BinarySearch(edges, at.Ticks);
+                var day = found >= 0 ? found : ~found - 1;
+                if (day < 0 || day >= days)
+                    continue;
+                var row = Row(typeId);
+                (isCreated ? row.Created : row.Completed)[day]++;
+                (isCreated ? all.Created : all.Completed)[day]++;
+            }
+        }
+
+        Count(created, true);
+        Count(completed, false);
+
+        IReadOnlyList<DashboardTrendPoint> Points(int[] c, int[] d) => [.. Enumerable.Range(0, days).Select(i => new DashboardTrendPoint(from.AddDays(i), c[i], d[i]))];
+
+        var series = wanted.Select(id => perType.TryGetValue(id, out var row)
+            ? new DashboardTypeSeries(id, Points(row.Created, row.Completed))
+            : new DashboardTypeSeries(id, Points(new int[days], new int[days]))).ToList();
+        var totals = perType.ToDictionary(p => p.Key, p => (p.Value.Created.Sum(), p.Value.Completed.Sum()));
+        return new TrendByType(Points(all.Created, all.Completed), series, totals);
+    }
+
     private static IEnumerable<string> StatusParams(params TaskStatusCode[] statuses) => statuses.Select(s => "status=" + s.ToCode());
 }
+
+/// <summary>Result of <see cref="DashboardRules.TrendByTaskType"/>: the department series, the requested type series and every type's in-period totals.</summary>
+public sealed record TrendByType(
+    IReadOnlyList<DashboardTrendPoint> All,
+    IReadOnlyList<DashboardTypeSeries> Series,
+    IReadOnlyDictionary<int, (int Created, int Completed)> Totals);

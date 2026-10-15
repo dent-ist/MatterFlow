@@ -8340,6 +8340,14 @@ export interface IDashboardClient {
      * @return OK
      */
     getDashboard(periodDays?: number | undefined, fresh?: boolean | undefined): Observable<DashboardSummary>;
+    /**
+     * @param periodDays (optional) 
+     * @param taskTypeIds (optional) 
+     * @param metric (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getDashboardTrend(periodDays?: number | undefined, taskTypeIds?: number[] | undefined, metric?: string | undefined, fresh?: boolean | undefined): Observable<DashboardTrend>;
 }
 
 @Injectable({
@@ -8405,6 +8413,76 @@ export class DashboardClient implements IDashboardClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DashboardSummary;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param periodDays (optional) 
+     * @param taskTypeIds (optional) 
+     * @param metric (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getDashboardTrend(periodDays?: number | undefined, taskTypeIds?: number[] | undefined, metric?: string | undefined, fresh?: boolean | undefined): Observable<DashboardTrend> {
+        let url_ = this.baseUrl + "/api/v1/dashboard/trend?";
+        if (periodDays === null)
+            throw new globalThis.Error("The parameter 'periodDays' cannot be null.");
+        else if (periodDays !== undefined)
+            url_ += "periodDays=" + encodeURIComponent("" + periodDays) + "&";
+        if (taskTypeIds === null)
+            throw new globalThis.Error("The parameter 'taskTypeIds' cannot be null.");
+        else if (taskTypeIds !== undefined)
+            taskTypeIds && taskTypeIds.forEach(item => { url_ += "taskTypeIds=" + encodeURIComponent("" + item) + "&"; });
+        if (metric === null)
+            throw new globalThis.Error("The parameter 'metric' cannot be null.");
+        else if (metric !== undefined)
+            url_ += "metric=" + encodeURIComponent("" + metric) + "&";
+        if (fresh === null)
+            throw new globalThis.Error("The parameter 'fresh' cannot be null.");
+        else if (fresh !== undefined)
+            url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetDashboardTrend(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetDashboardTrend(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<DashboardTrend>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<DashboardTrend>;
+        }));
+    }
+
+    protected processGetDashboardTrend(response: HttpResponseBase): Observable<DashboardTrend> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DashboardTrend;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -11061,10 +11139,44 @@ export interface DashboardSummary {
     [key: string]: any;
 }
 
+export interface DashboardTrend {
+    period: DashboardPeriod;
+    timeZone: string;
+    generatedAtUtc: string;
+    metric: string | undefined;
+    all: DashboardTrendPoint[];
+    byTaskType: DashboardTypeSeries[];
+    types: DashboardTrendType[];
+    createdQuery: string;
+    completedQuery: string;
+
+    [key: string]: any;
+}
+
 export interface DashboardTrendPoint {
     date: string;
     created: number;
     completed: number;
+
+    [key: string]: any;
+}
+
+export interface DashboardTrendType {
+    id: number;
+    name: string;
+    iconKey: string;
+    isActive: boolean;
+    created: number;
+    completed: number;
+    createdQuery: string;
+    completedQuery: string;
+
+    [key: string]: any;
+}
+
+export interface DashboardTypeSeries {
+    taskTypeId: number;
+    points: DashboardTrendPoint[];
 
     [key: string]: any;
 }

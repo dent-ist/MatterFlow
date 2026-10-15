@@ -14,6 +14,7 @@ public static class WorkViewsModule
         services.AddControllers().AddApplicationPart(typeof(WorkViewsModule).Assembly);
         services.AddScoped<TaskQueueService>();
         services.AddScoped<DashboardService>();
+        services.AddScoped<DashboardTrendService>();
         services.AddScoped<SwimlaneService>();
         services.AddScoped<WorkloadService>();
         services.Configure<DashboardOptions>(configuration.GetSection(DashboardOptions.SectionName));

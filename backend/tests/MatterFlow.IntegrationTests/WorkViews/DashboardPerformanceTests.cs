@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using MatterFlow.IntegrationTests.Fixtures;
 using MatterFlow.IntegrationTests.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -19,6 +20,7 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
     private DatabaseApiFactory _factory = null!;
     private WebApplicationFactory<Program> _logged = null!;
     private readonly CommandLog _commands = new();
+    private readonly List<int> _typeIds = [];
 
     public async Task InitializeAsync()
     {
@@ -27,8 +29,14 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
         var world = await h.CreateWorldAsync();
         var admin = await h.UserIdAsync(DatabaseApiFactory.AdminAccount);
         var pod = await h.CreatePodAsync("Pod Perf", admin);
-        await h.ExecuteAsync(SeedSql(world, admin, pod));
+
+        // The Tasks are spread over eight Task Types (a Task cannot change its type after creation, so they are inserted with it).
+        _typeIds.Add(world.TaskTypeId);
+        for (var i = 1; i < 8; i++)
+            _typeIds.Add(await h.CreateTaskTypeAsync("Perf type " + i, [world.OrderedWorkflowId], withForm: false));
+        await h.ExecuteAsync(SeedSql(world, admin, pod, _typeIds));
         (await h.ScalarAsync("SELECT COUNT(*) AS [Value] FROM dbo.Task")).ShouldBe(TaskCount);
+
 
         _logged = _factory.WithWebHostBuilder(builder => builder.ConfigureServices(services => services.AddLogging(logging =>
         {
@@ -44,7 +52,7 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
     }
 
     // Per ten Tasks: 8 NEW/IN_PROGRESS/ON_HOLD-ish open ones (rn % 10 in 0..7, 9) and one COMPLETED (rn % 10 = 8): 4,500 open, 500 completed.
-    private static string SeedSql(World w, int adminUserId, int podId) => $"""
+    private static string SeedSql(World w, int adminUserId, int podId, IReadOnlyList<int> typeIds) => $"""
         SET NOCOUNT ON;
         DECLARE @n INT = {TaskCount};
         DECLARE @version INT = (SELECT TOP 1 WorkflowVersionId FROM dbo.WorkflowVersion WHERE WorkflowDefinitionId = {w.OrderedWorkflowId} AND Status = 'PUBLISHED');
@@ -60,7 +68,7 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
 
         INSERT dbo.Task (MatterId, TaskTypeId, WorkflowInstanceId, Title, PriorityId, StatusCode, AssignedPodId, AssignedUserId, RequestorName,
                          DueDate, DueAtUtc, DueSortKey, StatusChangedAt, CompletedAt, CreatedAt, CreatedByUserId)
-        SELECT {w.MatterId}, {w.TaskTypeId}, i.WorkflowInstanceId, N'Seeded task ' + CAST(i.rn AS NVARCHAR(10)), p.PriorityId, x.st,
+        SELECT {w.MatterId}, CASE i.rn % 8 {string.Join(" ", typeIds.Select((id, idx) => $"WHEN {idx} THEN {id}"))} END, i.WorkflowInstanceId, N'Seeded task ' + CAST(i.rn AS NVARCHAR(10)), p.PriorityId, x.st,
                CASE WHEN i.rn % 4 < 2 THEN {podId} END, CASE WHEN i.rn % 3 = 0 THEN {adminUserId} END, N'Requestor ' + CAST(i.rn % 50 AS NVARCHAR(10)),
                x.due, NULL, CASE WHEN x.due IS NULL THEN NULL ELSE DATEADD(MILLISECOND, 86399999, CAST(x.due AS DATETIME2(3))) END,
                DATEADD(DAY, -(i.rn % 90), SYSUTCDATETIME()), CASE WHEN x.st = 'COMPLETED' THEN DATEADD(DAY, -(i.rn % 90), SYSUTCDATETIME()) END,
@@ -108,6 +116,44 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
 
         d.GetProperty("overdue").GetProperty("count").GetInt32().ShouldBeGreaterThan(0);
         d.GetProperty("aging").EnumerateArray().Sum(b => b.GetProperty("count").GetInt32()).ShouldBe(d.GetProperty("open").GetProperty("count").GetInt32());
+    }
+
+    [Fact]
+    public async Task The_trend_by_task_type_is_fast_uses_a_fixed_number_of_statements_and_adds_up()
+    {
+        var http = _logged.CreateClient();
+        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
+        var ids = string.Join('&', _typeIds.Select(id => "taskTypeIds=" + id));
+        var url = $"/api/v1/dashboard/trend?periodDays=90&fresh=true&{ids}";
+
+        var warm = await OkAsync(await http.GetAsync(url));
+        warm.GetProperty("byTaskType").GetArrayLength().ShouldBe(8);
+
+        var timings = new List<long>();
+        List<string> statements = [];
+        JsonElement trend = default;
+        for (var i = 0; i < 9; i++)
+        {
+            _commands.Clear();
+            var watch = Stopwatch.StartNew();
+            trend = await OkAsync(await http.GetAsync(url));
+            watch.Stop();
+            timings.Add(watch.ElapsedMilliseconds);
+            statements = _commands.Snapshot();
+        }
+
+        var median = timings.Order().ElementAt(timings.Count / 2);
+        output.WriteLine("trend by type ms: " + string.Join(", ", timings) + " statements: " + statements.Count);
+        median.ShouldBeLessThan(300, "p50 of the trend by task type at 5,000 Tasks: " + string.Join(", ", timings));
+        statements.Count.ShouldBeLessThanOrEqualTo(3, string.Join("\n---\n", statements)); // catalogue + one read per metric (no read per type)
+
+        foreach (var metric in new[] { "created", "completed" })
+        {
+            var sum = trend.GetProperty("byTaskType").EnumerateArray()
+                .Sum(s => s.GetProperty("points").EnumerateArray().Sum(p => p.GetProperty(metric).GetInt32()));
+            sum.ShouldBe(trend.GetProperty("all").EnumerateArray().Sum(p => p.GetProperty(metric).GetInt32()), metric);
+        }
     }
 
     /// <summary>Captures the text of every SQL command EF Core executes while a request runs.</summary>
