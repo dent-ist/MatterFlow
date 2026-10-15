@@ -27,6 +27,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { Badge } from '../../../shared/ui/badge';
 import { ListState } from '../../../shared/ui/data-table';
+import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { parsePage } from '../../../shared/ui/list-helpers';
 import { Pager } from '../../../shared/ui/pager';
 import { SearchBox } from '../../../shared/ui/search-box';
@@ -45,8 +46,9 @@ const PAGE_SIZE = 25;
  */
 @Component({
   selector: 'mf-users-page',
-  imports: [Button, MfDatePipe, SearchBox, ListState, Pager, Badge],
+  imports: [Button, MfDatePipe, ScrollArea, SearchBox, ListState, Pager, Badge],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   templateUrl: './users-page.html',
   styleUrls: ['./users-page.scss', '../../../shared/ui/page.scss'],
 })

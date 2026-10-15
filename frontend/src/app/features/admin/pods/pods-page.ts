@@ -32,6 +32,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-table';
 import { isActiveParam } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
+import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
 import { SearchBox } from '../../../shared/ui/search-box';
@@ -47,6 +48,8 @@ const SEARCH_DEBOUNCE_MS = 200;
   selector: 'mf-pods-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FixedPage,
+    ScrollArea,
     PageHeader,
     ConfirmDialog,
     ActiveBadge,

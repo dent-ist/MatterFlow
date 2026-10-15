@@ -21,6 +21,7 @@ import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ListState } from '../../../shared/ui/data-table';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
+import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -49,6 +50,8 @@ export const CONTRAST_MESSAGE = 'Text must be readable: 4.5:1 minimum';
   selector: 'mf-priorities-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FixedPage,
+    ScrollArea,
     PageHeader,
     ListState,
     ConfirmDialog,

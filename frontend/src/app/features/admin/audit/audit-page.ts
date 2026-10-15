@@ -32,6 +32,7 @@ import {
   splitGroup,
 } from './audit-links';
 import { ListState } from '../../../shared/ui/data-table';
+import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -70,7 +71,16 @@ const ACTOR_DEBOUNCE_MS = 250;
  */
 @Component({
   selector: 'mf-audit-page',
-  imports: [PageHeader, DateInput, ListState, RouterLink, MfDatePipe, NgTemplateOutlet],
+  imports: [
+    FixedPage,
+    ScrollArea,
+    PageHeader,
+    DateInput,
+    ListState,
+    RouterLink,
+    MfDatePipe,
+    NgTemplateOutlet,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './audit-page.html',
   styleUrl: './audit-page.scss',
@@ -115,6 +125,14 @@ export class AuditPage implements OnDestroy {
       key === 'actor' ? value !== null : value !== '',
     );
   });
+  /** The filter form is folded away until asked for: it is tall, and the grid needs the height. */
+  protected readonly filtersOpen = signal(false);
+  protected readonly activeFilters = computed(
+    () =>
+      Object.entries(this.applied()).filter(([key, value]) =>
+        key === 'actor' ? value !== null : value !== '',
+      ).length,
+  );
   protected readonly announcement = computed(() => {
     if (this.state() === 'loading') return 'Loading audit events';
     if (this.state() === 'error') return 'Could not load audit events';

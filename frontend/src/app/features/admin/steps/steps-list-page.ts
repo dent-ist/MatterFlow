@@ -7,6 +7,7 @@ import { ActiveBadge } from '../../../shared/ui/badge';
 import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-table';
 import { isActiveParam } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
+import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
 import { SearchBox } from '../../../shared/ui/search-box';
@@ -18,6 +19,8 @@ import { SearchBox } from '../../../shared/ui/search-box';
 @Component({
   selector: 'mf-steps-list-page',
   imports: [
+    FixedPage,
+    ScrollArea,
     PageHeader,
     ActiveBadge,
     RouterLink,
@@ -31,94 +34,96 @@ import { SearchBox } from '../../../shared/ui/search-box';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <mf-page-header
-      heading="Workflow Steps"
-      description="Reusable steps. Workflows copy a step when they are published, so editing a step here never changes a published workflow."
-    >
-      <p-button mfActions label="New step" icon="pi pi-plus" (onClick)="go('/admin/steps/new')" />
-    </mf-page-header>
+    <mf-fixed-page>
+      <mf-page-header
+        heading="Workflow Steps"
+        description="Reusable steps. Workflows copy a step when they are published, so editing a step here never changes a published workflow."
+      >
+        <p-button mfActions label="New step" icon="pi pi-plus" (onClick)="go('/admin/steps/new')" />
+      </mf-page-header>
 
-    <div class="pg-filters" role="search">
-      <mf-search-box
-        inputId="step-search"
-        placeholder="Title or description"
-        [value]="q() ?? ''"
-        (searchChange)="search($event)"
-      />
-      <mf-status-filter
-        inputId="step-status"
-        [value]="statusFilter()"
-        (valueChange)="setStatus($event)"
-      />
-    </div>
-
-    <mf-list-state
-      noun="steps"
-      emptyText="No steps yet. Add the first reusable step."
-      [state]="state()"
-      [empty]="rows().length === 0"
-      [filtered]="hasFilter()"
-      [columns]="4"
-      (retry)="load()"
-      (clear)="clear()"
-    >
-      <p-button mfEmptyAction label="New step" (onClick)="go('/admin/steps/new')" />
-      <div class="mf-table-wrap">
-        <div class="mf-scroll">
-          <table class="pg-table" data-steps>
-            <caption class="pg-sr">
-              Workflow Steps
-            </caption>
-            <thead>
-              <tr>
-                <th
-                  mfSort="title"
-                  [sort]="sort()"
-                  [defaultSort]="defaultSort"
-                  (sorted)="setSort($event)"
-                >
-                  Title
-                </th>
-                <th scope="col">Description</th>
-                <th
-                  mfSort="usedInVersions"
-                  [sort]="sort()"
-                  [defaultSort]="defaultSort"
-                  (sorted)="setSort($event)"
-                >
-                  Used in workflows
-                </th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (s of rows(); track s.stepDefinitionId) {
-                <tr [attr.data-row]="s.title">
-                  <td>
-                    <a class="pg-link" [routerLink]="['/admin/steps', s.stepDefinitionId]">{{
-                      s.title
-                    }}</a>
-                  </td>
-                  <td>{{ s.description }}</td>
-                  <td>{{ usage(s) }}</td>
-                  <td>
-                    <mf-active-badge [active]="s.isActive" />
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+      <div class="pg-filters" role="search">
+        <mf-search-box
+          inputId="step-search"
+          placeholder="Title or description"
+          [value]="q() ?? ''"
+          (searchChange)="search($event)"
+        />
+        <mf-status-filter
+          inputId="step-status"
+          [value]="statusFilter()"
+          (valueChange)="setStatus($event)"
+        />
       </div>
-      <mf-pager
-        [page]="pageNumber()"
-        [pageSize]="pageSize()"
-        [pageSizes]="pageSizes"
-        [total]="total()"
-        (pageChange)="goToPage($event)"
-        (pageSizeChange)="setPageSize($event)"
-      />
-    </mf-list-state>
+
+      <mf-list-state
+        noun="steps"
+        emptyText="No steps yet. Add the first reusable step."
+        [state]="state()"
+        [empty]="rows().length === 0"
+        [filtered]="hasFilter()"
+        [columns]="4"
+        (retry)="load()"
+        (clear)="clear()"
+      >
+        <p-button mfEmptyAction label="New step" (onClick)="go('/admin/steps/new')" />
+        <div class="mf-table-wrap" mfScrollArea="Steps list">
+          <div class="mf-scroll">
+            <table class="pg-table" data-steps>
+              <caption class="pg-sr">
+                Workflow Steps
+              </caption>
+              <thead>
+                <tr>
+                  <th
+                    mfSort="title"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Title
+                  </th>
+                  <th scope="col">Description</th>
+                  <th
+                    mfSort="usedInVersions"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Used in workflows
+                  </th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (s of rows(); track s.stepDefinitionId) {
+                  <tr [attr.data-row]="s.title">
+                    <td>
+                      <a class="pg-link" [routerLink]="['/admin/steps', s.stepDefinitionId]">{{
+                        s.title
+                      }}</a>
+                    </td>
+                    <td>{{ s.description }}</td>
+                    <td>{{ usage(s) }}</td>
+                    <td>
+                      <mf-active-badge [active]="s.isActive" />
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <mf-pager
+          [page]="pageNumber()"
+          [pageSize]="pageSize()"
+          [pageSizes]="pageSizes"
+          [total]="total()"
+          (pageChange)="goToPage($event)"
+          (pageSizeChange)="setPageSize($event)"
+        />
+      </mf-list-state>
+    </mf-fixed-page>
   `,
 })
 export class StepsListPage extends ServerListPage<StepDefinitionSummary> {

@@ -7,7 +7,7 @@
   <p class="mf-error" role="alert">We could not load roles. Try again.</p>
 } @else {
   <div class="mf-layout">
-    <section class="mf-list" [class.mf-list--wide]="!editing()" aria-label="Roles">
+    <section class="mf-list" [class.mf-list--wide]="!editing()" mfScrollArea="Roles list">
       @if (!editing()) {
         <p class="mf-role-head" aria-hidden="true">
           <span>Name</span><span>Description</span><span class="mf-role-head__n">Members</span
@@ -42,7 +42,7 @@
     </section>
 
     @if (editing()) {
-      <section class="mf-editor" aria-label="Role editor" data-editor>
+      <section class="mf-editor" mfScrollArea="Role editor" data-editor>
         @if (locked()) {
           <p class="mf-info" data-locked>
             System Admin holds every permission and cannot be edited or deleted.
@@ -136,7 +136,7 @@
 
         @if (!locked()) {
           <p class="mf-muted">Changes apply on each user's next request.</p>
-          <div class="mf-actions">
+          <div class="mf-actions mf-form-actions--sticky">
             <p-button
               [label]="selected() ? 'Save changes' : 'Create role'"
               [disabled]="saving()"

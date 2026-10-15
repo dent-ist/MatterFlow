@@ -40,7 +40,7 @@
       (retry)="reload()"
       (clear)="onSearch('')"
     >
-      <div class="mf-table-wrap">
+      <div class="mf-table-wrap" mfScrollArea="Users list">
         <div class="mf-scroll">
           <table>
             <caption class="mf-sr">
@@ -226,7 +226,7 @@
       }
 
       @if (canManage()) {
-        <div class="mf-actions">
+        <div class="mf-actions mf-form-actions--sticky">
           <p-button
             [label]="confirmDeactivate() ? 'Confirm and save' : 'Save changes'"
             [disabled]="!dirty() || saving()"

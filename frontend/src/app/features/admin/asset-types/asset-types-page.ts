@@ -17,6 +17,7 @@ import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ActiveBadge } from '../../../shared/ui/badge';
+import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { StatusFilter } from '../../../shared/ui/data-table';
 import { SearchBox } from '../../../shared/ui/search-box';
 
@@ -31,6 +32,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   selector: 'mf-asset-types-page',
   imports: [
     ActiveBadge,
+    ScrollArea,
     ConfirmDialog,
     ErrorReference,
     RouterLink,
@@ -40,6 +42,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     TextField,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <div class="pg-bar">
@@ -122,7 +125,7 @@ type LoadState = 'loading' | 'ready' | 'error';
             Active (inactive types can't be chosen for new assets)
           </label>
         }
-        <div class="pg-actions">
+        <div class="pg-actions mf-form-actions--sticky">
           <p-button
             type="submit"
             [label]="busy() ? 'Saving...' : editingId() ? 'Save changes' : 'Create asset type'"
@@ -168,7 +171,7 @@ type LoadState = 'loading' | 'ready' | 'error';
             }}
           </div>
         } @else {
-          <div class="mf-table-wrap">
+          <div class="mf-table-wrap" mfScrollArea="Asset types list">
             <div class="mf-scroll">
               <table class="pg-table" data-types>
                 <caption class="pg-sr">

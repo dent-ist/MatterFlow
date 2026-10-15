@@ -118,8 +118,33 @@
 
 .au-bar {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mf-s2) var(--mf-s4);
   margin-bottom: var(--mf-s2);
+}
+
+/* The form has [hidden]: keep it hidden even though the grid sets its display. */
+.au-filters[hidden] {
+  display: none;
+}
+
+/* Fixed-header page: an open filter form scrolls inside itself instead of pushing the grid out of view. */
+@media (min-width: 768px) and (min-height: 561px) {
+  .au-foot {
+    margin-top: auto;
+    padding: var(--mf-s2) var(--mf-s3);
+    background: var(--mf-surface);
+    border-top: 1px solid var(--mf-border);
+    box-shadow: 0 -3px 6px -4px rgb(0 0 0 / 18%);
+  }
+
+  .au-filters {
+    max-height: min(45dvh, 22rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
 }
 
 .au-check {

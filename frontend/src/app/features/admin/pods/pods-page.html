@@ -1,20 +1,20 @@
-<mf-page-header heading="Pods">
-  <span mfDescription>
-    Pod leads are a role. Assign the Pod Lead role under
-    <a routerLink="/admin/users" class="pods__link">Users</a>.
-  </span>
-  <p-button
-    mfActions
-    *mfHasPermission="'Pod.Manage'"
-    label="New pod"
-    icon="pi pi-plus"
-    (onClick)="newPod()"
-  />
-</mf-page-header>
-
 <p class="pods__live" role="status" aria-live="polite" data-live>{{ announce() }}</p>
 
 @if (editorOpen()) {
+  <mf-page-header heading="Pods">
+    <span mfDescription>
+      Pod leads are a role. Assign the Pod Lead role under
+      <a routerLink="/admin/users" class="pods__link">Users</a>.
+    </span>
+    <p-button
+      mfActions
+      *mfHasPermission="'Pod.Manage'"
+      label="New pod"
+      icon="pi pi-plus"
+      (onClick)="newPod()"
+    />
+  </mf-page-header>
+
   <section class="pods__editor" aria-labelledby="pods-editor-title" data-editor>
     <h2 id="pods-editor-title" class="pods__editor-title">
       {{ isNew() ? 'New pod' : 'Edit pod' }}
@@ -81,7 +81,7 @@
           assignments.
         </p>
       }
-      <div class="mf-form-actions pods__actions">
+      <div class="mf-form-actions mf-form-actions--sticky pods__actions">
         <p-button
           *mfHasPermission="'Pod.Manage'"
           type="submit"
@@ -223,103 +223,119 @@
     }
   </section>
 } @else {
-  <div class="pods__filters" role="search">
-    <mf-search-box
-      inputId="pods-search"
-      placeholder="Pod name or description"
-      [value]="q() ?? ''"
-      (searchChange)="search($event)"
-    />
-    <mf-status-filter
-      inputId="pods-status"
-      [value]="statusFilter()"
-      (valueChange)="setStatus($event)"
-    />
-  </div>
+  <mf-fixed-page>
+    <mf-page-header heading="Pods">
+      <span mfDescription>
+        Pod leads are a role. Assign the Pod Lead role under
+        <a routerLink="/admin/users" class="pods__link">Users</a>.
+      </span>
+      <p-button
+        mfActions
+        *mfHasPermission="'Pod.Manage'"
+        label="New pod"
+        icon="pi pi-plus"
+        (onClick)="newPod()"
+      />
+    </mf-page-header>
 
-  <mf-list-state
-    noun="pods"
-    [state]="state()"
-    [empty]="rows().length === 0"
-    [filtered]="hasFilter()"
-    [columns]="4"
-    (retry)="load()"
-    (clear)="clear()"
-  >
-    <p-button
-      mfEmptyAction
-      *mfHasPermission="'Pod.Manage'"
-      label="New pod"
-      icon="pi pi-plus"
-      (onClick)="newPod()"
-    />
-    <div class="mf-table-wrap">
-      <div class="mf-scroll">
-        <table class="pods__table" data-pods>
-          <caption class="pods__sr">
-            Pods
-          </caption>
-          <thead>
-            <tr>
-              <th
-                mfSort="name"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Name
-              </th>
-              <th
-                mfSort="memberCount"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Members
-              </th>
-              <th scope="col">Status</th>
-              <th scope="col" class="mf-col-actions"><span class="pods__sr">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (pod of rows(); track pod.podId) {
-              <tr [attr.data-pod]="pod.podId">
-                <td>
-                  <button type="button" class="pods__name" (click)="edit(pod)">
-                    {{ pod.name }}
-                  </button>
-                  @if (pod.description) {
-                    <div class="pods__muted">{{ pod.description }}</div>
-                  }
-                </td>
-                <td>{{ pod.memberCount }}</td>
-                <td><mf-active-badge [active]="pod.isActive" /></td>
-                <td class="mf-col-actions">
-                  <span class="mf-row-actions">
-                    <p-button
-                      label="Edit"
-                      [text]="true"
-                      [attr.data-edit]="pod.podId"
-                      [ariaLabel]="'Edit ' + pod.name"
-                      (onClick)="edit(pod)"
-                    />
-                  </span>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+    <div class="pods__filters" role="search">
+      <mf-search-box
+        inputId="pods-search"
+        placeholder="Pod name or description"
+        [value]="q() ?? ''"
+        (searchChange)="search($event)"
+      />
+      <mf-status-filter
+        inputId="pods-status"
+        [value]="statusFilter()"
+        (valueChange)="setStatus($event)"
+      />
     </div>
-    <mf-pager
-      [page]="pageNumber()"
-      [pageSize]="pageSize()"
-      [pageSizes]="pageSizes"
-      [total]="total()"
-      (pageChange)="goToPage($event)"
-      (pageSizeChange)="setPageSize($event)"
-    />
-  </mf-list-state>
+
+    <mf-list-state
+      noun="pods"
+      [state]="state()"
+      [empty]="rows().length === 0"
+      [filtered]="hasFilter()"
+      [columns]="4"
+      (retry)="load()"
+      (clear)="clear()"
+    >
+      <p-button
+        mfEmptyAction
+        *mfHasPermission="'Pod.Manage'"
+        label="New pod"
+        icon="pi pi-plus"
+        (onClick)="newPod()"
+      />
+      <div class="mf-table-wrap" mfScrollArea="Pods list">
+        <div class="mf-scroll">
+          <table class="pods__table" data-pods>
+            <caption class="pods__sr">
+              Pods
+            </caption>
+            <thead>
+              <tr>
+                <th
+                  mfSort="name"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Name
+                </th>
+                <th
+                  mfSort="memberCount"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Members
+                </th>
+                <th scope="col">Status</th>
+                <th scope="col" class="mf-col-actions"><span class="pods__sr">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (pod of rows(); track pod.podId) {
+                <tr [attr.data-pod]="pod.podId">
+                  <td>
+                    <button type="button" class="pods__name" (click)="edit(pod)">
+                      {{ pod.name }}
+                    </button>
+                    @if (pod.description) {
+                      <div class="pods__muted">{{ pod.description }}</div>
+                    }
+                  </td>
+                  <td>{{ pod.memberCount }}</td>
+                  <td><mf-active-badge [active]="pod.isActive" /></td>
+                  <td class="mf-col-actions">
+                    <span class="mf-row-actions">
+                      <p-button
+                        label="Edit"
+                        [text]="true"
+                        [attr.data-edit]="pod.podId"
+                        [ariaLabel]="'Edit ' + pod.name"
+                        (onClick)="edit(pod)"
+                      />
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <mf-pager
+        [page]="pageNumber()"
+        [pageSize]="pageSize()"
+        [pageSizes]="pageSizes"
+        [total]="total()"
+        (pageChange)="goToPage($event)"
+        (pageSizeChange)="setPageSize($event)"
+      />
+    </mf-list-state>
+  </mf-fixed-page>
 }
 
 <mf-confirm-dialog

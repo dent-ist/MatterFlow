@@ -10,6 +10,7 @@ import { ActiveBadge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-table';
 import { LocalListPage } from '../../../shared/ui/list-query';
+import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
@@ -23,6 +24,8 @@ import { SearchBox } from '../../../shared/ui/search-box';
   selector: 'mf-task-types-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FixedPage,
+    ScrollArea,
     PageHeader,
     ConfirmDialog,
     ActiveBadge,

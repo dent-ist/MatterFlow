@@ -175,3 +175,31 @@ tr.mf-selected {
     width: 100%;
   }
 }
+
+/* Fixed-header page: the list and the details panel each scroll inside their own box; the panel's Save bar stays at its bottom. */
+@media (min-width: 768px) and (min-height: 561px) {
+  .mf-layout {
+    flex: 1 1 0;
+    min-height: 0;
+    align-items: stretch;
+  }
+
+  .mf-list {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .mf-panel {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    --mf-card-pad: var(--mf-s4);
+    padding-bottom: 0;
+  }
+
+  .mf-panel .mf-actions {
+    margin-top: var(--mf-s3);
+  }
+}

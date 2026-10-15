@@ -3,326 +3,349 @@
     You don't have permission to view the audit logs.
   </p>
 } @else {
-  <mf-page-header
-    heading="Audit Logs"
-    [description]="
-      'Every recorded change, newest first. Times are shown in your time zone (' +
-      zone +
-      '); the date filters use it too. The log is read only and can\'t be exported.'
-    "
-  />
+  <mf-fixed-page>
+    <mf-page-header
+      heading="Audit Logs"
+      [description]="
+        'Every recorded change, newest first. Times are shown in your time zone (' +
+        zone +
+        '); the date filters use it too. The log is read only and can\'t be exported.'
+      "
+    />
 
-  <form
-    class="au-filters"
-    role="search"
-    aria-label="Filter audit events"
-    (submit)="$event.preventDefault(); apply()"
-  >
-    <div class="au-field">
-      <label for="au-object-type">Object type</label>
-      <select
-        class="mf-control"
-        id="au-object-type"
-        [value]="draft().objectType"
-        (change)="set('objectType', $any($event.target).value)"
+    <div class="au-bar">
+      <button
+        type="button"
+        class="mf-btn au-filter-button"
+        data-filters-toggle
+        aria-controls="au-filters"
+        [attr.aria-expanded]="filtersOpen()"
+        (click)="filtersOpen.set(!filtersOpen())"
       >
-        <option value="">Any</option>
-        @for (t of facets().objectTypes; track t) {
-          <option [value]="t" [selected]="t === draft().objectType">{{ t }}</option>
+        <i class="pi pi-filter" aria-hidden="true"></i>
+        Filters
+        @if (activeFilters() > 0) {
+          <span data-filter-count>({{ activeFilters() }})</span>
         }
-      </select>
-    </div>
-    <div class="au-field">
-      <label for="au-object-id">Object id</label>
-      <input
-        id="au-object-id"
-        class="mf-control"
-        type="text"
-        inputmode="numeric"
-        autocomplete="off"
-        [disabled]="!draft().objectType"
-        [attr.aria-describedby]="draft().objectType ? null : 'au-object-id-hint'"
-        [value]="draft().objectId"
-        (input)="set('objectId', $any($event.target).value)"
-      />
-      @if (!draft().objectType) {
-        <span class="au-hint" id="au-object-id-hint">Choose an object type first.</span>
-      }
-    </div>
-    <div class="au-field au-actor">
-      @if (canLookUpUsers()) {
-        <label for="au-actor">Actor</label>
+      </button>
+      <label class="au-check">
         <input
-          id="au-actor"
+          type="checkbox"
+          data-group-toggle
+          [checked]="grouped()"
+          (change)="grouped.set($any($event.target).checked)"
+        />
+        Group events of one operation
+      </label>
+    </div>
+
+    <form
+      id="au-filters"
+      class="au-filters"
+      role="search"
+      [hidden]="!filtersOpen()"
+      aria-label="Filter audit events"
+      (submit)="$event.preventDefault(); apply()"
+    >
+      <div class="au-field">
+        <label for="au-object-type">Object type</label>
+        <select
+          class="mf-control"
+          id="au-object-type"
+          [value]="draft().objectType"
+          (change)="set('objectType', $any($event.target).value)"
+        >
+          <option value="">Any</option>
+          @for (t of facets().objectTypes; track t) {
+            <option [value]="t" [selected]="t === draft().objectType">{{ t }}</option>
+          }
+        </select>
+      </div>
+      <div class="au-field">
+        <label for="au-object-id">Object id</label>
+        <input
+          id="au-object-id"
+          class="mf-control"
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          [disabled]="!draft().objectType"
+          [attr.aria-describedby]="draft().objectType ? null : 'au-object-id-hint'"
+          [value]="draft().objectId"
+          (input)="set('objectId', $any($event.target).value)"
+        />
+        @if (!draft().objectType) {
+          <span class="au-hint" id="au-object-id-hint">Choose an object type first.</span>
+        }
+      </div>
+      <div class="au-field au-actor">
+        @if (canLookUpUsers()) {
+          <label for="au-actor">Actor</label>
+          <input
+            id="au-actor"
+            class="mf-control"
+            type="search"
+            autocomplete="off"
+            placeholder="Type a name"
+            role="combobox"
+            aria-autocomplete="list"
+            [attr.aria-expanded]="actorMatches().length > 0"
+            [attr.aria-controls]="actorMatches().length > 0 ? 'au-actor-list' : null"
+            [value]="actorQuery()"
+            (input)="onActorInput($any($event.target).value)"
+          />
+          @if (draft().actor) {
+            <button type="button" class="mf-btn mf-btn--text" (click)="clearActor()">
+              Clear actor ({{ draft().actor?.displayName }})
+            </button>
+          }
+          @if (actorMatches().length > 0) {
+            <ul class="au-suggest" id="au-actor-list" role="listbox" aria-label="Matching users">
+              @for (u of actorMatches(); track u.userId) {
+                <li role="option" [attr.aria-selected]="draft().actor?.userId === u.userId">
+                  <button type="button" (click)="pickActor(u)">
+                    {{ u.displayName }}
+                    @if (u.email) {
+                      <span class="au-muted">{{ u.email }}</span>
+                    }
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        } @else {
+          <label for="au-actor-id">Actor (user id)</label>
+          <input
+            id="au-actor-id"
+            class="mf-control"
+            type="number"
+            min="1"
+            [value]="draft().actorId"
+            (input)="set('actorId', $any($event.target).value)"
+          />
+        }
+      </div>
+      <div class="au-field">
+        <label for="au-event-type">Event type</label>
+        <select
+          class="mf-control"
+          id="au-event-type"
+          [value]="draft().eventType"
+          (change)="set('eventType', $any($event.target).value)"
+        >
+          <option value="">Any</option>
+          @for (t of facets().eventTypes; track t) {
+            <option [value]="t" [selected]="t === draft().eventType">{{ t }}</option>
+          }
+        </select>
+      </div>
+      <div class="au-field">
+        <label for="au-from">From</label>
+        <mf-date-input
+          inputId="au-from"
+          label="from date"
+          [isoValue]="draft().from || null"
+          [invalid]="!!dateError()"
+          [describedBy]="dateError() ? 'au-date-error' : ''"
+          (isoChange)="set('from', $event ?? '')"
+          (textInvalid)="badFrom.set($event)"
+        />
+      </div>
+      <div class="au-field">
+        <label for="au-to">To</label>
+        <mf-date-input
+          inputId="au-to"
+          label="to date"
+          [isoValue]="draft().to || null"
+          [invalid]="!!dateError()"
+          [describedBy]="dateError() ? 'au-date-error' : ''"
+          (isoChange)="set('to', $event ?? '')"
+          (textInvalid)="badTo.set($event)"
+        />
+      </div>
+      <div class="au-field au-wide">
+        <label for="au-q">Search summary or field</label>
+        <input
+          id="au-q"
           class="mf-control"
           type="search"
           autocomplete="off"
-          placeholder="Type a name"
-          role="combobox"
-          aria-autocomplete="list"
-          [attr.aria-expanded]="actorMatches().length > 0"
-          [attr.aria-controls]="actorMatches().length > 0 ? 'au-actor-list' : null"
-          [value]="actorQuery()"
-          (input)="onActorInput($any($event.target).value)"
+          [value]="draft().q"
+          (input)="set('q', $any($event.target).value)"
         />
-        @if (draft().actor) {
-          <button type="button" class="mf-btn mf-btn--text" (click)="clearActor()">
-            Clear actor ({{ draft().actor?.displayName }})
-          </button>
-        }
-        @if (actorMatches().length > 0) {
-          <ul class="au-suggest" id="au-actor-list" role="listbox" aria-label="Matching users">
-            @for (u of actorMatches(); track u.userId) {
-              <li role="option" [attr.aria-selected]="draft().actor?.userId === u.userId">
-                <button type="button" (click)="pickActor(u)">
-                  {{ u.displayName }}
-                  @if (u.email) {
-                    <span class="au-muted">{{ u.email }}</span>
-                  }
-                </button>
-              </li>
-            }
-          </ul>
-        }
-      } @else {
-        <label for="au-actor-id">Actor (user id)</label>
-        <input
-          id="au-actor-id"
-          class="mf-control"
-          type="number"
-          min="1"
-          [value]="draft().actorId"
-          (input)="set('actorId', $any($event.target).value)"
-        />
-      }
-    </div>
-    <div class="au-field">
-      <label for="au-event-type">Event type</label>
-      <select
-        class="mf-control"
-        id="au-event-type"
-        [value]="draft().eventType"
-        (change)="set('eventType', $any($event.target).value)"
-      >
-        <option value="">Any</option>
-        @for (t of facets().eventTypes; track t) {
-          <option [value]="t" [selected]="t === draft().eventType">{{ t }}</option>
-        }
-      </select>
-    </div>
-    <div class="au-field">
-      <label for="au-from">From</label>
-      <mf-date-input
-        inputId="au-from"
-        label="from date"
-        [isoValue]="draft().from || null"
-        [invalid]="!!dateError()"
-        [describedBy]="dateError() ? 'au-date-error' : ''"
-        (isoChange)="set('from', $event ?? '')"
-        (textInvalid)="badFrom.set($event)"
-      />
-    </div>
-    <div class="au-field">
-      <label for="au-to">To</label>
-      <mf-date-input
-        inputId="au-to"
-        label="to date"
-        [isoValue]="draft().to || null"
-        [invalid]="!!dateError()"
-        [describedBy]="dateError() ? 'au-date-error' : ''"
-        (isoChange)="set('to', $event ?? '')"
-        (textInvalid)="badTo.set($event)"
-      />
-    </div>
-    <div class="au-field au-wide">
-      <label for="au-q">Search summary or field</label>
-      <input
-        id="au-q"
-        class="mf-control"
-        type="search"
-        autocomplete="off"
-        [value]="draft().q"
-        (input)="set('q', $any($event.target).value)"
-      />
-    </div>
-    <div class="au-buttons">
-      <button type="submit" class="mf-btn mf-btn--primary" data-apply>Apply filters</button>
-      <button type="button" class="mf-btn" data-reset (click)="reset()">Reset</button>
-    </div>
-  </form>
-  @if (dateError()) {
-    <p class="au-error" id="au-date-error" role="alert">{{ dateError() }}</p>
-  }
+      </div>
+      <div class="au-buttons">
+        <button type="submit" class="mf-btn mf-btn--primary" data-apply>Apply filters</button>
+        <button type="button" class="mf-btn" data-reset (click)="reset()">Reset</button>
+      </div>
+    </form>
+    @if (dateError()) {
+      <p class="au-error" id="au-date-error" role="alert">{{ dateError() }}</p>
+    }
 
-  @if (applied().correlationId) {
-    <p class="au-banner" role="note" data-operation-banner>
-      Showing the events of one operation.
-      <button type="button" class="mf-btn mf-btn--text" (click)="reset()">Show all events</button>
-    </p>
-  }
+    @if (applied().correlationId) {
+      <p class="au-banner" role="note" data-operation-banner>
+        Showing the events of one operation.
+        <button type="button" class="mf-btn mf-btn--text" (click)="reset()">Show all events</button>
+      </p>
+    }
 
-  <div class="au-bar">
-    <label class="au-check">
-      <input
-        type="checkbox"
-        data-group-toggle
-        [checked]="grouped()"
-        (change)="grouped.set($any($event.target).checked)"
-      />
-      Group events of one operation
-    </label>
-  </div>
+    <div class="au-sr" role="status" aria-live="polite">{{ announcement() }}</div>
 
-  <div class="au-sr" role="status" aria-live="polite">{{ announcement() }}</div>
-
-  <mf-list-state
-    noun="audit events"
-    emptyText="No audit events have been recorded yet."
-    [state]="state()"
-    [empty]="items().length === 0"
-    [filtered]="filtered()"
-    [columns]="5"
-    (retry)="retry()"
-    (clear)="reset()"
-  >
-    <div class="mf-table-wrap">
-      <div class="mf-scroll">
-        <table class="au-table">
-          <caption class="au-sr">
-            Audit events, newest first
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col"><span class="au-sr">Details</span></th>
-              <th scope="col">When</th>
-              <th scope="col">Who</th>
-              <th scope="col">What happened</th>
-              <th scope="col">Object</th>
-            </tr>
-          </thead>
-          <tbody>
-            @if (grouped()) {
-              @for (g of groups(); track g.key) {
-                @if (g.items.length > 1) {
-                  <tr class="au-group" [attr.data-group]="g.items[0].correlationId">
-                    <td>
-                      <button
-                        type="button"
-                        class="au-toggle"
-                        [attr.aria-expanded]="isGroupOpen(g)"
-                        [attr.aria-label]="
-                          (isGroupOpen(g) ? 'Hide' : 'Show') +
-                          ' the ' +
-                          g.items.length +
-                          ' events of this operation'
-                        "
-                        (click)="toggleGroup(g)"
-                      >
-                        <i
-                          class="pi"
-                          [class]="isGroupOpen(g) ? 'pi-chevron-down' : 'pi-chevron-right'"
-                          aria-hidden="true"
-                        ></i>
-                      </button>
-                    </td>
-                    <td>
-                      <time [attr.datetime]="g.items[0].occurredAtUtc">{{
-                        g.items[0].occurredAtUtc | mfDate
-                      }}</time>
-                    </td>
-                    <td>{{ g.items[0].actor.displayName }}</td>
-                    <td>
-                      <strong data-headline>{{ headline(g) }}</strong>
-                      <span class="au-muted"> ({{ g.items.length }} events in one operation)</span>
-                      <button
-                        type="button"
-                        class="mf-btn mf-btn--text"
-                        (click)="showOperation(g.items[0])"
-                      >
-                        Show only this operation
-                      </button>
-                    </td>
-                    <td data-group-object>
-                      @let first = objectItem(g);
-                      @if (route(first); as link) {
-                        <a class="au-linkout" [routerLink]="link">{{ objectText(first) }}</a>
-                      } @else {
-                        {{ objectText(first) }}
+    <mf-list-state
+      noun="audit events"
+      emptyText="No audit events have been recorded yet."
+      [state]="state()"
+      [empty]="items().length === 0"
+      [filtered]="filtered()"
+      [columns]="5"
+      (retry)="retry()"
+      (clear)="reset()"
+    >
+      <div class="mf-table-wrap" mfScrollArea="Audit events list" [resetKey]="applied()">
+        <div class="mf-scroll">
+          <table class="au-table">
+            <caption class="au-sr">
+              Audit events, newest first
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col"><span class="au-sr">Details</span></th>
+                <th scope="col">When</th>
+                <th scope="col">Who</th>
+                <th scope="col">What happened</th>
+                <th scope="col">Object</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (grouped()) {
+                @for (g of groups(); track g.key) {
+                  @if (g.items.length > 1) {
+                    <tr class="au-group" [attr.data-group]="g.items[0].correlationId">
+                      <td>
+                        <button
+                          type="button"
+                          class="au-toggle"
+                          [attr.aria-expanded]="isGroupOpen(g)"
+                          [attr.aria-label]="
+                            (isGroupOpen(g) ? 'Hide' : 'Show') +
+                            ' the ' +
+                            g.items.length +
+                            ' events of this operation'
+                          "
+                          (click)="toggleGroup(g)"
+                        >
+                          <i
+                            class="pi"
+                            [class]="isGroupOpen(g) ? 'pi-chevron-down' : 'pi-chevron-right'"
+                            aria-hidden="true"
+                          ></i>
+                        </button>
+                      </td>
+                      <td>
+                        <time [attr.datetime]="g.items[0].occurredAtUtc">{{
+                          g.items[0].occurredAtUtc | mfDate
+                        }}</time>
+                      </td>
+                      <td>{{ g.items[0].actor.displayName }}</td>
+                      <td>
+                        <strong data-headline>{{ headline(g) }}</strong>
+                        <span class="au-muted">
+                          ({{ g.items.length }} events in one operation)</span
+                        >
+                        <button
+                          type="button"
+                          class="mf-btn mf-btn--text"
+                          (click)="showOperation(g.items[0])"
+                        >
+                          Show only this operation
+                        </button>
+                      </td>
+                      <td data-group-object>
+                        @let first = objectItem(g);
+                        @if (route(first); as link) {
+                          <a class="au-linkout" [routerLink]="link">{{ objectText(first) }}</a>
+                        } @else {
+                          {{ objectText(first) }}
+                        }
+                      </td>
+                    </tr>
+                    @if (isGroupOpen(g)) {
+                      @let parts = split(g);
+                      @for (item of parts.happened; track item.auditEventId) {
+                        <ng-container
+                          *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: true }"
+                        />
                       }
-                    </td>
-                  </tr>
-                  @if (isGroupOpen(g)) {
-                    @let parts = split(g);
-                    @for (item of parts.happened; track item.auditEventId) {
-                      <ng-container
-                        *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: true }"
-                      />
-                    }
-                    @if (parts.fields.length > 0) {
-                      @if (parts.happened.length > 0) {
-                        <tr class="au-nested au-fields-toggle">
-                          <td></td>
-                          <td colspan="4">
-                            <button
-                              type="button"
-                              class="mf-btn mf-btn--text"
-                              data-view-changes
-                              [attr.aria-expanded]="isFieldsOpen(g)"
-                              (click)="toggleFields(g)"
-                            >
-                              {{ isFieldsOpen(g) ? 'Hide' : 'View' }}
-                              {{ parts.fields.length }}
-                              {{ parts.fields.length === 1 ? 'field change' : 'field changes' }}
-                            </button>
-                          </td>
-                        </tr>
-                      }
-                      @if (parts.happened.length === 0 || isFieldsOpen(g)) {
-                        @for (item of parts.fields; track item.auditEventId) {
-                          <ng-container
-                            *ngTemplateOutlet="
-                              eventRows;
-                              context: { $implicit: item, nested: true }
-                            "
-                          />
+                      @if (parts.fields.length > 0) {
+                        @if (parts.happened.length > 0) {
+                          <tr class="au-nested au-fields-toggle">
+                            <td></td>
+                            <td colspan="4">
+                              <button
+                                type="button"
+                                class="mf-btn mf-btn--text"
+                                data-view-changes
+                                [attr.aria-expanded]="isFieldsOpen(g)"
+                                (click)="toggleFields(g)"
+                              >
+                                {{ isFieldsOpen(g) ? 'Hide' : 'View' }}
+                                {{ parts.fields.length }}
+                                {{ parts.fields.length === 1 ? 'field change' : 'field changes' }}
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                        @if (parts.happened.length === 0 || isFieldsOpen(g)) {
+                          @for (item of parts.fields; track item.auditEventId) {
+                            <ng-container
+                              *ngTemplateOutlet="
+                                eventRows;
+                                context: { $implicit: item, nested: true }
+                              "
+                            />
+                          }
                         }
                       }
                     }
+                  } @else {
+                    <ng-container
+                      *ngTemplateOutlet="
+                        eventRows;
+                        context: { $implicit: g.items[0], nested: false }
+                      "
+                    />
                   }
-                } @else {
+                }
+              } @else {
+                @for (item of items(); track item.auditEventId) {
                   <ng-container
-                    *ngTemplateOutlet="eventRows; context: { $implicit: g.items[0], nested: false }"
+                    *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: false }"
                   />
                 }
               }
-            } @else {
-              @for (item of items(); track item.auditEventId) {
-                <ng-container
-                  *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: false }"
-                />
-              }
-            }
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
 
-    <div class="au-foot">
-      @if (nextCursor() !== null) {
-        <button
-          type="button"
-          class="mf-btn"
-          data-load-more
-          [disabled]="loadingMore()"
-          (click)="loadMore()"
-        >
-          {{ loadingMore() ? 'Loading...' : 'Load more' }}
-        </button>
-      } @else {
-        <span class="au-muted" data-end>End of the results.</span>
-      }
-    </div>
-  </mf-list-state>
+      <div class="au-foot">
+        @if (nextCursor() !== null) {
+          <button
+            type="button"
+            class="mf-btn"
+            data-load-more
+            [disabled]="loadingMore()"
+            (click)="loadMore()"
+          >
+            {{ loadingMore() ? 'Loading...' : 'Load more' }}
+          </button>
+        } @else {
+          <span class="au-muted" data-end>End of the results.</span>
+        }
+      </div>
+    </mf-list-state>
+  </mf-fixed-page>
 }
 
 <ng-template #eventRows let-item let-nested="nested">

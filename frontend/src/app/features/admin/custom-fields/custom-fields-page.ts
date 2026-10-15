@@ -6,6 +6,7 @@ import { FormVersionStatus, FormsClient } from '../../../api/generated/api-clien
 import { CUSTOM_FIELD_OBJECTS } from './custom-field-form-designer-api';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { Badge } from '../../../shared/ui/badge';
+import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -27,82 +28,86 @@ interface Row {
  */
 @Component({
   selector: 'mf-custom-fields-page',
-  imports: [PageHeader, Badge, ErrorReference, RouterLink, Button],
+  imports: [FixedPage, ScrollArea, PageHeader, Badge, ErrorReference, RouterLink, Button],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <mf-page-header
-      heading="Custom Fields"
-      description="Extra fields for Clients, Matters and Projects. Fields are versioned: publishing a new version never changes values already saved, and existing records stay editable."
-    ></mf-page-header>
+    <mf-fixed-page>
+      <mf-page-header
+        heading="Custom Fields"
+        description="Extra fields for Clients, Matters and Projects. Fields are versioned: publishing a new version never changes values already saved, and existing records stay editable."
+      ></mf-page-header>
 
-    @switch (state()) {
-      @case ('loading') {
-        <div class="pg-state" role="status" aria-busy="true">Loading custom fields...</div>
-      }
-      @case ('error') {
-        <div class="pg-alert" role="alert">
-          We couldn't load the custom field forms.
-          <mf-error-reference />
-          <p-button label="Retry" severity="secondary" (onClick)="load()" />
-        </div>
-      }
-      @case ('ready') {
-        <div class="mf-table-wrap">
-          <div class="mf-scroll">
-            <table class="pg-table" data-objects>
-              <caption class="pg-sr">
-                Objects with custom fields
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Object</th>
-                  <th scope="col">Form</th>
-                  <th scope="col" class="mf-col-actions"><span class="pg-sr">Actions</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (r of rows(); track r.key) {
-                  <tr [attr.data-row]="r.label">
-                    <td>
-                      <strong>{{ r.label }}</strong>
-                    </td>
-                    <td data-status>
-                      @switch (r.status) {
-                        @case ('published') {
-                          <mf-badge tone="success" icon="pi-check-circle"
-                            >Published v{{ r.publishedNo }}</mf-badge
-                          >
-                          @if (r.hasDraft) {
-                            <span class="pg-muted"> (draft in progress)</span>
+      @switch (state()) {
+        @case ('loading') {
+          <div class="pg-state" role="status" aria-busy="true">Loading custom fields...</div>
+        }
+        @case ('error') {
+          <div class="pg-alert" role="alert">
+            We couldn't load the custom field forms.
+            <mf-error-reference />
+            <p-button label="Retry" severity="secondary" (onClick)="load()" />
+          </div>
+        }
+        @case ('ready') {
+          <div class="mf-table-wrap" mfScrollArea="Custom fields list">
+            <div class="mf-scroll">
+              <table class="pg-table" data-objects>
+                <caption class="pg-sr">
+                  Objects with custom fields
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Object</th>
+                    <th scope="col">Form</th>
+                    <th scope="col" class="mf-col-actions"><span class="pg-sr">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (r of rows(); track r.key) {
+                    <tr [attr.data-row]="r.label">
+                      <td>
+                        <strong>{{ r.label }}</strong>
+                      </td>
+                      <td data-status>
+                        @switch (r.status) {
+                          @case ('published') {
+                            <mf-badge tone="success" icon="pi-check-circle"
+                              >Published v{{ r.publishedNo }}</mf-badge
+                            >
+                            @if (r.hasDraft) {
+                              <span class="pg-muted"> (draft in progress)</span>
+                            }
+                          }
+                          @case ('draft') {
+                            <mf-badge tone="warning" icon="pi-pencil"
+                              >Draft, not published</mf-badge
+                            >
+                          }
+                          @default {
+                            <span class="pg-muted">No custom fields</span>
                           }
                         }
-                        @case ('draft') {
-                          <mf-badge tone="warning" icon="pi-pencil">Draft, not published</mf-badge>
-                        }
-                        @default {
-                          <span class="pg-muted">No custom fields</span>
-                        }
-                      }
-                    </td>
-                    <td class="mf-col-actions">
-                      <span class="mf-row-actions">
-                        <a
-                          class="mf-btn mf-btn--text"
-                          [routerLink]="['/admin/custom-fields', r.key, 'form']"
-                          [attr.aria-label]="'Edit fields of ' + r.label"
-                          >Edit fields</a
-                        >
-                      </span>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+                      </td>
+                      <td class="mf-col-actions">
+                        <span class="mf-row-actions">
+                          <a
+                            class="mf-btn mf-btn--text"
+                            [routerLink]="['/admin/custom-fields', r.key, 'form']"
+                            [attr.aria-label]="'Edit fields of ' + r.label"
+                            >Edit fields</a
+                          >
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        }
       }
-    }
+    </mf-fixed-page>
   `,
 })
 export class CustomFieldsPage implements OnInit {

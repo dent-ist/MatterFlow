@@ -15,6 +15,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { ListState } from '../../../shared/ui/data-table';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 
@@ -32,7 +33,8 @@ function focusById(id: string): void {
 @Component({
   selector: 'mf-asset-link-roles-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ListState, ConfirmDialog, FormsModule, Button, HasPermissionDirective],
+  imports: [ListState, ConfirmDialog, FormsModule, Button, HasPermissionDirective, ScrollArea],
+  host: { class: 'mf-fill' },
   templateUrl: './asset-link-roles-page.html',
   styleUrl: '../admin-lookup.scss',
 })

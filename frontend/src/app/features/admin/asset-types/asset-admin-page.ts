@@ -11,6 +11,7 @@ import {
   HasUnsavedChanges,
   LeaveConfirmService,
 } from '../../../shared/guards/unsaved-changes.guard';
+import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { AssetLinkRolesPage } from '../asset-link-roles/asset-link-roles-page';
@@ -25,31 +26,34 @@ type AssetAdminTab = 'types' | 'link-roles';
  */
 @Component({
   selector: 'mf-asset-admin-page',
-  imports: [PageHeader, Tabs, AssetTypesPage, AssetLinkRolesPage],
+  imports: [FixedPage, PageHeader, Tabs, AssetTypesPage, AssetLinkRolesPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-page-header
-      heading="Asset Types & Link Roles"
-      [crumbs]="[{ label: 'Administration' }, { label: 'Assets' }]"
-    />
-    <mf-tabs
-      label="Asset set-up"
-      idPrefix="assets-admin"
-      [tabs]="tabs"
-      [selected]="current()"
-      (tabChange)="select($event)"
-    />
-    <div
-      role="tabpanel"
-      id="assets-admin-panel"
-      [attr.aria-labelledby]="'assets-admin-tab-' + current()"
-    >
-      @if (current() === 'types') {
-        <mf-asset-types-page />
-      } @else {
-        <mf-asset-link-roles-page #linkRoles />
-      }
-    </div>
+    <mf-fixed-page>
+      <mf-page-header
+        heading="Asset Types & Link Roles"
+        [crumbs]="[{ label: 'Administration' }, { label: 'Assets' }]"
+      />
+      <mf-tabs
+        label="Asset set-up"
+        idPrefix="assets-admin"
+        [tabs]="tabs"
+        [selected]="current()"
+        (tabChange)="select($event)"
+      />
+      <div
+        class="mf-fill"
+        role="tabpanel"
+        id="assets-admin-panel"
+        [attr.aria-labelledby]="'assets-admin-tab-' + current()"
+      >
+        @if (current() === 'types') {
+          <mf-asset-types-page />
+        } @else {
+          <mf-asset-link-roles-page #linkRoles />
+        }
+      </div>
+    </mf-fixed-page>
   `,
 })
 export class AssetAdminPage implements HasUnsavedChanges {

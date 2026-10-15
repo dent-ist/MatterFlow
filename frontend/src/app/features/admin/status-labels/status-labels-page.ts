@@ -11,6 +11,7 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 import { StatusBadge } from '../../../shared/ui/status-badge';
 import { ListState } from '../../../shared/ui/data-table';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
+import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -23,6 +24,8 @@ type LoadState = 'loading' | 'ready' | 'error';
   selector: 'mf-status-labels-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FixedPage,
+    ScrollArea,
     PageHeader,
     ListState,
     FormsModule,

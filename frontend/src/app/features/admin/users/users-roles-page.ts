@@ -10,6 +10,7 @@ import {
 import { Router } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
+import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { RolesPage } from '../roles/roles-page';
@@ -24,24 +25,31 @@ type UsersTab = 'users' | 'roles';
  */
 @Component({
   selector: 'mf-users-roles-page',
-  imports: [PageHeader, Tabs, UsersPage, RolesPage],
+  imports: [FixedPage, PageHeader, Tabs, UsersPage, RolesPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-page-header heading="Users" />
-    <mf-tabs
-      label="Users and roles"
-      idPrefix="users"
-      [tabs]="tabs()"
-      [selected]="current()"
-      (tabChange)="select($event)"
-    />
-    <div role="tabpanel" id="users-panel" [attr.aria-labelledby]="'users-tab-' + current()">
-      @if (current() === 'users') {
-        <mf-users-page />
-      } @else {
-        <mf-roles-page #roles />
-      }
-    </div>
+    <mf-fixed-page>
+      <mf-page-header heading="Users" />
+      <mf-tabs
+        label="Users and roles"
+        idPrefix="users"
+        [tabs]="tabs()"
+        [selected]="current()"
+        (tabChange)="select($event)"
+      />
+      <div
+        class="mf-fill"
+        role="tabpanel"
+        id="users-panel"
+        [attr.aria-labelledby]="'users-tab-' + current()"
+      >
+        @if (current() === 'users') {
+          <mf-users-page />
+        } @else {
+          <mf-roles-page #roles />
+        }
+      </div>
+    </mf-fixed-page>
   `,
 })
 export class UsersRolesPage implements HasUnsavedChanges {
