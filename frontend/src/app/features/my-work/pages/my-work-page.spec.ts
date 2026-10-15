@@ -15,7 +15,7 @@ import {
 import { MyWorkPage } from './my-work-page';
 
 /** Positions of the arguments of `getMyWork` (the view comes first, then the shared filters). */
-const ARG = { view: 0, q: 1, status: 2, pod: 4, completedFrom: 20, sort: 22, page: 24 };
+const ARG = { view: 0, q: 1, status: 2, pod: 4, completedFrom: 21, sort: 23, page: 25 };
 
 const COUNTS = { active: 7, dueSoon: 2, completed: 5, createdByMe: 3 };
 

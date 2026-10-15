@@ -22,14 +22,15 @@ const ARG = {
   status: 1,
   priority: 2,
   pod: 3,
-  assignee: 4,
-  unassigned: 5,
-  creator: 6,
-  overdue: 17,
-  sort: 21,
-  dir: 22,
-  page: 23,
-  pageSize: 24,
+  noPod: 4,
+  assignee: 5,
+  unassigned: 6,
+  creator: 7,
+  overdue: 18,
+  sort: 22,
+  dir: 23,
+  page: 24,
+  pageSize: 25,
 };
 
 describe('TaskQueuePage', () => {

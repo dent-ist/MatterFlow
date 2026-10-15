@@ -78,6 +78,7 @@ describe('RowEdit', () => {
     pods = {
       getPod: vi.fn(() =>
         of({
+          pod: { podId: 5, name: 'Pod A' },
           members: [
             { userId: 4, displayName: 'Sam Kim', isActive: true },
             { userId: 5, displayName: 'Gone Away', isActive: false },
@@ -126,8 +127,10 @@ describe('RowEdit', () => {
 
   it('shows the value with a chevron and an accessible name that includes the current value', async () => {
     await create('priority', aRow());
-    expect(trigger().getAttribute('aria-label')).toBe(
-      'Change priority of TSK-1042, currently Critical',
+    expect(trigger().getAttribute('aria-label')).toBe('Critical, change priority of TSK-1042');
+    // The name starts with the visible value (WCAG 2.5.3 Label in Name).
+    expect(trigger().getAttribute('aria-label')!.startsWith(trigger().textContent!.trim())).toBe(
+      true,
     );
     expect(trigger().getAttribute('aria-haspopup')).toBe('true');
     expect(trigger().querySelector('.pi-chevron-down')).not.toBeNull();
@@ -288,6 +291,8 @@ describe('RowEdit', () => {
     expect(option('none')).not.toBeNull();
     expect(option('4')).not.toBeNull();
     expect(option('5')).toBeNull();
+    // Why the list is short (UAT2-13).
+    expect(el().querySelector('[data-menu-note]')!.textContent).toContain('members of Pod A');
 
     await pick('4');
     expect(tasks['assignTask']).toHaveBeenCalledWith(1042, {
@@ -318,7 +323,11 @@ describe('RowEdit', () => {
     fixture.componentRef.setInput('assignMe', true);
     fixture.detectChanges();
     const button = el().querySelector<HTMLButtonElement>('[data-assign-me]')!;
-    expect(button.getAttribute('aria-label')).toBe('Assign TSK-1042 to me');
+    expect(button.getAttribute('aria-label')).toBe('Assign to me, TSK-1042');
+    // WCAG 2.5.3: the accessible name starts with the visible text.
+    expect(button.getAttribute('aria-label')!.startsWith(button.textContent!.trim())).toBe(true);
+    expect(trigger().getAttribute('aria-label')).toBe('Unassigned, change assignee of TSK-1042');
+    expect(trigger().classList).toContain('im-outlined');
     button.click();
     await fixture.whenStable();
     expect(tasks['assignTask']).toHaveBeenCalledWith(1042, {

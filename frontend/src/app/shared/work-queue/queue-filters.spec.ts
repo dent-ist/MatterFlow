@@ -47,6 +47,7 @@ describe('queue filter state', () => {
       status: 'on_hold,COMPLETED',
       priority: ['1', '2'],
       pod: '4',
+      noPod: 'true',
       assignee: '7',
       unassigned: 'true',
       creator: '8',
@@ -74,6 +75,7 @@ describe('queue filter state', () => {
       status: ['ON_HOLD', 'COMPLETED'],
       priority: [1, 2],
       pod: [4],
+      noPod: true,
       assignee: [7],
       unassigned: true,
       creator: [8],
@@ -155,6 +157,29 @@ describe('queue filter state', () => {
     };
     expect(filterCount(f)).toBe(2);
     expect(filterCount({ ...emptyFilters(), unassigned: true, assignee: [3] })).toBe(1);
+    expect(filterCount({ ...emptyFilters(), noPod: true, pod: [3] })).toBe(1);
+  });
+
+  it('round-trips the No pod filter through the URL, the chips and the API arguments', () => {
+    const state = parse({ noPod: 'true', status: 'NEW' });
+    expect(state.filters.noPod).toBe(true);
+    expect(toQueryParams(state)['noPod']).toBe('true');
+    expect(
+      toQueryParams({ ...state, filters: { ...state.filters, noPod: false } })['noPod'],
+    ).toBeNull();
+    expect(parse({ noPod: 'maybe' }).filters.noPod).toBe(false);
+
+    expect(queueArgs(state)[4]).toBe(true);
+    expect(queueArgs({ ...state, filters: { ...state.filters, noPod: false } })[4]).toBeUndefined();
+    expect(queueArgs(state, { omitPod: true })[4]).toBeUndefined();
+
+    const chips = buildChips(state.filters, names);
+    expect(chips.map((c) => c.label)).toEqual(['Status: NEW', 'Pod: No pod']);
+    expect(chips[1].remove(state.filters).noPod).toBe(false);
+  });
+
+  it('accepts the priorityAge sort used by the Dashboard', () => {
+    expect(parse({ sort: 'priorityAge', dir: 'asc' }).sort).toBe('priorityAge');
   });
 });
 
@@ -255,8 +280,8 @@ describe('API arguments', () => {
   it('passes only what is set, with the sort direction only when sorting', () => {
     const state = { ...emptyState(), page: 2, pageSize: 25 };
     const args = queueArgs(state);
-    expect(args.slice(0, 21).every((a) => a === undefined)).toBe(true);
-    expect(args.slice(21)).toEqual([undefined, undefined, 2, 25]);
+    expect(args.slice(0, 22).every((a) => a === undefined)).toBe(true);
+    expect(args.slice(22)).toEqual([undefined, undefined, 2, 25]);
 
     const sorted = queueArgs({
       ...state,
@@ -266,9 +291,9 @@ describe('API arguments', () => {
     });
     expect(sorted[0]).toBe('x');
     expect(sorted[1]).toEqual(['NEW']);
-    expect(sorted[16]).toBe(false); // asap
-    expect(sorted[17]).toBe(true); // overdue
-    expect(sorted.slice(21)).toEqual(['due', 'desc', 2, 25]);
+    expect(sorted[17]).toBe(false); // asap
+    expect(sorted[18]).toBe(true); // overdue
+    expect(sorted.slice(22)).toEqual(['due', 'desc', 2, 25]);
   });
 
   it('can leave the pod filter out (Pod Work has its own Pod)', () => {

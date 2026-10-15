@@ -263,7 +263,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                       type="button"
                       class="wt-action"
                       (click)="assignToMe.emit(row)"
-                      [attr.aria-label]="'Assign ' + row.taskNumber + ' to me'"
+                      [attr.aria-label]="'Assign to me, ' + row.taskNumber"
                     >
                       Assign to me
                     </button>

@@ -123,10 +123,11 @@ export interface PodOption {
               <select
                 id="fb-pod"
                 class="mf-control fb-input"
-                [value]="filters().pod.length ? filters().pod[0] : ''"
+                [value]="podValue()"
                 (change)="setPod($any($event.target).value)"
               >
                 <option value="">Any pod</option>
+                <option value="none" [selected]="podValue() === 'none'">No pod</option>
                 @for (pod of pods(); track pod.id) {
                   <option [value]="pod.id" [selected]="filters().pod[0] === pod.id">
                     {{ pod.name }}
@@ -292,6 +293,11 @@ export class WorkFilterBar {
   protected readonly activeView = computed(() =>
     this.showViews() ? activeBuiltIn(this.filters(), this.viewContext()) : null,
   );
+  protected readonly podValue = computed(() => {
+    const f = this.filters();
+    if (f.pod.length) return String(f.pod[0]);
+    return f.noPod ? 'none' : '';
+  });
   protected readonly assigneeValue = computed(() => {
     const f = this.filters();
     if (f.unassigned && f.assignee.length === 0) return 'unassigned';
@@ -327,7 +333,8 @@ export class WorkFilterBar {
   }
 
   protected setPod(value: string): void {
-    this.update({ pod: value ? [Number(value)] : [] });
+    if (value === 'none') this.update({ pod: [], noPod: true });
+    else this.update({ pod: value ? [Number(value)] : [], noPod: false });
   }
 
   protected setAssignee(value: string): void {

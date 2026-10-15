@@ -198,6 +198,29 @@ describe('WorkFilterBar', () => {
     expect(changes[1].dueFrom).toBeNull();
   });
 
+  it('offers "No pod" in the Pod filter, shows it when set, and sets and clears it', async () => {
+    await create({ ...emptyFilters(), noPod: true }, { pods: [{ id: 4, name: 'Pod A' }] });
+    openPanel();
+    const pod = el().querySelector<HTMLSelectElement>('#fb-pod')!;
+    expect(Array.from(pod.options).map((o) => o.textContent!.trim())).toEqual([
+      'Any pod',
+      'No pod',
+      'Pod A',
+    ]);
+    expect(pod.value).toBe('none');
+    pod.value = '4';
+    pod.dispatchEvent(new Event('change'));
+    expect(changes[0]).toMatchObject({ pod: [4], noPod: false });
+
+    TestBed.resetTestingModule();
+    await create(emptyFilters(), { pods: [{ id: 4, name: 'Pod A' }] });
+    openPanel();
+    const again = el().querySelector<HTMLSelectElement>('#fb-pod')!;
+    again.value = 'none';
+    again.dispatchEvent(new Event('change'));
+    expect(changes[changes.length - 1]).toMatchObject({ pod: [], noPod: true });
+  });
+
   it('applies a typed date only when the user leaves the field, and keeps text it cannot read', async () => {
     await create(emptyFilters());
     openPanel();

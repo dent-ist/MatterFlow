@@ -145,8 +145,8 @@ describe('MatterDetailPage', () => {
 
     expect(tab('Tasks').textContent?.trim()).toBe('Tasks (3 open)');
     let args = queue.getTaskQueue.mock.calls[0];
-    expect(args[8]).toBe(7);
-    expect(args[9]).toBeUndefined();
+    expect(args[9]).toBe(7);
+    expect(args[10]).toBeUndefined();
     expect(args[1]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
     expect(el().querySelector('tbody tr[data-task=TSK-1042] a')?.getAttribute('href')).toBe(
       '/tasks/1042',

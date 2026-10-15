@@ -277,8 +277,8 @@ describe('Projects pages', () => {
       await create(['Project.View', 'Task.View']);
 
       const args = queue.getTaskQueue.mock.calls[0];
-      expect(args[8]).toBe(7); // matter
-      expect(args[9]).toBe(3); // project
+      expect(args[9]).toBe(7); // matter
+      expect(args[10]).toBe(3); // project
       expect(args[1]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']); // open by default
       expect(el().querySelector('tbody tr[data-task=TSK-1042] a')?.getAttribute('href')).toBe(
         '/tasks/1042',

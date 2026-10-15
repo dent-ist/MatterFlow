@@ -11,6 +11,8 @@ export interface QueueFilters {
   status: string[];
   priority: number[];
   pod: number[];
+  /** Tasks without a Pod (combined with `pod` as either/or, like `unassigned` with `assignee`). */
+  noPod: boolean;
   assignee: number[];
   unassigned: boolean;
   creator: number[];
@@ -34,7 +36,7 @@ export type SortDirection = 'asc' | 'desc';
 
 export interface QueueState {
   filters: QueueFilters;
-  /** API sort field (`priority`, `due`, `created`, `number`, `status`, `completed`); null = the default queue order. */
+  /** API sort field (`priority`, `priorityAge`, `due`, `created`, `number`, `status`, `completed`); null = the default queue order. */
   sort: string | null;
   dir: SortDirection | null;
   page: number;
@@ -54,6 +56,7 @@ export const SORT_FIELDS: readonly string[] = [
   'number',
   'status',
   'completed',
+  'priorityAge',
 ];
 export const PAGE_SIZES: readonly number[] = [25, 50, 100];
 export const DEFAULT_PAGE_SIZE = 50;
@@ -64,6 +67,7 @@ export function emptyFilters(): QueueFilters {
     status: [],
     priority: [],
     pod: [],
+    noPod: false,
     assignee: [],
     unassigned: false,
     creator: [],
@@ -146,6 +150,7 @@ export function parseQueueState(params: ParamMap): QueueState {
       status: statuses(params),
       priority: ids(params, 'priority'),
       pod: ids(params, 'pod'),
+      noPod: bool(params, 'noPod') === true,
       assignee: ids(params, 'assignee'),
       unassigned: bool(params, 'unassigned') === true,
       creator: ids(params, 'creator'),
@@ -185,6 +190,7 @@ export function toQueryParams(state: QueueState): Record<string, QueryParamValue
     status: list(f.status),
     priority: list(f.priority),
     pod: list(f.pod),
+    noPod: f.noPod ? 'true' : null,
     assignee: list(f.assignee),
     unassigned: f.unassigned ? 'true' : null,
     creator: list(f.creator),
@@ -222,7 +228,7 @@ export function filterCount(f: QueueFilters): number {
     f.q,
     f.status.length,
     f.priority.length,
-    f.pod.length,
+    f.pod.length || f.noPod,
     f.assignee.length || f.unassigned,
     f.creator.length,
     f.client,
@@ -298,6 +304,13 @@ export function buildChips(f: QueueFilters, names: ChipNames): FilterChip[] {
       remove: (x) => ({ ...x, pod: without(x.pod, p) }),
     });
   }
+  if (f.noPod) {
+    chips.push({
+      key: 'noPod',
+      label: 'Pod: No pod',
+      remove: (x) => ({ ...x, noPod: false }),
+    });
+  }
   for (const a of f.assignee) {
     chips.push({
       key: `assignee:${a}`,
@@ -371,7 +384,8 @@ export function buildChips(f: QueueFilters, names: ChipNames): FilterChip[] {
   if (f.completedFrom || f.completedTo) {
     chips.push({
       key: 'completed',
-      label: `Closed: ${range(f.completedFrom, f.completedTo)}`,
+      // "Completed" when the list is limited to completed tasks (the Dashboard's Completed tile), "Closed" when cancelled ones count too.
+      label: `${sameSet(f.status, ['COMPLETED']) ? 'Completed' : 'Closed'}: ${range(f.completedFrom, f.completedTo)}`,
       remove: (x) => ({ ...x, completedFrom: null, completedTo: null }),
     });
   }
@@ -403,7 +417,8 @@ export function buildChips(f: QueueFilters, names: ChipNames): FilterChip[] {
 function range(from: string | null, to: string | null): string {
   const a = from ? formatDateOnly(from) : '';
   const b = to ? formatDateOnly(to) : '';
-  return from && to ? `${a} to ${b}` : from ? `from ${a}` : `until ${b}`;
+  if (from && to) return from === to ? a : `${a} to ${b}`;
+  return from ? `from ${a}` : `until ${b}`;
 }
 
 export function sameSet(a: readonly string[], b: readonly string[]): boolean {
@@ -493,6 +508,7 @@ export function queueArgs(
   status: string[] | undefined,
   priority: number[] | undefined,
   pod: number[] | undefined,
+  noPod: boolean | undefined,
   assignee: number[] | undefined,
   unassigned: boolean | undefined,
   creator: number[] | undefined,
@@ -522,6 +538,7 @@ export function queueArgs(
     some(f.status),
     some(f.priority),
     options.omitPod ? undefined : some(f.pod),
+    options.omitPod || !f.noPod ? undefined : true,
     some(f.assignee),
     f.unassigned ? true : undefined,
     some(f.creator),

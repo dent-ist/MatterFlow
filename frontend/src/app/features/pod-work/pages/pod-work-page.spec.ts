@@ -17,7 +17,7 @@ import {
 import { PodWorkPage } from './pod-work-page';
 
 /** Positions of the arguments of `getPodWork` (Pod and view first, then the shared filters). */
-const ARG = { podId: 0, view: 1, q: 2, status: 3, pod: 5, assignee: 6, sort: 23, page: 25 };
+const ARG = { podId: 0, view: 1, q: 2, status: 3, pod: 5, assignee: 7, sort: 24, page: 26 };
 
 const PODS = [
   { podId: 5, name: 'Pod A', isMember: true, isPrimary: true },

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, inject } from '@angular/core';
 import { UndoService } from '../../core/notify/undo.service';
 
 /**
@@ -24,6 +24,8 @@ import { UndoService } from '../../core/notify/undo.service';
             type="button"
             class="mf-btn mf-btn--text"
             data-undo
+            aria-keyshortcuts="Alt+Z"
+            title="Undo (Alt+Z)"
             [disabled]="undo.working()"
             (click)="undo.run()"
           >
@@ -68,4 +70,14 @@ import { UndoService } from '../../core/notify/undo.service';
 })
 export class UndoToast {
   protected readonly undo = inject(UndoService);
+
+  /** Alt+Z undoes the change in the toast, so a keyboard user does not have to tab to the end of the page to reach the button. */
+  @HostListener('document:keydown', ['$event'])
+  protected onKey(event: KeyboardEvent): void {
+    if (event.altKey && !event.ctrlKey && !event.metaKey && event.code === 'KeyZ') {
+      if (!this.undo.current() || this.undo.working()) return;
+      event.preventDefault();
+      void this.undo.run();
+    }
+  }
 }

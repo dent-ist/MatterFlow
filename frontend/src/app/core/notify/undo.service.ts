@@ -19,6 +19,8 @@ export interface UndoOffer {
 export class UndoService {
   readonly current = signal<UndoOffer | null>(null);
   readonly working = signal(false);
+  /** Counts finished Undo runs, so a screen whose row no longer exists (for example a list that dropped it) can read its data again. */
+  readonly settled = signal(0);
   private seq = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -53,6 +55,7 @@ export class UndoService {
       await offer.undo();
     } finally {
       if (this.current()?.id === offer.id) this.dismiss();
+      this.settled.update((n) => n + 1);
     }
   }
 

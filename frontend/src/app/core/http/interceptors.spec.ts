@@ -17,6 +17,7 @@ import { ApiError } from './api-error';
 import {
   CSRF_HEADER,
   MF_HTTP_INTERCEPTORS,
+  QuietRequests,
   SKIP_ERROR_TOAST,
   TIME_ZONE_HEADER,
   toastFor,
@@ -194,6 +195,21 @@ describe('HTTP interceptors', () => {
       .subscribe({ error: () => undefined });
     ctrl.expectOne('/x').flush({}, { status: 500, statusText: 'Server Error' });
     expect(messages.add).not.toHaveBeenCalled();
+  });
+
+  it('does not toast a failure of a request started inside QuietRequests.run, and still toasts the others', () => {
+    const { http, ctrl, messages } = setup();
+    const errors: unknown[] = [];
+    TestBed.inject(QuietRequests).run(() =>
+      http.get('/quiet').subscribe({ error: (e: unknown) => errors.push(e) }),
+    );
+    http.get('/loud').subscribe({ error: () => undefined });
+    ctrl.expectOne('/quiet').flush({}, { status: 500, statusText: 'Server Error' });
+    expect(errors.length).toBe(1);
+    expect(errors[0]).toBeInstanceOf(ApiError);
+    expect(messages.add).not.toHaveBeenCalled();
+    ctrl.expectOne('/loud').flush({}, { status: 500, statusText: 'Server Error' });
+    expect(messages.add).toHaveBeenCalledTimes(1);
   });
 
   it('parses problem details from blob error bodies (generated NSwag client)', async () => {

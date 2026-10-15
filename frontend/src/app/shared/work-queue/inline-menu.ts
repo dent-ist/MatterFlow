@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  effect,
   ElementRef,
   HostListener,
   inject,
@@ -8,6 +9,7 @@ import {
   OnDestroy,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 
@@ -38,6 +40,7 @@ let nextId = 0;
       #trigger
       type="button"
       class="im-trigger"
+      [class.im-outlined]="outlined()"
       data-inline-trigger
       aria-haspopup="true"
       [attr.aria-expanded]="open()"
@@ -64,6 +67,7 @@ let nextId = 0;
         [attr.aria-label]="menuLabel()"
         [style.top.px]="pos().top"
         [style.left.px]="pos().left"
+        [style.max-height.px]="pos().maxHeight"
         (click)="$event.stopPropagation()"
         (keydown)="onPopKey($event)"
       >
@@ -111,6 +115,9 @@ let nextId = 0;
             }
           }
         </div>
+        @if (footnote(); as note) {
+          <p class="im-foot" data-menu-note>{{ note }}</p>
+        }
       </div>
     }
   `,
@@ -139,6 +146,11 @@ let nextId = 0;
       font: inherit;
       text-align: left;
       cursor: pointer;
+    }
+    /* Where the value is the main action of a list (the Dashboard's unassigned queue) it looks like a control at rest. */
+    .im-trigger.im-outlined {
+      border-color: var(--mf-border-strong);
+      background: var(--mf-surface);
     }
     .im-trigger:hover:not([aria-disabled='true']),
     .im-trigger:focus-visible,
@@ -210,6 +222,13 @@ let nextId = 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
+    .im-foot {
+      margin: var(--mf-s1) 0 0;
+      padding: var(--mf-s1) var(--mf-s2) 0;
+      border-top: 1px solid var(--mf-border);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
     .im-note {
       margin: 0;
       padding: var(--mf-s2);
@@ -232,6 +251,10 @@ export class InlineMenu implements OnDestroy {
   readonly emptyText = input('No matches.');
   readonly loading = input(false);
   readonly busy = input(false);
+  /** Draws the trigger with a border at rest (it is the main action of a list, not a value in a table cell). */
+  readonly outlined = input(false);
+  /** A line under the options, for example why the list is limited. */
+  readonly footnote = input<string | null>(null);
 
   readonly opened = output<void>();
   readonly searched = output<string>();
@@ -240,8 +263,23 @@ export class InlineMenu implements OnDestroy {
   protected readonly uid = `im-${nextId++}`;
   protected readonly open = signal(false);
   protected readonly query = signal('');
-  protected readonly pos = signal({ top: 0, left: 0 });
+  protected readonly pos = signal<{ top: number; left: number; maxHeight: number | null }>({
+    top: 0,
+    left: 0,
+    maxHeight: null,
+  });
+  private readonly popRef = viewChild<ElementRef<HTMLElement>>('pop');
   private readonly trigger = viewChild.required<ElementRef<HTMLButtonElement>>('trigger');
+
+  constructor() {
+    // The list grows when the people arrive or the search narrows it: keep it on the side that fits.
+    effect(() => {
+      this.options();
+      this.loading();
+      this.footnote();
+      if (untracked(() => this.open())) setTimeout(() => this.place());
+    });
+  }
 
   ngOnDestroy(): void {
     document.removeEventListener('scroll', this.onScroll, true);
@@ -257,17 +295,47 @@ export class InlineMenu implements OnDestroy {
 
   show(): void {
     const rect = this.trigger().nativeElement.getBoundingClientRect();
-    const below = rect.bottom + 4;
-    const flip = below + 260 > window.innerHeight && rect.top > 260;
+    // Below the trigger first; once the list is drawn and measured, `place` flips it above (right against the trigger) only if it does not fit.
     this.pos.set({
-      top: flip ? Math.max(4, rect.top - 4 - 256) : below,
+      top: rect.bottom + 4,
       left: Math.max(4, Math.min(rect.left, window.innerWidth - 240)),
+      maxHeight: null,
     });
     this.query.set('');
     this.open.set(true);
     document.addEventListener('scroll', this.onScroll, true);
     this.opened.emit();
-    setTimeout(() => this.focusFirst());
+    setTimeout(() => {
+      this.place();
+      this.focusFirst();
+    });
+  }
+
+  /** Puts the list next to the trigger on the side with room for its real height; if neither side fits it scrolls inside the free space. */
+  private place(): void {
+    const pop = this.popRef()?.nativeElement;
+    if (!pop) return;
+    const rect = this.trigger().nativeElement.getBoundingClientRect();
+    const margin = 8;
+    const height = pop.getBoundingClientRect().height;
+    const roomBelow = window.innerHeight - rect.bottom - 4 - margin;
+    const roomAbove = rect.top - 4 - margin;
+    const left = this.pos().left;
+    const cap = 256;
+    if (height <= roomBelow) {
+      this.pos.set({ top: rect.bottom + 4, left, maxHeight: null });
+    } else if (height <= roomAbove) {
+      this.pos.set({ top: rect.top - 4 - height, left, maxHeight: null });
+    } else if (roomAbove > roomBelow) {
+      const max = Math.min(cap, Math.max(96, roomAbove));
+      this.pos.set({ top: rect.top - 4 - Math.min(height, max), left, maxHeight: max });
+    } else {
+      this.pos.set({
+        top: rect.bottom + 4,
+        left,
+        maxHeight: Math.min(cap, Math.max(96, roomBelow)),
+      });
+    }
   }
 
   focusTrigger(): void {

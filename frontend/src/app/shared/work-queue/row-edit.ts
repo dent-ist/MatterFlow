@@ -93,6 +93,8 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
       [emptyText]="field() === 'assignee' ? 'No people found.' : 'No options.'"
       [loading]="loading()"
       [busy]="busy()"
+      [outlined]="assignMe()"
+      [footnote]="footnote()"
       (opened)="onOpened()"
       (searched)="onSearch($event)"
       (picked)="onPick($event)"
@@ -126,7 +128,7 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
         class="re-me"
         data-assign-me
         [disabled]="busy()"
-        [attr.aria-label]="'Assign ' + r.taskNumber + ' to me'"
+        [attr.aria-label]="'Assign to me, ' + r.taskNumber"
         (click)="assignToMe()"
       >
         Assign to me
@@ -180,21 +182,36 @@ export class RowEdit {
   protected readonly flow = signal<StatusAction | null>(null);
   private readonly people = signal<Person[]>([]);
   private readonly podMode = signal(false);
+  private readonly podName = signal('');
   private readonly query = signal('');
   private searchSeq = 0;
   private readonly menu = viewChild(InlineMenu);
 
+  /**
+   * Accessible name of the trigger. It starts with the visible value (WCAG 2.5.3 Label in Name: someone who says "click Unassigned" or
+   * "click High" must hit it) and then says what it changes and for which task.
+   */
   protected readonly triggerLabel = computed(() => {
     const r = this.row();
     switch (this.field()) {
       case 'status':
-        return `Change status of ${r.taskNumber}, currently ${r.statusLabel}`;
+        return `${r.statusLabel}, change status of ${r.taskNumber}`;
       case 'priority':
-        return `Change priority of ${r.taskNumber}, currently ${r.priority.label}`;
-      case 'assignee':
-        return `Change assignee of ${r.taskNumber}, currently ${r.assignedUser?.displayName ?? 'unassigned'}`;
+        return `${r.priority.label}, change priority of ${r.taskNumber}`;
+      case 'assignee': {
+        const user = r.assignedUser;
+        const shown = user ? user.displayName + (user.isActive ? '' : ' (inactive)') : 'Unassigned';
+        return `${shown}, change assignee of ${r.taskNumber}`;
+      }
     }
   });
+
+  /** Why the assignee list is short (UAT2-13): it lists the members of the task's Pod. */
+  protected readonly footnote = computed(() =>
+    this.field() === 'assignee' && this.podMode() && this.podName()
+      ? `Showing members of ${this.podName()}.`
+      : null,
+  );
 
   protected readonly menuLabel = computed(
     () =>
@@ -279,6 +296,7 @@ export class RowEdit {
               .filter((m) => m.isActive)
               .map((m) => ({ id: m.userId, name: m.displayName })),
           );
+          this.podName.set(pod.pod.name);
           this.podMode.set(true);
           return;
         } catch {

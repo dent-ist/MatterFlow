@@ -267,7 +267,7 @@ describe('TaskTable', () => {
     );
     const buttons = el().querySelectorAll<HTMLButtonElement>('tbody .wt-action');
     expect(buttons.length).toBe(1);
-    expect(buttons[0].getAttribute('aria-label')).toBe('Assign TSK-1042 to me');
+    expect(buttons[0].getAttribute('aria-label')).toBe('Assign to me, TSK-1042');
 
     const emitted: number[] = [];
     fixture.componentInstance.assignToMe.subscribe((r) => emitted.push(r.taskId));

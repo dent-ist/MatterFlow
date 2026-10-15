@@ -4,7 +4,7 @@ import {
   HttpInterceptorFn,
   HttpRequest,
 } from '@angular/common/http';
-import { Injector, inject } from '@angular/core';
+import { Injectable, Injector, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, catchError, from, map, mergeMap, of, throwError } from 'rxjs';
 import { AuthStore } from '../auth/auth.store';
@@ -21,6 +21,29 @@ export const CSRF_HEADER_VALUE = 'web';
 /** Set `true` on a request's HttpContext when the caller handles its errors itself. */
 export const SKIP_ERROR_TOAST = new HttpContextToken<boolean>(() => false);
 
+/**
+ * Background requests (a page refreshing itself) report their failure inline and must not also toast. The generated clients cannot take an
+ * `HttpContext`, so the caller wraps the call: every request the wrapped function starts synchronously is marked quiet for the interceptor.
+ */
+@Injectable({ providedIn: 'root' })
+export class QuietRequests {
+  private depth = 0;
+
+  get active(): boolean {
+    return this.depth > 0;
+  }
+
+  /** Runs `start` (which must subscribe to the request synchronously) with the toast for its errors turned off. */
+  run<T>(start: () => T): T {
+    this.depth++;
+    try {
+      return start();
+    } finally {
+      this.depth--;
+    }
+  }
+}
+
 /** Adds the viewer's IANA zone to every request (addendum M); the server validates it. */
 export const timeZoneInterceptor: HttpInterceptorFn = (req, next) => {
   const zone = inject(USER_TIME_ZONE);
@@ -36,13 +59,14 @@ export const csrfInterceptor: HttpInterceptorFn = (req, next) => {
 /** Converts failures to `ApiError`, toasts non-field errors, refreshes permissions on 403. */
 export const problemDetailsInterceptor: HttpInterceptorFn = (req, next) => {
   const injector = inject(Injector);
+  const quiet = injector.get(QuietRequests).active;
   return next(req).pipe(
     catchError((error: unknown) => {
       if (!(error instanceof HttpErrorResponse)) return throwError(() => error);
       return decodeBlobBody(error).pipe(
         mergeMap((decoded) => {
           const apiError = ApiError.from(decoded);
-          if (!req.context.get(SKIP_ERROR_TOAST)) {
+          if (!quiet && !req.context.get(SKIP_ERROR_TOAST)) {
             const toast = toastFor(apiError);
             if (toast) {
               const show = () =>
