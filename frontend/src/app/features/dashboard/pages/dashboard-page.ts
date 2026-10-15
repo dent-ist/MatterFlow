@@ -55,7 +55,8 @@ import { DashUsersTab } from '../ui/dash-users-tab';
 import { Segment, StackedBar } from '../ui/stacked-bar';
 import { StatTile } from '../ui/stat-tile';
 import { DashTaskList, PanelState } from '../ui/task-list-panel';
-import { TrendChart } from '../ui/trend-chart';
+import { DashTrendsTab } from '../ui/dash-trends-tab';
+import { clearedTrendParams } from '../ui/trend-model';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -118,7 +119,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     ErrorReference,
     BarList,
     StackedBar,
-    TrendChart,
+    DashTrendsTab,
     DashSection,
     DashTaskList,
     HasPermissionDirective,
@@ -443,13 +444,15 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                       <span mfSectionActions class="head-period" data-trend-period>
                         <ng-container *ngTemplateOutlet="periodControl" />
                       </span>
-                      <mf-trend-chart
-                        heading="Tasks created and completed per day"
-                        [caption]="periodCaption()"
-                        [points]="d.trend"
-                        [createdQuery]="d.created.query"
-                        [completedQuery]="d.completed.query"
-                      />
+                      @defer (on immediate) {
+                        <mf-dash-trends-tab
+                          [period]="period()"
+                          [caption]="periodCaption()"
+                          [refreshKey]="d.generatedAtUtc"
+                        />
+                      } @placeholder {
+                        <p class="soon-load" role="status">Loading the trend.</p>
+                      }
                     </mf-dash-section>
                   </div>
                 }
@@ -948,7 +951,11 @@ export class DashboardPage implements OnInit {
     return this.router.navigate([], {
       relativeTo: this.route,
       // The Swimlane tab's own parameters (group, sort, filters...) do not follow the person to another tab.
-      queryParams: { tab, ...(tab === 'swimlane' ? {} : clearedViewParams()) },
+      queryParams: {
+        tab,
+        ...(tab === 'swimlane' ? {} : clearedViewParams()),
+        ...(tab === 'trends' ? {} : clearedTrendParams()),
+      },
       queryParamsHandling: 'merge',
       replaceUrl: replace,
     });

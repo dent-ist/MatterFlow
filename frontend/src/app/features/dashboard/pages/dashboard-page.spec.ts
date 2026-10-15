@@ -20,6 +20,7 @@ import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/au
 import { Permission } from '../../../core/auth/permissions';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { aRow, pageOf, provideLookups } from '../../../shared/work-queue/work-queue-testing';
+import { aTrend } from '../ui/trend-testing';
 import { AUTO_REFRESH_MS, DashboardPage } from './dashboard-page';
 
 const OPEN = 'status=NEW&status=IN_PROGRESS&status=ON_HOLD';
@@ -177,6 +178,7 @@ describe('DashboardPage', () => {
   let unassignedRows: TaskQueueRow[];
   let getDashboard: ReturnType<typeof vi.fn>;
   const getDashboardSwimlane = vi.fn(() => of(emptyBoard()));
+  let getDashboardTrend: ReturnType<typeof vi.fn>;
   let getTaskQueue: ReturnType<typeof vi.fn>;
   let assignTask: ReturnType<typeof vi.fn>;
   let harness: RouterTestingHarness;
@@ -187,6 +189,7 @@ describe('DashboardPage', () => {
     url = '/dashboard',
   ) {
     getDashboard = vi.fn().mockReturnValue(response);
+    getDashboardTrend = vi.fn((_days: number, ids?: number[]) => of(aTrend(ids ?? [])));
     getTaskQueue = vi.fn((...args: unknown[]) =>
       of(
         args[6] === true
@@ -214,7 +217,7 @@ describe('DashboardPage', () => {
       providers: [
         provideRouter([{ path: 'dashboard', component: DashboardPage }]),
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
-        { provide: DashboardClient, useValue: { getDashboard } },
+        { provide: DashboardClient, useValue: { getDashboard, getDashboardTrend } },
         { provide: DashboardBoardClient, useValue: { getDashboardSwimlane } },
         { provide: TaskQueueClient, useValue: { getTaskQueue } },
         { provide: TasksClient, useValue: { assignTask } },
@@ -897,9 +900,10 @@ describe('DashboardPage', () => {
     expect(el.textContent).not.toMatch(/billing|revenue|productivity/i);
   });
 
-  it('shows the daily trend with its data table on the Trends tab', async () => {
+  it('shows the daily trend with its legend and data table on the Trends tab, read with the period from its own request', async () => {
     const el = await open(of(summary()), ALL, '/dashboard?tab=trends');
-    const trend = el.querySelector('[data-section="trend"] mf-trend-chart')!;
+    expect(getDashboardTrend).toHaveBeenCalledWith(30, undefined, undefined, undefined);
+    const trend = el.querySelector('[data-section="trend"] mf-dash-trends-tab')!;
     expect(trend.querySelector('[data-plot] svg')).not.toBeNull();
     expect(text(trend.querySelector('[data-legend="created"]'))).toBe('Created 9');
     expect(text(trend.querySelector('[data-legend="completed"]'))).toBe('Completed 6');
@@ -950,6 +954,7 @@ describe('DashboardPage', () => {
     TestBed.resetTestingModule();
     el = await open(of(summary()), ALL, '/dashboard?tab=trends');
     expect(getDashboard).toHaveBeenCalledWith(90, undefined);
+    expect(getDashboardTrend).toHaveBeenCalledWith(90, undefined, undefined, undefined);
     expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe('quarter');
     expect(text(el.querySelector('[data-section="trend"]'))).toContain('Last quarter');
   });
