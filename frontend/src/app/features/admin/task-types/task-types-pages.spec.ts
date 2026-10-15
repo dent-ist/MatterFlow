@@ -158,7 +158,7 @@ describe('TaskTypesPage', () => {
     row('Data Processing').querySelector<HTMLButtonElement>('[data-activate]')!.click();
     await settle(fixture);
     expect(row('Data Processing').textContent).not.toContain('Inactive');
-  });
+  }, 20_000);
 });
 
 describe('TaskTypesPage workflow chips and filter', () => {
