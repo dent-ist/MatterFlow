@@ -308,6 +308,7 @@ export class AssetTypesPage implements OnInit {
       const page = await firstValueFrom(
         this.api.listAssetTypes(
           this.q().trim() || undefined,
+          undefined,
           status === 'all' ? undefined : status === 'active',
           1,
           100,

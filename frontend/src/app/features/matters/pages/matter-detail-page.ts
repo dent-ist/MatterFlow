@@ -215,7 +215,13 @@ type LoadState = 'loading' | 'ready' | 'error';
                     }
                     @case ('assets') {
                       @if (canSeeAssets()) {
-                        <mf-matter-assets [matterId]="m.matterId" />
+                        <mf-matter-assets
+                          [matterId]="m.matterId"
+                          [status]="status()"
+                          [page]="page()"
+                          [size]="size()"
+                          [sort]="sort()"
+                        />
                       } @else {
                         <div class="pg-state" data-no-access="assets">
                           You don't have permission to view assets.
@@ -349,6 +355,11 @@ export class MatterDetailPage {
   readonly matterId = input.required<string>();
   /** `?tab=`: `tasks` (default), `projects`, `assets`; `activity` opens the drawer; anything else (old `details`) shows the default. */
   readonly tab = input<string>();
+  /** The Assets tab's list state (its filters `name`, `typeId`, `extref` are read from the address by the tab itself). */
+  readonly status = input<string>();
+  readonly page = input<string>();
+  readonly size = input<string>();
+  readonly sort = input<string>();
 
   private readonly api = inject(MattersClient);
   private readonly pageTitle = inject(PageTitle);
@@ -403,7 +414,17 @@ export class MatterDetailPage {
 
   protected select(key: string): void {
     void this.router.navigate([], {
-      queryParams: { tab: key === 'tasks' ? null : key },
+      // The Assets tab's filters, paging and sort belong to that tab only.
+      queryParams: {
+        tab: key === 'tasks' ? null : key,
+        name: null,
+        typeId: null,
+        extref: null,
+        status: null,
+        page: null,
+        size: null,
+        sort: null,
+      },
       queryParamsHandling: 'merge',
     });
   }
@@ -426,7 +447,18 @@ export class MatterDetailPage {
       const [matter, projects] = await Promise.all([
         firstValueFrom(this.api.getMatter(id)),
         this.auth.has('Project.View')
-          ? firstValueFrom(this.projectsApi.listProjects(undefined, id, undefined, 1, 100, 'name'))
+          ? firstValueFrom(
+              this.projectsApi.listProjects(
+                undefined,
+                id,
+                undefined,
+                undefined,
+                undefined,
+                1,
+                100,
+                'name',
+              ),
+            )
           : Promise.resolve(null),
       ]);
       this.matter.set(matter);

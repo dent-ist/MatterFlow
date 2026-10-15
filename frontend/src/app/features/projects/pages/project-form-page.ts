@@ -176,7 +176,18 @@ export class ProjectFormPage implements HasUnsavedChanges {
 
   protected readonly searchMatters = async (query: string): Promise<PickerOption[]> => {
     const page = await firstValueFrom(
-      this.matters.listMatters(query, undefined, undefined, undefined, 1, 8, undefined),
+      this.matters.listMatters(
+        query,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        8,
+        undefined,
+      ),
     );
     return page.items.map(matterOption);
   };

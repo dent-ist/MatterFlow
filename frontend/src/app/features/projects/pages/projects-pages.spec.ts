@@ -15,6 +15,7 @@ import {
   aProject,
   apiError,
   buttonByLabel,
+  fakeQuery,
   ok,
   pageOfMatters,
   pageOfProjects,
@@ -43,6 +44,7 @@ describe('Projects pages', () => {
   let queue: Record<'getTaskQueue', Mock>;
   let navigate: Mock;
   let navigateByUrl: Mock;
+  let query: ReturnType<typeof fakeQuery>;
 
   async function configure(permissions: Permission[]): Promise<void> {
     projects = {
@@ -72,9 +74,11 @@ describe('Projects pages', () => {
         ),
     };
     queue = { getTaskQueue: vi.fn().mockReturnValue(ok(pageOf([aRow({ projectId: 3 })]))) };
+    query = fakeQuery();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        query.provider,
         MessageService,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: ProjectsClient, useValue: projects },
@@ -95,13 +99,24 @@ describe('Projects pages', () => {
   }
 
   describe('list', () => {
+    const FILTER_PARAMS = ['name', 'matter', 'matterId', 'status'];
+
     async function create(permissions: Permission[], inputs: Record<string, string> = {}) {
+      localStorage.clear();
       await configure(permissions);
+      query.set(
+        Object.fromEntries(Object.entries(inputs).filter(([k]) => FILTER_PARAMS.includes(k))),
+      );
       const fixture = TestBed.createComponent(ProjectsListPage);
-      for (const [k, v] of Object.entries(inputs)) fixture.componentRef.setInput(k, v);
+      for (const [k, v] of Object.entries(inputs)) {
+        if (!FILTER_PARAMS.includes(k) || k === 'status') fixture.componentRef.setInput(k, v);
+      }
       await settle(fixture);
       return fixture;
     }
+
+    const control = <T extends HTMLElement>(el: HTMLElement, name: string): T =>
+      el.querySelector<T>(`[aria-label="Filter by ${name}"]`)!;
 
     it('lists projects with their matter reference and archived state', async () => {
       const fixture = await create(['Project.View', 'Project.Create']);
@@ -115,39 +130,88 @@ describe('Projects pages', () => {
         undefined,
         undefined,
         true,
+        undefined,
+        undefined,
         1,
         25,
         undefined,
       );
     });
 
-    it('filters by matter from the URL, shows a removable chip and keeps the matter when creating', async () => {
+    it('has column filters instead of a search box: Name, Matter and Status (Active shown, Archived by name)', async () => {
+      const fixture = await create(['Project.View']);
+      const el: HTMLElement = fixture.nativeElement;
+      expect(el.querySelector('#project-search, #project-status, mf-search-box')).toBeNull();
+      expect(el.querySelector('[data-filter-row]')).toBeNull(); // closed by default
+      el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
+      await settle(fixture);
+
+      expect(control<HTMLInputElement>(el, 'Name')).not.toBeNull();
+      expect(control<HTMLInputElement>(el, 'Matter')).not.toBeNull();
+      const status = control<HTMLSelectElement>(el, 'Status');
+      expect(status.value).toBe('active');
+      expect(Array.from(status.options).map((o) => o.textContent?.trim())).toEqual([
+        'Active',
+        'Archived',
+        'All',
+      ]);
+      expect(el.querySelector('[data-filter-count]')).toBeNull();
+
+      const name = control<HTMLInputElement>(el, 'Name');
+      name.value = ' phase ';
+      name.dispatchEvent(new Event('input'));
+      name.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      expect(navigate).toHaveBeenLastCalledWith([], {
+        queryParams: { name: 'phase', page: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    });
+
+    it('sends the filters of the URL to the API, shows a removable matter chip and keeps the matter when creating', async () => {
       const fixture = await create(['Project.View', 'Project.Create'], {
         matterId: '7',
-        q: 'cust',
+        name: 'cust',
+        matter: '343-12',
+        status: 'inactive',
+        page: '2',
       });
+      fixture.componentRef.setInput('page', '2');
+      await settle(fixture);
 
-      expect(projects.listProjects).toHaveBeenLastCalledWith('cust', 7, true, 1, 25, undefined);
-      expect(fixture.nativeElement.querySelector('[data-matter-chip]')?.textContent).toContain(
-        '00343-00012 Merger Review',
+      expect(projects.listProjects).toHaveBeenLastCalledWith(
+        undefined,
+        7,
+        false,
+        'cust',
+        '343-12',
+        2,
+        25,
+        undefined,
+      );
+      expect(fixture.nativeElement.querySelector('[data-chip="matterId"]')?.textContent).toContain(
+        'Matter: 00343-00012 Merger Review',
       );
       buttonByLabel(fixture.nativeElement, 'New project')!.click();
       expect(navigateByUrl).toHaveBeenCalledWith('/projects/new?matterId=7');
-      fixture.nativeElement.querySelector('[data-matter-chip] button').click();
+      fixture.nativeElement.querySelector('[data-chip="matterId"] button').click();
       expect(navigate).toHaveBeenCalledWith([], {
         queryParams: { matterId: null, page: null },
         queryParamsHandling: 'merge',
       });
     });
 
-    it('hides New project without Project.Create and handles empty results', async () => {
+    it('hides New project without Project.Create and keeps the headers and filter row when nothing matches', async () => {
       const fixture = await create(['Project.View']);
       expect(buttonByLabel(fixture.nativeElement, 'New project')).toBeUndefined();
 
       projects.listProjects.mockReturnValue(ok(pageOfProjects()));
-      fixture.componentRef.setInput('q', 'zzz');
+      query.set({ name: 'zzz' });
       await settle(fixture);
-      expect(fixture.nativeElement.querySelector('[data-empty=filtered]')).not.toBeNull();
+      const el: HTMLElement = fixture.nativeElement;
+      expect(el.querySelector('[data-empty=filtered]')).not.toBeNull();
+      expect(el.querySelector('thead th')).not.toBeNull();
+      expect(el.querySelector('[data-filter-row]')).not.toBeNull();
     });
   });
 
@@ -205,6 +269,9 @@ describe('Projects pages', () => {
       await settle(fixture);
       expect(matters.listMatters).toHaveBeenCalledWith(
         '343-12',
+        undefined,
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,

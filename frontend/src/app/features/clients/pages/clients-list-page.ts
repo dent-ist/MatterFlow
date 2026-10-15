@@ -1,19 +1,39 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  inject,
+  viewChild,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { ClientResponse, ClientsClient } from '../../../api/generated/api-client';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
+import { statusDef } from '../../../shared/filters/common-defs';
+import { FilterDef } from '../../../shared/filters/filter-def';
+import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActiveBadge } from '../../../shared/ui/badge';
-import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-table';
-import { isActiveParam } from '../../../shared/ui/list-helpers';
-import { ServerListPage } from '../../../shared/ui/list-query';
+import { SortHeader } from '../../../shared/ui/data-table';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
+import { GridBody } from '../../../shared/ui/grid-body';
+import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
+import { ServerListPage } from '../../../shared/ui/list-query';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
-import { SearchBox } from '../../../shared/ui/search-box';
 
-/** Clients list (UX S05): search by number (padded or not) or name, status filter (Active by default), sortable, server paged. State lives in the URL. */
+/** The columns of the grid, in order; the keys the filter definitions point at. */
+const COLUMNS = ['clientNumber', 'name', 'matters', 'status'] as const;
+
+/**
+ * Clients list (UX S05): inline column filters (Client number, Name, Status with Active by default), sortable, server paged. State lives
+ * in the URL (`clientNumber`, `name`, `status`, `page`, `size`, `sort`).
+ */
 @Component({
   selector: 'mf-clients-list-page',
   imports: [
@@ -25,10 +45,10 @@ import { SearchBox } from '../../../shared/ui/search-box';
     Button,
     HasPermissionDirective,
     Pager,
-    SearchBox,
-    StatusFilter,
     SortHeader,
-    ListState,
+    GridBody,
+    FiltersBar,
+    ColumnFilterRow,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -44,36 +64,10 @@ import { SearchBox } from '../../../shared/ui/search-box';
         />
       </mf-page-header>
 
-      <div class="pg-filters" role="search">
-        <mf-search-box
-          inputId="client-search"
-          placeholder="343 or Acme"
-          [value]="q() ?? ''"
-          (searchChange)="search($event)"
-        />
-        <mf-status-filter
-          inputId="client-status"
-          [value]="statusFilter()"
-          (valueChange)="setStatus($event)"
-        />
-      </div>
+      <mf-filters-bar [filters]="filters" controls="client-filter-row" [clearAlso]="['q']" />
 
-      <mf-list-state
-        noun="clients"
-        [state]="state()"
-        [empty]="rows().length === 0"
-        [filtered]="hasFilter()"
-        [columns]="4"
-        (retry)="load()"
-        (clear)="clear()"
-      >
-        <p-button
-          mfEmptyAction
-          *mfHasPermission="'Client.Create'"
-          label="New client"
-          (onClick)="go('/clients/new')"
-        />
-        <div class="mf-table-wrap" mfScrollArea="Clients list">
+      <div class="mf-fill">
+        <div class="mf-table-wrap" mfScrollArea="Clients list" #scroll>
           <div class="mf-scroll">
             <table class="pg-table">
               <caption class="pg-sr">
@@ -100,8 +94,31 @@ import { SearchBox } from '../../../shared/ui/search-box';
                   <th scope="col">Matters</th>
                   <th scope="col">Status</th>
                 </tr>
+                @if (filters.rowVisible()) {
+                  <tr
+                    mfColumnFilterRow
+                    id="client-filter-row"
+                    [filters]="filters"
+                    [columns]="columns"
+                  ></tr>
+                }
               </thead>
-              <tbody>
+              <tbody
+                mfGridBody
+                noun="clients"
+                [state]="state()"
+                [empty]="rows().length === 0"
+                [filtered]="filters.activeCount() > 0"
+                [columns]="4"
+                (retry)="load()"
+                (clear)="clear()"
+              >
+                <p-button
+                  mfEmptyAction
+                  *mfHasPermission="'Client.Create'"
+                  label="New client"
+                  (onClick)="go('/clients/new')"
+                />
                 @for (c of rows(); track c.clientId) {
                   <tr>
                     <td class="pg-mono">
@@ -120,28 +137,60 @@ import { SearchBox } from '../../../shared/ui/search-box';
             </table>
           </div>
         </div>
-        <mf-pager
-          [page]="pageNumber()"
-          [pageSize]="pageSize()"
-          [pageSizes]="pageSizes"
-          [total]="total()"
-          (pageChange)="goToPage($event)"
-          (pageSizeChange)="setPageSize($event)"
-        />
-      </mf-list-state>
+        @if (state() === 'ready' && total() > 0) {
+          <mf-pager
+            [page]="pageNumber()"
+            [pageSize]="pageSize()"
+            [pageSizes]="pageSizes"
+            [total]="total()"
+            (pageChange)="goToPage($event)"
+            (pageSizeChange)="setPageSize($event)"
+          />
+        }
+      </div>
     </mf-fixed-page>
   `,
 })
 export class ClientsListPage extends ServerListPage<ClientResponse> {
   private readonly api = inject(ClientsClient);
+  private readonly injector = inject(Injector);
+  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
   protected readonly defaultSort = 'clientNumber';
+  protected readonly columns = COLUMNS;
+
+  /** One definition per filter: the row, the sheet, the chips, the count, the URL and the API arguments all come from it. */
+  private readonly defs = computed((): FilterDef[] => [
+    { key: 'clientNumber', label: 'Client number', column: 'clientNumber', type: 'text' },
+    { key: 'name', label: 'Name', column: 'name', type: 'text' },
+    statusDef(),
+  ]);
+
+  protected readonly filters: ListFilters = new ListFilters({
+    screen: 'clients',
+    noun: 'clients',
+    defs: this.defs,
+  });
+
+  constructor() {
+    super();
+    // The controls move into the sheet while the grid scrolls sideways.
+    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
+      injector: this.injector,
+    });
+  }
+
+  protected override listFilters() {
+    return this.filters;
+  }
 
   protected override fetch() {
     return firstValueFrom(
       this.api.listClients(
-        this.q()?.trim() || undefined,
-        isActiveParam(this.statusFilter()),
+        undefined,
+        isActiveParam(parseStatus(this.filters.text('status'))),
+        this.filters.text('clientNumber') || undefined,
+        this.filters.text('name') || undefined,
         this.pageNumber(),
         this.pageSize(),
         this.sort() || undefined,

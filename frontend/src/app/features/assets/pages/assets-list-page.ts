@@ -366,8 +366,8 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
       key: 'typeId',
       label: 'Type',
       column: 'type',
-      type: 'select',
-      allLabel: 'All types',
+      type: 'multiSelect',
+      emptyLabel: 'All types',
       options: this.typeOptions(),
     },
     { key: 'matter', label: 'Matter', column: 'matter', type: 'text' },
@@ -481,7 +481,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   private async loadTypes(): Promise<void> {
     try {
       const page = await firstValueFrom(
-        this.typesApi.listAssetTypes(undefined, undefined, 1, 100, undefined),
+        this.typesApi.listAssetTypes(undefined, undefined, undefined, 1, 100, undefined),
       );
       this.types.set(page.items);
     } catch {
@@ -491,11 +491,14 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
 
   protected override fetch() {
     const matterId = Number(this.filters.text('matterId'));
-    const typeId = Number(this.filters.text('typeId'));
+    const typeIds = this.filters
+      .list('typeId')
+      .map(Number)
+      .filter((n) => Number.isInteger(n) && n > 0);
     return firstValueFrom(
       this.api.listAssets(
         Number.isInteger(matterId) && matterId > 0 ? matterId : undefined,
-        Number.isInteger(typeId) && typeId > 0 ? typeId : undefined,
+        typeIds.length > 0 ? typeIds : undefined,
         isActiveParam(parseStatus(this.filters.text('status'))),
         undefined,
         this.filters.text('name') || undefined,

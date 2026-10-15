@@ -488,7 +488,16 @@ export class CreateTaskPage implements HasUnsavedChanges {
   private async loadProjects(matterId: number): Promise<void> {
     try {
       const page = await firstValueFrom(
-        this.projectsApi.listProjects(undefined, matterId, true, 1, 100, undefined),
+        this.projectsApi.listProjects(
+          undefined,
+          matterId,
+          true,
+          undefined,
+          undefined,
+          1,
+          100,
+          undefined,
+        ),
       );
       if (this.matter()?.id === matterId) this.projects.set(page.items);
     } catch {
@@ -500,7 +509,18 @@ export class CreateTaskPage implements HasUnsavedChanges {
 
   protected readonly searchMatters = async (query: string): Promise<PickerOption[]> => {
     const page = await firstValueFrom(
-      this.mattersApi.listMatters(query || undefined, undefined, true, undefined, 1, 8, undefined),
+      this.mattersApi.listMatters(
+        query || undefined,
+        undefined,
+        true,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        8,
+        undefined,
+      ),
     );
     for (const m of page.items) this.matterRecords.set(m.matterId, m);
     return page.items.map(matterOption);

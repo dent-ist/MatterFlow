@@ -719,7 +719,16 @@ export class TaskDetailsTab {
     if (this.auth.has('Project.View')) {
       tasks.push(
         firstValueFrom(
-          this.projectsApi.listProjects(undefined, matterId, undefined, 1, 100, 'name'),
+          this.projectsApi.listProjects(
+            undefined,
+            matterId,
+            undefined,
+            undefined,
+            undefined,
+            1,
+            100,
+            'name',
+          ),
         )
           .then((r) => this.projects.set(r.items ?? []))
           .catch(() => undefined),

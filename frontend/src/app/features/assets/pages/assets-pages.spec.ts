@@ -191,7 +191,9 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     const el = (): HTMLElement => fixture.nativeElement;
     const filterRow = (): HTMLElement | null => el().querySelector('[data-filter-row]');
     const control = <T extends HTMLElement>(name: string): T =>
-      el().querySelector<T>(`[aria-label="Filter by ${name}"]`)!;
+      el().querySelector<T>(
+        `[aria-label="Filter by ${name}"], [aria-label^="Filter by ${name},"]`,
+      )!;
     const toggle = (): HTMLButtonElement =>
       el().querySelector<HTMLButtonElement>('[data-filters-toggle]')!;
     const rowOf = (id: number): HTMLElement | null =>
@@ -283,9 +285,17 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       );
       for (const name of ['Name', 'Type', 'Matter', 'External reference', 'Status'])
         expect(control(name), name).not.toBeNull();
+      // Type is a multi-select: a button that says "All types", the choices are in its panel.
+      expect(control<HTMLButtonElement>('Type').textContent).toContain('All types');
+      control<HTMLButtonElement>('Type').click();
+      await settle(fixture);
       expect(
-        Array.from(control<HTMLSelectElement>('Type').options).map((o) => o.textContent!.trim()),
-      ).toEqual(['All types', 'Document Set', 'Source System']);
+        Array.from(el().querySelectorAll('mf-filter-popover .ms-label')).map((o) =>
+          o.textContent!.trim(),
+        ),
+      ).toEqual(['Document Set', 'Source System']);
+      control<HTMLButtonElement>('Type').click();
+      await settle(fixture);
       expect(
         Array.from(control<HTMLSelectElement>('Status').options).map((o) => o.textContent!.trim()),
       ).toEqual(['Active', 'Inactive', 'All']);
@@ -343,7 +353,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(control<HTMLInputElement>('Name').value).toBe('bundle');
       expect(control<HTMLInputElement>('Matter').value).toBe('343-12');
       expect(control<HTMLInputElement>('External reference').value).toBe('WS');
-      expect(control<HTMLSelectElement>('Type').value).toBe('4');
+      expect(control<HTMLButtonElement>('Type').textContent).toContain('Document Set');
       expect(control<HTMLSelectElement>('Status').value).toBe('inactive');
       expect(el().querySelector('[data-clear-filters]')).not.toBeNull();
     });
@@ -362,7 +372,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
 
       expect(assets.listAssets).toHaveBeenLastCalledWith(
         7,
-        4,
+        [4],
         undefined,
         undefined,
         'dms',
@@ -412,17 +422,16 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         replaceUrl: true,
       });
 
-      const type = control<HTMLSelectElement>('Type');
-      type.value = '4';
-      type.dispatchEvent(new Event('change'));
+      // Type is a multi-select: tick a choice, Done applies it (several types go to the URL as a list).
+      control<HTMLButtonElement>('Type').click();
+      await settle(fixture);
+      el().querySelector<HTMLInputElement>('mf-filter-popover [data-option="4"]')!.click();
+      el().querySelector<HTMLInputElement>('mf-filter-popover [data-option="5"]')!.click();
+      Array.from(el().querySelectorAll<HTMLButtonElement>('mf-filter-popover button'))
+        .find((b) => b.textContent?.trim() === 'Done')!
+        .click();
       expect(navigate).toHaveBeenLastCalledWith([], {
-        queryParams: { typeId: '4', page: null },
-        queryParamsHandling: 'merge',
-      });
-      type.value = '';
-      type.dispatchEvent(new Event('change'));
-      expect(navigate).toHaveBeenLastCalledWith([], {
-        queryParams: { typeId: null, page: null },
+        queryParams: { typeId: ['4', '5'], page: null },
         queryParamsHandling: 'merge',
       });
 
@@ -740,7 +749,14 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       );
       expect(el().querySelector('.mf-picker__change')).toBeNull();
       // Only active types are offered.
-      expect(types.listAssetTypes).toHaveBeenCalledWith(undefined, true, 1, 100, undefined);
+      expect(types.listAssetTypes).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+        true,
+        1,
+        100,
+        undefined,
+      );
       expect(el().querySelector('[data-type-fields]')).toBeNull();
 
       await chooseType('4');

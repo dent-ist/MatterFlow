@@ -254,7 +254,18 @@ export class AssetFormPage implements HasUnsavedChanges {
 
   protected readonly searchMatters = async (query: string): Promise<PickerOption[]> => {
     const page = await firstValueFrom(
-      this.matters.listMatters(query, undefined, true, undefined, 1, 8, undefined),
+      this.matters.listMatters(
+        query,
+        undefined,
+        true,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        8,
+        undefined,
+      ),
     );
     return page.items.map(matterOption);
   };
@@ -352,7 +363,7 @@ export class AssetFormPage implements HasUnsavedChanges {
   private async loadTypes(): Promise<void> {
     try {
       const page = await firstValueFrom(
-        this.typesApi.listAssetTypes(undefined, true, 1, 100, undefined),
+        this.typesApi.listAssetTypes(undefined, undefined, true, 1, 100, undefined),
       );
       this.types.set(page.items);
     } catch {

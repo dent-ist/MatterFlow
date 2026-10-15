@@ -16,6 +16,7 @@ import {
   aProject,
   apiError,
   buttonByLabel,
+  fakeQuery,
   ok,
   pageOfProjects,
   provideFakeMe,
@@ -37,11 +38,14 @@ describe('MatterDetailPage', () => {
   let assets: { listAssets: ReturnType<typeof vi.fn> };
   let queue: { getTaskQueue: ReturnType<typeof vi.fn> };
   let fixture: ComponentFixture<MatterDetailPage>;
+  let query: ReturnType<typeof fakeQuery>;
   let navigateByUrl: ReturnType<typeof vi.fn>;
   let writeText: ReturnType<typeof vi.fn>;
   const el = (): HTMLElement => fixture.nativeElement;
 
   async function create(permissions: Permission[], matter = aMatter()): Promise<void> {
+    localStorage.clear();
+    query = fakeQuery();
     matters = {
       getMatter: vi.fn().mockReturnValue(ok(matter)),
       setMatterActive: vi.fn().mockReturnValue(ok(aMatter({ isActive: false }))),
@@ -60,6 +64,7 @@ describe('MatterDetailPage', () => {
         { provide: ProjectsClient, useValue: projects },
         { provide: AssetsClient, useValue: assets },
         { provide: TaskQueueClient, useValue: queue },
+        query.provider,
         ...provideLookups(),
         ...provideClock('2026-10-14T15:00:00Z'),
         {
@@ -129,7 +134,16 @@ describe('MatterDetailPage', () => {
     // The first tab (Tasks) is selected on open; without Task.View it says so and loads nothing.
     expect(el().querySelector('[data-no-access=tasks]')).not.toBeNull();
     expect(queue.getTaskQueue).not.toHaveBeenCalled();
-    expect(projects.listProjects).toHaveBeenCalledWith(undefined, 7, undefined, 1, 100, 'name');
+    expect(projects.listProjects).toHaveBeenCalledWith(
+      undefined,
+      7,
+      undefined,
+      undefined,
+      undefined,
+      1,
+      100,
+      'name',
+    );
     await openTab('projects');
     expect(el().querySelector('tbody a')?.getAttribute('href')).toBe('/projects/3');
 
@@ -150,7 +164,17 @@ describe('MatterDetailPage', () => {
 
     tab('Projects').click();
     expect(navigate).toHaveBeenCalledWith([], {
-      queryParams: { tab: 'projects' },
+      // The Assets tab's filters, paging and sort belong to that tab only.
+      queryParams: {
+        tab: 'projects',
+        name: null,
+        typeId: null,
+        extref: null,
+        status: null,
+        page: null,
+        size: null,
+        sort: null,
+      },
       queryParamsHandling: 'merge',
     });
     expect(tab('Tasks').getAttribute('aria-selected')).toBe('true'); // the page input follows the address
@@ -236,7 +260,7 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('[data-error]')).not.toBeNull();
   });
 
-  it('lists the matter assets in the Assets tab with server-side search and links to the asset', async () => {
+  it('lists the matter assets in the Assets tab with column filters, server-side, and links to the asset', async () => {
     await create(['Matter.View', 'Asset.View', 'Asset.Create']);
 
     await openTab('assets');
@@ -251,28 +275,38 @@ describe('MatterDetailPage', () => {
       undefined,
       1,
       25,
-      'displayName',
+      undefined,
     );
-    expect(el().querySelector('mf-matter-assets tbody a')?.getAttribute('href')).toBe(
-      '/assets?selected=9',
-    );
+    const grid = el().querySelector('mf-matter-assets')!;
+    expect(grid.querySelector('tbody a')?.getAttribute('href')).toBe('/assets?selected=9');
     expect(buttonByLabel(el(), 'New asset')).toBeDefined();
+    // The standalone search box and status select are gone: Name, Type, External reference and Status are column filters.
+    expect(grid.querySelector('#matter-asset-search, #matter-asset-status')).toBeNull();
+    expect(grid.querySelector('[data-filter-row]')).toBeNull(); // closed by default
+    grid.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
+    await settle(fixture);
+    for (const name of ['Name', 'External reference'])
+      expect(grid.querySelector(`input[aria-label="Filter by ${name}"]`), name).not.toBeNull();
+    expect(
+      grid.querySelector<HTMLSelectElement>('select[aria-label="Filter by Status"]')!.value,
+    ).toBe('active');
+    expect(grid.querySelector('[aria-label^="Filter by Type"]')).not.toBeNull();
 
-    const box = el().querySelector<HTMLInputElement>('#matter-asset-search')!;
-    box.value = 'contract';
-    box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    // The filters come from the address (same parameter names as the Assets screen).
+    query.set({ name: 'contract', extref: 'WS', typeId: '4', status: 'all' });
+    fixture.componentRef.setInput('status', 'all');
     await settle(fixture);
     expect(assets.listAssets).toHaveBeenLastCalledWith(
       7,
+      [4],
       undefined,
-      true,
+      undefined,
       'contract',
-      undefined,
-      undefined,
+      'WS',
       undefined,
       1,
       25,
-      'displayName',
+      undefined,
     );
 
     buttonByLabel(el(), 'New asset')!.click();

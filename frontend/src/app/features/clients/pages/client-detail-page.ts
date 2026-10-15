@@ -96,7 +96,6 @@ type LoadState = 'loading' | 'ready' | 'error';
                   [clientId]="c.clientId"
                   [clientName]="c.name"
                   [clientActive]="c.isActive"
-                  [q]="q()"
                   [status]="status()"
                   [page]="page()"
                   [size]="size()"
@@ -181,7 +180,6 @@ export class ClientDetailPage {
   /** Old deep links: `activity` opens the drawer. */
   readonly tab = input<string>();
   // The Matters list state, bound from the address and handed to the grid.
-  readonly q = input<string>();
   readonly status = input<string>();
   readonly page = input<string>();
   readonly size = input<string>();

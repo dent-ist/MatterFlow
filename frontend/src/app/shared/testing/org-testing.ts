@@ -1,6 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { Provider, inject } from '@angular/core';
 import { ComponentFixture } from '@angular/core/testing';
-import { Observable, of, throwError } from 'rxjs';
+import { ActivatedRoute, ParamMap, Router, convertToParamMap } from '@angular/router';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import {
   ClientResponse,
   MatterResponse,
@@ -124,4 +126,36 @@ export function buttonByLabel(root: ParentNode, label: string): HTMLButtonElemen
   return Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find(
     (b) => b.textContent?.trim() === label,
   );
+}
+
+/**
+ * The query string a page's `ListFilters` reads (it reads the route; the specs mock the router itself). Provide `provider` and call
+ * `set` before or after creating the page: `const query = fakeQuery(); ... providers: [query.provider]; query.set({ name: 'acme' })`.
+ */
+export function fakeQuery(): {
+  provider: Provider;
+  set: (params: Record<string, string>) => void;
+  reset: () => void;
+} {
+  const query$ = new BehaviorSubject<ParamMap>(convertToParamMap({}));
+  return {
+    provider: {
+      provide: ActivatedRoute,
+      useFactory: () => {
+        const root = inject(Router).routerState.root;
+        return Object.create(root, {
+          queryParamMap: { value: query$.asObservable() },
+          snapshot: {
+            value: Object.create(root.snapshot, { queryParamMap: { value: query$.value } }),
+          },
+        });
+      },
+    },
+    set: (params) => {
+      const next: Record<string, string> = {};
+      for (const k of query$.value.keys) next[k] = query$.value.get(k)!;
+      query$.next(convertToParamMap({ ...next, ...params }));
+    },
+    reset: () => query$.next(convertToParamMap({})),
+  };
 }

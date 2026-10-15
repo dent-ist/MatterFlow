@@ -10,6 +10,7 @@ import {
   aMatter,
   apiError,
   buttonByLabel,
+  fakeQuery,
   ok,
   pageOfMatters,
   provideFakeMe,
@@ -23,9 +24,12 @@ describe('ClientDetailPage', () => {
   let matters: { listMatters: ReturnType<typeof vi.fn> };
   let fixture: ComponentFixture<ClientDetailPage>;
   let navigateByUrl: ReturnType<typeof vi.fn>;
+  let query: ReturnType<typeof fakeQuery>;
   const el = (): HTMLElement => fixture.nativeElement;
 
   async function create(permissions: Permission[]) {
+    localStorage.clear();
+    query = fakeQuery();
     clients = {
       getClient: vi.fn().mockReturnValue(ok(aClient())),
       updateClient: vi.fn().mockReturnValue(ok(aClient({ isActive: false }))),
@@ -34,6 +38,7 @@ describe('ClientDetailPage', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        query.provider,
         MessageService,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: ClientsClient, useValue: clients },
@@ -63,6 +68,9 @@ describe('ClientDetailPage', () => {
       1,
       true, // status filter defaults to Active
       undefined,
+      undefined,
+      undefined,
+      undefined,
       1,
       25,
       undefined,
@@ -86,19 +94,38 @@ describe('ClientDetailPage', () => {
     expect(aside.textContent).toContain('Created');
   });
 
-  it('searches, filters by status, sorts and pages the matters through the address', async () => {
+  it('has column filters for Matter and Name and a Status that shows Active; no search box', async () => {
+    await create(['Client.View', 'Matter.View']);
+    expect(el().querySelector('#client-matter-search, #client-matter-status')).toBeNull();
+    expect(el().querySelector('[data-filter-row]')).toBeNull(); // closed by default
+    el().querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
+    await settle(fixture);
+
+    const control = <T extends HTMLElement>(name: string): T =>
+      el().querySelector<T>(`[aria-label="Filter by ${name}"]`)!;
+    expect(control('Matter')).not.toBeNull();
+    expect(control('Name')).not.toBeNull();
+    expect(control<HTMLSelectElement>('Status').value).toBe('active');
+    expect(el().querySelector('[data-filter-count]')).toBeNull();
+  });
+
+  it('filters, sorts and pages the matters through the address', async () => {
     await create(['Client.View', 'Matter.View']);
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    el().querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
+    await settle(fixture);
 
-    const box = el().querySelector<HTMLInputElement>('#client-matter-search')!;
+    const box = el().querySelector<HTMLInputElement>('[aria-label="Filter by Name"]')!;
     box.value = 'merger';
+    box.dispatchEvent(new Event('input'));
     box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    expect(navigate).toHaveBeenCalledWith([], {
-      queryParams: { q: 'merger', page: null },
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { name: 'merger', page: null },
       queryParamsHandling: 'merge',
+      replaceUrl: true,
     });
 
-    const status = el().querySelector<HTMLSelectElement>('#client-matter-status')!;
+    const status = el().querySelector<HTMLSelectElement>('[aria-label="Filter by Status"]')!;
     status.value = 'all';
     status.dispatchEvent(new Event('change'));
     expect(navigate).toHaveBeenLastCalledWith([], {
@@ -106,16 +133,19 @@ describe('ClientDetailPage', () => {
       queryParamsHandling: 'merge',
     });
 
-    // The list state comes from the address (router-bound inputs of the page).
+    // The list state comes from the address: the filters from the query string, paging and sort from the page's router-bound inputs.
+    query.set({ status: 'all', name: 'merger', matterRef: '343-12', isSensitive: 'false' });
     fixture.componentRef.setInput('status', 'all');
-    fixture.componentRef.setInput('q', 'merger');
     fixture.componentRef.setInput('sort', '-name');
     fixture.componentRef.setInput('page', '2');
     await settle(fixture);
     expect(matters.listMatters).toHaveBeenLastCalledWith(
-      'merger',
+      undefined,
       1,
       undefined,
+      false,
+      '343-12',
+      'merger',
       undefined,
       2,
       25,
@@ -123,17 +153,20 @@ describe('ClientDetailPage', () => {
     );
   });
 
-  it('shows an empty state and a retry for the matters', async () => {
+  it('keeps the headers and filter row in the empty state and shows a retry inside the grid', async () => {
     await create(['Client.View', 'Matter.View']);
     matters.listMatters.mockReturnValue(ok(pageOfMatters()));
-    fixture.componentRef.setInput('q', 'zzz');
+    query.set({ name: 'zzz' });
     await settle(fixture);
     expect(el().textContent).toContain('No matters match');
+    expect(el().querySelector('[data-detail-main] thead th')).not.toBeNull();
+    expect(el().querySelector('[data-filter-row]')).not.toBeNull();
 
     matters.listMatters.mockReturnValue(apiError(500, { title: 'x', status: 500 } as never));
-    fixture.componentRef.setInput('q', 'yyy');
+    query.set({ name: 'yyy' });
     await settle(fixture);
     expect(el().querySelector('[data-detail-main] [role=alert]')).not.toBeNull();
+    expect(el().querySelector('[data-detail-main] thead th')).not.toBeNull();
   });
 
   it('gates the actions by permission', async () => {

@@ -380,7 +380,9 @@ export class AdvancedSearchPage {
   private requestId = 0;
 
   readonly searchClients = async (query: string): Promise<PickerOption[]> => {
-    const page = await firstValueFrom(this.clients.listClients(query, undefined, 1, 8, undefined));
+    const page = await firstValueFrom(
+      this.clients.listClients(query, undefined, undefined, undefined, 1, 8, undefined),
+    );
     return page.items.map((c) => ({
       id: c.clientId,
       label: `${c.clientNumber} ${c.name}`,
@@ -390,7 +392,18 @@ export class AdvancedSearchPage {
 
   readonly searchMatters = async (query: string): Promise<PickerOption[]> => {
     const page = await firstValueFrom(
-      this.matters.listMatters(query, undefined, undefined, undefined, 1, 8, undefined),
+      this.matters.listMatters(
+        query,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        8,
+        undefined,
+      ),
     );
     return page.items.map((m) => ({
       id: m.matterId,
@@ -576,7 +589,7 @@ export class AdvancedSearchPage {
       this.assetTypes.set(
         (
           await firstValueFrom(
-            this.assetTypesApi.listAssetTypes(undefined, undefined, 1, 100, undefined),
+            this.assetTypesApi.listAssetTypes(undefined, undefined, undefined, 1, 100, undefined),
           )
         ).items,
       );

@@ -1,20 +1,40 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  inject,
+  viewChild,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { MatterResponse, MattersClient } from '../../../api/generated/api-client';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
+import { matterColumnDefs } from '../../../shared/filters/common-defs';
+import { FilterDef } from '../../../shared/filters/filter-def';
+import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActiveBadge, SensitiveBadge } from '../../../shared/ui/badge';
-import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-table';
-import { isActiveParam } from '../../../shared/ui/list-helpers';
+import { SortHeader } from '../../../shared/ui/data-table';
+import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
+import { GridBody } from '../../../shared/ui/grid-body';
+import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { MatterRef } from '../../../shared/ui/matter-ref';
-import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
-import { SearchBox } from '../../../shared/ui/search-box';
 
-/** Matters list (UX S06): search by `343-12`, `00343-00012`, a number or a name; client and status filters; state lives in the URL. */
+/** The columns of the grid, in order; the keys the filter definitions point at. */
+const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
+
+/**
+ * Matters list (UX S06): inline column filters (Matter reference, Name, Client, Status with Active by default, and Sensitive under
+ * "More filters"); a link from a Client keeps `?clientId=` as a removable chip. State lives in the URL.
+ */
 @Component({
   selector: 'mf-matters-list-page',
   imports: [
@@ -28,10 +48,10 @@ import { SearchBox } from '../../../shared/ui/search-box';
     HasPermissionDirective,
     Pager,
     MatterRef,
-    SearchBox,
-    StatusFilter,
     SortHeader,
-    ListState,
+    GridBody,
+    FiltersBar,
+    ColumnFilterRow,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -47,47 +67,10 @@ import { SearchBox } from '../../../shared/ui/search-box';
         />
       </mf-page-header>
 
-      <div class="pg-filters" role="search">
-        <mf-search-box
-          inputId="matter-search"
-          placeholder="343-12, 00343-00012 or name"
-          [value]="q() ?? ''"
-          (searchChange)="search($event)"
-        />
-        <mf-status-filter
-          inputId="matter-status"
-          [value]="statusFilter()"
-          (valueChange)="setStatus($event)"
-        />
-        @if (clientId()) {
-          <div class="pg-filter">
-            <span class="pg-label">Client</span>
-            <span data-client-chip>
-              {{ clientChip() }}
-              <button type="button" (click)="clearClient()" aria-label="Remove client filter">
-                Remove
-              </button>
-            </span>
-          </div>
-        }
-      </div>
+      <mf-filters-bar [filters]="filters" controls="matter-filter-row" [clearAlso]="['q']" />
 
-      <mf-list-state
-        noun="matters"
-        [state]="state()"
-        [empty]="rows().length === 0"
-        [filtered]="hasFilter()"
-        [columns]="5"
-        (retry)="load()"
-        (clear)="clear()"
-      >
-        <p-button
-          mfEmptyAction
-          *mfHasPermission="'Matter.Create'"
-          label="New matter"
-          (onClick)="go('/matters/new')"
-        />
-        <div class="mf-table-wrap" mfScrollArea="Matters list">
+      <div class="mf-fill">
+        <div class="mf-table-wrap" mfScrollArea="Matters list" #scroll>
           <div class="mf-scroll">
             <table class="pg-table">
               <caption class="pg-sr">
@@ -122,8 +105,31 @@ import { SearchBox } from '../../../shared/ui/search-box';
                   <th scope="col">Projects</th>
                   <th scope="col">Status</th>
                 </tr>
+                @if (filters.rowVisible()) {
+                  <tr
+                    mfColumnFilterRow
+                    id="matter-filter-row"
+                    [filters]="filters"
+                    [columns]="columns"
+                  ></tr>
+                }
               </thead>
-              <tbody>
+              <tbody
+                mfGridBody
+                noun="matters"
+                [state]="state()"
+                [empty]="rows().length === 0"
+                [filtered]="filters.activeCount() > 0"
+                [columns]="5"
+                (retry)="load()"
+                (clear)="clear()"
+              >
+                <p-button
+                  mfEmptyAction
+                  *mfHasPermission="'Matter.Create'"
+                  label="New matter"
+                  (onClick)="go('/matters/new')"
+                />
                 @for (m of rows(); track m.matterId) {
                   <tr>
                     <td>
@@ -150,57 +156,90 @@ import { SearchBox } from '../../../shared/ui/search-box';
             </table>
           </div>
         </div>
-        <mf-pager
-          [page]="pageNumber()"
-          [pageSize]="pageSize()"
-          [pageSizes]="pageSizes"
-          [total]="total()"
-          (pageChange)="goToPage($event)"
-          (pageSizeChange)="setPageSize($event)"
-        />
-      </mf-list-state>
+        @if (state() === 'ready' && total() > 0) {
+          <mf-pager
+            [page]="pageNumber()"
+            [pageSize]="pageSize()"
+            [pageSizes]="pageSizes"
+            [total]="total()"
+            (pageChange)="goToPage($event)"
+            (pageSizeChange)="setPageSize($event)"
+          />
+        }
+      </div>
     </mf-fixed-page>
   `,
 })
 export class MattersListPage extends ServerListPage<MatterResponse> {
-  /** Query parameter `clientId` (bound by the router). */
-  readonly clientId = input<string>();
-
   private readonly api = inject(MattersClient);
+  private readonly injector = inject(Injector);
+  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
   protected readonly defaultSort = 'matterRef';
+  protected readonly columns = COLUMNS;
 
   protected readonly clientChip = computed(() => {
     const first = this.rows()[0];
-    return first && String(first.clientId) === this.clientId()
+    const id = this.filters.text('clientId');
+    return first && String(first.clientId) === id
       ? `${first.clientNumber} ${first.clientName}`
-      : `Client ${this.clientId()}`;
+      : `Client ${id}`;
   });
 
-  protected override extraFilters() {
-    return { clientId: this.clientId() };
+  /** One definition per filter: the row, the sheet, the chips, the count, the URL and the API arguments all come from it. */
+  private readonly defs = computed((): FilterDef[] => {
+    const [ref, name, status, sensitive] = matterColumnDefs();
+    return [
+      ref,
+      name,
+      { key: 'client', label: 'Client', column: 'client', type: 'text' },
+      status,
+      sensitive,
+      // `?clientId=` (a link from a client): no control, a removable chip.
+      {
+        key: 'clientId',
+        label: 'Client',
+        type: 'text',
+        noControl: true,
+        valueLabel: (): string => this.clientChip(),
+      },
+    ];
+  });
+
+  protected readonly filters: ListFilters = new ListFilters({
+    screen: 'matters',
+    noun: 'matters',
+    defs: this.defs,
+  });
+
+  constructor() {
+    super();
+    // The controls move into the sheet while the grid scrolls sideways.
+    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
+      injector: this.injector,
+    });
   }
 
-  protected override watch(): void {
-    this.clientId();
+  protected override listFilters() {
+    return this.filters;
   }
 
   protected override fetch() {
-    const clientId = Number(this.clientId());
+    const clientId = Number(this.filters.text('clientId'));
+    const sensitive = this.filters.text('isSensitive');
     return firstValueFrom(
       this.api.listMatters(
-        this.q()?.trim() || undefined,
-        Number.isInteger(clientId) && clientId > 0 ? clientId : undefined,
-        isActiveParam(this.statusFilter()),
         undefined,
+        Number.isInteger(clientId) && clientId > 0 ? clientId : undefined,
+        isActiveParam(parseStatus(this.filters.text('status'))),
+        sensitive === '' ? undefined : sensitive === 'true',
+        this.filters.text('matterRef') || undefined,
+        this.filters.text('name') || undefined,
+        this.filters.text('client') || undefined,
         this.pageNumber(),
         this.pageSize(),
         this.sort() || undefined,
       ),
     );
-  }
-
-  protected clearClient(): void {
-    this.navigate({ clientId: null, page: null });
   }
 }

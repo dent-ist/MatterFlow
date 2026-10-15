@@ -1,228 +1,241 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  effect,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
   inject,
   input,
   signal,
-  untracked,
+  viewChild,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
-import { AssetListItem, AssetsClient } from '../../api/generated/api-client';
+import {
+  AssetListItem,
+  AssetTypeResponse,
+  AssetTypesClient,
+  AssetsClient,
+} from '../../api/generated/api-client';
 import { HasPermissionDirective } from '../directives/has-permission.directive';
-import { StatusFilter, isActiveParam, debounced } from './list-helpers';
-import { ScrollArea } from './fixed-page';
-import { Pager } from './pager';
-import { ErrorReference } from './error-reference';
+import { ColumnFilterRow } from '../filters/column-filter-row';
+import { statusDef } from '../filters/common-defs';
+import { FilterDef, FilterOption } from '../filters/filter-def';
+import { FiltersBar } from '../filters/filters-bar';
+import { ListFilters } from '../filters/list-filters';
 import { ActiveBadge } from './badge';
+import { SortHeader } from './data-table';
+import { ScrollArea } from './fixed-page';
+import { GridBody } from './grid-body';
+import { isActiveParam, parseStatus } from './list-helpers';
+import { ServerListPage } from './list-query';
+import { Pager } from './pager';
 
-type LoadState = 'loading' | 'ready' | 'error';
+/** The columns of the grid, in order; the keys the filter definitions point at. */
+const COLUMNS = ['name', 'type', 'externalReference', 'status'] as const;
 
 /**
- * The Assets tab of a Matter (UX S08, S06): server-side search by name, type or external reference, a status filter and paging, for
- * the 200 to 300 assets a Matter can hold. Creating an asset starts from here with the Matter prefilled and locked.
+ * The Assets tab of a Matter (UX S08, S06): the same inline column filters as the Assets screen (Name, Type, External reference, Status
+ * with Active by default; `name`, `typeId`, `extref`, `status` in the URL), all server-side, with sorting and paging, for the 200 to 300
+ * assets a Matter can hold. Creating an asset starts from here with the Matter prefilled and locked.
  */
 @Component({
   selector: 'mf-matter-assets',
   imports: [
     ActiveBadge,
-    ErrorReference,
     RouterLink,
     Button,
     HasPermissionDirective,
     Pager,
     ScrollArea,
+    SortHeader,
+    GridBody,
+    FiltersBar,
+    ColumnFilterRow,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styleUrl: './page.scss',
   template: `
-    <div class="pg-filters" role="search">
-      <div class="pg-filter">
-        <label for="matter-asset-search">Search assets</label>
-        <input
-          #searchBox
-          id="matter-asset-search"
-          class="mf-control pg-input"
-          type="search"
-          placeholder="Name, type or reference"
-          [value]="q()"
-          (keydown.enter)="search(searchBox.value)"
-          (input)="searchLater(searchBox.value)"
-          (blur)="search(searchBox.value)"
-        />
-      </div>
-      <div class="pg-filter">
-        <label for="matter-asset-status">Status</label>
-        <select
-          id="matter-asset-status"
-          class="mf-control pg-input"
-          [value]="status()"
-          (change)="setStatus($any($event.target).value)"
-        >
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="all">All</option>
-        </select>
-      </div>
+    <mf-filters-bar [filters]="filters" controls="matter-asset-filter-row">
       <p-button
+        mfBarStart
         *mfHasPermission="'Asset.Create'"
         label="New asset"
         icon="pi pi-plus"
         severity="secondary"
+        data-new-asset
         (onClick)="newAsset()"
       />
-    </div>
+    </mf-filters-bar>
 
-    @switch (state()) {
-      @case ('loading') {
-        <div class="pg-state" role="status" aria-busy="true">Loading assets...</div>
-      }
-      @case ('error') {
-        <div class="pg-alert" role="alert">
-          We couldn't load the assets.
-          <mf-error-reference />
-          <p-button label="Retry" severity="secondary" (onClick)="load()" />
-        </div>
-      }
-      @case ('ready') {
-        @if (rows().length === 0) {
-          <div
-            class="pg-state"
-            [attr.data-empty]="q() || status() !== 'active' ? 'filtered' : 'none'"
-          >
-            @if (q() || status() !== 'active') {
-              <p>No assets match these filters.</p>
-            } @else {
-              <p>No assets in this matter yet.</p>
+    <div class="mf-table-wrap" mfScrollArea="Assets list" #scroll>
+      <div class="mf-scroll">
+        <table class="pg-table">
+          <caption class="pg-sr">
+            Assets of this matter
+          </caption>
+          <thead>
+            <tr>
+              <th
+                mfSort="displayName"
+                [sort]="sort()"
+                [defaultSort]="defaultSort"
+                (sorted)="setSort($event)"
+              >
+                Name
+              </th>
+              <th
+                mfSort="assetType"
+                [sort]="sort()"
+                [defaultSort]="defaultSort"
+                (sorted)="setSort($event)"
+              >
+                Type
+              </th>
+              <th scope="col">External reference</th>
+              <th scope="col">Status</th>
+            </tr>
+            @if (filters.rowVisible()) {
+              <tr
+                mfColumnFilterRow
+                id="matter-asset-filter-row"
+                [filters]="filters"
+                [columns]="columns"
+              ></tr>
             }
-          </div>
-        } @else {
-          <div
-            class="mf-scroll"
-            mfScrollArea="Assets list"
-            [resetKey]="q() + '|' + status() + '|' + page()"
+          </thead>
+          <tbody
+            mfGridBody
+            noun="assets"
+            emptyText="No assets in this matter yet."
+            [state]="state()"
+            [empty]="rows().length === 0"
+            [filtered]="filters.activeCount() > 0"
+            [columns]="4"
+            (retry)="load()"
+            (clear)="clear()"
           >
-            <table class="pg-table">
-              <caption class="pg-sr">
-                Assets of this matter
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">Type</th>
-                  <th scope="col">External reference</th>
-                  <th scope="col">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (a of rows(); track a.assetId) {
-                  <tr>
-                    <td>
-                      <a
-                        class="pg-link"
-                        routerLink="/assets"
-                        [queryParams]="{ selected: a.assetId }"
-                        >{{ a.displayName }}</a
-                      >
-                    </td>
-                    <td>{{ a.assetTypeName }}</td>
-                    <td class="pg-mono">{{ a.externalReference }}</td>
-                    <td>
-                      <mf-active-badge [active]="a.isActive" />
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-          <mf-pager
-            [page]="page()"
-            [pageSize]="pageSize"
-            [total]="total()"
-            (pageChange)="goToPage($event)"
-          />
-        }
-      }
+            @for (a of rows(); track a.assetId) {
+              <tr>
+                <td>
+                  <a class="pg-link" routerLink="/assets" [queryParams]="{ selected: a.assetId }">{{
+                    a.displayName
+                  }}</a>
+                </td>
+                <td>{{ a.assetTypeName }}</td>
+                <td class="pg-mono">{{ a.externalReference }}</td>
+                <td>
+                  <mf-active-badge [active]="a.isActive" />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+    @if (state() === 'ready' && total() > 0) {
+      <mf-pager
+        [page]="pageNumber()"
+        [pageSize]="pageSize()"
+        [pageSizes]="pageSizes"
+        [total]="total()"
+        (pageChange)="goToPage($event)"
+        (pageSizeChange)="setPageSize($event)"
+      />
     }
   `,
 })
-export class MatterAssets {
+export class MatterAssets extends ServerListPage<AssetListItem> {
   readonly matterId = input.required<number>();
 
   private readonly api = inject(AssetsClient);
-  private readonly router = inject(Router);
+  private readonly typesApi = inject(AssetTypesClient);
+  private readonly injector = inject(Injector);
+  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
-  protected readonly pageSize = 25;
-  protected readonly state = signal<LoadState>('loading');
-  protected readonly rows = signal<AssetListItem[]>([]);
-  protected readonly total = signal(0);
-  protected readonly q = signal('');
-  protected readonly status = signal<StatusFilter>('active');
-  protected readonly page = signal(1);
-  private requestId = 0;
+  protected readonly defaultSort = 'displayName';
+  protected readonly columns = COLUMNS;
+  protected readonly types = signal<AssetTypeResponse[]>([]);
+
+  protected readonly typeOptions = computed<FilterOption[]>(() =>
+    this.types().map((t) => ({ value: String(t.assetTypeId), label: t.name })),
+  );
+
+  /** One definition per filter: the Assets screen's, without the Matter (it is fixed here). */
+  private readonly defs = computed((): FilterDef[] => [
+    { key: 'name', label: 'Name', column: 'name', type: 'text' },
+    {
+      key: 'typeId',
+      label: 'Type',
+      column: 'type',
+      type: 'multiSelect',
+      emptyLabel: 'All types',
+      options: this.typeOptions(),
+    },
+    { key: 'extref', label: 'External reference', column: 'externalReference', type: 'text' },
+    statusDef(),
+  ]);
+
+  protected readonly filters: ListFilters = new ListFilters({
+    screen: 'matter-assets',
+    noun: 'assets',
+    defs: this.defs,
+  });
 
   constructor() {
-    effect(() => {
-      this.matterId();
-      untracked(() => {
-        this.page.set(1);
-        void this.load();
-      });
+    super();
+    void this.loadTypes();
+    // The controls move into the sheet while the grid scrolls sideways.
+    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
+      injector: this.injector,
     });
   }
 
-  async load(): Promise<void> {
-    const id = ++this.requestId;
-    this.state.set('loading');
+  protected override listFilters() {
+    return this.filters;
+  }
+
+  protected override watch(): void {
+    this.matterId();
+    super.watch();
+  }
+
+  private async loadTypes(): Promise<void> {
     try {
-      const result = await firstValueFrom(
-        this.api.listAssets(
-          this.matterId(),
-          undefined,
-          isActiveParam(this.status()),
-          this.q().trim() || undefined,
-          undefined,
-          undefined,
-          undefined,
-          this.page(),
-          this.pageSize,
-          'displayName',
-        ),
+      const page = await firstValueFrom(
+        this.typesApi.listAssetTypes(undefined, undefined, undefined, 1, 100, undefined),
       );
-      if (id !== this.requestId) return;
-      this.rows.set(result.items);
-      this.total.set(result.total);
-      this.state.set('ready');
+      this.types.set(page.items);
     } catch {
-      if (id === this.requestId) this.state.set('error');
+      this.types.set([]); // the filter just offers no types; the list still works
     }
   }
 
-  protected readonly searchLater = debounced((text: string) => this.search(text));
-
-  protected search(text: string): void {
-    const q = text.trim();
-    if (q === this.q()) return;
-    this.q.set(q);
-    this.page.set(1);
-    void this.load();
-  }
-
-  protected setStatus(status: string): void {
-    this.status.set(status === 'inactive' || status === 'all' ? status : 'active');
-    this.page.set(1);
-    void this.load();
-  }
-
-  protected goToPage(page: number): void {
-    this.page.set(page);
-    void this.load();
+  protected override fetch() {
+    const typeIds = this.filters
+      .list('typeId')
+      .map(Number)
+      .filter((n) => Number.isInteger(n) && n > 0);
+    return firstValueFrom(
+      this.api.listAssets(
+        this.matterId(),
+        typeIds.length > 0 ? typeIds : undefined,
+        isActiveParam(parseStatus(this.filters.text('status'))),
+        undefined,
+        this.filters.text('name') || undefined,
+        this.filters.text('extref') || undefined,
+        undefined,
+        this.pageNumber(),
+        this.pageSize(),
+        this.sort() || undefined,
+      ),
+    );
   }
 
   protected newAsset(): void {
-    void this.router.navigateByUrl(`/assets/new?matterId=${this.matterId()}`);
+    this.go(`/assets/new?matterId=${this.matterId()}`);
   }
 }

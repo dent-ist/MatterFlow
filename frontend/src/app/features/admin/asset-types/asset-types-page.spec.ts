@@ -75,18 +75,39 @@ describe('AssetTypesPage', () => {
 
   it('has the search box and status filter of the other admin lists, sent to the API (UXR4-13)', async () => {
     await create(['AssetType.Manage', 'Asset.View']);
-    expect(api.listAssetTypes).toHaveBeenLastCalledWith(undefined, undefined, 1, 100, 'sortOrder');
+    expect(api.listAssetTypes).toHaveBeenLastCalledWith(
+      undefined,
+      undefined,
+      undefined,
+      1,
+      100,
+      'sortOrder',
+    );
 
     const status = el().querySelector<HTMLSelectElement>('#asset-type-status')!;
     status.value = 'active';
     status.dispatchEvent(new Event('change'));
     await settle(fixture);
-    expect(api.listAssetTypes).toHaveBeenLastCalledWith(undefined, true, 1, 100, 'sortOrder');
+    expect(api.listAssetTypes).toHaveBeenLastCalledWith(
+      undefined,
+      undefined,
+      true,
+      1,
+      100,
+      'sortOrder',
+    );
 
     status.value = 'inactive';
     status.dispatchEvent(new Event('change'));
     await settle(fixture);
-    expect(api.listAssetTypes).toHaveBeenLastCalledWith(undefined, false, 1, 100, 'sortOrder');
+    expect(api.listAssetTypes).toHaveBeenLastCalledWith(
+      undefined,
+      undefined,
+      false,
+      1,
+      100,
+      'sortOrder',
+    );
   });
 
   it('lists the types with their field status, asset count and a link to the form designer', async () => {
@@ -100,7 +121,14 @@ describe('AssetTypesPage', () => {
     expect(rows[0].querySelector('a')?.getAttribute('href')).toBe('/admin/asset-types/4/form');
     expect(rows[1].textContent).toContain('No published fields');
     expect(rows[1].textContent).toContain('Inactive');
-    expect(api.listAssetTypes).toHaveBeenCalledWith(undefined, undefined, 1, 100, 'sortOrder');
+    expect(api.listAssetTypes).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+      undefined,
+      1,
+      100,
+      'sortOrder',
+    );
   });
 
   it('creates a type and reloads the list', async () => {
