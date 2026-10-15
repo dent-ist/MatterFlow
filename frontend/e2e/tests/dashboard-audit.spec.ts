@@ -87,6 +87,164 @@ test.describe('Dashboard drill-through', () => {
   });
 });
 
+test.describe('Dashboard actions and click-through', () => {
+  const chips = (page: import('@playwright/test').Page) =>
+    page.getByRole('list', { name: 'Active filters' });
+
+  test('Needs attention counts open the Task Queue and the filter arrives as a chip', async ({
+    page,
+    seed,
+  }) => {
+    const world = await seed.world();
+    await seed.task(world, { title: `Attn ${uid()}` });
+    await page.goto('/dashboard');
+
+    const attention = page.getByRole('group', { name: 'Needs attention' });
+    await expect(attention.getByRole('link')).toHaveCount(4);
+    await attention.getByRole('link', { name: /^Overdue: \d+\./ }).click();
+    await expect(page).toHaveURL(/overdue=true/);
+    await expect(chips(page)).toContainText('Overdue only');
+
+    await page.goBack();
+    await attention.getByRole('link', { name: /^Unassigned: \d+\./ }).click();
+    await expect(chips(page)).toContainText('Assignee: Unassigned');
+
+    await page.goBack();
+    await attention.getByRole('link', { name: /^ASAP open: \d+\./ }).click();
+    await expect(chips(page)).toContainText('ASAP only');
+
+    await page.goBack();
+    await attention.getByRole('link', { name: /^On hold: \d+\./ }).click();
+    await expect(page).toHaveURL(/status=ON_HOLD/);
+    await expect(chips(page)).toContainText('Status: On Hold');
+  });
+
+  test('age bands, priority bars and the trend legend open the filtered queue with chips', async ({
+    page,
+    seed,
+  }) => {
+    const world = await seed.world();
+    await seed.task(world, { title: `Age ${uid()}` });
+    await page.goto('/dashboard');
+
+    await page.getByRole('link', { name: /^0-2 days: \d+ tasks/ }).click();
+    await expect(page).toHaveURL(/createdFrom=.*createdTo=/);
+    await expect(chips(page)).toContainText('Created:');
+
+    await page.goBack();
+    const priorityBars = page.locator('mf-bar-list', { hasText: 'Open by priority' });
+    await priorityBars.getByRole('link').first().click();
+    await expect(page).toHaveURL(/priority=\d+/);
+    await expect(chips(page)).toContainText('Priority:');
+
+    await page.goBack();
+    await page
+      .getByRole('link', { name: /^Created \d+/ })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/createdFrom=/);
+    await expect(chips(page)).toContainText('Created: from');
+  });
+
+  test('the unassigned queue lets me take a task: the row shows me and the counts are read again', async ({
+    page,
+    seed,
+  }) => {
+    const world = await seed.world();
+    await seed.task(world, { title: `Take ${uid()}` });
+    await page.goto('/dashboard');
+
+    const panel = page.locator('[data-panel="unassigned"]');
+    const first = panel.locator('li').first();
+    await expect(first).toBeVisible();
+    const number = await first.getAttribute('data-task');
+    const recount = page.waitForRequest(
+      (r) => r.url().includes('/api/v1/dashboard') && r.url().includes('fresh=true'),
+    );
+    await first.getByRole('button', { name: /^Assign TSK-\d+ to me$/ }).click();
+
+    const row = panel.locator(`li[data-task="${number}"]`);
+    await expect(row.getByRole('button', { name: /^Assign .* to me$/ })).toHaveCount(0);
+    await expect(
+      row.getByRole('button', { name: /^Change assignee of .*, currently (?!unassigned)/ }),
+    ).toBeVisible();
+    await recount;
+    await expect(page.getByText(/is In Progress|assigned to/).first()).toBeVisible();
+  });
+
+  test('overdue and due-soon lists link to the sorted queue', async ({ page, seed }) => {
+    const world = await seed.world();
+    await seed.task(world, { title: `Late ${uid()}`, dueDate: dateInZone(FIRM_ZONE, -3) });
+    await page.goto('/dashboard');
+
+    const overdue = page.locator('[data-panel="overdue"]');
+    await expect(overdue.locator('li').first()).toContainText('Overdue');
+    await overdue.getByRole('link', { name: /View all overdue tasks/ }).click();
+    await expect(page).toHaveURL(/overdue=true/);
+    await expect(page).toHaveURL(/sort=due/);
+    await expect(chips(page)).toContainText('Overdue only');
+  });
+
+  test('the period presets drive created and completed only, and the choice sticks', async ({
+    page,
+  }) => {
+    await page.goto('/dashboard');
+    const week = page.waitForRequest(
+      (r) => /periodDays=\d+/.test(r.url()) && r.url().includes('/api/v1/dashboard'),
+    );
+    await page.locator('select[data-period]').selectOption({ label: 'This week' });
+    await week;
+    await expect(
+      page.getByRole('group', { name: 'Overview', exact: true }).getByText('This week').first(),
+    ).toBeVisible();
+
+    await page.reload();
+    await expect(page.locator('select[data-period]')).toHaveValue('week');
+  });
+
+  test('a section can be collapsed and stays collapsed after a reload', async ({ page }) => {
+    await page.goto('/dashboard');
+    const lists = page.getByRole('region', { name: 'Tasks to act on' });
+    await expect(lists.locator('[data-panel="unassigned"]')).toBeVisible();
+    await lists.getByRole('button', { name: /^Hide/ }).click();
+    await expect(lists.locator('[data-panel="unassigned"]')).toHaveCount(0);
+
+    await page.reload();
+    const again = page.getByRole('region', { name: 'Tasks to act on' });
+    await expect(again.getByRole('button', { name: /^Show/ })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    await again.getByRole('button', { name: /^Show/ }).click();
+    await expect(again.locator('[data-panel="unassigned"]')).toBeVisible();
+  });
+
+  test('the trend has a chart and a table of the same days', async ({ page, seed }) => {
+    const world = await seed.world();
+    await seed.task(world, { title: `Trend ${uid()}` });
+    await page.goto('/dashboard');
+    const trend = page.getByRole('region', { name: 'Created and completed', exact: true });
+    await expect(trend.getByRole('img', { name: /created and completed per day/i })).toBeVisible();
+    await trend.getByRole('button', { name: /View as table/ }).click();
+    await expect(trend.getByRole('table')).toBeVisible();
+    await expect(trend.getByRole('table').getByRole('link').first()).toBeVisible();
+  });
+
+  test('someone with nothing assigned sees a clear message and a way to find work', async ({
+    seed,
+    asUser,
+  }) => {
+    const user = await seed.user(['Director'], 'idle');
+    const page = await asUser(user.username);
+    await page.goto('/dashboard');
+    const mine = page.getByRole('region', { name: 'Your work' });
+    await expect(mine.getByText('Nothing assigned to you.')).toBeVisible();
+    await expect(
+      mine.getByRole('link', { name: /Browse (Pod Work|the Task Queue)/ }),
+    ).toBeVisible();
+  });
+});
+
 test.describe('Audit log browser (smoke)', () => {
   test('the audit log lists the events of one task and shows the details of an event', async ({
     page,

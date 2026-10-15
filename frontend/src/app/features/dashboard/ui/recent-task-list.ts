@@ -13,7 +13,7 @@ let nextId = 0;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="card" [attr.aria-labelledby]="id">
-      <h2 [id]="id">{{ heading() }}</h2>
+      <h3 [id]="id">{{ heading() }}</h3>
       @if (tasks().length === 0) {
         <p class="empty">{{ emptyText() }}</p>
       } @else {
@@ -46,7 +46,7 @@ let nextId = 0;
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius-lg);
     }
-    h2 {
+    h3 {
       margin: 0 0 var(--mf-s3);
       font-size: var(--mf-fs-lg);
     }

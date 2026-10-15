@@ -10,6 +10,18 @@ export function levelBars(rank: number | null | undefined): number {
 }
 
 /**
+ * The badge colours of a priority tone (`critical`, `high`, `normal`, `low`, or `#RRGGBB`), as CSS values. Charts use the same pair as the
+ * badge (fill and outline) so a priority looks the same everywhere.
+ */
+export function priorityColors(tone: string | null | undefined): { bg: string; fg: string } {
+  const t = tone ?? 'neutral';
+  if (TOKENS.has(t)) return { bg: `var(--mf-pr-${t}-bg)`, fg: `var(--mf-pr-${t}-fg)` };
+  return isHexColor(t)
+    ? { bg: t, fg: readableTextOn(t).color }
+    : { bg: 'var(--mf-surface-alt)', fg: 'var(--mf-text)' };
+}
+
+/**
  * Priority badge (UX 4.5, `mf-priority-badge`): label text plus a level-bar glyph so it is not color-only. Pass `priorityId`
  * to follow the shared lookups (renames and recolors appear everywhere, deactivated priorities still display), or `label`,
  * `color` and `rank` directly for previews.
@@ -104,15 +116,6 @@ export class PriorityBadge {
     return [0, 1, 2, 3].map((i) => i < n);
   });
 
-  protected readonly background = computed(() => {
-    const tone = this.tone();
-    if (TOKENS.has(tone)) return `var(--mf-pr-${tone}-bg)`;
-    return isHexColor(tone) ? tone : 'var(--mf-surface-alt)';
-  });
-
-  protected readonly foreground = computed(() => {
-    const tone = this.tone();
-    if (TOKENS.has(tone)) return `var(--mf-pr-${tone}-fg)`;
-    return isHexColor(tone) ? readableTextOn(tone).color : 'var(--mf-text)';
-  });
+  protected readonly background = computed(() => priorityColors(this.tone()).bg);
+  protected readonly foreground = computed(() => priorityColors(this.tone()).fg);
 }

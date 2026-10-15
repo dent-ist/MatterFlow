@@ -302,6 +302,34 @@ describe('RowEdit', () => {
     expect(undo.current()?.message).toContain('moved to In Progress');
   });
 
+  it('assignee: "Assign to me" appears only when asked for and only for an unassigned task, and assigns the signed-in user', async () => {
+    const unassigned = aRow({ status: 'NEW', assignedUser: undefined });
+    await create('assignee', unassigned);
+    expect(el().querySelector('[data-assign-me]')).toBeNull();
+
+    TestBed.resetTestingModule();
+    await create('assignee', aRow());
+    fixture.componentRef.setInput('assignMe', true);
+    fixture.detectChanges();
+    expect(el().querySelector('[data-assign-me]')).toBeNull();
+
+    TestBed.resetTestingModule();
+    await create('assignee', unassigned);
+    fixture.componentRef.setInput('assignMe', true);
+    fixture.detectChanges();
+    const button = el().querySelector<HTMLButtonElement>('[data-assign-me]')!;
+    expect(button.getAttribute('aria-label')).toBe('Assign TSK-1042 to me');
+    button.click();
+    await fixture.whenStable();
+    expect(tasks['assignTask']).toHaveBeenCalledWith(1042, {
+      rowVersion: 'AAAA',
+      podId: 5,
+      userId: 1,
+    });
+    expect(emitted[0].assignedUser?.displayName).toBe('Test User');
+    expect(undo.current()).not.toBeNull();
+  });
+
   it('assignee without a Pod searches all users', async () => {
     await create('assignee', aRow({ assignedPod: undefined, assignedUser: undefined }));
     await open();

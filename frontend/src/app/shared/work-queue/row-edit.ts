@@ -64,6 +64,24 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
   selector: 'mf-row-edit',
   imports: [InlineMenu, InlineStatusFlow, PriorityBadge, StatusBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `
+    .re-me {
+      margin-left: var(--mf-s2);
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--mf-link);
+      font: inherit;
+      font-size: var(--mf-fs-sm);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      cursor: pointer;
+    }
+    .re-me:disabled {
+      color: var(--mf-text-disabled);
+      cursor: default;
+    }
+  `,
   template: `
     @let r = row();
     <mf-inline-menu
@@ -102,6 +120,18 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
         }
       }
     </mf-inline-menu>
+    @if (field() === 'assignee' && assignMe() && !r.assignedUser && myId() > 0) {
+      <button
+        type="button"
+        class="re-me"
+        data-assign-me
+        [disabled]="busy()"
+        [attr.aria-label]="'Assign ' + r.taskNumber + ' to me'"
+        (click)="assignToMe()"
+      >
+        Assign to me
+      </button>
+    }
     @if (flow(); as action) {
       <mf-inline-status-flow
         [row]="r"
@@ -136,6 +166,8 @@ export class RowEdit {
    * instead of the lifecycle matrix and the caller's permissions.
    */
   readonly transitions = input<TaskTransitionOption[] | null>(null);
+  /** Assignee cell only: adds an "Assign to me" button next to the menu for a Task nobody is assigned to (the Dashboard's unassigned queue). */
+  readonly assignMe = input(false);
   readonly rowChange = output<TaskQueueRow>();
   /** The Task as the server returned it after a change (or after a conflict refresh), for screens that show the whole Task. */
   readonly taskChange = output<TaskResponse>();
@@ -143,6 +175,7 @@ export class RowEdit {
   readonly statusAction = output<StatusAction>();
 
   protected readonly busy = signal(false);
+  protected readonly myId = computed(() => this.auth.profile()?.userId ?? 0);
   protected readonly loading = signal(false);
   protected readonly flow = signal<StatusAction | null>(null);
   private readonly people = signal<Person[]>([]);
@@ -221,6 +254,13 @@ export class RowEdit {
       }
     }
   });
+
+  /** Assigns the Task to the signed-in user, exactly as picking them in the menu would (a New Task starts, Undo is offered). */
+  protected async assignToMe(): Promise<void> {
+    const me = this.auth.profile();
+    if (!me || this.busy()) return;
+    await this.onPick({ id: String(me.userId), label: me.displayName });
+  }
 
   // ---- opening and searching (assignee)
 

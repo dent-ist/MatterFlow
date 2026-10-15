@@ -11,13 +11,24 @@ export interface BarItem {
   /** Status code or other token that picks the bar color; default is the primary color. */
   tone?: string | null;
   muted?: boolean;
+  /** Explicit bar fill and outline (CSS colours), for example the badge colours of a priority. */
+  fill?: string | null;
+  outline?: string | null;
+}
+
+/** "42%", or "<1%" for a small non-zero share; no decimals, so a list can add up to 99 or 101. */
+export function sharePercent(count: number, total: number): string {
+  if (total <= 0 || count <= 0) return '0%';
+  const value = (count / total) * 100;
+  return value < 1 ? '<1%' : `${Math.round(value)}%`;
 }
 
 let nextId = 0;
 
 /**
- * Accessible horizontal bar list (UX `BarListChart`): every bar has its label and value as text, so color is never the only carrier,
- * and "View as table" swaps the bars for a plain table of the same numbers. Rows with a query are links to the Task Queue.
+ * Accessible horizontal bar list (UX `BarListChart`): every bar has its label, count and share of the total as text, so color is never
+ * the only carrier, and "View as table" swaps the bars for a plain table of the same numbers. A bar's length is its share of the total
+ * (a full track would be every task in the list). Rows with a query are links to the Task Queue.
  */
 @Component({
   selector: 'mf-bar-list',
@@ -26,7 +37,7 @@ let nextId = 0;
   template: `
     <section class="card" [attr.aria-labelledby]="id + '-h'">
       <header>
-        <h2 [id]="id + '-h'">{{ heading() }}</h2>
+        <h3 [id]="id + '-h'">{{ heading() }}</h3>
         @if (items().length > 0) {
           <button type="button" class="toggle" [attr.aria-pressed]="asTable()" (click)="toggle()">
             {{ asTable() ? 'View as bars' : 'View as table'
@@ -51,6 +62,7 @@ let nextId = 0;
               <tr>
                 <th scope="col">{{ rowHeading() }}</th>
                 <th scope="col" class="num">Tasks</th>
+                <th scope="col" class="num">Share</th>
               </tr>
             </thead>
             <tbody>
@@ -64,6 +76,7 @@ let nextId = 0;
                     }
                   </th>
                   <td class="num">{{ item.count }}</td>
+                  <td class="num">{{ share(item.count) }}</td>
                 </tr>
               }
             </tbody>
@@ -100,11 +113,14 @@ let nextId = 0;
             class="bar"
             [class.muted]="item.muted"
             [style.width.%]="width(item.count)"
-            [style.background]="item.muted ? null : color(item.tone)"
+            [style.background]="item.muted ? null : (item.fill ?? color(item.tone))"
+            [style.border-color]="item.outline ?? null"
+            [class.outlined]="!!item.outline"
           ></span>
         }
       </span>
       <span class="count">{{ item.count }}</span>
+      <span class="pct">{{ share(item.count) }}</span>
     </ng-template>
   `,
   styles: `
@@ -126,7 +142,7 @@ let nextId = 0;
       gap: var(--mf-s3);
       margin-bottom: var(--mf-s3);
     }
-    h2 {
+    h3 {
       margin: 0;
       font-size: var(--mf-fs-lg);
     }
@@ -155,7 +171,7 @@ let nextId = 0;
     }
     .row {
       display: grid;
-      grid-template-columns: minmax(6rem, 14rem) 1fr 3rem;
+      grid-template-columns: minmax(6rem, 12rem) 1fr 2.5rem 3rem;
       align-items: center;
       gap: var(--mf-s3);
       padding: var(--mf-s1) var(--mf-s2);
@@ -189,9 +205,19 @@ let nextId = 0;
     .bar.muted {
       background: var(--mf-border-strong);
     }
+    .bar.outlined {
+      box-sizing: border-box;
+      border: 1px solid;
+    }
     .count {
       text-align: right;
       font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .pct {
+      text-align: right;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
       font-variant-numeric: tabular-nums;
     }
     table {
@@ -224,7 +250,7 @@ let nextId = 0;
     }
     @media (max-width: 480px) {
       .row {
-        grid-template-columns: minmax(5rem, 7rem) 1fr 2.5rem;
+        grid-template-columns: minmax(4.5rem, 6.5rem) 1fr 2rem 2.5rem;
         gap: var(--mf-s2);
       }
     }
@@ -240,14 +266,19 @@ export class BarList {
 
   protected readonly id = `mf-bars-${nextId++}`;
   protected readonly asTable = signal(false);
-  protected readonly max = computed(() => Math.max(1, ...this.items().map((i) => i.count)));
+  protected readonly total = computed(() => this.items().reduce((sum, i) => sum + i.count, 0));
 
   protected toggle(): void {
     this.asTable.update((v) => !v);
   }
 
   protected width(count: number): number {
-    return Math.round((count / this.max()) * 100);
+    const total = this.total();
+    return total > 0 ? Math.max(1, Math.round((count / total) * 100)) : 0;
+  }
+
+  protected share(count: number): string {
+    return sharePercent(count, this.total());
   }
 
   protected params(query: string) {
