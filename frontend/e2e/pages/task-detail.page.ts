@@ -122,14 +122,44 @@ export class TaskDetailPage {
     return this.page.locator('[data-comment-id]');
   }
 
-  /** Brings a section into view (Comments load when they come near the visible area) and waits for its heading. */
+  /** The toggle button of the Comments or Assets bar (a disclosure: aria-expanded / aria-controls). */
+  toggle(name: 'Comments' | 'Assets'): Locator {
+    return this.section(name).locator('[data-toggle]');
+  }
+
+  /** Expands a collapsible section (they start collapsed) and waits until it is open. */
+  async ensureOpen(name: 'Comments' | 'Assets'): Promise<void> {
+    const toggle = this.toggle(name);
+    await toggle.scrollIntoViewIfNeeded();
+    if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  }
+
+  ensureCommentsOpen(): Promise<void> {
+    return this.ensureOpen('Comments');
+  }
+
+  ensureAssetsOpen(): Promise<void> {
+    return this.ensureOpen('Assets');
+  }
+
+  /** The rich-text editor of the composer: the one-line "Write a comment..." input is clicked first when the composer is collapsed. */
+  async composer(): Promise<Locator> {
+    await this.ensureCommentsOpen();
+    const comments = this.section('Comments');
+    const quick = comments.locator('[data-composer-quick]');
+    if (await quick.count()) await quick.click();
+    const editor = comments.locator('[data-composer] [role=textbox]');
+    await expect(editor).toBeFocused();
+    return editor;
+  }
+
+  /** Brings a section into view, expanding Comments and Assets (collapsed by default), and waits for its heading. */
   async showSection(name: 'Workflow' | 'Comments' | 'Assets'): Promise<void> {
+    if (name !== 'Workflow') await this.ensureOpen(name);
     const heading = this.section(name).locator('[data-section-heading]');
-    // The Comments heading is replaced when the thread starts loading (placeholder, then the real one): retry if it is swapped mid-scroll.
-    await expect(async () => {
-      await heading.scrollIntoViewIfNeeded({ timeout: 2000 });
-      await expect(heading).toBeVisible({ timeout: 2000 });
-    }).toPass();
+    await heading.scrollIntoViewIfNeeded();
+    await expect(heading).toBeVisible();
   }
 
   /** Opens the Activity drawer from the header and returns it. */
@@ -175,12 +205,12 @@ export class TaskDetailPage {
   }
 }
 
-/** Opens a task and waits until the header, the steps and the Comments (which load when they come near the screen) are there. */
+/** Opens a task and waits until the header, the steps and the (expanded) Comments are there. */
 export async function busyTaskPage(page: Page, taskId: number): Promise<void> {
   await page.goto(`/tasks/${taskId}`);
   await expect(page.locator('[data-task-header]')).toBeVisible();
   await expect(page.locator('[data-step-id]').first()).toBeVisible();
-  await page.locator('[data-section="comments"] [data-section-heading]').scrollIntoViewIfNeeded();
+  await new TaskDetailPage(page).ensureCommentsOpen();
   await expect(page.locator('[data-comment-id]').first()).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));
 }

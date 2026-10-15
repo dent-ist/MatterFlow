@@ -18,10 +18,11 @@ test.describe('Comments and history (SCN-018)', () => {
     await detail.showSection('Comments');
     const panel = comments(page);
     await expect(panel.locator('[data-empty]')).toHaveText('No comments yet.');
-    await expect(panel.locator('[data-post]')).toBeDisabled();
 
-    const editor = panel.getByRole('textbox', { name: 'Add a comment' });
-    await editor.click();
+    // The composer is one line until it gets focus.
+    await expect(panel.getByPlaceholder('Write a comment...')).toBeVisible();
+    const editor = await detail.composer();
+    await expect(panel.locator('[data-post]')).toBeDisabled();
     await panel.getByRole('button', { name: 'Bold' }).click();
     await page.keyboard.type('Urgent');
     await panel.getByRole('button', { name: 'Bold' }).click();
@@ -45,7 +46,9 @@ test.describe('Comments and history (SCN-018)', () => {
     await expect(comment.locator('[data-body] :is(i, em)')).toHaveText('load file');
     await expect(comment.locator('[data-body] li')).toHaveText('first item');
     await expect(panel.getByRole('heading', { name: 'Comments (1)' })).toBeVisible();
-    await expect(editor).toHaveText('');
+    // After a post the composer is one line again.
+    await expect(panel.getByPlaceholder('Write a comment...')).toBeVisible();
+    await expect(editor).toHaveCount(0);
   });
 
   test('SCN-018: editing keeps the earlier text in the edit history', async ({

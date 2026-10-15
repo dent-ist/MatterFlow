@@ -36,7 +36,8 @@ test.describe('Task detail: single page layout', () => {
       await page.setViewportSize({ width, height });
       const detail = new TaskDetailPage(page);
       await detail.open(task.taskId);
-      await detail.showSection('Comments');
+      await detail.ensureCommentsOpen();
+      await detail.ensureAssetsOpen();
       await expect(detail.commentItems.first()).toBeVisible();
 
       await expect(page.getByRole('tab')).toHaveCount(0);
@@ -259,8 +260,7 @@ test.describe('Task detail: single page layout', () => {
     await expect(detail.commentItems).toHaveCount(3);
 
     // A new comment is the latest, so it stays visible.
-    const composer = detail.section('Comments').locator('[data-composer] [role=textbox]');
-    await composer.click();
+    await detail.composer();
     await page.keyboard.type('Brand new comment');
     await detail.section('Comments').locator('[data-post]').click();
     await expect(detail.commentItems.last()).toContainText('Brand new comment');
@@ -277,6 +277,7 @@ test.describe('Task detail: single page layout', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
+    await detail.ensureCommentsOpen();
     await detail.showSection('Assets');
 
     const assets = page.getByRole('region', { name: 'Linked assets, scrollable' });
@@ -546,6 +547,8 @@ test.describe('Task detail: single page layout', () => {
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
+    await expect(detail.toggle('Assets')).toHaveAttribute('aria-expanded', 'false');
+    await detail.ensureAssetsOpen();
     await expect(detail.section('Assets')).toContainText("don't have permission to view assets");
     await expect(page.locator('[data-view-only]')).toContainText('View only');
   });
