@@ -71,9 +71,9 @@ export interface AssocItem {
         }
       </ul>
       @if (allLabel() && moreLink()) {
-        <a class="ac__all" data-assoc-all [routerLink]="moreLink()" [queryParams]="moreQuery()"
-          >{{ allLabel() }} ({{ items().length }})</a
-        >
+        <a class="ac__all" data-assoc-all [routerLink]="moreLink()" [queryParams]="moreQuery()">{{
+          allText()
+        }}</a>
       }
     }
   `,
@@ -166,6 +166,7 @@ export class AssocChips {
   readonly emptyText = input('None');
   readonly emptyWarning = input(false);
 
+  protected readonly allText = computed(() => `${this.allLabel()} (${this.items().length})`);
   protected readonly shown = computed(() => this.items().slice(0, this.max()));
   protected readonly hiddenCount = computed(() => Math.max(0, this.items().length - this.max()));
 }

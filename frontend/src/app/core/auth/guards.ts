@@ -1,5 +1,6 @@
 import { inject } from '@angular/core';
 import { Router, UrlTree } from '@angular/router';
+import { ADMIN_NAV_ITEMS } from '../../shared/layout/nav-items';
 import { AuthStore } from './auth.store';
 import { Permission } from './permissions';
 
@@ -20,23 +21,8 @@ const LANDING_FALLBACKS: readonly { path: string; permissions: Permission[] }[] 
   { path: '/matters', permissions: ['Matter.View'] },
   { path: '/projects', permissions: ['Project.View'] },
   { path: '/assets', permissions: ['Asset.View'] },
-  {
-    path: '/admin',
-    permissions: [
-      'User.View',
-      'User.Manage',
-      'Role.Manage',
-      'Pod.Manage',
-      'Pod.ManageMembers',
-      'TaskType.Manage',
-      'Workflow.Manage',
-      'AssetType.Manage',
-      'CustomField.Manage',
-      'Priority.Manage',
-      'StatusLabel.Manage',
-      'Audit.View',
-    ],
-  },
+  // The Administration section is a landing page for anyone who may open any of its menu items.
+  { path: '/admin', permissions: ADMIN_NAV_ITEMS.flatMap((i) => i.permissions) },
 ];
 
 /**

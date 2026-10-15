@@ -129,7 +129,7 @@ import { TagFilter, TagMatch, TagOption } from '../../../shared/ui/tag-filter';
                         class="pg-link"
                         data-used-in-link
                         [routerLink]="['/admin/workflows']"
-                        [queryParams]="{ step: s.stepDefinitionId }"
+                        [queryParams]="workflowsQuery(s)"
                         >Used in
                         {{
                           s.usedInWorkflows === 1 ? '1 workflow' : s.usedInWorkflows + ' workflows'
@@ -180,6 +180,11 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
       const status = this.statusFilter();
       untracked(() => void this.loadTagOptions(status));
     });
+  }
+
+  /** The Workflows tab limited to a step (`?step=<id>`). */
+  protected workflowsQuery(s: StepDefinitionSummary): Record<string, number> {
+    return { step: s.stepDefinitionId };
   }
 
   protected override extraFilters(): Record<string, unknown> {

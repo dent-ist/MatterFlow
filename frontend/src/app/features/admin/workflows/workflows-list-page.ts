@@ -139,7 +139,7 @@ import { SearchBox } from '../../../shared/ui/search-box';
                       [label]="'Task types of ' + w.name"
                       noun="task types"
                       [moreLink]="canOpenTaskTypes() ? '/admin/task-types' : null"
-                      [moreQuery]="{ workflow: w.workflowDefinitionId }"
+                      [moreQuery]="taskTypesQuery(w)"
                       emptyText="No task type"
                     />
                   </td>
@@ -261,6 +261,11 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   protected override watch(): void {
     this.taskTypeId();
     this.stepId();
+  }
+
+  /** The Task Types tab limited to a workflow (`?workflow=<id>`). */
+  protected taskTypesQuery(w: WorkflowSummary): Record<string, number> {
+    return { workflow: w.workflowDefinitionId };
   }
 
   /** The task types a workflow is eligible for: the ones it is the default of first, then the active ones by name, the deactivated ones last. */
