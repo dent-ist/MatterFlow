@@ -28,7 +28,8 @@ test.beforeAll(async ({ admin, seed }) => {
   }
   const counts = [3, 2, 1];
   titles = [];
-  const me = await admin.get<{ userId: number }>('/api/v1/me');
+  // Completed tasks are assigned to their own user, so that the admin's My Work (other tests look at its empty tabs) is left alone.
+  const worker = await seed.user(['Data Technician'], 'trendworker');
   for (let t = 0; t < 3; t++) {
     titles.push([]);
     for (let n = 0; n < counts[t]; n++) {
@@ -38,7 +39,7 @@ test.beforeAll(async ({ admin, seed }) => {
         {
           title,
           // Assigning starts a task, which is what a task needs before it can be completed.
-          ...(t < 2 && n === counts[t] - 1 ? { assignedUserId: me.userId } : {}),
+          ...(t < 2 && n === counts[t] - 1 ? { assignedUserId: worker.userId } : {}),
           // The first task of every type is overdue (due yesterday); the rest are due next week.
           dueDate: dateInZone(FIRM_ZONE, n === 0 ? -1 : 7),
         },

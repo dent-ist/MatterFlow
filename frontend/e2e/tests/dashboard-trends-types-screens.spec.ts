@@ -88,7 +88,7 @@ test.describe('trends screenshots', () => {
       const t = await seed.taskType({ name: `${NAMES[i]} ${tag}`, workflows: [world.workflow] });
       types.push({ id: t.id, name: `${NAMES[i]} ${tag}` });
     }
-    const me = await admin.get<{ userId: number }>('/api/v1/me');
+    const worker = await seed.user(['Data Technician'], 'trendshot');
 
     // Task counts fall from the first type to the last; every second task is assigned and completed.
     const jobs: { type: number; n: number }[] = [];
@@ -105,7 +105,7 @@ test.describe('trends screenshots', () => {
             {
               title: `Trend shot ${tag} ${String(job.n).padStart(3, '0')}`,
               dueDate: dateInZone(FIRM_ZONE, (job.n % 9) - 3),
-              ...(done ? { assignedUserId: me.userId } : {}),
+              ...(done ? { assignedUserId: worker.userId } : {}),
             },
           );
           if (done) {
@@ -144,8 +144,10 @@ test.describe('trends screenshots', () => {
       await expect(p.locator('[data-plot]')).toBeVisible();
       await expect(p.locator('[data-trend-loading]')).toHaveCount(0);
     };
-    const shot = async (name: string) => {
-      await page.getByRole('heading', { name: 'Dashboard', level: 1 }).scrollIntoViewIfNeeded();
+    const shot = async (name: string, keepScroll = false) => {
+      if (!keepScroll) {
+        await page.getByRole('heading', { name: 'Dashboard', level: 1 }).scrollIntoViewIfNeeded();
+      }
       await page.waitForTimeout(250);
       await page.screenshot({ path: path.join(OUT!, `${name}.png`) });
     };
@@ -178,7 +180,7 @@ test.describe('trends screenshots', () => {
       await box(page, top[8]).click();
       await expect(page.locator('[data-limit-msg]')).toContainText('Pick up to 8');
       await page.locator('[data-limit-msg]').scrollIntoViewIfNeeded();
-      await shot(`05-limit-message-${w}`);
+      await shot(`05-limit-message-${w}`, true);
 
       await page.getByRole('button', { name: /View as table/ }).click();
       await expect(page.locator('tbody tr').first()).toBeVisible();
