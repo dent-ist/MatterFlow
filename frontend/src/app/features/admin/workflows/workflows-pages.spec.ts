@@ -246,6 +246,24 @@ describe('WorkflowEditPage', () => {
     expect(navigate).toHaveBeenCalledWith(['/admin/workflows', 1, 'versions', 12]);
   });
 
+  it('shows the workflow status in the header and links to the draft in progress', async () => {
+    await setup({
+      getWorkflow: vi.fn().mockReturnValue(ok(wfDetail({ draftVersionId: 12, draftVersionNo: 3 }))),
+    });
+    const fixture = TestBed.createComponent(WorkflowEditPage);
+    fixture.componentRef.setInput('workflowId', '1');
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    const meta = el.querySelector('[data-meta]')!.textContent!;
+    expect(meta).toContain('Published v2');
+    expect(meta).toContain('Draft v3 in progress');
+    expect(el.querySelector('[data-open-draft]')?.getAttribute('href')).toBe(
+      '/admin/workflows/1/versions/12',
+    );
+    expect(el.querySelector('.wf-stack [data-history]')).not.toBeNull();
+    expect(el.querySelector('[data-history] [data-version="2"]')?.textContent).toContain('Current');
+  });
+
   it('saves details with the row version and reports a conflict', async () => {
     const api = {
       getWorkflow: vi.fn().mockReturnValue(ok(wfDetail())),
@@ -383,6 +401,38 @@ describe('WorkflowVersionPage draft editor', () => {
     expect(titles(el)).toEqual(['Load', 'OCR']);
   });
 
+  it('searches the library after a pause, with a labelled field, hint, count and no-results state', async () => {
+    const { a, fixture, el } = await open();
+    const label = el.querySelector<HTMLLabelElement>('[data-library] label[for="wf-lib-search"]');
+    expect(label?.textContent).toContain('Search steps');
+    expect(el.querySelector('[data-library] [data-search-hint]')).not.toBeNull();
+    expect(el.querySelector('[data-lib-count]')?.textContent).toContain('3 steps');
+
+    a.steps.listStepDefinitions.mockReturnValue(ok({ items: [], total: 0, page: 1, pageSize: 50 }));
+    type(el, '#wf-lib-search', 'zzz');
+    await new Promise((r) => setTimeout(r, 400));
+    await settle(fixture);
+    expect(a.steps.listStepDefinitions).toHaveBeenLastCalledWith(undefined, 'zzz', true, 1, 50);
+    expect(el.querySelector('[data-lib-empty]')?.textContent).toContain('No steps match');
+  });
+
+  it('moves focus to the next addable library step after adding one', async () => {
+    const { fixture, el } = await open();
+    click(el, '[data-add="5"]');
+    await settle(fixture);
+    // 1 and 2 are already in the workflow, 5 was just added: nothing left, so focus goes to the search box.
+    expect(document.activeElement?.id).toBe('wf-lib-search');
+  });
+
+  it('shows required and skippable indicators for each step', async () => {
+    const { el } = await open();
+    expect(
+      el.querySelector('[data-step-row="Intake QC"] [data-skip-summary]')?.textContent,
+    ).toContain('Required');
+    expect(el.querySelector('[data-library] h2')?.textContent).toContain('Workflow Steps');
+    expect(el.querySelector('#wf-steps-heading')?.textContent).toContain('(2)');
+  });
+
   it('keeps comment-required disabled unless the step is skippable', async () => {
     const { a, fixture, el } = await open();
     const comment = () => el.querySelector<HTMLInputElement>('[data-comment="1"]')!;
@@ -420,7 +470,7 @@ describe('WorkflowVersionPage draft editor', () => {
   it('explains the mode and confirms a change when steps exist', async () => {
     const { fixture, el } = await open();
     expect(el.querySelector('[data-mode-help]')?.textContent).toContain('Ordered:');
-    expect(el.querySelector('[data-step-row="Load"]')?.textContent).toContain('2.');
+    expect(el.querySelector('[data-step-row="Load"] .wf-step__no')?.textContent).toContain('2');
 
     click(el, '[data-mode="unordered"]');
     await settle(fixture);
@@ -435,7 +485,7 @@ describe('WorkflowVersionPage draft editor', () => {
     confirm.click();
     await settle(fixture);
     expect(el.querySelector('[data-mode-help]')?.textContent).toContain('Unordered:');
-    expect(el.querySelector('[data-step-row="Load"]')?.textContent).not.toContain('2.');
+    expect(el.querySelector('[data-step-row="Load"] .wf-step__no')).toBeNull();
   });
 
   it('previews a step input form read-only', async () => {
@@ -491,9 +541,14 @@ describe('WorkflowVersionPage draft editor', () => {
     expect(a.workflows['getWorkflowVersion']).toHaveBeenCalledWith(1, 11);
     const diff = document.querySelector('[data-diff]')!.textContent!;
     expect(diff).toContain('Changes since v2');
-    expect(diff).toContain('Added "Step 5"');
-    expect(diff).toContain('Removed "Old step"');
-    expect(diff).toContain('existing tasks stay on their current version');
+    const items = Array.from(document.querySelectorAll('[data-diff] .wf-diff li')).map((li) =>
+      li.textContent!.replace(/\s+/g, ' ').trim(),
+    );
+    expect(items).toContain('Added"Step 5"');
+    expect(items).toContain('Removed"Old step"');
+    expect(document.querySelector('[data-impact]')?.textContent).toContain(
+      'Existing tasks stay on their current version',
+    );
 
     expect(a.workflows['publishWorkflowVersion']).not.toHaveBeenCalled();
     Array.from(document.querySelectorAll('button'))
@@ -590,6 +645,8 @@ describe('WorkflowVersionPage published version', () => {
     expect(el.querySelector('[data-add]')).toBeNull();
     expect(el.querySelector('[data-move]')).toBeNull();
     expect(el.querySelector('[data-skippable]')).toBeNull();
+    expect(el.querySelector('[data-skip-summary]')?.textContent).toContain('Required');
+    expect(el.querySelector('[data-mode-box]')?.textContent).toContain('Ordered');
     expect(buttonByLabel(el, 'Publish...')).toBeUndefined();
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
 

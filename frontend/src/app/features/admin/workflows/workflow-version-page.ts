@@ -34,6 +34,7 @@ import { workflowErrors } from './workflow-errors';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { Badge, workflowStatusTone } from '../../../shared/ui/badge';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { SearchBox } from '../../../shared/ui/search-box';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -66,7 +67,16 @@ const UNORDERED_TEXT =
  */
 @Component({
   selector: 'mf-workflow-version-page',
-  imports: [PageHeader, Badge, ErrorReference, RouterLink, Button, ConfirmDialog, DynamicForm],
+  imports: [
+    PageHeader,
+    Badge,
+    ErrorReference,
+    RouterLink,
+    Button,
+    ConfirmDialog,
+    DynamicForm,
+    SearchBox,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
   template: `
@@ -125,194 +135,292 @@ const UNORDERED_TEXT =
             />
           }
         </div>
-        @if (workflow()?.publishedVersionNo; as p) {
-          <p class="pg-muted" data-published-note>Current published version: v{{ p }}</p>
-        }
-        @if (editable() && rows().length === 0) {
-          <p class="pg-muted" data-publish-hint>Add at least one step before you can publish.</p>
-        }
+        <span mfDescription class="wf-meta">
+          @if (workflow()?.publishedVersionNo; as p) {
+            <span data-published-note>Current published version: v{{ p }}</span>
+          }
+          @if (dirty()) {
+            <mf-badge tone="warning" icon="pi-pencil" data-dirty>Unsaved changes</mf-badge>
+          }
+          @if (editable() && rows().length === 0) {
+            <span data-publish-hint>Add at least one step before you can publish.</span>
+          }
+        </span>
       </mf-page-header>
 
-      @if (!editable()) {
-        <div class="pg-banner" data-readonly-banner>
-          This version is {{ v.version.status === 'Published' ? 'published' : 'retired' }} and
-          cannot be edited.
-          @if (workflow()?.draftVersionId; as d) {
-            <a class="pg-link" [routerLink]="['/admin/workflows', workflowId(), 'versions', d]"
-              >Open the draft (v{{ workflow()?.draftVersionNo }})</a
-            >
-          } @else {
-            Create a new draft to make changes.
-          }
-        </div>
-      }
-      @if (conflict()) {
-        <div class="pg-alert" role="alert" data-conflict>
-          This workflow was changed by someone else.
-          <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
-        </div>
-      }
-      @if (messages().length > 0) {
-        <div class="pg-summary" role="alert" data-summary>
-          Fix the following:
-          <ul>
-            @for (message of messages(); track message) {
-              <li>{{ message }}</li>
+      <div class="wf-stack">
+        @if (!editable()) {
+          <div class="pg-banner" data-readonly-banner>
+            This version is {{ v.version.status === 'Published' ? 'published' : 'retired' }} and
+            cannot be edited.
+            @if (workflow()?.draftVersionId; as d) {
+              <a class="pg-link" [routerLink]="['/admin/workflows', workflowId(), 'versions', d]"
+                >Open the draft (v{{ workflow()?.draftVersionNo }})</a
+              >
+            } @else {
+              Create a new draft to make changes.
             }
-          </ul>
-        </div>
-      }
+          </div>
+        }
+        @if (conflict()) {
+          <div class="pg-alert" role="alert" data-conflict>
+            This workflow was changed by someone else.
+            <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
+          </div>
+        }
+        @if (messages().length > 0) {
+          <div class="pg-summary" role="alert" data-summary>
+            Fix the following:
+            <ul>
+              @for (message of messages(); track message) {
+                <li>{{ message }}</li>
+              }
+            </ul>
+          </div>
+        }
 
-      <fieldset class="wf-panel" data-mode-box [disabled]="!editable()">
-        <legend class="pg-label">Execution mode</legend>
-        <div class="wf-opts">
-          <label class="wf-opt">
-            <input
-              type="radio"
-              name="wf-mode"
-              data-mode="ordered"
-              [checked]="isOrdered()"
-              (change)="requestMode(true)"
-            />
-            Ordered - steps must be resolved in sequence
-          </label>
-          <label class="wf-opt">
-            <input
-              type="radio"
-              name="wf-mode"
-              data-mode="unordered"
-              [checked]="!isOrdered()"
-              (change)="requestMode(false)"
-            />
-            Unordered - any order
-          </label>
-        </div>
-        <p class="pg-reason" data-mode-help>{{ isOrdered() ? orderedText : unorderedText }}</p>
-      </fieldset>
-
-      <div class="wf-cols" [style.marginTop]="'var(--mf-s4)'">
         @if (editable()) {
-          <section class="wf-panel" aria-labelledby="wf-lib-heading" data-library>
-            <h2 id="wf-lib-heading">Workflow Steps</h2>
-            <label class="pg-label" for="wf-lib-search">Search steps</label>
-            <input
-              id="wf-lib-search"
-              class="mf-control pg-input"
-              type="search"
-              placeholder="Title or description"
-              (input)="searchLibrary($any($event.target).value)"
-            />
-            @switch (libState()) {
-              @case ('loading') {
-                <p class="pg-muted" role="status">Loading steps...</p>
-              }
-              @case ('error') {
-                <p class="pg-alert" role="alert">
-                  Couldn't load the workflow steps.
-                  <mf-error-reference />
-                  <p-button label="Retry" severity="secondary" (onClick)="loadLibrary()" />
-                </p>
-              }
-              @case ('ready') {
-                @if (library().length === 0) {
-                  <p class="pg-muted" data-lib-empty>
-                    {{
-                      libQ() ? 'No steps match that search.' : 'There are no active workflow steps.'
-                    }}
-                  </p>
-                } @else {
-                  <ul class="wf-list" aria-label="Library steps">
-                    @for (s of library(); track s.stepDefinitionId) {
-                      <li class="wf-item" [attr.data-lib]="s.title">
-                        <div class="wf-item__row">
-                          <span class="wf-item__title">{{ s.title }}</span>
-                          <button
-                            type="button"
-                            class="wf-icon-btn"
-                            [attr.data-add]="s.stepDefinitionId"
-                            [attr.aria-label]="'Add ' + s.title + ' to the workflow'"
-                            [disabled]="inWorkflow(s.stepDefinitionId)"
-                            (click)="add(s)"
-                          >
-                            {{ inWorkflow(s.stepDefinitionId) ? 'Added' : '+ Add' }}
-                          </button>
-                        </div>
-                        @if (s.description) {
-                          <span class="pg-muted">{{ s.description }}</span>
-                        }
-                      </li>
-                    }
-                  </ul>
-                }
-              }
-            }
+          <fieldset class="wf-panel" data-mode-box>
+            <legend class="wf-panel__title">Execution mode</legend>
+            <div class="wf-opts">
+              <label class="wf-opt">
+                <input
+                  type="radio"
+                  name="wf-mode"
+                  data-mode="ordered"
+                  [checked]="isOrdered()"
+                  (change)="requestMode(true)"
+                />
+                Ordered - steps must be resolved in sequence
+              </label>
+              <label class="wf-opt">
+                <input
+                  type="radio"
+                  name="wf-mode"
+                  data-mode="unordered"
+                  [checked]="!isOrdered()"
+                  (change)="requestMode(false)"
+                />
+                Unordered - any order
+              </label>
+            </div>
+            <p class="pg-reason" data-mode-help>{{ isOrdered() ? orderedText : unorderedText }}</p>
+          </fieldset>
+        } @else {
+          <section class="wf-panel" data-mode-box aria-labelledby="wf-mode-heading">
+            <h2 id="wf-mode-heading">Execution mode</h2>
+            <p>
+              <mf-badge tone="info">{{ isOrdered() ? 'Ordered' : 'Unordered' }}</mf-badge>
+            </p>
+            <p class="pg-reason" data-mode-help>{{ isOrdered() ? orderedText : unorderedText }}</p>
           </section>
         }
 
-        <section
-          class="wf-panel"
-          aria-labelledby="wf-steps-heading"
-          data-steps
-          [style.gridColumn]="editable() ? null : '1 / -1'"
-        >
-          <h2 id="wf-steps-heading">Workflow steps ({{ rows().length }})</h2>
-          <div class="pg-sr" role="status" aria-live="polite" data-live>{{ live() }}</div>
-          @if (rows().length === 0) {
-            <p class="pg-muted" data-steps-empty>
-              {{
-                editable()
-                  ? 'No steps yet. Add steps from Workflow Steps. A workflow needs at least one step to be published.'
-                  : 'This version has no steps.'
-              }}
-            </p>
-          } @else {
-            <ol class="wf-list" aria-labelledby="wf-steps-heading">
-              @for (r of rows(); track r.stepId; let i = $index; let last = $last) {
-                <li class="wf-item" [attr.data-step-row]="r.title">
-                  <div class="wf-item__row">
-                    <span class="wf-item__title">
-                      @if (isOrdered()) {
-                        {{ i + 1 }}.
+        <div class="wf-cols" [class.wf-cols--single]="!editable()">
+          @if (editable()) {
+            <section class="wf-panel" aria-labelledby="wf-lib-heading" data-library>
+              <div class="wf-panel__head">
+                <h2 id="wf-lib-heading">Workflow Steps</h2>
+                <p class="pg-reason">Pick active steps from the library to add to this version.</p>
+              </div>
+              <mf-search-box
+                inputId="wf-lib-search"
+                label="Search steps"
+                placeholder="Title or description"
+                hint="Searches as you type by title or description."
+                [value]="libQ()"
+                (searchChange)="searchLibrary($event)"
+              />
+              <div class="wf-results" [attr.aria-busy]="libState() === 'loading'">
+                @switch (libState()) {
+                  @case ('loading') {
+                    @if (library().length === 0) {
+                      <p class="pg-muted" role="status">Loading steps...</p>
+                    }
+                  }
+                  @case ('error') {
+                    <div class="pg-alert" role="alert">
+                      Couldn't load the workflow steps.
+                      <mf-error-reference />
+                      <p-button label="Retry" severity="secondary" (onClick)="loadLibrary()" />
+                    </div>
+                  }
+                }
+                @if (libState() !== 'error') {
+                  @if (library().length === 0 && libState() === 'ready') {
+                    <div class="pg-state" data-lib-empty>
+                      {{
+                        libQ()
+                          ? 'No steps match that search. Try a different word, or clear the search.'
+                          : 'There are no active workflow steps.'
+                      }}
+                    </div>
+                  } @else if (library().length > 0) {
+                    <p class="wf-count" role="status" data-lib-count>
+                      {{ libCountText() }}
+                    </p>
+                    <ul class="wf-list wf-list--scroll" aria-label="Library steps" tabindex="0">
+                      @for (s of library(); track s.stepDefinitionId) {
+                        <li class="wf-lib-item" [attr.data-lib]="s.title">
+                          <div class="wf-lib-item__text">
+                            <span class="wf-item__title">{{ s.title }}</span>
+                            @if (s.description) {
+                              <span class="pg-muted wf-item__desc">{{ s.description }}</span>
+                            }
+                          </div>
+                          <button
+                            type="button"
+                            class="mf-btn"
+                            [attr.data-add]="s.stepDefinitionId"
+                            [attr.aria-label]="
+                              inWorkflow(s.stepDefinitionId)
+                                ? s.title + ' is already in the workflow'
+                                : 'Add ' + s.title + ' to the workflow'
+                            "
+                            [disabled]="inWorkflow(s.stepDefinitionId)"
+                            (click)="add(s)"
+                          >
+                            <i
+                              class="pi"
+                              [class.pi-plus]="!inWorkflow(s.stepDefinitionId)"
+                              [class.pi-check]="inWorkflow(s.stepDefinitionId)"
+                              aria-hidden="true"
+                            ></i>
+                            {{ inWorkflow(s.stepDefinitionId) ? 'Added' : 'Add' }}
+                          </button>
+                        </li>
                       }
-                      {{ r.title }}
-                    </span>
-                    <span class="wf-item__tools">
+                    </ul>
+                  }
+                }
+              </div>
+            </section>
+          }
+
+          <section class="wf-panel" aria-labelledby="wf-steps-heading" data-steps>
+            <div class="wf-panel__head">
+              <h2 id="wf-steps-heading">Steps in this version ({{ rows().length }})</h2>
+              @if (editable() && rows().length > 0) {
+                <p class="pg-reason" id="wf-reorder-help">
+                  Reorder with the Up and Down buttons, or press Alt+Up or Alt+Down on a step.
+                  @if (!isOrdered()) {
+                    The order is for display only in an unordered workflow.
+                  }
+                </p>
+              }
+            </div>
+            <div class="pg-sr" role="status" aria-live="polite" data-live>{{ live() }}</div>
+            @if (rows().length === 0) {
+              <div class="pg-state" data-steps-empty>
+                {{
+                  editable()
+                    ? 'No steps yet. Add steps from Workflow Steps. A workflow needs at least one step to be published.'
+                    : 'This version has no steps.'
+                }}
+              </div>
+            } @else {
+              <ol
+                class="wf-steps"
+                aria-labelledby="wf-steps-heading"
+                [attr.aria-describedby]="editable() ? 'wf-reorder-help' : null"
+              >
+                @for (r of rows(); track r.stepId; let i = $index; let last = $last) {
+                  <li
+                    class="wf-step"
+                    [class.wf-step--unordered]="!isOrdered()"
+                    [attr.data-step-row]="r.title"
+                  >
+                    @if (isOrdered()) {
+                      <span class="wf-step__no" aria-hidden="true">{{ i + 1 }}</span>
+                    }
+                    <div class="wf-step__main">
+                      <div class="wf-step__titlebar">
+                        <span class="wf-item__title">{{ r.title }}</span>
+                        <span class="wf-meta" data-skip-summary>
+                          @if (!r.isSkippable) {
+                            <mf-badge tone="neutral" icon="pi-lock">Required</mf-badge>
+                          } @else {
+                            <mf-badge tone="info" icon="pi-forward">Skippable</mf-badge>
+                            @if (r.skipCommentRequired) {
+                              <mf-badge tone="warning" icon="pi-comment">Comment on skip</mf-badge>
+                            }
+                          }
+                          @if (!r.active) {
+                            <mf-badge tone="danger" icon="pi-exclamation-triangle" data-inactive>
+                              Deactivated
+                            </mf-badge>
+                          }
+                        </span>
+                      </div>
+                      @if (r.description) {
+                        <span class="pg-muted wf-item__desc">{{ r.description }}</span>
+                      }
+                      @if (!r.active) {
+                        <span class="pg-reason">
+                          This library step has been deactivated. Remove it or reactivate it in the
+                          step library.
+                        </span>
+                      }
                       @if (editable()) {
-                        <button
-                          type="button"
-                          class="wf-icon-btn"
-                          data-move="up"
-                          [attr.data-step]="r.stepId"
-                          [attr.aria-label]="'Move ' + r.title + ' up'"
-                          [disabled]="i === 0"
-                          (click)="move(i, -1)"
-                        >
-                          Up
-                        </button>
-                        <button
-                          type="button"
-                          class="wf-icon-btn"
-                          data-move="down"
-                          [attr.data-step]="r.stepId"
-                          [attr.aria-label]="'Move ' + r.title + ' down'"
-                          [disabled]="last"
-                          (click)="move(i, 1)"
-                        >
-                          Down
-                        </button>
-                        <button
-                          type="button"
-                          class="wf-icon-btn"
-                          [attr.data-remove]="r.stepId"
-                          [attr.aria-label]="'Remove ' + r.title + ' from the workflow'"
-                          (click)="remove(i)"
-                        >
-                          Remove
-                        </button>
+                        <div class="wf-opts">
+                          <label class="wf-opt">
+                            <input
+                              type="checkbox"
+                              [attr.data-skippable]="r.stepId"
+                              [checked]="r.isSkippable"
+                              (change)="setSkippable(i, $any($event.target).checked)"
+                            />
+                            Skippable
+                          </label>
+                          <label class="wf-opt">
+                            <input
+                              type="checkbox"
+                              [attr.data-comment]="r.stepId"
+                              [checked]="r.skipCommentRequired"
+                              [disabled]="!r.isSkippable"
+                              (change)="setCommentRequired(i, $any($event.target).checked)"
+                            />
+                            Comment required on skip
+                          </label>
+                        </div>
+                      }
+                    </div>
+                    <div
+                      class="wf-step__tools"
+                      role="group"
+                      [attr.aria-label]="'Actions for ' + r.title"
+                    >
+                      @if (editable()) {
+                        <span class="wf-move">
+                          <button
+                            type="button"
+                            class="mf-btn mf-btn--icon"
+                            data-move="up"
+                            title="Move up"
+                            [attr.data-step]="r.stepId"
+                            [attr.aria-label]="'Move ' + r.title + ' up'"
+                            [disabled]="i === 0"
+                            (click)="move(i, -1)"
+                          >
+                            <i class="pi pi-arrow-up" aria-hidden="true"></i>
+                          </button>
+                          <button
+                            type="button"
+                            class="mf-btn mf-btn--icon"
+                            data-move="down"
+                            title="Move down"
+                            [attr.data-step]="r.stepId"
+                            [attr.aria-label]="'Move ' + r.title + ' down'"
+                            [disabled]="last"
+                            (click)="move(i, 1)"
+                          >
+                            <i class="pi pi-arrow-down" aria-hidden="true"></i>
+                          </button>
+                        </span>
                       }
                       <button
                         type="button"
-                        class="wf-icon-btn"
+                        class="mf-btn"
                         [attr.data-preview]="r.stepId"
                         [attr.aria-expanded]="isPreviewOpen(r.stepId)"
                         [attr.aria-label]="'Preview inputs of ' + r.title"
@@ -320,70 +428,42 @@ const UNORDERED_TEXT =
                       >
                         {{ isPreviewOpen(r.stepId) ? 'Hide inputs' : 'Preview inputs' }}
                       </button>
-                    </span>
-                  </div>
-                  @if (r.description) {
-                    <span class="pg-muted">{{ r.description }}</span>
-                  }
-                  @if (!r.active) {
-                    <span class="pg-reason" data-inactive>
-                      This library step has been deactivated. Remove it or reactivate it in the step
-                      library.
-                    </span>
-                  }
-                  @if (editable()) {
-                    <div class="wf-opts">
-                      <label class="wf-opt">
-                        <input
-                          type="checkbox"
-                          [attr.data-skippable]="r.stepId"
-                          [checked]="r.isSkippable"
-                          (change)="setSkippable(i, $any($event.target).checked)"
-                        />
-                        Skippable
-                      </label>
-                      <label class="wf-opt">
-                        <input
-                          type="checkbox"
-                          [attr.data-comment]="r.stepId"
-                          [checked]="r.skipCommentRequired"
-                          [disabled]="!r.isSkippable"
-                          (change)="setCommentRequired(i, $any($event.target).checked)"
-                        />
-                        Comment required on skip
-                      </label>
-                    </div>
-                  } @else {
-                    <span class="pg-muted" data-skip-summary>{{ skipSummary(r) }}</span>
-                  }
-                  @if (previewOf(r.stepId); as p) {
-                    <div class="wf-preview" [attr.data-preview-box]="r.stepId">
-                      @switch (p.state) {
-                        @case ('loading') {
-                          <p role="status">Loading inputs...</p>
-                        }
-                        @case ('error') {
-                          <p role="alert">We couldn't load the inputs for this step.</p>
-                        }
-                        @case ('none') {
-                          <p class="pg-muted">This step has no published inputs.</p>
-                        }
-                        @case ('ready') {
-                          <mf-dynamic-form [definition]="p.definition!" [readOnly]="true" />
-                        }
+                      @if (editable()) {
+                        <button
+                          type="button"
+                          class="mf-btn mf-btn--danger"
+                          [attr.data-remove]="r.stepId"
+                          [attr.aria-label]="'Remove ' + r.title + ' from the workflow'"
+                          (click)="remove(i)"
+                        >
+                          Remove
+                        </button>
                       }
                     </div>
-                  }
-                </li>
-              }
-            </ol>
-            @if (editable()) {
-              <p class="pg-reason">
-                Reorder with the Up and Down buttons, or press Alt+Up or Alt+Down on a step.
-              </p>
+                    @if (previewOf(r.stepId); as p) {
+                      <div class="wf-preview wf-step__preview" [attr.data-preview-box]="r.stepId">
+                        @switch (p.state) {
+                          @case ('loading') {
+                            <p role="status">Loading inputs...</p>
+                          }
+                          @case ('error') {
+                            <p role="alert">We couldn't load the inputs for this step.</p>
+                          }
+                          @case ('none') {
+                            <p class="pg-muted">This step has no published inputs.</p>
+                          }
+                          @case ('ready') {
+                            <mf-dynamic-form [definition]="p.definition!" [readOnly]="true" />
+                          }
+                        }
+                      </div>
+                    }
+                  </li>
+                }
+              </ol>
             }
-          }
-        </section>
+          </section>
+        </div>
       </div>
     }
 
@@ -401,7 +481,7 @@ const UNORDERED_TEXT =
         <p role="status">Comparing with the published version...</p>
       } @else {
         <div data-diff>
-          <p class="pg-label">
+          <p class="pg-label wf-diff-h">
             @if (previousNo(); as n) {
               Changes since v{{ n }}
             } @else {
@@ -410,30 +490,48 @@ const UNORDERED_TEXT =
           </p>
           @if (diff(); as d) {
             @if (d.unchanged) {
-              <p>No changes from the published version.</p>
+              <p class="wf-diff-h">No changes from the published version.</p>
             }
             <ul class="wf-diff">
               @if (d.modeChange; as m) {
-                <li>Mode changed from {{ m.from }} to {{ m.to }}</li>
+                <li>
+                  <mf-badge tone="info" icon="pi-sliders-h">Mode</mf-badge>
+                  <span>Changed from {{ m.from }} to {{ m.to }}</span>
+                </li>
               }
               @for (t of d.added; track t) {
-                <li>Added "{{ t }}"</li>
+                <li>
+                  <mf-badge tone="success" icon="pi-plus">Added</mf-badge>
+                  <span>"{{ t }}"</span>
+                </li>
               }
               @for (t of d.removed; track t) {
-                <li>Removed "{{ t }}"</li>
+                <li>
+                  <mf-badge tone="danger" icon="pi-minus">Removed</mf-badge>
+                  <span>"{{ t }}"</span>
+                </li>
               }
               @for (t of d.moved; track t) {
-                <li>Moved "{{ t }}"</li>
+                <li>
+                  <mf-badge tone="info" icon="pi-arrows-v">Moved</mf-badge>
+                  <span>"{{ t }}"</span>
+                </li>
               }
               @for (t of d.skipRuleChanged; track t) {
-                <li>Changed skip rule on "{{ t }}"</li>
+                <li>
+                  <mf-badge tone="warning" icon="pi-forward">Skip rule changed</mf-badge>
+                  <span>"{{ t }}"</span>
+                </li>
               }
             </ul>
           }
-          <p>
-            Impact: existing tasks stay on their current version. New tasks use this version.
-            Publishing copies the current step content, so later library edits will not change it.
-          </p>
+          <div class="wf-impact" data-impact>
+            <strong>Impact</strong>
+            <p>
+              Existing tasks stay on their current version. New tasks use this version. Publishing
+              copies the current step content, so later library edits will not change it.
+            </p>
+          </div>
         </div>
       }
     </mf-confirm-dialog>
@@ -508,6 +606,14 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
   protected readonly library = signal<StepDefinitionSummary[]>([]);
   protected readonly libState = signal<LoadState>('loading');
   protected readonly libQ = signal('');
+  private readonly libTotal = signal(0);
+  protected readonly libCountText = computed(() => {
+    const shown = this.library().length;
+    const total = this.libTotal();
+    if (total > shown)
+      return `Showing the first ${shown} of ${total} steps. Search to narrow the list.`;
+    return shown === 1 ? '1 step' : `${shown} steps`;
+  });
   private libRequest = 0;
 
   private readonly previews = signal<Record<number, PreviewState | undefined>>({});
@@ -581,6 +687,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
       );
       if (id !== this.libRequest) return;
       this.library.set(result.items);
+      this.libTotal.set(result.total ?? result.items.length);
       this.libState.set('ready');
     } catch {
       if (id === this.libRequest) this.libState.set('error');
@@ -610,6 +717,17 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
       },
     ]);
     this.live.set(`Added ${step.title} at position ${this.rows().length}.`);
+    // The Add button becomes disabled; keep focus in the library on the next step that can still be added.
+    const buttons = Array.from(
+      this.host.nativeElement.querySelectorAll<HTMLButtonElement>('[data-add]'),
+    );
+    const at = buttons.findIndex((b) => b.dataset['add'] === String(step.stepDefinitionId));
+    const following = [...buttons.slice(at + 1), ...buttons.slice(0, Math.max(at, 0)).reverse()];
+    const target = following.find((b) => !this.inWorkflow(Number(b.dataset['add'])));
+    this.focusAfterRender(
+      target ? `[data-add="${target.dataset['add']}"]:not(:disabled)` : '#wf-lib-search',
+      '#wf-lib-search',
+    );
   }
 
   protected remove(index: number): void {

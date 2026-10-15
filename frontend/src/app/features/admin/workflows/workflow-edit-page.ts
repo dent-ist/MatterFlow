@@ -25,7 +25,7 @@ import { TextField } from '../../../shared/ui/text-field';
 import { workflowErrors } from './workflow-errors';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { Badge, BadgeTone, workflowStatusTone } from '../../../shared/ui/badge';
+import { ActiveBadge, Badge, BadgeTone, workflowStatusTone } from '../../../shared/ui/badge';
 import { PageTitle } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
 
@@ -40,6 +40,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   imports: [
     PageHeader,
     Badge,
+    ActiveBadge,
     ConfirmDialog,
     ErrorReference,
     RouterLink,
@@ -56,7 +57,38 @@ type LoadState = 'loading' | 'ready' | 'error';
         { label: isEdit() ? name() || 'Edit' : 'New' },
       ]"
       [heading]="isEdit() ? name() || 'Edit workflow' : 'New workflow'"
-    />
+    >
+      <div mfActions class="mf-contents">
+        @if (detail()?.workflow; as w) {
+          @if (w.draftVersionId) {
+            <a
+              class="mf-btn"
+              data-open-draft
+              [routerLink]="[
+                '/admin/workflows',
+                w.workflowDefinitionId,
+                'versions',
+                w.draftVersionId,
+              ]"
+              >Open draft v{{ w.draftVersionNo }}</a
+            >
+          }
+        }
+      </div>
+      <span mfDescription class="wf-meta" data-meta>
+        @if (detail()?.workflow; as w) {
+          <mf-active-badge [active]="w.isActive" />
+          @if (w.publishedVersionNo; as p) {
+            <mf-badge tone="success" icon="pi-check-circle">Published v{{ p }}</mf-badge>
+          } @else {
+            <mf-badge tone="neutral">Not published</mf-badge>
+          }
+          @if (w.draftVersionNo; as n) {
+            <mf-badge tone="warning" icon="pi-pencil">Draft v{{ n }} in progress</mf-badge>
+          }
+        }
+      </span>
+    </mf-page-header>
 
     @if (state() === 'loading') {
       <div class="pg-state" role="status" aria-busy="true">Loading the workflow...</div>
@@ -67,162 +99,172 @@ type LoadState = 'loading' | 'ready' | 'error';
         <p-button label="Retry" severity="secondary" (onClick)="load()" />
       </div>
     } @else {
-      @if (conflict()) {
-        <div class="pg-alert" role="alert" data-conflict>
-          This workflow was changed by someone else.
-          <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
-        </div>
-      }
-      @if (messages().length > 0) {
-        <div class="pg-summary" role="alert" data-summary>
-          Fix the following to save:
-          <ul>
-            @for (message of messages(); track message) {
-              <li>{{ message }}</li>
-            }
-          </ul>
-        </div>
-      }
-
-      <form class="pg-form" novalidate (submit)="$event.preventDefault(); save()">
-        <mf-text-field
-          inputId="wf-name"
-          label="Name"
-          [required]="true"
-          [maxLength]="200"
-          [error]="nameError()"
-          [(value)]="name"
-        />
-        <mf-text-field
-          inputId="wf-description"
-          label="Description"
-          [multiline]="true"
-          [maxLength]="1000"
-          [error]="fieldError('description')"
-          [(value)]="description"
-        />
-
-        @if (isEdit()) {
-          <label class="pg-radio">
-            <input
-              type="checkbox"
-              id="wf-active"
-              [checked]="isActive()"
-              (change)="isActive.set($any($event.target).checked)"
-            />
-            Active (offered when creating tasks)
-          </label>
-        } @else {
-          <fieldset>
-            <legend>Execution mode</legend>
-            <label class="pg-radio">
-              <input
-                type="radio"
-                name="wf-mode"
-                data-mode="ordered"
-                [checked]="isOrdered()"
-                (change)="isOrdered.set(true)"
-              />
-              Ordered - steps must be resolved in sequence
-            </label>
-            <label class="pg-radio">
-              <input
-                type="radio"
-                name="wf-mode"
-                data-mode="unordered"
-                [checked]="!isOrdered()"
-                (change)="isOrdered.set(false)"
-              />
-              Unordered - steps can be done in any order
-            </label>
-            <p class="pg-reason">You can change this later while the version is a draft.</p>
-          </fieldset>
+      <div class="wf-stack">
+        @if (conflict()) {
+          <div class="pg-alert" role="alert" data-conflict>
+            This workflow was changed by someone else.
+            <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
+          </div>
+        }
+        @if (messages().length > 0) {
+          <div class="pg-summary" role="alert" data-summary>
+            Fix the following to save:
+            <ul>
+              @for (message of messages(); track message) {
+                <li>{{ message }}</li>
+              }
+            </ul>
+          </div>
         }
 
-        <div class="pg-actions">
-          <p-button
-            type="submit"
-            [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create workflow'"
-            [disabled]="busy()"
+        <form class="pg-form" novalidate (submit)="$event.preventDefault(); save()">
+          <mf-text-field
+            inputId="wf-name"
+            label="Name"
+            [required]="true"
+            [maxLength]="200"
+            [error]="nameError()"
+            [(value)]="name"
           />
-          <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
-        </div>
-      </form>
+          <mf-text-field
+            inputId="wf-description"
+            label="Description"
+            [multiline]="true"
+            [maxLength]="1000"
+            [error]="fieldError('description')"
+            [(value)]="description"
+          />
 
-      @if (detail(); as d) {
-        <section class="wf-panel" aria-labelledby="wf-history-heading" data-history>
-          <h2 id="wf-history-heading">Version history</h2>
-          @if (d.versions.length === 0) {
-            <p class="pg-muted">No versions yet.</p>
+          @if (isEdit()) {
+            <label class="pg-radio">
+              <input
+                type="checkbox"
+                id="wf-active"
+                [checked]="isActive()"
+                (change)="isActive.set($any($event.target).checked)"
+              />
+              Active (offered when creating tasks)
+            </label>
           } @else {
-            <div class="mf-scroll">
-              <table class="pg-table">
-                <caption class="pg-sr">
-                  Versions of
-                  {{
-                    d.workflow.name
-                  }}
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Version</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Mode</th>
-                    <th scope="col">Steps</th>
-                    <th scope="col">Published</th>
-                    <th scope="col"><span class="pg-sr">Actions</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (v of d.versions; track v.workflowVersionId) {
-                    <tr [attr.data-version]="v.versionNo">
-                      <td>
-                        <a
-                          class="pg-link"
-                          [routerLink]="[
-                            '/admin/workflows',
-                            d.workflow.workflowDefinitionId,
-                            'versions',
-                            v.workflowVersionId,
-                          ]"
-                          [attr.aria-label]="(isDraft(v) ? 'Edit draft v' : 'View v') + v.versionNo"
-                          >v{{ v.versionNo }}</a
-                        >
-                        @if (v.workflowVersionId === d.workflow.publishedVersionId) {
-                          <span class="pg-muted"> (current)</span>
-                        }
-                      </td>
-                      <td>
-                        <mf-badge [tone]="statusTone(v)">{{ v.status }}</mf-badge>
-                      </td>
-                      <td>{{ v.isOrdered ? 'Ordered' : 'Unordered' }}</td>
-                      <td>{{ v.stepCount }}</td>
-                      <td>{{ v.publishedAtUtc | mfDate }}</td>
-                      <td>
-                        @if (v.status === published) {
-                          <p-button
-                            [label]="'Create new draft from v' + v.versionNo"
-                            size="small"
-                            severity="secondary"
-                            [disabled]="busy() || !!d.workflow.draftVersionId"
-                            (onClick)="newDraft(v)"
-                          />
-                        }
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-            @if (d.workflow.draftVersionId) {
-              <p class="pg-reason">
-                A draft (v{{ d.workflow.draftVersionNo }}) is in progress. Publish or discard it
-                before creating another.
-              </p>
-            }
+            <fieldset>
+              <legend>Execution mode</legend>
+              <label class="pg-radio">
+                <input
+                  type="radio"
+                  name="wf-mode"
+                  data-mode="ordered"
+                  [checked]="isOrdered()"
+                  (change)="isOrdered.set(true)"
+                />
+                Ordered - steps must be resolved in sequence
+              </label>
+              <label class="pg-radio">
+                <input
+                  type="radio"
+                  name="wf-mode"
+                  data-mode="unordered"
+                  [checked]="!isOrdered()"
+                  (change)="isOrdered.set(false)"
+                />
+                Unordered - steps can be done in any order
+              </label>
+              <p class="pg-reason">You can change this later while the version is a draft.</p>
+            </fieldset>
           }
-        </section>
-      }
+
+          <div class="pg-actions">
+            <p-button
+              type="submit"
+              [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create workflow'"
+              [disabled]="busy()"
+            />
+            <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
+          </div>
+        </form>
+
+        @if (detail(); as d) {
+          <section class="wf-panel" aria-labelledby="wf-history-heading" data-history>
+            <div class="wf-panel__head">
+              <h2 id="wf-history-heading">Version history</h2>
+              <p class="pg-reason">
+                Tasks run on a published version. Published versions cannot be edited; create a new
+                draft to make changes.
+              </p>
+            </div>
+            @if (d.versions.length === 0) {
+              <p class="pg-muted">No versions yet.</p>
+            } @else {
+              <div class="mf-scroll">
+                <table class="pg-table">
+                  <caption class="pg-sr">
+                    Versions of
+                    {{
+                      d.workflow.name
+                    }}
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Version</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Mode</th>
+                      <th scope="col">Steps</th>
+                      <th scope="col">Published</th>
+                      <th scope="col"><span class="pg-sr">Actions</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (v of d.versions; track v.workflowVersionId) {
+                      <tr [attr.data-version]="v.versionNo">
+                        <td>
+                          <a
+                            class="pg-link"
+                            [routerLink]="[
+                              '/admin/workflows',
+                              d.workflow.workflowDefinitionId,
+                              'versions',
+                              v.workflowVersionId,
+                            ]"
+                            [attr.aria-label]="
+                              (isDraft(v) ? 'Edit draft v' : 'View v') + v.versionNo
+                            "
+                            >v{{ v.versionNo }}</a
+                          >
+                          @if (v.workflowVersionId === d.workflow.publishedVersionId) {
+                            <mf-badge class="wf-current" tone="success">Current</mf-badge>
+                          }
+                        </td>
+                        <td>
+                          <mf-badge [tone]="statusTone(v)">{{ v.status }}</mf-badge>
+                        </td>
+                        <td>{{ v.isOrdered ? 'Ordered' : 'Unordered' }}</td>
+                        <td>{{ v.stepCount }}</td>
+                        <td>{{ v.publishedAtUtc | mfDate }}</td>
+                        <td>
+                          @if (v.status === published) {
+                            <p-button
+                              [label]="'Create new draft from v' + v.versionNo"
+                              size="small"
+                              severity="secondary"
+                              [disabled]="busy() || !!d.workflow.draftVersionId"
+                              (onClick)="newDraft(v)"
+                            />
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              @if (d.workflow.draftVersionId) {
+                <p class="pg-reason">
+                  A draft (v{{ d.workflow.draftVersionNo }}) is in progress. Publish or discard it
+                  before creating another.
+                </p>
+              }
+            }
+          </section>
+        }
+      </div>
     }
 
     <mf-confirm-dialog

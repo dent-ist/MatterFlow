@@ -72,7 +72,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
     }
     .sb__input {
       width: 100%;
-      min-width: 240px;
+      min-width: min(240px, 100%);
       padding-right: calc(var(--mf-s3) + 24px);
     }
     /* The browser draws its own clear glyph on type=search; ours replaces it. */
