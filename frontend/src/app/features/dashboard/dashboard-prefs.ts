@@ -3,7 +3,7 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { DEFAULT_PERIOD, PeriodKey, isPeriodKey } from './dashboard-period';
 
 /** The tabs of the Dashboard, in display order. The value is the `?tab=` query parameter. */
-export const DASHBOARD_TABS = ['summary', 'breakdowns', 'trends'] as const;
+export const DASHBOARD_TABS = ['summary', 'breakdowns', 'trends', 'swimlane', 'users'] as const;
 export type DashboardTab = (typeof DASHBOARD_TABS)[number];
 
 export function isDashboardTab(value: unknown): value is DashboardTab {

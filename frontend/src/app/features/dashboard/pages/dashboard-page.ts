@@ -39,7 +39,9 @@ import { PERIOD_PRESETS, PeriodKey, isPeriodKey, periodDays, presetOf } from '..
 import { DashboardPrefs, DashboardTab, isDashboardTab } from '../dashboard-prefs';
 import { BarItem, BarList } from '../ui/bar-list';
 import { DashSection } from '../ui/dash-section';
+import { DashSwimlaneTab } from '../ui/dash-swimlane-tab';
 import { DashTab, DashTabs, panelId, tabId } from '../ui/dash-tabs';
+import { DashUsersTab } from '../ui/dash-users-tab';
 import { Segment, StackedBar } from '../ui/stacked-bar';
 import { StatTile } from '../ui/stat-tile';
 import { DashTaskList, PanelState } from '../ui/task-list-panel';
@@ -113,6 +115,8 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     RouterLink,
     NgTemplateOutlet,
     StatTile,
+    DashSwimlaneTab,
+    DashUsersTab,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -443,6 +447,36 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                     </mf-dash-section>
                   </div>
                 }
+                @case ('swimlane') {
+                  <div
+                    class="panel"
+                    role="tabpanel"
+                    data-tabpanel="swimlane"
+                    [id]="panelId('swimlane')"
+                    [attr.aria-labelledby]="tabId('swimlane')"
+                  >
+                    @defer {
+                      <mf-dash-swimlane-tab />
+                    } @placeholder {
+                      <p class="soon-load" role="status">Loading the swimlane board.</p>
+                    }
+                  </div>
+                }
+                @case ('users') {
+                  <div
+                    class="panel"
+                    role="tabpanel"
+                    data-tabpanel="users"
+                    [id]="panelId('users')"
+                    [attr.aria-labelledby]="tabId('users')"
+                  >
+                    @defer {
+                      <mf-dash-users-tab />
+                    } @placeholder {
+                      <p class="soon-load" role="status">Loading team workload.</p>
+                    }
+                  </div>
+                }
               }
             }
           }
@@ -687,6 +721,8 @@ export class DashboardPage implements OnInit {
     { key: 'summary', label: 'Summary' },
     { key: 'breakdowns', label: 'Breakdowns' },
     { key: 'trends', label: 'Trends' },
+    { key: 'swimlane', label: 'Swimlane' },
+    { key: 'users', label: 'Users' },
   ];
   protected readonly period = this.prefs.period;
   protected readonly state = signal<LoadState>('loading');

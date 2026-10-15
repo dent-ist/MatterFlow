@@ -350,15 +350,21 @@ describe('DashboardPage', () => {
     const key = (el: HTMLElement, name: string) =>
       selectedTab(el).dispatchEvent(new KeyboardEvent('keydown', { key: name, bubbles: true }));
 
-    it('is a WAI-ARIA tab list with Summary, Breakdowns and Trends and one labelled panel for the selected tab', async () => {
+    it('is a WAI-ARIA tab list with Summary, Breakdowns, Trends, Swimlane and Users and one labelled panel for the selected tab', async () => {
       const el = await open();
       const list = el.querySelector('[role="tablist"]')!;
       expect(list.getAttribute('aria-label')).toBe('Dashboard views');
-      expect(tabButtons(el).map((t) => text(t))).toEqual(['Summary', 'Breakdowns', 'Trends']);
+      expect(tabButtons(el).map((t) => text(t))).toEqual([
+        'Summary',
+        'Breakdowns',
+        'Trends',
+        'Swimlane',
+        'Users',
+      ]);
       const selected = selectedTab(el);
       expect(text(selected)).toBe('Summary');
       // Roving tabindex: only the selected tab is a tab stop.
-      expect(tabButtons(el).map((t) => t.tabIndex)).toEqual([0, -1, -1]);
+      expect(tabButtons(el).map((t) => t.tabIndex)).toEqual([0, -1, -1, -1, -1]);
       const panels = el.querySelectorAll('[role="tabpanel"]');
       expect(panels.length).toBe(1);
       expect(panels[0].getAttribute('aria-labelledby')).toBe(selected.id);
@@ -404,22 +410,28 @@ describe('DashboardPage', () => {
       await settle();
       expect(text(selectedTab(el))).toBe('Breakdowns');
       expect(document.activeElement).toBe(selectedTab(el));
-      expect(tabButtons(el).map((t) => t.tabIndex)).toEqual([-1, 0, -1]);
+      expect(tabButtons(el).map((t) => t.tabIndex)).toEqual([-1, 0, -1, -1, -1]);
       key(el, 'ArrowRight');
       await settle();
       expect(text(selectedTab(el))).toBe('Trends');
+      key(el, 'ArrowRight');
+      await settle();
+      expect(text(selectedTab(el))).toBe('Swimlane');
+      key(el, 'ArrowRight');
+      await settle();
+      expect(text(selectedTab(el))).toBe('Users');
       key(el, 'ArrowRight');
       await settle();
       expect(text(selectedTab(el))).toBe('Summary');
       key(el, 'ArrowLeft');
       await settle();
-      expect(text(selectedTab(el))).toBe('Trends');
+      expect(text(selectedTab(el))).toBe('Users');
       key(el, 'Home');
       await settle();
       expect(text(selectedTab(el))).toBe('Summary');
       key(el, 'End');
       await settle();
-      expect(text(selectedTab(el))).toBe('Trends');
+      expect(text(selectedTab(el))).toBe('Users');
       expect(document.activeElement).toBe(selectedTab(el));
       el.remove();
     });
