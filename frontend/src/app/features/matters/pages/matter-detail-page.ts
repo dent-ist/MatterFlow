@@ -21,24 +21,27 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
+import { ActiveBadge, SensitiveBadge } from '../../../shared/ui/badge';
+import { DetailLayout } from '../../../shared/ui/detail-layout';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { EntityActivity } from '../../../shared/ui/entity-activity';
 import { MatterAssets } from '../../../shared/ui/matter-assets';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
 import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
-import { ActiveBadge } from '../../../shared/ui/badge';
 import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
+import { MfTab, Tabs } from '../../../shared/ui/tabs';
 
-type Tab = 'tasks' | 'projects' | 'assets' | 'details' | 'activity';
+type Tab = 'tasks' | 'projects' | 'assets';
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * Matter detail (UX S06): reference with copy button, sensitivity and inactive banners, activation with the open-task rule,
- * and Tasks / Projects / Assets / Details / Activity tabs (Tasks is the shared work-queue table filtered to the Matter).
+ * and Tasks / Projects / Assets tabs in the main area (Tasks is the shared work-queue table filtered to the Matter) beside a Details panel
+ * (fields, Edit, Set inactive). Activity opens in a right-side drawer. The tab is kept in `?tab=`; `?tab=activity` opens the drawer.
  */
 @Component({
   selector: 'mf-matter-detail-page',
@@ -53,7 +56,10 @@ type LoadState = 'loading' | 'ready' | 'error';
     ConfirmDialog,
     MatterRef,
     MatterAssets,
-    EntityActivity,
+    ActivityDrawer,
+    DetailLayout,
+    SensitiveBadge,
+    Tabs,
     MfDatePipe,
     CustomFieldsView,
     ScopedTasks,
@@ -84,22 +90,16 @@ type LoadState = 'loading' | 'ready' | 'error';
               <mf-matter-ref mfRef [value]="m.matterRef" />
               <mf-active-badge [active]="m.isActive" />
             </mf-record-title>
-            <span *mfHasPermission="'Matter.SetActive'" mfActions>
+            @if (canSeeActivity()) {
               <p-button
-                [label]="m.isActive ? 'Set inactive' : 'Set active'"
+                mfActions
+                label="Activity"
+                icon="pi pi-history"
                 severity="secondary"
-                [disabled]="deactivateBlocked()"
-                [attr.aria-describedby]="deactivateBlocked() ? 'matter-toggle-reason' : null"
-                (onClick)="toggleOpen.set(true)"
+                data-activity-button
+                (onClick)="setActivityOpen(true)"
               />
-            </span>
-            <p-button
-              mfActions
-              *mfHasPermission="'Matter.Edit'"
-              label="Edit"
-              severity="secondary"
-              (onClick)="go('/matters/' + m.matterId + '/edit')"
-            />
+            }
             <p-button
               mfActions
               *mfHasPermission="'Project.Create'"
@@ -116,18 +116,6 @@ type LoadState = 'loading' | 'ready' | 'error';
               [disabled]="!m.isActive"
               (onClick)="go('/tasks/new?matterId=' + m.matterId)"
             />
-            @if (deactivateBlocked()) {
-              <p
-                *mfHasPermission="'Matter.SetActive'"
-                class="pg-reason"
-                id="matter-toggle-reason"
-                data-toggle-reason
-              >
-                <i class="pi pi-info-circle" aria-hidden="true"></i>
-                This matter has {{ m.openTaskCount }} tasks that aren't Completed or Cancelled.
-                Finish or cancel them first.
-              </p>
-            }
             <p class="pg-muted" data-client>
               Client:
               <a class="pg-link" [routerLink]="['/clients', m.clientId]"
@@ -155,120 +143,134 @@ type LoadState = 'loading' | 'ready' | 'error';
             </div>
           }
 
-          <div class="pg-tabs" role="tablist" aria-label="Matter sections">
-            <button
-              type="button"
-              role="tab"
-              [attr.aria-selected]="tab() === 'tasks'"
-              (click)="tab.set('tasks')"
-            >
-              Tasks ({{ m.openTaskCount ?? 0 }} open)
-            </button>
-            <button
-              type="button"
-              role="tab"
-              [attr.aria-selected]="tab() === 'projects'"
-              (click)="tab.set('projects')"
-            >
-              Projects ({{ m.projectCount }})
-            </button>
-            <button
-              type="button"
-              role="tab"
-              [attr.aria-selected]="tab() === 'assets'"
-              (click)="tab.set('assets')"
-            >
-              Assets
-            </button>
-            <button
-              type="button"
-              role="tab"
-              [attr.aria-selected]="tab() === 'details'"
-              (click)="tab.set('details')"
-            >
-              Details
-            </button>
-            @if (canSeeActivity()) {
-              <button
-                type="button"
-                role="tab"
-                [attr.aria-selected]="tab() === 'activity'"
-                (click)="tab.set('activity')"
-              >
-                Activity
-              </button>
-            }
-          </div>
-
-          @switch (tab()) {
-            @case ('tasks') {
-              <mf-scoped-tasks
-                [matterId]="m.matterId"
-                [canCreate]="m.isActive"
-                [showCreate]="false"
+          <mf-detail-layout>
+            <div mfMain>
+              <mf-tabs
+                label="Matter sections"
+                idPrefix="matter"
+                [tabs]="tabs()"
+                [selected]="current()"
+                (tabChange)="select($event)"
               />
-            }
-            @case ('projects') {
-              @if (projects().length === 0) {
-                <div class="pg-state" data-empty="projects">No projects in this matter yet.</div>
-              } @else {
-                <div class="mf-scroll">
-                  <table class="pg-table">
-                    <caption class="pg-sr">
-                      Projects of
-                      {{
-                        m.matterRef
-                      }}
-                    </caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">Name</th>
-                        <th scope="col">Description</th>
-                        <th scope="col">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (p of projects(); track p.projectId) {
-                        <tr>
-                          <td>
-                            <a class="pg-link" [routerLink]="['/projects', p.projectId]">{{
-                              p.name
-                            }}</a>
-                          </td>
-                          <td>{{ p.description }}</td>
-                          <td>
-                            <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
+              <div
+                role="tabpanel"
+                id="matter-panel"
+                [attr.aria-labelledby]="'matter-tab-' + current()"
+              >
+                @switch (current()) {
+                  @case ('tasks') {
+                    <mf-scoped-tasks
+                      [matterId]="m.matterId"
+                      [canCreate]="m.isActive"
+                      [showCreate]="false"
+                    />
+                  }
+                  @case ('projects') {
+                    @if (projects().length === 0) {
+                      <div class="pg-state" data-empty="projects">
+                        No projects in this matter yet.
+                      </div>
+                    } @else {
+                      <div class="mf-scroll">
+                        <table class="pg-table">
+                          <caption class="pg-sr">
+                            Projects of
+                            {{
+                              m.matterRef
+                            }}
+                          </caption>
+                          <thead>
+                            <tr>
+                              <th scope="col">Name</th>
+                              <th scope="col">Description</th>
+                              <th scope="col">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (p of projects(); track p.projectId) {
+                              <tr>
+                                <td>
+                                  <a class="pg-link" [routerLink]="['/projects', p.projectId]">{{
+                                    p.name
+                                  }}</a>
+                                </td>
+                                <td>{{ p.description }}</td>
+                                <td>
+                                  <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    }
+                  }
+                  @case ('assets') {
+                    @if (canSeeAssets()) {
+                      <mf-matter-assets [matterId]="m.matterId" />
+                    } @else {
+                      <div class="pg-state" data-no-access="assets">
+                        You don't have permission to view assets.
+                      </div>
+                    }
+                  }
+                }
+              </div>
+            </div>
+
+            <div mfAside>
+              <div class="pg-panel-actions">
+                <p-button
+                  *mfHasPermission="'Matter.Edit'"
+                  label="Edit"
+                  icon="pi pi-pencil"
+                  severity="secondary"
+                  (onClick)="go('/matters/' + m.matterId + '/edit')"
+                />
+                <p-button
+                  *mfHasPermission="'Matter.SetActive'"
+                  [label]="m.isActive ? 'Set inactive' : 'Set active'"
+                  severity="secondary"
+                  [disabled]="deactivateBlocked()"
+                  [attr.aria-describedby]="deactivateBlocked() ? 'matter-toggle-reason' : null"
+                  (onClick)="toggleOpen.set(true)"
+                />
+              </div>
+              @if (deactivateBlocked()) {
+                <p
+                  *mfHasPermission="'Matter.SetActive'"
+                  class="pg-reason"
+                  id="matter-toggle-reason"
+                  data-toggle-reason
+                >
+                  <i class="pi pi-info-circle" aria-hidden="true"></i>
+                  This matter has {{ m.openTaskCount }} tasks that aren't Completed or Cancelled.
+                  Finish or cancel them first.
+                </p>
               }
-            }
-            @case ('assets') {
-              @if (canSeeAssets()) {
-                <mf-matter-assets [matterId]="m.matterId" />
-              } @else {
-                <div class="pg-state" data-no-access="assets">
-                  You don't have permission to view assets.
-                </div>
-              }
-            }
-            @case ('details') {
-              <dl class="pg-dl">
+              <dl class="pg-dl pg-dl--stacked">
                 <dt>Matter reference</dt>
                 <dd><mf-matter-ref [value]="m.matterRef" /></dd>
                 <dt>Client</dt>
-                <dd>{{ m.clientNumber }} {{ m.clientName }}</dd>
+                <dd>
+                  <a class="pg-link" [routerLink]="['/clients', m.clientId]"
+                    ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
+                  >
+                </dd>
                 <dt>Matter number</dt>
                 <dd class="pg-mono">{{ m.matterNumber }}</dd>
                 <dt>Name</dt>
                 <dd>{{ m.name }}</dd>
                 <dt>Status</dt>
-                <dd>{{ m.isActive ? 'Active' : 'Inactive' }}</dd>
+                <dd><mf-active-badge [active]="m.isActive" /></dd>
                 <dt>Sensitive</dt>
-                <dd>{{ m.isSensitive ? 'Yes (warning only)' : 'No' }}</dd>
+                <dd data-sensitive-value>
+                  @if (m.isSensitive) {
+                    <mf-sensitive-badge /> <span class="pg-muted">Warning only</span>
+                  } @else {
+                    No
+                  }
+                </dd>
                 <dt>Created</dt>
                 <dd>{{ m.createdAtUtc | mfDate }}</dd>
                 @if (m.modifiedAtUtc) {
@@ -277,10 +279,17 @@ type LoadState = 'loading' | 'ready' | 'error';
                 }
               </dl>
               <mf-custom-fields-view [versionId]="m.formVersionId" [values]="m.formValues ?? {}" />
-            }
-            @case ('activity') {
-              <mf-entity-activity objectType="Matter" [objectId]="m.matterId" />
-            }
+            </div>
+          </mf-detail-layout>
+
+          @if (canSeeActivity()) {
+            <mf-activity-drawer
+              objectType="Matter"
+              [objectId]="m.matterId"
+              [name]="m.name"
+              [visible]="activityOpen()"
+              (visibleChange)="setActivityOpen($event)"
+            />
           }
 
           <mf-confirm-dialog
@@ -327,6 +336,8 @@ type LoadState = 'loading' | 'ready' | 'error';
 })
 export class MatterDetailPage {
   readonly matterId = input.required<string>();
+  /** `?tab=`: `tasks` (default), `projects`, `assets`; `activity` opens the drawer; anything else (old `details`) shows the default. */
+  readonly tab = input<string>();
 
   private readonly api = inject(MattersClient);
   private readonly pageTitle = inject(PageTitle);
@@ -338,7 +349,19 @@ export class MatterDetailPage {
   protected readonly state = signal<LoadState>('loading');
   protected readonly matter = signal<MatterResponse | null>(null);
   protected readonly projects = signal<ProjectResponse[]>([]);
-  protected readonly tab = signal<Tab>('tasks');
+  protected readonly activityOpen = signal(false);
+  protected readonly tabs = computed<MfTab[]>(() => {
+    const m = this.matter();
+    return [
+      { key: 'tasks', label: 'Tasks', count: m?.openTaskCount ?? 0 },
+      { key: 'projects', label: 'Projects', count: m?.projectCount ?? 0 },
+      { key: 'assets', label: 'Assets' },
+    ];
+  });
+  protected readonly current = computed<Tab>(() => {
+    const t = this.tab();
+    return t === 'projects' || t === 'assets' ? t : 'tasks';
+  });
   protected readonly toggleOpen = signal(false);
   protected readonly blockedOpen = signal(false);
   protected readonly blockedCount = signal(0);
@@ -360,6 +383,29 @@ export class MatterDetailPage {
       this.matterId();
       untracked(() => void this.load());
     });
+    effect(() => {
+      if (this.tab() === 'activity' && this.canSeeActivity()) {
+        untracked(() => this.activityOpen.set(true));
+      }
+    });
+  }
+
+  protected select(key: string): void {
+    void this.router.navigate([], {
+      queryParams: { tab: key === 'tasks' ? null : key },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  protected setActivityOpen(open: boolean): void {
+    this.activityOpen.set(open);
+    if (!open && this.tab() === 'activity') {
+      void this.router.navigate([], {
+        queryParams: { tab: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
   }
 
   async load(): Promise<void> {

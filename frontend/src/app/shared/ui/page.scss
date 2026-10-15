@@ -177,6 +177,43 @@
   margin: 0;
 }
 
+.pg-section-h {
+  margin: 0 0 var(--mf-s3);
+  font-size: var(--mf-fs-h3);
+}
+
+/* Details panel (mf-detail-layout): Edit / Set inactive buttons, then the record's fields stacked label over value. */
+.pg-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s2);
+  margin-bottom: var(--mf-s3);
+}
+
+.pg-panel-actions ~ .pg-reason {
+  margin: 0 0 var(--mf-s3);
+}
+
+.pg-dl--stacked {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.pg-dl--stacked dt {
+  margin-top: var(--mf-s3);
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+  font-weight: 600;
+}
+
+.pg-dl--stacked dt:first-child {
+  margin-top: 0;
+}
+
+.pg-dl--stacked dd {
+  overflow-wrap: anywhere;
+}
+
 .pg-tabs {
   display: flex;
   gap: var(--mf-s1);

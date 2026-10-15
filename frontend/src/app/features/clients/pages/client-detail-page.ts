@@ -11,29 +11,28 @@ import {
 import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
-import {
-  ClientResponse,
-  ClientsClient,
-  MatterResponse,
-  MattersClient,
-} from '../../../api/generated/api-client';
+import { ClientResponse, ClientsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
+import { DetailLayout } from '../../../shared/ui/detail-layout';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { EntityActivity } from '../../../shared/ui/entity-activity';
-import { MatterRef } from '../../../shared/ui/matter-ref';
+import { ClientMatters } from './client-matters';
 import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
 
-type Tab = 'matters' | 'details' | 'activity';
 type LoadState = 'loading' | 'ready' | 'error';
 
-/** Client detail (UX S05): number prominently, Matters / Details / Activity tabs, edit and activation. */
+/**
+ * Client detail (UX S05): the client's Matters grid in the main area and a Details panel on the right (number, name, status, custom
+ * fields, Edit and Set inactive / Set active). Activity opens in a right-side drawer from the header button. Old `?tab=activity`
+ * links open the drawer; `?tab=details` and `?tab=matters` just show the page.
+ */
 @Component({
   selector: 'mf-client-detail-page',
   imports: [
@@ -44,8 +43,9 @@ type LoadState = 'loading' | 'ready' | 'error';
     Button,
     HasPermissionDirective,
     ConfirmDialog,
-    MatterRef,
-    EntityActivity,
+    ActivityDrawer,
+    DetailLayout,
+    ClientMatters,
     MfDatePipe,
     CustomFieldsView,
   ],
@@ -74,116 +74,56 @@ type LoadState = 'loading' | 'ready' | 'error';
             <mf-record-title mfTitle [ref]="c.clientNumber" [name]="c.name">
               <mf-active-badge [active]="c.isActive" />
             </mf-record-title>
-            <p-button
-              mfActions
-              *mfHasPermission="'Client.Edit'"
-              [label]="c.isActive ? 'Set inactive' : 'Set active'"
-              severity="secondary"
-              (onClick)="toggleOpen.set(true)"
-            />
-            <p-button
-              mfActions
-              *mfHasPermission="'Client.Edit'"
-              label="Edit"
-              severity="secondary"
-              (onClick)="go('/clients/' + c.clientId + '/edit')"
-            />
+            @if (canSeeActivity()) {
+              <p-button
+                mfActions
+                label="Activity"
+                icon="pi pi-history"
+                severity="secondary"
+                data-activity-button
+                (onClick)="setActivityOpen(true)"
+              />
+            }
           </mf-page-header>
 
-          <div class="pg-tabs" role="tablist" aria-label="Client sections">
-            <button
-              type="button"
-              role="tab"
-              [attr.aria-selected]="tab() === 'matters'"
-              (click)="tab.set('matters')"
-            >
-              Matters ({{ c.matterCount }})
-            </button>
-            <button
-              type="button"
-              role="tab"
-              [attr.aria-selected]="tab() === 'details'"
-              (click)="tab.set('details')"
-            >
-              Details
-            </button>
-            @if (canSeeActivity()) {
-              <button
-                type="button"
-                role="tab"
-                [attr.aria-selected]="tab() === 'activity'"
-                (click)="tab.set('activity')"
-              >
-                Activity
-              </button>
-            }
-          </div>
+          <mf-detail-layout>
+            <section mfMain aria-labelledby="client-matters-h">
+              <h2 id="client-matters-h" class="pg-section-h">Matters</h2>
+              <mf-client-matters
+                [clientId]="c.clientId"
+                [clientName]="c.name"
+                [clientActive]="c.isActive"
+                [q]="q()"
+                [status]="status()"
+                [page]="page()"
+                [size]="size()"
+                [sort]="sort()"
+              />
+            </section>
 
-          @switch (tab()) {
-            @case ('matters') {
-              <div class="pg-actions" style="margin-bottom: var(--mf-s3)">
+            <div mfAside>
+              <div class="pg-panel-actions">
                 <p-button
-                  *mfHasPermission="'Matter.Create'"
-                  label="New matter for this client"
-                  icon="pi pi-plus"
+                  *mfHasPermission="'Client.Edit'"
+                  label="Edit"
+                  icon="pi pi-pencil"
                   severity="secondary"
-                  [disabled]="!c.isActive"
-                  (onClick)="go('/matters/new?clientId=' + c.clientId)"
+                  (onClick)="go('/clients/' + c.clientId + '/edit')"
+                />
+                <p-button
+                  *mfHasPermission="'Client.Edit'"
+                  [label]="c.isActive ? 'Set inactive' : 'Set active'"
+                  severity="secondary"
+                  (onClick)="toggleOpen.set(true)"
                 />
               </div>
-              @if (!c.isActive) {
-                <p class="pg-reason" data-inactive-reason>
-                  This client is inactive, so new matters can't be created for it.
-                </p>
-              }
-              @if (matters().length === 0) {
-                <div class="pg-state" data-empty>No matters yet for this client.</div>
-              } @else {
-                <div class="mf-scroll">
-                  <table class="pg-table">
-                    <caption class="pg-sr">
-                      Matters of
-                      {{
-                        c.name
-                      }}
-                    </caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">Matter</th>
-                        <th scope="col">Name</th>
-                        <th scope="col">Projects</th>
-                        <th scope="col">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (m of matters(); track m.matterId) {
-                        <tr>
-                          <td>
-                            <mf-matter-ref
-                              [value]="m.matterRef"
-                              [link]="['/matters', m.matterId]"
-                            />
-                          </td>
-                          <td>{{ m.name }}</td>
-                          <td>{{ m.projectCount }}</td>
-                          <td>
-                            <mf-active-badge [active]="m.isActive" />
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              }
-            }
-            @case ('details') {
-              <dl class="pg-dl">
+              <dl class="pg-dl pg-dl--stacked">
                 <dt>Client number</dt>
                 <dd class="pg-mono">{{ c.clientNumber }}</dd>
                 <dt>Name</dt>
                 <dd>{{ c.name }}</dd>
                 <dt>Status</dt>
-                <dd>{{ c.isActive ? 'Active' : 'Inactive' }}</dd>
+                <dd><mf-active-badge [active]="c.isActive" /></dd>
                 <dt>Created</dt>
                 <dd>{{ c.createdAtUtc | mfDate }}</dd>
                 @if (c.modifiedAtUtc) {
@@ -192,10 +132,17 @@ type LoadState = 'loading' | 'ready' | 'error';
                 }
               </dl>
               <mf-custom-fields-view [versionId]="c.formVersionId" [values]="c.formValues ?? {}" />
-            }
-            @case ('activity') {
-              <mf-entity-activity objectType="Client" [objectId]="c.clientId" />
-            }
+            </div>
+          </mf-detail-layout>
+
+          @if (canSeeActivity()) {
+            <mf-activity-drawer
+              objectType="Client"
+              [objectId]="c.clientId"
+              [name]="c.name"
+              [visible]="activityOpen()"
+              (visibleChange)="setActivityOpen($event)"
+            />
           }
 
           <mf-confirm-dialog
@@ -225,18 +172,24 @@ type LoadState = 'loading' | 'ready' | 'error';
 })
 export class ClientDetailPage {
   readonly clientId = input.required<string>();
+  /** Old deep links: `activity` opens the drawer. */
+  readonly tab = input<string>();
+  // The Matters list state, bound from the address and handed to the grid.
+  readonly q = input<string>();
+  readonly status = input<string>();
+  readonly page = input<string>();
+  readonly size = input<string>();
+  readonly sort = input<string>();
 
   private readonly api = inject(ClientsClient);
   private readonly pageTitle = inject(PageTitle);
-  private readonly mattersApi = inject(MattersClient);
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly client = signal<ClientResponse | null>(null);
-  protected readonly matters = signal<MatterResponse[]>([]);
-  protected readonly tab = signal<Tab>('matters');
+  protected readonly activityOpen = signal(false);
   protected readonly toggleOpen = signal(false);
   protected readonly busy = signal(false);
   protected readonly canSeeActivity = computed(() => this.auth.has('Audit.View'));
@@ -250,22 +203,29 @@ export class ClientDetailPage {
       this.clientId();
       untracked(() => void this.load());
     });
+    effect(() => {
+      if (this.tab() === 'activity' && this.canSeeActivity()) {
+        untracked(() => this.activityOpen.set(true));
+      }
+    });
+  }
+
+  protected setActivityOpen(open: boolean): void {
+    this.activityOpen.set(open);
+    if (!open && this.tab() === 'activity') {
+      void this.router.navigate([], {
+        queryParams: { tab: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
   }
 
   async load(): Promise<void> {
     const id = Number(this.clientId());
     this.state.set('loading');
     try {
-      const [client, matters] = await Promise.all([
-        firstValueFrom(this.api.getClient(id)),
-        this.auth.has('Matter.View')
-          ? firstValueFrom(
-              this.mattersApi.listMatters(undefined, id, undefined, undefined, 1, 100, 'matterRef'),
-            )
-          : Promise.resolve(null),
-      ]);
-      this.client.set(client);
-      this.matters.set(matters?.items ?? []);
+      this.client.set(await firstValueFrom(this.api.getClient(id)));
       this.state.set('ready');
     } catch {
       this.state.set('error');

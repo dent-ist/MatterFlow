@@ -82,6 +82,12 @@ describe('MatterDetailPage', () => {
       t.textContent!.trim().startsWith(label),
     )!;
 
+  /** The tab lives in the address (`?tab=`); the router binds it to the page input, so tests set the input. */
+  async function openTab(key: string | undefined): Promise<void> {
+    fixture.componentRef.setInput('tab', key);
+    await settle(fixture);
+  }
+
   it('shows the reference with a copy button, the client and the status', async () => {
     await create(['Matter.View', 'Project.View']);
 
@@ -119,31 +125,84 @@ describe('MatterDetailPage', () => {
 
     expect(
       Array.from(el().querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
-    ).toEqual(['Tasks (0 open)', 'Projects (1)', 'Assets', 'Details']);
+    ).toEqual(['Tasks (0)', 'Projects (1)', 'Assets']);
     // The first tab (Tasks) is selected on open; without Task.View it says so and loads nothing.
     expect(el().querySelector('[data-no-access=tasks]')).not.toBeNull();
     expect(queue.getTaskQueue).not.toHaveBeenCalled();
     expect(projects.listProjects).toHaveBeenCalledWith(undefined, 7, undefined, 1, 100, 'name');
-    tab('Projects').click();
-    await settle(fixture);
+    await openTab('projects');
     expect(el().querySelector('tbody a')?.getAttribute('href')).toBe('/projects/3');
 
-    tab('Tasks').click();
-    await settle(fixture);
+    await openTab(undefined);
     expect(el().querySelector('[data-no-access=tasks]')).not.toBeNull();
-    tab('Assets').click();
-    await settle(fixture);
+    await openTab('assets');
     expect(el().querySelector('[data-no-access=assets]')).not.toBeNull();
     expect(assets.listAssets).not.toHaveBeenCalled();
-    tab('Details').click();
+    // The old Details tab is gone: its link just shows the page (default tab) with the Details panel beside it.
+    await openTab('details');
+    expect(el().querySelector('[data-no-access=tasks]')).not.toBeNull();
+    expect(el().querySelector('aside dl')?.textContent).toContain('Merger Review');
+  });
+
+  it('keeps the tab in the address', async () => {
+    await create(['Matter.View', 'Project.View']);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+    tab('Projects').click();
+    expect(navigate).toHaveBeenCalledWith([], {
+      queryParams: { tab: 'projects' },
+      queryParamsHandling: 'merge',
+    });
+    expect(tab('Tasks').getAttribute('aria-selected')).toBe('true'); // the page input follows the address
+  });
+
+  it('puts the Details in a labelled panel beside the main area, with no Details or Activity tab', async () => {
+    await create(['Matter.View', 'Audit.View'], aMatter({ isSensitive: true }));
+
+    const aside = el().querySelector('aside')!;
+    const heading = document.getElementById(aside.getAttribute('aria-labelledby')!)!;
+    expect(heading.textContent?.trim()).toBe('Details');
+    const text = aside.textContent!;
+    for (const part of ['00343-00012', 'Merger Review', 'Active', 'Sensitive', 'Created']) {
+      expect(text).toContain(part);
+    }
+    expect(aside.querySelector('mf-sensitive-badge')).not.toBeNull();
+    expect(el().querySelector('mf-tabs')!.textContent).not.toMatch(/Details|Activity/);
+    // Activity is a header button that opens the drawer.
+    expect(el().querySelector('[data-page-actions]')!.textContent).toContain('Activity');
+  });
+
+  it('opens Activity in a drawer from the header button and for ?tab=activity; needs Audit.View', async () => {
+    await create(['Matter.View', 'Audit.View']);
+    expect(document.body.querySelector('.mf-drawer')).toBeNull();
+
+    buttonByLabel(el(), 'Activity')!.click();
     await settle(fixture);
-    expect(el().querySelector('dl')?.textContent).toContain('Merger Review');
+    const drawer = document.body.querySelector('.mf-drawer') as HTMLElement;
+    expect(drawer.textContent).toContain('Activity: Merger Review');
+    expect(drawer.querySelector('mf-entity-activity')).not.toBeNull();
+
+    TestBed.resetTestingModule();
+    await create(['Matter.View']);
+    expect(buttonByLabel(el(), 'Activity')).toBeUndefined();
+    fixture.componentRef.setInput('tab', 'activity');
+    await settle(fixture);
+    expect(document.body.querySelector('.mf-drawer')).toBeNull();
+  });
+
+  it('opens the Activity drawer for an old ?tab=activity link', async () => {
+    TestBed.resetTestingModule();
+    await create(['Matter.View', 'Audit.View']);
+    fixture.componentRef.setInput('tab', 'activity');
+    await settle(fixture);
+    expect(document.body.querySelector('.mf-drawer')?.textContent).toContain('Activity: ');
+    expect(tab('Tasks').getAttribute('aria-selected')).toBe('true');
   });
 
   it('lists the matter tasks in the Tasks tab (open by default, All on request); Create task is offered once, in the header', async () => {
     await create(['Matter.View', 'Task.View', 'Task.Create'], aMatter({ openTaskCount: 3 }));
 
-    expect(tab('Tasks').textContent?.trim()).toBe('Tasks (3 open)');
+    expect(tab('Tasks').textContent?.trim()).toBe('Tasks (3)');
     let args = queue.getTaskQueue.mock.calls[0];
     expect(args[9]).toBe(7);
     expect(args[10]).toBeUndefined();
@@ -167,25 +226,20 @@ describe('MatterDetailPage', () => {
   it('shows an empty state and a retry when the matter tasks cannot be loaded', async () => {
     await create(['Matter.View', 'Task.View']);
     queue.getTaskQueue.mockReturnValue(ok(pageOf([])));
-    tab('Projects').click();
-    await settle(fixture);
-    tab('Tasks').click();
-    await settle(fixture);
+    await openTab('projects');
+    await openTab(undefined);
     expect(el().querySelector('[data-empty=tasks]')?.textContent).toContain('No open tasks.');
 
     queue.getTaskQueue.mockReturnValue(apiError(500, { title: 'x', status: 500 } as never));
-    tab('Projects').click();
-    await settle(fixture);
-    tab('Tasks').click();
-    await settle(fixture);
+    await openTab('projects');
+    await openTab(undefined);
     expect(el().querySelector('[data-error]')).not.toBeNull();
   });
 
   it('lists the matter assets in the Assets tab with server-side search and links to the asset', async () => {
     await create(['Matter.View', 'Asset.View', 'Asset.Create']);
 
-    tab('Assets').click();
-    await settle(fixture);
+    await openTab('assets');
 
     expect(assets.listAssets).toHaveBeenCalledWith(
       7,

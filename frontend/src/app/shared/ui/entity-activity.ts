@@ -29,7 +29,7 @@ import { describeAuditEvent, isNoise } from './audit-format';
         @if (events().length === 0) {
           <p class="mf-activity__muted">No activity recorded yet.</p>
         } @else {
-          <ol class="mf-activity" aria-label="Activity">
+          <ol class="mf-activity" [class.mf-activity--compact]="compact()" aria-label="Activity">
             @for (e of events(); track e.auditEventId) {
               <li>
                 <time [attr.datetime]="e.occurredAtUtc">{{ e.occurredAtUtc | mfDate }}</time>
@@ -60,6 +60,14 @@ import { describeAuditEvent, isNoise } from './audit-format';
       padding: var(--mf-s2) 0;
       border-bottom: 1px solid var(--mf-border);
     }
+    .mf-activity--compact li {
+      grid-template-columns: 1fr auto;
+    }
+    .mf-activity--compact time {
+      grid-column: 1 / -1;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
     .mf-activity__who {
       color: var(--mf-text-muted);
     }
@@ -81,6 +89,8 @@ export class EntityActivity {
   /** Audit `ObjectType`, for example `Client`. */
   readonly objectType = input.required<string>();
   readonly objectId = input.required<number | string>();
+  /** Narrow layout for a drawer: the time on its own line above the text. */
+  readonly compact = input(false);
 
   private readonly api = inject(AuditEventsClient);
   private readonly users = inject(UsersClient);

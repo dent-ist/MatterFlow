@@ -1,7 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { MattersClient, ProjectsClient, TaskQueueClient } from '../../../api/generated/api-client';
+import {
+  AuditEventsClient,
+  MattersClient,
+  ProjectsClient,
+  TaskQueueClient,
+} from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
 import {
@@ -75,6 +80,10 @@ describe('Projects pages', () => {
         { provide: ProjectsClient, useValue: projects },
         { provide: MattersClient, useValue: matters },
         { provide: TaskQueueClient, useValue: queue },
+        {
+          provide: AuditEventsClient,
+          useValue: { listAuditEvents: vi.fn().mockReturnValue(ok({ items: [] })) },
+        },
         ...provideLookups(),
         ...provideClock('2026-10-14T15:00:00Z'),
       ],
@@ -271,6 +280,41 @@ describe('Projects pages', () => {
       expect(el().querySelector('[data-matter] .mf-ref')?.textContent).toBe('00343-00012');
       expect(buttonByLabel(el(), 'Archive')).toBeUndefined();
       expect(buttonByLabel(el(), 'Edit')).toBeUndefined();
+    });
+
+    it('shows the fields in a labelled Details panel with Edit and Archive, gated by permission', async () => {
+      await create(['Project.View', 'Project.Edit', 'Project.Archive']);
+
+      const aside = el().querySelector('aside')!;
+      expect(
+        document.getElementById(aside.getAttribute('aria-labelledby')!)?.textContent,
+      ).toContain('Details');
+      expect(aside.textContent).toContain('Custodian Processing');
+      expect(aside.textContent).toContain('Active');
+      expect(aside.contains(buttonByLabel(el(), 'Edit')!)).toBe(true);
+      expect(aside.contains(buttonByLabel(el(), 'Archive')!)).toBe(true);
+      expect(el().querySelector('[role=tab]')).toBeNull(); // no Details / Activity tabs any more
+      buttonByLabel(el(), 'Edit')!.click();
+      expect(navigateByUrl).toHaveBeenCalledWith('/projects/3/edit');
+    });
+
+    it('opens Activity in a drawer from the header (Audit.View), also for an old ?tab=activity link', async () => {
+      await create(['Project.View']);
+      expect(buttonByLabel(el(), 'Activity')).toBeUndefined();
+
+      TestBed.resetTestingModule();
+      await create(['Project.View', 'Audit.View']);
+      buttonByLabel(el(), 'Activity')!.click();
+      await settle(fixture);
+      const drawer = document.body.querySelector('.mf-drawer') as HTMLElement;
+      expect(drawer.textContent).toContain('Activity: Custodian Processing');
+      expect(drawer.querySelector('mf-entity-activity')).not.toBeNull();
+
+      TestBed.resetTestingModule();
+      await create(['Project.View', 'Audit.View']);
+      fixture.componentRef.setInput('tab', 'activity');
+      await settle(fixture);
+      expect(document.body.querySelector('.mf-drawer')).not.toBeNull();
     });
 
     it('lists the project tasks through the work-queue table, filtered by matter and project', async () => {

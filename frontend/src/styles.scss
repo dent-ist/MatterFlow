@@ -58,3 +58,16 @@ a:not([class]) {
   max-width: 100%;
   overflow-x: auto;
 }
+
+/* The right-side Activity drawer (mf-activity-drawer): a full-height PrimeNG dialog docked to the right edge. */
+.mf-drawer.p-dialog {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-shadow: var(--mf-shadow-2, -8px 0 24px rgb(0 0 0 / 18%));
+}
+
+.mf-drawer .p-dialog-content {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}

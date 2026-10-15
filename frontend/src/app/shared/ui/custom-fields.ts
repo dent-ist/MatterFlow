@@ -160,7 +160,7 @@ export class CustomFieldsEditor {
   template: `
     @if (schema(); as definition) {
       <section class="cf-view" aria-labelledby="custom-fields-h" data-custom-fields>
-        <h2 id="custom-fields-h" class="cf-title">Custom fields</h2>
+        <h3 id="custom-fields-h" class="cf-title">Custom fields</h3>
         <mf-dynamic-form [definition]="definition" [values]="values()" [readOnly]="true" />
       </section>
     }

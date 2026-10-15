@@ -15,10 +15,11 @@ import { ProjectResponse, ProjectsClient } from '../../../api/generated/api-clie
 import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
+import { DetailLayout } from '../../../shared/ui/detail-layout';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { EntityActivity } from '../../../shared/ui/entity-activity';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
 import { PageTitle } from '../../../core/title/page-title';
@@ -26,10 +27,12 @@ import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
 
-type Tab = 'tasks' | 'details' | 'activity';
 type LoadState = 'loading' | 'ready' | 'error';
 
-/** Project detail (UX S07): flat container of Tasks in a Matter; edit and archive/restore. */
+/**
+ * Project detail (UX S07): the project's Tasks grid in the main area and a Details panel on the right (fields, custom fields, Edit and
+ * Archive / Restore). Activity opens in a right-side drawer from the header button; an old `?tab=activity` link opens it too.
+ */
 @Component({
   selector: 'mf-project-detail-page',
   imports: [
@@ -41,7 +44,8 @@ type LoadState = 'loading' | 'ready' | 'error';
     HasPermissionDirective,
     ConfirmDialog,
     MatterRef,
-    EntityActivity,
+    ActivityDrawer,
+    DetailLayout,
     MfDatePipe,
     CustomFieldsView,
     ScopedTasks,
@@ -72,20 +76,16 @@ type LoadState = 'loading' | 'ready' | 'error';
             <mf-record-title mfTitle [name]="p.name">
               <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
             </mf-record-title>
-            <p-button
-              mfActions
-              *mfHasPermission="'Project.Archive'"
-              [label]="p.isActive ? 'Archive' : 'Restore'"
-              severity="secondary"
-              (onClick)="toggleOpen.set(true)"
-            />
-            <p-button
-              mfActions
-              *mfHasPermission="'Project.Edit'"
-              label="Edit"
-              severity="secondary"
-              (onClick)="go('/projects/' + p.projectId + '/edit')"
-            />
+            @if (canSeeActivity()) {
+              <p-button
+                mfActions
+                label="Activity"
+                icon="pi pi-history"
+                severity="secondary"
+                data-activity-button
+                (onClick)="setActivityOpen(true)"
+              />
+            }
             <p class="pg-muted" data-matter>
               Matter: <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />
               {{ p.matterName }}
@@ -98,53 +98,44 @@ type LoadState = 'loading' | 'ready' | 'error';
             </div>
           }
 
-          <div class="pg-tabs" role="tablist" aria-label="Project sections">
-            <button
-              type="button"
-              role="tab"
-              [attr.aria-selected]="tab() === 'tasks'"
-              (click)="tab.set('tasks')"
-            >
-              Tasks
-            </button>
-            <button
-              type="button"
-              role="tab"
-              [attr.aria-selected]="tab() === 'details'"
-              (click)="tab.set('details')"
-            >
-              Details
-            </button>
-            @if (canSeeActivity()) {
-              <button
-                type="button"
-                role="tab"
-                [attr.aria-selected]="tab() === 'activity'"
-                (click)="tab.set('activity')"
-              >
-                Activity
-              </button>
-            }
-          </div>
-
-          @switch (tab()) {
-            @case ('tasks') {
+          <mf-detail-layout>
+            <section mfMain aria-labelledby="project-tasks-h">
+              <h2 id="project-tasks-h" class="pg-section-h">Tasks</h2>
               <mf-scoped-tasks
                 [matterId]="p.matterId"
                 [projectId]="p.projectId"
                 [canCreate]="p.isActive"
               />
-            }
-            @case ('details') {
-              <dl class="pg-dl">
+            </section>
+
+            <div mfAside>
+              <div class="pg-panel-actions">
+                <p-button
+                  *mfHasPermission="'Project.Edit'"
+                  label="Edit"
+                  icon="pi pi-pencil"
+                  severity="secondary"
+                  (onClick)="go('/projects/' + p.projectId + '/edit')"
+                />
+                <p-button
+                  *mfHasPermission="'Project.Archive'"
+                  [label]="p.isActive ? 'Archive' : 'Restore'"
+                  severity="secondary"
+                  (onClick)="toggleOpen.set(true)"
+                />
+              </div>
+              <dl class="pg-dl pg-dl--stacked">
                 <dt>Name</dt>
                 <dd>{{ p.name }}</dd>
                 <dt>Description</dt>
                 <dd>{{ p.description || 'No description' }}</dd>
                 <dt>Matter</dt>
-                <dd>{{ p.matterRef }} {{ p.matterName }}</dd>
+                <dd>
+                  <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />
+                  {{ p.matterName }}
+                </dd>
                 <dt>Status</dt>
-                <dd>{{ p.isActive ? 'Active' : 'Archived' }}</dd>
+                <dd><mf-active-badge [active]="p.isActive" inactiveLabel="Archived" /></dd>
                 <dt>Created</dt>
                 <dd>{{ p.createdAtUtc | mfDate }}</dd>
                 @if (p.modifiedAtUtc) {
@@ -153,10 +144,17 @@ type LoadState = 'loading' | 'ready' | 'error';
                 }
               </dl>
               <mf-custom-fields-view [versionId]="p.formVersionId" [values]="p.formValues ?? {}" />
-            }
-            @case ('activity') {
-              <mf-entity-activity objectType="Project" [objectId]="p.projectId" />
-            }
+            </div>
+          </mf-detail-layout>
+
+          @if (canSeeActivity()) {
+            <mf-activity-drawer
+              objectType="Project"
+              [objectId]="p.projectId"
+              [name]="p.name"
+              [visible]="activityOpen()"
+              (visibleChange)="setActivityOpen($event)"
+            />
           }
 
           <mf-confirm-dialog
@@ -183,6 +181,8 @@ type LoadState = 'loading' | 'ready' | 'error';
 })
 export class ProjectDetailPage {
   readonly projectId = input.required<string>();
+  /** Old deep links: `activity` opens the drawer; other values just show the page. */
+  readonly tab = input<string>();
 
   private readonly api = inject(ProjectsClient);
   private readonly pageTitle = inject(PageTitle);
@@ -192,7 +192,7 @@ export class ProjectDetailPage {
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly project = signal<ProjectResponse | null>(null);
-  protected readonly tab = signal<Tab>('tasks');
+  protected readonly activityOpen = signal(false);
   protected readonly toggleOpen = signal(false);
   protected readonly busy = signal(false);
   protected readonly canSeeActivity = computed(() => this.auth.has('Audit.View'));
@@ -206,6 +206,22 @@ export class ProjectDetailPage {
       this.projectId();
       untracked(() => void this.load());
     });
+    effect(() => {
+      if (this.tab() === 'activity' && this.canSeeActivity()) {
+        untracked(() => this.activityOpen.set(true));
+      }
+    });
+  }
+
+  protected setActivityOpen(open: boolean): void {
+    this.activityOpen.set(open);
+    if (!open && this.tab() === 'activity') {
+      void this.router.navigate([], {
+        queryParams: { tab: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
   }
 
   async load(): Promise<void> {
