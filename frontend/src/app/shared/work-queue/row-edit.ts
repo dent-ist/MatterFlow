@@ -33,12 +33,16 @@ import {
   rowFromTask,
   statusChoices,
 } from './inline-edit';
+import { outOfOfficeText } from '../../core/availability/availability';
+import { USER_TIME_ZONE } from '../../core/time/clock';
 import { InlineMenu, MenuOption } from './inline-menu';
 import { InlineStatusFlow } from './inline-status-flow';
 
 interface Person {
   id: number;
   name: string;
+  /** "Out of office until Oct 20" when the person is out of office (still selectable). */
+  flag?: string;
 }
 
 const UNASSIGNED = 'none';
@@ -151,6 +155,7 @@ export class RowEdit {
   private readonly tasks = inject(TasksClient);
   private readonly pods = inject(PodsClient);
   private readonly users = inject(UsersLookupClient);
+  private readonly zone = inject(USER_TIME_ZONE);
   private readonly notify = inject(NotificationService);
   private readonly undoService = inject(UndoService);
   private destroyed = false;
@@ -263,6 +268,7 @@ export class RowEdit {
         const list: MenuOption[] = shown.map((p) => ({
           id: String(p.id),
           label: p.name,
+          flag: p.flag,
           selected: p.id === r.assignedUser?.userId,
         }));
         return r.assignedUser
@@ -298,6 +304,7 @@ export class RowEdit {
           );
           this.podName.set(pod.pod.name);
           this.podMode.set(true);
+          void this.flagPodMembers();
           return;
         } catch {
           /* fall through to the general lookup */
@@ -315,12 +322,35 @@ export class RowEdit {
     if (!this.podMode()) await this.lookup(text);
   }
 
+  /** The Pod list comes from the Pod; the lookup knows who is out of office, so mark them once it answers (best effort). */
+  private async flagPodMembers(): Promise<void> {
+    try {
+      const found = await firstValueFrom(this.users.lookupUsers(undefined, 50));
+      const flags = new Map(
+        found.flatMap((u) => {
+          const flag = outOfOfficeText(u.availability, this.zone);
+          return flag ? [[u.userId, flag] as const] : [];
+        }),
+      );
+      if (flags.size === 0 || !this.podMode()) return;
+      this.people.update((list) => list.map((p) => ({ ...p, flag: flags.get(p.id) })));
+    } catch {
+      /* the flag is a courtesy; the list works without it */
+    }
+  }
+
   private async lookup(text: string): Promise<void> {
     const seq = ++this.searchSeq;
     try {
       const found = await firstValueFrom(this.users.lookupUsers(text || undefined, 8));
       if (seq === this.searchSeq) {
-        this.people.set(found.map((u) => ({ id: u.userId, name: u.displayName })));
+        this.people.set(
+          found.map((u) => ({
+            id: u.userId,
+            name: u.displayName,
+            flag: outOfOfficeText(u.availability, this.zone) ?? undefined,
+          })),
+        );
       }
     } catch {
       if (seq === this.searchSeq) this.people.set([]);

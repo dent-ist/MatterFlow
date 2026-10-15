@@ -18,6 +18,8 @@ export interface PickerOption {
   label: string;
   /** Marks inactive records (the picker shows an "inactive" tag and still lets the caller decide). */
   inactive?: boolean;
+  /** A warning shown after the label with an icon (for example "Out of office until Oct 20"); the option stays selectable. */
+  flag?: string;
 }
 
 export type PickerSearch = (query: string) => Promise<PickerOption[]>;
@@ -43,6 +45,11 @@ export type PickerSearch = (query: string) => Promise<PickerOption[]>;
           <span>{{ s.label }}</span>
           @if (s.inactive) {
             <mf-badge>Inactive</mf-badge>
+          }
+          @if (s.flag) {
+            <span class="mf-picker__flag mf-picker__flag--chosen" data-chosen-flag>
+              <i class="pi pi-calendar-minus" aria-hidden="true"></i> {{ s.flag }}
+            </span>
           }
           @if (!locked()) {
             <button
@@ -95,6 +102,11 @@ export type PickerSearch = (query: string) => Promise<PickerOption[]>;
                   @if (o.inactive) {
                     <mf-badge>Inactive</mf-badge>
                   }
+                  @if (o.flag) {
+                    <span class="mf-picker__flag" data-option-flag>
+                      <i class="pi pi-calendar-minus" aria-hidden="true"></i> {{ o.flag }}
+                    </span>
+                  }
                 </li>
               }
             </ul>
@@ -146,6 +158,14 @@ export type PickerSearch = (query: string) => Promise<PickerOption[]>;
     }
     .mf-picker__note {
       color: var(--mf-text-muted);
+    }
+    .mf-picker__flag--chosen {
+      display: inline;
+    }
+    .mf-picker__flag {
+      display: block;
+      color: var(--mf-warning);
+      font-size: var(--mf-fs-xs);
     }
     .mf-picker__chosen {
       display: flex;

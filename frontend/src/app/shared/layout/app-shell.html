@@ -18,14 +18,7 @@
     />
   }
 
-  <div class="mf-user" data-testid="user-menu">
-    <span class="mf-user-name">{{ auth.displayName() }}</span>
-    @if (auth.profile()?.windowsAccount; as account) {
-      @if (account !== auth.displayName()) {
-        <span class="mf-user-account">{{ account }}</span>
-      }
-    }
-  </div>
+  <mf-user-menu (shortcuts)="toggleHelp()" />
 
   <button
     type="button"

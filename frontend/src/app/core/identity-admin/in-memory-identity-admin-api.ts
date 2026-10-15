@@ -36,6 +36,8 @@ interface MemUser {
   registeredAtUtc: string;
   lastLoginAtUtc?: string;
   version: number;
+  /** Set by tests to show a person as out of office or off hours; unset = available. */
+  availability?: { state: string; outUntil: string | undefined; note: string | undefined };
 }
 
 const fail = (status: number, code: string, message: string): Observable<never> =>
@@ -361,6 +363,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
       roles: u.roleIds.map((id) => this.role(id)?.name ?? '').sort(),
       registeredAtUtc: u.registeredAtUtc,
       lastLoginAtUtc: u.lastLoginAtUtc,
+      availability: u.availability ?? { state: 'AVAILABLE', outUntil: undefined, note: undefined },
     };
   }
 

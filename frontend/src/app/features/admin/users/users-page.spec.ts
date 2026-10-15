@@ -4,6 +4,7 @@ import { MessageService } from 'primeng/api';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
+import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { IdentityAdminApi } from '../../../core/identity-admin/identity-admin-api';
 import { InMemoryIdentityAdminApi } from '../../../core/identity-admin/in-memory-identity-admin-api';
 import { PendingUsersStore } from '../../../core/identity-admin/pending-users.store';
@@ -45,6 +46,7 @@ describe('UsersPage', () => {
       providers: [
         provideRouter([]),
         MessageService,
+        { provide: USER_TIME_ZONE, useValue: 'America/New_York' },
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         InMemoryIdentityAdminApi,
         { provide: IdentityAdminApi, useExisting: InMemoryIdentityAdminApi },
@@ -189,5 +191,79 @@ describe('UsersPage', () => {
 
     expect(button('Save changes')).toBeUndefined();
     expect(q<HTMLInputElement>('[data-role="5"]').closest('fieldset')!.disabled).toBe(true);
+  });
+
+  describe('availability', () => {
+    const chips = (): string[] =>
+      Array.from(el().querySelectorAll('tbody tr')).map((r) =>
+        r.querySelector('[data-availability-chip]')!.textContent!.trim(),
+      );
+
+    it('shows an availability chip per user: Available, Off hours, Out of office until a date', async () => {
+      await createWith(
+        (a) => {
+          a.users[1].availability = {
+            state: 'OUT_OF_OFFICE',
+            outUntil: '2027-03-21T04:00:00Z',
+            note: undefined,
+          };
+          a.users[0].availability = { state: 'OFF_HOURS', outUntil: undefined, note: undefined };
+        },
+        'User.View',
+        'User.Manage',
+      );
+      await chooseStatus('active');
+      expect(chips()).toEqual(['Out of office until Mar 20, 2027', 'Off hours']);
+    });
+
+    it('filters by availability and remembers the choice in the address', async () => {
+      await createWith(
+        (a) => {
+          a.users[1].availability = {
+            state: 'OUT_OF_OFFICE',
+            outUntil: undefined,
+            note: undefined,
+          };
+        },
+        'User.View',
+        'User.Manage',
+      );
+      await chooseStatus('all');
+      expect(rows().length).toBeGreaterThan(2);
+
+      const select = q<HTMLSelectElement>('#users-availability');
+      expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
+        'All',
+        'Available',
+        'Out of office',
+        'Off hours',
+      ]);
+      select.value = 'OUT_OF_OFFICE';
+      select.dispatchEvent(new Event('change'));
+      await settle();
+      expect(rows()).toEqual(['Dana Director']);
+
+      select.value = 'OFF_HOURS';
+      select.dispatchEvent(new Event('change'));
+      await settle();
+      expect(el().textContent).toContain('No users match these filters.');
+    });
+
+    it('offers "Edit availability" only with User.Manage', async () => {
+      await create('User.View');
+      await chooseStatus('active');
+      expect(el().querySelector('[data-edit-availability]')).toBeNull();
+    });
+
+    it('opens the availability dialog for the chosen user', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      el()
+        .querySelector<HTMLButtonElement>('[data-user="2"] [data-edit-availability] button')!
+        .click();
+      await settle();
+      const dialog = document.querySelector('.p-dialog');
+      expect(dialog?.textContent).toContain('Availability of Dana Director');
+    });
   });
 });

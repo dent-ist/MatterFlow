@@ -35,6 +35,7 @@ import {
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { LookupStore } from '../../../core/lookups/lookup-store';
+import { outOfOfficeText } from '../../../core/availability/availability';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import {
@@ -507,7 +508,11 @@ export class CreateTaskPage implements HasUnsavedChanges {
 
   protected readonly searchUsers = async (query: string): Promise<PickerOption[]> => {
     const found = await firstValueFrom(this.usersApi.lookupUsers(query || undefined, 8));
-    return found.map((u) => ({ id: u.userId, label: u.displayName }));
+    return found.map((u) => ({
+      id: u.userId,
+      label: u.displayName,
+      flag: outOfOfficeText(u.availability, this.zone) ?? undefined,
+    }));
   };
 
   protected onMatterPicked(option: PickerOption | null): void {

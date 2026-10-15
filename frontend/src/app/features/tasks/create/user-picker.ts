@@ -13,11 +13,15 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { UsersLookupClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { outOfOfficeText } from '../../../core/availability/availability';
+import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { ReferenceNames } from '../../../core/lookups/reference-names';
 
 interface Choice {
   id: number;
   label: string;
+  /** "Out of office until Oct 20"; the person can still be chosen. */
+  flag?: string;
 }
 
 /**
@@ -36,6 +40,11 @@ interface Choice {
     } @else if (chosen(); as c) {
       <div class="up__chosen" data-chosen>
         <span>{{ c.label }}</span>
+        @if (c.flag) {
+          <span class="up__flag up__flag--chosen" data-chosen-flag>
+            <i class="pi pi-calendar-minus" aria-hidden="true"></i> {{ c.flag }}
+          </span>
+        }
         @if (!disabled()) {
           <button type="button" class="up__change" (click)="clear()">Change</button>
         }
@@ -84,6 +93,11 @@ interface Choice {
                 (mousedown)="$event.preventDefault(); choose(o)"
               >
                 {{ o.label }}
+                @if (o.flag) {
+                  <span class="up__flag" data-option-flag>
+                    <i class="pi pi-calendar-minus" aria-hidden="true"></i> {{ o.flag }}
+                  </span>
+                }
               </li>
             }
           </ul>
@@ -138,6 +152,14 @@ interface Choice {
     .up__option:hover {
       background: var(--mf-selected-bg);
     }
+    .up__flag--chosen {
+      display: inline;
+    }
+    .up__flag {
+      display: block;
+      color: var(--mf-warning);
+      font-size: var(--mf-fs-xs);
+    }
     .up__note,
     .up__muted {
       color: var(--mf-text-muted);
@@ -169,6 +191,7 @@ export class UserPicker implements OnDestroy {
 
   private readonly api = inject(UsersLookupClient);
   private readonly auth = inject(AuthStore);
+  private readonly zone = inject(USER_TIME_ZONE);
 
   protected readonly canLookup = computed(() => this.auth.has('Task.Assign'));
   protected readonly text = signal('');
@@ -225,7 +248,13 @@ export class UserPicker implements OnDestroy {
     try {
       const found = await firstValueFrom(this.api.lookupUsers(this.text().trim() || undefined, 20));
       if (turn !== this.sequence) return;
-      this.options.set(found.map((u) => ({ id: u.userId, label: u.displayName })));
+      this.options.set(
+        found.map((u) => ({
+          id: u.userId,
+          label: u.displayName,
+          flag: outOfOfficeText(u.availability, this.zone) ?? undefined,
+        })),
+      );
       this.active.set(found.length > 0 ? 0 : -1);
     } catch {
       if (turn === this.sequence) this.options.set([]);

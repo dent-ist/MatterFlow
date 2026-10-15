@@ -25,6 +25,8 @@ import {
 import { PendingUsersStore } from '../../../core/identity-admin/pending-users.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { AvailabilityChip } from '../../../shared/availability/availability-chip';
+import { AvailabilityDialog } from '../../../shared/availability/availability-dialog';
 import { Badge } from '../../../shared/ui/badge';
 import { ListState } from '../../../shared/ui/data-table';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
@@ -39,6 +41,25 @@ const STATUS_VALUES: readonly StatusOption[] = ['pending', 'active', 'inactive',
 
 const PAGE_SIZE = 25;
 
+/** The availability filter (UX: next to the status filter). Off hours is a soft state; "Available" means available right now. */
+type AvailabilityFilter = 'all' | 'AVAILABLE' | 'OUT_OF_OFFICE' | 'OFF_HOURS';
+const AVAILABILITY_VALUES: readonly AvailabilityFilter[] = [
+  'all',
+  'AVAILABLE',
+  'OUT_OF_OFFICE',
+  'OFF_HOURS',
+];
+const AVAILABILITY_OPTIONS: { value: AvailabilityFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'AVAILABLE', label: 'Available' },
+  { value: 'OUT_OF_OFFICE', label: 'Out of office' },
+  { value: 'OFF_HOURS', label: 'Off hours' },
+];
+/** The API lists at most this many users per request. */
+const FETCH_SIZE = 100;
+/** The availability filter reads the whole status list (at most this many users) and filters it here. */
+const FILTER_LIMIT = 1000;
+
 /**
  * S12 Admin: Users tab of the Users page. A status filter (Pending access / Active / Inactive / All) next to the search box, paging and
  * the user detail panel with role assignment. Status, search and page live in the address (`status`, `q`, `page`); without `status`
@@ -46,7 +67,17 @@ const PAGE_SIZE = 25;
  */
 @Component({
   selector: 'mf-users-page',
-  imports: [Button, MfDatePipe, ScrollArea, SearchBox, ListState, Pager, Badge],
+  imports: [
+    Button,
+    MfDatePipe,
+    ScrollArea,
+    SearchBox,
+    ListState,
+    Pager,
+    Badge,
+    AvailabilityChip,
+    AvailabilityDialog,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   templateUrl: './users-page.html',
@@ -75,6 +106,15 @@ export class UsersPage implements OnInit {
     { value: 'all', label: 'All' },
   ]);
 
+  protected readonly availabilityOptions = AVAILABILITY_OPTIONS;
+  protected readonly availabilityFilter = computed<AvailabilityFilter>(() => {
+    const value = this.query().get('availability') as AvailabilityFilter | null;
+    return value && AVAILABILITY_VALUES.includes(value) ? value : 'all';
+  });
+  /** Person whose availability is being edited in the dialog (needs User.Manage). */
+  protected readonly availabilityEdit = signal<UserSummaryDto | null>(null);
+  protected readonly availabilityDialogOpen = signal(false);
+
   protected readonly canManage = computed(() => this.auth.has('User.Manage'));
   protected readonly canManageRoles = computed(() => this.auth.has('Role.Manage'));
 
@@ -93,6 +133,10 @@ export class UsersPage implements OnInit {
 
   // Detail panel
   protected readonly selected = signal<UserDetailDto | null>(null);
+  /** Availability of the person in the detail panel, from the list row. */
+  protected readonly selectedAvailability = computed(
+    () => this.users().find((u) => u.userId === this.selected()?.userId)?.availability ?? null,
+  );
   protected readonly draftRoleIds = signal<number[]>([]);
   protected readonly draftActive = signal(true);
   protected readonly draftName = signal('');
@@ -124,6 +168,7 @@ export class UsersPage implements OnInit {
       this.tab();
       this.search();
       this.page();
+      this.availabilityFilter();
       untracked(() => void this.reload());
     });
   }
@@ -157,6 +202,19 @@ export class UsersPage implements OnInit {
 
   protected setStatus(value: string): void {
     this.navigate({ status: value, page: null });
+  }
+
+  protected setAvailabilityFilter(value: string): void {
+    this.navigate({ availability: value === 'all' ? null : value, page: null });
+  }
+
+  protected clearFilters(): void {
+    this.navigate({ q: null, availability: null, page: null });
+  }
+
+  protected editAvailability(user: UserSummaryDto): void {
+    this.availabilityEdit.set(user);
+    this.availabilityDialogOpen.set(true);
   }
 
   /** The shared search box searches live after a pause and at once on Enter (UXR-11). */
@@ -282,25 +340,62 @@ export class UsersPage implements OnInit {
     }
   }
 
+  private fetchPage() {
+    return firstValueFrom(
+      this.api.listUsers({
+        status: this.tab(),
+        search: this.search(),
+        page: this.page(),
+        pageSize: PAGE_SIZE,
+      }),
+    );
+  }
+
+  /** Every user of the status and search (the API has no availability filter), for the availability filter. */
+  private async fetchAll() {
+    const first = await firstValueFrom(
+      this.api.listUsers({
+        status: this.tab(),
+        search: this.search(),
+        page: 1,
+        pageSize: FETCH_SIZE,
+      }),
+    );
+    const items = [...first.items];
+    for (let page = 2; items.length < Math.min(first.total, FILTER_LIMIT); page++) {
+      const next = await firstValueFrom(
+        this.api.listUsers({
+          status: this.tab(),
+          search: this.search(),
+          page,
+          pageSize: FETCH_SIZE,
+        }),
+      );
+      if (next.items.length === 0) break;
+      items.push(...next.items);
+    }
+    return { ...first, items };
+  }
+
   protected async reload(): Promise<void> {
     this.loading.set(true);
     this.loadError.set(false);
     try {
+      const availability = this.availabilityFilter();
       const [list, counts] = await Promise.all([
-        firstValueFrom(
-          this.api.listUsers({
-            status: this.tab(),
-            search: this.search(),
-            page: this.page(),
-            pageSize: PAGE_SIZE,
-          }),
-        ),
+        availability === 'all' ? this.fetchPage() : this.fetchAll(),
         firstValueFrom(this.api.userCounts()),
       ]);
       // Pending users are also counted as active by the API; they are listed under Pending access only.
-      const items = this.tab() === 'active' ? list.items.filter((u) => !u.isPending) : list.items;
+      let items = this.tab() === 'active' ? list.items.filter((u) => !u.isPending) : list.items;
+      let total = list.total - (list.items.length - items.length);
+      if (availability !== 'all') {
+        items = items.filter((u) => (u.availability?.state ?? 'AVAILABLE') === availability);
+        total = items.length;
+        items = items.slice((this.page() - 1) * PAGE_SIZE, this.page() * PAGE_SIZE);
+      }
       this.users.set(items);
-      this.total.set(list.total - (list.items.length - items.length));
+      this.total.set(total);
       this.counts.set(counts);
       this.pending.set(counts.pending);
     } catch {

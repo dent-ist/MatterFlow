@@ -20,6 +20,22 @@
       }
     </select>
   </div>
+  <div class="pg-filter">
+    <label for="users-availability">Availability</label>
+    <select
+      id="users-availability"
+      class="mf-control mf-status"
+      data-availability-filter
+      [value]="availabilityFilter()"
+      (change)="setAvailabilityFilter($any($event.target).value)"
+    >
+      @for (o of availabilityOptions; track o.value) {
+        <option [value]="o.value" [selected]="o.value === availabilityFilter()">
+          {{ o.label }}
+        </option>
+      }
+    </select>
+  </div>
   @if (counts().pending > 0 && tab() !== 'pending') {
     <button type="button" class="mf-pending-cue" data-pending-cue (click)="setStatus('pending')">
       <i class="pi pi-user-plus" aria-hidden="true"></i>
@@ -34,11 +50,11 @@
       noun="users"
       [state]="listState()"
       [empty]="users().length === 0"
-      [filtered]="search().trim().length > 0"
+      [filtered]="search().trim().length > 0 || availabilityFilter() !== 'all'"
       [emptyText]="tab() === 'pending' ? 'No one is waiting for access.' : 'No users found.'"
-      [columns]="6"
+      [columns]="7"
       (retry)="reload()"
-      (clear)="onSearch('')"
+      (clear)="clearFilters()"
     >
       <div class="mf-table-wrap" mfScrollArea="Users list">
         <div class="mf-scroll">
@@ -53,6 +69,7 @@
                 <th scope="col">First seen</th>
                 <th scope="col">Email</th>
                 <th scope="col">Roles</th>
+                <th scope="col">Availability</th>
                 <th scope="col" class="mf-col-actions"><span class="mf-sr">Actions</span></th>
               </tr>
             </thead>
@@ -72,6 +89,7 @@
                   <td>{{ u.registeredAtUtc | mfDate }}</td>
                   <td>{{ u.email }}</td>
                   <td>{{ rolesLabel(u) }}</td>
+                  <td><mf-availability-chip [availability]="u.availability" /></td>
                   <td class="mf-col-actions">
                     <span class="mf-row-actions">
                       <p-button
@@ -83,6 +101,15 @@
                         "
                         (onClick)="open(u)"
                       />
+                      @if (canManage() && !u.isPending) {
+                        <p-button
+                          label="Edit availability"
+                          [text]="true"
+                          [ariaLabel]="'Edit availability of ' + u.displayName"
+                          data-edit-availability
+                          (onClick)="editAvailability(u)"
+                        />
+                      }
                     </span>
                   </td>
                 </tr>
@@ -112,6 +139,9 @@
           (onClick)="closePanel()"
         />
       </header>
+      @if (selectedAvailability(); as a) {
+        <p class="mf-panel-availability"><mf-availability-chip [availability]="a" /></p>
+      }
       <p class="mf-muted">
         <span class="mf-mono">{{ u.windowsAccount }}</span>
         @if (u.email) {
@@ -240,3 +270,10 @@
     </aside>
   }
 </div>
+
+<mf-availability-dialog
+  [(visible)]="availabilityDialogOpen"
+  [userId]="availabilityEdit()?.userId ?? null"
+  [displayName]="availabilityEdit()?.displayName ?? ''"
+  (saved)="reload()"
+/>

@@ -23,6 +23,7 @@ import { GlobalSearch } from '../search/global-search';
 import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem } from './nav-items';
 import { ShortcutHelpState } from './shortcut-help-state';
 import { ShellLayout } from '../ui/fixed-page';
+import { UserMenu } from './user-menu';
 
 /** Header (logo, persistent global search, Create Task, user), permission-gated left nav, content outlet. */
 @Component({
@@ -35,6 +36,7 @@ import { ShellLayout } from '../ui/fixed-page';
     GlobalSearch,
     HasPermissionDirective,
     NgComponentOutlet,
+    UserMenu,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {

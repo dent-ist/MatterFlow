@@ -44,23 +44,6 @@
   flex: 1;
 }
 
-.mf-user {
-  margin-left: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  line-height: 1.2;
-}
-
-.mf-user-name {
-  font-weight: 600;
-}
-
-.mf-user-account {
-  font-size: var(--mf-fs-xs);
-  color: var(--mf-text-muted);
-}
-
 .mf-body {
   display: flex;
   flex: 1;
@@ -150,8 +133,7 @@
   }
 
   .mf-nav-label,
-  .mf-nav-heading,
-  .mf-user-account {
+  .mf-nav-heading {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -192,15 +174,6 @@
 
   .mf-help-btn {
     display: none;
-  }
-
-  .mf-user {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
 }
 

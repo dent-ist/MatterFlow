@@ -15,6 +15,7 @@ export interface SectionIcon {
 /** Screens that are not a left-navigation item. A longer prefix wins, so `/tasks/new` beats the Task Queue's `/tasks`. */
 export const EXTRA_SECTIONS: readonly SectionIcon[] = [
   { prefix: '/tasks/new', icon: 'pi pi-plus' },
+  { prefix: '/profile', icon: 'pi pi-user-edit' },
   { prefix: '/search', icon: 'pi pi-search' },
   { prefix: '/access-pending', icon: 'pi pi-lock' },
   { prefix: '/403', icon: 'pi pi-ban' },

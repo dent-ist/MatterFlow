@@ -18,6 +18,8 @@ export interface MenuOption {
   label: string;
   /** Muted text after the label (for a status action: the status it leads to). */
   hint?: string;
+  /** A warning shown under the label with an icon (for example "Out of office until Oct 20"); the option stays selectable. */
+  flag?: string;
   selected?: boolean;
   disabled?: boolean;
   /** Why a disabled option cannot be used; read out with the option. */
@@ -107,7 +109,14 @@ let nextId = 0;
                   aria-hidden="true"
                   style="width: 1rem"
                 ></i>
-                <span>{{ o.label }}</span>
+                <span class="im-text">
+                  <span>{{ o.label }}</span>
+                  @if (o.flag) {
+                    <span class="im-flag" data-option-flag>
+                      <i class="pi pi-calendar-minus" aria-hidden="true"></i> {{ o.flag }}
+                    </span>
+                  }
+                </span>
                 @if (o.hint) {
                   <span class="im-hint">{{ o.hint }}</span>
                 }
@@ -218,6 +227,15 @@ let nextId = 0;
     }
     .im-item[aria-checked='true'] {
       font-weight: 600;
+    }
+    .im-text {
+      display: grid;
+      min-width: 0;
+    }
+    .im-flag {
+      color: var(--mf-warning);
+      font-size: var(--mf-fs-xs);
+      font-weight: 400;
     }
     .im-hint,
     .im-note,

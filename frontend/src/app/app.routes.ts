@@ -74,6 +74,12 @@ export const routes: Routes = [
         loadChildren: () => import('./features/assets/assets.routes').then((m) => m.ASSETS_ROUTES),
       },
       {
+        path: 'profile',
+        canActivate: [permissionGuard('Task.View')],
+        loadChildren: () =>
+          import('./features/profile/profile.routes').then((m) => m.PROFILE_ROUTES),
+      },
+      {
         path: 'search',
         loadChildren: () => import('./features/search/search.routes').then((m) => m.SEARCH_ROUTES),
       },

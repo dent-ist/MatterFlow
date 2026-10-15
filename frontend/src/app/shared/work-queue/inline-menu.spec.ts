@@ -127,3 +127,43 @@ describe('InlineMenu empty state (DASH3-05)', () => {
     root.remove();
   });
 });
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [InlineMenu],
+  template: `
+    <mf-inline-menu label="Change assignee" [options]="options" (picked)="picked.push($event.id)"
+      >Unassigned</mf-inline-menu
+    >
+  `,
+})
+class FlagHost {
+  readonly options: MenuOption[] = [
+    { id: '1', label: 'Dana Director', flag: 'Out of office until Oct 20' },
+    { id: '2', label: 'Kim Admin' },
+  ];
+  readonly picked: string[] = [];
+}
+
+describe('InlineMenu option flag (availability)', () => {
+  it('shows the flag with an icon under the label and still lets the option be chosen', () => {
+    const fixture = TestBed.createComponent(FlagHost);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    document.body.appendChild(root);
+    root.querySelector<HTMLButtonElement>('[data-inline-trigger]')!.click();
+    fixture.detectChanges();
+
+    const flagged = root.querySelector<HTMLButtonElement>('.im-item[data-option="1"]')!;
+    expect(flagged.querySelector('[data-option-flag]')?.textContent?.trim()).toBe(
+      'Out of office until Oct 20',
+    );
+    expect(flagged.querySelector('.pi-calendar-minus')).not.toBeNull();
+    expect(root.querySelector('.im-item[data-option="2"] [data-option-flag]')).toBeNull();
+    expect(flagged.getAttribute('aria-disabled')).toBeNull();
+
+    flagged.click();
+    expect(fixture.componentInstance.picked).toEqual(['1']);
+    root.remove();
+  });
+});

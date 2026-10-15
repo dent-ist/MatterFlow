@@ -28,6 +28,7 @@ import {
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { LookupStore } from '../../../core/lookups/lookup-store';
+import { outOfOfficeText } from '../../../core/availability/availability';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
@@ -706,7 +707,11 @@ export class TaskDetailsTab {
   /** Any active user, as in Create Task (`GET /users/lookup`, needs Task.Assign), not just the Pod's members. */
   protected readonly searchUsers = async (query: string): Promise<PickerOption[]> => {
     const found = await firstValueFrom(this.usersApi.lookupUsers(query || undefined, 8));
-    return found.map((u) => ({ id: u.userId, label: u.displayName }));
+    return found.map((u) => ({
+      id: u.userId,
+      label: u.displayName,
+      flag: outOfOfficeText(u.availability, this.zone) ?? undefined,
+    }));
   };
 
   protected onAssignee(option: PickerOption | null): void {

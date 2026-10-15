@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
+import { NEVER } from 'rxjs';
 import { provideRouter } from '@angular/router';
-import { SearchClient } from '../../api/generated/api-client';
+import { MessageService } from 'primeng/api';
+import { MyAvailabilityClient, SearchClient } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Permission } from '../../core/auth/permissions';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
@@ -12,6 +14,8 @@ describe('AppShell header search', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        MessageService,
+        { provide: MyAvailabilityClient, useValue: { getMyAvailability: () => NEVER } },
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         {
           provide: SearchClient,

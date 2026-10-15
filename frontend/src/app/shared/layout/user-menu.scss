@@ -1,0 +1,125 @@
+:host {
+  position: relative;
+  margin-left: auto;
+  display: block;
+}
+
+.um-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  min-height: var(--mf-row-h);
+  padding: 0 var(--mf-s2);
+  border: 1px solid transparent;
+  border-radius: var(--mf-radius);
+  background: transparent;
+  color: var(--mf-text);
+  font: inherit;
+  text-align: right;
+  cursor: pointer;
+
+  &:hover,
+  &[aria-expanded='true'] {
+    background: var(--mf-surface-alt);
+  }
+}
+
+.um-icon,
+.um-chevron {
+  color: var(--mf-text-muted);
+  font-size: 0.875rem;
+}
+
+.um-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+.um-name {
+  font-weight: 600;
+}
+
+.um-account {
+  font-size: var(--mf-fs-xs);
+  color: var(--mf-text-muted);
+}
+
+.um-ooo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mf-s1);
+  font-size: var(--mf-fs-xs);
+  font-weight: 600;
+  color: var(--mf-warning);
+}
+
+.um-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 1100;
+  display: grid;
+  min-width: 15rem;
+  padding: var(--mf-s1);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-2);
+}
+
+.um-item {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s3);
+  min-height: var(--mf-row-h);
+  padding: 0 var(--mf-s3);
+  border: 0;
+  border-radius: var(--mf-radius);
+  background: transparent;
+  color: var(--mf-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--mf-surface-alt);
+  }
+
+  .pi {
+    color: var(--mf-text-muted);
+    width: 1rem;
+  }
+}
+
+/* Phones: the menu button shows only the person icon (the name and the label stay for screen readers). */
+@media (max-width: 480px) {
+  .um-text,
+  .um-chevron {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .um-trigger {
+    min-width: var(--mf-row-h);
+    justify-content: center;
+  }
+}
+
+/* Narrow desktop windows: the account line goes (the label for out of office stays). */
+@media (max-width: 1099px) {
+  .um-account {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
