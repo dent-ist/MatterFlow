@@ -10,6 +10,16 @@ export const ADMIN_USER = 'ke\\kekim';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Json = any;
 
+/** True for the answers that mean "the database lost a deadlock, repeat the call" (see `Api.call`). */
+export function isTransientConflict(result: RawResponse): boolean {
+  if (result.status === 500) return result.body?.code === 'INTERNAL_ERROR';
+  return (
+    result.status === 409 &&
+    result.body?.code === 'CONCURRENCY_CONFLICT' &&
+    String(result.body?.detail ?? '').includes('Another change was in progress')
+  );
+}
+
 export class ApiError extends Error {
   constructor(
     readonly method: string,
@@ -106,9 +116,14 @@ export class Api {
    */
   async call<T = Json>(method: string, path: string, body?: unknown): Promise<T> {
     let result = await this.raw(method, path, body);
-    if (result.status === 500 && result.body?.code === 'INTERNAL_ERROR') {
-      console.warn(`[e2e] ${method} ${path} -> 500 INTERNAL_ERROR, retrying once`);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+    // A SQL Server deadlock victim is rolled back as a whole and succeeds when repeated. The API answers it with 409 CONCURRENCY_CONFLICT
+    // and "Another change was in progress..." (a stale row version has a different message and is never retried), older builds with 500.
+    // Setup calls retry up to twice with a growing pause; every retry is logged so it stays visible.
+    for (let retry = 1; retry <= 2 && isTransientConflict(result); retry++) {
+      console.warn(
+        `[e2e] ${method} ${path} -> ${result.status} ${result.body?.code}, retry ${retry} of 2`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 500 * retry));
       result = await this.raw(method, path, body);
     }
     if (result.status < 200 || result.status >= 300) {

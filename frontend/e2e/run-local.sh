@@ -68,6 +68,16 @@ conn="Server=127.0.0.1,$sql_port;Database=MatterFlow;User Id=sa;Password=$sql_pa
   export Auth__Dev__DefaultUser='ke\kekim'
   export Bootstrap__SystemAdmins__0='ke\kekim'
   export Seed__StarterConfiguration__Enabled=true
+  # The per-user request budgets (RateLimits, SEC2-03) are sized for people. The suite runs all workers and every setup call as one System
+  # Admin, so under load it used up the task-write budget (429 TOO_MANY_REQUESTS on POST /tasks in test setup). Raised for this throwaway
+  # stack only; the defaults in code and in production configuration are unchanged.
+  export RateLimits__ApiPerMinute=1000000
+  export RateLimits__TaskWritesPerMinute=1000000
+  export RateLimits__CommentWritesPerMinute=1000000
+  export RateLimits__SearchPerMinute=1000000
+  export RateLimits__AdvancedSearchPerMinute=1000000
+  export RateLimits__AuditPerMinute=1000000
+  export RateLimits__DashboardPerMinute=1000000
   exec ./MatterFlow.Api
 ) >"$root/artifacts/e2e-api.log" 2>&1 &
 api_pid=$!
