@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using MatterFlow.Audit.Contracts;
 using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
@@ -16,6 +17,7 @@ namespace MatterFlow.WorkflowEngine.Application.Steps;
 /// <param name="DocumentationUrl">Optional documentation link.</param>
 /// <param name="IsActive">False = hidden from new workflow drafts; published versions are untouched.</param>
 /// <param name="UsedInVersions">Number of workflow versions (any status) that contain a copy of this step.</param>
+/// <param name="Tags">The step's tags (display names) in the order they were entered.</param>
 /// <param name="RowVersion">Optimistic-concurrency token (base64).</param>
 public sealed record StepDefinitionSummary(
     [property: Required] int StepDefinitionId,
@@ -24,7 +26,15 @@ public sealed record StepDefinitionSummary(
     string? DocumentationUrl,
     [property: Required] bool IsActive,
     [property: Required] int UsedInVersions,
+    [property: Required] IReadOnlyList<string> Tags,
     [property: Required] string RowVersion);
+
+/// <summary>An existing tag with the number of steps that carry it.</summary>
+/// <param name="Name">Display name (the spelling of the first time the tag was entered).</param>
+/// <param name="StepCount">Steps carrying the tag (limited to active or inactive steps when the request says so).</param>
+public sealed record StepTagSummary(
+    [property: Required] string Name,
+    [property: Required] int StepCount);
 
 /// <summary>Where a library step is used.</summary>
 /// <param name="WorkflowDefinitionId">The workflow.</param>
@@ -50,6 +60,7 @@ public sealed record StepUsage(
 /// <param name="PublishedFormVersionId">The published input form version a new workflow version would pin, if any.</param>
 /// <param name="DraftFormFieldCount">Fields in the open form draft (0 when there is none).</param>
 /// <param name="Usage">Workflow versions using the step, newest first.</param>
+/// <param name="Tags">The step's tags (display names) in the order they were entered.</param>
 /// <param name="RowVersion">Optimistic-concurrency token (base64).</param>
 public sealed record StepDefinitionDetail(
     [property: Required] int StepDefinitionId,
@@ -62,6 +73,7 @@ public sealed record StepDefinitionDetail(
     int? PublishedFormVersionId,
     [property: Required] int DraftFormFieldCount,
     [property: Required] IReadOnlyList<StepUsage> Usage,
+    [property: Required] IReadOnlyList<string> Tags,
     [property: Required] string RowVersion);
 
 /// <summary>Body to create a library step. An empty input form is provisioned with it.</summary>
@@ -82,6 +94,13 @@ public sealed record CreateStepDefinitionRequest
     /// <summary>Optional http(s) documentation link.</summary>
     [StringLength(1000)]
     public string? DocumentationUrl { get; init; }
+
+    /// <summary>
+    /// Free-form tags (library metadata, not part of published workflow versions). Each is trimmed, inner whitespace collapsed, at most 40
+    /// characters, no control characters; at most 20 per step; duplicates ignoring case keep the first spelling. Errors:
+    /// <c>TAG_TOO_LONG</c>, <c>TOO_MANY_TAGS</c>, <c>TAG_INVALID</c>.
+    /// </summary>
+    public IReadOnlyList<string>? Tags { get; init; }
 
     /// <summary>Longest instructions text.</summary>
     public const int MaxInstructions = 20000;
@@ -110,6 +129,13 @@ public sealed record UpdateStepDefinitionRequest
     [Required]
     public required bool IsActive { get; init; }
 
+    /// <summary>
+    /// Replaces the tags (omit to leave them unchanged, send an empty list to remove all). Free-form tags (library metadata, not part of published workflow versions). Each is trimmed, inner whitespace collapsed, at most 40
+    /// characters, no control characters; at most 20 per step; duplicates ignoring case keep the first spelling. Errors:
+    /// <c>TAG_TOO_LONG</c>, <c>TOO_MANY_TAGS</c>, <c>TAG_INVALID</c>.
+    /// </summary>
+    public IReadOnlyList<string>? Tags { get; init; }
+
     /// <summary>The row version the client saw (base64).</summary>
     [Required]
     public required string RowVersion { get; init; }
@@ -126,7 +152,7 @@ public sealed record StepActiveRequest
 /// <summary>Step library list filters.</summary>
 public sealed class StepDefinitionListQuery
 {
-    internal static readonly string[] Keys = ["page", "pageSize", "q", "isActive", "sort"];
+    internal static readonly string[] Keys = ["page", "pageSize", "q", "isActive", "sort", "tags", "tagMatch"];
 
     /// <summary>Sort fields accepted by <see cref="Sort"/> (prefix with <c>-</c> for descending).</summary>
     internal static readonly string[] SortFields = ["title", "-title", "usedInVersions", "-usedInVersions"];
@@ -135,9 +161,16 @@ public sealed class StepDefinitionListQuery
     [StringLength(30)]
     public string? Sort { get; init; }
 
-    /// <summary>Title or description fragment.</summary>
+    /// <summary>Title, description or tag text fragment.</summary>
     [StringLength(200)]
     public string? Q { get; init; }
+
+    /// <summary>Only steps with these tags (case-insensitive); repeat the parameter for several. See <see cref="TagMatch"/>.</summary>
+    public string[]? Tags { get; init; }
+
+    /// <summary><c>all</c> (default): steps having every selected tag; <c>any</c>: steps having at least one.</summary>
+    [StringLength(3)]
+    public string? TagMatch { get; init; }
 
     /// <summary>Filter by active state; omit for all.</summary>
     public bool? IsActive { get; init; }
@@ -149,11 +182,30 @@ public sealed class StepDefinitionListQuery
     public int? PageSize { get; init; }
 }
 
+/// <summary>Filters of the tag suggestions list.</summary>
+public sealed class StepTagListQuery
+{
+    internal static readonly string[] Keys = ["q", "isActive", "limit"];
+
+    /// <summary>Largest number of tags returned.</summary>
+    public const int MaxLimit = 200;
+
+    /// <summary>Tag text fragment (case-insensitive).</summary>
+    [StringLength(100)]
+    public string? Q { get; init; }
+
+    /// <summary>Count only active (true) or only inactive (false) steps; omit for all steps.</summary>
+    public bool? IsActive { get; init; }
+
+    /// <summary>How many tags to return (default 50, max 200).</summary>
+    public int? Limit { get; init; }
+}
+
 /// <summary>
 /// The step library (baseline 9.2): CRUD without hard delete (deactivate instead, because published workflow versions refer to the step).
 /// Callers are authorized with <c>Workflow.Manage</c> at the endpoint. Changes are audited by the Data layer (field level).
 /// </summary>
-public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver forms)
+public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver forms, IAuditWriter audit)
 {
     public async Task<Result<PagedResult<StepDefinitionSummary>>> ListAsync(StepDefinitionListQuery query, CancellationToken ct)
     {
@@ -177,7 +229,42 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
         var q = query.Q?.Trim();
         if (!string.IsNullOrEmpty(q))
         {
-            steps = steps.Where(s => s.Title.Contains(q) || (s.Description != null && s.Description.Contains(q)));
+            var tagLinks = db.Set<StepDefinitionTag>().AsNoTracking();
+            steps = steps.Where(s =>
+                s.Title.Contains(q)
+                || (s.Description != null && s.Description.Contains(q))
+                || tagLinks.Any(t => t.StepDefinitionId == s.Id && t.Tag.Key.Contains(q)));
+        }
+
+        var tagMatch = query.TagMatch?.Trim().ToLowerInvariant();
+        if (tagMatch is not (null or "" or "all" or "any"))
+        {
+            return Error.Validation("tagMatch", "INVALID", "tagMatch must be 'all' or 'any'.");
+        }
+
+        var wanted = FilterKeys(query.Tags);
+        if (wanted.IsFailure)
+        {
+            return wanted.Error!;
+        }
+
+        if (wanted.Value.Count > 0)
+        {
+            var links = db.Set<StepDefinitionTag>().AsNoTracking();
+            if (tagMatch == "any")
+            {
+                var keys = wanted.Value;
+                steps = steps.Where(s => links.Any(t => t.StepDefinitionId == s.Id && keys.Contains(t.Tag.Key)));
+            }
+            else
+            {
+                // Match all: one EXISTS per selected tag (at most 20), each answered by the (StepTagId, StepDefinitionId) index.
+                foreach (var key in wanted.Value)
+                {
+                    var k = key;
+                    steps = steps.Where(s => links.Any(t => t.StepDefinitionId == s.Id && t.Tag.Key == k));
+                }
+            }
         }
 
         var total = await steps.CountAsync(ct);
@@ -195,8 +282,43 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
             _ => withUsage.OrderBy(r => r.Step.Title).ThenBy(r => r.Step.Id),
         };
         var rows = await ordered.Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
-        var items = rows.Select(r => ToSummary(r.Step, r.Used)).ToList();
+        var tagsByStep = await TagsOfAsync(rows.Select(r => r.Step.Id).ToList(), ct);
+        var items = rows.Select(r => ToSummary(r.Step, r.Used, tagsByStep.GetValueOrDefault(r.Step.Id) ?? [])).ToList();
         return new PagedResult<StepDefinitionSummary>(items, total, page.Page, page.PageSize);
+    }
+
+    /// <summary>Existing tags with the number of steps carrying each: prefix matches first, then the most used, then by name.</summary>
+    public async Task<Result<IReadOnlyList<StepTagSummary>>> ListTagsAsync(StepTagListQuery query, CancellationToken ct)
+    {
+        var limit = query.Limit ?? 50;
+        if (limit is < 1 or > StepTagListQuery.MaxLimit)
+        {
+            return Error.Validation("limit", "INVALID", $"limit must be between 1 and {StepTagListQuery.MaxLimit}.");
+        }
+
+        var links = db.Set<StepDefinitionTag>().AsNoTracking();
+        if (query.IsActive is { } active)
+        {
+            var steps = db.Set<StepDefinition>().AsNoTracking();
+            links = links.Where(l => steps.Any(s => s.Id == l.StepDefinitionId && s.IsActive == active));
+        }
+
+        var q = query.Q is null ? null : StepTagRules.KeyOf(string.Join(' ', query.Q.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)));
+        var counted = links
+            .GroupBy(l => new { l.Tag.Key, l.Tag.Name })
+            .Select(g => new { g.Key.Key, g.Key.Name, Count = g.Count() });
+        if (!string.IsNullOrEmpty(q))
+        {
+            counted = counted.Where(t => t.Key.Contains(q));
+        }
+
+        var rows = await counted
+            .OrderBy(t => !string.IsNullOrEmpty(q) && t.Key.StartsWith(q) ? 0 : 1)
+            .ThenByDescending(t => t.Count)
+            .ThenBy(t => t.Key)
+            .Take(limit)
+            .ToListAsync(ct);
+        return rows.Select(t => new StepTagSummary(t.Name, t.Count)).ToList();
     }
 
     public async Task<Result<StepDefinitionDetail>> GetAsync(int id, CancellationToken ct)
@@ -211,6 +333,12 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
         if (fields.IsFailure)
         {
             return fields.Error!;
+        }
+
+        var tags = request.Tags is null ? null : StepTagRules.NormalizeAll(request.Tags);
+        if (tags is { IsFailure: true })
+        {
+            return tags.Error!;
         }
 
         var f = fields.Value;
@@ -238,6 +366,19 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
             return form.Error!;
         }
 
+        if (tags is { Value.Count: > 0 })
+        {
+            try
+            {
+                await ApplyTagsAsync(step, tags.Value, ct);
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex) when (WorkflowSupport.IsDuplicateKey(ex) || WorkflowSupport.IsForeignKey(ex))
+            {
+                return WorkflowSupport.Concurrency();
+            }
+        }
+
         if (tx is not null)
         {
             await tx.CommitAsync(ct);
@@ -252,6 +393,12 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
         if (fields.IsFailure)
         {
             return fields.Error!;
+        }
+
+        var tags = request.Tags is null ? null : StepTagRules.NormalizeAll(request.Tags);
+        if (tags is { IsFailure: true })
+        {
+            return tags.Error!;
         }
 
         var step = await db.Set<StepDefinition>().SingleOrDefaultAsync(s => s.Id == id, ct);
@@ -276,6 +423,12 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
         step.Instructions = f.Instructions;
         step.DocumentationUrl = f.DocumentationUrl;
         step.IsActive = request.IsActive;
+        if (tags is not null && await ApplyTagsAsync(step, tags.Value, ct))
+        {
+            // A change of tags alone must still move the row version and the modified stamps (the step row itself did not change).
+            db.Entry(step).Property(x => x.Title).IsModified = true;
+        }
+
         return await SaveAsync(step, f.Title, ct);
     }
 
@@ -317,12 +470,116 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
         {
             return WorkflowSupport.Concurrency();
         }
-        catch (DbUpdateException ex) when (WorkflowSupport.IsDuplicateKey(ex))
+        catch (DbUpdateException ex) when (WorkflowSupport.IsDuplicateOf(ex, WorkflowConstraints.StepTitle))
         {
             return DuplicateTitle(title);
         }
+        catch (DbUpdateException ex) when (WorkflowSupport.IsDuplicateKey(ex) || WorkflowSupport.IsForeignKey(ex))
+        {
+            // Another administrator added or removed the same tag at the same moment.
+            return WorkflowSupport.Concurrency();
+        }
 
         return await ToDetailAsync(step, ct);
+    }
+
+    /// <summary>
+    /// Makes the step's tags exactly <paramref name="wanted"/> (order included): links that are gone are removed, new tags are created
+    /// (an existing tag keeps its display spelling, so "relativity" and "Relativity" stay one tag), and a tag no step carries any more is
+    /// deleted. Queues one audit entry (field <c>Tags</c>) with the old and new lists. Returns false when nothing changed.
+    /// </summary>
+    private async Task<bool> ApplyTagsAsync(StepDefinition step, IReadOnlyList<NormalizedTag> wanted, CancellationToken ct)
+    {
+        var current = await db.Set<StepDefinitionTag>().Include(l => l.Tag).Where(l => l.StepDefinitionId == step.Id).OrderBy(l => l.SortOrder).ToListAsync(ct);
+        if (current.Select(l => l.Tag.Key).SequenceEqual(wanted.Select(w => w.Key)))
+        {
+            return false;
+        }
+
+        var wantedKeys = wanted.Select(w => w.Key).ToList();
+        var known = await db.Set<StepTag>().Where(t => wantedKeys.Contains(t.Key)).ToDictionaryAsync(t => t.Key, ct);
+        var existingLinks = current.ToDictionary(l => l.Tag.Key);
+
+        foreach (var link in current.Where(l => !wantedKeys.Contains(l.Tag.Key)).ToList())
+        {
+            db.Set<StepDefinitionTag>().Remove(link);
+            var stillUsed = await db.Set<StepDefinitionTag>().AnyAsync(l => l.StepTagId == link.StepTagId && l.StepDefinitionId != step.Id, ct);
+            if (!stillUsed)
+            {
+                db.Set<StepTag>().Remove(link.Tag);
+            }
+        }
+
+        for (var i = 0; i < wanted.Count; i++)
+        {
+            if (existingLinks.TryGetValue(wanted[i].Key, out var link))
+            {
+                link.SortOrder = i;
+                continue;
+            }
+
+            if (!known.TryGetValue(wanted[i].Key, out var tag))
+            {
+                tag = new StepTag { Key = wanted[i].Key, Name = wanted[i].Name };
+                db.Set<StepTag>().Add(tag);
+                known[tag.Key] = tag;
+            }
+
+            db.Set<StepDefinitionTag>().Add(new StepDefinitionTag { StepDefinitionId = step.Id, Tag = tag, SortOrder = i });
+        }
+
+        var oldNames = current.Select(l => l.Tag.Name).ToList();
+        var newNames = wanted.Select(w => known[w.Key].Name).ToList();
+        audit.Write(new AuditEntry
+        {
+            EventType = AuditEventTypes.FieldChanged,
+            ObjectType = "StepDefinition",
+            ObjectId = step.Id.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            FieldKey = "Tags",
+            OldValue = oldNames.Count == 0 ? null : string.Join(", ", oldNames),
+            NewValue = newNames.Count == 0 ? null : string.Join(", ", newNames),
+            Summary = "Tags changed",
+        });
+        return true;
+    }
+
+    private static Result<IReadOnlyList<string>> FilterKeys(string[]? tags)
+    {
+        var keys = new List<string>();
+        foreach (var raw in tags ?? [])
+        {
+            // A filter value that is not a valid tag (blank, too long) simply matches nothing; blank ones are ignored.
+            var text = string.Join(' ', (raw ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+            if (text.Length == 0)
+            {
+                continue;
+            }
+
+            var key = StepTagRules.KeyOf(text);
+            if (!keys.Contains(key))
+            {
+                keys.Add(key);
+            }
+        }
+
+        return keys.Count > StepTagRules.MaxPerStep
+            ? Error.Validation("tags", ErrorCodes.TooManyTags, $"Filter by at most {StepTagRules.MaxPerStep} tags.", ErrorCodes.TooManyTags)
+            : keys;
+    }
+
+    private async Task<Dictionary<int, List<string>>> TagsOfAsync(IReadOnlyCollection<int> stepIds, CancellationToken ct)
+    {
+        if (stepIds.Count == 0)
+        {
+            return [];
+        }
+
+        var rows = await db.Set<StepDefinitionTag>().AsNoTracking()
+            .Where(l => stepIds.Contains(l.StepDefinitionId))
+            .OrderBy(l => l.StepDefinitionId).ThenBy(l => l.SortOrder)
+            .Select(l => new { l.StepDefinitionId, l.Tag.Name })
+            .ToListAsync(ct);
+        return rows.GroupBy(r => r.StepDefinitionId).ToDictionary(g => g.Key, g => g.Select(r => r.Name).ToList());
     }
 
     private Task<bool> TitleTakenAsync(string title, int? exceptId, CancellationToken ct) =>
@@ -363,8 +620,8 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
         return (t.Value, d.Value, i.Value, u.Value);
     }
 
-    private static StepDefinitionSummary ToSummary(StepDefinition s, int used) =>
-        new(s.Id, s.Title, s.Description, s.DocumentationUrl, s.IsActive, used, WorkflowSupport.FormatRowVersion(s.RowVersion));
+    private static StepDefinitionSummary ToSummary(StepDefinition s, int used, IReadOnlyList<string> tags) =>
+        new(s.Id, s.Title, s.Description, s.DocumentationUrl, s.IsActive, used, tags, WorkflowSupport.FormatRowVersion(s.RowVersion));
 
     private async Task<StepDefinitionDetail> ToDetailAsync(StepDefinition step, CancellationToken ct)
     {
@@ -387,6 +644,7 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
             state.Published?.FormVersionId,
             state.DraftFieldCount,
             usage,
+            (await TagsOfAsync([step.Id], ct)).GetValueOrDefault(step.Id) ?? [],
             WorkflowSupport.FormatRowVersion(step.RowVersion));
     }
 }

@@ -62,6 +62,9 @@ public sealed record SeedStep
 
     public string? DocUrl { get; init; }
 
+    /// <summary>Free-form tags of the library step (for example Relativity, Processing); optional.</summary>
+    public List<string> Tags { get; init; } = [];
+
     public List<SeedField> Fields { get; init; } = [];
 }
 

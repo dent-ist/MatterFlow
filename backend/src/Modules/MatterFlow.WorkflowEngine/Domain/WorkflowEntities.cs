@@ -23,6 +23,32 @@ public class StepDefinition : AuditedEntity<int>
     public bool IsActive { get; set; } = true;
 }
 
+/// <summary>
+/// A free-form tag on library steps ("Relativity", "Processing"). One row per distinct tag: <see cref="Key"/> is the normalised,
+/// case-insensitive lookup key and <see cref="Name"/> the display spelling of the first time it was entered. Tags are metadata of the
+/// library step only; they are not part of a published workflow version.
+/// </summary>
+public class StepTag : Entity<int>
+{
+    public string Key { get; set; } = string.Empty;
+
+    public string Name { get; set; } = string.Empty;
+
+    public DateTime CreatedAtUtc { get; set; }
+}
+
+/// <summary>A tag on a step, in the order the admin entered the tags.</summary>
+public class StepDefinitionTag
+{
+    public int StepDefinitionId { get; set; }
+
+    public int StepTagId { get; set; }
+
+    public StepTag Tag { get; set; } = null!;
+
+    public int SortOrder { get; set; }
+}
+
 /// <summary>A named, reusable workflow. Its content lives in versions.</summary>
 [Audited(ObjectType = "WorkflowDefinition")]
 public class WorkflowDefinition : AuditedEntity<int>

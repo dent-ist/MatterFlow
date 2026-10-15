@@ -29,6 +29,30 @@ internal sealed class StepDefinitionConfiguration : IEntityTypeConfiguration<Ste
     }
 }
 
+internal sealed class StepTagConfiguration : IEntityTypeConfiguration<StepTag>
+{
+    public void Configure(EntityTypeBuilder<StepTag> b)
+    {
+        b.ToTable("StepTag");
+        b.Property(x => x.Key).HasColumnName("TagKey").HasMaxLength(40).IsRequired();
+        b.Property(x => x.Name).HasMaxLength(40).IsRequired();
+        b.Property(x => x.CreatedAtUtc).HasColumnName("CreatedAt").HasColumnType("datetime2").ValueGeneratedOnAdd().HasDefaultValueSql("SYSUTCDATETIME()");
+        b.HasIndex(x => x.Key).IsUnique().HasDatabaseName("UQ_StepTag_Key");
+    }
+}
+
+internal sealed class StepDefinitionTagConfiguration : IEntityTypeConfiguration<StepDefinitionTag>
+{
+    public void Configure(EntityTypeBuilder<StepDefinitionTag> b)
+    {
+        b.ToTable("StepDefinitionTag");
+        b.HasKey(x => new { x.StepDefinitionId, x.StepTagId });
+        b.HasOne<StepDefinition>().WithMany().HasForeignKey(x => x.StepDefinitionId).HasConstraintName("FK_StepDefinitionTag_Step");
+        b.HasOne(x => x.Tag).WithMany().HasForeignKey(x => x.StepTagId).HasConstraintName("FK_StepDefinitionTag_Tag");
+        b.HasIndex(x => new { x.StepTagId, x.StepDefinitionId }).HasDatabaseName("IX_StepDefinitionTag_Tag");
+    }
+}
+
 internal sealed class WorkflowDefinitionConfiguration : IEntityTypeConfiguration<WorkflowDefinition>
 {
     public void Configure(EntityTypeBuilder<WorkflowDefinition> b)

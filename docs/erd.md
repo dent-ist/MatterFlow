@@ -576,6 +576,8 @@ Value storage: JSON on owner rows (`Task.FormValuesJson`, `StepInstance.ValuesJs
 ```mermaid
 erDiagram
   StepDefinition ||--o{ WorkflowVersionStep : "copied into (source)"
+  StepDefinition ||--o{ StepDefinitionTag : "tagged"
+  StepTag ||--o{ StepDefinitionTag : "carried by"
   WorkflowDefinition ||--o{ WorkflowVersion : "versions"
   WorkflowVersion ||--o{ WorkflowVersionStep : "steps"
   FormVersion |o--o{ WorkflowVersionStep : "pinned step form"
@@ -593,6 +595,17 @@ erDiagram
     nvarchar_1000 DocumentationUrl
     bit IsActive
     rowversion RowVersion
+  }
+  StepTag {
+    int StepTagId PK
+    nvarchar_40 TagKey UK "lower-cased, case-insensitive collation"
+    nvarchar_40 Name "display spelling of the first use"
+    datetime2 CreatedAt
+  }
+  StepDefinitionTag {
+    int StepDefinitionId PK,FK
+    int StepTagId PK,FK
+    int SortOrder "order entered"
   }
   WorkflowDefinition {
     int WorkflowDefinitionId PK
@@ -647,6 +660,8 @@ erDiagram
 | Entity | Constraints and notes |
 |---|---|
 | StepDefinition | Library template; `Title` UNIQUE among active. Owns a step `FormDefinition`. **Editing never changes published workflow versions** because `WorkflowVersionStep` copies the text fields and pins a published form version (addendum A). |
+| StepTag | One row per distinct tag (script 22). `TagKey` is the normalised, lower-cased text with an explicit case-insensitive collation (`Latin1_General_100_CI_AS`) and `UQ_StepTag_Key`, so "relativity" and "Relativity" are one tag across steps; `Name` keeps the display spelling of the first use. CHECKs: key and name not blank. The application deletes a tag when no step carries it any more. |
+| StepDefinitionTag | Link table, PK `(StepDefinitionId, StepTagId)` (a step has a tag at most once), FKs to `StepDefinition` and `StepTag`, `SortOrder` (CHECK >= 0) keeps the order the admin entered. `IX_StepDefinitionTag_Tag (StepTagId, StepDefinitionId)` answers the tag filter and usage counts. Tags are library metadata: `WorkflowVersionStep` has no tag column, so tags are not part of a published version snapshot. Rules (trim, collapse whitespace, 40 characters, 20 per step, no control characters) are enforced by the application (`StepTagRules`); changes are audited as a `FIELD_CHANGED` event with field `Tags`. |
 | WorkflowDefinition | `Name` UNIQUE. Reusable across Task Types (via `TaskTypeWorkflow`). |
 | WorkflowVersion | UNIQUE `(WorkflowDefinitionId, VersionNo)`; filtered UNIQUE one PUBLISHED and one DRAFT per definition; CHECK Status. Published/retired immutable (`TR_WorkflowVersion_Immutable`, same pattern as forms). |
 | WorkflowVersionStep | UNIQUE `(WorkflowVersionId, SequenceNo)` (1..n contiguous, validated at publish); `StepFormVersionId` NULL or a PUBLISHED FormVersion of a STEP definition (checked at publish; immutable afterwards). `SourceStepDefinitionId` is informational. Ordered/unordered is `IsOrdered` on the version. `SkipCommentRequired` implies `IsSkippable` (CHECK). No assignee, no approval columns. |

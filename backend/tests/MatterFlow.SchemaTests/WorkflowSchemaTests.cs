@@ -113,4 +113,37 @@ public class WorkflowSchemaTests(SqlServerFixture sql)
         await ExecAsync(cs, "INSERT dbo.WorkflowVersion (WorkflowDefinitionId, VersionNo, Status, PublishedAt) VALUES (1, 2, 'PUBLISHED', SYSUTCDATETIME())");
         await ShouldRejectAsync(cs, "DELETE dbo.WorkflowVersion WHERE VersionNo = 2", "immutable");
     }
+
+    [Fact]
+    public async Task Step_tag_objects_exist_with_their_indexes()
+    {
+        var cs = await MigratedAsync();
+
+        (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.tables WHERE name IN ('StepTag','StepDefinitionTag')")).ShouldBe(2);
+        (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.indexes WHERE name IN ('UQ_StepTag_Key','IX_StepDefinitionTag_Tag','PK_StepDefinitionTag') AND is_disabled = 0")).ShouldBe(3);
+        (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.foreign_keys WHERE name IN ('FK_StepDefinitionTag_Step','FK_StepDefinitionTag_Tag')")).ShouldBe(2);
+        // The tags table is not part of the immutable published snapshot: WorkflowVersionStep has no tag column.
+        (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID('dbo.WorkflowVersionStep') AND name LIKE '%Tag%'")).ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task Step_tag_keys_are_case_insensitive_unique_and_a_step_has_a_tag_once()
+    {
+        var cs = await MigratedAsync();
+        await ExecAsync(cs, "INSERT dbo.StepDefinition (Title) VALUES (N'A'), (N'B')");
+        await ExecAsync(cs, "INSERT dbo.StepTag (TagKey, Name) VALUES (N'relativity', N'Relativity')");
+
+        await ShouldRejectAsync(cs, "INSERT dbo.StepTag (TagKey, Name) VALUES (N'RELATIVITY', N'RELATIVITY')", "UQ_StepTag_Key");
+        await ShouldRejectAsync(cs, "INSERT dbo.StepTag (TagKey, Name) VALUES (N'   ', N'x')", "CK_StepTag_Key");
+        await ShouldRejectAsync(cs, "INSERT dbo.StepTag (TagKey, Name) VALUES (N'ok', N'   ')", "CK_StepTag_Name");
+        await ShouldRejectAsync(cs, "INSERT dbo.StepTag (TagKey, Name) VALUES (N'" + new string('x', 41) + "', N'x')", "truncated");
+
+        await ExecAsync(cs, "INSERT dbo.StepDefinitionTag (StepDefinitionId, StepTagId, SortOrder) VALUES (1, 1, 0), (2, 1, 0)");
+        await ShouldRejectAsync(cs, "INSERT dbo.StepDefinitionTag (StepDefinitionId, StepTagId, SortOrder) VALUES (1, 1, 1)", "PK_StepDefinitionTag");
+        await ShouldRejectAsync(cs, "INSERT dbo.StepDefinitionTag (StepDefinitionId, StepTagId, SortOrder) VALUES (9, 1, 0)", "FK_StepDefinitionTag_Step");
+        await ExecAsync(cs, "INSERT dbo.StepTag (TagKey, Name) VALUES (N'qc', N'QC')");
+        await ShouldRejectAsync(cs, "INSERT dbo.StepDefinitionTag (StepDefinitionId, StepTagId, SortOrder) VALUES (1, 77, 0)", "FK_StepDefinitionTag_Tag");
+        await ShouldRejectAsync(cs, "INSERT dbo.StepDefinitionTag (StepDefinitionId, StepTagId, SortOrder) VALUES (1, 2, -1)", "CK_StepDefinitionTag_SortOrder");
+        await ShouldRejectAsync(cs, "DELETE dbo.StepTag WHERE TagKey = N'relativity'", "FK_StepDefinitionTag_Tag");
+    }
 }

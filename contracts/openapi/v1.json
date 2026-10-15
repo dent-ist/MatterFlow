@@ -6570,6 +6570,25 @@
             }
           },
           {
+            "name": "Tags",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "TagMatch",
+            "in": "query",
+            "schema": {
+              "maxLength": 3,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
             "name": "IsActive",
             "in": "query",
             "schema": {
@@ -6638,6 +6657,55 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StepDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/step-definitions/tags": {
+      "get": {
+        "tags": [
+          "StepDefinitions"
+        ],
+        "operationId": "ListStepTags",
+        "parameters": [
+          {
+            "name": "Q",
+            "in": "query",
+            "schema": {
+              "maxLength": 100,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "IsActive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "Limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StepTagSummary"
+                  }
                 }
               }
             }
@@ -7523,6 +7591,9 @@
               "FORM_VERSION_IMMUTABLE",
               "WORKFLOW_DRAFT_EXISTS",
               "WORKFLOW_VERSION_IMMUTABLE",
+              "TAG_TOO_LONG",
+              "TOO_MANY_TAGS",
+              "TAG_INVALID",
               "ASSET_TYPE_INACTIVE",
               "ASSET_INACTIVE",
               "UNSUPPORTED_MEDIA_TYPE",
@@ -8749,6 +8820,15 @@
               "null",
               "string"
             ]
+          },
+          "tags": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -11414,6 +11494,7 @@
           "publishedFormVersionId",
           "draftFormFieldCount",
           "usage",
+          "tags",
           "rowVersion"
         ],
         "type": "object",
@@ -11470,6 +11551,12 @@
               "$ref": "#/components/schemas/StepUsage"
             }
           },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "rowVersion": {
             "type": "string"
           }
@@ -11483,6 +11570,7 @@
           "documentationUrl",
           "isActive",
           "usedInVersions",
+          "tags",
           "rowVersion"
         ],
         "type": "object",
@@ -11513,8 +11601,30 @@
             "type": "integer",
             "format": "int32"
           },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "rowVersion": {
             "type": "string"
+          }
+        }
+      },
+      "StepTagSummary": {
+        "required": [
+          "name",
+          "stepCount"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "stepCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -13799,6 +13909,15 @@
           },
           "isActive": {
             "type": "boolean"
+          },
+          "tags": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           },
           "rowVersion": {
             "type": "string"

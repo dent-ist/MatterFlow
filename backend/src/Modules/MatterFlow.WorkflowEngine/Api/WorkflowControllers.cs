@@ -35,7 +35,7 @@ internal static class WorkflowFilters
 [Produces("application/json")]
 public class StepDefinitionsController(StepDefinitionService steps) : ControllerBase
 {
-    /// <summary>Lists library steps by title. <c>q</c> matches title or description; <c>isActive</c> filters by state.</summary>
+    /// <summary>Lists library steps by title. <c>q</c> matches title, description or tag text; <c>isActive</c> filters by state; <c>tags</c> (repeat it) keeps steps that carry all of the tags (<c>tagMatch=all</c>, the default) or any of them (<c>tagMatch=any</c>).</summary>
     [HttpGet(Name = "ListStepDefinitions")]
     [Authorize(Policy = WorkflowPolicies.Manage)]
     [ProducesResponseType<PagedResult<StepDefinitionSummary>>(StatusCodes.Status200OK, "application/json")]
@@ -43,6 +43,19 @@ public class StepDefinitionsController(StepDefinitionService steps) : Controller
     {
         WorkflowFilters.EnsureKnown(Request, StepDefinitionListQuery.Keys);
         return (await steps.ListAsync(query, cancellationToken)).OrThrow();
+    }
+
+    /// <summary>
+    /// Existing step tags with how many steps carry each, for autocomplete and the tag filter. <c>q</c> matches tag text,
+    /// <c>isActive</c> counts only active (or inactive) steps, <c>limit</c> caps the list (default 50, max 200).
+    /// </summary>
+    [HttpGet("tags", Name = "ListStepTags")]
+    [Authorize(Policy = WorkflowPolicies.Manage)]
+    [ProducesResponseType<IReadOnlyList<StepTagSummary>>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<IReadOnlyList<StepTagSummary>>> ListTags([FromQuery] StepTagListQuery query, CancellationToken cancellationToken)
+    {
+        WorkflowFilters.EnsureKnown(Request, StepTagListQuery.Keys);
+        return Ok((await steps.ListTagsAsync(query, cancellationToken)).OrThrow());
     }
 
     /// <summary>Gets a step with its input form reference and where it is used.</summary>

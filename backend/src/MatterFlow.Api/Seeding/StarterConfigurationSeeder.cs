@@ -113,6 +113,7 @@ public sealed class StarterConfigurationSeeder(
                         Description = Trim(step.Description, 1000),
                         Instructions = Trim(step.Instructions, CreateStepDefinitionRequest.MaxInstructions),
                         DocumentationUrl = Trim(step.DocUrl, 1000),
+                        Tags = step.Tags,
                     },
                     ct);
                 if (created.IsFailure)

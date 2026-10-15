@@ -60,6 +60,15 @@ public static class ErrorCodes
     /// <summary>A published or retired workflow version cannot be edited (create a new draft instead).</summary>
     public const string WorkflowVersionImmutable = "WORKFLOW_VERSION_IMMUTABLE";
 
+    /// <summary>A step tag is longer than 40 characters.</summary>
+    public const string TagTooLong = "TAG_TOO_LONG";
+
+    /// <summary>A step carries more than 20 tags.</summary>
+    public const string TooManyTags = "TOO_MANY_TAGS";
+
+    /// <summary>A step tag is empty after trimming or contains a control character.</summary>
+    public const string TagInvalid = "TAG_INVALID";
+
     /// <summary>A new Asset cannot use an inactive Asset Type.</summary>
     public const string AssetTypeInactive = "ASSET_TYPE_INACTIVE";
 

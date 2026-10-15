@@ -1650,6 +1650,7 @@
       "description": "Confirm the request is understood, complete and correctly categorized before work starts.",
       "instructions": "1. Read the request, Task form and any linked assets.\n2. Confirm Matter, deadline driver and handling flags. If privileged or AEO flags are set, confirm segregation instructions.\n3. Check that source and target assets exist in this Matter's Asset registry; create missing ones.\n4. If anything is unclear, ask the requestor (email/phone) and record the answer in a Task comment.\n5. Estimate volume so the Pod can plan.",
       "docUrl": "https://sharepoint.example.firm/ediscovery/sop/intake-review",
+      "tags": ["Intake"],
       "fields": [
         {
           "key": "scope_confirmed",
@@ -1718,6 +1719,7 @@
       "description": "Receive the data, verify it is complete and uncorrupted, and record where it lives.",
       "instructions": "1. Log the receipt time and who delivered it.\n2. Copy to the designated staging path; never work from the original media.\n3. Compute hashes and compare to the sender's values (SHA-256 preferred). A mismatch stops work: escalate to the requestor.\n4. Run malware scan.\n5. If content is encrypted, record WHERE the key is held (never the key).\n6. Update the Physical Media / Collection asset (location, custody holder, status).",
       "docUrl": "https://sharepoint.example.firm/ediscovery/sop/data-receipt",
+      "tags": ["Intake", "Collection"],
       "fields": [
         {
           "key": "received_datetime",
@@ -1848,6 +1850,7 @@
       "description": "Run the processing job with the agreed settings and record results.",
       "instructions": "1. Create the processing set using the Task form settings (profile, dedupe, time zone, OCR).\n2. Inventory, then discover, then publish. Do not publish before reviewing discovery counts.\n3. Record job names and counts below.\n4. If you deviate from the requested settings, say why.",
       "docUrl": "https://sharepoint.example.firm/ediscovery/sop/processing",
+      "tags": ["Processing", "Relativity"],
       "fields": [
         {
           "key": "processing_tool",
@@ -1922,6 +1925,7 @@
       "description": "Resolve or escalate files that failed processing (password-protected, corrupt, unsupported).",
       "instructions": "1. Export the error report.\n2. Request passwords through the requestor; do not guess or crack without attorney instruction.\n3. Re-process what can be fixed.\n4. Anything excluded must be excluded with requestor/attorney instruction; record who instructed you (the approval itself happens outside MatterFlow).",
       "docUrl": "https://sharepoint.example.firm/ediscovery/sop/exceptions",
+      "tags": ["Processing"],
       "fields": [
         {
           "key": "exceptions_total",
@@ -2003,6 +2007,7 @@
       "description": "Load data into the target workspace and reconcile counts to the source.",
       "instructions": "1. Load with the agreed field map and identifier.\n2. Reconcile document counts source vs workspace. Variances must be explained.\n3. Spot check metadata and text for 10 documents.\n4. Record the workspace asset.",
       "docUrl": "https://sharepoint.example.firm/ediscovery/sop/load-reconcile",
+      "tags": ["Relativity", "Processing", "QC"],
       "fields": [
         {
           "key": "workspace_asset",
@@ -2072,6 +2077,7 @@
       "description": "Independent check of the work product before it moves on.",
       "instructions": "1. Use a different person from the one who did the work wherever staffing allows.\n2. Choose a method proportionate to risk (productions: full check of counts, Bates, slip sheets, redactions).\n3. A Fail result sends the work back; record what must be redone.",
       "docUrl": "https://sharepoint.example.firm/ediscovery/sop/qc",
+      "tags": ["QC", "Review"],
       "fields": [
         {
           "key": "qc_method",
@@ -2169,6 +2175,7 @@
       "description": "Build the production set and verify Bates, load files, redactions and privilege exclusions.",
       "instructions": "1. Confirm in the Task or a comment that the production set was cleared (attorney sign-off happens outside MatterFlow).\n2. Verify NO document tagged privileged / withhold is in the set (run the saved search).\n3. Generate with the agreed prefix and numbering; check for Bates gaps and duplicates against previous volumes.\n4. Verify redactions are burned in and natives have slip sheets where specified.\n5. Validate the load file opens and counts match.\n6. Register or update the Production asset.",
       "docUrl": "https://sharepoint.example.firm/ediscovery/sop/production",
+      "tags": ["Production", "Relativity", "QC"],
       "fields": [
         {
           "key": "production_asset",
@@ -2262,6 +2269,7 @@
       "description": "Send the deliverable to the recipient securely and capture confirmation.",
       "instructions": "1. Encrypt every external delivery. Send passwords by a separate channel.\n2. For physical media, label it, log a Media Custody Event Task, and record the carrier tracking number.\n3. Capture proof of delivery.\n4. Set link expiry no longer than the agreement allows.",
       "docUrl": "https://sharepoint.example.firm/ediscovery/sop/delivery",
+      "tags": ["Production"],
       "fields": [
         {
           "key": "delivery_datetime",
@@ -2376,6 +2384,7 @@
       "description": "Create or change a workspace or vault and set access according to the request.",
       "instructions": "1. Create from the requested template. Name per convention: #####-##### - short name.\n2. Add users per request. External users (vendors, contract reviewers, client personnel) require a confidentiality agreement on file and an end date.\n3. Register the workspace/vault as an Asset in this Matter.\n4. Re-check the access list against the request before closing.",
       "docUrl": "https://sharepoint.example.firm/ediscovery/sop/workspace-setup",
+      "tags": ["Relativity", "Review"],
       "fields": [
         {
           "key": "workspace_asset",
@@ -2450,6 +2459,7 @@
       "description": "Hand off results, update the Asset registry and leave a clear record.",
       "instructions": "1. Update every Asset touched (status, location, counts).\n2. Notify the requestor with a short summary: what was done, counts, where it is.\n3. Note any follow-up work as a NEW Task (MatterFlow does not clone or chain Tasks).\n4. Keep notes factual and free of privileged analysis.",
       "docUrl": "https://sharepoint.example.firm/ediscovery/sop/closeout",
+      "tags": ["Close-out"],
       "fields": [
         {
           "key": "summary_notes",
