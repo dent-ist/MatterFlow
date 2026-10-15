@@ -96,6 +96,7 @@ export class SortHeader {
     .sf__label {
       font-weight: 600;
       font-size: var(--mf-fs-sm);
+      line-height: 1.25rem;
     }
     .sf__select {
       min-width: 160px;

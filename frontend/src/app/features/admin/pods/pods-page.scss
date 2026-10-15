@@ -34,6 +34,13 @@
   margin-bottom: 1rem;
 }
 
+/* Search box (label, input, hint) and status select (label, select) are aligned on their inputs, not on the hint line. */
+.pods__filters {
+  align-items: flex-start;
+  gap: var(--mf-s4);
+  margin-bottom: var(--mf-s3);
+}
+
 .pods__form {
   margin-bottom: var(--mf-s4);
 }
