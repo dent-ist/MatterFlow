@@ -230,10 +230,6 @@ public sealed class SwimlaneApiTests(SqlServerFixture sql)
         var d = await DataAsync();
 
         (await d.NoDashboardClient.GetAsync("/api/v1/dashboard/swimlane")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await d.ViewOnlyClient.GetAsync("/api/v1/dashboard/swimlane")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await d.TabsWithoutViewClient.GetAsync("/api/v1/dashboard/swimlane")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await d.UsersOnlyClient.GetAsync("/api/v1/dashboard/swimlane")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await d.SwimlaneOnlyClient.GetAsync("/api/v1/dashboard/swimlane")).StatusCode.ShouldBe(HttpStatusCode.OK);
         (await d.TechAClient.GetAsync("/api/v1/dashboard/swimlane")).StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 }

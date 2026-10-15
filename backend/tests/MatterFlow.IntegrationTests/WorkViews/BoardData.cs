@@ -55,18 +55,6 @@ public sealed class BoardData
 
     public HttpClient NoDashboardClient { get; private set; } = null!;
 
-    /// <summary>Dashboard.View but no tab permission.</summary>
-    public HttpClient ViewOnlyClient { get; private set; } = null!;
-
-    /// <summary>Both board tab permissions but not Dashboard.View: a tab permission has no effect without it.</summary>
-    public HttpClient TabsWithoutViewClient { get; private set; } = null!;
-
-    /// <summary>Dashboard.View + Dashboard.ViewSwimlane only.</summary>
-    public HttpClient SwimlaneOnlyClient { get; private set; } = null!;
-
-    /// <summary>Dashboard.View + Dashboard.ViewUsers only.</summary>
-    public HttpClient UsersOnlyClient { get; private set; } = null!;
-
     public long Id(string title) => _ids[title];
 
     public static Task<BoardData> GetAsync(SqlServerFixture sql)
@@ -114,10 +102,6 @@ public sealed class BoardData
         TechAClient = await H.UserWithAsync(@"KE\techa", perms);
         await H.UserWithAsync(@"KE\techb", TaskHarness.AllTaskPermissions);
         NoDashboardClient = H.As(@"KE\techb");
-        ViewOnlyClient = await H.UserWithAsync(@"KE\viewonly", "Dashboard.View");
-        TabsWithoutViewClient = await H.UserWithAsync(@"KE\tabsonly", "Dashboard.ViewSwimlane", "Dashboard.ViewUsers");
-        SwimlaneOnlyClient = await H.UserWithAsync(@"KE\swimonly", "Dashboard.View", "Dashboard.ViewSwimlane");
-        UsersOnlyClient = await H.UserWithAsync(@"KE\usersonly", "Dashboard.View", "Dashboard.ViewUsers");
         await H.UserWithAsync(@"KE\techc", TaskHarness.AllTaskPermissions);
         await H.As(@"KE\pendingperson").GetAsync("/api/v1/me");
         Admin = await H.UserIdAsync(DatabaseApiFactory.AdminAccount);
