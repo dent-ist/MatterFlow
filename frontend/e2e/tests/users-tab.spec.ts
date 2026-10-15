@@ -446,14 +446,18 @@ test.describe('Users tab: coverage', () => {
   const cell = (page: Page, p: Person, typeId: number) =>
     page.locator(`[data-cell="${p.userId}:${typeId}"]`);
 
-  test('is offered with its own permission and not to a Project Manager', async ({
+  test('is offered with its own permission and not to a role that only has the Users tab', async ({
     page,
     seed,
     asUser,
   }) => {
     await page.goto(`/dashboard?tab=users&uq=${wl.tag}`);
     await expect(page.locator('[data-users-views]')).toBeVisible();
-    const { username } = await seed.user(['Project Manager'], 'nocov');
+    const role = await seed.role(
+      ['Task.View', 'Dashboard.View', 'Dashboard.ViewUsers'],
+      'No coverage',
+    );
+    const { username } = await seed.user([role.name], 'nocov');
     const pm = await asUser(username);
     await pm.goto(`/dashboard?tab=users&view=coverage&uq=${wl.tag}`);
     await expect(pm.locator('[data-user-card]').first()).toBeVisible();

@@ -61,7 +61,7 @@ public sealed class CoverageData
         Type3 = await H.CreateTaskTypeAsync("Coverage Archive", [W.OrderedWorkflowId, W.UnorderedWorkflowId]);
         TypeNobody = await H.CreateTaskTypeAsync("Coverage Nobody", [W.OrderedWorkflowId, W.UnorderedWorkflowId]);
 
-        var viewer = TaskHarness.AllTaskPermissions.Append("Dashboard.ViewDepartment").ToArray();
+        var viewer = TaskHarness.AllTaskPermissions.Concat(new[] { "Dashboard.View", "Dashboard.ViewUsers" }).ToArray();
         await H.UserWithAsync(@"KE\cova", viewer);
         await H.UserWithAsync(@"KE\covb", viewer);
         await H.UserWithAsync(@"KE\covc", viewer);

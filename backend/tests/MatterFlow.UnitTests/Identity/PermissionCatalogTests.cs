@@ -75,7 +75,7 @@ public class PermissionCatalogTests
         codes.ShouldContain("Matter.SetActive");
         codes.ShouldContain("User.Manage");
         codes.ShouldContain("Role.Manage");
-        codes.Count.ShouldBe(48);
+        codes.Count.ShouldBe(49);
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public class PermissionCatalogTests
         var dashboard = Catalog().Where(c => c.Group == "Dashboard").ToList();
 
         dashboard.Select(c => c.Code).ShouldBe(
-            ["Dashboard.View", "Dashboard.ViewSummary", "Dashboard.ViewBreakdowns", "Dashboard.ViewTrends", "Dashboard.ViewSwimlane", "Dashboard.ViewUsers"]);
+            ["Dashboard.View", "Dashboard.ViewSummary", "Dashboard.ViewBreakdowns", "Dashboard.ViewTrends", "Dashboard.ViewSwimlane", "Dashboard.ViewUsers", "Dashboard.ViewCoverage"]);
         dashboard.ShouldAllBe(c => c.Description.Length > 20);
         Catalog().Select(c => c.Code).ShouldNotContain("Dashboard.ViewDepartment");
 

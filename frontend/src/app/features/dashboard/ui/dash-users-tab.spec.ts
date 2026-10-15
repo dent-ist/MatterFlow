@@ -30,7 +30,8 @@ import { USERS_REFRESH_MS, DashUsersTab } from './dash-users-tab';
 
 const PERMS: Permission[] = [
   'Task.View',
-  'Dashboard.ViewDepartment',
+  'Dashboard.View',
+  'Dashboard.ViewUsers',
   'Task.Assign',
   'Task.SetPriority',
   'Task.ChangeStatus',
@@ -629,7 +630,11 @@ describe('DashUsersTab', () => {
     });
 
     it('is not offered without the Assign permission', async () => {
-      await open(of(board()), '/dashboard?tab=users', ['Task.View', 'Dashboard.ViewDepartment']);
+      await open(of(board()), '/dashboard?tab=users', [
+        'Task.View',
+        'Dashboard.View',
+        'Dashboard.ViewUsers',
+      ]);
       expect(qa('[data-assign-work]').length).toBe(0);
     });
 

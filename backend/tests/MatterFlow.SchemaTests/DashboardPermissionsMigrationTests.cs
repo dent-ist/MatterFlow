@@ -84,7 +84,7 @@ public class DashboardPermissionsMigrationTests(SqlServerFixture sql)
         (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE Code = 'Dashboard.ViewDepartment'")).ShouldBeEmpty();
 
         // The new rows carry the catalog group, so the roles page lists them under Dashboard even before the startup sync.
-        (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE GroupName = 'Dashboard' ORDER BY Code")).ShouldBe(["Dashboard.View", .. Tabs.Order(StringComparer.Ordinal)]);
+        (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE GroupName = 'Dashboard' ORDER BY Code")).ShouldBe(["Dashboard.View", .. Tabs.Append("Dashboard.ViewCoverage").Order(StringComparer.Ordinal)]);
     }
 
     [Fact]
@@ -94,7 +94,23 @@ public class DashboardPermissionsMigrationTests(SqlServerFixture sql)
 
         await RunAsync(cs, new EmbeddedMigrationScriptSource());
 
-        (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE GroupName = 'Dashboard' ORDER BY Code")).Count.ShouldBe(6);
+        (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE GroupName = 'Dashboard' ORDER BY Code")).Count.ShouldBe(7);
         (await ReadAsync(cs, "SELECT CAST(COUNT(*) AS VARCHAR(10)) FROM dbo.RolePermission")).Single().ShouldBe("0");
+    }
+
+    [Fact]
+    public async Task The_coverage_permission_goes_to_Director_and_Pod_Lead_only_and_the_covering_index_exists()
+    {
+        var cs = await sql.CreateDatabaseAsync();
+        await RunAsync(cs, new ScriptsBefore(25));
+        await ExecAsync(cs, "INSERT dbo.Role (Name, IsActive) VALUES (N'Director', 1), (N'Pod Lead', 1), (N'Project Manager', 1), (N'Custom', 1);");
+
+        await RunAsync(cs, new EmbeddedMigrationScriptSource());
+
+        (await GrantsAsync(cs, "Director")).ShouldBe(["Dashboard.ViewCoverage"]);
+        (await GrantsAsync(cs, "Pod Lead")).ShouldBe(["Dashboard.ViewCoverage"]);
+        (await GrantsAsync(cs, "Project Manager")).ShouldBeEmpty();
+        (await GrantsAsync(cs, "Custom")).ShouldBeEmpty();
+        (await ReadAsync(cs, "SELECT name FROM sys.indexes WHERE name = 'IX_Task_CompletedCoverage'")).ShouldBe(["IX_Task_CompletedCoverage"]);
     }
 }
