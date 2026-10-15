@@ -30,13 +30,14 @@ public class DashboardController(DashboardService dashboard, DashboardTrendServi
     }
 
     /// <summary>
-    /// The Trends tab: created and completed per local day (the viewer's time zone) for all task types (<c>all</c>, equal to the summary trend) and for each
-    /// <c>taskTypeIds</c> (repeat the parameter, at most 8: 400 <c>TOO_MANY_TYPES</c>; an unknown id: 400 <c>UNKNOWN_TASK_TYPE</c>), plus <c>types</c>, the legend
-    /// of every task type with Tasks in the period or still active with its totals and the Task Queue queries that list them. <c>metric</c> (<c>created</c> or
-    /// <c>completed</c>) computes only that count. Needs the department view.
+    /// The Trends tab: created, completed, overdue (a snapshot at the end of each local day), on time and late per local day (the viewer's time zone) for all
+    /// task types (<c>all</c>) and for each <c>taskTypeIds</c> (repeat the parameter, at most 8: 400 <c>TOO_MANY_TYPES</c>; an unknown id: 400 <c>UNKNOWN_TASK_TYPE</c>),
+    /// plus <c>types</c>, the legend of every task type with Tasks in the period or still active with its totals and the Task Queue queries that list them.
+    /// <c>metric</c> computes only that count. Needs <c>Dashboard.View</c> and <c>Dashboard.ViewTrends</c>.
     /// </summary>
     [HttpGet("trend", Name = "GetDashboardTrend")]
-    [Authorize(Policy = "Perm:" + Permissions.Dashboard.ViewDepartment)]
+    [Authorize(Policy = "Perm:" + Permissions.Dashboard.View)]
+    [Authorize(Policy = "Perm:" + Permissions.Dashboard.ViewTrends)]
     [ProducesResponseType<DashboardTrend>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<DashboardTrend>> GetTrend([FromQuery] DashboardTrendQuery query, CancellationToken cancellationToken)
     {

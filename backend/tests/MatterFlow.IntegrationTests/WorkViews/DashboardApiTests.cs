@@ -275,40 +275,6 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
             await DrillAsync(bucket, zone);
     }
 
-    [Theory]
-    [InlineData(NewYork)]
-    [InlineData(Kiritimati)]
-    [InlineData(PagoPago)]
-    public async Task The_trend_has_one_point_per_day_and_its_totals_equal_the_created_and_completed_counts(string zone)
-    {
-        foreach (var days in new[] { 1, 7, 30, 60 })
-        {
-            var d = await DashboardAsync("periodDays=" + days, zone);
-            var trend = d.GetProperty("trend").EnumerateArray().ToList();
-            trend.Count.ShouldBe(days);
-            var today = LocalDate(zone, _now);
-            trend[^1].GetProperty("date").GetString().ShouldBe(today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
-            trend[0].GetProperty("date").GetString().ShouldBe(today.AddDays(1 - days).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
-            trend.Sum(p => p.GetProperty("created").GetInt32()).ShouldBe(d.GetProperty("created").GetProperty("count").GetInt32());
-            trend.Sum(p => p.GetProperty("completed").GetInt32()).ShouldBe(d.GetProperty("completed").GetProperty("count").GetInt32());
-        }
-
-        // Created today in the viewer's zone is counted on the last point.
-        var week = await DashboardAsync("periodDays=7", zone);
-        var expectedToday = _seeds.Count(s => LocalDate(zone, s.CreatedAtUtc) == LocalDate(zone, _now));
-        week.GetProperty("trend").EnumerateArray().Last().GetProperty("created").GetInt32().ShouldBe(expectedToday);
-    }
-
-    [Fact]
-    public async Task The_trend_is_only_in_the_payload_with_Dashboard_ViewTrends()
-    {
-        var summaryOnly = await _h.UserWithAsync(@"KE\notrend", "Dashboard.View", "Dashboard.ViewSummary");
-        (await OkAsync(await summaryOnly.GetAsync("/api/v1/dashboard"))).GetProperty("trend").GetArrayLength().ShouldBe(0);
-
-        var trends = await _h.UserWithAsync(@"KE\trender", "Dashboard.View", "Dashboard.ViewTrends");
-        (await OkAsync(await trends.GetAsync("/api/v1/dashboard"))).GetProperty("trend").GetArrayLength().ShouldBeGreaterThan(0);
-    }
-
     [Fact]
     public async Task Fresh_is_accepted_and_unknown_parameters_are_still_rejected()
     {
@@ -360,32 +326,28 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
         var open = admin.GetProperty("open").GetProperty("count").GetInt32();
         open.ShouldBeGreaterThan(0);
         admin.GetProperty("byStatus").GetArrayLength().ShouldBe(3);
-        admin.GetProperty("trend").GetArrayLength().ShouldBeGreaterThan(0);
 
         // Summary only: the headline numbers, nothing else.
         var summary = await OkAsync(await (await _h.UserWithAsync(@"KE\onlysummary", "Dashboard.View", "Dashboard.ViewSummary")).GetAsync("/api/v1/dashboard"));
         summary.GetProperty("open").GetProperty("count").GetInt32().ShouldBe(open);
         summary.GetProperty("created").GetProperty("count").GetInt32().ShouldBe(admin.GetProperty("created").GetProperty("count").GetInt32());
         ShouldHaveNoBreakdowns(summary);
-        summary.GetProperty("trend").GetArrayLength().ShouldBe(0);
 
-        // Breakdowns only: the charts, no counts and no trend.
+        // Breakdowns only: the charts, no counts.
         var breakdowns = await OkAsync(await (await _h.UserWithAsync(@"KE\onlybreakdowns", "Dashboard.View", "Dashboard.ViewBreakdowns")).GetAsync("/api/v1/dashboard"));
         ShouldHaveNoSummary(breakdowns);
         Total(breakdowns, "byStatus").ShouldBe(open);
         Total(breakdowns, "byPriority").ShouldBe(open);
         Total(breakdowns, "aging").ShouldBe(open);
         breakdowns.GetProperty("byTaskType").GetArrayLength().ShouldBeGreaterThan(0);
-        breakdowns.GetProperty("trend").GetArrayLength().ShouldBe(0);
 
         // Trends only.
         var trends = await OkAsync(await (await _h.UserWithAsync(@"KE\onlytrends", "Dashboard.View", "Dashboard.ViewTrends")).GetAsync("/api/v1/dashboard"));
         ShouldHaveNoSummary(trends);
         ShouldHaveNoBreakdowns(trends);
-        trends.GetProperty("trend").GetArrayLength().ShouldBe(admin.GetProperty("trend").GetArrayLength());
 
-        // The removed blocks are gone from the payload for everyone.
-        foreach (var gone in new[] { "byPod", "recentlyCreated", "recentlyCompleted", "mine" })
+        // The removed blocks are gone from the payload for everyone (the trend moved to its own endpoint).
+        foreach (var gone in new[] { "byPod", "recentlyCreated", "recentlyCompleted", "mine", "trend" })
             summary.TryGetProperty(gone, out _).ShouldBeFalse(gone);
     }
 
@@ -424,6 +386,5 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
         d.GetProperty("byTaskType").GetArrayLength().ShouldBe(0);
         d.GetProperty("byStatus").GetArrayLength().ShouldBe(3);
         d.GetProperty("aging").GetArrayLength().ShouldBe(4);
-        d.GetProperty("trend").EnumerateArray().Sum(p => p.GetProperty("created").GetInt32() + p.GetProperty("completed").GetInt32()).ShouldBe(0);
     }
 }

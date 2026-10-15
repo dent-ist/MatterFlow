@@ -230,4 +230,28 @@ test.describe('Trends by task type', () => {
     await expect(lines(page)).toHaveCount(4);
     expect(await axeViolations(page)).toEqual([]);
   });
+
+  test('needs Dashboard.View and Dashboard.ViewTrends: a Trends-only user sees just that tab, others get 403 from the endpoint', async ({
+    seed,
+    asUser,
+  }) => {
+    const trendsOnly = await seed.user(
+      [(await seed.role(['Dashboard.View', 'Dashboard.ViewTrends'], 'E2E trends only')).name],
+      'trendsonly',
+    );
+    const page = await asUser(trendsOnly.username);
+    await page.goto('/dashboard');
+    await expect(page.getByRole('tab', { name: 'Trends' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Summary' })).toHaveCount(0);
+    await expect(page.getByRole('group', { name: /created and completed per day/i })).toBeVisible();
+    await expect(lines(page)).toHaveCount(2);
+    expect((await page.request.get('/api/v1/dashboard/trend?periodDays=7')).status()).toBe(200);
+
+    const summaryOnly = await seed.user(
+      [(await seed.role(['Dashboard.View', 'Dashboard.ViewSummary'], 'E2E summary only')).name],
+      'summaryonly',
+    );
+    const other = await asUser(summaryOnly.username);
+    expect((await other.request.get('/api/v1/dashboard/trend')).status()).toBe(403);
+  });
 });

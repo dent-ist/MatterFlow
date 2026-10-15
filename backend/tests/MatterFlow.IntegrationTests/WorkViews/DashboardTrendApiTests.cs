@@ -110,7 +110,7 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
     [InlineData(NewYork)]
     [InlineData(Kiritimati)]
     [InlineData(PagoPago)]
-    public async Task Per_type_series_add_up_to_the_all_series_which_equals_the_summary_trend_in_the_viewers_days(string zone)
+    public async Task Per_type_series_add_up_to_the_all_series_which_equals_the_summary_counts_in_the_viewers_days(string zone)
     {
         foreach (var days in new[] { 1, 7, 30, 90 })
         {
@@ -120,9 +120,9 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
             using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/dashboard?periodDays=" + days);
             request.Headers.Add("X-Time-Zone", zone);
             var summary = await OkAsync(await _h.Admin.SendAsync(request));
-            var summaryTrend = summary.GetProperty("trend");
-            Column(trend.GetProperty("all"), "created").ShouldBe(Column(summaryTrend, "created"));
-            Column(trend.GetProperty("all"), "completed").ShouldBe(Column(summaryTrend, "completed"));
+            // All equals the summary's Created and Completed counts of the same period.
+            Column(trend.GetProperty("all"), "created").Sum().ShouldBe(summary.GetProperty("created").GetProperty("count").GetInt32());
+            Column(trend.GetProperty("all"), "completed").Sum().ShouldBe(summary.GetProperty("completed").GetProperty("count").GetInt32());
             trend.GetProperty("all").GetArrayLength().ShouldBe(days);
             trend.GetProperty("all")[days - 1].GetProperty("date").GetString().ShouldBe(LocalDate(zone, _now).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
 
@@ -251,9 +251,19 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
     [Fact]
     public async Task The_trend_needs_the_department_view()
     {
-        var viewer = await _h.UserWithAsync(@"KE\trendless", "Task.View");
-        (await RawAsync(string.Empty, viewer)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        var manager = await _h.UserWithAsync(@"KE\trendfull", "Task.View", "Dashboard.ViewDepartment");
+        // Neither Task.View, nor the other tabs, nor the trend tab without Dashboard.View opens it.
+        foreach (var (account, permissions) in new[]
+        {
+            (@"KE\trendless", new[] { "Task.View" }),
+            (@"KE\summaryonly", ["Dashboard.View", "Dashboard.ViewSummary", "Dashboard.ViewBreakdowns", "Dashboard.ViewSwimlane", "Dashboard.ViewUsers"]),
+            (@"KE\noview", ["Dashboard.ViewTrends"]),
+        })
+        {
+            var viewer = await _h.UserWithAsync(account, permissions);
+            (await RawAsync(string.Empty, viewer)).StatusCode.ShouldBe(HttpStatusCode.Forbidden, account);
+        }
+
+        var manager = await _h.UserWithAsync(@"KE\trendfull", "Dashboard.View", "Dashboard.ViewTrends");
         (await TrendAsync(client: manager)).GetProperty("all").GetArrayLength().ShouldBe(30);
     }
 

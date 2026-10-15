@@ -14,7 +14,7 @@ using Microsoft.EntityFrameworkCore;
 namespace MatterFlow.WorkViews.Application.Queries;
 
 /// <summary>
-/// Read side of the Dashboard: a handful of aggregate reads (one for the headline counts, one per breakdown, one for aging and two for the trend), never a read per row. It reuses <see cref="TaskQueueRules"/> so every number agrees with the Task Queue the user lands
+/// Read side of the Dashboard: a handful of aggregate reads (one for the headline counts, one per breakdown, and one for aging; the Trends tab has its own endpoint, <see cref="DashboardTrendService"/>), never a read per row. It reuses <see cref="TaskQueueRules"/> so every number agrees with the Task Queue the user lands
 /// on, and each number carries the Task Queue query that lists exactly the counted Tasks. Phase 1 has no per-record visibility (addendum E).
 /// </summary>
 public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, IPermissionChecker permissions, DashboardCache cache)
@@ -33,8 +33,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         var canView = permissions.Has(Permissions.Dashboard.View);
         var showSummary = canView && permissions.Has(Permissions.Dashboard.ViewSummary);
         var showBreakdowns = canView && permissions.Has(Permissions.Dashboard.ViewBreakdowns);
-        var showTrends = canView && permissions.Has(Permissions.Dashboard.ViewTrends);
-        var sections = (showSummary ? 1 : 0) | (showBreakdowns ? 2 : 0) | (showTrends ? 4 : 0);
+        var sections = (showSummary ? 1 : 0) | (showBreakdowns ? 2 : 0);
         var cacheKey = $"{me}|{query.PeriodDays}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{sections}";
         if (!query.Fresh && cache.TryGet(cacheKey, out var cached))
             return cached;
@@ -69,7 +68,6 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         var byType = await departmentOpen.GroupBy(t => t.TaskTypeId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct);
 
         IReadOnlyList<DashboardAgingBucket> aging = showBreakdowns ? await AgingAsync(departmentOpen, queueClock, ct) : [];
-        var trend = showTrends ? await TrendAsync(tasks, queueClock, from, fromUtc, ct) : [];
 
         var statusLabels = await db.Set<TaskStatusLabel>().AsNoTracking().ToDictionaryAsync(l => l.StatusCode, l => l.DisplayLabel, ct);
         var priorityRows = await db.Set<Priority>().AsNoTracking().OrderBy(p => p.SortOrder).Select(p => new { p.Id, p.Label, p.IsActive }).ToListAsync(ct);
@@ -126,8 +124,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             typeItems,
             priorityItems,
             statusItems,
-            aging,
-            trend);
+            aging);
         cache.Set(cacheKey, summary);
         return summary;
     }
@@ -155,17 +152,6 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
 
         int[] values = counts is null ? [0, 0, 0, 0] : [counts.B0, counts.B1, counts.B2, counts.B3];
         return [.. bands.Select((b, i) => new DashboardAgingBucket(b.Key, b.Label, b.MinDays, b.MaxDays, values[i], DashboardRules.Aging(b, today)))];
-    }
-
-    /// <summary>
-    /// Created and completed per local day. Two reads of one timestamp column each (covered by the CreatedAt / StatusChanged indexes); the days are
-    /// assigned in memory because the viewer's day edges are not UTC days. The totals equal the Created and Completed counts of the same period.
-    /// </summary>
-    private static async Task<IReadOnlyList<DashboardTrendPoint>> TrendAsync(IQueryable<WorkTask> tasks, QueueClock queueClock, DateOnly from, DateTime fromUtc, CancellationToken ct)
-    {
-        var created = await tasks.Where(t => t.CreatedAtUtc >= fromUtc).Select(t => t.CreatedAtUtc).ToListAsync(ct);
-        var completed = await tasks.Where(t => t.Status == TaskStatusCode.Completed && t.StatusChangedAtUtc >= fromUtc).Select(t => t.StatusChangedAtUtc).ToListAsync(ct);
-        return DashboardRules.Trend(from, queueClock.Today, created, completed, queueClock.StartOfDayUtc);
     }
 
     private static Expression<Func<WorkTask, bool>> Not(Expression<Func<WorkTask, bool>> predicate) =>

@@ -35,9 +35,6 @@ public sealed record DashboardBreakdownItem(
     [property: Required] bool IsOther,
     string? IconKey = null);
 
-/// <summary>One local calendar day of the period: Tasks created that day and Tasks completed that day (counts only, never per person).</summary>
-public sealed record DashboardTrendPoint([property: Required] DateOnly Date, [property: Required] int Created, [property: Required] int Completed);
-
 /// <summary>An age band of open Tasks (calendar days since creation in the viewer's zone). Informational, not an SLA.</summary>
 /// <param name="MaxDays">Null for the open-ended last band.</param>
 public sealed record DashboardAgingBucket(
@@ -53,8 +50,8 @@ public sealed record DashboardPeriod([property: Required] int Days, [property: R
 
 /// <summary>
 /// The operational Dashboard (baseline 12.2). Department-wide (addendum E) but redacted by the caller's Dashboard tab permissions: the headline counts
-/// (Open ... Created) need <c>Dashboard.ViewSummary</c>, ByTaskType, ByPriority, ByStatus and Aging need <c>Dashboard.ViewBreakdowns</c>, Trend needs
-/// <c>Dashboard.ViewTrends</c>; what the caller may not see is zero or an empty list. Overdue and the period are evaluated in the viewer's time zone (addendum M). Counts are operational facts, never billing or staff productivity measures.
+/// (Open ... Created) need <c>Dashboard.ViewSummary</c>, ByTaskType, ByPriority, ByStatus and Aging need <c>Dashboard.ViewBreakdowns</c>; what the caller may not see is zero or an empty list.
+/// The Trends tab reads its series from <c>GET /api/v1/dashboard/trend</c> (<c>Dashboard.ViewTrends</c>). Overdue and the period are evaluated in the viewer's time zone (addendum M). Counts are operational facts, never billing or staff productivity measures.
 /// </summary>
 public sealed record DashboardSummary(
     [property: Required] DashboardPeriod Period,
@@ -71,8 +68,7 @@ public sealed record DashboardSummary(
     [property: Required] IReadOnlyList<DashboardBreakdownItem> ByTaskType,
     [property: Required] IReadOnlyList<DashboardBreakdownItem> ByPriority,
     [property: Required] IReadOnlyList<DashboardBreakdownItem> ByStatus,
-    [property: Required] IReadOnlyList<DashboardAgingBucket> Aging,
-    [property: Required] IReadOnlyList<DashboardTrendPoint> Trend);
+    [property: Required] IReadOnlyList<DashboardAgingBucket> Aging);
 
 
 /// <summary>The request of the Trends tab: the period, the Task Types to draw a line for (at most <see cref="DashboardRules.MaxTrendTypes"/>) and optionally one metric.</summary>
@@ -129,7 +125,7 @@ public sealed record DashboardTrendType(
     [property: Required] string OverdueQuery);
 
 /// <summary>
-/// Created, completed, overdue, on-time and late per local day for the whole department (<c>all</c>, equal to the trend of the summary) and for each requested Task Type,
+/// Created, completed, overdue, on-time and late per local day for the whole department (<c>all</c>; its created and completed totals equal the Created and Completed counts of the summary) and for each requested Task Type,
 /// plus the legend: every Task Type that has Tasks in the period or is active, largest first. Counts only, never per person.
 /// </summary>
 /// <param name="Metric">The metric asked for or null for all; the other counts are 0 when set.</param>

@@ -99,7 +99,6 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
             watch.Stop();
             timings.Add(watch.ElapsedMilliseconds);
             statements = _commands.Snapshot();
-            dashboard.GetProperty("trend").GetArrayLength().ShouldBe(90);
         }
 
         output.WriteLine("dashboard ms: " + string.Join(", ", timings) + " statements: " + statements.Count);

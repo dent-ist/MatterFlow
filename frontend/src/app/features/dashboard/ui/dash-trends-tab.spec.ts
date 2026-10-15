@@ -42,7 +42,7 @@ describe('DashTrendsTab', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: 'trends', component: Host }]),
-        provideFakeMe(new FakeMeApi(withPermissions('Task.View', 'Dashboard.ViewDepartment'))),
+        provideFakeMe(new FakeMeApi(withPermissions('Dashboard.View', 'Dashboard.ViewTrends'))),
         { provide: DashboardClient, useValue: { getDashboardTrend: getTrend } },
         { provide: USER_TIME_ZONE, useValue: 'UTC' },
         { provide: Clock, useValue: { now: () => new Date('2026-10-14T15:45:00Z') } },

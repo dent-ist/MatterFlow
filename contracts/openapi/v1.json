@@ -9270,8 +9270,7 @@
           "byTaskType",
           "byPriority",
           "byStatus",
-          "aging",
-          "trend"
+          "aging"
         ],
         "type": "object",
         "properties": {
@@ -9331,12 +9330,6 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DashboardAgingBucket"
-            }
-          },
-          "trend": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardTrendPoint"
             }
           }
         }
@@ -9433,28 +9426,6 @@
             "format": "int32"
           },
           "late": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "DashboardTrendPoint": {
-        "required": [
-          "date",
-          "created",
-          "completed"
-        ],
-        "type": "object",
-        "properties": {
-          "date": {
-            "type": "string",
-            "format": "date"
-          },
-          "created": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "completed": {
             "type": "integer",
             "format": "int32"
           }

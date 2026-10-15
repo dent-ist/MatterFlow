@@ -88,11 +88,6 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
         query: `${OPEN}&createdTo=2026-09-29`,
       },
     ],
-    trend: [
-      { date: '2026-10-12', created: 4, completed: 2 },
-      { date: '2026-10-13', created: 0, completed: 3 },
-      { date: '2026-10-14', created: 5, completed: 1 },
-    ],
     ...overrides,
   };
 }

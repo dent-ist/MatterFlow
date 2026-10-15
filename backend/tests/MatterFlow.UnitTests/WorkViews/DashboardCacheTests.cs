@@ -23,7 +23,6 @@ public class DashboardCacheTests
             [],
             [],
             [],
-            [],
             []);
 
     private static DashboardCache Cache(int seconds, FakeTime time) => new(Options.Create(new DashboardOptions { CacheSeconds = seconds }), time);

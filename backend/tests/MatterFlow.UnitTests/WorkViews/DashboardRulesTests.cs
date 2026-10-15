@@ -110,36 +110,6 @@ public class DashboardRulesTests
         result[^1].Count.ShouldBe(6 + 5 + 4);
     }
 
-    [Fact]
-    public void Trend_has_one_point_per_local_day_and_counts_into_the_viewers_day()
-    {
-        // A zone five hours behind UTC: local midnight is 05:00 UTC.
-        DateTime Start(DateOnly d) => d.ToDateTime(TimeOnly.MinValue).AddHours(5);
-        var from = new DateOnly(2026, 10, 12);
-        var created = new[]
-        {
-            new DateTime(2026, 10, 12, 4, 59, 0), // 11 Oct local: outside the period
-            new DateTime(2026, 10, 12, 5, 0, 0),  // 12 Oct local, first minute
-            new DateTime(2026, 10, 13, 4, 59, 0), // 12 Oct local, last minute
-            new DateTime(2026, 10, 14, 9, 0, 0),  // 14 Oct local
-            new DateTime(2026, 10, 15, 5, 0, 0),  // 15 Oct local: after the period
-        };
-        var completed = new[] { new DateTime(2026, 10, 13, 5, 0, 0) };
-
-        var trend = DashboardRules.Trend(from, new DateOnly(2026, 10, 14), created, completed, Start);
-
-        trend.Select(p => p.Date).ShouldBe([from, from.AddDays(1), from.AddDays(2)]);
-        trend.Select(p => p.Created).ShouldBe([2, 0, 1]);
-        trend.Select(p => p.Completed).ShouldBe([0, 1, 0]);
-    }
-
-    [Fact]
-    public void Trend_of_a_single_day_has_one_point()
-    {
-        var today = new DateOnly(2026, 10, 14);
-        DashboardRules.Trend(today, today, [], [], d => d.ToDateTime(TimeOnly.MinValue)).Count.ShouldBe(1);
-    }
-
     private static readonly DateTime Now = new(2026, 10, 14, 20, 0, 0, DateTimeKind.Utc);
 
     [Fact]
@@ -173,9 +143,7 @@ public class DashboardRulesTests
         built.Totals[3].ShouldBe(new TrendTypeTotals(1, 0, 0, 0, 0));
         built.Totals.ContainsKey(9).ShouldBeFalse();
 
-        // The all series is exactly the existing trend for the same instants.
-        var plain = DashboardRules.Trend(from, today, created.Select(c => c.Item2), completed.Select(c => c.Item2), Start);
-        built.All.Select(p => (p.Date, p.Created, p.Completed)).ShouldBe(plain.Select(p => (p.Date, p.Created, p.Completed)));
+        built.All.Select(p => p.Date).ShouldBe([from, from.AddDays(1), from.AddDays(2)]);
     }
 
     [Fact]

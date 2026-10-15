@@ -95,47 +95,7 @@ public static class DashboardRules
     }
 
     /// <summary>
-    /// The daily series of a period: one point per local day from <paramref name="from"/> to <paramref name="today"/> (both inclusive), counting the given
-    /// instants into the local day they fall in. <paramref name="startOfDayUtc"/> maps a local date to the UTC instant it starts, so DST days work.
-    /// </summary>
-    public static IReadOnlyList<DashboardTrendPoint> Trend(
-        DateOnly from,
-        DateOnly today,
-        IEnumerable<DateTime> created,
-        IEnumerable<DateTime> completed,
-        Func<DateOnly, DateTime> startOfDayUtc)
-    {
-        ArgumentNullException.ThrowIfNull(created);
-        ArgumentNullException.ThrowIfNull(completed);
-        ArgumentNullException.ThrowIfNull(startOfDayUtc);
-        var days = today.DayNumber - from.DayNumber + 1;
-        if (days <= 0)
-            return [];
-
-        var edges = Enumerable.Range(0, days + 1).Select(i => startOfDayUtc(from.AddDays(i)).Ticks).ToArray();
-        var createdCounts = new int[days];
-        var completedCounts = new int[days];
-
-        void Count(IEnumerable<DateTime> instants, int[] into)
-        {
-            foreach (var instant in instants)
-            {
-                var found = Array.BinarySearch(edges, instant.Ticks);
-                var day = found >= 0 ? found : ~found - 1;
-                if (day >= 0 && day < days)
-                    into[day]++;
-            }
-        }
-
-        Count(created, createdCounts);
-        Count(completed, completedCounts);
-        return [.. Enumerable.Range(0, days).Select(i => new DashboardTrendPoint(from.AddDays(i), createdCounts[i], completedCounts[i]))];
-    }
-
-    /// <summary>
-    /// The daily series per Task Type: one point per local day from <paramref name="from"/> to <paramref name="today"/>, with the same day assignment as
-    /// <see cref="Trend"/>. Returns the department series (<c>All</c>, the sum of every type, so its created and completed equal <see cref="Trend"/> for the
-    /// same instants), the series of each id in <paramref name="wanted"/> (in that order, zeros when the type has no Task) and the totals of every type that has any.
+    /// The daily series per Task Type: one point per local day from <paramref name="from"/> to <paramref name="today"/>, with each instant counted into the viewer's local day it falls in (<paramref name="startOfDayUtc"/> maps a local date to the UTC instant it starts, so DST days work). Returns the department series (<c>All</c>, the sum of every type), the series of each id in <paramref name="wanted"/> (in that order, zeros when the type has no Task) and the totals of every type that has any.
     /// <para>
     /// <b>Overdue</b> is a snapshot per day: the Tasks that, at the end of that local day, were created, had a due moment that had passed (a timed due: the
     /// instant; a date-only due: after 23:59:59 of that date in the viewer's zone, as the Task Queue does) and were not yet closed. For today the snapshot is taken

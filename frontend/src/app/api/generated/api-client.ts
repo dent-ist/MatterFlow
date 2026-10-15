@@ -11134,7 +11134,6 @@ export interface DashboardSummary {
     byPriority: DashboardBreakdownItem[];
     byStatus: DashboardBreakdownItem[];
     aging: DashboardAgingBucket[];
-    trend: DashboardTrendPoint[];
 
     [key: string]: any;
 }
@@ -11161,14 +11160,6 @@ export interface DashboardTrendDay {
     overdue: number;
     onTime: number;
     late: number;
-
-    [key: string]: any;
-}
-
-export interface DashboardTrendPoint {
-    date: string;
-    created: number;
-    completed: number;
 
     [key: string]: any;
 }
