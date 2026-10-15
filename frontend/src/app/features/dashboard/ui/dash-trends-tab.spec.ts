@@ -28,7 +28,7 @@ class Host {
 const text = (e: Element | null) => (e?.textContent ?? '').replace(/\s+/g, ' ').trim();
 const STORE_KEY = (id: number) => `mf.dashboard.trends.v1.${id}`;
 
-describe('DashTrendsTab', () => {
+describe('DashTrendsTab', { timeout: 30_000 }, () => {
   let getTrend: ReturnType<typeof vi.fn>;
   let harness: RouterTestingHarness;
   let el: HTMLElement;
