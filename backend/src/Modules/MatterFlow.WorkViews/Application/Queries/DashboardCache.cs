@@ -10,6 +10,20 @@ public sealed class DashboardOptions
 
     /// <summary>How long a computed dashboard is served again to the same user and period (default 15 seconds; 0 switches the cache off).</summary>
     public int CacheSeconds { get; set; } = 15;
+
+    /// <summary>Thresholds of the Users tab (<c>Dashboard:Workload</c>).</summary>
+    public WorkloadOptions Workload { get; set; } = new();
+}
+
+/// <summary>
+/// Load levels of the team workload by number of open Tasks: 0 is IDLE, up to <see cref="LightMax"/> LIGHT, up to <see cref="NormalMax"/> NORMAL,
+/// more is HEAVY. A capacity hint for leads, never a performance rating.
+/// </summary>
+public sealed class WorkloadOptions
+{
+    public int LightMax { get; set; } = 3;
+
+    public int NormalMax { get; set; } = 8;
 }
 
 /// <summary>

@@ -5602,6 +5602,160 @@
         }
       }
     },
+    "/api/v1/dashboard/swimlane": {
+      "get": {
+        "tags": [
+          "DashboardBoard"
+        ],
+        "operationId": "GetDashboardSwimlane",
+        "parameters": [
+          {
+            "name": "completedDays",
+            "in": "query",
+            "schema": {
+              "maximum": 30,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "groupBy",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "podId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "assigneeId",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskTypeId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "priorityId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "overdueOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "mine",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SwimlaneBoard"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/workload": {
+      "get": {
+        "tags": [
+          "DashboardBoard"
+        ],
+        "operationId": "GetDashboardWorkload",
+        "parameters": [
+          {
+            "name": "podId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "availability",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkloadBoard"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/task-queue": {
       "get": {
         "tags": [
@@ -11394,6 +11548,391 @@
           }
         }
       },
+      "SwimlaneAssignee": {
+        "required": [
+          "userId",
+          "displayName",
+          "isActive",
+          "availability"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/UserAvailabilitySummary"
+          }
+        }
+      },
+      "SwimlaneBoard": {
+        "required": [
+          "timeZone",
+          "generatedAtUtc",
+          "completedDays",
+          "completedFrom",
+          "groupBy",
+          "sort",
+          "laneCap",
+          "lanes",
+          "groups"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "generatedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "groupBy": {
+            "type": "string"
+          },
+          "sort": {
+            "type": "string"
+          },
+          "laneCap": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lanes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SwimlaneLane"
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SwimlaneGroup"
+            }
+          }
+        }
+      },
+      "SwimlaneCard": {
+        "required": [
+          "taskId",
+          "ref",
+          "title",
+          "status",
+          "statusLabel",
+          "priority",
+          "assignee",
+          "pod",
+          "clientId",
+          "clientNumber",
+          "clientName",
+          "matterId",
+          "matterRef",
+          "matterName",
+          "matterIsSensitive",
+          "taskTypeId",
+          "taskTypeName",
+          "taskTypeIconKey",
+          "dueDate",
+          "dueAtUtc",
+          "isOverdue",
+          "isAsap",
+          "stepsResolved",
+          "stepsTotal",
+          "createdAtUtc",
+          "completedAtUtc",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/SwimlanePriority"
+          },
+          "assignee": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SwimlaneAssignee"
+              }
+            ]
+          },
+          "pod": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/QueuePod"
+              }
+            ]
+          },
+          "clientId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "clientNumber": {
+            "type": "string"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterRef": {
+            "type": "string"
+          },
+          "matterName": {
+            "type": "string"
+          },
+          "matterIsSensitive": {
+            "type": "boolean"
+          },
+          "taskTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "taskTypeName": {
+            "type": "string"
+          },
+          "taskTypeIconKey": {
+            "type": "string"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "dueAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "isOverdue": {
+            "type": "boolean"
+          },
+          "isAsap": {
+            "type": "boolean"
+          },
+          "stepsResolved": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stepsTotal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "SwimlaneGroup": {
+        "required": [
+          "key",
+          "kind",
+          "id",
+          "label",
+          "clientNumber",
+          "matterRef",
+          "color",
+          "rank",
+          "count",
+          "counts",
+          "children"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "label": {
+            "type": "string"
+          },
+          "clientNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "matterRef": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "color": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rank": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/SwimlaneLaneCounts"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SwimlaneGroup"
+            }
+          }
+        }
+      },
+      "SwimlaneLane": {
+        "required": [
+          "status",
+          "label",
+          "count",
+          "truncated",
+          "total",
+          "cards"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SwimlaneCard"
+            }
+          }
+        }
+      },
+      "SwimlaneLaneCounts": {
+        "required": [
+          "new",
+          "inProgress",
+          "onHold",
+          "completed"
+        ],
+        "type": "object",
+        "properties": {
+          "new": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "inProgress": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onHold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SwimlanePriority": {
+        "required": [
+          "priorityId",
+          "label",
+          "color",
+          "rank"
+        ],
+        "type": "object",
+        "properties": {
+          "priorityId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "label": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "rank": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "TaskActivityItem": {
         "required": [
           "eventId",
@@ -14284,6 +14823,305 @@
             "type": "string"
           }
         }
+      },
+      "WorkloadBoard": {
+        "required": [
+          "timeZone",
+          "generatedAtUtc",
+          "priorities",
+          "users",
+          "summary",
+          "thresholds"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "generatedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "priorities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkloadPriority"
+            }
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkloadUser"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/WorkloadSummary"
+          },
+          "thresholds": {
+            "$ref": "#/components/schemas/WorkloadThresholds"
+          }
+        }
+      },
+      "WorkloadNextDue": {
+        "required": [
+          "taskId",
+          "ref",
+          "dueDate",
+          "dueAtUtc",
+          "isOverdue"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "dueAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "isOverdue": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WorkloadPod": {
+        "required": [
+          "podId",
+          "name",
+          "isPrimary"
+        ],
+        "type": "object",
+        "properties": {
+          "podId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isPrimary": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WorkloadPriority": {
+        "required": [
+          "priorityId",
+          "label",
+          "color",
+          "rank"
+        ],
+        "type": "object",
+        "properties": {
+          "priorityId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "label": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "rank": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "WorkloadPriorityCount": {
+        "required": [
+          "priorityId",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "priorityId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "WorkloadSummary": {
+        "required": [
+          "available",
+          "busy",
+          "outOfOffice",
+          "unassignedTasks",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "busy": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "outOfOffice": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unassignedTasks": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "WorkloadThresholds": {
+        "required": [
+          "lightMax",
+          "normalMax"
+        ],
+        "type": "object",
+        "properties": {
+          "lightMax": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "normalMax": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "WorkloadTopPriority": {
+        "required": [
+          "priorityId",
+          "label",
+          "color",
+          "rank",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "priorityId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "label": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "rank": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "WorkloadUser": {
+        "required": [
+          "userId",
+          "displayName",
+          "initials",
+          "pods",
+          "availability",
+          "byPriority",
+          "openTotal",
+          "overdue",
+          "dueSoon",
+          "onHold",
+          "topPriority",
+          "nextDue",
+          "loadLevel"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "initials": {
+            "type": "string"
+          },
+          "pods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkloadPod"
+            }
+          },
+          "availability": {
+            "$ref": "#/components/schemas/UserAvailabilitySummary"
+          },
+          "byPriority": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkloadPriorityCount"
+            }
+          },
+          "openTotal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dueSoon": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onHold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "topPriority": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WorkloadTopPriority"
+              }
+            ]
+          },
+          "nextDue": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WorkloadNextDue"
+              }
+            ]
+          },
+          "loadLevel": {
+            "type": "string"
+          }
+        }
       }
     }
   },
@@ -14371,6 +15209,9 @@
     },
     {
       "name": "Dashboard"
+    },
+    {
+      "name": "DashboardBoard"
     },
     {
       "name": "TaskQueue"

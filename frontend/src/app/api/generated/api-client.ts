@@ -8416,6 +8416,209 @@ export class DashboardClient implements IDashboardClient {
     }
 }
 
+export interface IDashboardBoardClient {
+    /**
+     * @param completedDays (optional) 
+     * @param groupBy (optional) 
+     * @param sort (optional) 
+     * @param podId (optional) 
+     * @param assigneeId (optional) 
+     * @param taskTypeId (optional) 
+     * @param priorityId (optional) 
+     * @param q (optional) 
+     * @param overdueOnly (optional) 
+     * @param mine (optional) 
+     * @return OK
+     */
+    getDashboardSwimlane(completedDays?: number | undefined, groupBy?: string | undefined, sort?: string | undefined, podId?: number | undefined, assigneeId?: string | undefined, taskTypeId?: number | undefined, priorityId?: number | undefined, q?: string | undefined, overdueOnly?: boolean | undefined, mine?: boolean | undefined): Observable<SwimlaneBoard>;
+    /**
+     * @param podId (optional) 
+     * @param availability (optional) 
+     * @param q (optional) 
+     * @return OK
+     */
+    getDashboardWorkload(podId?: number | undefined, availability?: string | undefined, q?: string | undefined): Observable<WorkloadBoard>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class DashboardBoardClient implements IDashboardBoardClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param completedDays (optional) 
+     * @param groupBy (optional) 
+     * @param sort (optional) 
+     * @param podId (optional) 
+     * @param assigneeId (optional) 
+     * @param taskTypeId (optional) 
+     * @param priorityId (optional) 
+     * @param q (optional) 
+     * @param overdueOnly (optional) 
+     * @param mine (optional) 
+     * @return OK
+     */
+    getDashboardSwimlane(completedDays?: number | undefined, groupBy?: string | undefined, sort?: string | undefined, podId?: number | undefined, assigneeId?: string | undefined, taskTypeId?: number | undefined, priorityId?: number | undefined, q?: string | undefined, overdueOnly?: boolean | undefined, mine?: boolean | undefined): Observable<SwimlaneBoard> {
+        let url_ = this.baseUrl + "/api/v1/dashboard/swimlane?";
+        if (completedDays === null)
+            throw new globalThis.Error("The parameter 'completedDays' cannot be null.");
+        else if (completedDays !== undefined)
+            url_ += "completedDays=" + encodeURIComponent("" + completedDays) + "&";
+        if (groupBy === null)
+            throw new globalThis.Error("The parameter 'groupBy' cannot be null.");
+        else if (groupBy !== undefined)
+            url_ += "groupBy=" + encodeURIComponent("" + groupBy) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "sort=" + encodeURIComponent("" + sort) + "&";
+        if (podId === null)
+            throw new globalThis.Error("The parameter 'podId' cannot be null.");
+        else if (podId !== undefined)
+            url_ += "podId=" + encodeURIComponent("" + podId) + "&";
+        if (assigneeId === null)
+            throw new globalThis.Error("The parameter 'assigneeId' cannot be null.");
+        else if (assigneeId !== undefined)
+            url_ += "assigneeId=" + encodeURIComponent("" + assigneeId) + "&";
+        if (taskTypeId === null)
+            throw new globalThis.Error("The parameter 'taskTypeId' cannot be null.");
+        else if (taskTypeId !== undefined)
+            url_ += "taskTypeId=" + encodeURIComponent("" + taskTypeId) + "&";
+        if (priorityId === null)
+            throw new globalThis.Error("The parameter 'priorityId' cannot be null.");
+        else if (priorityId !== undefined)
+            url_ += "priorityId=" + encodeURIComponent("" + priorityId) + "&";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "q=" + encodeURIComponent("" + q) + "&";
+        if (overdueOnly === null)
+            throw new globalThis.Error("The parameter 'overdueOnly' cannot be null.");
+        else if (overdueOnly !== undefined)
+            url_ += "overdueOnly=" + encodeURIComponent("" + overdueOnly) + "&";
+        if (mine === null)
+            throw new globalThis.Error("The parameter 'mine' cannot be null.");
+        else if (mine !== undefined)
+            url_ += "mine=" + encodeURIComponent("" + mine) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetDashboardSwimlane(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetDashboardSwimlane(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<SwimlaneBoard>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<SwimlaneBoard>;
+        }));
+    }
+
+    protected processGetDashboardSwimlane(response: HttpResponseBase): Observable<SwimlaneBoard> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as SwimlaneBoard;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param podId (optional) 
+     * @param availability (optional) 
+     * @param q (optional) 
+     * @return OK
+     */
+    getDashboardWorkload(podId?: number | undefined, availability?: string | undefined, q?: string | undefined): Observable<WorkloadBoard> {
+        let url_ = this.baseUrl + "/api/v1/dashboard/workload?";
+        if (podId === null)
+            throw new globalThis.Error("The parameter 'podId' cannot be null.");
+        else if (podId !== undefined)
+            url_ += "podId=" + encodeURIComponent("" + podId) + "&";
+        if (availability === null)
+            throw new globalThis.Error("The parameter 'availability' cannot be null.");
+        else if (availability !== undefined)
+            url_ += "availability=" + encodeURIComponent("" + availability) + "&";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "q=" + encodeURIComponent("" + q) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetDashboardWorkload(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetDashboardWorkload(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WorkloadBoard>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WorkloadBoard>;
+        }));
+    }
+
+    protected processGetDashboardWorkload(response: HttpResponseBase): Observable<WorkloadBoard> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WorkloadBoard;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface ITaskQueueClient {
     /**
      * @param q (optional) 
@@ -11503,6 +11706,106 @@ export interface StepUsage {
     [key: string]: any;
 }
 
+export interface SwimlaneAssignee {
+    userId: number;
+    displayName: string;
+    isActive: boolean;
+    availability: UserAvailabilitySummary;
+
+    [key: string]: any;
+}
+
+export interface SwimlaneBoard {
+    timeZone: string;
+    generatedAtUtc: string;
+    completedDays: number;
+    completedFrom: string;
+    groupBy: string;
+    sort: string;
+    laneCap: number;
+    lanes: SwimlaneLane[];
+    groups: SwimlaneGroup[];
+
+    [key: string]: any;
+}
+
+export interface SwimlaneCard {
+    taskId: number;
+    ref: string;
+    title: string;
+    status: string;
+    statusLabel: string;
+    priority: SwimlanePriority;
+    assignee: SwimlaneAssignee | undefined;
+    pod: QueuePod | undefined;
+    clientId: number;
+    clientNumber: string;
+    clientName: string;
+    matterId: number;
+    matterRef: string;
+    matterName: string;
+    matterIsSensitive: boolean;
+    taskTypeId: number;
+    taskTypeName: string;
+    taskTypeIconKey: string;
+    dueDate: string | undefined;
+    dueAtUtc: string | undefined;
+    isOverdue: boolean;
+    isAsap: boolean;
+    stepsResolved: number;
+    stepsTotal: number;
+    createdAtUtc: string;
+    completedAtUtc: string | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface SwimlaneGroup {
+    key: string;
+    kind: string;
+    id: number | undefined;
+    label: string;
+    clientNumber: string | undefined;
+    matterRef: string | undefined;
+    color: string | undefined;
+    rank: number | undefined;
+    count: number;
+    counts: SwimlaneLaneCounts;
+    children: SwimlaneGroup[];
+
+    [key: string]: any;
+}
+
+export interface SwimlaneLane {
+    status: string;
+    label: string;
+    count: number;
+    truncated: boolean;
+    total: number;
+    cards: SwimlaneCard[];
+
+    [key: string]: any;
+}
+
+export interface SwimlaneLaneCounts {
+    new: number;
+    inProgress: number;
+    onHold: number;
+    completed: number;
+
+    [key: string]: any;
+}
+
+export interface SwimlanePriority {
+    priorityId: number;
+    label: string;
+    color: string;
+    rank: number;
+
+    [key: string]: any;
+}
+
 export interface TaskActivityItem {
     eventId: number;
     occurredAtUtc: string;
@@ -12260,6 +12563,96 @@ export interface WorkHourDto {
     dayOfWeek: number;
     start: string;
     end: string;
+
+    [key: string]: any;
+}
+
+export interface WorkloadBoard {
+    timeZone: string;
+    generatedAtUtc: string;
+    priorities: WorkloadPriority[];
+    users: WorkloadUser[];
+    summary: WorkloadSummary;
+    thresholds: WorkloadThresholds;
+
+    [key: string]: any;
+}
+
+export interface WorkloadNextDue {
+    taskId: number;
+    ref: string;
+    dueDate: string | undefined;
+    dueAtUtc: string | undefined;
+    isOverdue: boolean;
+
+    [key: string]: any;
+}
+
+export interface WorkloadPod {
+    podId: number;
+    name: string;
+    isPrimary: boolean;
+
+    [key: string]: any;
+}
+
+export interface WorkloadPriority {
+    priorityId: number;
+    label: string;
+    color: string;
+    rank: number;
+
+    [key: string]: any;
+}
+
+export interface WorkloadPriorityCount {
+    priorityId: number;
+    count: number;
+
+    [key: string]: any;
+}
+
+export interface WorkloadSummary {
+    available: number;
+    busy: number;
+    outOfOffice: number;
+    unassignedTasks: number;
+    total: number;
+
+    [key: string]: any;
+}
+
+export interface WorkloadThresholds {
+    lightMax: number;
+    normalMax: number;
+
+    [key: string]: any;
+}
+
+export interface WorkloadTopPriority {
+    priorityId: number;
+    label: string;
+    color: string;
+    rank: number;
+    count: number;
+
+    [key: string]: any;
+}
+
+export interface WorkloadUser {
+    userId: number;
+    displayName: string;
+    initials: string;
+    pods: WorkloadPod[];
+    availability: UserAvailabilitySummary;
+    byPriority: WorkloadPriorityCount[];
+    openTotal: number;
+    overdue: number;
+    dueSoon: number;
+    onHold: number;
+    topPriority: WorkloadTopPriority | undefined;
+    nextDue: WorkloadNextDue | undefined;
+    loadLevel: string;
 
     [key: string]: any;
 }

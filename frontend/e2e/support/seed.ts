@@ -19,6 +19,20 @@ export interface StepSpec {
   skipCommentRequired?: boolean;
 }
 
+/** A user's availability profile (the `PUT /users/{id}/availability` body without the row version). */
+export interface AvailabilitySpec {
+  status?: 'AVAILABLE' | 'OUT_OF_OFFICE';
+  /** First day out of office, `yyyy-MM-dd` in the user's zone; omit for "from now". */
+  from?: string | null;
+  /** Last day out of office; omit for "until the user sets Available again". */
+  until?: string | null;
+  note?: string | null;
+  /** IANA zone; omit for the firm zone. */
+  timeZoneId?: string | null;
+  /** ISO weekdays 1 (Monday) to 7 with `HH:mm` times; omit (null) for the default Mon-Fri 09:00-17:00, `[]` for no working days. */
+  workHours?: { dayOfWeek: number; start: string; end: string }[] | null;
+}
+
 export interface FieldSpec {
   key: string;
   label: string;
@@ -159,6 +173,31 @@ export class Seeder {
       roleIds: ids,
       rowVersion: detail.rowVersion,
     });
+  }
+
+  /**
+   * Sets a user's availability and work hours as the admin (on behalf, `User.Manage`), reading the current row version first so it can be
+   * called repeatedly for the same user. Everything not given is reset (Available, default hours, firm zone).
+   */
+  async availability(userId: number, spec: AvailabilitySpec = {}): Promise<Json> {
+    const current = await this.admin.get<Json>(`/api/v1/users/${userId}/availability`);
+    return this.admin.put(`/api/v1/users/${userId}/availability`, {
+      status: spec.status ?? 'AVAILABLE',
+      from: spec.from ?? null,
+      until: spec.until ?? null,
+      note: spec.note ?? null,
+      timeZoneId: spec.timeZoneId ?? null,
+      workHours: spec.workHours ?? null,
+      rowVersion: current.rowVersion,
+    });
+  }
+
+  /** Marks a user out of office (no dates: until set Available again). */
+  outOfOffice(
+    userId: number,
+    opts: { from?: string; until?: string; note?: string; timeZoneId?: string } = {},
+  ): Promise<Json> {
+    return this.availability(userId, { status: 'OUT_OF_OFFICE', ...opts });
   }
 
   async pod(name: string | undefined, memberUserIds: number[]): Promise<Json> {

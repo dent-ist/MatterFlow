@@ -235,7 +235,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         return (filter.Value, page.Value, sort, descending, QueueClock.Create(clock.UtcNow, timeZone));
     }
 
-    private IQueryable<WorkTask> ApplyFilter(IQueryable<WorkTask> rows, TaskQueueFilter f, QueueClock c)
+    internal IQueryable<WorkTask> ApplyFilter(IQueryable<WorkTask> rows, TaskQueueFilter f, QueueClock c)
     {
         if (f.Text is { } text)
         {
