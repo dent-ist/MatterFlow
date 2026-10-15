@@ -4,6 +4,8 @@ Two changes, shown here at 1366x768 and 375x812 (`<screen>-<width>x<height>.png`
 
 ## A. One "Workflows" menu item, two tabs
 
+> **Superseded by [task-types-tabs](../task-types-tabs/README.md):** the Workflows and Workflow Steps tabs are now the second and third tab of the **Task Types** page (menu item "Task Types", header "Task Types", titles "Task Types - Workflows" and "Task Types - Workflow Steps", breadcrumbs `Administration > Task Types > ...`). The addresses and the fixed-header layout described below are unchanged. The text below is kept as it was written.
+
 - The Administration menu is now: Users, Pods, Task Types & Forms, **Workflows**, Labels, Assets, Custom Fields, Audit Logs. The separate "Workflow Steps" item is gone.
 - The **Workflows** page has two tabs, built like Users/Roles (`mf-tabs`, route-based, one component that stays alive when the tab changes):
   - Tab 1 **Workflows**: the workflow list (`workflows-tab-*.png`).

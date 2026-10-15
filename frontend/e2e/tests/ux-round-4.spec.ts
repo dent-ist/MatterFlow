@@ -316,9 +316,9 @@ test.describe('Round 4: task type icons', () => {
 
 test.describe('Round 4: administration naming', () => {
   const titles: [string, string, string | RegExp][] = [
-    ['/admin/task-types', 'Task Types & Forms', 'Task Types & Forms - MatterFlow'],
-    ['/admin/workflows', 'Workflows', 'Workflows - MatterFlow'],
-    ['/admin/steps', 'Workflows', 'Workflows - Workflow Steps - MatterFlow'],
+    ['/admin/task-types', 'Task Types', 'Task Types - MatterFlow'],
+    ['/admin/workflows', 'Task Types', 'Task Types - Workflows - MatterFlow'],
+    ['/admin/steps', 'Task Types', 'Task Types - Workflow Steps - MatterFlow'],
     ['/admin/priorities', 'Labels', 'Labels - Priorities - MatterFlow'],
     ['/admin/status-labels', 'Labels', 'Labels - Status labels - MatterFlow'],
     ['/admin/custom-fields', 'Custom Fields', 'Custom Fields - MatterFlow'],

@@ -55,9 +55,10 @@ Left nav (items hidden when the user lacks the matching View permission):
   Administration (permission-gated)  /admin
      Users                         /admin/users (Users tab), /admin/roles (Roles tab)
      Pods                          /admin/pods
-     Task Types & Forms            /admin/task-types
-     Workflows                     /admin/workflows (Workflows tab), /admin/steps (Workflow Steps tab); the step pages /admin/steps/new, /admin/steps/:id, /admin/steps/:id/form
-                                   and the workflow pages /admin/workflows/new, /admin/workflows/:id[/versions/:v] keep their own pages and highlight this item
+     Task Types                    /admin/task-types (Task Types tab), /admin/workflows (Workflows tab), /admin/steps (Workflow Steps tab);
+                                   filtered links: /admin/workflows?taskType=:id, /admin/workflows?step=:id, /admin/task-types?workflow=:id;
+                                   the pages /admin/task-types/new, /admin/task-types/:id[/form], /admin/workflows/new, /admin/workflows/:id[/versions/:v],
+                                   /admin/steps/new, /admin/steps/:id[/form] keep their own URLs and highlight this item
      Labels                        /admin/priorities, /admin/status-labels
      Assets                        /admin/asset-types (tabs Asset Types, ?tab=link-roles = Asset Link Roles; page title "Asset types and link roles")
      Custom Fields                 /admin/custom-fields
@@ -247,7 +248,7 @@ Screen IDs map to baseline §19 (item number in brackets). Each spec: purpose, l
 | S12 | Admin: Users, pending users, roles/permissions | 12 |
 | S13 | Admin: Pods | 13 |
 | S14 | Admin: Task Types and form designer | 14 |
-| S15 | Admin: Workflow Steps (second tab of Workflows, with tags) | 15 |
+| S15 | Admin: Workflow Steps (third tab of Task Types, with tags) | 15 |
 | S16 | Admin: Workflow designer and publish | 16 |
 | S17 | Admin: Asset Types | 17 |
 | S18 | Admin: Priorities, status labels, custom fields | 18 |
@@ -831,7 +832,7 @@ Pod editor: Name (required, unique), Description, Active
 
 ### S14 Admin: Task Types and the Form Designer
 
-**Task Types list.** Columns: Name, Status (Draft/Published/Retired), Current form version, Eligible workflows (count), Default workflow, Open tasks. Actions: New, Edit (creates a draft from the published version if needed), Deactivate. Warning chip "No eligible published workflow: users can't create tasks of this type."
+**Task Types list** (first tab of the Task Types page, with the Workflows and Workflow Steps tabs; see [task-types-tabs](task-types-tabs/README.md)). Columns: Name, Request form (status and version), **Workflows** (the eligible workflows as chips that open the workflow; the default one starred and marked "default"; three chips then "+n more" and a "Workflows (n)" link that open the Workflows tab filtered to the type; "No workflow" as a warning when none), Status, Open tasks. Actions: New, Edit (creates a draft from the published version if needed), Deactivate. Warning chip "No eligible published workflow: users can't create tasks of this type."
 
 **Task Type editor (tabs).** `General` (name, description, active, default workflow) | `Form` (designer) | `Workflows` (eligible published Workflow list: picker listing published workflow definitions, "current published version" shown; remove) | `Versions` (history).
 
@@ -881,15 +882,15 @@ Rules for "OCR language"
 
 ### S15 Admin: Workflow Steps (step library)
 
-The step library is the **second tab ("Workflow Steps") of the Workflows page**; the Administration menu has one "Workflows" item for both tabs (`/admin/workflows` = Workflows tab, `/admin/steps` = Workflow Steps tab, route-based like Users/Roles; both need `Workflow.Manage`). Document titles "Workflows" and "Workflows - Workflow Steps".
+The step library is the **third tab ("Workflow Steps") of the Task Types page**; the Administration menu has one "Task Types" item for three tabs (`/admin/task-types` = Task Types, `/admin/workflows` = Workflows, `/admin/steps` = Workflow Steps; route-based like Users/Roles). The model reads left to right: a Task Type has eligible Workflows (one default), a Workflow is built from Steps of this shared library. Task Types needs `TaskType.Manage`, Workflows and Workflow Steps need `Workflow.Manage`; only permitted tabs show, and a person with only `Workflow.Manage` lands on Workflows. Document titles "Task Types", "Task Types - Workflows" and "Task Types - Workflow Steps"; breadcrumb `Administration > Task Types > Workflow Steps`.
 
 ```text
-Administration > Workflows > Workflow Steps                  [+ New step]
-Workflows | Workflow Steps
+Administration > Task Types > Workflow Steps                [+ New step]
+Task Types | Workflows | Workflow Steps
 Search [Title, description or tag]  Status [Active v]  [Tags v]  (o) Match all ( ) Match any   [Relativity x] [QC x]
 +----------------------+--------------------+-------------------------+--------------------+
-| Title                | Description        | Tags                    | Used in workflows  |
-| Deduplicate          | Remove duplicates  | (Relativity) (QC) +2 more | 4 versions       |
+| Title                | Description        | Tags                    | Used in            |
+| Deduplicate          | Remove duplicates  | (Relativity) (QC) +2 more | Used in 3 workflows (link) |
 ```
 **Tags.** Each step has free-form tags (examples: Relativity, Processing). The Tags column shows chips (first three, then "+n more", long tags cut with an ellipsis). The free-text search also matches tag text. The **Tags** button opens a panel of checkboxes of the existing tags with counts ("Relativity (3)"; a find box above eight tags); chosen tags show as removable chips ("Remove tag filter X"); "Match all" (default: a step needs every chosen tag) or "Match any". The state is in the address (`q`, `tags` repeated, `tagMatch=any`, `status`, `sort`, `page`). The workflow designer's step picker shows the same chips, searches tag text and has the same Tags filter.
 **Tag input (step editor).** Type and press Enter or comma to make a chip (leaving the box also commits), Backspace on an empty box removes the last chip, every chip has a "Remove tag X" button, existing tags are suggested as you type (a combobox with a listbox; free text is always allowed), a polite live region announces added and removed tags. Rules: trimmed, inner whitespace collapsed, at most 40 characters per tag, at most 20 per step, no control characters, case-insensitive uniqueness per step (the first spelling wins; an existing tag keeps its stored spelling across steps). Tags are library metadata: editing them never changes a published workflow version, and the change is audited (field `Tags`).
@@ -916,7 +917,7 @@ Default placement settings (overridable per workflow): Skippable [ ]  Skip comme
 ### S16 Admin: Workflow Designer and Publish
 
 ```text
-Administration > Workflows > Standard Processing           Draft v3 (published: v2)    [Validate] [Save draft] [Publish...]
+Administration > Task Types > Workflows > Standard Processing           Draft v3 (published: v2)    [Validate] [Save draft] [Publish...]
 Name [Standard Processing]   Description [____]
 Execution mode:  (o) Ordered - steps must be resolved in sequence     ( ) Unordered - any order
 +-- Step library (search) --+   +-- Workflow steps (this version) --------------------------------------+
@@ -1375,7 +1376,8 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S15-2 Editing a step shows the "doesn't change published workflows" notice, and published workflows are unchanged (addendum A).
 - [ ] UAT-S15-3 Used-in list visible; deletion replaced by deactivate when used.
 - [ ] UAT-S15-4 Inputs described as operational values, not staff metrics.
-- [ ] UAT-S15-5 One "Workflows" menu item with the tabs Workflows and Workflow Steps; /admin/workflows and /admin/steps open their tab; the step pages' breadcrumb is Administration > Workflows > Workflow Steps > step.
+- [ ] UAT-S15-5 One "Task Types" menu item with the tabs Task Types, Workflows and Workflow Steps; /admin/task-types, /admin/workflows and /admin/steps open their tab; the step pages' breadcrumb is Administration > Task Types > Workflow Steps > step.
+- [ ] UAT-S15-8 The Workflow Steps list has a Used in column ("Used in 3 workflows", "Not used" when none); the link opens the Workflows tab filtered by that step (`?step=:id`, a removable chip "Step: X" and the line "Filtered by step X"). The Task Types tab lists each type's workflows as chips (default starred and marked "default", three then "+n more", "No workflow" as a warning) that open the workflow, and "+n more" / "Workflows (n)" open the Workflows tab filtered by the task type (`?taskType=:id`); the Workflows tab lists the task types per workflow the same way (`?workflow=:id` on the Task Types tab).
 - [ ] UAT-S15-6 Tags: add with Enter or comma, remove with Backspace or the "Remove tag X" button, suggestions from existing tags, limits explained (40 characters, 20 tags).
 - [ ] UAT-S15-7 The Workflow Steps list shows a Tags column, searches tag text and filters by tags (Match all by default, Match any on request); the designer's step picker shows tags and finds steps by tag.
 
