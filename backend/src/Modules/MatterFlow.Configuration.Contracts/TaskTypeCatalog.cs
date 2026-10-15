@@ -4,6 +4,7 @@ namespace MatterFlow.Configuration.Contracts;
 /// <param name="Id">Task Type id (Task.TaskTypeId references it; immutable on a Task).</param>
 /// <param name="Name">Display name.</param>
 /// <param name="Description">Optional description.</param>
+/// <param name="IconKey">Key of the type's icon in the icon library (always set; see <see cref="TaskTypeIcons"/>).</param>
 /// <param name="IsActive">Inactive types stay on historical Tasks but are not offered for new Tasks.</param>
 /// <param name="FormDefinitionId">The request form's definition, or null when it has not been provisioned.</param>
 /// <param name="PublishedFormVersionId">The request form's current PUBLISHED version (what a new Task pins), or null when none is published.</param>
@@ -18,6 +19,7 @@ public sealed record TaskTypeInfo(
     int Id,
     string Name,
     string? Description,
+    string IconKey,
     bool IsActive,
     int? FormDefinitionId,
     int? PublishedFormVersionId,

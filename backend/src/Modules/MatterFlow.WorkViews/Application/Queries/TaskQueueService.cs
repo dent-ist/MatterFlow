@@ -419,6 +419,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                 ClientName = c.Name,
                 ProjectName = pr == null ? null : pr.Name,
                 TaskTypeName = ty.Name,
+                TaskTypeIconKey = ty.IconKey,
                 WorkflowDefinitionId = wd.Id,
                 WorkflowName = wd.Name,
                 PodName = pod == null ? null : pod.Name,
@@ -472,6 +473,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                 d.ProjectName,
                 t.TaskTypeId,
                 d.TaskTypeName,
+                d.TaskTypeIconKey,
                 d.WorkflowDefinitionId,
                 d.WorkflowName,
                 new QueuePriority(t.PriorityId, d.PriorityLabel, d.PriorityColor, d.PrioritySortOrder),
@@ -561,6 +563,8 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         public string? ProjectName { get; init; }
 
         public string TaskTypeName { get; init; } = string.Empty;
+
+        public string TaskTypeIconKey { get; init; } = string.Empty;
 
         public int WorkflowDefinitionId { get; init; }
 

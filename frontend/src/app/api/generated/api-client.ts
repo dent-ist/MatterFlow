@@ -10398,6 +10398,7 @@ export interface CreateTaskTypeRequest {
     isActive?: boolean;
     eligibleWorkflowIds?: number[] | undefined;
     defaultWorkflowDefinitionId?: number | undefined;
+    iconKey?: string | undefined;
 
     [key: string]: any;
 }
@@ -10440,6 +10441,7 @@ export interface DashboardBreakdownItem {
     count: number;
     query: string | undefined;
     isOther: boolean;
+    iconKey?: string | undefined;
 
     [key: string]: any;
 }
@@ -11316,6 +11318,7 @@ export interface TaskListItem {
     projectName: string | undefined;
     taskTypeId: number;
     taskTypeName: string;
+    taskTypeIconKey: string;
     priority: TaskPriorityRef;
     status: string;
     statusLabel: string;
@@ -11394,6 +11397,7 @@ export interface TaskQueueRow {
     projectName: string | undefined;
     taskTypeId: number;
     taskTypeName: string;
+    taskTypeIconKey: string;
     workflowDefinitionId: number;
     workflowName: string;
     priority: QueuePriority;
@@ -11515,6 +11519,7 @@ export interface TaskTransitionOption {
 export interface TaskTypeRef {
     taskTypeId: number;
     name: string;
+    iconKey: string;
 
     [key: string]: any;
 }
@@ -11523,6 +11528,7 @@ export interface TaskTypeView {
     id: number;
     name: string;
     description: string | undefined;
+    iconKey: string;
     isActive: boolean;
     defaultWorkflowDefinitionId: number | undefined;
     eligibleWorkflowIds: number[];
@@ -11702,6 +11708,7 @@ export interface UpdateTaskTypeRequest {
     eligibleWorkflowIds: number[];
     defaultWorkflowDefinitionId: number | undefined;
     rowVersion: string;
+    iconKey: string;
 
     [key: string]: any;
 }

@@ -2734,6 +2734,7 @@
   "taskTypes": [
     {
       "name": "Collection Receipt",
+      "iconKey": "package-import",
       "description": "Collected data (forensic image, export, self-collection) has arrived or will arrive and must be received and verified.",
       "titleHint": "Receive Jones laptop image",
       "fields": [
@@ -3140,6 +3141,7 @@
     },
     {
       "name": "Data Processing",
+      "iconKey": "cpu-2",
       "description": "Process collected data into Relativity (ingestion, extraction, dedupe, OCR).",
       "titleHint": "Process Jones mailbox into 00343-00012 workspace",
       "fields": [
@@ -3572,6 +3574,7 @@
     },
     {
       "name": "Relativity Workspace Setup",
+      "iconKey": "adjustments-cog",
       "description": "Create a new Relativity workspace for a Matter.",
       "titleHint": "New workspace for 00343-00012",
       "fields": [
@@ -3826,6 +3829,7 @@
     },
     {
       "name": "Data Load / Overlay",
+      "iconKey": "database-import",
       "description": "Load a load file, overlay metadata or load a production into a workspace.",
       "titleHint": "Overlay privilege fields from vendor",
       "fields": [
@@ -4071,6 +4075,7 @@
     },
     {
       "name": "Search and Culling",
+      "iconKey": "filter-search",
       "description": "Run search terms, hit reports or culling criteria in a workspace.",
       "titleHint": "Hit report for revised terms v3",
       "fields": [
@@ -4404,6 +4409,7 @@
     },
     {
       "name": "Review Setup and Batching",
+      "iconKey": "progress-check",
       "description": "Prepare a workspace for the review team: batches, layouts, saved searches.",
       "titleHint": "Batch 4,000 docs for contract reviewers",
       "fields": [
@@ -4646,6 +4652,7 @@
     },
     {
       "name": "Analytics / TAR Setup",
+      "iconKey": "robot",
       "description": "Set up analytics (threading, near-dup, clustering) or TAR / continuous active learning.",
       "titleHint": "CAL setup for 00343-00012 review",
       "fields": [
@@ -4869,6 +4876,7 @@
     },
     {
       "name": "Production (Outgoing)",
+      "iconKey": "package-export",
       "description": "Generate an outgoing production volume.",
       "titleHint": "PROD004 to opposing counsel",
       "fields": [
@@ -5246,6 +5254,7 @@
     },
     {
       "name": "Incoming Production Intake",
+      "iconKey": "file-import",
       "description": "Receive and load a production from another party or a vendor.",
       "titleHint": "Receive ABC Corp production vol 2",
       "fields": [
@@ -5506,6 +5515,7 @@
     },
     {
       "name": "Harvey Vault Request",
+      "iconKey": "sparkles",
       "description": "Create, populate, share or retire a Harvey vault.",
       "titleHint": "Harvey vault for diligence documents",
       "fields": [
@@ -5798,6 +5808,7 @@
     },
     {
       "name": "Physical Media Custody Event",
+      "iconKey": "usb",
       "description": "Log one custody event (receipt, check-out, shipment, return, destruction) for a Physical Media asset. One Task per event, so the history is a chain of custody.",
       "titleHint": "Check out drive 00343-00012-M003",
       "fields": [
@@ -6055,6 +6066,7 @@
     },
     {
       "name": "Access Request",
+      "iconKey": "key",
       "description": "Add, remove or review user access to a workspace or vault.",
       "titleHint": "Add 6 contract reviewers to review workspace",
       "fields": [
@@ -6276,6 +6288,7 @@
     },
     {
       "name": "Export / Transfer",
+      "iconKey": "file-export",
       "description": "Export data from a workspace or data set and transfer it to a client, vendor, expert or other party.",
       "titleHint": "Export workspace to client",
       "fields": [
@@ -6562,6 +6575,7 @@
     },
     {
       "name": "Archive and Disposition",
+      "iconKey": "archive",
       "description": "Archive, restore, delete or return data; certified destruction at matter close.",
       "titleHint": "Archive 00343-00012 workspace",
       "fields": [
@@ -6744,6 +6758,7 @@
     },
     {
       "name": "General / Ad Hoc Request",
+      "iconKey": "clipboard-list",
       "description": "Anything that does not fit another type: questions, reports, tool issues, training.",
       "titleHint": "How do I redact a native spreadsheet?",
       "fields": [

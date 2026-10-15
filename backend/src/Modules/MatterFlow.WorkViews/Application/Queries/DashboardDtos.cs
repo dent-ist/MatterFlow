@@ -25,13 +25,15 @@ public sealed record DashboardCount([property: Required] int Count, [property: R
 /// <summary>One row of an "open by ..." breakdown. <c>query</c> is null where the Task Queue has no equivalent filter (the combined "other" row).</summary>
 /// <param name="Id">The Task Type or Priority id; null for the "other" row and for statuses.</param>
 /// <param name="Code">The status code for the status breakdown; otherwise null.</param>
+/// <param name="IconKey">The Task Type icon key for the task-type breakdown (not the "other" row); otherwise null.</param>
 public sealed record DashboardBreakdownItem(
     int? Id,
     string? Code,
     [property: Required] string Label,
     [property: Required] int Count,
     string? Query,
-    [property: Required] bool IsOther);
+    [property: Required] bool IsOther,
+    string? IconKey = null);
 
 /// <summary>One local calendar day of the period: Tasks created that day and Tasks completed that day (counts only, never per person).</summary>
 public sealed record DashboardTrendPoint([property: Required] DateOnly Date, [property: Required] int Created, [property: Required] int Completed);

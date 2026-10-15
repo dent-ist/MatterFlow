@@ -86,6 +86,9 @@ public sealed record SeedTaskType
 
     public string? TitleHint { get; init; }
 
+    /// <summary>Icon key from the icon library (contracts/task-type-icons.json); omitted = the default icon.</summary>
+    public string? IconKey { get; init; }
+
     public List<SeedField> Fields { get; init; } = [];
 
     public List<string> EligibleWorkflows { get; init; } = [];

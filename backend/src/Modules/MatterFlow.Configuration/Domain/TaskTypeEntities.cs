@@ -1,3 +1,4 @@
+using MatterFlow.Configuration.Contracts;
 using MatterFlow.SharedKernel.Audit;
 using MatterFlow.SharedKernel.Entities;
 
@@ -15,6 +16,9 @@ public class TaskType : AuditedEntity<int>
     public string? Description { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    /// <summary>Key of this type's icon in the icon library (<c>contracts/task-type-icons.json</c>). Required; neutral colour, never uploaded.</summary>
+    public string IconKey { get; set; } = TaskTypeIcons.DefaultKey;
 
     /// <summary>One of the eligible workflow definitions, pre-selected for new Tasks. No foreign key until the workflow tables exist.</summary>
     public int? DefaultWorkflowDefinitionId { get; set; }

@@ -83,7 +83,7 @@ public sealed class TaskPresenter(
             t.Number,
             MatterRef(matter, t.MatterId),
             project is null ? null : new TaskProjectRef(project.ProjectId, project.Name, project.IsActive),
-            new TaskTypeRef(t.TaskTypeId, type?.Name ?? string.Empty),
+            new TaskTypeRef(t.TaskTypeId, type?.Name ?? string.Empty, type?.IconKey ?? TaskTypeIcons.DefaultKey),
             t.Title,
             t.Description,
             t.RequestorName,
@@ -120,7 +120,7 @@ public sealed class TaskPresenter(
     /// <summary>The page of list items for already-loaded Tasks (names resolved once per distinct id).</summary>
     public async Task<IReadOnlyList<TaskListItem>> BuildListAsync(IReadOnlyList<WorkTask> tasks, CancellationToken ct)
     {
-        var typeNames = (await taskTypes.ListAsync(includeInactive: true, ct)).ToDictionary(x => x.Id, x => x.Name);
+        var typeInfos = (await taskTypes.ListAsync(includeInactive: true, ct)).ToDictionary(x => x.Id);
         var priorityMap = (await priorities.ListAsync(includeInactive: true, ct)).ToDictionary(p => p.Id);
         var labelMap = (await labels.ListAsync(ct)).ToDictionary(l => l.Code, l => l.DisplayLabel);
         var userMap = await users.FindManyAsync(tasks.Select(t => t.AssignedUserId).OfType<int>().ToList(), ct);
@@ -157,7 +157,8 @@ public sealed class TaskPresenter(
                 t.ProjectId,
                 project?.Name,
                 t.TaskTypeId,
-                typeNames.GetValueOrDefault(t.TaskTypeId, string.Empty),
+                typeInfos.TryGetValue(t.TaskTypeId, out var typeInfo) ? typeInfo.Name : string.Empty,
+                typeInfo?.IconKey ?? TaskTypeIcons.DefaultKey,
                 PriorityRef(priority, t.PriorityId),
                 code,
                 labelMap.GetValueOrDefault(code, code),

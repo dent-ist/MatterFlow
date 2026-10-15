@@ -316,7 +316,8 @@ public sealed class StarterConfigurationSeeder(
                     Trim(Describe(type), 1000),
                     true,
                     eligible,
-                    type.DefaultWorkflow is null ? eligible.FirstOrDefault() : workflowIds[type.DefaultWorkflow]),
+                    type.DefaultWorkflow is null ? eligible.FirstOrDefault() : workflowIds[type.DefaultWorkflow],
+                    type.IconKey),
                 ct);
             if (created.IsFailure)
             {

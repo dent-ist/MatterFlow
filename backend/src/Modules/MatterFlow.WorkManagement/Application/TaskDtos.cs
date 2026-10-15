@@ -20,7 +20,7 @@ public sealed record TaskMatterRef(
 public sealed record TaskProjectRef([property: Required] int ProjectId, [property: Required] string Name, [property: Required] bool IsActive);
 
 /// <summary>The Task Type of a Task.</summary>
-public sealed record TaskTypeRef([property: Required] int TaskTypeId, [property: Required] string Name);
+public sealed record TaskTypeRef([property: Required] int TaskTypeId, [property: Required] string Name, [property: Required] string IconKey);
 
 /// <summary>A Priority label (users see the label, never the sort order number).</summary>
 public sealed record TaskPriorityRef([property: Required] int PriorityId, [property: Required] string Label, [property: Required] string Color, [property: Required] int SortOrder);
@@ -167,6 +167,7 @@ public sealed record TaskListItem(
     string? ProjectName,
     [property: Required] int TaskTypeId,
     [property: Required] string TaskTypeName,
+    [property: Required] string TaskTypeIconKey,
     [property: Required] TaskPriorityRef Priority,
     [property: Required] string Status,
     [property: Required] string StatusLabel,

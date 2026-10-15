@@ -8581,6 +8581,12 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "iconKey": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -8711,6 +8717,12 @@
           },
           "isOther": {
             "type": "boolean"
+          },
+          "iconKey": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -11522,6 +11534,7 @@
           "projectName",
           "taskTypeId",
           "taskTypeName",
+          "taskTypeIconKey",
           "priority",
           "status",
           "statusLabel",
@@ -11574,6 +11587,9 @@
             "format": "int32"
           },
           "taskTypeName": {
+            "type": "string"
+          },
+          "taskTypeIconKey": {
             "type": "string"
           },
           "priority": {
@@ -11789,6 +11805,7 @@
           "projectName",
           "taskTypeId",
           "taskTypeName",
+          "taskTypeIconKey",
           "workflowDefinitionId",
           "workflowName",
           "priority",
@@ -11862,6 +11879,9 @@
             "format": "int32"
           },
           "taskTypeName": {
+            "type": "string"
+          },
+          "taskTypeIconKey": {
             "type": "string"
           },
           "workflowDefinitionId": {
@@ -12404,7 +12424,8 @@
       "TaskTypeRef": {
         "required": [
           "taskTypeId",
-          "name"
+          "name",
+          "iconKey"
         ],
         "type": "object",
         "properties": {
@@ -12414,6 +12435,9 @@
           },
           "name": {
             "type": "string"
+          },
+          "iconKey": {
+            "type": "string"
           }
         }
       },
@@ -12422,6 +12446,7 @@
           "id",
           "name",
           "description",
+          "iconKey",
           "isActive",
           "defaultWorkflowDefinitionId",
           "eligibleWorkflowIds",
@@ -12449,6 +12474,9 @@
               "null",
               "string"
             ]
+          },
+          "iconKey": {
+            "type": "string"
           },
           "isActive": {
             "type": "boolean"
@@ -13085,7 +13113,8 @@
           "isActive",
           "eligibleWorkflowIds",
           "defaultWorkflowDefinitionId",
-          "rowVersion"
+          "rowVersion",
+          "iconKey"
         ],
         "type": "object",
         "properties": {
@@ -13116,6 +13145,9 @@
             "format": "int32"
           },
           "rowVersion": {
+            "type": "string"
+          },
+          "iconKey": {
             "type": "string"
           }
         }

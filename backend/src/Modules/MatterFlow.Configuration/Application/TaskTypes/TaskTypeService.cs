@@ -18,6 +18,7 @@ namespace MatterFlow.Configuration.Application.TaskTypes;
 /// <param name="Id">Task Type id.</param>
 /// <param name="Name">Unique display name.</param>
 /// <param name="Description">Optional description.</param>
+/// <param name="IconKey">Key of the type's icon in the icon library (<c>contracts/task-type-icons.json</c>). Always set; neutral colour.</param>
 /// <param name="IsActive">False = not offered for new Tasks; historical Tasks keep it.</param>
 /// <param name="DefaultWorkflowDefinitionId">Workflow pre-selected for new Tasks; one of the eligible workflows.</param>
 /// <param name="EligibleWorkflowIds">Workflow definition ids a new Task of this type may use, ascending.</param>
@@ -34,6 +35,7 @@ public sealed record TaskTypeView(
     [property: Required] int Id,
     [property: Required] string Name,
     string? Description,
+    [property: Required] string IconKey,
     [property: Required] bool IsActive,
     int? DefaultWorkflowDefinitionId,
     [property: Required] IReadOnlyList<int> EligibleWorkflowIds,
@@ -48,12 +50,19 @@ public sealed record TaskTypeView(
     [property: Required] string RowVersion);
 
 /// <summary>Body to create a Task Type. Its (empty) request form is provisioned with it.</summary>
+/// <param name="Name">Unique display name.</param>
+/// <param name="Description">Optional description.</param>
+/// <param name="IsActive">Defaults to true.</param>
+/// <param name="EligibleWorkflowIds">Workflows a new Task of this type may use.</param>
+/// <param name="DefaultWorkflowDefinitionId">One of the eligible workflows.</param>
+/// <param name="IconKey">An icon key from the library; omitted = the default icon (<c>file-text</c>). 400 <c>UNKNOWN_ICON</c> when not in the library.</param>
 public sealed record CreateTaskTypeRequest(
     [Required, StringLength(100)] string Name,
     [StringLength(1000)] string? Description,
     bool IsActive = true,
     IReadOnlyList<int>? EligibleWorkflowIds = null,
-    int? DefaultWorkflowDefinitionId = null);
+    int? DefaultWorkflowDefinitionId = null,
+    [StringLength(50)] string? IconKey = null);
 
 /// <summary>Body to change a Task Type, including its complete set of eligible workflows.</summary>
 public sealed record UpdateTaskTypeRequest(
@@ -62,7 +71,8 @@ public sealed record UpdateTaskTypeRequest(
     [Required] bool IsActive,
     [Required] IReadOnlyList<int> EligibleWorkflowIds,
     int? DefaultWorkflowDefinitionId,
-    [Required] string RowVersion);
+    [Required] string RowVersion,
+    [Required, StringLength(50)] string IconKey);
 
 /// <summary>Task Types: admin commands (audited) and the <see cref="ITaskTypeCatalog"/> read side for other modules.</summary>
 public sealed class TaskTypeService(
@@ -117,7 +127,7 @@ public sealed class TaskTypeService(
     }
 
     private static TaskTypeInfo ToInfo(TaskTypeView v) =>
-        new(v.Id, v.Name, v.Description, v.IsActive, v.FormDefinitionId, v.PublishedFormVersionId, v.HasFormFields, v.EligibleWorkflowIds, v.DefaultWorkflowDefinitionId, v.IsUsable);
+        new(v.Id, v.Name, v.Description, v.IconKey, v.IsActive, v.FormDefinitionId, v.PublishedFormVersionId, v.HasFormFields, v.EligibleWorkflowIds, v.DefaultWorkflowDefinitionId, v.IsUsable);
 
     private static TaskTypeView ToView(TaskType t, FormFacts? form)
     {
@@ -140,6 +150,7 @@ public sealed class TaskTypeService(
             t.Id,
             t.Name,
             t.Description,
+            t.IconKey,
             t.IsActive,
             t.DefaultWorkflowDefinitionId,
             eligible,
@@ -188,6 +199,9 @@ public sealed class TaskTypeService(
         var workflows = CheckWorkflows(request.EligibleWorkflowIds ?? [], request.DefaultWorkflowDefinitionId);
         if (workflows.IsFailure)
             return workflows.Error!;
+        var icon = CheckIcon(request.IconKey, allowOmitted: true);
+        if (icon.IsFailure)
+            return icon.Error!;
         if (await NameExistsAsync(name.Value, null, ct))
             return Duplicate(name.Value);
 
@@ -197,6 +211,7 @@ public sealed class TaskTypeService(
             Name = name.Value,
             Description = description.Value,
             IsActive = request.IsActive,
+            IconKey = icon.Value,
             DefaultWorkflowDefinitionId = request.DefaultWorkflowDefinitionId,
         };
         foreach (var workflowId in workflows.Value)
@@ -230,6 +245,9 @@ public sealed class TaskTypeService(
         var workflows = CheckWorkflows(request.EligibleWorkflowIds, request.DefaultWorkflowDefinitionId);
         if (workflows.IsFailure)
             return workflows.Error!;
+        var icon = CheckIcon(request.IconKey, allowOmitted: false);
+        if (icon.IsFailure)
+            return icon.Error!;
 
         var taskType = await db.Set<TaskType>().Include(t => t.EligibleWorkflows).FirstOrDefaultAsync(t => t.Id == id, ct);
         if (taskType is null)
@@ -242,6 +260,7 @@ public sealed class TaskTypeService(
         taskType.Name = name.Value;
         taskType.Description = description.Value;
         taskType.IsActive = request.IsActive;
+        taskType.IconKey = icon.Value;
         taskType.DefaultWorkflowDefinitionId = request.DefaultWorkflowDefinitionId;
 
         var before = taskType.EligibleWorkflows.Select(e => e.WorkflowDefinitionId).Order().ToList();
@@ -290,6 +309,18 @@ public sealed class TaskTypeService(
         if (string.IsNullOrEmpty(text))
             return Result<string?>.Success(null);
         return text.Length > 1000 ? LookupErrors.TooLong("description", "Use at most 1000 characters.") : Result<string?>.Success(text);
+    }
+
+    /// <summary>The icon must be one of the library keys. Omitted on create means the default icon; never accepted blank or free text.</summary>
+    private static Result<string> CheckIcon(string? key, bool allowOmitted)
+    {
+        if (key is null && allowOmitted)
+            return Result<string>.Success(TaskTypeIcons.DefaultKey);
+        if (string.IsNullOrWhiteSpace(key))
+            return Error.Validation("iconKey", "REQUIRED", "Choose an icon.");
+        return TaskTypeIcons.IsValid(key)
+            ? Result<string>.Success(key)
+            : Error.Validation("iconKey", "UNKNOWN_ICON", "Choose an icon from the library.");
     }
 
     /// <summary>Distinct ascending workflow ids; the default must be among them (erd.md: application check).</summary>

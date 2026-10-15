@@ -30,6 +30,7 @@ public sealed record TaskQueueRow(
     string? ProjectName,
     [property: Required] int TaskTypeId,
     [property: Required] string TaskTypeName,
+    [property: Required] string TaskTypeIconKey,
     [property: Required] int WorkflowDefinitionId,
     [property: Required] string WorkflowName,
     [property: Required] QueuePriority Priority,

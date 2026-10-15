@@ -70,7 +70,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         var statusLabels = await db.Set<TaskStatusLabel>().AsNoTracking().ToDictionaryAsync(l => l.StatusCode, l => l.DisplayLabel, ct);
         var priorityRows = await db.Set<Priority>().AsNoTracking().OrderBy(p => p.SortOrder).Select(p => new { p.Id, p.Label, p.IsActive }).ToListAsync(ct);
         var typeIds = byType.Select(t => t.Id).ToList();
-        var typeNames = await db.Set<TaskType>().AsNoTracking().Where(t => typeIds.Contains(t.Id)).ToDictionaryAsync(t => t.Id, t => t.Name, ct);
+        var typeRows = await db.Set<TaskType>().AsNoTracking().Where(t => typeIds.Contains(t.Id)).ToDictionaryAsync(t => t.Id, t => new { t.Name, t.IconKey }, ct);
 
         string StatusLabel(string code) => statusLabels.GetValueOrDefault(code, code);
 
@@ -91,7 +91,14 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             .ToList();
 
         var typeItems = DashboardRules.TopWithOther(
-            byType.Select(t => new DashboardBreakdownItem(t.Id, null, typeNames.GetValueOrDefault(t.Id, "Task Type " + t.Id), t.Count, DashboardRules.Open("type=" + t.Id), false)),
+            byType.Select(t => new DashboardBreakdownItem(
+                t.Id,
+                null,
+                typeRows.TryGetValue(t.Id, out var row) ? row.Name : "Task Type " + t.Id,
+                t.Count,
+                DashboardRules.Open("type=" + t.Id),
+                false,
+                row?.IconKey)),
             DashboardRules.TopTypes,
             "Other task types",
             rest => DashboardRules.Open([.. rest.Select(r => "type=" + r.Id)]));
