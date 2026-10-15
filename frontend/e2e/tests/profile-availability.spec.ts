@@ -327,7 +327,7 @@ test.describe('My profile: availability and work hours', () => {
     const task = await seed.task(world, { title: `Flag ${name}` });
     await new TaskDetailPage(page).open(task.taskId);
     await page.locator('[data-assignee] [data-inline-trigger]').click();
-    await page.getByRole('searchbox', { name: /Search/ }).fill(name);
+    await page.getByRole('textbox', { name: 'Search people' }).fill(name);
     const item = page.getByRole('menuitemradio', { name });
     await expect(item.locator('[data-option-flag]')).toContainText(
       `Out of office until ${until.short}`,

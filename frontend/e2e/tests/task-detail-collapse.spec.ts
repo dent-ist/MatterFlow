@@ -291,10 +291,8 @@ test.describe('Task detail: collapsible Comments and Assets', () => {
       const detail = new TaskDetailPage(page);
       await detail.open(task.taskId);
       await expect(detail.toggle('Comments')).toHaveAttribute('aria-expanded', 'false');
-      // The page header's breadcrumb link is a known small target at 375 px; this run looks at the page as a whole at 1366 only.
-      expect(await axeViolations(page, width === 1366 ? undefined : '[data-detail-below]')).toEqual(
-        [],
-      );
+      // The Comments and Assets area (the rest of the page has its own axe runs).
+      expect(await axeViolations(page, '[data-detail-below]')).toEqual([]);
       await detail.ensureCommentsOpen();
       await detail.ensureAssetsOpen();
       await detail.composer();
