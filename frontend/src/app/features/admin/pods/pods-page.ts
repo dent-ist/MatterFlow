@@ -32,25 +32,24 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-table';
 import { isActiveParam } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
-import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
-import { PageHeader } from '../../../shared/ui/page-header';
+import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { Pager } from '../../../shared/ui/pager';
 import { SearchBox } from '../../../shared/ui/search-box';
 
 const SEARCH_DEBOUNCE_MS = 200;
 
 /**
- * Admin: Pods (UX S13). Lists Pods, creates/edits/deactivates them and manages members. Pod Lead is a
- * role, not a Pod flag, so members show their roles as read-only chips and there is no lead control.
- * Actions are hidden without `Pod.Manage` / `Pod.ManageMembers`.
+ * Admin: Pods (UX S13), the third tab of the Users page (`/admin/pods`). Lists Pods, creates/edits/deactivates them and manages members.
+ * Pod Lead is a role, not a Pod flag, so members show their roles as read-only chips and there is no lead control. Actions are hidden
+ * without `Pod.Manage` / `Pod.ManageMembers`. The Users page binds the list state (`q`, `status`, `page`, `size`, `sort`) and the open
+ * editor (`pod`) from the address, because a nested component does not get the router's input binding itself.
  */
 @Component({
   selector: 'mf-pods-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   imports: [
-    FixedPage,
     ScrollArea,
-    PageHeader,
     ConfirmDialog,
     ActiveBadge,
     Badge,

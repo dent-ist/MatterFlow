@@ -114,9 +114,9 @@ const customFieldForm = (path: string): Route => ({
   loadComponent: () => import('./task-types/task-type-form-page').then((m) => m.TaskTypeFormPage),
 });
 
-/** `users` and `roles` match one route, so switching the tab keeps the page and moves focus naturally; `:tab` is the segment. */
+/** `users`, `roles` and `pods` match one route, so switching the tab keeps the page and moves focus naturally; `:tab` is the segment. */
 function usersRolesMatcher(segments: UrlSegment[]): UrlMatchResult | null {
-  return segments.length === 1 && (segments[0].path === 'users' || segments[0].path === 'roles')
+  return segments.length === 1 && ['users', 'roles', 'pods'].includes(segments[0].path)
     ? { consumed: segments, posParams: { tab: segments[0] } }
     : null;
 }
@@ -132,20 +132,20 @@ function taskTypesTabsMatcher(segments: UrlSegment[]): UrlMatchResult | null {
 export const ADMIN_ROUTES: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'users' },
   {
-    // /admin/users and /admin/roles are the two tabs of one page; the component stays alive when the tab changes.
+    // /admin/users, /admin/roles and /admin/pods are the three tabs of one page; the component stays alive when the tab changes.
     matcher: usersRolesMatcher,
-    // Document title = the page name plus the open tab (UXR4-12): "Users", "Users - Roles".
-    title: (route) => (route.params['tab'] === 'roles' ? 'Users - Roles' : 'Users'),
-    canActivate: [permissionGuard('User.View', 'User.Manage', 'Role.Manage')],
+    // Document title = the page name plus the open tab (UXR4-12): "Users", "Users - Roles", "Users - Pods".
+    title: (route) =>
+      route.params['tab'] === 'roles'
+        ? 'Users - Roles'
+        : route.params['tab'] === 'pods'
+          ? 'Users - Pods'
+          : 'Users',
+    canActivate: [
+      permissionGuard('User.View', 'User.Manage', 'Role.Manage', 'Pod.Manage', 'Pod.ManageMembers'),
+    ],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./users/users-roles-page').then((m) => m.UsersRolesPage),
-  },
-  {
-    path: 'pods',
-    title: 'Pods',
-    canActivate: [permissionGuard('Pod.Manage', 'Pod.ManageMembers')],
-    canDeactivate: [unsavedChangesGuard],
-    loadComponent: () => import('./pods/pods-page').then((m) => m.PodsPage),
   },
   {
     // /admin/task-types, /admin/workflows and /admin/steps are the three tabs of one page; the component stays alive when the tab

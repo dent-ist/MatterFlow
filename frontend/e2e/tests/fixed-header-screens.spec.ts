@@ -74,7 +74,7 @@ test.describe('fixed-header screenshots', () => {
       { name: 'project-tasks', url: `/projects/${projectId}`, ready: /./ },
       { name: 'admin-users', url: '/admin/users', ready: 'Users' },
       { name: 'admin-roles', url: '/admin/roles', ready: 'Users' },
-      { name: 'admin-pods', url: '/admin/pods', ready: 'Pods' },
+      { name: 'admin-pods', url: '/admin/pods', ready: 'Users' },
       { name: 'admin-task-types', url: '/admin/task-types', ready: 'Task Types' },
       { name: 'admin-workflows', url: '/admin/workflows', ready: 'Task Types' },
       { name: 'admin-steps', url: '/admin/steps', ready: 'Task Types' },

@@ -16,14 +16,17 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import {
   IdentityAdminApi,
+  PodChoice,
   RoleSummaryDto,
   UserCountsDto,
   UserDetailDto,
+  UserPodDto,
   UserStatusFilter,
   UserSummaryDto,
 } from '../../../core/identity-admin/identity-admin-api';
 import { PendingUsersStore } from '../../../core/identity-admin/pending-users.store';
 import { NotificationService } from '../../../core/notify/notification.service';
+import { UndoService } from '../../../core/notify/undo.service';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { AvailabilityChip } from '../../../shared/availability/availability-chip';
 import { AvailabilityDialog } from '../../../shared/availability/availability-dialog';
@@ -32,6 +35,8 @@ import { ListState } from '../../../shared/ui/data-table';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { parsePage } from '../../../shared/ui/list-helpers';
 import { Pager } from '../../../shared/ui/pager';
+import { PodsChange, UserPodsCell } from './user-pods-cell';
+import { podsText } from './user-pods-draft';
 import { SearchBox } from '../../../shared/ui/search-box';
 
 type Tab = Exclude<UserStatusFilter, 'all'>;
@@ -77,6 +82,7 @@ const FILTER_LIMIT = 1000;
     Badge,
     AvailabilityChip,
     AvailabilityDialog,
+    UserPodsCell,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -88,6 +94,7 @@ export class UsersPage implements OnInit {
   private readonly auth = inject(AuthStore);
   private readonly pending = inject(PendingUsersStore);
   private readonly notify = inject(NotificationService);
+  private readonly undo = inject(UndoService);
 
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -117,6 +124,13 @@ export class UsersPage implements OnInit {
 
   protected readonly canManage = computed(() => this.auth.has('User.Manage'));
   protected readonly canManageRoles = computed(() => this.auth.has('Role.Manage'));
+  /** Pod assignment in the grid needs Pod.ManageMembers (the endpoint's permission; Pod.Manage alone edits pods, not who is in them). */
+  protected readonly canEditPods = computed(() => this.auth.has('Pod.ManageMembers'));
+
+  // Pods column: the active pods to offer (loaded the first time an editor opens) and the people whose save is running.
+  protected readonly podChoices = signal<PodChoice[] | null>(null);
+  protected readonly podChoicesFailed = signal(false);
+  protected readonly podsBusy = signal<ReadonlySet<number>>(new Set());
 
   protected readonly tab = computed<StatusOption>(() => {
     const value = this.query().get('status') as StatusOption | null;
@@ -298,6 +312,125 @@ export class UsersPage implements OnInit {
       this.saving.set(false);
       this.confirmDeactivate.set(false);
     }
+  }
+
+  // ---- Pods column (inline assignment)
+
+  /** Loads the pods to offer once, the first time any editor opens. */
+  protected async loadPodChoices(): Promise<void> {
+    if (this.podChoices() !== null) return;
+    this.podChoicesFailed.set(false);
+    try {
+      this.podChoices.set(await firstValueFrom(this.api.listActivePods()));
+    } catch {
+      this.podChoicesFailed.set(true);
+    }
+  }
+
+  /**
+   * Applies one change of pods for one person: one request for the whole change. The chips show the result at once; a failure puts the
+   * old chips back, a 409 (someone else changed the person's pods) refreshes the list. Success offers one Undo that restores the
+   * previous pods in one request as well.
+   */
+  protected async applyPods(user: UserSummaryDto, change: PodsChange): Promise<void> {
+    const before = user.pods;
+    const choices = this.podChoices() ?? [];
+    const optimistic: UserPodDto[] = change.podIds
+      .map((id) => {
+        const known = before.find((p) => p.podId === id);
+        const name = known?.name ?? choices.find((c) => c.podId === id)?.name ?? '';
+        return {
+          podId: id,
+          name,
+          isActive: known?.isActive ?? true,
+          isPrimary: id === change.primaryPodId,
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+    this.setPodsBusy(user.userId, true);
+    this.patchPods(user.userId, optimistic);
+    try {
+      const saved = await firstValueFrom(
+        this.api.setUserPods(user.userId, {
+          podIds: change.podIds,
+          primaryPodId: change.primaryPodId,
+          expectedPodIds: before.map((p) => p.podId),
+          expectedPrimaryPodId: before.find((p) => p.isPrimary)?.podId,
+        }),
+      );
+      this.patchPods(user.userId, saved);
+      this.undo.offer(this.podsMessage(user.displayName, saved), () =>
+        this.undoPods(user, before, saved),
+      );
+    } catch (error) {
+      this.patchPods(user.userId, before);
+      if (error instanceof ApiError && error.code === 'CONCURRENCY_CONFLICT') {
+        this.notify.error(
+          `The pods of ${user.displayName} were changed by someone else. The list was refreshed.`,
+        );
+        void this.reload();
+      } else if (!(error instanceof ApiError) || error.hasFieldErrors) {
+        // The HTTP layer already toasts other API failures.
+        this.notify.error(
+          error instanceof ApiError ? error.message : "We couldn't save the pods. Try again.",
+        );
+      }
+    } finally {
+      this.setPodsBusy(user.userId, false);
+    }
+  }
+
+  /** Undo: puts the previous pods back in one request, unless someone changed them since (then nothing is overwritten). */
+  private async undoPods(
+    user: UserSummaryDto,
+    previous: readonly UserPodDto[],
+    applied: readonly UserPodDto[],
+  ): Promise<void> {
+    try {
+      const restored = await firstValueFrom(
+        this.api.setUserPods(user.userId, {
+          podIds: previous.map((p) => p.podId),
+          primaryPodId: previous.find((p) => p.isPrimary)?.podId,
+          expectedPodIds: applied.map((p) => p.podId),
+          expectedPrimaryPodId: applied.find((p) => p.isPrimary)?.podId,
+        }),
+      );
+      this.patchPods(user.userId, restored);
+      this.notify.success(`Pods of ${user.displayName} restored.`);
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'CONCURRENCY_CONFLICT') {
+        this.notify.info(`Not undone: the pods of ${user.displayName} were changed since.`);
+        void this.reload();
+      } else if (!(error instanceof ApiError) || error.hasFieldErrors) {
+        this.notify.error(
+          error instanceof ApiError ? error.message : "We couldn't undo that change. Try again.",
+        );
+      } else {
+        // The HTTP layer toasts the failure; add what it means for the Undo.
+        this.notify.error(`Couldn't undo the pod change of ${user.displayName}.`);
+      }
+    }
+  }
+
+  private podsMessage(name: string, pods: readonly UserPodDto[]): string {
+    return pods.length === 0
+      ? `${name} is in no pod now.`
+      : `Pods of ${name} set to ${podsText(pods)}.`;
+  }
+
+  private patchPods(userId: number, pods: readonly UserPodDto[]): void {
+    this.users.update((list) =>
+      list.map((u) => (u.userId === userId ? { ...u, pods: [...pods] } : u)),
+    );
+  }
+
+  private setPodsBusy(userId: number, busy: boolean): void {
+    this.podsBusy.update((set) => {
+      const next = new Set(set);
+      if (busy) next.add(userId);
+      else next.delete(userId);
+      return next;
+    });
   }
 
   protected rolesLabel(user: UserSummaryDto): string {

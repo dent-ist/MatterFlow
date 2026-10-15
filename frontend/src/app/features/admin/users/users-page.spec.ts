@@ -1,9 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router, provideRouter } from '@angular/router';
+import { throwError } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
+import { ApiError } from '../../../core/http/api-error';
+import { UndoService } from '../../../core/notify/undo.service';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { IdentityAdminApi } from '../../../core/identity-admin/identity-admin-api';
 import { InMemoryIdentityAdminApi } from '../../../core/identity-admin/in-memory-identity-admin-api';
@@ -264,6 +268,180 @@ describe('UsersPage', () => {
       await settle();
       const dialog = document.querySelector('.p-dialog');
       expect(dialog?.textContent).toContain('Availability of Dana Director');
+    });
+  });
+
+  describe('Pods column (inline assignment)', () => {
+    const podCell = (userId: number): HTMLElement =>
+      q(`[data-user="${userId}"] [data-pods-cell] mf-user-pods-cell`);
+    const chipsOf = (userId: number): string[] =>
+      Array.from(podCell(userId).querySelectorAll('[data-pod-chip]')).map((c) =>
+        c.textContent!.replace(/\s+/g, ' ').trim(),
+      );
+    const trigger = (userId: number): HTMLButtonElement =>
+      podCell(userId).querySelector<HTMLButtonElement>('[data-pods-trigger]')!;
+    const popover = (): HTMLElement => q('[data-pods-popover]');
+    async function pick(userId: number, ...podIds: number[]): Promise<void> {
+      trigger(userId).click();
+      await settle();
+      for (const id of podIds) {
+        q(`[data-pod-option="${id}"]`).click();
+        await settle();
+      }
+    }
+
+    async function applyPicked(): Promise<void> {
+      q('[data-pods-apply]').click();
+      await settle();
+    }
+
+    const withPods = (a: InMemoryIdentityAdminApi): void => {
+      a.pods.push(
+        { podId: 1, name: 'Processing', isActive: true },
+        { podId: 2, name: 'Review', isActive: true },
+        { podId: 3, name: 'Intake', isActive: true },
+        { podId: 4, name: 'Legacy', isActive: false },
+      );
+      a.users[2].podIds = [1, 2];
+      a.users[2].primaryPodId = 1;
+    };
+
+    it("shows each user's pods as chips with the primary pod starred, and No pod when empty", async () => {
+      await createWith(withPods, 'User.View');
+      expect(chipsOf(3)).toEqual(['Processing Primary', 'Review']);
+      expect(podCell(4).textContent).toContain('No pod');
+      expect(
+        Array.from(el().querySelectorAll('thead th')).map((th) => th.textContent!.trim()),
+      ).toContain('Pods');
+    });
+
+    it('is read-only without Pod.ManageMembers (chips only)', async () => {
+      await createWith(withPods, 'User.View', 'User.Manage', 'Pod.Manage');
+      expect(el().querySelector('[data-pods-trigger]')).toBeNull();
+      expect(chipsOf(3)).toEqual(['Processing Primary', 'Review']);
+    });
+
+    it('gives the button a name with the visible pods and the person', async () => {
+      await createWith(withPods, 'User.View', 'Pod.ManageMembers');
+      expect(trigger(3).getAttribute('aria-label')).toBe(
+        'Pods: Processing (primary), Review, change pods of Tariq Mahmood',
+      );
+      expect(trigger(4).getAttribute('aria-label')).toBe('Pods: none, change pods of Priya Patel');
+    });
+
+    it('assigns two pods in one request, makes the first the primary and offers one Undo', async () => {
+      await createWith(withPods, 'User.View', 'Pod.ManageMembers');
+      const call = vi.spyOn(api, 'setUserPods');
+      await pick(4, 1, 3); // Priya has no pods yet
+      await applyPicked();
+
+      expect(call).toHaveBeenCalledTimes(1);
+      expect(call).toHaveBeenCalledWith(4, {
+        podIds: [1, 3],
+        primaryPodId: 1,
+        expectedPodIds: [],
+        expectedPrimaryPodId: undefined,
+      });
+      expect(chipsOf(4)).toEqual(['Intake', 'Processing Primary']);
+      const offer = TestBed.inject(UndoService).current();
+      expect(offer?.message).toBe('Pods of Priya Patel set to Intake, Processing (primary).');
+      expect(document.activeElement).toBe(trigger(4));
+    });
+
+    it('Undo puts the previous pods back in one request', async () => {
+      await createWith(withPods, 'User.View', 'Pod.ManageMembers');
+      await pick(4, 1);
+      await applyPicked();
+      expect(chipsOf(4)).toEqual(['Processing Primary']);
+
+      const call = vi.spyOn(api, 'setUserPods');
+      await TestBed.inject(UndoService).run();
+      await settle();
+      expect(call).toHaveBeenCalledTimes(1);
+      expect(call.mock.calls[0][1]).toMatchObject({ podIds: [], primaryPodId: undefined });
+      expect(chipsOf(4)).toEqual([]);
+      expect(podCell(4).textContent).toContain('No pod');
+    });
+
+    it('asks for the new primary when the primary pod is removed and blocks Apply until it is chosen', async () => {
+      await createWith(withPods, 'User.View', 'Pod.ManageMembers');
+      const call = vi.spyOn(api, 'setUserPods');
+      await pick(3, 1); // untick Processing (primary)
+      expect(q('[data-primary-required]')).not.toBeNull();
+      await applyPicked();
+      expect(call).not.toHaveBeenCalled();
+
+      q('[data-pod-primary="2"]').click();
+      await settle();
+      await applyPicked();
+      expect(call).toHaveBeenCalledWith(
+        3,
+        expect.objectContaining({ podIds: [2], primaryPodId: 2 }),
+      );
+      expect(chipsOf(3)).toEqual(['Review Primary']);
+    });
+
+    it('loads the active pods only when an editor is first opened', async () => {
+      await createWith(withPods, 'User.View', 'Pod.ManageMembers');
+      const list = vi.spyOn(api, 'listActivePods');
+      expect(list).not.toHaveBeenCalled();
+      await pick(4);
+      await pick(4); // closes
+      trigger(4).click();
+      await settle();
+      expect(list).toHaveBeenCalledTimes(1);
+      // The inactive pod is not offered to Priya.
+      expect(el().querySelector('[data-pod-option="4"]')).toBeNull();
+      expect(popover().textContent).toContain('Processing');
+    });
+
+    it('puts the old pods back and says so when the save fails', async () => {
+      await createWith(withPods, 'User.View', 'Pod.ManageMembers');
+      vi.spyOn(api, 'setUserPods').mockReturnValue(throwError(() => new Error('boom')));
+      const add = vi.spyOn(TestBed.inject(MessageService), 'add');
+      await pick(3, 2);
+      await applyPicked();
+      expect(chipsOf(3)).toEqual(['Processing Primary', 'Review']);
+      expect(add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          summary: "We couldn't save the pods. Try again.",
+        }),
+      );
+      expect(TestBed.inject(UndoService).current()).toBeNull();
+    });
+
+    it('refreshes the list and explains a 409 (someone else changed the pods)', async () => {
+      await createWith(withPods, 'User.View', 'Pod.ManageMembers');
+      const conflict = new ApiError(
+        409,
+        'CONCURRENCY_CONFLICT',
+        'changed',
+        { code: 'CONCURRENCY_CONFLICT', detail: 'changed', status: 409 },
+        new HttpErrorResponse({ status: 409 }),
+      );
+      vi.spyOn(api, 'setUserPods').mockReturnValue(throwError(() => conflict));
+      const list = vi.spyOn(api, 'listUsers');
+      const add = vi.spyOn(TestBed.inject(MessageService), 'add');
+      await pick(3, 2);
+      await applyPicked();
+      expect(add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          summary:
+            'The pods of Tariq Mahmood were changed by someone else. The list was refreshed.',
+        }),
+      );
+      expect(list).toHaveBeenCalled();
+      expect(chipsOf(3)).toEqual(['Processing Primary', 'Review']);
+    });
+
+    it('lets a pending user without a role be assigned', async () => {
+      await createWith(withPods, 'User.View', 'Pod.ManageMembers');
+      expect(api.users[3].roleIds).toEqual([]);
+      await pick(4, 2);
+      await applyPicked();
+      expect(chipsOf(4)).toEqual(['Review Primary']);
     });
   });
 });

@@ -183,7 +183,6 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     const admin = document.body.querySelector('ul[aria-labelledby="mf-admin-heading"]')!;
     expect(Array.from(admin.querySelectorAll('li a')).map((a) => a.textContent!.trim())).toEqual([
       'Users',
-      'Pods',
       'Task Types',
       'Labels',
       'Assets',

@@ -15,6 +15,9 @@ import {
   UserDetailDto,
   UserListQuery,
   UserSummaryDto,
+  PodChoice,
+  SetUserPodsRequest,
+  UserPodDto,
 } from './identity-admin-api';
 
 interface MemRole {
@@ -36,6 +39,9 @@ interface MemUser {
   registeredAtUtc: string;
   lastLoginAtUtc?: string;
   version: number;
+  /** Pod memberships (ids; `primaryPodId` is the primary one). */
+  podIds: number[];
+  primaryPodId?: number;
   /** Set by tests to show a person as out of office or off hours; unset = available. */
   availability?: { state: string; outUntil: string | undefined; note: string | undefined };
 }
@@ -132,8 +138,12 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
       registeredAtUtc: '2026-10-14T13:05:00Z',
       lastLoginAtUtc: roleIds.length ? '2026-10-14T15:00:00Z' : undefined,
       version: 1,
+      podIds: [],
     };
   }
+
+  /** Pods of the stub (tests add to it). */
+  readonly pods: { podId: number; name: string; isActive: boolean }[] = [];
 
   // ---- users
 
@@ -363,8 +373,22 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
       roles: u.roleIds.map((id) => this.role(id)?.name ?? '').sort(),
       registeredAtUtc: u.registeredAtUtc,
       lastLoginAtUtc: u.lastLoginAtUtc,
+      pods: this.userPods(u),
       availability: u.availability ?? { state: 'AVAILABLE', outUntil: undefined, note: undefined },
     };
+  }
+
+  private userPods(u: MemUser): UserPodDto[] {
+    return u.podIds
+      .map((id) => this.pods.find((p) => p.podId === id))
+      .filter((p): p is { podId: number; name: string; isActive: boolean } => !!p)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((p) => ({
+        podId: p.podId,
+        name: p.name,
+        isActive: p.isActive,
+        isPrimary: u.primaryPodId === p.podId,
+      }));
   }
 
   private detail(u: MemUser): UserDetailDto {
@@ -386,5 +410,44 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
       permissionCodes: [...r.permissionCodes].sort(),
       rowVersion: '1',
     };
+  }
+
+  listActivePods(): Observable<PodChoice[]> {
+    return of(
+      this.pods
+        .filter((p) => p.isActive)
+        .map((p) => ({ podId: p.podId, name: p.name }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    );
+  }
+
+  /** Mirrors the server rules of `PUT /users/{id}/pods`: one primary that is selected, only active pods newly assigned, 409 on a stale view. */
+  setUserPods(userId: number, request: SetUserPodsRequest): Observable<UserPodDto[]> {
+    const u = this.find(userId);
+    if (!u) return fail(404, 'NOT_FOUND', 'The user does not exist.');
+    const wanted = [...new Set(request.podIds)];
+    if (request.primaryPodId !== undefined && !wanted.includes(request.primaryPodId)) {
+      return fail(400, 'VALIDATION_FAILED', 'The primary pod must be one of the selected pods.');
+    }
+    if (wanted.some((id) => !this.pods.some((p) => p.podId === id))) {
+      return fail(400, 'VALIDATION_FAILED', 'Unknown pod.');
+    }
+    if (
+      request.expectedPodIds &&
+      (request.expectedPodIds.length !== u.podIds.length ||
+        request.expectedPodIds.some((id) => !u.podIds.includes(id)) ||
+        request.expectedPrimaryPodId !== u.primaryPodId)
+    ) {
+      return fail(409, 'CONCURRENCY_CONFLICT', 'The pods were changed by someone else.');
+    }
+    const inactiveNew = wanted.find(
+      (id) => !u.podIds.includes(id) && !this.pods.find((p) => p.podId === id)?.isActive,
+    );
+    if (inactiveNew !== undefined) {
+      return fail(409, 'POD_INACTIVE', 'An inactive pod cannot be newly assigned.');
+    }
+    u.podIds = wanted;
+    u.primaryPodId = request.primaryPodId;
+    return of(this.userPods(u));
   }
 }

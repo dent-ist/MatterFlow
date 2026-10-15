@@ -13,25 +13,29 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { PodsPage } from '../pods/pods-page';
 import { RolesPage } from '../roles/roles-page';
 import { UsersPage } from './users-page';
 
-type UsersTab = 'users' | 'roles';
+type UsersTab = 'users' | 'roles' | 'pods';
+const TABS: readonly UsersTab[] = ['users', 'roles', 'pods'];
 
 /**
- * Administration: Users. Two tabs, Users (User.View / User.Manage) and Roles (Role.Manage), kept in the address: `/admin/users` and
- * `/admin/roles` open the matching tab. A tab the person may not use is not offered, and a link to it lands on the other one.
- * Leaving the Roles tab with an unsaved role edit asks first (the route's leave guard).
+ * Administration: Users. Three tabs, Users (User.View / User.Manage), Roles (Role.Manage) and Pods (Pod.Manage / Pod.ManageMembers), kept
+ * in the address: `/admin/users`, `/admin/roles` and `/admin/pods` open the matching tab. A tab the person may not use is not offered,
+ * and a link to it lands on the first one they may use. Leaving the Roles or Pods tab with an unsaved edit asks first (the route's
+ * leave guard). The Pods tab is a nested component, so the list state and the open pod editor of the address (`q`, `status`, `page`,
+ * `size`, `sort`, `pod`) are bound here and handed down.
  */
 @Component({
   selector: 'mf-users-roles-page',
-  imports: [FixedPage, PageHeader, Tabs, UsersPage, RolesPage],
+  imports: [FixedPage, PageHeader, Tabs, UsersPage, RolesPage, PodsPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Users" />
       <mf-tabs
-        label="Users and roles"
+        label="Users, roles and pods"
         idPrefix="users"
         [tabs]="tabs()"
         [selected]="current()"
@@ -45,8 +49,18 @@ type UsersTab = 'users' | 'roles';
       >
         @if (current() === 'users') {
           <mf-users-page />
-        } @else {
+        } @else if (current() === 'roles') {
           <mf-roles-page #roles />
+        } @else {
+          <mf-pods-page
+            #pods
+            [pod]="pod()"
+            [q]="q()"
+            [status]="status()"
+            [page]="page()"
+            [size]="size()"
+            [sort]="sort()"
+          />
         }
       </div>
     </mf-fixed-page>
@@ -56,19 +70,30 @@ export class UsersRolesPage implements HasUnsavedChanges {
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
   private readonly roles = viewChild<RolesPage>('roles');
+  private readonly pods = viewChild<PodsPage>('pods');
 
-  /** The `:tab` path segment (`users` or `roles`). */
+  /** The `:tab` path segment (`users`, `roles` or `pods`). */
   readonly tab = input<string>();
+  /** Query parameters of the Pods tab (its list state and the open pod editor), handed to it. */
+  readonly pod = input<string>();
+  readonly q = input<string>();
+  readonly status = input<string>();
+  readonly page = input<string>();
+  readonly size = input<string>();
+  readonly sort = input<string>();
 
   protected readonly tabs = computed<MfTab[]>(() => {
     const tabs: MfTab[] = [];
     if (this.auth.hasAny(['User.View', 'User.Manage'])) tabs.push({ key: 'users', label: 'Users' });
     if (this.auth.has('Role.Manage')) tabs.push({ key: 'roles', label: 'Roles' });
+    if (this.auth.hasAny(['Pod.Manage', 'Pod.ManageMembers'])) {
+      tabs.push({ key: 'pods', label: 'Pods' });
+    }
     return tabs;
   });
 
   protected readonly current = computed<UsersTab>(() => {
-    const wanted = this.tab() === 'roles' ? 'roles' : 'users';
+    const wanted = TABS.find((t) => t === this.tab()) ?? 'users';
     const keys = this.tabs().map((t) => t.key);
     return (keys.includes(wanted) ? wanted : (keys[0] ?? wanted)) as UsersTab;
   });
@@ -84,7 +109,9 @@ export class UsersRolesPage implements HasUnsavedChanges {
   }
 
   hasUnsavedChanges(): boolean {
-    return this.roles()?.hasUnsavedChanges() ?? false;
+    return (
+      (this.roles()?.hasUnsavedChanges() ?? false) || (this.pods()?.hasUnsavedChanges() ?? false)
+    );
   }
 
   protected select(key: string): void {

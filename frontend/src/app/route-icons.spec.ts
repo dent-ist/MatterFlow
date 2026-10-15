@@ -16,7 +16,7 @@ async function pagesOf(list: readonly Route[], base: string): Promise<Page[]> {
     let own = (r.path ?? '').replace(/:[A-Za-z]+/g, '1');
     const candidates: string[] = [];
     if (r.matcher) {
-      for (const probe of ['users', 'roles', 'task-types', 'workflows', 'steps']) {
+      for (const probe of ['users', 'roles', 'pods', 'task-types', 'workflows', 'steps']) {
         if (r.matcher([new UrlSegment(probe, {})], null as never, r)) candidates.push(probe);
       }
     } else candidates.push(own === '**' ? '404' : own);
@@ -30,6 +30,9 @@ async function pagesOf(list: readonly Route[], base: string): Promise<Page[]> {
   }
   return pages;
 }
+
+// The first test loads the lazy admin pages (a large chunk to compile); on a loaded machine that can pass the 5 s default.
+vi.setConfig({ testTimeout: 20000 });
 
 describe('page header icons: every routed page belongs to a section with an icon', () => {
   it('gives each route of the app the icon of its section', async () => {
@@ -64,9 +67,12 @@ describe('page header icons: every routed page belongs to a section with an icon
     }
   });
 
-  it('keeps Pod Work, Pods, Assets and the asset types apart, and handles the special screens', () => {
+  it('keeps Pod Work, Assets and the asset types apart, and handles the special screens', () => {
     expect(iconForPath('/pods/work')).toBe('pi pi-users');
-    expect(iconForPath('/admin/pods')).toBe('pi pi-sitemap');
+    // One icon for the whole Users page: Users, Roles and Pods are tabs of the Users menu item, so all three show the Users icon.
+    expect(iconForPath('/admin/users')).toBe('pi pi-id-card');
+    expect(iconForPath('/admin/roles')).toBe('pi pi-id-card');
+    expect(iconForPath('/admin/pods')).toBe('pi pi-id-card');
     expect(iconForPath('/assets/5')).toBe('pi pi-database');
     expect(iconForPath('/admin/asset-types')).toBe('pi pi-tags');
     expect(iconForPath('/tasks/new')).toBe('pi pi-plus');

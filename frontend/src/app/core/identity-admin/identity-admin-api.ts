@@ -8,6 +8,8 @@ import {
   UpdateRoleRequest,
   UserCountsDto,
   UserDetailDto,
+  UserPodDto,
+  SetUserPodsRequest,
 } from '../../api/generated/api-client';
 
 export type {
@@ -20,7 +22,15 @@ export type {
   UserCountsDto,
   UserDetailDto,
   UserSummaryDto,
+  UserPodDto,
+  SetUserPodsRequest,
 } from '../../api/generated/api-client';
+
+/** An active pod that can be assigned to a person (the choices of the Pods editor in the Users grid). */
+export interface PodChoice {
+  podId: number;
+  name: string;
+}
 
 export type UserStatusFilter = 'all' | 'pending' | 'active' | 'inactive';
 
@@ -62,4 +72,9 @@ export abstract class IdentityAdminApi {
   abstract updateRole(roleId: number, request: UpdateRoleRequest): Observable<RoleDetailDto>;
   abstract deleteRole(roleId: number): Observable<void>;
   abstract listPermissions(): Observable<PermissionGroupDto[]>;
+
+  /** Every active pod, by name. */
+  abstract listActivePods(): Observable<PodChoice[]>;
+  /** Replaces the pods and the primary pod of one person in one call (all of the person's pods come back, inactive ones too). */
+  abstract setUserPods(userId: number, request: SetUserPodsRequest): Observable<UserPodDto[]>;
 }

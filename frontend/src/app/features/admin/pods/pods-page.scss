@@ -1,7 +1,3 @@
-:host {
-  display: block;
-}
-
 .pods__editor-title {
   margin: 0 0 var(--mf-s3);
   font-size: var(--mf-fs-h3);
@@ -140,4 +136,17 @@
 
 .pods__link {
   color: var(--mf-link);
+}
+
+.pods__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mf-s3);
+  margin-bottom: var(--mf-s3);
+}
+
+.pods__intro {
+  margin: 0;
 }

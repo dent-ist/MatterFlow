@@ -4,11 +4,10 @@ test.describe('Administration menu and tabbed admin pages', () => {
   test('the menu is one flat list in the agreed order with the agreed names', async ({ page }) => {
     await page.goto('/dashboard');
     const items = page.getByRole('list', { name: 'Administration' }).getByRole('link');
-    await expect(items).toHaveCount(7); // the menu renders once the permissions are loaded
+    await expect(items).toHaveCount(6); // the menu renders once the permissions are loaded
     const names = (await items.allTextContents()).map((t) => t.replace(/\d+$/, '').trim());
     expect(names).toEqual([
       'Users',
-      'Pods',
       'Task Types',
       'Labels',
       'Assets',
@@ -17,7 +16,7 @@ test.describe('Administration menu and tabbed admin pages', () => {
     ]);
   });
 
-  test('Users and Roles are tabs of one page; both addresses work and follow the tab', async ({
+  test('Users, Roles and Pods are tabs of one page; the addresses work and follow the tab', async ({
     page,
   }) => {
     await page.goto('/admin/roles');
@@ -50,8 +49,9 @@ test.describe('Administration menu and tabbed admin pages', () => {
     await expect(page.getByRole('button', { name: 'New asset type' })).toBeVisible();
   });
 
-  test('the search box and the status filter line up on the Pods list', async ({ page }) => {
+  test('the search box and the status filter line up on the Pods tab', async ({ page }) => {
     await page.goto('/admin/pods');
+    await expect(page.getByRole('tab', { name: 'Pods' })).toHaveAttribute('aria-selected', 'true');
     const search = await page.getByRole('searchbox', { name: 'Search' }).last().boundingBox();
     const status = await page.getByLabel('Status').boundingBox();
     expect(Math.abs(search!.y - status!.y)).toBeLessThan(1);

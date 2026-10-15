@@ -203,7 +203,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
     test.setTimeout(180_000);
     for (const [path, title, list] of [
       ['/admin/users', 'Users', 'Users list, scrollable'],
-      ['/admin/pods', 'Pods', 'Pods list, scrollable'],
+      ['/admin/pods', 'Users', 'Pods list, scrollable'],
       ['/admin/task-types', 'Task Types', 'Task types list, scrollable'],
       ['/admin/workflows', 'Task Types', 'Workflows list, scrollable'],
       ['/admin/steps', 'Task Types', 'Steps list, scrollable'],

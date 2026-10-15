@@ -53,8 +53,8 @@ Left nav (items hidden when the user lacks the matching View permission):
   Assets                           /assets (global list), /assets/:id         (also inside Matter)
   ----
   Administration (permission-gated)  /admin
-     Users                         /admin/users (Users tab), /admin/roles (Roles tab)
-     Pods                          /admin/pods
+     Users                         /admin/users (Users tab), /admin/roles (Roles tab), /admin/pods (Pods tab, ?pod=<id>|new opens the pod editor);
+                                   one menu item, highlighted on all three; shown with any of User.View/User.Manage/Role.Manage/Pod.Manage/Pod.ManageMembers
      Task Types                    /admin/task-types (Task Types tab), /admin/workflows (Workflows tab), /admin/steps (Workflow Steps tab);
                                    filtered links: /admin/workflows?taskType=:id, /admin/workflows?step=:id, /admin/task-types?workflow=:id;
                                    the pages /admin/task-types/new, /admin/task-types/:id[/form], /admin/workflows/new, /admin/workflows/:id[/versions/:v],
@@ -815,15 +815,17 @@ Role editor: Name, Description, Permission matrix grouped:
 
 ### S13 Admin: Pods
 
+Pods is the **third tab of the Users page** (`Users | Roles | Pods`, `/admin/pods`, needs `Pod.Manage` or `Pod.ManageMembers`; document title "Users - Pods"; the page header keeps the Users icon on all three tabs, see docs/ux/users-pods/README.md). The Users grid also has a **Pods column** with an inline editor for people with `Pod.ManageMembers`.
+
 ```text
-Administration > Pods                                       [+ New Pod]
+Users  [Users] [Roles] [Pods]                               [+ New Pod]
 +--------+------------------+---------+--------+
 | Pod A  | Members 8        | Active  | [Edit] |
 Pod editor: Name (required, unique), Description, Active
   Members: table (Name, Roles shown as read-only chips, Primary Pod star per user is user-level)
   [+ Add members] typeahead multi-add; [Remove]
 ```
-- There is **no Lead flag** on the Pod; the UI shows each member's roles so Pod Leads are recognizable (e.g. "Pod Lead" role chip). Helper text: "Pod leads are a role. Assign the Pod Lead role under Users & Roles."
+- There is **no Lead flag** on the Pod; the UI shows each member's roles so Pod Leads are recognizable (e.g. "Pod Lead" role chip). Helper text: "Pod leads are a role. Assign the Pod Lead role on the Users tab."
 - Deactivating a Pod with open tasks: allowed; tasks keep it; the confirm says how many open tasks reference it.
 - Messages: "Enter a pod name." "A pod named 'X' already exists."
 - Needs `Pod.View/Manage/ManageMembers`.
@@ -1358,6 +1360,8 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S13-1 Create/edit Pod; add/remove members; user can be in multiple Pods.
 - [ ] UAT-S13-2 No per-pod lead flag; guidance text present.
 - [ ] UAT-S13-3 Unique pod name validated; deactivation shows open-task impact.
+- [ ] UAT-S13-4 Pods is the third tab of Users; `/admin/pods` and `?pod=` deep links work; there is no separate Pods menu item and Users stays highlighted.
+- [ ] UAT-S13-5 Users grid Pods column: chips (primary starred with the text Primary), inline popover to add/remove pods and choose the primary one with Apply/Cancel; removing the primary asks for the new one; one Undo; read-only without Pod.ManageMembers.
 
 ### S14 Task Types and form designer
 - [ ] UAT-S14-1 Palette contains exactly the specified controls; no File Upload.

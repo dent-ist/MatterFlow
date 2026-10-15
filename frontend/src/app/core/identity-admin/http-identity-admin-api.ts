@@ -1,9 +1,12 @@
 import { Injectable, Injector, inject } from '@angular/core';
-import { Observable, defer, from, shareReplay, switchMap } from 'rxjs';
-import type { RolesClient, UsersClient } from '../../api/generated/api-client';
+import { Observable, defer, firstValueFrom, from, shareReplay, switchMap } from 'rxjs';
+import type { PodsClient, RolesClient, UsersClient } from '../../api/generated/api-client';
 import {
   IdentityAdminApi,
   PagedResultOfUserSummaryDto,
+  PodChoice,
+  SetUserPodsRequest,
+  UserPodDto,
   PermissionGroupDto,
   RoleDetailDto,
   RoleSummaryDto,
@@ -28,6 +31,10 @@ export class HttpIdentityAdminApi extends IdentityAdminApi {
 
   private withUsers<T>(call: (c: UsersClient) => Observable<T>): Observable<T> {
     return this.client$.pipe(switchMap((m) => call(this.injector.get(m.UsersClient))));
+  }
+
+  private withPods<T>(call: (c: PodsClient) => Observable<T>): Observable<T> {
+    return this.client$.pipe(switchMap((m) => call(this.injector.get(m.PodsClient))));
   }
 
   private withRoles<T>(call: (c: RolesClient) => Observable<T>): Observable<T> {
@@ -92,5 +99,26 @@ export class HttpIdentityAdminApi extends IdentityAdminApi {
 
   listPermissions(): Observable<PermissionGroupDto[]> {
     return this.withRoles((c) => c.listPermissions());
+  }
+
+  listActivePods(): Observable<PodChoice[]> {
+    return this.client$.pipe(
+      switchMap((m) => from(this.loadActivePods(this.injector.get(m.PodsClient)))),
+    );
+  }
+
+  setUserPods(userId: number, request: SetUserPodsRequest): Observable<UserPodDto[]> {
+    return this.withPods((c) => c.setUserPods(userId, request));
+  }
+
+  /** The list endpoint pages at 100; a firm with more active pods than 1000 would not fit a checklist anyway. */
+  private async loadActivePods(client: PodsClient): Promise<PodChoice[]> {
+    const choices: PodChoice[] = [];
+    for (let page = 1; page <= 10; page++) {
+      const result = await firstValueFrom(client.listPods(undefined, true, page, 100, 'name'));
+      choices.push(...result.items.map((p) => ({ podId: p.podId, name: p.name })));
+      if (result.items.length === 0 || choices.length >= result.total) break;
+    }
+    return choices;
   }
 }

@@ -31,16 +31,10 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     label: 'Users',
     icon: 'pi pi-id-card',
     path: '/admin/users',
-    alsoActive: ['/admin/roles'],
-    // Users tab: User.View / User.Manage; Roles tab: Role.Manage.
-    permissions: ['User.View', 'User.Manage', 'Role.Manage'],
+    alsoActive: ['/admin/roles', '/admin/pods'],
+    // Users tab: User.View / User.Manage; Roles tab: Role.Manage; Pods tab: Pod.Manage / Pod.ManageMembers.
+    permissions: ['User.View', 'User.Manage', 'Role.Manage', 'Pod.Manage', 'Pod.ManageMembers'],
     pendingBadge: true,
-  },
-  {
-    label: 'Pods',
-    icon: 'pi pi-sitemap',
-    path: '/admin/pods',
-    permissions: ['Pod.Manage', 'Pod.ManageMembers'],
   },
   {
     // One item, three tabs: Task Types, Workflows and Workflow Steps (and the create/edit/form pages under them). Task types lead to
