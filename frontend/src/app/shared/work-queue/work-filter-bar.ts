@@ -70,39 +70,37 @@ export interface PodOption {
           }
         </button>
       </ng-template>
-      <ng-template #endTpl><ng-content select="[fb-end]" /></ng-template>
-
       @if (hasTabs()) {
         <div class="fb-tabrow">
           <div class="fb-tabs"><ng-content select="[fb-tabs]" /></div>
-          <ng-container *ngTemplateOutlet="searchTpl" />
+          <div class="fb-tools">
+            <ng-container *ngTemplateOutlet="searchTpl" />
+            <ng-container *ngTemplateOutlet="filtersTpl" />
+          </div>
         </div>
-      }
-      <div class="fb-row">
-        @if (!hasTabs()) {
+      } @else {
+        <div class="fb-row">
           <ng-container *ngTemplateOutlet="searchTpl" />
-        }
-        <ng-container *ngTemplateOutlet="filtersTpl" />
-        <div class="fb-end"><ng-container *ngTemplateOutlet="endTpl" /></div>
-      </div>
-
-      @if (showViews()) {
-        <div class="fb-views" role="group" aria-label="Quick views">
-          @for (view of views; track view.key) {
-            <button
-              type="button"
-              class="fb-view"
-              [attr.aria-pressed]="activeView() === view.key"
-              [disabled]="view.key === 'myPod' && !viewContext().primaryPodId"
-              [title]="
-                view.key === 'myPod' && !viewContext().primaryPodId
-                  ? 'You have no primary Pod'
-                  : null
-              "
-              (click)="viewSelect.emit(view.key)"
-            >
-              {{ view.label }}
-            </button>
+          <ng-container *ngTemplateOutlet="filtersTpl" />
+          @if (showViews()) {
+            <div class="fb-views" role="group" aria-label="Quick views">
+              @for (view of views; track view.key) {
+                <button
+                  type="button"
+                  class="fb-view"
+                  [attr.aria-pressed]="activeView() === view.key"
+                  [disabled]="view.key === 'myPod' && !viewContext().primaryPodId"
+                  [title]="
+                    view.key === 'myPod' && !viewContext().primaryPodId
+                      ? 'You have no primary Pod'
+                      : null
+                  "
+                  (click)="viewSelect.emit(view.key)"
+                >
+                  {{ view.label }}
+                </button>
+              }
+            </div>
           }
         </div>
       }

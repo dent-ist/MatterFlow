@@ -181,7 +181,7 @@ describe('MyWorkPage', () => {
     expect(el.querySelector('#fb-assignee')).toBeNull();
   });
 
-  it('puts the search box on the tab row and Filters, the sort note and Columns on one toolbar row', async () => {
+  it('puts the search box and Filters on the tab row and the sort note and Columns on the title row', async () => {
     const el = await open('/my-work');
     // The first render can lag behind whenStable on a busy machine: wait for the search box.
     await vi.waitFor(() => {
@@ -191,10 +191,10 @@ describe('MyWorkPage', () => {
     const tabRow = el.querySelector('.fb-tabrow')!;
     expect(tabRow.querySelector('[role="tablist"]')).not.toBeNull();
     expect(tabRow.querySelector('#fb-q')).not.toBeNull();
-    const row = el.querySelector('.fb-row')!;
-    expect(row.querySelector('.fb-button')).not.toBeNull();
-    expect(row.querySelector('[data-sort-note]')!.textContent).toContain('Sorted by Priority');
-    expect(row.querySelector('.cc-button')).not.toBeNull();
+    expect(tabRow.querySelector('.fb-button')).not.toBeNull();
+    const title = el.querySelector('[data-page-actions]')!;
+    expect(title.querySelector('[data-sort-note]')!.textContent).toContain('Sorted by Priority');
+    expect(title.querySelector('.cc-button')).not.toBeNull();
     expect(el.querySelector('[data-search-hint]')!.classList).toContain('sb__hint--float');
   });
 

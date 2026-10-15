@@ -1,7 +1,3 @@
-:host {
-  display: block;
-}
-
 .wt-wrap {
   overflow-x: auto;
   background:
@@ -43,6 +39,8 @@
 
   .wt th:first-child {
     background: var(--mf-surface-alt);
+    /* Above the other (sticky) column headers where they slide under it. */
+    z-index: 4;
   }
 
   .wt-row--overdue td:first-child {
@@ -336,4 +334,13 @@ th[aria-sort='descending'] .wt-sort {
   height: 12px;
   border-radius: var(--mf-radius);
   background: var(--mf-surface-alt);
+}
+
+/* Inside a fixed-header page the grid's own box scrolls and the "scroll sideways" hint would only take pinned height: the region
+   is named "... list, scrollable" and the edge shadows show where columns are hidden. */
+@media (min-width: 768px) and (min-height: 561px) {
+  .wt-hint,
+  .wt-hint--show {
+    display: none;
+  }
 }

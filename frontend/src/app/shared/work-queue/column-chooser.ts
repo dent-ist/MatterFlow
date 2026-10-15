@@ -73,6 +73,10 @@ import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
       position: absolute;
       right: 0;
       z-index: 5;
+      /* Never taller than the window: a long list of columns scrolls inside the panel (a fixed-header page cannot scroll to it). */
+      max-height: min(36rem, calc(100dvh - 7rem));
+      overflow-y: auto;
+      overscroll-behavior: contain;
       display: flex;
       gap: var(--mf-s5);
       margin-top: var(--mf-s1);

@@ -15,6 +15,7 @@ import { PodOption, WorkFilterBar } from '../../../shared/work-queue/work-filter
 import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
+import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 
 type TabKey = 'queue' | 'members' | 'attention' | 'all';
@@ -26,178 +27,187 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
  */
 @Component({
   selector: 'mf-pod-work-page',
-  imports: [PageHeader, WorkFilterBar, WorkList, WorkTabs, WorkViewControls],
+  imports: [FixedPage, PageHeader, ScrollArea, WorkFilterBar, WorkList, WorkTabs, WorkViewControls],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
-    <mf-page-header heading="Pod Work">
-      @if (pods().length > 0) {
-        <div class="wp-field">
-          <label for="pw-pod">Pod</label>
-          <select
-            id="pw-pod"
-            class="mf-control wp-select"
-            [value]="data()?.pod?.podId ?? ''"
-            (change)="selectPod($any($event.target).value)"
-          >
-            @if (!data()?.pod) {
-              <option value="" selected>Choose a Pod</option>
-            }
-            @if (yourPods().length > 0) {
-              <optgroup label="Your pods">
-                @for (p of yourPods(); track p.podId) {
-                  <option [value]="p.podId" [selected]="p.podId === data()?.pod?.podId">
-                    {{ p.name }}{{ p.isPrimary ? ' (primary)' : '' }}
-                  </option>
-                }
-              </optgroup>
-            }
-            @if (otherPods().length > 0) {
-              <optgroup label="Other pods">
-                @for (p of otherPods(); track p.podId) {
-                  <option [value]="p.podId" [selected]="p.podId === data()?.pod?.podId">
-                    {{ p.name }}
-                  </option>
-                }
-              </optgroup>
-            }
-          </select>
+    <mf-fixed-page>
+      <mf-page-header heading="Pod Work">
+        @if (pods().length > 0) {
+          <div mfActions class="wp-field wp-field--inline">
+            <label for="pw-pod">Pod</label>
+            <select
+              id="pw-pod"
+              class="mf-control wp-select"
+              [value]="data()?.pod?.podId ?? ''"
+              (change)="selectPod($any($event.target).value)"
+            >
+              @if (!data()?.pod) {
+                <option value="" selected>Choose a Pod</option>
+              }
+              @if (yourPods().length > 0) {
+                <optgroup label="Your pods">
+                  @for (p of yourPods(); track p.podId) {
+                    <option [value]="p.podId" [selected]="p.podId === data()?.pod?.podId">
+                      {{ p.name }}{{ p.isPrimary ? ' (primary)' : '' }}
+                    </option>
+                  }
+                </optgroup>
+              }
+              @if (otherPods().length > 0) {
+                <optgroup label="Other pods">
+                  @for (p of otherPods(); track p.podId) {
+                    <option [value]="p.podId" [selected]="p.podId === data()?.pod?.podId">
+                      {{ p.name }}
+                    </option>
+                  }
+                </optgroup>
+              }
+            </select>
+          </div>
+        }
+        @if (data()?.pod) {
+          <mf-work-view-controls
+            mfActions
+            [sort]="state().sort"
+            [dir]="state().dir"
+            [columns]="prefs().columns"
+            [density]="prefs().density"
+            (resetSort)="resetSort()"
+            (columnsChange)="setColumns($event)"
+            (densityChange)="setDensity($event)"
+          />
+        }
+      </mf-page-header>
+
+      @if (loadState() === 'ready' && pods().length === 0) {
+        <div class="wl-empty-note" data-empty="no-pod" role="status">
+          You aren't in a pod yet. Ask an administrator.
         </div>
-      }
-    </mf-page-header>
-
-    @if (loadState() === 'ready' && pods().length === 0) {
-      <div class="wl-empty-note" data-empty="no-pod" role="status">
-        You aren't in a pod yet. Ask an administrator.
-      </div>
-    } @else if (loadState() === 'ready' && !data()?.pod) {
-      <div class="wl-empty-note" data-empty="choose" role="status">
-        Choose a Pod to see its work.
-      </div>
-    } @else {
-      @if (data(); as d) {
-        <ul class="wp-summary" aria-label="Pod summary" data-summary>
-          <li>
-            Unassigned <strong>{{ d.summary.unassignedToPerson }}</strong>
-          </li>
-          <li>
-            Assigned <strong>{{ d.summary.assigned }}</strong>
-          </li>
-          <li>
-            Overdue <strong>{{ d.summary.overdue }}</strong>
-          </li>
-          <li>
-            On Hold <strong>{{ d.summary.onHold }}</strong>
-          </li>
-        </ul>
-      }
-
-      <mf-work-filter-bar
-        [filters]="state().filters"
-        [names]="chipNames()"
-        [pods]="podOptions()"
-        [userId]="userId()"
-        [hidden]="['pod']"
-        [hasTabs]="true"
-        (filtersChange)="setFilters($event)"
-        (clearAll)="clearFilters()"
-      >
-        <mf-work-tabs
-          fb-tabs
-          label="Pod Work views"
-          idPrefix="pw"
-          [tabs]="tabs()"
-          [selected]="tab()"
-          (selectedChange)="selectTab($event)"
-        />
-        <mf-work-view-controls
-          fb-end
-          [sort]="state().sort"
-          [dir]="state().dir"
-          [columns]="prefs().columns"
-          [density]="prefs().density"
-          (resetSort)="resetSort()"
-          (columnsChange)="setColumns($event)"
-          (densityChange)="setDensity($event)"
-        />
-      </mf-work-filter-bar>
-
-      <div role="tabpanel" id="pw-panel" [attr.aria-labelledby]="'pw-tab-' + tab()">
-        @if (tab() === 'members') {
-          @if (data(); as d) {
-            @if (d.memberLoads.length === 0) {
-              <p class="wp-note" data-members-empty>No members yet.</p>
-            } @else {
-              <div class="mf-scroll">
-                <table class="wp-members" data-members>
-                  <caption class="wp-help">
-                    Open work per person. These are workload facts, not a ranking.
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Member</th>
-                      <th scope="col">Open</th>
-                      <th scope="col">Overdue</th>
-                      <th scope="col">On Hold</th>
-                      <th scope="col"><span class="wp-sr">Show tasks</span></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (m of d.memberLoads; track m.userId) {
-                      <tr>
-                        <th scope="row">
-                          {{ m.displayName }}
-                          @if (!m.isActive) {
-                            <span class="wp-note">(inactive)</span>
-                          }
-                        </th>
-                        <td>{{ m.open }}</td>
-                        <td>{{ m.overdue }}</td>
-                        <td>{{ m.onHold }}</td>
-                        <td>
-                          <button
-                            type="button"
-                            class="mf-btn"
-                            [attr.aria-pressed]="state().filters.assignee.includes(m.userId)"
-                            [attr.aria-label]="'Show tasks of ' + m.displayName"
-                            (click)="toggleMember(m.userId)"
-                          >
-                            Show tasks
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            }
-          }
+      } @else if (loadState() === 'ready' && !data()?.pod) {
+        <div class="wl-empty-note" data-empty="choose" role="status">
+          Choose a Pod to see its work.
+        </div>
+      } @else {
+        @if (data(); as d) {
+          <ul class="wp-summary" aria-label="Pod summary" data-summary>
+            <li>
+              Unassigned <strong>{{ d.summary.unassignedToPerson }}</strong>
+            </li>
+            <li>
+              Assigned <strong>{{ d.summary.assigned }}</strong>
+            </li>
+            <li>
+              Overdue <strong>{{ d.summary.overdue }}</strong>
+            </li>
+            <li>
+              On Hold <strong>{{ d.summary.onHold }}</strong>
+            </li>
+          </ul>
         }
 
-        <mf-work-list
-          [rows]="rows()"
-          [total]="total()"
-          [page]="state().page"
-          [pageSize]="state().pageSize"
-          [state]="loadState()"
-          [columns]="prefs().columns"
-          [density]="prefs().density"
-          [sort]="state().sort"
-          [dir]="state().dir"
-          [filtered]="filtered()"
-          [caption]="'Pod Work: ' + (data()?.pod?.name ?? '')"
-          [emptyText]="emptyText()"
-          [showAssign]="canAssign()"
-          (sortChange)="sortBy($event)"
-          (pageChange)="goToPage($event)"
-          (pageSizeChange)="setPageSize($event)"
-          (retry)="load()"
-          (clearFilters)="clearFilters()"
-          (rowChange)="replaceRow($event)"
-          (assignToMe)="assignToMe($event)"
-        />
-      </div>
-    }
+        <mf-work-filter-bar
+          [filters]="state().filters"
+          [names]="chipNames()"
+          [pods]="podOptions()"
+          [userId]="userId()"
+          [hidden]="['pod']"
+          [hasTabs]="true"
+          (filtersChange)="setFilters($event)"
+          (clearAll)="clearFilters()"
+        >
+          <mf-work-tabs
+            fb-tabs
+            label="Pod Work views"
+            idPrefix="pw"
+            [tabs]="tabs()"
+            [selected]="tab()"
+            (selectedChange)="selectTab($event)"
+          />
+        </mf-work-filter-bar>
+
+        <div
+          class="mf-fill"
+          role="tabpanel"
+          id="pw-panel"
+          [attr.aria-labelledby]="'pw-tab-' + tab()"
+        >
+          @if (tab() === 'members') {
+            @if (data(); as d) {
+              @if (d.memberLoads.length === 0) {
+                <p class="wp-note" data-members-empty>No members yet.</p>
+              } @else {
+                <div class="mf-scroll wp-members-wrap" mfScrollArea="Pod members">
+                  <table class="wp-members" data-members>
+                    <caption class="wp-help">
+                      Open work per person. These are workload facts, not a ranking.
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Member</th>
+                        <th scope="col">Open</th>
+                        <th scope="col">Overdue</th>
+                        <th scope="col">On Hold</th>
+                        <th scope="col"><span class="wp-sr">Show tasks</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (m of d.memberLoads; track m.userId) {
+                        <tr>
+                          <th scope="row">
+                            {{ m.displayName }}
+                            @if (!m.isActive) {
+                              <span class="wp-note">(inactive)</span>
+                            }
+                          </th>
+                          <td>{{ m.open }}</td>
+                          <td>{{ m.overdue }}</td>
+                          <td>{{ m.onHold }}</td>
+                          <td>
+                            <button
+                              type="button"
+                              class="mf-btn"
+                              [attr.aria-pressed]="state().filters.assignee.includes(m.userId)"
+                              [attr.aria-label]="'Show tasks of ' + m.displayName"
+                              (click)="toggleMember(m.userId)"
+                            >
+                              Show tasks
+                            </button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            }
+          }
+
+          <mf-work-list
+            [rows]="rows()"
+            [total]="total()"
+            [page]="state().page"
+            [pageSize]="state().pageSize"
+            [state]="loadState()"
+            [columns]="prefs().columns"
+            [density]="prefs().density"
+            [sort]="state().sort"
+            [dir]="state().dir"
+            [filtered]="filtered()"
+            [caption]="'Pod Work: ' + (data()?.pod?.name ?? '')"
+            [emptyText]="emptyText()"
+            [showAssign]="canAssign()"
+            (sortChange)="sortBy($event)"
+            (pageChange)="goToPage($event)"
+            (pageSizeChange)="setPageSize($event)"
+            (retry)="load()"
+            (clearFilters)="clearFilters()"
+            (rowChange)="replaceRow($event)"
+            (assignToMe)="assignToMe($event)"
+          />
+        </div>
+      }
+    </mf-fixed-page>
   `,
 })
 export class PodWorkPage extends QueuePageBase<PodWorkData> {

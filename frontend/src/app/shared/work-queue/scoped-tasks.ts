@@ -35,10 +35,8 @@ const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'
   selector: 'mf-scoped-tasks',
   imports: [ErrorReference, Button, HasPermissionDirective, Pager, TaskTable],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   styles: `
-    :host {
-      display: block;
-    }
     .st-bar {
       display: flex;
       flex-wrap: wrap;
@@ -72,6 +70,18 @@ const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'
       border: 1px solid var(--mf-danger);
       border-radius: var(--mf-radius);
       color: var(--mf-danger);
+    }
+    /* Pinned above the grid of a fixed-header page: one row, the label beside the select. */
+    @media (min-width: 768px) and (min-height: 561px) {
+      .st-bar {
+        align-items: center;
+        margin-bottom: var(--mf-s2);
+      }
+      .st-filter {
+        grid-auto-flow: column;
+        align-items: center;
+        gap: var(--mf-s2);
+      }
     }
     .st-sr {
       position: absolute;
@@ -131,6 +141,7 @@ const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'
           [loading]="state() === 'loading'"
           [sort]="sort()"
           [dir]="dir()"
+          [resetKey]="scope() + '|' + sort() + '|' + dir() + '|' + page()"
           (sortChange)="sortBy($event)"
         />
         @if (rows().length > 0) {

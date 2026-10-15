@@ -82,3 +82,33 @@
   background: var(--mf-surface);
   text-align: center;
 }
+
+.wp-field--inline {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--mf-s2);
+  max-width: none;
+  margin: 0;
+}
+
+@media (min-width: 768px) and (min-height: 561px) {
+  /* The By member table is a short grid above the task list: it scrolls inside itself instead of taking the page. */
+  .mf-fill > .wp-members-wrap.wp-members-wrap {
+    flex: 0 1 auto;
+    max-height: 30dvh;
+    margin-bottom: var(--mf-s2);
+  }
+
+  .wp-members {
+    margin-bottom: 0;
+  }
+
+  .wp-summary {
+    margin-bottom: var(--mf-s2);
+  }
+
+  .wp-help {
+    margin-bottom: var(--mf-s2);
+  }
+}

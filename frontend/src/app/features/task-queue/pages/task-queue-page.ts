@@ -22,6 +22,7 @@ import { QueuePageBase } from '../../../shared/work-queue/queue-page';
 import { PodOption, WorkFilterBar } from '../../../shared/work-queue/work-filter-bar';
 import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
 import { WorkList } from '../../../shared/work-queue/work-list';
+import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 
 /**
@@ -31,64 +32,75 @@ import { PageHeader } from '../../../shared/ui/page-header';
  */
 @Component({
   selector: 'mf-task-queue-page',
-  imports: [PageHeader, Button, HasPermissionDirective, WorkFilterBar, WorkList, WorkViewControls],
+  imports: [
+    FixedPage,
+    PageHeader,
+    Button,
+    HasPermissionDirective,
+    WorkFilterBar,
+    WorkList,
+    WorkViewControls,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
-    <mf-page-header heading="Task Queue" />
+    <mf-fixed-page>
+      <mf-page-header heading="Task Queue">
+        <mf-work-view-controls
+          mfActions
+          [sort]="state().sort"
+          [dir]="state().dir"
+          [columns]="prefs().columns"
+          [density]="prefs().density"
+          (resetSort)="resetSort()"
+          (columnsChange)="setColumns($event)"
+          (densityChange)="setDensity($event)"
+        />
+      </mf-page-header>
 
-    <mf-work-filter-bar
-      [filters]="state().filters"
-      [names]="chipNames()"
-      [pods]="pods()"
-      [userId]="userId()"
-      [viewContext]="viewContext()"
-      [showViews]="true"
-      [defaultStatus]="defaultStatus()"
-      (filtersChange)="setFilters($event)"
-      (viewSelect)="applyView($event)"
-      (clearAll)="clearFilters()"
-    >
-      <mf-work-view-controls
-        fb-end
-        [sort]="state().sort"
-        [dir]="state().dir"
+      <mf-work-filter-bar
+        [filters]="state().filters"
+        [names]="chipNames()"
+        [pods]="pods()"
+        [userId]="userId()"
+        [viewContext]="viewContext()"
+        [showViews]="true"
+        [defaultStatus]="defaultStatus()"
+        (filtersChange)="setFilters($event)"
+        (viewSelect)="applyView($event)"
+        (clearAll)="clearFilters()"
+      >
+      </mf-work-filter-bar>
+
+      <mf-work-list
+        [rows]="rows()"
+        [total]="total()"
+        [page]="state().page"
+        [pageSize]="state().pageSize"
+        [state]="loadState()"
         [columns]="prefs().columns"
         [density]="prefs().density"
-        (resetSort)="resetSort()"
-        (columnsChange)="setColumns($event)"
-        (densityChange)="setDensity($event)"
-      />
-    </mf-work-filter-bar>
-
-    <mf-work-list
-      [rows]="rows()"
-      [total]="total()"
-      [page]="state().page"
-      [pageSize]="state().pageSize"
-      [state]="loadState()"
-      [columns]="prefs().columns"
-      [density]="prefs().density"
-      [sort]="state().sort"
-      [dir]="state().dir"
-      [filtered]="filtered()"
-      caption="Task Queue"
-      emptyText="No open tasks."
-      (sortChange)="sortBy($event)"
-      (pageChange)="goToPage($event)"
-      (pageSizeChange)="setPageSize($event)"
-      (retry)="load()"
-      (clearFilters)="clearFilters()"
-      (rowChange)="replaceRow($event)"
-    >
-      <p-button
-        empty-action
-        *mfHasPermission="'Task.Create'"
-        label="Create task"
-        icon="pi pi-plus"
-        (onClick)="go('/tasks/new')"
-      />
-    </mf-work-list>
+        [sort]="state().sort"
+        [dir]="state().dir"
+        [filtered]="filtered()"
+        caption="Task Queue"
+        emptyText="No open tasks."
+        (sortChange)="sortBy($event)"
+        (pageChange)="goToPage($event)"
+        (pageSizeChange)="setPageSize($event)"
+        (retry)="load()"
+        (clearFilters)="clearFilters()"
+        (rowChange)="replaceRow($event)"
+      >
+        <p-button
+          empty-action
+          *mfHasPermission="'Task.Create'"
+          label="Create task"
+          icon="pi pi-plus"
+          (onClick)="go('/tasks/new')"
+        />
+      </mf-work-list>
+    </mf-fixed-page>
   `,
 })
 export class TaskQueuePage extends QueuePageBase<TaskQueueData> {

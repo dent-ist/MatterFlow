@@ -12,6 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ScrollArea } from '../ui/fixed-page';
 import { TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
@@ -29,7 +30,7 @@ import { RowEdit } from './row-edit';
 
 const SKELETON_ROWS = [0, 1, 2, 3, 4];
 /** Box widths (px) under which the lowest-priority columns drop out. */
-const PROGRESS_FOLDS_BELOW = 1100;
+const PROGRESS_FOLDS_BELOW = 1060;
 const MATTER_HIDES_BELOW = 960;
 const PROJECT_HIDES_BELOW = 800;
 
@@ -48,9 +49,11 @@ const PROJECT_HIDES_BELOW = 800;
     MfDatePipe,
     PriorityBadge,
     RowEdit,
+    ScrollArea,
     StatusBadge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   styleUrl: './task-table.scss',
   template: `
     <p class="wt-hint" data-scroll-hint [class.wt-hint--show]="overflowing()">
@@ -59,9 +62,8 @@ const PROJECT_HIDES_BELOW = 800;
     <div
       #wrap
       class="wt-wrap"
-      role="region"
-      tabindex="0"
-      [attr.aria-label]="caption() + ' (scrolls sideways)'"
+      [mfScrollArea]="listLabel()"
+      [resetKey]="resetKey()"
       [class.wt-dim]="loading() && rows().length > 0"
     >
       <table
@@ -344,6 +346,10 @@ export class TaskTable {
   /** Keys of the columns to show, in table order. */
   readonly columns = input.required<readonly string[]>();
   readonly caption = input('Tasks');
+  /** Anything that changes the rows without a navigation (a local page, sort or filter): the grid goes back to the top. */
+  readonly resetKey = input<unknown>(undefined);
+  /** The scrolling region's name: "Task Queue list". */
+  protected readonly listLabel = computed(() => `${this.caption()} list`);
   readonly loading = input(false);
   readonly density = input<Density>('comfortable');
   /** Current API sort field; null shows no sort indicator (the default order applies). */

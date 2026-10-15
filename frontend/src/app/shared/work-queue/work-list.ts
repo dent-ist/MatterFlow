@@ -17,6 +17,7 @@ export type WorkListState = 'loading' | 'ready' | 'error';
   selector: 'mf-work-list',
   imports: [ErrorReference, TaskTable, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   styleUrl: './work-list.scss',
   template: `
     <div class="wl-sr" role="status" aria-live="polite">{{ announcement() }}</div>

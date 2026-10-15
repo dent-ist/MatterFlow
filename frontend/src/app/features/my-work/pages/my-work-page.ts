@@ -15,6 +15,7 @@ import { PodOption, WorkFilterBar } from '../../../shared/work-queue/work-filter
 import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
+import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 
 type TabKey = 'active' | 'dueSoon' | 'completed' | 'createdByMe';
@@ -35,104 +36,107 @@ const COMPLETED_WINDOW_DAYS = 90;
  */
 @Component({
   selector: 'mf-my-work-page',
-  imports: [PageHeader, RouterLink, WorkFilterBar, WorkList, WorkTabs, WorkViewControls],
+  imports: [FixedPage, PageHeader, RouterLink, WorkFilterBar, WorkList, WorkTabs, WorkViewControls],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
-    <mf-page-header heading="My Work" />
+    <mf-fixed-page>
+      <mf-page-header heading="My Work">
+        <mf-work-view-controls
+          mfActions
+          [sort]="state().sort"
+          [dir]="state().dir"
+          [defaultOrder]="defaultOrder()"
+          [defaultLabel]="tab() === 'completed' ? 'Closed date' : 'Priority'"
+          [columns]="prefs().columns"
+          [density]="prefs().density"
+          (resetSort)="resetSort()"
+          (columnsChange)="setColumns($event)"
+          (densityChange)="setDensity($event)"
+        />
+      </mf-page-header>
 
-    <mf-work-filter-bar
-      [filters]="state().filters"
-      [names]="chipNames()"
-      [pods]="pods()"
-      [userId]="userId()"
-      [hidden]="['assignee']"
-      [hasTabs]="true"
-      (filtersChange)="setFilters($event)"
-      (clearAll)="clearFilters()"
-    >
-      <mf-work-tabs
-        fb-tabs
-        label="My Work views"
-        idPrefix="mw"
-        [tabs]="tabs()"
-        [selected]="tab()"
-        (selectedChange)="selectTab($event)"
-      />
-      <mf-work-view-controls
-        fb-end
-        [sort]="state().sort"
-        [dir]="state().dir"
-        [defaultOrder]="defaultOrder()"
-        [defaultLabel]="tab() === 'completed' ? 'Closed date' : 'Priority'"
-        [columns]="prefs().columns"
-        [density]="prefs().density"
-        (resetSort)="resetSort()"
-        (columnsChange)="setColumns($event)"
-        (densityChange)="setDensity($event)"
-      />
-    </mf-work-filter-bar>
-
-    <div role="tabpanel" id="mw-panel" [attr.aria-labelledby]="'mw-tab-' + tab()">
-      @switch (tab()) {
-        @case ('dueSoon') {
-          <p class="wp-help" data-help>
-            Due Soon lists your open tasks with a due date in the next 2 days, plus overdue ones.
-            ASAP tasks have no due date, so they are not included.
-          </p>
-        }
-        @case ('completed') {
-          <p class="wp-help" data-help>
-            @if (windowed()) {
-              Showing tasks completed or cancelled in the last 90 days, newest first.
-              <button type="button" class="mf-btn mf-btn--text" (click)="showOlder()">
-                Show older
-              </button>
-            } @else {
-              Completed and cancelled tasks, newest first.
-            }
-          </p>
-        }
-      }
-
-      <mf-work-list
-        [rows]="rows()"
-        [total]="total()"
-        [page]="state().page"
-        [pageSize]="state().pageSize"
-        [state]="loadState()"
-        [columns]="prefs().columns"
-        [density]="prefs().density"
-        [sort]="state().sort"
-        [dir]="state().dir"
-        [filtered]="filtered()"
-        caption="My Work"
-        [newSince]="tab() === 'active' || tab() === 'dueSoon' ? lastVisit : null"
-        [emptyText]="emptyText()"
-        (sortChange)="sortBy($event)"
-        (pageChange)="goToPage($event)"
-        (pageSizeChange)="setPageSize($event)"
-        (retry)="load()"
-        (clearFilters)="clearFilters()"
-        (rowChange)="replaceRow($event)"
+      <mf-work-filter-bar
+        [filters]="state().filters"
+        [names]="chipNames()"
+        [pods]="pods()"
+        [userId]="userId()"
+        [hidden]="['assignee']"
+        [hasTabs]="true"
+        (filtersChange)="setFilters($event)"
+        (clearAll)="clearFilters()"
       >
-        @if (tab() === 'active' && auth.has('Pod.View')) {
-          <a empty-action class="wp-link" routerLink="/pods/work">Check Pod Work</a>
+        <mf-work-tabs
+          fb-tabs
+          label="My Work views"
+          idPrefix="mw"
+          [tabs]="tabs()"
+          [selected]="tab()"
+          (selectedChange)="selectTab($event)"
+        />
+      </mf-work-filter-bar>
+
+      <div class="mf-fill" role="tabpanel" id="mw-panel" [attr.aria-labelledby]="'mw-tab-' + tab()">
+        @switch (tab()) {
+          @case ('dueSoon') {
+            <p class="wp-help" data-help>
+              Due Soon lists your open tasks with a due date in the next 2 days, plus overdue ones.
+              ASAP tasks have no due date, so they are not included.
+            </p>
+          }
+          @case ('completed') {
+            <p class="wp-help" data-help>
+              @if (windowed()) {
+                Showing tasks completed or cancelled in the last 90 days, newest first.
+                <button type="button" class="mf-btn mf-btn--text" (click)="showOlder()">
+                  Show older
+                </button>
+              } @else {
+                Completed and cancelled tasks, newest first.
+              }
+            </p>
+          }
         }
-        @if (tab() === 'active') {
-          <p near-empty data-everything>
-            That's everything on your plate.
-            @if (auth.has('Pod.View')) {
-              Look for more in <a class="wp-link" routerLink="/pods/work">Pod Work</a>
-              or
-            } @else {
-              Look for more in
-            }
-            the <a class="wp-link" routerLink="/tasks">Task Queue</a>.
-          </p>
-        }
-      </mf-work-list>
-    </div>
+
+        <mf-work-list
+          [rows]="rows()"
+          [total]="total()"
+          [page]="state().page"
+          [pageSize]="state().pageSize"
+          [state]="loadState()"
+          [columns]="prefs().columns"
+          [density]="prefs().density"
+          [sort]="state().sort"
+          [dir]="state().dir"
+          [filtered]="filtered()"
+          caption="My Work"
+          [newSince]="tab() === 'active' || tab() === 'dueSoon' ? lastVisit : null"
+          [emptyText]="emptyText()"
+          (sortChange)="sortBy($event)"
+          (pageChange)="goToPage($event)"
+          (pageSizeChange)="setPageSize($event)"
+          (retry)="load()"
+          (clearFilters)="clearFilters()"
+          (rowChange)="replaceRow($event)"
+        >
+          @if (tab() === 'active' && auth.has('Pod.View')) {
+            <a empty-action class="wp-link" routerLink="/pods/work">Check Pod Work</a>
+          }
+          @if (tab() === 'active') {
+            <p near-empty data-everything>
+              That's everything on your plate.
+              @if (auth.has('Pod.View')) {
+                Look for more in <a class="wp-link" routerLink="/pods/work">Pod Work</a>
+                or
+              } @else {
+                Look for more in
+              }
+              the <a class="wp-link" routerLink="/tasks">Task Queue</a>.
+            </p>
+          }
+        </mf-work-list>
+      </div>
+    </mf-fixed-page>
   `,
 })
 export class MyWorkPage extends QueuePageBase<MyWorkData> {
