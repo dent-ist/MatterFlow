@@ -52,46 +52,64 @@ export function valuesPatch(
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let s = step();
-    <div class="step" [attr.data-step-id]="s.stepInstanceId" [attr.data-step-status]="s.status">
-      <h3 class="step__head">
-        <button
-          type="button"
-          class="step__toggle"
-          [id]="'step-btn-' + s.stepInstanceId"
-          [attr.aria-expanded]="open()"
-          [attr.aria-controls]="open() ? 'step-body-' + s.stepInstanceId : null"
-          (click)="open.set(!open())"
-        >
-          <i class="pi" [class]="locked() ? 'pi-lock' : status().icon" aria-hidden="true"></i>
-          <span class="step__no">{{ s.sequenceNo }}.</span>
-          <span class="step__title">{{ s.title }}</span>
-          <mf-badge [tone]="status().tone" data-state>{{ status().text }}</mf-badge>
-          @if (s.isCurrent && ordered()) {
-            <mf-badge tone="info" data-current>Current step</mf-badge>
+    <div
+      class="step"
+      [class.step--open]="open()"
+      [class.step--current]="s.isCurrent && ordered()"
+      [attr.data-step-id]="s.stepInstanceId"
+      [attr.data-step-status]="s.status"
+    >
+      <div class="step__row">
+        <h3 class="step__head">
+          <button
+            type="button"
+            class="step__toggle"
+            [id]="'step-btn-' + s.stepInstanceId"
+            [attr.aria-expanded]="open()"
+            [attr.aria-controls]="open() ? 'step-body-' + s.stepInstanceId : null"
+            (click)="open.set(!open())"
+          >
+            <i
+              class="pi step__chevron"
+              [class.pi-chevron-down]="open()"
+              [class.pi-chevron-right]="!open()"
+              aria-hidden="true"
+            ></i>
+            <i class="pi" [class]="locked() ? 'pi-lock' : status().icon" aria-hidden="true"></i>
+            <span class="step__no">{{ s.sequenceNo }}.</span>
+            <span class="step__title">{{ s.title }}</span>
+            <mf-badge [tone]="status().tone" data-state>{{ status().text }}</mf-badge>
+            @if (s.isCurrent && ordered()) {
+              <mf-badge tone="info" data-current>Current step</mf-badge>
+            }
+            @if (open()) {
+              <mf-badge tone="neutral">{{ s.isSkippable ? 'Skippable' : 'Required' }}</mf-badge>
+            }
+            @if (s.isReopenedPrerequisite) {
+              <mf-badge tone="warning" data-reopened>Reopened</mf-badge>
+            }
+          </button>
+        </h3>
+        <div class="step__notes">
+          @if (s.status === 'SKIPPED' && s.skipComment) {
+            <p class="step__note" data-skip-comment>Skipped: "{{ s.skipComment }}"</p>
           }
-          <mf-badge tone="neutral">{{ s.isSkippable ? 'Skippable' : 'Required' }}</mf-badge>
+          @if (s.resolvedAtUtc && (s.status === 'COMPLETED' || s.status === 'SKIPPED')) {
+            <p class="step__note">{{ status().text }} {{ s.resolvedAtUtc | mfDate }}</p>
+          }
           @if (s.isReopenedPrerequisite) {
-            <mf-badge tone="warning" data-reopened>Reopened</mf-badge>
+            <p class="step__note step__note--warn" data-reopened-note>
+              Step {{ s.sequenceNo }} was reopened. Later steps are unchanged. Resolve step
+              {{ s.sequenceNo }} before completing the task.
+            </p>
           }
-        </button>
-      </h3>
-      @if (s.status === 'SKIPPED' && s.skipComment) {
-        <p class="step__note" data-skip-comment>Skipped: "{{ s.skipComment }}"</p>
-      }
-      @if (s.resolvedAtUtc && (s.status === 'COMPLETED' || s.status === 'SKIPPED')) {
-        <p class="step__note">{{ status().text }} {{ s.resolvedAtUtc | mfDate }}</p>
-      }
-      @if (s.isReopenedPrerequisite) {
-        <p class="step__note step__note--warn" data-reopened-note>
-          Step {{ s.sequenceNo }} was reopened. Later steps are unchanged. Resolve step
-          {{ s.sequenceNo }} before completing the task.
-        </p>
-      }
-      @if (locked()) {
-        <p class="step__note" data-locked [id]="'step-lock-' + s.stepInstanceId">
-          Locked. Complete or skip step {{ blockingStepNo() }} first.
-        </p>
-      }
+          @if (locked()) {
+            <p class="step__note" data-locked [id]="'step-lock-' + s.stepInstanceId">
+              Locked. Complete or skip step {{ blockingStepNo() }} first.
+            </p>
+          }
+        </div>
+      </div>
 
       @if (open()) {
         <div class="step__body" [id]="'step-body-' + s.stepInstanceId">
@@ -249,12 +267,28 @@ export function valuesPatch(
   `,
   styles: `
     .step {
-      padding: var(--mf-s3) var(--mf-s4);
+      padding: var(--mf-s2) var(--mf-s4);
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius);
       background: var(--mf-surface);
     }
+    .step--open {
+      padding-block: var(--mf-s3);
+    }
+    .step--current {
+      border-color: var(--mf-primary);
+      box-shadow: inset 3px 0 0 var(--mf-primary);
+    }
+    /* A collapsed step is one line: the toggle (number, title, status) and its short notes side by side. */
+    .step__row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      column-gap: var(--mf-s3);
+    }
     .step__head {
+      flex: 0 1 auto;
+      min-width: 0;
       margin: 0;
       font-size: inherit;
     }
@@ -273,13 +307,37 @@ export function valuesPatch(
       text-align: left;
       cursor: pointer;
     }
+    .step__toggle:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 2px;
+    }
+    .step__chevron {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
     .step__title {
       font-weight: 600;
     }
+    .step__notes {
+      display: flex;
+      flex: 1 1 12rem;
+      flex-wrap: wrap;
+      column-gap: var(--mf-s3);
+      min-width: 0;
+    }
     .step__note {
-      margin: var(--mf-s1) 0 0;
+      margin: 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
+    }
+    .step:not(.step--open) .step__note {
+      overflow: hidden;
+      max-width: 100%;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .step--open .step__notes {
+      flex-basis: 100%;
     }
     .step__note--warn {
       color: var(--mf-warning);
@@ -363,6 +421,8 @@ export class TaskStep {
   protected readonly skipError = signal<string | null>(null);
   private loadedSchemaFor: number | null | undefined = null;
   private initialised = false;
+  private wasCurrent = false;
+  private wasResolved = false;
 
   protected readonly busy = this.store.busy;
   protected readonly status = computed(
@@ -435,10 +495,20 @@ export class TaskStep {
       const s = this.step();
       const focus = this.focusRequested();
       untracked(() => {
+        // Only the current step starts expanded. A step that becomes current later (the one before it was resolved) expands too;
+        // one that was just resolved folds into its one-line summary. Whatever the user opened or closed in between stays.
+        const current = s.isCurrent;
+        const resolved = s.status === 'COMPLETED' || s.status === 'SKIPPED';
         if (!this.initialised) {
           this.initialised = true;
-          this.open.set(s.isCurrent || s.status === 'IN_PROGRESS');
+          this.open.set(current);
+        } else if (current && !this.wasCurrent) {
+          this.open.set(true);
+        } else if (resolved && !this.wasResolved) {
+          this.foldKeepingFocus();
         }
+        this.wasCurrent = current;
+        this.wasResolved = resolved;
         if (focus) {
           this.open.set(true);
           queueMicrotask(() => {
@@ -465,6 +535,20 @@ export class TaskStep {
       this.step(); // new data from the server resets the draft
       untracked(() => this.draft.set(null));
     });
+  }
+
+  /** Folds the step; when focus was inside it (the button just pressed disappears), focus moves to the step's own toggle. */
+  private foldKeepingFocus(): void {
+    const root = this.host.nativeElement;
+    const hadFocus =
+      root.contains(document.activeElement) || document.activeElement === document.body;
+    this.open.set(false);
+    if (hadFocus) {
+      setTimeout(() => {
+        const toggle = root.querySelector<HTMLElement>('.step__toggle');
+        if (toggle && document.activeElement === document.body) toggle.focus();
+      });
+    }
   }
 
   private async loadSchema(id: number): Promise<void> {

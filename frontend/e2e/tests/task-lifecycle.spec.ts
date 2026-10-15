@@ -52,7 +52,7 @@ test.describe('Status changes and closed tasks', () => {
     await expect(page.locator('[data-status-reason]')).toContainText('Waiting for the client');
     await expect(page.locator('[data-status-reason]')).toContainText('ke\\kekim');
 
-    await detail.showTab('Workflow');
+    await detail.showSection('Workflow');
     await expect(page.locator('[data-workflow-notice]')).toContainText('This task is On Hold');
     const first = detail.step(world.workflow.stepTitles[0]);
     await first.expand();
@@ -106,7 +106,7 @@ test.describe('Status changes and closed tasks', () => {
     ]);
 
     // The comment is kept with the task.
-    await detail.showTab('Comments');
+    await detail.showSection('Comments');
     await expect(page.getByRole('region', { name: 'Comments' })).toContainText('Wrong task type');
 
     await page.locator('[data-reopen-task]').click();
@@ -157,10 +157,10 @@ test.describe('Status changes and closed tasks', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
 
+    await page.locator('[data-task-header] [data-edit]').click();
     await expect(page.locator('[data-locked-fields]')).toContainText(
       "Can't be changed after creation",
     );
-    await page.locator('[data-task-header] [data-edit]').click();
     await expect(page.getByRole('combobox', { name: /^(Matter|Task type|Workflow)/ })).toHaveCount(
       0,
     );

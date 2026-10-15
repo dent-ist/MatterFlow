@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  ElementRef,
   effect,
   inject,
   signal,
@@ -45,6 +44,8 @@ import {
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { splitFormErrors } from '../../../shared/ui/custom-fields';
+import { Dialog } from 'primeng/dialog';
+import { DialogFocus } from '../../../shared/ui/dialog-focus';
 import { TaskDetailStore } from './task-detail.store';
 import { valuesPatch } from './task-step';
 import { MatterRef } from '../../../shared/ui/matter-ref';
@@ -73,24 +74,94 @@ const LOCK_TEXT =
 const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
 
 /**
- * Details tab (UX S10): read view with the request-form values, and an edit mode for title, description, requestor, project,
- * priority, due date and time (local time zone), Pod and assignee, and the request form under the version the Task was
- * created with. Matter, Task Type and Workflow are shown read-only. Server field errors are mapped back onto the fields.
+ * Details panel (UX S10) of the Task page, in the side panel of `mf-detail-layout` (the layout adds the "Details" heading): the
+ * read view (requestor, dates, due, project, Pod, request-form values) and, behind "Edit details" (or the header's Edit), the
+ * edit form in a dialog: title, description, requestor, project, priority, due date and time (local time zone), Pod and assignee,
+ * and the request form under the version the Task was created with. Matter, Task Type and Workflow are shown read-only. Server
+ * field errors are mapped back onto the fields. Closing the dialog returns to the same page.
  */
 @Component({
   selector: 'mf-task-details-tab',
-  imports: [DynamicForm, DateInput, MfDatePipe, DueLabelPipe, EntityPicker, MatterRef],
+  imports: [
+    DynamicForm,
+    DateInput,
+    Dialog,
+    DialogFocus,
+    MfDatePipe,
+    DueLabelPipe,
+    EntityPicker,
+    MatterRef,
+  ],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', '../../../shared/ui/form-field.scss'],
   template: `
     @if (store.task(); as t) {
-      <section aria-labelledby="details-h" data-details-tab>
-        <div class="dt__head">
-          <h2 id="details-h" class="dt__title">Details</h2>
-        </div>
+      <div data-details-tab>
+        @if (t.allowedActions.canEdit) {
+          <div class="pg-panel-actions">
+            <button type="button" class="mf-btn" data-edit-details (click)="openEdit()">
+              Edit details
+            </button>
+          </div>
+        }
 
-        @if (editing()) {
+        <dl class="pg-dl pg-dl--stacked" data-view>
+          @if (t.description) {
+            <dt>Description</dt>
+            <dd class="pre">{{ t.description }}</dd>
+          }
+          <dt>Requestor</dt>
+          <dd>
+            {{ t.requestorName }}
+            @if (t.requestorEmail) {
+              &lt;<a class="pg-link" [href]="'mailto:' + t.requestorEmail">{{ t.requestorEmail }}</a
+              >&gt;
+            }
+          </dd>
+          @if (t.requestedAtUtc) {
+            <dt>Request sent</dt>
+            <dd>{{ t.requestedAtUtc | mfDate }}</dd>
+          }
+          <dt>Due</dt>
+          <dd>{{ { dueDate: t.dueDate, dueAtUtc: t.dueAtUtc } | dueLabel: t.status }}</dd>
+          <dt>Project</dt>
+          <dd>{{ t.project?.name ?? 'No project' }}</dd>
+          <dt>Pod</dt>
+          <dd>{{ t.assignedPod?.name ?? 'No pod' }}</dd>
+          <dt>Task type</dt>
+          <dd>{{ t.taskType.name }}</dd>
+          <dt>Created</dt>
+          <dd>{{ t.createdBy?.displayName ?? 'Unknown' }}, {{ t.createdAtUtc | mfDate }}</dd>
+          @if (t.modifiedAtUtc) {
+            <dt>Last updated</dt>
+            <dd>{{ t.modifiedAtUtc | mfDate }}</dd>
+          }
+        </dl>
+
+        @if (!editing() && schema(); as definition) {
+          <section class="dt__request" aria-labelledby="td-request-h" data-request-form>
+            <h3 id="td-request-h" class="dt__sub">
+              Request details ({{ t.taskType.name }}, form version {{ t.formVersionNo }})
+            </h3>
+            <mf-dynamic-form [definition]="definition" [values]="formValues()" [readOnly]="true" />
+          </section>
+        }
+
+        <p-dialog
+          header="Edit task details"
+          appendTo="body"
+          [modal]="true"
+          [closable]="true"
+          closeAriaLabel="Close without saving"
+          [closeOnEscape]="!store.dirty()"
+          [mfDialogFocus]="editing()"
+          [draggable]="false"
+          [resizable]="false"
+          [visible]="editing()"
+          (visibleChange)="onDialogVisible($event)"
+          [style]="{ width: '44rem', maxWidth: '95vw' }"
+        >
           <form class="dt__form" novalidate (submit)="save($event)" data-edit-form>
             @if (summary().length > 0) {
               <div class="pg-summary" role="alert" tabindex="-1" data-error-summary>
@@ -306,6 +377,27 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
               </fieldset>
             }
 
+            <section class="dt__locked" aria-labelledby="td-locked-h" data-locked-fields>
+              <h3 id="td-locked-h" class="dt__sub">
+                <i class="pi pi-lock" aria-hidden="true"></i> Task type, workflow and matter
+              </h3>
+              <dl class="pg-dl">
+                <dt>Matter</dt>
+                <dd>
+                  <mf-matter-ref
+                    [value]="t.matter.matterRef"
+                    [link]="['/matters', t.matter.matterId]"
+                  />
+                  {{ t.matter.name }}
+                </dd>
+                <dt>Task type</dt>
+                <dd>{{ t.taskType.name }}</dd>
+                <dt>Workflow</dt>
+                <dd>{{ t.workflow.workflowName }} v{{ t.workflow.versionNo }}</dd>
+              </dl>
+              <p class="pg-muted" data-lock-text>{{ lockText }}</p>
+            </section>
+
             <div class="dt__actions">
               <button
                 type="submit"
@@ -326,93 +418,11 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
               </button>
             </div>
           </form>
-        } @else {
-          <dl class="pg-dl" data-view>
-            <dt>Title</dt>
-            <dd>{{ t.title }}</dd>
-            <dt>Description</dt>
-            <dd class="pre">{{ t.description || 'Not provided' }}</dd>
-            <dt>Requestor</dt>
-            <dd>
-              {{ t.requestorName }}
-              @if (t.requestorEmail) {
-                &lt;<a class="pg-link" [href]="'mailto:' + t.requestorEmail">{{
-                  t.requestorEmail
-                }}</a
-                >&gt;
-              }
-            </dd>
-            @if (t.requestedAtUtc) {
-              <dt>Request sent</dt>
-              <dd>{{ t.requestedAtUtc | mfDate }}</dd>
-            }
-            <dt>Project</dt>
-            <dd>{{ t.project?.name ?? 'No project' }}</dd>
-            <dt>Priority</dt>
-            <dd>{{ t.priority.label }}</dd>
-            <dt>Due</dt>
-            <dd>{{ { dueDate: t.dueDate, dueAtUtc: t.dueAtUtc } | dueLabel: t.status }}</dd>
-            <dt>Pod</dt>
-            <dd>{{ t.assignedPod?.name ?? 'No pod' }}</dd>
-            <dt>Assignee</dt>
-            <dd>{{ t.assignedUser?.displayName ?? 'Unassigned' }}</dd>
-            <dt>Created</dt>
-            <dd>{{ t.createdBy?.displayName ?? 'Unknown' }}, {{ t.createdAtUtc | mfDate }}</dd>
-            @if (t.modifiedAtUtc) {
-              <dt>Last updated</dt>
-              <dd>{{ t.modifiedAtUtc | mfDate }}</dd>
-            }
-          </dl>
-
-          @if (schema(); as definition) {
-            <section class="dt__request" aria-labelledby="td-request-h" data-request-form>
-              <h3 id="td-request-h" class="dt__sub">
-                Request details ({{ t.taskType.name }}, form version {{ t.formVersionNo }})
-              </h3>
-              <mf-dynamic-form
-                [definition]="definition"
-                [values]="formValues()"
-                [readOnly]="true"
-              />
-            </section>
-          }
-        }
-
-        <section class="dt__locked" aria-labelledby="td-locked-h" data-locked-fields>
-          <h3 id="td-locked-h" class="dt__sub">
-            <i class="pi pi-lock" aria-hidden="true"></i> Task type, workflow and matter
-          </h3>
-          <dl class="pg-dl">
-            <dt>Matter</dt>
-            <dd>
-              <mf-matter-ref
-                [value]="t.matter.matterRef"
-                [link]="['/matters', t.matter.matterId]"
-              />
-              {{ t.matter.name }}
-            </dd>
-            <dt>Task type</dt>
-            <dd>{{ t.taskType.name }}</dd>
-            <dt>Workflow</dt>
-            <dd>{{ t.workflow.workflowName }} v{{ t.workflow.versionNo }}</dd>
-          </dl>
-          <p class="pg-muted" data-lock-text>{{ lockText }}</p>
-        </section>
-      </section>
+        </p-dialog>
+      </div>
     }
   `,
   styles: `
-    .dt__head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--mf-s3);
-      margin-bottom: var(--mf-s3);
-    }
-    .dt__title {
-      margin: 0;
-      font-size: var(--mf-fs-h3);
-    }
     .dt__sub {
       margin: var(--mf-s4) 0 var(--mf-s2);
       font-size: var(--mf-fs-md);
@@ -420,7 +430,6 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
     .dt__form {
       display: grid;
       gap: var(--mf-s4);
-      max-width: 640px;
     }
     .dt__due,
     .dt__request {
@@ -458,7 +467,6 @@ export class TaskDetailsTab {
   private readonly zone = inject(USER_TIME_ZONE);
   private readonly clock = inject(Clock);
   private readonly dynamicForm = viewChild(DynamicForm);
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly lockText = LOCK_TEXT;
   protected readonly toNumber = toNumber;
@@ -623,7 +631,7 @@ export class TaskDetailsTab {
     this.formErrors.set([]);
     this.summary.set([]);
     this.store.dirty.set(false);
-    setTimeout(() => this.host.nativeElement.querySelector<HTMLElement>('#td-title')?.focus());
+    setTimeout(() => document.getElementById('td-title')?.focus());
     void this.loadOptions(t.matter.matterId);
   }
 
@@ -689,6 +697,15 @@ export class TaskDetailsTab {
 
   protected err(key: string): string | null {
     return this.fieldErrors()[key] ?? null;
+  }
+
+  protected openEdit(): void {
+    this.store.editOrigin.set('panel');
+    this.store.editing.set(true);
+  }
+
+  protected onDialogVisible(visible: boolean): void {
+    if (!visible && this.store.editing()) this.cancelEdit();
   }
 
   protected cancelEdit(): void {
@@ -800,9 +817,7 @@ export class TaskDetailsTab {
   }
 
   private focusSummary(): void {
-    queueMicrotask(() =>
-      this.host.nativeElement.querySelector<HTMLElement>('[data-error-summary]')?.focus(),
-    );
+    queueMicrotask(() => document.querySelector<HTMLElement>('[data-error-summary]')?.focus());
   }
 
   private showServerErrors(error: unknown): void {

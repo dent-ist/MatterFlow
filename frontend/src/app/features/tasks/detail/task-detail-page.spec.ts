@@ -41,7 +41,8 @@ describe('TaskDetailPage header', () => {
 
     expect(el.querySelectorAll('[data-edit]').length).toBe(1);
     expect(q(el, '[data-edit]')!.textContent!.trim()).toBe('Edit');
-    expect(q(el, '[data-edit-details]')).toBeNull();
+    expect(q(el, '[data-edit-details]')).not.toBeNull();
+    expect(q(el, '[data-activity-button]')!.textContent).toContain('Activity');
     expect(q(el, '[data-status] [data-inline-trigger]')).not.toBeNull();
     expect(q(el, '[data-priority] [data-inline-trigger]')).not.toBeNull();
     expect(q(el, '[data-assignee] [data-inline-trigger]')).not.toBeNull();
@@ -99,15 +100,18 @@ describe('TaskDetailPage header', () => {
     expect(q(el, '[data-priority]')!.textContent).toContain('Critical');
   });
 
-  it('returns focus to Edit when the Details form closes', async () => {
+  it('opens the Details form from Edit and returns focus to Edit when it closes', async () => {
     const { fixture, el } = await mountTaskPage(aTask());
     document.body.appendChild(el);
-    await click(fixture, q(el, '[data-edit]'));
-    expect(q(el, '[data-edit]')).toBeNull();
+    const edit = q(el, '[data-edit]') as HTMLElement;
+    edit.focus();
+    await click(fixture, edit);
+    expect(q(document.body, '[data-edit-form]')).not.toBeNull();
     fixture.debugElement.injector.get(TaskDetailStore).editing.set(false);
     await settle(fixture);
     await new Promise((r) => setTimeout(r, 20));
-    expect(document.activeElement).toBe(q(el, '[data-edit]'));
+    expect(q(document.body, '[data-edit-form]')).toBeNull();
+    expect(document.activeElement).toBe(edit);
     el.remove();
   });
 
@@ -363,7 +367,6 @@ describe('TaskDetailPage complete', () => {
     await click(fixture, link);
 
     expect(fakes.tasks['completeTask']).not.toHaveBeenCalled();
-    expect(q(el, '#task-tab-workflow')!.getAttribute('aria-selected')).toBe('true');
     expect(q(el, '[data-step-id="103"] .step__toggle')!.getAttribute('aria-expanded')).toBe('true');
     expect(document.activeElement).toBe(q(el, '#step-btn-103'));
   });
@@ -425,40 +428,119 @@ describe('TaskDetailPage complete', () => {
   });
 });
 
-describe('TaskDetailPage tabs and states', () => {
+describe('TaskDetailPage layout and states', () => {
   afterEach(() => TestBed.resetTestingModule());
 
-  it('has the five tabs, with the Comments, Assets and Activity panels mounted on demand', async () => {
-    const { fixture, el } = await mountTaskPage(aTask());
-    expect(Array.from(el.querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim())).toEqual(
-      ['Details', 'Workflow (1/3)', 'Comments', 'Assets', 'Activity'],
+  it('is one page: Workflow and Comments in the main column, Details and Assets in the side panel, no tabs', async () => {
+    const { el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
+
+    expect(q(el, '[role=tablist]')).toBeNull();
+    expect(q(el, '[role=tab]')).toBeNull();
+    const main = q(el, '[data-detail-main]')!;
+    expect(q(main, '[data-section=workflow] [data-workflow-tab]')).not.toBeNull();
+    expect(q(main, '[data-section=comments] mf-task-comments')).not.toBeNull();
+    const panel = q(el, 'aside[data-detail-panel]')!;
+    expect(q(panel, '[data-section=details] [data-details-tab]')).not.toBeNull();
+    expect(q(panel, '[data-section=assets] mf-task-asset-links')).not.toBeNull();
+    // Activity is a drawer, not a section.
+    expect(q(el, 'mf-task-activity')).toBeNull();
+  });
+
+  it('keeps the heading order: one h1, h2 sections Workflow, Comments, Details, Assets', async () => {
+    const { el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
+    expect(el.querySelectorAll('h1').length).toBe(1);
+    const h2 = Array.from(el.querySelectorAll('h2')).map(
+      (h) => h.textContent!.replace(/\s+/g, ' ').trim().split(' ')[0],
     );
-    const panels: Record<string, string> = {
-      comments: 'mf-task-comments',
-      assets: 'mf-task-asset-links',
-      activity: 'mf-task-activity',
-    };
-    for (const [name, selector] of Object.entries(panels)) {
-      await click(fixture, q(el, `#task-tab-${name}`));
-      expect(q(el, selector)).not.toBeNull();
+    expect(h2).toEqual(['Workflow', 'Comments', 'Details', 'Assets']);
+    expect(q(el, 'aside')!.getAttribute('aria-labelledby')).toBe(q(el, 'aside h2')!.id);
+  });
+
+  it('has a Jump to row whose links scroll to the section and move focus to its heading', async () => {
+    const { fixture, el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
+    document.body.appendChild(el);
+    const nav = q(el, 'nav[aria-label="Jump to"]')!;
+    expect(Array.from(nav.querySelectorAll('a')).map((a) => a.textContent!.trim())).toEqual([
+      'Workflow',
+      'Comments',
+      'Assets',
+    ]);
+    for (const [name, selector] of [
+      ['workflow', '#wf-h'],
+      ['comments', '[data-section=comments] [data-section-heading]'],
+      ['assets', '[data-section=assets] [data-section-heading]'],
+    ]) {
+      await click(fixture, q(nav, `[data-jump-to=${name}]`));
+      await new Promise((r) => setTimeout(r, 10));
+      expect(document.activeElement).toBe(q(el, selector));
     }
+    el.remove();
   });
 
-  it('moves between tabs with the arrow keys and exposes ARIA tab semantics', async () => {
+  it.each(['workflow', 'comments', 'assets'])(
+    'the old ?tab=%s link scrolls to the section and moves focus to its heading',
+    async (name) => {
+      const scroll = vi.fn();
+      HTMLElement.prototype.scrollIntoView = scroll;
+      const { fixture, el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View'], {}, name);
+      await settle(fixture);
+      await new Promise((r) => setTimeout(r, 20));
+      const heading = q(el, `[data-section=${name}] [data-section-heading]`);
+      expect(heading).not.toBeNull();
+      expect(scroll.mock.contexts).toContain(heading);
+      expect(heading!.getAttribute('tabindex')).toBe('-1');
+      expect(fixture.debugElement.injector.get(TaskDetailStore).activityOpen()).toBe(false);
+    },
+  );
+
+  it('the old ?tab=activity link opens the Activity drawer, and ?tab=details just shows the page', async () => {
+    const activity = await mountTaskPage(aTask(), PERMS, {}, 'activity');
+    expect(activity.fixture.debugElement.injector.get(TaskDetailStore).activityOpen()).toBe(true);
+    expect(q(document.body, 'mf-task-activity')).not.toBeNull();
+    TestBed.resetTestingModule();
+
+    const details = await mountTaskPage(aTask(), PERMS, {}, 'details');
+    expect(details.fixture.debugElement.injector.get(TaskDetailStore).activityOpen()).toBe(false);
+    expect(q(details.el, '[data-header], [data-task-header]')).not.toBeNull();
+    expect(q(document.body, 'mf-task-activity')).toBeNull();
+  });
+
+  it('the Activity button opens the drawer titled with the task, and closing it returns focus to the button', async () => {
     const { fixture, el } = await mountTaskPage(aTask());
-    const details = q(el, '#task-tab-details')!;
-    details.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    document.body.appendChild(el);
+    const button = q(el, '[data-activity-button]') as HTMLElement;
+    button.focus();
+    await click(fixture, button);
+    await new Promise((r) => setTimeout(r, 20));
+    const drawer = q(document.body, '.mf-drawer')!;
+    expect(drawer.textContent).toContain('Activity: TSK-1042 Process Smith custodians');
+    expect(q(drawer, 'mf-task-activity')).not.toBeNull();
+
+    fixture.debugElement.injector.get(TaskDetailStore).activityOpen.set(false);
     await settle(fixture);
-    expect(q(el, '#task-tab-workflow')!.getAttribute('aria-selected')).toBe('true');
-    expect(q(el, '#task-tab-workflow')!.getAttribute('tabindex')).toBe('0');
-    expect(q(el, '#task-tab-details')!.getAttribute('tabindex')).toBe('-1');
-    expect(q(el, '[role=tabpanel]')!.getAttribute('aria-labelledby')).toBe('task-tab-workflow');
+    await new Promise((r) => setTimeout(r, 30));
+    expect(document.activeElement).toBe(button);
+    el.remove();
   });
 
-  it('opens the tab named in the URL', async () => {
-    const { el } = await mountTaskPage(aTask(), PERMS, {}, 'workflow');
-    expect(q(el, '#task-tab-workflow')!.getAttribute('aria-selected')).toBe('true');
-    expect(q(el, '[data-workflow-tab]')).not.toBeNull();
+  it('opens the step named by ?step= and puts focus on it', async () => {
+    const task = aTask();
+    const id = task.workflow.steps[0].stepInstanceId;
+    const { fixture, el } = await mountTaskPage(task, PERMS);
+    document.body.appendChild(el);
+    fixture.componentRef.setInput('step', String(id));
+    await settle(fixture);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(q(el, `[data-step-id="${id}"] .step__toggle`)!.getAttribute('aria-expanded')).toBe(
+      'true',
+    );
+    expect(document.activeElement).toBe(q(el, `#step-btn-${id}`));
+    el.remove();
+  });
+
+  it('shows a note in place of the Assets for a user without Asset.View', async () => {
+    const { el } = await mountTaskPage(aTask(), ['Task.View']);
+    expect(q(el, '[data-section=assets] [data-no-access]')).not.toBeNull();
   });
 
   it('shows a not-found page for 404 and a permission page for 403', async () => {
@@ -538,7 +620,7 @@ describe('TaskDetailPage tabs and states', () => {
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
     await click(fixture, q(el, '[data-edit]'));
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
-    const title = q(el, '#td-title') as HTMLInputElement;
+    const title = q(document.body, '#td-title') as HTMLInputElement;
     title.value = 'New title';
     title.dispatchEvent(new Event('input'));
     await settle(fixture);

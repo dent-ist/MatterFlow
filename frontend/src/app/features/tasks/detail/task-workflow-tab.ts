@@ -3,7 +3,7 @@ import { TaskStep } from './task-step';
 import { TaskDetailStore } from './task-detail.store';
 
 /**
- * Workflow tab (UX S10): the stepper for ordered and unordered workflows, the progress summary, an explanation when step
+ * Workflow section (UX S10): the stepper for ordered and unordered workflows, the progress summary, an explanation when step
  * actions are blocked (On Hold, closed), and the Complete task action at the end.
  */
 @Component({
@@ -14,9 +14,10 @@ import { TaskDetailStore } from './task-detail.store';
   template: `
     @if (wf(); as w) {
       <section aria-labelledby="wf-h" data-workflow-tab>
-        <h2 id="wf-h" class="wf__title">
-          {{ w.workflowName }} v{{ w.versionNo }}
+        <h2 id="wf-h" class="wf__title" tabindex="-1" data-section-heading>
+          Workflow
           <span class="wf__mode" data-mode>
+            {{ w.workflowName }} v{{ w.versionNo }}.
             {{
               w.isOrdered
                 ? 'Ordered: complete or skip each step in order'
@@ -108,6 +109,14 @@ import { TaskDetailStore } from './task-detail.store';
     .wf__title {
       margin: 0 0 var(--mf-s1);
       font-size: var(--mf-fs-h3);
+      scroll-margin-top: calc(var(--mf-header-h, 3.75rem) + var(--mf-s4));
+    }
+    .wf__title:focus {
+      outline: none;
+    }
+    .wf__title:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 2px;
     }
     .wf__mode {
       margin-left: var(--mf-s2);

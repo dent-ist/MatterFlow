@@ -56,7 +56,7 @@ test.describe('Assignment by a technician (SCN-006)', () => {
 
     await expect(detail.assignee).toContainText(colleague.username);
     await detail.expectStatus('In Progress');
-    await detail.showTab('Activity');
+    await detail.openActivity();
     await expect(page.getByRole('region', { name: 'Activity' })).toContainText(/assign/i);
   });
 });

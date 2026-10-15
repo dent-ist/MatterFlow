@@ -43,7 +43,7 @@ const PAGE_SIZE = 25;
   imports: [MfDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="ta" aria-label="Activity">
+    <section class="ta" [class.ta--compact]="compact()" aria-label="Activity">
       <div class="ta__filters" role="group" aria-label="Filter by type">
         @for (f of filters; track f.key) {
           <button
@@ -177,6 +177,10 @@ const PAGE_SIZE = 25;
       padding: var(--mf-s2) 0;
       border-bottom: 1px solid var(--mf-border);
     }
+    .ta--compact .ta__item {
+      grid-template-columns: 1fr;
+      gap: var(--mf-s1);
+    }
     @media (max-width: 40rem) {
       .ta__item {
         grid-template-columns: 1fr;
@@ -233,6 +237,8 @@ export class TaskActivity {
   readonly taskId = input.required<number>();
   /** Change the value to reload the timeline. */
   readonly refresh = input(0);
+  /** One column (time above the text), for the narrow Activity drawer. */
+  readonly compact = input(false);
 
   protected readonly filters = ACTIVITY_FILTERS;
   private readonly api = inject(TaskActivityClient);

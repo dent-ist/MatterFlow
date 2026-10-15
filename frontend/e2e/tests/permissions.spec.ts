@@ -250,7 +250,7 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
     await expect(detail.statusMenu).toHaveCount(0);
     await expect(page.locator('[data-view-only]')).toContainText('View only');
-    await detail.showTab('Workflow');
+    await detail.showSection('Workflow');
     await expect(page.locator('[data-start], [data-complete], [data-skip]')).toHaveCount(0);
     await expect(detail.completeTaskButton).toHaveCount(0);
   });

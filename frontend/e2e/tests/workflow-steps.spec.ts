@@ -21,7 +21,7 @@ test.describe('Ordered workflow rules (SCN-010, SCN-011, SCN-012, SCN-013)', () 
     const api = new TaskApi(admin, task.taskId);
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Workflow');
+    await detail.showSection('Workflow');
 
     await expect(detail.step(intake).state).toHaveText('Pending');
     for (const title of [validate, load, report]) {
@@ -59,7 +59,7 @@ test.describe('Ordered workflow rules (SCN-010, SCN-011, SCN-012, SCN-013)', () 
     const task = await seed.task(world);
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Workflow');
+    await detail.showSection('Workflow');
 
     const step = detail.step(intake);
     await step.expand();
@@ -116,7 +116,7 @@ test.describe('Ordered workflow rules (SCN-010, SCN-011, SCN-012, SCN-013)', () 
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Workflow');
+    await detail.showSection('Workflow');
     const step = detail.step(validate);
     await step.expand();
     await expect(step.skipButton).toBeDisabled();
@@ -144,7 +144,7 @@ test.describe('Ordered workflow rules (SCN-010, SCN-011, SCN-012, SCN-013)', () 
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Workflow');
+    await detail.showSection('Workflow');
     await detail.step(validate).reopen();
 
     await expect(detail.step(validate).state).toHaveText('In progress');
@@ -189,7 +189,7 @@ test.describe('Ordered workflow rules (SCN-010, SCN-011, SCN-012, SCN-013)', () 
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Workflow');
+    await detail.showSection('Workflow');
     await expect(detail.step(five).locked).toContainText('Locked. Complete or skip step 2 first.');
 
     const blocked = await api.stepAction(5, 'complete');
@@ -215,7 +215,7 @@ test.describe('Ordered workflow rules (SCN-010, SCN-011, SCN-012, SCN-013)', () 
     const task = await seed.task(world);
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Workflow');
+    await detail.showSection('Workflow');
 
     await expect(page.locator('[data-mode]')).toContainText('Unordered');
     await expect(detail.step(gamma).locked).toHaveCount(0);
@@ -242,7 +242,7 @@ test.describe('Completing a task with open steps (addendum K)', () => {
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Workflow');
+    await detail.showSection('Workflow');
     await expect(page.locator('#wf-complete-note')).toContainText('2 steps are not completed');
     await detail.completeTaskButton.click();
 
@@ -263,7 +263,7 @@ test.describe('Completing a task with open steps (addendum K)', () => {
     const task = await seed.task(world);
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Workflow');
+    await detail.showSection('Workflow');
     await detail.completeTaskButton.click();
     await detail.dialog.getByRole('button', { name: 'Cancel' }).click();
     await expect(detail.dialog).toBeHidden();
@@ -286,7 +286,7 @@ test.describe('Completing a task with open steps (addendum K)', () => {
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Workflow');
+    await detail.showSection('Workflow');
     await detail.completeTaskButton.click();
 
     await expect(detail.dialog.locator('[data-blocked-body]')).toContainText(
@@ -332,7 +332,7 @@ test.describe('Known application defects (docs/qa/e2e-findings.md)', () => {
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Workflow');
+    await detail.showSection('Workflow');
     const step = detail.step(world.workflow.stepTitles[0]);
     await step.expand();
     await expect(step.reopenButton).toBeVisible();

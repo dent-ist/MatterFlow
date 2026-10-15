@@ -33,7 +33,7 @@ export const COMMENTS_PAGE_SIZE = 200;
 const RENDER_CACHE_LIMIT = 1000;
 
 /**
- * The Comments tab of a Task (UX S10): the thread, a basic rich-text composer, and edit / delete of one's own comments.
+ * The Comments section of a Task (UX S10): the thread, a basic rich-text composer, and edit / delete of one's own comments.
  * Comments are allowed in every Task status; `readOnly` only hides the composer and the row actions (for example when the viewer lacks
  * Task.Comment). Cancel and On Hold reasons show their purpose label and cannot be deleted. Bodies arrive sanitized from the server and
  * are rendered through Angular's own HTML sanitizer.
@@ -48,7 +48,7 @@ const RENDER_CACHE_LIMIT = 1000;
   template: `
     <section class="tc" aria-label="Comments">
       <header class="tc__head">
-        <h2 class="tc__title">Comments ({{ total() }})</h2>
+        <h2 class="tc__title" tabindex="-1" data-section-heading>Comments ({{ total() }})</h2>
         <div class="tc__order" role="group" aria-label="Order">
           <button
             type="button"
@@ -270,6 +270,14 @@ const RENDER_CACHE_LIMIT = 1000;
     .tc__title {
       margin: 0;
       font-size: var(--mf-fs-h3);
+      scroll-margin-top: calc(var(--mf-header-h, 3.75rem) + var(--mf-s4));
+    }
+    .tc__title:focus {
+      outline: none;
+    }
+    .tc__title:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 2px;
     }
     .tc__order {
       display: inline-flex;
@@ -411,6 +419,8 @@ export class TaskComments {
   readonly taskId = input.required<number>();
   /** Hides the composer and the edit / delete actions. */
   readonly readOnly = input(false);
+  /** Change the value (for example the Task's rowVersion) to reload the thread quietly: a status change adds its reason as a comment. */
+  readonly refresh = input<string | number | null>(null);
 
   /** Number of comments shown, after every load and change. */
   readonly countChange = output<number>();
@@ -458,7 +468,19 @@ export class TaskComments {
         void this.load();
       });
     });
+    effect(() => {
+      this.refresh();
+      untracked(() => {
+        // The first run is the initial load above; later ones reload without the loading state, keeping what is shown.
+        if (this.refreshed && this.state() !== 'loading' && this.editingId() === null) {
+          void this.load(this.items().length);
+        }
+        this.refreshed = true;
+      });
+    });
   }
+
+  private refreshed = false;
 
   protected canPost(): boolean {
     return !this.readOnly() && this.auth.has('Task.Comment');

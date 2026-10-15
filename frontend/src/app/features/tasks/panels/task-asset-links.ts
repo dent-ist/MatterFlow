@@ -16,6 +16,7 @@ import {
   TaskAssetLinkResponse,
   TaskAssetsClient,
 } from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { AssetPicker } from '../../../shared/ui/asset-picker';
@@ -27,7 +28,7 @@ export const ASSETS_CLOSED_NOTE =
   "Linked assets can't be changed while the task is Completed or Cancelled. Reopen it to change them.";
 
 /**
- * The Assets tab of a Task (UX S10): the linked Assets with their relationship (Source, Destination, Subject, Result, ...), linking through the
+ * The Assets section of a Task (UX S10): the linked Assets with their relationship (Source, Destination, Subject, Result, ...), linking through the
  * `AssetPicker` limited to the Task's Matter, changing the relationship and unlinking with a confirmation. Read-only when `readOnly` is set
  * (closed Task) or when the server says the caller cannot change links (missing Asset.Link or Task.Edit).
  *
@@ -41,15 +42,21 @@ export const ASSETS_CLOSED_NOTE =
   template: `
     <section class="tl" aria-label="Linked assets">
       <header class="tl__head">
-        <h2 class="tl__title">Assets ({{ items().length }})</h2>
-        @if (editable() && !linking()) {
+        <h2 class="tl__title" tabindex="-1" data-section-heading>
+          {{ canSee() ? 'Assets (' + items().length + ')' : 'Assets' }}
+        </h2>
+        @if (canSee() && editable() && !linking()) {
           <button type="button" class="mf-btn" data-link-open (click)="openLinking()">
             Link asset
           </button>
         }
       </header>
 
-      @if (closedNote()) {
+      @if (!canSee()) {
+        <p class="tl__note" data-no-access>
+          You don't have permission to view assets, so linked assets aren't shown here.
+        </p>
+      } @else if (closedNote()) {
         <p class="tl__note" data-closed-note>{{ closedNoteText }}</p>
       }
 
@@ -98,103 +105,94 @@ export const ASSETS_CLOSED_NOTE =
         </form>
       }
 
-      @switch (state()) {
-        @case ('loading') {
-          <p class="tl__muted" role="status" aria-busy="true">Loading assets...</p>
-        }
-        @case ('error') {
-          <p class="tl__alert" role="alert" data-load-error>
-            Something went wrong. Try again.
-            <button type="button" class="tl__link" (click)="reload()">Retry</button>
-          </p>
-        }
-        @default {
-          @if (items().length === 0) {
-            <p class="tl__muted" data-empty>{{ emptyText }}</p>
-          } @else {
-            <div class="tl__scroll">
-              <div class="mf-scroll">
-                <table class="tl__table">
-                  <thead>
-                    <tr>
-                      <th scope="col">Name</th>
-                      <th scope="col">Type</th>
-                      <th scope="col">External ref</th>
-                      <th scope="col">Relationship</th>
-                      <th scope="col"><span class="tl__sr">Actions</span></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (a of items(); track a.assetId) {
-                      <tr [attr.data-asset-id]="a.assetId">
-                        <td>
-                          {{ a.displayName }}
-                          @if (!a.isActive) {
-                            <mf-badge>Inactive</mf-badge>
-                          }
-                        </td>
-                        <td>{{ a.assetTypeName }}</td>
-                        <td>
-                          @if (isUrl(a.externalReference)) {
-                            <a
-                              [href]="a.externalReference"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              >{{ a.externalReference }}</a
-                            >
-                          } @else {
-                            {{ a.externalReference }}
-                          }
-                        </td>
-                        <td>
-                          @if (editable()) {
-                            <select
-                              class="mf-control mf-control--compact"
-                              data-role-select
-                              [attr.aria-label]="'Relationship of ' + a.displayName"
-                              [disabled]="busy()"
-                              (change)="changeRole(a, $event)"
-                            >
-                              <option
-                                value=""
-                                [selected]="
-                                  a.assetLinkRoleId === undefined || a.assetLinkRoleId === null
-                                "
-                              >
-                                None
-                              </option>
-                              @for (r of rolesFor(a); track r.id) {
-                                <option [value]="r.id" [selected]="r.id === a.assetLinkRoleId">
-                                  {{ r.name }}
-                                </option>
-                              }
-                            </select>
-                          } @else {
-                            <span data-role>{{ a.assetLinkRoleName ?? 'None' }}</span>
-                          }
-                        </td>
-                        <td class="tl__end">
-                          @if (editable()) {
-                            <button
-                              type="button"
-                              class="mf-btn"
-                              data-unlink
-                              [disabled]="busy()"
-                              (click)="askUnlink(a)"
-                            >
-                              Remove link
-                            </button>
-                          }
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </div>
+      @if (canSee()) {
+        @switch (state()) {
+          @case ('loading') {
+            <p class="tl__muted" role="status" aria-busy="true">Loading assets...</p>
           }
-          @if (rowError()) {
-            <p class="tl__alert" role="alert" data-row-error>{{ rowError() }}</p>
+          @case ('error') {
+            <p class="tl__alert" role="alert" data-load-error>
+              Something went wrong. Try again.
+              <button type="button" class="tl__link" (click)="reload()">Retry</button>
+            </p>
+          }
+          @default {
+            @if (items().length === 0) {
+              <p class="tl__muted" data-empty>{{ emptyText }}</p>
+            } @else {
+              <ul class="tl__list" aria-label="Linked assets">
+                @for (a of items(); track a.assetId) {
+                  <li class="tl__item" [attr.data-asset-id]="a.assetId">
+                    <div class="tl__name">
+                      <strong>{{ a.displayName }}</strong>
+                      @if (!a.isActive) {
+                        <mf-badge>Inactive</mf-badge>
+                      }
+                    </div>
+                    @if (a.assetTypeName) {
+                      <p class="tl__meta" data-type>{{ a.assetTypeName }}</p>
+                    }
+                    @if (a.externalReference) {
+                      <p class="tl__meta tl__ref" data-ref>
+                        @if (isUrl(a.externalReference)) {
+                          <a
+                            [href]="a.externalReference"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            >{{ a.externalReference }}</a
+                          >
+                        } @else {
+                          {{ a.externalReference }}
+                        }
+                      </p>
+                    }
+                    <div class="tl__row">
+                      @if (editable()) {
+                        <select
+                          class="mf-control mf-control--compact"
+                          data-role-select
+                          [attr.aria-label]="'Relationship of ' + a.displayName"
+                          [disabled]="busy()"
+                          (change)="changeRole(a, $event)"
+                        >
+                          <option
+                            value=""
+                            [selected]="
+                              a.assetLinkRoleId === undefined || a.assetLinkRoleId === null
+                            "
+                          >
+                            None
+                          </option>
+                          @for (r of rolesFor(a); track r.id) {
+                            <option [value]="r.id" [selected]="r.id === a.assetLinkRoleId">
+                              {{ r.name }}
+                            </option>
+                          }
+                        </select>
+                        <button
+                          type="button"
+                          class="mf-btn"
+                          data-unlink
+                          [attr.aria-label]="'Remove link to ' + a.displayName"
+                          [disabled]="busy()"
+                          (click)="askUnlink(a)"
+                        >
+                          Remove link
+                        </button>
+                      } @else {
+                        <span class="tl__meta"
+                          >Relationship:
+                          <span data-role>{{ a.assetLinkRoleName ?? 'None' }}</span></span
+                        >
+                      }
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+            @if (rowError()) {
+              <p class="tl__alert" role="alert" data-row-error>{{ rowError() }}</p>
+            }
           }
         }
       }
@@ -231,31 +229,51 @@ export const ASSETS_CLOSED_NOTE =
     .tl__title {
       margin: 0;
       font-size: var(--mf-fs-h3);
+      scroll-margin-top: calc(var(--mf-header-h, 3.75rem) + var(--mf-s4));
     }
-    .tl__scroll {
-      overflow-x: auto;
+    .tl__title:focus {
+      outline: none;
     }
-    .tl__table {
-      width: 100%;
-      border-collapse: collapse;
+    .tl__title:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 2px;
     }
-    .tl__table th,
-    .tl__table td {
+    .tl__list {
+      display: grid;
+      gap: var(--mf-s2);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .tl__item {
+      display: grid;
+      gap: var(--mf-s1);
       padding: var(--mf-s2) var(--mf-s3);
-      border-bottom: 1px solid var(--mf-border);
-      text-align: left;
-      vertical-align: middle;
+      border: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius);
       overflow-wrap: anywhere;
     }
-    .tl__end {
-      text-align: right;
+    .tl__name {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s2);
     }
-    .tl__sr {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
+    .tl__meta {
+      margin: 0;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+    .tl__row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s2);
+      margin-top: var(--mf-s1);
+    }
+    .tl__row select {
+      flex: 1 1 8rem;
+      min-width: 0;
     }
     .tl__form {
       display: flex;
@@ -325,6 +343,9 @@ export class TaskAssetLinks {
   private readonly roles = signal<AssetLinkRoleView[]>([]);
   protected readonly activeRoles = computed(() => this.roles().filter((r) => r.isActive));
 
+  private readonly auth = inject(AuthStore);
+  /** Linked assets are Asset.View data; without it a note replaces the list (the API would only return placeholder names). */
+  protected readonly canSee = computed(() => this.auth.has('Asset.View'));
   protected readonly editable = computed(() => !this.readOnly() && this.serverCanEdit());
   protected readonly closedNote = computed(() => {
     const status = this.taskStatus();
@@ -344,13 +365,16 @@ export class TaskAssetLinks {
   constructor() {
     effect(() => {
       this.taskId();
+      const canSee = this.canSee();
       untracked(() => {
         this.state.set('loading');
         this.closeLinking();
-        void this.load();
+        if (canSee) void this.load();
       });
     });
-    void this.loadRoles();
+    effect(() => {
+      if (this.canSee()) untracked(() => void this.loadRoles());
+    });
   }
 
   protected reload(): void {

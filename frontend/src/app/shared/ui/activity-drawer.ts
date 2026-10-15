@@ -7,6 +7,9 @@ import { EntityActivity } from './entity-activity';
  * The Activity of a record in a right-side drawer, opened from the "Activity" button of the page header. It is an accessible modal
  * dialog (focus trap, Esc closes, focus returns to the button that opened it) titled "Activity: <record name>". The history loads when
  * the drawer opens and shows the same loading, empty and error states as `mf-entity-activity`.
+ *
+ * Without `objectType` and `objectId` the drawer shows its projected content instead (the Task page projects its own timeline, which
+ * is built from the Task's own activity API). Put an `@if` around the content in the host so it is created only while the drawer is open.
  */
 @Component({
   selector: 'mf-activity-drawer',
@@ -36,15 +39,23 @@ import { EntityActivity } from './entity-activity';
       }"
     >
       @if (visible()) {
-        <mf-entity-activity [objectType]="objectType()" [objectId]="objectId()" [compact]="true" />
+        @if (objectType() !== null && objectId() !== null) {
+          <mf-entity-activity
+            [objectType]="objectType()!"
+            [objectId]="objectId()!"
+            [compact]="true"
+          />
+        } @else {
+          <ng-content />
+        }
       }
     </p-dialog>
   `,
 })
 export class ActivityDrawer {
   /** Audit `ObjectType`, for example `Client`. */
-  readonly objectType = input.required<string>();
-  readonly objectId = input.required<number | string>();
+  readonly objectType = input<string | null>(null);
+  readonly objectId = input<number | string | null>(null);
   /** The record's name, for the title. */
   readonly name = input.required<string>();
   readonly visible = model(false);

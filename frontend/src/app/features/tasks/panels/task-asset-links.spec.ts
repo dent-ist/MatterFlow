@@ -5,6 +5,8 @@ import {
   AssetsClient,
   TaskAssetsClient,
 } from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
+import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { aLookupItem } from '../../../shared/testing/asset-testing';
 import { apiError, buttonByLabel, ok, settle } from '../../../shared/testing/org-testing';
 import { aLink } from './task-panels-testing';
@@ -31,6 +33,7 @@ describe('TaskAssetLinks', () => {
   async function create(
     list = { items: [aLink()], canEdit: true },
     inputs: Record<string, unknown> = {},
+    permissions: Parameters<typeof withPermissions> = ['Asset.View', 'Asset.Link', 'Task.Edit'],
   ): Promise<void> {
     api = {
       listTaskAssets: vi.fn().mockReturnValue(ok(list)),
@@ -47,11 +50,13 @@ describe('TaskAssetLinks', () => {
     TestBed.configureTestingModule({
       providers: [
         MessageService,
+        provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: TaskAssetsClient, useValue: api },
         { provide: AssetsClient, useValue: assets },
         { provide: AssetLinkRolesClient, useValue: { listAssetLinkRoles: () => ok(ROLES) } },
       ],
     });
+    await TestBed.inject(AuthStore).ensureLoaded();
     fixture = TestBed.createComponent(TaskAssetLinks);
     fixture.componentRef.setInput('taskId', 42);
     fixture.componentRef.setInput('matterId', 7);
@@ -233,6 +238,15 @@ describe('TaskAssetLinks', () => {
     await settle(fixture);
 
     expect(q('[data-row-error]').textContent).toContain("can't be changed");
+  });
+
+  it('shows a note instead of the list, and loads nothing, without the Asset.View permission', async () => {
+    await create({ items: [aLink()], canEdit: false }, {}, ['Task.View']);
+
+    expect(q('[data-no-access]').textContent).toContain("don't have permission to view assets");
+    expect(api.listTaskAssets).not.toHaveBeenCalled();
+    expect(el().querySelector('[data-asset-id]')).toBeNull();
+    expect(el().querySelector('[data-link-open]')).toBeNull();
   });
 
   it('offers a retry when loading fails', async () => {

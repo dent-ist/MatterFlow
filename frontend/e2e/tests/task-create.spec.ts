@@ -36,7 +36,7 @@ test.describe('Create task: project, workflow and form rules (SCN-004, SCN-005, 
     await expect(detail.titleText).toHaveText(title);
     await detail.expectStatus('New');
     await expect(detail.progress).toContainText('0 of 3 resolved');
-    await expect(page.getByRole('region', { name: 'Details' })).toContainText('No project');
+    await expect(detail.detailsPanel).toContainText('No project');
 
     const task = await admin.get(`/api/v1/tasks/${taskId}`);
     expect(task.project).toBeNull();
@@ -61,7 +61,7 @@ test.describe('Create task: project, workflow and form rules (SCN-004, SCN-005, 
     await create.requestorName.fill('Rita Requestor');
     const taskId = await create.create();
 
-    await expect(page.getByRole('region', { name: 'Details' })).toContainText(project.name);
+    await expect(new TaskDetailPage(page).detailsPanel).toContainText(project.name);
     const task = await admin.get(`/api/v1/tasks/${taskId}`);
     expect(task.project.projectId).toBe(project.projectId);
   });

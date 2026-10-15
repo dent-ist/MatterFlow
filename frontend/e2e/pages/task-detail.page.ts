@@ -2,7 +2,7 @@ import { expect, Locator, Page } from '@playwright/test';
 
 export type TaskAction = 'START' | 'RESUME' | 'HOLD' | 'COMPLETE' | 'CANCEL' | 'REOPEN';
 
-/** One step of the Workflow tab stepper. */
+/** One step of the Workflow section's stepper. */
 export class StepPanel {
   readonly root: Locator;
 
@@ -70,7 +70,7 @@ export class StepPanel {
   }
 }
 
-/** Task detail (UX S10): header, status actions and the Details / Workflow / Comments / Assets / Activity tabs. */
+/** Task detail (UX S10): one page with the header, status actions, Workflow and Comments, the Details and Assets side panel and the Activity drawer. */
 export class TaskDetailPage {
   readonly header: Locator;
   readonly number: Locator;
@@ -97,13 +97,29 @@ export class TaskDetailPage {
     await expect(this.header).toBeVisible();
   }
 
-  tab(name: 'Details' | 'Workflow' | 'Comments' | 'Assets' | 'Activity'): Locator {
-    return this.page.getByRole('tab', { name: new RegExp(`^${name}`) });
+  /** A section of the single-page layout (Workflow and Comments in the main column, Assets in the side panel). */
+  section(name: 'Workflow' | 'Comments' | 'Assets'): Locator {
+    return this.page.locator(`[data-section="${name.toLowerCase()}"]`);
   }
 
-  async showTab(name: 'Details' | 'Workflow' | 'Comments' | 'Assets' | 'Activity'): Promise<void> {
-    await this.tab(name).click();
-    await expect(this.tab(name)).toHaveAttribute('aria-selected', 'true');
+  /** The Details section of the side panel. */
+  get detailsPanel(): Locator {
+    return this.page.locator('[data-section="details"]');
+  }
+
+  /** Brings a section into view (Comments load when they come near the visible area) and waits for its heading. */
+  async showSection(name: 'Workflow' | 'Comments' | 'Assets'): Promise<void> {
+    const heading = this.section(name).locator('[data-section-heading]');
+    await heading.scrollIntoViewIfNeeded();
+    await expect(heading).toBeVisible();
+  }
+
+  /** Opens the Activity drawer from the header and returns it. */
+  async openActivity(): Promise<Locator> {
+    await this.header.locator('[data-activity-button]').click();
+    const drawer = this.page.getByRole('dialog', { name: /^Activity:/ });
+    await expect(drawer).toBeVisible();
+    return drawer;
   }
 
   /** The status badge text in the header (New, In Progress, On Hold, Completed, Cancelled). */

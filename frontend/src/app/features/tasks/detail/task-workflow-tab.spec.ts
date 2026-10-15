@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 vi.setConfig({ testTimeout: 60000 });
 import { of } from 'rxjs';
 import { StepActionResponse, TaskResponse } from '../../../api/generated/api-client';
+import { TaskDetailStore } from './task-detail.store';
 import { apiError, settle } from '../../../shared/testing/org-testing';
 import {
   aStep,
@@ -84,6 +85,49 @@ describe('Workflow tab: ordered stepper', () => {
     expect(items[4].querySelector('[data-locked]')).not.toBeNull();
     expect(q(el, '[data-mode]')!.textContent).toContain('Ordered');
     expect(q(el, '[data-workflow-tab] [data-progress]')!.textContent).toContain('Resolved 2 of 5');
+  });
+
+  it('expands only the current step; the others are one-line summaries the user can open', async () => {
+    const { fixture, el } = await mountWorkflow(
+      aTask({ workflow: { steps: orderedSteps() } as never }),
+    );
+    const expanded = (id: number) =>
+      q(el, `[data-step-id="${id}"] .step__toggle`)!.getAttribute('aria-expanded');
+    expect([101, 102, 103, 104, 105].map(expanded)).toEqual([
+      'false',
+      'false',
+      'true',
+      'false',
+      'false',
+    ]);
+    // A collapsed step has no body (no instructions, no actions) but keeps its status line.
+    expect(q(el, '[data-step-id="101"] .step__body')).toBeNull();
+    expect(q(el, '[data-step-id="101"] [data-state]')!.textContent).toContain('Completed');
+    expect(q(el, '[data-step-id="102"] [data-skip-comment]')).not.toBeNull();
+
+    await click(fixture, q(el, '[data-step-id="104"] .step__toggle'));
+    expect(expanded(104)).toBe('true');
+    expect(expanded(103)).toBe('true'); // opening one does not close another
+    await click(fixture, q(el, '[data-step-id="103"] .step__toggle'));
+    expect(expanded(103)).toBe('false');
+  });
+
+  it('folds a step once it is resolved and opens the step that becomes current', async () => {
+    const { fixture, el } = await mountWorkflow(
+      aTask({ workflow: { steps: orderedSteps() } as never }),
+    );
+    const next = orderedSteps();
+    next[2] = aStep({ ...next[2], status: 'COMPLETED', isCurrent: false, hasBeenResolved: true });
+    next[3] = aStep({ ...next[3], status: 'IN_PROGRESS', isCurrent: true });
+    fixture.debugElement.injector
+      .get(TaskDetailStore)
+      .task.set(aTask({ workflow: { steps: next } as never }));
+    await settle(fixture);
+
+    const expanded = (id: number) =>
+      q(el, `[data-step-id="${id}"] .step__toggle`)!.getAttribute('aria-expanded');
+    expect(expanded(103)).toBe('false');
+    expect(expanded(104)).toBe('true');
   });
 
   it('shows instructions and the documentation link for the current step and its actions', async () => {

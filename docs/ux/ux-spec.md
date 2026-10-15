@@ -617,11 +617,14 @@ TSK-1042  Process Smith custodians                           [Change status v] [
 Type: Data Processing   Workflow: Standard Processing v2 (ordered)    Workflow: 3 of 6 resolved [=====-----]
 (banner when Completed/Cancelled: "This task is Completed. Move it back to In Progress to edit." [Reopen task])
 (banner when matter inactive: "Matter is inactive. This task can't be reopened.")
-[ Details ] [ Workflow (3/6) ] [ Comments (5) ] [ Assets (2) ] [ Activity ]
+  WORKFLOW (main, fluid)                              | DETAILS (side panel, 340 px, sticky)
+  (3) Deduplicate  [current, expanded]                |   requestor, dates, due, project, pod, request form
+  (1)(2)(4)(5) one-line summaries                     |   [Edit details]
+  COMMENTS (composer + thread)                        | ASSETS (links, roles, Link asset)
 ```
-There is **no Attachments tab** (nothing is stored).
+**Page layout (single page, `mf-detail-layout`, docs/ux/task-detail).** The former Details / Workflow / Comments / Assets / Activity tabs are one page, like Client, Matter and Project. Main column: Workflow, then Comments (loaded when scrolled near). Side panel (`aside`, from 1100 px, sticky, own scroll): Details, then Assets. Below 1100 px one column: Details (collapsible, collapsed on phones), Workflow, Comments, Assets, plus a "Jump to" link row (Workflow, Comments, Assets) that scrolls and moves focus to the section heading. Activity is a right-side drawer opened by the header's Activity button. Old links: `?tab=workflow|comments|assets` scroll to the section, `?tab=activity` opens the drawer, `?tab=details` shows the page; `?step=<id>` opens that step. Only the current step is expanded; other steps are one-line summaries that can be opened. Edit (header, or "Edit details" in the panel) opens the edit form in a dialog and returns to the same page. There is **no Attachments section** (nothing is stored).
 
-**Header.** Always visible (sticky): ref, title, status badge, priority badge (inline editable with `Task.SetPriority`), due (`DueCell`), Pod, assignee (inline editable with `Task.Assign`/`Reassign`), Matter ref link, workflow name + version + progress. Primary actions: **Change status** menu, **Edit**, **Cancel task**. The same status control is the only place status changes (plus Complete in the Workflow tab when all resolved).
+**Header.** Ref, title, status badge, priority badge (inline editable with `Task.SetPriority`), due (`DueCell`), Pod, assignee (inline editable with `Task.Assign`/`Reassign`), Matter ref link, workflow name + version + progress. Primary actions: **Change status** menu, **Edit**, **Cancel task**. The same status control is the only place status changes (plus Complete in the Workflow tab when all resolved).
 
 **Immutable fields.** Matter, Task Type, Workflow (and version) are shown read-only with a lock icon and tooltip "Can't be changed after creation. To correct it, cancel this task and create a new one." Project is editable (same Matter only).
 
@@ -1285,7 +1288,7 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 
 ### S10 Task detail
 - [ ] UAT-S10-1 Header always shows Matter ref, title, priority, status, Pod/assignee, due/ASAP, workflow.
-- [ ] UAT-S10-2 Tabs: Details, Workflow, Comments, Assets, Activity. No Attachments tab.
+- [ ] UAT-S10-2 One page: Workflow and Comments (main), Details and Assets (side panel), Activity drawer. No tabs, no Attachments section.
 - [ ] UAT-S10-3 Matter, Task Type, Workflow are read-only with lock explanation; Project is editable within the Matter.
 - [ ] UAT-S10-4 Request form values editable and audited; form version caption shown.
 - [ ] UAT-S10-5 Completed/Cancelled tasks are read-only until moved to In Progress; blocked with reason when Matter inactive.

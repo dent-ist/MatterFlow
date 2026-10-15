@@ -98,6 +98,18 @@ describe('TaskComments', () => {
     expect(api.listTaskComments).toHaveBeenCalledWith(42, false);
   });
 
+  it('reloads quietly when the host changes `refresh` (a status change adds its reason as a comment)', async () => {
+    await create([aComment()]);
+    const calls = api.listTaskComments.mock.calls.length;
+    api.listTaskComments.mockReturnValue(
+      ok({ items: [aComment(), aComment({ commentId: 2 })], total: 2 }),
+    );
+    fixture.componentRef.setInput('refresh', 'RV2');
+    await settle(fixture);
+    expect(api.listTaskComments.mock.calls.length).toBeGreaterThan(calls);
+    expect(el().querySelectorAll('[data-comment-id]').length).toBe(2);
+  });
+
   it('reports the number of comments to the host', async () => {
     api = undefined as never;
     const counts: number[] = [];

@@ -29,24 +29,47 @@ const schema = {
 describe('Details tab', () => {
   afterEach(() => TestBed.resetTestingModule());
 
-  it('shows the read view, the locked fields with their explanation and the request form values', async () => {
-    const { el } = await mountTaskPage(
+  it('shows the read view in the panel and the request form values; the locked fields and their explanation come with the form', async () => {
+    const { fixture, el } = await mountTaskPage(
       aTask({ formVersionId: 3, formVersionNo: 3, formValues: { ocr: true, language: 'English' } }),
       ['Task.View', 'Task.Edit'],
       { forms: { getFormVersionSchema: vi.fn().mockReturnValue(of(schema)) } },
     );
 
     const view = q(el, '[data-view]')!.textContent!;
-    expect(view).toContain('Process Smith custodians');
+    expect(view).toContain('Process the custodians.');
     expect(view).toContain('Jane Roe');
+    expect(view).toContain('Data Processing');
     expect(q(el, '[data-view] a[href="mailto:jane.roe@client.com"]')).not.toBeNull();
     expect(q(el, '[data-request-form]')!.textContent).toContain('form version 3');
     expect(q(el, '[data-request-form]')!.textContent).toContain('English');
-    const locked = q(el, '[data-locked-fields]')!.textContent!;
+    expect(q(el, '[data-locked-fields]')).toBeNull();
+
+    await click(fixture, q(el, '[data-edit-details]'));
+    const locked = q(document.body, '[data-locked-fields]')!.textContent!;
     expect(locked).toContain('Data Processing');
     expect(locked).toContain('Standard Processing v2');
     expect(locked).toContain('00343-00012');
-    expect(q(el, '[data-lock-text]')!.textContent).toContain("Can't be changed after creation");
+    expect(q(document.body, '[data-lock-text]')!.textContent).toContain(
+      "Can't be changed after creation",
+    );
+  });
+
+  it('Edit details in the panel opens the same form as the header Edit and returns to the page', async () => {
+    const { fixture, el } = await mountTaskPage(aTask());
+    document.body.appendChild(el);
+    const open = q(el, '[data-edit-details]') as HTMLElement;
+    open.focus();
+    await click(fixture, open);
+    expect(q(document.body, '[data-edit-form]')).not.toBeNull();
+    expect(q(document.body, '.p-dialog [role=dialog], .p-dialog')).not.toBeNull();
+
+    await click(fixture, q(document.body, '[data-cancel]'));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(q(document.body, '[data-edit-form]')).toBeNull();
+    expect(q(el, '[data-view]')).not.toBeNull();
+    expect(document.activeElement).toBe(open);
+    el.remove();
   });
 
   it('closed tasks are read only', async () => {
@@ -66,28 +89,30 @@ describe('Details tab', () => {
     const { fixture, el } = await mountTaskPage(aTask({ dueDate: '2026-10-30', dueTime: '15:00' }));
     await click(fixture, q(el, '[data-edit]'));
 
-    expect((q(el, '#td-title') as HTMLInputElement).value).toBe('Process Smith custodians');
-    expect((q(el, '#td-due-date') as HTMLInputElement).value).toBe('Oct 30, 2026');
-    expect((q(el, '#td-due-time') as HTMLInputElement).value).toBe('15:00');
-    expect(q(el, 'label[for=td-due-time]')!.textContent).toMatch(/Time \(.+\)/);
-    expect(q(el, '#td-pod')).not.toBeNull();
+    expect((q(document.body, '#td-title') as HTMLInputElement).value).toBe(
+      'Process Smith custodians',
+    );
+    expect((q(document.body, '#td-due-date') as HTMLInputElement).value).toBe('Oct 30, 2026');
+    expect((q(document.body, '#td-due-time') as HTMLInputElement).value).toBe('15:00');
+    expect(q(document.body, 'label[for=td-due-time]')!.textContent).toMatch(/Time \(.+\)/);
+    expect(q(document.body, '#td-pod')).not.toBeNull();
     // The assignee is chosen with the user picker (any active user), not a list of the Pod's members.
-    expect(q(el, 'mf-entity-picker')).not.toBeNull();
+    expect(q(document.body, 'mf-entity-picker')).not.toBeNull();
     // Matter, Task Type and Workflow stay read-only
-    expect(q(el, '[data-locked-fields]')).not.toBeNull();
-    expect(q(el, '#td-matter')).toBeNull();
+    expect(q(document.body, '[data-locked-fields]')).not.toBeNull();
+    expect(q(document.body, '#td-matter')).toBeNull();
   });
 
   it('validates required fields before calling the server', async () => {
     const { fixture, el, fakes } = await mountTaskPage(aTask());
     await click(fixture, q(el, '[data-edit]'));
-    await type(fixture, el, '#td-title', '');
-    await type(fixture, el, '#td-due-time', '10:00');
-    await click(fixture, q(el, '[data-save]'));
+    await type(fixture, document.body, '#td-title', '');
+    await type(fixture, document.body, '#td-due-time', '10:00');
+    await click(fixture, q(document.body, '[data-save]'));
 
-    expect(q(el, '#td-title-error')!.textContent).toContain('Enter a title.');
-    expect(q(el, '[data-error-summary]')!.textContent).toContain('Enter a title.');
-    expect(q(el, '#td-title')!.getAttribute('aria-invalid')).toBe('true');
+    expect(q(document.body, '#td-title-error')!.textContent).toContain('Enter a title.');
+    expect(q(document.body, '[data-error-summary]')!.textContent).toContain('Enter a title.');
+    expect(q(document.body, '#td-title')!.getAttribute('aria-invalid')).toBe('true');
     expect(fakes.tasks['updateTask']).not.toHaveBeenCalled();
   });
 
@@ -97,10 +122,10 @@ describe('Details tab', () => {
       tasks: { updateTask: vi.fn().mockReturnValue(of(saved)) },
     });
     await click(fixture, q(el, '[data-edit]'));
-    await type(fixture, el, '#td-title', 'New title');
-    await type(fixture, el, '#td-due-date', '2026-11-02');
-    await type(fixture, el, '#td-due-time', '09:30');
-    await click(fixture, q(el, '[data-save]'));
+    await type(fixture, document.body, '#td-title', 'New title');
+    await type(fixture, document.body, '#td-due-date', '2026-11-02');
+    await type(fixture, document.body, '#td-due-time', '09:30');
+    await click(fixture, q(document.body, '[data-save]'));
 
     expect(fakes.tasks['updateTask']).toHaveBeenCalledWith(
       1042,
@@ -113,7 +138,7 @@ describe('Details tab', () => {
         priorityId: undefined,
       }),
     );
-    expect(q(el, '[data-edit-form]')).toBeNull();
+    expect(q(document.body, '[data-edit-form]')).toBeNull();
     expect(q(el, '[data-task-title]')!.textContent).toBe('New title');
   });
 
@@ -132,12 +157,16 @@ describe('Details tab', () => {
       },
     });
     await click(fixture, q(el, '[data-edit]'));
-    await click(fixture, q(el, '[data-save]'));
+    await click(fixture, q(document.body, '[data-save]'));
 
-    expect(q(el, '#td-req-email-error')!.textContent).toContain('That email address looks wrong.');
-    expect(q(el, '#td-req-email')!.getAttribute('aria-invalid')).toBe('true');
-    expect(q(el, '[data-error-summary]')!.textContent).toContain('Due date is not valid.');
-    expect(q(el, '[data-edit-form]')).not.toBeNull();
+    expect(q(document.body, '#td-req-email-error')!.textContent).toContain(
+      'That email address looks wrong.',
+    );
+    expect(q(document.body, '#td-req-email')!.getAttribute('aria-invalid')).toBe('true');
+    expect(q(document.body, '[data-error-summary]')!.textContent).toContain(
+      'Due date is not valid.',
+    );
+    expect(q(document.body, '[data-edit-form]')).not.toBeNull();
     expect(q(el, '[data-conflict-banner]')).toBeNull();
   });
 
@@ -148,11 +177,11 @@ describe('Details tab', () => {
       },
     });
     await click(fixture, q(el, '[data-edit]'));
-    await type(fixture, el, '#td-title', 'Mine');
-    await click(fixture, q(el, '[data-save]'));
+    await type(fixture, document.body, '#td-title', 'Mine');
+    await click(fixture, q(document.body, '[data-save]'));
 
     expect(q(el, '[data-conflict-banner]')).not.toBeNull();
-    expect((q(el, '#td-title') as HTMLInputElement).value).toBe('Mine');
+    expect((q(document.body, '#td-title') as HTMLInputElement).value).toBe('Mine');
   });
 
   it('request form values are edited under the stored form version and sent as a patch', async () => {
@@ -167,12 +196,14 @@ describe('Details tab', () => {
     await click(fixture, q(el, '[data-edit]'));
     expect(fakes.forms.getFormVersionSchema).toHaveBeenCalledWith(3);
     const language = Array.from(
-      el.querySelectorAll<HTMLInputElement>('mf-dynamic-form input[type=text]'),
+      document.body.querySelectorAll<HTMLInputElement>(
+        '.p-dialog mf-dynamic-form input[type=text]',
+      ),
     )[0];
     language.value = 'French';
     language.dispatchEvent(new Event('input'));
     await settle(fixture);
-    await click(fixture, q(el, '[data-save]'));
+    await click(fixture, q(document.body, '[data-save]'));
 
     const body = fakes.tasks['updateTask'].mock.calls[0][1];
     expect(body.formValues).toEqual({ ocr: true, language: 'French' });
@@ -191,11 +222,11 @@ describe('Details tab', () => {
       },
     );
     await click(fixture, q(el, '[data-edit]'));
-    const pod = q(el, '#td-pod') as HTMLSelectElement;
+    const pod = q(document.body, '#td-pod') as HTMLSelectElement;
     pod.value = '';
     pod.dispatchEvent(new Event('change'));
     await settle(fixture);
-    await click(fixture, q(el, '[data-save]'));
+    await click(fixture, q(document.body, '[data-save]'));
 
     expect(fakes.tasks['assignTask']).toHaveBeenCalledWith(1042, {
       rowVersion: 'RV2',
@@ -214,17 +245,17 @@ describe('Details tab', () => {
       },
     );
     await click(fixture, q(el, '[data-edit]'));
-    await click(fixture, q(el, '[data-chosen] button'));
-    await type(fixture, el, '#td-assignee', 'Coll');
+    await click(fixture, q(document.body, '[data-chosen] button'));
+    await type(fixture, document.body, '#td-assignee', 'Coll');
     await new Promise((r) => setTimeout(r, 300));
     await settle(fixture);
     const lookup = TestBed.inject(UsersLookupClient).lookupUsers as ReturnType<typeof vi.fn>;
     expect(lookup).toHaveBeenCalledWith('Coll', 8);
-    const option = q(el, '[role=option]')!;
+    const option = q(document.body, '[role=option]')!;
     expect(option.textContent).toContain('Colleague C.');
     option.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     await settle(fixture);
-    await click(fixture, q(el, '[data-save]'));
+    await click(fixture, q(document.body, '[data-save]'));
 
     expect(fakes.tasks['assignTask']).toHaveBeenCalledWith(
       1042,
@@ -235,10 +266,10 @@ describe('Details tab', () => {
   it('warns, without blocking, when the due date is in the past (UAT2-16)', async () => {
     const { fixture, el } = await mountTaskPage(aTask({ dueDate: '2099-10-30' }));
     await click(fixture, q(el, '[data-edit]'));
-    expect(q(el, '[data-past-due]')).toBeNull();
+    expect(q(document.body, '[data-past-due]')).toBeNull();
 
-    await type(fixture, el, '#td-due-date', '2020-01-02');
-    expect(q(el, '[data-past-due]')!.textContent).toContain('already passed');
-    expect((q(el, '[data-save]') as HTMLButtonElement).disabled).toBe(false);
+    await type(fixture, document.body, '#td-due-date', '2020-01-02');
+    expect(q(document.body, '[data-past-due]')!.textContent).toContain('already passed');
+    expect((q(document.body, '[data-save]') as HTMLButtonElement).disabled).toBe(false);
   });
 });

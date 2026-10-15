@@ -14,6 +14,7 @@ import { DetailLayout } from './detail-layout';
     <mf-detail-layout>
       <p mfMain data-m>Main grid</p>
       <p mfAside data-a>Field values</p>
+      <p mfAfter data-x>Extra section</p>
     </mf-detail-layout>
   `,
 })
@@ -59,6 +60,21 @@ describe('DetailLayout', () => {
     expect(aside.querySelector('[data-a]')).not.toBeNull();
     expect(aside.querySelector('button')).toBeNull(); // no disclosure when it is a side panel
     expect(aside.querySelector('[data-detail-body]')!.hasAttribute('hidden')).toBe(false);
+  });
+
+  it('puts the optional extra section inside the panel from 1100 px and after the main area below it', async () => {
+    const wide = await render(1280);
+    expect(wide.querySelector('aside [data-x]')).not.toBeNull();
+    TestBed.resetTestingModule();
+
+    const narrow = await render(768);
+    expect(narrow.querySelector('aside [data-x]')).toBeNull();
+    const layout = narrow.querySelector('[data-detail-layout]')!;
+    const order = Array.from(layout.children).map((c) =>
+      c.matches('aside') ? 'aside' : c.matches('[data-detail-main]') ? 'main' : 'after',
+    );
+    expect(order).toEqual(['aside', 'main', 'after']);
+    expect(layout.querySelector('[data-detail-after] [data-x]')).not.toBeNull();
   });
 
   it('moves the panel above the main area below 1100 px, expanded on a tablet', async () => {

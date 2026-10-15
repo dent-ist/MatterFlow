@@ -3,8 +3,10 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   input,
+  signal,
   untracked,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -13,22 +15,29 @@ import { TaskActivity } from '../panels/task-activity';
 import { TaskAssetLinks } from '../panels/task-asset-links';
 import { TaskComments } from '../panels/task-comments';
 import { TaskActionDialogs } from './task-action-dialogs';
-import { TASK_TABS, TaskDetailStore, TaskTab } from './task-detail.store';
+import { InView } from './in-view';
+import { TaskDetailStore, TaskSection } from './task-detail.store';
 import { TaskDetailsTab } from './task-details-tab';
 import { TaskHeader } from './task-header';
 import { TaskWorkflowTab } from './task-workflow-tab';
 import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
+import { DetailLayout } from '../../../shared/ui/detail-layout';
 
 const WARNING_TEXT: Readonly<Record<string, string>> = {
   USER_NOT_IN_POD: "The assignee isn't a member of the assigned Pod. The change was saved.",
 };
 
-const isTab = (v: unknown): v is TaskTab => TASK_TABS.includes(v as TaskTab);
+const SECTIONS: readonly string[] = ['workflow', 'comments', 'assets'];
+const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as string);
 
 /**
- * Task detail (UX S10, `/tasks/:id`): header with the status actions, banners (conflict, closed, sensitive, hold or cancel
- * reason), and the Details / Workflow / Comments / Assets / Activity tabs.
+ * Task detail (UX S10, `/tasks/:id`): one page in the layout of the Client, Matter and Project pages. The header carries the status
+ * actions, Edit and Activity (a right-side drawer); then the banners (conflict, closed, sensitive, hold or cancel reason); then the
+ * Workflow and Comments sections in the main column and the Details and Assets sections in the side panel. Below 1100 px the order is
+ * Details (collapsible), Workflow, Comments, Assets, with a "Jump to" row. The old `?tab=` links scroll to the section
+ * (`workflow`, `comments`, `assets`), open the drawer (`activity`) or just show the page (`details`); `?step=<id>` opens that step.
  */
 @Component({
   selector: 'mf-task-detail-page',
@@ -36,6 +45,9 @@ const isTab = (v: unknown): v is TaskTab => TASK_TABS.includes(v as TaskTab);
     ErrorReference,
     RouterLink,
     TaskHeader,
+    DetailLayout,
+    ActivityDrawer,
+    InView,
     TaskDetailsTab,
     TaskWorkflowTab,
     TaskActionDialogs,
@@ -128,52 +140,66 @@ const isTab = (v: unknown): v is TaskTab => TASK_TABS.includes(v as TaskTab);
             <div class="pg-banner" role="status" data-warning>{{ w }}</div>
           }
 
-          <div class="pg-tabs" role="tablist" aria-label="Task sections">
-            @for (tab of tabs(); track tab.id) {
-              <button
-                type="button"
-                role="tab"
-                [id]="'task-tab-' + tab.id"
-                [attr.aria-selected]="store.tab() === tab.id"
-                [attr.aria-controls]="store.tab() === tab.id ? 'task-panel-' + tab.id : null"
-                [attr.tabindex]="store.tab() === tab.id ? 0 : -1"
-                (click)="select(tab.id)"
-                (keydown)="onTabKey($event)"
-              >
-                {{ tab.label }}
-              </button>
-            }
-          </div>
+          <mf-detail-layout>
+            <div mfMain>
+              <nav class="jump" aria-label="Jump to" data-jump>
+                <span class="jump__label">Jump to</span>
+                <a href="#task-workflow" data-jump-to="workflow" (click)="jump($event, 'workflow')"
+                  >Workflow</a
+                >
+                <a href="#task-comments" data-jump-to="comments" (click)="jump($event, 'comments')"
+                  >Comments</a
+                >
+                <a href="#task-assets" data-jump-to="assets" (click)="jump($event, 'assets')"
+                  >Assets</a
+                >
+              </nav>
 
-          <div
-            role="tabpanel"
-            [id]="'task-panel-' + store.tab()"
-            [attr.aria-labelledby]="'task-tab-' + store.tab()"
-            tabindex="0"
-          >
-            @switch (store.tab()) {
-              @case ('details') {
-                <mf-task-details-tab />
-              }
-              @case ('workflow') {
+              <div class="sec" id="task-workflow" data-section="workflow">
                 <mf-task-workflow-tab />
-              }
-              @case ('comments') {
-                <mf-task-comments [taskId]="t.taskId" />
-              }
-              @case ('assets') {
-                <mf-task-asset-links
-                  [taskId]="t.taskId"
-                  [matterId]="t.matter.matterId"
-                  [readOnly]="store.closed()"
-                  [taskStatus]="t.status"
-                />
-              }
-              @case ('activity') {
-                <mf-task-activity [taskId]="t.taskId" />
-              }
+              </div>
+
+              <div
+                class="sec"
+                id="task-comments"
+                data-section="comments"
+                mfInView
+                (inView)="commentsOn.set(true)"
+              >
+                @if (commentsOn()) {
+                  <mf-task-comments [taskId]="t.taskId" [refresh]="t.rowVersion" />
+                } @else {
+                  <section aria-label="Comments">
+                    <h2 class="sec__h" tabindex="-1" data-section-heading>Comments</h2>
+                    <p class="sec__muted" role="status" aria-busy="true">Loading comments...</p>
+                  </section>
+                }
+              </div>
+            </div>
+
+            <div mfAside data-section="details">
+              <mf-task-details-tab />
+            </div>
+
+            <div mfAfter id="task-assets" data-section="assets">
+              <mf-task-asset-links
+                [taskId]="t.taskId"
+                [matterId]="t.matter.matterId"
+                [readOnly]="store.closed()"
+                [taskStatus]="t.status"
+              />
+            </div>
+          </mf-detail-layout>
+
+          <mf-activity-drawer
+            [name]="t.taskNumber + ' ' + t.title"
+            [visible]="store.activityOpen()"
+            (visibleChange)="setActivityOpen($event)"
+          >
+            @if (store.activityOpen()) {
+              <mf-task-activity [taskId]="t.taskId" [compact]="true" />
             }
-          </div>
+          </mf-activity-drawer>
 
           <mf-task-action-dialogs />
         }
@@ -192,34 +218,68 @@ const isTab = (v: unknown): v is TaskTab => TASK_TABS.includes(v as TaskTab);
       text-decoration: underline;
       cursor: pointer;
     }
-    [role='tabpanel']:focus-visible {
+    .sec + .sec {
+      margin-top: var(--mf-s5);
+    }
+    .sec__h {
+      margin: 0 0 var(--mf-s3);
+      font-size: var(--mf-fs-h3);
+      scroll-margin-top: calc(var(--mf-header-h, 3.75rem) + var(--mf-s4));
+    }
+    .sec__h:focus {
+      outline: none;
+    }
+    .sec__h:focus-visible {
       outline: 2px solid var(--mf-focus);
+      outline-offset: 2px;
+    }
+    .sec__muted {
+      margin: 0;
+      color: var(--mf-text-muted);
+    }
+    /* "Jump to" is for the single-column layout only; from 1100 px everything is in view. */
+    .jump {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s2) var(--mf-s4);
+      margin-bottom: var(--mf-s4);
+      font-size: var(--mf-fs-sm);
+    }
+    .jump__label {
+      color: var(--mf-text-muted);
+      font-weight: 600;
+    }
+    .jump a {
+      display: inline-flex;
+      align-items: center;
+      min-height: var(--mf-target-min, 2rem);
+      color: var(--mf-link);
+    }
+    @media (min-width: 1100px) {
+      .jump {
+        display: none;
+      }
     }
   `,
 })
 export class TaskDetailPage implements HasUnsavedChanges {
   /** Route parameter `:id`. */
   readonly id = input.required<string>();
-  /** Query parameter `?tab=`. */
+  /** Query parameter `?tab=` (old links): a section to scroll to, `activity` for the drawer. */
   readonly tab = input<string | undefined>();
+  /** Query parameter `?step=<stepInstanceId>`: opens that step and moves focus to it. */
+  readonly step = input<string | undefined>();
 
   protected readonly store = inject(TaskDetailStore);
   private readonly pageTitle = inject(PageTitle);
   private readonly router = inject(Router);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  protected readonly tabs = computed(() => {
-    const w = this.store.task()?.workflow.progress;
-    return [
-      { id: 'details' as TaskTab, label: 'Details' },
-      {
-        id: 'workflow' as TaskTab,
-        label: w ? `Workflow (${w.resolved}/${w.total})` : 'Workflow',
-      },
-      { id: 'comments' as TaskTab, label: 'Comments' },
-      { id: 'assets' as TaskTab, label: 'Assets' },
-      { id: 'activity' as TaskTab, label: 'Activity' },
-    ];
-  });
+  /** True once the Comments are near the visible area (or were asked for): they load then, not with the first paint. */
+  protected readonly commentsOn = signal(false);
+  /** The `?tab=` / `?step=` pair already acted on for the loaded Task, so a reload does not scroll again. */
+  private handledLink: string | null = null;
 
   protected readonly reopen = computed(
     () => this.store.task()?.allowedActions.transitions.find((o) => o.action === 'REOPEN') ?? null,
@@ -236,22 +296,35 @@ export class TaskDetailPage implements HasUnsavedChanges {
     });
     effect(() => {
       const id = Number(this.id());
-      untracked(() => void this.store.load(id));
-    });
-    effect(() => {
-      const t = this.tab();
-      if (isTab(t)) untracked(() => this.store.tab.set(t));
-    });
-    effect(() => {
-      const current = this.store.tab();
       untracked(() => {
-        if ((this.tab() ?? 'details') !== current && this.store.state() === 'ready') {
-          void this.router.navigate([], {
-            queryParams: { tab: current },
-            queryParamsHandling: 'merge',
-            replaceUrl: true,
-          });
-        }
+        this.handledLink = null;
+        this.commentsOn.set(false);
+        void this.store.load(id);
+      });
+    });
+    // Old links: act on them once the page is showing.
+    effect(() => {
+      const ready = this.store.state() === 'ready';
+      const tab = this.tab();
+      const step = this.step();
+      untracked(() => {
+        if (!ready) return;
+        const key = `${tab ?? ''}|${step ?? ''}`;
+        if (this.handledLink === key) return;
+        this.handledLink = key;
+        if (tab === 'activity') this.store.activityOpen.set(true);
+        else if (isSection(tab)) this.store.showSection(tab);
+        const stepId = Number(step);
+        if (step && Number.isInteger(stepId)) this.store.focusStepId.set(stepId);
+      });
+    });
+    // A request to show a section (Jump to, ?tab=): scroll there and put focus on the section's heading.
+    effect(() => {
+      const request = this.store.sectionRequest();
+      untracked(() => {
+        if (!request) return;
+        if (request.section === 'comments') this.commentsOn.set(true);
+        setTimeout(() => this.focusSection(request.section));
       });
     });
   }
@@ -260,22 +333,29 @@ export class TaskDetailPage implements HasUnsavedChanges {
     return this.store.editing() && this.store.dirty();
   }
 
-  protected select(tab: TaskTab): void {
-    this.store.tab.set(tab);
+  protected jump(event: Event, section: TaskSection): void {
+    event.preventDefault();
+    this.store.showSection(section);
   }
 
-  /** WAI-ARIA tabs: arrows move and activate, Home and End jump. */
-  protected onTabKey(event: KeyboardEvent): void {
-    const index = TASK_TABS.indexOf(this.store.tab());
-    let next = -1;
-    if (event.key === 'ArrowRight') next = (index + 1) % TASK_TABS.length;
-    else if (event.key === 'ArrowLeft') next = (index - 1 + TASK_TABS.length) % TASK_TABS.length;
-    else if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = TASK_TABS.length - 1;
-    if (next < 0) return;
-    event.preventDefault();
-    this.store.tab.set(TASK_TABS[next]);
-    const id = `task-tab-${TASK_TABS[next]}`;
-    queueMicrotask(() => document.getElementById(id)?.focus());
+  protected setActivityOpen(open: boolean): void {
+    this.store.activityOpen.set(open);
+    if (!open && this.tab() === 'activity') {
+      void this.router.navigate([], {
+        queryParams: { tab: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
+  }
+
+  private focusSection(section: TaskSection): void {
+    const root = this.host.nativeElement;
+    const heading = root.querySelector<HTMLElement>(
+      `[data-section="${section}"] [data-section-heading]`,
+    );
+    if (!heading) return;
+    heading.scrollIntoView?.({ block: 'start' });
+    heading.focus({ preventScroll: true });
   }
 }

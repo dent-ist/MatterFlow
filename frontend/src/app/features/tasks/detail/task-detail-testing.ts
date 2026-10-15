@@ -4,11 +4,15 @@ import { Router, provideRouter } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { Observable, of } from 'rxjs';
 import {
+  AssetLinkRolesClient,
   FormsClient,
   PodsClient,
   PrioritiesClient,
   ProjectsClient,
   StatusLabelsClient,
+  TaskActivityClient,
+  TaskAssetsClient,
+  TaskCommentsClient,
   TaskAllowedActions,
   TaskCompletionCheck,
   TaskResponse,
@@ -244,6 +248,24 @@ export async function mountTaskPage(
       { provide: TasksClient, useValue: fakes.tasks },
       { provide: TaskWorkflowClient, useValue: fakes.workflow },
       { provide: FormsClient, useValue: fakes.forms },
+      // The page shows the Comments and Assets sections and the Activity drawer; they load through these.
+      {
+        provide: TaskCommentsClient,
+        useValue: { listTaskComments: vi.fn().mockReturnValue(ok({ items: [], total: 0 })) },
+      },
+      {
+        provide: TaskAssetsClient,
+        useValue: { listTaskAssets: vi.fn().mockReturnValue(ok({ items: [], canEdit: false })) },
+      },
+      { provide: AssetLinkRolesClient, useValue: { listAssetLinkRoles: () => ok([]) } },
+      {
+        provide: TaskActivityClient,
+        useValue: {
+          getTaskActivity: vi
+            .fn()
+            .mockReturnValue(ok({ items: [], nextCursor: null, canViewChanges: false })),
+        },
+      },
       {
         provide: PrioritiesClient,
         useValue: { listPriorities: () => ok(SEEDED_PRIORITIES()) },

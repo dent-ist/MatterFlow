@@ -13,6 +13,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 
 export type DetailState = 'loading' | 'ready' | 'error' | 'notFound' | 'forbidden';
+/** The old `?tab=` values: the sections of the single page, plus `activity` (the drawer) and `details` (just the page). */
 export type TaskTab = 'details' | 'workflow' | 'comments' | 'assets' | 'activity';
 export const TASK_TABS: readonly TaskTab[] = [
   'details',
@@ -21,6 +22,8 @@ export const TASK_TABS: readonly TaskTab[] = [
   'assets',
   'activity',
 ];
+/** The sections of the page that links, the "Jump to" row and `?tab=` can scroll to. */
+export type TaskSection = 'workflow' | 'comments' | 'assets';
 
 /** The dialog currently asking the user to confirm or explain a status change. */
 export type ActionDialog =
@@ -63,7 +66,12 @@ export class TaskDetailStore {
   readonly busy = signal(false);
   /** Non-blocking warnings of the last write (for example USER_NOT_IN_POD). */
   readonly warnings = signal<string[]>([]);
-  readonly tab = signal<TaskTab>('details');
+  /** The section a link asked for; the page scrolls to it and moves focus to its heading. `seq` makes a repeated request count. */
+  readonly sectionRequest = signal<{ section: TaskSection; seq: number } | null>(null);
+  /** Whether the Activity drawer is open. */
+  readonly activityOpen = signal(false);
+  /** Where the Edit form was opened from, so focus goes back there when it closes. */
+  readonly editOrigin = signal<'header' | 'panel'>('header');
   readonly editing = signal(false);
   readonly dirty = signal(false);
   readonly dialog = signal<ActionDialog | null>(null);
@@ -273,11 +281,15 @@ export class TaskDetailStore {
     this.dialog.set(null);
   }
 
-  /** Jumps to a step in the Workflow tab (links in the blocked-completion dialog). */
+  /** Jumps to a step of the Workflow section (links in the blocked-completion dialog). */
   showStep(stepInstanceId: number): void {
     this.dialog.set(null);
-    this.tab.set('workflow');
     this.focusStepId.set(stepInstanceId);
+  }
+
+  /** Scrolls to a section of the page and moves focus to its heading. */
+  showSection(section: TaskSection): void {
+    this.sectionRequest.update((r) => ({ section, seq: (r?.seq ?? 0) + 1 }));
   }
 
   // ---- step actions

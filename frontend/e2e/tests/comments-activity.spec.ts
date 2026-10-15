@@ -15,7 +15,7 @@ test.describe('Comments and history (SCN-018)', () => {
     const task = await seed.task(world);
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Comments');
+    await detail.showSection('Comments');
     const panel = comments(page);
     await expect(panel.locator('[data-empty]')).toHaveText('No comments yet.');
     await expect(panel.locator('[data-post]')).toBeDisabled();
@@ -60,7 +60,7 @@ test.describe('Comments and history (SCN-018)', () => {
     });
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Comments');
+    await detail.showSection('Comments');
     const panel = comments(page);
 
     await panel.locator('[data-edit]').click();
@@ -84,7 +84,7 @@ test.describe('Comments and history (SCN-018)', () => {
     });
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Comments');
+    await detail.showSection('Comments');
     const panel = comments(page);
 
     await panel.locator('[data-delete]').click();
@@ -110,7 +110,7 @@ test.describe('Comments and history (SCN-018)', () => {
     });
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Comments');
+    await detail.showSection('Comments');
     const body = comments(page).locator('[data-body]');
     await expect(body).toContainText('Safe text');
     await expect(body.locator('script, img[onerror], [onclick]')).toHaveCount(0);
@@ -135,7 +135,7 @@ test.describe('Comments and history (SCN-018)', () => {
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Activity');
+    await detail.openActivity();
     const feed = activity(page);
     await expect(feed.getByRole('listitem').first()).toContainText('ke\\kekim');
     await expect(feed.getByText('Comment added')).toBeVisible();

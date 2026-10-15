@@ -24,9 +24,11 @@ let nextId = 0;
  * - Below 1100 px: one column; the panel moves ABOVE the main area (also in the reading and tab order) and its heading becomes a
  *   disclosure button (`aria-expanded`). It starts collapsed on phones and expanded on tablets.
  *
- * Slots: `mfMain` (the main area) and `mfAside` (the Details content; the panel adds the "Details" heading, which names the `aside`).
+ * Slots: `mfMain` (the main area), `mfAside` (the Details content; the panel adds the "Details" heading, which names the `aside`) and the
+ * optional `mfAfter` (a further section of the panel, for example the Task's Assets: inside the sticky panel below Details from 1100 px,
+ * and BELOW the main area on narrower screens, so the reading order there is Details, main, then this section).
  *
- *   <mf-detail-layout><div mfMain>...</div><div mfAside>...</div></mf-detail-layout>
+ *   <mf-detail-layout><div mfMain>...</div><div mfAside>...</div><section mfAfter>...</section></mf-detail-layout>
  */
 @Component({
   selector: 'mf-detail-layout',
@@ -47,8 +49,14 @@ let nextId = 0;
       </div>
       @if (wide()) {
         <ng-container [ngTemplateOutlet]="panel" />
+      } @else {
+        <div class="dl__after dl__after--below" data-detail-after>
+          <ng-container [ngTemplateOutlet]="after" />
+        </div>
       }
     </div>
+
+    <ng-template #after><ng-content select="[mfAfter]" /></ng-template>
 
     <ng-template #panel>
       <aside class="dl__aside" [attr.aria-labelledby]="uid + '-h'" data-detail-panel>
@@ -77,6 +85,11 @@ let nextId = 0;
         <div class="dl__body" [id]="uid + '-body'" [hidden]="!wide() && !open()" data-detail-body>
           <ng-content select="[mfAside]" />
         </div>
+        @if (wide()) {
+          <div class="dl__after" data-detail-after>
+            <ng-container [ngTemplateOutlet]="after" />
+          </div>
+        }
       </aside>
     </ng-template>
   `,
@@ -147,6 +160,17 @@ let nextId = 0;
     }
     .dl__body[hidden] {
       display: none;
+    }
+    .dl__after:empty {
+      display: none;
+    }
+    .dl__after {
+      padding: var(--mf-s4);
+      border-top: 1px solid var(--mf-border);
+    }
+    .dl__after--below {
+      padding: 0;
+      border: 0;
     }
   `,
 })

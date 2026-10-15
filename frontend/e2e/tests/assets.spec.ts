@@ -14,7 +14,7 @@ test.describe('Linking assets to a task (SCN-016)', () => {
     const task = await seed.task(world);
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Assets');
+    await detail.showSection('Assets');
     const panel = page.getByRole('region', { name: 'Linked assets' });
 
     const link = async (displayName: string, relationship: string) => {
@@ -24,7 +24,7 @@ test.describe('Linking assets to a task (SCN-016)', () => {
       await panel.locator('[data-link-role]').selectOption({ label: relationship });
       await panel.locator('[data-link-submit]').click();
       await expect(
-        panel.locator(`tr[data-asset-id]`).filter({ hasText: displayName }),
+        panel.locator(`li[data-asset-id]`).filter({ hasText: displayName }),
       ).toBeVisible();
     };
 
@@ -32,11 +32,11 @@ test.describe('Linking assets to a task (SCN-016)', () => {
     await link(target.displayName, 'Destination');
     await expect(panel.getByRole('heading', { name: 'Assets (2)' })).toBeVisible();
     await expect(
-      panel.locator(`tr[data-asset-id="${source.assetId}"] [data-role-select]`),
+      panel.locator(`li[data-asset-id="${source.assetId}"] [data-role-select]`),
     ).toHaveValue(/\d+/);
 
     await panel
-      .locator(`tr[data-asset-id="${target.assetId}"] [data-role-select]`)
+      .locator(`li[data-asset-id="${target.assetId}"] [data-role-select]`)
       .selectOption({ label: 'Result' });
     await expect
       .poll(async () => {
@@ -46,9 +46,9 @@ test.describe('Linking assets to a task (SCN-016)', () => {
       })
       .toBe('Result');
 
-    await panel.locator(`tr[data-asset-id="${source.assetId}"] [data-unlink]`).click();
+    await panel.locator(`li[data-asset-id="${source.assetId}"] [data-unlink]`).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Remove link' }).click();
-    await expect(panel.locator(`tr[data-asset-id="${source.assetId}"]`)).toHaveCount(0);
+    await expect(panel.locator(`li[data-asset-id="${source.assetId}"]`)).toHaveCount(0);
     await expect(panel.getByRole('heading', { name: 'Assets (1)' })).toBeVisible();
   });
 
@@ -63,7 +63,7 @@ test.describe('Linking assets to a task (SCN-016)', () => {
     const task = await seed.task(world);
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Assets');
+    await detail.showSection('Assets');
     const panel = page.getByRole('region', { name: 'Linked assets' });
     await panel.locator('[data-link-open]').click();
     const picker = panel.getByRole('combobox', { name: 'Asset to link' });
@@ -120,7 +120,7 @@ test.describe('Linking assets to a task (SCN-016)', () => {
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.showTab('Assets');
+    await detail.showSection('Assets');
     const panel = page.getByRole('region', { name: 'Linked assets' });
     await expect(panel.locator('[data-closed-note]')).toContainText("can't be changed");
     await expect(panel.locator('[data-link-open]')).toHaveCount(0);

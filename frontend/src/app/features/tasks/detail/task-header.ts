@@ -1,13 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  computed,
-  effect,
-  inject,
-  signal,
-  untracked,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import {
   TaskQueueRow,
   TaskResponse,
@@ -44,11 +35,11 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
 }
 
 /**
- * Task header (UX S10): number, title, status, priority, due or ASAP, Pod and assignee, Matter reference with copy button
+ * Task header (UX S10): number, title, the task type icon slot, status, priority, due or ASAP, Pod and assignee, Matter reference with copy button
  * and workflow. Status, Priority and Assignee are the same inline menus as in the work tables (`mf-row-edit`) for users who
  * may change them; the status menu lists only the transitions in `allowedActions` (ones the caller lacks permission for are
- * left out, ones blocked by the Matter are disabled with the reason). One Edit button opens the Details form for the other
- * fields. A user who can change nothing sees a "View only" line.
+ * left out, ones blocked by the Matter are disabled with the reason). One Edit button opens the Details form (a dialog) for the other
+ * fields; the Activity button opens the Activity drawer. A user who can change nothing sees a "View only" line.
  */
 @Component({
   selector: 'mf-task-header',
@@ -60,12 +51,22 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
       <div class="th" data-task-header>
         <mf-page-header [crumbs]="crumbs()">
           <span mfTitle class="th__title">
+            <!-- TODO: show mf-task-type-icon ([iconKey]="t.taskType.iconKey") here, before the number, once the shared task type icon component is on dev. -->
             <span class="pg-mono" data-task-number>{{ t.taskNumber }}</span>
             <span data-task-title>{{ t.title }}</span>
           </span>
-          @if (t.allowedActions.canEdit && !store.editing()) {
+          @if (t.allowedActions.canEdit) {
             <button mfActions type="button" class="mf-btn" data-edit (click)="edit()">Edit</button>
           }
+          <button
+            mfActions
+            type="button"
+            class="mf-btn th__activity"
+            data-activity-button
+            (click)="store.activityOpen.set(true)"
+          >
+            <i class="pi pi-history" aria-hidden="true"></i> Activity
+          </button>
 
           <div class="th__meta">
             <span data-status>
@@ -148,12 +149,7 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
   `,
   styles: `
     .th {
-      position: sticky;
-      top: 0;
-      z-index: 2;
       margin-bottom: var(--mf-s3);
-      padding: var(--mf-s3) 0;
-      background: var(--mf-bg);
     }
     .th__title {
       display: inline-flex;
@@ -184,23 +180,6 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
 })
 export class TaskHeader {
   protected readonly store = inject(TaskDetailStore);
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
-  private wasEditing = false;
-
-  constructor() {
-    // The Edit button is hidden while the form is open; when the form closes, focus goes back to it.
-    effect(() => {
-      const editing = this.store.editing();
-      untracked(() => {
-        if (this.wasEditing && !editing) {
-          setTimeout(() =>
-            this.host.nativeElement.querySelector<HTMLElement>('[data-edit]')?.focus(),
-          );
-        }
-        this.wasEditing = editing;
-      });
-    });
-  }
 
   /** A change made from a chip, shown at once; it only counts while the Task it was made on is still the one on screen. */
   protected readonly override = signal<{ basis: TaskResponse; row: TaskQueueRow } | null>(null);
@@ -248,7 +227,7 @@ export class TaskHeader {
   }
 
   protected edit(): void {
-    this.store.tab.set('details');
+    this.store.editOrigin.set('header');
     this.store.editing.set(true);
   }
 }
