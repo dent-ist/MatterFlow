@@ -79,12 +79,13 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
       } @else {
         <div
           class="stack"
-          role="group"
+          role="list"
           [attr.aria-label]="heading() + ', share of ' + total() + ' tasks'"
         >
           @for (s of segments(); track $index) {
             @if (s.count > 0) {
               <a
+                role="listitem"
                 class="seg"
                 routerLink="/tasks"
                 [queryParams]="params(s.query)"
