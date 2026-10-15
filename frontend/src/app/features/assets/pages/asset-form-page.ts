@@ -182,7 +182,7 @@ export function externalReferenceError(text: string): string | null {
           <p class="pg-muted" data-no-fields>This asset type has no extra fields.</p>
         }
 
-        <div class="pg-actions">
+        <div class="pg-actions mf-form-actions--sticky">
           <p-button
             type="submit"
             [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create asset'"

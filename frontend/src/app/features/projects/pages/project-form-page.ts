@@ -131,7 +131,7 @@ function matterOption(m: MatterResponse): PickerOption {
           (touched)="customTouched.set(true)"
         />
 
-        <div class="pg-actions">
+        <div class="pg-actions mf-form-actions--sticky">
           <p-button
             type="submit"
             [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create project'"

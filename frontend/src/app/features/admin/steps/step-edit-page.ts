@@ -161,7 +161,7 @@ export function isValidDocumentationUrl(value: string): boolean {
           </section>
         }
 
-        <div class="pg-actions">
+        <div class="pg-actions mf-form-actions--sticky">
           <p-button
             type="submit"
             [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create step'"

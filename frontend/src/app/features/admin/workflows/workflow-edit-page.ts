@@ -172,7 +172,7 @@ type LoadState = 'loading' | 'ready' | 'error';
             </fieldset>
           }
 
-          <div class="pg-actions">
+          <div class="pg-actions mf-form-actions--sticky">
             <p-button
               type="submit"
               [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create workflow'"
