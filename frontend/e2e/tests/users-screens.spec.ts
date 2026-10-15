@@ -43,7 +43,7 @@ test.describe('users screenshots', () => {
       await page.goto(`${base}&upod=${wl.podB.podId}`);
       await ready(page);
       await shot(`02-pod-filter-${w}`);
-      await page.goto(`/dashboard?tab=users&view=coverage&uq=cov${cov.tag}`);
+      await page.goto(`/dashboard?tab=users&view=coverage&uq=zcov${cov.tag}`);
       await expect(page.locator('[data-coverage-table]')).toBeVisible();
       await shot(`07-coverage-${w}`);
     }
@@ -75,7 +75,7 @@ test.describe('users screenshots', () => {
     await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
 
-    await page.goto(`/dashboard?tab=users&view=coverage&uq=cov${cov.tag}`);
+    await page.goto(`/dashboard?tab=users&view=coverage&uq=zcov${cov.tag}`);
     await expect(page.locator('[data-coverage-table]')).toBeVisible();
     await page.getByLabel('Colour scale').selectOption('absolute');
     await shot('08-coverage-absolute-1366');

@@ -64,6 +64,8 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
 export const USERS_REFRESH_MS = 5 * 60_000;
 /** Pause after an edit before the board is read again (several quick edits make one read). */
 const EDIT_REFRESH_DELAY_MS = 900;
+/** How many people are drawn at first, and with each Show more. */
+export const USERS_PAGE = 60;
 
 /**
  * Dashboard > Users tab (epic #68): the team workload. One card per person (or one table row), coloured by the highest priority of their
@@ -209,7 +211,7 @@ const EDIT_REFRESH_DELAY_MS = 900;
             </div>
           } @else if (layout() === 'table') {
             <mf-users-table
-              [users]="users()"
+              [users]="shown()"
               [legend]="board()?.priorities ?? []"
               [thresholds]="board()?.thresholds ?? null"
               [density]="density()"
@@ -225,7 +227,7 @@ const EDIT_REFRESH_DELAY_MS = 900;
               [attr.data-density]="density()"
               [attr.aria-busy]="refreshing() ? 'true' : null"
             >
-              @for (u of users(); track u.userId) {
+              @for (u of shown(); track u.userId) {
                 <li class="cell">
                   <mf-users-card
                     [user]="u"
@@ -239,6 +241,17 @@ const EDIT_REFRESH_DELAY_MS = 900;
                 </li>
               }
             </ul>
+          }
+          @if (users().length > shown().length) {
+            <p class="more" data-users-more>
+              Showing {{ shown().length }} of {{ users().length }} people.
+              <button type="button" class="mf-btn" data-users-show-more (click)="showMore()">
+                Show {{ pageStep }} more
+              </button>
+              <button type="button" class="mf-btn" data-users-show-all (click)="showAll()">
+                Show all
+              </button>
+            </p>
           }
         }
       }
@@ -304,6 +317,14 @@ const EDIT_REFRESH_DELAY_MS = 900;
     }
     .cell {
       min-width: 0;
+    }
+    .more {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s2);
+      margin: var(--mf-s3) 0 0;
+      color: var(--mf-text-muted);
     }
     .bone {
       display: block;
@@ -410,6 +431,10 @@ export class DashUsersTab implements OnInit {
   protected readonly canAssign = computed(() => this.auth.has('Task.Assign'));
   protected readonly filtered = computed(() => filterCount(this.filters()) > 0);
   protected readonly users = computed(() => sortUsers(this.board()?.users ?? [], this.sort()));
+  /** A large department draws 60 people at a time (the page stays quick); Show more or Show all draws the rest. */
+  protected readonly pageStep = USERS_PAGE;
+  private readonly limit = signal(USERS_PAGE);
+  protected readonly shown = computed(() => this.users().slice(0, this.limit()));
   protected readonly updated = computed(() => {
     const b = this.board();
     return b ? mfDate(b.generatedAtUtc, this.zone, 'datetime') : null;
@@ -492,6 +517,7 @@ export class DashUsersTab implements OnInit {
   protected patchFilters(patch: Partial<UsersFilters>): void {
     const next = { ...this.filters(), ...patch };
     if (sameFilters(next, this.filters())) return;
+    this.limit.set(USERS_PAGE);
     this.filters.set(next);
     void this.writeUrl();
     if (this.view() === 'coverage') {
@@ -526,7 +552,16 @@ export class DashUsersTab implements OnInit {
     this.patchFilters({ ...DEFAULT_FILTERS });
   }
 
+  protected showMore(): void {
+    this.limit.update((n) => n + USERS_PAGE);
+  }
+
+  protected showAll(): void {
+    this.limit.set(Number.MAX_SAFE_INTEGER);
+  }
+
   protected setSort(sort: UserSort): void {
+    this.limit.set(USERS_PAGE);
     this.prefs.remember({ sort });
     this.live.set(
       `Sorted by ${{ load: 'availability and load', name: 'name', priority: 'highest priority', open: 'open tasks' }[sort]}.`,

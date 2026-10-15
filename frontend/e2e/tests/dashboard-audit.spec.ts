@@ -327,14 +327,26 @@ test.describe('Dashboard actions and click-through', () => {
     await expect(tabs.getByRole('tab', { name: 'Breakdowns' })).toHaveAttribute('tabindex', '0');
     await expect(tabs.getByRole('tab', { name: 'Summary' })).toHaveAttribute('tabindex', '-1');
     await expect(page).toHaveURL(/tab=breakdowns/);
+    // Each key moves the selection through the address; wait for it before the next key (a tab that renders a lot, such as Users, would
+    // otherwise still be the selected one when the next arrow is read).
     await page.keyboard.press('End');
     await expect(tabs.getByRole('tab', { name: 'Users' })).toBeFocused();
+    await expect(page).toHaveURL(/tab=users/);
+    await expect(tabs.getByRole('tab', { name: 'Users' })).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('ArrowRight');
     await expect(tabs.getByRole('tab', { name: 'Summary' })).toBeFocused();
+    await expect(page).toHaveURL(/tab=summary/);
+    await expect(tabs.getByRole('tab', { name: 'Summary' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     await page.keyboard.press('ArrowLeft');
     await expect(tabs.getByRole('tab', { name: 'Users' })).toBeFocused();
+    await expect(page).toHaveURL(/tab=users/);
+    await expect(tabs.getByRole('tab', { name: 'Users' })).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('Home');
     await expect(tabs.getByRole('tab', { name: 'Summary' })).toBeFocused();
+    await expect(page).toHaveURL(/tab=summary/);
     // Tab leaves the tab list into the panel (the next tab stop is not another tab).
     await page.keyboard.press('Tab');
     await expect(tabs.getByRole('tab', { name: 'Breakdowns' })).not.toBeFocused();

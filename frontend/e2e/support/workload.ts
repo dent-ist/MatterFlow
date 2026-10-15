@@ -97,6 +97,15 @@ export async function seedWorkload(admin: Api, seed: Seeder): Promise<WorkloadSe
       });
     } else if (plan.offHours) {
       await seed.availability(person.userId, { workHours: [] });
+    } else {
+      // Everyone else works around the clock, so "Available" does not depend on the time the suite runs.
+      await seed.availability(person.userId, {
+        workHours: [1, 2, 3, 4, 5, 6, 7].map((dayOfWeek) => ({
+          dayOfWeek,
+          start: '00:00',
+          end: '23:59',
+        })),
+      });
     }
   }
 
@@ -166,7 +175,7 @@ export async function seedCoverage(admin: Api, seed: Seeder): Promise<CoverageSe
   const production = await seed.taskType({ name: `Cov ${tag} Production`, workflows: [workflow] });
   const review = await seed.taskType({ name: `Cov ${tag} Review`, workflows: [workflow] });
   const make = async (i: number): Promise<Person> => {
-    const u = await seed.user(['Data Technician'], `cov${tag}${i}`);
+    const u = await seed.user(['Data Technician'], `zcov${tag}${i}`);
     const me = await Api.as(u.username);
     try {
       const profile = await me.get<Json>('/api/v1/me');

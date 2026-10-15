@@ -434,15 +434,16 @@ test.describe('Users tab: workload', () => {
     await page.getByRole('button', { name: 'Cards' }).click();
     await card(page, 'heavy').locator('[data-user-open]').click();
     await expect(page.locator('[data-drawer-tasks] li').first()).toBeVisible();
-    expect(await axeViolations(page)).toEqual([]);
+    // A modal drawer makes the page behind it inert, so the dialogs are checked on their own.
+    expect(await axeViolations(page, '.mf-users-drawer')).toEqual([]);
     await page.locator('[data-drawer-assign]').click();
     await expect(page.locator('[data-assign-dialog]')).toBeVisible();
-    expect(await axeViolations(page)).toEqual([]);
+    expect(await axeViolations(page, '.mf-users-assign')).toEqual([]);
   });
 });
 
 test.describe('Users tab: coverage', () => {
-  const scoped = (extra = '') => `/dashboard?tab=users&view=coverage&uq=cov${cov.tag}${extra}`;
+  const scoped = (extra = '') => `/dashboard?tab=users&view=coverage&uq=zcov${cov.tag}${extra}`;
   const cell = (page: Page, p: Person, typeId: number) =>
     page.locator(`[data-cell="${p.userId}:${typeId}"]`);
 
@@ -592,7 +593,7 @@ test.describe('Users tab: coverage', () => {
     expect(await axeViolations(page)).toEqual([]);
     await cell(page, cov.people.a, cov.typeIds.production).click();
     await expect(page.locator('[data-coverage-tasks] li').first()).toBeVisible();
-    expect(await axeViolations(page)).toEqual([]);
+    expect(await axeViolations(page, '.mf-coverage-drawer')).toEqual([]);
     await page.keyboard.press('Escape');
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto(scoped());

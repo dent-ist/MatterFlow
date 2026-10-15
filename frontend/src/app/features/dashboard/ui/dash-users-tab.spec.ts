@@ -695,6 +695,39 @@ describe('DashUsersTab', () => {
     });
   });
 
+  describe('a large department', () => {
+    const many = (n: number) =>
+      aBoard(
+        Array.from({ length: n }, (_, i) =>
+          aUser(i + 1, `Person ${String(i + 1).padStart(3, '0')}`),
+        ),
+      );
+
+    it('draws 60 people at first and the rest on request, in the cards and in the table', async () => {
+      await open(of(many(130)));
+      expect(qa('[data-user-card]').length).toBe(60);
+      expect(text(q('[data-users-more]'))).toContain('Showing 60 of 130 people.');
+      q<HTMLButtonElement>('[data-users-show-more]').click();
+      await settle();
+      expect(qa('[data-user-card]').length).toBe(120);
+      q<HTMLButtonElement>('[data-users-show-all]').click();
+      await settle();
+      expect(qa('[data-user-card]').length).toBe(130);
+      expect(q('[data-users-more]')).toBeNull();
+      q<HTMLButtonElement>('[data-layout="table"]').click();
+      await settle();
+      expect(qa('tbody tr').length).toBe(130);
+    });
+
+    it('starts again from 60 after a new sort', async () => {
+      await open(of(many(130)));
+      q<HTMLButtonElement>('[data-users-show-all]').click();
+      await settle();
+      await choose('[data-sort]', 'name');
+      expect(qa('[data-user-card]').length).toBe(60);
+    });
+  });
+
   describe('coverage view', () => {
     const COV: Permission[] = [...PERMS, 'Dashboard.ViewCoverage'];
     const coverage = () => open(of(board()), '/dashboard?tab=users&view=coverage', COV);
