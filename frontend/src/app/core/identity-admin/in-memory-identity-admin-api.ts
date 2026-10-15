@@ -413,40 +413,22 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
   }
 
   listActivePods(): Observable<PodChoice[]> {
-    return of(
-      this.pods
-        .filter((p) => p.isActive)
-        .map((p) => ({ podId: p.podId, name: p.name }))
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    );
+    return of(this.pods.filter((p) => p.isActive).map((p) => ({ podId: p.podId, name: p.name })));
   }
 
-  /** Mirrors the server rules of `PUT /users/{id}/pods`: one primary that is selected, only active pods newly assigned, 409 on a stale view. */
+  /** Stub of `PUT /users/{id}/pods` (the server rules are tested against the real API): one primary among the pods, no new inactive pod. */
   setUserPods(userId: number, request: SetUserPodsRequest): Observable<UserPodDto[]> {
     const u = this.find(userId);
     if (!u) return fail(404, 'NOT_FOUND', 'The user does not exist.');
-    const wanted = [...new Set(request.podIds)];
-    if (request.primaryPodId !== undefined && !wanted.includes(request.primaryPodId)) {
-      return fail(400, 'VALIDATION_FAILED', 'The primary pod must be one of the selected pods.');
+    const ids = [...new Set(request.podIds)];
+    const bad = (id: number) =>
+      !u.podIds.includes(id) && !this.pods.find((p) => p.podId === id)?.isActive;
+    if (request.primaryPodId !== undefined && !ids.includes(request.primaryPodId)) {
+      return fail(400, 'VALIDATION_FAILED', 'The primary pod must be one of the pods.');
     }
-    if (wanted.some((id) => !this.pods.some((p) => p.podId === id))) {
-      return fail(400, 'VALIDATION_FAILED', 'Unknown pod.');
-    }
-    if (
-      request.expectedPodIds &&
-      (request.expectedPodIds.length !== u.podIds.length ||
-        request.expectedPodIds.some((id) => !u.podIds.includes(id)) ||
-        request.expectedPrimaryPodId !== u.primaryPodId)
-    ) {
-      return fail(409, 'CONCURRENCY_CONFLICT', 'The pods were changed by someone else.');
-    }
-    const inactiveNew = wanted.find(
-      (id) => !u.podIds.includes(id) && !this.pods.find((p) => p.podId === id)?.isActive,
-    );
-    if (inactiveNew !== undefined) {
+    if (ids.some(bad))
       return fail(409, 'POD_INACTIVE', 'An inactive pod cannot be newly assigned.');
-    }
-    u.podIds = wanted;
+    u.podIds = ids;
     u.primaryPodId = request.primaryPodId;
     return of(this.userPods(u));
   }

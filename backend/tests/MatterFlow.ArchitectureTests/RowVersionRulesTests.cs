@@ -15,6 +15,7 @@ public class RowVersionRulesTests
     private static readonly HashSet<string> NoRowVersionByDesign =
     [
         "SetPrimaryPodRequest", // sets a flag on a pod membership row; last write wins by design
+        "SetUserPodsRequest", // replaces membership rows (no row of its own to version); concurrency is the optional expectedPodIds check
         "ReorderRequest", // reorders a list; the order is the whole payload
     ];
 

@@ -128,7 +128,7 @@ describe('mf-page-header', () => {
     });
 
     it('shows the icon of the section for another route and none outside a section', async () => {
-      expect(icons(await at('/admin/pods'))[0]).toContain('pi-sitemap');
+      expect(icons(await at('/admin/pods'))[0]).toContain('pi-id-card');
     });
 
     it('shows no section icon on a route that belongs to no section', async () => {

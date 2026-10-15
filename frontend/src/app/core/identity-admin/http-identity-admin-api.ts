@@ -1,5 +1,5 @@
 import { Injectable, Injector, inject } from '@angular/core';
-import { Observable, defer, firstValueFrom, from, shareReplay, switchMap } from 'rxjs';
+import { Observable, defer, from, map, shareReplay, switchMap } from 'rxjs';
 import type { PodsClient, RolesClient, UsersClient } from '../../api/generated/api-client';
 import {
   IdentityAdminApi,
@@ -102,23 +102,13 @@ export class HttpIdentityAdminApi extends IdentityAdminApi {
   }
 
   listActivePods(): Observable<PodChoice[]> {
-    return this.client$.pipe(
-      switchMap((m) => from(this.loadActivePods(this.injector.get(m.PodsClient)))),
+    // The list endpoint pages at 100; a checklist of more active pods would not be usable anyway.
+    return this.withPods((c) => c.listPods(undefined, true, 1, 100, 'name')).pipe(
+      map((r) => r.items.map((p) => ({ podId: p.podId, name: p.name }))),
     );
   }
 
   setUserPods(userId: number, request: SetUserPodsRequest): Observable<UserPodDto[]> {
     return this.withPods((c) => c.setUserPods(userId, request));
-  }
-
-  /** The list endpoint pages at 100; a firm with more active pods than 1000 would not fit a checklist anyway. */
-  private async loadActivePods(client: PodsClient): Promise<PodChoice[]> {
-    const choices: PodChoice[] = [];
-    for (let page = 1; page <= 10; page++) {
-      const result = await firstValueFrom(client.listPods(undefined, true, page, 100, 'name'));
-      choices.push(...result.items.map((p) => ({ podId: p.podId, name: p.name })));
-      if (result.items.length === 0 || choices.length >= result.total) break;
-    }
-    return choices;
   }
 }
