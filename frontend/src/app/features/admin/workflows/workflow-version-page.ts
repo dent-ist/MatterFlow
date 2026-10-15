@@ -193,7 +193,7 @@ const UNORDERED_TEXT =
       <div class="wf-cols" [style.marginTop]="'var(--mf-s4)'">
         @if (editable()) {
           <section class="wf-panel" aria-labelledby="wf-lib-heading" data-library>
-            <h2 id="wf-lib-heading">Step library</h2>
+            <h2 id="wf-lib-heading">Workflow Steps</h2>
             <label class="pg-label" for="wf-lib-search">Search steps</label>
             <input
               id="wf-lib-search"
@@ -208,7 +208,7 @@ const UNORDERED_TEXT =
               }
               @case ('error') {
                 <p class="pg-alert" role="alert">
-                  Couldn't load the step library.
+                  Couldn't load the workflow steps.
                   <mf-error-reference />
                   <p-button label="Retry" severity="secondary" (onClick)="loadLibrary()" />
                 </p>
@@ -217,9 +217,7 @@ const UNORDERED_TEXT =
                 @if (library().length === 0) {
                   <p class="pg-muted" data-lib-empty>
                     {{
-                      libQ()
-                        ? 'No steps match that search.'
-                        : 'The step library has no active steps.'
+                      libQ() ? 'No steps match that search.' : 'There are no active workflow steps.'
                     }}
                   </p>
                 } @else {
@@ -263,7 +261,7 @@ const UNORDERED_TEXT =
             <p class="pg-muted" data-steps-empty>
               {{
                 editable()
-                  ? 'No steps yet. Add steps from the step library. A workflow needs at least one step to be published.'
+                  ? 'No steps yet. Add steps from Workflow Steps. A workflow needs at least one step to be published.'
                   : 'This version has no steps.'
               }}
             </p>

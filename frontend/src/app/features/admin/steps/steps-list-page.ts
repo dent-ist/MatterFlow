@@ -32,7 +32,7 @@ import { SearchBox } from '../../../shared/ui/search-box';
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <mf-page-header
-      heading="Step library"
+      heading="Workflow Steps"
       description="Reusable steps. Workflows copy a step when they are published, so editing a step here never changes a published workflow."
     >
       <p-button mfActions label="New step" icon="pi pi-plus" (onClick)="go('/admin/steps/new')" />
@@ -67,7 +67,7 @@ import { SearchBox } from '../../../shared/ui/search-box';
         <div class="mf-scroll">
           <table class="pg-table" data-steps>
             <caption class="pg-sr">
-              Step library
+              Workflow Steps
             </caption>
             <thead>
               <tr>

@@ -9,6 +9,8 @@ export interface NavItem {
   permissions: Permission[];
   /** Shows the pending-users count next to the label. */
   pendingBadge?: boolean;
+  /** Other paths whose pages belong to this item (a second tab of the same page); the item is highlighted on them too. */
+  alsoActive?: string[];
 }
 
 /** Left navigation (UX 2.1). Items are hidden, never disabled, without the matching View permission. */
@@ -26,9 +28,11 @@ export const NAV_ITEMS: NavItem[] = [
 /** Administration section: shown only when at least one entry is permitted. */
 export const ADMIN_NAV_ITEMS: NavItem[] = [
   {
-    label: 'Users & roles',
+    label: 'Users',
     icon: 'pi pi-id-card',
     path: '/admin/users',
+    alsoActive: ['/admin/roles'],
+    // Users tab: User.View / User.Manage; Roles tab: Role.Manage.
     permissions: ['User.View', 'User.Manage', 'Role.Manage'],
     pendingBadge: true,
   },
@@ -39,16 +43,10 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     permissions: ['Pod.Manage', 'Pod.ManageMembers'],
   },
   {
-    label: 'Task types & forms',
+    label: 'Task Types & Forms',
     icon: 'pi pi-file-edit',
     path: '/admin/task-types',
     permissions: ['TaskType.Manage'],
-  },
-  {
-    label: 'Step library',
-    icon: 'pi pi-clone',
-    path: '/admin/steps',
-    permissions: ['Workflow.Manage'],
   },
   {
     label: 'Workflows',
@@ -57,31 +55,34 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     permissions: ['Workflow.Manage'],
   },
   {
-    label: 'Priorities & status labels',
+    label: 'Workflow Steps',
+    icon: 'pi pi-clone',
+    path: '/admin/steps',
+    permissions: ['Workflow.Manage'],
+  },
+  {
+    label: 'Labels',
     icon: 'pi pi-flag',
     path: '/admin/priorities',
+    alsoActive: ['/admin/status-labels'],
     permissions: ['Priority.Manage', 'StatusLabel.Manage'],
   },
   {
-    label: 'Asset types',
+    // The Asset Types and Asset Link Roles tabs. Not the Assets data records above; the page itself is titled "Asset types and link roles".
+    label: 'Assets',
     icon: 'pi pi-tags',
     path: '/admin/asset-types',
+    alsoActive: ['/admin/asset-link-roles'],
     permissions: ['AssetType.Manage'],
   },
   {
-    label: 'Asset link roles',
-    icon: 'pi pi-link',
-    path: '/admin/asset-link-roles',
-    permissions: ['AssetType.Manage'],
-  },
-  {
-    label: 'Custom fields',
+    label: 'Custom Fields',
     icon: 'pi pi-sliders-h',
     path: '/admin/custom-fields',
     permissions: ['CustomField.Manage'],
   },
   {
-    label: 'Audit log',
+    label: 'Audit Logs',
     icon: 'pi pi-history',
     path: '/admin/audit',
     permissions: ['Audit.View'],

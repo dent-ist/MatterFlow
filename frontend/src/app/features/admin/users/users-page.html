@@ -1,30 +1,4 @@
-<mf-page-header heading="Users &amp; roles">
-  @if (canManageRoles()) {
-    <div mfActions class="mf-contents">
-      <a routerLink="/admin/roles" class="mf-btn">Roles &amp; permissions</a>
-    </div>
-  }
-</mf-page-header>
-
-<div class="mf-tabs">
-  <div class="mf-tablist" role="tablist" aria-label="Users">
-    @for (t of tabs; track t.id) {
-      <button
-        type="button"
-        role="tab"
-        class="mf-tab"
-        [attr.data-tab]="t.id"
-        [attr.aria-selected]="tab() === t.id"
-        [class.mf-active]="tab() === t.id"
-        (click)="selectTab(t.id)"
-      >
-        {{ t.label }} ({{ countFor(t.id) }})
-      </button>
-    }
-  </div>
-</div>
-
-<div class="mf-search-row" role="search">
+<div class="pg-filters" role="search">
   <mf-search-box
     inputId="users-search"
     label="Search users"
@@ -32,6 +6,26 @@
     [value]="search()"
     (searchChange)="onSearch($event)"
   />
+  <div class="pg-filter">
+    <label for="users-status">Status</label>
+    <select
+      id="users-status"
+      class="mf-control mf-status"
+      data-status-filter
+      [value]="tab()"
+      (change)="setStatus($any($event.target).value)"
+    >
+      @for (o of statusOptions(); track o.value) {
+        <option [value]="o.value" [selected]="o.value === tab()">{{ o.label }}</option>
+      }
+    </select>
+  </div>
+  @if (counts().pending > 0 && tab() !== 'pending') {
+    <button type="button" class="mf-pending-cue" data-pending-cue (click)="setStatus('pending')">
+      <i class="pi pi-user-plus" aria-hidden="true"></i>
+      {{ counts().pending }} waiting for access
+    </button>
+  }
 </div>
 
 <div class="mf-layout">

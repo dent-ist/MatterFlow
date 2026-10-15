@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -34,6 +34,13 @@ describe('UsersPage', () => {
   }
 
   async function create(...permissions: Permission[]): Promise<void> {
+    await createWith(() => undefined, ...permissions);
+  }
+
+  async function createWith(
+    prepare: (api: InMemoryIdentityAdminApi) => void,
+    ...permissions: Permission[]
+  ): Promise<void> {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -45,9 +52,21 @@ describe('UsersPage', () => {
     });
     await TestBed.inject(AuthStore).ensureLoaded();
     api = TestBed.inject(InMemoryIdentityAdminApi);
+    prepare(api);
     fixture = TestBed.createComponent(UsersPage);
     await settle();
   }
+
+  /** Picks a status in the filter next to the search box. */
+  async function chooseStatus(value: string): Promise<void> {
+    const select = q<HTMLSelectElement>('#users-status');
+    select.value = value;
+    select.dispatchEvent(new Event('change'));
+    await settle();
+  }
+
+  const statusOptions = (): string[] =>
+    Array.from(el().querySelectorAll('#users-status option')).map((o) => o.textContent!.trim());
 
   const rows = (): string[] =>
     Array.from(el().querySelectorAll('tbody tr')).map((r) =>
@@ -57,28 +76,49 @@ describe('UsersPage', () => {
   it('opens on the pending queue with counts, and publishes the pending count for the nav badge', async () => {
     await create('User.View', 'User.Manage');
 
-    expect(q('[data-tab="pending"]').textContent).toContain('Pending access (2)');
-    expect(q('[data-tab="active"]').textContent).toContain('Active (2)');
-    expect(q('[data-tab="inactive"]').textContent).toContain('Inactive (1)');
+    expect(statusOptions()).toEqual(['Pending access (2)', 'Active', 'Inactive', 'All']);
+    expect(q<HTMLSelectElement>('#users-status').value).toBe('pending');
     expect(rows()).toEqual(['Priya Patel', 'Tariq Mahmood']);
     expect(TestBed.inject(PendingUsersStore).count()).toBe(2);
+  });
+
+  it('opens on Active when no one is waiting, and shows no pending cue', async () => {
+    await createWith(
+      (a) => a.users.forEach((u) => u.roleIds.length === 0 && u.roleIds.push(6)),
+      'User.View',
+    );
+
+    expect(q<HTMLSelectElement>('#users-status').value).toBe('active');
+    expect(statusOptions()[0]).toBe('Pending access (0)');
+    expect(el().querySelector('[data-pending-cue]')).toBeNull();
+  });
+
+  it('keeps a visible pending cue while another status is shown, and All lists everyone', async () => {
+    await create('User.View');
+    await chooseStatus('active');
+    expect(q('[data-pending-cue]').textContent).toContain('2 waiting for access');
+
+    await chooseStatus('all');
+    expect(rows()).toEqual(expect.arrayContaining(['Priya Patel', 'Dana Director']));
+    expect(TestBed.inject(Router).url).toContain('status=all');
+
+    q('[data-pending-cue]').click();
+    await settle();
+    expect(q<HTMLSelectElement>('#users-status').value).toBe('pending');
   });
 
   it('shows the empty state when no one is waiting', async () => {
     await create('User.View');
     api.users.forEach((u) => u.roleIds.length === 0 && u.roleIds.push(6));
-    q('[data-tab="active"]').click();
-    await settle();
-    q('[data-tab="pending"]').click();
-    await settle();
+    await chooseStatus('active');
+    await chooseStatus('pending');
 
     expect(q('[data-empty]').textContent).toContain('No one is waiting for access.');
   });
 
   it('searches and switches tabs', async () => {
     await create('User.View');
-    q('[data-tab="active"]').click();
-    await settle();
+    await chooseStatus('active');
     expect(rows()).toContain('Dana Director');
 
     const input = q<HTMLInputElement>('#users-search');
@@ -104,15 +144,14 @@ describe('UsersPage', () => {
 
     await press('Save changes');
     expect(api.users.find((u) => u.userId === 4)!.roleIds).toEqual([5]);
-    expect(q('[data-tab="pending"]').textContent).toContain('Pending access (1)');
+    expect(statusOptions()[0]).toBe('Pending access (1)');
     expect(TestBed.inject(PendingUsersStore).count()).toBe(1);
     expect(q('[data-panel]').textContent).toContain('Task.View'); // effective permissions refreshed
   });
 
   it('asks for confirmation before deactivating and then saves', async () => {
     await create('User.View', 'User.Manage');
-    q('[data-tab="active"]').click();
-    await settle();
+    await chooseStatus('active');
     const row = el().querySelector('[data-user="2"]')!;
     row.querySelector<HTMLButtonElement>('button')!.click();
     await settle();
@@ -130,8 +169,7 @@ describe('UsersPage', () => {
   it('shows the last-admin guard message instead of silently failing', async () => {
     await create('User.View', 'User.Manage');
     api.currentUserId = 99; // not the admin, so only the last-admin rule applies
-    q('[data-tab="active"]').click();
-    await settle();
+    await chooseStatus('active');
     el().querySelector<HTMLButtonElement>('[data-user="1"] button')!.click(); // Kim Admin, the only admin
     await settle();
 

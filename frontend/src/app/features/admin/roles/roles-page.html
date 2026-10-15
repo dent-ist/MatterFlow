@@ -1,7 +1,7 @@
-<mf-page-header heading="Roles &amp; permissions">
-  <a mfActions routerLink="/admin/users" class="mf-btn">Users</a>
-  <p-button mfActions label="New role" icon="pi pi-plus" (onClick)="startNew()" />
-</mf-page-header>
+<div class="mf-roles-bar">
+  <p class="mf-roles-intro">Roles group permissions. Assign them to people on the Users tab.</p>
+  <p-button label="New role" icon="pi pi-plus" (onClick)="startNew()" />
+</div>
 
 @if (loadError()) {
   <p class="mf-error" role="alert">We could not load roles. Try again.</p>

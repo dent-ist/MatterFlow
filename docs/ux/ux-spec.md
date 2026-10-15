@@ -53,15 +53,15 @@ Left nav (items hidden when the user lacks the matching View permission):
   Assets                           /assets (global list), /assets/:id         (also inside Matter)
   ----
   Administration (permission-gated)  /admin
-     Users & Roles                 /admin/users, /admin/roles
+     Users                         /admin/users (Users tab), /admin/roles (Roles tab)
      Pods                          /admin/pods
      Task Types & Forms            /admin/task-types
-     Step Library                  /admin/steps
      Workflows                     /admin/workflows
-     Asset Types                   /admin/asset-types
+     Workflow Steps                /admin/steps
+     Labels                        /admin/priorities, /admin/status-labels
+     Assets                        /admin/asset-types (tabs Asset Types, ?tab=link-roles = Asset Link Roles; page title "Asset types and link roles")
      Custom Fields                 /admin/custom-fields
-     Priorities & Status Labels    /admin/priorities, /admin/status-labels
-     Audit Log                     /admin/audit
+     Audit Logs                    /admin/audit
 Other routes
   Create Task                      /tasks/new   (+ ?matterId=&projectId= prefill)
   Task detail                      /tasks/:id   (?tab=details|workflow|comments|assets|activity)
@@ -247,11 +247,11 @@ Screen IDs map to baseline §19 (item number in brackets). Each spec: purpose, l
 | S12 | Admin: Users, pending users, roles/permissions | 12 |
 | S13 | Admin: Pods | 13 |
 | S14 | Admin: Task Types and form designer | 14 |
-| S15 | Admin: Step library | 15 |
+| S15 | Admin: Workflow Steps | 15 |
 | S16 | Admin: Workflow designer and publish | 16 |
 | S17 | Admin: Asset Types | 17 |
 | S18 | Admin: Priorities, status labels, custom fields | 18 |
-| S19 | Admin: Audit log | 19 |
+| S19 | Admin: Audit Logs | 19 |
 | S20 | Global search typeahead (header) | 13.1 |
 | S21 | Access Pending | 6.4 |
 | S22 | System pages (403, 404, error, conflict) | n/a |
@@ -760,10 +760,10 @@ Chronological, filterable by type (Status, Assignment, Fields, Workflow, Comment
 
 ### S12 Admin: Users, Pending Users, Roles and Permissions
 
-**Users list.** Tabs: **Pending access (N)**, **Active**, **Inactive**.
+**Users page.** Two tabs: **Users** and **Roles** (the roles and permissions screen). The Users tab lists users with a **Status** filter next to the search box: **Pending access (N)**, **Active**, **Inactive**, **All**; it opens on Pending access when someone is waiting, otherwise Active, and the choice lives in the URL (`status`, `q`, `page`).
 ```text
-Administration > Users & Roles
-[ Pending access (3) ] [ Active (212) ] [ Inactive (9) ]      Search [____]
+Administration > Users                                   [ Users ] [ Roles ]
+Search [____________]  Status [Pending access (3) v]   (3 waiting for access)
 Pending table: Name | Windows account | First seen | Email | Roles | Pods | [Grant access]
 ```
 - **Pending access** lists newly registered users with zero roles (the admin queue instead of notifications). Badge count also appears on the Administration nav item for users with `User.Manage`/`Role.Manage` [UX-PROPOSAL]. Row action "Grant access" opens the user drawer.
@@ -1082,7 +1082,7 @@ Create task, Create and add another, Save changes, Save draft, Publish version <
 | Workflow ordered | "Ordered: complete or skip each step in order." |
 | Workflow unordered | "Unordered: work these steps in any order." |
 | Comments | "Internal only. Visible to people who can view tasks." |
-| Step library edit | "Editing this step doesn't change workflows that are already published." |
+| Workflow Steps edit | "Editing this step doesn't change workflows that are already published." |
 | Status labels | "You can rename how statuses appear. You can't add or remove them." |
 | Priority admin | "Order from most to least urgent. Users see labels, not numbers." |
 | Pod lead | "Pod leads are a role. Assign the Pod Lead role under Users & Roles." |
@@ -1443,7 +1443,7 @@ Internal codes fixed: NEW, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED. Rules (ad
 | `Workflow.Manage` | Step Library, Workflow designer |
 | `AssetType.Manage`, `CustomField.Manage`, `Priority.Manage`, `StatusLabel.Manage` | respective admin screens |
 | `Dashboard.ViewDepartment` | Department dashboard |
-| `Audit.View` | Audit log; old/new values in Activity |
+| `Audit.View` | Audit Logs; old/new values in Activity |
 
 ## Appendix D: UX proposals and open questions for the product owner
 

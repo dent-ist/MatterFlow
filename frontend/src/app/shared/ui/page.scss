@@ -9,6 +9,19 @@
   gap: var(--mf-s2);
 }
 
+.pg-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mf-s3);
+  margin-bottom: var(--mf-s3);
+}
+
+.pg-bar__intro {
+  margin: 0;
+}
+
 .pg-muted {
   color: var(--mf-text-muted);
 }
@@ -29,6 +42,7 @@
 .pg-filter label {
   font-weight: 600;
   font-size: var(--mf-fs-sm);
+  line-height: 1.25rem;
 }
 
 .pg-input {

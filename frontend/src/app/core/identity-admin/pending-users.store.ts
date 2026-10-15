@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { IdentityAdminApi } from './identity-admin-api';
 
-/** Number of users waiting for access; drives the badge on the Users & roles nav item (S12). */
+/** Number of users waiting for access; drives the badge on the Users nav item (S12). */
 @Injectable({ providedIn: 'root' })
 export class PendingUsersStore {
   private readonly api = inject(IdentityAdminApi, { optional: true });

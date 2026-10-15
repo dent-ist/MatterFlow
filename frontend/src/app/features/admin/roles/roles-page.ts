@@ -6,7 +6,6 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { ApiError } from '../../../core/http/api-error';
@@ -18,7 +17,6 @@ import {
 } from '../../../core/identity-admin/identity-admin-api';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { PageHeader } from '../../../shared/ui/page-header';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 
@@ -32,7 +30,7 @@ export function prerequisiteOf(code: string, all: ReadonlySet<string>): string |
 /** S12 Admin: Roles and permissions. List with member counts, editor with the grouped permission matrix. */
 @Component({
   selector: 'mf-roles-page',
-  imports: [PageHeader, Button, RouterLink, ConfirmDialog, SearchBox],
+  imports: [Button, ConfirmDialog, SearchBox],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './roles-page.html',
   styleUrl: './roles-page.scss',

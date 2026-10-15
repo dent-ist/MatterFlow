@@ -130,7 +130,7 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     expect(headerButton()).toBeNull();
   });
 
-  it('shows the pending-access count badge on Users & roles for users who can view users', async () => {
+  it('shows the pending-access count badge on Users for users who can view users', async () => {
     configure('director');
     TestBed.configureTestingModule({
       providers: [{ provide: IdentityAdminApi, useClass: InMemoryIdentityAdminApi }],
@@ -142,7 +142,7 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
 
     const badge = document.querySelector('[data-pending-badge]');
     expect(badge?.textContent?.trim()).toBe('2');
-    expect(badge?.closest('a')?.textContent).toContain('Users & roles');
+    expect(badge?.closest('a')?.textContent).toContain('Users');
   });
 
   it('hides nav items the user has no View permission for', async () => {
@@ -161,8 +161,8 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
   it('shows System Admin the Administration section', async () => {
     await open('admin');
     expect(document.body.textContent).toContain('Administration');
-    expect(navLabels(document.body)).toContain('Audit log');
-    expect(navLabels(document.body)).toContain('Users & roles');
+    expect(navLabels(document.body)).toContain('Audit Logs');
+    expect(navLabels(document.body)).toContain('Users');
   });
 
   it('lists the Administration items at one level, without groups', async () => {
@@ -170,16 +170,15 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     expect(document.body.querySelector('.mf-nav-group-toggle')).toBeNull();
     const admin = document.body.querySelector('ul[aria-labelledby="mf-admin-heading"]')!;
     expect(Array.from(admin.querySelectorAll('li a')).map((a) => a.textContent!.trim())).toEqual([
-      'Users & roles',
+      'Users',
       'Pods',
-      'Task types & forms',
-      'Step library',
+      'Task Types & Forms',
       'Workflows',
-      'Priorities & status labels',
-      'Asset types',
-      'Asset link roles',
-      'Custom fields',
-      'Audit log',
+      'Workflow Steps',
+      'Labels',
+      'Assets',
+      'Custom Fields',
+      'Audit Logs',
     ]);
   });
 

@@ -63,7 +63,8 @@
           <li>
             <a
               [routerLink]="item.path"
-              routerLinkActive="mf-active"
+              [class.mf-active]="isAdminActive(item)"
+              [attr.aria-current]="isAdminActive(item) ? 'page' : null"
               [title]="item.label"
               [attr.aria-label]="
                 item.pendingBadge && pendingUsers.count() > 0

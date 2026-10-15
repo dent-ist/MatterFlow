@@ -17,7 +17,6 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ListState } from '../../../shared/ui/data-table';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
-import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -27,13 +26,13 @@ function focusById(id: string): void {
 }
 
 /**
- * Admin: Asset link roles, i.e. the roles an Asset can have on a Task (Source, Destination, Subject, Result, ...). Add, rename,
+ * Admin: Asset link roles (the second tab of the Assets set-up page), i.e. the roles an Asset can have on a Task (Source, Destination, Subject, Result, ...). Add, rename,
  * deactivate, reorder (drag or arrows) and delete when unused. Needs `AssetType.Manage`.
  */
 @Component({
   selector: 'mf-asset-link-roles-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeader, ListState, ConfirmDialog, FormsModule, Button, HasPermissionDirective],
+  imports: [ListState, ConfirmDialog, FormsModule, Button, HasPermissionDirective],
   templateUrl: './asset-link-roles-page.html',
   styleUrl: '../admin-lookup.scss',
 })

@@ -3,10 +3,13 @@ import {
   Component,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -24,21 +27,28 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { Badge } from '../../../shared/ui/badge';
 import { ListState } from '../../../shared/ui/data-table';
-import { PageHeader } from '../../../shared/ui/page-header';
+import { parsePage } from '../../../shared/ui/list-helpers';
 import { Pager } from '../../../shared/ui/pager';
 import { SearchBox } from '../../../shared/ui/search-box';
 
 type Tab = Exclude<UserStatusFilter, 'all'>;
+type StatusOption = UserStatusFilter;
+
+const STATUS_VALUES: readonly StatusOption[] = ['pending', 'active', 'inactive', 'all'];
 
 const PAGE_SIZE = 25;
 
-/** S12 Admin: Users. Tabs Pending / Active / Inactive, search, paging and the user detail panel with role assignment. */
+/**
+ * S12 Admin: Users tab of the Users page. A status filter (Pending access / Active / Inactive / All) next to the search box, paging and
+ * the user detail panel with role assignment. Status, search and page live in the address (`status`, `q`, `page`); without `status`
+ * the list opens on Pending access when someone is waiting and on Active otherwise.
+ */
 @Component({
   selector: 'mf-users-page',
-  imports: [PageHeader, Button, RouterLink, MfDatePipe, SearchBox, ListState, Pager, Badge],
+  imports: [Button, MfDatePipe, SearchBox, ListState, Pager, Badge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './users-page.html',
-  styleUrl: './users-page.scss',
+  styleUrls: ['./users-page.scss', '../../../shared/ui/page.scss'],
 })
 export class UsersPage implements OnInit {
   private readonly api = inject(IdentityAdminApi);
@@ -46,18 +56,32 @@ export class UsersPage implements OnInit {
   private readonly pending = inject(PendingUsersStore);
   private readonly notify = inject(NotificationService);
 
-  protected readonly tabs: { id: Tab; label: string }[] = [
-    { id: 'pending', label: 'Pending access' },
-    { id: 'active', label: 'Active' },
-    { id: 'inactive', label: 'Inactive' },
-  ];
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly query = toSignal(this.route.queryParamMap, {
+    initialValue: this.route.snapshot.queryParamMap,
+  });
+  /** Pending access when someone is waiting, else Active; applies only while the address has no `status`. */
+  private readonly defaultTab = signal<Tab>('active');
+  private readonly ready = signal(false);
+
+  /** Status filter options; the pending count is part of its label so the cue stays visible while another status is shown. */
+  protected readonly statusOptions = computed<{ value: StatusOption; label: string }[]>(() => [
+    { value: 'pending', label: `Pending access (${this.counts().pending})` },
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'all', label: 'All' },
+  ]);
 
   protected readonly canManage = computed(() => this.auth.has('User.Manage'));
   protected readonly canManageRoles = computed(() => this.auth.has('Role.Manage'));
 
-  protected readonly tab = signal<Tab>('pending');
-  protected readonly search = signal('');
-  protected readonly page = signal(1);
+  protected readonly tab = computed<StatusOption>(() => {
+    const value = this.query().get('status') as StatusOption | null;
+    return value && STATUS_VALUES.includes(value) ? value : this.defaultTab();
+  });
+  protected readonly search = computed(() => this.query().get('q')?.trim() ?? '');
+  protected readonly page = computed(() => parsePage(this.query().get('page') ?? undefined));
   protected readonly counts = signal<UserCountsDto>({ pending: 0, active: 0, inactive: 0 });
   protected readonly users = signal<UserSummaryDto[]>([]);
   protected readonly total = signal(0);
@@ -91,14 +115,28 @@ export class UsersPage implements OnInit {
     );
   });
 
-  async ngOnInit(): Promise<void> {
-    await Promise.all([this.loadRoles(), this.reload()]);
+  constructor() {
+    // Any change of status, search or page in the address reloads the list.
+    effect(() => {
+      if (!this.ready()) return;
+      this.tab();
+      this.search();
+      this.page();
+      untracked(() => void this.reload());
+    });
   }
 
-  /** Pending users are also counted as active by the API; they are listed under Pending only. */
-  protected countFor(tab: Tab): number {
-    const counts = this.counts();
-    return tab === 'active' ? Math.max(0, counts.active - counts.pending) : counts[tab];
+  async ngOnInit(): Promise<void> {
+    void this.loadRoles();
+    try {
+      const counts = await firstValueFrom(this.api.userCounts());
+      this.counts.set(counts);
+      this.pending.set(counts.pending);
+      this.defaultTab.set(counts.pending > 0 ? 'pending' : 'active');
+    } catch {
+      /* the list load below reports the failure */
+    }
+    this.ready.set(true);
   }
 
   /** True while the role ticks in the panel differ from the saved ones, so the effective permissions shown are out of date. */
@@ -107,23 +145,27 @@ export class UsersPage implements OnInit {
     return !!u && !sameIds(this.draftRoleIds(), u.roleIds);
   });
 
-  protected async selectTab(tab: Tab): Promise<void> {
-    this.tab.set(tab);
-    this.page.set(1);
-    await this.reload();
+  private navigate(params: Record<string, string | number | null>): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: params,
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  protected setStatus(value: string): void {
+    this.navigate({ status: value, page: null });
   }
 
   /** The shared search box searches live after a pause and at once on Enter (UXR-11). */
-  protected async onSearch(value: string): Promise<void> {
+  protected onSearch(value: string): void {
     if (value === this.search()) return;
-    this.search.set(value);
-    this.page.set(1);
-    await this.reload();
+    this.navigate({ q: value || null, page: null });
   }
 
-  protected async goTo(page: number): Promise<void> {
-    this.page.set(Math.min(Math.max(1, page), this.pageCount()));
-    await this.reload();
+  protected goTo(page: number): void {
+    const next = Math.min(Math.max(1, page), this.pageCount());
+    this.navigate({ page: next === 1 ? null : next });
   }
 
   protected async open(user: UserSummaryDto): Promise<void> {
@@ -253,6 +295,7 @@ export class UsersPage implements OnInit {
         ),
         firstValueFrom(this.api.userCounts()),
       ]);
+      // Pending users are also counted as active by the API; they are listed under Pending access only.
       const items = this.tab() === 'active' ? list.items.filter((u) => !u.isPending) : list.items;
       this.users.set(items);
       this.total.set(list.total - (list.items.length - items.length));

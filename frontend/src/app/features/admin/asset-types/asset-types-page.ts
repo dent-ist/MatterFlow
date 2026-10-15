@@ -17,29 +17,28 @@ import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ActiveBadge } from '../../../shared/ui/badge';
-import { PageHeader } from '../../../shared/ui/page-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
- * Admin: Asset Types (UX S17). Name, description, order and active flag are edited here; the type's own fields are edited in the
+ * Admin: Asset Types (UX S17), the first tab of the Assets set-up page. Name, description, order and active flag are edited here; the type's own fields are edited in the
  * form designer (`Edit fields`), which versions them. Types are deactivated, never deleted, so existing Assets keep working.
  * Needs `AssetType.Manage`.
  */
 @Component({
   selector: 'mf-asset-types-page',
-  imports: [PageHeader, ActiveBadge, ConfirmDialog, ErrorReference, RouterLink, Button, TextField],
+  imports: [ActiveBadge, ConfirmDialog, ErrorReference, RouterLink, Button, TextField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <mf-page-header
-      heading="Asset types"
-      description="Each type has its own fields. Fields are versioned; changing them never alters saved values."
-    >
+    <div class="pg-bar">
+      <p class="pg-muted pg-bar__intro">
+        Each type has its own fields. Fields are versioned; changing them never alters saved values.
+      </p>
       @if (canManage()) {
-        <p-button mfActions label="New asset type" icon="pi pi-plus" (onClick)="startCreate()" />
+        <p-button label="New asset type" icon="pi pi-plus" (onClick)="startCreate()" />
       }
-    </mf-page-header>
+    </div>
 
     <p class="pg-sr" role="status" aria-live="polite" data-announce>{{ announcement() }}</p>
 

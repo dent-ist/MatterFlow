@@ -88,6 +88,14 @@ export class AppShell {
     this.help.open.set(open);
   }
 
+  /** An Administration item is current on its own path and on the paths of its other tabs (and below them). */
+  protected isAdminActive(item: NavItem): boolean {
+    const path = this.url().split(/[?#]/)[0];
+    return [item.path, ...(item.alsoActive ?? [])].some(
+      (p) => path === p || path.startsWith(p + '/'),
+    );
+  }
+
   private visible(items: NavItem[]): NavItem[] {
     return items.filter((i) => this.auth.hasAny(i.permissions));
   }

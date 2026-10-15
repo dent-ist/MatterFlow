@@ -6,33 +6,26 @@
   color: var(--mf-link);
 }
 
-.mf-tabs {
-  display: flex;
+.mf-status {
+  min-width: 200px;
+}
+
+/* Sits on the input row (the labels above the controls are one line high), so it lines up with the search box and the select. */
+.mf-pending-cue {
+  align-self: flex-start;
+  margin-top: 1.5rem;
+  min-height: var(--mf-row-h);
+  padding: 0 var(--mf-s3);
+  display: inline-flex;
   align-items: center;
   gap: var(--mf-s2);
-  margin-bottom: var(--mf-s3);
-  border-bottom: 1px solid var(--mf-border);
-}
-
-.mf-tab {
-  padding: var(--mf-s2) var(--mf-s3);
-  min-height: var(--mf-row-h);
-  background: none;
-  border: 0;
-  border-bottom: 3px solid transparent;
   font: inherit;
-  color: var(--mf-text-muted);
+  font-weight: 600;
+  color: var(--mf-warning);
+  background: var(--mf-warning-bg);
+  border: 1px solid var(--mf-warning);
+  border-radius: var(--mf-radius);
   cursor: pointer;
-
-  &.mf-active {
-    color: var(--mf-primary);
-    border-bottom-color: var(--mf-primary);
-    font-weight: 600;
-  }
-}
-
-.mf-search-row {
-  margin-bottom: var(--mf-s3);
 }
 
 /* Labelled field: bold label above a 40 px control (shared look, styles/_forms.scss). */
@@ -180,9 +173,4 @@ tr.mf-selected {
   .mf-panel {
     width: 100%;
   }
-}
-
-.mf-tablist {
-  display: flex;
-  gap: var(--mf-s2);
 }
