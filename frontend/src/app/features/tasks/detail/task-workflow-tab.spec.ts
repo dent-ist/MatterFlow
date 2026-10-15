@@ -90,6 +90,22 @@ describe('Workflow tab: ordered stepper', () => {
     expect(q(el, '[data-workflow-tab] [data-progress]')!.textContent).toContain('Resolved 2 of 5');
   });
 
+  it('keeps the status and the resolved date in a fixed right-hand column, outside the toggle button', async () => {
+    const { el } = await mountWorkflow(aTask({ workflow: { steps: orderedSteps() } as never }));
+    const done = q(el, '[data-step-id="101"]')!;
+    const aside = done.querySelector('.step__aside')!;
+    expect(aside.querySelector('[data-state]')!.textContent).toContain('Completed');
+    expect(aside.querySelector('[data-resolved-at]')!.textContent).toMatch(/2026/);
+    expect(done.querySelector('.step__toggle [data-state]')).toBeNull();
+    // Only resolved steps have a date; the status column is still there for the others.
+    const pending = q(el, '[data-step-id="104"]')!;
+    expect(pending.querySelector('[data-resolved-at]')!.textContent!.trim()).toBe('');
+    expect(pending.querySelector('.step__aside [data-state]')!.textContent).toContain('Pending');
+    // The colour treatment follows the status attribute (completed = green, skipped = dashed).
+    expect(done.getAttribute('data-step-status')).toBe('COMPLETED');
+    expect(q(el, '[data-step-id="102"]')!.getAttribute('data-step-status')).toBe('SKIPPED');
+  });
+
   it('expands only the current step; the others are one-line summaries the user can open', async () => {
     const { fixture, el } = await mountWorkflow(
       aTask({ workflow: { steps: orderedSteps() } as never }),

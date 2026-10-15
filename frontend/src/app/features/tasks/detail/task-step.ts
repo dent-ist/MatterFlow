@@ -81,7 +81,6 @@ export function valuesPatch(
             <i class="pi" [class]="locked() ? 'pi-lock' : status().icon" aria-hidden="true"></i>
             <span class="step__no">{{ s.sequenceNo }}.</span>
             <span class="step__title">{{ s.title }}</span>
-            <mf-badge [tone]="status().tone" data-state>{{ status().text }}</mf-badge>
             @if (s.isCurrent && ordered()) {
               <mf-badge tone="info" data-current>Current step</mf-badge>
             }
@@ -93,12 +92,19 @@ export function valuesPatch(
             }
           </button>
         </h3>
+        <div class="step__aside">
+          <span class="step__when" data-resolved-at>
+            @if (s.resolvedAtUtc && (s.status === 'COMPLETED' || s.status === 'SKIPPED')) {
+              {{ s.resolvedAtUtc | mfDate }}
+            }
+          </span>
+          <span class="step__state">
+            <mf-badge [tone]="status().tone" data-state>{{ status().text }}</mf-badge>
+          </span>
+        </div>
         <div class="step__notes">
           @if (s.status === 'SKIPPED' && s.skipComment) {
             <p class="step__note" data-skip-comment>Skipped: "{{ s.skipComment }}"</p>
-          }
-          @if (s.resolvedAtUtc && (s.status === 'COMPLETED' || s.status === 'SKIPPED')) {
-            <p class="step__note">{{ status().text }} {{ s.resolvedAtUtc | mfDate }}</p>
           }
           @if (s.isReopenedPrerequisite) {
             <p class="step__note step__note--warn" data-reopened-note>
@@ -284,16 +290,58 @@ export function valuesPatch(
     }
     /* A collapsed step is one line: the toggle (number, title, status) and its short notes side by side. */
     .step__row {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       column-gap: var(--mf-s3);
     }
     .step__head {
-      flex: 0 1 auto;
       min-width: 0;
       margin: 0;
       font-size: inherit;
+    }
+    /* Date/time, then the status: both sit in fixed-width columns at the right edge, so the status is in the same place whatever the step name. */
+    .step__aside {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--mf-s3);
+    }
+    .step__when {
+      min-width: 11.5rem;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+      text-align: right;
+      white-space: nowrap;
+    }
+    .step__state {
+      display: flex;
+      justify-content: flex-end;
+      min-width: 6.5rem;
+    }
+    /* Completed steps are tinted green (with the label and icon, not colour alone); skipped steps are muted and dashed. */
+    .step[data-step-status='COMPLETED'] {
+      border-color: var(--mf-success);
+      background: color-mix(in srgb, var(--mf-success-bg) 45%, var(--mf-surface));
+      box-shadow: inset 3px 0 0 var(--mf-success);
+    }
+    .step[data-step-status='SKIPPED'] {
+      border-style: dashed;
+      background: var(--mf-surface-alt);
+    }
+    @media (max-width: 640px) {
+      .step__row {
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: var(--mf-s1);
+      }
+      .step__aside {
+        justify-content: flex-start;
+      }
+      .step__when {
+        min-width: 0;
+        order: 2;
+        text-align: left;
+      }
     }
     .step__toggle {
       display: flex;
@@ -322,8 +370,8 @@ export function valuesPatch(
       font-weight: 600;
     }
     .step__notes {
+      grid-column: 1 / -1;
       display: flex;
-      flex: 1 1 12rem;
       flex-wrap: wrap;
       column-gap: var(--mf-s3);
       min-width: 0;
