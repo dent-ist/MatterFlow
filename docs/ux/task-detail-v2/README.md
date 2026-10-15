@@ -1,6 +1,6 @@
 # Task detail v2: Workflow, Comments | Assets and a resizable Details panel
 
-Product-owner request: technicians spend most of their time on the Task page and paste long emails (with tables) into the task. Details needs more width, Workflow and Comments less. This replaces the layout described in [../task-detail](../task-detail/README.md) (the single page, the header, the Activity drawer and the old `?tab=` / `?step=` links are unchanged).
+Product-owner request: technicians spend most of their time on the Task page and paste long emails (with tables) into the task. Details needs more width, Workflow and Comments less. This replaces the layout described in [../task-detail](../task-detail/README.md) (the single page, the header, the Activity drawer and the old `?tab=` / `?step=` links are unchanged). Comments and Assets became collapsible sections afterwards: see [../task-detail-v3](../task-detail-v3/README.md).
 
 ## Layout (from 1100 px)
 
