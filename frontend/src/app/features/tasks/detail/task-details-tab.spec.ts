@@ -39,7 +39,12 @@ describe('Details tab', () => {
     );
 
     const view = q(el, '[data-view]')!.textContent!;
-    expect(view).toContain('Process the custodians.');
+    expect(q(el, '[data-description]')!.textContent).toContain('Process the custodians.');
+    // Created (and Last updated, when the task was changed) share one row.
+    expect(q(el, '.dt__pair')!.textContent).toContain('Created');
+    // Edit is an icon button in the corner, named for screen readers.
+    expect(q(el, '[data-edit-details]')!.getAttribute('aria-label')).toBe('Edit details');
+    expect(q(el, '[data-edit-details]')!.textContent!.trim()).toBe('');
     expect(view).toContain('Jane Roe');
     expect(view).toContain('Data Processing');
     expect(q(el, '[data-view] a[href="mailto:jane.roe@client.com"]')).not.toBeNull();

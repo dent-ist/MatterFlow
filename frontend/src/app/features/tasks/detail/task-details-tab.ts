@@ -100,45 +100,66 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
     @if (store.task(); as t) {
       <div data-details-tab>
         @if (t.allowedActions.canEdit) {
-          <div class="pg-panel-actions">
-            <button type="button" class="mf-btn" data-edit-details (click)="openEdit()">
-              Edit details
+          <div class="pg-panel-actions dt__corner">
+            <button
+              type="button"
+              class="mf-btn mf-btn--icon"
+              data-edit-details
+              aria-label="Edit details"
+              title="Edit details"
+              (click)="openEdit()"
+            >
+              <i class="pi pi-pencil" aria-hidden="true"></i>
             </button>
           </div>
         }
 
-        <dl class="pg-dl pg-dl--stacked" data-view>
-          @if (t.description) {
-            <dt>Description</dt>
-            <dd class="pre mf-rich" data-description>{{ t.description }}</dd>
-          }
-          <dt>Requestor</dt>
-          <dd>
-            {{ t.requestorName }}
-            @if (t.requestorEmail) {
-              &lt;<a class="pg-link" [href]="'mailto:' + t.requestorEmail">{{ t.requestorEmail }}</a
-              >&gt;
+        @if (t.description) {
+          <div class="dt__description">
+            <h3 class="dt__sub dt__sub--first">Description</h3>
+            <div class="pre mf-rich" data-description>{{ t.description }}</div>
+          </div>
+        }
+
+        <section class="dt__info" aria-labelledby="td-info-h" data-view>
+          <h3 id="td-info-h" class="dt__sub">Task information</h3>
+          <dl class="pg-dl dt__facts">
+            <dt>Requestor</dt>
+            <dd>
+              {{ t.requestorName }}
+              @if (t.requestorEmail) {
+                &lt;<a class="pg-link" [href]="'mailto:' + t.requestorEmail">{{
+                  t.requestorEmail
+                }}</a
+                >&gt;
+              }
+            </dd>
+            @if (t.requestedAtUtc) {
+              <dt>Request sent</dt>
+              <dd>{{ t.requestedAtUtc | mfDate }}</dd>
             }
-          </dd>
-          @if (t.requestedAtUtc) {
-            <dt>Request sent</dt>
-            <dd>{{ t.requestedAtUtc | mfDate }}</dd>
-          }
-          <dt>Due</dt>
-          <dd>{{ { dueDate: t.dueDate, dueAtUtc: t.dueAtUtc } | dueLabel: t.status }}</dd>
-          <dt>Project</dt>
-          <dd>{{ t.project?.name ?? 'No project' }}</dd>
-          <dt>Pod</dt>
-          <dd>{{ t.assignedPod?.name ?? 'No pod' }}</dd>
-          <dt>Task type</dt>
-          <dd>{{ t.taskType.name }}</dd>
-          <dt>Created</dt>
-          <dd>{{ t.createdBy?.displayName ?? 'Unknown' }}, {{ t.createdAtUtc | mfDate }}</dd>
-          @if (t.modifiedAtUtc) {
-            <dt>Last updated</dt>
-            <dd>{{ t.modifiedAtUtc | mfDate }}</dd>
-          }
-        </dl>
+            <dt>Due</dt>
+            <dd>{{ { dueDate: t.dueDate, dueAtUtc: t.dueAtUtc } | dueLabel: t.status }}</dd>
+            <dt>Project</dt>
+            <dd>{{ t.project?.name ?? 'No project' }}</dd>
+            <dt>Pod</dt>
+            <dd>{{ t.assignedPod?.name ?? 'No pod' }}</dd>
+            <dt>Task type</dt>
+            <dd>{{ t.taskType.name }}</dd>
+            <div class="dt__pair">
+              <div class="dt__pair-item">
+                <dt>Created</dt>
+                <dd>{{ t.createdBy?.displayName ?? 'Unknown' }}, {{ t.createdAtUtc | mfDate }}</dd>
+              </div>
+              @if (t.modifiedAtUtc) {
+                <div class="dt__pair-item">
+                  <dt>Last updated</dt>
+                  <dd>{{ t.modifiedAtUtc | mfDate }}</dd>
+                </div>
+              }
+            </div>
+          </dl>
+        </section>
 
         @if (!editing() && schema(); as definition) {
           <section class="dt__request" aria-labelledby="td-request-h" data-request-form>
@@ -429,6 +450,45 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
     .dt__sub {
       margin: var(--mf-s4) 0 var(--mf-s2);
       font-size: var(--mf-fs-md);
+    }
+    .dt__sub--first {
+      margin-top: 0;
+    }
+    /* Edit sits in the top right corner of the panel as an icon. */
+    .dt__corner {
+      justify-content: flex-end;
+      margin-bottom: var(--mf-s1);
+    }
+    /* Task information: label / value rows, slightly indented under its heading (as the Request details block below). */
+    .dt__facts {
+      margin-left: var(--mf-s3);
+      gap: var(--mf-s1) var(--mf-s4);
+      font-size: var(--mf-fs-sm);
+    }
+    .dt__facts dt {
+      color: var(--mf-text-muted);
+      font-weight: 600;
+    }
+    .dt__facts dd {
+      overflow-wrap: anywhere;
+    }
+    .dt__pair {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--mf-s1) var(--mf-s5);
+    }
+    .dt__pair-item {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: var(--mf-s1) var(--mf-s2);
+      align-items: baseline;
+    }
+    .dt__request {
+      margin-left: var(--mf-s3);
+    }
+    .dt__request > .dt__sub {
+      margin-left: calc(var(--mf-s3) * -1);
     }
     .dt__form {
       display: grid;
