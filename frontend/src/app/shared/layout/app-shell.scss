@@ -133,32 +133,6 @@
   color: var(--mf-text-muted);
 }
 
-.mf-nav-group-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--mf-s2);
-  width: 100%;
-  min-height: 2rem;
-  padding: 0 var(--mf-s3);
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--mf-fs-xs);
-  font-weight: 600;
-  color: var(--mf-text-muted);
-  text-align: left;
-  cursor: pointer;
-  border-radius: var(--mf-radius);
-
-  &:hover {
-    background: var(--mf-surface-alt);
-  }
-}
-
-.mf-nav ul.mf-collapsed {
-  display: none;
-}
-
 .mf-main {
   flex: 1;
   min-width: 0;
@@ -173,21 +147,6 @@
   .mf-nav {
     width: 56px;
     padding: var(--mf-s2);
-  }
-
-  /* In the icon rail every icon stays reachable, so collapsing is ignored and group buttons become dividers. */
-  .mf-nav ul.mf-collapsed {
-    display: block;
-  }
-
-  .mf-nav-group-toggle {
-    display: none;
-  }
-
-  .mf-nav-group {
-    margin-top: var(--mf-s2);
-    padding-top: var(--mf-s2);
-    border-top: 1px solid var(--mf-border);
   }
 
   .mf-nav-label,

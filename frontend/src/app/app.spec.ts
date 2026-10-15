@@ -165,26 +165,22 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     expect(navLabels(document.body)).toContain('Users & roles');
   });
 
-  it('groups the Administration items and lets a group collapse', async () => {
+  it('lists the Administration items at one level, without groups', async () => {
     await open('admin');
-    const toggles = Array.from(
-      document.body.querySelectorAll<HTMLButtonElement>('.mf-nav-group-toggle'),
-    );
-    expect(toggles.map((t) => t.textContent!.trim())).toEqual([
-      'People',
-      'Work set-up',
-      'Data set-up',
-      'Oversight',
+    expect(document.body.querySelector('.mf-nav-group-toggle')).toBeNull();
+    const admin = document.body.querySelector('ul[aria-labelledby="mf-admin-heading"]')!;
+    expect(Array.from(admin.querySelectorAll('li a')).map((a) => a.textContent!.trim())).toEqual([
+      'Users & roles',
+      'Pods',
+      'Task types & forms',
+      'Step library',
+      'Workflows',
+      'Priorities & status labels',
+      'Asset types',
+      'Asset link roles',
+      'Custom fields',
+      'Audit log',
     ]);
-    const oversight = toggles[3];
-    expect(oversight.getAttribute('aria-expanded')).toBe('true');
-    oversight.click();
-    await new Promise((r) => setTimeout(r));
-    expect(oversight.getAttribute('aria-expanded')).toBe('false');
-    expect(
-      document.body.querySelector('#' + oversight.getAttribute('aria-controls'))!.classList,
-    ).toContain('mf-collapsed');
-    localStorage.removeItem('mf.nav.collapsed.v1');
   });
 
   it('sends a user without the permission to the 403 page', async () => {
