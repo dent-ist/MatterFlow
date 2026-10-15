@@ -59,6 +59,7 @@ function savePanelOpen(open: boolean): void {
   template: `
     <div
       class="dl"
+      [style.--dl-aside]="asideWidth()"
       [class.dl--wide]="wide()"
       [class.dl--slim]="mid() && !isOpen()"
       data-detail-layout
@@ -120,7 +121,7 @@ function savePanelOpen(open: boolean): void {
     }
     .dl--wide {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 340px;
+      grid-template-columns: minmax(0, 1fr) var(--dl-aside, 340px);
       gap: var(--mf-s5);
       align-items: start;
     }
@@ -202,6 +203,8 @@ export class DetailLayout {
   readonly heading = input('Details');
   /** Lets the panel collapse between 1100 and 1399 px (see the class comment). */
   readonly collapsible = input(false);
+  /** Width of the side panel from 1100 px (any CSS length); the Task page asks for more room for its Details. */
+  readonly asideWidth = input('340px');
 
   protected readonly uid = `dl-${nextId++}`;
   /** True from 1100 px (two columns). Without `matchMedia` (tests) the wide layout is used. */

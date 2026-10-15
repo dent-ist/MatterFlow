@@ -57,6 +57,7 @@ export interface WorkTab {
       flex-wrap: nowrap;
       gap: var(--mf-s1);
       overflow-x: auto;
+      overflow-y: hidden;
       scrollbar-width: thin;
       /* Keeps the selected tab's 3 px underline (it overlaps the row's border by 2 px) inside the scrolling box. */
       margin-bottom: -2px;

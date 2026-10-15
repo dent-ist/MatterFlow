@@ -140,7 +140,7 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
             <div class="pg-banner" role="status" data-warning>{{ w }}</div>
           }
 
-          <mf-detail-layout>
+          <mf-detail-layout asideWidth="clamp(380px, 34vw, 480px)">
             <div mfMain>
               <nav class="jump" aria-label="Jump to" data-jump>
                 <span class="jump__label">Jump to</span>

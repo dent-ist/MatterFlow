@@ -94,6 +94,25 @@ const RENDER_CACHE_LIMIT = 1000;
                     @if (c.purposeLabel) {
                       <span class="tc__tag" data-purpose>{{ c.purposeLabel }}</span>
                     }
+                    @if (editingId() !== c.commentId && !readOnly() && (c.canEdit || c.canDelete)) {
+                      <span class="tc__actions tc__actions--row">
+                        @if (c.canEdit) {
+                          <button type="button" class="mf-btn" data-edit (click)="startEdit(c)">
+                            Edit
+                          </button>
+                        }
+                        @if (c.canDelete) {
+                          <button
+                            type="button"
+                            class="mf-btn mf-btn--danger"
+                            data-delete
+                            (click)="askDelete(c)"
+                          >
+                            Delete
+                          </button>
+                        }
+                      </span>
+                    }
                   </div>
 
                   @if (editingId() === c.commentId) {
@@ -163,25 +182,6 @@ const RENDER_CACHE_LIMIT = 1000;
                           }
                         </div>
                       }
-                    }
-                    @if (!readOnly() && (c.canEdit || c.canDelete)) {
-                      <div class="tc__actions">
-                        @if (c.canEdit) {
-                          <button type="button" class="mf-btn" data-edit (click)="startEdit(c)">
-                            Edit
-                          </button>
-                        }
-                        @if (c.canDelete) {
-                          <button
-                            type="button"
-                            class="mf-btn mf-btn--danger"
-                            data-delete
-                            (click)="askDelete(c)"
-                          >
-                            Delete
-                          </button>
-                        }
-                      </div>
                     }
                   }
                 </li>
@@ -380,13 +380,21 @@ const RENDER_CACHE_LIMIT = 1000;
     }
     .tc__actions {
       display: flex;
+      justify-content: flex-end;
       gap: var(--mf-s2);
       margin-top: var(--mf-s2);
+    }
+    /* Edit and Delete sit at the right end of the author line instead of under the text. */
+    .tc__actions--row {
+      margin: calc(var(--mf-s1) * -1) 0 calc(var(--mf-s1) * -1) auto;
     }
     .tc__composer {
       display: grid;
       gap: var(--mf-s2);
-      justify-items: start;
+      justify-items: stretch;
+    }
+    .tc__composer [data-post] {
+      justify-self: end;
     }
     .tc__composer mf-rich-text-editor {
       justify-self: stretch;

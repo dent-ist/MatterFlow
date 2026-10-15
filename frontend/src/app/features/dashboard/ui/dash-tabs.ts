@@ -54,13 +54,13 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
       display: flex;
       gap: var(--mf-s1);
       overflow-x: auto;
-      border-bottom: 1px solid var(--mf-border);
+      overflow-y: hidden;
+      box-shadow: inset 0 -1px 0 var(--mf-border);
       scrollbar-width: thin;
     }
     .tab {
       flex: none;
       min-height: 2.75rem;
-      margin-bottom: -1px;
       padding: 0 var(--mf-s4);
       color: var(--mf-text-muted);
       background: none;

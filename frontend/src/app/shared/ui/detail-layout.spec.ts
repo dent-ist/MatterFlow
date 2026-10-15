@@ -71,6 +71,8 @@ describe('DetailLayout', () => {
     );
     expect(aside.querySelector('[data-a]')).not.toBeNull();
     expect(aside.querySelector('button')).toBeNull(); // no disclosure when it is a side panel
+    // 340 px unless the page asks for more room (the Task page does).
+    expect((layout as HTMLElement).style.getPropertyValue('--dl-aside')).toBe('340px');
     expect(aside.querySelector('[data-detail-body]')!.hasAttribute('hidden')).toBe(false);
   });
 

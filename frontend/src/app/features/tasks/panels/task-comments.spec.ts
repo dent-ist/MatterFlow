@@ -189,6 +189,9 @@ describe('TaskComments', () => {
 
     expect(items[0].querySelector('[data-edit]')).not.toBeNull();
     expect(items[0].querySelector('[data-delete]')).not.toBeNull();
+    // The buttons sit on the author line (right end), not in a row under the text.
+    expect(items[0].querySelector('.tc__meta [data-edit]')).not.toBeNull();
+    expect(items[0].querySelector('.tc__meta [data-delete]')).not.toBeNull();
     expect(items[1].querySelector('[data-edit]')).toBeNull();
     expect(items[1].querySelector('[data-delete]')).toBeNull();
   });
