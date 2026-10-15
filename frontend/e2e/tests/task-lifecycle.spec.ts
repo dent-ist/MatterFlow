@@ -182,6 +182,7 @@ test.describe('Sensitive matter banner', () => {
 
     const create = new CreateTaskPage(page);
     await create.open();
+    await create.chooseTaskType(world.taskType.name);
     await expect(create.sensitiveBanner).toHaveCount(0);
     await create.pickMatter(world.matter.matterRef, world.matter.matterRef);
     await expect(create.sensitiveBanner).toContainText('Sensitive matter.');

@@ -241,11 +241,12 @@ test.describe('Create task: project, workflow and form rules (SCN-004, SCN-005, 
     const world = await seed.world();
     const create = new CreateTaskPage(page);
     await create.open();
+    await expect(create.submit).toHaveCount(0); // nothing to submit before a type is chosen
+    await create.chooseTaskType(world.taskType.name);
     await create.submit.click();
 
     await expect(create.summary).toContainText('Select a matter.');
     await expect(create.summary).toContainText('Enter a title.');
-    await expect(create.summary).toContainText('Select a task type.');
     await expect(create.summary).toContainText("Enter the requestor's name.");
     await expect(page).toHaveURL(/\/tasks\/new$/);
 

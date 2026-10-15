@@ -107,13 +107,13 @@ test.describe('Task type icons and the type-first Create Task', () => {
     const dialog = page.getByRole('dialog', { name: 'Choose an icon' });
     await expect(dialog).toBeVisible();
     await dialog.getByRole('searchbox', { name: 'Search icons' }).fill('email');
-    await dialog.getByRole('radio', { name: /Email/ }).first().click();
+    await dialog.getByRole('radio', { name: 'Email', exact: true }).click();
     await expect(dialog).toHaveCount(0);
     await expect(page.locator('[data-icon-current]')).toHaveText('Email');
     await page.locator('[data-save] button').click();
     await expect(page.getByText('Saved.').first()).toBeVisible();
 
-    await page.goto('/admin/task-types');
+    await page.goto(`/admin/task-types?q=${encodeURIComponent(world.taskType.name)}`);
     await expect(
       page.locator(`[data-row="${world.taskType.name}"] svg[data-icon="mail"]`),
     ).toBeVisible();

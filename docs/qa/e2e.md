@@ -115,7 +115,7 @@ Baseline 6.4 scenario 3 (Access Pending, role grant, dashboard) is covered by th
 
 1. Pick (or add) a spec under `e2e/tests/`. Name the `describe` after the scenario ids it covers and prefix test titles with `SCN-nnn:` when they implement a baseline scenario, so `-g SCN-015` works.
 2. Build data with `seed` (`const world = await seed.world({ stepCount: 3 })` gives a client, matter, task type and workflow; `seed.task(world)` a task; `seed.user(['Data Technician'], 'tech')` a signed-in-able user). Add a builder to `support/seed.ts` when a new kind of data is needed.
-3. Drive the UI through a page object (`pages/`). Add methods or locators there rather than in the test when more than one test needs them.
+3. Drive the UI through a page object (`pages/`). Add methods or locators there rather than in the test when more than one test needs them. Create Task is type first: `CreateTaskPage.open()` shows the type chooser, so call `chooseTaskType(name)` (or open `?taskType=<id>`) before touching any form field.
 4. Use the API only to set up or to assert what the UI cannot do (a 409 code, a stored value). Assert the UI first, the API second.
 5. Run `npm run e2e -- -g "your test" --repeat-each=5` against a kept stack to check for flakiness, then `npm run format:check` (prettier covers `e2e/`) and `npm run e2e:typecheck`.
 

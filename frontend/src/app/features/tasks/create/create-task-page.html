@@ -67,8 +67,10 @@
                   data-type-search
                 />
               </div>
-              <p class="sr-only" role="status" aria-live="polite">
-                {{ shownChoices().length }} of {{ usableChoices().length }} task types
+              <p class="mf-field__help" role="status" aria-live="polite" data-type-count>
+                @if (typeQuery()) {
+                  {{ shownChoices().length }} of {{ usableChoices().length }} task types
+                }
               </p>
             }
             @if (shownChoices().length === 0) {
