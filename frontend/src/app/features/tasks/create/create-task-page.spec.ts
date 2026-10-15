@@ -205,6 +205,17 @@ async function type(h: Harness, selector: string, value: string): Promise<void> 
   await settle(h.fixture);
 }
 
+const editor = (h: Harness): HTMLElement =>
+  h.el.querySelector<HTMLElement>('[data-description-field] [role=textbox]')!;
+
+/** Types into the description's rich text editor (the way the browser reports it: HTML in the editable area, then an input event). */
+async function typeDescription(h: Harness, html: string): Promise<void> {
+  const area = editor(h);
+  area.innerHTML = html;
+  area.dispatchEvent(new Event('input'));
+  await settle(h.fixture);
+}
+
 /** Chooses a task type by clicking its card in the chooser (the form appears once a type is chosen). */
 async function pickType(h: Harness, name = 'Data Processing'): Promise<void> {
   field<HTMLButtonElement>(h, `[data-type-card="${name}"]`).click();
@@ -391,7 +402,7 @@ describe('CreateTaskPage', () => {
     const h = await create({ inputs: { matterId: '7', projectId: '3' } });
     await fillRequired(h);
     await type(h, '#ct-requestor-email', 'jane@example-firm.test');
-    await type(h, '#ct-description', 'Load file by Friday');
+    await typeDescription(h, '<p>Load file by Friday</p>');
     await choose(h, '#ct-priority', '2');
     await type(h, '#ct-due-date', '2026-10-30');
     await type(h, '#ct-due-time', '15:00');
@@ -416,7 +427,7 @@ describe('CreateTaskPage', () => {
       taskTypeId: 1,
       workflowDefinitionId: 10,
       title: 'Process Smith custodians',
-      description: 'Load file by Friday',
+      description: '<p>Load file by Friday</p>',
       requestorName: 'Jane Doe',
       requestorEmail: 'jane@example-firm.test',
       requestedAtUtc: undefined,
@@ -660,9 +671,7 @@ describe('CreateTaskPage', () => {
       expect(field(h, '[data-type-chooser]')).not.toBeNull(); // the prefill waits for the type
       await pickType(h);
       expect(field<HTMLInputElement>(h, '#ct-title').value).toBe('Production volume 7');
-      expect(field<HTMLTextAreaElement>(h, '#ct-description').value).toBe(
-        'Please prepare the load file.',
-      );
+      expect(editor(h).innerHTML).toBe('<p>Please prepare the load file.</p>');
       expect(field<HTMLInputElement>(h, '#ct-requestor-name').value).toBe('Jane Doe');
       expect(field<HTMLInputElement>(h, '#ct-requestor-email').value).toBe(
         'jane.doe@example-firm.test',
@@ -675,6 +684,51 @@ describe('CreateTaskPage', () => {
       const body = h.tasks.createTask.mock.calls[0][0];
       expect(body.title).toBe('Edited by hand');
       expect(body.requestedAtUtc).toBe('2026-10-12T13:15:00+00:00');
+    });
+  });
+
+  describe('rich text description (decision R)', () => {
+    it('is a rich text editor with a table button and the privilege reminder, and nothing is sent while it is empty', async () => {
+      const h = await create({ inputs: { matterId: '7', projectId: '3' } });
+      await fillRequired(h);
+      await type(h, '[data-request-details] input[type=text]', 'WS-9');
+      expect(editor(h).getAttribute('aria-label')).toBe('Description');
+      expect(h.el.querySelector('[data-description-field] [data-cmd=table]')).not.toBeNull();
+      expect(field(h, '#ct-description-help').textContent).toContain('Privilege reminder');
+
+      await typeDescription(h, '<p><br></p>');
+      await submit(h);
+      expect(h.tasks.createTask.mock.calls[0][0].description).toBeUndefined();
+    });
+
+    it('sends a table as HTML for the server to sanitize', async () => {
+      const h = await create({ inputs: { matterId: '7', projectId: '3' } });
+      await fillRequired(h);
+      await type(h, '[data-request-details] input[type=text]', 'WS-9');
+      const table =
+        '<p>Load:</p><table><tbody><tr><td>Smith</td><td>12 GB</td></tr></tbody></table>';
+      await typeDescription(h, table);
+      await submit(h);
+      expect(h.tasks.createTask.mock.calls[0][0].description).toBe(table);
+    });
+
+    it('counts a description with content as unsaved changes and an empty one as none', async () => {
+      const h = await create({ inputs: { matterId: '7' } });
+      await pickType(h);
+      expect(h.fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+      await typeDescription(h, '<p><br></p>');
+      expect(h.fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+      await typeDescription(h, '<p>x</p>');
+      expect(h.fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+    });
+
+    it('rejects a description over 20000 characters with a message on the field', async () => {
+      const h = await create({ inputs: { matterId: '7', projectId: '3' } });
+      await fillRequired(h);
+      await typeDescription(h, `<p>${'x'.repeat(20001)}</p>`);
+      await submit(h);
+      expect(field(h, '#ct-description-error').textContent).toContain('20000');
+      expect(h.tasks.createTask).not.toHaveBeenCalled();
     });
   });
 

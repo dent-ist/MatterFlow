@@ -47,6 +47,14 @@ import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { splitFormErrors } from '../../../shared/ui/custom-fields';
 import { Dialog } from 'primeng/dialog';
 import { DialogFocus } from '../../../shared/ui/dialog-focus';
+import { RichTextEditor } from '../panels/rich-text-editor';
+import {
+  DESCRIPTION_MAX_TEXT,
+  decorateLinks,
+  descriptionToHtml,
+  htmlToText,
+  isBlankHtml,
+} from '../panels/rich-text';
 import { TaskDetailStore } from './task-detail.store';
 import { valuesPatch } from './task-step';
 import { MatterRef } from '../../../shared/ui/matter-ref';
@@ -92,6 +100,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
     DueLabelPipe,
     EntityPicker,
     MatterRef,
+    RichTextEditor,
   ],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -117,7 +126,12 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
         @if (t.description) {
           <div class="dt__description">
             <h3 class="dt__sub dt__sub--first">Description</h3>
-            <div class="pre mf-rich" data-description>{{ t.description }}</div>
+            <div
+              class="mf-rich"
+              data-description
+              [attr.data-format]="t.descriptionFormat"
+              [innerHTML]="descriptionHtml()"
+            ></div>
           </div>
         }
 
@@ -215,17 +229,15 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
             </div>
 
             <div class="mf-field">
-              <label class="mf-field__label" for="td-description">Description</label>
-              <textarea
-                id="td-description"
-                class="mf-field__input"
-                rows="5"
-                maxlength="20000"
+              <span class="mf-field__label" id="td-description-label">Description</span>
+              <mf-rich-text-editor
+                label="Description"
+                placeholder="Describe the work. You can paste a table from an email."
+                data-description-editor
+                [maxLength]="descriptionMax"
                 [value]="model().description"
-                [attr.aria-invalid]="err('description') ? 'true' : null"
-                [attr.aria-describedby]="err('description') ? 'td-description-error' : null"
-                (input)="set('description', $any($event.target).value)"
-              ></textarea>
+                (valueChange)="set('description', $event)"
+              />
               @if (err('description'); as e) {
                 <p class="mf-field__error" id="td-description-error" role="alert">{{ e }}</p>
               }
@@ -580,6 +592,17 @@ export class TaskDetailsTab {
     return list;
   });
 
+  protected readonly descriptionMax = DESCRIPTION_MAX_TEXT;
+
+  /** The description for reading: saved text is escaped, saved rich text is already sanitized; links show their real host. */
+  protected readonly descriptionHtml = computed(() => {
+    const t = this.store.task();
+    return t ? decorateLinks(descriptionToHtml(t.description, t.descriptionFormat)) : '';
+  });
+
+  /** What the editor started with (a description saved as text is converted to paragraphs), to tell whether the person changed it. */
+  private startDescription = '';
+
   protected readonly podOptions = computed<Option[]>(() => {
     const current = this.store.task()?.assignedPod;
     const list = this.pods()
@@ -673,7 +696,7 @@ export class TaskDetailsTab {
     if (!t) return;
     const m: EditModel = {
       title: t.title,
-      description: t.description ?? '',
+      description: descriptionToHtml(t.description, t.descriptionFormat),
       requestorName: t.requestorName,
       requestorEmail: t.requestorEmail ?? '',
       projectId: t.project?.projectId ?? null,
@@ -684,6 +707,7 @@ export class TaskDetailsTab {
       userId: t.assignedUser?.userId ?? null,
     };
     this.original = m;
+    this.startDescription = m.description;
     this.model.set(m);
     this.assignee.set(
       t.assignedUser
@@ -811,6 +835,9 @@ export class TaskDetailsTab {
     const m = this.model();
     const errors: Record<string, string> = {};
     if (!m.title.trim()) errors['title'] = 'Enter a title.';
+    if (htmlToText(m.description).trim().length > DESCRIPTION_MAX_TEXT) {
+      errors['description'] = `Description must be ${DESCRIPTION_MAX_TEXT} characters or fewer.`;
+    }
     if (!m.requestorName.trim()) errors['requestorName'] = 'Enter the requestor name.';
     if (m.requestorEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.requestorEmail.trim())) {
       errors['requestorEmail'] = 'Enter a valid email address.';
@@ -863,7 +890,7 @@ export class TaskDetailsTab {
         rowVersion: t.rowVersion,
         projectId: m.projectId ?? undefined,
         title: m.title.trim(),
-        description: m.description.trim() || undefined,
+        description: this.descriptionToSend(t.description, t.descriptionFormat, m.description),
         requestorName: m.requestorName.trim(),
         requestorEmail: m.requestorEmail.trim() || undefined,
         requestedAtUtc: t.requestedAtUtc,
@@ -906,6 +933,19 @@ export class TaskDetailsTab {
         `Hidden fields were cleared: ${dropped.join(', ')}.`,
       );
     }
+  }
+
+  /**
+   * The description to send. A description saved as text that the person did not touch is sent back as it is (the server then keeps it as
+   * text and records no change); anything edited is sent as the editor's HTML, which the server sanitizes again.
+   */
+  private descriptionToSend(
+    saved: string | undefined,
+    format: string,
+    html: string,
+  ): string | undefined {
+    if (format !== 'HTML' && saved && html === this.startDescription) return saved;
+    return isBlankHtml(html) ? undefined : html;
   }
 
   private focusSummary(): void {

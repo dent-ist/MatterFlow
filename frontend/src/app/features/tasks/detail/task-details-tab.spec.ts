@@ -69,6 +69,132 @@ describe('Details tab', () => {
     expect(dd.textContent).toContain('a | b | c');
   });
 
+  describe('rich text description (decision R)', () => {
+    const html =
+      '<p>Please load:</p><table><thead><tr><th scope="col">Custodian</th><th scope="col">Size</th></tr></thead><tbody><tr><td>Smith</td><td colspan="2">12 GB</td></tr></tbody></table><p><a href="https://example.com/doc">doc</a></p>';
+
+    it('shows a saved table as a table inside the mf-rich box, with links opening in a new tab and showing their host', async () => {
+      const { el } = await mountTaskPage(aTask({ description: html, descriptionFormat: 'HTML' }), [
+        'Task.View',
+      ]);
+      const box = q(el, '[data-description]')!;
+      expect(box.getAttribute('data-format')).toBe('HTML');
+      expect(box.classList).toContain('mf-rich');
+      expect(box.querySelectorAll('table').length).toBe(1);
+      expect(box.querySelectorAll('thead th[scope=col]').length).toBe(2);
+      expect(box.querySelector('td[colspan="2"]')?.textContent).toBe('12 GB');
+      const link = box.querySelector('a')!;
+      expect(link.getAttribute('target')).toBe('_blank');
+      expect(box.textContent).toContain('(example.com)');
+    });
+
+    it("never renders script, handlers or styles even if they were in the stored value (Angular's own sanitizer as defence in depth)", async () => {
+      const { el } = await mountTaskPage(
+        aTask({
+          description:
+            '<p onclick="x()" style="position:fixed">Hi</p><script>window.__pwn=1</script><img src=x onerror="window.__pwn=2"><table><tr><td onmouseover="x()">c</td></tr></table>',
+          descriptionFormat: 'HTML',
+        }),
+        ['Task.View'],
+      );
+      const box = q(el, '[data-description]')!;
+      expect(box.innerHTML).not.toContain('script');
+      expect(box.innerHTML).not.toContain('onclick');
+      expect(box.innerHTML).not.toContain('onmouseover');
+      expect(box.innerHTML).not.toContain('style=');
+      expect(box.innerHTML).not.toContain('<img');
+      expect(box.innerHTML).not.toContain('onerror');
+      expect(box.querySelector('td')?.textContent).toBe('c');
+      expect((window as unknown as { __pwn?: number }).__pwn).toBeUndefined();
+    });
+
+    it('shows a description saved as text escaped, with its line breaks, never as markup', async () => {
+      const { el } = await mountTaskPage(
+        aTask({
+          description: 'Line 1\nLine <b>2</b> & <script>x</script>\n\nSecond',
+          descriptionFormat: 'TEXT',
+        }),
+        ['Task.View'],
+      );
+      const box = q(el, '[data-description]')!;
+      expect(box.querySelectorAll('p').length).toBe(2);
+      expect(box.querySelector('br')).not.toBeNull();
+      expect(box.querySelector('b')).toBeNull();
+      expect(box.querySelector('script')).toBeNull();
+      expect(box.textContent).toContain('Line <b>2</b> & <script>x</script>');
+    });
+
+    it('edits a saved table in the rich text editor, sends HTML, and sends a text description back unchanged when it was not touched', async () => {
+      const saved = aTask({ rowVersion: 'RV2' });
+      const { fixture, el, fakes } = await mountTaskPage(
+        aTask({ description: html, descriptionFormat: 'HTML' }),
+        ['Task.View', 'Task.Edit'],
+        { tasks: { updateTask: vi.fn().mockReturnValue(of(saved)) } },
+      );
+      await click(fixture, q(el, '[data-edit]'));
+      const area = q(document.body, '[data-description-editor] [role=textbox]')!;
+      expect(area.querySelectorAll('table').length).toBe(1);
+      expect(area.getAttribute('aria-label')).toBe('Description');
+
+      area.insertAdjacentHTML('beforeend', '<p>More</p>');
+      area.dispatchEvent(new Event('input'));
+      await settle(fixture);
+      await click(fixture, q(document.body, '[data-save]'));
+      const body = fakes.tasks['updateTask'].mock.calls[0][1];
+      expect(body.description).toContain('<table>');
+      expect(body.description).toContain('<p>More</p>');
+    });
+
+    it('does not turn an untouched text description into HTML on save (the server then records no change)', async () => {
+      const { fixture, el, fakes } = await mountTaskPage(
+        aTask({ description: 'Old text\nsecond line', descriptionFormat: 'TEXT' }),
+        ['Task.View', 'Task.Edit'],
+        { tasks: { updateTask: vi.fn().mockReturnValue(of(aTask({ rowVersion: 'RV2' }))) } },
+      );
+      await click(fixture, q(el, '[data-edit]'));
+      const area = q(document.body, '[data-description-editor] [role=textbox]')!;
+      expect(area.innerHTML).toBe('<p>Old text<br>second line</p>');
+      await type(fixture, document.body, '#td-title', 'Only the title changed');
+      await click(fixture, q(document.body, '[data-save]'));
+      expect(fakes.tasks['updateTask'].mock.calls[0][1].description).toBe('Old text\nsecond line');
+    });
+
+    it('sends the edited text as HTML, and nothing when the description was cleared', async () => {
+      const { fixture, el, fakes } = await mountTaskPage(
+        aTask({ description: 'Old text', descriptionFormat: 'TEXT' }),
+        ['Task.View', 'Task.Edit'],
+        { tasks: { updateTask: vi.fn().mockReturnValue(of(aTask({ rowVersion: 'RV2' }))) } },
+      );
+      await click(fixture, q(el, '[data-edit]'));
+      const area = q(document.body, '[data-description-editor] [role=textbox]')!;
+      area.innerHTML = '<p>New text</p>';
+      area.dispatchEvent(new Event('input'));
+      await settle(fixture);
+      await click(fixture, q(document.body, '[data-save]'));
+      expect(fakes.tasks['updateTask'].mock.calls[0][1].description).toBe('<p>New text</p>');
+
+      await click(fixture, q(el, '[data-edit]'));
+      const again = q(document.body, '[data-description-editor] [role=textbox]')!;
+      again.innerHTML = '<p><br></p>';
+      again.dispatchEvent(new Event('input'));
+      await settle(fixture);
+      await click(fixture, q(document.body, '[data-save]'));
+      expect(fakes.tasks['updateTask'].mock.calls[1][1].description).toBeUndefined();
+    });
+
+    it('rejects a description over 20000 characters before it is sent', async () => {
+      const { fixture, el, fakes } = await mountTaskPage(aTask(), ['Task.View', 'Task.Edit']);
+      await click(fixture, q(el, '[data-edit]'));
+      const area = q(document.body, '[data-description-editor] [role=textbox]')!;
+      area.innerHTML = `<p>${'x'.repeat(20001)}</p>`;
+      area.dispatchEvent(new Event('input'));
+      await settle(fixture);
+      await click(fixture, q(document.body, '[data-save]'));
+      expect(q(document.body, '#td-description-error')!.textContent).toContain('20000');
+      expect(fakes.tasks['updateTask']).not.toHaveBeenCalled();
+    });
+  });
+
   it('Edit details in the panel opens the same form as the header Edit and returns to the page', async () => {
     const { fixture, el } = await mountTaskPage(aTask());
     document.body.appendChild(el);

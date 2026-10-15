@@ -268,15 +268,25 @@
                 </p>
               }
             </div>
-            <mf-text-field
-              inputId="ct-description"
-              label="Description"
-              [multiline]="true"
-              [maxLength]="20000"
-              help="Plain text. Privilege reminder: don't paste privileged advice or more than the work needs; this text is saved with the task and visible to everyone who can open it."
-              [error]="fieldError('description')"
-              [(value)]="description"
-            />
+            <div class="mf-field" data-description-field>
+              <span class="mf-field__label" id="ct-description-label">Description</span>
+              <mf-rich-text-editor
+                label="Description"
+                placeholder="Describe the work. You can paste a table from an email."
+                [maxLength]="descriptionMax"
+                [(value)]="description"
+              />
+              <p class="mf-field__help" id="ct-description-help">
+                Bold, italic, lists, links and tables. Privilege reminder: don't paste privileged
+                advice or more than the work needs; this text is saved with the task and visible to
+                everyone who can open it.
+              </p>
+              @if (fieldError('description'); as e) {
+                <p class="mf-field__error" id="ct-description-error" role="alert">
+                  <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
+                </p>
+              }
+            </div>
             @if (requestedAt(); as sent) {
               <p class="mf-field__help" data-source-sent>
                 Source email sent: {{ sent | mfDate }} (read-only, from the email)

@@ -3,7 +3,19 @@
 /** Largest plain-text length the comment editor accepts (UX 5.5 proposal). */
 export const COMMENT_MAX_TEXT = 10_000;
 
+/** Largest plain-text length of a Task description (the server limit; decision R). */
+export const DESCRIPTION_MAX_TEXT = 20_000;
+
+/** Most table cells one comment or description may hold (the server limit; decision R). */
+export const MAX_TABLE_CELLS = 200;
+
+/** Deepest nesting of tables kept; deeper ones are flattened (the server does the same). */
+export const MAX_TABLE_DEPTH = 3;
+
 const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+
+const NEVER_RENDERED =
+  'img,picture,source,video,audio,track,iframe,frame,object,embed,form,input,button,select,textarea,svg,math,style,link,meta,base,script';
 
 /**
  * The link the editor may insert for what the user typed: `http(s)://...` and `mailto:` are accepted as typed, a bare host such as
@@ -25,6 +37,94 @@ export function htmlToText(html: string | null | undefined): string {
   if (!html) return '';
   return new DOMParser().parseFromString(html, 'text/html').body.textContent ?? '';
 }
+
+/**
+ * Plain text as HTML, like the server's conversion: everything escaped, a blank line starts a paragraph and a single line break becomes a
+ * `<br>`. Shows descriptions saved as text (before descriptions became rich text) and starts their editing.
+ */
+export function textToHtml(text: string | null | undefined): string {
+  const normalized = (text ?? '').replace(/\r\n?/g, '\n').replace(/^[\n \t]+|[\n \t]+$/g, '');
+  if (normalized.trim().length === 0) return '';
+  return normalized
+    .split(/\n[ \t]*\n+/)
+    .filter((paragraph) => paragraph.trim().length > 0)
+    .map(
+      (paragraph) =>
+        `<p>${paragraph
+          .split('\n')
+          .map((line) => escapeText(line.replace(/\s+$/, '')))
+          .join('<br>')}</p>`,
+    )
+    .join('');
+}
+
+/** The HTML to show or edit for a Task description in either storage format (`TEXT` is escaped, `HTML` is already sanitized). */
+export function descriptionToHtml(
+  description: string | null | undefined,
+  format: string | null | undefined,
+): string {
+  if (!description) return '';
+  return format === 'HTML' ? description : textToHtml(description);
+}
+
+const BLOCK_TAGS = new Set([
+  'p',
+  'div',
+  'li',
+  'ul',
+  'ol',
+  'tr',
+  'table',
+  'caption',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'blockquote',
+  'pre',
+]);
+
+/**
+ * The text of an HTML fragment for summaries: paragraphs, list items, line breaks and table rows end a line and table cells are separated by
+ * ` | ` (the server's plain-text rendering of a description). Parsed into an inert document; nothing is executed or fetched.
+ */
+export function htmlToPlainText(html: string | null | undefined): string {
+  if (!html) return '';
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  let out = '';
+  const newline = (): void => {
+    if (out.length > 0 && !out.endsWith('\n')) out += '\n';
+  };
+  const walk = (node: Node): void => {
+    for (const child of Array.from(node.childNodes)) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        out += (child.textContent ?? '').replace(/[ \t\r\n\f]+/g, ' ');
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        const tag = (child as Element).localName;
+        if (tag === 'br') {
+          out += '\n';
+          continue;
+        }
+        const block = BLOCK_TAGS.has(tag);
+        if (block) newline();
+        walk(child);
+        if (tag === 'td' || tag === 'th') out += ' | ';
+        if (block) newline();
+      }
+    }
+  };
+  walk(doc.body);
+  return out
+    .replace(/(?:[ \u00A0]*\|[ \u00A0]*)+(?=\n|$)/g, '')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{2,}/g, '\n')
+    .trim();
+}
+
+const escapeText = (value: string): string =>
+  value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /** True when the HTML shows nothing but whitespace (empty paragraphs and line breaks count as nothing). */
 export function isBlankHtml(html: string | null | undefined): boolean {
@@ -54,6 +154,9 @@ const stripWww = (host: string): string => host.toLowerCase().replace(/^www\./, 
 export function decorateLinks(html: string | null | undefined): string {
   if (!html) return '';
   const doc = new DOMParser().parseFromString(html, 'text/html');
+  // The server never stores these. Dropping them here keeps a remote image (a tracking pixel) from loading even if one were stored, because
+  // Angular's own sanitizer would let a plain <img src> through.
+  for (const element of Array.from(doc.body.querySelectorAll(NEVER_RENDERED))) element.remove();
   for (const anchor of Array.from(doc.body.querySelectorAll('a'))) {
     anchor.setAttribute('target', '_blank');
 
@@ -97,4 +200,39 @@ function hasWhitespaceOrControl(text: string): boolean {
     if (char.charCodeAt(0) <= 0x20 || /\s/.test(char)) return true;
   }
   return false;
+}
+
+// ---- table cells (used by the editor's keyboard handling, which cannot wait for a lazy chunk)
+
+/** The cell that holds the caret (the innermost one), when the selection is inside `area`. */
+export function cellAtSelection(
+  area: HTMLElement,
+  selection: Selection | null,
+): HTMLTableCellElement | null {
+  const node = selection?.anchorNode;
+  if (!node || !area.contains(node)) return null;
+  const element = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+  const cell = element?.closest('td, th');
+  return cell && area.contains(cell) ? (cell as HTMLTableCellElement) : null;
+}
+
+/** The next (or previous) cell of the same table in reading order, or null at the end (Tab then leaves the editor). */
+export function neighbourCell(
+  cell: HTMLTableCellElement,
+  backward: boolean,
+): HTMLTableCellElement | null {
+  const table = cell.closest('table');
+  if (!table) return null;
+  const cells = Array.from(table.rows).flatMap((tr) => Array.from(tr.cells));
+  return cells[cells.indexOf(cell) + (backward ? -1 : 1)] ?? null;
+}
+
+/** Puts the caret at the start of a cell. */
+export function placeCaret(cell: Element, selection: Selection | null): void {
+  if (!selection) return;
+  const range = cell.ownerDocument.createRange();
+  range.selectNodeContents(cell);
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
 }

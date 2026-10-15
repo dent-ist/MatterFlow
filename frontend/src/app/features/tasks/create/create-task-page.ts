@@ -55,6 +55,8 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { GridNav } from '../../../shared/ui/grid-nav';
 import { splitFormErrors } from '../../../shared/ui/custom-fields';
 import { EmailIntake, EmailPrefill } from '../../../shared/ui/email-intake';
+import { RichTextEditor } from '../panels/rich-text-editor';
+import { DESCRIPTION_MAX_TEXT, htmlToText, isBlankHtml } from '../panels/rich-text';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
@@ -65,7 +67,6 @@ type LoadState = 'loading' | 'ready' | 'error';
 type SchemaState = 'none' | 'loading' | 'ready' | 'error';
 
 export const TITLE_MAX = 200;
-const DESCRIPTION_MAX = 20000;
 const REQUESTOR_NAME_MAX = 200;
 const REQUESTOR_EMAIL_MAX = 254;
 /** More types than this and the chooser shows a search box. */
@@ -112,6 +113,7 @@ const matterOption = (m: MatterResponse): PickerOption => ({
     EmailIntake,
     EntityPicker,
     TextField,
+    RichTextEditor,
     ConfirmDialog,
     GridNav,
     TaskTypeIcon,
@@ -243,7 +245,9 @@ export class CreateTaskPage implements HasUnsavedChanges {
   protected readonly projectId$ = signal<number | null>(null);
   protected readonly projectCleared = signal(false);
   protected readonly title = signal('');
+  /** The description as the rich text editor's HTML (the server sanitizes it again). */
   protected readonly description = signal('');
+  protected readonly descriptionMax = DESCRIPTION_MAX_TEXT;
   protected readonly typeId = signal<number | null>(null);
   protected readonly workflowId = signal<number | null>(null);
   protected readonly requestorName = signal('');
@@ -342,8 +346,8 @@ export class CreateTaskPage implements HasUnsavedChanges {
     if (!title) errors['title'] = 'Enter a title.';
     else if (title.length > TITLE_MAX)
       errors['title'] = `Title must be ${TITLE_MAX} characters or fewer.`;
-    if (this.description().length > DESCRIPTION_MAX) {
-      errors['description'] = `Description must be ${DESCRIPTION_MAX} characters or fewer.`;
+    if (htmlToText(this.description()).trim().length > DESCRIPTION_MAX_TEXT) {
+      errors['description'] = `Description must be ${DESCRIPTION_MAX_TEXT} characters or fewer.`;
     }
     if (this.typeId() === null) errors['taskTypeId'] = 'Select a task type.';
     else if (this.workflowId() === null) errors['workflowDefinitionId'] = 'Select a workflow.';
@@ -420,7 +424,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
     if (this.saved) return false;
     return (
       this.title().trim() !== '' ||
-      this.description().trim() !== '' ||
+      !isBlankHtml(this.description()) ||
       this.requestorName().trim() !== '' ||
       this.requestorEmail().trim() !== '' ||
       Object.keys(this.formValues()).length > 0 ||
@@ -743,7 +747,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
   private buildRequest(): CreateTaskRequest {
     const evaluation = this.definition() ? this.requestForm()?.evaluation() : undefined;
     const email = this.requestorEmail().trim();
-    const description = this.description().trim();
+    const description = isBlankHtml(this.description()) ? '' : this.description();
     const date = this.dueDate();
     const user = this.canAssign() ? this.assignee() : null;
     return {

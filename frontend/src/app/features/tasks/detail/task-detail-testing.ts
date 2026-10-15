@@ -132,6 +132,7 @@ export function aTask(all: Partial<TaskResponse> = {}): TaskResponse {
     taskType: { taskTypeId: 5, name: 'Data Processing', iconKey: 'cpu-2' },
     title: 'Process Smith custodians',
     description: 'Process the custodians.',
+    descriptionFormat: 'TEXT',
     requestorName: 'Jane Roe',
     requestorEmail: 'jane.roe@client.com',
     requestedAtUtc: undefined,

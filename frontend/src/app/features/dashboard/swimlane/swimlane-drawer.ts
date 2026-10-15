@@ -32,7 +32,7 @@ import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { StatusBadge } from '../../../shared/ui/status-badge';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
-import { htmlToText } from '../../tasks/panels/rich-text';
+import { htmlToPlainText, htmlToText } from '../../tasks/panels/rich-text';
 import { applyRow, cardToRow } from './swimlane-model';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -406,7 +406,11 @@ export class SwimlaneDrawer {
   protected readonly visible = computed(() => this.card() !== null);
   protected readonly row = computed<TaskQueueRow>(() => cardToRow(this.card() as SwimlaneCard));
   protected readonly summary = computed(() => {
-    const text = htmlToText(this.task()?.description).trim();
+    const t = this.task();
+    // A description saved as text is shown as it is; rich text is reduced to its lines (table cells separated by a bar).
+    const text = (
+      t?.descriptionFormat === 'HTML' ? htmlToPlainText(t.description) : (t?.description ?? '')
+    ).trim();
     return text.length > 400 ? text.slice(0, 400).trimEnd() + '...' : text;
   });
 

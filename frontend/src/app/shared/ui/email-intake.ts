@@ -16,6 +16,12 @@ import { IntakeClient, ParsedEmailResponse } from '../../api/generated/api-clien
 import { AuthStore } from '../../core/auth/auth.store';
 import { ApiError } from '../../core/http/api-error';
 import { MfDatePipe } from '../pipes/mf-date.pipe';
+import {
+  DESCRIPTION_MAX_TEXT,
+  isBlankHtml,
+  textToHtml,
+} from '../../features/tasks/panels/rich-text';
+import { RichTextEditor } from '../../features/tasks/panels/rich-text-editor';
 import { TextField } from './text-field';
 
 /** The values the host prefills a Create Task form with. A field is present only when the user chose to replace it. */
@@ -79,7 +85,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
  */
 @Component({
   selector: 'mf-email-intake',
-  imports: [Button, TextField, MfDatePipe],
+  imports: [Button, TextField, MfDatePipe, RichTextEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './email-intake.scss',
   template: `
@@ -145,7 +151,8 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
                 placeholder="Copy the email in Outlook (including From, Sent and Subject lines) and paste it here"
                 [value]="pasted()"
                 [disabled]="phase() === 'loading'"
-                (input)="pasted.set($any($event.target).value)"
+                (paste)="onPasteBox($event)"
+                (input)="onPasteInput($any($event.target).value)"
               ></textarea>
             </div>
 
@@ -227,14 +234,20 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
                     {{ replaceLabel('title') }}
                   </label>
 
-                  <mf-text-field
-                    label="Description"
-                    inputId="ei-f-description"
-                    [multiline]="true"
-                    [maxLength]="20000"
-                    [(value)]="description"
-                    help="Plain text. Signatures and quoted messages are kept; trim what you do not need."
-                  />
+                  <div class="ei__editor">
+                    <span class="ei__label" id="ei-f-description-label">Description</span>
+                    <mf-rich-text-editor
+                      label="Description"
+                      placeholder=""
+                      data-ei-description
+                      [maxLength]="descriptionMax"
+                      [(value)]="description"
+                    />
+                    <p class="ei__help">
+                      Formatting and tables from the email are kept. Signatures and quoted messages
+                      are kept; trim what you do not need.
+                    </p>
+                  </div>
                   <label class="ei__replace">
                     <input
                       type="checkbox"
@@ -335,6 +348,10 @@ export class EmailIntake {
   protected readonly error = signal('');
   protected readonly dragging = signal(false);
   protected readonly pasted = signal('');
+  /** The clipboard HTML of the paste in the box, while the box still holds exactly that paste (tables then reach the description). */
+  private readonly pastedHtml = signal('');
+  private pastedFor = '';
+  protected readonly descriptionMax = DESCRIPTION_MAX_TEXT;
   protected readonly liveMessage = signal('');
   protected readonly doneMessage = signal('');
 
@@ -353,7 +370,11 @@ export class EmailIntake {
   });
 
   protected readonly nothingFound = computed(
-    () => !this.title() && !this.description() && !this.requestorName() && !this.requestorEmail(),
+    () =>
+      !this.title() &&
+      isBlankHtml(this.description()) &&
+      !this.requestorName() &&
+      !this.requestorEmail(),
   );
 
   protected readonly emailError = computed(() => {
@@ -370,7 +391,8 @@ export class EmailIntake {
   }
 
   protected replaceLabel(key: FieldKey): string {
-    const hasExisting = !!this.existing()[key]?.trim();
+    const current = this.existing()[key];
+    const hasExisting = key === 'description' ? !isBlankHtml(current) : !!current?.trim();
     return hasExisting
       ? `Replace the current ${FIELD_LABELS[key].toLowerCase()}`
       : `Fill ${FIELD_LABELS[key].toLowerCase()}`;
@@ -394,7 +416,30 @@ export class EmailIntake {
   protected async readPasted(): Promise<void> {
     const text = this.pasted().trim();
     if (!text || this.phase() === 'loading') return;
-    await this.run(() => firstValueFrom(this.api.parseEmailText({ pastedText: text })));
+    const html = this.pastedHtml();
+    await this.run(() =>
+      firstValueFrom(
+        this.api.parseEmailText({ pastedText: text, pastedHtml: html.trim() ? html : undefined }),
+      ),
+    );
+  }
+
+  protected onPasteBox(event: ClipboardEvent): void {
+    const box = event.target as HTMLTextAreaElement;
+    const html = event.clipboardData?.getData('text/html') ?? '';
+    const text = event.clipboardData?.getData('text/plain') ?? '';
+    // Only a paste into an empty box can be matched with its HTML; the box itself always receives the plain text.
+    if (box.value.trim() === '' && html.trim() !== '') {
+      this.pastedHtml.set(html);
+      this.pastedFor = squash(text);
+    } else {
+      this.pastedHtml.set('');
+    }
+  }
+
+  protected onPasteInput(value: string): void {
+    this.pasted.set(value);
+    if (squash(value) !== this.pastedFor) this.pastedHtml.set('');
   }
 
   protected async onFileChosen(event: Event): Promise<void> {
@@ -424,6 +469,7 @@ export class EmailIntake {
     const text = textFromDrop(data);
     if (text) {
       this.pasted.set(text);
+      this.pastedHtml.set(safeGet(data, 'text/html'));
       return this.readPasted();
     }
 
@@ -475,7 +521,8 @@ export class EmailIntake {
     const guessed = !fromName && !!email ? email.split('@')[0] : '';
 
     this.title.set(result.subject ?? '');
-    this.description.set(result.body ?? '');
+    // The email's own formatting (tables included) when the server could keep it, else its plain text as paragraphs.
+    this.description.set(result.bodyHtml ? result.bodyHtml : textToHtml(result.body));
     this.requestorName.set(fromName || guessed);
     this.requestorEmail.set(email);
     this.confirmName.set(!!guessed);
@@ -483,7 +530,7 @@ export class EmailIntake {
     this.warnings.set(result.warnings ?? []);
     this.replace.set({
       title: !existing.title?.trim(),
-      description: !existing.description?.trim(),
+      description: isBlankHtml(existing.description),
       requestorName: !existing.requestorName?.trim(),
       requestorEmail: !existing.requestorEmail?.trim(),
     });
@@ -506,8 +553,8 @@ export class EmailIntake {
       out.title = this.title().trim();
       filled.push('Title');
     }
-    if (r.description && this.description().trim()) {
-      out.description = this.description().trim();
+    if (r.description && !isBlankHtml(this.description())) {
+      out.description = this.description();
       filled.push('Description');
     }
     if (r.requestorName && this.requestorName().trim()) {
@@ -534,6 +581,7 @@ export class EmailIntake {
     this.phase.set('idle');
     this.error.set('');
     this.pasted.set('');
+    this.pastedHtml.set('');
     this.title.set('');
     this.description.set('');
     this.requestorName.set('');
@@ -554,6 +602,9 @@ function textFromDrop(data: DataTransfer): string {
   doc.querySelectorAll('script,style,head').forEach((n) => n.remove());
   return (doc.body?.innerText ?? doc.body?.textContent ?? '').trim();
 }
+
+/** Text without any whitespace, to tell whether the box still holds what was pasted (line endings differ between clipboard and box). */
+const squash = (value: string): string => value.replace(/\s+/g, '');
 
 function safeGet(data: DataTransfer, type: string): string {
   try {

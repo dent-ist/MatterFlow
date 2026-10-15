@@ -90,6 +90,8 @@ describe('EmailIntake', () => {
     return event;
   }
 
+  const editor = (): HTMLElement => q<HTMLElement>('[data-ei-description] [role=textbox]');
+
   const field = (id: string): HTMLInputElement | HTMLTextAreaElement =>
     q<HTMLInputElement | HTMLTextAreaElement>(`#${id}`);
 
@@ -124,9 +126,10 @@ describe('EmailIntake', () => {
 
     expect(api.parseEmailText).toHaveBeenCalledWith({
       pastedText: 'From: Jane\nSubject: Production volume 7\n\nbody',
+      pastedHtml: undefined,
     });
     expect(field('ei-f-title').value).toBe('Production volume 7');
-    expect(field('ei-f-description').value).toContain('Please prepare the load file.');
+    expect(editor().innerHTML).toBe('<p>Hi team,</p><p>Please prepare the load file.</p>');
     expect(field('ei-f-name').value).toBe('Jane Doe');
     expect(field('ei-f-email').value).toBe('jane.doe@example-firm.test');
     expect(q('[data-sent]').textContent).toContain('Oct 12, 2026');
@@ -141,7 +144,7 @@ describe('EmailIntake', () => {
     expect(emitted).toEqual([
       {
         title: 'Volume 7 load file',
-        description: 'Hi team,\n\nPlease prepare the load file.',
+        description: '<p>Hi team,</p><p>Please prepare the load file.</p>',
         requestorName: 'Jane Doe',
         requestorEmail: 'jane.doe@example-firm.test',
         requestedAt: '2026-10-12T13:15:00+00:00',
@@ -440,6 +443,100 @@ describe('EmailIntake', () => {
         spy.mockRestore();
         set.mockRestore();
       }
+    });
+  });
+
+  describe('rich description (decision R)', () => {
+    const table =
+      '<p>Please load:</p><table><tbody><tr><td>Smith</td><td>12 GB</td></tr></tbody></table>';
+
+    function pasteWithHtml(box: HTMLTextAreaElement, text: string, html: string): void {
+      const event = new Event('paste', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'clipboardData', {
+        value: {
+          getData: (type: string) =>
+            type === 'text/html' ? html : type === 'text/plain' ? text : '',
+        },
+      });
+      box.dispatchEvent(event);
+      // The browser then puts the plain text into the box.
+      box.value = text;
+      box.dispatchEvent(new Event('input'));
+    }
+
+    it('keeps the table of an email in the description and the description editable as rich text', async () => {
+      await create();
+      api.parseEmailFile.mockReturnValue(ok(parsed({ bodyHtml: table })));
+      await chooseFile(new File(['From: a@b.test\n\nx'], 'request.eml'));
+
+      expect(editor().querySelector('table')).not.toBeNull();
+      expect(editor().getAttribute('aria-label')).toBe('Description');
+      expect(el().textContent).toContain('Formatting and tables from the email are kept');
+      expect(q('[data-privilege-note]').textContent).toContain('Privilege reminder');
+
+      buttonByLabel(el(), 'Fill the task')!.click();
+      await settle(fixture);
+      expect(emitted[0].description).toBe(table);
+    });
+
+    it('shows hostile markup in the returned body as nothing (the editor sanitizes again)', async () => {
+      await create();
+      api.parseEmailFile.mockReturnValue(
+        ok(
+          parsed({
+            bodyHtml:
+              '<p onclick="x()">Hi</p><script>window.__eml=1</script><img src=x onerror="window.__eml=2">',
+          }),
+        ),
+      );
+      await chooseFile(new File(['x'], 'request.eml'));
+      expect(editor().innerHTML).not.toContain('script');
+      expect(editor().innerHTML).not.toContain('onclick');
+      expect(editor().innerHTML).not.toContain('onerror');
+      expect((window as unknown as { __eml?: number }).__eml).toBeUndefined();
+    });
+
+    it('falls back to the plain text body as paragraphs when the email has no HTML body', async () => {
+      await create();
+      api.parseEmailFile.mockReturnValue(
+        ok(parsed({ body: 'a <b>x</b>\nb', bodyHtml: undefined })),
+      );
+      await chooseFile(new File(['x'], 'request.eml'));
+      expect(editor().innerHTML).toBe('<p>a &lt;b&gt;x&lt;/b&gt;<br>b</p>');
+    });
+
+    it('sends the HTML of a paste into the empty box along with the text', async () => {
+      await create();
+      const box = q<HTMLTextAreaElement>('textarea');
+      pasteWithHtml(box, 'Name\tQty\nDisk\t2', '<table><tr><td>Name</td><td>Qty</td></tr></table>');
+      await settle(fixture);
+      buttonByLabel(el(), 'Fill from pasted text')!.click();
+      await settle(fixture);
+
+      expect(api.parseEmailText).toHaveBeenCalledWith({
+        pastedText: 'Name\tQty\nDisk\t2',
+        pastedHtml: '<table><tr><td>Name</td><td>Qty</td></tr></table>',
+      });
+    });
+
+    it('does not send HTML once the text in the box was edited or when the paste went into text that was already there', async () => {
+      await create();
+      const box = q<HTMLTextAreaElement>('textarea');
+      pasteWithHtml(box, 'pasted', '<p>pasted</p>');
+      box.value = 'pasted and edited';
+      box.dispatchEvent(new Event('input'));
+      await settle(fixture);
+      buttonByLabel(el(), 'Fill from pasted text')!.click();
+      await settle(fixture);
+      expect(api.parseEmailText.mock.calls[0][0].pastedHtml).toBeUndefined();
+
+      // A second paste into a box that already holds text cannot be matched with its HTML.
+      const again = q<HTMLTextAreaElement>('textarea');
+      again.value = 'existing text';
+      again.dispatchEvent(new Event('input'));
+      pasteWithHtml(again, 'existing textmore', '<p>more</p>');
+      await settle(fixture);
+      expect(again.value).toBe('existing textmore');
     });
   });
 });

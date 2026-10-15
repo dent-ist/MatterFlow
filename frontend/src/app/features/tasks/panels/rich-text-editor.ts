@@ -14,14 +14,34 @@ import {
   viewChild,
 } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
-import { COMMENT_MAX_TEXT, htmlToText, normalizeLink } from './rich-text';
+import {
+  COMMENT_MAX_TEXT,
+  MAX_TABLE_CELLS,
+  cellAtSelection,
+  htmlToText,
+  neighbourCell,
+  normalizeLink,
+  placeCaret,
+} from './rich-text';
 
 type Command = 'bold' | 'italic' | 'insertUnorderedList' | 'insertOrderedList';
 
+type TableAction =
+  | 'row-above'
+  | 'row-below'
+  | 'row-delete'
+  | 'column-left'
+  | 'column-right'
+  | 'column-delete'
+  | 'table-delete';
+
+type RichTools = typeof import('./rich-tools');
+
 /**
- * A small rich-text editor for Task comments (UX 5.5): bold, italic, bulleted and numbered lists, and links. No library: a contenteditable
- * area with the browser's own commands, so it adds nothing to the bundle. Paste is reduced to plain text. The HTML it produces is only a
- * draft; the server sanitizes it again and the UI renders the sanitized result.
+ * A small rich-text editor for Task descriptions and comments (UX 5.5, decision R): bold, italic, bulleted and numbered lists, links and
+ * tables. No library: a contenteditable area with the browser's own commands. Pasted or dropped HTML (Outlook, Word, web pages) is rebuilt
+ * from a short allow-list before it is inserted, tables included; the table and paste code is a separate lazy chunk that loads on first use.
+ * The HTML it produces is only a draft; the server sanitizes it again and the UI renders the sanitized result.
  *
  * Inputs: `value` (HTML, two-way), `maxLength` (plain-text characters), `label` (accessible name), `placeholder`, `disabled`.
  * Output: `submitted` (Ctrl+Enter).
@@ -60,7 +80,82 @@ type Command = 'bold' | 'italic' | 'insertUnorderedList' | 'insertOrderedList';
         >
           <i class="pi pi-link" aria-hidden="true"></i>
         </button>
+        <button
+          type="button"
+          class="rte__btn"
+          data-cmd="table"
+          aria-label="Insert table"
+          title="Insert table"
+          [attr.aria-expanded]="tableOpen()"
+          [disabled]="disabled()"
+          (mousedown)="$event.preventDefault()"
+          (click)="openTable()"
+        >
+          <i class="pi pi-table" aria-hidden="true"></i>
+        </button>
       </div>
+
+      @if (inTable() && !disabled()) {
+        <div class="rte__tools" role="toolbar" aria-label="Table" data-table-tools>
+          @for (a of tableActions; track a.action) {
+            <button
+              type="button"
+              class="rte__tool"
+              [attr.data-table-action]="a.action"
+              [class.rte__tool--danger]="a.danger"
+              (mousedown)="$event.preventDefault()"
+              (click)="runTable(a.action)"
+            >
+              {{ a.label }}
+            </button>
+          }
+        </div>
+      }
+
+      @if (tableOpen()) {
+        <form class="rte__link rte__table-form" data-table-form (submit)="applyTable($event)">
+          <label class="rte__link-label" [for]="tableId + '-rows'">Rows</label>
+          <input
+            #tableRowsInput
+            class="rte__num"
+            type="number"
+            min="1"
+            max="8"
+            inputmode="numeric"
+            [id]="tableId + '-rows'"
+            [value]="tableRows()"
+            (input)="tableRows.set(toCount($any($event.target).value))"
+            (keydown.escape)="closeTable()"
+          />
+          <label class="rte__link-label" [for]="tableId + '-cols'">Columns</label>
+          <input
+            class="rte__num"
+            type="number"
+            min="1"
+            max="8"
+            inputmode="numeric"
+            [id]="tableId + '-cols'"
+            [value]="tableColumns()"
+            (input)="tableColumns.set(toCount($any($event.target).value))"
+            (keydown.escape)="closeTable()"
+          />
+          <label class="rte__check">
+            <input
+              type="checkbox"
+              data-table-header
+              [checked]="tableHeader()"
+              (change)="tableHeader.set($any($event.target).checked)"
+            />
+            Header row
+          </label>
+          <button type="submit" class="mf-btn" data-table-insert>Insert table</button>
+          <button type="button" class="mf-btn" (click)="closeTable()">Cancel</button>
+          <span class="rte__hint" [id]="tableId + '-hint'">Up to 8 rows and 8 columns.</span>
+          @if (tableError()) {
+            <span class="rte__error" role="alert" data-table-error>{{ tableError() }}</span>
+          }
+        </form>
+      }
 
       @if (linkOpen()) {
         <form class="rte__link" data-link-form (submit)="applyLink($event)">
@@ -92,7 +187,7 @@ type Command = 'bold' | 'italic' | 'insertUnorderedList' | 'insertOrderedList';
 
       <div
         #area
-        class="rte__area"
+        class="rte__area mf-rich"
         role="textbox"
         tabindex="0"
         aria-multiline="true"
@@ -104,8 +199,15 @@ type Command = 'bold' | 'italic' | 'insertUnorderedList' | 'insertOrderedList';
         (keyup)="refreshActive()"
         (mouseup)="refreshActive()"
         (paste)="onPaste($event)"
+        (drop)="onDrop($event)"
+        (dragstart)="internalDrag = true"
+        (dragend)="internalDrag = false"
         (keydown)="onKey($event)"
       ></div>
+
+      <span class="rte__live" role="status" aria-live="polite" data-rte-live>{{
+        announcement()
+      }}</span>
 
       <div class="rte__foot">
         <span class="rte__count" [class.rte__count--over]="tooLong()" aria-live="polite">
@@ -121,6 +223,7 @@ type Command = 'bold' | 'italic' | 'insertUnorderedList' | 'insertOrderedList';
       display: block;
     }
     .rte {
+      position: relative;
       border: 1px solid var(--mf-border-strong);
       border-radius: var(--mf-radius);
       background: var(--mf-surface);
@@ -178,6 +281,60 @@ type Command = 'bold' | 'italic' | 'insertUnorderedList' | 'insertOrderedList';
       color: var(--mf-text);
       font: inherit;
     }
+    .rte__tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--mf-s1);
+      padding: var(--mf-s1) var(--mf-s2);
+      border-bottom: 1px solid var(--mf-border);
+      background: var(--mf-surface-alt);
+    }
+    .rte__tool {
+      min-height: 2rem;
+      padding: 0 var(--mf-s2);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface);
+      color: var(--mf-text);
+      font: inherit;
+      font-size: var(--mf-fs-sm);
+      cursor: pointer;
+    }
+    .rte__tool:hover {
+      background: var(--mf-selected-bg);
+    }
+    .rte__tool--danger {
+      color: var(--mf-danger-text, var(--mf-danger));
+    }
+    .rte__num {
+      width: 4rem;
+      min-height: 2rem;
+      padding: 0 var(--mf-s2);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface);
+      color: var(--mf-text);
+      font: inherit;
+    }
+    .rte__check {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      font-size: var(--mf-fs-sm);
+    }
+    .rte__hint {
+      flex-basis: 100%;
+      font-size: var(--mf-fs-xs);
+      color: var(--mf-text-muted);
+    }
+    .rte__live {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
     .rte__error {
       flex-basis: 100%;
       color: var(--mf-danger);
@@ -210,6 +367,9 @@ type Command = 'bold' | 'italic' | 'insertUnorderedList' | 'insertOrderedList';
     .rte__area a {
       color: var(--mf-link);
     }
+    .rte__area table {
+      margin-bottom: var(--mf-s2);
+    }
     .rte__foot {
       display: flex;
       justify-content: flex-end;
@@ -236,6 +396,20 @@ export class RichTextEditor {
   /** Ctrl+Enter pressed inside the editor. */
   readonly submitted = output<void>();
 
+  protected readonly tableActions: readonly {
+    action: TableAction;
+    label: string;
+    danger?: boolean;
+  }[] = [
+    { action: 'row-above', label: 'Row above' },
+    { action: 'row-below', label: 'Row below' },
+    { action: 'row-delete', label: 'Delete row', danger: true },
+    { action: 'column-left', label: 'Column left' },
+    { action: 'column-right', label: 'Column right' },
+    { action: 'column-delete', label: 'Delete column', danger: true },
+    { action: 'table-delete', label: 'Delete table', danger: true },
+  ];
+
   protected readonly buttons: readonly { command: Command; label: string; icon: string }[] = [
     { command: 'bold', label: 'Bold', icon: 'pi-bold' },
     { command: 'italic', label: 'Italic', icon: 'pi-italic' },
@@ -246,20 +420,37 @@ export class RichTextEditor {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly area = viewChild.required<ElementRef<HTMLElement>>('area');
   private readonly linkInput = viewChild<ElementRef<HTMLInputElement>>('linkInput');
+  private readonly tableRowsInput = viewChild<ElementRef<HTMLInputElement>>('tableRowsInput');
 
   protected readonly linkId = `mf-rte-link-${Math.random().toString(36).slice(2, 8)}`;
   protected readonly active = signal<ReadonlySet<Command>>(new Set());
   protected readonly linkOpen = signal(false);
   protected readonly linkText = signal('');
   protected readonly linkError = signal(false);
+  protected readonly tableId = `mf-rte-table-${Math.random().toString(36).slice(2, 8)}`;
+  protected readonly tableOpen = signal(false);
+  protected readonly tableRows = signal(3);
+  protected readonly tableColumns = signal(3);
+  protected readonly tableHeader = signal(true);
+  protected readonly tableError = signal('');
+  protected readonly inTable = signal(false);
+  protected readonly announcement = signal('');
+  /** True while a drag that started inside the editor is under way (moving text within the editor is left to the browser). */
+  protected internalDrag = false;
   protected readonly length = signal(0);
-  protected readonly empty = computed(() => this.length() === 0);
+  /** True while the editor holds a table: an empty table is content (it is being filled in), although it has no text yet. */
+  private readonly hasTable = signal(false);
+  protected readonly empty = computed(() => this.length() === 0 && !this.hasTable());
   protected readonly tooLong = computed(() => this.length() > this.maxLength());
   protected readonly showCount = computed(
     () => this.length() >= this.maxLength() * 0.8 || this.tooLong(),
   );
 
   private savedRange: Range | null = null;
+  private tools: Promise<RichTools> | null = null;
+  /** The table cell the caret was last in, so the table buttons still work while the focus is on them. */
+  private lastCell: HTMLTableCellElement | null = null;
+  private announced = 0;
   /** The last HTML this editor itself produced, so an echo of it from the parent does not reset the caret. */
   private lastEmitted: string | null = null;
 
@@ -273,10 +464,14 @@ export class RichTextEditor {
         this.area().nativeElement.innerHTML =
           this.sanitizer.sanitize(SecurityContext.HTML, html) ?? '';
         this.length.set(this.textLength());
+        this.hasTable.set(this.area().nativeElement.querySelector('td, th') !== null);
       });
     });
     effect(() => {
       if (this.linkOpen()) queueMicrotask(() => this.linkInput()?.nativeElement.focus());
+    });
+    effect(() => {
+      if (this.tableOpen()) queueMicrotask(() => this.tableRowsInput()?.nativeElement.focus());
     });
   }
 
@@ -340,24 +535,165 @@ export class RichTextEditor {
   protected onInput(): void {
     const html = this.area().nativeElement.innerHTML;
     this.length.set(this.textLength());
+    this.hasTable.set(this.area().nativeElement.querySelector('td, th') !== null);
     this.lastEmitted = this.empty() ? '' : html;
     this.value.set(this.lastEmitted);
     this.refreshActive();
   }
 
   protected onPaste(event: ClipboardEvent): void {
+    const data = event.clipboardData;
+    const html = data?.getData('text/html') ?? '';
+    const text = data?.getData('text/plain') ?? '';
+    // Nothing is pasted as the browser would paste it: HTML is rebuilt from the allow-list first, plain text goes in as text.
     event.preventDefault();
-    const text = event.clipboardData?.getData('text/plain') ?? '';
-    if (text.length > 0) {
-      this.exec('insertText', text);
-      this.onInput();
+    void this.insertContent(html, text);
+  }
+
+  protected onDrop(event: DragEvent): void {
+    if (this.internalDrag) {
+      this.internalDrag = false;
+      return; // text moved inside the editor is already clean
     }
+    event.preventDefault();
+    const data = event.dataTransfer;
+    if (!data) return;
+    const html = data.getData('text/html');
+    const text = data.getData('text/plain');
+    if (!html && !text) return; // files and images are not accepted
+    this.moveCaretToPoint(event.clientX, event.clientY);
+    void this.insertContent(html, text);
+  }
+
+  protected openTable(): void {
+    const selection = document.getSelection();
+    const inside =
+      selection &&
+      selection.rangeCount > 0 &&
+      this.area().nativeElement.contains(selection.anchorNode);
+    this.savedRange = inside ? selection.getRangeAt(0).cloneRange() : null;
+    this.tableError.set('');
+    this.tableOpen.set(true);
+    void this.loadTools();
+  }
+
+  protected closeTable(): void {
+    this.tableOpen.set(false);
+    this.area().nativeElement.focus();
+  }
+
+  protected toCount(value: string): number {
+    const n = Math.trunc(Number(value));
+    return Number.isFinite(n) ? Math.min(8, Math.max(1, n)) : 1;
+  }
+
+  protected async applyTable(event: Event): Promise<void> {
+    event.preventDefault();
+    const rows = this.tableRows();
+    const columns = this.tableColumns();
+    const area = this.area().nativeElement;
+    const tools = await this.loadTools();
+    if (!tools.fitsCellLimit(area, rows * columns)) {
+      this.tableError.set(`A table field can have at most ${MAX_TABLE_CELLS} table cells.`);
+      return;
+    }
+    area.focus();
+    const selection = document.getSelection();
+    if (this.savedRange && selection) {
+      selection.removeAllRanges();
+      selection.addRange(this.savedRange);
+    }
+    this.insertHtml(tools.buildTableHtml(rows, columns, this.tableHeader()));
+    const first = area.querySelector<HTMLElement>(`[${tools.NEW_CELL_MARK}]`);
+    if (first) {
+      first.removeAttribute(tools.NEW_CELL_MARK);
+      placeCaret(first, document.getSelection());
+    }
+    this.tableOpen.set(false);
+    this.onInput();
+    this.announce(
+      `Table inserted with ${rows} ${rows === 1 ? 'row' : 'rows'} and ${columns} ${columns === 1 ? 'column' : 'columns'}. Press Tab to move between cells.`,
+    );
+  }
+
+  /** One of the table buttons: rows and columns are added or removed around the cell that holds the caret. */
+  protected async runTable(action: TableAction): Promise<void> {
+    const cell = this.activeCell();
+    if (!cell) return;
+    const tools = await this.loadTools();
+    const area = this.area().nativeElement;
+    const size = tools.describeCell(cell);
+    const addsRow = action === 'row-above' || action === 'row-below';
+    const addsColumn = action === 'column-left' || action === 'column-right';
+    if ((addsRow || addsColumn) && !tools.fitsCellLimit(area, addsRow ? size.columns : size.rows)) {
+      this.announce(`Not added: a field can have at most ${MAX_TABLE_CELLS} table cells.`);
+      return;
+    }
+
+    let target: HTMLTableCellElement | null = null;
+    let message: string;
+    switch (action) {
+      case 'row-above':
+        target = tools.addRow(cell, 'above');
+        message = 'Row added above.';
+        break;
+      case 'row-below':
+        target = tools.addRow(cell, 'below');
+        message = 'Row added below.';
+        break;
+      case 'row-delete':
+        target = tools.deleteRow(cell);
+        message = target ? 'Row deleted.' : 'The only row was deleted, so the table was removed.';
+        break;
+      case 'column-left':
+        target = tools.addColumn(cell, 'left');
+        message = 'Column added on the left.';
+        break;
+      case 'column-right':
+        target = tools.addColumn(cell, 'right');
+        message = 'Column added on the right.';
+        break;
+      case 'column-delete':
+        target = tools.deleteColumn(cell);
+        message = target
+          ? 'Column deleted.'
+          : 'The only column was deleted, so the table was removed.';
+        break;
+      default:
+        tools.deleteTable(cell.closest('table') as HTMLTableElement);
+        message = 'Table deleted.';
+    }
+
+    area.focus();
+    if (target) {
+      placeCaret(target, document.getSelection());
+      const where = tools.describeCell(target);
+      message += ` Now row ${where.row} of ${where.rows}, column ${where.column} of ${where.columns}.`;
+    }
+    this.lastCell = target;
+    this.onInput();
+    this.announce(message);
   }
 
   protected onKey(event: KeyboardEvent): void {
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
       event.preventDefault();
       this.submitted.emit();
+      return;
+    }
+    if (event.key === 'Tab' && !event.ctrlKey && !event.altKey && !event.metaKey) {
+      // Inside a table Tab and Shift+Tab move between cells. At the first and last cell they carry on as usual (the focus leaves the editor),
+      // so the editor never traps the keyboard.
+      const cell = cellAtSelection(this.area().nativeElement, document.getSelection());
+      const next = cell ? neighbourCell(cell, event.shiftKey) : null;
+      if (next) {
+        event.preventDefault();
+        placeCaret(next, document.getSelection());
+        this.refreshActive();
+        this.announce(
+          `Row ${(next.parentElement as HTMLTableRowElement).rowIndex + 1}, column ${next.cellIndex + 1}.`,
+        );
+      }
     }
   }
 
@@ -376,6 +712,118 @@ export class RichTextEditor {
       }
     }
     this.active.set(next);
+
+    // Moving the focus to a table button keeps the selection (and so the buttons); they go when the caret is elsewhere in the editor.
+    const selection = document.getSelection();
+    const inside =
+      !!selection &&
+      selection.rangeCount > 0 &&
+      this.area().nativeElement.contains(selection.anchorNode);
+    const cell = cellAtSelection(this.area().nativeElement, selection);
+    if (cell) {
+      this.lastCell = cell;
+      this.inTable.set(true);
+    } else if (inside) {
+      this.inTable.set(false);
+    }
+  }
+
+  private loadTools(): Promise<RichTools> {
+    return (this.tools ??= import('./rich-tools'));
+  }
+
+  private activeCell(): HTMLTableCellElement | null {
+    const area = this.area().nativeElement;
+    const current = cellAtSelection(area, document.getSelection());
+    if (current) return current;
+    return this.lastCell?.isConnected && area.contains(this.lastCell) ? this.lastCell : null;
+  }
+
+  private announce(message: string): void {
+    // A trailing non-breaking space makes a repeated message count as a change, so a screen reader says it again.
+    this.announced += 1;
+    this.announcement.set(message + (this.announced % 2 === 0 ? '\u00A0' : ''));
+  }
+
+  /** Inserts pasted or dropped content: HTML rebuilt from the allow-list, else the plain text. */
+  private async insertContent(html: string, text: string): Promise<void> {
+    if (html.trim().length > 0) {
+      try {
+        const tools = await this.loadTools();
+        const cleaned = tools.cleanPastedHtml(html);
+        if (cleaned.kind === 'html') {
+          this.insertHtml(cleaned.html);
+          this.onInput();
+          if (cleaned.cells > 0) {
+            this.announce(
+              `Table pasted with ${cleaned.cells} ${cleaned.cells === 1 ? 'cell' : 'cells'}.`,
+            );
+          }
+          return;
+        }
+        if (cleaned.reason === 'too-many-cells') {
+          this.announce(
+            `That table has more than ${MAX_TABLE_CELLS} cells, so it was pasted as text.`,
+          );
+        }
+      } catch {
+        // The clean-up code could not be loaded: the text below is the safe fallback.
+      }
+    }
+    if (text.length > 0) {
+      this.exec('insertText', text);
+      this.onInput();
+    }
+  }
+
+  /** Inserts trusted HTML (already rebuilt from the allow-list) at the caret; undo works where the browser supports `insertHTML`. */
+  private insertHtml(html: string): void {
+    const area = this.area().nativeElement;
+    area.focus();
+    if (
+      typeof document.execCommand === 'function' &&
+      document.execCommand('insertHTML', false, html)
+    )
+      return;
+
+    const selection = document.getSelection();
+    let range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+    if (!range || !area.contains(range.commonAncestorContainer)) {
+      range = document.createRange();
+      range.selectNodeContents(area);
+      range.collapse(false);
+    }
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    range.deleteContents();
+    range.insertNode(template.content);
+    range.collapse(false);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  }
+
+  private moveCaretToPoint(x: number, y: number): void {
+    const area = this.area().nativeElement;
+    const doc = document as Document & {
+      caretPositionFromPoint?: (
+        x: number,
+        y: number,
+      ) => { offsetNode: Node; offset: number } | null;
+      caretRangeFromPoint?: (x: number, y: number) => Range | null;
+    };
+    let range: Range | null = null;
+    const position = doc.caretPositionFromPoint?.(x, y);
+    if (position) {
+      range = document.createRange();
+      range.setStart(position.offsetNode, position.offset);
+      range.collapse(true);
+    } else {
+      range = doc.caretRangeFromPoint?.(x, y) ?? null;
+    }
+    if (!range || !area.contains(range.startContainer)) return;
+    const selection = document.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
   }
 
   private textLength(): number {

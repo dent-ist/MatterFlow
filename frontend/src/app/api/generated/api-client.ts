@@ -11752,12 +11752,14 @@ export interface ParsedEmailResponse {
     sentAt: string | undefined;
     source: EmailSource;
     warnings: string[];
+    bodyHtml?: string | undefined;
 
     [key: string]: any;
 }
 
 export interface ParsePastedTextRequest {
     pastedText: string | undefined;
+    pastedHtml?: string | undefined;
 
     [key: string]: any;
 }
@@ -12524,6 +12526,7 @@ export interface TaskResponse {
     taskType: TaskTypeRef;
     title: string;
     description: string | undefined;
+    descriptionFormat: string;
     requestorName: string;
     requestorEmail: string | undefined;
     requestedAtUtc: string | undefined;
