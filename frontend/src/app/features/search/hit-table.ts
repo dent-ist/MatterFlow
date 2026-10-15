@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SearchHit } from '../../api/generated/api-client';
 import { highlightParts } from '../../shared/search/search-meta';
@@ -30,58 +30,88 @@ import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
     }
   `,
   template: `
-    <table class="pg-table" data-hit-table>
-      <caption class="pg-sr">
-        {{
-          caption()
-        }}
-      </caption>
-      <thead>
-        <tr>
-          <th scope="col">Reference</th>
-          <th scope="col">Name</th>
-          <th scope="col">Details</th>
-          <th scope="col">Matter</th>
-          <th scope="col">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (hit of hits(); track hit.type + hit.id) {
-          <tr data-hit-row>
-            <td class="pg-mono">{{ hit.reference }}</td>
-            <td>
-              <a class="pg-link" [routerLink]="hit.path">
-                @for (part of parts(hit.label); track $index) {
-                  @if (part.match) {
-                    <mark>{{ part.text }}</mark>
-                  } @else {
-                    <span>{{ part.text }}</span>
-                  }
-                }
-              </a>
-            </td>
-            <td>{{ detail(hit) }}</td>
-            <td>
-              @if (hit.type !== 'client' && hit.matterRef) {
-                <span class="hit-matter">
-                  <mf-matter-ref [value]="hit.matterRef" />
-                  @if (hit.isSensitive) {
-                    <mf-sensitive-badge />
-                  }
-                </span>
-              }
-            </td>
-            <td>
-              @if (hit.status) {
-                <mf-status-badge [code]="hit.status" />
-              } @else {
-                <mf-active-badge [active]="hit.isActive" />
-              }
-            </td>
+    <div class="mf-scroll">
+      <table class="pg-table" data-hit-table>
+        <caption class="pg-sr">
+          {{
+            caption()
+          }}
+        </caption>
+        <thead>
+          <tr>
+            @if (has('reference')) {
+              <th scope="col">Reference</th>
+            }
+            <th scope="col">{{ nameHeading() }}</th>
+            @if (has('details')) {
+              <th scope="col">{{ detailsHeading() }}</th>
+            }
+            @if (has('matter')) {
+              <th scope="col">Matter</th>
+            }
+            @if (has('matterName')) {
+              <th scope="col">Matter name</th>
+            }
+            <th scope="col">Status</th>
           </tr>
-        }
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          @for (hit of hits(); track hit.type + hit.id) {
+            <tr data-hit-row>
+              @if (has('reference')) {
+                <td class="pg-mono">
+                  @if (hit.reference) {
+                    <!-- The same destination as the name link; kept out of the tab order and the reading order so it is not announced twice. -->
+                    <a class="pg-link" [routerLink]="hit.path" tabindex="-1" aria-hidden="true">{{
+                      hit.reference
+                    }}</a>
+                  }
+                </td>
+              }
+              <td>
+                <a class="pg-link" [routerLink]="hit.path">
+                  @for (part of parts(hit.label); track $index) {
+                    @if (part.match) {
+                      <mark>{{ part.text }}</mark>
+                    } @else {
+                      <span>{{ part.text }}</span>
+                    }
+                  }
+                </a>
+                @if (hit.type === 'matter' && hit.isSensitive) {
+                  <mf-sensitive-badge />
+                }
+              </td>
+              @if (has('details')) {
+                <td>{{ hit.secondary ?? '' }}</td>
+              }
+              @if (has('matter')) {
+                <td>
+                  @if (hit.type !== 'client' && hit.matterRef) {
+                    <span class="hit-matter">
+                      <mf-matter-ref [value]="hit.matterRef" />
+                      @if (hit.isSensitive) {
+                        <mf-sensitive-badge />
+                      }
+                    </span>
+                  }
+                </td>
+              }
+              @if (has('matterName')) {
+                <td>{{ hit.matterName ?? '' }}</td>
+              }
+              <td>
+                @if (hit.status) {
+                  <mf-status-badge [code]="hit.status" />
+                } @else {
+                  <mf-active-badge [active]="hit.isActive" />
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   `,
 })
 export class HitTable {
@@ -95,9 +125,41 @@ export class HitTable {
     return highlightParts(text, this.query());
   }
 
-  /** The details column: a Matter's client, an Asset's type, a Task's requestor, a Project's Matter. */
-  protected detail(hit: SearchHit): string {
-    if (hit.type === 'project') return hit.matterName ?? '';
-    return hit.secondary ?? '';
+  /** The kind of record in the table; Advanced Search lists one type at a time. Mixed lists get every column. */
+  private readonly kind = computed(() => {
+    const types = new Set(this.hits().map((h) => h.type));
+    return types.size === 1 ? [...types][0] : null;
+  });
+
+  protected readonly nameHeading = computed(() => (this.kind() === 'task' ? 'Title' : 'Name'));
+  protected readonly detailsHeading = computed(() => {
+    switch (this.kind()) {
+      case 'matter':
+        return 'Client';
+      case 'task':
+        return 'Requestor';
+      case 'asset':
+        return 'Type';
+      default:
+        return 'Details';
+    }
+  });
+
+  /** Columns per type (UXR-41): no column that would be empty for the whole table. */
+  protected has(column: 'reference' | 'details' | 'matter' | 'matterName'): boolean {
+    switch (this.kind()) {
+      case 'client':
+        return column === 'reference';
+      case 'matter':
+        return column === 'reference' || column === 'details';
+      case 'task':
+        return column !== 'matterName';
+      case 'asset':
+        return column !== 'matterName';
+      case 'project':
+        return column === 'matter' || column === 'matterName';
+      default:
+        return column !== 'matterName';
+    }
   }
 }

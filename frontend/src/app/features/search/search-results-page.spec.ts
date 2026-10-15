@@ -65,6 +65,18 @@ describe('SearchResultsPage', () => {
     );
   });
 
+  it('shows only the columns that fit each type, with the reference as a link', async () => {
+    const fixture = await create('343');
+    const el: HTMLElement = fixture.nativeElement;
+    const heads = (i: number) =>
+      Array.from(sections(el)[i].querySelectorAll('th')).map((th) => th.textContent!.trim());
+    expect(heads(0)).toEqual(['Reference', 'Name', 'Client', 'Status']);
+    expect(heads(1)).toEqual(['Reference', 'Name', 'Status']);
+    expect(heads(2)).toEqual(['Reference', 'Title', 'Requestor', 'Matter', 'Status']);
+    const refLink = sections(el)[0].querySelector('[data-hit-row] td a')!;
+    expect(refLink.getAttribute('href')).toBe('/matters/7');
+  });
+
   it('echoes the normalized form of a number', async () => {
     const fixture = await create('343');
     expect(fixture.nativeElement.querySelector('[data-echo]').textContent).toContain('00343');
