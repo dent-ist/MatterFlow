@@ -25,7 +25,9 @@ export const SEARCH_DEBOUNCE_MS = 300;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="sb">
-      <label class="sb__label" [for]="inputId()">{{ label() }}</label>
+      <label class="sb__label" [class.sb__label--hidden]="hideLabel()" [for]="inputId()">{{
+        label()
+      }}</label>
       <div class="sb__field">
         <input
           class="mf-control sb__input"
@@ -38,6 +40,8 @@ export const SEARCH_DEBOUNCE_MS = 300;
           (input)="onInput($any($event.target).value)"
           (keydown.enter)="$event.preventDefault(); commit($any($event.target).value)"
           (keydown.escape)="draft() && clear()"
+          (focus)="focused.set(true)"
+          (blur)="focused.set(false)"
         />
         @if (draft()) {
           <button
@@ -50,7 +54,14 @@ export const SEARCH_DEBOUNCE_MS = 300;
           </button>
         }
       </div>
-      <span class="sb__hint" [id]="inputId() + '-hint'" data-search-hint>{{ hintText() }}</span>
+      <span
+        class="sb__hint"
+        [class.sb__hint--float]="hintOnFocus()"
+        [class.sb__hint--show]="focused()"
+        [id]="inputId() + '-hint'"
+        data-search-hint
+        >{{ hintText() }}</span
+      >
     </div>
   `,
   styles: `
@@ -58,6 +69,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
       display: block;
     }
     .sb {
+      position: relative;
       display: grid;
       gap: var(--mf-s1);
     }
@@ -99,9 +111,42 @@ export const SEARCH_DEBOUNCE_MS = 300;
       background: var(--mf-surface-alt);
       color: var(--mf-text);
     }
+    .sb__label--hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
     .sb__hint {
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
+    }
+    /* Compact toolbars: the hint stays the input's description for screen readers, and floats over the page only while focused. */
+    .sb__hint--float {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .sb__hint--float.sb__hint--show {
+      top: calc(100% + var(--mf-s1));
+      left: 0;
+      z-index: 5;
+      width: max-content;
+      max-width: 100%;
+      height: auto;
+      padding: var(--mf-s1) var(--mf-s2);
+      overflow: visible;
+      clip-path: none;
+      white-space: normal;
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface);
+      box-shadow: var(--mf-shadow-1);
     }
   `,
 })
@@ -114,6 +159,11 @@ export class SearchBox {
   readonly inputId = input.required<string>();
   /** Text after the box; the default explains live search. */
   readonly hint = input('');
+  /** Hides the visible label (it stays the accessible name); the page shows a placeholder instead. */
+  readonly hideLabel = input(false);
+  /** Shows the hint only while the box has focus, floating over the page instead of taking a line. */
+  readonly hintOnFocus = input(false);
+  protected readonly focused = signal(false);
 
   /** The text to search for (trimmed, empty when cleared). Emitted live, on Enter and on clear; never twice for the same text. */
   readonly searchChange = output<string>();

@@ -10,7 +10,9 @@ import { dateDaysAgo, QueueState, queueArgs } from '../../../shared/work-queue/q
 import { isBareState } from '../../../shared/work-queue/last-view';
 import { loadPodChoices } from '../../../shared/work-queue/pod-options';
 import { QueuePageBase } from '../../../shared/work-queue/queue-page';
+import { recordVisit } from '../../../shared/work-queue/last-visit';
 import { PodOption, WorkFilterBar } from '../../../shared/work-queue/work-filter-bar';
+import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
 import { PageHeader } from '../../../shared/ui/page-header';
@@ -33,19 +35,11 @@ const COMPLETED_WINDOW_DAYS = 90;
  */
 @Component({
   selector: 'mf-my-work-page',
-  imports: [PageHeader, RouterLink, WorkFilterBar, WorkList, WorkTabs],
+  imports: [PageHeader, RouterLink, WorkFilterBar, WorkList, WorkTabs, WorkViewControls],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
     <mf-page-header heading="My Work" />
-
-    <mf-work-tabs
-      label="My Work views"
-      idPrefix="mw"
-      [tabs]="tabs()"
-      [selected]="tab()"
-      (selectedChange)="selectTab($event)"
-    />
 
     <mf-work-filter-bar
       [filters]="state().filters"
@@ -53,9 +47,31 @@ const COMPLETED_WINDOW_DAYS = 90;
       [pods]="pods()"
       [userId]="userId()"
       [hidden]="['assignee']"
+      [hasTabs]="true"
       (filtersChange)="setFilters($event)"
       (clearAll)="clearFilters()"
-    />
+    >
+      <mf-work-tabs
+        fb-tabs
+        label="My Work views"
+        idPrefix="mw"
+        [tabs]="tabs()"
+        [selected]="tab()"
+        (selectedChange)="selectTab($event)"
+      />
+      <mf-work-view-controls
+        fb-end
+        [sort]="state().sort"
+        [dir]="state().dir"
+        [defaultOrder]="defaultOrder()"
+        [defaultLabel]="tab() === 'completed' ? 'Closed date' : 'Priority'"
+        [columns]="prefs().columns"
+        [density]="prefs().density"
+        (resetSort)="resetSort()"
+        (columnsChange)="setColumns($event)"
+        (densityChange)="setDensity($event)"
+      />
+    </mf-work-filter-bar>
 
     <div role="tabpanel" id="mw-panel" [attr.aria-labelledby]="'mw-tab-' + tab()">
       @switch (tab()) {
@@ -91,24 +107,29 @@ const COMPLETED_WINDOW_DAYS = 90;
         [dir]="state().dir"
         [filtered]="filtered()"
         caption="My Work"
-        [defaultOrder]="
-          tab() === 'completed'
-            ? 'Default order: Newest closed first'
-            : 'Default order: Priority, ASAP first, Due date, Oldest'
-        "
+        [newSince]="tab() === 'active' || tab() === 'dueSoon' ? lastVisit : null"
         [emptyText]="emptyText()"
         (sortChange)="sortBy($event)"
-        (resetSort)="resetSort()"
         (pageChange)="goToPage($event)"
         (pageSizeChange)="setPageSize($event)"
-        (columnsChange)="setColumns($event)"
-        (densityChange)="setDensity($event)"
         (retry)="load()"
         (clearFilters)="clearFilters()"
         (rowChange)="replaceRow($event)"
       >
         @if (tab() === 'active' && auth.has('Pod.View')) {
           <a empty-action class="wp-link" routerLink="/pods/work">Check Pod Work</a>
+        }
+        @if (tab() === 'active') {
+          <p near-empty data-everything>
+            That's everything on your plate.
+            @if (auth.has('Pod.View')) {
+              Look for more in <a class="wp-link" routerLink="/pods/work">Pod Work</a>
+              or
+            } @else {
+              Look for more in
+            }
+            the <a class="wp-link" routerLink="/tasks">Task Queue</a>.
+          </p>
         }
       </mf-work-list>
     </div>
@@ -125,12 +146,19 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     return view && view in TAB_LABELS ? (view as TabKey) : 'active';
   });
 
+  protected readonly defaultOrder = computed(() =>
+    this.tab() === 'completed'
+      ? 'Default order: Newest closed first'
+      : 'Default order: Priority, ASAP first, Due date, Oldest',
+  );
+
   protected readonly tabs = computed<WorkTab[]>(() => {
     const counts = this.data()?.counts;
     return (Object.keys(TAB_LABELS) as TabKey[]).map((key) => ({
       key,
       label: TAB_LABELS[key],
       count: counts ? counts[key] : null,
+      emphasize: key === 'active' || key === 'dueSoon',
     }));
   });
 
@@ -150,8 +178,12 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
           : 'You have not created any tasks.',
   );
 
+  /** When the user last opened My Work (ms), read once on arrival: tasks created after it show "New". Null on the first visit. */
+  protected readonly lastVisit: number | null;
+
   constructor() {
     super('my-work');
+    this.lastVisit = recordVisit(this.userId(), this.clock.now().getTime());
     const keys = this.route.snapshot?.queryParamMap?.keys ?? [];
     const remembered = keys.length === 0 ? this.lastView() : null;
     if (remembered) {

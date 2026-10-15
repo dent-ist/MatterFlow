@@ -12,6 +12,7 @@ import { loadLastPod, saveLastPod } from '../../../shared/work-queue/column-pref
 import { QueueState, queueArgs } from '../../../shared/work-queue/queue-filters';
 import { QueuePageBase } from '../../../shared/work-queue/queue-page';
 import { PodOption, WorkFilterBar } from '../../../shared/work-queue/work-filter-bar';
+import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
 import { PageHeader } from '../../../shared/ui/page-header';
@@ -25,7 +26,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
  */
 @Component({
   selector: 'mf-pod-work-page',
-  imports: [PageHeader, WorkFilterBar, WorkList, WorkTabs],
+  imports: [PageHeader, WorkFilterBar, WorkList, WorkTabs, WorkViewControls],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
@@ -91,23 +92,35 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
         </ul>
       }
 
-      <mf-work-tabs
-        label="Pod Work views"
-        idPrefix="pw"
-        [tabs]="tabs()"
-        [selected]="tab()"
-        (selectedChange)="selectTab($event)"
-      />
-
       <mf-work-filter-bar
         [filters]="state().filters"
         [names]="chipNames()"
         [pods]="podOptions()"
         [userId]="userId()"
         [hidden]="['pod']"
+        [hasTabs]="true"
         (filtersChange)="setFilters($event)"
         (clearAll)="clearFilters()"
-      />
+      >
+        <mf-work-tabs
+          fb-tabs
+          label="Pod Work views"
+          idPrefix="pw"
+          [tabs]="tabs()"
+          [selected]="tab()"
+          (selectedChange)="selectTab($event)"
+        />
+        <mf-work-view-controls
+          fb-end
+          [sort]="state().sort"
+          [dir]="state().dir"
+          [columns]="prefs().columns"
+          [density]="prefs().density"
+          (resetSort)="resetSort()"
+          (columnsChange)="setColumns($event)"
+          (densityChange)="setDensity($event)"
+        />
+      </mf-work-filter-bar>
 
       <div role="tabpanel" id="pw-panel" [attr.aria-labelledby]="'pw-tab-' + tab()">
         @if (tab() === 'members') {
@@ -176,11 +189,8 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
           [emptyText]="emptyText()"
           [showAssign]="canAssign()"
           (sortChange)="sortBy($event)"
-          (resetSort)="resetSort()"
           (pageChange)="goToPage($event)"
           (pageSizeChange)="setPageSize($event)"
-          (columnsChange)="setColumns($event)"
-          (densityChange)="setDensity($event)"
           (retry)="load()"
           (clearFilters)="clearFilters()"
           (rowChange)="replaceRow($event)"

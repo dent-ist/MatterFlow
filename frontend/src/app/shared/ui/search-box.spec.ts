@@ -85,4 +85,20 @@ describe('SearchBox', () => {
     fixture.detectChanges();
     expect(box().value).toBe('');
   });
+
+  it('can show the hint only while focused, and keeps it as the description', () => {
+    fixture.componentRef.setInput('hintOnFocus', true);
+    fixture.componentRef.setInput('hideLabel', true);
+    fixture.detectChanges();
+    const hint = el().querySelector('[data-search-hint]')!;
+    expect(box().getAttribute('aria-describedby')).toBe(hint.id);
+    expect(hint.classList).not.toContain('sb__hint--show');
+    box().dispatchEvent(new Event('focus'));
+    fixture.detectChanges();
+    expect(hint.classList).toContain('sb__hint--show');
+    box().dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+    expect(hint.classList).not.toContain('sb__hint--show');
+    expect(el().querySelector('.sb__label')!.classList).toContain('sb__label--hidden');
+  });
 });

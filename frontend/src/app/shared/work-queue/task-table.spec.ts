@@ -65,10 +65,11 @@ describe('TaskTable', () => {
     expect(headers).toEqual(['Ref', 'Title', 'Status']);
   });
 
-  it('shows ASAP as a labelled pill and never as overdue', async () => {
+  it('shows ASAP as a plain label with a small icon (not a pill) and never as overdue', async () => {
     await create([aRow({ isAsap: true, isOverdue: false })], ['due']);
     const pill = cell('due').querySelector('.wt-asap')!;
     expect(pill.textContent?.trim()).toBe('ASAP');
+    expect(pill.querySelector('.pi-bolt')).not.toBeNull();
     expect(pill.getAttribute('title')).toBe('No due date set. Handle promptly.');
     expect(cell('due').textContent).not.toContain('Overdue');
     expect(el().querySelector('.wt-row--overdue')).toBeNull();
@@ -101,6 +102,28 @@ describe('TaskTable', () => {
     expect(link.getAttribute('title')).toBe('A very long title '.repeat(10));
   });
 
+  it('shows the client and matter name in a muted second line under the title', async () => {
+    await create([aRow()], ['ref', 'title']);
+    const sub = cell('title').querySelector('[data-title-context]')!;
+    expect(sub.textContent?.trim()).toBe('Acme Corp · Merger Review');
+    expect(sub.getAttribute('title')).toBe('Acme Corp / Merger Review');
+  });
+
+  it('marks tasks created since the last visit with a "New" text badge, only when asked', async () => {
+    const rows = [
+      aRow({ taskId: 1, createdAtUtc: '2026-10-14T10:00:00Z' }),
+      aRow({ taskId: 2, createdAtUtc: '2026-10-01T10:00:00Z' }),
+    ];
+    await create(rows, ['ref', 'title']);
+    expect(el().querySelector('[data-new-marker]')).toBeNull();
+    fixture.componentRef.setInput('newSince', new Date('2026-10-10T00:00:00Z').getTime());
+    fixture.detectChanges();
+    const markers = el().querySelectorAll('[data-new-marker]');
+    expect(markers.length).toBe(1);
+    expect(markers[0].textContent?.trim()).toBe('New');
+    expect(markers[0].closest('tr')!.querySelector('.wt-title')).not.toBeNull();
+  });
+
   it('marks the Actions column so it can stay visible while the table scrolls', async () => {
     await create([aRow({ assignedUser: undefined, status: 'NEW' })], ['ref', 'title'], {
       showAssign: true,
@@ -115,12 +138,14 @@ describe('TaskTable', () => {
     expect(hint.classList).not.toContain('wt-hint--show');
   });
 
-  it('shows "Due soon" with a clock icon and a timed due date in the viewer zone', async () => {
+  it('says "Due today" with a clock icon, "Tomorrow" in words, and shows later dates plainly (viewer zone)', async () => {
     await create(
       [
-        aRow({ taskId: 1, isAsap: false, dueDate: '2026-10-15' }),
+        aRow({ taskId: 1, isAsap: false, dueDate: '2026-10-14' }),
+        aRow({ taskId: 2, isAsap: false, dueDate: '2026-10-15' }),
+        aRow({ taskId: 3, isAsap: false, dueDate: '2026-10-16' }),
         aRow({
-          taskId: 2,
+          taskId: 4,
           isAsap: false,
           dueDate: '2026-10-28',
           dueAtUtc: '2026-10-28T20:00:00Z',
@@ -129,10 +154,14 @@ describe('TaskTable', () => {
       ['due'],
     );
     const dues = Array.from(el().querySelectorAll('tbody td[data-col="due"]'));
-    expect(dues[0].textContent).toContain('Due soon');
+    const text = (n: number) => dues[n].textContent!.replace(/\s+/g, ' ').trim();
+    expect(text(0)).toBe('Oct 14, 2026 · Due today');
     expect(dues[0].querySelector('.pi-clock')).not.toBeNull();
-    expect(dues[1].textContent).toContain('Oct 28, 2026, 3:00 PM CDT');
-    expect(dues[1].textContent).not.toContain('Due soon');
+    expect(dues[0].querySelector('.wt-due--soon')).not.toBeNull();
+    expect(text(1)).toBe('Oct 15, 2026 · Tomorrow');
+    expect(dues[1].querySelector('.pi')).toBeNull();
+    expect(text(2)).toBe('Oct 16, 2026');
+    expect(text(3)).toBe('Oct 28, 2026, 3:00 PM CDT');
   });
 
   it('mutes the due date of a closed task and never calls it overdue', async () => {
@@ -172,8 +201,11 @@ describe('TaskTable', () => {
   it('shows the current step and the resolved count with an accessible progress bar', async () => {
     await create([aRow()], ['progress']);
     const progress = cell('progress');
-    expect(progress.textContent).toContain('Step 3/6: Dedup');
-    expect(progress.textContent).toContain('2 of 6 resolved');
+    expect(progress.textContent).toContain('Dedup');
+    expect(progress.textContent).toContain('2 of 6');
+    expect(progress.querySelector('.wt-progress')?.getAttribute('title')).toBe(
+      'Step 3 of 6: Dedup (2 of 6 resolved)',
+    );
     expect(progress.querySelector('progress')?.getAttribute('aria-label')).toBe(
       '2 of 6 steps resolved',
     );

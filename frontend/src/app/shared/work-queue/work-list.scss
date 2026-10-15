@@ -2,21 +2,6 @@
   display: block;
 }
 
-.wl-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--mf-s3);
-  margin-bottom: var(--mf-s2);
-}
-
-.wl-sort {
-  margin: 0;
-  color: var(--mf-text-muted);
-  font-size: var(--mf-fs-sm);
-}
-
 .wl-sr {
   position: absolute;
   width: 1px;
@@ -69,4 +54,9 @@
   background: var(--mf-surface);
   color: var(--mf-text);
   font: inherit;
+}
+
+.wl-near {
+  margin: var(--mf-s3) 0;
+  color: var(--mf-text-muted);
 }

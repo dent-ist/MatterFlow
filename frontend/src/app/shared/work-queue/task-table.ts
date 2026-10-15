@@ -30,8 +30,8 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
 
 /**
  * The table behind Task Queue, My Work and Pod Work (UX 5.2, S02 to S04): a real `<table>` with sortable header buttons that
- * announce `aria-sort`, a due cell that never relies on color alone (ASAP pill, "Overdue 4d" text with an alert icon, "Due soon"
- * with a clock icon), a sensitive-matter marker, and five skeleton rows while loading. The title opens the Task. Status, Priority and Assignee are inline editors for users who may change them (`mf-row-edit`).
+ * announce `aria-sort`, a due cell that never relies on color alone (ASAP label with a bolt icon, "Overdue 4d" with an alert icon, "Due today"
+ * with a clock icon, "Tomorrow"), a sensitive-matter marker, and five skeleton rows while loading. The title opens the Task. Status, Priority and Assignee are inline editors for users who may change them (`mf-row-edit`).
  */
 @Component({
   selector: 'mf-task-table',
@@ -101,12 +101,31 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                       <span class="wt-mono">{{ row.taskNumber }}</span>
                     }
                     @case ('title') {
-                      <a
-                        class="wt-title"
-                        [routerLink]="['/tasks', row.taskId]"
-                        [attr.title]="row.title"
-                        >{{ row.title }}</a
-                      >
+                      <!-- TODO: show mf-task-type-icon before the title once the shared task type icon component is on dev. -->
+                      <div class="wt-titlecell">
+                        <span class="wt-titleline">
+                          <a
+                            class="wt-title"
+                            [routerLink]="['/tasks', row.taskId]"
+                            [attr.title]="row.title"
+                            >{{ row.title }}</a
+                          >
+                          @if (isNew(row)) {
+                            <span
+                              class="wt-new"
+                              data-new-marker
+                              title="Assigned since your last visit"
+                              >New</span
+                            >
+                          }
+                        </span>
+                        <span
+                          class="wt-sub"
+                          data-title-context
+                          [attr.title]="row.clientName + ' / ' + row.matterName"
+                          >{{ row.clientName }} · {{ row.matterName }}</span
+                        >
+                      </div>
                     }
                     @case ('matter') {
                       <mf-matter-ref
@@ -140,30 +159,26 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                       @if (row.workflow.stepsTotal === 0) {
                         -
                       } @else {
-                        <div class="wt-progress">
-                          @if (row.workflow.currentStepName) {
-                            <span
-                              >Step {{ row.workflow.currentStepNumber }}/{{
-                                row.workflow.stepsTotal
-                              }}: {{ row.workflow.currentStepName }}</span
+                        <div class="wt-progress" [attr.title]="progressTitle(row)">
+                          <span class="wt-progress-line">
+                            <progress
+                              [max]="row.workflow.stepsTotal"
+                              [value]="row.workflow.stepsResolved"
+                              [attr.aria-label]="
+                                row.workflow.stepsResolved +
+                                ' of ' +
+                                row.workflow.stepsTotal +
+                                ' steps resolved'
+                              "
+                            ></progress>
+                            <span class="wt-progress-count"
+                              >{{ row.workflow.stepsResolved }} of
+                              {{ row.workflow.stepsTotal }}</span
                             >
-                          } @else {
-                            <span>All steps resolved</span>
-                          }
-                          <span class="wt-muted"
-                            >{{ row.workflow.stepsResolved }} of
-                            {{ row.workflow.stepsTotal }} resolved</span
-                          >
-                          <progress
-                            [max]="row.workflow.stepsTotal"
-                            [value]="row.workflow.stepsResolved"
-                            [attr.aria-label]="
-                              row.workflow.stepsResolved +
-                              ' of ' +
-                              row.workflow.stepsTotal +
-                              ' steps resolved'
-                            "
-                          ></progress>
+                          </span>
+                          <span class="wt-progress-step wt-muted">{{
+                            row.workflow.currentStepName ?? 'All steps resolved'
+                          }}</span>
                         </div>
                       }
                     }
@@ -216,17 +231,21 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                     @case ('due') {
                       @let due = row | dueState: row.status;
                       @if (due.kind === 'asap') {
-                        <span class="wt-asap" [title]="due.tooltip">ASAP</span>
+                        <span class="wt-asap" [title]="due.tooltip">
+                          <i class="pi pi-bolt" aria-hidden="true"></i>ASAP
+                        </span>
                       } @else if (row.isOverdue || due.kind === 'overdue') {
                         <span class="wt-due wt-due--overdue">
                           <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
                           {{ due.dateText }} · <strong>{{ due.badge ?? 'Overdue' }}</strong>
                         </span>
-                      } @else if (due.kind === 'soon') {
+                      } @else if (due.daysUntil === 0) {
                         <span class="wt-due wt-due--soon">
                           <i class="pi pi-clock" aria-hidden="true"></i>
-                          {{ due.dateText }} · <strong>Due soon</strong>
+                          {{ due.dateText }} · <strong>Due today</strong>
                         </span>
+                      } @else if (due.daysUntil === 1) {
+                        <span class="wt-due">{{ due.dateText }} · <strong>Tomorrow</strong></span>
                       } @else {
                         <span class="wt-due" [class.wt-due--closed]="due.kind === 'closed'">{{
                           due.dateText
@@ -297,6 +316,8 @@ export class TaskTable {
   readonly dir = input<SortDirection | null>(null);
   /** Adds an "Assign to me" action to unassigned open rows. */
   readonly showAssign = input(false);
+  /** Instant (ms) of the user's previous visit; tasks created after it get a "New" marker. Null shows no markers (My Work only). */
+  readonly newSince = input<number | null>(null);
 
   readonly sortChange = output<string>();
   readonly assignToMe = output<TaskQueueRow>();
@@ -350,6 +371,19 @@ export class TaskTable {
 
   protected canAssign(row: TaskQueueRow): boolean {
     return !row.assignedUser && ['NEW', 'IN_PROGRESS', 'ON_HOLD'].includes(row.status);
+  }
+
+  protected isNew(row: TaskQueueRow): boolean {
+    const since = this.newSince();
+    return since !== null && new Date(row.createdAtUtc).getTime() > since;
+  }
+
+  protected progressTitle(row: TaskQueueRow): string {
+    const w = row.workflow;
+    const step = w.currentStepName
+      ? `Step ${w.currentStepNumber} of ${w.stepsTotal}: ${w.currentStepName}`
+      : 'All steps resolved';
+    return `${step} (${w.stepsResolved} of ${w.stepsTotal} resolved)`;
   }
 
   protected ageDays(row: TaskQueueRow): number {

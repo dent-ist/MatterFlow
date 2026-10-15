@@ -71,6 +71,8 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     const box = await drawer.boundingBox();
     expect(box!.x + box!.width).toBeGreaterThan(1270); // docked to the right edge
     await expect(drawer.getByRole('list', { name: 'Activity' })).toBeVisible();
+    // Esc under load can arrive before the dialog has taken focus: wait until it has, as a keyboard user would.
+    await expect(drawer.locator(':focus')).toHaveCount(1);
 
     await page.keyboard.press('Escape');
     await expect(drawer).toBeHidden();

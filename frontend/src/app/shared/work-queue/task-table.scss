@@ -126,11 +126,44 @@ th[aria-sort='descending'] .wt-sort {
   white-space: nowrap;
 }
 
-/* Title takes the spare width, never less than 220 px, and wraps to at most two lines (UXR-09). */
+/* Title takes the spare width: the link wraps to at most two lines, with a muted client / matter line under it. */
 .wt td[data-col='title'],
 .wt th[data-col='title'] {
   min-width: 180px;
-  max-width: 300px;
+  max-width: 360px;
+}
+
+.wt-titlecell {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wt-titleline {
+  display: flex;
+  align-items: baseline;
+  gap: var(--mf-s2);
+  min-width: 0;
+}
+
+.wt-sub {
+  overflow: hidden;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Text badge, not colour alone. */
+.wt-new {
+  flex: none;
+  padding: 0 var(--mf-s2);
+  border-radius: 999px;
+  background: var(--mf-selected-bg);
+  color: var(--mf-primary);
+  font-size: var(--mf-fs-xs);
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 /* Pod and Assignee never wrap: long names are cut with an ellipsis (full name in the tooltip and accessible name). */
@@ -204,13 +237,11 @@ th[aria-sort='descending'] .wt-sort {
 }
 
 .wt-asap {
-  display: inline-block;
-  padding: 0 var(--mf-s2);
-  border: 2px solid var(--mf-asap);
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mf-s1);
   color: var(--mf-asap);
   font-weight: 700;
-  font-size: var(--mf-fs-sm);
 }
 
 /* One line: "Oct 12, 2026 · Overdue 2d" (UXR-09). */
@@ -237,14 +268,33 @@ th[aria-sort='descending'] .wt-sort {
 .wt-progress {
   display: grid;
   gap: 2px;
-  min-width: 160px;
+  width: 160px;
   font-size: var(--mf-fs-sm);
 }
 
+.wt-progress-line {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+}
+
 .wt-progress progress {
-  width: 100%;
+  flex: 1 1 0;
+  width: 0;
+  min-width: 40px;
   height: 6px;
   accent-color: var(--mf-primary);
+}
+
+.wt-progress-count {
+  flex: none;
+  white-space: nowrap;
+}
+
+.wt-progress-step {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .wt-action {

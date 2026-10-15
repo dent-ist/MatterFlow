@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TaskQueueRow } from '../../api/generated/api-client';
 import { Pager } from '../ui/pager';
-import { ColumnChooser } from './column-chooser';
 import { Density } from './column-prefs';
 import { PAGE_SIZES, SortDirection } from './queue-filters';
 import { TaskTable } from './task-table';
@@ -9,48 +8,17 @@ import { ErrorReference } from '../ui/error-reference';
 
 export type WorkListState = 'loading' | 'ready' | 'error';
 
-const SORT_LABELS: Readonly<Record<string, string>> = {
-  priority: 'Priority',
-  due: 'Due date',
-  created: 'Created',
-  number: 'Ref',
-  status: 'Status',
-  completed: 'Closed',
-};
-
 /**
- * Table, sort note, column chooser, paging and the loading, empty and error states of every work list (UX 5.2, 8.6): five skeleton
+ * Table, paging and the loading, empty and error states of every work list (UX 5.2, 8.6): five skeleton
  * rows while loading, dimmed rows while refreshing, "No results match these filters" with Clear filters, and an inline alert with Retry
  * that keeps the previous rows. A polite live region announces the range after each load.
  */
 @Component({
   selector: 'mf-work-list',
-  imports: [ErrorReference, TaskTable, Pager, ColumnChooser],
+  imports: [ErrorReference, TaskTable, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './work-list.scss',
   template: `
-    <div class="wl-bar">
-      <p class="wl-sort" data-sort-note>
-        @if (sort(); as s) {
-          Sorted by {{ sortLabel() }} ({{ dir() === 'desc' ? 'descending' : 'ascending' }}).
-          <button type="button" class="mf-btn mf-btn--text" (click)="resetSort.emit()">
-            Reset sort
-          </button>
-        } @else {
-          <span title="Choosing a column header sorts by it and replaces this order.">
-            {{ defaultOrder() }}
-            <i class="pi pi-info-circle" aria-hidden="true"></i>
-          </span>
-        }
-      </p>
-      <mf-column-chooser
-        [columns]="columns()"
-        [density]="density()"
-        (columnsChange)="columnsChange.emit($event)"
-        (densityChange)="densityChange.emit($event)"
-      />
-    </div>
-
     <div class="wl-sr" role="status" aria-live="polite">{{ announcement() }}</div>
 
     @if (state() === 'error') {
@@ -71,10 +39,14 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
         [sort]="sort()"
         [dir]="dir()"
         [showAssign]="showAssign()"
+        [newSince]="newSince()"
         (sortChange)="sortChange.emit($event)"
         (assignToMe)="assignToMe.emit($event)"
         (rowChange)="rowChange.emit($event)"
       />
+      @if (state() === 'ready' && !filtered() && rows().length > 0 && rows().length < 5) {
+        <div class="wl-near" data-near-empty><ng-content select="[near-empty]" /></div>
+      }
       @if (rows().length > 0) {
         <mf-pager
           [page]="page()"
@@ -115,22 +87,18 @@ export class WorkList {
   readonly filtered = input(false);
   readonly emptyText = input('No tasks yet.');
   readonly showAssign = input(false);
-  /** What the default order is, for the sort note. */
-  readonly defaultOrder = input('Default order: Priority, ASAP first, Due date, Oldest');
+  /** Instant (ms) of the previous visit; rows created after it show a "New" marker. */
+  readonly newSince = input<number | null>(null);
 
   readonly sortChange = output<string>();
-  readonly resetSort = output<void>();
   readonly pageChange = output<number>();
   readonly pageSizeChange = output<number>();
-  readonly columnsChange = output<string[]>();
-  readonly densityChange = output<Density>();
   readonly retry = output<void>();
   readonly clearFilters = output<void>();
   readonly assignToMe = output<TaskQueueRow>();
   readonly rowChange = output<TaskQueueRow>();
 
   protected readonly sizes = PAGE_SIZES;
-  protected readonly sortLabel = computed(() => SORT_LABELS[this.sort() ?? ''] ?? this.sort());
   protected readonly announcement = computed(() => {
     if (this.state() === 'loading') return 'Loading tasks';
     const total = this.total();

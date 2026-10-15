@@ -20,6 +20,7 @@ import { isBareState } from '../../../shared/work-queue/last-view';
 import { loadPodChoices } from '../../../shared/work-queue/pod-options';
 import { QueuePageBase } from '../../../shared/work-queue/queue-page';
 import { PodOption, WorkFilterBar } from '../../../shared/work-queue/work-filter-bar';
+import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { PageHeader } from '../../../shared/ui/page-header';
 
@@ -30,7 +31,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
  */
 @Component({
   selector: 'mf-task-queue-page',
-  imports: [PageHeader, Button, HasPermissionDirective, WorkFilterBar, WorkList],
+  imports: [PageHeader, Button, HasPermissionDirective, WorkFilterBar, WorkList, WorkViewControls],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
@@ -47,7 +48,18 @@ import { PageHeader } from '../../../shared/ui/page-header';
       (filtersChange)="setFilters($event)"
       (viewSelect)="applyView($event)"
       (clearAll)="clearFilters()"
-    />
+    >
+      <mf-work-view-controls
+        fb-end
+        [sort]="state().sort"
+        [dir]="state().dir"
+        [columns]="prefs().columns"
+        [density]="prefs().density"
+        (resetSort)="resetSort()"
+        (columnsChange)="setColumns($event)"
+        (densityChange)="setDensity($event)"
+      />
+    </mf-work-filter-bar>
 
     <mf-work-list
       [rows]="rows()"
@@ -63,11 +75,8 @@ import { PageHeader } from '../../../shared/ui/page-header';
       caption="Task Queue"
       emptyText="No open tasks."
       (sortChange)="sortBy($event)"
-      (resetSort)="resetSort()"
       (pageChange)="goToPage($event)"
       (pageSizeChange)="setPageSize($event)"
-      (columnsChange)="setColumns($event)"
-      (densityChange)="setDensity($event)"
       (retry)="load()"
       (clearFilters)="clearFilters()"
       (rowChange)="replaceRow($event)"

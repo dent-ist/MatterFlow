@@ -112,6 +112,40 @@ test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
     await myWork.expectNotListed(others.title);
   });
 
+  test('My Work: search shares the tab row, Filters, the sort note and Columns share one row, new tasks are marked until the next visit', async ({
+    seed,
+    asUser,
+  }) => {
+    const me = await seed.user(['Data Technician'], 'toolbar');
+    const world = await seed.world();
+    const first = await seed.task(world, { title: `First ${uid()}`, assignedUserId: me.userId });
+
+    const page = await asUser(me.username);
+    const myWork = new MyWorkPage(page);
+    await myWork.open();
+    await myWork.expectListed(first.title);
+    const y = async (loc: ReturnType<typeof page.locator>) => (await loc.boundingBox())!.y;
+    const search = page.getByRole('searchbox', { name: 'Search title or ref' });
+    const tab = myWork.tab(/^Active/);
+    expect(Math.abs((await y(search)) - (await y(tab)))).toBeLessThan(24);
+    const filters = page.getByRole('button', { name: /^Filters/ });
+    const columns = page.getByRole('button', { name: 'Columns' });
+    expect(Math.abs((await y(filters)) - (await y(columns)))).toBeLessThan(8);
+    await expect(page.locator('[data-sort-note]')).toContainText('Sorted by Priority');
+    await expect(page.locator('[data-near-empty]')).toContainText(
+      "That's everything on your plate.",
+    );
+    await expect(page.locator('[data-new-marker]')).toHaveCount(0);
+
+    // A task assigned after that visit is marked New on the next one, and not on the one after.
+    const second = await seed.task(world, { title: `Second ${uid()}`, assignedUserId: me.userId });
+    await myWork.open();
+    await expect(myWork.row(second.title).locator('[data-new-marker]')).toHaveText('New');
+    await expect(myWork.row(first.title).locator('[data-new-marker]')).toHaveCount(0);
+    await myWork.open();
+    await expect(page.locator('[data-new-marker]')).toHaveCount(0);
+  });
+
   test('SCN-007: Pod Work shows only the chosen Pod and includes colleagues work', async ({
     seed,
     asUser,

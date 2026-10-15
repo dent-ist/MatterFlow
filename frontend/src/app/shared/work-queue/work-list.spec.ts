@@ -29,23 +29,6 @@ describe('WorkList', () => {
     fixture.detectChanges();
   }
 
-  it('explains the default order and the way back from a header sort', async () => {
-    await create([aRow()]);
-    expect(el().querySelector('[data-sort-note]')!.textContent).toContain(
-      'Default order: Priority, ASAP first, Due date, Oldest',
-    );
-
-    fixture.componentRef.setInput('sort', 'due');
-    fixture.componentRef.setInput('dir', 'desc');
-    fixture.detectChanges();
-    const note = el().querySelector('[data-sort-note]')!;
-    expect(note.textContent).toContain('Sorted by Due date (descending)');
-    let reset = 0;
-    fixture.componentInstance.resetSort.subscribe(() => reset++);
-    note.querySelector<HTMLButtonElement>('button')!.click();
-    expect(reset).toBe(1);
-  });
-
   it('shows "Showing 1-50 of 312", rows per page and announces the range politely', async () => {
     await create([aRow()], { total: 312, page: 1, pageSize: 50 });
     expect(el().textContent).toContain('Showing 1-50 of 312');
@@ -98,34 +81,25 @@ describe('WorkList', () => {
     expect(retried).toBe(1);
   });
 
-  it('changes columns and density through the column chooser, never offering to hide Ref or Title', async () => {
-    await create([aRow()], { columns: ['ref', 'title', 'status'] });
-    el().querySelector<HTMLButtonElement>('.cc-button')!.click();
+  it('adds a friendly line below a short list, only when nothing is filtered', async () => {
+    await create([aRow()]);
+    expect(el().querySelector('[data-near-empty]')).not.toBeNull();
+    fixture.componentRef.setInput('filtered', true);
     fixture.detectChanges();
+    expect(el().querySelector('[data-near-empty]')).toBeNull();
+  });
 
-    const checks = Array.from(el().querySelectorAll<HTMLLabelElement>('.cc-check'));
-    const find = (label: string) =>
-      checks.find((c) => c.textContent?.includes(label))!.querySelector('input')!;
-    expect(find('Ref').disabled).toBe(true);
-    expect(find('Title').disabled).toBe(true);
-    expect(find('Ref').checked).toBe(true);
-
-    const columns: string[][] = [];
-    const densities: string[] = [];
-    fixture.componentInstance.columnsChange.subscribe((c) => columns.push(c));
-    fixture.componentInstance.densityChange.subscribe((d) => densities.push(d));
-    find('Client').click();
-    find('Compact').click();
-    expect(columns[0]).toEqual(['ref', 'title', 'client', 'status']);
-    expect(densities).toEqual(['compact']);
+  it('leaves out the friendly line from five rows on', async () => {
+    await create([1, 2, 3, 4, 5].map((n) => aRow({ taskId: n, taskNumber: `TSK-${n}` })));
+    expect(el().querySelector('[data-near-empty]')).toBeNull();
   });
 });
 
 describe('WorkTabs', () => {
   let fixture: ComponentFixture<WorkTabs>;
   const tabs: WorkTab[] = [
-    { key: 'a', label: 'Active', count: 7 },
-    { key: 'b', label: 'Due Soon', count: 2 },
+    { key: 'a', label: 'Active', count: 7, emphasize: true },
+    { key: 'b', label: 'Due Soon', count: 2, emphasize: true },
     { key: 'c', label: 'Completed' },
   ];
 
@@ -158,6 +132,25 @@ describe('WorkTabs', () => {
     ]);
     expect(buttons().map((b) => b.tabIndex)).toEqual([0, -1, -1]);
     expect(buttons()[0].getAttribute('aria-controls')).toBe('x-panel');
+  });
+
+  it('mutes zero counts and bolds only the counts that ask for it while above zero', () => {
+    fixture.componentRef.setInput('tabs', [
+      { key: 'a', label: 'Active', count: 7, emphasize: true },
+      { key: 'b', label: 'Due Soon', count: 0, emphasize: true },
+      { key: 'c', label: 'Done', count: 4 },
+      { key: 'd', label: 'Mine', count: 0 },
+    ]);
+    fixture.detectChanges();
+    const counts = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.count'),
+    ).map((c) => [c.classList.contains('count--strong'), c.classList.contains('count--zero')]);
+    expect(counts).toEqual([
+      [true, false],
+      [false, true],
+      [false, false],
+      [false, true],
+    ]);
   });
 
   it('selects on click and moves with the arrow keys, Home and End', () => {

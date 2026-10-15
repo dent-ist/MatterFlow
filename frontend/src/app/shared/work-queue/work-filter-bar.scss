@@ -11,14 +11,44 @@
 .fb-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--mf-s3);
 }
 
-/* Lines the Filters button up with the search input itself (below its 1.25rem label), not with the hint line under the input. */
 .fb-button {
-  margin-top: calc(1.25rem + var(--mf-s1));
   min-height: var(--mf-row-h);
+}
+
+/* Controls projected by the page (sort note, Columns): far right of the toolbar row. */
+.fb-end {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+
+/* Tabs on the left, search on the right; the search wraps below the tabs, full width, on narrow screens. */
+.fb-tabrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--mf-s2) var(--mf-s4);
+  border-bottom: 2px solid var(--mf-border);
+}
+
+.fb-tabs {
+  min-width: 0;
+}
+
+.fb-tabrow .fb-search {
+  margin-bottom: var(--mf-s1);
+}
+
+@media (max-width: 900px) {
+  .fb-tabrow .fb-search {
+    flex: 1 1 100%;
+    max-width: none;
+  }
 }
 
 .fb-field {
@@ -33,8 +63,8 @@
 }
 
 .fb-search {
-  flex: 1 1 280px;
-  max-width: 480px;
+  flex: 0 1 320px;
+  min-width: 0;
 }
 
 .fb-view {

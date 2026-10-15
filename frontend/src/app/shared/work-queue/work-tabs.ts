@@ -12,6 +12,8 @@ export interface WorkTab {
   label: string;
   /** Count shown in parentheses; omitted while unknown. */
   count?: number | null;
+  /** Bold the count while it is above zero (Active, Due soon). Other non-zero counts stay normal weight; zero counts are muted. */
+  emphasize?: boolean;
 }
 
 /**
@@ -37,7 +39,12 @@ export interface WorkTab {
         >
           {{ tab.label }}
           @if (tab.count !== undefined && tab.count !== null) {
-            <span class="count">({{ tab.count }})</span>
+            <span
+              class="count"
+              [class.count--strong]="tab.emphasize && tab.count > 0"
+              [class.count--zero]="tab.count === 0"
+              >({{ tab.count }})</span
+            >
           }
         </button>
       }
@@ -48,8 +55,6 @@ export interface WorkTab {
       display: flex;
       flex-wrap: wrap;
       gap: var(--mf-s1);
-      border-bottom: 2px solid var(--mf-border);
-      margin-bottom: var(--mf-s3);
     }
     .tab {
       min-height: var(--mf-row-h);
@@ -68,7 +73,14 @@ export interface WorkTab {
       font-weight: 600;
     }
     .count {
-      color: var(--mf-text-muted);
+      color: inherit;
+      font-weight: 400;
+    }
+    .count--zero {
+      color: var(--mf-text-disabled);
+    }
+    .count--strong {
+      font-weight: 700;
     }
   `,
 })

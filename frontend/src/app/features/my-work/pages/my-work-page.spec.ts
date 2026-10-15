@@ -118,7 +118,8 @@ describe('MyWorkPage', () => {
     );
     const row = el.querySelector('tbody tr')!;
     expect(row.textContent).toContain('00343-00012');
-    expect(row.textContent).toContain('Step 3/6: Dedup');
+    expect(row.textContent).toContain('2 of 6');
+    expect(row.textContent).toContain('Dedup');
     expect(row.textContent).toContain('ASAP');
     expect(row.textContent).toContain('In Progress');
   });
@@ -178,6 +179,56 @@ describe('MyWorkPage', () => {
     harness.detectChanges();
     expect(el.querySelector('#fb-pod')).not.toBeNull();
     expect(el.querySelector('#fb-assignee')).toBeNull();
+  });
+
+  it('puts the search box on the tab row and Filters, the sort note and Columns on one toolbar row', async () => {
+    const el = await open('/my-work');
+    // The first render can lag behind whenStable on a busy machine: wait for the search box.
+    await vi.waitFor(() => {
+      harness.detectChanges();
+      expect(el.querySelector('#fb-q')).not.toBeNull();
+    });
+    const tabRow = el.querySelector('.fb-tabrow')!;
+    expect(tabRow.querySelector('[role="tablist"]')).not.toBeNull();
+    expect(tabRow.querySelector('#fb-q')).not.toBeNull();
+    const row = el.querySelector('.fb-row')!;
+    expect(row.querySelector('.fb-button')).not.toBeNull();
+    expect(row.querySelector('[data-sort-note]')!.textContent).toContain('Sorted by Priority');
+    expect(row.querySelector('.cc-button')).not.toBeNull();
+    expect(el.querySelector('[data-search-hint]')!.classList).toContain('sb__hint--float');
+  });
+
+  it('marks tasks created since the previous visit as New, then forgets them at the next visit', async () => {
+    const rows = [
+      aRow({ taskId: 1, taskNumber: 'TSK-1', createdAtUtc: '2026-10-14T12:00:00Z' }),
+      aRow({ taskId: 2, taskNumber: 'TSK-2', createdAtUtc: '2026-10-01T12:00:00Z' }),
+    ];
+    // First ever visit: nothing is marked.
+    let el = await open('/my-work', { rows, response: of(pageOf(rows, { counts: COUNTS })) });
+    expect(el.querySelectorAll('[data-new-marker]').length).toBe(0);
+    const key = Object.keys(localStorage).find((k) => k.startsWith('mf.my-work.last-visit'))!;
+    expect(Number(localStorage.getItem(key))).toBe(new Date('2026-10-14T15:00:00Z').getTime());
+
+    // An earlier visit: the task created after it is New, the older one is not.
+    TestBed.resetTestingModule();
+    localStorage.setItem(key, String(new Date('2026-10-10T00:00:00Z').getTime()));
+    el = await open('/my-work', { rows, response: of(pageOf(rows, { counts: COUNTS })) });
+    const marked = el.querySelectorAll('[data-new-marker]');
+    expect(marked.length).toBe(1);
+    expect(marked[0].closest('tr')!.getAttribute('data-task')).toBe('TSK-1');
+
+    // The visit above was recorded, so the marker is gone the next time.
+    TestBed.resetTestingModule();
+    el = await open('/my-work', { rows, response: of(pageOf(rows, { counts: COUNTS })) });
+    expect(el.querySelectorAll('[data-new-marker]').length).toBe(0);
+  });
+
+  it('closes a short list with a friendly line that links to Pod Work and the Task Queue', async () => {
+    const el = await open('/my-work');
+    const line = el.querySelector('[data-near-empty]')!;
+    expect(line.textContent).toContain("That's everything on your plate.");
+    const hrefs = Array.from(line.querySelectorAll('a')).map((a) => a.getAttribute('href'));
+    expect(hrefs).toEqual(['/pods/work', '/tasks']);
   });
 
   it('says what an empty tab means and points to Pod Work from Active', async () => {

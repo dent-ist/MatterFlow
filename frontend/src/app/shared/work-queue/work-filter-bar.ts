@@ -20,6 +20,7 @@ import {
   buildChips,
   filterCount,
 } from './queue-filters';
+import { NgTemplateOutlet } from '@angular/common';
 import { DateInput } from 'form-engine';
 import { SearchBox } from '../ui/search-box';
 
@@ -37,20 +38,24 @@ export interface PodOption {
 @Component({
   selector: 'mf-work-filter-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DateInput, SearchBox],
+  imports: [DateInput, NgTemplateOutlet, SearchBox],
   styleUrl: './work-filter-bar.scss',
   template: `
     <div class="fb">
-      <div class="fb-row">
+      <ng-template #searchTpl>
         <mf-search-box
           class="fb-search"
           role="search"
           inputId="fb-q"
           label="Search title or ref"
-          placeholder="TSK-1042 or dedup"
+          placeholder="Search title or ref"
+          [hideLabel]="true"
+          [hintOnFocus]="true"
           [value]="filters().q"
           (searchChange)="update({ q: $event })"
         />
+      </ng-template>
+      <ng-template #filtersTpl>
         <button
           type="button"
           class="mf-btn fb-button"
@@ -64,6 +69,21 @@ export interface PodOption {
             <span class="fb-count" data-filter-count>({{ count() }})</span>
           }
         </button>
+      </ng-template>
+      <ng-template #endTpl><ng-content select="[fb-end]" /></ng-template>
+
+      @if (hasTabs()) {
+        <div class="fb-tabrow">
+          <div class="fb-tabs"><ng-content select="[fb-tabs]" /></div>
+          <ng-container *ngTemplateOutlet="searchTpl" />
+        </div>
+      }
+      <div class="fb-row">
+        @if (!hasTabs()) {
+          <ng-container *ngTemplateOutlet="searchTpl" />
+        }
+        <ng-container *ngTemplateOutlet="filtersTpl" />
+        <div class="fb-end"><ng-container *ngTemplateOutlet="endTpl" /></div>
       </div>
 
       @if (showViews()) {
@@ -257,6 +277,8 @@ export class WorkFilterBar {
   readonly userId = input<number | null>(null);
   readonly viewContext = input<ViewContext>({ userId: null, primaryPodId: null, recentFrom: '' });
   readonly showViews = input(false);
+  /** True when the page projects `mf-work-tabs` (`fb-tabs`): the tabs share a row with the search box. */
+  readonly hasTabs = input(false);
   /**
    * The status set the page starts on ("All open" on the Task Queue). While the status filter equals it, it is not shown as a chip
    * and not counted, and "Clear all filters" only appears once something else is set (UXR-10).

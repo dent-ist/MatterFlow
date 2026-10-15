@@ -215,6 +215,8 @@ export interface DueState {
   tooltip?: string;
   overdue: boolean;
   hasTime: boolean;
+  /** Whole calendar days from today (viewer's zone) to the due day: 0 today, 1 tomorrow. Set for open, not overdue tasks with a due date. */
+  daysUntil?: number;
 }
 
 export const CLOSED_STATUSES: readonly string[] = ['COMPLETED', 'CANCELLED'];
@@ -281,9 +283,17 @@ export function describeDue(
       badge: 'Due soon',
       overdue: false,
       hasTime,
+      daysUntil: dueIdx - today,
     };
   }
-  return { kind: 'future', label: dateText, dateText, overdue: false, hasTime };
+  return {
+    kind: 'future',
+    label: dateText,
+    dateText,
+    overdue: false,
+    hasTime,
+    daysUntil: dueIdx - today,
+  };
 }
 
 function overdueDuration(instant: Date | null, calendarDays: number, now: Date): string {
