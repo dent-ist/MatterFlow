@@ -64,7 +64,8 @@
 
 .wt th,
 .wt td {
-  padding: var(--mf-s2) var(--mf-s3);
+  /* Tight side padding keeps the default columns inside 1280 px for a user with the inline editors (UXR2-01). */
+  padding: var(--mf-s2) var(--mf-s2);
   border-bottom: 1px solid var(--mf-border);
   text-align: left;
   vertical-align: middle;
@@ -128,8 +129,26 @@ th[aria-sort='descending'] .wt-sort {
 /* Title takes the spare width, never less than 220 px, and wraps to at most two lines (UXR-09). */
 .wt td[data-col='title'],
 .wt th[data-col='title'] {
-  min-width: 220px;
-  max-width: 420px;
+  min-width: 180px;
+  max-width: 300px;
+}
+
+/* Pod and Assignee never wrap: long names are cut with an ellipsis (full name in the tooltip and accessible name). */
+.wt td[data-col='pod'],
+.wt td[data-col='assignee'] {
+  white-space: nowrap;
+}
+
+.wt td[data-col='assignee'] mf-row-edit {
+  display: block;
+  max-width: 9rem;
+}
+
+.wt-clip {
+  display: block;
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .wt-title {

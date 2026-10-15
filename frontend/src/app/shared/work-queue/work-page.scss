@@ -25,6 +25,8 @@
 .wp-field {
   display: grid;
   gap: var(--mf-s1);
+  max-width: 360px;
+  margin-top: var(--mf-s3);
 }
 
 .wp-field label {
@@ -34,6 +36,7 @@
 
 .wp-select {
   min-width: 220px;
+  max-width: 100%;
 }
 
 .wp-link {

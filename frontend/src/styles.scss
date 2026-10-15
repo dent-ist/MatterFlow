@@ -51,7 +51,10 @@ a:not([class]) {
 }
 
 /* Wide tables scroll sideways inside their own box instead of widening the page on narrow screens (UAT2-24). */
+/* Positioned, so the visually hidden captions and header labels inside a wide table are clipped with it. Without this
+   the absolutely positioned text sits outside the scroll box and widens the page (UXR2-03). */
 .mf-scroll {
+  position: relative;
   max-width: 100%;
   overflow-x: auto;
 }

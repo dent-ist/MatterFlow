@@ -71,8 +71,17 @@
   width: 220px;
   flex: none;
   padding: var(--mf-s3);
-  background: var(--mf-surface);
   border-right: 1px solid var(--mf-border);
+  /* A soft shadow on the bottom (and top) edge shows only while more items are hidden beyond it, so a short window
+     still tells the user the menu scrolls (UXR2-16). */
+  background:
+    linear-gradient(var(--mf-surface) 30%, transparent) center top / 100% 24px no-repeat local,
+    linear-gradient(transparent, var(--mf-surface) 70%) center bottom / 100% 24px no-repeat local,
+    radial-gradient(farthest-side at 50% 0, rgb(0 0 0 / 22%), transparent) center top / 100% 8px
+      no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, rgb(0 0 0 / 22%), transparent) center bottom / 100%
+      8px no-repeat scroll,
+    var(--mf-surface);
   /* Stays in view while the page scrolls; scrolls itself when the window is shorter than the menu. */
   position: sticky;
   top: var(--mf-header-h);
@@ -208,4 +217,30 @@
   color: #fff;
   background: var(--mf-danger);
   border-radius: 999px;
+}
+
+/* Phones: the header must never be wider than the screen (UXR2-02). The keyboard-shortcut help is for keyboards, so it goes;
+   the name stays for screen readers only. */
+@media (max-width: 480px) {
+  .mf-header {
+    gap: var(--mf-s2);
+    padding-inline: var(--mf-s3);
+  }
+
+  .mf-logo {
+    font-size: var(--mf-fs-md);
+  }
+
+  .mf-help-btn {
+    display: none;
+  }
+
+  .mf-user {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }

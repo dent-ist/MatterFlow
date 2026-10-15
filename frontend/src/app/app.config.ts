@@ -19,6 +19,7 @@ import { IdentityAdminApi } from './core/identity-admin/identity-admin-api';
 import { InMemoryIdentityAdminApi } from './core/identity-admin/in-memory-identity-admin-api';
 import { MF_HTTP_INTERCEPTORS } from './core/http/interceptors';
 import { MfPreset } from './core/theme/mf-preset';
+import { suppressImplicitAutofocus } from './core/theme/no-autofocus';
 import { MfTitleStrategy } from './core/title/page-title';
 import { environment } from '../environments/environment';
 
@@ -40,6 +41,7 @@ export const appConfig: ApplicationConfig = {
     },
     // Permissions load on first navigation (guards await it) and refresh on window focus (60 s).
     provideAppInitializer(() => {
+      suppressImplicitAutofocus();
       inject(AuthStore).startFocusRefresh();
     }),
     providePrimeNG({

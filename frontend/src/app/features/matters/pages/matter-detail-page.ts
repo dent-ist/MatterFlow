@@ -84,7 +84,7 @@ type LoadState = 'loading' | 'ready' | 'error';
               <mf-matter-ref mfRef [value]="m.matterRef" />
               <mf-active-badge [active]="m.isActive" />
             </mf-record-title>
-            <span *mfHasPermission="'Matter.SetActive'" mfActions class="pg-toggle">
+            <span *mfHasPermission="'Matter.SetActive'" mfActions>
               <p-button
                 [label]="m.isActive ? 'Set inactive' : 'Set active'"
                 severity="secondary"
@@ -92,12 +92,6 @@ type LoadState = 'loading' | 'ready' | 'error';
                 [attr.aria-describedby]="deactivateBlocked() ? 'matter-toggle-reason' : null"
                 (onClick)="toggleOpen.set(true)"
               />
-              @if (deactivateBlocked()) {
-                <span class="pg-reason" id="matter-toggle-reason" data-toggle-reason>
-                  This matter has {{ m.openTaskCount }} tasks that aren't Completed or Cancelled.
-                  Finish or cancel them first.
-                </span>
-              }
             </span>
             <p-button
               mfActions
@@ -122,6 +116,18 @@ type LoadState = 'loading' | 'ready' | 'error';
               [disabled]="!m.isActive"
               (onClick)="go('/tasks/new?matterId=' + m.matterId)"
             />
+            @if (deactivateBlocked()) {
+              <p
+                *mfHasPermission="'Matter.SetActive'"
+                class="pg-reason"
+                id="matter-toggle-reason"
+                data-toggle-reason
+              >
+                <i class="pi pi-info-circle" aria-hidden="true"></i>
+                This matter has {{ m.openTaskCount }} tasks that aren't Completed or Cancelled.
+                Finish or cancel them first.
+              </p>
+            }
             <p class="pg-muted" data-client>
               Client:
               <a class="pg-link" [routerLink]="['/clients', m.clientId]"
@@ -316,14 +322,6 @@ type LoadState = 'loading' | 'ready' | 'error';
           </mf-confirm-dialog>
         }
       }
-    }
-  `,
-  styles: `
-    .pg-toggle {
-      display: inline-flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: var(--mf-s1);
     }
   `,
 })

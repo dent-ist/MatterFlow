@@ -58,7 +58,8 @@ describe('Details tab', () => {
       }),
     );
     expect(q(el, '[data-edit]')).toBeNull();
-    expect(q(el, '[data-readonly-note]')!.textContent).toContain('Reopen it to edit');
+    expect(q(el, '[data-closed-banner]')!.textContent).toContain('Reopen it to edit');
+    expect(q(el, '[data-readonly-note]')).toBeNull();
   });
 
   it('edit mode shows inputs for the editable fields only, with the due time labelled with the zone', async () => {

@@ -184,7 +184,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                     }
                     @case ('pod') {
                       @if (row.assignedPod; as pod) {
-                        {{ pod.name }}
+                        <span class="wt-clip" [attr.title]="pod.name">{{ pod.name }}</span>
                       } @else {
                         <span class="wt-muted">No pod</span>
                       }
@@ -197,10 +197,12 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
                           (rowChange)="rowChange.emit($event)"
                         />
                       } @else if (row.assignedUser; as user) {
-                        {{ user.displayName }}
-                        @if (!user.isActive) {
-                          <span class="wt-muted">(inactive)</span>
-                        }
+                        <span class="wt-clip" [attr.title]="user.displayName">
+                          {{ user.displayName }}
+                          @if (!user.isActive) {
+                            <span class="wt-muted">(inactive)</span>
+                          }
+                        </span>
                       } @else {
                         <span class="wt-unassigned">Unassigned</span>
                       }

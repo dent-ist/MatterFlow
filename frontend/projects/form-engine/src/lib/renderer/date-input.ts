@@ -191,7 +191,7 @@ export class DateInput {
   protected readonly text = signal('');
   protected readonly badText = signal(false);
   protected readonly placeholder = computed(() =>
-    this.withTime() ? 'Oct 12, 2026, 2:30 PM' : 'Oct 12, 2026',
+    this.withTime() ? 'mm/dd/yyyy, h:mm AM' : 'mm/dd/yyyy',
   );
   protected readonly hint = computed(() =>
     this.withTime()

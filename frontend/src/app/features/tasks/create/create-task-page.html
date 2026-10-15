@@ -1,6 +1,6 @@
 <mf-page-header
   heading="Create task"
-  [crumbs]="[{ label: 'Tasks', link: '/tasks' }, { label: 'New' }]"
+  [crumbs]="[{ label: 'Tasks', link: '/tasks' }, { label: 'Create task' }]"
 />
 
 @if (!canCreate()) {
@@ -189,7 +189,7 @@
               [attr.aria-invalid]="fieldError('projectId') ? 'true' : null"
               (change)="onProjectChange($event)"
             >
-              <option value="" [selected]="projectId$() === null">None</option>
+              <option value="" [selected]="projectId$() === null">No project</option>
               @for (p of projects(); track p.projectId) {
                 <option [value]="p.projectId" [selected]="p.projectId === projectId$()">
                   {{ p.name }}
@@ -335,7 +335,7 @@
                   [attr.aria-invalid]="fieldError('assignedPodId') ? 'true' : null"
                   (change)="onPodChange($event)"
                 >
-                  <option value="" [selected]="podId() === null">None</option>
+                  <option value="" [selected]="podId() === null">No pod</option>
                   @for (p of pods(); track p.podId) {
                     <option [value]="p.podId" [selected]="p.podId === podId()">{{ p.name }}</option>
                   }
@@ -381,7 +381,7 @@
             [disabled]="busy()"
             (onClick)="submit(true)"
           />
-          <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="cancel()" />
+          <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
         </div>
       </form>
     </div>

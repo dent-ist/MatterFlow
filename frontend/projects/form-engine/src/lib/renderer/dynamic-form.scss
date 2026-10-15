@@ -10,7 +10,7 @@
 }
 
 .mf-form__heading {
-  margin: 0.5rem 0 0;
+  margin: 0.75rem 0 0.25rem;
   font-size: 1.125rem;
 }
 
@@ -44,6 +44,8 @@
   > p-multiselect,
   > mf-date-input {
     width: 100%;
+    /* The same control width as the page forms (UXR2-12). */
+    max-width: 30rem;
   }
 }
 

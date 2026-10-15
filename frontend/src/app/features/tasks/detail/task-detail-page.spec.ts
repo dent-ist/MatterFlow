@@ -265,7 +265,7 @@ describe('TaskDetailPage header', () => {
     });
     const { fixture, el, fakes } = await mountTaskPage(task);
     expect(q(el, '[data-closed-banner]')!.textContent).toMatch(
-      /This task is Completed\.\s+Move it back to In Progress to edit\./,
+      /This task is Completed\.\s+Reopen it to edit\./,
     );
     expect(q(el, '[data-edit]')).toBeNull();
 

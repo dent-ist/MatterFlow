@@ -44,11 +44,11 @@ let nextId = 0;
       [attr.aria-controls]="open() ? uid + '-pop' : null"
       [attr.aria-label]="label()"
       [attr.aria-busy]="busy() ? 'true' : null"
-      [disabled]="busy()"
+      [attr.aria-disabled]="busy() ? 'true' : null"
       (click)="toggle($event)"
       (keydown)="onTriggerKey($event)"
     >
-      <ng-content />
+      <span class="im-value"><ng-content /></span>
       <i
         class="pi"
         [class]="busy() ? 'pi-spin pi-spinner' : 'pi-chevron-down'"
@@ -117,8 +117,16 @@ let nextId = 0;
   styles: `
     :host {
       display: inline-block;
+      max-width: 100%;
+    }
+    .im-value {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .im-trigger {
+      max-width: 100%;
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
@@ -132,13 +140,13 @@ let nextId = 0;
       text-align: left;
       cursor: pointer;
     }
-    .im-trigger:hover:not(:disabled),
+    .im-trigger:hover:not([aria-disabled='true']),
     .im-trigger:focus-visible,
     .im-trigger[aria-expanded='true'] {
       border-color: var(--mf-border-strong);
       background: var(--mf-surface-alt);
     }
-    .im-trigger:disabled {
+    .im-trigger[aria-disabled='true'] {
       cursor: progress;
       opacity: 0.7;
     }
@@ -241,6 +249,8 @@ export class InlineMenu implements OnDestroy {
 
   protected toggle(event: Event): void {
     event.stopPropagation();
+    // Busy uses aria-disabled, not disabled: a disabled button would drop the focus that a pick returned to it.
+    if (this.busy()) return;
     if (this.open()) this.close(true);
     else this.show();
   }
@@ -285,7 +295,7 @@ export class InlineMenu implements OnDestroy {
 
   protected onTriggerKey(event: KeyboardEvent): void {
     event.stopPropagation();
-    if (event.key === 'ArrowDown' && !this.open()) {
+    if (event.key === 'ArrowDown' && !this.open() && !this.busy()) {
       event.preventDefault();
       this.show();
     }

@@ -324,7 +324,7 @@ export class RowEdit {
               ? `${r.taskNumber} is unassigned.`
               : `${r.taskNumber} assigned to ${option.label}.` +
                 (r.status === 'NEW' && t.status !== 'NEW'
-                  ? ` Task moved to ${t.statusLabel}.`
+                  ? ` Task moved to ${t.statusLabel}. Undo puts the assignee back; the status stays.`
                   : ''),
           {
             field: 'assignee',

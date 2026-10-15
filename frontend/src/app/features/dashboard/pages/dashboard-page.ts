@@ -211,7 +211,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                   emptyText="No open tasks."
                 />
                 <mf-bar-list
-                  heading="Open by Task Type"
+                  heading="Open by task type"
                   rowHeading="Task type"
                   [items]="types()"
                   emptyText="No open tasks."

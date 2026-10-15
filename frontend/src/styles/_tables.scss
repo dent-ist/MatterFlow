@@ -6,6 +6,7 @@
  * Every row action needs an accessible name that includes the row ("Edit Access Request"), set with aria-label.
  */
 .mf-table-wrap {
+  position: relative;
   overflow-x: auto;
   max-width: 100%;
 }

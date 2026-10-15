@@ -32,8 +32,8 @@ export type WorkPage = 'queue' | 'my-work' | 'pod-work';
 
 export const DEFAULT_COLUMNS: Readonly<Record<WorkPage, readonly string[]>> = {
   // Chosen to fit a 1280 px screen without sideways scrolling (UXR-09). Project is empty for most tasks and Task type repeats
-  // what the title says, so both live in the column chooser; so do Age, Pod (My Work) and Workflow progress (Pod Work).
-  queue: ['ref', 'title', 'matter', 'priority', 'pod', 'assignee', 'due', 'status'],
+  // what the title says, so both live in the column chooser; so do Age, Pod (Task Queue and My Work) and Workflow progress (Pod Work).
+  queue: ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status'],
   'my-work': ['ref', 'title', 'matter', 'priority', 'progress', 'due', 'status'],
   'pod-work': ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status'],
 };
@@ -52,7 +52,7 @@ export function normalizeColumns(keys: readonly string[]): string[] {
 }
 
 function storageKey(page: WorkPage, userId: number | null): string {
-  return `mf.work-table.v2.${page}.${userId ?? 'anon'}`;
+  return `mf.work-table.v3.${page}.${userId ?? 'anon'}`;
 }
 
 function storage(): Storage | null {

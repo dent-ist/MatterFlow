@@ -16,11 +16,17 @@ import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   styles: `
+    mf-sensitive-badge {
+      margin-left: var(--mf-s2);
+    }
     mark {
       background: transparent;
       color: inherit;
       font-weight: 700;
       text-decoration: underline;
+    }
+    .hit-matter mf-sensitive-badge {
+      margin-left: 0;
     }
     .hit-matter {
       display: inline-flex;

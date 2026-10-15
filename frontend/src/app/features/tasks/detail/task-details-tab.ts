@@ -90,15 +90,6 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
           <h2 id="details-h" class="dt__title">Details</h2>
         </div>
 
-        @if (store.closed()) {
-          <p class="pg-muted" data-readonly-note>
-            This task is {{ t.statusLabel }}.
-            @if (!store.viewOnly()) {
-              Reopen it to edit.
-            }
-          </p>
-        }
-
         @if (editing()) {
           <form class="dt__form" novalidate (submit)="save($event)" data-edit-form>
             @if (summary().length > 0) {

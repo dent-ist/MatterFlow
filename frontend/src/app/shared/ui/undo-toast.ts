@@ -45,7 +45,8 @@ import { UndoService } from '../../core/notify/undo.service';
   styles: `
     .ut {
       position: fixed;
-      left: var(--mf-s4);
+      /* Same corner as the success and error toasts (UXR2-13); it no longer covers the sidebar footer. */
+      right: var(--mf-s4);
       bottom: var(--mf-s4);
       z-index: 1200;
       max-width: min(32rem, calc(100vw - 2 * var(--mf-s4)));

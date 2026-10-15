@@ -105,12 +105,13 @@
 
 /* PrimeNG buttons: same size scale (small is no longer smaller than the default) and the same variants. */
 .p-button {
-  min-height: 2rem;
+  min-height: 32px;
   font-size: var(--mf-fs-md);
+  white-space: nowrap;
 }
 
 .p-button.p-button-sm {
-  min-height: 2rem;
+  min-height: 32px;
   font-size: var(--mf-fs-md);
 }
 

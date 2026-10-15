@@ -126,10 +126,8 @@ test.describe('Status changes and closed tasks', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await detail.expectStatus('Completed');
-    await expect(page.locator('[data-closed-banner]')).toContainText(
-      'Move it back to In Progress to edit',
-    );
-    await expect(page.locator('[data-readonly-note]')).toContainText('Reopen it to edit');
+    await expect(page.locator('[data-closed-banner]')).toContainText('Reopen it to edit');
+    await expect(page.locator('[data-readonly-note]')).toHaveCount(0);
     await expect(page.locator('[data-task-header] [data-edit]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
 

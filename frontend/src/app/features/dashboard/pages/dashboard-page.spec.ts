@@ -201,7 +201,7 @@ describe('DashboardPage', () => {
     const bars = el.querySelector('[data-section="breakdowns"]')!;
     expect(bars.textContent).toContain('Open by Pod');
     expect(bars.textContent).toContain('Open by Priority');
-    expect(bars.textContent).toContain('Open by Task Type');
+    expect(bars.textContent).toContain('Open by task type');
     expect(bars.textContent).toContain('Open by Status');
     const podRows = Array.from(bars.querySelectorAll('mf-bar-list')[0].querySelectorAll('li'));
     expect(

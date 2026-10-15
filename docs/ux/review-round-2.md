@@ -109,3 +109,36 @@ Inline Status, Priority and Assignee on Task detail and tables including **Undo*
 3. Should Asset types, Custom fields and Link roles (small configuration tables) get search, sort and paging, or stay as plain tables with only the scroll fix?
 4. Not exercised because no data path in this seed: Pod Work table with "Assign to me", My Work with rows, Access Pending, the Task Queue last-view memory, Roles and Pods validation. They follow the same components and are covered by e2e where relevant; worth a quick manual pass in round 3.
 5. Screen reader behaviour (announcements, live region for Undo) was not tested with assistive technology, only through axe and DOM inspection.
+
+## 6. Round 2 fixes
+
+Status of every finding after the fix pass (branch `dev`). Verified in the running app (Chromium at 1280, 1024 and 375 px against SQL Server + API), the e2e suite, unit tests and the production build.
+
+Product-owner decisions applied: Task Queue / My Work / Pod Work keep Title Case (feature names); Undo after an assignment does not restore New (the toast now says so: "Task moved to In Progress. Undo puts the assignee back; the status stays."); Asset types, Custom fields and Link roles get the consistent row actions and named buttons but no new search, sort or pager.
+
+| ID | Status | What changed |
+|---|---|---|
+| UXR2-01 (and UXR-09) | Fixed | Task Queue is 1012 px in a 1012 px container at 1280 for an editing user, worst case (overdue "Oct 12, 2026 · Overdue 3d", assignee, Status chevrons). Default queue columns are Ref, Title, Matter, Priority, Assignee, Due, Status (Pod moved to the column chooser; saved prefs key bumped to v3 so everyone gets the new default). Cell side padding 12 to 8 px, Title 180 to 300 px, Pod and Assignee never wrap and are cut with an ellipsis (full name in the tooltip and accessible name). "No pod" no longer wraps. |
+| UXR2-02 | Fixed | Under 480 px the header hides the shortcut-help button and keeps the user name for screen readers only; p-button labels never wrap. No page-level sideways scroll at 375 px on any list, admin or detail route checked (about 15). |
+| UXR2-03 | Fixed | Root cause was visually hidden captions and header labels (absolute) escaping the scroll box and widening the page. `.mf-scroll` and `.mf-table-wrap` are now positioned. Asset types and Custom fields also sit in `.mf-table-wrap`. |
+| UXR2-04, UXR2-20 | Fixed (pager deferred) | One rule: last column holds at most two text actions with row-named aria-labels, via `.mf-col-actions` / `.mf-row-actions`. Asset types: "Edit X" and "Deactivate X" / "Activate X" (red when deactivating); "Edit fields" sits on its own line in the Fields column. Task types: duplicate "Edit" removed (the name link opens it), "Design" is now "Edit form" ("Edit the request form of X"). Link roles: Rename moved into the actions column next to Delete, focus goes to the rename field. Custom fields: "Edit fields" in the same pattern. Search, sort, pager and `mf-list-state` for Asset types, Custom fields and Link roles: deferred by decision (not trivial: Asset types has its own editor and load states). |
+| UXR2-05 | Fixed | The inline menu trigger used `disabled` while saving, which dropped the focus a pick had just returned to it. It now uses `aria-disabled` and ignores clicks while busy. Verified: after a Priority and an Assignee pick `document.activeElement` is the trigger. Unit test added. |
+| UXR2-06 | Fixed | Audit filters are a 3-column grid with labels and controls on shared row lines, search spanning two columns, Apply / Reset in one row; one column under 768 px. |
+| UXR2-07 | Fixed | H1s and the Pods description: "Users & roles", "Roles & permissions", "Priorities & status labels"; dashboard "Open by task type". |
+| UXR2-08 | Fixed | Matter detail: Set inactive, Edit, New project and Create task in this matter are all on the title row; the reason is a note under the header, linked with `aria-describedby`. With a very long matter name the actions wrap below the title, as a unit. |
+| UXR2-09 | Fixed | PrimeNG passes `undefined` (not `false`) to its `pAutoFocus` directive, which then writes `autofocus="true"` on every p-button. `suppressImplicitAutofocus()` (app initializer, `core/theme/no-autofocus.ts`) keeps the attribute off unless a button asks for it. Verified: 0 elements with `autofocus` and `activeElement` is `body` on Pods, Priorities, Link roles and the queue. Unit test added. |
+| UXR2-10 | Fixed | 8 px gap before the Sensitive badge in search results. |
+| UXR2-11 | Fixed | Filter rows align at the top (`align-items: start`) on the shared and task-type filter rows; Pod Work select capped at 360 px with 12 px under the H1. |
+| UXR2-12 | Partly fixed | Form-engine controls are capped at 30rem (same width as page forms); 12 px above and 4 px below group headings; date placeholders "mm/dd/yyyy" and "mm/dd/yyyy, h:mm AM". Deferred: the PrimeNG select chevron still differs from the native arrow. |
+| UXR2-13 | Fixed | Undo toast is bottom-right with the other toasts. |
+| UXR2-14 | Fixed | One 32 px height for `.p-button` and `.mf-btn` (the 30 px came from 2rem at the 15 px root); Cancel on Create task is the outline button. |
+| UXR2-15 | Fixed | "Inactive roles aren't offered for new links"; Pod and Project selects read "No pod" / "No project"; "Design" became "Edit form"; the closed-task note under Details is gone and the banner reads "This task is Completed. Reopen it to edit." (matches the Reopen task button). |
+| UXR2-16 | Fixed | Scroll shadows on the sidebar edges show when more items are beyond the fold (all groups stay expanded by default). |
+| UXR2-17 | Partly fixed | Tab titles name the record on Edit task type, Edit workflow and Edit step; crumb "Tasks > Create task"; "Project:" dropped from the project crumb; audit text "AssetType 8 and 3 related changes" reads "Asset type 8 and 3 related changes". Deferred: audit rows "Form #45" and "AssetType 8" need name lookups for forms and asset types in `IAuditDisplayLookup` (backend, new Contracts directories and integration tests). |
+| UXR2-18 | Partly fixed | No double border around the Pending-users empty state; no reserved gap under the Pods description; gap between the workflow form card and the version-history card. Deferred: the pod editor has no breadcrumb (it is an inline editor, not a route). |
+| UXR2-19 | Fixed | Details list rows align on the text baseline (Matter label); form designer helper and error text 12 to 13 px at the 15 px root (0.875rem). |
+| Task Queue fit, 375 px Help button, Asset types wrapper and names, admin row-action pattern, focus after inline pick, `autofocus`, Audit grid, H1 case, Matter header | Fixed | See UXR2-01, 02, 03, 04, 05, 09, 06, 07, 08. |
+
+Open questions from section 5: 1 and 2 are decided (above); 3 decided (no new search or pager); 4 and 5 unchanged.
+
+Test results: `ng build form-engine` ok; lint clean; format check clean; `npm test` 86 frontend files, 841 tests and 10 form-engine files, 307 tests, all passing; production build initial total 668.78 kB (limit 700 kB); Playwright e2e 81 passed, 0 failed (`frontend/e2e/run-local.sh`). Selector changes: the closed-task note (`data-readonly-note`) no longer exists, so `task-lifecycle.spec.ts` asserts the banner copy instead.

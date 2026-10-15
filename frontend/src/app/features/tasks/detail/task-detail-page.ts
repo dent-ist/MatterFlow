@@ -98,7 +98,7 @@ const isTab = (v: unknown): v is TaskTab => TASK_TABS.includes(v as TaskTab);
               This task is {{ t.statusLabel }}.
               @if (reopen(); as r) {
                 @if (r.permitted) {
-                  Move it back to In Progress to edit.
+                  Reopen it to edit.
                   <button
                     type="button"
                     class="link-btn"

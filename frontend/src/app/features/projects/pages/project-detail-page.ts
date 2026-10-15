@@ -66,7 +66,7 @@ type LoadState = 'loading' | 'ready' | 'error';
             [crumbs]="[
               { label: 'Matters', link: '/matters' },
               { label: p.matterRef, link: ['/matters', p.matterId] },
-              { label: 'Project: ' + p.name },
+              { label: p.name },
             ]"
           >
             <mf-record-title mfTitle [name]="p.name">
