@@ -3,11 +3,10 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { BarItem, BarList } from './bar-list';
-import { RecentTaskList } from './recent-task-list';
 import { StatTile } from './stat-tile';
 
 @Component({
-  imports: [BarList, RecentTaskList, StatTile],
+  imports: [BarList, StatTile],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-stat-tile
@@ -24,22 +23,6 @@ import { StatTile } from './stat-tile';
       linkText="View tasks I created"
     />
     <mf-bar-list heading="Open by Pod" rowHeading="Pod" [items]="items" />
-    <mf-recent-task-list
-      heading="Recently created"
-      [tasks]="[
-        {
-          taskId: 5,
-          taskNumber: 'TSK-1005',
-          title: 'Process custodians',
-          matterId: 1,
-          matterRef: '00343-00012',
-          matterName: 'Merger',
-          status: 'NEW',
-          statusLabel: 'New',
-          atUtc: '2026-10-14T15:00:00Z',
-        },
-      ]"
-    />
   `,
 })
 class Host {
@@ -128,16 +111,6 @@ describe('dashboard UI', () => {
     ).toEqual(['Pod A 40', 'Pod B 10', 'Other Pods 5', 'Empty Pod 0']);
     expect(el.querySelector('mf-bar-list .bars')).toBeNull();
     expect(toggle().textContent).toContain('View as bars');
-  });
-
-  it('lists recent tasks with number, title, matter reference and a link to the task', async () => {
-    const el = await render();
-    const link = el.querySelector<HTMLAnchorElement>('mf-recent-task-list a')!;
-    expect(link.getAttribute('href')).toBe('/tasks/5');
-    expect(link.textContent).toContain('TSK-1005');
-    expect(link.textContent).toContain('Process custodians');
-    expect(link.textContent).toContain('00343-00012');
-    expect(link.textContent).toContain('Oct 14, 2026');
   });
 
   it('draws no bar for a zero count, titles each label and names the table link by its list', async () => {

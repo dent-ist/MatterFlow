@@ -13,8 +13,9 @@ import {
   viewChildren,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { map } from 'rxjs';
 import {
   DashboardBreakdownItem,
   DashboardClient,
@@ -34,17 +35,16 @@ import { PageHeader } from '../../../shared/ui/page-header';
 import { priorityColors } from '../../../shared/ui/priority-badge';
 import { LIST_ORDER, ListKind, OPEN_UNASSIGNED_QUERY, queueArgsFor } from '../dashboard-links';
 import { PERIOD_PRESETS, PeriodKey, isPeriodKey, periodDays, presetOf } from '../dashboard-period';
-import { DashboardPrefs } from '../dashboard-prefs';
+import { DASHBOARD_TABS, DashboardPrefs, DashboardTab, isDashboardTab } from '../dashboard-prefs';
 import { BarItem, BarList } from '../ui/bar-list';
 import { DashSection } from '../ui/dash-section';
-import { RecentTaskList } from '../ui/recent-task-list';
+import { DashTab, DashTabs, panelId, tabId } from '../ui/dash-tabs';
 import { Segment, StackedBar } from '../ui/stacked-bar';
 import { StatTile } from '../ui/stat-tile';
 import { DashTaskList, PanelState } from '../ui/task-list-panel';
 import { TrendChart } from '../ui/trend-chart';
 
 type LoadState = 'loading' | 'ready' | 'error';
-type SectionName = 'department' | 'lists' | 'mine' | 'trend' | 'breakdowns' | 'recent';
 
 /** One list panel of the "Tasks to act on" section: what it is called and the Task Queue query behind it. */
 interface PanelSpec {
@@ -88,11 +88,13 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
 }
 
 /**
- * Dashboard (UX S01, baseline 12.2): action first. "Needs attention" counts, the oldest unassigned tasks with inline assignment, the
- * overdue and due-soon lists, then the overview, trend and breakdowns. Everything that counts tasks is a link to `/tasks` carrying the
- * query the API computed for that number. Department figures need `Dashboard.ViewDepartment`; "Your work" is for everyone. The order
- * follows the role (technicians start with their own work), sections can be collapsed (remembered per user), and the page refreshes
- * itself every five minutes while visible without moving the page. Operational counts only: no billing, hours or per-person scores.
+ * Dashboard (UX S01, baseline 12.2), organised in three tabs (WAI-ARIA tabs, the selection lives in the address as `?tab=` and the last
+ * tab is remembered per user): Summary (Needs attention, Overview, the unassigned queue with inline assignment, Overdue and Due soon),
+ * Breakdowns (open tasks by priority, task type and status, and their age) and Trends (created and completed per day). All three read
+ * one shared summary request; only the Summary tab also reads the task lists, and only when it is shown. Everything that counts tasks is
+ * a link to `/tasks` carrying the query the API computed for that number. Department figures need `Dashboard.ViewDepartment`; everyone
+ * else gets the unassigned queue (with Task.Assign) and a pointer to My Work. The page refreshes itself every five minutes while visible
+ * without moving the page. Operational counts only: no billing, hours or per-person scores.
  */
 @Component({
   selector: 'mf-dashboard-page',
@@ -105,7 +107,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     DashSection,
     DashTaskList,
     HasPermissionDirective,
-    RecentTaskList,
+    DashTabs,
     RouterLink,
     NgTemplateOutlet,
     StatTile,
@@ -113,28 +115,30 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-page-header heading="Dashboard">
-      <div mfActions class="controls">
-        <button
-          type="button"
-          class="mf-btn refresh"
-          data-refresh
-          [attr.aria-disabled]="refreshing() ? 'true' : null"
-          [attr.aria-busy]="refreshing() ? 'true' : null"
-          (click)="refresh()"
-        >
-          <i
-            class="pi"
-            [class]="refreshing() ? 'pi-spin pi-spinner' : 'pi-refresh'"
-            aria-hidden="true"
-          ></i>
-          Refresh
-        </button>
-        @if (updated(); as u) {
-          <span class="updated" data-updated>
-            Updated {{ u }}<span class="auto"> · refreshes every 5 minutes</span>
-          </span>
-        }
-      </div>
+      @if (hasData()) {
+        <div mfActions class="controls">
+          <button
+            type="button"
+            class="mf-btn refresh"
+            data-refresh
+            [attr.aria-disabled]="refreshing() ? 'true' : null"
+            [attr.aria-busy]="refreshing() ? 'true' : null"
+            (click)="refresh()"
+          >
+            <i
+              class="pi"
+              [class]="refreshing() ? 'pi-spin pi-spinner' : 'pi-refresh'"
+              aria-hidden="true"
+            ></i>
+            Refresh
+          </button>
+          @if (updated(); as u) {
+            <span class="updated" data-updated>
+              Updated {{ u }}<span class="auto"> · refreshes every 5 minutes</span>
+            </span>
+          }
+        </div>
+      }
     </mf-page-header>
 
     <p class="sr-only" role="status" aria-live="polite" data-dash-live>{{ live() }}</p>
@@ -166,37 +170,77 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       </label>
     </ng-template>
 
-    @switch (state()) {
-      @case ('loading') {
-        <div class="skeletons" role="status" aria-busy="true" aria-label="Loading the dashboard">
-          @for (n of skeletonTiles; track n) {
-            <div class="skeleton"></div>
-          }
-        </div>
+    <ng-template #listsGrid>
+      <div class="grid grid--lists" [class.grid--three]="panels().length === 3" data-lists>
+        @for (panel of panels(); track panel.kind; let last = $last) {
+          <mf-dash-task-list
+            [kind]="panel.kind"
+            [heading]="panel.heading"
+            [emptyText]="panel.emptyText"
+            [viewAllText]="panel.viewAllText"
+            [rows]="listOf(panel.kind).rows"
+            [total]="listOf(panel.kind).total"
+            [state]="listOf(panel.kind).state"
+            [query]="panel.query"
+            [skippable]="!last"
+            (rowChange)="onRowChange(panel.kind, $event)"
+            (retry)="reloadList(panel.kind)"
+          />
+        }
+      </div>
+    </ng-template>
+
+    @if (!department()) {
+      <!-- Without the department view: no tabs, only what this person may see and a pointer to My Work. -->
+      <p class="note" data-limited-note>
+        Department figures are available to Pod Leads and Directors. Your assigned tasks are in
+        <a routerLink="/my-work">My Work</a>.
+      </p>
+      @if (panels().length > 0) {
+        <mf-dash-section heading="Tasks to act on" name="lists">
+          <ng-container *ngTemplateOutlet="listsGrid" />
+        </mf-dash-section>
       }
-      @case ('error') {
-        <div class="alert" role="alert" data-error>
-          <span>The dashboard could not be loaded.</span>
-          <mf-error-reference />
-          <button type="button" class="mf-btn" (click)="load()">Retry</button>
-        </div>
-      }
-      @default {
-        @if (data(); as d) {
-          @if (isEmpty()) {
-            <div class="empty" data-empty>
-              <p>No tasks yet.</p>
-              <a *mfHasPermission="'Task.Create'" class="cta" routerLink="/tasks/new">
-                Create the first task
-              </a>
-            </div>
-          } @else {
-            @for (name of order(); track name) {
-              @switch (name) {
-                @case ('department') {
-                  <mf-dash-section heading="Department" name="department">
+    } @else {
+      @switch (state()) {
+        @case ('loading') {
+          <ng-container *ngTemplateOutlet="tabList" />
+          <div class="skeletons" role="status" aria-busy="true" aria-label="Loading the dashboard">
+            @for (n of skeletonTiles; track n) {
+              <div class="skeleton"></div>
+            }
+          </div>
+        }
+        @case ('error') {
+          <div class="alert" role="alert" data-error>
+            <span>The dashboard could not be loaded.</span>
+            <mf-error-reference />
+            <button type="button" class="mf-btn" (click)="load()">Retry</button>
+          </div>
+        }
+        @default {
+          @if (data(); as d) {
+            @if (isEmpty()) {
+              <div class="empty" data-empty>
+                <p>No open tasks, and none were created or completed in this period.</p>
+                <div class="empty-period"><ng-container *ngTemplateOutlet="periodControl" /></div>
+                <a *mfHasPermission="'Task.Create'" class="cta" routerLink="/tasks/new">
+                  Create the first task
+                </a>
+              </div>
+            } @else {
+              <ng-container *ngTemplateOutlet="tabList" />
+              @switch (activeTab()) {
+                @case ('summary') {
+                  <div
+                    class="panel"
+                    role="tabpanel"
+                    data-tabpanel="summary"
+                    [id]="panelId('summary')"
+                    [attr.aria-labelledby]="tabId('summary')"
+                  >
                     <div role="group" aria-labelledby="attn-h" class="group" data-group="attention">
-                      <h3 id="attn-h">Needs attention</h3>
+                      <h2 id="attn-h">Needs attention</h2>
                       <div class="tiles tiles--3">
                         <mf-stat-tile
                           label="Overdue"
@@ -232,7 +276,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                     </div>
                     <div role="group" aria-labelledby="ov-h" class="group" data-group="overview">
                       <div class="group-head">
-                        <h3 id="ov-h">Overview</h3>
+                        <h2 id="ov-h">Overview</h2>
                         <ng-container *ngTemplateOutlet="periodControl" />
                       </div>
                       <div class="tiles tiles--5">
@@ -280,137 +324,39 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                         />
                       </div>
                     </div>
-                  </mf-dash-section>
-                }
-                @case ('lists') {
-                  <mf-dash-section heading="Tasks to act on" name="lists" key="lists">
-                    <div
-                      class="grid grid--lists"
-                      [class.grid--three]="panels().length === 3"
-                      data-lists
-                    >
-                      @for (panel of panels(); track panel.kind) {
-                        <mf-dash-task-list
-                          [kind]="panel.kind"
-                          [heading]="panel.heading"
-                          [emptyText]="panel.emptyText"
-                          [viewAllText]="panel.viewAllText"
-                          [rows]="listOf(panel.kind).rows"
-                          [total]="listOf(panel.kind).total"
-                          [state]="listOf(panel.kind).state"
-                          [query]="panel.query"
-                          (rowChange)="onRowChange(panel.kind, $event)"
-                          (retry)="reloadList(panel.kind)"
-                        />
-                      }
-                    </div>
-                  </mf-dash-section>
-                }
-                @case ('mine') {
-                  <mf-dash-section heading="Your work" name="mine" key="mine">
-                    <a mfSectionActions routerLink="/my-work" class="head-link">Go to My Work</a>
-                    @if (!department() && showMinePeriod()) {
-                      <span mfSectionActions class="head-period">
-                        <ng-container *ngTemplateOutlet="periodControl" />
-                      </span>
-                    }
-                    @if (d.mine.open.count === 0) {
-                      <div class="nothing" data-nothing-assigned>
-                        <p><strong>Nothing assigned to you.</strong></p>
-                        <p>
-                          @if (canPodWork()) {
-                            <a routerLink="/pods/work">Browse Pod Work</a> to pick up work.
-                          } @else {
-                            <a routerLink="/tasks">Browse the Task Queue</a> to pick up work.
-                          }
-                        </p>
-                      </div>
-                      @if (d.mine.createdByMe.count > 0) {
-                        <div class="tiles tiles--one">
-                          <mf-stat-tile
-                            label="Created by me"
-                            emphasis="quiet"
-                            linkText="View tasks I created"
-                            [value]="d.mine.createdByMe.count"
-                            [query]="d.mine.createdByMe.query"
-                            [caption]="periodCaption()"
-                          />
-                        </div>
-                      }
-                    } @else {
-                      <div class="tiles">
-                        <mf-stat-tile
-                          label="My open tasks"
-                          [value]="d.mine.open.count"
-                          [query]="d.mine.open.query"
-                          linkText="View my open tasks"
-                        />
-                        <mf-stat-tile
-                          label="My overdue"
-                          icon="pi-exclamation-circle"
-                          tone="danger"
-                          [value]="d.mine.overdue.count"
-                          [query]="d.mine.overdue.query"
-                          caption="Excludes ASAP tasks"
-                          linkText="View my overdue tasks"
-                        />
-                        <mf-stat-tile
-                          label="My due soon"
-                          [value]="d.mine.dueSoon.count"
-                          [query]="d.mine.dueSoon.query"
-                          caption="Due in the next 2 days"
-                          linkText="View my tasks due soon"
-                        />
-                        <mf-stat-tile
-                          label="Created by me"
-                          linkText="View tasks I created"
-                          [value]="d.mine.createdByMe.count"
-                          [query]="d.mine.createdByMe.query"
-                          [caption]="periodCaption()"
-                        />
-                      </div>
-                    }
-                  </mf-dash-section>
-                }
-                @case ('trend') {
-                  <mf-dash-section heading="Created and completed" name="trend" key="trend">
-                    <mf-trend-chart
-                      heading="Tasks created and completed per day"
-                      [caption]="periodCaption() + '. Change the period under Overview.'"
-                      [points]="d.trend"
-                      [createdQuery]="d.created.query"
-                      [completedQuery]="d.completed.query"
-                    />
-                  </mf-dash-section>
+                    <mf-dash-section heading="Tasks to act on" name="lists">
+                      <ng-container *ngTemplateOutlet="listsGrid" />
+                    </mf-dash-section>
+                  </div>
                 }
                 @case ('breakdowns') {
-                  <mf-dash-section heading="Open tasks by" name="breakdowns" key="breakdowns">
-                    <div class="grid" data-grid="breakdowns">
-                      <mf-bar-list
-                        heading="Open by pod"
-                        rowHeading="Pod"
-                        [items]="pods()"
-                        emptyText="No open tasks."
-                      />
-                      <mf-bar-list
-                        heading="Open by priority"
-                        rowHeading="Priority"
-                        [items]="priorities()"
-                        emptyText="No open tasks."
-                      />
-                      <mf-bar-list
-                        heading="Open by task type"
-                        rowHeading="Task type"
-                        [items]="types()"
-                        emptyText="No open tasks."
-                      />
-                      <mf-bar-list
-                        heading="Open by status"
-                        rowHeading="Status"
-                        [items]="statuses()"
-                        emptyText="No open tasks."
-                      />
-                      <div class="wide">
+                  <div
+                    class="panel"
+                    role="tabpanel"
+                    data-tabpanel="breakdowns"
+                    [id]="panelId('breakdowns')"
+                    [attr.aria-labelledby]="tabId('breakdowns')"
+                  >
+                    <mf-dash-section heading="Open tasks by" name="breakdowns">
+                      <div class="grid" data-grid="breakdowns">
+                        <mf-bar-list
+                          heading="Open by priority"
+                          rowHeading="Priority"
+                          [items]="priorities()"
+                          emptyText="No open tasks."
+                        />
+                        <mf-bar-list
+                          heading="Open by task type"
+                          rowHeading="Task type"
+                          [items]="types()"
+                          emptyText="No open tasks."
+                        />
+                        <mf-bar-list
+                          heading="Open by status"
+                          rowHeading="Status"
+                          [items]="statuses()"
+                          emptyText="No open tasks."
+                        />
                         <mf-stacked-bar
                           heading="Age of open tasks"
                           rowHeading="Age"
@@ -419,24 +365,30 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                           note="Days since the task was created. Informational, not a service-level target."
                         />
                       </div>
-                    </div>
-                  </mf-dash-section>
+                    </mf-dash-section>
+                  </div>
                 }
-                @case ('recent') {
-                  <mf-dash-section heading="Recent activity" name="recent" key="recent">
-                    <div class="grid" data-grid="recent">
-                      <mf-recent-task-list
-                        heading="Recently created"
-                        [tasks]="d.recentlyCreated"
-                        emptyText="No tasks created yet."
+                @case ('trends') {
+                  <div
+                    class="panel"
+                    role="tabpanel"
+                    data-tabpanel="trends"
+                    [id]="panelId('trends')"
+                    [attr.aria-labelledby]="tabId('trends')"
+                  >
+                    <mf-dash-section heading="Created and completed" name="trend">
+                      <span mfSectionActions class="head-period" data-trend-period>
+                        <ng-container *ngTemplateOutlet="periodControl" />
+                      </span>
+                      <mf-trend-chart
+                        heading="Tasks created and completed per day"
+                        [caption]="periodCaption()"
+                        [points]="d.trend"
+                        [createdQuery]="d.created.query"
+                        [completedQuery]="d.completed.query"
                       />
-                      <mf-recent-task-list
-                        heading="Recently completed"
-                        [tasks]="d.recentlyCompleted"
-                        emptyText="No tasks completed yet."
-                      />
-                    </div>
-                  </mf-dash-section>
+                    </mf-dash-section>
+                  </div>
                 }
               }
             }
@@ -444,18 +396,36 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
         }
       }
     }
+
+    <ng-template #tabList>
+      <mf-dash-tabs [tabs]="tabs" [selected]="activeTab()" (tabChange)="selectTab($event)" />
+    </ng-template>
   `,
   styles: `
     :host {
       display: block;
     }
-    h3 {
+    .group h2 {
       margin: 0 0 var(--mf-s2);
       font-size: var(--mf-fs-md);
       color: var(--mf-text-muted);
     }
-    .group + .group {
-      margin-top: var(--mf-s4);
+    .group {
+      margin-bottom: var(--mf-s5);
+    }
+    .note {
+      margin: 0 0 var(--mf-s4);
+      padding: var(--mf-s3) var(--mf-s4);
+      color: var(--mf-text-muted);
+      background: var(--mf-surface);
+      border: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius-lg);
+    }
+    .note a {
+      color: var(--mf-link);
+    }
+    .empty-period {
+      margin: var(--mf-s3) 0 var(--mf-s4);
     }
     .controls {
       display: flex;
@@ -471,7 +441,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       gap: var(--mf-s2) var(--mf-s4);
       margin-bottom: var(--mf-s2);
     }
-    .group-head h3 {
+    .group-head h2 {
       margin: 0;
     }
     .head-period {
@@ -511,34 +481,11 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     .stale span {
       flex: 1;
     }
-    .head-link {
-      font-size: var(--mf-fs-sm);
-      color: var(--mf-link);
-    }
     .tiles,
     .skeletons {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: var(--mf-s3);
-    }
-    .tiles--one {
-      margin-top: var(--mf-s3);
-    }
-    .nothing {
-      padding: var(--mf-s4);
-      color: var(--mf-text-muted);
-      background: var(--mf-surface);
-      border: 1px dashed var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-    }
-    .nothing p {
-      margin: 0 0 var(--mf-s1);
-    }
-    .nothing strong {
-      color: var(--mf-text);
-    }
-    .nothing a {
-      color: var(--mf-link);
     }
     .tiles--3 {
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -594,9 +541,6 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       .grid--three > :first-child {
         grid-column: 1 / -1;
       }
-    }
-    .wide {
-      grid-column: 1 / -1;
     }
     @media (max-width: 900px) {
       .grid:not(.grid--lists) {
@@ -656,15 +600,27 @@ export class DashboardPage implements OnInit {
   private readonly undo = inject(UndoService);
   private readonly quiet = inject(QuietRequests);
   private readonly injector = inject(Injector);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly panelRefs = viewChildren(DashTaskList);
   private undoSeen = 0;
   private requestId = 0;
   private readonly listIds: Record<ListKind, number> = { unassigned: 0, overdue: 0, dueSoon: 0 };
   private countTimer: ReturnType<typeof setTimeout> | null = null;
   private lastLoadedAt = 0;
+  /** Counts the summary reads that were meant to refresh the lists; `listsSeq` is the one the lists on screen belong to. */
+  private summarySeq = 0;
+  private listsSeq = -1;
 
   protected readonly periods = PERIOD_PRESETS;
   protected readonly skeletonTiles = [1, 2, 3, 4, 5, 6, 7, 8];
+  protected readonly panelId = panelId;
+  protected readonly tabId = tabId;
+  protected readonly tabs: readonly DashTab[] = [
+    { key: 'summary', label: 'Summary' },
+    { key: 'breakdowns', label: 'Breakdowns' },
+    { key: 'trends', label: 'Trends' },
+  ];
   protected readonly period = this.prefs.period;
   protected readonly state = signal<LoadState>('loading');
   protected readonly data = signal<DashboardSummary | null>(null);
@@ -672,35 +628,34 @@ export class DashboardPage implements OnInit {
   protected readonly refreshFailed = signal(false);
   /** Polite live region: what the last refresh or inline assignment did, for screen readers. */
   protected readonly live = signal('');
+  /** When the lists of a person without the department view were last read (they have no summary to carry the time). */
+  private readonly listsReadAt = signal<Date | null>(null);
 
   private readonly lists = {
     unassigned: signal<ListData>(EMPTY_LIST),
     overdue: signal<ListData>(EMPTY_LIST),
     dueSoon: signal<ListData>(EMPTY_LIST),
   };
-  protected readonly unassignedList = this.lists.unassigned.asReadonly();
-  protected readonly overdueList = this.lists.overdue.asReadonly();
-  protected readonly dueSoonList = this.lists.dueSoon.asReadonly();
 
   protected readonly department = computed(() => this.auth.has('Dashboard.ViewDepartment'));
   protected readonly canAssign = computed(() => this.auth.has('Task.Assign'));
-  protected readonly canPodWork = computed(() => this.auth.has('Pod.View'));
-  /** Technicians start with their own work; people with the department view start with the department. */
-  protected readonly order = computed<SectionName[]>(() =>
-    this.department()
-      ? ['department', 'lists', 'mine', 'trend', 'breakdowns', 'recent']
-      : this.panels().length > 0
-        ? ['mine', 'lists']
-        : ['mine'],
-  );
+
+  /** The `?tab=` of the address; the tab shown is this one, else the one used last, else Summary. */
+  private readonly tabParam = toSignal(this.route.queryParamMap.pipe(map((p) => p.get('tab'))), {
+    initialValue: this.route.snapshot.queryParamMap.get('tab'),
+  });
+  protected readonly activeTab = computed<DashboardTab>(() => {
+    const fromUrl = this.tabParam();
+    if (isDashboardTab(fromUrl)) return fromUrl;
+    const remembered = this.prefs.tab();
+    return DASHBOARD_TABS.includes(remembered) ? remembered : 'summary';
+  });
 
   /**
-   * The lists of "Tasks to act on". Department people get the department's Unassigned queue, Overdue and Due soon. Everyone else gets
-   * their own Overdue and Due soon (when they have work) and, with Task.Assign, the Unassigned queue to pick work from.
+   * The lists of "Tasks to act on". The department gets the Unassigned queue (with Task.Assign), Overdue and Due soon. Everyone else gets
+   * only the Unassigned queue to pick work from, when they have Task.Assign (their own work is in My Work).
    */
   protected readonly panels = computed<PanelSpec[]>(() => {
-    const d = this.data();
-    if (!d) return [];
     const unassigned = (query: string): PanelSpec => ({
       kind: 'unassigned',
       heading: 'Unassigned queue',
@@ -708,67 +663,53 @@ export class DashboardPage implements OnInit {
       viewAllText: 'View all unassigned tasks',
       query,
     });
-    if (this.department()) {
-      return [
-        unassigned(d.unassigned.query),
-        {
-          kind: 'overdue',
-          heading: 'Overdue',
-          emptyText: 'Nothing is overdue.',
-          viewAllText: 'View all overdue tasks',
-          query: d.overdue.query,
-        },
-        {
-          kind: 'dueSoon',
-          heading: 'Due soon',
-          emptyText: 'Nothing is due in the next 2 days.',
-          viewAllText: 'View all tasks due soon',
-          query: d.dueSoon.query,
-        },
-      ];
-    }
-    const panels: PanelSpec[] = [];
-    if (d.mine.open.count > 0) {
-      panels.push(
-        {
-          kind: 'overdue',
-          heading: 'My overdue',
-          emptyText: 'Nothing of yours is overdue.',
-          viewAllText: 'View all my overdue tasks',
-          query: d.mine.overdue.query,
-        },
-        {
-          kind: 'dueSoon',
-          heading: 'My due soon',
-          emptyText: 'Nothing of yours is due in the next 2 days.',
-          viewAllText: 'View all my tasks due soon',
-          query: d.mine.dueSoon.query,
-        },
-      );
-    }
-    if (this.canAssign()) panels.push(unassigned(OPEN_UNASSIGNED_QUERY));
-    return panels;
-  });
-  /** The period only means something where a visible tile counts "created" (everyone's Created by me tile). */
-  protected readonly showMinePeriod = computed(() => {
+    if (!this.department()) return this.canAssign() ? [unassigned(OPEN_UNASSIGNED_QUERY)] : [];
     const d = this.data();
-    return !!d && (d.mine.open.count > 0 || d.mine.createdByMe.count > 0);
+    if (!d) return [];
+    return [
+      ...(this.canAssign() ? [unassigned(d.unassigned.query)] : []),
+      {
+        kind: 'overdue',
+        heading: 'Overdue',
+        emptyText: 'Nothing is overdue.',
+        viewAllText: 'View all overdue tasks',
+        query: d.overdue.query,
+      },
+      {
+        kind: 'dueSoon',
+        heading: 'Due soon',
+        emptyText: 'Nothing is due in the next 2 days.',
+        viewAllText: 'View all tasks due soon',
+        query: d.dueSoon.query,
+      },
+    ];
   });
+  /** Whether there is anything to refresh: the department figures, or a list of tasks to pick from. */
+  protected readonly hasData = computed(() =>
+    this.department() ? this.data() !== null : this.panels().length > 0,
+  );
 
   protected readonly periodCaption = computed(() => presetOf(this.period()).caption);
   protected readonly updated = computed(() => {
     const d = this.data();
-    return d ? mfDate(d.generatedAtUtc, this.zone, 'datetime') : null;
+    if (d) return mfDate(d.generatedAtUtc, this.zone, 'datetime');
+    const at = this.listsReadAt();
+    return at ? mfDate(at, this.zone, 'datetime') : null;
   });
   /**
-   * No tasks at all: nothing created yet and nothing open (the recent list is not limited to the period). Only meaningful for people who
-   * may see department figures: for everyone else the server returns zeros for the department, which must not read as "no tasks yet".
+   * Nothing open and nothing created or completed in the period. Only meaningful for people who may see department figures: for everyone
+   * else the server returns zeros for the department, which must not read as "no tasks".
    */
   protected readonly isEmpty = computed(() => {
     const d = this.data();
-    return this.department() && !!d && d.recentlyCreated.length === 0 && d.open.count === 0;
+    return (
+      this.department() &&
+      !!d &&
+      d.open.count === 0 &&
+      d.created.count === 0 &&
+      d.completed.count === 0
+    );
   });
-  protected readonly pods = computed(() => toBars(this.data()?.byPod ?? []));
   protected readonly types = computed(() => toBars(this.data()?.byTaskType ?? []));
   protected readonly statuses = computed(() => toBars(this.data()?.byStatus ?? []));
   /** In priority order (most urgent first, as the API sends them), coloured like the priority badges. */
@@ -802,6 +743,26 @@ export class DashboardPage implements OnInit {
         if (this.state() === 'ready') this.load({ silent: true, fresh: true });
       });
     });
+    // Keep the address in step with the tab shown: add a missing or unknown ?tab=, so a reload or a shared link lands here.
+    effect(() => {
+      const tab = this.activeTab();
+      const param = this.tabParam();
+      const dept = this.department();
+      untracked(() => {
+        if (dept && param !== tab) void this.navigateToTab(tab);
+      });
+    });
+    // The lists belong to the Summary tab and are read when it is shown (not on the other tabs): arriving on it with older lists reads them.
+    effect(() => {
+      const tab = this.activeTab();
+      const ready = this.state() === 'ready';
+      untracked(() => {
+        if (this.department() && tab === 'summary' && ready && this.listsSeq !== this.summarySeq) {
+          this.listsSeq = this.summarySeq;
+          this.loadLists(true);
+        }
+      });
+    });
     this.destroyRef.onDestroy(() => {
       if (this.countTimer) clearTimeout(this.countTimer);
     });
@@ -811,6 +772,23 @@ export class DashboardPage implements OnInit {
     this.prefs.ensureLoaded();
     this.load();
     this.startAutoRefresh();
+  }
+
+  // ---- tabs
+
+  protected selectTab(key: string): void {
+    if (!isDashboardTab(key) || key === this.activeTab()) return;
+    this.prefs.setTab(key);
+    void this.navigateToTab(key);
+  }
+
+  private navigateToTab(tab: DashboardTab): Promise<boolean> {
+    return this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   protected setPeriod(value: string): void {
@@ -826,7 +804,7 @@ export class DashboardPage implements OnInit {
     this.load({ silent: true, fresh: true, announce: true });
   }
 
-  /** Counts and lists after an inline edit or a period change; the page keeps what it shows until the answer arrives. */
+  /** Counts after a period change; the lists do not depend on the period, and the page keeps what it shows until the answer arrives. */
   private refreshNumbers(lists = false): void {
     this.load({ silent: true, fresh: true, lists });
   }
@@ -835,6 +813,10 @@ export class DashboardPage implements OnInit {
     options: { silent?: boolean; fresh?: boolean; lists?: boolean; announce?: boolean } = {},
   ): void {
     const { silent = false, fresh = false, lists = true, announce = false } = options;
+    if (!this.department()) {
+      this.loadLimited(silent, announce);
+      return;
+    }
     const id = ++this.requestId;
     const background = silent && !!this.data();
     if (background) this.refreshing.set(true);
@@ -857,8 +839,13 @@ export class DashboardPage implements OnInit {
             this.refreshFailed.set(false);
             this.lastLoadedAt = this.clock.now().getTime();
             if (announce) this.live.set(`Dashboard refreshed. Updated ${this.updated()}.`);
-            if (lists && (this.department() || this.panels().length > 0)) {
-              this.loadLists(silent);
+            if (lists) {
+              // The lists are part of the Summary tab: read them now when it is shown, else when it is next opened.
+              this.summarySeq++;
+              if (this.activeTab() === 'summary') {
+                this.listsSeq = this.summarySeq;
+                this.loadLists(silent);
+              }
             }
           },
           error: () => {
@@ -871,6 +858,17 @@ export class DashboardPage implements OnInit {
         });
     if (background) this.quiet.run(start);
     else start();
+  }
+
+  /** Without the department view there is no summary to read: only the lists (the unassigned queue, with Task.Assign). */
+  private loadLimited(silent: boolean, announce: boolean): void {
+    this.state.set('ready');
+    this.refreshFailed.set(false);
+    this.lastLoadedAt = this.clock.now().getTime();
+    if (this.panels().length === 0) return;
+    this.listsReadAt.set(this.clock.now());
+    if (announce) this.live.set(`Dashboard refreshed. Updated ${this.updated()}.`);
+    this.loadLists(silent);
   }
 
   // ---- lists

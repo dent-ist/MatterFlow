@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { NEVER, Subject, of, throwError } from 'rxjs';
@@ -37,17 +37,6 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
     asapOpen: count(4, `${OPEN}&asap=true`),
     completed: count(94, 'status=COMPLETED&completedFrom=2026-09-15'),
     created: count(101, 'createdFrom=2026-09-15'),
-    byPod: [
-      { label: 'Pod A', count: 40, id: 1, code: undefined, query: `${OPEN}&pod=1`, isOther: false },
-      {
-        label: 'No Pod',
-        count: 17,
-        id: undefined,
-        code: undefined,
-        query: `${OPEN}&noPod=true`,
-        isOther: false,
-      },
-    ],
     byTaskType: [
       {
         label: 'Data Processing',
@@ -102,38 +91,6 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
       { date: '2026-10-13', created: 0, completed: 3 },
       { date: '2026-10-14', created: 5, completed: 1 },
     ],
-    recentlyCreated: [
-      {
-        taskId: 5,
-        taskNumber: 'TSK-1005',
-        title: 'Process custodians',
-        matterId: 1,
-        matterRef: '00343-00012',
-        matterName: 'Merger',
-        status: 'NEW',
-        statusLabel: 'New',
-        atUtc: '2026-10-14T12:00:00Z',
-      },
-    ],
-    recentlyCompleted: [
-      {
-        taskId: 4,
-        taskNumber: 'TSK-1004',
-        title: 'Deliver production',
-        matterId: 1,
-        matterRef: '00343-00012',
-        matterName: 'Merger',
-        status: 'COMPLETED',
-        statusLabel: 'Completed',
-        atUtc: '2026-10-13T12:00:00Z',
-      },
-    ],
-    mine: {
-      open: count(3, `${OPEN}&assignee=9`),
-      overdue: count(1, `${OPEN}&assignee=9&overdue=true`),
-      dueSoon: count(2, `${OPEN}&assignee=9&asap=false&overdue=false&dueTo=2026-10-16`),
-      createdByMe: count(5, 'creator=9&createdFrom=2026-09-15'),
-    },
     ...overrides,
   };
 }
@@ -189,7 +146,11 @@ describe('DashboardPage', () => {
   let assignTask: ReturnType<typeof vi.fn>;
   let harness: RouterTestingHarness;
 
-  async function open(response: unknown = of(summary()), permissions: Permission[] = ALL) {
+  async function open(
+    response: unknown = of(summary()),
+    permissions: Permission[] = ALL,
+    url = '/dashboard',
+  ) {
     getDashboard = vi.fn().mockReturnValue(response);
     getTaskQueue = vi.fn((...args: unknown[]) =>
       of(
@@ -231,7 +192,7 @@ describe('DashboardPage', () => {
     });
     await TestBed.inject(AuthStore).ensureLoaded();
     harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/dashboard', DashboardPage);
+    await harness.navigateByUrl(url, DashboardPage);
     await settle();
     return harness.routeNativeElement as HTMLElement;
   }
@@ -263,7 +224,7 @@ describe('DashboardPage', () => {
     expect(getDashboard).toHaveBeenCalledWith(30, undefined);
 
     const group = el.querySelector('[data-group="attention"]')!;
-    expect(text(group.querySelector('h3'))).toBe('Needs attention');
+    expect(text(group.querySelector('h2'))).toBe('Needs attention');
     const tiles = Array.from(group.querySelectorAll<HTMLElement>('mf-stat-tile'));
     expect(tiles.map((t) => text(t.querySelector('.label')))).toEqual([
       'Overdue',
@@ -333,86 +294,230 @@ describe('DashboardPage', () => {
     expect(text(tile.querySelector('.value'))).toBe('0');
   });
 
-  it('shows the Your work tiles with links to the queue', async () => {
-    const el = await open();
-    const mine = el.querySelector('[data-section="mine"]')!;
-    expect(mine.textContent).toContain('My open tasks');
-    expect(hrefs(el, '[data-section="mine"] mf-stat-tile a')[1]).toBe(
-      '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&assignee=9&overdue=true',
-    );
-    expect(mine.querySelector('a[href="/my-work"]')).not.toBeNull();
-  });
-
-  it('orders the sections by role: department first for managers, own work and lists for technicians', async () => {
+  it('has no Your work section, no pod breakdown and no recent-activity lists any more', async () => {
     let el = await open();
-    const names = (host: HTMLElement) =>
-      Array.from(host.querySelectorAll('[data-section]')).map((s) =>
-        s.getAttribute('data-section'),
+    expect(el.textContent).not.toMatch(/Your work|My open tasks|Created by me|Open by pod/);
+    expect(el.querySelector('mf-recent-task-list')).toBeNull();
+    TestBed.resetTestingModule();
+    el = await open(of(summary()), ALL, '/dashboard?tab=breakdowns');
+    expect(el.textContent).not.toContain('Open by pod');
+    expect(el.textContent).not.toMatch(/Recently (created|completed)/);
+  });
+
+  describe('tabs', () => {
+    const tabButtons = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const selectedTab = (el: HTMLElement) =>
+      tabButtons(el).find((t) => t.getAttribute('aria-selected') === 'true')!;
+    const key = (el: HTMLElement, name: string) =>
+      selectedTab(el).dispatchEvent(new KeyboardEvent('keydown', { key: name, bubbles: true }));
+
+    it('is a WAI-ARIA tab list with Summary, Breakdowns and Trends and one labelled panel for the selected tab', async () => {
+      const el = await open();
+      const list = el.querySelector('[role="tablist"]')!;
+      expect(list.getAttribute('aria-label')).toBe('Dashboard views');
+      expect(tabButtons(el).map((t) => text(t))).toEqual(['Summary', 'Breakdowns', 'Trends']);
+      const selected = selectedTab(el);
+      expect(text(selected)).toBe('Summary');
+      // Roving tabindex: only the selected tab is a tab stop.
+      expect(tabButtons(el).map((t) => t.tabIndex)).toEqual([0, -1, -1]);
+      const panels = el.querySelectorAll('[role="tabpanel"]');
+      expect(panels.length).toBe(1);
+      expect(panels[0].getAttribute('aria-labelledby')).toBe(selected.id);
+      expect(selected.getAttribute('aria-controls')).toBe(panels[0].id);
+    });
+
+    it('opens on Summary, puts ?tab= in the address and the page header stays the only H1', async () => {
+      const el = await open();
+      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=summary');
+      expect(el.querySelectorAll('h1').length).toBe(1);
+      expect(el.querySelector('[data-tabpanel="summary"]')).not.toBeNull();
+    });
+
+    it('shows the tab named by ?tab= and ignores an unknown one', async () => {
+      let el = await open(of(summary()), ALL, '/dashboard?tab=trends');
+      expect(text(selectedTab(el))).toBe('Trends');
+      expect(el.querySelector('[data-tabpanel="trends"]')).not.toBeNull();
+      expect(el.querySelector('[data-tabpanel="summary"]')).toBeNull();
+      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends');
+
+      TestBed.resetTestingModule();
+      el = await open(of(summary()), ALL, '/dashboard?tab=nonsense');
+      expect(text(selectedTab(el))).toBe('Summary');
+      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=summary');
+    });
+
+    it('selects a tab by click: the address follows, the panel changes and only one panel exists', async () => {
+      const el = await open();
+      tabButtons(el)[1].click();
+      await settle();
+      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=breakdowns');
+      expect(text(selectedTab(el))).toBe('Breakdowns');
+      expect(el.querySelectorAll('[role="tabpanel"]').length).toBe(1);
+      expect(el.querySelector('[data-tabpanel="breakdowns"]')).not.toBeNull();
+      expect(el.querySelector('[data-group="attention"]')).toBeNull();
+    });
+
+    it('moves with the arrow keys (wrapping), Home and End, moves focus with the selection and rolls the tab stop', async () => {
+      const el = await open();
+      document.body.appendChild(el);
+      selectedTab(el).focus();
+      key(el, 'ArrowRight');
+      await settle();
+      expect(text(selectedTab(el))).toBe('Breakdowns');
+      expect(document.activeElement).toBe(selectedTab(el));
+      expect(tabButtons(el).map((t) => t.tabIndex)).toEqual([-1, 0, -1]);
+      key(el, 'ArrowRight');
+      await settle();
+      expect(text(selectedTab(el))).toBe('Trends');
+      key(el, 'ArrowRight');
+      await settle();
+      expect(text(selectedTab(el))).toBe('Summary');
+      key(el, 'ArrowLeft');
+      await settle();
+      expect(text(selectedTab(el))).toBe('Trends');
+      key(el, 'Home');
+      await settle();
+      expect(text(selectedTab(el))).toBe('Summary');
+      key(el, 'End');
+      await settle();
+      expect(text(selectedTab(el))).toBe('Trends');
+      expect(document.activeElement).toBe(selectedTab(el));
+      el.remove();
+    });
+
+    it('remembers the last tab per user and opens it when the address has none', async () => {
+      let el = await open(of(summary()), ALL, '/dashboard?tab=breakdowns');
+      tabButtons(el)[2].click();
+      await settle();
+      expect(JSON.parse(localStorage.getItem('mf.dashboard.v2.1') ?? '{}').tab).toBe('trends');
+
+      TestBed.resetTestingModule();
+      el = await open();
+      expect(text(selectedTab(el))).toBe('Trends');
+      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends');
+
+      // An explicit ?tab= wins over the remembered one.
+      TestBed.resetTestingModule();
+      el = await open(of(summary()), ALL, '/dashboard?tab=summary');
+      expect(text(selectedTab(el))).toBe('Summary');
+    });
+
+    it('follows the browser Back and Forward (the address is the source of truth)', async () => {
+      const el = await open();
+      await TestBed.inject(Router).navigateByUrl('/dashboard?tab=trends');
+      await settle();
+      expect(text(selectedTab(el))).toBe('Trends');
+      await TestBed.inject(Router).navigateByUrl('/dashboard?tab=breakdowns');
+      await settle();
+      expect(text(selectedTab(el))).toBe('Breakdowns');
+    });
+
+    it('shares one summary request between the tabs and reads the lists only for Summary', async () => {
+      const el = await open(of(summary()), ALL, '/dashboard?tab=breakdowns');
+      expect(getDashboard).toHaveBeenCalledTimes(1);
+      // Breakdowns needs no list: the Task Queue has not been asked anything.
+      expect(getTaskQueue).not.toHaveBeenCalled();
+
+      tabButtons(el)[2].click();
+      await settle();
+      expect(getDashboard).toHaveBeenCalledTimes(1);
+      expect(getTaskQueue).not.toHaveBeenCalled();
+
+      // Summary reads its three lists when it is first shown, and not again when it is shown again with nothing newer.
+      tabButtons(el)[0].click();
+      await settle();
+      expect(getDashboard).toHaveBeenCalledTimes(1);
+      expect(getTaskQueue).toHaveBeenCalledTimes(3);
+      tabButtons(el)[1].click();
+      await settle();
+      tabButtons(el)[0].click();
+      await settle();
+      expect(getTaskQueue).toHaveBeenCalledTimes(3);
+    });
+
+    it('reads the lists again when Summary is shown after a refresh that happened on another tab', async () => {
+      const el = await open();
+      expect(getTaskQueue).toHaveBeenCalledTimes(3);
+      tabButtons(el)[1].click();
+      await settle();
+      el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
+      await settle();
+      expect(getDashboard).toHaveBeenCalledTimes(2);
+      // The refresh on Breakdowns did not read the lists.
+      expect(getTaskQueue).toHaveBeenCalledTimes(3);
+      tabButtons(el)[0].click();
+      await settle();
+      expect(getTaskQueue).toHaveBeenCalledTimes(6);
+    });
+
+    it('shows the period control only where it is used: the Overview row on Summary and the Trends tab, not on Breakdowns', async () => {
+      const el = await open();
+      expect(el.querySelectorAll('select[data-period]').length).toBe(1);
+      expect(el.querySelector('[data-group="overview"] select[data-period]')).not.toBeNull();
+      tabButtons(el)[1].click();
+      await settle();
+      expect(el.querySelector('select[data-period]')).toBeNull();
+      tabButtons(el)[2].click();
+      await settle();
+      expect(el.querySelectorAll('select[data-period]').length).toBe(1);
+      expect(el.querySelector('[data-section="trend"] select[data-period]')).not.toBeNull();
+      expect(text(el.querySelector('label.period'))).toContain('Created and completed in');
+    });
+  });
+
+  describe('without Dashboard.ViewDepartment', () => {
+    it('shows no tabs and no department figures, the friendly note with a link to My Work, and no summary request', async () => {
+      const el = await open(of(summary()), ['Task.View']);
+      expect(el.querySelector('[role="tablist"]')).toBeNull();
+      expect(el.querySelector('[data-group]')).toBeNull();
+      expect(el.querySelector('[data-error], [data-empty]')).toBeNull();
+      expect(text(el.querySelector('[data-limited-note]'))).toBe(
+        'Department figures are available to Pod Leads and Directors. Your assigned tasks are in My Work.',
       );
-    expect(names(el)).toEqual(['department', 'lists', 'mine', 'trend', 'breakdowns', 'recent']);
-
-    // A technician with work: Your work, then their own Overdue and Due soon (no Task.Assign: no unassigned queue).
-    TestBed.resetTestingModule();
-    el = await open(of(summary()), ['Task.View']);
-    expect(names(el)).toEqual(['mine', 'lists']);
-    const panels = Array.from(el.querySelectorAll('[data-panel]'));
-    expect(panels.map((p) => p.getAttribute('data-panel'))).toEqual(['overdue', 'dueSoon']);
-    expect(panels.map((p) => text(p.querySelector('h3')))).toEqual(['My overdue', 'My due soon']);
-    const queries = getTaskQueue.mock.calls.map((c) => c[1]);
-    expect(queries).toEqual([
-      ['NEW', 'IN_PROGRESS', 'ON_HOLD'],
-      ['NEW', 'IN_PROGRESS', 'ON_HOLD'],
-    ]);
-    // Assignee = me (user 9 in the fixture queries).
-    expect(getTaskQueue.mock.calls.map((c) => c[5])).toEqual([[9], [9]]);
-  });
-
-  it('gives a technician with Task.Assign the unassigned queue too, and still shows it when nothing is assigned to them', async () => {
-    let el = await open(of(summary()), ['Task.View', 'Task.Assign']);
-    const kinds = () =>
-      Array.from(el.querySelectorAll('[data-panel]')).map((p) => p.getAttribute('data-panel'));
-    // Their own work first, then the queue to pick work from.
-    expect(kinds()).toEqual(['overdue', 'dueSoon', 'unassigned']);
-    expect(el.querySelector('[data-section="department"]')).toBeNull();
-    expect(
-      el
-        .querySelector<HTMLAnchorElement>('[data-panel="unassigned"] [data-view-all]')!
-        .getAttribute('href'),
-    ).toBe(
-      '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true&sort=priorityAge&dir=asc',
-    );
-    expect(el.querySelector('[data-panel="unassigned"] [data-assign-me]')).not.toBeNull();
-
-    const none = summary({
-      mine: {
-        open: count(0, `${OPEN}&assignee=9`),
-        overdue: count(0, ''),
-        dueSoon: count(0, ''),
-        createdByMe: count(0, ''),
-      },
+      expect(el.querySelector('[data-limited-note] a')!.getAttribute('href')).toBe('/my-work');
+      // Nothing to pick from without Task.Assign: no lists, no refresh controls, no calls at all.
+      expect(el.querySelector('[data-panel]')).toBeNull();
+      expect(el.querySelector('[data-refresh]')).toBeNull();
+      expect(getDashboard).not.toHaveBeenCalled();
+      expect(getTaskQueue).not.toHaveBeenCalled();
+      expect(TestBed.inject(Router).url).toBe('/dashboard');
     });
-    TestBed.resetTestingModule();
-    el = await open(of(none), ['Task.View', 'Task.Assign']);
-    expect(el.querySelector('[data-nothing-assigned]')).not.toBeNull();
-    expect(kinds()).toEqual(['unassigned']);
-  });
 
-  it('hides the period control when nothing on the page uses it, and shows it in Your work when a Created by me tile is visible', async () => {
-    const none = summary({
-      mine: {
-        open: count(0, `${OPEN}&assignee=9`),
-        overdue: count(0, ''),
-        dueSoon: count(0, ''),
-        createdByMe: count(0, ''),
-      },
+    it('with Task.Assign shows only the Unassigned queue (organisation wide, assignable) and the note', async () => {
+      const el = await open(of(summary()), ['Task.View', 'Task.Assign'], '/dashboard?tab=trends');
+      expect(el.querySelector('[data-limited-note]')).not.toBeNull();
+      const kinds = Array.from(el.querySelectorAll('[data-panel]')).map((p) =>
+        p.getAttribute('data-panel'),
+      );
+      expect(kinds).toEqual(['unassigned']);
+      expect(el.querySelector('[role="tablist"]')).toBeNull();
+      expect(getDashboard).not.toHaveBeenCalled();
+      expect(
+        el
+          .querySelector<HTMLAnchorElement>('[data-panel="unassigned"] [data-view-all]')!
+          .getAttribute('href'),
+      ).toBe(
+        '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true&sort=priorityAge&dir=asc',
+      );
+      expect(el.querySelector('[data-panel="unassigned"] [data-assign-me]')).not.toBeNull();
+      // No period control: nothing here uses it. The Refresh button is there, with a time.
+      expect(el.querySelector('select[data-period]')).toBeNull();
+      expect(el.querySelector('[data-refresh]')).not.toBeNull();
+      expect(text(el.querySelector('[data-updated]'))).toContain('Updated Oct 14, 2026, 3:45 PM');
+      // The address is left alone (no ?tab= is added for a page without tabs).
+      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends');
     });
-    let el = await open(of(none), ['Task.View']);
-    expect(el.querySelector('select[data-period]')).toBeNull();
 
-    TestBed.resetTestingModule();
-    el = await open(of(summary()), ['Task.View']);
-    expect(el.querySelector('[data-section="mine"] select[data-period]')).not.toBeNull();
-    expect(el.querySelectorAll('select[data-period]').length).toBe(1);
+    it('refreshes the queue with the button and announces it', async () => {
+      const el = await open(of(summary()), ['Task.View', 'Task.Assign']);
+      expect(getTaskQueue).toHaveBeenCalledTimes(1);
+      el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
+      await settle();
+      expect(getTaskQueue).toHaveBeenCalledTimes(2);
+      expect(text(el.querySelector('[data-dash-live]'))).toContain('Dashboard refreshed');
+      expect(getDashboard).not.toHaveBeenCalled();
+    });
   });
 
   it('lists the unassigned tasks by priority then age with reference, title, matter, priority, age and the assignee editor', async () => {
@@ -462,12 +567,21 @@ describe('DashboardPage', () => {
     expect(el.querySelector('[data-panel="overdue"] [data-skip]')).toBeNull();
   });
 
-  it('does not offer assignment to people who may not assign', async () => {
+  it('shows the Unassigned queue only to people who may assign, and then with the assignee editor', async () => {
     const el = await open(of(summary()), ['Task.View', 'Dashboard.ViewDepartment']);
-    const row = el.querySelector('[data-panel="unassigned"] li')!;
-    expect(row.querySelector('mf-row-edit')).toBeNull();
-    expect(row.querySelector('[data-assign-me]')).toBeNull();
-    expect(text(row.querySelector('.assign'))).toBe('Unassigned');
+    expect(el.querySelector('[data-panel="unassigned"]')).toBeNull();
+    expect(
+      Array.from(el.querySelectorAll('[data-panel]')).map((p) => p.getAttribute('data-panel')),
+    ).toEqual(['overdue', 'dueSoon']);
+    // The Unassigned tile (a count and a link to the queue) stays.
+    expect(el.querySelector('[data-group="attention"]')!.textContent).toContain('Unassigned');
+    // The first list of a page can be skipped; the last one has nothing after it to skip to.
+    const rows = [overdueRow, { ...overdueRow, taskId: 31, taskNumber: 'TSK-31' }];
+    getTaskQueue.mockImplementation(() => of(pageOf([...rows, ...rows.slice(0, 1)], { total: 3 })));
+    el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
+    await settle();
+    expect(el.querySelector('[data-panel="overdue"] [data-skip]')).not.toBeNull();
+    expect(el.querySelector('[data-panel="dueSoon"] [data-skip]')).toBeNull();
   });
 
   it('moves an assigned task out of the unassigned queue at once, keeps counts consistent, moves focus to the next row and announces it', async () => {
@@ -559,39 +673,44 @@ describe('DashboardPage', () => {
     expect(el.querySelector('[data-panel="overdue"] [data-view-all]')).toBeNull();
   });
 
-  it('shows breakdowns with percent, priority order and badge colours, every row linked', async () => {
-    const el = await open();
+  it('shows the breakdowns tab: priority, task type (with Other), status and age, with percent, badge colours and every row linked', async () => {
+    const el = await open(of(summary()), ALL, '/dashboard?tab=breakdowns');
     const bars = el.querySelector('[data-section="breakdowns"]')!;
-    expect(bars.textContent).toContain('Open by pod');
-    expect(bars.textContent).toContain('Open by priority');
-    expect(bars.textContent).toContain('Open by task type');
-    expect(bars.textContent).toContain('Open by status');
-    const podRows = Array.from(bars.querySelectorAll('mf-bar-list')[0].querySelectorAll('li'));
+    const lists = Array.from(bars.querySelectorAll('mf-bar-list'));
+    expect(lists.map((l) => text(l.querySelector('h3')))).toEqual([
+      'Open by priority',
+      'Open by task type',
+      'Open by status',
+    ]);
+    expect(text(bars.querySelector('mf-stacked-bar h3'))).toBe('Age of open tasks');
+    expect(bars.textContent).not.toContain('Open by pod');
+
+    const typeRows = Array.from(lists[1].querySelectorAll('li'));
     expect(
-      podRows.map((r) =>
+      typeRows.map((r) =>
         [
           r.querySelector('.name')?.textContent,
           r.querySelector('.count')?.textContent,
           r.querySelector('.pct')?.textContent,
         ].join(' '),
       ),
-    ).toEqual(['Pod A 40 70%', 'No pod 17 30%']);
-    expect(podRows[0].querySelector('a')!.getAttribute('href')).toContain('pod=1');
-    // "No pod" links to the queue's No pod filter like the other rows.
-    expect(podRows[1].querySelector('a')!.getAttribute('href')).toContain('noPod=true');
+    ).toEqual(['Data Processing 50 88%', 'Other task types 7 12%']);
+    expect(typeRows[0].querySelector('a')!.getAttribute('href')).toContain('type=3');
 
-    const critical = bars.querySelectorAll('mf-bar-list')[1].querySelector<HTMLElement>('.bar')!;
+    const critical = lists[0].querySelector<HTMLElement>('.bar')!;
     expect(critical.style.background).toContain('--mf-pr-critical-bg');
+    expect(hrefs(el, 'mf-stacked-bar a')[0]).toContain('/tasks?');
 
     expect(text(bars.querySelector('mf-stacked-bar'))).toContain(
       'Informational, not a service-level target',
     );
-    expect(hrefs(el, 'mf-recent-task-list a')).toEqual(['/tasks/5', '/tasks/4']);
+    // Every chart can be viewed as a table.
+    expect(bars.querySelectorAll('.toggle').length).toBe(4);
     expect(el.textContent).not.toMatch(/billing|revenue|productivity/i);
   });
 
-  it('shows the daily trend with its data table', async () => {
-    const el = await open();
+  it('shows the daily trend with its data table on the Trends tab', async () => {
+    const el = await open(of(summary()), ALL, '/dashboard?tab=trends');
     const trend = el.querySelector('[data-section="trend"] mf-trend-chart')!;
     expect(trend.querySelector('[data-plot] svg')).not.toBeNull();
     expect(text(trend.querySelector('[data-legend="created"]'))).toBe('Created 9');
@@ -619,9 +738,6 @@ describe('DashboardPage', () => {
     await settle();
     expect(getDashboard).toHaveBeenLastCalledWith(3, true);
     expect(el.querySelector('[data-group="overview"]')!.textContent).toContain('This week');
-    expect(el.querySelector('[data-section="trend"]')!.textContent).toContain(
-      'Change the period under Overview',
-    );
 
     select.value = 'month';
     select.dispatchEvent(new Event('change'));
@@ -636,31 +752,21 @@ describe('DashboardPage', () => {
     expect(getTaskQueue).toHaveBeenCalledTimes(3);
   });
 
-  it('remembers the period and the collapsed sections per user', async () => {
+  it('remembers the period per user and shows the same period on the Trends tab', async () => {
     let el = await open();
-    const toggle = () =>
-      el.querySelector<HTMLButtonElement>('[data-section="lists"] [data-section-toggle]')!;
-    expect(toggle().getAttribute('aria-expanded')).toBe('true');
-    toggle().click();
-    await settle();
-    expect(toggle().getAttribute('aria-expanded')).toBe('false');
-    expect(toggle().textContent).toContain('Show');
-    expect(el.querySelector('[data-lists]')).toBeNull();
     const select = el.querySelector<HTMLSelectElement>('select[data-period]')!;
     select.value = 'quarter';
     select.dispatchEvent(new Event('change'));
     await settle();
 
     TestBed.resetTestingModule();
-    el = await open();
-    expect(toggle().getAttribute('aria-expanded')).toBe('false');
+    el = await open(of(summary()), ALL, '/dashboard?tab=trends');
     expect(getDashboard).toHaveBeenCalledWith(90, undefined);
-    toggle().click();
-    await settle();
-    expect(el.querySelector('[data-lists]')).not.toBeNull();
+    expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe('quarter');
+    expect(text(el.querySelector('[data-section="trend"]'))).toContain('Last quarter');
   });
 
-  it('works when browser storage is blocked', async () => {
+  it('works when browser storage is blocked: tabs and the address still work', async () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('blocked');
     });
@@ -668,20 +774,21 @@ describe('DashboardPage', () => {
       throw new Error('blocked');
     });
     const el = await open();
-    expect(el.querySelector('[data-section="department"]')).not.toBeNull();
-    el.querySelector<HTMLButtonElement>('[data-section="lists"] [data-section-toggle]')!.click();
+    expect(el.querySelector('[data-group="attention"]')).not.toBeNull();
+    el.querySelector<HTMLButtonElement>('[data-tab="trends"]')!.click();
     await settle();
-    expect(el.querySelector('[data-lists]')).toBeNull();
+    expect(el.querySelector('[data-tabpanel="trends"]')).not.toBeNull();
+    expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends');
   });
 
   it('refreshes on the button without a loading state, bypassing the server cache', async () => {
     const el = await open();
-    const before = el.querySelector('[data-section="department"]');
+    const before = el.querySelector('[data-group="attention"]');
     el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
     expect(el.querySelector('[aria-busy="true"][aria-label]')).toBeNull();
     await settle();
     expect(getDashboard).toHaveBeenLastCalledWith(30, true);
-    expect(el.querySelector('[data-section="department"]')).toBe(before);
+    expect(el.querySelector('[data-group="attention"]')).toBe(before);
   });
 
   it('keeps keyboard focus on Refresh while it works (aria-disabled, not disabled) and announces when it is done', async () => {
@@ -716,7 +823,7 @@ describe('DashboardPage', () => {
     const el = await open();
     const tick = spy.mock.calls.find((c) => c[1] === AUTO_REFRESH_MS)![0] as () => void;
     expect(AUTO_REFRESH_MS).toBe(300_000);
-    const before = el.querySelector('[data-section="lists"]');
+    const before = el.querySelector('[data-lists]');
 
     vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
     tick();
@@ -728,7 +835,27 @@ describe('DashboardPage', () => {
     await settle();
     expect(getDashboard).toHaveBeenCalledTimes(2);
     expect(getDashboard).toHaveBeenLastCalledWith(30, undefined);
-    expect(el.querySelector('[data-section="lists"]')).toBe(before);
+    expect(el.querySelector('[data-lists]')).toBe(before);
+  });
+
+  it('does not refresh by itself while an assignee menu is open, and refreshes only the shared summary on other tabs', async () => {
+    const spy = vi.spyOn(globalThis, 'setInterval');
+    const el = await open(of(summary()), ALL, '/dashboard?tab=breakdowns');
+    const tick = spy.mock.calls.find((c) => c[1] === AUTO_REFRESH_MS)![0] as () => void;
+    const menu = document.createElement('mf-dash-task-list');
+    menu.innerHTML = '<div class="im-pop"></div>';
+    document.body.appendChild(menu);
+    tick();
+    await settle();
+    expect(getDashboard).toHaveBeenCalledTimes(1);
+    menu.remove();
+
+    tick();
+    await settle();
+    // One summary read; the lists belong to the Summary tab, which is not shown.
+    expect(getDashboard).toHaveBeenCalledTimes(2);
+    expect(getTaskQueue).not.toHaveBeenCalled();
+    expect(el.querySelector('[data-tabpanel="breakdowns"]')).not.toBeNull();
   });
 
   it('keeps the figures and says so in the banner when a background refresh fails, with Retry and without a second toast', async () => {
@@ -740,7 +867,7 @@ describe('DashboardPage', () => {
     await settle();
     expect(el.querySelector('[data-stale]')!.textContent).toContain('could not be refreshed');
     expect(el.querySelector('[data-error]')).toBeNull();
-    expect(el.querySelector('[data-section="department"]')).not.toBeNull();
+    expect(el.querySelector('[data-group="attention"]')).not.toBeNull();
     // The refresh ran quietly (no generic error toast); the banner is the one message.
     expect(run).toHaveBeenCalledTimes(1);
 
@@ -750,48 +877,23 @@ describe('DashboardPage', () => {
     expect(el.querySelector('[data-stale]')).toBeNull();
   });
 
-  it('says "Nothing assigned to you" with a link to Pod Work instead of zero tiles', async () => {
-    const none = summary({
-      mine: {
-        open: count(0, `${OPEN}&assignee=9`),
-        overdue: count(0, ''),
-        dueSoon: count(0, ''),
-        createdByMe: count(0, ''),
-      },
-    });
-    let el = await open(of(none));
-    const mine = el.querySelector('[data-section="mine"]')!;
-    expect(text(mine.querySelector('[data-nothing-assigned]'))).toContain(
-      'Nothing assigned to you.',
-    );
-    expect(mine.querySelector('a[href="/pods/work"]')).not.toBeNull();
-    expect(mine.querySelector('mf-stat-tile')).toBeNull();
-
-    TestBed.resetTestingModule();
-    el = await open(of(none), ['Task.View']);
-    expect(el.querySelector('[data-nothing-assigned] a[href="/pods/work"]')).toBeNull();
-    expect(el.querySelector('[data-nothing-assigned] a[href="/tasks"]')).not.toBeNull();
-  });
-
-  it('hides the department sections from users without Dashboard.ViewDepartment', async () => {
-    const el = await open(of(summary()), ['Task.View']);
-    expect(el.querySelector('[data-section="mine"]')).not.toBeNull();
-    expect(el.querySelector('[data-section="department"]')).toBeNull();
-    expect(el.querySelector('[data-section="breakdowns"]')).toBeNull();
-    expect(el.querySelector('[data-section="trend"]')).toBeNull();
-    expect(el.querySelector('[data-section="recent"]')).toBeNull();
-  });
-
   it('shows the empty state only to people who can see department figures, with a create button only if they can create tasks', async () => {
-    const empty = summary({ open: count(0, OPEN), recentlyCreated: [], recentlyCompleted: [] });
-    // Without Dashboard.ViewDepartment the server returns zeros for the department: that must not read as "no tasks yet".
+    const empty = summary({
+      open: count(0, OPEN),
+      created: count(0, 'createdFrom=2026-09-15'),
+      completed: count(0, 'status=COMPLETED&completedFrom=2026-09-15'),
+    });
+    // Without Dashboard.ViewDepartment the server returns zeros for the department: that must not read as "no tasks".
     let el = await open(of(empty), ['Task.View']);
     expect(el.querySelector('[data-empty]')).toBeNull();
-    expect(el.querySelector('[data-section="mine"]')).not.toBeNull();
+    expect(el.querySelector('[data-limited-note]')).not.toBeNull();
 
     TestBed.resetTestingModule();
     el = await open(of(empty), ['Task.View', 'Dashboard.ViewDepartment']);
-    expect(el.querySelector('[data-empty]')!.textContent).toContain('No tasks yet.');
+    expect(el.querySelector('[data-empty]')!.textContent).toContain('No open tasks');
+    // A quiet period is not "no tasks ever": the period can be widened right there.
+    expect(el.querySelector('[data-empty] select[data-period]')).not.toBeNull();
+    expect(el.querySelector('[role="tablist"]')).toBeNull();
     expect(el.querySelector('a[href="/tasks/new"]')).toBeNull();
 
     TestBed.resetTestingModule();
@@ -817,6 +919,6 @@ describe('DashboardPage', () => {
     await settle();
     expect(getDashboard).toHaveBeenCalledTimes(2);
     expect(el.querySelector('[data-error]')).toBeNull();
-    expect(el.querySelector('[data-section="department"]')).not.toBeNull();
+    expect(el.querySelector('[data-group="attention"]')).not.toBeNull();
   });
 });

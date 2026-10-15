@@ -205,3 +205,46 @@ Applied on `dev` after the review (backend: `noPod` filter, `priorityAge` sort, 
 ## 10. Screenshots after the fixes
 
 Checked by hand on a real stack at 1280, 768 and 375 px (Needs attention 3 tiles, Overview 5 with ASAP outlined in blue, period control in the Overview row, unassigned queue with outlined assignee menus, dotted partial day and weekend shading in the trend, single-hue age bar, "No pod" linked, two-column tiles at 375). Scratch screenshots are not committed.
+
+## 11. Round 3: tabs
+
+Product owner request: a calmer Dashboard organised in tabs, with the duplicated and low-value blocks removed.
+
+### What was removed
+
+- **Open by Pod**, the whole **Your work** section (My open, overdue, due soon, Created by me, and the technician lists; My Work is the place for them) and the **Recently created / Recently completed** lists. The API payload lost `byPod`, `recentlyCreated`, `recentlyCompleted` and `mine` (plus their queries, DTOs and rules); the OpenAPI document and the generated client were regenerated. Drill-through to the Task Queue is unchanged, and the queue's `noPod` and `pod` filters stay.
+- Collapsible sections (tabs replace them), the collapsed-section preference, `RecentTaskList`, and the matching specs and e2e tests.
+
+### Tabs
+
+The tab list follows the WAI-ARIA tabs pattern (`role=tablist` named "Dashboard views", automatic activation, roving tabindex so only the selected tab is a tab stop, Left and Right wrap, Home and End, one `role=tabpanel` labelled by its tab). The selected tab lives in the address as `?tab=summary|breakdowns|trends`, so links, reload and Back work; an unknown value falls back to a valid tab, and the last tab is remembered per user in `localStorage` (every access in try/catch) and used when the address has none. On a phone the tab list scrolls sideways.
+
+| Tab | Content |
+|---|---|
+| Summary | Needs attention (Overdue, Unassigned, On hold); Overview (Open, Due soon, ASAP open, Completed, Created) with the period control; Unassigned queue (only with Task.Assign), Overdue and Due soon lists |
+| Breakdowns | Open by priority, by task type (Top 5 and Other), by status, and the age of open tasks; each with "View as table" and drill-through |
+| Trends | Created vs Completed chart with the period control and its table view |
+
+The period control appears only where it is used: the Overview row and the Trends tab, never on Breakdowns. Headings: H1 "Dashboard", H2 per block, H3 per card, sentence case.
+
+### Data
+
+One summary request is shared by all tabs (no call per tab, switching tabs makes no request). The Task Queue lists belong to Summary only: they are read when Summary is shown, and again when it is shown after a refresh that happened on another tab. Auto-refresh (5 minutes, visible tab only, not while an assignee menu is open, no focus or scroll reset), Refresh with "Updated <time>", the failed-refresh banner with Retry, inline assign with Undo, focus return, live regions and names that contain their visible text are unchanged.
+
+### Without Dashboard.ViewDepartment
+
+No tabs, no figures, and no summary request. The page says "Department figures are available to Pod Leads and Directors. Your assigned tasks are in My Work." with a link to My Work; with Task.Assign the Unassigned queue is shown below it (with Refresh and "Updated"), otherwise nothing else. The empty state ("No open tasks, and none were created or completed in this period.", with the period control and, with Task.Create, "Create the first task") replaces the tabs for department users; the old "no tasks ever" test needed the recent list and is now period based.
+
+### Verification
+
+Real stack (SQL Server container, published API serving the build). Screenshots of each tab at 1280 and 375 (and Summary at 1024 and 768) are in `docs/ux/dashboard-v3/`. At 375 the shell's collapsed sidebar narrows the content and the third tab is partly off screen: the list scrolls horizontally, no page overflow.
+
+### Deferred
+
+- One summary payload still carries all three tabs' figures (about 11 KB); a per-tab `sections` parameter would make Breakdowns and Trends lazy on the server too.
+- The unassigned queue for people without the department view is still organisation wide (not limited to their pods).
+- No axe run was added to the repository's e2e suite.
+
+### Test results (round 3)
+
+Full Playwright suite 93 passed (fresh stack); WorkViews and schema integration tests 71 passed; unit 1,039, architecture 35; `npm test` 930 (app) and 307 (form-engine); lint, prettier, `dotnet format --verify-no-changes` clean; `ng build form-engine` ok; production build initial total 669.79 kB.

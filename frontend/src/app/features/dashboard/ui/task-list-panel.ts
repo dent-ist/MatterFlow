@@ -72,7 +72,7 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
               <i class="pi pi-check-circle" aria-hidden="true"></i> {{ emptyText() }}
             </p>
           } @else {
-            @if (rows().length > 2) {
+            @if (rows().length > 2 && skippable()) {
               <button type="button" class="skip" data-skip (click)="skipList()">
                 Skip {{ heading() }} list
               </button>
@@ -339,6 +339,8 @@ export class DashTaskList {
   readonly query = input.required<string>();
   readonly emptyText = input('Nothing here.');
   readonly viewAllText = input('View all');
+  /** False for the last list of a page: nothing follows it to skip to. */
+  readonly skippable = input(true);
   readonly rowChange = output<TaskQueueRow>();
   readonly retry = output<void>();
 
