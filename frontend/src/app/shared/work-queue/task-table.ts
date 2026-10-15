@@ -108,6 +108,14 @@ const PROJECT_HIDES_BELOW = 800;
               </tr>
             }
           }
+          @if (!loading() && rows().length === 0) {
+            <!-- Nothing to list: the headers stay and the message (projected by the list) takes the first row. -->
+            <tr class="wt-empty-row">
+              <td [attr.colspan]="shownColumns().length + (showAssign() ? 1 : 0)">
+                <ng-content select="[table-empty]" />
+              </td>
+            </tr>
+          }
           @for (row of rows(); track row.taskId) {
             <tr [class.wt-row--overdue]="row.isOverdue" [attr.data-task]="row.taskNumber">
               @for (col of shownColumns(); track col.key) {

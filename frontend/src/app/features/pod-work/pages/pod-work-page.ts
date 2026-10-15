@@ -66,18 +66,6 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
             </select>
           </div>
         }
-        @if (data()?.pod) {
-          <mf-work-view-controls
-            mfActions
-            [sort]="state().sort"
-            [dir]="state().dir"
-            [columns]="prefs().columns"
-            [density]="prefs().density"
-            (resetSort)="resetSort()"
-            (columnsChange)="setColumns($event)"
-            (densityChange)="setDensity($event)"
-          />
-        }
       </mf-page-header>
 
       @if (loadState() === 'ready' && pods().length === 0) {
@@ -183,6 +171,17 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
             }
           }
 
+          <div class="wl-gridbar" data-grid-toolbar>
+            <mf-work-view-controls
+              [sort]="state().sort"
+              [dir]="state().dir"
+              [columns]="prefs().columns"
+              [density]="prefs().density"
+              (resetSort)="resetSort()"
+              (columnsChange)="setColumns($event)"
+              (densityChange)="setDensity($event)"
+            />
+          </div>
           <mf-work-list
             [rows]="rows()"
             [total]="total()"

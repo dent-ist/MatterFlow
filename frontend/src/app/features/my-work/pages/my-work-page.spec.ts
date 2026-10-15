@@ -181,20 +181,27 @@ describe('MyWorkPage', () => {
     expect(el.querySelector('#fb-assignee')).toBeNull();
   });
 
-  it('puts the search box and Filters on the tab row and the sort note and Columns on the title row', async () => {
+  it('puts the search box and Filters on the tab row and the sort note and Columns in a bar above the grid', async () => {
     const el = await open('/my-work');
     // The first render can lag behind whenStable on a busy machine: wait for the search box.
     await vi.waitFor(() => {
       harness.detectChanges();
       expect(el.querySelector('#fb-q')).not.toBeNull();
+      expect(el.querySelector('[data-grid-toolbar] [data-sort-note]')).not.toBeNull();
     });
     const tabRow = el.querySelector('.fb-tabrow')!;
     expect(tabRow.querySelector('[role="tablist"]')).not.toBeNull();
     expect(tabRow.querySelector('#fb-q')).not.toBeNull();
     expect(tabRow.querySelector('.fb-button')).not.toBeNull();
-    const title = el.querySelector('[data-page-actions]')!;
-    expect(title.querySelector('[data-sort-note]')!.textContent).toContain('Sorted by Priority');
-    expect(title.querySelector('.cc-button')).not.toBeNull();
+    // The sort note and Columns sit in a bar directly above the grid, not in the title row.
+    const bar = el.querySelector('[data-grid-toolbar]')!;
+    expect(bar.querySelector('[data-sort-note]')!.textContent).toContain('Sorted by Priority');
+    expect(bar.querySelector('.cc-button')).not.toBeNull();
+    expect(el.querySelector('[data-page-actions] [data-sort-note]')).toBeNull();
+    expect(
+      bar.compareDocumentPosition(el.querySelector('mf-work-list')!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(el.querySelector('[data-search-hint]')!.classList).toContain('sb__hint--float');
   });
 

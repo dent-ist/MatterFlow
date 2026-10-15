@@ -49,11 +49,15 @@ describe('WorkList', () => {
   it('says there are no tasks yet when nothing is filtered', async () => {
     await create([], { emptyText: 'No tasks yet.' });
     expect(el().querySelector('[data-empty]')!.textContent).toContain('No tasks yet.');
-    expect(el().querySelector('table')).toBeNull();
+    // The column headers stay when there is nothing to list; the message sits in the first row under them.
+    expect(el().querySelector('table thead th')).not.toBeNull();
+    expect(el().querySelector('table tbody [data-empty]')).not.toBeNull();
+    expect(el().querySelector('mf-pager')).toBeNull();
   });
 
   it('says no tasks match the filters and offers to clear them', async () => {
     await create([], { filtered: true });
+    expect(el().querySelector('table thead th')).not.toBeNull();
     expect(el().querySelector('[data-empty]')!.textContent).toContain(
       'No tasks match these filters.',
     );

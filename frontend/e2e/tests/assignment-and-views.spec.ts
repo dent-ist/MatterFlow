@@ -112,7 +112,7 @@ test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
     await myWork.expectNotListed(others.title);
   });
 
-  test('My Work: search and Filters share the tab row, the sort note and Columns share the title row, new tasks are marked until the next visit', async ({
+  test('My Work: search and Filters share the tab row, the sort note and Columns sit above the grid, new tasks are marked until the next visit', async ({
     seed,
     asUser,
   }) => {
@@ -131,8 +131,9 @@ test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
     const filters = page.getByRole('button', { name: /^Filters/ });
     expect(Math.abs((await y(filters)) - (await y(tab)))).toBeLessThan(24);
     const columns = page.getByRole('button', { name: 'Columns' });
-    const title = page.getByRole('heading', { name: 'My Work', level: 1 });
-    expect(Math.abs((await y(columns)) - (await y(title)))).toBeLessThan(24);
+    const head = page.locator('table thead').first();
+    expect(await y(columns)).toBeGreaterThan(await y(tab));
+    expect(await y(columns)).toBeLessThan(await y(head));
     await expect(page.locator('[data-sort-note]')).toContainText('Sorted by Priority');
     await expect(page.locator('[data-near-empty]')).toContainText(
       "That's everything on your plate.",

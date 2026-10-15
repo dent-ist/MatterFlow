@@ -443,13 +443,10 @@ test.describe('Round 4: queues, wording and accessibility', () => {
       (await page.getByRole('button', { name: 'Columns' }).boundingBox())!,
     ];
     expect(columns.height).toBe(filters.height);
-    // Columns sits on the title row, Filters on the toolbar row under it.
-    const title = (await page
-      .getByRole('heading', { name: 'Task Queue', level: 1 })
-      .boundingBox())!;
-    expect(Math.abs(columns.y + columns.height / 2 - (title.y + title.height / 2))).toBeLessThan(
-      12,
-    );
+    // "Sorted by" and Columns sit in a bar directly above the grid (below the Filters row), at its right end.
+    const header = (await page.locator('table thead').first().boundingBox())!;
+    expect(columns.y).toBeGreaterThan(filters.y);
+    expect(columns.y + columns.height).toBeLessThanOrEqual(header.y + 1);
 
     const client = await seed.client();
     await page.goto(`/clients/${client.clientId}`);

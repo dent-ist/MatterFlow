@@ -41,20 +41,7 @@ const COMPLETED_WINDOW_DAYS = 90;
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="My Work">
-        <mf-work-view-controls
-          mfActions
-          [sort]="state().sort"
-          [dir]="state().dir"
-          [defaultOrder]="defaultOrder()"
-          [defaultLabel]="tab() === 'completed' ? 'Closed date' : 'Priority'"
-          [columns]="prefs().columns"
-          [density]="prefs().density"
-          (resetSort)="resetSort()"
-          (columnsChange)="setColumns($event)"
-          (densityChange)="setDensity($event)"
-        />
-      </mf-page-header>
+      <mf-page-header heading="My Work"> </mf-page-header>
 
       <mf-work-filter-bar
         [filters]="state().filters"
@@ -98,6 +85,19 @@ const COMPLETED_WINDOW_DAYS = 90;
           }
         }
 
+        <div class="wl-gridbar" data-grid-toolbar>
+          <mf-work-view-controls
+            [sort]="state().sort"
+            [dir]="state().dir"
+            [defaultOrder]="defaultOrder()"
+            [defaultLabel]="tab() === 'completed' ? 'Closed date' : 'Priority'"
+            [columns]="prefs().columns"
+            [density]="prefs().density"
+            (resetSort)="resetSort()"
+            (columnsChange)="setColumns($event)"
+            (densityChange)="setDensity($event)"
+          />
+        </div>
         <mf-work-list
           [rows]="rows()"
           [total]="total()"

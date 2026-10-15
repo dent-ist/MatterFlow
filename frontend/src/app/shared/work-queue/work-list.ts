@@ -30,39 +30,22 @@ export type WorkListState = 'loading' | 'ready' | 'error';
       </div>
     }
 
-    @if (state() === 'loading' || rows().length > 0) {
-      <mf-task-table
-        [rows]="rows()"
-        [columns]="columns()"
-        [caption]="caption()"
-        [loading]="state() === 'loading'"
-        [density]="density()"
-        [sort]="sort()"
-        [dir]="dir()"
-        [showAssign]="showAssign()"
-        [newSince]="newSince()"
-        (sortChange)="sortChange.emit($event)"
-        (assignToMe)="assignToMe.emit($event)"
-        (rowChange)="rowChange.emit($event)"
-      />
-      <div class="wl-footrow">
-        @if (state() === 'ready' && !filtered() && rows().length > 0 && rows().length < 5) {
-          <div class="wl-near" data-near-empty><ng-content select="[near-empty]" /></div>
-        }
-        @if (rows().length > 0) {
-          <mf-pager
-            class="wl-pager"
-            [page]="page()"
-            [pageSize]="pageSize()"
-            [pageSizes]="sizes"
-            [total]="total()"
-            (pageChange)="pageChange.emit($event)"
-            (pageSizeChange)="pageSizeChange.emit($event)"
-          />
-        }
-      </div>
-    } @else if (state() === 'ready') {
-      <div class="wl-empty" data-empty>
+    <!-- The column headers always show, also when there is nothing to list (the empty message sits right under them). -->
+    <mf-task-table
+      [rows]="rows()"
+      [columns]="columns()"
+      [caption]="caption()"
+      [loading]="state() === 'loading'"
+      [density]="density()"
+      [sort]="sort()"
+      [dir]="dir()"
+      [showAssign]="showAssign()"
+      [newSince]="newSince()"
+      (sortChange)="sortChange.emit($event)"
+      (assignToMe)="assignToMe.emit($event)"
+      (rowChange)="rowChange.emit($event)"
+    >
+      <div table-empty class="wl-empty" data-empty>
         @if (filtered()) {
           <p>No tasks match these filters.</p>
           <button type="button" class="mf-btn wl-button" (click)="clearFilters.emit()">
@@ -73,7 +56,23 @@ export type WorkListState = 'loading' | 'ready' | 'error';
           <ng-content select="[empty-action]" />
         }
       </div>
-    }
+    </mf-task-table>
+    <div class="wl-footrow">
+      @if (state() === 'ready' && !filtered() && rows().length > 0 && rows().length < 5) {
+        <div class="wl-near" data-near-empty><ng-content select="[near-empty]" /></div>
+      }
+      @if (rows().length > 0) {
+        <mf-pager
+          class="wl-pager"
+          [page]="page()"
+          [pageSize]="pageSize()"
+          [pageSizes]="sizes"
+          [total]="total()"
+          (pageChange)="pageChange.emit($event)"
+          (pageSizeChange)="pageSizeChange.emit($event)"
+        />
+      }
+    </div>
   `,
 })
 export class WorkList {

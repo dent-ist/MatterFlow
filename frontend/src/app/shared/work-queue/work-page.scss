@@ -112,3 +112,10 @@
     margin-bottom: var(--mf-s2);
   }
 }
+
+/* "Sorted by ..." and Columns sit directly above the grid, at its right end (they used to be in the title row). */
+.wl-gridbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 var(--mf-s2);
+}

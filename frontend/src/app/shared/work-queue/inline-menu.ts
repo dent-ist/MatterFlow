@@ -155,7 +155,7 @@ let nextId = 0;
       border-color: var(--mf-border-strong);
       background: var(--mf-surface);
     }
-    .im-trigger:hover:not([aria-disabled='true']),
+    /* No border or fill on hover: the value (a badge with a chevron) already looks like a control. Keyboard focus and the open menu keep theirs. */
     .im-trigger:focus-visible,
     .im-trigger[aria-expanded='true'] {
       border-color: var(--mf-border-strong);

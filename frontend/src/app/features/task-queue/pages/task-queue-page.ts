@@ -45,18 +45,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="Task Queue">
-        <mf-work-view-controls
-          mfActions
-          [sort]="state().sort"
-          [dir]="state().dir"
-          [columns]="prefs().columns"
-          [density]="prefs().density"
-          (resetSort)="resetSort()"
-          (columnsChange)="setColumns($event)"
-          (densityChange)="setDensity($event)"
-        />
-      </mf-page-header>
+      <mf-page-header heading="Task Queue"> </mf-page-header>
 
       <mf-work-filter-bar
         [filters]="state().filters"
@@ -72,6 +61,17 @@ import { PageHeader } from '../../../shared/ui/page-header';
       >
       </mf-work-filter-bar>
 
+      <div class="wl-gridbar" data-grid-toolbar>
+        <mf-work-view-controls
+          [sort]="state().sort"
+          [dir]="state().dir"
+          [columns]="prefs().columns"
+          [density]="prefs().density"
+          (resetSort)="resetSort()"
+          (columnsChange)="setColumns($event)"
+          (densityChange)="setDensity($event)"
+        />
+      </div>
       <mf-work-list
         [rows]="rows()"
         [total]="total()"
