@@ -54,6 +54,12 @@ describe('TaskTypesPage', () => {
     ).toBe('/admin/task-types/1/form');
   });
 
+  it('shows each type with its icon in neutral colour before the name', () => {
+    const icon = row('Data Processing').querySelector('mf-task-type-icon svg')!;
+    expect(icon.getAttribute('aria-hidden')).toBe('true');
+    expect(icon.getAttribute('stroke')).toBe('currentColor');
+  });
+
   it('searches, sorts and pages in the browser, hides inactive types by default and names the row actions', async () => {
     await new Promise<void>((resolve) =>
       api.create({ name: 'Collection', description: undefined }).subscribe(() => resolve()),
@@ -185,6 +191,31 @@ describe('TaskTypeEditPage', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/admin/task-types', created.id]);
   });
 
+  it('requires an icon: new types start with the default and the chosen icon is saved', async () => {
+    await open();
+    expect(q('[data-icon-current]').textContent).toBe('Document');
+    await type('[data-name]', 'Collection');
+
+    q<HTMLButtonElement>('[data-icon-trigger]').click();
+    await new Promise((r) => setTimeout(r, 80));
+    fixture.detectChanges();
+    document.querySelector<HTMLButtonElement>('[data-icon-dialog] [data-key="mail"]')!.click();
+    await new Promise((r) => setTimeout(r, 80));
+    await settle(fixture);
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+
+    await save();
+    const created = await new Promise<{ iconKey: string }>((resolve) =>
+      api.list().subscribe((all) => resolve(all.find((t) => t.name === 'Collection')!)),
+    );
+    expect(created.iconKey).toBe('mail');
+  });
+
+  it('shows the saved icon when editing', async () => {
+    await open('1');
+    expect(q('[data-icon-current]').textContent).toBe('Processing');
+  });
+
   it('requires a name and shows the server duplicate-name message on the field', async () => {
     await open();
     await save();
@@ -240,6 +271,7 @@ describe('TaskTypeEditPage', () => {
         .update(1, {
           name: 'Data Processing',
           description: undefined,
+          iconKey: 'cpu-2',
           isActive: true,
           eligibleWorkflowIds: [3],
           defaultWorkflowDefinitionId: undefined,

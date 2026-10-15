@@ -404,6 +404,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                 DueDate = t.DueDate,
                 DueAtUtc = t.DueAtUtc,
                 CreatedAtUtc = t.CreatedAtUtc,
+                AssignedAtUtc = t.AssignedAtUtc,
                 ModifiedAtUtc = t.ModifiedAtUtc,
                 CompletedAtUtc = t.CompletedAtUtc,
                 StatusChangedAtUtc = t.StatusChangedAtUtc,
@@ -488,6 +489,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                 t.DueDate is null,
                 TaskQueueRules.IsOverdue(t.Status, t.DueDate, t.DueAtUtc, queueClock),
                 DateTime.SpecifyKind(t.CreatedAtUtc, DateTimeKind.Utc),
+                Utc(t.AssignedAtUtc),
                 Utc(t.ModifiedAtUtc),
                 Utc(t.CompletedAtUtc),
                 DateTime.SpecifyKind(t.StatusChangedAtUtc, DateTimeKind.Utc),
@@ -533,6 +535,8 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         public DateTime? DueAtUtc { get; init; }
 
         public DateTime CreatedAtUtc { get; init; }
+
+        public DateTime? AssignedAtUtc { get; init; }
 
         public DateTime? ModifiedAtUtc { get; init; }
 

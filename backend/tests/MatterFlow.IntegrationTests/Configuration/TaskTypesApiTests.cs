@@ -61,10 +61,11 @@ public sealed class TaskTypesApiTests(SqlServerFixture sql) : IAsyncLifetime
         return await ReadAsync(response);
     }
 
-    private static object UpdateBody(JsonElement current, string? name = null, bool? isActive = null, int[]? workflows = null, int? defaultWorkflow = null, bool keepDefault = true) => new
+    private static object UpdateBody(JsonElement current, string? name = null, bool? isActive = null, int[]? workflows = null, int? defaultWorkflow = null, bool keepDefault = true, string? iconKey = null) => new
     {
         name = name ?? current.GetProperty("name").GetString(),
         description = current.GetProperty("description").GetString(),
+        iconKey = iconKey ?? current.GetProperty("iconKey").GetString(),
         isActive = isActive ?? current.GetProperty("isActive").GetBoolean(),
         eligibleWorkflowIds = workflows ?? Ints(current.GetProperty("eligibleWorkflowIds")),
         defaultWorkflowDefinitionId = keepDefault && defaultWorkflow is null && current.GetProperty("defaultWorkflowDefinitionId").ValueKind == JsonValueKind.Number
@@ -344,5 +345,78 @@ public sealed class TaskTypesApiTests(SqlServerFixture sql) : IAsyncLifetime
         events.Where(e => e.FieldKey == "Name").Select(e => e.NewValue).ShouldContain("Audited 2");
         events.Where(e => e.FieldKey == "IsActive").Select(e => e.NewValue).ShouldContain("false");
         events.Single(e => e.EventType == "TASK_TYPE_WORKFLOWS_CHANGED" && e.OldValue == "1").NewValue.ShouldBe("1, 2");
+    }
+
+    // ---- icon (required, allow-listed, default file-text)
+
+    [Fact]
+    public async Task A_new_task_type_gets_the_default_icon_when_none_is_sent_and_every_read_returns_it()
+    {
+        var admin = As();
+        var created = await CreateAsync(admin, new { name = "No icon sent" });
+        created.GetProperty("iconKey").GetString().ShouldBe(TaskTypeIcons.DefaultKey);
+        TaskTypeIcons.DefaultKey.ShouldBe("file-text");
+
+        var chosen = await CreateAsync(admin, new { name = "With icon", iconKey = "mail" });
+        chosen.GetProperty("iconKey").GetString().ShouldBe("mail");
+
+        // Shared by several types: allowed.
+        var again = await CreateAsync(admin, new { name = "Same icon", iconKey = "mail" });
+        again.GetProperty("iconKey").GetString().ShouldBe("mail");
+
+        var list = await ReadAsync(await admin.GetAsync("/api/v1/task-types"));
+        list.EnumerateArray().ToDictionary(t => t.GetProperty("name").GetString()!, t => t.GetProperty("iconKey").GetString())
+            .ShouldBe(new Dictionary<string, string?> { ["No icon sent"] = "file-text", ["With icon"] = "mail", ["Same icon"] = "mail" }, ignoreOrder: true);
+        (await GetAsync(admin, Id(chosen))).GetProperty("iconKey").GetString().ShouldBe("mail");
+
+        using var scope = _factory.Services.CreateScope();
+        var info = await scope.ServiceProvider.GetRequiredService<ITaskTypeCatalog>().GetAsync(Id(chosen));
+        info!.IconKey.ShouldBe("mail");
+    }
+
+    [Theory]
+    [InlineData("not-an-icon")]
+    [InlineData("MAIL")]
+    [InlineData("../mail")]
+    [InlineData("<svg onload=alert(1)>")]
+    [InlineData("   ")]
+    public async Task An_icon_outside_the_library_is_rejected_on_create_and_update(string key)
+    {
+        var admin = As();
+        var rejected = await admin.PostAsJsonAsync("/api/v1/task-types", new { name = "Bad icon", iconKey = key });
+        rejected.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        var error = (await ReadAsync(rejected)).GetProperty("errors").GetProperty("iconKey")[0].GetProperty("code").GetString();
+        error.ShouldBeOneOf("UNKNOWN_ICON", "REQUIRED");
+        (await _factory.CountAsync<MatterFlow.Configuration.Domain.TaskType>()).ShouldBe(0);
+
+        var created = await CreateAsync(admin, new { name = "Good icon", iconKey = "book" });
+        var update = await admin.PutAsJsonAsync($"/api/v1/task-types/{Id(created)}", UpdateBody(created, iconKey: key));
+        update.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await GetAsync(admin, Id(created))).GetProperty("iconKey").GetString().ShouldBe("book");
+    }
+
+    [Fact]
+    public async Task Update_requires_an_icon_and_a_changed_icon_is_audited()
+    {
+        var admin = As();
+        var created = await CreateAsync(admin, new { name = "Icon audit" });
+
+        var missing = await admin.PutAsJsonAsync($"/api/v1/task-types/{Id(created)}", new
+        {
+            name = "Icon audit",
+            isActive = true,
+            eligibleWorkflowIds = Array.Empty<int>(),
+            rowVersion = created.GetProperty("rowVersion").GetString(),
+        });
+        missing.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        var updated = await UpdateAsync(admin, created, UpdateBody(created, iconKey: "scale"));
+        updated.GetProperty("iconKey").GetString().ShouldBe("scale");
+
+        var events = await _factory.WithDbAsync(db => db.Set<AuditEvent>()
+            .Where(e => e.ObjectType == "TaskType" && e.ObjectId == Id(created).ToString() && e.FieldKey == "IconKey")
+            .OrderBy(e => e.Id)
+            .ToListAsync());
+        events.Single(e => e.NewValue == "scale").OldValue.ShouldBe("file-text");
     }
 }

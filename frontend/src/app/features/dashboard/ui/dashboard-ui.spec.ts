@@ -27,7 +27,7 @@ import { StatTile } from './stat-tile';
 })
 class Host {
   items: BarItem[] = [
-    { label: 'Pod A', count: 40, query: 'status=NEW&pod=1' },
+    { label: 'Pod A', count: 40, query: 'status=NEW&pod=1', iconKey: 'users' },
     { label: 'Pod B', count: 10, query: 'status=NEW&pod=2' },
     { label: 'Other Pods', count: 5, query: null, muted: true },
     { label: 'Empty Pod', count: 0, query: 'status=NEW&pod=3' },
@@ -78,6 +78,15 @@ describe('dashboard UI', () => {
     ).toEqual(['Pod A 40', 'Pod B 10', 'Other Pods 5', 'Empty Pod 0']);
     expect(rows[0].querySelector('a')!.getAttribute('href')).toBe('/tasks?status=NEW&pod=1');
     expect(rows[2].querySelector('a')).toBeNull();
+  });
+
+  it('draws a task type icon before the label of a row that has one, in neutral colour', async () => {
+    const el = await render();
+    const rows = Array.from(el.querySelectorAll('mf-bar-list li'));
+    const icon = rows[0].querySelector('mf-task-type-icon svg')!;
+    expect(icon.getAttribute('aria-hidden')).toBe('true');
+    expect(icon.getAttribute('stroke')).toBe('currentColor');
+    expect(rows[1].querySelector('mf-task-type-icon')).toBeNull();
   });
 
   it('scales the bars to the longest one and prints the share of the total beside them', async () => {

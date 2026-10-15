@@ -56,6 +56,7 @@ const aType = (overrides: Partial<TaskTypeView> = {}): TaskTypeView => ({
   id: 1,
   name: 'Data Processing',
   description: undefined,
+  iconKey: 'file-text',
   isActive: true,
   defaultWorkflowDefinitionId: 10,
   eligibleWorkflowIds: [10, 11],
@@ -204,6 +205,12 @@ async function type(h: Harness, selector: string, value: string): Promise<void> 
   await settle(h.fixture);
 }
 
+/** Chooses a task type by clicking its card in the chooser (the form appears once a type is chosen). */
+async function pickType(h: Harness, name = 'Data Processing'): Promise<void> {
+  field<HTMLButtonElement>(h, `[data-type-card="${name}"]`).click();
+  await settle(h.fixture);
+}
+
 async function choose(h: Harness, selector: string, value: string): Promise<void> {
   const select = field<HTMLSelectElement>(h, selector);
   select.value = value;
@@ -216,36 +223,106 @@ async function submit(h: Harness): Promise<void> {
   await settle(h.fixture);
 }
 
-async function fillRequired(h: Harness): Promise<void> {
+async function fillRequired(h: Harness, choose = true): Promise<void> {
+  if (choose) await pickType(h);
   await type(h, '#ct-title', 'Process Smith custodians');
   await type(h, '#ct-requestor-name', 'Jane Doe');
-  await choose(h, '#ct-type', '1');
 }
 
 describe('CreateTaskPage', () => {
-  it('shows only active types, disabling those without an eligible published workflow', async () => {
+  it('offers only active task types the user can create tasks of, as cards with icon, name and description', async () => {
     const h = await create({
       types: [
-        aType(),
+        aType({ description: 'Process and load collected data.', iconKey: 'cpu-2' }),
         aType({ id: 2, name: 'Broken', isUsable: false, eligibleWorkflowIds: [] }),
         aType({ id: 3, name: 'Retired', isActive: false }),
       ],
     });
-    const options = Array.from(h.el.querySelectorAll<HTMLOptionElement>('#ct-type option'));
-    expect(options.map((o) => o.textContent!.trim())).toEqual([
-      'Select...',
-      'Broken (no workflow available)',
-      'Data Processing',
-    ]);
-    expect(options[1].disabled).toBe(true);
-    expect(options[2].disabled).toBe(false);
+    const cards = Array.from(h.el.querySelectorAll<HTMLElement>('[data-type-card]'));
+    expect(cards.map((c) => c.dataset['typeCard'])).toEqual(['Data Processing']);
+    expect(cards[0].textContent).toContain('Process and load collected data.');
+    expect(cards[0].querySelector('mf-task-type-icon svg')?.getAttribute('aria-hidden')).toBe(
+      'true',
+    );
+    expect(field(h, 'form')).toBeNull();
+    expect(field(h, '#ct-title')).toBeNull();
+  });
+
+  it('shows an empty state when no task type is available', async () => {
+    const h = await create({ types: [aType({ isUsable: false, eligibleWorkflowIds: [] })] });
+    expect(field(h, '[data-type-empty]').textContent).toContain('No task types are available');
+    expect(field(h, '[data-type-card]')).toBeNull();
+  });
+
+  it('reveals the form with the type as a header chip when a card is chosen', async () => {
+    const h = await create({ types: [aType({ iconKey: 'cpu-2' })] });
+    await pickType(h);
+    expect(field(h, '[data-type-chooser]')).toBeNull();
+    expect(field(h, '[data-type-name]').textContent).toBe('Data Processing');
+    expect(field(h, '[data-type-chip] mf-task-type-icon')).not.toBeNull();
+    expect(field(h, '#ct-title')).not.toBeNull();
+    expect(field(h, '#ct-type')).toBeNull();
+  });
+
+  it('skips the chooser for ?taskType=<id> and ignores types the user may not use', async () => {
+    const types = [
+      aType(),
+      aType({ id: 2, name: 'Broken', isUsable: false, eligibleWorkflowIds: [] }),
+    ];
+    const h = await create({ inputs: { taskType: '1' }, types });
+    expect(field(h, '[data-type-chooser]')).toBeNull();
+    expect(field(h, '[data-type-name]').textContent).toBe('Data Processing');
+
+    TestBed.resetTestingModule();
+    const unusable = await create({ inputs: { taskType: '2' }, types });
+    expect(field(unusable, '[data-type-chooser]')).not.toBeNull();
+    TestBed.resetTestingModule();
+    const garbage = await create({ inputs: { taskType: 'abc' } });
+    expect(field(garbage, '[data-type-chooser]')).not.toBeNull();
+  });
+
+  it('moves between cards with the arrow keys and chooses with a click, Enter or Space (radio group)', async () => {
+    const h = await create({
+      types: [aType(), aType({ id: 2, name: 'Other' }), aType({ id: 3, name: 'Third' })],
+    });
+    const group = field(h, '[role=radiogroup]');
+    expect(group.getAttribute('aria-labelledby')).toBe('ct-h-type');
+    const cards = Array.from(h.el.querySelectorAll<HTMLButtonElement>('[role=radio]'));
+    expect(cards.map((c) => c.tabIndex)).toEqual([0, -1, -1]);
+    cards[0].focus();
+    cards[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(document.activeElement).toBe(cards[1]);
+    await settle(h.fixture);
+    expect(cards.map((c) => c.tabIndex)).toEqual([-1, 0, -1]);
+    cards[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    expect(document.activeElement).toBe(cards[2]);
+    cards[2].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    expect(document.activeElement).toBe(cards[1]);
+    // Enter and Space activate a button natively (as a click); the chooser reacts to the click.
+    cards[1].click();
+    await settle(h.fixture);
+    expect(field(h, '[data-type-name]').textContent).toBe('Other');
+  });
+
+  it('searches the types only when there are more than 12', async () => {
+    const some = (n: number) =>
+      Array.from({ length: n }, (_, i) => aType({ id: i + 1, name: `Type ${i + 1}` }));
+    const few = await create({ types: some(12) });
+    expect(field(few, '[data-type-search]')).toBeNull();
+    TestBed.resetTestingModule();
+    const many = await create({ types: some(13) });
+    expect(many.el.querySelectorAll('[data-type-card]').length).toBe(13);
+    await type(many, '[data-type-search]', 'type 13');
+    expect(many.el.querySelectorAll('[data-type-card]').length).toBe(1);
+    await type(many, '[data-type-search]', 'zzz');
+    expect(field(many, '[data-type-none]')).not.toBeNull();
   });
 
   it('preselects the default workflow and renders the type form with its conditional rules', async () => {
     const h = await create({ inputs: { matterId: '7' } });
     expect(field(h, '[data-request-details]')).toBeNull();
 
-    await choose(h, '#ct-type', '1');
+    await pickType(h);
 
     const radios = Array.from(h.el.querySelectorAll<HTMLInputElement>('[data-workflows] input'));
     expect(radios.map((r) => r.checked)).toEqual([true, false]);
@@ -274,8 +351,8 @@ describe('CreateTaskPage', () => {
 
   it('drops each problem from the summary as it is fixed and removes the summary when none is left (UAT2-17)', async () => {
     const h = await create({ inputs: { matterId: '7' } });
+    await pickType(h);
     await type(h, '#ct-title', 'Process Smith custodians');
-    await choose(h, '#ct-type', '1');
     await submit(h);
     const summary = (): string => field(h, '[data-summary]')?.textContent ?? '';
     expect(summary()).toContain("Enter the requestor's name.");
@@ -334,6 +411,7 @@ describe('CreateTaskPage', () => {
 
   it('shows ASAP help without a due date and warns about a past date', async () => {
     const h = await create();
+    await pickType(h);
     expect(field(h, '[data-due-help]').textContent).toContain('ASAP');
     await type(h, '#ct-due-date', '2026-10-01');
     expect(field(h, '[data-past-due]').textContent).toContain('already passed');
@@ -390,41 +468,56 @@ describe('CreateTaskPage', () => {
 
   it('shows the sensitive-matter warning', async () => {
     const h = await create({ inputs: { matterId: '7' }, matter: aMatter({ isSensitive: true }) });
+    await pickType(h);
     expect(field(h, '[data-sensitive-banner]').textContent).toContain('Sensitive matter');
   });
 
   it('does not preselect an inactive matter', async () => {
     const h = await create({ inputs: { matterId: '7' }, matter: aMatter({ isActive: false }) });
+    await pickType(h);
     expect(field(h, '#ct-matter')).not.toBeNull();
     expect(h.el.textContent).toContain('This matter is inactive. Choose an active matter.');
   });
 
-  describe('request form on type change', { timeout: 20000 }, () => {
-    it('asks before clearing entered request details and keeps them on Keep', async () => {
-      const h = await create({
-        inputs: { matterId: '7' },
-        types: [
-          aType(),
-          aType({ id: 2, name: 'Other', hasFormFields: false, publishedFormVersionId: undefined }),
-        ],
-      });
-      await choose(h, '#ct-type', '1');
+  describe('Change type', { timeout: 20000 }, () => {
+    const twoTypes = (): TaskTypeView[] => [
+      aType(),
+      aType({ id: 2, name: 'Other', hasFormFields: false, publishedFormVersionId: undefined }),
+    ];
+
+    it('goes straight back to the chooser when no request details were entered', async () => {
+      const h = await create({ inputs: { matterId: '7' }, types: twoTypes() });
+      await pickType(h);
+      await type(h, '#ct-title', 'Kept title');
+
+      field<HTMLButtonElement>(h, '[data-change-type]').click();
+      await settle(h.fixture);
+
+      expect(field(h, '[data-type-chooser]')).not.toBeNull();
+      expect(document.querySelector('[role=dialog]')).toBeNull();
+      await pickType(h, 'Other');
+      expect(field<HTMLInputElement>(h, '#ct-title').value).toBe('Kept title');
+      expect(field(h, '[data-type-name]').textContent).toBe('Other');
+    });
+
+    it('asks before clearing entered request details', async () => {
+      const h = await create({ inputs: { matterId: '7' }, types: twoTypes() });
+      await pickType(h);
       await type(h, '[data-request-details] input[type=text]', 'WS-9');
 
-      const select = field<HTMLSelectElement>(h, '#ct-type');
-      select.value = '2';
-      select.dispatchEvent(new Event('change'));
+      field<HTMLButtonElement>(h, '[data-change-type]').click();
       await new Promise((r) => setTimeout(r, 50)); // an open dialog never lets the fixture settle in tests
       h.fixture.detectChanges();
       expect(document.body.textContent).toContain(
         'Changing the task type clears the request details you entered.',
       );
-      expect(field<HTMLSelectElement>(h, '#ct-type').value).toBe('1');
+      expect(field(h, '[data-type-chooser]')).toBeNull();
 
       buttonByLabel(document.querySelector('[role=dialog]')!, 'Change')!.click();
       await new Promise((r) => setTimeout(r, 50)); // the closing dialog animation never settles in tests
       h.fixture.detectChanges();
-      expect(field<HTMLSelectElement>(h, '#ct-type').value).toBe('2');
+      expect(field(h, '[data-type-chooser]')).not.toBeNull();
+      await pickType(h, 'Other');
       expect(field(h, '[data-request-details] mf-dynamic-form')).toBeNull();
     });
   });
@@ -488,13 +581,14 @@ describe('CreateTaskPage', () => {
         permissions: ['Task.View', 'Task.Create', 'Matter.View'],
         inputs: { matterId: '7' },
       });
+      await pickType(h);
       expect(field(h, '#ct-priority')).toBeNull();
       expect(field(h, '[data-priority-fixed]').textContent).toContain('Normal');
       expect(field(h, '#ct-user')).toBeNull();
       expect(field(h, '#ct-pod')).toBeNull();
       expect(field(h, '[data-no-assign]')).not.toBeNull();
 
-      await fillRequired(h);
+      await fillRequired(h, false);
       await type(h, '[data-request-details] input[type=text]', 'WS-9');
       await submit(h);
 
@@ -517,13 +611,14 @@ describe('CreateTaskPage', () => {
     it('is collapsed by default behind a Fill from email button, essentials first', async () => {
       localStorage.removeItem(EMAIL_PANEL_STORAGE_KEY);
       const h = await create();
+      await pickType(h);
 
       expect(field(h, '#ei-paste')).toBeNull();
       expect(field(h, '[data-email-toggle]')!.textContent).toContain('Fill from email');
       const order = Array.from(
-        h.el.querySelectorAll('#ct-matter, #ct-type, #ct-title, #ct-requestor-name'),
+        h.el.querySelectorAll('#ct-matter, #ct-title, #ct-requestor-name'),
       ).map((e) => e.id);
-      expect(order).toEqual(['ct-matter', 'ct-type', 'ct-title', 'ct-requestor-name']);
+      expect(order).toEqual(['ct-matter', 'ct-title', 'ct-requestor-name']);
     });
 
     it('prefills title, description and requestor, all still editable', async () => {
@@ -541,6 +636,8 @@ describe('CreateTaskPage', () => {
       await settle(h.fixture);
 
       expect(h.intake.parseEmailText).toHaveBeenCalled();
+      expect(field(h, '[data-type-chooser]')).not.toBeNull(); // the prefill waits for the type
+      await pickType(h);
       expect(field<HTMLInputElement>(h, '#ct-title').value).toBe('Production volume 7');
       expect(field<HTMLTextAreaElement>(h, '#ct-description').value).toBe(
         'Please prepare the load file.',
@@ -550,10 +647,8 @@ describe('CreateTaskPage', () => {
         'jane.doe@example-firm.test',
       );
       expect(field(h, '[data-source-sent]')).not.toBeNull();
-      expect(field(h, '#ct-type')).not.toBeNull();
 
       await type(h, '#ct-title', 'Edited by hand');
-      await choose(h, '#ct-type', '1');
       await type(h, '[data-request-details] input[type=text]', 'WS-9');
       await submit(h);
       const body = h.tasks.createTask.mock.calls[0][0];
@@ -574,7 +669,7 @@ describe('CreateTaskPage', () => {
     expect(h.tasks.createTask).toHaveBeenCalledTimes(1);
     expect(h.router.navigateByUrl).not.toHaveBeenCalled();
     expect(field<HTMLInputElement>(h, '#ct-title').value).toBe('');
-    expect(field<HTMLSelectElement>(h, '#ct-type').value).toBe('');
+    expect(field(h, '[data-type-name]').textContent).toBe('Data Processing');
     expect(field<HTMLSelectElement>(h, '#ct-pod').value).toBe('4');
     expect(field<HTMLSelectElement>(h, '#ct-project').value).toBe('3');
     expect(field(h, '[data-chosen]').textContent).toContain('00343-00012');
@@ -582,6 +677,8 @@ describe('CreateTaskPage', () => {
 
   it('reports unsaved changes until the task is created', async () => {
     const h = await create({ inputs: { matterId: '7' } });
+    expect(h.fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+    await pickType(h);
     expect(h.fixture.componentInstance.hasUnsavedChanges()).toBe(false);
     await type(h, '#ct-title', 'Draft');
     expect(h.fixture.componentInstance.hasUnsavedChanges()).toBe(true);

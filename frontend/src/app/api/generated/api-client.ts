@@ -11412,6 +11412,7 @@ export interface TaskQueueRow {
     isAsap: boolean;
     isOverdue: boolean;
     createdAtUtc: string;
+    assignedAtUtc: string | undefined;
     updatedAtUtc: string | undefined;
     completedAtUtc: string | undefined;
     statusChangedAtUtc: string;

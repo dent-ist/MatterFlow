@@ -45,6 +45,7 @@ public sealed record TaskQueueRow(
     [property: Required] bool IsAsap,
     [property: Required] bool IsOverdue,
     [property: Required] DateTime CreatedAtUtc,
+    DateTime? AssignedAtUtc,
     DateTime? UpdatedAtUtc,
     DateTime? CompletedAtUtc,
     [property: Required] DateTime StatusChangedAtUtc,

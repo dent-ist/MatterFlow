@@ -153,6 +153,10 @@ public sealed class StarterConfigurationSeedTests(SqlServerFixture sql) : IAsync
             all.Count.ShouldBe(15);
             (await catalog.ListUsableAsync()).Count.ShouldBe(15);
             all.ShouldAllBe(t => t.IsUsable && t.PublishedFormVersionId != null && t.EligibleWorkflowIds.Count >= 1 && t.DefaultWorkflowDefinitionId != null);
+
+            // Every starter type has an icon from the library, and none was left on the placeholder default (each has a sensible one).
+            all.ShouldAllBe(t => TaskTypeIcons.IsValid(t.IconKey) && t.IconKey != TaskTypeIcons.DefaultKey);
+            all.Single(t => t.Name == "Data Processing").IconKey.ShouldBe("cpu-2");
         }
 
         // 10 steps, 8 published workflows, 7 asset types with published forms, 9 non-admin roles.

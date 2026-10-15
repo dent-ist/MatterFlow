@@ -112,12 +112,12 @@ let nextId = 0;
     </section>
 
     <ng-template #rowBody let-item>
-      <span class="name">
+      <span class="namecell">
         @if (item.iconKey) {
           <mf-task-type-icon class="ti" [iconKey]="item.iconKey" size="sm" />
         }
-        {{ item.label }}</span
-      >
+        <span class="name">{{ item.label }}</span>
+      </span>
       <span class="track" aria-hidden="true">
         @if (item.count > 0) {
           <span
@@ -200,8 +200,14 @@ let nextId = 0;
       font-size: var(--mf-fs-md);
       line-height: 1.25;
     }
+    .namecell {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--mf-s2);
+      min-width: 0;
+    }
     .ti {
-      margin-right: var(--mf-s1);
+      margin-top: 1px;
       color: var(--mf-text-muted);
     }
     .track {

@@ -13,7 +13,7 @@ export class GridNav {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     const items = Array.from(
       this.host.nativeElement.querySelectorAll<HTMLElement>('[role="radio"],[role="option"]'),
-    ).filter((el) => !el.hasAttribute('disabled') && el.offsetParent !== null);
+    ).filter((el) => !el.hasAttribute('disabled'));
     const current = items.indexOf(event.target as HTMLElement);
     if (current < 0) return;
     let next: HTMLElement | undefined;

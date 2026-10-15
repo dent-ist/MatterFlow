@@ -47,4 +47,26 @@ public class TaskTypesSchemaTests(SqlServerFixture sql)
         // A Task Type that has eligibility rows can never be deleted (deactivate instead).
         await ShouldRejectAsync(cs, "DELETE dbo.TaskType WHERE TaskTypeId = 1", "FK_TaskTypeWorkflowEligibility_TaskType");
     }
+
+    [Fact]
+    public async Task Icon_key_is_required_defaults_to_file_text_and_only_takes_well_formed_ids()
+    {
+        var cs = await MigratedAsync();
+
+        await ExecAsync(cs, "INSERT dbo.TaskType (Name) VALUES (N'No icon given')");
+        (await ExecAsync(cs, "SELECT COUNT(*) FROM dbo.TaskType WHERE Name = N'No icon given' AND IconKey = 'file-text'")).ShouldBe(1);
+
+        await ExecAsync(cs, "INSERT dbo.TaskType (Name, IconKey) VALUES (N'Mail', 'mail')");
+        await ShouldRejectAsync(cs, "INSERT dbo.TaskType (Name, IconKey) VALUES (N'Null icon', NULL)", "IconKey");
+        await ShouldRejectAsync(cs, "INSERT dbo.TaskType (Name, IconKey) VALUES (N'Empty icon', '')", "CK_TaskType_IconKey");
+        await ShouldRejectAsync(cs, "INSERT dbo.TaskType (Name, IconKey) VALUES (N'Bad icon', 'Not An Icon')", "CK_TaskType_IconKey");
+        await ShouldRejectAsync(cs, "INSERT dbo.TaskType (Name, IconKey) VALUES (N'Long icon', '" + new string('a', 51) + "')", "truncated");
+    }
+
+    [Fact]
+    public async Task Task_assigned_at_exists_and_is_empty_for_unassigned_tasks()
+    {
+        var cs = await MigratedAsync();
+        (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Task') AND name = 'AssignedAt' AND is_nullable = 1")).ShouldBe(1);
+    }
 }

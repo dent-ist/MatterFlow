@@ -753,11 +753,9 @@ export class CreateTaskPage implements HasUnsavedChanges {
     this.dueDateInput()?.clear();
     this.dueTime.set('');
     this.assignee.set(null);
-    this.applyType(null);
+    this.applyType(this.typeId()); // the same type again, with an empty request form
     this.summary.set([]);
-    setTimeout(() =>
-      document.querySelector<HTMLElement>('[data-type-card][tabindex="0"]')?.focus(),
-    );
+    setTimeout(() => document.getElementById('ct-title')?.focus());
   }
 
   protected cancel(): void {

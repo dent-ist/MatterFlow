@@ -37,6 +37,9 @@ public class WorkTask : AuditedEntity<long>
 
     public int? AssignedUserId { get; set; }
 
+    /// <summary>When the current assignee was assigned (UTC); null while no user is assigned. Pod-only changes do not move it.</summary>
+    public DateTime? AssignedAtUtc { get; set; }
+
     public string RequestorName { get; set; } = string.Empty;
 
     public string? RequestorEmail { get; set; }

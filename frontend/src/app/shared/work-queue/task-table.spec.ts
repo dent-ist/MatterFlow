@@ -109,19 +109,38 @@ describe('TaskTable', () => {
     expect(sub.getAttribute('title')).toBe('Acme Corp / Merger Review');
   });
 
-  it('marks tasks created since the last visit with a "New" text badge, only when asked', async () => {
+  it('marks tasks assigned since the last visit with a "New" text badge, only when asked', async () => {
     const rows = [
       aRow({ taskId: 1, createdAtUtc: '2026-10-14T10:00:00Z' }),
       aRow({ taskId: 2, createdAtUtc: '2026-10-01T10:00:00Z' }),
+      // Created long ago, handed to this person after the last visit: new to them.
+      aRow({
+        taskId: 3,
+        createdAtUtc: '2026-09-01T10:00:00Z',
+        assignedAtUtc: '2026-10-14T10:00:00Z',
+      }),
+      // Created recently but assigned before the last visit: already seen.
+      aRow({
+        taskId: 4,
+        createdAtUtc: '2026-10-14T10:00:00Z',
+        assignedAtUtc: '2026-10-05T10:00:00Z',
+      }),
     ];
     await create(rows, ['ref', 'title']);
     expect(el().querySelector('[data-new-marker]')).toBeNull();
     fixture.componentRef.setInput('newSince', new Date('2026-10-10T00:00:00Z').getTime());
     fixture.detectChanges();
     const markers = el().querySelectorAll('[data-new-marker]');
-    expect(markers.length).toBe(1);
+    expect(markers.length).toBe(2);
     expect(markers[0].textContent?.trim()).toBe('New');
     expect(markers[0].closest('tr')!.querySelector('.wt-title')).not.toBeNull();
+  });
+
+  it('shows the task type icon before the title, with the type name as its tooltip', async () => {
+    await create([aRow({ taskTypeIconKey: 'cpu-2' })], ['ref', 'title']);
+    const icon = cell('title').querySelector('[data-type-icon]')!;
+    expect(icon.getAttribute('title')).toBe('Data Processing');
+    expect(icon.querySelector('mf-task-type-icon svg')?.getAttribute('aria-hidden')).toBe('true');
   });
 
   it('marks the Actions column so it can stay visible while the table scrolls', async () => {

@@ -389,7 +389,8 @@ export class TaskTable {
 
   protected isNew(row: TaskQueueRow): boolean {
     const since = this.newSince();
-    return since !== null && new Date(row.createdAtUtc).getTime() > since;
+    // When the person was handed the Task, not when it was created (a Task created last week and assigned today is new to them).
+    return since !== null && new Date(row.assignedAtUtc ?? row.createdAtUtc).getTime() > since;
   }
 
   protected progressTitle(row: TaskQueueRow): string {

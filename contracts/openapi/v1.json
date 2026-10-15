@@ -11820,6 +11820,7 @@
           "isAsap",
           "isOverdue",
           "createdAtUtc",
+          "assignedAtUtc",
           "updatedAtUtc",
           "completedAtUtc",
           "statusChangedAtUtc",
@@ -11955,6 +11956,13 @@
           },
           "createdAtUtc": {
             "type": "string",
+            "format": "date-time"
+          },
+          "assignedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date-time"
           },
           "updatedAtUtc": {

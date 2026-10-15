@@ -36,6 +36,7 @@ export function aRow(overrides: Partial<TaskQueueRow> = {}): TaskQueueRow {
     isAsap: true,
     isOverdue: false,
     createdAtUtc: '2026-10-01T12:00:00Z',
+    assignedAtUtc: undefined,
     updatedAtUtc: undefined,
     completedAtUtc: undefined,
     statusChangedAtUtc: '2026-10-01T12:00:00Z',

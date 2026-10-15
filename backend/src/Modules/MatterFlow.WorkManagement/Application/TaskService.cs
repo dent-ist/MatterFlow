@@ -316,6 +316,7 @@ public sealed class TaskService
             Status = assignment.Status,
             AssignedPodId = request.AssignedPodId,
             AssignedUserId = request.AssignedUserId,
+            AssignedAtUtc = request.AssignedUserId is null ? null : now,
             RequestorName = request.RequestorName.Trim(),
             RequestorEmail = TaskSupport.Clean(request.RequestorEmail),
             RequestedAtUtc = TaskSupport.ToUtc(request.RequestedAtUtc),
@@ -630,6 +631,8 @@ public sealed class TaskService
         var oldUser = task.AssignedUserId;
 
         task.AssignedPodId = request.PodId;
+        if (task.AssignedUserId != request.UserId)
+            task.AssignedAtUtc = request.UserId is null ? null : _clock.UtcNow;
         task.AssignedUserId = request.UserId;
         if (assignment.AutoStarted)
         {
