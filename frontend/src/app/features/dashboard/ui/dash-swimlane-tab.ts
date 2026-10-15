@@ -81,13 +81,10 @@ const EDIT_REFRESH_DELAY_MS = 900;
       [people]="peopleOptions()"
       [types]="typeOptions()"
       [priorities]="priorityOptions()"
-      [updated]="updated()"
-      [refreshing]="refreshing()"
       (viewChange)="patchView($event)"
       (densityChange)="setDensity($event)"
       (expandAll)="expandAll()"
       (collapseAll)="collapseAll()"
-      (refresh)="refresh()"
     />
 
     <p class="sr-only" role="status" aria-live="polite" data-swimlane-live>{{ live() }}</p>
@@ -237,7 +234,8 @@ export class DashSwimlaneTab implements OnInit {
   protected readonly density = this.prefs.density;
   protected readonly state = signal<LoadState>('loading');
   protected readonly board = signal<SwimlaneBoard | null>(null);
-  protected readonly refreshing = signal(false);
+  /** True while a refresh is running (the Dashboard's tab row shows it on its refresh icon). */
+  readonly refreshing = signal(false);
   protected readonly refreshFailed = signal(false);
   protected readonly live = signal('');
   protected readonly collapsed = signal<ReadonlySet<string>>(new Set());
@@ -422,7 +420,8 @@ export class DashSwimlaneTab implements OnInit {
 
   // ---- loading
 
-  protected refresh(): void {
+  /** Reads the board again now; the Dashboard's refresh icon (in the tab row) and the failed-refresh Retry call this. */
+  refresh(): void {
     if (this.refreshing()) return;
     this.load({ silent: true, announce: true });
   }

@@ -311,7 +311,9 @@ describe('DashSwimlaneTab', () => {
       'Nothing completed in this period',
     );
     expect(q('[data-board]').getAttribute('aria-busy')).toBeNull();
-    expect(text(q('[data-updated]'))).toContain('Updated Oct 15, 2026');
+    // The refresh icon lives in the Dashboard's tab row; the toolbar has neither a Refresh button nor an Updated line.
+    expect(q('[data-updated]')).toBeNull();
+    expect(q('[data-refresh-board]')).toBeNull();
   });
 
   it('draws a card with priority text and icon, ref link, title, client, matter link, due chip, assignee and progress', async () => {
@@ -359,7 +361,7 @@ describe('DashSwimlaneTab', () => {
   it('keeps the board on screen when a background refresh fails and says so with Retry', async () => {
     await open();
     getBoard.mockReturnValue(throwError(() => new Error('down')));
-    q<HTMLButtonElement>('[data-refresh-board]').click();
+    (harness.routeDebugElement!.componentInstance as DashSwimlaneTab).refresh();
     await settle();
     expect(qa('mf-swimlane-card').length).toBe(4);
     expect(text(q('[data-swimlane-stale]'))).toContain('could not be refreshed');

@@ -473,8 +473,14 @@ describe('DashboardPage', () => {
       expect(el.querySelector('[data-tabpanel="swimlane"]')!.getAttribute('aria-labelledby')).toBe(
         'mf-dash-tab-swimlane',
       );
-      // The Swimlane tab brings its own Refresh; the page header's (for the summary figures) steps aside.
+      // The page header's Refresh (summary figures) steps aside; the board's refresh is an icon in the tab row, with no "Updated" text.
       expect(el.querySelector('mf-page-header [data-refresh]')).toBeNull();
+      const icon = el.querySelector<HTMLButtonElement>('mf-dash-tabs [data-refresh-board]')!;
+      expect(icon).not.toBeNull();
+      expect(icon.getAttribute('aria-label')).toBe('Refresh board');
+      expect(icon.textContent!.trim()).toBe('');
+      expect(icon.closest('mf-dash-tabs')!.querySelector('[role="tablist"]')).not.toBeNull();
+      expect(el.querySelector('[data-updated]')).toBeNull();
 
       tabButtons(el)[4].click();
       await settle();

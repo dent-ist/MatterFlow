@@ -29,23 +29,27 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
   selector: 'mf-dash-tabs',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="tabs" role="tablist" [attr.aria-label]="label()">
-      @for (t of tabs(); track t.key) {
-        <button
-          type="button"
-          role="tab"
-          class="tab"
-          [id]="tabId(t.key)"
-          [attr.data-tab]="t.key"
-          [attr.aria-selected]="t.key === selected()"
-          [attr.aria-controls]="t.key === selected() ? panelId(t.key) : null"
-          [attr.tabindex]="t.key === selected() ? 0 : -1"
-          (click)="choose(t.key)"
-          (keydown)="onKey($event)"
-        >
-          {{ t.label }}
-        </button>
-      }
+    <div class="row">
+      <div class="tabs" role="tablist" [attr.aria-label]="label()">
+        @for (t of tabs(); track t.key) {
+          <button
+            type="button"
+            role="tab"
+            class="tab"
+            [id]="tabId(t.key)"
+            [attr.data-tab]="t.key"
+            [attr.aria-selected]="t.key === selected()"
+            [attr.aria-controls]="t.key === selected() ? panelId(t.key) : null"
+            [attr.tabindex]="t.key === selected() ? 0 : -1"
+            (click)="choose(t.key)"
+            (keydown)="onKey($event)"
+          >
+            {{ t.label }}
+          </button>
+        }
+      </div>
+      <!-- Controls that belong to the tab row (for example the Swimlane's refresh icon) sit at its right end, on the same line as the labels. -->
+      <div class="end"><ng-content /></div>
     </div>
   `,
   styles: `
@@ -53,12 +57,28 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
       display: block;
       margin-bottom: var(--mf-s4);
     }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      box-shadow: inset 0 -1px 0 var(--mf-border);
+    }
+    .end {
+      display: flex;
+      flex: none;
+      align-items: center;
+      gap: var(--mf-s2);
+    }
+    .end:empty {
+      display: none;
+    }
     .tabs {
+      flex: 1 1 auto;
+      min-width: 0;
       display: flex;
       gap: var(--mf-s1);
       overflow-x: auto;
       overflow-y: hidden;
-      box-shadow: inset 0 -1px 0 var(--mf-border);
       scrollbar-width: thin;
     }
     .tab {

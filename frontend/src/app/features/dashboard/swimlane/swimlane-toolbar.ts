@@ -134,24 +134,6 @@ export interface Option {
         </span>
       }
       <span class="grow"></span>
-      @if (updated(); as u) {
-        <span class="updated" data-updated>Updated {{ u }}</span>
-      }
-      <button
-        type="button"
-        class="mf-btn"
-        data-refresh-board
-        [attr.aria-disabled]="refreshing() ? 'true' : null"
-        [attr.aria-busy]="refreshing() ? 'true' : null"
-        (click)="refresh.emit()"
-      >
-        <i
-          class="pi"
-          [class]="refreshing() ? 'pi-spin pi-spinner' : 'pi-refresh'"
-          aria-hidden="true"
-        ></i>
-        Refresh
-      </button>
     </div>
 
     @if (panel()) {
@@ -263,6 +245,12 @@ export interface Option {
       min-width: 14rem;
       flex: 0 1 18rem;
     }
+    /* The search input is as tall as the other (compact) controls on the line, not the 40px form height. */
+    .search ::ng-deep .sb__input {
+      min-height: var(--mf-row-h-compact);
+      height: var(--mf-row-h-compact);
+      padding-block: 0;
+    }
     .n {
       font-variant-numeric: tabular-nums;
     }
@@ -275,11 +263,6 @@ export interface Option {
     .pair {
       display: inline-flex;
       gap: var(--mf-s2);
-    }
-    .updated {
-      align-self: center;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
     }
     .panel {
       display: flex;
@@ -308,9 +291,6 @@ export interface Option {
       .fld select {
         width: 100%;
       }
-      .updated {
-        display: none;
-      }
     }
   `,
 })
@@ -327,14 +307,11 @@ export class SwimlaneToolbar {
   readonly people = input<Option[]>([]);
   readonly types = input<Option[]>([]);
   readonly priorities = input<Option[]>([]);
-  readonly updated = input<string | null>(null);
-  readonly refreshing = input(false);
 
   readonly viewChange = output<Partial<SwimlaneView>>();
   readonly densityChange = output<Density>();
   readonly expandAll = output<void>();
   readonly collapseAll = output<void>();
-  readonly refresh = output<void>();
 
   protected readonly panel = signal(false);
   protected readonly count = computed(() => filterCount(this.view()));

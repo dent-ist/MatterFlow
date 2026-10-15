@@ -11,6 +11,7 @@ import {
   inject,
   signal,
   untracked,
+  viewChild,
   viewChildren,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
@@ -486,7 +487,26 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     }
 
     <ng-template #tabList>
-      <mf-dash-tabs [tabs]="tabs" [selected]="activeTab()" (tabChange)="selectTab($event)" />
+      <mf-dash-tabs [tabs]="tabs" [selected]="activeTab()" (tabChange)="selectTab($event)">
+        @if (activeTab() === 'swimlane') {
+          <button
+            type="button"
+            class="mf-btn mf-btn--icon"
+            data-refresh-board
+            aria-label="Refresh board"
+            title="Refresh board"
+            [attr.aria-disabled]="swimlane()?.refreshing() ? 'true' : null"
+            [attr.aria-busy]="swimlane()?.refreshing() ? 'true' : null"
+            (click)="swimlane()?.refresh()"
+          >
+            <i
+              class="pi"
+              [class]="swimlane()?.refreshing() ? 'pi-spin pi-spinner' : 'pi-refresh'"
+              aria-hidden="true"
+            ></i>
+          </button>
+        }
+      </mf-dash-tabs>
     </ng-template>
   `,
   styles: `
@@ -729,6 +749,8 @@ export class DashboardPage implements OnInit {
   protected readonly state = signal<LoadState>('loading');
   protected readonly data = signal<DashboardSummary | null>(null);
   protected readonly refreshing = signal(false);
+  /** The Swimlane tab, when it is on screen: its refresh icon sits in the tab row. */
+  protected readonly swimlane = viewChild(DashSwimlaneTab);
   protected readonly refreshFailed = signal(false);
   /** Polite live region: what the last refresh or inline assignment did, for screen readers. */
   protected readonly live = signal('');
