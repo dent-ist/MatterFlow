@@ -65,12 +65,15 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   /** Where the breadcrumb's first segment leads. */
   readonly sectionPath = input('/admin/task-types');
   readonly ownerLabel = input('Task Type');
+  /** Breadcrumb segments before the section (`Administration > Workflows` for a Step); empty for the other owners. */
+  readonly parentCrumbs = input<readonly Crumb[]>([]);
   /** `Task Types & Forms > Access Request > Form`: every segment is a link where the owner has a page of its own. */
   protected readonly formCrumbs = computed<Crumb[]>(() => {
     const o = this.owner();
     if (!o) return [];
     const hasPage = ['Task Type', 'Step'].includes(this.ownerLabel());
     return [
+      ...this.parentCrumbs(),
       { label: this.heading(), link: this.sectionPath() },
       { label: o.name, link: hasPage ? [this.sectionPath(), this.ownerId()] : undefined },
       { label: 'Form' },

@@ -275,6 +275,8 @@ Status values: Active, Inactive.
 
 ## 5. Step Definitions (library)
 
+Each step also carries free-form **tags** (the `tags` list of the step in `seed-configuration.json`), applied when the step is first created: S01 Intake; S02 Intake, Collection; S03 Processing, Relativity; S04 Processing; S05 Relativity, Processing, QC; S06 QC, Review; S07 Production, Relativity, QC; S08 Production; S09 Relativity, Review; S10 Close-out. Admins can change them at any time; the seed never overwrites the tags of a step that already exists.
+
 | Code | Title | Used in workflows |
 |---|---|---|
 | S01 | Intake Review and Scope Confirmation | Standard Processing and Load, Data Load Only, Standard Production, Workspace Setup and Access, Media and Data Receipt, Quick Request, Search, Analytics and Review Prep, Delivery, Return and Disposition |

@@ -77,7 +77,7 @@ test.describe('fixed-header screenshots', () => {
       { name: 'admin-pods', url: '/admin/pods', ready: 'Pods' },
       { name: 'admin-task-types', url: '/admin/task-types', ready: /Task types/i },
       { name: 'admin-workflows', url: '/admin/workflows', ready: 'Workflows' },
-      { name: 'admin-steps', url: '/admin/steps', ready: 'Workflow Steps' },
+      { name: 'admin-steps', url: '/admin/steps', ready: 'Workflows' },
       { name: 'admin-priorities', url: '/admin/priorities', ready: /./ },
       { name: 'admin-status-labels', url: '/admin/status-labels', ready: /./ },
       { name: 'admin-asset-types', url: '/admin/asset-types', ready: /./ },

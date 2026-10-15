@@ -27,6 +27,7 @@ const summary = (overrides: Partial<StepDefinitionSummary> = {}): StepDefinition
   documentationUrl: undefined,
   isActive: true,
   usedInVersions: 3,
+  tags: [],
   rowVersion: 'AAAA',
   ...overrides,
 });
@@ -50,6 +51,7 @@ const detail = (overrides: Partial<StepDefinitionDetail> = {}): StepDefinitionDe
       status: 'Published' as never,
     },
   ],
+  tags: [],
   rowVersion: 'BBBB',
   ...overrides,
 });
@@ -92,7 +94,15 @@ describe('StepsListPage', () => {
     expect(rows[0].textContent).toContain('3 versions');
     expect(rows[1].textContent).toContain('Not used');
     expect(rows[1].textContent).toContain('Inactive');
-    expect(api.listStepDefinitions).toHaveBeenCalledWith(undefined, undefined, true, 1, 25);
+    expect(api.listStepDefinitions).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true,
+      1,
+      25,
+    );
   });
 
   it('shows an empty state with a way to add the first step', async () => {
@@ -121,7 +131,15 @@ describe('StepsListPage', () => {
     fixture.componentRef.setInput('status', 'all');
     fixture.componentRef.setInput('page', '2');
     await settle(fixture);
-    expect(api.listStepDefinitions).toHaveBeenLastCalledWith(undefined, 'qc', undefined, 2, 25);
+    expect(api.listStepDefinitions).toHaveBeenLastCalledWith(
+      undefined,
+      'qc',
+      undefined,
+      undefined,
+      undefined,
+      2,
+      25,
+    );
   });
 });
 
@@ -164,6 +182,7 @@ describe('StepEditPage', () => {
       description: undefined,
       instructions: undefined,
       documentationUrl: 'https://sharepoint.example.firm/dedupe',
+      tags: [],
     });
     expect(navigate).toHaveBeenCalledWith(['/admin/steps', 12]);
   });
@@ -210,6 +229,7 @@ describe('StepEditPage', () => {
       instructions: 'Run the dedupe job.',
       documentationUrl: 'https://sharepoint.example.firm/dedupe',
       isActive: true,
+      tags: [],
       rowVersion: 'BBBB',
     });
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
@@ -264,5 +284,242 @@ describe('isValidDocumentationUrl', () => {
     expect(isValidDocumentationUrl('http://x.example')).toBe(true);
     expect(isValidDocumentationUrl('ftp://x.example')).toBe(false);
     expect(isValidDocumentationUrl('x.example')).toBe(false);
+  });
+});
+
+describe('StepsListPage tags', () => {
+  const tagOptions = [
+    { name: 'Relativity', stepCount: 3 },
+    { name: 'QC', stepCount: 1 },
+  ];
+
+  it('shows each step tags as chips with +n more, and offers the existing tags with counts', async () => {
+    const api = {
+      listStepDefinitions: vi.fn().mockReturnValue(
+        ok({
+          items: [
+            summary({ tags: ['Relativity', 'Processing', 'QC', 'Review', 'Intake'] }),
+            summary({ stepDefinitionId: 5, title: 'OCR', tags: [] }),
+          ],
+          total: 2,
+          page: 1,
+          pageSize: 25,
+        }),
+      ),
+      listStepTags: vi.fn().mockReturnValue(ok(tagOptions)),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(StepsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
+      ['Title', 'Description', 'Tags', 'Used in workflows', 'Status'],
+    );
+    const first = el.querySelector('tbody tr[data-row="Deduplicate"]')!;
+    expect(
+      Array.from(first.querySelectorAll('[data-tag]')).map((c) => c.textContent!.trim()),
+    ).toEqual(['Relativity', 'Processing', 'QC']);
+    expect(first.querySelector('[data-tags-more]')!.textContent).toContain('+2 more');
+    expect(el.querySelector('tbody tr[data-row="OCR"] [data-tags]')).toBeNull();
+    expect(api.listStepTags).toHaveBeenCalledWith(undefined, true, 200);
+
+    el.querySelector<HTMLButtonElement>('#step-tags-button')!.click();
+    await settle(fixture);
+    expect(
+      Array.from(el.querySelectorAll('.tf__option')).map((o) =>
+        o.textContent!.replace(/\s+/g, ' ').trim(),
+      ),
+    ).toEqual(['Relativity (3)', 'QC (1)']);
+  });
+
+  it('puts the chosen tags and Match all / any in the address and sends them to the API', async () => {
+    const api = {
+      listStepDefinitions: vi
+        .fn()
+        .mockReturnValue(ok({ items: [], total: 0, page: 1, pageSize: 25 })),
+      listStepTags: vi.fn().mockReturnValue(ok(tagOptions)),
+    };
+    await setup(api);
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(StepsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+
+    el.querySelector<HTMLButtonElement>('#step-tags-button')!.click();
+    await settle(fixture);
+    el.querySelector<HTMLInputElement>('[data-tag-option="Relativity"]')!.click();
+    await settle(fixture);
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { tags: ['Relativity'], page: null },
+      queryParamsHandling: 'merge',
+    });
+
+    fixture.componentRef.setInput('tags', ['Relativity', 'QC']);
+    await settle(fixture);
+    expect(api.listStepDefinitions).toHaveBeenLastCalledWith(
+      undefined,
+      undefined,
+      ['Relativity', 'QC'],
+      undefined, // Match all is the default and is not sent
+      true,
+      1,
+      25,
+    );
+    expect(el.querySelectorAll('[data-selected-tag]')).toHaveLength(2);
+
+    fixture.componentRef.setInput('tagMatch', 'any');
+    await settle(fixture);
+    expect(api.listStepDefinitions).toHaveBeenLastCalledWith(
+      undefined,
+      undefined,
+      ['Relativity', 'QC'],
+      'any',
+      true,
+      1,
+      25,
+    );
+
+    el.querySelectorAll<HTMLInputElement>('.tf__radio input')[0].click();
+    await settle(fixture);
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { tagMatch: null, page: null },
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('accepts a single tag in the address and treats the filter as filtering (Clear filters resets tags too)', async () => {
+    const api = {
+      listStepDefinitions: vi
+        .fn()
+        .mockReturnValue(ok({ items: [], total: 0, page: 1, pageSize: 25 })),
+      listStepTags: vi.fn().mockReturnValue(ok(tagOptions)),
+    };
+    await setup(api);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(StepsListPage);
+    fixture.componentRef.setInput('tags', 'QC');
+    await settle(fixture);
+    expect(api.listStepDefinitions).toHaveBeenLastCalledWith(
+      undefined,
+      undefined,
+      ['QC'],
+      undefined,
+      true,
+      1,
+      25,
+    );
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('[data-empty="filtered"]')).not.toBeNull();
+    buttonByLabel(el, 'Clear filters')!.click();
+    await settle(fixture);
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { q: null, status: null, page: null, tags: null, tagMatch: null },
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('still lists steps when the tag options cannot be loaded', async () => {
+    const api = {
+      listStepDefinitions: vi
+        .fn()
+        .mockReturnValue(ok({ items: [summary()], total: 1, page: 1, pageSize: 25 })),
+      listStepTags: vi.fn().mockReturnValue(apiError(500, { status: 500, title: 'x' })),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(StepsListPage);
+    await settle(fixture);
+    expect(fixture.nativeElement.querySelectorAll('tbody tr')).toHaveLength(1);
+  });
+});
+
+describe('StepEditPage tags', () => {
+  it('shows the tags as chips, saves added and removed tags, and offers existing tags as suggestions', async () => {
+    const api = {
+      getStepDefinition: vi
+        .fn()
+        .mockReturnValue(ok(detail({ tags: ['Relativity', 'Processing'] }))),
+      listStepTags: vi.fn().mockReturnValue(ok([{ name: 'QC', stepCount: 2 }])),
+      updateStepDefinition: vi
+        .fn()
+        .mockReturnValue(ok(detail({ tags: ['Relativity', 'QC'], rowVersion: 'CCCC' }))),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(StepEditPage);
+    fixture.componentRef.setInput('stepId', '4');
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(el.querySelector('label[for="step-tags"]')?.textContent).toContain('Tags');
+    expect(
+      Array.from(el.querySelectorAll('.ti__chip .ti__text')).map((c) => c.textContent),
+    ).toEqual(['Relativity', 'Processing']);
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+
+    el.querySelector<HTMLButtonElement>('[aria-label="Remove tag Processing"]')!.click();
+    const input = el.querySelector<HTMLInputElement>('#step-tags')!;
+    input.focus();
+    input.value = 'qc';
+    input.dispatchEvent(new Event('input'));
+    await settle(fixture);
+    expect(api.listStepTags).toHaveBeenLastCalledWith('qc', undefined, 12);
+    expect(el.querySelector('[role="option"]')?.textContent?.trim()).toBe('QC');
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+    );
+    await settle(fixture);
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+
+    buttonByLabel(el, 'Save changes')!.click();
+    await settle(fixture);
+    expect(api.updateStepDefinition).toHaveBeenCalledWith(
+      4,
+      expect.objectContaining({ tags: ['Relativity', 'QC'], rowVersion: 'BBBB' }),
+    );
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+  });
+
+  it('shows a server tag error under the field', async () => {
+    const api = {
+      getStepDefinition: vi.fn().mockReturnValue(ok(detail())),
+      listStepTags: vi.fn().mockReturnValue(ok([])),
+      updateStepDefinition: vi.fn().mockReturnValue(
+        apiError(400, {
+          status: 400,
+          title: 'Validation failed',
+          code: 'TAG_TOO_LONG',
+          errors: {
+            tags: [{ code: 'TAG_TOO_LONG', message: 'A tag can have at most 40 characters.' }],
+          },
+        } as never),
+      ),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(StepEditPage);
+    fixture.componentRef.setInput('stepId', '4');
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    const title = el.querySelector<HTMLInputElement>('#step-title')!;
+    title.value = 'Dedupe';
+    title.dispatchEvent(new Event('input'));
+    buttonByLabel(el, 'Save changes')!.click();
+    await settle(fixture);
+    expect(el.querySelector('#step-tags-error')?.textContent).toContain('at most 40 characters');
+  });
+
+  it('has the Administration > Workflows > Workflow Steps > step breadcrumb', async () => {
+    const api = {
+      getStepDefinition: vi.fn().mockReturnValue(ok(detail())),
+      listStepTags: vi.fn().mockReturnValue(ok([])),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(StepEditPage);
+    fixture.componentRef.setInput('stepId', '4');
+    await settle(fixture);
+    const crumbs = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('nav[aria-label="Breadcrumb"] li'),
+    ).map((li) => li.textContent!.trim());
+    expect(crumbs).toEqual(['Administration', 'Workflows', 'Workflow Steps', 'Deduplicate']);
   });
 });

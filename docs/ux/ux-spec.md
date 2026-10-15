@@ -56,8 +56,8 @@ Left nav (items hidden when the user lacks the matching View permission):
      Users                         /admin/users (Users tab), /admin/roles (Roles tab)
      Pods                          /admin/pods
      Task Types & Forms            /admin/task-types
-     Workflows                     /admin/workflows
-     Workflow Steps                /admin/steps
+     Workflows                     /admin/workflows (Workflows tab), /admin/steps (Workflow Steps tab); the step pages /admin/steps/new, /admin/steps/:id, /admin/steps/:id/form
+                                   and the workflow pages /admin/workflows/new, /admin/workflows/:id[/versions/:v] keep their own pages and highlight this item
      Labels                        /admin/priorities, /admin/status-labels
      Assets                        /admin/asset-types (tabs Asset Types, ?tab=link-roles = Asset Link Roles; page title "Asset types and link roles")
      Custom Fields                 /admin/custom-fields
@@ -247,7 +247,7 @@ Screen IDs map to baseline §19 (item number in brackets). Each spec: purpose, l
 | S12 | Admin: Users, pending users, roles/permissions | 12 |
 | S13 | Admin: Pods | 13 |
 | S14 | Admin: Task Types and form designer | 14 |
-| S15 | Admin: Workflow Steps | 15 |
+| S15 | Admin: Workflow Steps (second tab of Workflows, with tags) | 15 |
 | S16 | Admin: Workflow designer and publish | 16 |
 | S17 | Admin: Asset Types | 17 |
 | S18 | Admin: Priorities, status labels, custom fields | 18 |
@@ -866,21 +866,27 @@ Rules for "OCR language"
 
 ---
 
-### S15 Admin: Step Library
+### S15 Admin: Workflow Steps (step library)
+
+The step library is the **second tab ("Workflow Steps") of the Workflows page**; the Administration menu has one "Workflows" item for both tabs (`/admin/workflows` = Workflows tab, `/admin/steps` = Workflow Steps tab, route-based like Users/Roles; both need `Workflow.Manage`). Document titles "Workflows" and "Workflows - Workflow Steps".
 
 ```text
-Administration > Step Library                                [+ New step]
-Search [____]  Status [Active v]
-+----------------------+------------------------------+-----------+--------------------+
-| Title                | Description                  | Fields    | Used in workflows  |
-| Deduplicate          | Remove duplicate items       | 3         | 4 versions         |
+Administration > Workflows > Workflow Steps                  [+ New step]
+Workflows | Workflow Steps
+Search [Title, description or tag]  Status [Active v]  [Tags v]  (o) Match all ( ) Match any   [Relativity x] [QC x]
++----------------------+--------------------+-------------------------+--------------------+
+| Title                | Description        | Tags                    | Used in workflows  |
+| Deduplicate          | Remove duplicates  | (Relativity) (QC) +2 more | 4 versions       |
 ```
+**Tags.** Each step has free-form tags (examples: Relativity, Processing). The Tags column shows chips (first three, then "+n more", long tags cut with an ellipsis). The free-text search also matches tag text. The **Tags** button opens a panel of checkboxes of the existing tags with counts ("Relativity (3)"; a find box above eight tags); chosen tags show as removable chips ("Remove tag filter X"); "Match all" (default: a step needs every chosen tag) or "Match any". The state is in the address (`q`, `tags` repeated, `tagMatch=any`, `status`, `sort`, `page`). The workflow designer's step picker shows the same chips, searches tag text and has the same Tags filter.
+**Tag input (step editor).** Type and press Enter or comma to make a chip (leaving the box also commits), Backspace on an empty box removes the last chip, every chip has a "Remove tag X" button, existing tags are suggested as you type (a combobox with a listbox; free text is always allowed), a polite live region announces added and removed tags. Rules: trimmed, inner whitespace collapsed, at most 40 characters per tag, at most 20 per step, no control characters, case-insensitive uniqueness per step (the first spelling wins; an existing tag keeps its stored spelling across steps). Tags are library metadata: editing them never changes a published workflow version, and the change is audited (field `Tags`).
 **Step editor.**
 ```text
 Title (required) [__________]
 Description [__________]  (short)
 Instructions [ rich text? plain multi-line with line breaks / basic markdown-free ]  (detailed SOP)
 Documentation URL [https://...]  (optional, validated)
+Tags [(Relativity x) (Processing x) type a tag...]  (optional)
 Data inputs (operational values only): same field designer pattern (types as in S14, no file upload) with conditional rules
    e.g. Items in [number, required]  Items out [number]  QC result [dropdown Pass/Fail, required]
    Hint: "These are operational values recorded on the task, not staff or billing metrics."
@@ -1353,6 +1359,9 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S15-2 Editing a step shows the "doesn't change published workflows" notice, and published workflows are unchanged (addendum A).
 - [ ] UAT-S15-3 Used-in list visible; deletion replaced by deactivate when used.
 - [ ] UAT-S15-4 Inputs described as operational values, not staff metrics.
+- [ ] UAT-S15-5 One "Workflows" menu item with the tabs Workflows and Workflow Steps; /admin/workflows and /admin/steps open their tab; the step pages' breadcrumb is Administration > Workflows > Workflow Steps > step.
+- [ ] UAT-S15-6 Tags: add with Enter or comma, remove with Backspace or the "Remove tag X" button, suggestions from existing tags, limits explained (40 characters, 20 tags).
+- [ ] UAT-S15-7 The Workflow Steps list shows a Tags column, searches tag text and filters by tags (Match all by default, Match any on request); the designer's step picker shows tags and finds steps by tag.
 
 ### S16 Workflow designer
 - [ ] UAT-S16-1 Choose Ordered/Unordered; ordering UI only meaningful for ordered; mode change confirm.

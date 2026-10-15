@@ -17,6 +17,8 @@ export interface StepSpec {
   requiredInput?: boolean;
   isSkippable?: boolean;
   skipCommentRequired?: boolean;
+  /** Free-form library tags of the step. */
+  tags?: string[];
 }
 
 /** A user's availability profile (the `PUT /users/{id}/availability` body without the row version). */
@@ -231,6 +233,7 @@ export class Seeder {
       title,
       description: null,
       instructions: spec.instructions ?? null,
+      tags: spec.tags ?? [],
     });
     if (spec.requiredInput) {
       await this.publishForm(created.formDefinitionId, [

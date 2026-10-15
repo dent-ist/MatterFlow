@@ -87,6 +87,7 @@ const libStep = (id: number, title: string): StepDefinitionSummary => ({
   documentationUrl: undefined,
   isActive: true,
   usedInVersions: 0,
+  tags: [],
   rowVersion: 'S',
 });
 
@@ -412,7 +413,15 @@ describe('WorkflowVersionPage draft editor', () => {
     type(el, '#wf-lib-search', 'zzz');
     await new Promise((r) => setTimeout(r, 400));
     await settle(fixture);
-    expect(a.steps.listStepDefinitions).toHaveBeenLastCalledWith(undefined, 'zzz', true, 1, 50);
+    expect(a.steps.listStepDefinitions).toHaveBeenLastCalledWith(
+      undefined,
+      'zzz',
+      undefined,
+      undefined,
+      true,
+      1,
+      50,
+    );
     expect(el.querySelector('[data-lib-empty]')?.textContent).toContain('No steps match');
   });
 

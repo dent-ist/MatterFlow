@@ -76,7 +76,7 @@ export abstract class ListQueryPage {
     void this.router.navigateByUrl(path);
   }
 
-  protected navigate(params: Record<string, string | number | null>): void {
+  protected navigate(params: Record<string, string | number | readonly string[] | null>): void {
     void this.router.navigate([], { queryParams: params, queryParamsHandling: 'merge' });
   }
 }

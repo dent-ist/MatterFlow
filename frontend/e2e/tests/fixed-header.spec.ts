@@ -205,7 +205,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
       ['/admin/pods', 'Pods', 'Pods list, scrollable'],
       ['/admin/task-types', 'Task Types & Forms', 'Task types list, scrollable'],
       ['/admin/workflows', 'Workflows', 'Workflows list, scrollable'],
-      ['/admin/steps', 'Workflow Steps', 'Steps list, scrollable'],
+      ['/admin/steps', 'Workflows', 'Steps list, scrollable'],
       ['/admin/priorities', 'Labels', 'Priorities list, scrollable'],
       ['/admin/status-labels', 'Labels', 'Status labels list, scrollable'],
       ['/admin/asset-types', 'Asset Types & Link Roles', 'Asset types list, scrollable'],

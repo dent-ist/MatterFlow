@@ -49,15 +49,11 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     permissions: ['TaskType.Manage'],
   },
   {
+    // The Workflows and Workflow Steps tabs (and the step and workflow pages under them).
     label: 'Workflows',
     icon: 'pi pi-share-alt',
     path: '/admin/workflows',
-    permissions: ['Workflow.Manage'],
-  },
-  {
-    label: 'Workflow Steps',
-    icon: 'pi pi-clone',
-    path: '/admin/steps',
+    alsoActive: ['/admin/steps'],
     permissions: ['Workflow.Manage'],
   },
   {

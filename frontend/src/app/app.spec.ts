@@ -174,7 +174,6 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
       'Pods',
       'Task Types & Forms',
       'Workflows',
-      'Workflow Steps',
       'Labels',
       'Assets',
       'Custom Fields',

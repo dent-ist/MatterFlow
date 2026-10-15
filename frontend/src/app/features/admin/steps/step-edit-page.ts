@@ -17,6 +17,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { TagInput } from '../../../shared/ui/tag-input';
 import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PageTitle } from '../../../core/title/page-title';
@@ -36,19 +37,26 @@ export function isValidDocumentationUrl(value: string): boolean {
   }
 }
 
+/** True when both lists hold the same tags in the same order (ignoring case). */
+function sameTags(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((t, i) => t.toLowerCase() === b[i].toLowerCase());
+}
+
 /**
- * Admin: create or edit a library step (UX S15). Title, description, instructions and documentation link live here; the data inputs are
+ * Admin: create or edit a library step (UX S15). Title, description, instructions, documentation link and tags live here; the data inputs are
  * the step's form, edited with the form designer at `/admin/steps/:id/form`. Editing never changes published workflows (addendum A);
  * deactivating hides the step from new workflow drafts. Needs `Workflow.Manage` (route guard).
  */
 @Component({
   selector: 'mf-step-edit-page',
-  imports: [PageHeader, ErrorReference, RouterLink, Button, TextField, ConfirmDialog],
+  imports: [PageHeader, ErrorReference, RouterLink, Button, TextField, TagInput, ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <mf-page-header
       [crumbs]="[
+        { label: 'Administration' },
+        { label: 'Workflows', link: '/admin/workflows' },
         { label: 'Workflow Steps', link: '/admin/steps' },
         { label: isEdit() ? original()?.title || 'Edit' : 'New' },
       ]"
@@ -103,6 +111,16 @@ export function isValidDocumentationUrl(value: string): boolean {
           [maxLength]="1000"
           [error]="fieldError('description')"
           [(value)]="description"
+        />
+        <mf-tag-input
+          inputId="step-tags"
+          label="Tags"
+          placeholder="Add a tag"
+          help="Optional labels such as Relativity or Processing, used to find the step. Press Enter or comma to add one. Up to 20 tags, 40 characters each."
+          [error]="fieldError('tags')"
+          [suggestions]="tagSuggestions()"
+          (queryChange)="suggestTags($event)"
+          [(value)]="tags"
         />
         <mf-text-field
           inputId="step-instructions"
@@ -221,6 +239,8 @@ export class StepEditPage implements HasUnsavedChanges {
   protected readonly description = signal('');
   protected readonly instructions = signal('');
   protected readonly documentationUrl = signal('');
+  protected readonly tags = signal<string[]>([]);
+  protected readonly tagSuggestions = signal<string[]>([]);
   protected readonly busy = signal(false);
   protected readonly submitted = signal(false);
   protected readonly serverErrors = signal<Record<string, string>>({});
@@ -228,6 +248,7 @@ export class StepEditPage implements HasUnsavedChanges {
   protected readonly conflict = signal(false);
   protected readonly deactivateOpen = signal(false);
   private saved = false;
+  private suggestRequest = 0;
 
   protected readonly titleError = computed(() => {
     if (this.submitted() && this.title().trim() === '') return 'Enter a title.';
@@ -273,14 +294,16 @@ export class StepEditPage implements HasUnsavedChanges {
         (this.title() !== o.title ||
           this.description() !== (o.description ?? '') ||
           this.instructions() !== (o.instructions ?? '') ||
-          this.documentationUrl() !== (o.documentationUrl ?? ''))
+          this.documentationUrl() !== (o.documentationUrl ?? '') ||
+          !sameTags(this.tags(), o.tags))
       );
     }
     return (
       this.title().trim() !== '' ||
       this.description().trim() !== '' ||
       this.instructions().trim() !== '' ||
-      this.documentationUrl().trim() !== ''
+      this.documentationUrl().trim() !== '' ||
+      this.tags().length > 0
     );
   }
 
@@ -324,6 +347,7 @@ export class StepEditPage implements HasUnsavedChanges {
       description: this.description().trim() || undefined,
       instructions: this.instructions().trim() || undefined,
       documentationUrl: this.documentationUrl().trim() || undefined,
+      tags: this.tags(),
     };
     const result = await this.run(() =>
       this.isEdit()
@@ -415,5 +439,19 @@ export class StepEditPage implements HasUnsavedChanges {
     this.description.set(step.description ?? '');
     this.instructions.set(step.instructions ?? '');
     this.documentationUrl.set(step.documentationUrl ?? '');
+    this.tags.set([...step.tags]);
+  }
+
+  /** Existing tags that match what was typed, for the tag box (the latest answer wins; failures just offer nothing). */
+  protected async suggestTags(text: string): Promise<void> {
+    const request = ++this.suggestRequest;
+    try {
+      const found = await firstValueFrom(
+        this.api.listStepTags(text.trim() || undefined, undefined, 12),
+      );
+      if (request === this.suggestRequest) this.tagSuggestions.set(found.map((t) => t.name));
+    } catch {
+      if (request === this.suggestRequest) this.tagSuggestions.set([]);
+    }
   }
 }

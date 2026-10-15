@@ -318,7 +318,7 @@ test.describe('Round 4: administration naming', () => {
   const titles: [string, string, string | RegExp][] = [
     ['/admin/task-types', 'Task Types & Forms', 'Task Types & Forms - MatterFlow'],
     ['/admin/workflows', 'Workflows', 'Workflows - MatterFlow'],
-    ['/admin/steps', 'Workflow Steps', 'Workflow Steps - MatterFlow'],
+    ['/admin/steps', 'Workflows', 'Workflows - Workflow Steps - MatterFlow'],
     ['/admin/priorities', 'Labels', 'Labels - Priorities - MatterFlow'],
     ['/admin/status-labels', 'Labels', 'Labels - Status labels - MatterFlow'],
     ['/admin/custom-fields', 'Custom Fields', 'Custom Fields - MatterFlow'],

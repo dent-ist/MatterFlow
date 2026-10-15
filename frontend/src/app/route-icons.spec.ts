@@ -16,7 +16,7 @@ async function pagesOf(list: readonly Route[], base: string): Promise<Page[]> {
     let own = (r.path ?? '').replace(/:[A-Za-z]+/g, '1');
     const candidates: string[] = [];
     if (r.matcher) {
-      for (const probe of ['users', 'roles']) {
+      for (const probe of ['users', 'roles', 'workflows', 'steps']) {
         if (r.matcher([new UrlSegment(probe, {})], null as never, r)) candidates.push(probe);
       }
     } else candidates.push(own === '**' ? '404' : own);

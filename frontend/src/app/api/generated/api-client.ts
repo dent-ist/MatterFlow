@@ -9322,16 +9322,25 @@ export interface IStepDefinitionsClient {
     /**
      * @param sort (optional) 
      * @param q (optional) 
+     * @param tags (optional) 
+     * @param tagMatch (optional) 
      * @param isActive (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    listStepDefinitions(sort?: string | undefined, q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary>;
+    listStepDefinitions(sort?: string | undefined, q?: string | undefined, tags?: string[] | undefined, tagMatch?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary>;
     /**
      * @return Created
      */
     createStepDefinition(body: CreateStepDefinitionRequest): Observable<StepDefinitionDetail>;
+    /**
+     * @param q (optional) 
+     * @param isActive (optional) 
+     * @param limit (optional) 
+     * @return OK
+     */
+    listStepTags(q?: string | undefined, isActive?: boolean | undefined, limit?: number | undefined): Observable<StepTagSummary[]>;
     /**
      * @return OK
      */
@@ -9366,12 +9375,14 @@ export class StepDefinitionsClient implements IStepDefinitionsClient {
     /**
      * @param sort (optional) 
      * @param q (optional) 
+     * @param tags (optional) 
+     * @param tagMatch (optional) 
      * @param isActive (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    listStepDefinitions(sort?: string | undefined, q?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary> {
+    listStepDefinitions(sort?: string | undefined, q?: string | undefined, tags?: string[] | undefined, tagMatch?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary> {
         let url_ = this.baseUrl + "/api/v1/step-definitions?";
         if (sort === null)
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
@@ -9381,6 +9392,14 @@ export class StepDefinitionsClient implements IStepDefinitionsClient {
             throw new globalThis.Error("The parameter 'q' cannot be null.");
         else if (q !== undefined)
             url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (tags === null)
+            throw new globalThis.Error("The parameter 'tags' cannot be null.");
+        else if (tags !== undefined)
+            tags && tags.forEach(item => { url_ += "Tags=" + encodeURIComponent("" + item) + "&"; });
+        if (tagMatch === null)
+            throw new globalThis.Error("The parameter 'tagMatch' cannot be null.");
+        else if (tagMatch !== undefined)
+            url_ += "TagMatch=" + encodeURIComponent("" + tagMatch) + "&";
         if (isActive === null)
             throw new globalThis.Error("The parameter 'isActive' cannot be null.");
         else if (isActive !== undefined)
@@ -9483,6 +9502,71 @@ export class StepDefinitionsClient implements IStepDefinitionsClient {
             let result201: any = null;
             result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StepDefinitionDetail;
             return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param q (optional) 
+     * @param isActive (optional) 
+     * @param limit (optional) 
+     * @return OK
+     */
+    listStepTags(q?: string | undefined, isActive?: boolean | undefined, limit?: number | undefined): Observable<StepTagSummary[]> {
+        let url_ = this.baseUrl + "/api/v1/step-definitions/tags?";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (isActive === null)
+            throw new globalThis.Error("The parameter 'isActive' cannot be null.");
+        else if (isActive !== undefined)
+            url_ += "IsActive=" + encodeURIComponent("" + isActive) + "&";
+        if (limit === null)
+            throw new globalThis.Error("The parameter 'limit' cannot be null.");
+        else if (limit !== undefined)
+            url_ += "Limit=" + encodeURIComponent("" + limit) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListStepTags(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListStepTags(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<StepTagSummary[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<StepTagSummary[]>;
+        }));
+    }
+
+    protected processListStepTags(response: HttpResponseBase): Observable<StepTagSummary[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StepTagSummary[];
+            return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -10853,6 +10937,7 @@ export interface CreateStepDefinitionRequest {
     description?: string | undefined;
     instructions?: string | undefined;
     documentationUrl?: string | undefined;
+    tags?: string[] | undefined;
 
     [key: string]: any;
 }
@@ -11679,6 +11764,7 @@ export interface StepDefinitionDetail {
     publishedFormVersionId: number | undefined;
     draftFormFieldCount: number;
     usage: StepUsage[];
+    tags: string[];
     rowVersion: string;
 
     [key: string]: any;
@@ -11691,7 +11777,15 @@ export interface StepDefinitionSummary {
     documentationUrl: string | undefined;
     isActive: boolean;
     usedInVersions: number;
+    tags: string[];
     rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface StepTagSummary {
+    name: string;
+    stepCount: number;
 
     [key: string]: any;
 }
@@ -12284,6 +12378,7 @@ export interface UpdateStepDefinitionRequest {
     instructions?: string | undefined;
     documentationUrl?: string | undefined;
     isActive: boolean;
+    tags?: string[] | undefined;
     rowVersion: string;
 
     [key: string]: any;
@@ -12698,6 +12793,9 @@ export enum ApiProblemDetailsCode {
     FORM_VERSION_IMMUTABLE = "FORM_VERSION_IMMUTABLE",
     WORKFLOW_DRAFT_EXISTS = "WORKFLOW_DRAFT_EXISTS",
     WORKFLOW_VERSION_IMMUTABLE = "WORKFLOW_VERSION_IMMUTABLE",
+    TAG_TOO_LONG = "TAG_TOO_LONG",
+    TOO_MANY_TAGS = "TOO_MANY_TAGS",
+    TAG_INVALID = "TAG_INVALID",
     ASSET_TYPE_INACTIVE = "ASSET_TYPE_INACTIVE",
     ASSET_INACTIVE = "ASSET_INACTIVE",
     UNSUPPORTED_MEDIA_TYPE = "UNSUPPORTED_MEDIA_TYPE",

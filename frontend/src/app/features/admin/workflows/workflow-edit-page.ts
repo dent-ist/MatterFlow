@@ -53,6 +53,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   template: `
     <mf-page-header
       [crumbs]="[
+        { label: 'Administration' },
         { label: 'Workflows', link: '/admin/workflows' },
         { label: isEdit() ? name() || 'Edit' : 'New' },
       ]"

@@ -4,14 +4,13 @@ test.describe('Administration menu and tabbed admin pages', () => {
   test('the menu is one flat list in the agreed order with the agreed names', async ({ page }) => {
     await page.goto('/dashboard');
     const items = page.getByRole('list', { name: 'Administration' }).getByRole('link');
-    await expect(items).toHaveCount(9); // the menu renders once the permissions are loaded
+    await expect(items).toHaveCount(8); // the menu renders once the permissions are loaded
     const names = (await items.allTextContents()).map((t) => t.replace(/\d+$/, '').trim());
     expect(names).toEqual([
       'Users',
       'Pods',
       'Task Types & Forms',
       'Workflows',
-      'Workflow Steps',
       'Labels',
       'Assets',
       'Custom Fields',

@@ -35,6 +35,8 @@ import { ErrorReference } from '../../../shared/ui/error-reference';
 import { Badge, workflowStatusTone } from '../../../shared/ui/badge';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { SearchBox } from '../../../shared/ui/search-box';
+import { TagChips } from '../../../shared/ui/tag-chips';
+import { TagFilter, TagMatch, TagOption } from '../../../shared/ui/tag-filter';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -76,6 +78,8 @@ const UNORDERED_TEXT =
     ConfirmDialog,
     DynamicForm,
     SearchBox,
+    TagChips,
+    TagFilter,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
@@ -91,6 +95,7 @@ const UNORDERED_TEXT =
     } @else if (version(); as v) {
       <mf-page-header
         [crumbs]="[
+          { label: 'Administration' },
           { label: 'Workflows', link: '/admin/workflows' },
           { label: v.workflowName, link: ['/admin/workflows', workflowId()] },
           { label: 'v' + v.version.versionNo },
@@ -226,10 +231,19 @@ const UNORDERED_TEXT =
               <mf-search-box
                 inputId="wf-lib-search"
                 label="Search steps"
-                placeholder="Title or description"
-                hint="Searches as you type by title or description."
+                placeholder="Title, description or tag"
+                hint="Searches as you type by title, description or tag."
                 [value]="libQ()"
                 (searchChange)="searchLibrary($event)"
+              />
+              <mf-tag-filter
+                idPrefix="wf-lib-tags"
+                label="Tags"
+                [options]="libTagOptions()"
+                [selected]="libTags()"
+                [match]="libMatch()"
+                (selectedChange)="setLibTags($event)"
+                (matchChange)="setLibMatch($event)"
               />
               <div class="wf-results" [attr.aria-busy]="libState() === 'loading'">
                 @switch (libState()) {
@@ -250,8 +264,8 @@ const UNORDERED_TEXT =
                   @if (library().length === 0 && libState() === 'ready') {
                     <div class="pg-state" data-lib-empty>
                       {{
-                        libQ()
-                          ? 'No steps match that search. Try a different word, or clear the search.'
+                        libQ() || libTags().length > 0
+                          ? 'No steps match that search. Try a different word, or clear the search and the tags.'
                           : 'There are no active workflow steps.'
                       }}
                     </div>
@@ -267,6 +281,7 @@ const UNORDERED_TEXT =
                             @if (s.description) {
                               <span class="pg-muted wf-item__desc">{{ s.description }}</span>
                             }
+                            <mf-tag-chips [tags]="s.tags" [max]="3" />
                           </div>
                           <button
                             type="button"
@@ -606,6 +621,9 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
   protected readonly library = signal<StepDefinitionSummary[]>([]);
   protected readonly libState = signal<LoadState>('loading');
   protected readonly libQ = signal('');
+  protected readonly libTags = signal<string[]>([]);
+  protected readonly libMatch = signal<TagMatch>('all');
+  protected readonly libTagOptions = signal<TagOption[]>([]);
   private readonly libTotal = signal(0);
   protected readonly libCountText = computed(() => {
     const shown = this.library().length;
@@ -672,7 +690,10 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
       this.workflow.set(workflow.workflow);
       this.apply(detail);
       this.state.set('ready');
-      if (this.editable() && this.libState() !== 'ready') void this.loadLibrary();
+      if (this.editable() && this.libState() !== 'ready') {
+        void this.loadLibrary();
+        void this.loadLibraryTags();
+      }
     } catch {
       this.state.set('error');
     }
@@ -683,7 +704,15 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
     this.libState.set('loading');
     try {
       const result = await firstValueFrom(
-        this.steps.listStepDefinitions(undefined, this.libQ().trim() || undefined, true, 1, 50),
+        this.steps.listStepDefinitions(
+          undefined,
+          this.libQ().trim() || undefined,
+          this.libTags().length > 0 ? this.libTags() : undefined,
+          this.libMatch() === 'any' ? 'any' : undefined,
+          true,
+          1,
+          50,
+        ),
       );
       if (id !== this.libRequest) return;
       this.library.set(result.items);
@@ -697,6 +726,25 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
   protected searchLibrary(text: string): void {
     this.libQ.set(text);
     void this.loadLibrary();
+  }
+
+  protected setLibTags(tags: string[]): void {
+    this.libTags.set(tags);
+    void this.loadLibrary();
+  }
+
+  protected setLibMatch(match: TagMatch): void {
+    this.libMatch.set(match);
+    if (this.libTags().length > 1) void this.loadLibrary();
+  }
+
+  private async loadLibraryTags(): Promise<void> {
+    try {
+      const tags = await firstValueFrom(this.steps.listStepTags(undefined, true, 200));
+      this.libTagOptions.set(tags.map((t) => ({ name: t.name, count: t.stepCount })));
+    } catch {
+      this.libTagOptions.set([]); // the picker still searches by text
+    }
   }
 
   protected inWorkflow(stepId: number): boolean {
