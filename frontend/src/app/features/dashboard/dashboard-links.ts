@@ -51,3 +51,22 @@ export const LIST_ORDER: Record<
 
 /** The Task Queue query of every open, unassigned task (what the department sees, and what a person with Task.Assign picks work from). */
 export const OPEN_UNASSIGNED_QUERY = 'status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true';
+
+/** Query parameters of the Users tab (`?tab=users&upod=..&uavail=..&uq=..`); the page clears them when another tab is chosen. */
+export const USERS_POD_PARAM = 'upod';
+export const USERS_AVAILABILITY_PARAM = 'uavail';
+export const USERS_Q_PARAM = 'uq';
+
+/** The Workload or Coverage view of the tab, and the Coverage period (`cp`, and `cfrom` / `cto` for a custom range). */
+export const USERS_VIEW_PARAM = 'view';
+export const COVERAGE_PARAMS = ['cp', 'cfrom', 'cto'] as const;
+
+export function clearedUsersParams(): Record<string, null> {
+  return {
+    [USERS_POD_PARAM]: null,
+    [USERS_AVAILABILITY_PARAM]: null,
+    [USERS_Q_PARAM]: null,
+    [USERS_VIEW_PARAM]: null,
+    ...Object.fromEntries(COVERAGE_PARAMS.map((k) => [k, null])),
+  };
+}

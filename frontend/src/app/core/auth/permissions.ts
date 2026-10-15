@@ -50,6 +50,7 @@ export const PERMISSIONS = [
   'Dashboard.ViewTrends',
   'Dashboard.ViewSwimlane',
   'Dashboard.ViewUsers',
+  'Dashboard.ViewCoverage',
   'Audit.View',
 ] as const;
 

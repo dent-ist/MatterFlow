@@ -208,6 +208,9 @@ public static class Permissions
 
         /// <summary>Users tab: team workload per person.</summary>
         public const string ViewUsers = "Dashboard.ViewUsers";
+
+        /// <summary>See how many tasks each person completed per task type (training and coverage planning). Needs <see cref="View"/> too.</summary>
+        public const string ViewCoverage = "Dashboard.ViewCoverage";
     }
 
     /// <summary>Audit permissions.</summary>
@@ -267,6 +270,7 @@ public static class Permissions
         Dashboard.ViewTrends,
         Dashboard.ViewSwimlane,
         Dashboard.ViewUsers,
+        Dashboard.ViewCoverage,
         Audit.View,
     ];
 }

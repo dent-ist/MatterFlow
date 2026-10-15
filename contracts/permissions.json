@@ -237,6 +237,11 @@
       "description": "Users tab: team workload per person (open, overdue and due soon tasks)"
     },
     {
+      "code": "Dashboard.ViewCoverage",
+      "group": "Dashboard",
+      "description": "See how many tasks each person completed per task type (training and coverage planning)"
+    },
+    {
       "code": "Audit.View",
       "group": "Oversight",
       "description": "Browse the audit log"

@@ -19,6 +19,7 @@ import { UndoService } from '../../../core/notify/undo.service';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { Permission } from '../../../core/auth/permissions';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
+import { aBoard } from '../users/users-testing';
 import { aRow, pageOf, provideLookups } from '../../../shared/work-queue/work-queue-testing';
 import { aTrend } from '../ui/trend-testing';
 import { AUTO_REFRESH_MS, DashboardPage } from './dashboard-page';
@@ -174,6 +175,7 @@ describe('DashboardPage', () => {
   let getDashboard: ReturnType<typeof vi.fn>;
   const getDashboardSwimlane = vi.fn(() => of(emptyBoard()));
   let getDashboardTrend: ReturnType<typeof vi.fn>;
+  const getDashboardWorkload = vi.fn(() => of(aBoard([])));
   let getTaskQueue: ReturnType<typeof vi.fn>;
   let assignTask: ReturnType<typeof vi.fn>;
   let harness: RouterTestingHarness;
@@ -213,7 +215,10 @@ describe('DashboardPage', () => {
         provideRouter([{ path: 'dashboard', component: DashboardPage }]),
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: DashboardClient, useValue: { getDashboard, getDashboardTrend } },
-        { provide: DashboardBoardClient, useValue: { getDashboardSwimlane } },
+        {
+          provide: DashboardBoardClient,
+          useValue: { getDashboardSwimlane, getDashboardWorkload },
+        },
         { provide: TaskQueueClient, useValue: { getTaskQueue } },
         { provide: TasksClient, useValue: { assignTask } },
         { provide: PodsClient, useValue: {} },
@@ -490,7 +495,7 @@ describe('DashboardPage', () => {
       await settle();
       expect(text(selectedTab(el))).toBe('Users');
       const panel = el.querySelector('[data-tabpanel="users"]')!;
-      expect(text(panel.querySelector('[data-users-soon]'))).toBe('Team workload is coming soon.');
+      expect(panel.querySelector('mf-dash-users-tab')).not.toBeNull();
       expect(el.querySelector('mf-page-header [data-refresh]')).toBeNull();
       expect(el.querySelector('[data-tabpanel="swimlane"]')).toBeNull();
 

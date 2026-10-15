@@ -67,6 +67,10 @@ a:not([class]) {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  /* PrimeNG keeps a transform on a dialog; a transformed ancestor becomes the containing block of fixed descendants, which put the
+     inline menus (fixed, positioned from the trigger's viewport rectangle) far outside the screen inside a drawer. */
+  transform: none !important;
+  will-change: auto !important;
   box-shadow: var(--mf-shadow-2, -8px 0 24px rgb(0 0 0 / 18%));
 }
 

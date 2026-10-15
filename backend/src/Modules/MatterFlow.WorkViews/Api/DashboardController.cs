@@ -52,7 +52,7 @@ public class DashboardController(DashboardService dashboard, DashboardTrendServi
 /// </summary>
 [ApiController]
 [Route("api/v1/dashboard")]
-public class DashboardBoardController(SwimlaneService swimlane, WorkloadService workload) : ControllerBase
+public class DashboardBoardController(SwimlaneService swimlane, WorkloadService workload, CoverageService coverage) : ControllerBase
 {
     /// <summary>
     /// Every open Task plus the Tasks completed or cancelled in the last <c>completedDays</c> days as four lanes (<c>NEW</c>, <c>IN_PROGRESS</c>, <c>ON_HOLD</c>,
@@ -81,5 +81,18 @@ public class DashboardBoardController(SwimlaneService swimlane, WorkloadService 
     {
         FilterParsing.EnsureKnown(Request.Query.Keys, WorkloadQuery.Keys).OrThrow();
         return (await workload.GetAsync(query, cancellationToken)).OrThrow();
+    }
+
+    /// <summary>
+    /// How many Tasks each person completed per task type in a period (<c>from</c> and <c>to</c>, or <c>periodDays</c>, default 30), for training and
+    /// cross-coverage planning (addendum Q). Needs its own permission, <c>Dashboard.ViewCoverage</c>. Cells list only non-zero counts; the matrix fills in zeros.
+    /// </summary>
+    [HttpGet("coverage", Name = "GetDashboardCoverage")]
+    [Authorize(Policy = "Perm:" + Permissions.Dashboard.ViewCoverage)]
+    [ProducesResponseType<CoverageBoard>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<CoverageBoard>> GetCoverage([FromQuery] CoverageQuery query, CancellationToken cancellationToken)
+    {
+        FilterParsing.EnsureKnown(Request.Query.Keys, CoverageQuery.Keys).OrThrow();
+        return (await coverage.GetAsync(query, cancellationToken)).OrThrow();
     }
 }

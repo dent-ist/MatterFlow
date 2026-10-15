@@ -35,7 +35,7 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { priorityColors } from '../../../shared/ui/priority-badge';
-import { LIST_ORDER, ListKind, queueArgsFor } from '../dashboard-links';
+import { LIST_ORDER, ListKind, clearedUsersParams, queueArgsFor } from '../dashboard-links';
 import { PERIOD_PRESETS, PeriodKey, isPeriodKey, periodDays, presetOf } from '../dashboard-period';
 import {
   DASHBOARD_TABS,
@@ -955,6 +955,7 @@ export class DashboardPage implements OnInit {
         tab,
         ...(tab === 'swimlane' ? {} : clearedViewParams()),
         ...(tab === 'trends' ? {} : clearedTrendParams()),
+        ...(tab === 'users' ? {} : clearedUsersParams()),
       },
       queryParamsHandling: 'merge',
       replaceUrl: replace,

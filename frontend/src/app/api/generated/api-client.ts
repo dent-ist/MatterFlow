@@ -8583,6 +8583,15 @@ export interface IDashboardBoardClient {
      * @return OK
      */
     getDashboardWorkload(podId?: number | undefined, availability?: string | undefined, q?: string | undefined): Observable<WorkloadBoard>;
+    /**
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param periodDays (optional) 
+     * @param podId (optional) 
+     * @param includeInactive (optional) 
+     * @return OK
+     */
+    getDashboardCoverage(from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, podId?: number | undefined, includeInactive?: boolean | undefined): Observable<CoverageBoard>;
 }
 
 @Injectable({
@@ -8753,6 +8762,81 @@ export class DashboardBoardClient implements IDashboardBoardClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WorkloadBoard;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param periodDays (optional) 
+     * @param podId (optional) 
+     * @param includeInactive (optional) 
+     * @return OK
+     */
+    getDashboardCoverage(from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, podId?: number | undefined, includeInactive?: boolean | undefined): Observable<CoverageBoard> {
+        let url_ = this.baseUrl + "/api/v1/dashboard/coverage?";
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent("" + from) + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent("" + to) + "&";
+        if (periodDays === null)
+            throw new globalThis.Error("The parameter 'periodDays' cannot be null.");
+        else if (periodDays !== undefined)
+            url_ += "periodDays=" + encodeURIComponent("" + periodDays) + "&";
+        if (podId === null)
+            throw new globalThis.Error("The parameter 'podId' cannot be null.");
+        else if (podId !== undefined)
+            url_ += "podId=" + encodeURIComponent("" + podId) + "&";
+        if (includeInactive === null)
+            throw new globalThis.Error("The parameter 'includeInactive' cannot be null.");
+        else if (includeInactive !== undefined)
+            url_ += "includeInactive=" + encodeURIComponent("" + includeInactive) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetDashboardCoverage(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetDashboardCoverage(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<CoverageBoard>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<CoverageBoard>;
+        }));
+    }
+
+    protected processGetDashboardCoverage(response: HttpResponseBase): Observable<CoverageBoard> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CoverageBoard;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -11002,6 +11086,60 @@ export interface CompleteTaskRequest {
     rowVersion: string;
     completeUnresolvedSteps?: boolean;
     workflowRowVersion?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface CoverageBoard {
+    timeZone: string;
+    generatedAtUtc: string;
+    from: string;
+    to: string;
+    days: number;
+    taskTypes: CoverageTaskType[];
+    users: CoverageUser[];
+    cells: CoverageCell[];
+    summary: CoverageSummary;
+
+    [key: string]: any;
+}
+
+export interface CoverageCell {
+    userId: number;
+    taskTypeId: number;
+    completed: number;
+
+    [key: string]: any;
+}
+
+export interface CoverageSummary {
+    taskTypes: number;
+    users: number;
+    typesWithFewerThanTwoPeople: number;
+    totalCompleted: number;
+
+    [key: string]: any;
+}
+
+export interface CoverageTaskType {
+    taskTypeId: number;
+    name: string;
+    iconKey: string;
+    isActive: boolean;
+    total: number;
+    peopleWhoHandledIt: number;
+
+    [key: string]: any;
+}
+
+export interface CoverageUser {
+    userId: number;
+    displayName: string;
+    initials: string;
+    pods: WorkloadPod[];
+    isActive: boolean;
+    availability: UserAvailabilitySummary;
+    total: number;
 
     [key: string]: any;
 }

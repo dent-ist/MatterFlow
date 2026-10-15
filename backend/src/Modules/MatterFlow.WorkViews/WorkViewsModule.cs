@@ -17,6 +17,7 @@ public static class WorkViewsModule
         services.AddScoped<DashboardTrendService>();
         services.AddScoped<SwimlaneService>();
         services.AddScoped<WorkloadService>();
+        services.AddScoped<CoverageService>();
         services.Configure<DashboardOptions>(configuration.GetSection(DashboardOptions.SectionName));
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<DashboardCache>();

@@ -47,7 +47,7 @@ test.describe('Swimlane tab', () => {
     await page.getByRole('tab', { name: 'Users' }).click();
     await expect(page).toHaveURL(/tab=users/);
     await expect(page).not.toHaveURL(/group=/);
-    await expect(page.getByText('Team workload is coming soon')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Team workload' })).toBeAttached();
     await page.goBack();
     await expect(page.getByRole('region', { name: 'Swimlane board' })).toBeVisible();
   });

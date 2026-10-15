@@ -128,6 +128,12 @@ public class PermissionCatalogTests
             role.Permissions.ShouldContain(Permissions.Pod.View);
         }
 
+        // Completion counts per person (addendum Q) are for Director and Pod Lead only.
+        P("Director").ShouldContain(Permissions.Dashboard.ViewCoverage);
+        P("Pod Lead").ShouldContain(Permissions.Dashboard.ViewCoverage);
+        P("Project Manager").ShouldNotContain(Permissions.Dashboard.ViewCoverage);
+        P("Data Technician").ShouldNotContain(Permissions.Dashboard.ViewCoverage);
+        P("Data Scientist").ShouldNotContain(Permissions.Dashboard.ViewCoverage);
         P("Director").ShouldContain(Permissions.Audit.View);
         P("Director").ShouldContain(Permissions.User.View);
         P("Project Manager").ShouldNotContain(Permissions.Audit.View);

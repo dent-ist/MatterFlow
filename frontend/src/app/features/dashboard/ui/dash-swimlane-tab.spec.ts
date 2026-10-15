@@ -156,6 +156,8 @@ const taskOf = (card: SwimlaneCard, patch: Record<string, unknown> = {}) => ({
 });
 
 describe('DashSwimlaneTab', () => {
+  // PrimeNG dialogs and long lanes are slow on a loaded machine; the default 5 s made the suite flaky.
+  vi.setConfig({ testTimeout: 20_000 });
   let getBoard: ReturnType<typeof vi.fn>;
   let tasks: Record<string, ReturnType<typeof vi.fn>>;
   let harness: RouterTestingHarness;

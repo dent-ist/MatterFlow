@@ -111,3 +111,12 @@ See `docs/qa/findings.md`. Notable: Completed -> Cancelled is allowed directly (
 - If the user **enters or changes any custom value** in that section, the required fields in that section must be satisfied, and the screen highlights exactly which ones are missing (inline, red border, listed by name).
 - On **create**, all required custom fields are enforced as before.
 - Detail screens may show a neutral "Not provided" for required fields that old records lack.
+
+## Q. Task type coverage: completion counts per person for training (decided 2026-10-15, issue #73)
+
+- The product owner asked for a view of **how many tasks each person completed per task type in a period**, to see who is not handling certain types of work and needs training or cross-coverage.
+- This **supersedes the "no completion statistics, no per-person performance metrics" note of the Dashboard epic (#68) for this one view only.** The Swimlane and Users workload views stay operational-capacity views with no completion counts, speed or ranking.
+- It is a **Coverage view inside the Dashboard Users tab** (`?tab=users&view=coverage`), headed "Task type coverage - use this to plan training and cross-coverage, not to rank people". There is no ranking, score or "best / worst" wording; ordering by total is allowed and labelled neutrally ("By total completed"). Zero cells are shown as possible training gaps, and the view counts how many people handled each task type (fewer than two is flagged: a bus-factor insight).
+- **Read access is limited by its own permission, `Dashboard.ViewCoverage`** (separate from the Users tab permission), granted to Director and Pod Lead by default. The endpoint is `GET /api/v1/dashboard/coverage`.
+- **What counts:** tasks with status COMPLETED (not cancelled) whose completion time falls inside the period in the viewer's time zone, counted for the person the task is **assigned to** (the Task keeps no separate "completed by", and a completed task cannot be reassigned, so this is the person who held it when it was completed). Inactive users appear only when they completed something in the period (marked Inactive). Availability is shown as a small marker only and never changes the counts.
+- **Audit:** reading the view writes nothing extra to the audit log.
