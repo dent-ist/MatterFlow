@@ -14,27 +14,57 @@ import { TaskDetailStore } from './task-detail.store';
   template: `
     @if (wf(); as w) {
       <section aria-labelledby="wf-h" data-workflow-tab>
-        <h2 id="wf-h" class="wf__title" tabindex="-1" data-section-heading>
-          Workflow
-          <span class="wf__mode" data-mode>
-            {{ w.workflowName }} v{{ w.versionNo }}.
-            {{
-              w.isOrdered
-                ? 'Ordered: complete or skip each step in order'
-                : 'Unordered: work these in any order'
-            }}
-          </span>
-        </h2>
-        <p class="wf__progress" data-progress>
-          Resolved {{ w.progress.resolved }} of {{ w.progress.total }}
-          <progress
-            [max]="w.progress.total"
-            [value]="w.progress.resolved"
-            [attr.aria-label]="
-              'Resolved ' + w.progress.resolved + ' of ' + w.progress.total + ' steps'
-            "
-          ></progress>
-        </p>
+        <div class="wf__top">
+          <div class="wf__summary">
+            <h2 id="wf-h" class="wf__title" tabindex="-1" data-section-heading>
+              Workflow
+              <span class="wf__mode" data-mode>
+                {{ w.workflowName }} v{{ w.versionNo }}.
+                {{
+                  w.isOrdered
+                    ? 'Ordered: complete or skip each step in order'
+                    : 'Unordered: work these in any order'
+                }}
+              </span>
+            </h2>
+            <p class="wf__progress" data-progress>
+              Resolved {{ w.progress.resolved }} of {{ w.progress.total }}
+              <progress
+                [max]="w.progress.total"
+                [value]="w.progress.resolved"
+                [attr.aria-label]="
+                  'Resolved ' + w.progress.resolved + ' of ' + w.progress.total + ' steps'
+                "
+              ></progress>
+            </p>
+          </div>
+          @if (completeOption(); as c) {
+            <div class="wf__complete" data-complete-task>
+              <button
+                type="button"
+                class="mf-btn mf-btn--primary"
+                data-complete-task-button
+                aria-describedby="wf-complete-note"
+                [disabled]="!c.permitted || store.busy()"
+                (click)="store.requestAction('COMPLETE')"
+              >
+                <i class="pi pi-check-circle" aria-hidden="true"></i>
+                Complete task
+              </button>
+              <p id="wf-complete-note" class="wf__complete-note">
+                @if (!c.permitted) {
+                  {{ completeBlockedText(c.blockedReason) }}
+                } @else if (unresolvedCount() > 0) {
+                  {{ unresolvedCount() }}
+                  {{ unresolvedCount() === 1 ? 'step is' : 'steps are' }} not completed. You will be
+                  asked whether to mark them all completed.
+                } @else {
+                  All steps are resolved.
+                }
+              </p>
+            </div>
+          }
+        </div>
 
         @if (notice(); as n) {
           <div class="pg-banner" role="note" data-workflow-notice>{{ n }}</div>
@@ -76,32 +106,6 @@ import { TaskDetailStore } from './task-detail.store';
             </li>
           }
         </ol>
-
-        @if (completeOption(); as c) {
-          <div class="wf__complete" data-complete-task>
-            <p [id]="'wf-complete-note'">
-              @if (!c.permitted) {
-                {{ completeBlockedText(c.blockedReason) }}
-              } @else if (unresolvedCount() > 0) {
-                Task completion: {{ unresolvedCount() }}
-                {{ unresolvedCount() === 1 ? 'step is' : 'steps are' }} not completed. You will be
-                asked whether to mark them all completed.
-              } @else {
-                All steps are resolved.
-              }
-            </p>
-            <button
-              type="button"
-              class="mf-btn mf-btn--primary"
-              data-complete-task-button
-              aria-describedby="wf-complete-note"
-              [disabled]="!c.permitted || store.busy()"
-              (click)="store.requestAction('COMPLETE')"
-            >
-              Complete task
-            </button>
-          </div>
-        }
       </section>
     }
   `,
@@ -157,18 +161,33 @@ import { TaskDetailStore } from './task-detail.store';
       padding: 0;
       list-style: none;
     }
-    .wf__complete {
+    /* The Complete task action sits at the top right of the Workflow section, level with its title and progress. */
+    .wf__top {
       display: flex;
       flex-wrap: wrap;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: var(--mf-s3);
-      margin-top: var(--mf-s4);
-      padding-top: var(--mf-s3);
-      border-top: 1px solid var(--mf-border);
+      margin-bottom: var(--mf-s3);
     }
-    .wf__complete p {
+    .wf__summary {
+      flex: 1 1 18rem;
+      min-width: 0;
+    }
+    .wf__summary .wf__progress {
+      margin-bottom: 0;
+    }
+    .wf__complete {
+      display: grid;
+      justify-items: end;
+      gap: var(--mf-s1);
+      max-width: 22rem;
+    }
+    .wf__complete-note {
       margin: 0;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+      text-align: right;
     }
   `,
 })

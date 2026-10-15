@@ -192,6 +192,12 @@ describe('TaskComments', () => {
     // The buttons sit on the author line (right end), not in a row under the text.
     expect(items[0].querySelector('.tc__meta [data-edit]')).not.toBeNull();
     expect(items[0].querySelector('.tc__meta [data-delete]')).not.toBeNull();
+    // Icon-only buttons: they have no visible text, so the accessible name carries it.
+    expect(items[0].querySelector('[data-edit]')!.getAttribute('aria-label')).toBe('Edit comment');
+    expect(items[0].querySelector('[data-delete]')!.getAttribute('aria-label')).toBe(
+      'Delete comment',
+    );
+    expect(items[0].querySelector('[data-edit]')!.textContent!.trim()).toBe('');
     expect(items[1].querySelector('[data-edit]')).toBeNull();
     expect(items[1].querySelector('[data-delete]')).toBeNull();
   });

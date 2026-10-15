@@ -97,18 +97,27 @@ const RENDER_CACHE_LIMIT = 1000;
                     @if (editingId() !== c.commentId && !readOnly() && (c.canEdit || c.canDelete)) {
                       <span class="tc__actions tc__actions--row">
                         @if (c.canEdit) {
-                          <button type="button" class="mf-btn" data-edit (click)="startEdit(c)">
-                            Edit
+                          <button
+                            type="button"
+                            class="mf-btn mf-btn--text mf-btn--icon"
+                            data-edit
+                            aria-label="Edit comment"
+                            title="Edit comment"
+                            (click)="startEdit(c)"
+                          >
+                            <i class="pi pi-pencil" aria-hidden="true"></i>
                           </button>
                         }
                         @if (c.canDelete) {
                           <button
                             type="button"
-                            class="mf-btn mf-btn--danger"
+                            class="mf-btn mf-btn--text mf-btn--icon mf-btn--danger"
                             data-delete
+                            aria-label="Delete comment"
+                            title="Delete comment"
                             (click)="askDelete(c)"
                           >
-                            Delete
+                            <i class="pi pi-trash" aria-hidden="true"></i>
                           </button>
                         }
                       </span>

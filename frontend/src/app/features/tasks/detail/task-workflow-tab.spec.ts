@@ -106,6 +106,15 @@ describe('Workflow tab: ordered stepper', () => {
     expect(q(el, '[data-step-id="102"]')!.getAttribute('data-step-status')).toBe('SKIPPED');
   });
 
+  it('puts Complete task at the top of the Workflow section, before the steps (not below them, next to Comments)', async () => {
+    const { el } = await mountWorkflow(aTask({ workflow: { steps: orderedSteps() } as never }));
+    const complete = q(el, '[data-complete-task]')!;
+    const steps = q(el, 'ol.wf__steps')!;
+    expect(complete.compareDocumentPosition(steps) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(complete.closest('.wf__top')).not.toBeNull();
+    expect(complete.querySelector('.pi-check-circle')).not.toBeNull();
+  });
+
   it('expands only the current step; the others are one-line summaries the user can open', async () => {
     const { fixture, el } = await mountWorkflow(
       aTask({ workflow: { steps: orderedSteps() } as never }),
