@@ -11,8 +11,14 @@
 .fb-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: end;
+  align-items: flex-start;
   gap: var(--mf-s3);
+}
+
+/* Lines the Filters button up with the search input itself (below its 1.25rem label), not with the hint line under the input. */
+.fb-button {
+  margin-top: calc(1.25rem + var(--mf-s1));
+  min-height: var(--mf-row-h);
 }
 
 .fb-field {

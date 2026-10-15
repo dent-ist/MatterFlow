@@ -64,6 +64,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
     .sb__label {
       font-weight: 600;
       font-size: var(--mf-fs-sm);
+      line-height: 1.25rem;
     }
     .sb__field {
       position: relative;
