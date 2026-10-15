@@ -14,11 +14,9 @@ public static class DashboardRules
 {
     public const int DefaultPeriodDays = 30;
     public const int MaxPeriodDays = 365;
-    public const int TopN = 8;
 
     /// <summary>Task Types shown individually before the rest is folded into "Other task types".</summary>
     public const int TopTypes = 5;
-    public const int RecentCount = 10;
 
     public static readonly IReadOnlyList<AgingBand> AgingBands =
     [

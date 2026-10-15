@@ -10451,33 +10451,10 @@ export interface DashboardCount {
     [key: string]: any;
 }
 
-export interface DashboardMine {
-    open: DashboardCount;
-    overdue: DashboardCount;
-    dueSoon: DashboardCount;
-    createdByMe: DashboardCount;
-
-    [key: string]: any;
-}
-
 export interface DashboardPeriod {
     days: number;
     from: string;
     to: string;
-
-    [key: string]: any;
-}
-
-export interface DashboardRecentTask {
-    taskId: number;
-    taskNumber: string;
-    title: string;
-    matterId: number;
-    matterRef: string;
-    matterName: string;
-    status: string;
-    statusLabel: string;
-    atUtc: string;
 
     [key: string]: any;
 }
@@ -10494,15 +10471,11 @@ export interface DashboardSummary {
     asapOpen: DashboardCount;
     completed: DashboardCount;
     created: DashboardCount;
-    byPod: DashboardBreakdownItem[];
     byTaskType: DashboardBreakdownItem[];
     byPriority: DashboardBreakdownItem[];
     byStatus: DashboardBreakdownItem[];
     aging: DashboardAgingBucket[];
     trend: DashboardTrendPoint[];
-    recentlyCreated: DashboardRecentTask[];
-    recentlyCompleted: DashboardRecentTask[];
-    mine: DashboardMine;
 
     [key: string]: any;
 }

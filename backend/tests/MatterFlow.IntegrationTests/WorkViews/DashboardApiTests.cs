@@ -230,15 +230,6 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
         priorities["Low"].ShouldBe(2);
         priorities["Normal"].ShouldBe(_seeds.Count(s => s.IsOpen) - 5);
 
-        var pods = d.GetProperty("byPod").EnumerateArray().ToDictionary(i => i.GetProperty("label").GetString()!, i => i.GetProperty("count").GetInt32());
-        pods["Pod A"].ShouldBe(4);
-        pods["Pod B"].ShouldBe(3);
-        pods["No Pod"].ShouldBe(2 + 11);
-        // "No pod" drills through to exactly the open Tasks without a Pod (the queue's noPod filter).
-        var noPod = d.GetProperty("byPod").EnumerateArray().Single(i => i.GetProperty("label").GetString() == "No Pod");
-        noPod.GetProperty("query").GetString()!.ShouldContain("noPod=true");
-        (await DrillAsync(noPod, NewYork)).Count.ShouldBe(2 + 11);
-
         // Task Types: 13 types hold open Tasks; the top 5 are listed and the rest folded into one "Other" row that drills through with all the folded types.
         var types = d.GetProperty("byTaskType").EnumerateArray().ToList();
         types.Count.ShouldBe(6);
@@ -251,7 +242,7 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
         types[0].GetProperty("label").GetString().ShouldBe("Data Processing");
         types[0].GetProperty("count").GetInt32().ShouldBe(Titles(s => s.IsOpen && s.Type == _seeds[0].Type).Length);
 
-        foreach (var row in new[] { "byStatus", "byPriority", "byPod", "byTaskType" }.SelectMany(g => d.GetProperty(g).EnumerateArray()))
+        foreach (var row in new[] { "byStatus", "byPriority", "byTaskType" }.SelectMany(g => d.GetProperty(g).EnumerateArray()))
         {
             if (row.GetProperty("query").ValueKind == JsonValueKind.Null)
                 continue;
@@ -345,48 +336,7 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Recent_lists_hold_the_latest_ten_with_number_title_and_matter()
-    {
-        var d = await DashboardAsync();
-        var created = d.GetProperty("recentlyCreated").EnumerateArray().ToList();
-        created.Count.ShouldBe(10);
-        created.Select(r => r.GetProperty("atUtc").GetDateTime()).ShouldBe([.. created.Select(r => r.GetProperty("atUtc").GetDateTime()).OrderByDescending(x => x)]);
-        created[0].GetProperty("title").GetString().ShouldBe("far-new");
-        created[0].GetProperty("taskNumber").GetString().ShouldStartWith("TSK-");
-        created[0].GetProperty("matterRef").GetString().ShouldBe("00343-00012");
-        created[0].GetProperty("status").GetString().ShouldBe("NEW");
-        created[0].GetProperty("statusLabel").GetString().ShouldBe("New");
-        created.Select(r => r.GetProperty("title").GetString()).ShouldBe([.. _seeds.OrderByDescending(s => s.CreatedAtUtc).Take(10).Select(s => s.Title)]);
-
-        var completed = d.GetProperty("recentlyCompleted").EnumerateArray().Select(r => r.GetProperty("title").GetString()).ToList();
-        completed.ShouldBe(["done-today", "done-recent", "done-old"]);
-    }
-
-    [Fact]
-    public async Task The_mine_block_counts_the_signed_in_users_work_and_drills_through()
-    {
-        foreach (var zone in new[] { NewYork, Kiritimati })
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/dashboard");
-            request.Headers.Add("X-Time-Zone", zone);
-            var d = await OkAsync(await _techA.SendAsync(request));
-            var mine = d.GetProperty("mine");
-            var from = StartOfDayUtc(zone, LocalDate(zone, _now).AddDays(-29));
-
-            (await DrillAsync(mine.GetProperty("open"), zone, _techA)).ShouldBeSet(Titles(s => s.IsOpen && s.Assignee == _techAId));
-            (await DrillAsync(mine.GetProperty("overdue"), zone, _techA)).ShouldBeSet(Titles(s => Overdue(s, zone) && s.Assignee == _techAId));
-            (await DrillAsync(mine.GetProperty("dueSoon"), zone, _techA)).ShouldBeSet(Titles(s => DueSoon(s, zone) && s.Assignee == _techAId));
-            (await DrillAsync(mine.GetProperty("createdByMe"), zone, _techA)).ShouldBeSet(Titles(s => s.Creator == _techAId && s.CreatedAtUtc >= from));
-            mine.GetProperty("open").GetProperty("count").GetInt32().ShouldBe(3);
-        }
-
-        // Another user's numbers differ: the admin created none of tech A's tasks and is assigned nothing.
-        var admin = await DashboardAsync();
-        admin.GetProperty("mine").GetProperty("open").GetProperty("count").GetInt32().ShouldBe(0);
-    }
-
-    [Fact]
-    public async Task Sec2_05_department_figures_need_Dashboard_ViewDepartment_and_the_mine_block_does_not()
+    public async Task Sec2_05_department_figures_need_Dashboard_ViewDepartment()
     {
         var admin = await DashboardAsync();
         admin.GetProperty("open").GetProperty("count").GetInt32().ShouldBeGreaterThan(0);
@@ -395,15 +345,15 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
         var d = await OkAsync(await viewer.GetAsync("/api/v1/dashboard"));
         foreach (var name in new[] { "open", "unassigned", "overdue", "onHold", "dueSoon", "asapOpen", "completed", "created" })
             d.GetProperty(name).GetProperty("count").GetInt32().ShouldBe(0, name);
-        foreach (var name in new[] { "byPod", "byTaskType", "recentlyCreated", "recentlyCompleted" })
+        foreach (var name in new[] { "byTaskType" })
             d.GetProperty(name).GetArrayLength().ShouldBe(0, name);
         d.GetProperty("byPriority").EnumerateArray().Sum(i => i.GetProperty("count").GetInt32()).ShouldBe(0);
         d.GetProperty("byStatus").EnumerateArray().Sum(i => i.GetProperty("count").GetInt32()).ShouldBe(0);
         d.GetProperty("aging").EnumerateArray().Sum(i => i.GetProperty("count").GetInt32()).ShouldBe(0);
-        d.GetProperty("mine").GetProperty("open").GetProperty("count").GetInt32().ShouldBe(0);
 
-        // The personal block still works for a caller without the department permission.
-        (await OkAsync(await _techA.GetAsync("/api/v1/dashboard"))).GetProperty("mine").GetProperty("open").GetProperty("count").GetInt32().ShouldBe(3);
+        // The removed blocks are gone from the payload for everyone.
+        foreach (var gone in new[] { "byPod", "recentlyCreated", "recentlyCompleted", "mine" })
+            d.TryGetProperty(gone, out _).ShouldBeFalse(gone);
         (await OkAsync(await _techA.GetAsync("/api/v1/dashboard"))).GetProperty("open").GetProperty("count").GetInt32().ShouldBe(0);
 
         var manager = await _h.UserWithAsync(@"KE\deptfull", "Task.View", "Dashboard.ViewDepartment");
@@ -420,8 +370,6 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
         var d = await DashboardAsync();
         foreach (var name in new[] { "open", "unassigned", "overdue", "onHold", "dueSoon", "asapOpen", "completed", "created" })
             d.GetProperty(name).GetProperty("count").GetInt32().ShouldBe(0);
-        d.GetProperty("recentlyCreated").GetArrayLength().ShouldBe(0);
-        d.GetProperty("byPod").GetArrayLength().ShouldBe(0);
         d.GetProperty("byTaskType").GetArrayLength().ShouldBe(0);
         d.GetProperty("byStatus").GetArrayLength().ShouldBe(3);
         d.GetProperty("aging").GetArrayLength().ShouldBe(4);

@@ -8730,29 +8730,6 @@
           }
         }
       },
-      "DashboardMine": {
-        "required": [
-          "open",
-          "overdue",
-          "dueSoon",
-          "createdByMe"
-        ],
-        "type": "object",
-        "properties": {
-          "open": {
-            "$ref": "#/components/schemas/DashboardCount"
-          },
-          "overdue": {
-            "$ref": "#/components/schemas/DashboardCount"
-          },
-          "dueSoon": {
-            "$ref": "#/components/schemas/DashboardCount"
-          },
-          "createdByMe": {
-            "$ref": "#/components/schemas/DashboardCount"
-          }
-        }
-      },
       "DashboardPeriod": {
         "required": [
           "days",
@@ -8775,52 +8752,6 @@
           }
         }
       },
-      "DashboardRecentTask": {
-        "required": [
-          "taskId",
-          "taskNumber",
-          "title",
-          "matterId",
-          "matterRef",
-          "matterName",
-          "status",
-          "statusLabel",
-          "atUtc"
-        ],
-        "type": "object",
-        "properties": {
-          "taskId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "taskNumber": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "matterId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "matterRef": {
-            "type": "string"
-          },
-          "matterName": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "statusLabel": {
-            "type": "string"
-          },
-          "atUtc": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
       "DashboardSummary": {
         "required": [
           "period",
@@ -8834,15 +8765,11 @@
           "asapOpen",
           "completed",
           "created",
-          "byPod",
           "byTaskType",
           "byPriority",
           "byStatus",
           "aging",
-          "trend",
-          "recentlyCreated",
-          "recentlyCompleted",
-          "mine"
+          "trend"
         ],
         "type": "object",
         "properties": {
@@ -8880,12 +8807,6 @@
           "created": {
             "$ref": "#/components/schemas/DashboardCount"
           },
-          "byPod": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardBreakdownItem"
-            }
-          },
           "byTaskType": {
             "type": "array",
             "items": {
@@ -8915,21 +8836,6 @@
             "items": {
               "$ref": "#/components/schemas/DashboardTrendPoint"
             }
-          },
-          "recentlyCreated": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardRecentTask"
-            }
-          },
-          "recentlyCompleted": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardRecentTask"
-            }
-          },
-          "mine": {
-            "$ref": "#/components/schemas/DashboardMine"
           }
         }
       },

@@ -22,8 +22,8 @@ public class DashboardQuery
 /// </summary>
 public sealed record DashboardCount([property: Required] int Count, [property: Required] string Query);
 
-/// <summary>One row of an "open by ..." breakdown. <c>query</c> is null where the Task Queue has no equivalent filter (no Pod, the combined "other" row).</summary>
-/// <param name="Id">The Pod, Task Type or Priority id; null for the "no Pod" and "other" rows and for statuses.</param>
+/// <summary>One row of an "open by ..." breakdown. <c>query</c> is null where the Task Queue has no equivalent filter (the combined "other" row).</summary>
+/// <param name="Id">The Task Type or Priority id; null for the "other" row and for statuses.</param>
 /// <param name="Code">The status code for the status breakdown; otherwise null.</param>
 public sealed record DashboardBreakdownItem(
     int? Id,
@@ -46,27 +46,8 @@ public sealed record DashboardAgingBucket(
     [property: Required] int Count,
     [property: Required] string Query);
 
-/// <summary>A Task in the recently created or recently completed list. <c>atUtc</c> is the creation or completion time.</summary>
-public sealed record DashboardRecentTask(
-    [property: Required] long TaskId,
-    [property: Required] string TaskNumber,
-    [property: Required] string Title,
-    [property: Required] int MatterId,
-    [property: Required] string MatterRef,
-    [property: Required] string MatterName,
-    [property: Required] string Status,
-    [property: Required] string StatusLabel,
-    [property: Required] DateTime AtUtc);
-
 /// <summary>The period the "completed" and "created" counts cover (viewer's local dates, both inclusive).</summary>
 public sealed record DashboardPeriod([property: Required] int Days, [property: Required] DateOnly From, [property: Required] DateOnly To);
-
-/// <summary>The signed-in user's own numbers (My Work).</summary>
-public sealed record DashboardMine(
-    [property: Required] DashboardCount Open,
-    [property: Required] DashboardCount Overdue,
-    [property: Required] DashboardCount DueSoon,
-    [property: Required] DashboardCount CreatedByMe);
 
 /// <summary>
 /// The operational Dashboard (baseline 12.2). Department-wide for everyone with Task.View (addendum E); overdue and the period are evaluated in
@@ -84,12 +65,9 @@ public sealed record DashboardSummary(
     [property: Required] DashboardCount AsapOpen,
     [property: Required] DashboardCount Completed,
     [property: Required] DashboardCount Created,
-    [property: Required] IReadOnlyList<DashboardBreakdownItem> ByPod,
     [property: Required] IReadOnlyList<DashboardBreakdownItem> ByTaskType,
     [property: Required] IReadOnlyList<DashboardBreakdownItem> ByPriority,
     [property: Required] IReadOnlyList<DashboardBreakdownItem> ByStatus,
     [property: Required] IReadOnlyList<DashboardAgingBucket> Aging,
-    [property: Required] IReadOnlyList<DashboardTrendPoint> Trend,
-    [property: Required] IReadOnlyList<DashboardRecentTask> RecentlyCreated,
-    [property: Required] IReadOnlyList<DashboardRecentTask> RecentlyCompleted,
-    [property: Required] DashboardMine Mine);
+    [property: Required] IReadOnlyList<DashboardTrendPoint> Trend);
+

@@ -2,7 +2,6 @@ using System.Linq.Expressions;
 using MatterFlow.Configuration.Domain;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
-using MatterFlow.Organization.Domain;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Tasks;
@@ -15,8 +14,7 @@ using Microsoft.EntityFrameworkCore;
 namespace MatterFlow.WorkViews.Application.Queries;
 
 /// <summary>
-/// Read side of the Dashboard: a handful of aggregate reads (one for the headline counts, one per breakdown, one for aging, one for the personal
-/// block and two small lists), never a read per row. It reuses <see cref="TaskQueueRules"/> so every number agrees with the Task Queue the user lands
+/// Read side of the Dashboard: a handful of aggregate reads (one for the headline counts, one per breakdown, one for aging and two for the trend), never a read per row. It reuses <see cref="TaskQueueRules"/> so every number agrees with the Task Queue the user lands
 /// on, and each number carries the Task Queue query that lists exactly the counted Tasks. Phase 1 has no per-record visibility (addendum E).
 /// </summary>
 public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, IPermissionChecker permissions, DashboardCache cache)
@@ -46,7 +44,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         Expression<Func<WorkTask, bool>> dueSoon = t => t.DueDate != null && t.DueDate <= dueSoonDay;
         var openDueSoon = open.Where(dueSoon).Where(Not(overdue));
 
-        // Department figures need Dashboard.ViewDepartment; without it the caller gets only the personal block and empty department blocks (SEC2-05).
+        // Department figures need Dashboard.ViewDepartment; without it the caller gets empty department blocks (SEC2-05).
 
         // Headline counts: one statement with a scalar subquery per number.
         var head = !department ? null : await tasks.Select(_ => new
@@ -61,19 +59,9 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             Created = tasks.Count(t => t.CreatedAtUtc >= fromUtc),
         }).FirstOrDefaultAsync(ct);
 
-        var mineOpen = open.Where(t => t.AssignedUserId == me);
-        var mine = await tasks.Select(_ => new
-        {
-            Open = mineOpen.Count(),
-            Overdue = mineOpen.Count(overdue),
-            DueSoon = mineOpen.Where(dueSoon).Where(Not(overdue)).Count(),
-            Created = tasks.Count(t => t.CreatedByUserId == me && t.CreatedAtUtc >= fromUtc),
-        }).FirstOrDefaultAsync(ct);
-
         var departmentOpen = department ? open : open.Where(_ => false);
         var byStatus = await departmentOpen.GroupBy(t => t.Status).Select(g => new { Status = g.Key, Count = g.Count() }).ToListAsync(ct);
         var byPriority = await departmentOpen.GroupBy(t => t.PriorityId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct);
-        var byPod = await departmentOpen.GroupBy(t => t.AssignedPodId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct);
         var byType = await departmentOpen.GroupBy(t => t.TaskTypeId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct);
 
         var aging = await AgingAsync(departmentOpen, queueClock, ct);
@@ -81,8 +69,6 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
 
         var statusLabels = await db.Set<TaskStatusLabel>().AsNoTracking().ToDictionaryAsync(l => l.StatusCode, l => l.DisplayLabel, ct);
         var priorityRows = await db.Set<Priority>().AsNoTracking().OrderBy(p => p.SortOrder).Select(p => new { p.Id, p.Label, p.IsActive }).ToListAsync(ct);
-        var podIds = byPod.Where(p => p.Id != null).Select(p => p.Id!.Value).ToList();
-        var podNames = await db.Set<Pod>().AsNoTracking().Where(p => podIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.Name, ct);
         var typeIds = byType.Select(t => t.Id).ToList();
         var typeNames = await db.Set<TaskType>().AsNoTracking().Where(t => typeIds.Contains(t.Id)).ToDictionaryAsync(t => t.Id, t => t.Name, ct);
 
@@ -104,33 +90,13 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             .Select(p => new DashboardBreakdownItem(p.Id, null, p.Label, priorityCounts.GetValueOrDefault(p.Id), DashboardRules.Open("priority=" + p.Id), false))
             .ToList();
 
-        var podItems = DashboardRules.TopWithOther(
-            byPod.Where(p => p.Id != null).Select(p => new DashboardBreakdownItem(
-                p.Id,
-                null,
-                podNames.GetValueOrDefault(p.Id!.Value, "Pod " + p.Id),
-                p.Count,
-                DashboardRules.Open("pod=" + p.Id),
-                false)),
-            DashboardRules.TopN,
-            "Other pods",
-            rest => DashboardRules.Open([.. rest.Select(r => "pod=" + r.Id)])).ToList();
-        if (byPod.FirstOrDefault(p => p.Id == null) is { Count: > 0 } noPod)
-            podItems.Add(new DashboardBreakdownItem(null, null, "No Pod", noPod.Count, DashboardRules.Open("noPod=true"), false));
-
         var typeItems = DashboardRules.TopWithOther(
             byType.Select(t => new DashboardBreakdownItem(t.Id, null, typeNames.GetValueOrDefault(t.Id, "Task Type " + t.Id), t.Count, DashboardRules.Open("type=" + t.Id), false)),
             DashboardRules.TopTypes,
             "Other task types",
             rest => DashboardRules.Open([.. rest.Select(r => "type=" + r.Id)]));
 
-        IReadOnlyList<DashboardRecentTask> recentlyCreated = department ? await RecentAsync(tasks, null, t => t.CreatedAtUtc, t => t.CreatedAtUtc, statusLabels, ct) : [];
-        IReadOnlyList<DashboardRecentTask> recentlyCompleted = department
-            ? await RecentAsync(tasks, t => t.Status == TaskStatusCode.Completed, t => t.StatusChangedAtUtc, t => t.CompletedAtUtc ?? t.StatusChangedAtUtc, statusLabels, ct)
-            : [];
-
         head ??= new { Open = 0, Unassigned = 0, Overdue = 0, OnHold = 0, DueSoon = 0, AsapOpen = 0, Completed = 0, Created = 0 };
-        mine ??= new { Open = 0, Overdue = 0, DueSoon = 0, Created = 0 };
 
         var summary = new DashboardSummary(
             new DashboardPeriod(query.PeriodDays, from, today),
@@ -144,19 +110,11 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             new DashboardCount(head.AsapOpen, DashboardRules.AsapOpen),
             new DashboardCount(head.Completed, DashboardRules.Completed(from)),
             new DashboardCount(head.Created, DashboardRules.Created(from)),
-            podItems,
             typeItems,
             priorityItems,
             statusItems,
             aging,
-            trend,
-            recentlyCreated,
-            recentlyCompleted,
-            new DashboardMine(
-                new DashboardCount(mine.Open, DashboardRules.Open("assignee=" + me)),
-                new DashboardCount(mine.Overdue, DashboardRules.Open("assignee=" + me, "overdue=true")),
-                new DashboardCount(mine.DueSoon, DashboardRules.Open("assignee=" + me, "asap=false", "overdue=false", "dueTo=" + DashboardRules.Date(dueSoonDay))),
-                new DashboardCount(mine.Created, DashboardRules.Join(["creator=" + me, DashboardRules.Created(from)]))));
+            trend);
         cache.Set(cacheKey, summary);
         return summary;
     }
@@ -195,44 +153,6 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         var created = await tasks.Where(t => t.CreatedAtUtc >= fromUtc).Select(t => t.CreatedAtUtc).ToListAsync(ct);
         var completed = await tasks.Where(t => t.Status == TaskStatusCode.Completed && t.StatusChangedAtUtc >= fromUtc).Select(t => t.StatusChangedAtUtc).ToListAsync(ct);
         return DashboardRules.Trend(from, queueClock.Today, created, completed, queueClock.StartOfDayUtc);
-    }
-
-    private async Task<IReadOnlyList<DashboardRecentTask>> RecentAsync(
-        IQueryable<WorkTask> tasks,
-        Expression<Func<WorkTask, bool>>? filter,
-        Expression<Func<WorkTask, DateTime>> order,
-        Func<WorkTask, DateTime> atSelector,
-        IReadOnlyDictionary<string, string> labels,
-        CancellationToken ct)
-    {
-        var source = filter is null ? tasks : tasks.Where(filter);
-        var ids = await source.OrderByDescending(order).ThenByDescending(t => t.Id).Take(DashboardRules.RecentCount).Select(t => t.Id).ToListAsync(ct);
-        if (ids.Count == 0)
-            return [];
-
-        var rows = await (
-            from t in tasks.Where(t => ids.Contains(t.Id))
-            join m in db.Set<Matter>().AsNoTracking() on t.MatterId equals m.Id
-            select new { Task = t, m.MatterRef, MatterName = m.Name }).ToListAsync(ct);
-        var byId = rows.ToDictionary(r => r.Task.Id);
-        return
-        [
-            .. ids.Where(byId.ContainsKey).Select(id =>
-            {
-                var r = byId[id];
-                var code = r.Task.Status.ToCode();
-                return new DashboardRecentTask(
-                    id,
-                    r.Task.Number,
-                    r.Task.Title,
-                    r.Task.MatterId,
-                    r.MatterRef,
-                    r.MatterName,
-                    code,
-                    labels.GetValueOrDefault(code, code),
-                    DateTime.SpecifyKind(atSelector(r.Task), DateTimeKind.Utc));
-            }),
-        ];
     }
 
     private static Expression<Func<WorkTask, bool>> Not(Expression<Func<WorkTask, bool>> predicate) =>
