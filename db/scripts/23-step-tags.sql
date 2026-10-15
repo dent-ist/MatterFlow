@@ -1,4 +1,4 @@
--- 22-step-tags.sql
+-- 23-step-tags.sql
 -- Purpose: free-form tags on library steps (dbo.StepDefinition), so steps can be found by tag in the Workflow Steps list and in the
 --   workflow designer's step picker. Two normalised tables:
 --     dbo.StepTag            one row per distinct tag: TagKey (the normalised, lower-cased text; case-insensitive unique, the lookup key)

@@ -26,7 +26,7 @@ Tag rules (the same in the browser and on the server, `StepTagRules`): trimmed, 
 
 Tags are library metadata: they are **not** part of a published workflow version (the snapshot copies title, description, instructions, link and form version only), so editing tags never changes a published version, and a tag change is audited as a `FIELD_CHANGED` event on the step (field `Tags`, old and new list) and moves the step's row version.
 
-Backend: script `22-step-tags.sql` (`dbo.StepTag`, `dbo.StepDefinitionTag`), `tags` on the step create/update/read DTOs (omit on update to leave them unchanged), `GET /api/v1/step-definitions?tags=a&tags=b&tagMatch=all|any&q=` (q also matches tag text; tags of a page are loaded with one query), `GET /api/v1/step-definitions/tags?q=&isActive=&limit=` (existing tags with usage counts). Both need `Workflow.Manage`. The starter configuration tags its steps (Intake, Collection, Processing, Relativity, QC, Review, Production, Close-out).
+Backend: script `23-step-tags.sql` (`dbo.StepTag`, `dbo.StepDefinitionTag`), `tags` on the step create/update/read DTOs (omit on update to leave them unchanged), `GET /api/v1/step-definitions?tags=a&tags=b&tagMatch=all|any&q=` (q also matches tag text; tags of a page are loaded with one query), `GET /api/v1/step-definitions/tags?q=&isActive=&limit=` (existing tags with usage counts). Both need `Workflow.Manage`. The starter configuration tags its steps (Intake, Collection, Processing, Relativity, QC, Review, Production, Close-out).
 
 ## Accessibility
 
