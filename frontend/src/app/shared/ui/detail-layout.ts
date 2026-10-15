@@ -2,10 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   computed,
   inject,
   input,
+  linkedSignal,
   signal,
+  viewChild,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { FixedPage } from './fixed-page';
@@ -19,6 +22,13 @@ export const DETAIL_TABLET_QUERY = '(min-width: 600px)';
 /** The same, on a fixed-header page (record pages): only a tall window starts with the summary open, a short one leaves the height to the grid. */
 export const DETAIL_TABLET_TALL_QUERY = '(min-width: 600px) and (min-height: 900px)';
 
+/** The resizable layout (the Task page): the share of the width the main (left) column gets, in percent. */
+export const SPLIT_DEFAULT = 60;
+export const SPLIT_MIN = 35;
+export const SPLIT_MAX = 70;
+/** Width of the splitter handle between the columns, in px (the `1rem` of the grid). */
+const SPLIT_HANDLE_PX = 16;
+
 let nextId = 0;
 const PANEL_KEY = 'mf.detail-panel.open';
 
@@ -27,6 +37,30 @@ function readPanelOpen(): boolean {
     return localStorage.getItem(PANEL_KEY) === '1';
   } catch {
     return false;
+  }
+}
+
+function clampSplit(value: number): number {
+  return Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, Number.isFinite(value) ? value : SPLIT_DEFAULT));
+}
+
+function readSplit(key: string): number {
+  if (!key) return SPLIT_DEFAULT;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw === null || raw.trim() === '' ? SPLIT_DEFAULT : clampSplit(Number(raw));
+  } catch {
+    return SPLIT_DEFAULT;
+  }
+}
+
+function saveSplit(key: string, value: number): void {
+  if (!key) return;
+  try {
+    if (value === SPLIT_DEFAULT) localStorage.removeItem(key);
+    else localStorage.setItem(key, String(value));
+  } catch {
+    // Not persisted (private window or blocked storage).
   }
 }
 
@@ -50,10 +84,13 @@ function savePanelOpen(open: boolean): void {
  *   disclosure button (`aria-expanded`). It starts collapsed on phones and expanded on tablets.
  *
  * Slots: `mfMain` (the main area), `mfAside` (the Details content; the panel adds the "Details" heading, which names the `aside`) and the
- * optional `mfAfter` (a further section of the panel, for example the Task's Assets: inside the sticky panel below Details from 1100 px,
- * and BELOW the main area on narrower screens, so the reading order there is Details, main, then this section).
+ * optional `mfBelow` (only with `split`: sections under the main area inside the same column, for example the Task's Comments and Assets).
  *
- *   <mf-detail-layout><div mfMain>...</div><div mfAside>...</div><section mfAfter>...</section></mf-detail-layout>
+ * `split` (the Task page) makes the two columns resizable: the main column gets 60 % by default (35 to 70 %), a separator between the columns
+ * is dragged (pointer and touch) or moved with the keyboard, the share is remembered under `splitKey` and a double click, Enter or the
+ * "Reset layout" button restore 60 / 40. Below 1100 px there is no splitter: Details, main, then `mfBelow` in one column.
+ *
+ *   <mf-detail-layout><div mfMain>...</div><div mfAside>...</div></mf-detail-layout>
  */
 @Component({
   selector: 'mf-detail-layout',
@@ -64,55 +101,92 @@ function savePanelOpen(open: boolean): void {
     <div
       class="dl"
       [style.--dl-aside]="asideWidth()"
+      [style.--dl-cols]="splitting() ? splitColumns() : null"
       [class.dl--wide]="wide()"
       [class.dl--slim]="mid() && !isOpen()"
+      [class.dl--split]="splitting()"
+      [class.dl--dragging]="dragging()"
       data-detail-layout
       [attr.data-layout]="wide() ? (mid() ? 'wide-collapsible' : 'wide') : 'narrow'"
     >
       @if (!wide()) {
         <ng-container [ngTemplateOutlet]="panel" />
       }
-      <div class="dl__main" data-detail-main>
-        <ng-content select="[mfMain]" />
-      </div>
+      @if (split()) {
+        <div class="dl__left" data-detail-left>
+          <div class="dl__main" data-detail-main>
+            <ng-container [ngTemplateOutlet]="main" />
+          </div>
+          <div class="dl__below" data-detail-below>
+            <ng-content select="[mfBelow]" />
+          </div>
+        </div>
+      } @else {
+        <div class="dl__main" data-detail-main>
+          <ng-container [ngTemplateOutlet]="main" />
+        </div>
+      }
+      @if (splitting()) {
+        <div
+          #handle
+          class="dl__split"
+          role="separator"
+          tabindex="0"
+          aria-orientation="vertical"
+          aria-label="Resize Details panel"
+          title="Drag to resize. Double-click to reset to 60 / 40."
+          data-splitter
+          [attr.aria-valuenow]="valueNow()"
+          [attr.aria-valuemin]="splitMin"
+          [attr.aria-valuemax]="splitMax"
+          [attr.aria-valuetext]="valueText()"
+          (pointerdown)="dragStart($event)"
+          (pointermove)="dragMove($event)"
+          (pointerup)="dragEnd($event)"
+          (pointercancel)="dragEnd($event)"
+          (lostpointercapture)="dragEnd($event)"
+          (keydown)="onSplitKey($event)"
+          (dblclick)="resetSplit()"
+        >
+          <span class="dl__grip" aria-hidden="true"></span>
+        </div>
+      }
       @if (wide()) {
         <ng-container [ngTemplateOutlet]="panel" />
-      } @else {
-        <div class="dl__after dl__after--below" data-detail-after>
-          <ng-container [ngTemplateOutlet]="after" />
-        </div>
       }
     </div>
 
-    <ng-template #after><ng-content select="[mfAfter]" /></ng-template>
+    <ng-template #main><ng-content select="[mfMain]" /></ng-template>
 
     <ng-template #panel>
       <aside class="dl__aside" [attr.aria-labelledby]="uid + '-h'" data-detail-panel>
-        <h2 class="dl__h" [id]="uid + '-h'">
-          @if (!wide() || mid()) {
-            <button
-              type="button"
-              class="dl__toggle"
-              data-detail-toggle
-              [attr.aria-expanded]="isOpen()"
-              [attr.aria-controls]="uid + '-body'"
-              (click)="toggle()"
-            >
-              <span>{{ heading() }}</span>
-              <i class="pi dl__chevron" [class]="chevron()" aria-hidden="true"></i>
+        <div class="dl__bar">
+          <h2 class="dl__h" [id]="uid + '-h'">
+            @if (!wide() || mid()) {
+              <button
+                type="button"
+                class="dl__toggle"
+                data-detail-toggle
+                [attr.aria-expanded]="isOpen()"
+                [attr.aria-controls]="uid + '-body'"
+                (click)="toggle()"
+              >
+                <span>{{ heading() }}</span>
+                <i class="pi dl__chevron" [class]="chevron()" aria-hidden="true"></i>
+              </button>
+            } @else {
+              <span class="dl__t">{{ heading() }}</span>
+            }
+          </h2>
+          @if (splitting() && pct() !== splitDefault) {
+            <button type="button" class="dl__reset" data-split-reset (click)="resetSplit()">
+              Reset layout
             </button>
-          } @else {
-            <span class="dl__t">{{ heading() }}</span>
           }
-        </h2>
+        </div>
         <div class="dl__body" [id]="uid + '-body'" [hidden]="!isOpen()" data-detail-body>
           <ng-content select="[mfAside]" />
         </div>
-        @if (wide()) {
-          <div class="dl__after" [hidden]="!isOpen()" data-detail-after>
-            <ng-container [ngTemplateOutlet]="after" />
-          </div>
-        }
       </aside>
     </ng-template>
   `,
@@ -131,6 +205,104 @@ function savePanelOpen(open: boolean): void {
     }
     .dl--slim {
       grid-template-columns: minmax(0, 1fr) auto;
+    }
+    /* The resizable layout: left column, handle (1rem), Details; --dl-cols carries the two shares. */
+    .dl--wide.dl--split {
+      grid-template-columns: var(--dl-cols);
+      column-gap: 0;
+    }
+    .dl__left {
+      min-width: 0;
+    }
+    .dl__below {
+      min-width: 0;
+      margin-top: var(--mf-s5);
+    }
+    .dl__below:empty {
+      display: none;
+    }
+    .dl__split {
+      position: sticky;
+      top: calc(var(--mf-header-h, 3.75rem) + var(--mf-s4));
+      align-self: start;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      height: calc(100vh - var(--mf-header-h, 3.75rem) - var(--mf-s5) - var(--mf-s4));
+      min-height: 8rem;
+      cursor: col-resize;
+      touch-action: none;
+      user-select: none;
+      border-radius: var(--mf-radius);
+    }
+    .dl__split::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 2px;
+      transform: translateX(-50%);
+      border-radius: 1px;
+      background: var(--mf-border);
+      transition: background-color 0.15s;
+    }
+    .dl__grip {
+      position: relative;
+      width: 6px;
+      height: 2.5rem;
+      border: 1px solid var(--mf-border-strong);
+      border-radius: 3px;
+      background: var(--mf-surface);
+    }
+    .dl__split:hover::before,
+    .dl--dragging .dl__split::before {
+      width: 4px;
+      background: var(--mf-primary);
+    }
+    .dl__split:hover .dl__grip,
+    .dl--dragging .dl__grip {
+      border-color: var(--mf-primary);
+      background: var(--mf-primary);
+    }
+    .dl__split:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: -2px;
+    }
+    .dl__split:focus-visible::before {
+      width: 4px;
+      background: var(--mf-focus);
+    }
+    .dl__split:focus-visible .dl__grip {
+      border-color: var(--mf-focus);
+      background: var(--mf-focus);
+    }
+    .dl--dragging {
+      cursor: col-resize;
+    }
+    .dl__bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--mf-s2);
+      padding-right: var(--mf-s3);
+    }
+    .dl__bar .dl__h {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .dl__reset {
+      flex: none;
+      min-height: var(--mf-target-min, 2rem);
+      padding: 0 var(--mf-s2);
+      border: 0;
+      background: transparent;
+      color: var(--mf-link);
+      font: inherit;
+      font-size: var(--mf-fs-sm);
+      text-decoration: underline;
+      cursor: pointer;
     }
     .dl__main {
       min-width: 0;
@@ -187,20 +359,6 @@ function savePanelOpen(open: boolean): void {
     .dl__body[hidden] {
       display: none;
     }
-    .dl__after[hidden] {
-      display: none;
-    }
-    .dl__after:empty {
-      display: none;
-    }
-    .dl__after {
-      padding: var(--mf-s4);
-      border-top: 1px solid var(--mf-border);
-    }
-    .dl__after--below {
-      padding: 0;
-      border: 0;
-    }
     /*
      * Inside a fixed-header page (mf-fixed-page) the layout fills what is left under the pinned header: the main area is a column
      * whose grid scrolls, and the Details panel scrolls inside itself (it does not stick to the window). Narrow screens stack them, the
@@ -240,9 +398,6 @@ function savePanelOpen(open: boolean): void {
         overflow-y: auto;
         overscroll-behavior: contain;
       }
-      :host(.dl--fixed) .dl:not(.dl--wide) .dl__after--below {
-        flex: none;
-      }
     }
   `,
 })
@@ -255,6 +410,30 @@ export class DetailLayout {
   readonly collapsible = input(false);
   /** Width of the side panel from 1100 px (any CSS length); the Task page asks for more room for its Details. */
   readonly asideWidth = input('340px');
+  /** Makes the two columns resizable and adds the `mfBelow` slot under the main area (the Task page). */
+  readonly split = input(false);
+  /** localStorage key that remembers the width (include the user id); empty means not remembered. */
+  readonly splitKey = input('');
+
+  protected readonly splitDefault = SPLIT_DEFAULT;
+  protected readonly splitMin = SPLIT_MIN;
+  protected readonly splitMax = SPLIT_MAX;
+  private readonly handle = viewChild<ElementRef<HTMLElement>>('handle');
+  /** Share of the width for the main (left) column, in percent. Read from storage as soon as the key is known, so nothing jumps on load. */
+  protected readonly pct = linkedSignal(() => readSplit(this.splitKey()));
+  protected readonly dragging = signal(false);
+  /** The splitter is shown in the two-column layout of a `split` layout only. */
+  protected readonly splitting = computed(() => this.split() && this.wide());
+  protected readonly splitColumns = computed(() => {
+    const left = this.pct();
+    return `minmax(0, ${left}fr) ${SPLIT_HANDLE_PX / 16}rem minmax(0, ${100 - left}fr)`;
+  });
+  protected readonly valueNow = computed(() => Math.round(this.pct()));
+  protected readonly valueText = computed(
+    () => `Main area ${this.valueNow()} percent, Details ${100 - this.valueNow()} percent`,
+  );
+  private dragPointer: number | null = null;
+  private previousUserSelect = '';
 
   protected readonly uid = `dl-${nextId++}`;
   /** True from 1100 px (two columns). Without `matchMedia` (tests) the wide layout is used. */
@@ -290,7 +469,83 @@ export class DetailLayout {
     }
   }
 
+  /** Sets the share (clamped to 35 to 70 %); `persist` writes it to storage (end of a drag, every key press). */
+  protected setSplit(value: number, persist = true): void {
+    const next = clampSplit(Math.round(value * 10) / 10);
+    this.pct.set(next);
+    if (persist) saveSplit(this.splitKey(), next);
+  }
+
+  protected resetSplit(): void {
+    this.setSplit(SPLIT_DEFAULT);
+  }
+
+  protected onSplitKey(event: KeyboardEvent): void {
+    const step = event.shiftKey ? 10 : 2;
+    let next: number | null = null;
+    switch (event.key) {
+      case 'ArrowLeft':
+        next = this.pct() - step;
+        break;
+      case 'ArrowRight':
+        next = this.pct() + step;
+        break;
+      case 'Home':
+        next = SPLIT_MIN;
+        break;
+      case 'End':
+        next = SPLIT_MAX;
+        break;
+      case 'Enter':
+        next = SPLIT_DEFAULT;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    this.setSplit(next);
+  }
+
+  protected dragStart(event: PointerEvent): void {
+    if (event.button !== undefined && event.button !== 0) return;
+    this.dragPointer = event.pointerId;
+    this.dragging.set(true);
+    const el = event.currentTarget as HTMLElement;
+    try {
+      el.setPointerCapture(event.pointerId);
+    } catch {
+      // No capture (older browsers or synthetic events): moves still arrive while the pointer is over the handle.
+    }
+    // No text selection while dragging; the previous value comes back when the drag ends (or the page goes away).
+    this.previousUserSelect = document.body.style.userSelect;
+    document.body.style.userSelect = 'none';
+    el.focus({ preventScroll: true });
+    event.preventDefault();
+  }
+
+  protected dragMove(event: PointerEvent): void {
+    if (this.dragPointer !== event.pointerId) return;
+    const handle = this.handle()?.nativeElement;
+    const grid = handle?.parentElement;
+    if (!grid) return;
+    const rect = grid.getBoundingClientRect();
+    const usable = rect.width - SPLIT_HANDLE_PX;
+    if (usable <= 0) return;
+    this.setSplit(((event.clientX - rect.left - SPLIT_HANDLE_PX / 2) / usable) * 100, false);
+  }
+
+  protected dragEnd(event: PointerEvent): void {
+    if (this.dragPointer === null || this.dragPointer !== event.pointerId) return;
+    this.dragPointer = null;
+    this.dragging.set(false);
+    document.body.style.userSelect = this.previousUserSelect;
+    saveSplit(this.splitKey(), this.pct());
+  }
+
   constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      if (this.dragPointer !== null) document.body.style.userSelect = this.previousUserSelect;
+    });
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
     const wide = window.matchMedia(DETAIL_WIDE_QUERY);
     this.wide.set(wide.matches);

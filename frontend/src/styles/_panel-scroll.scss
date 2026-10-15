@@ -1,0 +1,11 @@
+/* Independent scroll area of the Task page (see PanelScroll): capped by --mf-panel-max, scrolls by itself, never chains to the page. */
+.mf-panel-scroll {
+  max-height: var(--mf-panel-max, none);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.mf-panel-scroll:focus-visible {
+  outline: 2px solid var(--mf-focus);
+  outline-offset: -2px;
+}
