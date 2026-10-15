@@ -1,14 +1,18 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
+  Injector,
   linkedSignal,
   inject,
   input,
+  model,
   output,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -20,11 +24,21 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { DisclosureBar } from '../../../shared/ui/disclosure-bar';
 import { PanelScroll } from '../../../shared/ui/panel-scroll';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { COMMENT_MAX_TEXT, decorateLinks, htmlToText, isBlankHtml } from './rich-text';
 import { RichTextEditor } from './rich-text-editor';
+import {
+  commentsPreview,
+  countNew,
+  latestOf,
+  readSeen,
+  saveOpen,
+  saveSeen,
+  sectionOpenKey,
+} from './section-state';
 
 export const COMMENTS_INTERNAL_NOTE = 'Internal only. Visible to people who can view tasks.';
 export const COMMENTS_PRIVILEGE_NOTE =
@@ -72,264 +86,316 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
  * comments inside that window, and a search looks through every loaded comment whatever the limit. The server list is always requested newest
  * first, so the latest comments are in the first page however long the thread is.
  *
- * Inputs: `taskId` (required), `readOnly`. Outputs: `countChange` (comments shown, after every load and change) and `changed`
+ * It is a collapsible section (`open`, two-way): a bar with the count, a one-line preview, a "N new" cue (comments by others since this person last
+ * saw the thread) and the Add comment action; the thread and the composer render only when open, but the list loads with the page. The composer is
+ * one line until it gets focus.
+ *
+ * Inputs: `taskId` (required), `readOnly`, `refresh`, `open`. Outputs: `countChange` (comments shown, after every load and change) and `changed`
  * (a comment was posted, edited or deleted, so the host can refresh its header or the activity).
  */
 @Component({
   selector: 'mf-task-comments',
-  imports: [MfDatePipe, RichTextEditor, ConfirmDialog, SearchBox, PanelScroll],
+  imports: [MfDatePipe, RichTextEditor, ConfirmDialog, SearchBox, PanelScroll, DisclosureBar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="tc" aria-label="Comments">
-      <header class="tc__head">
-        <h2 class="tc__title" tabindex="-1" data-section-heading>Comments ({{ total() }})</h2>
-      </header>
-      <div class="tc__tools">
-        <mf-search-box
-          class="tc__search"
-          inputId="tc-search"
-          label="Search comments"
-          placeholder="Search comments"
-          [hideLabel]="true"
-          [hintOnFocus]="true"
-          hint="Searches the author and the text of all the comments loaded here, whatever the Show latest setting."
-          [value]="query()"
-          (searchChange)="query.set($event)"
-        />
-        <div class="tc__opts">
-          <select
-            class="mf-control tc__sort"
-            data-order-select
-            aria-label="Sort comments"
-            (change)="setOrder($any($event.target).value === 'newest')"
+      <mf-disclosure-bar
+        [label]="label()"
+        [open]="open()"
+        [controls]="panelId"
+        [badge]="newBadge()"
+        [preview]="preview()"
+        [announce]="announce()"
+        (activated)="toggle()"
+      >
+        @if (canPost()) {
+          <button
+            type="button"
+            class="mf-btn mf-btn--text"
+            data-add-comment
+            aria-label="Add comment"
+            title="Add comment"
+            (click)="addComment()"
           >
-            <option value="oldest" [selected]="!newestFirst()">Oldest first</option>
-            <option value="newest" [selected]="newestFirst()">Newest first</option>
-          </select>
-          <label class="tc__show">
-            <span>Show latest</span>
-            <select
-              class="mf-control tc__limit"
-              data-limit-select
-              (change)="setLimit($any($event.target).value)"
-            >
-              @for (l of limits; track l) {
-                <option [value]="l" [selected]="l === limit()">
-                  {{ l === 'all' ? 'All' : l }}
-                </option>
-              }
-            </select>
-          </label>
-        </div>
-      </div>
-
-      @switch (state()) {
-        @case ('loading') {
-          <p class="tc__muted" role="status" aria-busy="true">Loading comments...</p>
+            <i class="pi pi-comment" aria-hidden="true"></i>
+            <span class="tc__act">Add comment</span>
+          </button>
         }
-        @case ('error') {
-          <p class="tc__alert" role="alert" data-load-error>
-            Something went wrong. Try again.
-            <button type="button" class="tc__link" (click)="reload()">Retry</button>
-          </p>
-        }
-        @default {
-          @if (items().length === 0) {
-            <p class="tc__muted" data-empty>No comments yet.</p>
-          } @else if (visibleItems().length === 0) {
-            <p class="tc__muted" data-no-match role="status">
-              No comments match "{{ query() }}".
-              <button type="button" class="tc__link" (click)="query.set('')">Clear search</button>
-            </p>
-          } @else {
-            @if (query()) {
-              <p class="tc__muted" data-match-count role="status">
-                {{ visibleItems().length }} of {{ items().length }} comments match.
-              </p>
-            }
-            <div mfPanelScroll="Comment thread" class="tc__scroll" data-comments-scroll>
-              <ol class="tc__list">
-                @for (c of visibleItems(); track c.commentId) {
-                  <li class="tc__item" [attr.data-comment-id]="c.commentId">
-                    <div class="tc__meta">
-                      <strong class="tc__author">{{ c.author.displayName }}</strong>
-                      <time [attr.datetime]="c.createdAtUtc" [title]="c.createdAtUtc + ' (UTC)'">{{
-                        c.createdAtUtc | mfDate
-                      }}</time>
-                      @if (c.purposeLabel) {
-                        <span class="tc__tag" data-purpose>{{ c.purposeLabel }}</span>
-                      }
-                      @if (
-                        editingId() !== c.commentId && !readOnly() && (c.canEdit || c.canDelete)
-                      ) {
-                        <span class="tc__actions tc__actions--row">
-                          @if (c.canEdit) {
-                            <button
-                              type="button"
-                              class="mf-btn mf-btn--text mf-btn--icon"
-                              data-edit
-                              aria-label="Edit comment"
-                              title="Edit comment"
-                              (click)="startEdit(c)"
-                            >
-                              <i class="pi pi-pencil" aria-hidden="true"></i>
-                            </button>
-                          }
-                          @if (c.canDelete) {
-                            <button
-                              type="button"
-                              class="mf-btn mf-btn--text mf-btn--icon mf-btn--danger"
-                              data-delete
-                              aria-label="Delete comment"
-                              title="Delete comment"
-                              (click)="askDelete(c)"
-                            >
-                              <i class="pi pi-trash" aria-hidden="true"></i>
-                            </button>
-                          }
-                        </span>
-                      }
-                    </div>
-
-                    @if (editingId() === c.commentId) {
-                      <div class="tc__edit" data-edit-form>
-                        <mf-rich-text-editor
-                          label="Edit comment"
-                          [(value)]="editDraft"
-                          [disabled]="saving()"
-                          (submitted)="saveEdit(c)"
-                        />
-                        @if (editError()) {
-                          <p class="tc__alert" role="alert" data-edit-error>{{ editError() }}</p>
-                        }
-                        <div class="tc__actions">
-                          <button
-                            type="button"
-                            class="mf-btn mf-btn--primary"
-                            data-save-edit
-                            [disabled]="saving() || isBlank(editDraft())"
-                            (click)="saveEdit(c)"
-                          >
-                            Save changes
-                          </button>
-                          <button
-                            type="button"
-                            class="mf-btn"
-                            data-cancel-edit
-                            (click)="cancelEdit()"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    } @else {
-                      <div
-                        class="tc__body mf-rich"
-                        data-body
-                        [innerHTML]="render(c.bodyHtml)"
-                      ></div>
-                      @if (c.isEdited) {
-                        <p class="tc__edited">
-                          <span data-edited
-                            >Edited
-                            <time [attr.datetime]="c.editedAtUtc">{{
-                              c.editedAtUtc | mfDate
-                            }}</time></span
-                          >
-                          <button
-                            type="button"
-                            class="tc__link"
-                            data-history-toggle
-                            [attr.aria-expanded]="historyId() === c.commentId"
-                            (click)="toggleHistory(c)"
-                          >
-                            View edit history
-                          </button>
-                        </p>
-                        @if (historyId() === c.commentId) {
-                          <div class="tc__history" data-history>
-                            @if (history() === null) {
-                              <p class="tc__muted" role="status">Loading edit history...</p>
-                            } @else {
-                              @for (r of history(); track r.revisionId) {
-                                <div class="tc__rev">
-                                  <time [attr.datetime]="r.revisedAtUtc">{{
-                                    r.revisedAtUtc | mfDate
-                                  }}</time>
-                                  <div
-                                    class="tc__body mf-rich"
-                                    [innerHTML]="render(r.bodyHtml)"
-                                  ></div>
-                                </div>
-                              }
-                            }
-                          </div>
-                        }
-                      }
-                    }
-                  </li>
-                }
-              </ol>
+      </mf-disclosure-bar>
+      <div class="tc__panel" [id]="panelId" [hidden]="!open()">
+        @if (open()) {
+          <div class="tc__tools">
+            <mf-search-box
+              class="tc__search"
+              inputId="tc-search"
+              label="Search comments"
+              placeholder="Search comments"
+              [hideLabel]="true"
+              [hintOnFocus]="true"
+              hint="Searches the author and the text of all the comments loaded here, whatever the Show latest setting."
+              [value]="query()"
+              (searchChange)="query.set($event)"
+            />
+            <div class="tc__opts">
+              <select
+                class="mf-control tc__sort"
+                data-order-select
+                aria-label="Sort comments"
+                (change)="setOrder($any($event.target).value === 'newest')"
+              >
+                <option value="oldest" [selected]="!newestFirst()">Oldest first</option>
+                <option value="newest" [selected]="newestFirst()">Newest first</option>
+              </select>
+              <label class="tc__show">
+                <span>Show latest</span>
+                <select
+                  class="mf-control tc__limit"
+                  data-limit-select
+                  (change)="setLimit($any($event.target).value)"
+                >
+                  @for (l of limits; track l) {
+                    <option [value]="l" [selected]="l === limit()">
+                      {{ l === 'all' ? 'All' : l }}
+                    </option>
+                  }
+                </select>
+              </label>
             </div>
-            @if (!query() && limited()) {
-              <p class="tc__muted" data-limit-note role="status">
-                Showing the latest {{ visibleItems().length }} of {{ total() }} comments.
-                <button type="button" class="tc__link" data-show-all (click)="setLimit('all')">
-                  Show all
-                </button>
+          </div>
+
+          @switch (state()) {
+            @case ('loading') {
+              <p class="tc__muted" role="status" aria-busy="true">Loading comments...</p>
+            }
+            @case ('error') {
+              <p class="tc__alert" role="alert" data-load-error>
+                Something went wrong. Try again.
+                <button type="button" class="tc__link" (click)="reload()">Retry</button>
               </p>
             }
-            @if (items().length < total() && (limit() === 'all' || query())) {
-              <div class="tc__more" data-more>
-                <p class="tc__muted" data-more-note>
-                  Showing {{ items().length }} of {{ total() }} comments.
+            @default {
+              @if (items().length === 0) {
+                <p class="tc__muted" data-empty>No comments yet.</p>
+              } @else if (visibleItems().length === 0) {
+                <p class="tc__muted" data-no-match role="status">
+                  No comments match "{{ query() }}".
+                  <button type="button" class="tc__link" (click)="query.set('')">
+                    Clear search
+                  </button>
                 </p>
-                @if (moreError()) {
-                  <p class="tc__alert" role="alert" data-more-error>{{ moreError() }}</p>
+              } @else {
+                @if (query()) {
+                  <p class="tc__muted" data-match-count role="status">
+                    {{ visibleItems().length }} of {{ items().length }} comments match.
+                  </p>
+                }
+                <div mfPanelScroll="Comment thread" class="tc__scroll" data-comments-scroll>
+                  <ol class="tc__list">
+                    @for (c of visibleItems(); track c.commentId) {
+                      <li class="tc__item" [attr.data-comment-id]="c.commentId">
+                        <div class="tc__meta">
+                          <strong class="tc__author">{{ c.author.displayName }}</strong>
+                          <time
+                            [attr.datetime]="c.createdAtUtc"
+                            [title]="c.createdAtUtc + ' (UTC)'"
+                            >{{ c.createdAtUtc | mfDate }}</time
+                          >
+                          @if (c.purposeLabel) {
+                            <span class="tc__tag" data-purpose>{{ c.purposeLabel }}</span>
+                          }
+                          @if (
+                            editingId() !== c.commentId && !readOnly() && (c.canEdit || c.canDelete)
+                          ) {
+                            <span class="tc__actions tc__actions--row">
+                              @if (c.canEdit) {
+                                <button
+                                  type="button"
+                                  class="mf-btn mf-btn--text mf-btn--icon"
+                                  data-edit
+                                  aria-label="Edit comment"
+                                  title="Edit comment"
+                                  (click)="startEdit(c)"
+                                >
+                                  <i class="pi pi-pencil" aria-hidden="true"></i>
+                                </button>
+                              }
+                              @if (c.canDelete) {
+                                <button
+                                  type="button"
+                                  class="mf-btn mf-btn--text mf-btn--icon mf-btn--danger"
+                                  data-delete
+                                  aria-label="Delete comment"
+                                  title="Delete comment"
+                                  (click)="askDelete(c)"
+                                >
+                                  <i class="pi pi-trash" aria-hidden="true"></i>
+                                </button>
+                              }
+                            </span>
+                          }
+                        </div>
+
+                        @if (editingId() === c.commentId) {
+                          <div class="tc__edit" data-edit-form>
+                            <mf-rich-text-editor
+                              label="Edit comment"
+                              [(value)]="editDraft"
+                              [disabled]="saving()"
+                              (submitted)="saveEdit(c)"
+                            />
+                            @if (editError()) {
+                              <p class="tc__alert" role="alert" data-edit-error>
+                                {{ editError() }}
+                              </p>
+                            }
+                            <div class="tc__actions">
+                              <button
+                                type="button"
+                                class="mf-btn mf-btn--primary"
+                                data-save-edit
+                                [disabled]="saving() || isBlank(editDraft())"
+                                (click)="saveEdit(c)"
+                              >
+                                Save changes
+                              </button>
+                              <button
+                                type="button"
+                                class="mf-btn"
+                                data-cancel-edit
+                                (click)="cancelEdit()"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        } @else {
+                          <div
+                            class="tc__body mf-rich"
+                            data-body
+                            [innerHTML]="render(c.bodyHtml)"
+                          ></div>
+                          @if (c.isEdited) {
+                            <p class="tc__edited">
+                              <span data-edited
+                                >Edited
+                                <time [attr.datetime]="c.editedAtUtc">{{
+                                  c.editedAtUtc | mfDate
+                                }}</time></span
+                              >
+                              <button
+                                type="button"
+                                class="tc__link"
+                                data-history-toggle
+                                [attr.aria-expanded]="historyId() === c.commentId"
+                                (click)="toggleHistory(c)"
+                              >
+                                View edit history
+                              </button>
+                            </p>
+                            @if (historyId() === c.commentId) {
+                              <div class="tc__history" data-history>
+                                @if (history() === null) {
+                                  <p class="tc__muted" role="status">Loading edit history...</p>
+                                } @else {
+                                  @for (r of history(); track r.revisionId) {
+                                    <div class="tc__rev">
+                                      <time [attr.datetime]="r.revisedAtUtc">{{
+                                        r.revisedAtUtc | mfDate
+                                      }}</time>
+                                      <div
+                                        class="tc__body mf-rich"
+                                        [innerHTML]="render(r.bodyHtml)"
+                                      ></div>
+                                    </div>
+                                  }
+                                }
+                              </div>
+                            }
+                          }
+                        }
+                      </li>
+                    }
+                  </ol>
+                </div>
+                @if (!query() && limited()) {
+                  <p class="tc__muted" data-limit-note role="status">
+                    Showing the latest {{ visibleItems().length }} of {{ total() }} comments.
+                    <button type="button" class="tc__link" data-show-all (click)="setLimit('all')">
+                      Show all
+                    </button>
+                  </p>
+                }
+                @if (items().length < total() && (limit() === 'all' || query())) {
+                  <div class="tc__more" data-more>
+                    <p class="tc__muted" data-more-note>
+                      Showing {{ items().length }} of {{ total() }} comments.
+                    </p>
+                    @if (moreError()) {
+                      <p class="tc__alert" role="alert" data-more-error>{{ moreError() }}</p>
+                    }
+                    <button
+                      type="button"
+                      class="mf-btn"
+                      data-load-more
+                      [disabled]="loadingMore()"
+                      (click)="loadMore()"
+                    >
+                      {{ loadingMore() ? 'Loading...' : 'Load more comments' }}
+                    </button>
+                  </div>
+                }
+              }
+            }
+          }
+
+          @if (canPost()) {
+            <form
+              class="tc__composer"
+              data-composer
+              (submit)="post($event)"
+              (focusout)="composerFocusOut($event)"
+            >
+              @if (composerOpen()) {
+                <mf-rich-text-editor
+                  label="Add a comment"
+                  placeholder="Add a comment... (Ctrl+Enter to post)"
+                  [(value)]="draft"
+                  [disabled]="posting()"
+                  (submitted)="post()"
+                />
+                <p class="tc__note" data-internal-note>{{ internalNote }}</p>
+                <p class="tc__note tc__note--privilege" data-privilege-note>
+                  <i class="pi pi-lock" aria-hidden="true"></i> {{ privilegeNote }}
+                </p>
+                @if (postError()) {
+                  <p class="tc__alert" role="alert" data-post-error>{{ postError() }}</p>
                 }
                 <button
-                  type="button"
-                  class="mf-btn"
-                  data-load-more
-                  [disabled]="loadingMore()"
-                  (click)="loadMore()"
+                  type="submit"
+                  class="mf-btn mf-btn--primary"
+                  data-post
+                  [disabled]="posting() || isBlank(draft())"
                 >
-                  {{ loadingMore() ? 'Loading...' : 'Load more comments' }}
+                  Post comment
                 </button>
-              </div>
-            }
+              } @else {
+                <input
+                  type="text"
+                  class="mf-control tc__quick"
+                  data-composer-quick
+                  placeholder="Write a comment..."
+                  aria-label="Add a comment"
+                  autocomplete="off"
+                  (focus)="expandComposer()"
+                  (click)="expandComposer()"
+                />
+              }
+            </form>
+          } @else {
+            <p class="tc__note" data-internal-note>{{ internalNote }}</p>
           }
         }
-      }
-
-      @if (canPost()) {
-        <form class="tc__composer" data-composer (submit)="post($event)">
-          <mf-rich-text-editor
-            label="Add a comment"
-            placeholder="Add a comment... (Ctrl+Enter to post)"
-            [(value)]="draft"
-            [disabled]="posting()"
-            (submitted)="post()"
-          />
-          <p class="tc__note" data-internal-note>{{ internalNote }}</p>
-          <p class="tc__note tc__note--privilege" data-privilege-note>
-            <i class="pi pi-lock" aria-hidden="true"></i> {{ privilegeNote }}
-          </p>
-          @if (postError()) {
-            <p class="tc__alert" role="alert" data-post-error>{{ postError() }}</p>
-          }
-          <button
-            type="submit"
-            class="mf-btn mf-btn--primary"
-            data-post
-            [disabled]="posting() || isBlank(draft())"
-          >
-            Post comment
-          </button>
-        </form>
-      } @else {
-        <p class="tc__note" data-internal-note>{{ internalNote }}</p>
-      }
+      </div>
 
       <mf-confirm-dialog
         title="Delete comment"
@@ -352,24 +418,15 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
       display: grid;
       gap: var(--mf-s3);
     }
-    .tc__head {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--mf-s2);
+    /* In a narrow bar (a half-width bar, phones) the quick action is just its icon; the name stays in aria-label and title. */
+    @container (max-width: 22rem) {
+      .tc__act {
+        display: none;
+      }
     }
-    .tc__title {
-      margin: 0;
-      font-size: var(--mf-fs-h3);
-      scroll-margin-top: calc(var(--mf-header-h, 3.75rem) + var(--mf-s4));
-    }
-    .tc__title:focus {
-      outline: none;
-    }
-    .tc__title:focus-visible {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: 2px;
+    .tc__panel:not([hidden]) {
+      display: grid;
+      gap: var(--mf-s3);
     }
     .tc__tools {
       display: grid;
@@ -501,6 +558,10 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
     .tc__composer [data-post] {
       justify-self: end;
     }
+    .tc__quick {
+      width: 100%;
+      border-radius: 999px;
+    }
     .tc__composer mf-rich-text-editor {
       justify-self: stretch;
     }
@@ -535,6 +596,12 @@ export class TaskComments {
   /** Change the value (for example the Task's rowVersion) to reload the thread quietly: a status change adds its reason as a comment. */
   readonly refresh = input<string | number | null>(null);
 
+  /**
+   * Whether the section is expanded (two-way). The page sets the start value (remembered choice) and may open it for a link; a person's own
+   * toggle is remembered per user. The comments load on page load either way; the thread and the composer render only when open.
+   */
+  readonly open = model(false);
+
   /** Number of comments shown, after every load and change. */
   readonly countChange = output<number>();
   /** A comment was posted, edited or deleted. */
@@ -548,6 +615,7 @@ export class TaskComments {
   private readonly api = inject(TaskCommentsClient);
   private readonly auth = inject(AuthStore);
   private readonly notify = inject(NotificationService);
+  private readonly injector = inject(Injector);
   private readonly rendered = new Map<string, string>();
 
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
@@ -593,6 +661,39 @@ export class TaskComments {
     return this.newestFirst() ? picked : [...picked].reverse();
   });
 
+  protected readonly panelId = 'tc-panel';
+  private readonly userId = computed(() => this.auth.profile()?.userId);
+  /** When this person last saw this Task's comments (the baseline of "new"; null on a first visit). */
+  private readonly seenAt = linkedSignal<[number | null | undefined, number], number | null>({
+    source: () => [this.userId(), this.taskId()],
+    computation: ([user, task]) => readSeen(user, task),
+  });
+  protected readonly newCount = computed(() =>
+    countNew(this.items(), this.seenAt(), this.userId()),
+  );
+  protected readonly newBadge = computed(() =>
+    this.newCount() > 0 ? `${this.newCount()} new` : '',
+  );
+  protected readonly label = computed(() =>
+    this.state() === 'ready' ? `Comments (${this.total()})` : 'Comments',
+  );
+  protected readonly preview = computed(() =>
+    this.state() === 'ready'
+      ? commentsPreview(latestOf(this.items()))
+      : this.state() === 'error'
+        ? "Comments couldn't be loaded"
+        : '',
+  );
+  /** Said once through the bar's polite live region when the page opens with new comments. */
+  protected readonly announce = signal('');
+  /** The first load of this Task decides whether the section opens by itself (new comments). */
+  private visited = false;
+
+  /** The composer is one line ("Write a comment...") until it gets focus; then it is the full editor. */
+  protected readonly composerOpen = signal(false);
+  private readonly editor = viewChild(RichTextEditor);
+  private focusing = false;
+
   protected readonly draft = signal('');
   protected readonly posting = signal(false);
   protected readonly postError = signal('');
@@ -612,9 +713,19 @@ export class TaskComments {
     effect(() => {
       this.taskId();
       untracked(() => {
+        this.visited = false;
+        this.announce.set('');
+        this.composerOpen.set(false);
         this.state.set('loading');
         void this.load();
       });
+    });
+    // Seen: while the section is open (or opens), the newest comment counts as read for the next visit.
+    effect(() => {
+      if (this.open() && this.state() === 'ready') {
+        this.items();
+        untracked(() => this.markSeen());
+      }
     });
     effect(() => {
       this.refresh();
@@ -629,6 +740,49 @@ export class TaskComments {
   }
 
   private refreshed = false;
+
+  protected toggle(): void {
+    const next = !this.open();
+    this.open.set(next);
+    saveOpen(sectionOpenKey('comments', this.userId()), next);
+    if (!next) this.seenAt.set(this.markSeen());
+  }
+
+  /** Quick action in the bar: open the section and put the cursor in the composer. */
+  protected addComment(): void {
+    this.open.set(true);
+    saveOpen(sectionOpenKey('comments', this.userId()), true);
+    this.expandComposer();
+  }
+
+  protected expandComposer(): void {
+    if (this.composerOpen()) return;
+    this.composerOpen.set(true);
+    this.focusing = true;
+    afterNextRender(
+      () => {
+        this.editor()?.focus();
+        this.focusing = false;
+      },
+      { injector: this.injector },
+    );
+  }
+
+  /** Back to the one-line input when focus leaves an empty composer. */
+  protected composerFocusOut(event: FocusEvent): void {
+    const form = event.currentTarget as HTMLElement;
+    if (this.focusing || this.posting() || form.contains(event.relatedTarget as Node | null))
+      return;
+    if (isBlankHtml(this.draft())) this.composerOpen.set(false);
+  }
+
+  /** Stores "seen now" (never before the newest comment) and returns it. */
+  private markSeen(): number {
+    const latest = latestOf(this.items());
+    const at = Math.max(Date.now(), latest ? timeOf(latest) : 0);
+    saveSeen(this.userId(), this.taskId(), at);
+    return at;
+  }
 
   protected canPost(): boolean {
     return !this.readOnly() && this.auth.has('Task.Comment');
@@ -689,6 +843,8 @@ export class TaskComments {
     try {
       await firstValueFrom(this.api.addTaskComment(this.taskId(), { bodyHtml: this.draft() }));
       this.draft.set('');
+      this.composerOpen.set(false);
+      this.open.set(true);
       this.notify.success('Comment posted.');
       await this.load(this.items().length);
       this.changed.emit();
@@ -796,6 +952,19 @@ export class TaskComments {
     return decorated;
   }
 
+  /** After the first load of a Task: new comments by others open the section; a first visit only starts the clock. */
+  private firstVisit(): void {
+    if (this.visited) return;
+    this.visited = true;
+    const n = this.newCount();
+    if (n > 0) {
+      this.open.set(true);
+      this.announce.set(`${n} new comment${n === 1 ? '' : 's'}`);
+    } else if (this.seenAt() === null) {
+      this.markSeen();
+    }
+  }
+
   /**
    * Loads the first page and, with `keep` (after a post, edit or delete: the number on screen before), as many further pages as it takes to
    * show at least that many comments again. The first request carries no paging arguments: the server's default page is the first 200.
@@ -818,6 +987,7 @@ export class TaskComments {
       this.moreError.set('');
       this.state.set('ready');
       this.countChange.emit(first.total);
+      this.firstVisit();
     } catch {
       if (taskId === this.taskId()) this.state.set('error');
     }

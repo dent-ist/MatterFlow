@@ -6,16 +6,16 @@ import {
   ElementRef,
   inject,
   input,
-  signal,
+  linkedSignal,
   untracked,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { TaskActivity } from '../panels/task-activity';
 import { TaskAssetLinks } from '../panels/task-asset-links';
+import { readOpen, sectionOpenKey } from '../panels/section-state';
 import { TaskComments } from '../panels/task-comments';
 import { TaskActionDialogs } from './task-action-dialogs';
-import { InView } from './in-view';
 import { TaskDetailStore, TaskSection } from './task-detail.store';
 import { TaskDetailsTab } from './task-details-tab';
 import { TaskHeader } from './task-header';
@@ -48,7 +48,6 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
     TaskHeader,
     DetailLayout,
     ActivityDrawer,
-    InView,
     TaskDetailsTab,
     TaskWorkflowTab,
     TaskActionDialogs,
@@ -162,30 +161,32 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
             </div>
 
             <div mfBelow class="below">
-              <div class="bottom">
+              <div class="bottom" [class.bottom--split]="commentsOpen() === assetsOpen()">
                 <div
                   class="sec panel panel--comments"
+                  [class.panel--closed]="!commentsOpen()"
                   id="task-comments"
                   data-section="comments"
-                  mfInView
-                  (inView)="commentsOn.set(true)"
                 >
-                  @if (commentsOn()) {
-                    <mf-task-comments [taskId]="t.taskId" [refresh]="t.rowVersion" />
-                  } @else {
-                    <section aria-label="Comments">
-                      <h2 class="sec__h" tabindex="-1" data-section-heading>Comments</h2>
-                      <p class="sec__muted" role="status" aria-busy="true">Loading comments...</p>
-                    </section>
-                  }
+                  <mf-task-comments
+                    [taskId]="t.taskId"
+                    [refresh]="t.rowVersion"
+                    [(open)]="commentsOpen"
+                  />
                 </div>
 
-                <div class="sec panel panel--assets" id="task-assets" data-section="assets">
+                <div
+                  class="sec panel panel--assets"
+                  [class.panel--closed]="!assetsOpen()"
+                  id="task-assets"
+                  data-section="assets"
+                >
                   <mf-task-asset-links
                     [taskId]="t.taskId"
                     [matterId]="t.matter.matterId"
                     [readOnly]="store.closed()"
                     [taskStatus]="t.status"
+                    [(open)]="assetsOpen"
                   />
                 </div>
               </div>
@@ -244,6 +245,9 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
       background: var(--mf-surface);
       box-shadow: var(--mf-shadow-1);
     }
+    .panel.panel--closed {
+      padding: var(--mf-s1) var(--mf-s3);
+    }
     @media (min-width: 600px) {
       .panel--assets {
         --mf-panel-max: 60vh;
@@ -255,7 +259,7 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
       }
     }
     @container (min-width: 36rem) {
-      .bottom {
+      .bottom--split {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: stretch;
       }
@@ -264,22 +268,6 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
       .bottom {
         grid-template-columns: minmax(0, 1fr);
       }
-    }
-    .sec__h {
-      margin: 0 0 var(--mf-s3);
-      font-size: var(--mf-fs-h3);
-      scroll-margin-top: calc(var(--mf-header-h, 3.75rem) + var(--mf-s4));
-    }
-    .sec__h:focus {
-      outline: none;
-    }
-    .sec__h:focus-visible {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: 2px;
-    }
-    .sec__muted {
-      margin: 0;
-      color: var(--mf-text-muted);
     }
     /* "Jump to" is for the single-column layout only; from 1100 px everything is in view. */
     .jump {
@@ -326,8 +314,16 @@ export class TaskDetailPage implements HasUnsavedChanges {
     () => `mf.task-detail.split.${this.auth.profile()?.userId ?? 'anon'}`,
   );
 
-  /** True once the Comments are near the visible area (or were asked for): they load then, not with the first paint. */
-  protected readonly commentsOn = signal(false);
+  /**
+   * Whether Comments and Assets are expanded: the choice remembered for this person (read before the first render), collapsed by default.
+   * Links, Jump to and new comments open a section without changing what is remembered. Reset when another Task is shown.
+   */
+  private readonly openKeys = computed(() => {
+    const user = this.auth.profile()?.userId;
+    return [sectionOpenKey('comments', user), sectionOpenKey('assets', user), this.id()];
+  });
+  protected readonly commentsOpen = linkedSignal(() => readOpen(this.openKeys()[0]) ?? false);
+  protected readonly assetsOpen = linkedSignal(() => readOpen(this.openKeys()[1]) ?? false);
   /** The `?tab=` / `?step=` pair already acted on for the loaded Task, so a reload does not scroll again. */
   private handledLink: string | null = null;
 
@@ -348,7 +344,6 @@ export class TaskDetailPage implements HasUnsavedChanges {
       const id = Number(this.id());
       untracked(() => {
         this.handledLink = null;
-        this.commentsOn.set(false);
         void this.store.load(id);
       });
     });
@@ -373,7 +368,8 @@ export class TaskDetailPage implements HasUnsavedChanges {
       const request = this.store.sectionRequest();
       untracked(() => {
         if (!request) return;
-        if (request.section === 'comments') this.commentsOn.set(true);
+        if (request.section === 'comments') this.commentsOpen.set(true);
+        if (request.section === 'assets') this.assetsOpen.set(true);
         setTimeout(() => this.focusSection(request.section));
       });
     });

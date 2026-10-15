@@ -432,6 +432,7 @@ describe('TaskDetailPage complete', () => {
 });
 
 describe('TaskDetailPage layout and states', () => {
+  beforeEach(() => localStorage.clear());
   afterEach(() => TestBed.resetTestingModule());
 
   it('is one page: Workflow in the main column, Comments and Assets below it, Details in the side panel, no tabs', async () => {
@@ -548,7 +549,9 @@ describe('TaskDetailPage layout and states', () => {
   });
 
   it('shows a note in place of the Assets for a user without Asset.View', async () => {
-    const { el } = await mountTaskPage(aTask(), ['Task.View']);
+    const { fixture, el } = await mountTaskPage(aTask(), ['Task.View']);
+    expect(q(el, '[data-section=assets] [data-preview]')!.textContent).toContain("can't view");
+    await click(fixture, q(el, '[data-section=assets] [data-toggle]'));
     expect(q(el, '[data-section=assets] [data-no-access]')).not.toBeNull();
   });
 
@@ -634,5 +637,61 @@ describe('TaskDetailPage layout and states', () => {
     title.dispatchEvent(new Event('input'));
     await settle(fixture);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+  });
+
+  it('starts with Comments and Assets collapsed, side by side as two slim bars', async () => {
+    const { el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
+    for (const name of ['comments', 'assets']) {
+      const toggle = q(el, `[data-section=${name}] [data-toggle]`)!;
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    }
+    expect(q(el, '.bottom')!.classList).toContain('bottom--split');
+    expect(q(el, '[data-section=comments] [data-comment-id]')).toBeNull();
+  });
+
+  it('opens a section from its bar, and one open section takes the whole row (stacked)', async () => {
+    const { fixture, el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
+    await click(fixture, q(el, '[data-section=assets] [data-toggle]'));
+    expect(q(el, '[data-section=assets] [data-toggle]')!.getAttribute('aria-expanded')).toBe(
+      'true',
+    );
+    expect(q(el, '.bottom')!.classList).not.toContain('bottom--split');
+    await click(fixture, q(el, '[data-section=comments] [data-toggle]'));
+    expect(q(el, '.bottom')!.classList).toContain('bottom--split');
+  });
+
+  it('applies the remembered choice of this user before the first render', async () => {
+    localStorage.clear();
+    localStorage.setItem('mf.task-detail.comments.open.1', '1');
+    const { el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
+    expect(q(el, '[data-section=comments] [data-toggle]')!.getAttribute('aria-expanded')).toBe(
+      'true',
+    );
+    expect(q(el, '[data-section=assets] [data-toggle]')!.getAttribute('aria-expanded')).toBe(
+      'false',
+    );
+    localStorage.clear();
+  });
+
+  it.each(['comments', 'assets'])(
+    'the deep link ?tab=%s and Jump to expand the section without changing what is remembered',
+    async (name) => {
+      localStorage.clear();
+      const { fixture, el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View'], {}, name);
+      await settle(fixture);
+      await new Promise((r) => setTimeout(r, 20));
+      expect(q(el, `[data-section=${name}] [data-toggle]`)!.getAttribute('aria-expanded')).toBe(
+        'true',
+      );
+      expect(localStorage.getItem(`mf.task-detail.${name}.open.1`)).toBeNull();
+    },
+  );
+
+  it('Jump to expands a collapsed section', async () => {
+    const { fixture, el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
+    await click(fixture, q(el, '[data-jump-to=comments]'));
+    expect(q(el, '[data-section=comments] [data-toggle]')!.getAttribute('aria-expanded')).toBe(
+      'true',
+    );
   });
 });

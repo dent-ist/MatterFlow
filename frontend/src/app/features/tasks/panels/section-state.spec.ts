@@ -1,0 +1,101 @@
+import { aComment, aLink } from './task-panels-testing';
+import {
+  assetsPreview,
+  commentsPreview,
+  countNew,
+  latestOf,
+  readOpen,
+  readSeen,
+  saveOpen,
+  saveSeen,
+  shortAgo,
+} from './section-state';
+
+describe('section-state', () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => vi.restoreAllMocks());
+
+  it('remembers a flag and reads rubbish as "not set"', () => {
+    expect(readOpen('k')).toBeNull();
+    saveOpen('k', true);
+    expect(readOpen('k')).toBe(true);
+    saveOpen('k', false);
+    expect(readOpen('k')).toBe(false);
+    localStorage.setItem('k', 'maybe');
+    expect(readOpen('k')).toBeNull();
+  });
+
+  it('never throws when storage is blocked', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    expect(readOpen('k')).toBeNull();
+    expect(() => saveOpen('k', true)).not.toThrow();
+    expect(readSeen(1, 2)).toBeNull();
+    expect(() => saveSeen(1, 2, 3)).not.toThrow();
+  });
+
+  it('keeps the seen time per user and task, the most recent 200 tasks only', () => {
+    saveSeen(1, 10, 111);
+    saveSeen(2, 10, 222);
+    expect(readSeen(1, 10)).toBe(111);
+    expect(readSeen(2, 10)).toBe(222);
+    expect(readSeen(1, 11)).toBeNull();
+    for (let id = 100; id < 300; id++) saveSeen(1, id, id);
+    expect(readSeen(1, 10)).toBeNull(); // pushed out
+    expect(readSeen(1, 299)).toBe(299);
+    expect(readSeen(2, 10)).toBe(222); // another user's list is separate
+  });
+
+  it('counts comments by others after the seen time; nothing on a first visit', () => {
+    const at = (id: number, time: string, user = 9) =>
+      aComment({
+        commentId: id,
+        createdAtUtc: time,
+        author: { userId: user, displayName: 'X', isActive: true },
+      });
+    const items = [
+      at(1, '2026-10-13T10:00:00Z'),
+      at(2, '2026-10-13T13:00:00Z'),
+      at(3, '2026-10-13T14:00:00Z', 1),
+    ];
+    const seen = Date.parse('2026-10-13T12:00:00Z');
+    expect(countNew(items, seen, 1)).toBe(1);
+    expect(countNew(items, seen, 5)).toBe(2);
+    expect(countNew(items, null, 5)).toBe(0);
+    expect(latestOf(items)?.commentId).toBe(3);
+    expect(latestOf([])).toBeNull();
+  });
+
+  it('words the time shortly', () => {
+    const now = Date.parse('2026-10-15T12:00:00Z');
+    expect(shortAgo('2026-10-15T11:59:40Z', now)).toBe('just now');
+    expect(shortAgo('2026-10-15T11:55:00Z', now)).toBe('5m ago');
+    expect(shortAgo('2026-10-15T09:00:00Z', now)).toBe('3h ago');
+    expect(shortAgo('2026-10-13T12:00:00Z', now)).toBe('2d ago');
+    expect(shortAgo('2026-09-01T12:00:00Z', now)).toBe('Sep 1, 2026');
+    expect(shortAgo('nonsense', now)).toBe('');
+  });
+
+  it('previews the latest comment as plain text, or says there are none', () => {
+    const now = Date.parse('2026-10-15T12:00:00Z');
+    const c = aComment({
+      bodyHtml: '<p>Sent <b>the</b>   index</p>',
+      createdAtUtc: '2026-10-15T09:00:00Z',
+    });
+    expect(commentsPreview(c, now)).toBe('Latest: Dana P., 3h ago: Sent the index');
+    expect(commentsPreview(null)).toBe('No comments yet');
+  });
+
+  it('previews the first two asset names and how many more', () => {
+    const names = ['Workspace Name', 'Review set', 'Laptop'];
+    const links = names.map((displayName, i) => aLink({ assetId: i, displayName }));
+    expect(assetsPreview([])).toBe('No linked assets');
+    expect(assetsPreview(links.slice(0, 1))).toBe('Workspace Name');
+    expect(assetsPreview(links.slice(0, 2))).toBe('Workspace Name, Review set');
+    expect(assetsPreview(links)).toBe('Workspace Name, Review set +1 more');
+  });
+});
