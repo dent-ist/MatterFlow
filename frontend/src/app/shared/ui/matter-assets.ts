@@ -90,33 +90,37 @@ type LoadState = 'loading' | 'ready' | 'error';
             }
           </div>
         } @else {
-          <table class="pg-table">
-            <caption class="pg-sr">
-              Assets of this matter
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Type</th>
-                <th scope="col">External reference</th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (a of rows(); track a.assetId) {
+          <div class="mf-scroll">
+            <table class="pg-table">
+              <caption class="pg-sr">
+                Assets of this matter
+              </caption>
+              <thead>
                 <tr>
-                  <td>
-                    <a class="pg-link" [routerLink]="['/assets', a.assetId]">{{ a.displayName }}</a>
-                  </td>
-                  <td>{{ a.assetTypeName }}</td>
-                  <td class="pg-mono">{{ a.externalReference }}</td>
-                  <td>
-                    <mf-active-badge [active]="a.isActive" />
-                  </td>
+                  <th scope="col">Name</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">External reference</th>
+                  <th scope="col">Status</th>
                 </tr>
-              }
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                @for (a of rows(); track a.assetId) {
+                  <tr>
+                    <td>
+                      <a class="pg-link" [routerLink]="['/assets', a.assetId]">{{
+                        a.displayName
+                      }}</a>
+                    </td>
+                    <td>{{ a.assetTypeName }}</td>
+                    <td class="pg-mono">{{ a.externalReference }}</td>
+                    <td>
+                      <mf-active-badge [active]="a.isActive" />
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
           <mf-pager
             [page]="page()"
             [pageSize]="pageSize"

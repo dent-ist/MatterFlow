@@ -335,12 +335,8 @@ describe('TaskQueuePage', () => {
     expect(empty.textContent).toContain('Create task');
   });
 
-  it('shows Create task only with Task.Create', async () => {
-    let el = await open('/tasks?status=NEW');
-    expect(el.querySelector('mf-page-header')!.textContent).toContain('Create task');
-
-    TestBed.resetTestingModule();
-    el = await open('/tasks?status=NEW', { permissions: ['Task.View'] });
+  it('leaves the one global Create task button to the app header (UXR-23)', async () => {
+    const el = await open('/tasks?status=NEW');
     expect(el.querySelector('mf-page-header')!.textContent).not.toContain('Create task');
   });
 

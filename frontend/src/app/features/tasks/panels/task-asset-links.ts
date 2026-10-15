@@ -113,82 +113,84 @@ export const ASSETS_CLOSED_NOTE =
             <p class="tl__muted" data-empty>{{ emptyText }}</p>
           } @else {
             <div class="tl__scroll">
-              <table class="tl__table">
-                <thead>
-                  <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Type</th>
-                    <th scope="col">External ref</th>
-                    <th scope="col">Relationship</th>
-                    <th scope="col"><span class="tl__sr">Actions</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (a of items(); track a.assetId) {
-                    <tr [attr.data-asset-id]="a.assetId">
-                      <td>
-                        {{ a.displayName }}
-                        @if (!a.isActive) {
-                          <mf-badge>Inactive</mf-badge>
-                        }
-                      </td>
-                      <td>{{ a.assetTypeName }}</td>
-                      <td>
-                        @if (isUrl(a.externalReference)) {
-                          <a
-                            [href]="a.externalReference"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            >{{ a.externalReference }}</a
-                          >
-                        } @else {
-                          {{ a.externalReference }}
-                        }
-                      </td>
-                      <td>
-                        @if (editable()) {
-                          <select
-                            class="mf-control mf-control--compact"
-                            data-role-select
-                            [attr.aria-label]="'Relationship of ' + a.displayName"
-                            [disabled]="busy()"
-                            (change)="changeRole(a, $event)"
-                          >
-                            <option
-                              value=""
-                              [selected]="
-                                a.assetLinkRoleId === undefined || a.assetLinkRoleId === null
-                              "
-                            >
-                              None
-                            </option>
-                            @for (r of rolesFor(a); track r.id) {
-                              <option [value]="r.id" [selected]="r.id === a.assetLinkRoleId">
-                                {{ r.name }}
-                              </option>
-                            }
-                          </select>
-                        } @else {
-                          <span data-role>{{ a.assetLinkRoleName ?? 'None' }}</span>
-                        }
-                      </td>
-                      <td class="tl__end">
-                        @if (editable()) {
-                          <button
-                            type="button"
-                            class="mf-btn"
-                            data-unlink
-                            [disabled]="busy()"
-                            (click)="askUnlink(a)"
-                          >
-                            Remove link
-                          </button>
-                        }
-                      </td>
+              <div class="mf-scroll">
+                <table class="tl__table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Name</th>
+                      <th scope="col">Type</th>
+                      <th scope="col">External ref</th>
+                      <th scope="col">Relationship</th>
+                      <th scope="col"><span class="tl__sr">Actions</span></th>
                     </tr>
-                  }
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    @for (a of items(); track a.assetId) {
+                      <tr [attr.data-asset-id]="a.assetId">
+                        <td>
+                          {{ a.displayName }}
+                          @if (!a.isActive) {
+                            <mf-badge>Inactive</mf-badge>
+                          }
+                        </td>
+                        <td>{{ a.assetTypeName }}</td>
+                        <td>
+                          @if (isUrl(a.externalReference)) {
+                            <a
+                              [href]="a.externalReference"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              >{{ a.externalReference }}</a
+                            >
+                          } @else {
+                            {{ a.externalReference }}
+                          }
+                        </td>
+                        <td>
+                          @if (editable()) {
+                            <select
+                              class="mf-control mf-control--compact"
+                              data-role-select
+                              [attr.aria-label]="'Relationship of ' + a.displayName"
+                              [disabled]="busy()"
+                              (change)="changeRole(a, $event)"
+                            >
+                              <option
+                                value=""
+                                [selected]="
+                                  a.assetLinkRoleId === undefined || a.assetLinkRoleId === null
+                                "
+                              >
+                                None
+                              </option>
+                              @for (r of rolesFor(a); track r.id) {
+                                <option [value]="r.id" [selected]="r.id === a.assetLinkRoleId">
+                                  {{ r.name }}
+                                </option>
+                              }
+                            </select>
+                          } @else {
+                            <span data-role>{{ a.assetLinkRoleName ?? 'None' }}</span>
+                          }
+                        </td>
+                        <td class="tl__end">
+                          @if (editable()) {
+                            <button
+                              type="button"
+                              class="mf-btn"
+                              data-unlink
+                              [disabled]="busy()"
+                              (click)="askUnlink(a)"
+                            >
+                              Remove link
+                            </button>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
             </div>
           }
           @if (rowError()) {

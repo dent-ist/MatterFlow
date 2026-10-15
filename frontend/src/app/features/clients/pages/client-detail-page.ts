@@ -139,36 +139,41 @@ type LoadState = 'loading' | 'ready' | 'error';
               @if (matters().length === 0) {
                 <div class="pg-state" data-empty>No matters yet for this client.</div>
               } @else {
-                <table class="pg-table">
-                  <caption class="pg-sr">
-                    Matters of
-                    {{
-                      c.name
-                    }}
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Matter</th>
-                      <th scope="col">Name</th>
-                      <th scope="col">Projects</th>
-                      <th scope="col">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (m of matters(); track m.matterId) {
+                <div class="mf-scroll">
+                  <table class="pg-table">
+                    <caption class="pg-sr">
+                      Matters of
+                      {{
+                        c.name
+                      }}
+                    </caption>
+                    <thead>
                       <tr>
-                        <td>
-                          <mf-matter-ref [value]="m.matterRef" [link]="['/matters', m.matterId]" />
-                        </td>
-                        <td>{{ m.name }}</td>
-                        <td>{{ m.projectCount }}</td>
-                        <td>
-                          <mf-active-badge [active]="m.isActive" />
-                        </td>
+                        <th scope="col">Matter</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Projects</th>
+                        <th scope="col">Status</th>
                       </tr>
-                    }
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      @for (m of matters(); track m.matterId) {
+                        <tr>
+                          <td>
+                            <mf-matter-ref
+                              [value]="m.matterRef"
+                              [link]="['/matters', m.matterId]"
+                            />
+                          </td>
+                          <td>{{ m.name }}</td>
+                          <td>{{ m.projectCount }}</td>
+                          <td>
+                            <mf-active-badge [active]="m.isActive" />
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
               }
             }
             @case ('details') {

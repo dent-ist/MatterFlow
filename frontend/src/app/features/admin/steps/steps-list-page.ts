@@ -64,49 +64,51 @@ import { SearchBox } from '../../../shared/ui/search-box';
     >
       <p-button mfEmptyAction label="New step" (onClick)="go('/admin/steps/new')" />
       <div class="mf-table-wrap">
-        <table class="pg-table" data-steps>
-          <caption class="pg-sr">
-            Step library
-          </caption>
-          <thead>
-            <tr>
-              <th
-                mfSort="title"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Title
-              </th>
-              <th scope="col">Description</th>
-              <th
-                mfSort="usedInVersions"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Used in workflows
-              </th>
-              <th scope="col">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (s of rows(); track s.stepDefinitionId) {
-              <tr [attr.data-row]="s.title">
-                <td>
-                  <a class="pg-link" [routerLink]="['/admin/steps', s.stepDefinitionId]">{{
-                    s.title
-                  }}</a>
-                </td>
-                <td>{{ s.description }}</td>
-                <td>{{ usage(s) }}</td>
-                <td>
-                  <mf-active-badge [active]="s.isActive" />
-                </td>
+        <div class="mf-scroll">
+          <table class="pg-table" data-steps>
+            <caption class="pg-sr">
+              Step library
+            </caption>
+            <thead>
+              <tr>
+                <th
+                  mfSort="title"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Title
+                </th>
+                <th scope="col">Description</th>
+                <th
+                  mfSort="usedInVersions"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Used in workflows
+                </th>
+                <th scope="col">Status</th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (s of rows(); track s.stepDefinitionId) {
+                <tr [attr.data-row]="s.title">
+                  <td>
+                    <a class="pg-link" [routerLink]="['/admin/steps', s.stepDefinitionId]">{{
+                      s.title
+                    }}</a>
+                  </td>
+                  <td>{{ s.description }}</td>
+                  <td>{{ usage(s) }}</td>
+                  <td>
+                    <mf-active-badge [active]="s.isActive" />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
       <mf-pager
         [page]="pageNumber()"

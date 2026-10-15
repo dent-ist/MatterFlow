@@ -78,47 +78,49 @@ import { SearchBox } from '../../../shared/ui/search-box';
       (clear)="clear()"
     >
       <div class="mf-table-wrap">
-        <table class="pg-table">
-          <caption class="pg-sr">
-            Projects
-          </caption>
-          <thead>
-            <tr>
-              <th
-                mfSort="name"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Name
-              </th>
-              <th
-                mfSort="matterRef"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Matter
-              </th>
-              <th scope="col">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (p of rows(); track p.projectId) {
+        <div class="mf-scroll">
+          <table class="pg-table">
+            <caption class="pg-sr">
+              Projects
+            </caption>
+            <thead>
               <tr>
-                <td>
-                  <a class="pg-link" [routerLink]="['/projects', p.projectId]">{{ p.name }}</a>
-                </td>
-                <td>
-                  <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />
-                </td>
-                <td>
-                  <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
-                </td>
+                <th
+                  mfSort="name"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Name
+                </th>
+                <th
+                  mfSort="matterRef"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Matter
+                </th>
+                <th scope="col">Status</th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (p of rows(); track p.projectId) {
+                <tr>
+                  <td>
+                    <a class="pg-link" [routerLink]="['/projects', p.projectId]">{{ p.name }}</a>
+                  </td>
+                  <td>
+                    <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />
+                  </td>
+                  <td>
+                    <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
       <mf-pager
         [page]="pageNumber()"

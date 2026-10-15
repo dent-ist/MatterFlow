@@ -206,36 +206,38 @@ type LoadState = 'loading' | 'ready' | 'error';
               @if (projects().length === 0) {
                 <div class="pg-state" data-empty="projects">No projects in this matter yet.</div>
               } @else {
-                <table class="pg-table">
-                  <caption class="pg-sr">
-                    Projects of
-                    {{
-                      m.matterRef
-                    }}
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Name</th>
-                      <th scope="col">Description</th>
-                      <th scope="col">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (p of projects(); track p.projectId) {
+                <div class="mf-scroll">
+                  <table class="pg-table">
+                    <caption class="pg-sr">
+                      Projects of
+                      {{
+                        m.matterRef
+                      }}
+                    </caption>
+                    <thead>
                       <tr>
-                        <td>
-                          <a class="pg-link" [routerLink]="['/projects', p.projectId]">{{
-                            p.name
-                          }}</a>
-                        </td>
-                        <td>{{ p.description }}</td>
-                        <td>
-                          <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
-                        </td>
+                        <th scope="col">Name</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Status</th>
                       </tr>
-                    }
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      @for (p of projects(); track p.projectId) {
+                        <tr>
+                          <td>
+                            <a class="pg-link" [routerLink]="['/projects', p.projectId]">{{
+                              p.name
+                            }}</a>
+                          </td>
+                          <td>{{ p.description }}</td>
+                          <td>
+                            <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
               }
             }
             @case ('assets') {

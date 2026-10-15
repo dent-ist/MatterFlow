@@ -49,7 +49,7 @@ export function isValidDocumentationUrl(value: string): boolean {
     <mf-page-header
       [crumbs]="[
         { label: 'Step library', link: '/admin/steps' },
-        { label: isEdit() ? 'Edit' : 'New' },
+        { label: isEdit() ? original()?.title || 'Edit' : 'New' },
       ]"
       [heading]="isEdit() ? 'Edit step' : 'New step'"
     />

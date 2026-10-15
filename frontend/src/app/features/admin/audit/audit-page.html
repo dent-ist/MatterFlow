@@ -186,112 +186,117 @@
     (clear)="reset()"
   >
     <div class="mf-table-wrap">
-      <table class="au-table">
-        <caption class="au-sr">
-          Audit events, newest first
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col"><span class="au-sr">Details</span></th>
-            <th scope="col">When</th>
-            <th scope="col">Who</th>
-            <th scope="col">What happened</th>
-            <th scope="col">Object</th>
-          </tr>
-        </thead>
-        <tbody>
-          @if (grouped()) {
-            @for (g of groups(); track g.key) {
-              @if (g.items.length > 1) {
-                <tr class="au-group" [attr.data-group]="g.items[0].correlationId">
-                  <td>
-                    <button
-                      type="button"
-                      class="au-toggle"
-                      [attr.aria-expanded]="isGroupOpen(g)"
-                      [attr.aria-label]="
-                        (isGroupOpen(g) ? 'Hide' : 'Show') +
-                        ' the ' +
-                        g.items.length +
-                        ' events of this operation'
-                      "
-                      (click)="toggleGroup(g)"
-                    >
-                      <i
-                        class="pi"
-                        [class]="isGroupOpen(g) ? 'pi-chevron-down' : 'pi-chevron-right'"
-                        aria-hidden="true"
-                      ></i>
-                    </button>
-                  </td>
-                  <td>
-                    <time [attr.datetime]="g.items[0].occurredAtUtc">{{
-                      g.items[0].occurredAtUtc | mfDate
-                    }}</time>
-                  </td>
-                  <td>{{ g.items[0].actor.displayName }}</td>
-                  <td colspan="2">
-                    <strong data-headline>{{ headline(g) }}</strong>
-                    <span class="au-muted"> ({{ g.items.length }} events in one operation)</span>
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--text"
-                      (click)="showOperation(g.items[0])"
-                    >
-                      Show only this operation
-                    </button>
-                  </td>
-                </tr>
-                @if (isGroupOpen(g)) {
-                  @let parts = split(g);
-                  @for (item of parts.happened; track item.auditEventId) {
-                    <ng-container
-                      *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: true }"
-                    />
-                  }
-                  @if (parts.fields.length > 0) {
-                    @if (parts.happened.length > 0) {
-                      <tr class="au-nested au-fields-toggle">
-                        <td></td>
-                        <td colspan="4">
-                          <button
-                            type="button"
-                            class="mf-btn mf-btn--text"
-                            data-view-changes
-                            [attr.aria-expanded]="isFieldsOpen(g)"
-                            (click)="toggleFields(g)"
-                          >
-                            {{ isFieldsOpen(g) ? 'Hide' : 'View' }}
-                            {{ parts.fields.length }}
-                            {{ parts.fields.length === 1 ? 'field change' : 'field changes' }}
-                          </button>
-                        </td>
-                      </tr>
+      <div class="mf-scroll">
+        <table class="au-table">
+          <caption class="au-sr">
+            Audit events, newest first
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col"><span class="au-sr">Details</span></th>
+              <th scope="col">When</th>
+              <th scope="col">Who</th>
+              <th scope="col">What happened</th>
+              <th scope="col">Object</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (grouped()) {
+              @for (g of groups(); track g.key) {
+                @if (g.items.length > 1) {
+                  <tr class="au-group" [attr.data-group]="g.items[0].correlationId">
+                    <td>
+                      <button
+                        type="button"
+                        class="au-toggle"
+                        [attr.aria-expanded]="isGroupOpen(g)"
+                        [attr.aria-label]="
+                          (isGroupOpen(g) ? 'Hide' : 'Show') +
+                          ' the ' +
+                          g.items.length +
+                          ' events of this operation'
+                        "
+                        (click)="toggleGroup(g)"
+                      >
+                        <i
+                          class="pi"
+                          [class]="isGroupOpen(g) ? 'pi-chevron-down' : 'pi-chevron-right'"
+                          aria-hidden="true"
+                        ></i>
+                      </button>
+                    </td>
+                    <td>
+                      <time [attr.datetime]="g.items[0].occurredAtUtc">{{
+                        g.items[0].occurredAtUtc | mfDate
+                      }}</time>
+                    </td>
+                    <td>{{ g.items[0].actor.displayName }}</td>
+                    <td colspan="2">
+                      <strong data-headline>{{ headline(g) }}</strong>
+                      <span class="au-muted"> ({{ g.items.length }} events in one operation)</span>
+                      <button
+                        type="button"
+                        class="mf-btn mf-btn--text"
+                        (click)="showOperation(g.items[0])"
+                      >
+                        Show only this operation
+                      </button>
+                    </td>
+                  </tr>
+                  @if (isGroupOpen(g)) {
+                    @let parts = split(g);
+                    @for (item of parts.happened; track item.auditEventId) {
+                      <ng-container
+                        *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: true }"
+                      />
                     }
-                    @if (parts.happened.length === 0 || isFieldsOpen(g)) {
-                      @for (item of parts.fields; track item.auditEventId) {
-                        <ng-container
-                          *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: true }"
-                        />
+                    @if (parts.fields.length > 0) {
+                      @if (parts.happened.length > 0) {
+                        <tr class="au-nested au-fields-toggle">
+                          <td></td>
+                          <td colspan="4">
+                            <button
+                              type="button"
+                              class="mf-btn mf-btn--text"
+                              data-view-changes
+                              [attr.aria-expanded]="isFieldsOpen(g)"
+                              (click)="toggleFields(g)"
+                            >
+                              {{ isFieldsOpen(g) ? 'Hide' : 'View' }}
+                              {{ parts.fields.length }}
+                              {{ parts.fields.length === 1 ? 'field change' : 'field changes' }}
+                            </button>
+                          </td>
+                        </tr>
+                      }
+                      @if (parts.happened.length === 0 || isFieldsOpen(g)) {
+                        @for (item of parts.fields; track item.auditEventId) {
+                          <ng-container
+                            *ngTemplateOutlet="
+                              eventRows;
+                              context: { $implicit: item, nested: true }
+                            "
+                          />
+                        }
                       }
                     }
                   }
+                } @else {
+                  <ng-container
+                    *ngTemplateOutlet="eventRows; context: { $implicit: g.items[0], nested: false }"
+                  />
                 }
-              } @else {
+              }
+            } @else {
+              @for (item of items(); track item.auditEventId) {
                 <ng-container
-                  *ngTemplateOutlet="eventRows; context: { $implicit: g.items[0], nested: false }"
+                  *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: false }"
                 />
               }
             }
-          } @else {
-            @for (item of items(); track item.auditEventId) {
-              <ng-container
-                *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: false }"
-              />
-            }
-          }
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <div class="au-foot">

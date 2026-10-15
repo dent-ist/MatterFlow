@@ -64,7 +64,10 @@ function clientOption(c: ClientResponse): PickerOption {
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <mf-page-header
-      [crumbs]="[{ label: 'Matters', link: '/matters' }, { label: isEdit() ? 'Edit' : 'New' }]"
+      [crumbs]="[
+        { label: 'Matters', link: '/matters' },
+        { label: isEdit() ? original()?.name || 'Edit' : 'New' },
+      ]"
       [heading]="isEdit() ? 'Edit matter' : 'New matter'"
     />
 

@@ -48,53 +48,55 @@ interface Row {
         </div>
       }
       @case ('ready') {
-        <table class="pg-table" data-objects>
-          <caption class="pg-sr">
-            Objects with custom fields
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Object</th>
-              <th scope="col">Form</th>
-              <th scope="col"><span class="pg-sr">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (r of rows(); track r.key) {
-              <tr [attr.data-row]="r.label">
-                <td>
-                  <strong>{{ r.label }}</strong>
-                </td>
-                <td data-status>
-                  @switch (r.status) {
-                    @case ('published') {
-                      <mf-badge tone="success" icon="pi-check-circle"
-                        >Published v{{ r.publishedNo }}</mf-badge
-                      >
-                      @if (r.hasDraft) {
-                        <span class="pg-muted"> (draft in progress)</span>
+        <div class="mf-scroll">
+          <table class="pg-table" data-objects>
+            <caption class="pg-sr">
+              Objects with custom fields
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Object</th>
+                <th scope="col">Form</th>
+                <th scope="col"><span class="pg-sr">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of rows(); track r.key) {
+                <tr [attr.data-row]="r.label">
+                  <td>
+                    <strong>{{ r.label }}</strong>
+                  </td>
+                  <td data-status>
+                    @switch (r.status) {
+                      @case ('published') {
+                        <mf-badge tone="success" icon="pi-check-circle"
+                          >Published v{{ r.publishedNo }}</mf-badge
+                        >
+                        @if (r.hasDraft) {
+                          <span class="pg-muted"> (draft in progress)</span>
+                        }
+                      }
+                      @case ('draft') {
+                        <mf-badge tone="warning" icon="pi-pencil">Draft, not published</mf-badge>
+                      }
+                      @default {
+                        <span class="pg-muted">No custom fields</span>
                       }
                     }
-                    @case ('draft') {
-                      <mf-badge tone="warning" icon="pi-pencil">Draft, not published</mf-badge>
-                    }
-                    @default {
-                      <span class="pg-muted">No custom fields</span>
-                    }
-                  }
-                </td>
-                <td>
-                  <a
-                    class="pg-link"
-                    [routerLink]="['/admin/custom-fields', r.key, 'form']"
-                    [attr.aria-label]="'Edit fields of ' + r.label"
-                    >Edit fields</a
-                  >
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+                  </td>
+                  <td>
+                    <a
+                      class="pg-link"
+                      [routerLink]="['/admin/custom-fields', r.key, 'form']"
+                      [attr.aria-label]="'Edit fields of ' + r.label"
+                      >Edit fields</a
+                    >
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       }
     }
   `,

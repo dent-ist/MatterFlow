@@ -52,7 +52,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     <mf-page-header
       [crumbs]="[
         { label: 'Workflows', link: '/admin/workflows' },
-        { label: isEdit() ? 'Edit' : 'New' },
+        { label: isEdit() ? name() || 'Edit' : 'New' },
       ]"
       [heading]="isEdit() ? name() || 'Edit workflow' : 'New workflow'"
     />
@@ -154,63 +154,65 @@ type LoadState = 'loading' | 'ready' | 'error';
           @if (d.versions.length === 0) {
             <p class="pg-muted">No versions yet.</p>
           } @else {
-            <table class="pg-table">
-              <caption class="pg-sr">
-                Versions of
-                {{
-                  d.workflow.name
-                }}
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Version</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Mode</th>
-                  <th scope="col">Steps</th>
-                  <th scope="col">Published</th>
-                  <th scope="col"><span class="pg-sr">Actions</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (v of d.versions; track v.workflowVersionId) {
-                  <tr [attr.data-version]="v.versionNo">
-                    <td>
-                      <a
-                        class="pg-link"
-                        [routerLink]="[
-                          '/admin/workflows',
-                          d.workflow.workflowDefinitionId,
-                          'versions',
-                          v.workflowVersionId,
-                        ]"
-                        [attr.aria-label]="(isDraft(v) ? 'Edit draft v' : 'View v') + v.versionNo"
-                        >v{{ v.versionNo }}</a
-                      >
-                      @if (v.workflowVersionId === d.workflow.publishedVersionId) {
-                        <span class="pg-muted"> (current)</span>
-                      }
-                    </td>
-                    <td>
-                      <mf-badge [tone]="statusTone(v)">{{ v.status }}</mf-badge>
-                    </td>
-                    <td>{{ v.isOrdered ? 'Ordered' : 'Unordered' }}</td>
-                    <td>{{ v.stepCount }}</td>
-                    <td>{{ v.publishedAtUtc | mfDate }}</td>
-                    <td>
-                      @if (v.status === published) {
-                        <p-button
-                          [label]="'Create new draft from v' + v.versionNo"
-                          size="small"
-                          severity="secondary"
-                          [disabled]="busy() || !!d.workflow.draftVersionId"
-                          (onClick)="newDraft(v)"
-                        />
-                      }
-                    </td>
+            <div class="mf-scroll">
+              <table class="pg-table">
+                <caption class="pg-sr">
+                  Versions of
+                  {{
+                    d.workflow.name
+                  }}
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Version</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Mode</th>
+                    <th scope="col">Steps</th>
+                    <th scope="col">Published</th>
+                    <th scope="col"><span class="pg-sr">Actions</span></th>
                   </tr>
-                }
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  @for (v of d.versions; track v.workflowVersionId) {
+                    <tr [attr.data-version]="v.versionNo">
+                      <td>
+                        <a
+                          class="pg-link"
+                          [routerLink]="[
+                            '/admin/workflows',
+                            d.workflow.workflowDefinitionId,
+                            'versions',
+                            v.workflowVersionId,
+                          ]"
+                          [attr.aria-label]="(isDraft(v) ? 'Edit draft v' : 'View v') + v.versionNo"
+                          >v{{ v.versionNo }}</a
+                        >
+                        @if (v.workflowVersionId === d.workflow.publishedVersionId) {
+                          <span class="pg-muted"> (current)</span>
+                        }
+                      </td>
+                      <td>
+                        <mf-badge [tone]="statusTone(v)">{{ v.status }}</mf-badge>
+                      </td>
+                      <td>{{ v.isOrdered ? 'Ordered' : 'Unordered' }}</td>
+                      <td>{{ v.stepCount }}</td>
+                      <td>{{ v.publishedAtUtc | mfDate }}</td>
+                      <td>
+                        @if (v.status === published) {
+                          <p-button
+                            [label]="'Create new draft from v' + v.versionNo"
+                            size="small"
+                            severity="secondary"
+                            [disabled]="busy() || !!d.workflow.draftVersionId"
+                            (onClick)="newDraft(v)"
+                          />
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
             @if (d.workflow.draftVersionId) {
               <p class="pg-reason">
                 A draft (v{{ d.workflow.draftVersionNo }}) is in progress. Publish or discard it

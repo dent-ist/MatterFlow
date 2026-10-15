@@ -58,7 +58,10 @@ function matterOption(m: MatterResponse): PickerOption {
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <mf-page-header
-      [crumbs]="[{ label: 'Projects', link: '/projects' }, { label: isEdit() ? 'Edit' : 'New' }]"
+      [crumbs]="[
+        { label: 'Projects', link: '/projects' },
+        { label: isEdit() ? original()?.name || 'Edit' : 'New' },
+      ]"
       [heading]="isEdit() ? 'Edit project' : 'New project'"
     />
 

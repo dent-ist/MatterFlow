@@ -52,31 +52,33 @@ type LoadState = 'loading' | 'ready' | 'error';
               No tasks are linked to this asset yet.
             </div>
           } @else {
-            <table class="pg-table">
-              <caption class="pg-sr">
-                Tasks linked to this asset
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Ref</th>
-                  <th scope="col">Title</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Role</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (t of links(); track t.taskId) {
-                  <tr [attr.data-task]="t.taskNumber">
-                    <td class="pg-mono">{{ t.taskNumber }}</td>
-                    <td>
-                      <a class="pg-link" [routerLink]="['/tasks', t.taskId]">{{ t.title }}</a>
-                    </td>
-                    <td><mf-status-badge [code]="t.statusCode" /></td>
-                    <td>{{ t.assetLinkRoleName ?? '-' }}</td>
+            <div class="mf-scroll">
+              <table class="pg-table">
+                <caption class="pg-sr">
+                  Tasks linked to this asset
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Ref</th>
+                    <th scope="col">Title</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Role</th>
                   </tr>
-                }
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  @for (t of links(); track t.taskId) {
+                    <tr [attr.data-task]="t.taskNumber">
+                      <td class="pg-mono">{{ t.taskNumber }}</td>
+                      <td>
+                        <a class="pg-link" [routerLink]="['/tasks', t.taskId]">{{ t.title }}</a>
+                      </td>
+                      <td><mf-status-badge [code]="t.statusCode" /></td>
+                      <td>{{ t.assetLinkRoleName ?? '-' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           }
         }
       }

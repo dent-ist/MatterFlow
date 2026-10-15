@@ -41,99 +41,111 @@
     <i class="pi pi-plus" aria-hidden="true"></i> New task type
   </a>
   <div class="mf-table-wrap">
-    <table class="grid" data-task-types>
-      <caption class="sr-only">
-        Task types
-      </caption>
-      <thead>
-        <tr>
-          <th mfSort="name" [sort]="sort()" [defaultSort]="defaultSort" (sorted)="setSort($event)">
-            Name
-          </th>
-          <th mfSort="form" [sort]="sort()" [defaultSort]="defaultSort" (sorted)="setSort($event)">
-            Request form
-          </th>
-          <th
-            mfSort="eligible"
-            [sort]="sort()"
-            [defaultSort]="defaultSort"
-            (sorted)="setSort($event)"
-          >
-            Eligible workflows
-          </th>
-          <th
-            mfSort="default"
-            [sort]="sort()"
-            [defaultSort]="defaultSort"
-            (sorted)="setSort($event)"
-          >
-            Default workflow
-          </th>
-          <th scope="col">Status</th>
-          <th scope="col" class="mf-col-actions"><span class="sr-only">Actions</span></th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (t of rows(); track t.id) {
-          <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
-            <td>
-              <a [routerLink]="['/admin/task-types', t.id]">{{ t.name }}</a>
-              @if (warning(t); as w) {
-                <p class="chip" data-warning>{{ w }}</p>
-              }
-            </td>
-            <td data-form-status>
-              {{ formStatus(t) }}
-              @if (formVersion(t)) {
-                <span class="muted">{{ formVersion(t) }}</span>
-              }
-            </td>
-            <td data-eligible-count>{{ t.eligibleWorkflowIds.length }}</td>
-            <td data-default>{{ workflowName(t.defaultWorkflowDefinitionId) }}</td>
-            <td><mf-active-badge [active]="t.isActive" /></td>
-            <td class="mf-col-actions">
-              <span class="mf-row-actions">
-                <a
-                  class="mf-btn mf-btn--text"
-                  [routerLink]="['/admin/task-types', t.id, 'form']"
-                  [attr.aria-label]="'Design the request form of ' + t.name"
-                  >Design</a
-                >
-                <a
-                  class="mf-btn mf-btn--text"
-                  [routerLink]="['/admin/task-types', t.id]"
-                  [attr.aria-label]="'Edit ' + t.name"
-                  >Edit</a
-                >
-                @if (t.isActive) {
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--text mf-btn--danger"
-                    [disabled]="busy()"
-                    [attr.aria-label]="'Deactivate ' + t.name"
-                    (click)="askDeactivate(t)"
-                    data-deactivate
-                  >
-                    Deactivate
-                  </button>
-                } @else {
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--text"
-                    [disabled]="busy()"
-                    [attr.aria-label]="'Activate ' + t.name"
-                    (click)="setActive(t, true)"
-                    data-activate
-                  >
-                    Activate
-                  </button>
-                }
-              </span>
-            </td>
+    <div class="mf-scroll">
+      <table class="grid" data-task-types>
+        <caption class="sr-only">
+          Task types
+        </caption>
+        <thead>
+          <tr>
+            <th
+              mfSort="name"
+              [sort]="sort()"
+              [defaultSort]="defaultSort"
+              (sorted)="setSort($event)"
+            >
+              Name
+            </th>
+            <th
+              mfSort="form"
+              [sort]="sort()"
+              [defaultSort]="defaultSort"
+              (sorted)="setSort($event)"
+            >
+              Request form
+            </th>
+            <th
+              mfSort="eligible"
+              [sort]="sort()"
+              [defaultSort]="defaultSort"
+              (sorted)="setSort($event)"
+            >
+              Eligible workflows
+            </th>
+            <th
+              mfSort="default"
+              [sort]="sort()"
+              [defaultSort]="defaultSort"
+              (sorted)="setSort($event)"
+            >
+              Default workflow
+            </th>
+            <th scope="col">Status</th>
+            <th scope="col" class="mf-col-actions"><span class="sr-only">Actions</span></th>
           </tr>
-        }
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          @for (t of rows(); track t.id) {
+            <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
+              <td>
+                <a [routerLink]="['/admin/task-types', t.id]">{{ t.name }}</a>
+                @if (warning(t); as w) {
+                  <p class="chip" data-warning>{{ w }}</p>
+                }
+              </td>
+              <td data-form-status>
+                {{ formStatus(t) }}
+                @if (formVersion(t)) {
+                  <span class="muted">{{ formVersion(t) }}</span>
+                }
+              </td>
+              <td data-eligible-count>{{ t.eligibleWorkflowIds.length }}</td>
+              <td data-default>{{ workflowName(t.defaultWorkflowDefinitionId) }}</td>
+              <td><mf-active-badge [active]="t.isActive" /></td>
+              <td class="mf-col-actions">
+                <span class="mf-row-actions">
+                  <a
+                    class="mf-btn mf-btn--text"
+                    [routerLink]="['/admin/task-types', t.id, 'form']"
+                    [attr.aria-label]="'Design the request form of ' + t.name"
+                    >Design</a
+                  >
+                  <a
+                    class="mf-btn mf-btn--text"
+                    [routerLink]="['/admin/task-types', t.id]"
+                    [attr.aria-label]="'Edit ' + t.name"
+                    >Edit</a
+                  >
+                  @if (t.isActive) {
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text mf-btn--danger"
+                      [disabled]="busy()"
+                      [attr.aria-label]="'Deactivate ' + t.name"
+                      (click)="askDeactivate(t)"
+                      data-deactivate
+                    >
+                      Deactivate
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text"
+                      [disabled]="busy()"
+                      [attr.aria-label]="'Activate ' + t.name"
+                      (click)="setActive(t, true)"
+                      data-activate
+                    >
+                      Activate
+                    </button>
+                  }
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   </div>
   <mf-pager
     [page]="shownPage()"

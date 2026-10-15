@@ -47,49 +47,55 @@
       (clear)="onSearch('')"
     >
       <div class="mf-table-wrap">
-        <table>
-          <caption class="mf-sr">
-            Users
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Windows account</th>
-              <th scope="col">First seen</th>
-              <th scope="col">Email</th>
-              <th scope="col">Roles</th>
-              <th scope="col" class="mf-col-actions"><span class="mf-sr">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (u of users(); track u.userId) {
-              <tr [attr.data-user]="u.userId" [class.mf-selected]="selected()?.userId === u.userId">
-                <td>
-                  {{ u.displayName }}
-                  @if (u.isSeededAdmin) {
-                    <mf-badge tone="info">Seeded</mf-badge>
-                  }
-                </td>
-                <td class="mf-mono">{{ u.windowsAccount }}</td>
-                <td>{{ u.registeredAtUtc | mfDate }}</td>
-                <td>{{ u.email }}</td>
-                <td>{{ rolesLabel(u) }}</td>
-                <td class="mf-col-actions">
-                  <span class="mf-row-actions">
-                    <p-button
-                      [label]="u.isPending && canManage() ? 'Grant access' : 'Open'"
-                      [text]="true"
-                      [ariaLabel]="
-                        (u.isPending && canManage() ? 'Grant access to ' : 'Open ') + u.displayName
-                      "
-                      (onClick)="open(u)"
-                    />
-                  </span>
-                </td>
+        <div class="mf-scroll">
+          <table>
+            <caption class="mf-sr">
+              Users
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Windows account</th>
+                <th scope="col">First seen</th>
+                <th scope="col">Email</th>
+                <th scope="col">Roles</th>
+                <th scope="col" class="mf-col-actions"><span class="mf-sr">Actions</span></th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (u of users(); track u.userId) {
+                <tr
+                  [attr.data-user]="u.userId"
+                  [class.mf-selected]="selected()?.userId === u.userId"
+                >
+                  <td>
+                    {{ u.displayName }}
+                    @if (u.isSeededAdmin) {
+                      <mf-badge tone="info">Seeded</mf-badge>
+                    }
+                  </td>
+                  <td class="mf-mono">{{ u.windowsAccount }}</td>
+                  <td>{{ u.registeredAtUtc | mfDate }}</td>
+                  <td>{{ u.email }}</td>
+                  <td>{{ rolesLabel(u) }}</td>
+                  <td class="mf-col-actions">
+                    <span class="mf-row-actions">
+                      <p-button
+                        [label]="u.isPending && canManage() ? 'Grant access' : 'Open'"
+                        [text]="true"
+                        [ariaLabel]="
+                          (u.isPending && canManage() ? 'Grant access to ' : 'Open ') +
+                          u.displayName
+                        "
+                        (onClick)="open(u)"
+                      />
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
       <mf-pager
         [page]="page()"

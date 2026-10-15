@@ -102,73 +102,75 @@
         <p class="pods__muted" data-no-members>No members yet.</p>
       } @else {
         <div class="mf-table-wrap">
-          <table class="pods__table" data-members>
-            <caption class="pods__sr">
-              Pod members
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Roles</th>
-                <th scope="col">Primary pod</th>
-                <th scope="col" class="mf-col-actions"><span class="pods__sr">Actions</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (member of members(); track member.userId) {
-                <tr [attr.data-member]="member.userId">
-                  <td>
-                    {{ member.displayName }}
-                    @if (!member.isActive) {
-                      <mf-badge tone="neutral">Disabled</mf-badge>
-                    }
-                  </td>
-                  <td>
-                    @for (role of member.roles; track role) {
-                      <mf-badge tone="info" data-role>{{ role }}</mf-badge>
-                    }
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      class="pods__star"
-                      data-primary
-                      [attr.aria-pressed]="member.isPrimary"
-                      [attr.aria-label]="
-                        (member.isPrimary ? 'Clear primary pod for ' : 'Make primary pod for ') +
-                        member.displayName
-                      "
-                      [attr.title]="
-                        member.isPrimary
-                          ? 'Primary pod: click to clear'
-                          : 'Make this the primary pod'
-                      "
-                      [disabled]="
-                        busy() || !auth.has('Pod.ManageMembers') || !detail()!.pod.isActive
-                      "
-                      (click)="togglePrimary(member)"
-                    >
-                      <i [class]="member.isPrimary ? 'pi pi-star-fill' : 'pi pi-star'"></i>
-                    </button>
-                  </td>
-                  <td class="mf-col-actions">
-                    <span class="mf-row-actions">
-                      <p-button
-                        *mfHasPermission="'Pod.ManageMembers'"
-                        label="Remove"
-                        [text]="true"
-                        severity="danger"
-                        [attr.data-remove]="member.userId"
-                        [ariaLabel]="'Remove ' + member.displayName"
-                        [disabled]="busy()"
-                        (onClick)="removeMember(member)"
-                      />
-                    </span>
-                  </td>
+          <div class="mf-scroll">
+            <table class="pods__table" data-members>
+              <caption class="pods__sr">
+                Pod members
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Roles</th>
+                  <th scope="col">Primary pod</th>
+                  <th scope="col" class="mf-col-actions"><span class="pods__sr">Actions</span></th>
                 </tr>
-              }
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                @for (member of members(); track member.userId) {
+                  <tr [attr.data-member]="member.userId">
+                    <td>
+                      {{ member.displayName }}
+                      @if (!member.isActive) {
+                        <mf-badge tone="neutral">Disabled</mf-badge>
+                      }
+                    </td>
+                    <td>
+                      @for (role of member.roles; track role) {
+                        <mf-badge tone="info" data-role>{{ role }}</mf-badge>
+                      }
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        class="pods__star"
+                        data-primary
+                        [attr.aria-pressed]="member.isPrimary"
+                        [attr.aria-label]="
+                          (member.isPrimary ? 'Clear primary pod for ' : 'Make primary pod for ') +
+                          member.displayName
+                        "
+                        [attr.title]="
+                          member.isPrimary
+                            ? 'Primary pod: click to clear'
+                            : 'Make this the primary pod'
+                        "
+                        [disabled]="
+                          busy() || !auth.has('Pod.ManageMembers') || !detail()!.pod.isActive
+                        "
+                        (click)="togglePrimary(member)"
+                      >
+                        <i [class]="member.isPrimary ? 'pi pi-star-fill' : 'pi pi-star'"></i>
+                      </button>
+                    </td>
+                    <td class="mf-col-actions">
+                      <span class="mf-row-actions">
+                        <p-button
+                          *mfHasPermission="'Pod.ManageMembers'"
+                          label="Remove"
+                          [text]="true"
+                          severity="danger"
+                          [attr.data-remove]="member.userId"
+                          [ariaLabel]="'Remove ' + member.displayName"
+                          [disabled]="busy()"
+                          (onClick)="removeMember(member)"
+                        />
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
       }
 
@@ -252,60 +254,62 @@
       (onClick)="newPod()"
     />
     <div class="mf-table-wrap">
-      <table class="pods__table" data-pods>
-        <caption class="pods__sr">
-          Pods
-        </caption>
-        <thead>
-          <tr>
-            <th
-              mfSort="name"
-              [sort]="sort()"
-              [defaultSort]="defaultSort"
-              (sorted)="setSort($event)"
-            >
-              Name
-            </th>
-            <th
-              mfSort="memberCount"
-              [sort]="sort()"
-              [defaultSort]="defaultSort"
-              (sorted)="setSort($event)"
-            >
-              Members
-            </th>
-            <th scope="col">Status</th>
-            <th scope="col" class="mf-col-actions"><span class="pods__sr">Actions</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (pod of rows(); track pod.podId) {
-            <tr [attr.data-pod]="pod.podId">
-              <td>
-                <button type="button" class="pods__name" (click)="edit(pod)">
-                  {{ pod.name }}
-                </button>
-                @if (pod.description) {
-                  <div class="pods__muted">{{ pod.description }}</div>
-                }
-              </td>
-              <td>{{ pod.memberCount }}</td>
-              <td><mf-active-badge [active]="pod.isActive" /></td>
-              <td class="mf-col-actions">
-                <span class="mf-row-actions">
-                  <p-button
-                    label="Edit"
-                    [text]="true"
-                    [attr.data-edit]="pod.podId"
-                    [ariaLabel]="'Edit ' + pod.name"
-                    (onClick)="edit(pod)"
-                  />
-                </span>
-              </td>
+      <div class="mf-scroll">
+        <table class="pods__table" data-pods>
+          <caption class="pods__sr">
+            Pods
+          </caption>
+          <thead>
+            <tr>
+              <th
+                mfSort="name"
+                [sort]="sort()"
+                [defaultSort]="defaultSort"
+                (sorted)="setSort($event)"
+              >
+                Name
+              </th>
+              <th
+                mfSort="memberCount"
+                [sort]="sort()"
+                [defaultSort]="defaultSort"
+                (sorted)="setSort($event)"
+              >
+                Members
+              </th>
+              <th scope="col">Status</th>
+              <th scope="col" class="mf-col-actions"><span class="pods__sr">Actions</span></th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (pod of rows(); track pod.podId) {
+              <tr [attr.data-pod]="pod.podId">
+                <td>
+                  <button type="button" class="pods__name" (click)="edit(pod)">
+                    {{ pod.name }}
+                  </button>
+                  @if (pod.description) {
+                    <div class="pods__muted">{{ pod.description }}</div>
+                  }
+                </td>
+                <td>{{ pod.memberCount }}</td>
+                <td><mf-active-badge [active]="pod.isActive" /></td>
+                <td class="mf-col-actions">
+                  <span class="mf-row-actions">
+                    <p-button
+                      label="Edit"
+                      [text]="true"
+                      [attr.data-edit]="pod.podId"
+                      [ariaLabel]="'Edit ' + pod.name"
+                      (onClick)="edit(pod)"
+                    />
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
     <mf-pager
       [page]="pageNumber()"

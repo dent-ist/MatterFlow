@@ -49,3 +49,9 @@ a:not([class]) {
 .mf-contents {
   display: contents;
 }
+
+/* Wide tables scroll sideways inside their own box instead of widening the page on narrow screens (UAT2-24). */
+.mf-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}

@@ -213,6 +213,13 @@ Ordered to fix shared pieces once, with visible wins first. Suggested GitHub iss
 - **Sticky full-height sidebar with grouped, collapsible admin section; labelled icon rail** (UXR-22, with UAT-22). M.
 - **Dashboard grid, tooltips and link text** (UXR-29), **Search results columns** (UXR-41). S.
 
+**Batch 5 status: implemented** (deferred pieces at the end).
+- Sidebar: `height: calc(100vh - header)` and sticky, so the background reaches the bottom on short pages and the menu scrolls itself. Administration is grouped (People, Work set-up, Data set-up, Oversight; `group` and `ADMIN_GROUPS` in `shared/layout/nav-items.ts`); each group is a button with `aria-expanded` that collapses its list, remembered in `mf.nav.collapsed.v1`. In the icon rail (under 1100 px) collapsing is ignored so every icon stays reachable, group buttons become dividers, and each link keeps its title tooltip and text name.
+- Dashboard: fixed 4-column tile grid (2 under 900 px, 1 under 420 px); zero counts draw no bar; truncated labels carry a `title`; "View as table" keeps its visible text with a visually hidden " for Open by Pod" suffix.
+- Search results: `mf-search-hit-table` shows only the columns that fit the type (Client: Reference, Name, Status; Matter: Reference, Name, Client; Task: Reference, Title, Requestor, Matter; Project: Name, Matter, Matter name; Asset: Reference, Name, Type, Matter). The reference is a link to the same record (out of the tab order and hidden from assistive technology so it is not read twice). Tasks and Projects ARE searched (architecture.md section on Global search; backend `SearchService` and the dropdown request all permitted types): "acme" returned none because it matches names, titles, requestors and Matter references only, not client names. No change made.
+- Leftovers: tables sit in `.mf-scroll` (UAT2-24; the task tab strip already scrolled); Task Queue header no longer repeats Create task (the app header has it; the empty-state button stays); Edit-page breadcrumbs show the record name. UAT2-19 and the Access Pending "Check again" live region were already in place.
+- Deferred: NG0956 on `/assets/new` (a dev-only warning; every `@for` in that page tracks by a stable key, so the source is likely inside a PrimeNG control, and it needs a browser to pin down); user menu with account/version (UXR-23 remainder).
+
 Dependencies: Batch 1 before 2 and 3. UAT items already tracked elsewhere (UAT2-03 focus return, UAT2-04, UAT2-05 contrast, UAT2-13) should ride along with the components they touch.
 
 ### Suggested glossary (to apply in Batch 0)

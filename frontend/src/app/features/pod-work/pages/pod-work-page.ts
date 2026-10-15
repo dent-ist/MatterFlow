@@ -115,46 +115,48 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
             @if (d.memberLoads.length === 0) {
               <p class="wp-note" data-members-empty>No members yet.</p>
             } @else {
-              <table class="wp-members" data-members>
-                <caption class="wp-help">
-                  Open work per person. These are workload facts, not a ranking.
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Member</th>
-                    <th scope="col">Open</th>
-                    <th scope="col">Overdue</th>
-                    <th scope="col">On Hold</th>
-                    <th scope="col"><span class="wp-sr">Show tasks</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (m of d.memberLoads; track m.userId) {
+              <div class="mf-scroll">
+                <table class="wp-members" data-members>
+                  <caption class="wp-help">
+                    Open work per person. These are workload facts, not a ranking.
+                  </caption>
+                  <thead>
                     <tr>
-                      <th scope="row">
-                        {{ m.displayName }}
-                        @if (!m.isActive) {
-                          <span class="wp-note">(inactive)</span>
-                        }
-                      </th>
-                      <td>{{ m.open }}</td>
-                      <td>{{ m.overdue }}</td>
-                      <td>{{ m.onHold }}</td>
-                      <td>
-                        <button
-                          type="button"
-                          class="mf-btn"
-                          [attr.aria-pressed]="state().filters.assignee.includes(m.userId)"
-                          [attr.aria-label]="'Show tasks of ' + m.displayName"
-                          (click)="toggleMember(m.userId)"
-                        >
-                          Show tasks
-                        </button>
-                      </td>
+                      <th scope="col">Member</th>
+                      <th scope="col">Open</th>
+                      <th scope="col">Overdue</th>
+                      <th scope="col">On Hold</th>
+                      <th scope="col"><span class="wp-sr">Show tasks</span></th>
                     </tr>
-                  }
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    @for (m of d.memberLoads; track m.userId) {
+                      <tr>
+                        <th scope="row">
+                          {{ m.displayName }}
+                          @if (!m.isActive) {
+                            <span class="wp-note">(inactive)</span>
+                          }
+                        </th>
+                        <td>{{ m.open }}</td>
+                        <td>{{ m.overdue }}</td>
+                        <td>{{ m.onHold }}</td>
+                        <td>
+                          <button
+                            type="button"
+                            class="mf-btn"
+                            [attr.aria-pressed]="state().filters.assignee.includes(m.userId)"
+                            [attr.aria-label]="'Show tasks of ' + m.displayName"
+                            (click)="toggleMember(m.userId)"
+                          >
+                            Show tasks
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
             }
           }
         }

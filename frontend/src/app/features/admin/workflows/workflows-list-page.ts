@@ -70,59 +70,63 @@ import { SearchBox } from '../../../shared/ui/search-box';
     >
       <p-button mfEmptyAction label="New workflow" (onClick)="go('/admin/workflows/new')" />
       <div class="mf-table-wrap">
-        <table class="pg-table" data-workflows>
-          <caption class="pg-sr">
-            Workflows
-          </caption>
-          <thead>
-            <tr>
-              <th
-                mfSort="name"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Name
-              </th>
-              <th scope="col">Latest published</th>
-              <th scope="col">Draft</th>
-              <th scope="col">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (w of rows(); track w.workflowDefinitionId) {
-              <tr [attr.data-row]="w.name">
-                <td>
-                  <a class="pg-link" [routerLink]="['/admin/workflows', w.workflowDefinitionId]">{{
-                    w.name
-                  }}</a>
-                  @if (w.description) {
-                    <div class="pg-muted">{{ w.description }}</div>
-                  }
-                </td>
-                <td>
-                  @if (w.publishedVersionNo) {
-                    <mf-badge tone="success" icon="pi-check-circle">Published</mf-badge>
-                    v{{ w.publishedVersionNo }} ({{ stepsLabel(w.publishedStepCount) }})
-                  } @else {
-                    <span class="pg-muted">Not published</span>
-                  }
-                </td>
-                <td>
-                  @if (w.draftVersionNo) {
-                    <mf-badge tone="warning" icon="pi-pencil">Draft</mf-badge>
-                    v{{ w.draftVersionNo }}
-                  } @else {
-                    <span class="pg-muted">None</span>
-                  }
-                </td>
-                <td>
-                  <mf-active-badge [active]="w.isActive" />
-                </td>
+        <div class="mf-scroll">
+          <table class="pg-table" data-workflows>
+            <caption class="pg-sr">
+              Workflows
+            </caption>
+            <thead>
+              <tr>
+                <th
+                  mfSort="name"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Name
+                </th>
+                <th scope="col">Latest published</th>
+                <th scope="col">Draft</th>
+                <th scope="col">Status</th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (w of rows(); track w.workflowDefinitionId) {
+                <tr [attr.data-row]="w.name">
+                  <td>
+                    <a
+                      class="pg-link"
+                      [routerLink]="['/admin/workflows', w.workflowDefinitionId]"
+                      >{{ w.name }}</a
+                    >
+                    @if (w.description) {
+                      <div class="pg-muted">{{ w.description }}</div>
+                    }
+                  </td>
+                  <td>
+                    @if (w.publishedVersionNo) {
+                      <mf-badge tone="success" icon="pi-check-circle">Published</mf-badge>
+                      v{{ w.publishedVersionNo }} ({{ stepsLabel(w.publishedStepCount) }})
+                    } @else {
+                      <span class="pg-muted">Not published</span>
+                    }
+                  </td>
+                  <td>
+                    @if (w.draftVersionNo) {
+                      <mf-badge tone="warning" icon="pi-pencil">Draft</mf-badge>
+                      v{{ w.draftVersionNo }}
+                    } @else {
+                      <span class="pg-muted">None</span>
+                    }
+                  </td>
+                  <td>
+                    <mf-active-badge [active]="w.isActive" />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
       <mf-pager
         [page]="pageNumber()"

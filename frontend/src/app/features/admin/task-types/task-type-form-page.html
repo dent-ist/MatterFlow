@@ -82,46 +82,48 @@
 
       <section class="ttf__versions" aria-labelledby="ttf-versions-h">
         <h2 id="ttf-versions-h" class="ttf__h2">Versions</h2>
-        <table class="ttf__table">
-          <caption class="ttf__sr">
-            Form versions
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Version</th>
-              <th scope="col">Status</th>
-              <th scope="col">Updated</th>
-              <th scope="col">Note</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (v of versions(); track v.id) {
-              <tr [class.is-current]="v.id === current()!.id">
-                <th scope="row">
-                  <button
-                    type="button"
-                    class="ttf__link"
-                    [attr.aria-current]="v.id === current()!.id ? 'true' : null"
-                    (click)="open(v.id, $any($event.target))"
-                  >
-                    v{{ v.versionNo }}
-                  </button>
-                </th>
-                <td>
-                  {{
-                    v.status === 'DRAFT'
-                      ? 'Draft'
-                      : v.status === 'PUBLISHED'
-                        ? 'Published'
-                        : 'Retired'
-                  }}
-                </td>
-                <td>{{ v.updatedAtUtc | mfDate }}</td>
-                <td>{{ v.note ?? '' }}</td>
+        <div class="mf-scroll">
+          <table class="ttf__table">
+            <caption class="ttf__sr">
+              Form versions
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Version</th>
+                <th scope="col">Status</th>
+                <th scope="col">Updated</th>
+                <th scope="col">Note</th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (v of versions(); track v.id) {
+                <tr [class.is-current]="v.id === current()!.id">
+                  <th scope="row">
+                    <button
+                      type="button"
+                      class="ttf__link"
+                      [attr.aria-current]="v.id === current()!.id ? 'true' : null"
+                      (click)="open(v.id, $any($event.target))"
+                    >
+                      v{{ v.versionNo }}
+                    </button>
+                  </th>
+                  <td>
+                    {{
+                      v.status === 'DRAFT'
+                        ? 'Draft'
+                        : v.status === 'PUBLISHED'
+                          ? 'Published'
+                          : 'Retired'
+                    }}
+                  </td>
+                  <td>{{ v.updatedAtUtc | mfDate }}</td>
+                  <td>{{ v.note ?? '' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </section>
     }
   }

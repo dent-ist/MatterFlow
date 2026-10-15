@@ -99,51 +99,53 @@ import { SearchBox } from '../../../shared/ui/search-box';
       (clear)="clear()"
     >
       <div class="mf-table-wrap">
-        <table class="pg-table">
-          <caption class="pg-sr">
-            Assets
-          </caption>
-          <thead>
-            <tr>
-              <th
-                mfSort="displayName"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Name
-              </th>
-              <th
-                mfSort="assetType"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Type
-              </th>
-              <th scope="col">Matter</th>
-              <th scope="col">External reference</th>
-              <th scope="col">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (a of rows(); track a.assetId) {
+        <div class="mf-scroll">
+          <table class="pg-table">
+            <caption class="pg-sr">
+              Assets
+            </caption>
+            <thead>
               <tr>
-                <td>
-                  <a class="pg-link" [routerLink]="['/assets', a.assetId]">{{ a.displayName }}</a>
-                </td>
-                <td>{{ a.assetTypeName }}</td>
-                <td>
-                  <mf-matter-ref [value]="a.matterRef" [link]="['/matters', a.matterId]" />
-                </td>
-                <td class="pg-mono">{{ a.externalReference }}</td>
-                <td>
-                  <mf-active-badge [active]="a.isActive" />
-                </td>
+                <th
+                  mfSort="displayName"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Name
+                </th>
+                <th
+                  mfSort="assetType"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Type
+                </th>
+                <th scope="col">Matter</th>
+                <th scope="col">External reference</th>
+                <th scope="col">Status</th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (a of rows(); track a.assetId) {
+                <tr>
+                  <td>
+                    <a class="pg-link" [routerLink]="['/assets', a.assetId]">{{ a.displayName }}</a>
+                  </td>
+                  <td>{{ a.assetTypeName }}</td>
+                  <td>
+                    <mf-matter-ref [value]="a.matterRef" [link]="['/matters', a.matterId]" />
+                  </td>
+                  <td class="pg-mono">{{ a.externalReference }}</td>
+                  <td>
+                    <mf-active-badge [active]="a.isActive" />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
       <mf-pager
         [page]="pageNumber()"

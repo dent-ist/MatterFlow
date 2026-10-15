@@ -138,69 +138,71 @@ type LoadState = 'loading' | 'ready' | 'error';
         @if (rows().length === 0) {
           <div class="pg-state" data-empty>No asset types yet.</div>
         } @else {
-          <table class="pg-table" data-types>
-            <caption class="pg-sr">
-              Asset types
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Fields</th>
-                <th scope="col">Assets</th>
-                <th scope="col">Status</th>
-                <th scope="col"><span class="pg-sr">Actions</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (t of rows(); track t.assetTypeId) {
-                <tr [attr.data-row]="t.name">
-                  <td>
-                    <strong>{{ t.name }}</strong>
-                    @if (t.description) {
-                      <div class="pg-muted">{{ t.description }}</div>
-                    }
-                  </td>
-                  <td>
-                    @if (t.publishedFormVersionNo) {
-                      Published v{{ t.publishedFormVersionNo }}
-                    } @else {
-                      <span class="pg-muted">No published fields</span>
-                    }
-                    <a
-                      class="pg-link"
-                      [routerLink]="['/admin/asset-types', t.assetTypeId, 'form']"
-                      [attr.aria-label]="'Edit fields of ' + t.name"
-                      >Edit fields</a
-                    >
-                  </td>
-                  <td>{{ t.assetCount }}</td>
-                  <td>
-                    <mf-active-badge [active]="t.isActive" />
-                  </td>
-                  <td class="pg-row-actions">
-                    @if (canManage()) {
-                      <div class="pg-row-actions__inner">
-                        <p-button
-                          label="Edit"
-                          size="small"
-                          severity="secondary"
-                          [attr.aria-label]="'Edit ' + t.name"
-                          (onClick)="startEdit(t)"
-                        />
-                        <p-button
-                          [label]="t.isActive ? 'Deactivate' : 'Activate'"
-                          size="small"
-                          severity="secondary"
-                          [disabled]="busy()"
-                          (onClick)="onToggle(t)"
-                        />
-                      </div>
-                    }
-                  </td>
+          <div class="mf-scroll">
+            <table class="pg-table" data-types>
+              <caption class="pg-sr">
+                Asset types
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Fields</th>
+                  <th scope="col">Assets</th>
+                  <th scope="col">Status</th>
+                  <th scope="col"><span class="pg-sr">Actions</span></th>
                 </tr>
-              }
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                @for (t of rows(); track t.assetTypeId) {
+                  <tr [attr.data-row]="t.name">
+                    <td>
+                      <strong>{{ t.name }}</strong>
+                      @if (t.description) {
+                        <div class="pg-muted">{{ t.description }}</div>
+                      }
+                    </td>
+                    <td>
+                      @if (t.publishedFormVersionNo) {
+                        Published v{{ t.publishedFormVersionNo }}
+                      } @else {
+                        <span class="pg-muted">No published fields</span>
+                      }
+                      <a
+                        class="pg-link"
+                        [routerLink]="['/admin/asset-types', t.assetTypeId, 'form']"
+                        [attr.aria-label]="'Edit fields of ' + t.name"
+                        >Edit fields</a
+                      >
+                    </td>
+                    <td>{{ t.assetCount }}</td>
+                    <td>
+                      <mf-active-badge [active]="t.isActive" />
+                    </td>
+                    <td class="pg-row-actions">
+                      @if (canManage()) {
+                        <div class="pg-row-actions__inner">
+                          <p-button
+                            label="Edit"
+                            size="small"
+                            severity="secondary"
+                            [attr.aria-label]="'Edit ' + t.name"
+                            (onClick)="startEdit(t)"
+                          />
+                          <p-button
+                            [label]="t.isActive ? 'Deactivate' : 'Activate'"
+                            size="small"
+                            severity="secondary"
+                            [disabled]="busy()"
+                            (onClick)="onToggle(t)"
+                          />
+                        </div>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
         }
       }
     }

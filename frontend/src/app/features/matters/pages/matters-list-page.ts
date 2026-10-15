@@ -84,63 +84,65 @@ import { SearchBox } from '../../../shared/ui/search-box';
         (onClick)="go('/matters/new')"
       />
       <div class="mf-table-wrap">
-        <table class="pg-table">
-          <caption class="pg-sr">
-            Matters
-          </caption>
-          <thead>
-            <tr>
-              <th
-                mfSort="matterRef"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Matter reference
-              </th>
-              <th
-                mfSort="name"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Name
-              </th>
-              <th
-                mfSort="clientNumber"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Client
-              </th>
-              <th scope="col">Projects</th>
-              <th scope="col">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (m of rows(); track m.matterId) {
+        <div class="mf-scroll">
+          <table class="pg-table">
+            <caption class="pg-sr">
+              Matters
+            </caption>
+            <thead>
               <tr>
-                <td><mf-matter-ref [value]="m.matterRef" [link]="['/matters', m.matterId]" /></td>
-                <td>
-                  {{ m.name }}
-                  @if (m.isSensitive) {
-                    <mf-sensitive-badge />
-                  }
-                </td>
-                <td>
-                  <a class="pg-link" [routerLink]="['/clients', m.clientId]"
-                    ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
-                  >
-                </td>
-                <td>{{ m.projectCount }}</td>
-                <td>
-                  <mf-active-badge [active]="m.isActive" />
-                </td>
+                <th
+                  mfSort="matterRef"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Matter reference
+                </th>
+                <th
+                  mfSort="name"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Name
+                </th>
+                <th
+                  mfSort="clientNumber"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Client
+                </th>
+                <th scope="col">Projects</th>
+                <th scope="col">Status</th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (m of rows(); track m.matterId) {
+                <tr>
+                  <td><mf-matter-ref [value]="m.matterRef" [link]="['/matters', m.matterId]" /></td>
+                  <td>
+                    {{ m.name }}
+                    @if (m.isSensitive) {
+                      <mf-sensitive-badge />
+                    }
+                  </td>
+                  <td>
+                    <a class="pg-link" [routerLink]="['/clients', m.clientId]"
+                      ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
+                    >
+                  </td>
+                  <td>{{ m.projectCount }}</td>
+                  <td>
+                    <mf-active-badge [active]="m.isActive" />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
       <mf-pager
         [page]="pageNumber()"

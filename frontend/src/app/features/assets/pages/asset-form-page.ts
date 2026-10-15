@@ -62,7 +62,10 @@ export function externalReferenceError(text: string): string | null {
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <mf-page-header
-      [crumbs]="[{ label: 'Assets', link: '/assets' }, { label: isEdit() ? 'Edit' : 'New' }]"
+      [crumbs]="[
+        { label: 'Assets', link: '/assets' },
+        { label: isEdit() ? original()?.displayName || 'Edit' : 'New' },
+      ]"
       [heading]="isEdit() ? 'Edit asset' : 'New asset'"
     />
 

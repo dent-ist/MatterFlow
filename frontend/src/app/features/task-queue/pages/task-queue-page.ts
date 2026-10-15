@@ -34,15 +34,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
-    <mf-page-header heading="Task Queue">
-      <p-button
-        mfActions
-        *mfHasPermission="'Task.Create'"
-        label="Create task"
-        icon="pi pi-plus"
-        (onClick)="go('/tasks/new')"
-      />
-    </mf-page-header>
+    <mf-page-header heading="Task Queue" />
 
     <mf-work-filter-bar
       [filters]="state().filters"

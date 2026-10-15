@@ -70,49 +70,51 @@ import { SearchBox } from '../../../shared/ui/search-box';
         (onClick)="go('/clients/new')"
       />
       <div class="mf-table-wrap">
-        <table class="pg-table">
-          <caption class="pg-sr">
-            Clients
-          </caption>
-          <thead>
-            <tr>
-              <th
-                mfSort="clientNumber"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Client number
-              </th>
-              <th
-                mfSort="name"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Name
-              </th>
-              <th scope="col">Matters</th>
-              <th scope="col">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (c of rows(); track c.clientId) {
+        <div class="mf-scroll">
+          <table class="pg-table">
+            <caption class="pg-sr">
+              Clients
+            </caption>
+            <thead>
               <tr>
-                <td class="pg-mono">
-                  <a class="pg-link" [routerLink]="['/clients', c.clientId]">{{
-                    c.clientNumber
-                  }}</a>
-                </td>
-                <td>{{ c.name }}</td>
-                <td>{{ c.matterCount }}</td>
-                <td>
-                  <mf-active-badge [active]="c.isActive" />
-                </td>
+                <th
+                  mfSort="clientNumber"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Client number
+                </th>
+                <th
+                  mfSort="name"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Name
+                </th>
+                <th scope="col">Matters</th>
+                <th scope="col">Status</th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (c of rows(); track c.clientId) {
+                <tr>
+                  <td class="pg-mono">
+                    <a class="pg-link" [routerLink]="['/clients', c.clientId]">{{
+                      c.clientNumber
+                    }}</a>
+                  </td>
+                  <td>{{ c.name }}</td>
+                  <td>{{ c.matterCount }}</td>
+                  <td>
+                    <mf-active-badge [active]="c.isActive" />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
       <mf-pager
         [page]="pageNumber()"

@@ -50,7 +50,10 @@ type LoadState = 'loading' | 'ready' | 'error';
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <mf-page-header
-      [crumbs]="[{ label: 'Clients', link: '/clients' }, { label: isEdit() ? 'Edit' : 'New' }]"
+      [crumbs]="[
+        { label: 'Clients', link: '/clients' },
+        { label: isEdit() ? original()?.name || 'Edit' : 'New' },
+      ]"
       [heading]="isEdit() ? 'Edit client' : 'New client'"
     />
 
