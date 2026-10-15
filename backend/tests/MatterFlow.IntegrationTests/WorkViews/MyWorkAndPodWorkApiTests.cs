@@ -86,6 +86,28 @@ public sealed class MyWorkAndPodWorkApiTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task The_completed_tabs_closed_date_window_does_not_change_the_other_tab_counts()
+    {
+        var d = await DataAsync();
+        var onActive = (await MyWorkAsync(d, d.TechAClient)).GetProperty("counts");
+
+        // The web app asks for the Completed tab with a 90-day window; Active, Due soon and Created by me must read the same as on any tab.
+        var window = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-90)).ToString("yyyy-MM-dd");
+        foreach (var query in new[] { $"view=completed&completedFrom={window}", "view=completed&completedFrom=2099-01-01", "view=completed" })
+        {
+            var counts = (await MyWorkAsync(d, d.TechAClient, query)).GetProperty("counts");
+            counts.GetProperty("active").GetInt32().ShouldBe(onActive.GetProperty("active").GetInt32(), query);
+            counts.GetProperty("dueSoon").GetInt32().ShouldBe(onActive.GetProperty("dueSoon").GetInt32(), query);
+            counts.GetProperty("createdByMe").GetInt32().ShouldBe(onActive.GetProperty("createdByMe").GetInt32(), query);
+        }
+
+        // The Completed count is the same on every tab (default window), and an explicit range changes only the Completed tab.
+        (await MyWorkAsync(d, d.TechAClient, $"view=completed&completedFrom={window}")).GetProperty("counts").GetProperty("completed").GetInt32()
+            .ShouldBe(onActive.GetProperty("completed").GetInt32());
+        (await MyWorkAsync(d, d.TechAClient, "view=completed&completedFrom=2099-01-01")).GetProperty("counts").GetProperty("completed").GetInt32().ShouldBe(0);
+    }
+
+    [Fact]
     public async Task My_work_pages_and_validates()
     {
         var d = await DataAsync();

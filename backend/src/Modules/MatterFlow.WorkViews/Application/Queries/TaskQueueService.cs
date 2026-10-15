@@ -49,6 +49,9 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
 
     // ---- My Work
 
+    /// <summary>The Completed tab shows tasks closed in the last this-many days unless a closed-date range is given (UX S02).</summary>
+    private const int CompletedWindowDays = 90;
+
     public async Task<Result<MyWorkPage>> MyWorkAsync(MyWorkQuery query, CancellationToken ct)
     {
         if (currentUser.UserId is not { } me)
@@ -63,10 +66,15 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
             return request.Error!;
 
         var (filter, page, sort, descending, queueClock) = request.Value;
-        var filtered = ApplyFilter(db.Set<WorkTask>().AsNoTracking(), filter, queueClock);
+        // The closed-date range (the Completed tab's 90-day window or the user's own range) belongs to the Completed tab only: applied to
+        // every tab's count it would zero "Active" and "Created by me" as soon as the Completed tab is opened. With no range the Completed
+        // count always uses the default window, so it reads the same on every tab.
+        var closedFrom = filter.CompletedFrom ?? (filter.CompletedTo is null ? queueClock.Today.AddDays(-CompletedWindowDays) : null);
+        var filtered = ApplyFilter(db.Set<WorkTask>().AsNoTracking(), filter with { CompletedFrom = null, CompletedTo = null }, queueClock);
+        var closedWindow = ApplyFilter(db.Set<WorkTask>().AsNoTracking(), filter with { CompletedFrom = closedFrom }, queueClock);
         var active = filtered.Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Open);
         var dueSoon = filtered.Where(t => t.AssignedUserId == me).Where(TaskQueueRules.DueSoon(queueClock));
-        var completed = filtered.Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Closed);
+        var completed = closedWindow.Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Closed);
         var created = filtered.Where(t => t.CreatedByUserId == me);
 
         var current = view switch
