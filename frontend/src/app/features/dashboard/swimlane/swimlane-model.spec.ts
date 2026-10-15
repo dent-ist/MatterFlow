@@ -1,9 +1,5 @@
 import { convertToParamMap } from '@angular/router';
-import {
-  SwimlaneBoard,
-  SwimlaneGroup,
-  SwimlaneLane,
-} from '../../../api/generated/api-client';
+import { SwimlaneBoard, SwimlaneGroup, SwimlaneLane } from '../../../api/generated/api-client';
 import {
   DEFAULT_VIEW,
   GroupNode,

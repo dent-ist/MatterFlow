@@ -86,9 +86,7 @@ test.describe('Swimlane tab', () => {
     await openBoard(page);
     const card = cards(page, 'IN_PROGRESS').first();
     await expect(card.locator('.card > .bar')).toBeVisible();
-    await expect(card.locator('mf-priority-badge, [data-field="priority"]')).toContainText(
-      /Critical|High|Normal|Low/,
-    );
+    await expect(card.locator('[data-field="priority"]')).toContainText(/Critical|High|Normal|Low/);
     await expect(card.locator('mf-task-type-icon svg')).toHaveCount(1);
     await expect(card.locator('[data-card-ref]')).toHaveAttribute('href', /\/tasks\/\d+/);
     await expect(card.locator('[data-client]')).toContainText('Board client');

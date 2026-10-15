@@ -12,6 +12,8 @@ import { seedBoard } from '../support/board';
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 
+const lane = (page: Page, code: string) => page.locator(`[data-lane="${code}"]`);
+
 async function ready(page: Page): Promise<void> {
   await expect(page.locator('[data-lane="NEW"] mf-swimlane-card').first()).toBeVisible();
   await expect(page.locator('[data-board][aria-busy="true"]')).toHaveCount(0);
@@ -71,11 +73,46 @@ test.describe('swimlane screenshots', () => {
     await shot('08-drawer-1366');
     await page.keyboard.press('Escape');
 
+    // Loading skeletons, the capped-lane note and the error state, with the same data.
+    await page.route('**/api/v1/dashboard/swimlane**', async (route) => {
+      await new Promise((r) => setTimeout(r, 1500));
+      await route.continue();
+    });
+    await page.goto(`${base}&group=none`);
+    await expect(page.locator('[data-board][aria-busy="true"]')).toBeVisible();
+    await shot('09-loading-1366');
+    await page.unroute('**/api/v1/dashboard/swimlane**');
+
+    await page.route('**/api/v1/dashboard/swimlane**', async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      body.lanes[0].count = 230;
+      body.lanes[0].total = 230;
+      body.lanes[0].truncated = true;
+      await route.fulfill({ response, json: body });
+    });
+    await page.goto(`${base}&group=none`);
+    await ready(page);
+    await lane(page, 'NEW')
+      .locator('[data-lane-body]')
+      .evaluate((el) => (el.scrollTop = el.scrollHeight));
+    await expect(page.locator('[data-truncated]')).toBeVisible();
+    await shot('10-capped-lane-1366');
+    await page.unroute('**/api/v1/dashboard/swimlane**');
+
+    await page.route('**/api/v1/dashboard/swimlane**', (route) =>
+      route.fulfill({ status: 500, json: { code: 'INTERNAL_ERROR', traceId: 'trace-0001' } }),
+    );
+    await page.goto(`${base}&group=none`);
+    await expect(page.locator('[data-swimlane-error]')).toBeVisible();
+    await shot('11-error-1366');
+    await page.unroute('**/api/v1/dashboard/swimlane**');
+
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto(`${base}&group=none`);
     await ready(page);
     await page.locator('[data-lane="NEW"] [data-card-open]').first().click();
     await expect(page.locator('[data-peek]')).toBeVisible();
-    await shot('09-drawer-375');
+    await shot('12-drawer-375');
   });
 });

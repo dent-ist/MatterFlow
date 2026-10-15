@@ -35,6 +35,7 @@ import { LaneMove, SwimlaneLane } from '../swimlane/swimlane-lane';
 import {
   DEFAULT_VIEW,
   Density,
+  GroupBy,
   LANE_CODES,
   LaneCode,
   LaneModel,
@@ -43,6 +44,7 @@ import {
   buildLane,
   filterCount,
   hasViewParams,
+  isGroupBy,
   laneOf,
   laneQueueParams,
   sameView,
@@ -121,7 +123,7 @@ const EDIT_REFRESH_DELAY_MS = 900;
         @for (lane of lanes(); track lane.code) {
           <mf-swimlane-lane
             [model]="lane"
-            [groupBy]="view().groupBy"
+            [groupBy]="shownGroupBy()"
             [density]="density()"
             [loading]="state() === 'loading'"
             [filtered]="filtersOn()"
@@ -259,6 +261,12 @@ export class DashSwimlaneTab implements OnInit {
     return b ? mfDate(b.generatedAtUtc, this.zone, 'datetime') : null;
   });
 
+  /** The grouping of the board on screen: a change of Group by shows its layout when its board arrives, not before. */
+  protected readonly shownGroupBy = computed<GroupBy>(() => {
+    const shown = this.board()?.groupBy;
+    return isGroupBy(shown) ? shown : this.view().groupBy;
+  });
+
   protected readonly lanes = computed<LaneModel[]>(() => {
     const b = this.board();
     const now = this.clock.now();
@@ -276,7 +284,7 @@ export class DashSwimlaneTab implements OnInit {
       const lane = b?.lanes.find((l) => l.status === code) ?? emptyLane(code);
       return buildLane(
         lane,
-        b?.groupBy === this.view().groupBy ? this.view().groupBy : 'none',
+        this.shownGroupBy(),
         b?.groups ?? [],
         this.collapsed(),
         now,
@@ -587,6 +595,11 @@ export class DashSwimlaneTab implements OnInit {
     if (this.editTimer) clearTimeout(this.editTimer);
     this.editTimer = setTimeout(() => {
       this.editTimer = null;
+      // Not under a menu or dialog that was opened meanwhile: look again a little later.
+      if (this.selectedId() !== null || document.querySelector('.im-pop, .p-dialog-mask')) {
+        this.scheduleRefresh();
+        return;
+      }
       this.load({ silent: true });
     }, EDIT_REFRESH_DELAY_MS);
   }

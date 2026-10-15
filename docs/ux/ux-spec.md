@@ -295,6 +295,19 @@ Dashboard                                             Period: [Last 30 days v]
 **Permission.** Without `Dashboard.ViewDepartment` the department tiles are replaced by "My open tasks / Due soon / Created by me" tiles.
 **Refresh.** Manual "Refresh" button and "Updated 10:42 AM" caption; no auto-poll in Phase 1 [UX-PROPOSAL].
 
+**Tabs (epic #68).** The page has five tabs (WAI-ARIA tabs, `?tab=` in the address, never remembered): Summary, Breakdowns, Trends, Swimlane and Users, all for `Dashboard.ViewDepartment`. Swimlane is specified below; Users (team workload) is issue #73.
+
+#### S01b Swimlane tab (issue #72)
+
+**Purpose.** Show where every open task stands as cards in four lanes, and who holds what, without drag and drop. An operational view, not a performance evaluation: no per-person completion figures, speed or ranking.
+**Layout.** Lanes are columns: **New | In Progress | On Hold | Completed**. A sticky lane header shows the exact count and a cue ("oldest 5d" for the open lanes). Each lane scrolls vertically by itself (the board is the height of the screen minus the page above it); the board scrolls sideways inside itself between 900 and about 1100 px, and below 900 px the lanes stack. A lane draws 40 cards at a time ("Show 40 more of N hidden"); a lane holds at most 200 cards and says "Showing 200 of N. Open the Task Queue" (a link with the same filters) when capped. Completed holds Completed and Cancelled tasks whose last status change is in the window (7, 14 or 30 days, default 7).
+**Toolbar (one wrapping row).** Group by (None, Priority, Assignee, Client / matter), Sort (Priority, Due date, Client / matter, Created), search (title or ref), Filters (count on the button: Pod, Assignee incl. Unassigned, Task type, Priority, Overdue only), Only mine, Density (Comfortable, Compact), Completed in last (7, 14, 30 days), Expand all / Collapse all (when grouped), Updated time and Refresh. Group, sort, window and density are remembered per user (localStorage, guarded); every choice that changes the data is in the address (`group`, `sort`, `days`, `q`, `pod`, `assignee`, `type`, `priority`, `overdue`, `mine`) and is dropped when another tab is chosen. The data filters are not remembered, so a plain Swimlane link never opens a silently filtered board.
+**Card.** Left bar in the priority colour (same tokens as the priority badge), the level-bar icon and the priority text (never colour alone), task type icon, task number link, title clamped to two lines, client and matter (number link with copy, name), assignee with initials and an Out of office flag, due chip (Overdue 2d, Due today, Tomorrow, ASAP or the date, in the viewer's zone; Done / Cancelled date in the Completed lane), workflow progress bar with "2/4", and a lock for a sensitive matter. Status, Priority and Assignee are the inline menus of the queues (`mf-row-edit`) with the same rules, dialogs (Hold, Cancel, Complete, Reopen) and Undo. A card whose status changes moves to the right lane at once. The whole card opens the drawer.
+**Grouping.** Priority: groups in rank order with a coloured header. Assignee: avatar, name and an Out of office chip, Unassigned last. Client / matter: a WAI-ARIA tree per lane (`role="tree"`, `treeitem`, `aria-level` 1 client, 2 matter, 3 card, `aria-expanded`), indented one step per level, a count on every node, collapse state shared by all lanes.
+**Drawer peek.** Right-side modal dialog (focus trapped, Esc or Close returns focus to the card): summary, workflow steps with state words, the three latest comments, the same inline menus, "Open full task".
+**Keyboard.** One tab stop per lane. Up, Down, Home, End move between cards (tree: Right opens or steps in, Left closes or steps out); Left and Right (Shift with them inside the tree) move to the neighbouring lane; Enter opens the drawer; `m` opens the status menu; a "Skip lane" button leads to the next lane.
+**Refresh.** Every 5 minutes while the tab is visible, skipped while a menu, dialog or the drawer is open, never moves focus; a failed background read keeps the board and shows a banner with Retry. First load: skeleton cards per lane; error: alert with reference and Retry.
+
 ---
 
 ### S02 My Work
@@ -1207,6 +1220,8 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S01-6 Without `Dashboard.ViewDepartment`, only personal tiles show.
 - [ ] UAT-S01-7 No staff productivity, billing, or export features.
 - [ ] UAT-S01-8 One failing widget shows its own error with Retry.
+- [ ] UAT-S01-9 Swimlane: four lanes with exact counts, groups (priority, assignee, client / matter tree), sort, filters and the completed window; the board and its choices survive a reload and a copied link.
+- [ ] UAT-S01-10 Swimlane: inline Status, Priority and Assignee menus with Undo, the drawer peek returns focus to its card, keyboard works without a mouse, and axe is clean.
 
 ### S02 My Work
 - [ ] UAT-S02-1 Shows tasks assigned to me from all my Pods (SCN-007).

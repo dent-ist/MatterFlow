@@ -65,6 +65,8 @@ frontend/e2e/
     tasks.ts             TaskApi: step actions and status changes through the API (setup and negative checks)
     fixtures.ts          test, expect and the fixtures below
     time.ts              dates in a given IANA zone, the two extreme zones used by the overdue test
+    board.ts             seedBoard: 150+ tasks across clients, matters, priorities, statuses and assignees for the Swimlane tests and screenshots
+    axe.ts               axe-core runner (wcag2a, wcag2aa, wcag21aa, wcag22aa); reads axe from E2E_AXE_PATH or an installed axe-core, tests skip without it
   pages/                 page objects: create-task, task-detail (+ StepPanel), queues (Task Queue, My Work, Pod Work), organization
   fixtures/email/        sample .eml files (copies of tools/spike-outlook-dnd/samples, kept byte exact)
   tests/*.spec.ts        the tests
@@ -95,6 +97,7 @@ Fixtures (from `support/fixtures.ts`):
 | `permissions` (7) | Access Pending then role grant, disabled account; SCN-019 no admin menu and the denied page, 13 management calls refused with `PERMISSION_DENIED` and no state change, view-only role, missing `Task.Assign`, read-only task view |
 | `search` (5) | SCN-020 header search by unpadded combined number with related tasks and assets, all spellings find the matter first, matter picker resolves `343-12` style input, matters-only role gets no task or asset groups, empty result |
 | `task-lifecycle` (8) | Start, On Hold needs a reason (UI and server) and blocks the workflow, Cancel needs a comment and Reopen, closed task edit requires reopen, fixed matter/type/workflow, sensitive matter banner on create, task, matter and queue |
+| `swimlane` (19) | Dashboard > Swimlane (issue #72): tab list and per-tab addresses, four lanes with sticky headers, exact counts and own scrolling, card content, Out of office flag, sort, group by priority / assignee / client-matter tree (roles, levels, indentation, counts, collapse, Expand/Collapse all), arrow-key navigation in the tree and between cards, search and filters with count and address sync, Only mine, completed window and remembered choices, drawer peek (focus trap, Esc returns focus), inline status move, priority change with Undo, inline assign, error with Retry, responsive stacking, axe |
 | `dashboard-audit` (7) | Dashboard tiles drill through to the queue with the same filter (my overdue, my open, department ASAP and Unassigned), department section needs its permission; audit log browser smoke (filter by object, event type and text, details, read only, who may open it) |
 
 Baseline 6.4 scenario 3 (Access Pending, role grant, dashboard) is covered by the first test of `permissions`.

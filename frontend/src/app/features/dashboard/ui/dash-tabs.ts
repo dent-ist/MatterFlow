@@ -2,6 +2,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  Injector,
+  afterNextRender,
+  effect,
   inject,
   input,
   output,
@@ -95,6 +98,7 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
 })
 export class DashTabs {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
   protected readonly tabId = tabId;
   protected readonly panelId = panelId;
 
@@ -103,6 +107,20 @@ export class DashTabs {
   readonly label = input('Dashboard views');
   /** The tab the person chose (click or keyboard). */
   readonly tabChange = output<string>();
+
+  constructor() {
+    // On a phone the five tabs scroll sideways: a tab chosen by a link (or a reload) is brought into view.
+    effect(() => {
+      const key = this.selected();
+      afterNextRender(
+        () =>
+          this.host.nativeElement
+            .querySelector<HTMLElement>(`[data-tab="${key}"]`)
+            ?.scrollIntoView?.({ inline: 'nearest', block: 'nearest' }),
+        { injector: this.injector },
+      );
+    });
+  }
 
   protected choose(key: string): void {
     if (key !== this.selected()) this.tabChange.emit(key);
