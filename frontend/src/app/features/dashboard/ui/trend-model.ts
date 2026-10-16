@@ -6,14 +6,22 @@ import {
 } from '../../../api/generated/api-client';
 
 /**
- * The pure model of the Trends tab: what can be drawn (measures), how each line looks (colour, dash, marker; never colour alone), which
- * lines the current choices make, and how the choices travel in the address (`types`, `metric`, `all`, `due`) and in the browser.
+ * The pure model of the Trends tab: what can be drawn (measures), how each line looks (colour, dash, marker; never colour alone), the two
+ * panels (flows and backlog) the current choices make, the state machine of the measure controls and the "Compare task types" list, the
+ * y axis scale, and how the choices travel in the address (`types`, `metric`, `bmetric`, `all`; legacy `due`) and in the browser.
+ *
+ * Extension points for the backlog series (WP8b, #120): add `'open'` to `BacklogMeasure` and `BACKLOG_MEASURES`, give it a `MEASURE_INFO` and
+ * `MEASURE_STYLES` entry, a `DashboardTrendDay.open` column in `valuesOf`, and (if wanted) a `'both'` choice that draws Open and Overdue.
+ * Everything else (panel title, segmented control, legend, table groups, tooltip groups) reads `BACKLOG_MEASURES` and `PanelView`.
  */
 
 /** What a line counts per day. `overdue` is a snapshot at the end of the day; the others are events of the day. */
 export type Measure = 'created' | 'completed' | 'overdue' | 'onTime' | 'late';
 export const MEASURES: readonly Measure[] = ['created', 'completed', 'overdue', 'onTime', 'late'];
 export const MAX_TYPES = 8;
+/** Panel heights in px (T1 contract): the flows panel 320, the backlog panel 200. */
+export const FLOWS_HEIGHT = 320;
+export const BACKLOG_HEIGHT = 200;
 export const LIMIT_MESSAGE = 'Pick up to 8 task types to keep the chart readable';
 
 export function isMeasure(value: unknown): value is Measure {
@@ -64,10 +72,36 @@ export const MEASURE_INFO: Record<Measure, MeasureInfo> = {
   },
 };
 
-/** The due-date measures that can be added to the default chart (the "Due dates" group). */
-export const DUE_MEASURES = ['overdue', 'onTime', 'late'] as const;
-export type DueMeasure = (typeof DUE_MEASURES)[number];
-const DUE_URL: Record<DueMeasure, string> = { overdue: 'overdue', onTime: 'ontime', late: 'late' };
+/** Panel 1 (flows, events of a day) and Panel 2 (backlog, a level at the end of the day). */
+export type FlowMeasure = 'created' | 'completed' | 'onTime' | 'late';
+export const FLOW_MEASURES: readonly FlowMeasure[] = ['created', 'completed', 'onTime', 'late'];
+/** What panel 1 shows: two lines of All task types (`both`) or one measure (for All and for each compared task type). */
+export type FlowChoice = 'both' | FlowMeasure;
+/** Stocks. WP8b adds `'open'` here (see the note above). */
+export type BacklogMeasure = 'overdue';
+export const BACKLOG_MEASURES: readonly BacklogMeasure[] = ['overdue'];
+export type BacklogChoice = BacklogMeasure;
+export const DEFAULT_BACKLOG: BacklogChoice = 'overdue';
+
+/** Words of the address for the measures (`metric=ontime`); the legacy spelling `onTime` is read too. */
+const FLOW_URL: Record<FlowMeasure, string> = {
+  created: 'created',
+  completed: 'completed',
+  onTime: 'ontime',
+  late: 'late',
+};
+
+export const FLOW_CHOICE_LABEL: Record<FlowChoice, string> = {
+  both: 'Created and completed',
+  created: 'Created',
+  completed: 'Completed',
+  onTime: 'On time',
+  late: 'Completed late',
+};
+export const BACKLOG_CHOICE_LABEL: Record<BacklogChoice, string> = { overdue: 'Overdue' };
+
+export const FLOWS_TITLE = 'Created and completed';
+export const BACKLOG_TITLE = 'Backlog at end of day';
 
 export type MarkerShape =
   | 'circle'
@@ -149,25 +183,37 @@ export function isHollow(shape: MarkerShape): boolean {
 
 // ---- the choices
 
+/** "All task types" line: `auto` hides it while task types are compared (a different magnitude), `on` / `off` is the user's own choice. */
+export type AllMode = 'auto' | 'on' | 'off';
+
 export interface TrendChoice {
   /** Checked task types in the order they were checked. */
   types: readonly number[];
-  /** The "All task types" line is shown. */
-  showAll: boolean;
-  /** The measure of the All line and the type lines while task types are selected. */
-  metric: Measure;
-  /** Extra All-level lines of the default chart (no task type checked). */
-  due: readonly DueMeasure[];
+  all: AllMode;
+  /** Panel 1. With task types checked it is always a single measure (never `both`). */
+  metric: FlowChoice;
+  /** Panel 2. */
+  bmetric: BacklogChoice;
 }
 
-export const DEFAULT_CHOICE: TrendChoice = { types: [], showAll: true, metric: 'created', due: [] };
+export const DEFAULT_CHOICE: TrendChoice = {
+  types: [],
+  all: 'auto',
+  metric: 'both',
+  bmetric: DEFAULT_BACKLOG,
+};
+
+/** Whether the "All task types" line is drawn. */
+export function allVisible(choice: TrendChoice): boolean {
+  return choice.all === 'auto' ? choice.types.length === 0 : choice.all === 'on';
+}
 
 export function sameChoice(a: TrendChoice, b: TrendChoice): boolean {
   return (
-    a.showAll === b.showAll &&
+    a.all === b.all &&
     a.metric === b.metric &&
-    a.types.join() === b.types.join() &&
-    a.due.join() === b.due.join()
+    a.bmetric === b.bmetric &&
+    a.types.join() === b.types.join()
   );
 }
 
@@ -182,35 +228,107 @@ export function cleanTypeIds(values: readonly unknown[]): number[] {
   return out;
 }
 
-function cleanDue(values: readonly unknown[]): DueMeasure[] {
-  return DUE_MEASURES.filter((m) => values.includes(m));
+/** The first single measure a two-line measure turns into when a task type is picked. */
+export const FIRST_SINGLE: FlowMeasure = 'created';
+
+export interface ChoiceChange {
+  choice: TrendChoice;
+  /** Said politely (live region) when the control the user did not touch changed; null otherwise. */
+  announcement: string | null;
 }
 
-export const TREND_PARAMS = ['types', 'metric', 'all', 'due'] as const;
+/**
+ * The one place that keeps the choices consistent: task types need a single measure in panel 1 (`both` becomes the first single measure,
+ * announced), and when the last type is removed the "All task types" choice goes back to automatic and Created back to the two-line view.
+ */
+export function normalizeChoice(choice: TrendChoice, previous: TrendChoice | null): ChoiceChange {
+  let next = choice;
+  let announcement: string | null = null;
+  if (next.types.length > 0 && next.metric === 'both') {
+    next = { ...next, metric: FIRST_SINGLE };
+    announcement = `Showing ${FLOW_CHOICE_LABEL[FIRST_SINGLE]} to compare task types.`;
+  }
+  if (next.types.length === 0 && previous && previous.types.length > 0) {
+    // The last type is gone: undo what picking types did (All is automatic again, Created goes back to the two-line view).
+    next = {
+      ...next,
+      all: 'auto',
+      metric: next.metric === FIRST_SINGLE ? 'both' : next.metric,
+    };
+  }
+  return { choice: next, announcement };
+}
+
+/** Ticks or unticks the All line; a choice equal to what automatic would do is stored as automatic. */
+export function toggleAllMode(choice: TrendChoice): TrendChoice {
+  const nowVisible = !allVisible(choice);
+  const auto = choice.types.length === 0;
+  return { ...choice, all: nowVisible === auto ? 'auto' : nowVisible ? 'on' : 'off' };
+}
+
+/** Measures offered by the panel 1 control: "Created and completed" is a two-line view of All task types only. */
+export function flowOptions(choice: TrendChoice): FlowChoice[] {
+  return choice.types.length > 0 ? [...FLOW_MEASURES] : ['both', ...FLOW_MEASURES];
+}
+
+export function backlogOptions(): BacklogChoice[] {
+  return [...BACKLOG_MEASURES];
+}
+
+export function isFlowChoice(value: unknown): value is FlowChoice {
+  return value === 'both' || (FLOW_MEASURES as readonly unknown[]).includes(value);
+}
+
+export const TREND_PARAMS = ['types', 'metric', 'bmetric', 'all', 'due'] as const;
 
 export function hasTrendParams(params: ParamMap): boolean {
   return TREND_PARAMS.some((k) => params.has(k));
 }
 
-/** The choices an address names (missing or invalid parts fall back to the defaults). */
-export function choiceFromParams(params: ParamMap): TrendChoice {
-  const metric = params.get('metric');
-  const dueNames = (params.get('due') ?? '').split(',');
-  return {
-    types: cleanTypeIds((params.get('types') ?? '').split(',').filter(Boolean)),
-    showAll: params.get('all') !== '0',
-    metric: isMeasure(metric) ? metric : DEFAULT_CHOICE.metric,
-    due: DUE_MEASURES.filter((m) => dueNames.includes(DUE_URL[m])),
-  };
+function flowFromWord(word: string | null): FlowMeasure | null {
+  if (word === null) return null;
+  const w = word.toLowerCase();
+  return FLOW_MEASURES.find((m) => FLOW_URL[m] === w) ?? null;
 }
 
-/** The query parameters that carry the choices (null removes a parameter that is at its default). */
+/**
+ * True when an address (a legacy one: `due=overdue`, `metric=overdue`, or `bmetric=`) asks for the backlog panel; the tab then shows the
+ * panel even if the user hid it.
+ */
+export function namesBacklog(params: ParamMap): boolean {
+  const due = (params.get('due') ?? '').split(',');
+  return params.has('bmetric') || params.get('metric') === 'overdue' || due.includes('overdue');
+}
+
+/**
+ * The choices an address names (missing or invalid parts fall back to the defaults). Legacy parameters keep working: `metric=overdue` is the
+ * backlog panel (Overdue), `due=ontime` / `due=late` are the flow measures On time / Completed late (the first one named wins), `due=overdue`
+ * is the backlog panel, and `all=1` keeps All task types when types are compared.
+ */
+export function choiceFromParams(params: ParamMap): TrendChoice {
+  const dueNames = (params.get('due') ?? '').split(',');
+  const legacyDue = flowFromWord(dueNames.find((n) => flowFromWord(n) && n !== 'created') ?? null);
+  const metric = flowFromWord(params.get('metric')) ?? legacyDue ?? DEFAULT_CHOICE.metric;
+  const all = params.get('all');
+  return normalizeChoice(
+    {
+      types: cleanTypeIds((params.get('types') ?? '').split(',').filter(Boolean)),
+      all: all === '0' ? 'off' : all === '1' ? 'on' : 'auto',
+      metric,
+      bmetric: DEFAULT_BACKLOG,
+    },
+    null,
+  ).choice;
+}
+
+/** The query parameters that carry the choices (null removes a parameter that is at its default, and the legacy `due`). */
 export function choiceToParams(choice: TrendChoice): Record<string, string | null> {
   return {
     types: choice.types.length > 0 ? choice.types.join(',') : null,
-    metric: choice.metric !== DEFAULT_CHOICE.metric ? choice.metric : null,
-    all: choice.showAll ? null : '0',
-    due: choice.due.length > 0 ? choice.due.map((m) => DUE_URL[m]).join(',') : null,
+    metric: choice.metric !== DEFAULT_CHOICE.metric ? FLOW_URL[choice.metric as FlowMeasure] : null,
+    bmetric: choice.bmetric !== DEFAULT_CHOICE.bmetric ? choice.bmetric : null,
+    all: choice.all === 'off' ? '0' : choice.all === 'on' ? '1' : null,
+    due: null,
   };
 }
 
@@ -218,22 +336,32 @@ export function clearedTrendParams(): Record<string, null> {
   return Object.fromEntries(TREND_PARAMS.map((k) => [k, null]));
 }
 
-/** Choices read back from storage (anything unexpected falls back to the defaults). */
+/** Choices read back from storage (anything unexpected falls back to the defaults; the first version of the storage is understood too). */
 export function choiceFromStored(raw: unknown): TrendChoice {
   if (!raw || typeof raw !== 'object') return DEFAULT_CHOICE;
   const r = raw as Record<string, unknown>;
-  return {
-    types: Array.isArray(r['types']) ? cleanTypeIds(r['types']) : [],
-    showAll: r['showAll'] !== false,
-    metric: isMeasure(r['metric']) ? r['metric'] : DEFAULT_CHOICE.metric,
-    due: Array.isArray(r['due']) ? cleanDue(r['due']) : [],
-  };
+  const types = Array.isArray(r['types']) ? cleanTypeIds(r['types']) : [];
+  const legacy = !('all' in r);
+  const all: AllMode =
+    r['all'] === 'on' || r['all'] === 'off'
+      ? r['all']
+      : legacy && r['showAll'] === false
+        ? 'off'
+        : 'auto';
+  const storedMetric = typeof r['metric'] === 'string' ? flowFromWord(r['metric']) : null;
+  // The first version's default metric was `created` next to "both lines": without types that meant the two-line chart.
+  const metric: FlowChoice =
+    r['metric'] === 'both' || (legacy && types.length === 0) ? 'both' : (storedMetric ?? 'both');
+  return normalizeChoice({ types, all, metric, bmetric: DEFAULT_BACKLOG }, null).choice;
 }
 
 // ---- the lines
 
+export type PanelKey = 'flows' | 'backlog';
+
 export interface ChartLine {
   key: string;
+  panel: PanelKey;
   /** Name in the table header and the tooltip. */
   name: string;
   /** Shown before the value in the tooltip and read-out; null in the default chart ("2 created"). */
@@ -250,12 +378,21 @@ export interface ChartLine {
   approximate: boolean;
 }
 
-export interface TrendView {
-  /** No task type is checked: the default chart (Created and Completed, plus the Due dates lines). */
-  defaultMode: boolean;
+export interface PanelView {
+  key: PanelKey;
+  title: string;
   lines: ChartLine[];
-  /** Measures drawn, in order (for the heading). */
-  measures: Measure[];
+  /** Height of the panel's drawing in px. */
+  height: number;
+  /** Said in the tooltip under the day when the lines of the panel show the same measure ("Created"); null for the two-line chart. */
+  measureNote: string | null;
+}
+
+export interface TrendView {
+  /** No task type is checked: the default chart. */
+  defaultMode: boolean;
+  flows: PanelView;
+  backlog: PanelView;
 }
 
 function valuesOf(days: readonly DashboardTrendDay[], measure: Measure): number[] {
@@ -263,9 +400,9 @@ function valuesOf(days: readonly DashboardTrendDay[], measure: Measure): number[
 }
 
 /**
- * The lines the choices make. Default chart (no task type checked): with "All task types" on, Created and Completed as today; the Due
- * dates ticked add Overdue / On time / Completed late. With task types checked: "All task types" (if on) and one line per checked type,
- * all showing the chosen metric; the Due dates lines are not drawn then.
+ * The lines the choices make. Panel 1 (flows): without task types the chosen measure of All task types (`both`: Created and Completed);
+ * with task types "All task types" (unless hidden, see `allVisible`) and one line per checked type, all showing the chosen measure.
+ * Panel 2 (backlog): the same rule for its measure. A line keeps its colour, dash and marker in both panels.
  */
 export function buildView(
   choice: TrendChoice,
@@ -273,9 +410,25 @@ export function buildView(
   slots: ReadonlyMap<number, number>,
   types: readonly DashboardTrendType[],
 ): TrendView {
-  if (!data) return { defaultMode: choice.types.length === 0, lines: [], measures: [] };
+  const defaultMode = choice.types.length === 0;
+  const flowTitle = flowsHeading(choice.metric);
+  const empty = (key: PanelKey, title: string, height: number): PanelView => ({
+    key,
+    title,
+    lines: [],
+    height,
+    measureNote: null,
+  });
+  if (!data) {
+    return {
+      defaultMode,
+      flows: empty('flows', flowTitle, FLOWS_HEIGHT),
+      backlog: empty('backlog', BACKLOG_TITLE, BACKLOG_HEIGHT),
+    };
+  }
   const all = data.all;
   const line = (
+    panel: PanelKey,
     measure: Measure,
     key: string,
     name: string,
@@ -285,7 +438,8 @@ export function buildView(
     tip: string | null,
     iconKey: string | null = null,
   ): ChartLine => ({
-    key,
+    key: `${panel}-${key}`,
+    panel,
     name,
     tipName: tip,
     valueWord: tip === null ? MEASURE_INFO[measure].word : '',
@@ -297,68 +451,166 @@ export function buildView(
     approximate: measure === 'onTime' || measure === 'late' || measure === 'overdue',
   });
 
-  if (choice.types.length === 0) {
+  /** One measure for All task types and for each checked type. */
+  const single = (panel: PanelKey, measure: Measure): ChartLine[] => {
     const lines: ChartLine[] = [];
-    if (choice.showAll) {
+    if (defaultMode) {
+      if (allVisible(choice)) {
+        lines.push(
+          line(
+            panel,
+            measure,
+            `all-${measure}`,
+            MEASURE_INFO[measure].label,
+            MEASURE_STYLES[measure],
+            all,
+            null,
+            null,
+          ),
+        );
+      }
+      return lines;
+    }
+    if (allVisible(choice)) {
       lines.push(
-        line('created', 'all-created', 'Created', MEASURE_STYLES.created, all, null, null),
-      );
-      lines.push(
-        line('completed', 'all-completed', 'Completed', MEASURE_STYLES.completed, all, null, null),
+        line(panel, measure, 'all', 'All task types', ALL_STYLE, all, null, 'All task types'),
       );
     }
-    for (const m of choice.due) {
-      lines.push(line(m, `all-${m}`, MEASURE_INFO[m].label, MEASURE_STYLES[m], all, null, null));
+    for (const id of choice.types) {
+      const series = data.byTaskType.find((s) => s.taskTypeId === id);
+      const meta = types.find((t) => t.id === id);
+      const slot = slots.get(id);
+      if (!series || slot === undefined) continue;
+      const name = meta?.name ?? `Task type ${id}`;
+      lines.push(
+        line(
+          panel,
+          measure,
+          `type-${id}`,
+          name,
+          TYPE_STYLES[slot % TYPE_STYLES.length],
+          series.points,
+          id,
+          name,
+          meta?.iconKey ?? null,
+        ),
+      );
     }
-    return { defaultMode: true, lines, measures: lines.map((l) => l.measure) };
-  }
+    return lines;
+  };
 
-  const lines: ChartLine[] = [];
-  if (choice.showAll) {
-    lines.push(
-      line(choice.metric, 'all', 'All task types', ALL_STYLE, all, null, 'All task types'),
-    );
+  let flowLines: ChartLine[];
+  if (choice.metric === 'both') {
+    flowLines = allVisible(choice)
+      ? [
+          line(
+            'flows',
+            'created',
+            'all-created',
+            'Created',
+            MEASURE_STYLES.created,
+            all,
+            null,
+            null,
+          ),
+          line(
+            'flows',
+            'completed',
+            'all-completed',
+            'Completed',
+            MEASURE_STYLES.completed,
+            all,
+            null,
+            null,
+          ),
+        ]
+      : [];
+  } else {
+    flowLines = single('flows', choice.metric);
   }
-  for (const id of choice.types) {
-    const series = data.byTaskType.find((s) => s.taskTypeId === id);
-    const meta = types.find((t) => t.id === id);
-    const slot = slots.get(id);
-    if (!series || slot === undefined) continue;
-    const name = meta?.name ?? `Task type ${id}`;
-    lines.push(
-      line(
-        choice.metric,
-        `type-${id}`,
-        name,
-        TYPE_STYLES[slot % TYPE_STYLES.length],
-        series.points,
-        id,
-        name,
-        meta?.iconKey ?? null,
-      ),
-    );
-  }
-  return { defaultMode: false, lines, measures: lines.length > 0 ? [choice.metric] : [] };
+  const backlogLines = single('backlog', choice.bmetric);
+  return {
+    defaultMode,
+    flows: {
+      key: 'flows',
+      title: flowTitle,
+      lines: flowLines,
+      height: FLOWS_HEIGHT,
+      measureNote:
+        !defaultMode && choice.metric !== 'both' ? FLOW_CHOICE_LABEL[choice.metric] : null,
+    },
+    backlog: {
+      key: 'backlog',
+      title: BACKLOG_TITLE,
+      lines: backlogLines,
+      height: BACKLOG_HEIGHT,
+      measureNote: !defaultMode ? BACKLOG_CHOICE_LABEL[choice.bmetric] : null,
+    },
+  };
 }
 
-/** "Tasks created and completed per day" and friends. */
-export function chartHeading(measures: readonly Measure[]): string {
-  const unique = MEASURES.filter((m) => measures.includes(m));
-  if (unique.length === 0) return 'Tasks per day';
-  if (unique.length === 1) {
-    switch (unique[0]) {
-      case 'overdue':
-        return 'Overdue tasks at the end of each day';
-      case 'onTime':
-        return 'Tasks completed on time per day';
-      case 'late':
-        return 'Tasks completed late per day';
-      default:
-        return `Tasks ${MEASURE_INFO[unique[0]].heading} per day`;
+/** "Tasks created and completed per day" and friends (panel 1). */
+export function flowsHeading(metric: FlowChoice): string {
+  switch (metric) {
+    case 'both':
+      return 'Tasks created and completed per day';
+    case 'onTime':
+      return 'Tasks completed on time per day';
+    case 'late':
+      return 'Tasks completed late per day';
+    default:
+      return `Tasks ${MEASURE_INFO[metric].heading} per day`;
+  }
+}
+
+// ---- the axis
+
+export interface Scale {
+  max: number;
+  ticks: number[];
+}
+
+const NICE_STEPS = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+/** Round tick steps (times a power of ten) that read well on an axis. */
+const TICK_STEPS = [1, 2, 2.5, 5];
+export const MIN_AXIS_MAX = 4;
+
+/**
+ * The top of a count axis: the smallest of 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10 times a power of ten that holds the peak plus 5 percent
+ * headroom for the label; never below 4 (a flat zero line stays readable).
+ */
+export function niceMax(peak: number): number {
+  const target = Math.max(0, peak) * 1.05;
+  if (target <= MIN_AXIS_MAX) return MIN_AXIS_MAX;
+  const power = 10 ** Math.floor(Math.log10(target));
+  for (const step of NICE_STEPS) {
+    if (target <= step * power + 1e-9) return step * power;
+  }
+  return 10 * power;
+}
+
+/** The axis of a panel: its top and integer ticks from 0 (about four intervals, on round steps that divide the top). */
+export function niceScale(peak: number): Scale {
+  const max = niceMax(peak);
+  let best = 1;
+  let bestScore = Infinity;
+  const exp = Math.floor(Math.log10(max));
+  for (let p = Math.max(0, exp - 2); p <= exp; p++) {
+    for (const base of TICK_STEPS) {
+      const step = base * 10 ** p;
+      if (!Number.isInteger(step)) continue;
+      const count = max / step;
+      if (!Number.isInteger(count) || count < 2 || count > 6) continue;
+      const score = Math.abs(count - 4) + (count > 4 ? 0.1 : 0);
+      if (score < bestScore) {
+        best = step;
+        bestScore = score;
+      }
     }
   }
-  const words = unique.map((m) => MEASURE_INFO[m].heading);
-  return `Tasks ${words.slice(0, -1).join(', ')} and ${words[words.length - 1]} per day`;
+  const ticks: number[] = [];
+  for (let v = 0; v <= max; v += best) ticks.push(v);
+  return { max, ticks };
 }
 
 // ---- the legend
@@ -371,6 +623,11 @@ export interface TypeRow {
   total: number;
   /** Task Queue query behind the total. */
   query: string;
+}
+
+/** The measure behind the numbers of the compare list: the single measure of panel 1 (Created while two lines are shown). */
+export function totalMeasure(choice: TrendChoice): FlowMeasure {
+  return choice.metric === 'both' ? FIRST_SINGLE : choice.metric;
 }
 
 export function totalOf(type: DashboardTrendType, metric: Measure): number {

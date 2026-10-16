@@ -2,11 +2,12 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { TrendChart, niceMax } from './trend-chart';
-import { ALL_STYLE, ChartLine, MEASURE_STYLES, TYPE_STYLES } from './trend-model';
+import { TrendChart } from './trend-chart';
+import { ALL_STYLE, ChartLine, MEASURE_STYLES, PanelView, TYPE_STYLES } from './trend-model';
 
 function line(partial: Partial<ChartLine> & Pick<ChartLine, 'key' | 'name' | 'values'>): ChartLine {
   return {
+    panel: 'flows',
     tipName: null,
     valueWord: 'created',
     style: MEASURE_STYLES.created,
@@ -29,22 +30,36 @@ const COMPLETED = line({
   style: MEASURE_STYLES.completed,
 });
 
+const panel = (
+  key: 'flows' | 'backlog',
+  lines: readonly ChartLine[],
+  note: string | null = null,
+): PanelView => ({
+  key,
+  title: key === 'flows' ? 'Created and completed' : 'Backlog at end of day',
+  lines: [...lines],
+  height: key === 'flows' ? 320 : 200,
+  measureNote: note,
+});
+
 @Component({
   imports: [TrendChart],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<mf-trend-chart
-    heading="Tasks created and completed per day"
+    heading="Tasks over time"
     [dates]="dates()"
-    [lines]="lines()"
+    [panels]="panels()"
     [asTable]="asTable()"
-    [measureNote]="note()"
   />`,
 })
 class Host {
   dates = signal<readonly string[]>(DATES);
-  lines = signal<readonly ChartLine[]>([CREATED, COMPLETED]);
+  panels = signal<readonly PanelView[]>([panel('flows', [CREATED, COMPLETED])]);
   asTable = signal(false);
-  note = signal<string | null>(null);
+  /** Sets the lines of the (only) flows panel. */
+  setLines(lines: readonly ChartLine[], note: string | null = null) {
+    this.panels.set([panel('flows', lines, note)]);
+  }
 }
 
 const text = (e: Element | null) => (e?.textContent ?? '').replace(/\s+/g, ' ').trim();
@@ -73,10 +88,6 @@ describe('trend chart', () => {
     await fixture.whenStable();
   }
 
-  it('rounds the axis up to a readable top', () => {
-    expect([0, 1, 3, 7, 12, 40, 101, 4800].map(niceMax)).toEqual([1, 1, 5, 10, 20, 50, 200, 5000]);
-  });
-
   describe('default two-line chart', () => {
     beforeEach(() => open());
 
@@ -84,6 +95,7 @@ describe('trend chart', () => {
       const plot = el.querySelector('[data-plot]')!;
       expect(plot.getAttribute('aria-roledescription')).toBe('chart');
       expect(plot.getAttribute('aria-label')).toContain('Created 7 created, Completed 5 completed');
+      expect(el.querySelector('h4')!.textContent).toBe('Created and completed');
       expect(plot.getAttribute('tabindex')).toBe('0');
       const svg = plot.querySelector('svg.chart')!;
       expect(svg.getAttribute('aria-hidden')).toBe('true');
@@ -133,30 +145,32 @@ describe('trend chart', () => {
       expect(el.querySelector('[data-tip]')).toBeNull();
 
       // A pointer over the middle of the plot picks the middle day.
-      vi.spyOn(plot, 'getBoundingClientRect').mockReturnValue({
+      const panelPlot = el.querySelector<HTMLElement>('.panel-plot')!;
+      // The drawing is 640 px wide (the default without a measured size) and the axis labels take 34 px at the left and 14 at the right.
+      vi.spyOn(plot.querySelector('svg')!, 'getBoundingClientRect').mockReturnValue({
         left: 0,
-        width: 360,
+        width: 640,
         top: 0,
-        height: 190,
+        height: 320,
       } as DOMRect);
-      plot.dispatchEvent(
-        Object.assign(new Event('pointermove', { bubbles: true }), { clientX: 188 }),
+      panelPlot.dispatchEvent(
+        Object.assign(new Event('pointermove', { bubbles: true }), { clientX: 327 }),
       );
       fixture.detectChanges();
       expect(el.querySelector('[data-tip]')!.textContent).toContain('Fri, Oct 2');
 
       // The day is taken from the drawing itself: a drawing that sits to the right of the left edge of its box (offset 220 px) maps
       // the pointer over ITS middle (x = 220 + 180) to the middle day, not the pointer over the middle of the box.
-      plot.dispatchEvent(new Event('pointerleave'));
+      panelPlot.dispatchEvent(new Event('pointerleave'));
       fixture.detectChanges();
       vi.spyOn(plot.querySelector('svg')!, 'getBoundingClientRect').mockReturnValue({
         left: 220,
-        width: 360,
+        width: 640,
         top: 0,
-        height: 190,
+        height: 320,
       } as DOMRect);
-      plot.dispatchEvent(
-        Object.assign(new Event('pointermove', { bubbles: true }), { clientX: 400 }),
+      panelPlot.dispatchEvent(
+        Object.assign(new Event('pointermove', { bubbles: true }), { clientX: 547 }),
       );
       fixture.detectChanges();
       expect(el.querySelector('[data-tip]')!.textContent).toContain('Fri, Oct 2');
@@ -192,7 +206,7 @@ describe('trend chart', () => {
     });
 
     it('says what there is to draw when no line is visible', async () => {
-      await update((h) => h.lines.set([]));
+      await update((h) => h.setLines([]));
       expect(el.querySelector('[data-empty]')!.textContent).toContain('Select a line');
       expect(el.querySelector('[data-plot]')).toBeNull();
     });
@@ -229,8 +243,7 @@ describe('trend chart', () => {
     beforeEach(async () => {
       await open();
       await update((h) => {
-        h.lines.set([ALL, ALPHA, BETA]);
-        h.note.set('Created');
+        h.setLines([ALL, ALPHA, BETA], 'Created');
       });
     });
 
@@ -277,9 +290,10 @@ describe('trend chart', () => {
             .map((t) => Number(t.textContent))
             .filter((n) => !isNaN(n)),
         );
+      // Peak 8 (+5 percent) gives an axis to 10 in steps of 2; peak 2 gives the minimum axis of 4.
       expect(top()).toBe(10);
-      await update((h) => h.lines.set([BETA]));
-      expect(top()).toBe(2);
+      await update((h) => h.setLines([BETA]));
+      expect(top()).toBe(4);
     });
 
     it('has a table column per visible line with links that carry the task type', async () => {
@@ -325,7 +339,7 @@ describe('trend chart', () => {
     it('links Overdue to the open tasks due by that day (today: the queue overdue filter) and says what the links list', async () => {
       await open();
       await update((h) => {
-        h.lines.set([OVERDUE, LATE]);
+        h.setLines([OVERDUE, LATE]);
         h.asTable.set(true);
       });
       const rows = Array.from(el.querySelectorAll('tbody tr'));
@@ -368,9 +382,153 @@ describe('trend chart', () => {
       });
       await update((h) => {
         h.dates.set(dates);
-        h.lines.set([line({ key: 'a', name: 'A', values: dates.map((_, i) => i % 7) })]);
+        h.setLines([line({ key: 'a', name: 'A', values: dates.map((_, i) => i % 7) })]);
       });
       expect(el.querySelectorAll('path.marker').length).toBe(8);
+    });
+  });
+
+  describe('two panels', () => {
+    const OVERDUE = line({
+      key: 'backlog-all-overdue',
+      panel: 'backlog',
+      name: 'Overdue',
+      valueWord: 'overdue',
+      measure: 'overdue',
+      style: MEASURE_STYLES.overdue,
+      values: [120, 152, 140],
+      approximate: true,
+    });
+
+    beforeEach(async () => {
+      await open();
+      await update((h) =>
+        h.panels.set([panel('flows', [CREATED, COMPLETED]), panel('backlog', [OVERDUE])]),
+      );
+    });
+
+    it('gives each panel its own title and axis: the flows keep their scale next to a stock of 152', () => {
+      const panels = Array.from(el.querySelectorAll('[data-panel]'));
+      expect(panels.map((p) => p.getAttribute('data-panel'))).toEqual(['flows', 'backlog']);
+      expect(panels.map((p) => text(p.querySelector('h4')))).toEqual([
+        'Created and completed',
+        'Backlog at end of day',
+      ]);
+      const top = (p: Element) =>
+        Math.max(
+          ...Array.from(p.querySelectorAll('text.tick'))
+            .map((t) => Number(t.textContent))
+            .filter((n) => !isNaN(n)),
+        );
+      expect(top(panels[0])).toBe(6); // flows peak 5 (+5 percent) -> 6
+      expect(top(panels[1])).toBe(200); // overdue peak 152 -> 200
+      // Heights are the contract of the layout: 320 and 200 px.
+      const heights = panels.map(
+        (p) => p.querySelector('svg')!.getAttribute('viewBox')!.split(' ')[3],
+      );
+      expect(heights).toEqual(['320', '200']);
+    });
+
+    it('shares one x scale: the same day is at the same x in both panels', () => {
+      const flows = el.querySelector('[data-panel=flows] polyline')!.getAttribute('points')!;
+      const backlog = el.querySelector('[data-panel=backlog] polyline')!.getAttribute('points')!;
+      const xs = (pts: string) => pts.split(' ').map((p) => p.split(',')[0]);
+      expect(xs(backlog)).toEqual(xs(flows));
+      // Only the lower panel carries the day labels.
+      expect(el.querySelectorAll('[data-panel=flows] text.tick').length).toBe(
+        el.querySelectorAll('[data-panel=flows] line.grid').length,
+      );
+      expect(el.querySelectorAll('[data-panel=backlog] text.tick').length).toBeGreaterThan(
+        el.querySelectorAll('[data-panel=backlog] line.grid').length,
+      );
+    });
+
+    it('shows the cursor in both panels and lists the lines of both in the tooltip, grouped by panel', () => {
+      const plot = el.querySelector<HTMLElement>('[data-plot]')!;
+      plot.dispatchEvent(new FocusEvent('focus'));
+      plot.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      fixture.detectChanges();
+      expect(el.querySelectorAll('line.rule').length).toBe(2);
+      expect(el.querySelectorAll('[data-tip]').length).toBe(1);
+      const tip = text(el.querySelector('[data-tip]'));
+      expect(tip).toContain('Created and completed');
+      expect(tip).toContain('5 created');
+      expect(tip).toContain('Backlog at end of day');
+      expect(tip).toContain('152 overdue');
+      expect(text(el.querySelector('[data-readout]'))).toBe(
+        'Fri, Oct 2: 5 created, 4 completed; Backlog at end of day: 152 overdue.',
+      );
+      expect(plot.getAttribute('aria-label')).toContain(
+        'Backlog at end of day: Overdue 140 overdue now',
+      );
+    });
+
+    it('does not take the arrow keys of the controls inside the chart', () => {
+      const plot = el.querySelector<HTMLElement>('[data-plot]')!;
+      const heading = el.querySelector('h4')!;
+      heading.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      fixture.detectChanges();
+      expect(el.querySelector('[data-tip]')).toBeNull();
+      expect(plot).toBeTruthy();
+    });
+
+    it('has one table with a group header per panel and a column per line', async () => {
+      await update((h) => h.asTable.set(true));
+      expect(
+        Array.from(el.querySelectorAll('thead th[scope=colgroup]')).map((t) => text(t)),
+      ).toEqual(['Created and completed', 'Backlog at end of day']);
+      expect(Array.from(el.querySelectorAll('thead th[data-col]')).map((t) => text(t))).toEqual([
+        'Created',
+        'Completed',
+        'Overdue',
+      ]);
+      expect(el.querySelectorAll('tbody tr')[1].querySelectorAll('td').length).toBe(3);
+    });
+  });
+
+  describe('size', () => {
+    it('draws at the measured width in real pixels and redraws on resize', async () => {
+      let callback: ResizeObserverCallback = () => undefined;
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(cb: ResizeObserverCallback) {
+            callback = cb;
+          }
+          observe(): void {
+            /* the test drives the callback */
+          }
+          disconnect(): void {
+            /* nothing to release */
+          }
+        },
+      );
+      try {
+        await open();
+        const viewBox = () => el.querySelector('svg.chart')!.getAttribute('viewBox');
+        expect(viewBox()).toBe('0 0 640 320');
+        callback([{ contentRect: { width: 1002 } } as ResizeObserverEntry], {} as ResizeObserver);
+        fixture.detectChanges();
+        expect(viewBox()).toBe('0 0 1002 320');
+        // A tiny or zero width (a hidden tab) is ignored.
+        callback([{ contentRect: { width: 0 } } as ResizeObserverEntry], {} as ResizeObserver);
+        fixture.detectChanges();
+        expect(viewBox()).toBe('0 0 1002 320');
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+  });
+
+  describe('all zero', () => {
+    it('keeps a readable axis from 0 to 4 and says there is nothing to count', async () => {
+      await open();
+      await update((h) => h.setLines([line({ key: 'z', name: 'Created', values: [0, 0, 0] })]));
+      const ticks = Array.from(el.querySelectorAll('text.tick'))
+        .map((t) => text(t))
+        .filter((t) => /^\d+$/.test(t));
+      expect(ticks).toEqual(['0', '1', '2', '3', '4']);
+      expect(text(el.querySelector('[data-zero]'))).toBe('Nothing to count in this period.');
     });
   });
 });

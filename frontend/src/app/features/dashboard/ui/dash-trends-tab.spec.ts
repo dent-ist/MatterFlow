@@ -70,7 +70,17 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     await settle();
   }
   const url = () => TestBed.inject(Router).url;
-  const lines = () => Array.from(el.querySelectorAll('polyline.series:not(.partial)'));
+  const panelLines = (key: string) =>
+    Array.from(el.querySelectorAll(`[data-panel=${key}] polyline.series:not(.partial)`));
+  const choose = async (panel: string, value: string) => {
+    const radio = el.querySelector<HTMLInputElement>(
+      `[data-measure=${panel}] [data-measure-option="${value}"]`,
+    )!;
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change', { bubbles: true }));
+    await settle();
+  };
+  const live = () => text(el.querySelector('[data-trend-live]'));
   const stored = () => JSON.parse(localStorage.getItem(STORE_KEY(1)) ?? 'null');
 
   beforeEach(() => {
@@ -83,23 +93,34 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
   });
   afterEach(() => vi.restoreAllMocks());
 
-  it("starts as today's chart: All task types with Created and Completed, and every type listed unchecked", async () => {
+  it('starts with two panels: Created and Completed of All task types, and Overdue at the end of the day, and every type listed unchecked', async () => {
     await open();
     expect(getTrend).toHaveBeenCalledTimes(1);
     expect(getTrend).toHaveBeenCalledWith(30, undefined, undefined, undefined);
-    expect(text(el.querySelector('h3'))).toBe('Tasks created and completed per day');
-    expect(lines().length).toBe(2);
+    expect(text(el.querySelector('h3'))).toBe('Tasks over time');
+    expect(Array.from(el.querySelectorAll('[data-panel] h4')).map((h) => text(h))).toEqual([
+      'Tasks created and completed per day',
+      'Backlog at end of day',
+    ]);
+    expect(panelLines('flows').length).toBe(2);
+    expect(panelLines('backlog').length).toBe(1);
     expect(el.querySelector<HTMLInputElement>('[data-all]')!.checked).toBe(true);
     expect(
       Array.from(el.querySelectorAll<HTMLInputElement>('[data-type-box]')).every((b) => !b.checked),
     ).toBe(true);
     expect(text(el.querySelector('[data-legend="created"]'))).toBe('Created 9');
     expect(text(el.querySelector('[data-legend="completed"]'))).toBe('Completed 6');
-    // The measure selector waits for a task type.
-    expect(el.querySelector<HTMLInputElement>('[data-metric="created"]')!.disabled).toBe(true);
-    expect(text(el.querySelector('[data-show-disabled]'))).toContain(
-      'until you select a task type',
+    // No disabled control anywhere: the measure control is live, the list says what picking a type does.
+    expect(
+      el.querySelectorAll('input:disabled, select:disabled, [data-select-all]:disabled').length,
+    ).toBe(0);
+    expect(el.querySelector<HTMLInputElement>('[data-measure-option="both"]')!.checked).toBe(true);
+    expect(text(el.querySelector('[data-two-line]'))).toBe(
+      'Pick a task type and the chart switches to Created.',
     );
+    expect(el.querySelector('[data-measure-single="backlog"]')!.textContent).toBe('Overdue');
+    // The old Due dates group and Show radios are gone.
+    expect(el.querySelector('[data-group="due-dates"], [data-show], [data-due]')).toBeNull();
     // No search box for a short list.
     expect(el.querySelector('[data-search]')).toBeNull();
   });
@@ -124,69 +145,154 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     expect(el.querySelector('[data-total="11"]')!.tagName).toBe('SPAN');
   });
 
-  it('checking a task type switches to one metric for All and the type, reads it once, and puts the choice in the address and in storage', async () => {
+  it('checking a task type switches to its first single measure, hides All for scale, announces it, reads once, and puts the choice in the address and in storage', async () => {
     await open();
     await check(5);
     expect(getTrend).toHaveBeenLastCalledWith(30, [5], undefined, undefined);
-    expect(lines().length).toBe(2);
-    expect(text(el.querySelector('h3'))).toBe('Tasks created per day');
-    expect(url()).toBe('/trends?types=5');
-    expect(stored()).toEqual({ types: [5], showAll: true, metric: 'created', due: [] });
-    // The measure selector is live now, the Due dates are not.
-    expect(el.querySelector<HTMLInputElement>('[data-metric="created"]')!.disabled).toBe(false);
-    expect(el.querySelector<HTMLInputElement>('[data-due="overdue"]')!.disabled).toBe(true);
-    expect(el.querySelector('[data-due-disabled]')).not.toBeNull();
-    // The legend rows carry a sample of their line; All task types has its own total.
+    // All task types is hidden by default while types are compared (T2): one line per panel, the type's.
+    expect(panelLines('flows').length).toBe(1);
+    expect(panelLines('backlog').length).toBe(1);
+    expect(text(el.querySelector('[data-panel=flows] h4'))).toBe('Tasks created per day');
+    expect(url()).toBe('/trends?types=5&metric=created');
+    expect(stored()).toEqual({ types: [5], all: 'auto', metric: 'created', bmetric: 'overdue' });
+    expect(live()).toBe('Showing Created to compare task types.');
+    expect(el.querySelector<HTMLInputElement>('[data-all]')!.checked).toBe(false);
+    expect(text(el.querySelector('[data-hidden-for-scale]'))).toBe('(hidden for scale)');
+    expect(el.querySelector('[data-measure-option="both"]')).toBeNull();
+    // No disabled control: the two-line hint is replaced by the total's meaning.
+    expect(el.querySelector('[data-two-line]')).toBeNull();
+    expect(el.querySelectorAll('input:disabled, select:disabled').length).toBe(0);
+    // The list rows carry a sample of their line; All task types has its own total.
     expect(box(5).closest('.row')!.querySelector('mf-trend-sample')).not.toBeNull();
     expect(text(el.querySelector('[data-total="all"]'))).toBe('9');
+
+    // Ticking All brings it back and the choice sticks in the address (all=1).
+    el.querySelector<HTMLInputElement>('[data-all]')!.click();
+    await settle();
+    expect(panelLines('flows').length).toBe(2);
+    expect(url()).toBe('/trends?types=5&metric=created&all=1');
 
     // Another type needs one more read; unchecking needs none.
     await check(7);
     expect(getTrend).toHaveBeenLastCalledWith(30, [5, 7], undefined, undefined);
-    expect(url()).toBe('/trends?types=5,7');
-    expect(lines().length).toBe(3);
+    expect(url()).toBe('/trends?types=5,7&metric=created&all=1');
+    expect(panelLines('flows').length).toBe(3);
     const calls = getTrend.mock.calls.length;
     await check(7);
     expect(getTrend.mock.calls.length).toBe(calls);
-    expect(lines().length).toBe(2);
-    expect(url()).toBe('/trends?types=5');
+    expect(panelLines('flows').length).toBe(2);
+  });
+
+  it('three types for the first time: All is hidden and re-ticking it keeps it after a reload of the address', async () => {
+    await open();
+    await check(5);
+    await check(7);
+    await check(9);
+    expect(panelLines('flows').length).toBe(3);
+    el.querySelector<HTMLInputElement>('[data-all]')!.click();
+    await settle();
+    expect(panelLines('flows').length).toBe(4);
+    const address = url();
+    expect(address).toContain('all=1');
+    TestBed.resetTestingModule();
+    localStorage.clear();
+    await open(address);
+    expect(panelLines('flows').length).toBe(4);
+    expect(el.querySelector<HTMLInputElement>('[data-all]')!.checked).toBe(true);
   });
 
   it('keeps the colour of a type while it stays checked', async () => {
     await open();
     await check(5);
     await check(7);
-    const colour = () =>
-      Array.from(el.querySelectorAll('polyline.series:not(.partial)')).map((p) =>
-        p.getAttribute('stroke'),
-      );
+    const colour = () => panelLines('flows').map((p) => p.getAttribute('stroke'));
     const before = colour();
     await check(5);
     const after = colour();
-    expect(after[1]).toBe(before[2]);
+    expect(after[0]).toBe(before[1]);
   });
 
-  it('switches the metric for every visible line without another read and keeps it in the address', async () => {
+  it('the segmented control switches the measure of a panel without another read and keeps it in the address', async () => {
     await open();
+    await choose('flows', 'late');
+    expect(getTrend).toHaveBeenCalledTimes(1);
+    expect(panelLines('flows').length).toBe(1);
+    expect(text(el.querySelector('[data-panel=flows] h4'))).toBe('Tasks completed late per day');
+    expect(url()).toBe('/trends?metric=late');
+    // Back to the two-line view: the default is not written.
+    await choose('flows', 'both');
+    expect(url()).toBe('/trends');
+    expect(panelLines('flows').length).toBe(2);
+
+    // With a type the numbers on the rows follow the measure and link to the queue; types sort by it.
     await check(5);
-    const calls = getTrend.mock.calls.length;
-    const radio = el.querySelector<HTMLInputElement>('[data-metric="overdue"]')!;
-    radio.checked = true;
-    radio.dispatchEvent(new Event('change', { bubbles: true }));
-    await settle();
-    expect(getTrend.mock.calls.length).toBe(calls);
-    expect(text(el.querySelector('h3'))).toBe('Overdue tasks at the end of each day');
-    expect(url()).toBe('/trends?types=5&metric=overdue');
-    // The numbers on the rows follow the metric: overdue now, linking to the queue's overdue filter for that type.
-    expect(text(el.querySelector('[data-total="5"]'))).toBe('2');
+    await choose('flows', 'completed');
+    expect(url()).toBe('/trends?types=5&metric=completed');
+    expect(text(el.querySelector('[data-total="5"]'))).toBe('4');
     expect(el.querySelector('[data-total="5"]')!.getAttribute('href')).toContain(
-      'overdue=true&type=5',
+      'status=COMPLETED',
     );
-    expect(text(el.querySelector('[data-show] + .hint'))).toContain('Overdue now');
-    // Types sort by the shown metric.
     expect(Array.from(el.querySelectorAll('[data-type] .name')).map((n) => text(n))[0]).toBe(
       'Alpha',
     );
+  });
+
+  it('is never a dead end: the control is a radiogroup and a select, and a type switches a two-line measure', async () => {
+    await open();
+    const group = el.querySelector('[data-measure=flows]')!;
+    expect(group.getAttribute('role')).toBe('radiogroup');
+    expect(Array.from(group.querySelectorAll('label')).map((l) => text(l))).toEqual([
+      'Created and completed',
+      'Created',
+      'Completed',
+      'On time',
+      'Completed late',
+    ]);
+    expect(el.querySelector('[data-measure-select=flows]')).not.toBeNull();
+    // The select (below 600 px) works the same.
+    const select = el.querySelector<HTMLSelectElement>('[data-measure-select=flows]')!;
+    select.value = 'onTime';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    await settle();
+    expect(url()).toBe('/trends?metric=ontime');
+    await choose('flows', 'both');
+    await check(5);
+    expect(el.querySelector<HTMLInputElement>('[data-measure-option="created"]')!.checked).toBe(
+      true,
+    );
+  });
+
+  it('hides and shows the backlog panel, remembered in the browser but not in the address', async () => {
+    await open();
+    const toggle = () => el.querySelector<HTMLButtonElement>('[data-backlog-toggle]')!;
+    expect(text(toggle())).toBe('Hide backlog');
+    toggle().click();
+    await settle();
+    expect(el.querySelector('[data-panel=backlog]')).toBeNull();
+    expect(text(toggle())).toBe('Show backlog');
+    expect(url()).toBe('/trends');
+    expect(localStorage.getItem('mf.dashboard.trends.backlog.v1.1')).toBe('hidden');
+    TestBed.resetTestingModule();
+    await open('/trends');
+    expect(el.querySelector('[data-panel=backlog]')).toBeNull();
+    // A legacy address that asks for Overdue shows the panel again.
+    TestBed.resetTestingModule();
+    await open('/trends?due=overdue');
+    expect(el.querySelector('[data-panel=backlog]')).not.toBeNull();
+  });
+
+  it('opens a legacy address: due=overdue,ontime is Overdue in the backlog panel and On time as the flow measure', async () => {
+    await open('/trends?due=overdue,ontime');
+    expect(el.querySelector<HTMLInputElement>('[data-measure-option="onTime"]')!.checked).toBe(
+      true,
+    );
+    expect(panelLines('flows').length).toBe(1);
+    expect(panelLines('backlog').length).toBe(1);
+    // metric=overdue with types: the types are compared in the backlog panel.
+    TestBed.resetTestingModule();
+    await open('/trends?types=5,7&metric=overdue');
+    expect(panelLines('backlog').length).toBe(2);
+    expect(panelLines('flows').length).toBe(2);
   });
 
   it('refuses a ninth task type with a polite inline message and no read', async () => {
@@ -195,7 +301,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     // Search appears above eight task types.
     expect(el.querySelector('[data-search]')).not.toBeNull();
     for (let i = 0; i < 8; i++) await check(100 + i);
-    expect(el.querySelectorAll('polyline.series:not(.partial)').length).toBe(9);
+    expect(panelLines('flows').length).toBe(8);
     const calls = getTrend.mock.calls.length;
     await check(108);
     expect(box(108).checked).toBe(false);
@@ -226,7 +332,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     await settle();
     expect(el.querySelectorAll<HTMLInputElement>('[data-type-box]:checked').length).toBe(0);
     expect(url()).toBe('/trends');
-    expect(lines().length).toBe(2);
+    expect(panelLines('flows').length).toBe(2);
   });
 
   it('searches the task types by name', async () => {
@@ -255,36 +361,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     expect(el.querySelector('[data-empty]')!.textContent).toContain('Select a line');
     expect(el.querySelector('[data-legend="created"]')).toBeNull();
     await check(5);
-    expect(lines().length).toBe(1);
-  });
-
-  it('adds Overdue, On time and Completed late of All task types to the default chart from the Due dates group', async () => {
-    await open();
-    expect(text(el.querySelector('[data-group="due-dates"] h4'))).toBe('Due dates');
-    expect(text(el.querySelector('[data-group="due-dates"] .hint'))).toContain(
-      "Uses each task's current due date",
-    );
-    const tick = async (m: string) => {
-      const b = el.querySelector<HTMLInputElement>(`[data-due="${m}"]`)!;
-      b.checked = true;
-      b.dispatchEvent(new Event('change', { bubbles: true }));
-      await settle();
-    };
-    await tick('overdue');
-    await tick('onTime');
-    expect(lines().length).toBe(4);
-    expect(url()).toBe('/trends?due=overdue,ontime');
-    expect(text(el.querySelector('h3'))).toBe(
-      'Tasks created, completed, overdue and on time per day',
-    );
-    expect(stored().due).toEqual(['overdue', 'onTime']);
-    // Overdue now, with a link to the queue's overdue filter.
-    expect(el.querySelector('[data-legend="overdue"]')!.getAttribute('href')).toContain(
-      'overdue=true',
-    );
-    expect(text(el.querySelector('[data-legend="overdue"]'))).toBe('3');
-    // No data request is needed: the lines come with the first answer.
-    expect(getTrend).toHaveBeenCalledTimes(1);
+    expect(panelLines('flows').length).toBe(1);
   });
 
   it('lists the values of every visible line for a day in the tooltip and the table has a column per line', async () => {
@@ -295,18 +372,24 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     plot.dispatchEvent(new FocusEvent('focus'));
     harness.detectChanges();
     const tip = text(el.querySelector('[data-tip]'));
-    expect(tip).toContain('All task types 5');
+    // All task types is hidden for scale; both panels list their lines for the day, grouped.
+    expect(tip).not.toContain('All task types');
     expect(tip).toContain('Alpha 3');
     expect(tip).toContain('Beta 2');
-    el.querySelector<HTMLButtonElement>('.toggle')!.click();
+    expect(tip).toContain('Backlog at end of day');
+    expect(text(el.querySelector('[data-readout]'))).toContain('Backlog at end of day: Alpha');
+    el.querySelector<HTMLButtonElement>('[data-backlog-toggle] ~ .toggle')!.click();
     harness.detectChanges();
-    expect(Array.from(el.querySelectorAll('thead th')).map((t) => text(t))).toEqual([
-      'Day',
-      'All task types',
+    expect(Array.from(el.querySelectorAll('thead th[scope=colgroup]')).map((t) => text(t))).toEqual(
+      ['Tasks created per day', 'Backlog at end of day'],
+    );
+    expect(Array.from(el.querySelectorAll('thead th[data-col]')).map((t) => text(t))).toEqual([
+      'Alpha',
+      'Beta',
       'Alpha',
       'Beta',
     ]);
-    expect(el.querySelectorAll('tbody tr')[0].querySelectorAll('a')[1].getAttribute('href')).toBe(
+    expect(el.querySelectorAll('tbody tr')[0].querySelectorAll('a')[0].getAttribute('href')).toBe(
       '/tasks?createdFrom=2026-10-12&createdTo=2026-10-12&type=5',
     );
   });
@@ -315,22 +398,24 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     it('a shared address names the view and wins over what this browser remembers', async () => {
       localStorage.setItem(
         STORE_KEY(1),
-        JSON.stringify({ types: [5], showAll: true, metric: 'created', due: [] }),
+        JSON.stringify({ types: [5], all: 'auto', metric: 'created', bmetric: 'overdue' }),
       );
       await open('/trends?types=7,5&metric=completed&all=0');
       expect(getTrend).toHaveBeenCalledWith(30, [7, 5], undefined, undefined);
       expect(box(7).checked).toBe(true);
       expect(box(5).checked).toBe(true);
       expect(el.querySelector<HTMLInputElement>('[data-all]')!.checked).toBe(false);
-      expect(el.querySelector<HTMLInputElement>('[data-metric="completed"]')!.checked).toBe(true);
-      expect(lines().length).toBe(2);
-      expect(text(el.querySelector('h3'))).toBe('Tasks completed per day');
+      expect(el.querySelector<HTMLInputElement>('[data-measure-option="completed"]')!.checked).toBe(
+        true,
+      );
+      expect(panelLines('flows').length).toBe(2);
+      expect(text(el.querySelector('[data-panel=flows] h4'))).toBe('Tasks completed per day');
     });
 
     it('without parameters the remembered view is restored and the address completed', async () => {
       localStorage.setItem(
         STORE_KEY(1),
-        JSON.stringify({ types: [7], showAll: true, metric: 'late', due: [] }),
+        JSON.stringify({ types: [7], all: 'auto', metric: 'late', bmetric: 'overdue' }),
       );
       await open('/trends');
       expect(getTrend).toHaveBeenCalledWith(30, [7], undefined, undefined);
@@ -353,7 +438,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     it('ignores a broken stored value and works when browser storage is blocked', async () => {
       localStorage.setItem(STORE_KEY(1), '{nope');
       await open();
-      expect(lines().length).toBe(2);
+      expect(panelLines('flows').length).toBe(2);
       TestBed.resetTestingModule();
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
         throw new Error('blocked');
@@ -364,7 +449,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
       await open();
       await check(5);
       expect(box(5).checked).toBe(true);
-      expect(url()).toBe('/trends?types=5');
+      expect(url()).toBe('/trends?types=5&metric=created');
     });
   });
 
@@ -385,13 +470,13 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     it('drops a remembered task type the server does not know and shows the rest', async () => {
       localStorage.setItem(
         STORE_KEY(1),
-        JSON.stringify({ types: [999], showAll: true, metric: 'created', due: [] }),
+        JSON.stringify({ types: [999], all: 'auto', metric: 'created', bmetric: 'overdue' }),
       );
       await open('/trends', (_d, ids) =>
         ids && ids.includes(999) ? throwError(() => ({ status: 400 })) : of(aTrend([], extra)),
       );
       expect(getTrend).toHaveBeenCalledTimes(2);
-      expect(lines().length).toBe(2);
+      expect(panelLines('flows').length).toBe(2);
       expect(url()).toBe('/trends');
       expect(text(el.querySelector('[data-trend-live]'))).toContain('no longer exists');
     });
@@ -399,11 +484,11 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     it('removes a checked inactive type that has no tasks once the period no longer lists it', async () => {
       localStorage.setItem(
         STORE_KEY(1),
-        JSON.stringify({ types: [5, 77], showAll: true, metric: 'created', due: [] }),
+        JSON.stringify({ types: [5, 77], all: 'auto', metric: 'created', bmetric: 'overdue' }),
       );
       await open('/trends');
       expect(box(5).checked).toBe(true);
-      expect(url()).toBe('/trends?types=5');
+      expect(url()).toBe('/trends?types=5&metric=created');
       expect(text(el.querySelector('[data-trend-live]'))).toContain('Task type 77');
     });
 
@@ -415,7 +500,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
       el.querySelector<HTMLButtonElement>('[data-trend-retry]')!.click();
       await settle();
       expect(el.querySelector('[data-trend-error]')).toBeNull();
-      expect(lines().length).toBe(2);
+      expect(panelLines('flows').length).toBe(2);
     });
   });
 });

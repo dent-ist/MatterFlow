@@ -17,21 +17,30 @@ import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PeriodKey, periodDays } from '../dashboard-period';
 import { TrendChart } from './trend-chart';
 import { TrendLegend } from './trend-legend';
+import { MeasureOption, TrendMeasure } from './trend-measure';
 import {
+  BACKLOG_CHOICE_LABEL,
+  BacklogChoice,
   DEFAULT_CHOICE,
-  DueMeasure,
+  FLOW_CHOICE_LABEL,
+  FlowChoice,
   LIMIT_MESSAGE,
   MAX_TYPES,
-  MEASURE_INFO,
-  Measure,
+  PanelView,
   TrendChoice,
+  backlogOptions,
   buildView,
-  chartHeading,
   choiceFromParams,
   choiceToParams,
+  flowOptions,
   freeSlot,
   hasTrendParams,
+  isFlowChoice,
+  namesBacklog,
+  normalizeChoice,
   sameChoice,
+  toggleAllMode,
+  totalMeasure,
   typeRows,
 } from './trend-model';
 import { TrendPrefs } from './trend-prefs';
@@ -41,15 +50,17 @@ type LoadState = 'loading' | 'ready' | 'error';
 let nextId = 0;
 
 /**
- * Dashboard > Trends tab: the daily lines of the whole department ("All task types") and of up to eight task types, with the Overdue, On
- * time and Completed late lines of the Due dates group. The legend is the control (see `mf-trend-legend`). The choices live in the address
- * (`types`, `metric`, `all`, `due`) so a link shares the view, and are remembered per user in this browser. The data is one request that
+ * Dashboard > Trends tab: the daily lines of the whole department ("All task types") and of up to eight task types in two stacked panels
+ * that share one x scale: flows (Created, Completed, On time, Completed late; 320 px) and backlog (Overdue at the end of the day; 200 px,
+ * can be hidden). Each panel has its own segmented measure control; "Compare task types" is a list next to the chart that never disables
+ * (picking a type turns a two-line measure into its first single measure and says so). The choices live in the address (`types`, `metric`,
+ * `bmetric`, `all`; legacy `due`) so a link shares the view, and are remembered per user in this browser. The data is one request that
  * names the checked task types; checking a type already read needs no request. The period and the Refresh of the page drive it.
  * Operational counts only: no per-person figures.
  */
 @Component({
   selector: 'mf-dash-trends-tab',
-  imports: [TrendChart, TrendLegend, ErrorReference],
+  imports: [TrendChart, TrendLegend, TrendMeasure, ErrorReference],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section
@@ -58,18 +69,31 @@ let nextId = 0;
       [attr.aria-busy]="busy() ? 'true' : null"
     >
       <header>
-        <h3 [id]="id + '-h'">{{ heading() }}</h3>
-        @if (view().lines.length > 0 && !noActivity()) {
-          <button
-            type="button"
-            class="toggle"
-            [attr.aria-pressed]="asTable()"
-            (click)="toggleTable()"
-          >
-            {{ asTable() ? 'View as chart' : 'View as table'
-            }}<span class="sr-only"> for {{ heading() }}</span>
-          </button>
-        }
+        <h3 [id]="id + '-h'">{{ heading }}</h3>
+        <span class="tools">
+          @if (data() && !noActivity()) {
+            <button
+              type="button"
+              class="toggle"
+              data-backlog-toggle
+              [attr.aria-pressed]="backlogShown()"
+              (click)="toggleBacklog()"
+            >
+              {{ backlogShown() ? 'Hide backlog' : 'Show backlog' }}
+            </button>
+          }
+          @if (hasLines() && !noActivity()) {
+            <button
+              type="button"
+              class="toggle"
+              [attr.aria-pressed]="asTable()"
+              (click)="toggleTable()"
+            >
+              {{ asTable() ? 'View as chart' : 'View as table'
+              }}<span class="sr-only"> for {{ heading }}</span>
+            </button>
+          }
+        </span>
       </header>
       @if (caption(); as c) {
         <p class="note">{{ c }}</p>
@@ -84,14 +108,16 @@ let nextId = 0;
       } @else if (data(); as d) {
         <div class="layout">
           <div class="main">
-            <mf-trend-chart
-              [heading]="heading()"
-              [dates]="dates()"
-              [lines]="noActivity() ? [] : view().lines"
-              [asTable]="asTable()"
-              [measureNote]="measureNote()"
-              [emptyText]="emptyText()"
-            />
+            <div class="sticky">
+              <mf-trend-chart
+                [heading]="heading"
+                [dates]="dates()"
+                [panels]="panels()"
+                [asTable]="asTable()"
+                [emptyText]="emptyText()"
+                [controls]="measureTpl"
+              />
+            </div>
           </div>
           <mf-trend-legend
             class="side"
@@ -101,8 +127,6 @@ let nextId = 0;
             [message]="message()"
             (allChange)="toggleAll()"
             (typeChange)="toggleType($event)"
-            (dueChange)="toggleDue($event)"
-            (metricChange)="setMetric($event)"
             (selectTop)="selectTop()"
             (clear)="clearTypes()"
             (limit)="message.set(limitMessage)"
@@ -111,6 +135,25 @@ let nextId = 0;
       } @else {
         <p class="note" role="status" data-trend-loading>Loading the trend.</p>
       }
+      <ng-template #measureTpl let-key>
+        @if (key === 'flows') {
+          <mf-trend-measure
+            panel="flows"
+            label="Measure of the created and completed panel"
+            [options]="flowChoices()"
+            [value]="choice().metric"
+            (valueChange)="setMetric($event)"
+          />
+        } @else {
+          <mf-trend-measure
+            panel="backlog"
+            label="Measure of the backlog panel"
+            [options]="backlogChoices"
+            [value]="choice().bmetric"
+            (valueChange)="setBacklogMetric($event)"
+          />
+        }
+      </ng-template>
       <p class="sr-only" role="status" aria-live="polite" data-trend-live>{{ live() }}</p>
     </section>
   `,
@@ -136,6 +179,12 @@ let nextId = 0;
       margin: 0;
       font-size: var(--mf-fs-lg);
     }
+    .tools {
+      display: inline-flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: var(--mf-s1) var(--mf-s4);
+    }
     .toggle {
       background: none;
       border: 0;
@@ -153,27 +202,39 @@ let nextId = 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
+    /* Chart column and control panel side by side from 1000 px: the panel is 300 to 340 px, a fixed 360 px from 1600 px (the chart gets the
+       rest). The chart column is as tall as the panel and the chart sticks under the tab row while the panel scrolls, so the chart stays
+       in view while types are ticked. The sticky offset is the shared variable of the page header (--mf-dash-sticky-top) plus 16 px. */
     .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 21rem;
+      grid-template-columns: minmax(0, 1fr);
       gap: var(--mf-s5);
-      align-items: start;
+      align-items: stretch;
     }
     .main {
       min-width: 0;
     }
     .side {
-      padding-left: var(--mf-s4);
-      border-left: 1px solid var(--mf-border);
+      padding: var(--mf-s4) 0 0;
+      border-top: 1px solid var(--mf-border);
     }
-    @media (max-width: 1000px) {
+    @media (min-width: 1000px) {
       .layout {
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr) clamp(300px, 24vw, 340px);
+      }
+      .sticky {
+        position: sticky;
+        top: calc(var(--mf-dash-sticky-top, 0px) + var(--mf-s4));
       }
       .side {
-        padding: var(--mf-s4) 0 0;
-        border-left: 0;
-        border-top: 1px solid var(--mf-border);
+        padding: 0 0 0 var(--mf-s4);
+        border-top: 0;
+        border-left: 1px solid var(--mf-border);
+      }
+    }
+    @media (min-width: 1600px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr) 360px;
       }
     }
     .alert {
@@ -230,6 +291,14 @@ export class DashTrendsTab {
 
   private readonly days = computed(() => periodDays(this.period(), this.clock.now(), this.zone));
 
+  protected readonly heading = 'Tasks over time';
+  protected readonly backlogChoices: readonly MeasureOption<BacklogChoice>[] = backlogOptions().map(
+    (value) => ({ value, label: BACKLOG_CHOICE_LABEL[value] }),
+  );
+  /** The user hid the backlog panel (remembered, not in the address). */
+  protected readonly backlogHidden = signal(false);
+  protected readonly backlogShown = computed(() => !this.backlogHidden());
+
   protected readonly view = computed(() => {
     const d = this.data();
     return buildView(this.choice(), d, this.slots(), d?.types ?? []);
@@ -244,20 +313,21 @@ export class DashTrendsTab {
       d.all.every((p) => p.created + p.completed + p.overdue + p.onTime + p.late === 0)
     );
   });
-  protected readonly heading = computed(() => {
-    const view = this.view();
-    return view.defaultMode &&
-      !view.lines.some((l) => l.measure !== 'created' && l.measure !== 'completed')
-      ? 'Tasks created and completed per day'
-      : chartHeading(view.measures);
+  /** The panels the chart draws: flows, and backlog unless hidden. */
+  protected readonly panels = computed<PanelView[]>(() => {
+    const v = this.view();
+    const none = this.noActivity();
+    const strip = (p: PanelView): PanelView => (none ? { ...p, lines: [] } : p);
+    return this.backlogHidden() ? [strip(v.flows)] : [strip(v.flows), strip(v.backlog)];
   });
-  protected readonly measureNote = computed(() =>
-    this.choice().types.length > 0 ? MEASURE_INFO[this.choice().metric].label : null,
+  protected readonly hasLines = computed(() => this.panels().some((p) => p.lines.length > 0));
+  protected readonly flowChoices = computed<MeasureOption<FlowChoice>[]>(() =>
+    flowOptions(this.choice()).map((value) => ({ value, label: FLOW_CHOICE_LABEL[value] })),
   );
   protected readonly emptyText = computed(() =>
     this.noActivity()
       ? 'No tasks were created or completed in this period.'
-      : 'Select a line in the legend to draw it.',
+      : 'Select a line in the list to draw it.',
   );
 
   private readonly params = toSignal(this.route.queryParamMap, {
@@ -267,6 +337,8 @@ export class DashTrendsTab {
   constructor() {
     // The address wins over what this browser remembers (a shared link), and the address is completed from what is remembered.
     const snapshot = this.route.snapshot.queryParamMap;
+    // An address that asks for the backlog (legacy `due=overdue`, `metric=overdue`, `bmetric=`) shows it even if the user hid it.
+    this.backlogHidden.set(this.prefs.backlogHidden() && !namesBacklog(snapshot));
     if (hasTrendParams(snapshot)) {
       this.applyChoice(choiceFromParams(snapshot), false);
     } else {
@@ -299,7 +371,7 @@ export class DashTrendsTab {
 
   protected toggleAll(): void {
     this.message.set('');
-    this.applyChoice({ ...this.choice(), showAll: !this.choice().showAll }, true);
+    this.applyChoice(toggleAllMode(this.choice()), true);
   }
 
   protected toggleType(id: number): void {
@@ -315,17 +387,24 @@ export class DashTrendsTab {
     }
   }
 
-  protected toggleDue(m: DueMeasure): void {
-    const c = this.choice();
-    const due = c.due.includes(m) ? c.due.filter((x) => x !== m) : [...c.due, m];
-    this.applyChoice(
-      { ...c, due: (['overdue', 'onTime', 'late'] as const).filter((x) => due.includes(x)) },
-      true,
-    );
+  protected setMetric(value: string): void {
+    if (isFlowChoice(value) && value !== this.choice().metric) {
+      this.applyChoice({ ...this.choice(), metric: value }, true);
+    }
   }
 
-  protected setMetric(metric: Measure): void {
-    if (metric !== this.choice().metric) this.applyChoice({ ...this.choice(), metric }, true);
+  protected setBacklogMetric(value: string): void {
+    const bmetric = backlogOptions().find((m) => m === value);
+    if (bmetric && bmetric !== this.choice().bmetric) {
+      this.applyChoice({ ...this.choice(), bmetric }, true);
+    }
+  }
+
+  protected toggleBacklog(): void {
+    const hidden = !this.backlogHidden();
+    this.backlogHidden.set(hidden);
+    this.prefs.saveBacklogHidden(hidden);
+    this.live.set(hidden ? 'Backlog hidden.' : 'Backlog shown.');
   }
 
   /** Select all: the task types with the highest totals for the shown measure, up to the limit. */
@@ -333,7 +412,7 @@ export class DashTrendsTab {
     const d = this.data();
     if (!d) return;
     const c = this.choice();
-    const rows = typeRows(d.types, c.metric);
+    const rows = typeRows(d.types, totalMeasure(c));
     const ids = rows.slice(0, MAX_TYPES).map((r) => r.id);
     this.message.set(
       rows.length > MAX_TYPES
@@ -353,7 +432,9 @@ export class DashTrendsTab {
   }
 
   /** Makes the choices current: keeps the colours of types that stay checked, remembers them and (for a user's change) puts them in the address. */
-  private applyChoice(next: TrendChoice, userChange: boolean): void {
+  private applyChoice(wanted: TrendChoice, userChange: boolean): void {
+    const { choice: next, announcement } = normalizeChoice(wanted, this.choice());
+    if (announcement && userChange) this.live.set(announcement);
     const slots = new Map<number, number>();
     for (const id of next.types) {
       const kept = this.slots().get(id);

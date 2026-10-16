@@ -11,17 +11,25 @@ import {
   MEASURE_STYLES,
   TYPE_STYLES,
   TrendChoice,
+  allVisible,
+  backlogOptions,
   buildView,
-  chartHeading,
   choiceFromParams,
   choiceFromStored,
   choiceToParams,
   cleanTypeIds,
   dayQuery,
+  flowOptions,
+  flowsHeading,
   freeSlot,
   hasTrendParams,
   linkNote,
+  namesBacklog,
+  niceMax,
+  niceScale,
+  normalizeChoice,
   sameChoice,
+  toggleAllMode,
   typeRows,
 } from './trend-model';
 
@@ -63,20 +71,48 @@ const DATA = {
 const params = (o: Record<string, string>) => convertToParamMap(o);
 
 describe('trend model', () => {
+  describe('axis', () => {
+    // [peak, expected top, expected ticks]
+    const table: [number, number, number[]][] = [
+      [0, 4, [0, 1, 2, 3, 4]],
+      [1, 4, [0, 1, 2, 3, 4]],
+      [3, 4, [0, 1, 2, 3, 4]],
+      [7, 8, [0, 2, 4, 6, 8]],
+      [21, 25, [0, 5, 10, 15, 20, 25]],
+      [99, 150, [0, 50, 100, 150]],
+      [100, 150, [0, 50, 100, 150]],
+      [101, 150, [0, 50, 100, 150]],
+      [152, 200, [0, 50, 100, 150, 200]],
+      [1234, 1500, [0, 500, 1000, 1500]],
+    ];
+    it.each(table)('peak %d gives top %d', (peak, max, ticks) => {
+      expect(niceMax(peak)).toBe(max);
+      expect(niceScale(peak)).toEqual({ max, ticks });
+    });
+
+    it('peak 21 gives max 25, not 50, and every tick is a whole number on a round step', () => {
+      expect(niceMax(21)).toBe(25);
+      for (let peak = 0; peak <= 3000; peak += 7) {
+        const { max, ticks } = niceScale(peak);
+        expect(max).toBeGreaterThanOrEqual(Math.max(4, peak));
+        expect(ticks[0]).toBe(0);
+        expect(ticks[ticks.length - 1]).toBe(max);
+        expect(ticks.length).toBeGreaterThanOrEqual(3);
+        expect(ticks.length).toBeLessThanOrEqual(7);
+        expect(ticks.every(Number.isInteger)).toBe(true);
+      }
+    });
+  });
+
   describe('address and storage', () => {
     it('reads the choices from the address and falls back for anything invalid', () => {
-      const c = choiceFromParams(
-        params({ types: '3,x,3,-1,9', metric: 'overdue', all: '0', due: 'overdue,late,bogus' }),
-      );
-      expect(c).toEqual({
-        types: [3, 9],
-        showAll: false,
-        metric: 'overdue',
-        due: ['overdue', 'late'],
-      });
+      const c = choiceFromParams(params({ types: '3,x,3,-1,9', metric: 'late', all: '1' }));
+      expect(c).toEqual({ types: [3, 9], all: 'on', metric: 'late', bmetric: 'overdue' });
       expect(choiceFromParams(params({ metric: 'nope' }))).toEqual(DEFAULT_CHOICE);
+      expect(choiceFromParams(params({ all: '0' })).all).toBe('off');
       expect(hasTrendParams(params({ tab: 'trends' }))).toBe(false);
       expect(hasTrendParams(params({ types: '1' }))).toBe(true);
+      expect(hasTrendParams(params({ bmetric: 'overdue' }))).toBe(true);
     });
 
     it('keeps at most eight ids and writes only what differs from the default', () => {
@@ -85,122 +121,179 @@ describe('trend model', () => {
       expect(choiceToParams(DEFAULT_CHOICE)).toEqual({
         types: null,
         metric: null,
+        bmetric: null,
         all: null,
         due: null,
       });
-      const c: TrendChoice = { types: [1, 2], showAll: false, metric: 'onTime', due: ['onTime'] };
+      const c: TrendChoice = { types: [1, 2], all: 'off', metric: 'onTime', bmetric: 'overdue' };
       expect(choiceToParams(c)).toEqual({
         types: '1,2',
-        metric: 'onTime',
+        metric: 'ontime',
+        bmetric: null,
         all: '0',
-        due: 'ontime',
+        due: null,
       });
       expect(choiceFromParams(params(choiceToParams(c) as Record<string, string>))).toEqual(c);
+      const explicit: TrendChoice = { ...c, all: 'on', metric: 'completed' };
+      expect(choiceToParams(explicit)['all']).toBe('1');
+      expect(choiceFromParams(params(choiceToParams(explicit) as Record<string, string>))).toEqual(
+        explicit,
+      );
     });
 
-    it('reads stored choices defensively', () => {
+    it('maps the legacy parameters: due=ontime / late are flow measures, metric=overdue and due=overdue are the backlog', () => {
+      expect(choiceFromParams(params({ due: 'overdue,ontime' })).metric).toBe('onTime');
+      expect(choiceFromParams(params({ due: 'late' })).metric).toBe('late');
+      expect(choiceFromParams(params({ due: 'overdue' }))).toEqual(DEFAULT_CHOICE);
+      // metric=overdue with types: the types are compared in the backlog panel (Overdue); the flow panel gets its first single measure.
+      const legacy = choiceFromParams(params({ tab: 'trends', types: '5,7', metric: 'overdue' }));
+      expect(legacy).toEqual({ types: [5, 7], all: 'auto', metric: 'created', bmetric: 'overdue' });
+      expect(choiceFromParams(params({ types: '5', metric: 'onTime' })).metric).toBe('onTime');
+      expect(namesBacklog(params({ due: 'ontime,overdue' }))).toBe(true);
+      expect(namesBacklog(params({ types: '5', metric: 'overdue' }))).toBe(true);
+      expect(namesBacklog(params({ types: '5' }))).toBe(false);
+      // The legacy `due` is dropped from the address when the view is written back.
+      expect(choiceToParams(choiceFromParams(params({ due: 'late' })))['due']).toBeNull();
+    });
+
+    it('reads stored choices defensively, including the first version of the storage', () => {
       expect(choiceFromStored(null)).toEqual(DEFAULT_CHOICE);
       expect(choiceFromStored('x')).toEqual(DEFAULT_CHOICE);
       expect(
-        choiceFromStored({
-          types: [2, 'a', 2],
-          showAll: false,
-          metric: 'late',
-          due: ['overdue', 'x'],
-        }),
-      ).toEqual({
-        types: [2],
-        showAll: false,
-        metric: 'late',
-        due: ['overdue'],
-      });
+        choiceFromStored({ types: [2, 'a', 2], all: 'on', metric: 'late', bmetric: 'overdue' }),
+      ).toEqual({ types: [2], all: 'on', metric: 'late', bmetric: 'overdue' });
+      // First version: `metric: created` next to no types meant the two-line chart; showAll true was the (automatic) default.
+      expect(choiceFromStored({ types: [], showAll: true, metric: 'created', due: [] })).toEqual(
+        DEFAULT_CHOICE,
+      );
+      expect(choiceFromStored({ types: [2], showAll: true, metric: 'completed', due: [] })).toEqual(
+        { types: [2], all: 'auto', metric: 'completed', bmetric: 'overdue' },
+      );
+      expect(choiceFromStored({ types: [2], showAll: false, metric: 'overdue', due: [] }).all).toBe(
+        'off',
+      );
       expect(sameChoice(DEFAULT_CHOICE, { ...DEFAULT_CHOICE })).toBe(true);
       expect(sameChoice(DEFAULT_CHOICE, { ...DEFAULT_CHOICE, types: [1] })).toBe(false);
     });
   });
 
+  describe('state machine', () => {
+    it('picking the first type turns a two-line measure into the first single measure and says so', () => {
+      const r = normalizeChoice({ ...DEFAULT_CHOICE, types: [5] }, DEFAULT_CHOICE);
+      expect(r.choice.metric).toBe('created');
+      expect(r.announcement).toBe('Showing Created to compare task types.');
+      // A single measure stays and nothing is announced.
+      const keep = normalizeChoice({ ...DEFAULT_CHOICE, types: [5], metric: 'late' }, null);
+      expect(keep.choice.metric).toBe('late');
+      expect(keep.announcement).toBeNull();
+    });
+
+    it('All task types is automatic: hidden while types are compared, back when none is left', () => {
+      expect(allVisible(DEFAULT_CHOICE)).toBe(true);
+      expect(allVisible({ ...DEFAULT_CHOICE, types: [5], metric: 'created' })).toBe(false);
+      const on: TrendChoice = { ...DEFAULT_CHOICE, types: [5], metric: 'created', all: 'on' };
+      expect(allVisible(on)).toBe(true);
+      // The user ticked All: it sticks. Removing the last type forgets an explicit choice that only made sense with types.
+      expect(normalizeChoice({ ...on, types: [] }, on).choice.all).toBe('auto');
+      // ... and Created, which picking the first type chose for the user, goes back to the two-line view; other measures stay.
+      expect(normalizeChoice({ ...on, types: [] }, on).choice.metric).toBe('both');
+      expect(normalizeChoice({ ...on, types: [], metric: 'late' }, on).choice.metric).toBe('late');
+      // Toggling: with types, ticking All is explicit; unticking it again is back to automatic.
+      const auto: TrendChoice = { ...DEFAULT_CHOICE, types: [5], metric: 'created' };
+      expect(toggleAllMode(auto).all).toBe('on');
+      expect(toggleAllMode(on).all).toBe('auto');
+      // Without types, unticking All is explicit (an empty chart), ticking it again is automatic.
+      expect(toggleAllMode(DEFAULT_CHOICE).all).toBe('off');
+      expect(toggleAllMode({ ...DEFAULT_CHOICE, all: 'off' }).all).toBe('auto');
+    });
+
+    it('offers the two-line measure only while no type is compared, and never a disabled option', () => {
+      expect(flowOptions(DEFAULT_CHOICE)).toEqual([
+        'both',
+        'created',
+        'completed',
+        'onTime',
+        'late',
+      ]);
+      expect(flowOptions({ ...DEFAULT_CHOICE, types: [5], metric: 'created' })).toEqual([
+        'created',
+        'completed',
+        'onTime',
+        'late',
+      ]);
+      expect(backlogOptions()).toEqual(['overdue']);
+    });
+  });
+
   describe('lines', () => {
-    it('the default chart is Created and Completed of All task types, plus the ticked Due dates lines', () => {
+    it('the default view: panel 1 is Created and Completed of All task types, panel 2 is Overdue of All', () => {
       const v = buildView(DEFAULT_CHOICE, DATA, new Map(), DATA.types);
       expect(v.defaultMode).toBe(true);
-      expect(v.lines.map((l) => [l.key, l.values.join()])).toEqual([
-        ['all-created', '1,2'],
-        ['all-completed', '2,3'],
+      expect(v.flows.lines.map((l) => [l.key, l.values.join()])).toEqual([
+        ['flows-all-created', '1,2'],
+        ['flows-all-completed', '2,3'],
       ]);
-      expect(v.lines[0].style).toBe(MEASURE_STYLES.created);
-      const due = buildView(
-        { ...DEFAULT_CHOICE, due: ['overdue', 'late'] },
-        DATA,
-        new Map(),
-        DATA.types,
-      );
-      expect(due.lines.map((l) => l.key)).toEqual([
-        'all-created',
-        'all-completed',
-        'all-overdue',
-        'all-late',
+      expect(v.flows.lines[0].style).toBe(MEASURE_STYLES.created);
+      expect(v.flows.height).toBe(320);
+      expect(v.flows.title).toBe('Tasks created and completed per day');
+      expect(v.backlog.lines.map((l) => [l.key, l.panel, l.values.join()])).toEqual([
+        ['backlog-all-overdue', 'backlog', '3,4'],
       ]);
-      expect(due.lines[2].values).toEqual([3, 4]);
-      const hidden = buildView(
-        { ...DEFAULT_CHOICE, showAll: false, due: ['onTime'] },
-        DATA,
-        new Map(),
-        DATA.types,
-      );
-      expect(hidden.lines.map((l) => l.key)).toEqual(['all-onTime']);
-      expect(
-        buildView({ ...DEFAULT_CHOICE, showAll: false }, DATA, new Map(), DATA.types).lines,
-      ).toEqual([]);
+      expect(v.backlog.height).toBe(200);
+      expect(v.backlog.title).toBe('Backlog at end of day');
+      expect(v.flows.measureNote).toBeNull();
     });
 
-    it('with task types checked one metric is drawn for All and for each type, the Due dates lines are not', () => {
+    it('a single flow measure draws one line of All; On time and Completed late are flow measures', () => {
+      const v = buildView({ ...DEFAULT_CHOICE, metric: 'onTime' }, DATA, new Map(), DATA.types);
+      expect(v.flows.lines.map((l) => [l.name, l.values.join()])).toEqual([['On time', '4,5']]);
+      expect(v.flows.title).toBe('Tasks completed on time per day');
+      const hidden = buildView({ ...DEFAULT_CHOICE, all: 'off' }, DATA, new Map(), DATA.types);
+      expect(hidden.flows.lines).toEqual([]);
+      expect(hidden.backlog.lines).toEqual([]);
+    });
+
+    it('with task types checked both panels compare them; All task types is hidden for scale unless ticked', () => {
+      const slots = new Map([
+        [7, 0],
+        [5, 3],
+      ]);
       const choice: TrendChoice = {
         types: [7, 5],
-        showAll: true,
-        metric: 'overdue',
-        due: ['late'],
+        all: 'auto',
+        metric: 'completed',
+        bmetric: 'overdue',
       };
-      const v = buildView(
-        choice,
-        DATA,
-        new Map([
-          [7, 0],
-          [5, 3],
-        ]),
-        DATA.types,
-      );
+      const v = buildView(choice, DATA, slots, DATA.types);
       expect(v.defaultMode).toBe(false);
-      expect(v.lines.map((l) => [l.key, l.values.join()])).toEqual([
-        ['all', '3,4'],
-        ['type-7', '32,42'],
-        ['type-5', '12,22'],
+      expect(v.flows.lines.map((l) => [l.key, l.values.join()])).toEqual([
+        ['flows-type-7', '31,41'],
+        ['flows-type-5', '11,21'],
       ]);
-      expect(v.lines[0].style).toBe(ALL_STYLE);
-      expect(v.lines[1].style).toBe(TYPE_STYLES[0]);
-      expect(v.lines[2].style).toBe(TYPE_STYLES[3]);
-      expect(v.lines[1].typeId).toBe(7);
-      expect(v.measures).toEqual(['overdue']);
-      expect(
-        buildView(
-          { ...choice, showAll: false },
-          DATA,
-          new Map([
-            [7, 0],
-            [5, 3],
-          ]),
-          DATA.types,
-        ).lines.length,
-      ).toBe(2);
+      expect(v.backlog.lines.map((l) => [l.key, l.values.join()])).toEqual([
+        ['backlog-type-7', '32,42'],
+        ['backlog-type-5', '12,22'],
+      ]);
+      expect(v.flows.lines[0].style).toBe(TYPE_STYLES[0]);
+      expect(v.backlog.lines[1].style).toBe(TYPE_STYLES[3]);
+      expect(v.flows.lines[0].typeId).toBe(7);
+      expect(v.flows.measureNote).toBe('Completed');
+      expect(v.backlog.measureNote).toBe('Overdue');
+      const withAll = buildView({ ...choice, all: 'on' }, DATA, slots, DATA.types);
+      expect(withAll.flows.lines.map((l) => l.key)).toEqual([
+        'flows-all',
+        'flows-type-7',
+        'flows-type-5',
+      ]);
+      expect(withAll.flows.lines[0].style).toBe(ALL_STYLE);
+      expect(withAll.backlog.lines[0].values).toEqual([3, 4]);
     });
 
-    it('names the chart after what it draws', () => {
-      expect(chartHeading(['created', 'completed'])).toBe('Tasks created and completed per day');
-      expect(chartHeading(['created'])).toBe('Tasks created per day');
-      expect(chartHeading(['overdue'])).toBe('Overdue tasks at the end of each day');
-      expect(chartHeading(['created', 'completed', 'overdue'])).toBe(
-        'Tasks created, completed and overdue per day',
-      );
-      expect(chartHeading([])).toBe('Tasks per day');
+    it('names panel 1 after what it draws', () => {
+      expect(flowsHeading('both')).toBe('Tasks created and completed per day');
+      expect(flowsHeading('created')).toBe('Tasks created per day');
+      expect(flowsHeading('completed')).toBe('Tasks completed per day');
+      expect(flowsHeading('late')).toBe('Tasks completed late per day');
     });
 
     it('gives a type the lowest free colour slot', () => {

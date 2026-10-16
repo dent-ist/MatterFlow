@@ -7,15 +7,14 @@ import { queueParams } from '../dashboard-links';
 import { TrendSample } from './trend-sample';
 import {
   ALL_STYLE,
-  DUE_MEASURES,
-  DueMeasure,
+  FlowMeasure,
   MAX_TYPES,
-  MEASURES,
   MEASURE_INFO,
   MEASURE_STYLES,
-  Measure,
   TYPE_STYLES,
   TrendChoice,
+  allVisible,
+  totalMeasure,
   typeRows,
 } from './trend-model';
 
@@ -24,64 +23,20 @@ let nextId = 0;
 export const SEARCH_ABOVE = 8;
 
 /**
- * The legend of the Trends chart, which is also its control (`mf-trend-legend`): a "Due dates" group (Overdue, On time, Completed late for
- * the default chart) and a "Task types" group (the "All task types" line, one checkbox per task type with its icon, name and total for the
- * period, the Show selector for the measure, Select all and Clear). Every row has a sample of its line (colour, dash and marker) so colour is
- * never the only cue. Totals link to the Task Queue. Nothing is drawn or fetched here; the tab owns the choices.
+ * The "Compare task types" list of the Trends chart, which is also its legend (`mf-trend-legend`): the "All task types" line, one checkbox
+ * per task type with its icon, name and total for the period (of the measure of panel 1), Select all and Clear. The list is never disabled:
+ * while panel 1 shows its two-line measure a one-line hint says that picking a type switches it to Created. The measure itself is chosen
+ * with the segmented control above each panel. Every row has a sample of its line (colour, dash and marker) so colour is never the only cue.
+ * Totals link to the Task Queue. Nothing is drawn or fetched here; the tab owns the choices.
  */
 @Component({
   selector: 'mf-trend-legend',
   imports: [RouterLink, NgTemplateOutlet, TrendSample, TaskTypeIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="group" role="group" [attr.aria-labelledby]="id + '-due'" data-group="due-dates">
-      <h4 [id]="id + '-due'">Due dates</h4>
-      <ul class="list">
-        @for (m of dueMeasures; track m) {
-          <li class="row" [class.off]="!defaultMode()">
-            <label class="pick">
-              <input
-                type="checkbox"
-                [attr.data-due]="m"
-                [checked]="choice().due.includes(m)"
-                [disabled]="!defaultMode()"
-                [attr.aria-describedby]="id + '-due-hint'"
-                (change)="dueChange.emit(m)"
-              />
-              <mf-trend-sample [style]="styles[m]" />
-              <span class="name">{{ info[m].label }}</span>
-            </label>
-            @if (dueTotal(m); as t) {
-              @if (t.count > 0) {
-                <a
-                  class="total"
-                  routerLink="/tasks"
-                  [queryParams]="params(t.query)"
-                  [attr.data-legend]="m"
-                  [attr.aria-label]="t.label + ' ' + t.count + ', view in the Task Queue'"
-                  >{{ t.count }}</a
-                >
-              } @else {
-                <span class="total zero">0</span>
-              }
-            }
-          </li>
-        }
-      </ul>
-      <p class="hint" [id]="id + '-due-hint'">
-        Uses each task's current due date. Tasks without a due date (ASAP) are not counted.
-        @if (!defaultMode()) {
-          <span data-due-disabled>
-            Shown only while no task type is selected; pick Overdue or On time under Show to compare
-            task types.
-          </span>
-        }
-      </p>
-    </div>
-
     <div class="group" role="group" [attr.aria-labelledby]="id + '-types'" data-group="task-types">
       <div class="group-head">
-        <h4 [id]="id + '-types'">Task types</h4>
+        <h4 [id]="id + '-types'">Compare task types</h4>
         <span class="actions">
           <button type="button" class="link" data-select-all (click)="selectTop.emit()">
             Select all
@@ -97,37 +52,11 @@ export const SEARCH_ABOVE = 8;
           </button>
         </span>
       </div>
-
-      <div
-        class="show"
-        role="radiogroup"
-        [attr.aria-labelledby]="id + '-show'"
-        [attr.aria-describedby]="id + '-show-hint'"
-        data-show
-      >
-        <span class="show-label" [id]="id + '-show'">Show:</span>
-        @for (m of measures; track m) {
-          <label class="radio" [class.off]="defaultMode()">
-            <input
-              type="radio"
-              [name]="id + '-metric'"
-              [value]="m"
-              [attr.data-metric]="m"
-              [checked]="choice().metric === m"
-              [disabled]="defaultMode()"
-              (change)="metricChange.emit(m)"
-            />
-            {{ info[m].label }}
-          </label>
-        }
-      </div>
-      <p class="hint" [id]="id + '-show-hint'">
-        @if (defaultMode()) {
-          <span data-show-disabled
-            >Created and completed are both shown until you select a task type.</span
-          >
+      <p class="hint" [id]="id + '-hint'" data-compare-hint>
+        @if (twoLine()) {
+          <span data-two-line>Pick a task type and the chart switches to Created.</span>
         } @else {
-          <span>{{ info[choice().metric].totalNote }} (the number on each row).</span>
+          <span>{{ info[measure()].totalNote }} (the number on each row).</span>
         }
       </p>
 
@@ -147,24 +76,27 @@ export const SEARCH_ABOVE = 8;
       <ul class="list scroll mf-scroll" data-type-list>
         <li class="row">
           <label class="pick">
-            <input
-              type="checkbox"
-              data-all
-              [checked]="choice().showAll"
-              (change)="allChange.emit()"
-            />
-            @if (!defaultMode() && choice().showAll) {
+            <input type="checkbox" data-all [checked]="showAll()" (change)="allChange.emit()" />
+            @if (!twoLine() && showAll()) {
               <mf-trend-sample [style]="allStyle" />
             }
             <span class="name">All task types</span>
+            @if (allHidden()) {
+              <span
+                class="retired"
+                data-hidden-for-scale
+                title="Hidden for scale while task types are compared"
+                >(hidden for scale)</span
+              >
+            }
           </label>
-          @if (!defaultMode()) {
+          @if (!twoLine()) {
             @if (allTotal(); as t) {
               <ng-container *ngTemplateOutlet="totalTpl; context: { $implicit: t, id: 'all' }" />
             }
           }
         </li>
-        @if (defaultMode() && choice().showAll) {
+        @if (twoLine() && showAll()) {
           <li class="row sub">
             <a
               routerLink="/tasks"
@@ -229,12 +161,7 @@ export const SEARCH_ABOVE = 8;
           [queryParams]="params(t.query)"
           [attr.data-total]="key"
           [attr.aria-label]="
-            info[choice().metric].label +
-            ' ' +
-            t.count +
-            ', ' +
-            t.label +
-            ', view in the Task Queue'
+            info[measure()].label + ' ' + t.count + ', ' + t.label + ', view in the Task Queue'
           "
           >{{ t.count }}</a
         >
@@ -296,7 +223,7 @@ export const SEARCH_ABOVE = 8;
       list-style: none;
     }
     .scroll {
-      max-height: 20rem;
+      max-height: max(14rem, calc(100vh - 24rem));
       overflow: auto;
     }
     .row {
@@ -377,27 +304,6 @@ export const SEARCH_ABOVE = 8;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
     }
-    .show {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s1) var(--mf-s3);
-      font-size: var(--mf-fs-sm);
-    }
-    .show-label {
-      font-weight: 600;
-    }
-    .radio {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      min-height: var(--mf-target-min);
-      cursor: pointer;
-    }
-    .radio input {
-      margin: 0;
-      accent-color: var(--mf-primary);
-    }
     .search {
       box-sizing: border-box;
       width: 100%;
@@ -431,8 +337,6 @@ export const SEARCH_ABOVE = 8;
 export class TrendLegend {
   protected readonly id = `mf-trend-legend-${nextId++}`;
   protected readonly searchAbove = SEARCH_ABOVE;
-  protected readonly dueMeasures = DUE_MEASURES;
-  protected readonly measures = MEASURES;
   protected readonly info = MEASURE_INFO;
   protected readonly styles = MEASURE_STYLES;
   protected readonly allStyle = ALL_STYLE;
@@ -446,17 +350,21 @@ export class TrendLegend {
 
   readonly allChange = output<void>();
   readonly typeChange = output<number>();
-  readonly dueChange = output<DueMeasure>();
-  readonly metricChange = output<Measure>();
   readonly selectTop = output<void>();
   readonly clear = output<void>();
   /** A ninth type was checked: refused. */
   readonly limit = output<void>();
 
   protected readonly search = signal('');
-  protected readonly defaultMode = computed(() => this.choice().types.length === 0);
+  protected readonly twoLine = computed(() => this.choice().metric === 'both');
+  protected readonly measure = computed(() => totalMeasure(this.choice()));
+  protected readonly showAll = computed(() => allVisible(this.choice()));
+  /** "All task types" is off only because task types are compared (the automatic rule). */
+  protected readonly allHidden = computed(
+    () => this.choice().all === 'auto' && this.choice().types.length > 0,
+  );
   protected readonly types = computed<readonly DashboardTrendType[]>(() => this.data().types);
-  private readonly rows = computed(() => typeRows(this.types(), this.choice().metric));
+  private readonly rows = computed(() => typeRows(this.types(), this.measure()));
   protected readonly visibleRows = computed(() => {
     const q = this.search().trim().toLowerCase();
     return q ? this.rows().filter((r) => r.name.toLowerCase().includes(q)) : this.rows();
@@ -466,33 +374,16 @@ export class TrendLegend {
     return queueParams(query);
   }
 
-  protected sum(measure: 'created' | 'completed' | 'onTime' | 'late'): number {
+  protected sum(measure: FlowMeasure): number {
     return this.data().all.reduce((a, d) => a + d[measure], 0);
-  }
-
-  /** The total of a Due dates row: Overdue is the count now; On time and Late are totals for the period. */
-  protected dueTotal(m: DueMeasure) {
-    const d = this.data();
-    const count = m === 'overdue' ? (d.all[d.all.length - 1]?.overdue ?? 0) : this.sum(m);
-    return {
-      count,
-      query: m === 'overdue' ? d.overdueQuery : d.completedQuery,
-      label: m === 'overdue' ? 'Overdue now' : MEASURE_INFO[m].label,
-    };
   }
 
   protected allTotal() {
     const d = this.data();
-    const metric = this.choice().metric;
-    const count = metric === 'overdue' ? (d.all[d.all.length - 1]?.overdue ?? 0) : this.sum(metric);
+    const metric = this.measure();
     return {
-      count,
-      query:
-        metric === 'overdue'
-          ? d.overdueQuery
-          : metric === 'created'
-            ? d.createdQuery
-            : d.completedQuery,
+      count: this.sum(metric),
+      query: metric === 'created' ? d.createdQuery : d.completedQuery,
       label: 'All task types',
     };
   }
