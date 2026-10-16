@@ -1,11 +1,11 @@
 import { definePreset } from '@primeuix/themes';
-import Aura from '@primeuix/themes/aura';
+import { AuraLite } from './aura-lite';
 
 /**
- * PrimeNG Aura preset themed from docs/ux/tokens.css (light theme only in Phase 1).
+ * PrimeNG Aura preset (AuraLite: only the components the app renders) themed from docs/ux/tokens.css (light theme only in Phase 1).
  * Brand primary #1F4E9C, focus ring #B45309 (2px solid, 2px offset), 4px radius, Segoe UI stack.
  */
-export const MfPreset = definePreset(Aura, {
+export const MfPreset = definePreset(AuraLite, {
   components: {
     // Toasts (UXR4-21): Aura's success/info/warn/error text is a mid-tone green/blue/yellow/red on a pale tint (below 4.5:1). Dark text
     // of the same hue on the same kind of tint is 7:1 or better, the detail line is the normal text colour.
