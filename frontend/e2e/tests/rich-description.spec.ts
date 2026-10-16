@@ -29,6 +29,18 @@ const OUTLOOK_TABLE = `<html xmlns:o="urn:schemas-microsoft-com:office:office"><
 <tr><td colspan=2 style='background:yellow'>Marcus Okafor and Priya Raman (merged)</td></tr>
 </table><!--EndFragment--></body></html>`;
 
+/** A wide table as Outlook would put it on the clipboard. */
+function wideTable(columns: number, rows: number): string {
+  const cell = (tag: string, text: string): string => `<${tag}>${text}</${tag}>`;
+  const head = `<tr>${Array.from({ length: columns }, (_, c) => cell('th', `Column ${c + 1}`)).join('')}</tr>`;
+  const body = Array.from(
+    { length: rows },
+    (_, r) =>
+      `<tr>${Array.from({ length: columns }, (_, c) => cell('td', `Row ${r + 1} value ${c + 1} with a longer text`)).join('')}</tr>`,
+  ).join('');
+  return `<table>${head}${body}</table>`;
+}
+
 const HOSTILE = `<p onclick="window.__pwn=1">Hostile<script>window.__pwn=2</script><img src=x onerror="window.__pwn=3"></p>
 <table style="position:fixed;top:0;left:0;width:100%;height:100%"><tr><td onmouseover="window.__pwn=4" colspan="2 onclick=window.__pwn=5"><svg><style><a title="</style><img src onerror=window.__pwn=6>"></svg>cell</td></tr></table>
 <a href="javascript:window.__pwn=7">js link</a><iframe srcdoc="<script>window.__pwn=8</script>"></iframe><form action="javascript:1"><input></form>`;
@@ -148,6 +160,46 @@ test.describe('Rich text description with tables (issue #80)', () => {
     await expect(page.locator('[data-description]')).toContainText('Hostile');
     expect(await pwned(page)).toBeUndefined();
     expect(dialogs).toEqual([]);
+  });
+
+  test('a wide table pasted into the Create task form scrolls inside the editor and does not widen the page (375 px)', async ({
+    page,
+    seed,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    const world = await seed.world();
+    const create = new CreateTaskPage(page);
+    await create.open(`?taskType=${world.taskType.id}`);
+    await create.fillBasics({
+      matterRef: world.matter.matterRef,
+      taskType: world.taskType.name,
+      title: 'Wide table',
+    });
+    const measure = (): Promise<{
+      page: number;
+      editorRight: number;
+      formRight: number;
+      scrolls: boolean;
+    }> =>
+      page.evaluate(() => {
+        const area = document.querySelector<HTMLElement>(
+          '[data-description-field] [role=textbox]',
+        )!;
+        return {
+          page: document.documentElement.scrollWidth,
+          editorRight: area.getBoundingClientRect().right,
+          formRight: document.querySelector('form.ct__form')!.getBoundingClientRect().right,
+          scrolls: area.scrollWidth > area.clientWidth,
+        };
+      });
+    // The page may already be a little wider than a phone (not this feature's doing); the table must not add to it.
+    const before = await measure();
+    await pasteInto(page, EDITOR, wideTable(12, 4), 'plain text fallback');
+    await expect(create.description.locator('table')).toHaveCount(1);
+    const after = await measure();
+    expect(after.page).toBeLessThanOrEqual(before.page);
+    expect(after.editorRight).toBeLessThanOrEqual(after.formRight);
+    expect(after.scrolls).toBe(true);
   });
 
   test('classic mXSS payloads sent straight to the API never run in the browser', async ({

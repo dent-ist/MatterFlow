@@ -221,6 +221,7 @@ type RichTools = typeof import('./rich-tools');
   styles: `
     :host {
       display: block;
+      min-width: 0;
     }
     .rte {
       position: relative;
@@ -342,6 +343,9 @@ type RichTools = typeof import('./rich-tools');
     }
     .rte__area {
       position: relative;
+      /* A wide table scrolls inside the area and must not count towards the width of the form around it (inline-size containment). */
+      contain: inline-size;
+      min-width: 0;
       min-height: 6rem;
       max-height: 20rem;
       overflow: auto;
@@ -367,8 +371,13 @@ type RichTools = typeof import('./rich-tools');
     .rte__area a {
       color: var(--mf-link);
     }
-    .rte__area table {
+    /* The editable area is the scrolling, focusable box of a wide table (the table inside it does not scroll on its own): the keyboard can reach it. */
+    :host ::ng-deep .rte__area table {
+      display: table;
+      width: auto;
+      max-width: none;
       margin-bottom: var(--mf-s2);
+      overflow: visible;
     }
     .rte__foot {
       display: flex;

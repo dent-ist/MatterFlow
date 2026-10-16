@@ -97,10 +97,12 @@ test.describe('rich description screenshots', () => {
       // 2. The saved task: the table in the Details panel (and the whole page on a phone).
       const taskId = await create.create();
       const detail = new TaskDetailPage(page);
-      // On a phone the Details panel starts collapsed.
-      const toggle = page.locator('[data-detail-toggle]');
-      if ((await toggle.count()) > 0 && (await toggle.getAttribute('aria-expanded')) === 'false') {
-        await toggle.click();
+      // On a phone the Details panel starts collapsed behind a disclosure button.
+      if (size.width < 700) {
+        const toggle = page.locator('[data-detail-toggle]');
+        await toggle.waitFor();
+        if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click();
+        await expect(toggle).toHaveAttribute('aria-expanded', 'true');
       }
       await expect(page.locator('[data-description] table')).toBeVisible();
       await shoot(page, `details-${size.name}`);

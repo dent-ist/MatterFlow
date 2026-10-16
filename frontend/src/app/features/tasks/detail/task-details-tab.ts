@@ -228,7 +228,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
               }
             </div>
 
-            <div class="mf-field">
+            <div class="mf-field dt__rich">
               <span class="mf-field__label" id="td-description-label">Description</span>
               <mf-rich-text-editor
                 label="Description"
@@ -500,6 +500,11 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
     .dt__form {
       display: grid;
       gap: var(--mf-s4);
+    }
+    /* The description editor holds tables: it uses the width of the dialog (a field is 480px at most) and never widens the form's grid. */
+    .dt__rich {
+      max-width: none;
+      min-width: 0;
     }
     .dt__due,
     .dt__request {

@@ -26,14 +26,9 @@
   }
 
   .mf-rich__scroll {
-    max-width: 100%;
+    contain: inline-size;
     margin: 0 0 var(--mf-s2);
     overflow-x: auto;
-  }
-
-  .mf-rich__scroll:focus-visible {
-    outline: 2px solid var(--mf-focus, var(--mf-link));
-    outline-offset: 2px;
   }
 
   .mf-rich__scroll > table,
