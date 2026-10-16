@@ -4,10 +4,12 @@ import { assignHint } from './users-assign';
 import { backOnText, bandOf } from './users-card';
 import {
   DEFAULT_FILTERS,
+  apiAvailability,
   cardState,
   cardSummary,
   countsOf,
   filterCount,
+  filterUsers,
   filtersFromParams,
   filtersToParams,
   hasFilterParams,
@@ -52,14 +54,14 @@ describe('users model', () => {
       expect(toneOf(custom)).toBe('#7A1FA2');
     });
 
-    it('the band says it in words and keeps the priority label after a rename', () => {
-      expect(bandOf(ann).text).toBe('Highest priority: Critical');
+    it('the band label (tooltip words) keeps the priority label after a rename', () => {
+      expect(bandOf(ann).label).toBe('Highest priority: Critical');
       const renamed = aUser(9, 'Zed', [0, 1, 0, 0], {
         topPriority: { priorityId: 2, label: 'Rush', color: 'high', rank: 2, count: 1 },
       });
-      expect(bandOf(renamed).text).toBe('Highest priority: Rush');
-      expect(bandOf(cy).text).toBe('Available - no open tasks');
-      expect(bandOf(dee).text).toBe('Not available');
+      expect(bandOf(renamed).label).toBe('Highest priority: Rush');
+      expect(bandOf(cy).label).toBe('No open tasks');
+      expect(bandOf(dee).label).toBe('Out of office');
     });
 
     it('reads the load level and falls back to Free for an unknown one', () => {
@@ -97,7 +99,7 @@ describe('users model', () => {
 
     it('explains the thresholds from the configuration', () => {
       expect(thresholdText({ lightMax: 2, normalMax: 5 })).toEqual([
-        'Free: no open tasks.',
+        'Idle: no open tasks.',
         'Light: 1 to 2 open tasks.',
         'Normal: 3 to 5 open tasks.',
         'Heavy: more than 5 open tasks.',
@@ -151,20 +153,61 @@ describe('users model', () => {
   describe('filters and the address', () => {
     it('reads valid parameters and ignores the rest', () => {
       const f = filtersFromParams(convertToParamMap({ upod: '3', uavail: 'out', uq: ' ann ' }));
-      expect(f).toEqual({ pod: 3, availability: 'out', q: 'ann' });
+      expect(f).toEqual({ ...DEFAULT_FILTERS, pod: 3, availability: 'out', q: 'ann' });
       expect(filtersFromParams(convertToParamMap({ upod: 'x', uavail: 'nope' }))).toEqual(
         DEFAULT_FILTERS,
       );
+      expect(
+        filtersFromParams(
+          convertToParamMap({ uload: 'heavy,bogus,idle', uprio: '2', uavail: 'off' }),
+        ),
+      ).toEqual({ ...DEFAULT_FILTERS, load: ['idle', 'heavy'], priority: 2, availability: 'off' });
       expect(hasFilterParams(convertToParamMap({ uq: 'a' }))).toBe(true);
+      expect(hasFilterParams(convertToParamMap({ uload: 'idle' }))).toBe(true);
       expect(hasFilterParams(convertToParamMap({ tab: 'users' }))).toBe(false);
     });
 
     it('writes only what is set (null removes a parameter) and counts the filters', () => {
-      expect(filtersToParams(DEFAULT_FILTERS)).toEqual({ upod: null, uavail: null, uq: null });
-      const f = { pod: 2, availability: 'available' as const, q: 'x' };
-      expect(filtersToParams(f)).toEqual({ upod: '2', uavail: 'available', uq: 'x' });
-      expect(filterCount(f)).toBe(3);
+      expect(filtersToParams(DEFAULT_FILTERS)).toEqual({
+        upod: null,
+        uavail: null,
+        uq: null,
+        uload: null,
+        uprio: null,
+      });
+      const f = {
+        pod: 2,
+        availability: 'available' as const,
+        q: 'x',
+        load: ['idle' as const, 'heavy' as const],
+        priority: 1,
+      };
+      expect(filtersToParams(f)).toEqual({
+        upod: '2',
+        uavail: 'available',
+        uq: 'x',
+        uload: 'idle,heavy',
+        uprio: '1',
+      });
+      expect(filterCount(f)).toBe(5);
       expect(filterCount(DEFAULT_FILTERS)).toBe(0);
+    });
+
+    it('applies load, priority and off hours on the page; off hours is read from the API as all', () => {
+      const f = (patch: Partial<typeof DEFAULT_FILTERS>) => ({ ...DEFAULT_FILTERS, ...patch });
+      expect(names(filterUsers(all, f({ load: ['idle'] })))).toEqual(['Cy Tan']);
+      expect(names(filterUsers(all, f({ load: ['light', 'heavy'] })))).toEqual([
+        'Dee Fox',
+        'Ann Lee',
+        'Eve Kim',
+      ]);
+      // priority: the highest open priority is the person's tone (Critical = 1, High = 2, Normal = 3)
+      expect(names(filterUsers(all, f({ priority: 1 })))).toEqual(['Ann Lee']);
+      expect(names(filterUsers(all, f({ priority: 3 })))).toEqual(['Bob Ray']);
+      expect(names(filterUsers(all, f({ availability: 'off' })))).toEqual(['Eve Kim']);
+      expect(apiAvailability(f({ availability: 'off' }))).toBe('all');
+      expect(apiAvailability(f({ availability: 'out' }))).toBe('out');
+      expect(filterUsers(all, DEFAULT_FILTERS)).toHaveLength(all.length);
     });
 
     it('collects the pods seen on the board', () => {
@@ -185,11 +228,23 @@ describe('users model', () => {
 
   describe('text and links', () => {
     it('summarises a card in one sentence for assistive technology', () => {
-      expect(cardSummary(ann, '')).toBe(
-        'Ann Lee, 3 open tasks, highest priority Critical, 2 overdue',
+      expect(cardSummary(ann, 'Available')).toBe(
+        'Ann Lee. 3 open tasks, highest priority Critical, 2 overdue, light load',
       );
-      expect(cardSummary(cy, '')).toBe('Cy Tan, Available, no open tasks');
-      expect(cardSummary(dee, 'Back on Oct 20')).toBe('Dee Fox, Not available, Back on Oct 20');
+      expect(cardSummary(cy, 'Available')).toBe('Cy Tan. No open tasks');
+      expect(cardSummary(dee, 'Out of office until Oct 20')).toBe(
+        'Dee Fox. Out of office until Oct 20. Annual leave. 1 open task, highest priority High, light load',
+      );
+      expect(
+        cardSummary(
+          aUser(7, 'Gus Roe', [0, 0, 0, 0], { availability: outOfOffice }),
+          'Out of office until Oct 20',
+        ),
+      ).toBe('Gus Roe. Out of office until Oct 20. Annual leave. No open tasks');
+      expect(
+        cardSummary(aUser(8, 'Hal Moe', [0, 0, 1, 0], { dueSoon: 1, onHold: 2 }), 'Available'),
+      ).toBe('Hal Moe. 1 open task, highest priority Normal, 1 due soon, 2 on hold, light load');
+      expect(cardSummary(eve, 'Off hours')).toContain('Eve Kim. Off hours. 2 open tasks');
     });
 
     it('says when someone is back: the day of the last absence plus one, in the viewer zone', () => {

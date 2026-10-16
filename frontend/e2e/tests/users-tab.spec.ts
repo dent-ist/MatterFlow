@@ -89,49 +89,57 @@ test.describe('Users tab: workload', () => {
         ooo ? 'ooo' : u.openTotal === 0 ? 'free' : u.topPriority.color,
       );
       await expect(c).toHaveAttribute('data-load', u.loadLevel);
-      await expect(c.locator('[data-open-total] dd')).toHaveText(String(u.openTotal));
-      await expect(c.locator('[data-overdue] dd')).toHaveText(String(u.overdue));
-      await expect(c.locator('[data-due-soon] dd')).toHaveText(String(u.dueSoon));
-      await expect(c.locator('[data-hold] dd')).toHaveText(String(u.onHold));
       if (u.openTotal > 0) {
-        for (const p of data.priorities) {
-          const n = u.byPriority.find((b: Json) => b.priorityId === p.priorityId).count;
-          await expect(c.locator(`[data-priority-count="${p.label}"]`)).toHaveAttribute(
-            'data-count',
-            String(n),
-          );
-        }
+        await expect(c.locator('[data-open-total]')).toHaveText(String(u.openTotal));
+      } else {
+        await expect(c.locator('[data-open-total]')).toHaveCount(0);
       }
+      await expect(c.locator('[data-overdue]')).toHaveCount(u.overdue > 0 ? 1 : 0);
+      if (u.overdue > 0) {
+        await expect(c.locator('[data-overdue]')).toHaveAttribute('data-count', String(u.overdue));
+      }
+      // The bar has a segment for every priority that has open tasks, and only for those.
+      for (const p of data.priorities) {
+        const n = u.byPriority.find((b: Json) => b.priorityId === p.priorityId).count;
+        await expect(c.locator(`[data-load-bar] [data-segment="${p.label}"]`)).toHaveCount(
+          n > 0 ? 1 : 0,
+        );
+      }
+      // The whole status is in the accessible name and the tooltip, not on the tile.
+      const open = c.locator('[data-user-open]');
+      const name = await open.getAttribute('aria-label');
+      expect(name).toBe(await open.getAttribute('title'));
+      expect(name).toContain(u.displayName);
+      if (u.openTotal === 0) expect(name).toContain('No open tasks');
+      else expect(name).toContain(`${u.openTotal} open task`);
+      if (ooo) expect(name).toContain('Out of office');
     }
   });
 
-  test('colours the card by the highest priority with the same colours as the priority badge, and says it in words', async ({
+  test('colours the tile by the highest priority with the same colours as the priority badge, and a level glyph', async ({
     page,
   }) => {
     await openUsers(page);
     const critical = card(page, 'critical');
     await expect(critical).toHaveAttribute('data-tone', 'critical');
-    await expect(critical.locator('[data-band-text]')).toHaveText('Highest priority: Critical');
-    const band = critical.locator('[data-band]');
-    expect(await band.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
+    const pill = critical.locator('[data-pill]');
+    expect(await pill.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
       await tokenColor(page, '--mf-pr-critical-bg'),
     );
-    expect(await band.evaluate((el) => getComputedStyle(el).color)).toBe(
+    expect(await pill.evaluate((el) => getComputedStyle(el).color)).toBe(
       await tokenColor(page, '--mf-pr-critical-fg'),
     );
-    await expect(card(page, 'high')).toHaveAttribute('data-tone', 'high');
-    await expect(card(page, 'high').locator('[data-band-text]')).toHaveText(
-      'Highest priority: High',
+    expect(await critical.evaluate((el) => getComputedStyle(el).borderLeftColor)).toBe(
+      await tokenColor(page, '--mf-pr-critical-fg'),
     );
+    // The glyph repeats the rank (colour is never the only cue): 4 bars for the most urgent, 1 for the least.
+    await expect(critical.locator('[data-glyph]')).toHaveAttribute('data-bars', '4');
+    await expect(card(page, 'high')).toHaveAttribute('data-tone', 'high');
+    await expect(card(page, 'high').locator('[data-glyph]')).toHaveAttribute('data-bars', '3');
     await expect(card(page, 'lightNormal')).toHaveAttribute('data-tone', 'normal');
     await expect(card(page, 'low')).toHaveAttribute('data-tone', 'low');
-    // Priority counts in rank order, zeros muted.
-    const critBadges = critical.locator('[data-priority-count]');
-    await expect(critBadges).toHaveText(['Critical 1', 'High 2', 'Normal 2', 'Low 0']);
-    await expect(critBadges.nth(3)).toHaveClass(/pc--zero/);
-    await expect(critBadges.nth(0)).not.toHaveClass(/pc--zero/);
-    // Load bar segments follow the same order.
-    await expect(critical.locator('[data-load-bar] [data-segment]')).toHaveText(['', '', '']);
+    await expect(card(page, 'low').locator('[data-glyph]')).toHaveAttribute('data-bars', '1');
+    // Load bar segments follow the priority order.
     expect(
       await critical
         .locator('[data-load-bar] [data-segment]')
@@ -139,38 +147,62 @@ test.describe('Users tab: workload', () => {
     ).toEqual(['Critical', 'High', 'Normal']);
   });
 
-  test('free capacity is green with text, an out of office person has a hatched grey card with the return date and note', async ({
+  test('idle is green and out of office is hatched grey, with icons and no sentences; the words are in the name and tooltip', async ({
     page,
   }) => {
     await openUsers(page);
     const idle = card(page, 'idle');
-    await expect(idle.locator('[data-band-text]')).toHaveText('Available - no open tasks');
-    await expect(idle.locator('[data-free]')).toContainText('No open tasks');
-    await expect(idle.locator('[data-load-label]')).toHaveText('Free');
-    await expect(idle.locator('[data-avail-chip]')).toHaveText('Available');
-    expect(await idle.locator('[data-band]').evaluate((el) => getComputedStyle(el).color)).toBe(
-      await tokenColor(page, '--mf-success'),
+    await expect(idle.locator('[data-state-icon]')).toHaveClass(/pi-check-circle/);
+    await expect(idle.locator('[data-open-total]')).toHaveCount(0);
+    expect(await idle.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
+      await tokenColor(page, '--mf-success-bg'),
+    );
+    await expect(idle.locator('[data-user-open]')).toHaveAttribute(
+      'aria-label',
+      `${person('idle').displayName}. No open tasks`,
     );
 
     const away = card(page, 'ooo');
-    await expect(away.locator('[data-band-text]')).toHaveText('Not available');
-    await expect(away.locator('[data-avail-chip]')).toContainText('Out of office until');
-    await expect(away.locator('[data-back]')).toContainText(/^\s*Back on [A-Z][a-z]{2} \d{1,2}/);
-    await expect(away.locator('[data-note]')).toHaveText('Annual leave');
     await expect(away).toHaveAttribute('data-availability', 'OUT_OF_OFFICE');
+    await expect(away.locator('[data-state-icon]')).toHaveClass(/pi-calendar-minus/);
+    await expect(away.locator('[data-user-open]')).toHaveAttribute(
+      'aria-label',
+      /Out of office until [A-Z][a-z]{2} \d{1,2}\. Annual leave\. 2 open tasks/,
+    );
     expect(await away.evaluate((el) => getComputedStyle(el).backgroundImage)).toContain(
       'repeating-linear-gradient',
     );
     // Their open tasks are still counted.
-    await expect(away.locator('[data-open-total] dd')).toHaveText('2');
-
-    const awayIdle = card(page, 'oooIdle');
-    await expect(awayIdle.locator('[data-band-text]')).toHaveText('Not available');
-    await expect(awayIdle.locator('[data-back]')).toContainText('No return date set');
+    await expect(away.locator('[data-open-total]')).toHaveText('2');
+    await expect(card(page, 'oooIdle').locator('[data-user-open]')).toHaveAttribute(
+      'aria-label',
+      /Parental leave\. No open tasks/,
+    );
 
     const off = card(page, 'offHours');
-    await expect(off.locator('[data-avail-chip]')).toHaveText('Off hours');
+    await expect(off.locator('[data-off-hours]')).toHaveCount(1);
     await expect(off).toHaveAttribute('data-state', 'busy');
+    await expect(off.locator('[data-user-open]')).toHaveAttribute('aria-label', /Off hours/);
+
+    // No filler sentences anywhere on a tile.
+    for (const c of await page.locator('[data-user-card]').all()) {
+      const visible = (await c.innerText()).replace(/\s+/g, ' ');
+      expect(visible).not.toMatch(/No open tasks|Not available|Available|Highest priority|Free/);
+    }
+  });
+
+  test('a tile is a fraction of the old card: small, and many to a line', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await openUsers(page);
+    const box = (await card(page, 'critical').boundingBox())!;
+    expect(box.height).toBeLessThanOrEqual(64);
+    expect(box.width).toBeLessThanOrEqual(200);
+    expect(box.width * box.height).toBeLessThanOrEqual(89_000 / 4);
+    const perLine = await page.locator('[data-users-grid] li').evaluateAll((els) => {
+      const top = els[0].getBoundingClientRect().top;
+      return els.filter((e) => Math.abs(e.getBoundingClientRect().top - top) < 2).length;
+    });
+    expect(perLine).toBeGreaterThanOrEqual(6);
   });
 
   test('shows the default order: available first, out of office last, lighter load first', async ({
@@ -208,7 +240,7 @@ test.describe('Users tab: workload', () => {
     await expect(page.locator('[data-user-card]')).toHaveCount(2);
     await expect(page).toHaveURL(/uavail=out/);
     // The summary does not change with the filter.
-    await expect(page.locator('[data-summary-tile="out"] [data-n]')).not.toHaveText('-');
+    await expect(page.locator('[data-chip="out"] [data-n]')).not.toHaveText('-');
     await page.getByLabel('Availability', { exact: true }).selectOption({ label: 'Available' });
     await expect(page.locator('[data-user-card]')).toHaveCount(PLAN.length - 2);
     await page.getByLabel('Availability', { exact: true }).selectOption({ label: 'All' });
@@ -247,41 +279,98 @@ test.describe('Users tab: workload', () => {
     await expect(
       table.locator(`[data-user-row][data-user="${css(person('ooo').displayName)}"]`),
     ).toContainText('Out of office until');
-    await page.getByLabel('Density', { exact: true }).selectOption({ label: 'Compact' });
+    await page.locator('[data-density="compact"]').click();
     await page.reload();
     await expect(page.locator('[data-users-table]')).toHaveAttribute('data-density', 'compact');
     await page.getByRole('button', { name: 'Cards' }).click();
     await expect(page.locator('[data-users-grid]')).toHaveAttribute('data-density', 'compact');
   });
 
-  test('the summary strip counts the team and links the unassigned tasks to the Task Queue', async ({
+  test('the chips count the team, filter by load, idle, out of office and off hours, and link the unassigned tasks to the Task Queue', async ({
     page,
   }) => {
     await openUsers(page);
     const n = async (k: string) =>
-      Number(await page.locator(`[data-summary-tile="${k}"] [data-n]`).textContent());
-    const summary = (await api(page)).summary;
-    expect(await n('available')).toBe(summary.available);
-    expect(await n('busy')).toBe(summary.busy);
-    expect(await n('out')).toBe(summary.outOfOffice);
-    expect(await n('unassigned')).toBe(summary.unassignedTasks);
-    expect(summary.available).toBeGreaterThanOrEqual(2);
-    expect(summary.outOfOffice).toBeGreaterThanOrEqual(2);
+      Number(await page.locator(`[data-chip="${k}"] [data-n]`).textContent());
+    const data = await api(page);
+    const byLevel = (l: string) => data.users.filter((u: Json) => u.loadLevel === l).length;
+    expect(await n('idle')).toBe(byLevel('IDLE'));
+    expect(await n('light')).toBe(byLevel('LIGHT'));
+    expect(await n('normal')).toBe(byLevel('NORMAL'));
+    expect(await n('heavy')).toBe(byLevel('HEAVY'));
+    expect(await n('out')).toBe(
+      data.users.filter((u: Json) => u.availability.state === 'OUT_OF_OFFICE').length,
+    );
+    expect(await n('off')).toBe(
+      data.users.filter((u: Json) => u.availability.state === 'OFF_HOURS').length,
+    );
+    expect(Number(await page.locator('[data-summary-unassigned] [data-n]').textContent())).toBe(
+      data.summary.unassignedTasks,
+    );
+    expect(await n('out')).toBeGreaterThanOrEqual(2);
 
-    await page
-      .getByRole('button', { name: /Out of office/ })
-      .first()
-      .click();
+    await page.locator('[data-chip="out"]').click();
     await expect(page.locator('[data-user-card]')).toHaveCount(2);
+    await expect(page.locator('[data-chip="out"]')).toHaveAttribute('aria-pressed', 'true');
+    await page.locator('[data-chip="out"]').click();
+    await expect(page.locator('[data-user-card]')).toHaveCount(PLAN.length);
+
+    // Idle is everyone with nothing open (including the one out of office); heavy joins it (any of the chosen levels).
+    await page.locator('[data-chip="idle"]').click();
+    await expect(page.locator('[data-user-card]')).toHaveCount(byLevel('IDLE'));
+    await expect(page).toHaveURL(/uload=idle/);
+    await page.locator('[data-chip="heavy"]').click();
+    await expect(page.locator('[data-user-card]')).toHaveCount(byLevel('IDLE') + byLevel('HEAVY'));
+    await expect(page).toHaveURL(/uload=idle(,|%2C)heavy/);
+    await page.reload();
+    await expect(page.locator('[data-chip="heavy"]')).toHaveAttribute('aria-pressed', 'true');
+    await page.locator('[data-chip="idle"]').click();
+    await page.locator('[data-chip="heavy"]').click();
+    await expect(page.locator('[data-user-card]')).toHaveCount(PLAN.length);
+
+    await page.locator('[data-chip="off"]').click();
+    await expect(page.locator('[data-user-card]')).toHaveCount(1);
+    await expect(card(page, 'offHours')).toBeVisible();
+    await page.locator('[data-chip="off"]').click();
+
+    await page.getByLabel('Highest priority', { exact: true }).selectOption({ label: 'Critical' });
+    await expect(page.locator('[data-user-card]')).toHaveCount(
+      data.users.filter((u: Json) => u.topPriority?.label === 'Critical').length,
+    );
+    await expect(page).toHaveURL(/uprio=/);
     await page
-      .getByRole('button', { name: /Out of office/ })
-      .first()
-      .click();
+      .getByLabel('Highest priority', { exact: true })
+      .selectOption({ label: 'Any priority' });
     await expect(page.locator('[data-user-card]')).toHaveCount(PLAN.length);
 
     await page.locator('[data-summary-unassigned]').click();
     await expect(page).toHaveURL(/\/tasks\?.*unassigned=true/);
     await expect(page.getByRole('link', { name: `Unassigned ${wl.tag} 1` })).toBeVisible();
+  });
+
+  test('the assign icon appears on hover and focus and is reachable from the keyboard', async ({
+    page,
+  }) => {
+    await openUsers(page);
+    const tile = card(page, 'idle');
+    const assign = tile.locator('[data-assign-work]');
+    await expect(assign).toHaveAttribute(
+      'aria-label',
+      `Assign work to ${person('idle').displayName}`,
+    );
+    await expect(assign).toHaveAttribute('title', /Assign work to/);
+    expect(await assign.evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+    await tile.hover();
+    await expect(assign).toHaveCSS('opacity', '1');
+    const size = (await assign.boundingBox())!;
+    expect(Math.min(size.width, size.height)).toBeGreaterThanOrEqual(24);
+    await page.mouse.move(0, 0);
+    await tile.locator('[data-user-open]').focus();
+    await page.keyboard.press('Tab');
+    await expect(assign).toBeFocused();
+    await expect(assign).toHaveCSS('opacity', '1');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('[data-assign-dialog]')).toBeVisible();
   });
 
   test('a card opens a drawer with the open tasks, keeps focus and returns it on Escape', async ({
@@ -329,7 +418,7 @@ test.describe('Users tab: workload', () => {
     await expect(page.getByText(/priority set to Critical/)).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(low).toHaveAttribute('data-tone', 'critical', { timeout: 15_000 });
-    await expect(low.locator('[data-band-text]')).toHaveText('Highest priority: Critical');
+    await expect(low.locator('[data-glyph]')).toHaveAttribute('data-bars', '4');
     await page.getByRole('button', { name: 'Undo' }).click();
     await expect(low).toHaveAttribute('data-tone', 'low', { timeout: 15_000 });
   });
@@ -366,7 +455,7 @@ test.describe('Users tab: workload', () => {
     expect(found.items[0].status).toBe('IN_PROGRESS'); // assigning starts a New task
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
-    await expect(idle.locator('[data-open-total] dd')).toHaveText('1', { timeout: 15_000 });
+    await expect(idle.locator('[data-open-total]')).toHaveText('1', { timeout: 15_000 });
     await expect(idle).toHaveAttribute('data-state', 'busy');
 
     await page.getByRole('button', { name: 'Undo' }).click();
@@ -388,18 +477,20 @@ test.describe('Users tab: workload', () => {
     );
   });
 
-  test('the legend explains the colours, the load levels and what the view is not', async ({
+  test('the legend explains the colours, the marks, the load levels and what the view is not', async ({
     page,
   }) => {
     await openUsers(page);
-    await expect(page.locator('[data-frame]')).toContainText('does not measure completed work');
     await page.getByRole('button', { name: 'Legend and help' }).click();
     const legend = page.locator('[data-legend]');
-    await expect(legend).toContainText('Highest priority: Critical');
-    await expect(legend).toContainText('Available - no open tasks');
+    await expect(legend.locator('[data-legend-priorities]')).toContainText('Critical');
+    await expect(legend.locator('[data-legend-priorities]')).toContainText('Idle: no open tasks');
+    await expect(legend.locator('[data-legend-priorities]')).toContainText('Out of office');
+    await expect(legend.locator('[data-legend-marks]')).toContainText('overdue');
     await expect(legend).toContainText('Light: 1 to 3 open tasks.');
     await expect(legend).toContainText('Heavy: more than 8 open tasks.');
-    await expect(legend).toContainText('no completion');
+    await expect(legend.locator('[data-frame]')).toContainText('Operational capacity only');
+    await expect(legend).toContainText('No completion');
   });
 
   test('is usable at 1024 and 375 px without sideways scrolling', async ({ page }) => {
@@ -414,9 +505,21 @@ test.describe('Users tab: workload', () => {
       );
       expect(overflow, `${w}px`).toBeLessThanOrEqual(0);
     }
-    const a = await card(page, 'idle').boundingBox();
-    const b = await card(page, 'light').boundingBox();
-    expect(Math.abs(a!.x - b!.x)).toBeLessThan(2); // one column at 375 px
+    // Two columns at 375 px: tiles reflow side by side and none is cut off.
+    const a = (await card(page, 'idle').boundingBox())!;
+    const b = (await card(page, 'light').boundingBox())!;
+    const tiles = await page
+      .locator('[data-user-card]')
+      .evaluateAll(
+        (els) =>
+          els
+            .map((e) => e.getBoundingClientRect())
+            .filter((r) => r.top === els[0].getBoundingClientRect().top).length,
+      );
+    expect(tiles).toBeGreaterThanOrEqual(2);
+    expect(tiles).toBeLessThanOrEqual(3);
+    expect(a.x + a.width).toBeLessThanOrEqual(375);
+    expect(b.x + b.width).toBeLessThanOrEqual(375);
   });
 
   test('has no axe violations on the cards, the table, the drawer and the picker', async ({

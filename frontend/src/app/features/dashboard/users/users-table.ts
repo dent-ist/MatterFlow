@@ -92,9 +92,18 @@ import {
               </td>
               <td>
                 @let b = bandOf(u);
-                <span class="state" [style.background]="b.bg" [style.color]="b.fg">
+                <span
+                  class="state"
+                  [style.background]="b.bg"
+                  [style.color]="b.fg"
+                  [attr.title]="b.label"
+                  [attr.aria-label]="stateOf(u) === 'busy' ? null : b.label"
+                  [attr.role]="stateOf(u) === 'busy' ? null : 'img'"
+                >
                   <i class="pi" [class]="b.icon" aria-hidden="true"></i>
-                  {{ stateOf(u) === 'busy' ? (u.topPriority?.label ?? '') : b.text }}
+                  @if (stateOf(u) === 'busy') {
+                    {{ u.topPriority?.label ?? '' }}
+                  }
                 </span>
               </td>
               @for (c of countsOf(u); track c.priority.priorityId) {
@@ -132,12 +141,13 @@ import {
                 <td>
                   <button
                     type="button"
-                    class="mf-btn"
+                    class="mf-btn mf-btn--icon"
                     data-assign-work
                     [attr.aria-label]="'Assign work to ' + u.displayName"
+                    [attr.title]="'Assign work to ' + u.displayName"
                     (click)="assign.emit(u)"
                   >
-                    <i class="pi pi-user-plus" aria-hidden="true"></i>Assign work
+                    <i class="pi pi-user-plus" aria-hidden="true"></i>
                   </button>
                 </td>
               }

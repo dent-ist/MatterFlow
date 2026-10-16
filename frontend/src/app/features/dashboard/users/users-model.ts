@@ -8,7 +8,9 @@ import {
 import {
   OPEN_UNASSIGNED_QUERY,
   USERS_AVAILABILITY_PARAM,
+  USERS_LOAD_PARAM,
   USERS_POD_PARAM,
+  USERS_PRIORITY_PARAM,
   USERS_Q_PARAM,
   queueParams,
 } from '../dashboard-links';
@@ -23,11 +25,13 @@ export const USER_SORT_LABELS: Record<UserSort, string> = {
   priority: 'Highest priority',
   open: 'Open tasks',
 };
-export const AVAILABILITY_FILTERS = ['all', 'available', 'out'] as const;
+/** `available` is everyone not out of office (the API's meaning); `off` (off hours) is applied on the page. */
+export const AVAILABILITY_FILTERS = ['all', 'available', 'off', 'out'] as const;
 export type AvailabilityFilter = (typeof AVAILABILITY_FILTERS)[number];
 export const AVAILABILITY_LABELS: Record<AvailabilityFilter, string> = {
   all: 'All',
   available: 'Available',
+  off: 'Off hours',
   out: 'Out of office',
 };
 export const LAYOUTS = ['cards', 'table'] as const;
@@ -46,30 +50,64 @@ export const isAvailabilityFilter = (v: unknown): v is AvailabilityFilter =>
 export const isLayout = (v: unknown): v is Layout => LAYOUTS.includes(v as Layout);
 export const isDensity = (v: unknown): v is Density => DENSITIES.includes(v as Density);
 
-/** The filters of the tab. They are sent to the API and live in the address (`?tab=users&upod=3&uavail=out&uq=ann`). */
+/** The load filters (chips): `idle` is a person with nothing open and not out of office; the others follow the API's load level. */
+export const LOAD_FILTERS = ['idle', 'light', 'normal', 'heavy'] as const;
+export type LoadFilter = (typeof LOAD_FILTERS)[number];
+export const isLoadFilter = (v: unknown): v is LoadFilter => LOAD_FILTERS.includes(v as LoadFilter);
+
+/**
+ * The filters of the tab. Pod, availability (all, available, out) and name are sent to the API; load, priority and off hours are applied on
+ * the page. All of them live in the address (`?tab=users&upod=3&uavail=out&uq=ann&uload=idle,heavy&uprio=1`).
+ */
 export interface UsersFilters {
   pod: number | null;
   availability: AvailabilityFilter;
   q: string;
+  /** Load levels to show (any of them); empty means all. */
+  load: LoadFilter[];
+  /** Highest open priority to show (a priority id), or null for all. */
+  priority: number | null;
 }
 
-export const DEFAULT_FILTERS: UsersFilters = { pod: null, availability: 'all', q: '' };
+export const DEFAULT_FILTERS: UsersFilters = {
+  pod: null,
+  availability: 'all',
+  q: '',
+  load: [],
+  priority: null,
+};
 
 export function sameFilters(a: UsersFilters, b: UsersFilters): boolean {
-  return a.pod === b.pod && a.availability === b.availability && a.q === b.q;
+  return (
+    a.pod === b.pod &&
+    a.availability === b.availability &&
+    a.q === b.q &&
+    a.priority === b.priority &&
+    a.load.join() === b.load.join()
+  );
 }
 
 export function hasFilterParams(params: ParamMap): boolean {
-  return [USERS_POD_PARAM, USERS_AVAILABILITY_PARAM, USERS_Q_PARAM].some((k) => params.has(k));
+  return [
+    USERS_POD_PARAM,
+    USERS_AVAILABILITY_PARAM,
+    USERS_Q_PARAM,
+    USERS_LOAD_PARAM,
+    USERS_PRIORITY_PARAM,
+  ].some((k) => params.has(k));
 }
 
 export function filtersFromParams(params: ParamMap): UsersFilters {
   const pod = Number(params.get(USERS_POD_PARAM));
+  const prio = Number(params.get(USERS_PRIORITY_PARAM));
   const availability = params.get(USERS_AVAILABILITY_PARAM);
+  const load = (params.get(USERS_LOAD_PARAM) ?? '').split(',').filter(isLoadFilter);
   return {
     pod: Number.isInteger(pod) && pod > 0 ? pod : null,
     availability: isAvailabilityFilter(availability) ? availability : 'all',
     q: (params.get(USERS_Q_PARAM) ?? '').trim(),
+    load: LOAD_FILTERS.filter((l) => load.includes(l)),
+    priority: Number.isInteger(prio) && prio > 0 ? prio : null,
   };
 }
 
@@ -79,11 +117,37 @@ export function filtersToParams(f: UsersFilters): Record<string, string | null> 
     [USERS_POD_PARAM]: f.pod === null ? null : String(f.pod),
     [USERS_AVAILABILITY_PARAM]: f.availability === 'all' ? null : f.availability,
     [USERS_Q_PARAM]: f.q || null,
+    [USERS_LOAD_PARAM]: f.load.length ? f.load.join(',') : null,
+    [USERS_PRIORITY_PARAM]: f.priority === null ? null : String(f.priority),
   };
 }
 
 export function filterCount(f: UsersFilters): number {
-  return (f.pod !== null ? 1 : 0) + (f.availability !== 'all' ? 1 : 0) + (f.q ? 1 : 0);
+  return (
+    (f.pod !== null ? 1 : 0) +
+    (f.availability !== 'all' ? 1 : 0) +
+    (f.q ? 1 : 0) +
+    (f.load.length ? 1 : 0) +
+    (f.priority !== null ? 1 : 0)
+  );
+}
+
+/** What the API is asked for: it knows all, available and out; "off hours" is read as "all" and narrowed on the page. */
+export function apiAvailability(f: UsersFilters): 'all' | 'available' | 'out' {
+  return f.availability === 'off' ? 'all' : f.availability;
+}
+
+/** True when the person passes the filters that are applied on the page (load, priority, off hours). */
+export function passesLocalFilters(u: WorkloadUser, f: UsersFilters): boolean {
+  if (f.availability === 'off' && u.availability?.state !== 'OFF_HOURS') return false;
+  if (f.priority !== null && (u.openTotal === 0 || u.topPriority?.priorityId !== f.priority)) {
+    return false;
+  }
+  return f.load.length === 0 || f.load.includes(loadLevelOf(u).toLowerCase() as LoadFilter);
+}
+
+export function filterUsers(users: readonly WorkloadUser[], f: UsersFilters): WorkloadUser[] {
+  return users.filter((u) => passesLocalFilters(u, f));
 }
 
 // ---- states of a person
@@ -104,7 +168,7 @@ export function loadLevelOf(u: Pick<WorkloadUser, 'loadLevel'>): LoadLevel {
 }
 
 export const LOAD_LABELS: Record<LoadLevel, string> = {
-  IDLE: 'Free',
+  IDLE: 'Idle',
   LIGHT: 'Light',
   NORMAL: 'Normal',
   HEAVY: 'Heavy',
@@ -122,7 +186,7 @@ export function thresholdText(t: WorkloadThresholds | null | undefined): string[
   const light = t?.lightMax ?? 3;
   const normal = t?.normalMax ?? 8;
   return [
-    'Free: no open tasks.',
+    'Idle: no open tasks.',
     `Light: 1 to ${light} open tasks.`,
     `Normal: ${light + 1} to ${normal} open tasks.`,
     `Heavy: more than ${normal} open tasks.`,
@@ -232,22 +296,29 @@ export function plural(n: number, one: string, many = one + 's'): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-/** Everything the card says, as one sentence for assistive technology and the card's accessible name. */
+/**
+ * Everything a tile says, as sentences for the tile's accessible name and its tooltip: the name, the availability when it is not the usual
+ * ("Out of office until Oct 20", "Off hours") and the work ("No open tasks", or the open count, highest priority, overdue, due soon, on hold
+ * and load). The tiles themselves carry no such words; colours and icons stand for them.
+ */
 export function cardSummary(u: WorkloadUser, availabilityText: string): string {
   const parts: string[] = [u.displayName];
-  switch (cardState(u)) {
-    case 'ooo':
-      parts.push('Not available', availabilityText);
-      break;
-    case 'free':
-      parts.push('Available, no open tasks');
-      break;
-    default:
-      parts.push(plural(u.openTotal, 'open task'));
-      if (u.topPriority) parts.push(`highest priority ${u.topPriority.label}`);
-      if (u.overdue > 0) parts.push(`${u.overdue} overdue`);
+  if (u.availability?.state === 'OUT_OF_OFFICE' || u.availability?.state === 'OFF_HOURS') {
+    parts.push(availabilityText);
+    if (u.availability.note) parts.push(u.availability.note);
   }
-  return parts.join(', ');
+  if (u.openTotal === 0) {
+    parts.push('No open tasks');
+    return parts.join('. ');
+  }
+  const work = [plural(u.openTotal, 'open task')];
+  if (u.topPriority) work.push(`highest priority ${u.topPriority.label}`);
+  if (u.overdue > 0) work.push(`${u.overdue} overdue`);
+  if (u.dueSoon > 0) work.push(`${u.dueSoon} due soon`);
+  if (u.onHold > 0) work.push(`${u.onHold} on hold`);
+  work.push(`${LOAD_LABELS[loadLevelOf(u)].toLowerCase()} load`);
+  parts.push(work.join(', '));
+  return parts.join('. ');
 }
 
 // ---- links to the Task Queue

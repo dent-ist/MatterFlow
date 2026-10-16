@@ -118,23 +118,25 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
 
           <p class="actions">
             <a
-              class="mf-btn mf-btn--primary"
+              class="mf-btn mf-btn--icon mf-btn--primary"
               data-open-queue
               routerLink="/tasks"
+              aria-label="Open in Task Queue"
+              title="Open in Task Queue"
               [queryParams]="queueParams()"
             >
-              Open in Task Queue
-              <i class="pi pi-arrow-right" aria-hidden="true"></i>
+              <i class="pi pi-external-link" aria-hidden="true"></i>
             </a>
             @if (canAssign()) {
               <button
                 type="button"
-                class="mf-btn"
+                class="mf-btn mf-btn--icon"
                 data-drawer-assign
                 [attr.aria-label]="'Assign work to ' + u.displayName"
+                [attr.title]="'Assign work to ' + u.displayName"
                 (click)="assign.emit(u)"
               >
-                <i class="pi pi-user-plus" aria-hidden="true"></i>Assign work
+                <i class="pi pi-user-plus" aria-hidden="true"></i>
               </button>
             }
           </p>
@@ -159,8 +161,15 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
                 <div class="alert" role="alert" data-drawer-error>
                   <span>The open tasks could not be loaded.</span>
                   <mf-error-reference />
-                  <button type="button" class="mf-btn" data-drawer-retry (click)="load()">
-                    Retry
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--icon"
+                    data-drawer-retry
+                    aria-label="Retry"
+                    title="Retry"
+                    (click)="load()"
+                  >
+                    <i class="pi pi-refresh" aria-hidden="true"></i>
                   </button>
                 </div>
               }

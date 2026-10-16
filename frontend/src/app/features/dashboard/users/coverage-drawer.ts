@@ -98,13 +98,14 @@ export function targetQueueParams(t: CoverageTarget): Record<string, string | st
           </p>
           <p class="actions">
             <a
-              class="mf-btn mf-btn--primary"
+              class="mf-btn mf-btn--icon mf-btn--primary"
               data-open-queue
               routerLink="/tasks"
+              aria-label="Open in Task Queue"
+              title="Open in Task Queue"
               [queryParams]="queueParams()"
             >
-              Open in Task Queue
-              <i class="pi pi-arrow-right" aria-hidden="true"></i>
+              <i class="pi pi-external-link" aria-hidden="true"></i>
             </a>
           </p>
           @switch (state()) {

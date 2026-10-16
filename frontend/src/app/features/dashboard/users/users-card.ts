@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import {
   WorkloadPriority,
   WorkloadThresholds,
@@ -7,26 +6,16 @@ import {
 } from '../../../api/generated/api-client';
 import { availabilityDisplay, shortDay } from '../../../core/availability/availability';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { calendarDayInZone, describeDue } from '../../../core/time/time';
-import { priorityColors } from '../../../shared/ui/priority-badge';
-import {
-  Density,
-  LOAD_ICONS,
-  LOAD_LABELS,
-  cardState,
-  cardSummary,
-  countsOf,
-  loadLevelOf,
-  plural,
-  segmentsOf,
-  thresholdText,
-  toneOf,
-} from './users-model';
+import { calendarDayInZone } from '../../../core/time/time';
+import { levelBars, priorityColors } from '../../../shared/ui/priority-badge';
+import { Density, cardState, cardSummary, loadLevelOf, segmentsOf, toneOf } from './users-model';
+import { UsersGlyph } from './users-glyph';
 
-/** The coloured band of a card: icon, text and colours (the badge pair of the priority, or the green and grey states). */
+/** The colours, icon and phrase of a person's state: priority colours when something is open, green when free, hatched grey when out of office. */
 export interface Band {
   icon: string;
-  text: string;
+  /** The words for tooltips and accessible names (the tile itself shows none of them). */
+  label: string;
   bg: string;
   fg: string;
 }
@@ -39,175 +28,104 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
 }
 
 /**
- * One person on the Team workload board. The band at the top carries the card colour and always says it in words: the highest priority of the
- * open tasks (the badge colours of that priority), "Available - no open tasks" (green) or "Not available" (hatched grey, with the return date and
- * note). Below: avatar, name, availability chip, pods, a count badge per priority in rank order (zeros muted), open total, overdue, due soon,
- * on hold, next due and a segmented load bar with its Free, Light, Normal or Heavy label. The name is the button that opens the person's tasks;
- * it stretches over the whole card and "Assign work" sits above it. Operational capacity only: no completion counts, speed or ranking.
+ * One person on the Team workload board, as a small tile (about 150 x 52 px). Row 1 is the name (truncated; the tooltip and the accessible
+ * name carry the whole status). Row 2 is a colour pill (the highest priority colours with a level glyph and the open count; a green check
+ * when nothing is open; a grey calendar when out of office), the load bar split by priority, and small icon marks for overdue work, a heavy
+ * load and off hours. A left edge in the pill colour repeats the highest priority. No sentences on the tile: colour, hatching and icons carry
+ * the state, and the legend explains them. The name is the button that opens the person's tasks and stretches over the whole tile; the Assign
+ * icon sits above it and appears on hover or focus. Operational capacity only: no completion counts, speed or ranking.
+ *
+ * `density="compact"` is the dense variant: one row with the pill, the name and the marks.
  */
 @Component({
   selector: 'mf-users-card',
-  imports: [RouterLink],
+  imports: [UsersGlyph],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.compact]': "density() === 'compact'" },
   template: `
     @let u = user();
     @let st = state();
+    @let b = band();
     <article
-      class="card"
-      [class.card--ooo]="st === 'ooo'"
-      [class.card--free]="st === 'free'"
+      class="tile"
+      [class.tile--ooo]="st === 'ooo'"
+      [class.tile--free]="st === 'free'"
+      [class.tile--heavy]="level() === 'HEAVY'"
       [attr.data-user-card]="u.userId"
       [attr.data-user]="u.displayName"
       [attr.data-state]="st"
       [attr.data-tone]="tone()"
       [attr.data-load]="level()"
       [attr.data-availability]="u.availability.state"
+      [style.border-left-color]="st === 'ooo' ? null : b.fg"
     >
-      <div
-        class="band"
-        data-band
-        [class.band--ooo]="st === 'ooo'"
-        [style.background]="band().bg"
-        [style.color]="band().fg"
-      >
-        <i class="pi" [class]="band().icon" aria-hidden="true"></i>
-        <span class="band-text" data-band-text
-          ><span class="pill">{{ band().text }}</span></span
+      <p class="name">
+        <button
+          type="button"
+          class="open"
+          data-user-open
+          [id]="'wl-open-' + u.userId"
+          [attr.aria-label]="summary()"
+          [attr.title]="summary()"
+          (click)="open.emit(u)"
         >
-      </div>
-
-      <div class="body">
-        <div class="head">
-          <span class="avatar" aria-hidden="true">{{ u.initials }}</span>
-          <div class="who">
-            <h3 class="name">
-              <button
-                type="button"
-                class="open"
-                data-user-open
-                [id]="'wl-open-' + u.userId"
-                [attr.aria-label]="u.displayName + '. ' + summary() + '. Open tasks'"
-                (click)="open.emit(u)"
-              >
-                {{ u.displayName }}
-              </button>
-            </h3>
-            <span class="chip" [class]="'chip chip--' + avail().tone" data-avail-chip>
-              <i class="pi" [class]="avail().icon" aria-hidden="true"></i>
-              {{ avail().label }}
-            </span>
-          </div>
-        </div>
-
-        @if (u.pods.length > 0 && !isCompact()) {
-          <ul class="pods" aria-label="Pods" data-pods>
-            @for (p of u.pods; track p.podId) {
-              <li class="pod">{{ p.name }}</li>
-            }
-          </ul>
-        }
-
-        @if (st === 'ooo') {
-          <p class="back" data-back>
-            <i class="pi pi-calendar-minus" aria-hidden="true"></i>
-            <strong>{{ back() ?? 'No return date set' }}</strong>
-          </p>
-          @if (u.availability.note) {
-            <p class="note" data-note>{{ u.availability.note }}</p>
+          {{ u.displayName }}
+        </button>
+      </p>
+      <div class="meta" aria-hidden="true">
+        <span
+          class="pill"
+          data-pill
+          [style.background]="b.bg"
+          [style.color]="b.fg"
+          [style.border-color]="b.fg"
+        >
+          @if (st === 'busy') {
+            <mf-users-glyph data-glyph [level]="bars()" [attr.data-bars]="bars()" />
+          } @else {
+            <i class="pi" [class]="b.icon" data-state-icon></i>
           }
-        } @else if (st === 'free') {
-          <p class="free" data-free>
-            <i class="pi pi-check-circle" aria-hidden="true"></i> No open tasks
-          </p>
-        }
-
-        @if (u.openTotal > 0) {
-          <ul class="prio" aria-label="Open tasks by priority" data-priority-counts>
-            @for (c of counts(); track c.priority.priorityId) {
-              @if (c.count > 0 || !isCompact()) {
-                <li
-                  class="pc"
-                  [class.pc--zero]="c.count === 0"
-                  [attr.data-priority-count]="c.priority.label"
-                  [attr.data-count]="c.count"
-                  [style.background]="c.count > 0 ? colorsOf(c.priority.color).bg : null"
-                  [style.color]="c.count > 0 ? colorsOf(c.priority.color).fg : null"
-                  [style.border-color]="c.count > 0 ? colorsOf(c.priority.color).fg : null"
-                >
-                  {{ c.priority.label }} <strong>{{ c.count }}</strong>
-                </li>
-              }
-            }
-          </ul>
-        }
-
-        <dl class="stats">
-          <div class="stat" data-open-total>
-            <dt>Open</dt>
-            <dd>{{ u.openTotal }}</dd>
-          </div>
-          <div class="stat" [class.stat--warn]="u.overdue > 0" data-overdue>
-            <dt><i class="pi pi-exclamation-circle" aria-hidden="true"></i>Overdue</dt>
-            <dd>{{ u.overdue }}</dd>
-          </div>
-          <div class="stat" [class.stat--soon]="u.dueSoon > 0" data-due-soon>
-            <dt><i class="pi pi-clock" aria-hidden="true"></i>Due soon</dt>
-            <dd>{{ u.dueSoon }}</dd>
-          </div>
-          <div class="stat" data-hold>
-            <dt><i class="pi pi-pause" aria-hidden="true"></i>On hold</dt>
-            <dd>{{ u.onHold }}</dd>
-          </div>
-        </dl>
-
-        @if (u.nextDue && !isCompact()) {
-          <p class="next" data-next-due [class.next--overdue]="u.nextDue.isOverdue">
-            <i
-              class="pi"
-              [class]="u.nextDue.isOverdue ? 'pi-exclamation-circle' : 'pi-calendar'"
-              aria-hidden="true"
-            ></i>
-            Next due
-            <a class="ref mf-ref" [routerLink]="['/tasks', u.nextDue.taskId]">{{
-              u.nextDue.ref
-            }}</a>
-            <span>{{ nextDueText() }}</span>
-          </p>
-        }
-
-        <div class="load" data-load-row>
-          <div class="track" role="img" data-load-bar [attr.aria-label]="barLabel()">
-            @for (s of segments(); track s.priorityId) {
-              <span
-                class="seg"
-                [attr.data-segment]="s.label"
-                [style.width.%]="s.percent"
-                [style.background]="colorsOf(s.color).bg"
-                [style.box-shadow]="'inset 0 0 0 1px ' + colorsOf(s.color).fg"
-              ></span>
-            }
-          </div>
-          <span class="level" [attr.data-load-label]="level()" [attr.title]="help()">
-            <i class="pi" [class]="loadIcon()" aria-hidden="true"></i>
-            {{ loadLabel() }}
-          </span>
-        </div>
-
-        @if (canAssign()) {
-          <div class="actions">
-            <button
-              type="button"
-              class="mf-btn assign"
-              data-assign-work
-              [attr.aria-label]="'Assign work to ' + u.displayName"
-              (click)="assign.emit(u)"
+          @if (u.openTotal > 0) {
+            <strong class="n" data-open-total>{{ u.openTotal }}</strong>
+          }
+        </span>
+        <span class="marks">
+          @if (u.overdue > 0) {
+            <span class="mark mark--late" data-overdue [attr.data-count]="u.overdue"
+              ><i class="pi pi-clock"></i>{{ u.overdue }}</span
             >
-              <i class="pi pi-user-plus" aria-hidden="true"></i>Assign work
-            </button>
-          </div>
-        }
+          }
+          @if (level() === 'HEAVY') {
+            <i class="pi pi-exclamation-triangle mark mark--heavy" data-heavy></i>
+          }
+          @if (u.availability.state === 'OFF_HOURS') {
+            <i class="pi pi-moon mark" data-off-hours></i>
+          }
+        </span>
       </div>
+      <span class="track" aria-hidden="true" data-load-bar [attr.data-open]="u.openTotal">
+        @for (s of segments(); track s.priorityId) {
+          <span
+            class="seg"
+            [attr.data-segment]="s.label"
+            [style.width.%]="s.percent"
+            [style.background]="colorsOf(s.color).bg"
+            [style.box-shadow]="'inset 0 0 0 1px ' + colorsOf(s.color).fg"
+          ></span>
+        }
+      </span>
+      @if (canAssign()) {
+        <button
+          type="button"
+          class="assign"
+          data-assign-work
+          [attr.aria-label]="'Assign work to ' + u.displayName"
+          [attr.title]="'Assign work to ' + u.displayName"
+          (click)="assign.emit(u)"
+        >
+          <i class="pi pi-user-plus" aria-hidden="true"></i>
+        </button>
+      }
     </article>
   `,
   styles: `
@@ -215,92 +133,47 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       display: block;
       min-width: 0;
     }
-    .card {
+    .tile {
       position: relative;
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      gap: 3px;
+      align-content: start;
       height: 100%;
       min-width: 0;
+      padding: 5px 6px 5px 6px;
       overflow: hidden;
       background: var(--mf-surface);
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-lg);
-      box-shadow: var(--mf-shadow-1);
+      border-left: 4px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius);
     }
-    .card:hover {
+    .tile:hover {
       border-color: var(--mf-border-strong);
     }
-    .card--ooo {
+    .tile--free {
+      background: var(--mf-success-bg);
+      border-color: var(--mf-success);
+    }
+    .tile--ooo {
       border-style: dashed;
       border-color: var(--mf-border-strong);
       background: repeating-linear-gradient(
         135deg,
-        var(--mf-surface-alt) 0 8px,
-        var(--mf-surface) 8px 16px
+        var(--mf-surface-alt) 0 6px,
+        var(--mf-surface) 6px 12px
       );
     }
-    .band {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      padding: var(--mf-s1) var(--mf-s3);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-      border-bottom: 1px solid rgb(0 0 0 / 12%);
-    }
-    .band--ooo {
-      color: var(--mf-text);
-      background: repeating-linear-gradient(
-        135deg,
-        var(--mf-border) 0 6px,
-        var(--mf-surface-alt) 6px 12px
-      ) !important;
-    }
-    .band--ooo .pill {
-      padding: 0 var(--mf-s2);
-      color: var(--mf-text);
-      background: var(--mf-surface);
-      border-radius: var(--mf-radius);
-    }
-    .body {
-      display: grid;
-      gap: var(--mf-s2);
-      align-content: start;
-      flex: 1;
-      min-width: 0;
-      padding: var(--mf-s3);
-    }
-    .head {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s3);
-      min-width: 0;
-    }
-    .avatar {
-      flex: none;
-      display: inline-grid;
-      place-items: center;
-      width: 2.5rem;
-      height: 2.5rem;
-      color: var(--mf-primary);
-      background: var(--mf-selected-bg);
-      border: 1px solid var(--mf-primary);
-      border-radius: 50%;
-      font-size: var(--mf-fs-sm);
-      font-weight: 700;
-    }
-    .who {
-      display: grid;
-      gap: 2px;
-      justify-items: start;
-      min-width: 0;
+    .tile--heavy {
+      box-shadow: inset 0 0 0 1px var(--mf-danger);
     }
     .name {
       margin: 0;
-      font-size: var(--mf-fs-md);
+      min-width: 0;
+      font-size: var(--mf-fs-sm);
       line-height: 1.3;
     }
     .open {
+      display: block;
       max-width: 100%;
       padding: 0;
       border: 0;
@@ -309,198 +182,159 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       font: inherit;
       font-weight: 600;
       text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       cursor: pointer;
-      overflow-wrap: anywhere;
     }
     .open::after {
       content: '';
       position: absolute;
       inset: 0;
-      border-radius: var(--mf-radius-lg);
+      border-radius: var(--mf-radius);
     }
     .open:focus-visible {
       outline: none;
     }
     .open:focus-visible::after {
       outline: 2px solid var(--mf-focus);
-      outline-offset: 2px;
+      outline-offset: 1px;
     }
-    .chip {
+    .meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 5px;
+      min-width: 0;
+      height: 18px;
+    }
+    .pill {
+      flex: none;
       display: inline-flex;
       align-items: center;
-      gap: var(--mf-s1);
-      padding: 0 var(--mf-s2);
-      border: 1px solid currentColor;
-      border-radius: 999px;
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .chip--success {
-      color: var(--mf-success);
-      background: var(--mf-success-bg);
-    }
-    .chip--warning {
-      color: var(--mf-warning);
-      background: var(--mf-warning-bg);
-    }
-    .chip--neutral {
-      color: var(--mf-text-muted);
-      background: var(--mf-surface-alt);
-      border-style: dashed;
-    }
-    .pods {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--mf-s1);
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-    .pod {
-      padding: 0 var(--mf-s2);
-      color: var(--mf-text-muted);
-      background: var(--mf-surface-alt);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
-      font-size: var(--mf-fs-xs);
-    }
-    .back,
-    .free,
-    .note {
-      margin: 0;
-    }
-    .back {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      color: var(--mf-text);
-      font-size: var(--mf-fs-md);
-    }
-    .note {
-      color: var(--mf-text);
-      font-size: var(--mf-fs-sm);
-      font-style: italic;
-      overflow-wrap: anywhere;
-    }
-    .free {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      color: var(--mf-success);
-      font-weight: 600;
-    }
-    .prio {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--mf-s1);
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-    .pc {
-      padding: 0 var(--mf-s2);
+      justify-content: center;
+      gap: 4px;
+      box-sizing: border-box;
+      min-width: 1.5rem;
+      height: 18px;
+      padding: 0 5px;
       border: 1px solid;
-      border-radius: var(--mf-radius);
+      border-radius: 9px;
       font-size: var(--mf-fs-xs);
-      white-space: nowrap;
+      line-height: 1;
     }
-    .pc--zero {
-      color: var(--mf-text-muted);
-      border-style: dashed;
-      border-color: var(--mf-border-strong);
-      font-weight: 400;
+    .pill .pi {
+      font-size: 0.7rem;
     }
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: var(--mf-s1) var(--mf-s2);
-      margin: 0;
-    }
-    .stat dt {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      white-space: nowrap;
-    }
-    .stat dd {
-      margin: 0;
-      font-size: var(--mf-fs-lg, 1.125rem);
-      font-weight: 700;
+    .n {
       font-variant-numeric: tabular-nums;
     }
-    .stat--warn dt,
-    .stat--warn dd {
-      color: var(--mf-danger);
-    }
-    .stat--soon dt,
-    .stat--soon dd {
-      color: var(--mf-warning);
-    }
-    .next {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s1);
-      margin: 0;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-    }
-    .next--overdue {
-      color: var(--mf-danger);
-    }
-    .ref {
-      position: relative;
-      color: var(--mf-link);
-      text-underline-offset: 2px;
-    }
-    .load {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
+    .tile--ooo .pill {
+      border-style: dashed;
+      background: var(--mf-surface);
     }
     .track {
       display: flex;
-      flex: 1;
-      height: 0.75rem;
+      height: 7px;
       overflow: hidden;
       background: var(--mf-surface-alt);
       border: 1px solid var(--mf-border-strong);
       border-radius: 999px;
+    }
+    .tile--free .track {
+      background: transparent;
+      border-style: dashed;
+      border-color: var(--mf-success);
     }
     .seg {
       flex: none;
       height: 100%;
       min-width: 3px;
     }
-    .level {
+    .tile--ooo .seg {
+      opacity: 0.6;
+    }
+    .marks {
+      flex: none;
       display: inline-flex;
       align-items: center;
-      gap: var(--mf-s1);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-      white-space: nowrap;
+      gap: 4px;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
     }
-    [data-load='HEAVY'] .level {
+    .mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-size: 0.7rem;
+    }
+    .mark--late {
+      color: var(--mf-danger);
+      font-size: var(--mf-fs-xs);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .mark--heavy {
       color: var(--mf-danger);
     }
-    .actions {
-      position: relative;
-      display: flex;
-      margin-top: var(--mf-s1);
-    }
     .assign {
-      position: relative;
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      z-index: 1;
+      display: inline-grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      color: var(--mf-text);
+      background: var(--mf-surface);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius);
+      font-size: 0.75rem;
+      cursor: pointer;
+      opacity: 0;
     }
-    :host(.compact) .body {
-      gap: var(--mf-s1);
-      padding: var(--mf-s2);
+    .tile:hover .assign,
+    .tile:focus-within .assign,
+    .assign:focus-visible {
+      opacity: 1;
     }
-    :host(.compact) .avatar {
-      width: 2rem;
-      height: 2rem;
+    .assign:hover {
+      background: var(--mf-selected-bg);
+    }
+    .assign:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 1px;
+    }
+    /* No hover on a touch screen: the drawer has the Assign icon, so the tile keeps its whole name. */
+    @media (hover: none) {
+      .assign {
+        display: none;
+      }
+    }
+    /* Dense: one row (pill, name, marks), no bar. */
+    :host(.compact) .tile {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding-block: 3px;
+    }
+    :host(.compact) .meta {
+      display: contents;
+    }
+    :host(.compact) .pill {
+      order: -1;
+    }
+    :host(.compact) .name {
+      flex: 1;
+    }
+    :host(.compact) .track {
+      display: none;
+    }
+    :host(.compact) .assign {
+      top: 50%;
+      transform: translateY(-50%);
     }
   `,
 })
@@ -520,57 +354,36 @@ export class UsersCard {
   protected readonly state = computed(() => cardState(this.user()));
   protected readonly tone = computed(() => toneOf(this.user()));
   protected readonly level = computed(() => loadLevelOf(this.user()));
-  protected readonly loadLabel = computed(() => LOAD_LABELS[this.level()]);
-  protected readonly loadIcon = computed(() => LOAD_ICONS[this.level()]);
-  protected readonly help = computed(() => thresholdText(this.thresholds()).join(' '));
-  protected readonly isCompact = computed(() => this.density() === 'compact');
-  protected readonly counts = computed(() => countsOf(this.user(), this.legend()));
   protected readonly segments = computed(() =>
     segmentsOf(this.user(), this.legend(), this.thresholds()),
   );
   protected readonly avail = computed(() =>
-    availabilityDisplay(this.user().availability, this.zone),
+    availabilityDisplay(this.user().availability, this.zone, this.clock.now()),
   );
-  protected readonly back = computed(() =>
-    backOnText(this.user().availability.outUntil, this.zone, this.clock.now()),
-  );
-  protected readonly summary = computed(() =>
-    cardSummary(this.user(), this.back() ?? this.avail().label),
-  );
+  protected readonly summary = computed(() => cardSummary(this.user(), this.avail().label));
   protected readonly band = computed<Band>(() => bandOf(this.user()));
-
-  protected readonly barLabel = computed(() => {
-    const u = this.user();
-    const parts = this.segments().map((s) => `${s.count} ${s.label}`);
-    return `Load: ${plural(u.openTotal, 'open task')}${parts.length ? ' (' + parts.join(', ') + ')' : ''}. ${this.loadLabel()}.`;
-  });
-
-  protected readonly nextDueText = computed(() => {
-    const n = this.user().nextDue;
-    if (!n) return '';
-    const due = describeDue(n, this.clock.now(), this.zone);
-    return due.kind === 'asap' ? 'ASAP' : due.label;
-  });
+  /** Level bars of the priority glyph: 4 for the most urgent rank down to 1, as on the priority badge. */
+  protected readonly bars = computed(() => levelBars(this.user().topPriority?.rank));
 
   protected colorsOf(tone: string) {
     return priorityColors(tone);
   }
 }
 
-/** The band of a user: priority colours when something is open, green when free, hatched grey when out of office. */
+/** The colours, icon and phrase of a user: priority colours when something is open, green when free, hatched grey when out of office. */
 export function bandOf(u: WorkloadUser): Band {
   switch (cardState(u)) {
     case 'ooo':
       return {
         icon: 'pi-calendar-minus',
-        text: 'Not available',
+        label: 'Out of office',
         bg: 'var(--mf-surface-alt)',
         fg: 'var(--mf-text)',
       };
     case 'free':
       return {
         icon: 'pi-check-circle',
-        text: 'Available - no open tasks',
+        label: 'No open tasks',
         bg: 'var(--mf-success-bg)',
         fg: 'var(--mf-success)',
       };
@@ -578,7 +391,7 @@ export function bandOf(u: WorkloadUser): Band {
       const colors = priorityColors(u.topPriority?.color);
       return {
         icon: 'pi-flag-fill',
-        text: `Highest priority: ${u.topPriority?.label ?? 'none'}`,
+        label: `Highest priority: ${u.topPriority?.label ?? 'none'}`,
         bg: colors.bg,
         fg: colors.fg,
       };

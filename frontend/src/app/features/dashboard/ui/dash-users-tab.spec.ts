@@ -229,75 +229,62 @@ describe('DashUsersTab', () => {
       expect(q('[data-users-grid]').getAttribute('aria-busy')).toBeNull();
     });
 
-    it('colours a card by its highest priority, in words, and keeps the token for tests', async () => {
+    it('colours a tile by its highest priority with a level glyph, and keeps the token for tests', async () => {
       await open();
-      expect(card('Ann Lee').getAttribute('data-tone')).toBe('critical');
-      expect(text(card('Ann Lee').querySelector('[data-band-text]'))).toBe(
-        'Highest priority: Critical',
-      );
-      expect(card('Bob Ray').getAttribute('data-tone')).toBe('normal');
-      expect(text(card('Bob Ray').querySelector('[data-band-text]'))).toBe(
-        'Highest priority: Normal',
-      );
-      expect(card('Ann Lee').querySelector<HTMLElement>('[data-band]')!.style.background).toContain(
+      const ann = card('Ann Lee');
+      expect(ann.getAttribute('data-tone')).toBe('critical');
+      expect(ann.querySelector<HTMLElement>('[data-pill]')!.style.background).toContain(
         '--mf-pr-critical-bg',
       );
+      expect(ann.querySelector('[data-glyph]')!.getAttribute('data-bars')).toBe('4');
+      expect(card('Bob Ray').getAttribute('data-tone')).toBe('normal');
+      expect(card('Bob Ray').querySelector('[data-glyph]')!.getAttribute('data-bars')).toBe('2');
+      expect(text(ann.querySelector('[data-open-total]'))).toBe('3');
     });
 
-    it('shows the green free state with text and the hatched grey out-of-office state with the return date and note', async () => {
+    it('has no sentences on a tile: the state is colour, hatching and an icon, and the words are in the name and tooltip', async () => {
       await open();
+      for (const c of qa('[data-user-card]')) {
+        const visible = text(c);
+        expect(visible).not.toMatch(/No open tasks|Not available|Available|Highest priority/i);
+        const open = c.querySelector('[data-user-open]')!;
+        expect(open.getAttribute('title')).toBe(open.getAttribute('aria-label'));
+      }
       const free = card('Cy Tan');
       expect(free.getAttribute('data-state')).toBe('free');
-      expect(text(free.querySelector('[data-band-text]'))).toBe('Available - no open tasks');
-      expect(text(free.querySelector('[data-free]'))).toBe('No open tasks');
-      expect(text(free.querySelector('[data-load-label]'))).toBe('Free');
+      expect(free.querySelector('[data-state-icon]')!.className).toContain('pi-check-circle');
+      expect(free.querySelector('[data-open-total]')).toBeNull();
+      expect(free.querySelector('[data-user-open]')!.getAttribute('aria-label')).toBe(
+        'Cy Tan. No open tasks',
+      );
 
       const ooo = card('Dee Fox');
       expect(ooo.getAttribute('data-state')).toBe('ooo');
       expect(ooo.getAttribute('data-availability')).toBe('OUT_OF_OFFICE');
-      expect(text(ooo.querySelector('[data-band-text]'))).toBe('Not available');
-      expect(text(ooo.querySelector('[data-avail-chip]'))).toBe('Out of office until Oct 20');
-      expect(text(ooo.querySelector('[data-back]'))).toBe('Back on Oct 21');
-      expect(text(ooo.querySelector('[data-note]'))).toBe('Annual leave');
+      expect(ooo.querySelector('[data-state-icon]')!.className).toContain('pi-calendar-minus');
+      expect(ooo.querySelector('[data-user-open]')!.getAttribute('aria-label')).toContain(
+        'Dee Fox. Out of office until Oct 20. Annual leave. 1 open task',
+      );
       expect(OUT_UNTIL).toBeTruthy();
     });
 
-    it('marks off hours with a soft chip and still counts the work', async () => {
+    it('marks off hours with a moon, overdue work with a clock and a count, and a heavy load', async () => {
       await open();
       const eve = card('Eve Kim');
-      expect(text(eve.querySelector('[data-avail-chip]'))).toBe('Off hours');
+      expect(eve.querySelector('[data-off-hours]')).not.toBeNull();
       expect(eve.getAttribute('data-state')).toBe('busy');
-    });
-
-    it('shows a count badge per priority in rank order with zero counts muted', async () => {
-      await open();
-      const badges = qa('[data-priority-count]').filter((b) => card('Ann Lee').contains(b));
-      expect(badges.map((b) => text(b))).toEqual(['Critical 1', 'High 2', 'Normal 0', 'Low 0']);
-      expect(badges.map((b) => b.classList.contains('pc--zero'))).toEqual([
-        false,
-        false,
-        true,
-        true,
-      ]);
-    });
-
-    it('shows open, overdue, due soon, on hold, next due, pods and the load label', async () => {
-      await open();
-      const ann = card('Ann Lee');
-      expect(text(ann.querySelector('[data-open-total]'))).toBe('Open3');
-      expect(text(ann.querySelector('[data-overdue]'))).toBe('Overdue2');
-      expect(text(ann.querySelector('[data-due-soon]'))).toBe('Due soon1');
-      expect(text(ann.querySelector('[data-hold]'))).toBe('On hold1');
-      expect(text(ann.querySelector('[data-pods]'))).toBe('Pod A');
-      expect(text(ann.querySelector('[data-load-label]'))).toBe('Light');
-      const bob = card('Bob Ray');
-      expect(text(bob.querySelector('[data-next-due]'))).toContain('TSK-55');
-      expect(bob.querySelector('[data-next-due] a')!.getAttribute('href')).toBe('/tasks/55');
-      expect(text(card('Hal Moe').querySelector('[data-load-label]'))).toBe('Heavy');
+      expect(eve.querySelector('[data-user-open]')!.getAttribute('aria-label')).toContain(
+        'Off hours',
+      );
+      expect(card('Ann Lee').querySelector('[data-off-hours]')).toBeNull();
+      expect(text(card('Ann Lee').querySelector('[data-overdue]'))).toBe('2');
+      expect(card('Bob Ray').querySelector('[data-overdue]')).toBeNull();
       expect(card('Hal Moe').getAttribute('data-load')).toBe('HEAVY');
+      expect(card('Hal Moe').querySelector('[data-heavy]')).not.toBeNull();
+      expect(card('Ann Lee').querySelector('[data-heavy]')).toBeNull();
     });
 
-    it('draws the load bar segments in rank order and names it for assistive technology', async () => {
+    it('draws the load bar segments in rank order', async () => {
       await open();
       const bar = card('Bob Ray').querySelector('[data-load-bar]')!;
       expect(
@@ -305,46 +292,104 @@ describe('DashUsersTab', () => {
           s.getAttribute('data-segment'),
         ),
       ).toEqual(['Normal', 'Low']);
-      expect(bar.getAttribute('role')).toBe('img');
-      expect(bar.getAttribute('aria-label')).toBe('Load: 6 open tasks (5 Normal, 1 Low). Normal.');
-      expect(card('Cy Tan').querySelector('[data-load-bar]')!.getAttribute('aria-label')).toBe(
-        'Load: 0 open tasks. Free.',
-      );
+      expect(card('Cy Tan').querySelectorAll('[data-segment]').length).toBe(0);
     });
 
     it('names the open button with the visible name first and the state in words', async () => {
       await open();
       const label = card('Ann Lee').querySelector('[data-user-open]')!.getAttribute('aria-label')!;
       expect(label.startsWith('Ann Lee')).toBe(true);
-      expect(label).toContain('3 open tasks, highest priority Critical, 2 overdue');
-      expect(
-        card('Dee Fox').querySelector('[data-user-open]')!.getAttribute('aria-label'),
-      ).toContain('Not available');
+      expect(label).toContain('3 open tasks, highest priority Critical, 2 overdue, 1 due soon');
+      expect(label).toContain('light load');
+    });
+
+    it('assigns with an icon button that has a name and a tooltip', async () => {
+      await open();
+      const assign = card('Ann Lee').querySelector('[data-assign-work]')!;
+      expect(assign.getAttribute('aria-label')).toBe('Assign work to Ann Lee');
+      expect(assign.getAttribute('title')).toBe('Assign work to Ann Lee');
+      expect(text(assign)).toBe('');
     });
   });
 
-  describe('summary strip', () => {
-    it('counts available, busy, out of office and unassigned tasks and links the unassigned ones to the Task Queue', async () => {
+  describe('quick filter chips', () => {
+    it('count the team by load, out of office and off hours, and link the unassigned tasks to the Task Queue', async () => {
       await open();
-      const n = (k: string) => text(q(`[data-summary-tile="${k}"] [data-n]`));
-      expect([n('available'), n('busy'), n('out'), n('unassigned')]).toEqual(['1', '4', '1', '4']);
+      const n = (k: string) => text(q(`[data-chip="${k}"] [data-n]`));
+      expect([n('idle'), n('light'), n('normal'), n('heavy'), n('out'), n('off')]).toEqual([
+        '1',
+        '3',
+        '1',
+        '1',
+        '1',
+        '1',
+      ]);
+      expect(text(q('[data-summary-unassigned] [data-n]'))).toBe('4');
       const href = q('[data-summary-unassigned]').getAttribute('href')!;
       expect(href).toContain('/tasks?');
       expect(href).toContain('unassigned=true');
       expect(href).toContain('status=NEW');
     });
 
-    it('the out of office tile toggles the availability filter', async () => {
+    it('the out of office chip toggles the availability filter through the API', async () => {
       await open();
-      q<HTMLButtonElement>('[data-summary-out]').click();
+      q<HTMLButtonElement>('[data-chip="out"]').click();
       await settle();
       expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'out', undefined);
       expect(url()).toContain('uavail=out');
-      expect(q('[data-summary-out]').getAttribute('aria-pressed')).toBe('true');
-      q<HTMLButtonElement>('[data-summary-out]').click();
+      expect(q('[data-chip="out"]').getAttribute('aria-pressed')).toBe('true');
+      q<HTMLButtonElement>('[data-chip="out"]').click();
       await settle();
       expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined);
       expect(url()).not.toContain('uavail');
+    });
+
+    it('load chips combine and filter on the page without another read; the address keeps them', async () => {
+      await open();
+      q<HTMLButtonElement>('[data-chip="idle"]').click();
+      await settle();
+      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual(['Cy Tan']);
+      q<HTMLButtonElement>('[data-chip="heavy"]').click();
+      await settle();
+      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual([
+        'Cy Tan',
+        'Hal Moe',
+      ]);
+      expect(url()).toContain('uload=idle,heavy');
+      expect(getWorkload).toHaveBeenCalledTimes(1);
+      expect(text(q('[data-users-live]'))).toBe('2 people shown.');
+      expect(q('[data-chip="idle"]').getAttribute('aria-pressed')).toBe('true');
+      q<HTMLButtonElement>('[data-chip="idle"]').click();
+      await settle();
+      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual(['Hal Moe']);
+    });
+
+    it('off hours is the availability filter applied on the page', async () => {
+      await open();
+      q<HTMLButtonElement>('[data-chip="off"]').click();
+      await settle();
+      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual(['Eve Kim']);
+      expect(getWorkload).toHaveBeenCalledTimes(1);
+      expect(url()).toContain('uavail=off');
+    });
+
+    it('opens with the load and priority filters of the address', async () => {
+      await open(of(board()), '/dashboard?tab=users&uload=normal,heavy&uprio=1');
+      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual(['Hal Moe']);
+      expect(q('[data-chip="heavy"]').getAttribute('aria-pressed')).toBe('true');
+      expect(q<HTMLSelectElement>('[data-filter="priority"]').value).toBe('1');
+    });
+
+    it('the priority filter keeps people whose highest open priority is the chosen one', async () => {
+      await open();
+      await choose('[data-filter="priority"]', '3');
+      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual(['Bob Ray']);
+      expect(url()).toContain('uprio=3');
+      expect(getWorkload).toHaveBeenCalledTimes(1);
+      q<HTMLButtonElement>('[data-clear-filters]').click();
+      await settle();
+      expect(qa('[data-user-card]').length).toBe(6);
+      expect(url()).not.toContain('uprio');
     });
   });
 
@@ -389,8 +434,12 @@ describe('DashUsersTab', () => {
       const row = q('[data-user-row="4"]');
       expect(row.getAttribute('data-state')).toBe('ooo');
       expect(text(row)).toContain('Out of office until Oct 20');
+      expect(text(q('[data-user-row="3"]'))).not.toMatch(/No open tasks|Not available/);
+      expect(q('[data-user-row="3"] .state').getAttribute('aria-label')).toBe('No open tasks');
+      expect(text(q('[data-assign-work]'))).toBe('');
       expect(q('[data-layout="table"]').getAttribute('aria-pressed')).toBe('true');
-      await choose('[data-density]', 'compact');
+      q<HTMLButtonElement>('[data-density="compact"]').click();
+      await settle();
       expect(q('[data-users-table]').getAttribute('data-density')).toBe('compact');
       expect(JSON.parse(localStorage.getItem('mf.dashboard.users.v1.5')!)).toEqual({
         sort: 'load',
@@ -400,18 +449,20 @@ describe('DashUsersTab', () => {
       });
     });
 
-    it('opens the legend with the card colours, load levels and the framing text', async () => {
+    it('opens the legend with the pill colours, marks, load levels and the framing text', async () => {
       await open();
       expect(q('[data-legend]')).toBeNull();
       q<HTMLButtonElement>('[data-legend-toggle]').click();
       await settle();
       expect(q('[data-legend-toggle]').getAttribute('aria-expanded')).toBe('true');
-      expect(text(q('[data-legend]'))).toContain('Highest priority: Critical');
-      expect(text(q('[data-legend]'))).toContain('Not available');
+      expect(text(q('[data-legend-priorities]'))).toContain('Critical');
+      expect(text(q('[data-legend-priorities]'))).toContain('Idle: no open tasks');
+      expect(text(q('[data-legend-priorities]'))).toContain('Out of office');
+      expect(text(q('[data-legend-marks]'))).toContain('overdue');
       expect(text(q('[data-load-help]'))).toContain('Light: 1 to 3 open tasks.');
       expect(text(q('[data-load-help]'))).toContain('Heavy: more than 8 open tasks.');
-      expect(text(q('[data-legend]'))).toContain('no completion');
-      expect(text(q('[data-frame]'))).toContain('does not measure completed work');
+      expect(text(q('[data-legend]'))).toContain('No completion');
+      expect(text(q('[data-frame]'))).toContain('Operational capacity only');
     });
   });
 
@@ -703,28 +754,28 @@ describe('DashUsersTab', () => {
         ),
       );
 
-    it('draws 60 people at first and the rest on request, in the cards and in the table', async () => {
-      await open(of(many(130)));
-      expect(qa('[data-user-card]').length).toBe(60);
-      expect(text(q('[data-users-more]'))).toContain('Showing 60 of 130 people.');
+    it('draws 200 people at first and the rest on request, in the cards and in the table', async () => {
+      await open(of(many(450)));
+      expect(qa('[data-user-card]').length).toBe(200);
+      expect(text(q('[data-users-more]'))).toContain('Showing 200 of 450 people.');
       q<HTMLButtonElement>('[data-users-show-more]').click();
       await settle();
-      expect(qa('[data-user-card]').length).toBe(120);
+      expect(qa('[data-user-card]').length).toBe(400);
       q<HTMLButtonElement>('[data-users-show-all]').click();
       await settle();
-      expect(qa('[data-user-card]').length).toBe(130);
+      expect(qa('[data-user-card]').length).toBe(450);
       expect(q('[data-users-more]')).toBeNull();
       q<HTMLButtonElement>('[data-layout="table"]').click();
       await settle();
-      expect(qa('tbody tr').length).toBe(130);
+      expect(qa('tbody tr').length).toBe(450);
     });
 
-    it('starts again from 60 after a new sort', async () => {
-      await open(of(many(130)));
+    it('starts again from 200 after a new sort', async () => {
+      await open(of(many(450)));
       q<HTMLButtonElement>('[data-users-show-all]').click();
       await settle();
       await choose('[data-sort]', 'name');
-      expect(qa('[data-user-card]').length).toBe(60);
+      expect(qa('[data-user-card]').length).toBe(200);
     });
   });
 
@@ -994,8 +1045,10 @@ describe('DashUsersTab', () => {
         }),
       ),
     );
-    expect(text(q('[data-band-text]'))).toBe('Highest priority: Rush');
-    expect(text(q('[data-priority-count]'))).toBe('Rush 1');
+    expect(q('[data-user-open]').getAttribute('aria-label')).toContain('highest priority Rush');
+    q<HTMLButtonElement>('[data-legend-toggle]').click();
+    await settle();
+    expect(text(q('[data-legend-priorities]'))).toContain('Rush');
   });
 });
 

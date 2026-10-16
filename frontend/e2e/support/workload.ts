@@ -23,7 +23,7 @@ export interface WorkloadSeed {
   world: Awaited<ReturnType<Seeder['world']>>;
 }
 
-interface Plan {
+export interface Plan {
   key: string;
   loads: [number, number, number, number];
   pod: 'A' | 'B';
@@ -47,6 +47,42 @@ export const PLAN: Plan[] = [
   { key: 'idleB', loads: [0, 0, 0, 0], pod: 'B' },
 ];
 
+const DEFAULT_PLAN = PLAN;
+
+/**
+ * A department of `n` people for the screenshots and the size checks: the mix of a real firm (about a fifth idle, most light or normal, a few
+ * heavy, some out of office or off hours), in two pods. Keys are `p0`, `p1`, ...
+ */
+export function crowdPlan(n: number): Plan[] {
+  const mix: Omit<Plan, 'key' | 'pod'>[] = [
+    { loads: [0, 0, 0, 0] },
+    { loads: [0, 0, 0, 2] },
+    { loads: [0, 0, 1, 1] },
+    { loads: [0, 1, 2, 2] },
+    { loads: [0, 2, 3, 1] },
+    { loads: [1, 2, 2, 0] },
+    { loads: [0, 3, 2, 2] },
+    { loads: [0, 0, 4, 3] },
+    { loads: [0, 0, 0, 0] },
+    { loads: [0, 0, 0, 4] },
+    { loads: [2, 1, 1, 1] },
+    { loads: [0, 2, 0, 0], ooo: { note: 'Annual leave', untilDays: 6 } },
+    { loads: [0, 1, 0, 1] },
+    { loads: [0, 0, 1, 0], offHours: true },
+    { loads: [0, 2, 5, 5] },
+    { loads: [0, 0, 0, 0] },
+    { loads: [0, 0, 3, 3] },
+    { loads: [0, 0, 0, 0], ooo: { note: 'Parental leave' } },
+    { loads: [0, 0, 2, 0] },
+    { loads: [3, 3, 2, 2] },
+  ];
+  return Array.from({ length: n }, (_, i) => ({
+    key: `p${i}`,
+    pod: i % 2 === 0 ? 'A' : 'B',
+    ...mix[i % mix.length],
+  }));
+}
+
 async function inBatches(n: number, width: number, job: (i: number) => Promise<unknown>) {
   for (let start = 0; start < n; start += width) {
     await Promise.all(Array.from({ length: Math.min(width, n - start) }, (_, k) => job(start + k)));
@@ -57,7 +93,13 @@ async function inBatches(n: number, width: number, job: (i: number) => Promise<u
  * Seeds the Users tab (issue #73): the twelve people of `PLAN` (display names carry a unique tag, so `uq=<tag>` scopes the tab to them in the
  * shared database), their open tasks by priority (with some overdue, due soon and on hold) and four unassigned tasks to assign.
  */
-export async function seedWorkload(admin: Api, seed: Seeder): Promise<WorkloadSeed> {
+export async function seedWorkload(
+  admin: Api,
+  seed: Seeder,
+  options: { plan?: Plan[]; width?: number } = {},
+): Promise<WorkloadSeed> {
+  const plans = options.plan ?? DEFAULT_PLAN;
+  const width = options.width ?? 3;
   const tag = uid();
   const world = await seed.world({ stepCount: 3 });
   const page = await admin.get<Json>('/api/v1/priorities');
@@ -66,8 +108,8 @@ export async function seedWorkload(admin: Api, seed: Seeder): Promise<WorkloadSe
     .sort((a: Json, b: Json) => a.sortOrder - b.sortOrder);
 
   const people: Record<string, Person> = {};
-  await inBatches(PLAN.length, 3, async (i) => {
-    const plan = PLAN[i];
+  await inBatches(plans.length, width, async (i) => {
+    const plan = plans[i];
     const u = await seed.user(['Data Technician'], `wl${tag}${i}`);
     const me = await Api.as(u.username);
     try {
@@ -84,11 +126,12 @@ export async function seedWorkload(admin: Api, seed: Seeder): Promise<WorkloadSe
   });
 
   const inPod = (pod: 'A' | 'B') =>
-    PLAN.filter((p) => p.pod === pod).map((p) => people[p.key].userId);
+    plans.filter((p) => p.pod === pod).map((p) => people[p.key].userId);
   const podA = await seed.pod(`Workload A ${tag}`, inPod('A'));
   const podB = await seed.pod(`Workload B ${tag}`, inPod('B'));
 
-  for (const plan of PLAN) {
+  await inBatches(plans.length, width, async (i) => {
+    const plan = plans[i];
     const person = people[plan.key];
     if (plan.ooo) {
       await seed.outOfOffice(person.userId, {
@@ -107,12 +150,12 @@ export async function seedWorkload(admin: Api, seed: Seeder): Promise<WorkloadSe
         })),
       });
     }
-  }
+  });
 
   const client = world.client;
   const matter = world.matter;
   const jobs: { person: Person; priority: Json; pod: Json; n: number }[] = [];
-  for (const plan of PLAN) {
+  for (const plan of plans) {
     plan.loads.forEach((count, p) => {
       for (let n = 0; n < count; n++) {
         jobs.push({
@@ -125,7 +168,7 @@ export async function seedWorkload(admin: Api, seed: Seeder): Promise<WorkloadSe
     });
   }
   const held = new Set<number>();
-  await inBatches(jobs.length, 4, async (i) => {
+  await inBatches(jobs.length, width + 1, async (i) => {
     const j = jobs[i];
     const dueDay = i % 7 === 0 ? -3 : i % 7 === 1 ? 1 : i % 7 === 2 ? 12 : null; // overdue, soon, later, ASAP
     const created = await seed.task(

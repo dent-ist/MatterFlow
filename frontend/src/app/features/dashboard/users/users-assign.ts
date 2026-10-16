@@ -115,8 +115,15 @@ export function assignHint(
               <div class="alert" role="alert" data-assign-error>
                 <span>The unassigned tasks could not be loaded.</span>
                 <mf-error-reference />
-                <button type="button" class="mf-btn" data-assign-retry (click)="load()">
-                  Retry
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--icon"
+                  data-assign-retry
+                  aria-label="Retry"
+                  title="Retry"
+                  (click)="load()"
+                >
+                  <i class="pi pi-refresh" aria-hidden="true"></i>
                 </button>
               </div>
             }
@@ -151,13 +158,14 @@ export function assignHint(
                       </div>
                       <button
                         type="button"
-                        class="mf-btn mf-btn--primary pick"
+                        class="mf-btn mf-btn--icon mf-btn--primary pick"
                         data-assign-pick
                         [disabled]="busy()"
                         [attr.aria-label]="'Assign ' + r.taskNumber + ' to ' + u.displayName"
+                        [attr.title]="'Assign ' + r.taskNumber + ' to ' + u.displayName"
                         (click)="pick(r)"
                       >
-                        Assign
+                        <i class="pi pi-user-plus" aria-hidden="true"></i>
                       </button>
                     </li>
                   }

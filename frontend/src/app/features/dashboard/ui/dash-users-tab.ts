@@ -13,6 +13,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
@@ -44,6 +45,11 @@ import {
   UserSort,
   UsersFilters,
   filterCount,
+  filterUsers,
+  LOAD_FILTERS,
+  LoadFilter,
+  AvailabilityFilter,
+  apiAvailability,
   filtersFromParams,
   filtersToParams,
   hasFilterParams,
@@ -65,24 +71,26 @@ export const USERS_REFRESH_MS = 5 * 60_000;
 /** Pause after an edit before the board is read again (several quick edits make one read). */
 const EDIT_REFRESH_DELAY_MS = 900;
 /** How many people are drawn at first, and with each Show more. */
-export const USERS_PAGE = 60;
+export const USERS_PAGE = 200;
 
 /**
- * Dashboard > Users tab (epic #68): the team workload. One card per person (or one table row), coloured by the highest priority of their
- * open tasks, with availability (Available, Off hours, Out of office until a date), a count per priority, open, overdue, due soon, on hold,
- * next due and a Free, Light, Normal or Heavy load. A summary strip counts who is free, busy or away and the unassigned tasks. A card opens
- * a drawer with that person's open tasks (inline edits with Undo) and "Assign work" picks from the unassigned tasks. The filters (pod,
- * availability, name) live in the address; sort, density and cards or table are remembered per user. The board refreshes itself every five
- * minutes without moving focus and never while a menu, the drawer or a dialog is open.
+ * Dashboard > Users tab (epic #68): the team workload. One small tile per person (or one table row; 100 or more people fit on a screen or two),
+ * coloured by the highest priority of their open tasks, with a load bar split by priority, marks for overdue work, a heavy load and off hours,
+ * and the whole status in the tooltip and the accessible name. Quick filter chips (Idle, Light, Normal, Heavy, Out of office, Off hours) double
+ * as the legend; the toolbar adds name, pod, highest priority, availability and sort. A tile opens a drawer with that person's open tasks
+ * (inline edits with Undo) and the Assign icon picks from the unassigned tasks. The filters live in the address; sort, tile size and cards or
+ * table are remembered per user. The board refreshes itself every five minutes without moving focus and never while a menu, the drawer or a
+ * dialog is open.
  *
- * Keyboard model: the cards are an ordinary list in reading order with the normal tab order. Each card has two tab stops, the person's name
- * (opens the drawer; its click area is the whole card) and "Assign work". There is no arrow-key grid to learn.
+ * Keyboard model: the tiles are an ordinary list in reading order with the normal tab order. Each tile has two tab stops, the person's name
+ * (opens the drawer; its click area is the whole tile) and the Assign icon (shown on hover or focus). There is no arrow-key grid to learn.
  *
  * Operational capacity only: no completion counts, speed, ranking or per-person performance measures.
  */
 @Component({
   selector: 'mf-dash-users-tab',
   imports: [
+    NgTemplateOutlet,
     UsersToolbar,
     UsersSummary,
     UsersCard,
@@ -94,52 +102,36 @@ export const USERS_PAGE = 60;
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (canCoverage()) {
-      <div class="views" role="group" aria-label="Users view" data-users-views>
-        <button
-          type="button"
-          class="mf-btn toggle"
-          data-view="workload"
-          [attr.aria-pressed]="view() === 'workload'"
-          (click)="setView('workload')"
-        >
-          <i class="pi pi-users" aria-hidden="true"></i>Workload
-        </button>
-        <button
-          type="button"
-          class="mf-btn toggle"
-          data-view="coverage"
-          [attr.aria-pressed]="view() === 'coverage'"
-          (click)="setView('coverage')"
-        >
-          <i class="pi pi-table" aria-hidden="true"></i>Coverage
-        </button>
-      </div>
-    }
+    <ng-template #viewsTpl>
+      @if (canCoverage()) {
+        <div class="views" role="group" aria-label="Users view" data-users-views>
+          <button
+            type="button"
+            class="mf-btn mf-btn--icon toggle"
+            data-view="workload"
+            aria-label="Workload"
+            title="Workload: who has room and what is open"
+            [attr.aria-pressed]="view() === 'workload'"
+            (click)="setView('workload')"
+          >
+            <i class="pi pi-users" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="mf-btn mf-btn--icon toggle"
+            data-view="coverage"
+            aria-label="Coverage"
+            title="Coverage: task types each person has completed"
+            [attr.aria-pressed]="view() === 'coverage'"
+            (click)="setView('coverage')"
+          >
+            <i class="pi pi-table" aria-hidden="true"></i>
+          </button>
+        </div>
+      }
+    </ng-template>
 
-    @if (view() === 'coverage') {
-      <mf-coverage-view
-        [filters]="filters()"
-        [pods]="podOptions()"
-        (filtersChange)="patchFilters($event)"
-        (podsSeen)="coveragePods.set($event)"
-      />
-    } @else {
-      <h2 class="sr-only" id="wl-h">Team workload</h2>
-      <p class="frame" data-frame>
-        <i class="pi pi-info-circle" aria-hidden="true"></i>
-        <span>
-          Operational capacity only: who has room and what is open. It does not measure completed
-          work, speed or performance, and it does not rank people.
-        </span>
-      </p>
-
-      <mf-users-summary
-        [summary]="board()?.summary ?? null"
-        [outOnly]="filters().availability === 'out'"
-        (toggleOut)="toggleOut()"
-      />
-
+    @if (view() === 'workload') {
       <mf-users-toolbar
         [filters]="filters()"
         [sort]="sort()"
@@ -152,6 +144,31 @@ export const USERS_PAGE = 60;
         (sortChange)="setSort($event)"
         (densityChange)="setDensity($event)"
         (layoutChange)="setLayout($event)"
+      >
+        <ng-container *ngTemplateOutlet="viewsTpl" />
+      </mf-users-toolbar>
+    } @else {
+      <div class="views-row">
+        <ng-container *ngTemplateOutlet="viewsTpl" />
+      </div>
+    }
+
+    @if (view() === 'coverage') {
+      <mf-coverage-view
+        [filters]="filters()"
+        [pods]="podOptions()"
+        (filtersChange)="patchFilters($event)"
+        (podsSeen)="coveragePods.set($event)"
+      />
+    } @else {
+      <h2 class="sr-only" id="wl-h">Team workload</h2>
+      <mf-users-summary
+        [summary]="board()?.summary ?? null"
+        [users]="board()?.users ?? []"
+        [filters]="filters()"
+        [thresholds]="board()?.thresholds ?? null"
+        (loadToggle)="toggleLoad($event)"
+        (availabilityToggle)="toggleAvailability($event)"
       />
 
       <p class="sr-only" role="status" aria-live="polite" data-users-live>{{ live() }}</p>
@@ -163,8 +180,15 @@ export const USERS_PAGE = 60;
             The team workload could not be refreshed. Showing the figures from {{ updated() }}.
             <mf-error-reference />
           </span>
-          <button type="button" class="mf-btn" data-users-stale-retry (click)="refresh()">
-            Retry
+          <button
+            type="button"
+            class="mf-btn mf-btn--icon"
+            data-users-stale-retry
+            aria-label="Retry"
+            title="Retry"
+            (click)="refresh()"
+          >
+            <i class="pi pi-refresh" aria-hidden="true"></i>
           </button>
         </div>
       }
@@ -174,7 +198,16 @@ export const USERS_PAGE = 60;
           <div class="alert" role="alert" data-users-error>
             <span>The team workload could not be loaded.</span>
             <mf-error-reference />
-            <button type="button" class="mf-btn" data-users-retry (click)="load()">Retry</button>
+            <button
+              type="button"
+              class="mf-btn mf-btn--icon"
+              data-users-retry
+              aria-label="Retry"
+              title="Retry"
+              (click)="load()"
+            >
+              <i class="pi pi-refresh" aria-hidden="true"></i>
+            </button>
           </div>
         }
         @case ('forbidden') {
@@ -202,8 +235,15 @@ export const USERS_PAGE = 60;
               <i class="pi pi-users" aria-hidden="true"></i>
               @if (filtered()) {
                 <span>No people match these filters.</span>
-                <button type="button" class="mf-btn" data-users-clear (click)="clearFilters()">
-                  Clear filters
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--icon"
+                  data-users-clear
+                  aria-label="Clear filters"
+                  title="Clear filters"
+                  (click)="clearFilters()"
+                >
+                  <i class="pi pi-filter-slash" aria-hidden="true"></i>
                 </button>
               } @else {
                 <span>There are no team members to show yet.</span>
@@ -244,12 +284,26 @@ export const USERS_PAGE = 60;
           }
           @if (users().length > shown().length) {
             <p class="more" data-users-more>
-              Showing {{ shown().length }} of {{ users().length }} people.
-              <button type="button" class="mf-btn" data-users-show-more (click)="showMore()">
-                Show {{ pageStep }} more
+              <span>Showing {{ shown().length }} of {{ users().length }} people.</span>
+              <button
+                type="button"
+                class="mf-btn mf-btn--icon"
+                data-users-show-more
+                [attr.aria-label]="'Show ' + pageStep + ' more people'"
+                [attr.title]="'Show ' + pageStep + ' more people'"
+                (click)="showMore()"
+              >
+                <i class="pi pi-angle-down" aria-hidden="true"></i>
               </button>
-              <button type="button" class="mf-btn" data-users-show-all (click)="showAll()">
-                Show all
+              <button
+                type="button"
+                class="mf-btn mf-btn--icon"
+                data-users-show-all
+                aria-label="Show all people"
+                title="Show all people"
+                (click)="showAll()"
+              >
+                <i class="pi pi-angle-double-down" aria-hidden="true"></i>
               </button>
             </p>
           }
@@ -279,13 +333,18 @@ export const USERS_PAGE = 60;
     .views {
       display: inline-flex;
       gap: var(--mf-s1);
+    }
+    .views-row {
       margin-bottom: var(--mf-s3);
     }
     .toggle[aria-pressed='true'] {
       background: var(--mf-selected-bg);
       border-color: var(--mf-primary);
       color: var(--mf-primary);
-      font-weight: 600;
+    }
+    .mf-btn:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 1px;
     }
     .sr-only {
       position: absolute;
@@ -295,25 +354,18 @@ export const USERS_PAGE = 60;
       clip-path: inset(50%);
       white-space: nowrap;
     }
-    .frame {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--mf-s2);
-      margin: 0 0 var(--mf-s3);
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-    }
+    /* Tiles of about 9rem x 3.3rem: seven or more to a line on a laptop, two on a phone. */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr));
-      gap: var(--mf-s3);
+      grid-template-columns: repeat(auto-fill, minmax(min(9rem, 100%), 1fr));
+      gap: var(--mf-s2);
       margin: 0;
       padding: 0;
       list-style: none;
     }
     .grid[data-density='compact'] {
-      grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
-      gap: var(--mf-s2);
+      grid-template-columns: repeat(auto-fill, minmax(min(8.5rem, 100%), 1fr));
+      gap: var(--mf-s1);
     }
     .cell {
       min-width: 0;
@@ -328,7 +380,7 @@ export const USERS_PAGE = 60;
     }
     .bone {
       display: block;
-      min-height: 14rem;
+      min-height: 3.2rem;
       background: var(--mf-surface-alt);
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius-lg);
@@ -415,7 +467,7 @@ export class DashUsersTab implements OnInit {
   private readonly coverage = viewChild(CoverageView);
   protected readonly refreshFailed = signal(false);
   protected readonly live = signal('');
-  protected readonly bones = [1, 2, 3, 4, 5, 6];
+  protected readonly bones = Array.from({ length: 24 }, (_, i) => i);
   protected readonly version = signal(0);
 
   private readonly drawerId = signal<number | null>(null);
@@ -430,8 +482,10 @@ export class DashUsersTab implements OnInit {
 
   protected readonly canAssign = computed(() => this.auth.has('Task.Assign'));
   protected readonly filtered = computed(() => filterCount(this.filters()) > 0);
-  protected readonly users = computed(() => sortUsers(this.board()?.users ?? [], this.sort()));
-  /** A large department draws 60 people at a time (the page stays quick); Show more or Show all draws the rest. */
+  protected readonly users = computed(() =>
+    sortUsers(filterUsers(this.board()?.users ?? [], this.filters()), this.sort()),
+  );
+  /** A large department draws 200 people at a time (the page stays quick); Show more or Show all draws the rest. */
   protected readonly pageStep = USERS_PAGE;
   private readonly limit = signal(USERS_PAGE);
   protected readonly shown = computed(() => this.users().slice(0, this.limit()));
@@ -515,13 +569,23 @@ export class DashUsersTab implements OnInit {
   // ---- the view
 
   protected patchFilters(patch: Partial<UsersFilters>): void {
-    const next = { ...this.filters(), ...patch };
-    if (sameFilters(next, this.filters())) return;
+    const before = this.filters();
+    const next = { ...before, ...patch };
+    if (sameFilters(next, before)) return;
     this.limit.set(USERS_PAGE);
     this.filters.set(next);
     void this.writeUrl();
     if (this.view() === 'coverage') {
       // The coverage view reads again when the pod changes; the name filter is applied on the page.
+      return;
+    }
+    // Load, priority and off hours are applied on the page; the rest is a new read.
+    if (
+      next.pod === before.pod &&
+      next.q === before.q &&
+      apiAvailability(next) === apiAvailability(before)
+    ) {
+      this.live.set(`${plural(this.users().length, 'person', 'people')} shown.`);
       return;
     }
     this.load({ silent: !!this.board() });
@@ -544,8 +608,16 @@ export class DashUsersTab implements OnInit {
     if (view === 'workload') this.load({ silent: !!this.board() });
   }
 
-  protected toggleOut(): void {
-    this.patchFilters({ availability: this.filters().availability === 'out' ? 'all' : 'out' });
+  /** A load chip: on or off (the chips combine). */
+  protected toggleLoad(level: LoadFilter): void {
+    const on = new Set(this.filters().load);
+    if (!on.delete(level)) on.add(level);
+    this.patchFilters({ load: LOAD_FILTERS.filter((l) => on.has(l)) });
+  }
+
+  /** The Out of office and Off hours chips: the availability filter, on or off. */
+  protected toggleAvailability(value: AvailabilityFilter): void {
+    this.patchFilters({ availability: this.filters().availability === value ? 'all' : value });
   }
 
   protected clearFilters(): void {
@@ -609,7 +681,7 @@ export class DashUsersTab implements OnInit {
     const f = this.filters();
     const start = () =>
       this.api
-        .getDashboardWorkload(f.pod ?? undefined, f.availability, f.q || undefined)
+        .getDashboardWorkload(f.pod ?? undefined, apiAvailability(f), f.q || undefined)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (board) => {

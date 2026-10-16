@@ -1,136 +1,238 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { WorkloadSummary } from '../../../api/generated/api-client';
-import { unassignedQueueParams } from './users-model';
+import {
+  WorkloadSummary,
+  WorkloadThresholds,
+  WorkloadUser,
+} from '../../../api/generated/api-client';
+import {
+  AvailabilityFilter,
+  LOAD_ICONS,
+  LoadFilter,
+  UsersFilters,
+  loadLevelOf,
+  thresholdText,
+  unassignedQueueParams,
+} from './users-model';
+
+interface Chip {
+  key: 'idle' | 'light' | 'normal' | 'heavy' | 'out' | 'off';
+  word: string;
+  icon: string;
+  title: string;
+  count: string;
+  pressed: boolean;
+}
 
 /**
- * The team summary strip above the cards: Available (nobody open), Busy (open tasks), Out of office and Unassigned tasks. The counts ignore
- * the availability and name filters, so the strip stays steady while the cards are filtered. "Out of office" filters the cards to those
- * people (a toggle) and "Unassigned tasks" opens the Task Queue filtered to open tasks nobody has.
+ * The quick filters above the tiles, which are also the first part of the legend: Idle (nothing open), Light, Normal and Heavy load,
+ * Out of office and Off hours, each a toggle with its icon, a short word and how many people it holds, plus "Unassigned tasks" (an icon link to
+ * the Task Queue with the count). Load chips combine (any of them); Out of office and Off hours are the availability filter. Counts of the load
+ * chips and Off hours follow the people on the board (pod and name filters apply); Unassigned (and Out of office while "Available" hides them)
+ * come from the team summary, which ignores the pod, availability and name filters.
  */
 @Component({
   selector: 'mf-users-summary',
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ul class="strip" aria-label="Team summary" data-summary>
-      <li class="tile tile--free" data-summary-tile="available">
-        <i class="pi pi-check-circle" aria-hidden="true"></i>
-        <span class="n" data-n>{{ shown('available') }}</span>
-        <span class="t">Available <span class="sub">no open tasks</span></span>
-      </li>
-      <li class="tile" data-summary-tile="busy">
-        <i class="pi pi-briefcase" aria-hidden="true"></i>
-        <span class="n" data-n>{{ shown('busy') }}</span>
-        <span class="t">Busy <span class="sub">have open tasks</span></span>
-      </li>
-      <li class="tile tile--ooo" data-summary-tile="out">
-        <i class="pi pi-calendar-minus" aria-hidden="true"></i>
-        <span class="n" data-n>{{ shown('outOfOffice') }}</span>
+    <div class="chips" role="group" aria-label="Quick filters" data-summary>
+      @for (c of chips(); track c.key) {
         <button
           type="button"
-          class="t link"
-          data-summary-out
-          [attr.aria-pressed]="outOnly()"
-          (click)="toggleOut.emit()"
+          class="chip"
+          [class]="'chip chip--' + c.key"
+          [attr.data-chip]="c.key"
+          [attr.aria-pressed]="c.pressed"
+          [attr.title]="c.title"
+          (click)="toggle(c.key)"
         >
-          Out of office
-          <span class="sub">{{ outOnly() ? 'showing only these' : 'show only these' }}</span>
+          <i class="pi" [class]="c.icon" aria-hidden="true"></i>
+          <span class="w">{{ c.word }}</span>
+          <strong class="n" data-n>{{ c.count }}</strong>
         </button>
-      </li>
-      <li class="tile tile--warn" data-summary-tile="unassigned">
+      }
+      <a
+        class="chip chip--unassigned"
+        data-summary-unassigned
+        routerLink="/tasks"
+        [queryParams]="queue"
+        title="Open tasks nobody has: open them in the Task Queue"
+        [attr.aria-label]="'Unassigned tasks: ' + unassigned() + '. Open in the Task Queue'"
+      >
         <i class="pi pi-inbox" aria-hidden="true"></i>
-        <span class="n" data-n>{{ shown('unassignedTasks') }}</span>
-        <a class="t link" data-summary-unassigned routerLink="/tasks" [queryParams]="queue">
-          Unassigned tasks <span class="sub">open in the Task Queue</span>
-        </a>
-      </li>
-    </ul>
+        <span class="w">Unassigned</span>
+        <strong class="n" data-n>{{ unassigned() }}</strong>
+        <i class="pi pi-external-link go" aria-hidden="true"></i>
+      </a>
+    </div>
   `,
   styles: `
     :host {
       display: block;
-      margin-bottom: var(--mf-s3);
+      margin-bottom: var(--mf-s2);
     }
-    .strip {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-      gap: var(--mf-s2);
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-    .tile {
+    .chips {
       display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      min-width: 0;
-      padding: var(--mf-s2) var(--mf-s3);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-lg);
+      flex-wrap: wrap;
+      gap: var(--mf-s1) var(--mf-s2);
     }
-    .tile--free {
+    /* On a phone the chips are one line that scrolls sideways inside itself, so the tiles start higher. */
+    @media (max-width: 560px) {
+      .chips {
+        flex-wrap: nowrap;
+        padding-bottom: 2px;
+        overflow-x: auto;
+      }
+      .chip {
+        flex: none;
+      }
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      box-sizing: border-box;
+      min-height: 28px;
+      padding: 0 var(--mf-s2);
+      color: var(--mf-text);
+      background: var(--mf-surface);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: 999px;
+      font: inherit;
+      font-size: var(--mf-fs-sm);
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .chip:hover {
+      background: var(--mf-surface-alt);
+    }
+    .chip[aria-pressed='true'] {
+      border-color: var(--mf-primary);
+      border-width: 2px;
+      padding: 0 calc(var(--mf-s2) - 1px);
+      background: var(--mf-selected-bg);
+      font-weight: 600;
+    }
+    .chip[aria-pressed='true'] .w {
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .chip:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 1px;
+    }
+    .n {
+      font-variant-numeric: tabular-nums;
+    }
+    .chip--idle {
       color: var(--mf-success);
       background: var(--mf-success-bg);
       border-color: var(--mf-success);
     }
-    .tile--ooo {
-      border-style: dashed;
-      border-color: var(--mf-border-strong);
+    .chip--idle[aria-pressed='true'] {
+      border-color: var(--mf-success);
     }
-    .tile--warn .pi {
+    .chip--heavy .pi {
+      color: var(--mf-danger);
+    }
+    .chip--out {
+      border-style: dashed;
+      background: repeating-linear-gradient(
+        135deg,
+        var(--mf-surface-alt) 0 5px,
+        var(--mf-surface) 5px 10px
+      );
+    }
+    .chip--unassigned .pi:first-child {
       color: var(--mf-warning);
     }
-    .n {
-      font-size: var(--mf-fs-h3, 1.375rem);
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-    .t {
-      display: grid;
-      color: inherit;
-      font-weight: 600;
-      text-align: left;
-    }
-    .sub {
+    .go {
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      font-weight: 400;
-    }
-    .tile--free .sub {
-      color: var(--mf-success);
-    }
-    button.link {
-      padding: 0;
-      border: 0;
-      background: none;
-      color: var(--mf-link);
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    a.link {
-      color: var(--mf-link);
-      text-decoration: none;
-    }
-    .link:hover {
-      text-decoration: underline;
-    }
-    button.link[aria-pressed='true'] {
-      text-decoration: underline;
+      font-size: 0.7rem;
     }
   `,
 })
 export class UsersSummary {
   readonly summary = input<WorkloadSummary | null>(null);
-  readonly outOnly = input(false);
-  readonly toggleOut = output<void>();
+  readonly users = input<readonly WorkloadUser[]>([]);
+  readonly filters = input.required<UsersFilters>();
+  readonly thresholds = input<WorkloadThresholds | null>(null);
+
+  readonly loadToggle = output<LoadFilter>();
+  readonly availabilityToggle = output<AvailabilityFilter>();
 
   protected readonly queue = unassignedQueueParams();
-
-  protected shown(key: 'available' | 'busy' | 'outOfOffice' | 'unassignedTasks'): string {
+  protected readonly unassigned = computed(() => {
     const s = this.summary();
-    return s ? String(s[key]) : '-';
+    return s ? String(s.unassignedTasks) : '-';
+  });
+
+  protected readonly chips = computed<Chip[]>(() => {
+    const f = this.filters();
+    const users = this.users();
+    const ready = this.summary() !== null;
+    const count = (n: number) => (ready ? String(n) : '-');
+    const byLevel = (l: string) => users.filter((u) => loadLevelOf(u) === l).length;
+    const help = thresholdText(this.thresholds());
+    // Out of office: counted on the page while the board holds everyone (or only them); with "Available" the API hides them, so the
+    // team summary (which ignores the availability filter) has the number.
+    const out = users.filter((u) => u.availability?.state === 'OUT_OF_OFFICE').length;
+    const outCount = f.availability === 'available' ? (this.summary()?.outOfOffice ?? 0) : out;
+    return [
+      {
+        key: 'idle',
+        word: 'Idle',
+        icon: LOAD_ICONS.IDLE,
+        title: 'Idle: no open tasks. ' + help[0],
+        count: count(byLevel('IDLE')),
+        pressed: f.load.includes('idle'),
+      },
+      {
+        key: 'light',
+        word: 'Light',
+        icon: LOAD_ICONS.LIGHT,
+        title: help[1],
+        count: count(byLevel('LIGHT')),
+        pressed: f.load.includes('light'),
+      },
+      {
+        key: 'normal',
+        word: 'Normal',
+        icon: LOAD_ICONS.NORMAL,
+        title: help[2],
+        count: count(byLevel('NORMAL')),
+        pressed: f.load.includes('normal'),
+      },
+      {
+        key: 'heavy',
+        word: 'Heavy',
+        icon: LOAD_ICONS.HEAVY,
+        title: help[3],
+        count: count(byLevel('HEAVY')),
+        pressed: f.load.includes('heavy'),
+      },
+      {
+        key: 'out',
+        word: 'Out of office',
+        icon: 'pi-calendar-minus',
+        title: 'Out of office: show only these people',
+        count: count(outCount),
+        pressed: f.availability === 'out',
+      },
+      {
+        key: 'off',
+        word: 'Off hours',
+        icon: 'pi-moon',
+        title: 'Off hours: outside their working hours right now',
+        count: count(users.filter((u) => u.availability?.state === 'OFF_HOURS').length),
+        pressed: f.availability === 'off',
+      },
+    ];
+  });
+
+  protected toggle(key: Chip['key']): void {
+    if (key === 'out' || key === 'off') this.availabilityToggle.emit(key);
+    else this.loadToggle.emit(key);
   }
 }

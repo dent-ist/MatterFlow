@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { WorkloadPriority, WorkloadThresholds } from '../../../api/generated/api-client';
 import { SearchBox } from '../../../shared/ui/search-box';
-import { priorityColors } from '../../../shared/ui/priority-badge';
+import { levelBars, priorityColors } from '../../../shared/ui/priority-badge';
 import {
   AVAILABILITY_FILTERS,
   AVAILABILITY_LABELS,
   AvailabilityFilter,
+  DEFAULT_FILTERS,
   DENSITIES,
   Density,
   LAYOUTS,
@@ -20,6 +21,7 @@ import {
   isUserSort,
   thresholdText,
 } from './users-model';
+import { UsersGlyph } from './users-glyph';
 
 export interface PodOption {
   id: number;
@@ -27,31 +29,28 @@ export interface PodOption {
 }
 
 /**
- * The toolbar of the Users tab: sort, pod, availability, search by name, density, the cards or table view, Refresh and the legend (card
- * colours, load levels and what this view is not). It owns no state: every choice is emitted and the tab writes it to the address (the
+ * The toolbar of the Users tab: search by name, pod, highest priority, availability and sort, then icon buttons: clear filters, tile size, the
+ * cards or table view and the legend (pill colours, marks, load levels and what this view is not). It owns no state: every choice is emitted and the tab writes it to the address (the
  * filters) and to the remembered choices (sort, density, view).
  */
 @Component({
   selector: 'mf-users-toolbar',
-  imports: [SearchBox],
+  imports: [SearchBox, UsersGlyph],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let f = filters();
     <div class="bar" role="toolbar" aria-label="Team workload controls">
-      <div class="fld">
-        <label class="lbl" for="wl-sort">Sort</label>
-        <select
-          id="wl-sort"
-          class="mf-control mf-control--compact"
-          data-sort
-          [value]="sort()"
-          (change)="onSort($any($event.target).value)"
-        >
-          @for (s of sorts; track s) {
-            <option [value]="s" [selected]="s === sort()">{{ sortLabels[s] }}</option>
-          }
-        </select>
-      </div>
+      <mf-search-box
+        class="search"
+        role="search"
+        inputId="wl-q"
+        label="Search by name"
+        placeholder="Search by name"
+        [hideLabel]="true"
+        [hintOnFocus]="true"
+        [value]="f.q"
+        (searchChange)="filtersChange.emit({ q: $event })"
+      />
       @if (pods().length > 0 || f.pod !== null) {
         <div class="fld">
           <label class="lbl" for="wl-pod">Pod</label>
@@ -69,6 +68,22 @@ export interface PodOption {
         </div>
       }
       <div class="fld">
+        <label class="lbl" for="wl-prio">Highest priority</label>
+        <select
+          id="wl-prio"
+          class="mf-control mf-control--compact"
+          data-filter="priority"
+          (change)="filtersChange.emit({ priority: num($any($event.target).value) })"
+        >
+          <option value="">Any priority</option>
+          @for (p of priorities(); track p.priorityId) {
+            <option [value]="p.priorityId" [selected]="f.priority === p.priorityId">
+              {{ p.label }}
+            </option>
+          }
+        </select>
+      </div>
+      <div class="fld">
         <label class="lbl" for="wl-avail">Availability</label>
         <select
           id="wl-avail"
@@ -84,117 +99,156 @@ export interface PodOption {
           }
         </select>
       </div>
-      <mf-search-box
-        class="search"
-        role="search"
-        inputId="wl-q"
-        label="Search by name"
-        placeholder="Search by name"
-        [hideLabel]="true"
-        [hintOnFocus]="true"
-        [value]="f.q"
-        (searchChange)="filtersChange.emit({ q: $event })"
-      />
       <div class="fld">
-        <label class="lbl" for="wl-density">Density</label>
+        <label class="lbl" for="wl-sort">Sort</label>
         <select
-          id="wl-density"
+          id="wl-sort"
           class="mf-control mf-control--compact"
-          data-density
-          [value]="density()"
-          (change)="onDensity($any($event.target).value)"
+          data-sort
+          [value]="sort()"
+          (change)="onSort($any($event.target).value)"
         >
-          @for (d of densities; track d) {
-            <option [value]="d" [selected]="d === density()">
-              {{ d === 'compact' ? 'Compact' : 'Comfortable' }}
-            </option>
+          @for (s of sorts; track s) {
+            <option [value]="s" [selected]="s === sort()">{{ sortLabels[s] }}</option>
           }
         </select>
       </div>
-      <span class="pair" role="group" aria-label="View">
-        @for (l of layouts; track l) {
+      <span class="grow"></span>
+      <span class="tools">
+        <ng-content />
+        @if (count() > 0) {
           <button
             type="button"
-            class="mf-btn toggle"
-            [attr.data-layout]="l"
-            [attr.aria-pressed]="layout() === l"
-            (click)="layoutChange.emit(l)"
+            class="mf-btn mf-btn--icon clear"
+            data-clear-filters
+            [attr.aria-label]="'Clear filters (' + count() + ')'"
+            [attr.title]="'Clear filters (' + count() + ')'"
+            (click)="clear()"
           >
-            <i
-              class="pi"
-              [class]="l === 'cards' ? 'pi-th-large' : 'pi-list'"
-              aria-hidden="true"
-            ></i>
-            {{ l === 'cards' ? 'Cards' : 'Table' }}
+            <i class="pi pi-filter-slash" aria-hidden="true"></i>
+            <span class="badge" aria-hidden="true">{{ count() }}</span>
           </button>
         }
-      </span>
-      @if (count() > 0) {
-        <button type="button" class="mf-btn mf-btn--text" data-clear-filters (click)="clear()">
-          Clear filters ({{ count() }})
+        <span class="pair" role="group" aria-label="Tile size" data-density-group>
+          @for (d of densities; track d) {
+            <button
+              type="button"
+              class="mf-btn mf-btn--icon toggle"
+              [attr.data-density]="d"
+              [attr.aria-pressed]="density() === d"
+              [attr.aria-label]="d === 'compact' ? 'Dense tiles' : 'Standard tiles'"
+              [attr.title]="d === 'compact' ? 'Dense tiles: name and count only' : 'Standard tiles'"
+              (click)="densityChange.emit(d)"
+            >
+              <i
+                class="pi"
+                [class]="d === 'compact' ? 'pi-window-minimize' : 'pi-window-maximize'"
+                aria-hidden="true"
+              ></i>
+            </button>
+          }
+        </span>
+        <span class="pair" role="group" aria-label="View">
+          @for (l of layouts; track l) {
+            <button
+              type="button"
+              class="mf-btn mf-btn--icon toggle"
+              [attr.data-layout]="l"
+              [attr.aria-pressed]="layout() === l"
+              [attr.aria-label]="l === 'cards' ? 'Cards' : 'Table'"
+              [attr.title]="
+                l === 'cards' ? 'Cards: one tile per person' : 'Table: one row per person'
+              "
+              (click)="layoutChange.emit(l)"
+            >
+              <i
+                class="pi"
+                [class]="l === 'cards' ? 'pi-th-large' : 'pi-list'"
+                aria-hidden="true"
+              ></i>
+            </button>
+          }
+        </span>
+        <button
+          type="button"
+          class="mf-btn mf-btn--icon toggle"
+          data-legend-toggle
+          aria-label="Legend and help"
+          title="Legend and help"
+          [attr.aria-pressed]="legendOpen()"
+          [attr.aria-expanded]="legendOpen()"
+          [attr.aria-controls]="legendOpen() ? 'wl-legend' : null"
+          (click)="legendOpen.set(!legendOpen())"
+        >
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
         </button>
-      }
-      <span class="grow"></span>
-      <button
-        type="button"
-        class="mf-btn"
-        data-legend-toggle
-        [attr.aria-expanded]="legendOpen()"
-        [attr.aria-controls]="legendOpen() ? 'wl-legend' : null"
-        (click)="legendOpen.set(!legendOpen())"
-      >
-        <i class="pi pi-info-circle" aria-hidden="true"></i>
-        Legend and help
-      </button>
+      </span>
     </div>
 
     @if (legendOpen()) {
       <section id="wl-legend" class="legend" aria-label="Legend and help" data-legend>
         <div>
-          <h3>Card colour</h3>
-          <p class="small">
-            The top band shows the highest priority among the person's open tasks. It always says it
-            in words too.
-          </p>
-          <ul class="swatches">
+          <h3>Pill colour: highest open priority</h3>
+          <ul class="swatches" data-legend-priorities>
             @for (p of priorities(); track p.priorityId) {
               <li>
                 <span
                   class="swatch"
                   [style.background]="colorsOf(p.color).bg"
                   [style.color]="colorsOf(p.color).fg"
-                  >Highest priority: {{ p.label }}</span
+                  [style.border-color]="colorsOf(p.color).fg"
+                  ><mf-users-glyph [level]="barsOf(p.rank)" />{{ p.label }}</span
                 >
               </li>
             }
             <li>
               <span class="swatch swatch--free"
-                ><i class="pi pi-check-circle" aria-hidden="true"></i>Available - no open
-                tasks</span
+                ><i class="pi pi-check-circle" aria-hidden="true"></i>Idle: no open tasks</span
               >
             </li>
             <li>
               <span class="swatch swatch--ooo"
-                ><i class="pi pi-calendar-minus" aria-hidden="true"></i>Not available (out of
-                office)</span
+                ><i class="pi pi-calendar-minus" aria-hidden="true"></i>Out of office
+                (hatched)</span
               >
             </li>
           </ul>
+          <p class="small">
+            The number in the pill is the open tasks. The coloured edge of the tile repeats the
+            priority colour.
+          </p>
         </div>
         <div>
+          <h3>Marks and bar</h3>
+          <ul class="plain" data-legend-marks>
+            <li><i class="pi pi-clock late" aria-hidden="true"></i> 2: overdue tasks</li>
+            <li>
+              <i class="pi pi-exclamation-triangle late" aria-hidden="true"></i> Heavy load (red
+              outline)
+            </li>
+            <li><i class="pi pi-moon" aria-hidden="true"></i> Off hours</li>
+            <li>
+              <span class="sample" aria-hidden="true"></span> The bar splits the open tasks by
+              priority, in the colours above; a full bar is a normal load or more.
+            </li>
+          </ul>
           <h3>Load</h3>
           <ul class="plain" data-load-help>
             @for (line of loadLines(); track line) {
               <li>{{ line }}</li>
             }
           </ul>
-          <p class="small">The load bar is split by priority, in the same order and colours.</p>
         </div>
         <div>
-          <h3>What this is not</h3>
+          <h3>Names and details</h3>
           <p class="small">
-            This view shows operational capacity: who has room and what is open. It has no
-            completion counts, speed, ranking or other performance measures.
+            Hover or focus a tile for the full status (for example "Out of office until Nov 3"). A
+            click opens the person's tasks. The user-plus icon on a tile assigns work.
+          </p>
+          <h3>What this is not</h3>
+          <p class="small" data-frame>
+            Operational capacity only: who has room and what is open. No completion counts, speed,
+            ranking or other performance measures.
           </p>
         </div>
       </section>
@@ -203,13 +257,13 @@ export interface PodOption {
   styles: `
     :host {
       display: block;
-      margin-bottom: var(--mf-s3);
+      margin-bottom: var(--mf-s2);
     }
     .bar {
       display: flex;
       flex-wrap: wrap;
       align-items: flex-end;
-      gap: var(--mf-s2) var(--mf-s3);
+      gap: var(--mf-s2);
     }
     .fld {
       display: grid;
@@ -224,18 +278,47 @@ export interface PodOption {
       flex: 1;
     }
     .search {
-      min-width: 14rem;
-      flex: 0 1 18rem;
+      min-width: 10rem;
+      flex: 0 1 11rem;
     }
     .pair {
       display: inline-flex;
       gap: var(--mf-s1);
     }
-    .toggle[aria-pressed='true'] {
+    .tools {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s2);
+    }
+    .fld select {
+      max-width: 13rem;
+    }
+    .toggle[aria-pressed='true'],
+    .toggle[aria-expanded='true'] {
       background: var(--mf-selected-bg);
       border-color: var(--mf-primary);
       color: var(--mf-primary);
-      font-weight: 600;
+    }
+    .mf-btn:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 1px;
+    }
+    .clear {
+      position: relative;
+    }
+    .badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      min-width: 16px;
+      padding: 0 3px;
+      color: #fff;
+      background: var(--mf-primary);
+      border-radius: 8px;
+      font-size: 0.65rem;
+      line-height: 16px;
+      text-align: center;
     }
     /* The search input is as tall as the other (compact) controls on the line. */
     .search ::ng-deep .sb__input {
@@ -266,7 +349,7 @@ export interface PodOption {
     .plain {
       display: grid;
       gap: var(--mf-s1);
-      margin: 0;
+      margin: 0 0 var(--mf-s2);
       padding: 0;
       list-style: none;
       font-size: var(--mf-fs-sm);
@@ -277,7 +360,7 @@ export interface PodOption {
       gap: var(--mf-s1);
       padding: 0 var(--mf-s2);
       border: 1px solid currentColor;
-      border-radius: var(--mf-radius);
+      border-radius: 999px;
       font-size: var(--mf-fs-sm);
       font-weight: 600;
     }
@@ -293,6 +376,18 @@ export interface PodOption {
         var(--mf-border) 0 6px,
         var(--mf-surface-alt) 6px 12px
       );
+    }
+    .late {
+      color: var(--mf-danger);
+    }
+    .plain .sample {
+      display: inline-block;
+      width: 2rem;
+      height: 8px;
+      vertical-align: middle;
+      background: linear-gradient(90deg, var(--mf-pr-high-bg) 50%, var(--mf-pr-normal-bg) 50%);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: 999px;
     }
     @media (max-width: 560px) {
       .search {
@@ -336,6 +431,10 @@ export class UsersToolbar {
     return priorityColors(tone);
   }
 
+  protected barsOf(rank: number | null | undefined): number {
+    return levelBars(rank);
+  }
+
   protected num(value: string): number | null {
     const n = Number(value);
     return value !== '' && Number.isInteger(n) && n > 0 ? n : null;
@@ -356,6 +455,6 @@ export class UsersToolbar {
   }
 
   protected clear(): void {
-    this.filtersChange.emit({ pod: null, availability: 'all', q: '' });
+    this.filtersChange.emit({ ...DEFAULT_FILTERS });
   }
 }

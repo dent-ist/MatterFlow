@@ -56,6 +56,8 @@ export const OPEN_UNASSIGNED_QUERY = 'status=NEW&status=IN_PROGRESS&status=ON_HO
 export const USERS_POD_PARAM = 'upod';
 export const USERS_AVAILABILITY_PARAM = 'uavail';
 export const USERS_Q_PARAM = 'uq';
+export const USERS_LOAD_PARAM = 'uload';
+export const USERS_PRIORITY_PARAM = 'uprio';
 
 /** The Workload or Coverage view of the tab, and the Coverage period (`cp`, and `cfrom` / `cto` for a custom range). */
 export const USERS_VIEW_PARAM = 'view';
@@ -66,6 +68,8 @@ export function clearedUsersParams(): Record<string, null> {
     [USERS_POD_PARAM]: null,
     [USERS_AVAILABILITY_PARAM]: null,
     [USERS_Q_PARAM]: null,
+    [USERS_LOAD_PARAM]: null,
+    [USERS_PRIORITY_PARAM]: null,
     [USERS_VIEW_PARAM]: null,
     ...Object.fromEntries(COVERAGE_PARAMS.map((k) => [k, null])),
   };
