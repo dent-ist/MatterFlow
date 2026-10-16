@@ -258,6 +258,22 @@ public sealed class RichHtmlTableTests
         RichHtml.ToPlainText(null).ShouldBe(string.Empty);
     }
 
+    [Fact]
+    public void RichText_is_the_plain_text_entry_point_for_snippets_audit_and_exports()
+    {
+        RichText.ToPlainText("<p>Intro</p><table><tr><th>A</th><th>B</th></tr></table>").ShouldBe("Intro\nA | B");
+        RichText.ToHtml("a\nb").ShouldBe("<p>a<br>b</p>");
+        RichText.ToPlainText(null).ShouldBe(string.Empty);
+    }
+
+    [Fact]
+    public void Direction_overrides_are_removed_from_text_but_isolates_and_marks_stay()
+    {
+        Clean("<p>a\u202Eb\u202Dc\u202Ad\u202Be\u202Cf</p>").ShouldBe("<p>abcdef</p>");
+        Clean("<table><tr><td>\u202E12\u202C</td></tr></table>").ShouldBe("<table><tbody><tr><td>12</td></tr></tbody></table>");
+        Clean("<p>\u2067\u05D0\u2069 \u200F</p>").ShouldBe("<p>\u2067\u05D0\u2069 \u200F</p>");
+    }
+
     [Theory]
     [InlineData("Plain note", false)]
     [InlineData("From John <john@example.com> about a < b and c > d", false)]

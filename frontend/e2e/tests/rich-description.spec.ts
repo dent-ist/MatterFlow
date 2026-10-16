@@ -150,6 +150,43 @@ test.describe('Rich text description with tables (issue #80)', () => {
     expect(dialogs).toEqual([]);
   });
 
+  test('classic mXSS payloads sent straight to the API never run in the browser', async ({
+    page,
+    seed,
+  }) => {
+    const dialogs: string[] = [];
+    page.on('dialog', (d) => {
+      dialogs.push(d.message());
+      void d.dismiss();
+    });
+    const world = await seed.world();
+    const payloads = [
+      '<math><mtext><table><mglyph><style><!--</style><img title="--&gt;&lt;img src=1 onerror=window.__pwn=1&gt;">',
+      '<form><math><mtext></form><form><mglyph><style></math><img src onerror=window.__pwn=2>',
+      '<noscript><p title="</noscript><img src=x onerror=window.__pwn=3>">',
+      '<svg></p><style><a id="</style><img src=1 onerror=window.__pwn=4>">',
+      '<table><caption><style><a title="</style><img src=x onerror=window.__pwn=5>"></style></caption></table>',
+      '<select><template><style><a title="</style><img src onerror=window.__pwn=6>">',
+      '<table><tr><td><svg><style><img src=x onerror=window.__pwn=7></style></svg></td></tr></table>',
+      '<a href="javascript:window.__pwn=8">click me</a><table><tr><td><a href="  JaVaScRiPt:window.__pwn=9">x</a></td></tr></table>',
+    ];
+    for (const [i, payload] of payloads.entries()) {
+      const task = await seed.taskWithDescription(world, `<p>case ${i + 1}</p>${payload}`);
+      expect(task.description, `case ${i + 1}`).not.toMatch(
+        /onerror|<img|<svg|<style|javascript:/i,
+      );
+      await new TaskDetailPage(page).open(task.taskId);
+      await expect(page.locator('[data-description]')).toContainText(`case ${i + 1}`);
+      await page
+        .locator('[data-description] a')
+        .first()
+        .click({ timeout: 1000 })
+        .catch(() => undefined);
+      expect(await pwned(page), `case ${i + 1}`).toBeUndefined();
+    }
+    expect(dialogs).toEqual([]);
+  });
+
   test('an email file keeps its table in the description, without its scripts, styles and tracking image', async ({
     page,
     seed,
