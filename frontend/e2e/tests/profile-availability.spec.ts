@@ -423,7 +423,7 @@ test.describe('profile screenshots', () => {
         ['Priya Out', 'out'],
         ['Marcus Hours', 'hours'],
         ['Elena Back', 'back'],
-      ].map(async ([, label]) => seed.user(['Data Technician'], `shot-${label}`)),
+      ].map(async ([, label]) => seed.user(['Data Technician'], `profshot-${label}`)),
     );
     const names = await Promise.all(people.map((p) => displayNameOf(admin, p.userId)));
     await seed.outOfOffice(people[0].userId, {
@@ -480,15 +480,20 @@ test.describe('profile screenshots', () => {
 
       const view = await asUser('ke\\kekim');
       await view.setViewportSize({ width: size.w, height: size.h });
-      await view.goto('/admin/users?status=active&name=e2e-shot');
+      await view.goto('/admin/users?status=active&name=e2e-profshot');
       await expect(view.locator('tbody tr').first()).toBeVisible();
       await shot(view, size.n, '06-users-chips', false);
+      // Batch 4 (#79): Availability is a column filter, and the filter row is closed by default.
+      const filters = view.getByRole('button', { name: /^Filters/ });
+      if ((await filters.getAttribute('aria-pressed')) !== 'true') await filters.click();
       await view
         .getByRole('combobox', { name: 'Filter by Availability' })
         .selectOption('OUT_OF_OFFICE');
       await shot(view, size.n, '07-users-filter-out-of-office', false);
 
-      await view.getByLabel('Availability', { exact: true }).selectOption('all');
+      // Back to the unfiltered list (at phone width the filters are in a sheet that would cover the rows).
+      await view.goto('/admin/users?status=active&name=e2e-profshot');
+      await expect(view.locator('tbody tr').first()).toBeVisible();
       await view.getByRole('button', { name: `Edit availability of ${names[1]}` }).click();
       await expect(view.getByRole('dialog').locator('[data-preview-chip]')).toBeVisible();
       await shot(view, size.n, '08-admin-edit-availability-dialog', false);

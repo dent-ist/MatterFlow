@@ -81,7 +81,10 @@ test.describe('workflow tabs and tags screenshots', () => {
 
       await page.goto('/admin/steps?tags=QC&tags=Review');
       await expect(page.locator('table[data-steps] tbody tr').first()).toBeVisible();
-      await page.getByRole('button', { name: /^Tags/ }).click();
+      // The filters are column filters (#79): the Tags dropdown in the filter row, or the tag checkboxes in the sheet at phone width.
+      const tagsFilter = page.getByRole('button', { name: /^Filter by Tags,/ });
+      if (await tagsFilter.isVisible()) await tagsFilter.click();
+      else await page.getByRole('button', { name: /^Filters/ }).click();
       await expect(page.getByRole('checkbox', { name: /^QC / })).toBeVisible();
       await shoot('workflow-steps-tab-tag-filter');
       await page.keyboard.press('Escape');
