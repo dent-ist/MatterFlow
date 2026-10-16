@@ -145,9 +145,11 @@ test.describe('Column filters on the Assets screen', () => {
     await toggle(page).click();
     await expect(sheet(page)).toBeVisible();
     await expect(page.locator('tr.mf-filter-row')).toHaveCount(0);
-    for (const column of ['Name', 'Type', 'Matter', 'External reference', 'Status']) {
+    for (const column of ['Name', 'Matter', 'External reference', 'Status']) {
       await expect(sheet(page).getByLabel(`Filter by ${column}`)).toBeVisible();
     }
+    // Type is a multi-select: its checkbox group sits in the sheet.
+    await expect(sheet(page).locator('.ms-group')).toBeVisible();
     // 44 px targets.
     const box = (await sheet(page).getByLabel('Filter by Name').boundingBox())!;
     expect(box.height).toBeGreaterThanOrEqual(43);

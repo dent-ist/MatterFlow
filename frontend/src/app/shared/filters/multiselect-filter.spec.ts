@@ -154,6 +154,25 @@ describe('multi-select column filter', () => {
     expect(button().textContent).toContain('All');
   });
 
+  it('keeps a tick made while an earlier change is still on its way back from the address', () => {
+    create({ value: [] });
+    button().click();
+    fixture.detectChanges();
+    boxes()[0].checked = true;
+    boxes()[0].dispatchEvent(new Event('change'));
+    vi.advanceTimersByTime(MULTI_COMMIT_MS); // "1" is applied; the address has not answered yet
+    expect(emitted).toEqual([['1']]);
+
+    boxes()[1].checked = true;
+    boxes()[1].dispatchEvent(new Event('change')); // the next tick
+    fixture.componentRef.setInput('value', ['1']); // the answer to the first change arrives now
+    fixture.detectChanges();
+    expect(boxes().map((b) => b.checked)).toEqual([true, true, false]);
+
+    vi.advanceTimersByTime(MULTI_COMMIT_MS);
+    expect(emitted).toEqual([['1'], ['1', '2']]);
+  });
+
   it('shows the group in place, without a button or popover, in the sheet (inline)', () => {
     create({ inline: true, value: ['2'] });
     expect(el().querySelector('button.ft-btn')).toBeNull();

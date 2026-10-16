@@ -52,14 +52,18 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(page).toHaveURL(new RegExp(`/matters/new\\?clientId=${client.clientId}$`));
   });
 
-  test('Client: the matters list searches and filters by status', async ({ page, seed }) => {
+  test('Client: the matters grid filters by name through the column filter row', async ({
+    page,
+    seed,
+  }) => {
     const client = await seed.client({ name: `Filter Client ${uid()}` });
     const active = await seed.matter({ client, number: '00001', name: `Alpha ${uid()}` });
     await seed.matter({ client, number: '00002', name: `Beta ${uid()}` });
     await page.goto(`/clients/${client.clientId}`);
 
-    await page.locator('#client-matter-search').fill(active.name);
-    await expect(page).toHaveURL(/q=/);
+    await page.getByRole('button', { name: /^Filters/ }).click();
+    await page.getByRole('textbox', { name: 'Filter by Name' }).fill(active.name);
+    await expect(page).toHaveURL(/name=/);
     await expect(page.getByRole('row').filter({ hasText: 'Beta' })).toHaveCount(0);
     await expect(page.getByRole('row').filter({ hasText: active.name })).toHaveCount(1);
   });

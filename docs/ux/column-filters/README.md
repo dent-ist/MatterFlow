@@ -2,6 +2,8 @@
 
 Issue #76 (Batch 1 of epic #75). Implements the pattern standard of `docs/ux/column-filters-review.md` (section 4) with the product manager's decisions of the epic, as reusable parts, and proves it by moving the Assets screen onto them (no visible change at 1366x768; the filter row is now a sheet where it could not work before).
 
+Issue #77 (Batch 2) moved Clients, Matters, Projects, the Client's Matters grid and the Matter's Assets tab onto the same parts (section "Batch 2: the record lists" below).
+
 Screenshots are in `screenshots/` (`<name>-<width>x<height>.png`):
 
 - Assets, 1366x768: `assets-filters-closed`, `assets-filters-open`, `assets-filters-active` (row open, values in the cells), `assets-chips-row-closed` (chips instead), `assets-print` (print rendering with the "Filters: ..." line).
@@ -120,3 +122,38 @@ Useful options: `openByDefault`, `visibleColumns` (a signal of the shown column 
 - The server typeahead for more than 50 users, facet counts per option (`FilterOption.count` is rendered when given) and saved views are later items.
 - The work lists and the other record lists are not migrated here (Batches 2 to 4); `QueueFilters` and `ListQueryPage` keep working. `queue-defs.ts` is the adapter they will use.
 - Funnel icon in the header of a filtered column (review 4.3) is Batch 5.6.
+
+## Batch 2: the record lists
+
+Issue #77 (Batch 2 of epic #75). Clients, Matters, Projects, the Client page's Matters grid and the Matter page's Assets tab lost their standalone search box and status select (`mf-search-box`, `mf-status-filter`, `mf-list-state` on these screens) and use `mf-filters-bar` + `tr[mfColumnFilterRow]`. The filter row is closed by default on all of them (the open state is remembered per screen and user); a link that carries filters opens it.
+
+| Screen | Filters (URL parameter) | Notes |
+| --- | --- | --- |
+| Clients `/clients` | Client number (`clientNumber`, text), Name (`name`, text), Status (`status`, Active default) | The old `q` is no longer read; Clear filters still drops it from an old link. |
+| Matters `/matters` | Matter reference (`matterRef`), Name (`name`), Client (`client`, name or number digits), Status (`status`), Sensitive (`isSensitive`, in More filters, Yes / No), `?clientId=` as a removable chip | The typed pair `343-12` finds the padded reference (and `343-120` while typing); a full padded reference is exact. |
+| Projects `/projects` | Name (`name`), Matter (`matter`, reference, typed pair or name), Status (`status`; inactive is called Archived), `?matterId=` chip | |
+| Client page, Matters | Matter (`matterRef`), Name (`name`), Status (`status`), Sensitive (`isSensitive`, More filters) | Create matter sits at the left of the bar. `page`, `size`, `sort` stay router inputs of the page. |
+| Matter page, Assets tab (`?tab=assets`) | Name (`name`), Type (`typeId`, multi-select), External reference (`extref`), Status (`status`) | Same parameter names as the Assets screen. Switching tab removes the tab's filters, paging and sort from the address. New asset sits at the left of the bar. |
+| Assets `/assets` | Type is now a multi-select (`typeId=4&typeId=5`; `assetTypeId[]` on the API) | Other filters unchanged. |
+
+Shared pieces added for these screens:
+
+- `shared/ui/grid-body.ts`, `tbody[mfGridBody]`: the loading, error and empty rows live inside the table body, so the column headers and the filter row stay on screen in every state (`mf-list-state` replaced the whole table). The first-run empty state keeps its action (`mfEmptyAction`), the filtered one offers Clear filters.
+- `shared/filters/common-defs.ts`: `statusDef()` (Active default, "Archived" wording for Projects) and `matterColumnDefs()` (the Matters filters that Matters and a Client's Matters share).
+- Test helper `fakeQuery()` in `shared/testing/org-testing.ts` feeds a page's `ListFilters` a query string.
+
+API (query parameters, all `Contains`, parameterised, case-insensitive, `%` `_` `[` literal, combined with AND, max 200 characters; the list permission is unchanged):
+
+| Endpoint | New parameters |
+| --- | --- |
+| `GET /clients` | `clientNumber` (digits the padded 5-digit number contains; anything else finds nothing), `name` |
+| `GET /matters` | `matterRef`, `name`, `client` (client name, or digits the client number contains) |
+| `GET /projects` | `name`, `matter` (Matter reference, typed pair or Matter name) |
+| `GET /assets` | `assetTypeId` is repeatable (any of the given types) |
+| `GET /asset-types` | `name` (the Asset Types page itself moves in Batch 4) |
+
+All of these resolve inside the Organization / Assets modules, so no directory lookup is needed. A created-date range was left out (it needs the viewer's time zone and no Batch 2 grid shows a Created column). Pods, Workflows and Steps text parameters are left to Batch 4.
+
+Screenshots of these screens (`<name>-<width>x<height>.png`): `clients-filters-closed`, `clients-filters-open`, `clients-filters-active`, `clients-empty-filtered`, `matters-more-filters`, `matters-filters-active`, `matters-chips-row-closed`, `projects-filters-open`, `client-matters-closed`, `client-matters-filtered`, `matter-assets-type-multiselect` (1366x768), `clients-closed`, `clients-sheet`, `clients-sheet-filtered`, `matter-assets-closed` (375x812). Regenerate with `E2E_SCREENSHOTS=docs/ux/column-filters/screenshots frontend/e2e/run-local.sh -g "column filters records screenshots"`.
+
+Tests: unit specs for each page, `grid-body.spec.ts`, `common-defs.spec.ts`; e2e `column-filters-records.spec.ts` (filters, empty states, chips, sheet, tab switch, axe closed / open / filtered / empty / sheet); integration tests `OrganizationColumnFilterTests` and the Asset type tests in `AssetsApiTests`.

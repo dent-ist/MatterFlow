@@ -91,7 +91,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
     await expect.poll(() => scrollTopOf(region)).toBeGreaterThan(300);
 
     expect(await box(heading)).toEqual(before.heading);
-    expect(await box(search)).toEqual(before.search);
+    expect(await box(filters)).toEqual(before.filters);
     expect(await box(filters)).toEqual(before.filters);
     expect(await box(header)).toEqual(before.header); // sticky column header
     expect(await box(pager)).toEqual(before.pager); // pinned pager bar
@@ -147,16 +147,16 @@ test.describe('Fixed-header screens at 1366x768', () => {
     await expect(page.getByRole('heading', { name: 'Clients', level: 1 })).toBeVisible();
     const region = page.getByRole('region', { name: 'Clients list, scrollable' });
     await expect(region.locator('tbody tr').first()).toBeVisible();
-    const search = page.getByRole('searchbox', { name: 'Search' });
+    const filters = page.getByRole('button', { name: /^Filters/ });
     const before = {
-      search: await box(search),
+      filters: await box(filters),
       header: await box(region.locator('thead th').first()),
     };
     expect(await documentOverflow(page)).toBeLessThanOrEqual(0);
 
     await scrollRegion(region, 400);
     expect(await scrollTopOf(region)).toBeGreaterThan(100);
-    expect(await box(search)).toEqual(before.search);
+    expect(await box(filters)).toEqual(before.filters);
     expect(await box(region.locator('thead th').first())).toEqual(before.header);
 
     // Paging: Next is in the pinned bar and the new page starts at the top.

@@ -49,7 +49,7 @@ test.describe('Assets screen: column filters and details below the grid', () => 
     for (let i = 0; i < columns.length; i++) {
       const th = (await headers.nth(i).boundingBox())!;
       const control = (await grid
-        .locator(`thead tr.mf-filter-row td:nth-child(${i + 1}) :is(input, select)`)
+        .locator(`thead tr.mf-filter-row td:nth-child(${i + 1}) :is(input, select, button)`)
         .first()
         .boundingBox())!;
       // Directly under its column, inside the column width, 32 px high.
@@ -99,8 +99,10 @@ test.describe('Assets screen: column filters and details below the grid', () => 
     await openFilters(page);
     const names = page.locator('tbody tr[data-asset-id] button.as-name');
 
-    // Type (select) narrows to the type's assets; Active is the default status, so the inactive one is hidden.
-    await page.getByRole('combobox', { name: 'Filter by Type' }).selectOption({ label: typeName });
+    // Type (multi-select) narrows to the type's assets; Active is the default status, so the inactive one is hidden.
+    await page.getByRole('button', { name: /^Filter by Type/ }).click();
+    await page.getByRole('checkbox', { name: typeName }).check();
+    await page.getByRole('button', { name: 'Done' }).click();
     await expect(page).toHaveURL(new RegExp(`typeId=${type.assetTypeId}`));
     await expect(names).toHaveText([`Alpha ${token}`, `Beta ${token}`]);
     await expect(filtersToggle(page)).toContainText('(1)');

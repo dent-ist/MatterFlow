@@ -200,6 +200,11 @@ export class ColumnMultiselectFilter {
     effect(() => {
       const committed = this.value() ?? [];
       untracked(() => {
+        // The echo of our own change coming back from the address (400 ms after a tick, the router answers a little later) must not
+        // undo a tick the user made in the meantime; only a change from outside (Clear filters, a chip, Back) replaces the draft.
+        const echo =
+          committed.length === this.last.length && committed.every((x) => this.last.includes(x));
+        if (echo) return;
         this.last = committed;
         clearTimeout(this.timer);
         this.draft.set(committed);
