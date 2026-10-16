@@ -50,7 +50,7 @@ public sealed record DashboardPeriod([property: Required] int Days, [property: R
 
 /// <summary>
 /// The operational Dashboard (baseline 12.2). Department-wide (addendum E) but redacted by the caller's Dashboard tab permissions: the headline counts
-/// (Open ... Created) need <c>Dashboard.ViewSummary</c>, ByTaskType, ByPriority, ByStatus and Aging need <c>Dashboard.ViewBreakdowns</c>; what the caller may not see is zero or an empty list.
+/// (Open ... Created) need <c>Dashboard.ViewSummary</c> (<c>Dashboard.ViewUnassigned</c> alone gets only the Unassigned count: the size of the queue), ByTaskType, ByPriority, ByStatus and Aging need <c>Dashboard.ViewBreakdowns</c>; what the caller may not see is zero or an empty list.
 /// The Trends tab reads its series from <c>GET /api/v1/dashboard/trend</c> (<c>Dashboard.ViewTrends</c>). Overdue and the period are evaluated in the viewer's time zone (addendum M). Counts are operational facts, never billing or staff productivity measures.
 /// </summary>
 public sealed record DashboardSummary(

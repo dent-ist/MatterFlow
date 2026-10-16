@@ -92,7 +92,7 @@ export const STUB_SCENARIOS: Record<string, MeProfile & { label: string }> = {
       'Asset.Edit',
       'Asset.Link',
       'Dashboard.View',
-      'Dashboard.ViewSummary',
+      'Dashboard.ViewUnassigned',
     ],
     isSystemAdmin: false,
     hasWork: true,

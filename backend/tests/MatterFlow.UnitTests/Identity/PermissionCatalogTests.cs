@@ -75,7 +75,7 @@ public class PermissionCatalogTests
         codes.ShouldContain("Matter.SetActive");
         codes.ShouldContain("User.Manage");
         codes.ShouldContain("Role.Manage");
-        codes.Count.ShouldBe(49);
+        codes.Count.ShouldBe(50);
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public class PermissionCatalogTests
         var dashboard = Catalog().Where(c => c.Group == "Dashboard").ToList();
 
         dashboard.Select(c => c.Code).ShouldBe(
-            ["Dashboard.View", "Dashboard.ViewSummary", "Dashboard.ViewBreakdowns", "Dashboard.ViewTrends", "Dashboard.ViewSwimlane", "Dashboard.ViewUsers", "Dashboard.ViewCoverage"]);
+            ["Dashboard.View", "Dashboard.ViewSummary", "Dashboard.ViewUnassigned", "Dashboard.ViewBreakdowns", "Dashboard.ViewTrends", "Dashboard.ViewSwimlane", "Dashboard.ViewUsers", "Dashboard.ViewCoverage"]);
         dashboard.ShouldAllBe(c => c.Description.Length > 20);
         Catalog().Select(c => c.Code).ShouldNotContain("Dashboard.ViewDepartment");
 
@@ -144,15 +144,18 @@ public class PermissionCatalogTests
         P("Data Technician").ShouldContain(Permissions.Project.Archive);
         P("Data Technician").ShouldNotContain(Permissions.Client.Create);
 
-        // Dashboard: Directors see every tab, Pod Leads Summary + Swimlane + Users, Project Managers Summary + Swimlane, technicians Summary only.
-        string[] tabs = [Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewBreakdowns, Permissions.Dashboard.ViewTrends, Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers];
+        // Dashboard: Directors see every tab, Pod Leads Summary + Swimlane + Users, Project Managers Summary + Swimlane, technicians the unassigned queue only (ViewUnassigned, not the department counts of ViewSummary).
+        string[] tabs = [Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewUnassigned, Permissions.Dashboard.ViewBreakdowns, Permissions.Dashboard.ViewTrends, Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers];
         foreach (var role in StarterRoles.All)
             role.Permissions.Intersect(tabs).Any().ShouldBe(role.Permissions.Contains(Permissions.Dashboard.View), $"{role.Name}: a tab permission only has effect with Dashboard.View");
-        tabs.Append(Permissions.Dashboard.View).ShouldBeSubsetOf(P("Director"));
+        tabs.Except([Permissions.Dashboard.ViewUnassigned]).Append(Permissions.Dashboard.View).ShouldBeSubsetOf(P("Director"));
+        P("Director").ShouldNotContain(Permissions.Dashboard.ViewUnassigned, "the unassigned queue is part of Summary for everyone who holds ViewSummary");
         P("Pod Lead").Intersect(tabs).ShouldBe([Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers], ignoreOrder: true);
         P("Project Manager").Intersect(tabs).ShouldBe([Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane], ignoreOrder: true);
-        P("Data Technician").Intersect(tabs).ShouldBe([Permissions.Dashboard.ViewSummary]);
-        P("Data Scientist").Intersect(tabs).ShouldBe([Permissions.Dashboard.ViewSummary]);
+        P("Data Technician").Intersect(tabs).ShouldBe([Permissions.Dashboard.ViewUnassigned]);
+        P("Data Scientist").Intersect(tabs).ShouldBe([Permissions.Dashboard.ViewUnassigned]);
+        foreach (var role in new[] { "Data Technician", "Data Scientist" })
+            P(role).ShouldNotContain(Permissions.Dashboard.ViewSummary, role + ": technicians see the queue, not the department counts");
         P("Data Scientist").ShouldNotContain(Permissions.Project.Create);
         P("Data Scientist").ShouldContain(Permissions.Asset.Link);
     }

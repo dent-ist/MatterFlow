@@ -32,6 +32,8 @@ public sealed class DashboardTabPermissionsTests(SqlServerFixture sql)
             (["Dashboard.ViewSummary", "Dashboard.ViewBreakdowns", "Dashboard.ViewTrends", "Dashboard.ViewSwimlane", "Dashboard.ViewUsers"],
                 [HttpStatusCode.Forbidden, HttpStatusCode.Forbidden, HttpStatusCode.Forbidden]),
             (["Dashboard.View", "Dashboard.ViewSummary"], [HttpStatusCode.OK, HttpStatusCode.Forbidden, HttpStatusCode.Forbidden]),
+            (["Dashboard.View", "Dashboard.ViewUnassigned"], [HttpStatusCode.OK, HttpStatusCode.Forbidden, HttpStatusCode.Forbidden]),
+            (["Dashboard.ViewUnassigned"], [HttpStatusCode.Forbidden, HttpStatusCode.Forbidden, HttpStatusCode.Forbidden]),
             (["Dashboard.View", "Dashboard.ViewBreakdowns"], [HttpStatusCode.OK, HttpStatusCode.Forbidden, HttpStatusCode.Forbidden]),
             (["Dashboard.View", "Dashboard.ViewTrends"], [HttpStatusCode.OK, HttpStatusCode.Forbidden, HttpStatusCode.Forbidden]),
             (["Dashboard.View", "Dashboard.ViewSwimlane"], [HttpStatusCode.Forbidden, HttpStatusCode.OK, HttpStatusCode.Forbidden]),

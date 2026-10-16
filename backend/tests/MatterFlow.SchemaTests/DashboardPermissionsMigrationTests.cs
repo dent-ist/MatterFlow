@@ -75,7 +75,8 @@ public class DashboardPermissionsMigrationTests(SqlServerFixture sql)
         // Everyone gets Dashboard.View; holders of the old right get every tab; Task.Assign brings Summary.
         (await GrantsAsync(cs, "Lead")).ShouldBe(["Dashboard.View", .. Tabs.Order(StringComparer.Ordinal), "Task.Assign", "Task.View"]);
         (await GrantsAsync(cs, "Retired lead")).ShouldBe(["Dashboard.View", .. Tabs.Order(StringComparer.Ordinal)]);
-        (await GrantsAsync(cs, "Worker")).ShouldBe(["Dashboard.View", "Dashboard.ViewSummary", "Task.Assign", "Task.View"]);
+        // Script 27 then moves the technician-type role (Summary + Task.Assign, no department tab) to the unassigned queue only; the lead keeps Summary.
+        (await GrantsAsync(cs, "Worker")).ShouldBe(["Dashboard.View", "Dashboard.ViewUnassigned", "Task.Assign", "Task.View"]);
         (await GrantsAsync(cs, "Viewer")).ShouldBe(["Dashboard.View", "Task.View"]);
         (await GrantsAsync(cs, "Custom")).ShouldBe(["Dashboard.View", "Task.View"]);
 
@@ -84,7 +85,7 @@ public class DashboardPermissionsMigrationTests(SqlServerFixture sql)
         (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE Code = 'Dashboard.ViewDepartment'")).ShouldBeEmpty();
 
         // The new rows carry the catalog group, so the roles page lists them under Dashboard even before the startup sync.
-        (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE GroupName = 'Dashboard' ORDER BY Code")).ShouldBe(["Dashboard.View", .. Tabs.Append("Dashboard.ViewCoverage").Order(StringComparer.Ordinal)]);
+        (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE GroupName = 'Dashboard' ORDER BY Code")).ShouldBe(["Dashboard.View", .. Tabs.Append("Dashboard.ViewCoverage").Append("Dashboard.ViewUnassigned").Order(StringComparer.Ordinal)]);
     }
 
     [Fact]
@@ -94,7 +95,7 @@ public class DashboardPermissionsMigrationTests(SqlServerFixture sql)
 
         await RunAsync(cs, new EmbeddedMigrationScriptSource());
 
-        (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE GroupName = 'Dashboard' ORDER BY Code")).Count.ShouldBe(7);
+        (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE GroupName = 'Dashboard' ORDER BY Code")).Count.ShouldBe(8);
         (await ReadAsync(cs, "SELECT CAST(COUNT(*) AS VARCHAR(10)) FROM dbo.RolePermission")).Single().ShouldBe("0");
     }
 
@@ -112,5 +113,38 @@ public class DashboardPermissionsMigrationTests(SqlServerFixture sql)
         (await GrantsAsync(cs, "Project Manager")).ShouldBeEmpty();
         (await GrantsAsync(cs, "Custom")).ShouldBeEmpty();
         (await ReadAsync(cs, "SELECT name FROM sys.indexes WHERE name = 'IX_Task_CompletedCoverage'")).ShouldBe(["IX_Task_CompletedCoverage"]);
+    }
+
+    [Fact]
+    public async Task Technician_type_roles_move_from_Summary_to_the_unassigned_queue_and_the_others_keep_Summary()
+    {
+        var cs = await sql.CreateDatabaseAsync();
+        await RunAsync(cs, new ScriptsBefore(27));
+        await ExecAsync(cs, """
+            INSERT dbo.Permission (Code, GroupName, Description) VALUES
+              ('Task.Assign', 'Task', N'Assign tasks'), ('Task.View', 'Task', N'View tasks');
+            INSERT dbo.Role (Name, IsActive) VALUES (N'Technician', 1), (N'Project Manager', 1), (N'Pod Lead', 1), (N'Director', 1), (N'Observer', 1), (N'Custom', 1), (N'Summary only', 1);
+            INSERT dbo.RolePermission (RoleId, PermissionId)
+            SELECT r.RoleId, p.PermissionId FROM dbo.Role r JOIN dbo.Permission p ON
+              (r.Name = N'Technician' AND p.Code IN ('Dashboard.View', 'Dashboard.ViewSummary', 'Task.Assign', 'Task.View'))
+              OR (r.Name = N'Project Manager' AND p.Code IN ('Dashboard.View', 'Dashboard.ViewSummary', 'Dashboard.ViewSwimlane', 'Task.Assign', 'Task.View'))
+              OR (r.Name = N'Pod Lead' AND p.Code IN ('Dashboard.View', 'Dashboard.ViewSummary', 'Dashboard.ViewUsers', 'Task.Assign', 'Task.View'))
+              OR (r.Name = N'Director' AND p.Code IN ('Dashboard.View', 'Dashboard.ViewSummary', 'Dashboard.ViewBreakdowns', 'Dashboard.ViewTrends', 'Task.Assign', 'Task.View'))
+              OR (r.Name = N'Observer' AND p.Code IN ('Dashboard.View', 'Dashboard.ViewSummary', 'Dashboard.ViewBreakdowns', 'Task.View'))
+              OR (r.Name = N'Summary only' AND p.Code IN ('Dashboard.View', 'Dashboard.ViewSummary', 'Task.View'))
+              OR (r.Name = N'Custom' AND p.Code IN ('Task.Assign', 'Task.View'));
+            """);
+
+        await RunAsync(cs, new EmbeddedMigrationScriptSource());
+
+        (await GrantsAsync(cs, "Technician")).ShouldBe(["Dashboard.View", "Dashboard.ViewUnassigned", "Task.Assign", "Task.View"]);
+        (await GrantsAsync(cs, "Project Manager")).ShouldBe(["Dashboard.View", "Dashboard.ViewSummary", "Dashboard.ViewSwimlane", "Task.Assign", "Task.View"]);
+        (await GrantsAsync(cs, "Pod Lead")).ShouldBe(["Dashboard.View", "Dashboard.ViewSummary", "Dashboard.ViewUsers", "Task.Assign", "Task.View"]);
+        (await GrantsAsync(cs, "Director")).ShouldBe(["Dashboard.View", "Dashboard.ViewBreakdowns", "Dashboard.ViewSummary", "Dashboard.ViewTrends", "Task.Assign", "Task.View"]);
+        // No Task.Assign: nothing changes (Read-Only Observer, Compliance Auditor and any custom summary-only role keep their counts).
+        (await GrantsAsync(cs, "Observer")).ShouldBe(["Dashboard.View", "Dashboard.ViewBreakdowns", "Dashboard.ViewSummary", "Task.View"]);
+        (await GrantsAsync(cs, "Summary only")).ShouldBe(["Dashboard.View", "Dashboard.ViewSummary", "Task.View"]);
+        (await GrantsAsync(cs, "Custom")).ShouldBe(["Task.Assign", "Task.View"]);
+        (await ReadAsync(cs, "SELECT GroupName FROM dbo.Permission WHERE Code = 'Dashboard.ViewUnassigned'")).ShouldBe(["Dashboard"]);
     }
 }

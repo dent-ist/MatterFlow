@@ -264,7 +264,7 @@ Screen IDs map to baseline §19 (item number in brackets). Each spec: purpose, l
 ### S01 Dashboard
 
 **Purpose.** Department overview for oversight; drill-through to filtered Task Queue. Not billing, not staff scoring.
-**Who.** "The Dashboard is not for everyone": it needs `Dashboard.View` (menu item and route; without it the route is the 403 page and the Dashboard item is hidden), and each tab its own permission: Summary `Dashboard.ViewSummary`, Breakdowns `Dashboard.ViewBreakdowns`, Trends `Dashboard.ViewTrends`, Swimlane `Dashboard.ViewSwimlane`, Users `Dashboard.ViewUsers`. A tab permission only has effect together with `Dashboard.View`.
+**Who.** "The Dashboard is not for everyone": it needs `Dashboard.View` (menu item and route; without it the route is the 403 page and the Dashboard item is hidden), and each tab its own permission: Summary `Dashboard.ViewSummary` (everything on Summary) or `Dashboard.ViewUnassigned` (the unassigned queue alone), Breakdowns `Dashboard.ViewBreakdowns`, Trends `Dashboard.ViewTrends`, Swimlane `Dashboard.ViewSwimlane`, Users `Dashboard.ViewUsers`. A tab permission only has effect together with `Dashboard.View`.
 
 ```text
 Dashboard                                             Period: [Last 30 days v]
@@ -293,8 +293,8 @@ Dashboard                                             Period: [Last 30 days v]
 - Charts use the categorical palette only for Pod/Type bars; every bar has a text value. Priority and status bars reuse badge colours + labels.
 - No per-person productivity chart, no hours, no revenue.
 **States.** Loading: tile skeletons. Empty (no tasks yet): "No tasks yet. Create the first task." with button (needs `Task.Create`). Error: per-widget inline error with Retry so one failing widget does not blank the page.
-**Permission.** Only the permitted tabs are shown; the first permitted tab is the default and a link to a forbidden tab falls back to it. With `Dashboard.View` but no tab permission the page shows a short note ("No Dashboard tab is turned on for your role...") with a link to My Work. The server redacts the data of tabs the person may not see (counts, charts, trend). The Unassigned queue (with `Task.Assign`) and the Overdue and Due soon lists belong to Summary. The post-login landing page is never the Dashboard for people without `Dashboard.View` (My Work or the Task Queue, else the first screen they may open).
-**Refresh.** Manual "Refresh" button and "Updated 10:42 AM" caption; no auto-poll in Phase 1 [UX-PROPOSAL].
+**Permission.** Only the permitted tabs are shown; the first permitted tab is the default and a link to a forbidden tab falls back to it. With `Dashboard.View` but no tab permission the page shows a short note ("No Dashboard tab is turned on for your role...") with a link to My Work. The server redacts the data of tabs the person may not see (counts, charts, trend). Summary has two layers: with `Dashboard.ViewSummary` it shows the Needs attention and Overview tiles, the Unassigned queue (with `Task.Assign` or `Dashboard.ViewUnassigned`) and the Overdue and Due soon lists; with `Dashboard.ViewUnassigned` alone (technicians) the Summary tab contains only the Unassigned queue (no tiles, no period control, no other lists) and the server sends no department-wide counts. The post-login landing page is never the Dashboard for people without `Dashboard.View` (My Work or the Task Queue, else the first screen they may open).
+**Refresh.** One icon-only Refresh button (aria-label "Refresh", tooltip "Refresh. Updated 10:42 AM. Refreshes itself every 5 minutes.", spinner and `aria-busy` while reading) at the right end of the tab row, on every tab (Summary, Breakdowns, Trends, Swimlane, Users); it refreshes the tab shown. There is no visible "Updated" text; the time of the last read is the tooltip. The page also refreshes itself every 5 minutes while visible, and a failed refresh keeps the figures with a banner and Retry.
 
 **Tabs (epic #68).** The page has five tabs (WAI-ARIA tabs, `?tab=` in the address, never remembered): Summary, Breakdowns, Trends, Swimlane and Users, all for `Dashboard.ViewDepartment`. Swimlane is specified below; Users (team workload) is issue #73.
 
@@ -1477,6 +1477,7 @@ Internal codes fixed: NEW, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED. Rules (ad
 | `Workflow.Manage` | Step Library, Workflow designer |
 | `AssetType.Manage`, `CustomField.Manage`, `Priority.Manage`, `StatusLabel.Manage` | respective admin screens |
 | `Dashboard.View` | Dashboard nav item and route (403 without it); a tab permission has no effect without it |
+| `Dashboard.ViewUnassigned` | The Summary tab with only the Unassigned queue (technicians; needs `Dashboard.View`) |
 | `Dashboard.ViewSummary` / `ViewBreakdowns` / `ViewTrends` / `ViewSwimlane` / `ViewUsers` | The Summary, Breakdowns, Trends, Swimlane and Users tabs of the Dashboard (and the matching part of the server payload) |
 | `Audit.View` | Audit Logs; old/new values in Activity |
 
@@ -1491,7 +1492,7 @@ Items tagged [UX-PROPOSAL] above need confirmation. Highest impact:
 6. **Zero as a client/matter number** (`0` -> `00000`): allow?
 7. **Number editing:** is "restricted, audited Change number" acceptable for users with edit permission?
 8. **Asset Type changes:** not versioned in baseline; proposed hide-not-delete behavior on removed fields. Link labels (Source/Destination/Subject/Result) configurable (OPEN-14)?
-9. **Dashboard scope**: who gets which tab (`Dashboard.View` plus one permission per tab); whether technicians should see the department counts of Summary or only the unassigned queue.
+9. **Dashboard scope**: who gets which tab (`Dashboard.View` plus one permission per tab); whether technicians should see the department counts of Summary or only the unassigned queue (decided, issue #81: only the unassigned queue, `Dashboard.ViewUnassigned`).
 10. **Task Activity values** visible only with `Audit.View`?
 11. **Inactive Client** behavior (blocks new Matters?).
 12. **Comment deletion** leaves no tombstone in the thread.

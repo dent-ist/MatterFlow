@@ -11,7 +11,7 @@ namespace MatterFlow.WorkViews.Api;
 /// <summary>
 /// The operational Dashboard: department-wide counts (Phase 1 has no per-record visibility, addendum E), breakdowns of open Tasks, aging and trend.
 /// The Dashboard is not for everyone: it needs <c>Dashboard.View</c> plus at least one tab permission, and the payload only carries the sections
-/// the caller's tab permissions allow (Summary, Breakdowns, Trends; the rest is empty). Overdue and the period use the caller's time zone
+/// the caller's tab permissions allow (Summary, the unassigned queue alone with <c>Dashboard.ViewUnassigned</c>, Breakdowns, Trends; the rest is empty). Overdue and the period use the caller's time zone
 /// (<c>X-Time-Zone</c>, addendum M). Every count carries the Task Queue query string that lists exactly the counted Tasks. No billing or productivity figures.
 /// </summary>
 [ApiController]
@@ -21,7 +21,7 @@ public class DashboardController(DashboardService dashboard, DashboardTrendServi
     /// <summary>Gets the Dashboard for a period (<c>periodDays</c>, default 30, max 365) that drives the "completed" and "created" counts.</summary>
     [HttpGet(Name = "GetDashboard")]
     [Authorize(Policy = "Perm:" + Permissions.Dashboard.View)]
-    [Authorize(Policy = "Perm:" + Permissions.Dashboard.ViewSummary + "|" + Permissions.Dashboard.ViewBreakdowns + "|" + Permissions.Dashboard.ViewTrends)]
+    [Authorize(Policy = "Perm:" + Permissions.Dashboard.ViewSummary + "|" + Permissions.Dashboard.ViewUnassigned + "|" + Permissions.Dashboard.ViewBreakdowns + "|" + Permissions.Dashboard.ViewTrends)]
     [ProducesResponseType<DashboardSummary>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<DashboardSummary>> Get([FromQuery] DashboardQuery query, CancellationToken cancellationToken)
     {

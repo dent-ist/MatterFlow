@@ -231,7 +231,7 @@
         "Asset.Edit",
         "Asset.Link",
         "Dashboard.View",
-        "Dashboard.ViewSummary"
+        "Dashboard.ViewUnassigned"
       ]
     },
     {
@@ -259,7 +259,7 @@
         "Asset.Edit",
         "Asset.Link",
         "Dashboard.View",
-        "Dashboard.ViewSummary"
+        "Dashboard.ViewUnassigned"
       ]
     },
     {
@@ -286,7 +286,7 @@
         "Asset.Edit",
         "Asset.Link",
         "Dashboard.View",
-        "Dashboard.ViewSummary"
+        "Dashboard.ViewUnassigned"
       ]
     },
     {
@@ -389,6 +389,7 @@
     "StatusLabel.Manage",
     "Dashboard.View",
     "Dashboard.ViewSummary",
+    "Dashboard.ViewUnassigned",
     "Dashboard.ViewBreakdowns",
     "Dashboard.ViewTrends",
     "Dashboard.ViewSwimlane",

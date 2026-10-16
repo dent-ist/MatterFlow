@@ -8,15 +8,16 @@ export const DASHBOARD_TABS = ['summary', 'breakdowns', 'trends', 'swimlane', 'u
 export type DashboardTab = (typeof DASHBOARD_TABS)[number];
 
 /**
- * The permission each tab needs (in addition to Dashboard.View, which opens the Dashboard at all). The page shows only the tabs the person holds;
- * a new tab is added here and in DASHBOARD_TABS and plugs into the page's tab switch.
+ * The permissions that open each tab (any one of them, in addition to Dashboard.View, which opens the Dashboard at all). The page shows only the
+ * tabs the person holds; a new tab is added here and in DASHBOARD_TABS and plugs into the page's tab switch. Summary has two layers:
+ * ViewSummary shows all of it, ViewUnassigned alone shows only the unassigned queue.
  */
-export const DASHBOARD_TAB_PERMISSIONS: Record<DashboardTab, Permission> = {
-  summary: 'Dashboard.ViewSummary',
-  breakdowns: 'Dashboard.ViewBreakdowns',
-  trends: 'Dashboard.ViewTrends',
-  swimlane: 'Dashboard.ViewSwimlane',
-  users: 'Dashboard.ViewUsers',
+export const DASHBOARD_TAB_PERMISSIONS: Record<DashboardTab, readonly Permission[]> = {
+  summary: ['Dashboard.ViewSummary', 'Dashboard.ViewUnassigned'],
+  breakdowns: ['Dashboard.ViewBreakdowns'],
+  trends: ['Dashboard.ViewTrends'],
+  swimlane: ['Dashboard.ViewSwimlane'],
+  users: ['Dashboard.ViewUsers'],
 };
 
 export const DASHBOARD_TAB_LABELS: Record<DashboardTab, string> = {

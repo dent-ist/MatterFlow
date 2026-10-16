@@ -33,7 +33,9 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         var canView = permissions.Has(Permissions.Dashboard.View);
         var showSummary = canView && permissions.Has(Permissions.Dashboard.ViewSummary);
         var showBreakdowns = canView && permissions.Has(Permissions.Dashboard.ViewBreakdowns);
-        var sections = (showSummary ? 1 : 0) | (showBreakdowns ? 2 : 0);
+        // Dashboard.ViewUnassigned alone: only the size of the unassigned queue (and the query that lists it), none of the department-wide counts.
+        var showUnassigned = showSummary || (canView && permissions.Has(Permissions.Dashboard.ViewUnassigned));
+        var sections = (showSummary ? 1 : 0) | (showBreakdowns ? 2 : 0) | (showUnassigned ? 4 : 0);
         var cacheKey = $"{me}|{query.PeriodDays}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{sections}";
         if (!query.Fresh && cache.TryGet(cacheKey, out var cached))
             return cached;
@@ -48,8 +50,9 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         Expression<Func<WorkTask, bool>> dueSoon = t => t.DueDate != null && t.DueDate <= dueSoonDay;
         var openDueSoon = open.Where(dueSoon).Where(Not(overdue));
 
-        // Headline counts (Summary tab): one statement with a scalar subquery per number.
-        var head = !showSummary ? null : await tasks.Select(_ => new
+        // Headline counts (Summary tab): one statement with a scalar subquery per number. With Dashboard.ViewUnassigned alone only the size of the
+        // unassigned queue is read: the department-wide counts are neither computed nor sent.
+        var head = showSummary ? await tasks.Select(_ => new
         {
             Open = open.Count(),
             Unassigned = open.Count(t => t.AssignedUserId == null),
@@ -59,7 +62,19 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             AsapOpen = open.Count(t => t.DueDate == null),
             Completed = tasks.Count(t => t.Status == TaskStatusCode.Completed && t.StatusChangedAtUtc >= fromUtc),
             Created = tasks.Count(t => t.CreatedAtUtc >= fromUtc),
-        }).FirstOrDefaultAsync(ct);
+        }).FirstOrDefaultAsync(ct)
+        : showUnassigned ? await tasks.Select(_ => new
+        {
+            Open = 0,
+            Unassigned = open.Count(t => t.AssignedUserId == null),
+            Overdue = 0,
+            OnHold = 0,
+            DueSoon = 0,
+            AsapOpen = 0,
+            Completed = 0,
+            Created = 0,
+        }).FirstOrDefaultAsync(ct)
+        : null;
 
         // Breakdowns tab: open Tasks by status, priority and type, and their age.
         var departmentOpen = showBreakdowns ? open : open.Where(_ => false);

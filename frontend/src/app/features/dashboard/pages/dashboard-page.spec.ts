@@ -319,9 +319,12 @@ describe('DashboardPage', () => {
     expect(group.querySelector('select[data-period]')).not.toBeNull();
     expect(text(group.querySelector('label.period'))).toContain('Completed and created in');
     expect(el.querySelector('mf-page-header select[data-period]')).toBeNull();
-    expect(el.querySelector('[data-updated]')!.textContent).toContain(
-      'Updated Oct 14, 2026, 3:42 PM',
-    );
+    // The refresh icon sits in the tab row; "Updated <time>" is its tooltip, never visible text.
+    const refresh = el.querySelector<HTMLButtonElement>('mf-dash-tabs [data-refresh]')!;
+    expect(refresh.getAttribute('title')).toContain('Updated Oct 14, 2026, 3:42 PM');
+    expect(refresh.getAttribute('aria-label')).toBe('Refresh');
+    expect(el.querySelector('[data-updated]')).toBeNull();
+    expect(el.textContent).not.toContain('refreshes every 5 minutes');
   });
 
   it('lays Summary out as tiles beside the unassigned queue with Overdue and Due soon in a row below, in this order', async () => {
@@ -482,11 +485,12 @@ describe('DashboardPage', () => {
       expect(el.querySelector('[data-tabpanel="swimlane"]')!.getAttribute('aria-labelledby')).toBe(
         'mf-dash-tab-swimlane',
       );
-      // The page header's Refresh (summary figures) steps aside; the board's refresh is an icon in the tab row, with no "Updated" text.
+      // The refresh is one icon in the tab row, with no "Updated" text, on every tab.
       expect(el.querySelector('mf-page-header [data-refresh]')).toBeNull();
-      const icon = el.querySelector<HTMLButtonElement>('mf-dash-tabs [data-refresh-board]')!;
+      expect(el.querySelectorAll('[data-refresh]').length).toBe(1);
+      const icon = el.querySelector<HTMLButtonElement>('mf-dash-tabs [data-refresh]')!;
       expect(icon).not.toBeNull();
-      expect(icon.getAttribute('aria-label')).toBe('Refresh board');
+      expect(icon.getAttribute('aria-label')).toBe('Refresh');
       expect(icon.textContent!.trim()).toBe('');
       expect(icon.closest('mf-dash-tabs')!.querySelector('[role="tablist"]')).not.toBeNull();
       expect(el.querySelector('[data-updated]')).toBeNull();
@@ -496,16 +500,70 @@ describe('DashboardPage', () => {
       expect(text(selectedTab(el))).toBe('Users');
       const panel = el.querySelector('[data-tabpanel="users"]')!;
       expect(panel.querySelector('mf-dash-users-tab')).not.toBeNull();
-      const usersIcon = el.querySelector<HTMLButtonElement>('mf-dash-tabs [data-refresh-users]')!;
-      expect(usersIcon.getAttribute('aria-label')).toBe('Refresh team workload');
+      const usersIcon = el.querySelector<HTMLButtonElement>('mf-dash-tabs [data-refresh]')!;
+      expect(usersIcon.getAttribute('aria-label')).toBe('Refresh');
       expect(usersIcon.textContent!.trim()).toBe('');
-      expect(el.querySelector('mf-dash-tabs [data-refresh-board]')).toBeNull();
+      expect(el.querySelectorAll('[data-refresh]').length).toBe(1);
       expect(el.querySelector('mf-page-header [data-refresh]')).toBeNull();
       expect(el.querySelector('[data-tabpanel="swimlane"]')).toBeNull();
 
       tabButtons(el)[0].click();
       await settle();
-      expect(el.querySelector('mf-page-header [data-refresh]')).not.toBeNull();
+      expect(el.querySelector('mf-dash-tabs [data-refresh]')).not.toBeNull();
+      expect(el.querySelectorAll('[data-refresh]').length).toBe(1);
+    });
+
+    it('has one icon-only Refresh in the tab row on Summary, Breakdowns, Trends, Swimlane and Users, acting on the tab shown', async () => {
+      const el = await open();
+      const swimlaneRead = getDashboardSwimlane.mock.calls.length;
+      const workloadRead = getDashboardWorkload.mock.calls.length;
+      for (const [index, label] of [
+        'Summary',
+        'Breakdowns',
+        'Trends',
+        'Swimlane',
+        'Users',
+      ].entries()) {
+        if (index > 0) {
+          tabButtons(el)[index].click();
+          await settle();
+        }
+        expect(text(selectedTab(el))).toBe(label);
+        expect(el.querySelectorAll('[data-refresh]').length).toBe(1);
+        const button = el.querySelector<HTMLButtonElement>('mf-dash-tabs [data-refresh]')!;
+        expect(button.getAttribute('aria-label')).toBe('Refresh');
+        expect(button.getAttribute('title')).toContain('Refresh');
+        expect(button.textContent!.trim()).toBe('');
+        expect(button.querySelector('.pi-refresh')).not.toBeNull();
+      }
+      // On Users the icon reads the workload again; on Swimlane the board.
+      const usersRead = getDashboardWorkload.mock.calls.length;
+      el.querySelector<HTMLButtonElement>('mf-dash-tabs [data-refresh]')!.click();
+      await settle();
+      expect(getDashboardWorkload.mock.calls.length).toBeGreaterThan(usersRead);
+      expect(workloadRead).toBeLessThanOrEqual(usersRead);
+      tabButtons(el)[3].click();
+      await settle();
+      const boardRead = getDashboardSwimlane.mock.calls.length;
+      expect(boardRead).toBeGreaterThanOrEqual(swimlaneRead);
+      el.querySelector<HTMLButtonElement>('mf-dash-tabs [data-refresh]')!.click();
+      await settle();
+      expect(getDashboardSwimlane.mock.calls.length).toBeGreaterThan(boardRead);
+    });
+
+    it('shows the spinner and aria-busy on the tab-row Refresh while the summary is read again', async () => {
+      const el = await open();
+      const again = new Subject<DashboardSummary>();
+      getDashboard.mockReturnValueOnce(again);
+      const button = el.querySelector<HTMLButtonElement>('mf-dash-tabs [data-refresh]')!;
+      button.click();
+      await settle();
+      expect(button.getAttribute('aria-busy')).toBe('true');
+      expect(button.querySelector('.pi-spinner')).not.toBeNull();
+      again.next(summary());
+      again.complete();
+      await settle();
+      expect(button.getAttribute('aria-busy')).toBeNull();
     });
 
     it('does not carry the Swimlane parameters (group, sort, filters) to another tab', async () => {
@@ -669,7 +727,53 @@ describe('DashboardPage', () => {
       expect(selected(el)).toBe('Users');
       expect(el.querySelector('[data-tabpanel="users"]')).not.toBeNull();
       expect(getDashboard).not.toHaveBeenCalled();
-      expect(el.querySelector('[data-refresh]')).toBeNull();
+      // The refresh icon belongs to the tab row, which the board tabs have too.
+      expect(el.querySelectorAll('mf-dash-tabs [data-refresh]').length).toBe(1);
+    });
+
+    it('Dashboard.ViewUnassigned alone: Summary is only the Unassigned queue, no tiles, no Overdue or Due soon, and the queue is read', async () => {
+      const el = await open(of(summary()), [
+        'Task.View',
+        'Dashboard.View',
+        'Dashboard.ViewUnassigned',
+      ]);
+      expect(tabLabels(el)).toEqual(['Summary']);
+      expect(el.querySelector('[data-group], mf-stat-tile, select[data-period]')).toBeNull();
+      expect(el.querySelector('[data-empty]')).toBeNull();
+      expect(
+        Array.from(el.querySelectorAll('[data-panel]')).map((p) => p.getAttribute('data-panel')),
+      ).toEqual(['unassigned']);
+      expect(el.querySelector('[data-panel="unassigned"] [data-total]')!.textContent).toContain(
+        '17',
+      );
+      // One queue read, no Overdue or Due soon reads.
+      expect(getTaskQueue).toHaveBeenCalledTimes(1);
+      expect(el.querySelectorAll('mf-dash-tabs [data-refresh]').length).toBe(1);
+    });
+
+    it('Dashboard.ViewUnassigned with other tabs: Summary is still the queue alone, the other tabs are unchanged', async () => {
+      const el = await open(of(summary()), [
+        'Task.View',
+        'Dashboard.View',
+        'Dashboard.ViewUnassigned',
+        'Dashboard.ViewBreakdowns',
+      ]);
+      expect(tabLabels(el)).toEqual(['Summary', 'Breakdowns']);
+      expect(el.querySelector('[data-group]')).toBeNull();
+      expect(el.querySelectorAll('[data-panel]').length).toBe(1);
+    });
+
+    it('Dashboard.ViewUnassigned and Dashboard.ViewSummary together show everything as ViewSummary does', async () => {
+      const el = await open(of(summary()), [
+        'Task.View',
+        'Dashboard.View',
+        'Dashboard.ViewSummary',
+        'Dashboard.ViewUnassigned',
+      ]);
+      expect(el.querySelectorAll('[data-group]').length).toBe(2);
+      expect(
+        Array.from(el.querySelectorAll('[data-panel]')).map((p) => p.getAttribute('data-panel')),
+      ).toEqual(['unassigned', 'overdue', 'dueSoon']);
     });
 
     it('Summary tab with Task.Assign shows the Unassigned queue; without it only Overdue and Due soon', async () => {

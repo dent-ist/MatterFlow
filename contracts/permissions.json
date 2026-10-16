@@ -217,6 +217,11 @@
       "description": "Summary tab: headline counts, the unassigned queue, and the overdue and due soon lists"
     },
     {
+      "code": "Dashboard.ViewUnassigned",
+      "group": "Dashboard",
+      "description": "See the unassigned task queue on the Dashboard Summary tab (assign work to yourself or others)"
+    },
+    {
       "code": "Dashboard.ViewBreakdowns",
       "group": "Dashboard",
       "description": "Breakdowns tab: open tasks by priority, task type and status, and their age"

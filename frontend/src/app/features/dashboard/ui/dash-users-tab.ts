@@ -435,7 +435,7 @@ export class DashUsersTab implements OnInit {
   protected readonly pageStep = USERS_PAGE;
   private readonly limit = signal(USERS_PAGE);
   protected readonly shown = computed(() => this.users().slice(0, this.limit()));
-  protected readonly updated = computed(() => {
+  readonly updated = computed(() => {
     const b = this.board();
     return b ? mfDate(b.generatedAtUtc, this.zone, 'datetime') : null;
   });

@@ -42,8 +42,8 @@ public static class StarterRoles
         Permissions.Client.EditNumber, Permissions.Matter.EditNumber, Permissions.Matter.SetActive,
     ];
 
-    /// <summary>Technicians: open the Dashboard and its Summary tab (the unassigned queue to pick work from). Everything else on it is for leads and directors.</summary>
-    private static readonly string[] DashboardSummaryOnly = [Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary];
+    /// <summary>Technicians: open the Dashboard and the unassigned queue on its Summary tab (to pick work from), not the department-wide counts. Everything else on it is for leads and directors.</summary>
+    private static readonly string[] DashboardUnassignedOnly = [Permissions.Dashboard.View, Permissions.Dashboard.ViewUnassigned];
 
     public static IReadOnlyList<StarterRole> All { get; } =
     [
@@ -60,8 +60,8 @@ public static class StarterRoles
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers,
                 Permissions.Dashboard.ViewCoverage]),
         new("Data Technician", "Works tasks and manages projects.",
-            [..Everyone, ..ProjectManage, ..DashboardSummaryOnly]),
+            [..Everyone, ..ProjectManage, ..DashboardUnassignedOnly]),
         new("Data Scientist", "Works tasks; read access to projects.",
-            [..Everyone, ..DashboardSummaryOnly]),
+            [..Everyone, ..DashboardUnassignedOnly]),
     ];
 }

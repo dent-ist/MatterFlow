@@ -26,7 +26,7 @@ No horizontal page scroll at any of the three widths (checked in the e2e test `d
 | `dashboard-director.png` | Director | all five tabs |
 | `dashboard-pod-lead.png` | Pod Lead | Summary, Swimlane, Users |
 | `dashboard-project-manager.png` | Project Manager | Summary, Swimlane |
-| `dashboard-data-technician.png` | Data Technician | Summary only (the unassigned queue to pick work from) |
+| `dashboard-data-technician.png` | Data Technician | Summary only (the unassigned queue to pick work from). Superseded by issue #81: the technician now holds `Dashboard.ViewUnassigned` and sees the queue alone, see `../dashboard-v5/README.md` |
 | `dashboard-trends-and-swimlane.png` | custom: View + Trends + Swimlane | those two tabs |
 | `dashboard-view-only-no-tabs.png` | custom: Dashboard.View only | the friendly note with a link to My Work |
 | `dashboard-no-dashboard-view.png` | custom: no Dashboard.View | menu item hidden, route shows the 403 page |

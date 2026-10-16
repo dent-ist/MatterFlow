@@ -194,8 +194,14 @@ public static class Permissions
         /// <summary>Open the Dashboard. Needed for every tab.</summary>
         public const string View = "Dashboard.View";
 
-        /// <summary>Summary tab: the headline tiles, the unassigned queue, and the overdue and due soon lists.</summary>
+        /// <summary>Summary tab: the headline counts and tiles, the overdue and due soon lists, and (with Task.Assign) the unassigned queue.</summary>
         public const string ViewSummary = "Dashboard.ViewSummary";
+
+        /// <summary>
+        /// Summary tab, unassigned queue only: the list of Tasks nobody is assigned to (to pick work from), without the department-wide counts, the
+        /// Needs attention and Overview tiles or the Overdue and Due soon lists, which need <see cref="ViewSummary"/>. Needs <see cref="View"/> too.
+        /// </summary>
+        public const string ViewUnassigned = "Dashboard.ViewUnassigned";
 
         /// <summary>Breakdowns tab: open Tasks by priority, task type and status, and their age.</summary>
         public const string ViewBreakdowns = "Dashboard.ViewBreakdowns";
@@ -266,6 +272,7 @@ public static class Permissions
         StatusLabel.Manage,
         Dashboard.View,
         Dashboard.ViewSummary,
+        Dashboard.ViewUnassigned,
         Dashboard.ViewBreakdowns,
         Dashboard.ViewTrends,
         Dashboard.ViewSwimlane,

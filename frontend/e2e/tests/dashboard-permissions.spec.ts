@@ -1,4 +1,6 @@
+import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { uid } from '../support/seed';
 
 /**
  * "The Dashboard is not for everyone": Dashboard.View opens it, every tab has its own permission, the server redacts what a person may not see,
@@ -89,6 +91,87 @@ test.describe('Dashboard permissions', () => {
     expect((await page.request.get('/api/v1/dashboard/trend')).status()).toBe(403);
   });
 
+  test('a technician (Dashboard.ViewUnassigned) sees only the unassigned queue, and the server sends no department counts', async ({
+    seed,
+    asUser,
+  }) => {
+    const world = await seed.world();
+    await seed.task(world, { title: `Queue only ${uid()}` });
+    const user = await seed.user(['Data Technician'], 'queueonly');
+    const page = await asUser(user.username);
+
+    await page.goto('/dashboard');
+    await expect(page.getByRole('tab')).toHaveText(['Summary']);
+    const panel = page.locator('[data-tabpanel="summary"]');
+    await expect(panel.locator('[data-panel="unassigned"]')).toBeVisible();
+    await expect(panel.locator('[data-panel="unassigned"] li').first()).toBeVisible();
+    // No tiles, no Overview period control and no Overdue or Due soon lists.
+    await expect(panel.locator('[data-group], mf-stat-tile, select[data-period]')).toHaveCount(0);
+    await expect(panel.locator('[data-panel]')).toHaveCount(1);
+    // The refresh icon is in the tab row.
+    await expect(
+      page.locator('mf-dash-tabs').getByRole('button', { name: 'Refresh', exact: true }),
+    ).toBeVisible();
+
+    // Server side: the size of the queue only. Counts are zero, breakdowns empty, and the other tabs' endpoints are 403.
+    const body = await (await page.request.get('/api/v1/dashboard?fresh=true')).json();
+    expect(body.unassigned.count).toBeGreaterThan(0);
+    for (const name of ['open', 'overdue', 'onHold', 'dueSoon', 'asapOpen', 'completed', 'created'])
+      expect(body[name].count, name).toBe(0);
+    expect(body.byStatus).toEqual([]);
+    expect(body.aging).toEqual([]);
+    for (const url of ['trend', 'swimlane', 'workload', 'coverage'])
+      expect((await page.request.get(`/api/v1/dashboard/${url}`)).status(), url).toBe(403);
+  });
+
+  test('the Director keeps the whole Summary tab and the same icon-only Refresh on every tab', async ({
+    page,
+  }) => {
+    await page.goto('/dashboard');
+    await expect(page.locator('[data-group="attention"]')).toBeVisible();
+    await expect(page.locator('[data-panel="overdue"]')).toBeVisible();
+    for (const tab of ['Summary', 'Breakdowns', 'Trends', 'Swimlane', 'Users']) {
+      await page.getByRole('tab', { name: tab }).click();
+      await expect(page.getByRole('tab', { name: tab })).toHaveAttribute('aria-selected', 'true');
+      const refresh = page.getByRole('button', { name: 'Refresh', exact: true });
+      await expect(refresh, tab).toHaveCount(1);
+      await expect(refresh).toHaveText('');
+      await expect(
+        page.locator('mf-dash-tabs').getByRole('button', { name: 'Refresh' }),
+      ).toBeVisible();
+      await expect(page.locator('mf-page-header').getByRole('button')).toHaveCount(0);
+      await expect(page.locator('[data-updated]')).toHaveCount(0);
+      await expect(page.getByText(/refreshes every 5 minutes/)).toHaveCount(0);
+    }
+  });
+
+  test.describe('accessibility of the technician view', () => {
+    test.skip(!axeAvailable(), 'axe-core is not installed (npm ci) and E2E_AXE_PATH is not set');
+    for (const size of [
+      { width: 1366, height: 768 },
+      { width: 375, height: 812 },
+    ]) {
+      test(`axe is clean on the unassigned-only Summary at ${size.width}`, async ({
+        seed,
+        asUser,
+      }) => {
+        const world = await seed.world();
+        await seed.task(world, { title: `Axe queue ${uid()}` });
+        const user = await seed.user(['Data Technician'], `axequeue${size.width}`);
+        const page = await asUser(user.username);
+        await page.setViewportSize(size);
+        await page.goto('/dashboard');
+        await expect(page.locator('[data-panel="unassigned"] li').first()).toBeVisible();
+        expect(await axeViolations(page)).toEqual([]);
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+          ),
+        ).toBe(true);
+      });
+    }
+  });
+
   test('the role editor has a Dashboard section: a tab permission selects Dashboard.View, clearing View clears the tabs with a note', async ({
     page,
     seed,
@@ -98,8 +181,9 @@ test.describe('Dashboard permissions', () => {
     await page.locator('button.mf-role', { hasText: role.name }).click();
     const group = page.locator('[data-group="Dashboard"]');
     await expect(group.locator('legend')).toHaveText('Dashboard');
-    await expect(group.locator('[data-perm]')).toHaveCount(7);
+    await expect(group.locator('[data-perm]')).toHaveCount(8);
     await expect(group.locator('[data-perm="Dashboard.ViewCoverage"]')).toBeAttached();
+    await expect(group.locator('[data-perm="Dashboard.ViewUnassigned"]')).toBeAttached();
 
     await group.locator('[data-perm="Dashboard.ViewSwimlane"]').check();
     await expect(group.locator('[data-perm="Dashboard.View"]')).toBeChecked();

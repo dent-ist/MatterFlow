@@ -328,10 +328,23 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
         admin.GetProperty("byStatus").GetArrayLength().ShouldBe(3);
 
         // Summary only: the headline numbers, nothing else.
-        var summary = await OkAsync(await (await _h.UserWithAsync(@"KE\onlysummary", "Dashboard.View", "Dashboard.ViewSummary")).GetAsync("/api/v1/dashboard"));
+        var summaryClient = await _h.UserWithAsync(@"KE\onlysummary", "Dashboard.View", "Dashboard.ViewSummary");
+        var summary = await OkAsync(await summaryClient.GetAsync("/api/v1/dashboard"));
         summary.GetProperty("open").GetProperty("count").GetInt32().ShouldBe(open);
         summary.GetProperty("created").GetProperty("count").GetInt32().ShouldBe(admin.GetProperty("created").GetProperty("count").GetInt32());
         ShouldHaveNoBreakdowns(summary);
+
+        // The unassigned queue only (technicians): the size of the queue and nothing else, no department-wide count, no breakdown.
+        var unassigned = await OkAsync(await (await _h.UserWithAsync(@"KE\onlyunassigned", "Dashboard.View", "Dashboard.ViewUnassigned")).GetAsync("/api/v1/dashboard"));
+        unassigned.GetProperty("unassigned").GetProperty("count").GetInt32().ShouldBe(admin.GetProperty("unassigned").GetProperty("count").GetInt32());
+        unassigned.GetProperty("unassigned").GetProperty("count").GetInt32().ShouldBeGreaterThan(0);
+        foreach (var name in SummaryNames.Where(n => n != "unassigned"))
+            unassigned.GetProperty(name).GetProperty("count").GetInt32().ShouldBe(0, name);
+        ShouldHaveNoBreakdowns(unassigned);
+
+        // The cached answer of one caller is never served to another with other rights (the key carries the section flags).
+        var summaryAgain = await OkAsync(await summaryClient.GetAsync("/api/v1/dashboard"));
+        summaryAgain.GetProperty("open").GetProperty("count").GetInt32().ShouldBe(open);
 
         // Breakdowns only: the charts, no counts.
         var breakdowns = await OkAsync(await (await _h.UserWithAsync(@"KE\onlybreakdowns", "Dashboard.View", "Dashboard.ViewBreakdowns")).GetAsync("/api/v1/dashboard"));
@@ -368,6 +381,11 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
         // Swimlane and Users do not open the shared summary payload.
         var boardTabs = await _h.UserWithAsync(@"KE\boardtabs", "Dashboard.View", "Dashboard.ViewSwimlane", "Dashboard.ViewUsers");
         (await boardTabs.GetAsync("/api/v1/dashboard")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+
+        var queueOnly = await _h.UserWithAsync(@"KE\queueonly", "Dashboard.View", "Dashboard.ViewUnassigned");
+        (await queueOnly.GetAsync("/api/v1/dashboard")).StatusCode.ShouldBe(HttpStatusCode.OK);
+        var queueNoView = await _h.UserWithAsync(@"KE\queuenoview", "Dashboard.ViewUnassigned");
+        (await queueNoView.GetAsync("/api/v1/dashboard")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
 
         var any = await _h.UserWithAsync(@"KE\anytab", "Dashboard.View", "Dashboard.ViewTrends");
         (await any.GetAsync("/api/v1/dashboard")).StatusCode.ShouldBe(HttpStatusCode.OK);

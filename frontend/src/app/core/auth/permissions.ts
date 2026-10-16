@@ -46,6 +46,7 @@ export const PERMISSIONS = [
   'StatusLabel.Manage',
   'Dashboard.View',
   'Dashboard.ViewSummary',
+  'Dashboard.ViewUnassigned',
   'Dashboard.ViewBreakdowns',
   'Dashboard.ViewTrends',
   'Dashboard.ViewSwimlane',

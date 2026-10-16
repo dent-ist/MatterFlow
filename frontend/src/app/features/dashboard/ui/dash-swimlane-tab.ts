@@ -254,7 +254,7 @@ export class DashSwimlaneTab implements OnInit {
     return filterCount(v) > 0 || !!v.q || v.mine;
   });
 
-  protected readonly updated = computed(() => {
+  readonly updated = computed(() => {
     const b = this.board();
     return b ? mfDate(b.generatedAtUtc, this.zone, 'datetime') : null;
   });

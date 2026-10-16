@@ -91,7 +91,8 @@ The first five roles match the architecture starter matrix (section 6.3); the la
 | Pod.Manage/ManageMembers | X | X | - | X | - | - | - | - | X | - |
 | User.View | X | X | - | - | - | - | - | - | - | X |
 | Dashboard.View (open the Dashboard) | X | X | X | X | X | X | X | X | - | X |
-| Dashboard.ViewSummary | X | X | X | X | X | X | X | X | - | X |
+| Dashboard.ViewSummary | X | X | X | X | - | - | - | X | - | X |
+| Dashboard.ViewUnassigned (the unassigned queue only) | X | - | - | - | X | X | X | - | - | - |
 | Dashboard.ViewBreakdowns, ViewTrends | X | X | - | - | - | - | - | X | - | X |
 | Dashboard.ViewSwimlane | X | X | X | X | - | - | - | - | - | - |
 | Dashboard.ViewUsers | X | X | - | X | - | - | - | - | - | - |
