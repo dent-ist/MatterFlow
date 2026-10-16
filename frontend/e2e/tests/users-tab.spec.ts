@@ -533,7 +533,7 @@ test.describe('Users tab: workload', () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await openUsers(page);
     await page.getByRole('button', { name: 'Table' }).click();
-    const wrap = page.locator('[data-users-table]').locator('xpath=..');
+    const wrap = page.locator('[data-users-scroll]');
     await expect(wrap).toBeVisible();
     await wrap.evaluate((el) => (el.scrollLeft = 300));
     const person = page.locator('[data-users-table] tbody th.person').first();
