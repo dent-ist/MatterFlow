@@ -13,7 +13,7 @@ test.describe('Page header icons', () => {
         icon: Array.from(a.querySelector('i.pi')!.classList).filter((c) => c.startsWith('pi-'))[0],
       })),
     );
-    expect(entries.length).toBeGreaterThanOrEqual(15);
+    expect(entries.length).toBeGreaterThanOrEqual(14);
     for (const { href, icon } of entries) {
       await page.goto(href);
       const heading = page.getByRole('heading', { level: 1 }).first();

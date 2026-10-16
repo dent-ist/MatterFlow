@@ -47,6 +47,17 @@ async function userPods(admin: Api, userId: number): Promise<Json[]> {
   return admin.get<Json[]>(`/api/v1/users/${userId}/pods?includeInactive=true`);
 }
 
+/** The chips are optimistic, so the server state is polled: it is there once the one request has been answered. */
+async function expectSaved(
+  admin: Api,
+  userId: number,
+  expected: [number, boolean][],
+): Promise<void> {
+  await expect
+    .poll(async () => (await userPods(admin, userId)).map((p) => [p.podId, p.isPrimary]))
+    .toEqual(expected);
+}
+
 test.describe('Pods tab on the Users page', () => {
   test('/admin/pods opens the third tab of Users; the Pods menu item is gone and Users stays highlighted', async ({
     page,
@@ -151,17 +162,25 @@ test.describe('Pods column of the Users grid', () => {
     await expect(trigger(row)).toBeFocused();
     await expect(page.locator('[data-undo-message]')).toContainText(`Pods of ${person.username}`);
 
-    const saved = await userPods(admin, person.userId);
-    expect(saved.map((p) => [p.podId, p.isPrimary])).toEqual([
+    await expectSaved(admin, person.userId, [
       [ids[0], false],
       [ids[1], true],
     ]);
 
     // The assignment is audited with readable text.
-    const audit = await admin.get<Json>(`/api/v1/audit/search?objectType=Pod&objectId=${ids[1]}`);
-    const summaries = audit.items.map((e: Json) => e.summary);
-    expect(summaries).toContain(`Added ${person.username} to ${names[1]} Pod`);
-    expect(summaries).toContain(`Set ${names[1]} Pod as the primary pod of ${person.username}`);
+    await expect
+      .poll(async () => {
+        const audit = await admin.get<Json>(
+          `/api/v1/audit/search?objectType=Pod&objectId=${ids[1]}`,
+        );
+        return audit.items.map((e: Json) => e.summary);
+      })
+      .toEqual(
+        expect.arrayContaining([
+          `Added ${person.username} to ${names[1]} Pod`,
+          `Set ${names[1]} Pod as the primary pod of ${person.username}`,
+        ]),
+      );
   });
 
   test('removing the primary pod asks for the new one in the same popover and blocks Apply until it is chosen', async ({
@@ -195,8 +214,7 @@ test.describe('Pods column of the Users grid', () => {
     await apply.click();
     await expect(chips(row)).toHaveCount(1);
     await expect(chips(row).first()).toContainText(`${names[1]} Primary`);
-    const saved = await userPods(admin, person.userId);
-    expect(saved.map((p) => [p.podId, p.isPrimary])).toEqual([[ids[1], true]]);
+    await expectSaved(admin, person.userId, [[ids[1], true]]);
   });
 
   test('Undo restores the previous pods in one step', async ({ page, seed, admin }) => {
@@ -215,8 +233,7 @@ test.describe('Pods column of the Users grid', () => {
     await page.locator('[data-undo]').click();
     await expect(chips(row)).toHaveCount(1);
     await expect(chips(row).first()).toContainText(`${names[0]} Primary`);
-    const restored = await userPods(admin, person.userId);
-    expect(restored.map((p) => [p.podId, p.isPrimary])).toEqual([[ids[0], true]]);
+    await expectSaved(admin, person.userId, [[ids[0], true]]);
   });
 
   test('a change made by someone else meanwhile is a conflict: the user is told and the row refreshes', async ({
