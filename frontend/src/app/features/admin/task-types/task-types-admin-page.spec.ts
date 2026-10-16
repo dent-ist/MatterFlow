@@ -125,8 +125,10 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
       expect(tabNames()).toEqual(['Task Types', 'Workflows', 'Workflow Steps']);
       expect(selected()).toEqual(['Task Types']);
       expect(crumbs()).toEqual(['Administration', 'Task Types']);
-      expect(el().querySelector('#task-type-search')).not.toBeNull();
-      expect(el().querySelector('#wf-search')).toBeNull();
+      // Every tab has its own filters bar (inline column filters, closed by default) and no search box.
+      expect(el().querySelector('mf-filters-bar')).not.toBeNull();
+      expect(el().querySelector('#task-type-search, #wf-search, mf-search-box')).toBeNull();
+      expect(el().querySelector('[data-filter-row]')).toBeNull();
       expect(el().querySelector('[data-new]')!.textContent).toContain('New task type');
       expect(el().querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe(
         'task-types-admin-tab-task-types',
@@ -143,7 +145,8 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
       expect(el().querySelector('[data-page-icon]')?.className).toContain('pi-file-edit');
       expect(selected()).toEqual(['Workflows']);
       expect(crumbs()).toEqual(['Administration', 'Task Types', 'Workflows']);
-      expect(el().querySelector('#wf-search')).not.toBeNull();
+      expect(el().querySelector('mf-filters-bar')).not.toBeNull();
+      expect(el().querySelector('#wf-search, mf-search-box')).toBeNull();
       expect(
         Array.from(el().querySelectorAll('button')).some(
           (b) => b.textContent?.trim() === 'New workflow',
@@ -160,7 +163,8 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
       expect(selected()).toEqual(['Workflow Steps']);
       expect(el().querySelector('[data-page-icon]')?.className).toContain('pi-file-edit');
       expect(crumbs()).toEqual(['Administration', 'Task Types', 'Workflow Steps']);
-      expect(el().querySelector('#step-search')).not.toBeNull();
+      expect(el().querySelector('mf-filters-bar')).not.toBeNull();
+      expect(el().querySelector('#step-search, mf-search-box')).toBeNull();
       expect(
         Array.from(el().querySelectorAll('button')).some(
           (b) => b.textContent?.trim() === 'New step',
@@ -189,21 +193,26 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
     'hands the tag filter in the address to the step list',
     async () => {
       await open(
-        '/admin/steps?tags=Relativity&tags=QC&tagMatch=any&q=load',
+        '/admin/steps?tags=Relativity&tags=QC&tagMatch=any&title=load',
         'TaskType.Manage',
         'Workflow.Manage',
       );
       expect(steps.listStepDefinitions).toHaveBeenLastCalledWith(
         undefined,
+        undefined,
         'load',
+        undefined,
+        undefined,
         ['Relativity', 'QC'],
         'any',
         true,
         1,
         25,
       );
-      const radios = Array.from(el().querySelectorAll<HTMLInputElement>('.tf__radio input'));
-      expect(radios.map((r) => r.checked)).toEqual([false, true]);
+      // The address opens the filter row with the tags chosen and Match any selected.
+      expect(
+        el().querySelector<HTMLSelectElement>('[aria-label="Filter by Tag match"]')?.value,
+      ).toBe('any');
     },
     SLOW,
   );
@@ -219,7 +228,10 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
       expect(workflows.listWorkflows).toHaveBeenLastCalledWith(
         undefined,
         undefined,
+        undefined,
         true,
+        undefined,
+        undefined,
         1,
         undefined,
         1,
@@ -242,7 +254,10 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
       expect(workflows.listWorkflows).toHaveBeenLastCalledWith(
         undefined,
         undefined,
+        undefined,
         true,
+        undefined,
+        undefined,
         undefined,
         5,
         1,

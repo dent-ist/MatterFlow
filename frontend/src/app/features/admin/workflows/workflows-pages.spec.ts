@@ -176,7 +176,10 @@ describe('WorkflowsListPage', () => {
     expect(api.listWorkflows).toHaveBeenCalledWith(
       undefined,
       undefined,
+      undefined,
       true,
+      undefined,
+      undefined,
       undefined,
       undefined,
       1,
@@ -294,7 +297,10 @@ describe('WorkflowsListPage', () => {
     expect(api.listWorkflows).toHaveBeenLastCalledWith(
       undefined,
       undefined,
+      undefined,
       true,
+      undefined,
+      undefined,
       7,
       undefined,
       1,
@@ -314,7 +320,10 @@ describe('WorkflowsListPage', () => {
     expect(api.listWorkflows).toHaveBeenLastCalledWith(
       undefined,
       undefined,
+      undefined,
       true,
+      undefined,
+      undefined,
       undefined,
       undefined,
       1,
@@ -343,12 +352,79 @@ describe('WorkflowsListPage', () => {
     expect(api.listWorkflows).toHaveBeenLastCalledWith(
       undefined,
       undefined,
+      undefined,
       true,
+      undefined,
+      undefined,
       undefined,
       undefined,
       1,
       25,
     );
+  });
+
+  it('sends the column filters of the address: name, published, draft and status', async () => {
+    const api = {
+      listWorkflows: vi
+        .fn()
+        .mockReturnValue(ok({ items: [summary()], total: 1, page: 1, pageSize: 25 })),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: '**', children: [] }]),
+        MessageService,
+        provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage'))),
+        { provide: WorkflowsClient, useValue: api },
+      ],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
+    await TestBed.inject(Router).navigateByUrl(
+      '/x?name=%20std%20&hasPublished=true&hasDraft=false&status=all',
+    );
+    const fixture = TestBed.createComponent(WorkflowsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(api.listWorkflows).toHaveBeenLastCalledWith(
+      undefined,
+      undefined,
+      'std',
+      undefined,
+      true,
+      false,
+      undefined,
+      undefined,
+      1,
+      25,
+    );
+    // A link with filters opens the row with the values in it.
+    const control = (name: string) =>
+      el.querySelector<HTMLInputElement | HTMLSelectElement>(`[aria-label="Filter by ${name}"]`);
+    expect(control('Name')?.value).toBe('std');
+    expect(el.querySelector('[data-filter-count]')?.textContent).toBe('(4)');
+  });
+
+  it('has column filters instead of a search box and a status select, closed by default', async () => {
+    const api = {
+      listWorkflows: vi
+        .fn()
+        .mockReturnValue(ok({ items: [summary()], total: 1, page: 1, pageSize: 25 })),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(WorkflowsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(el.querySelector('#wf-search, #wf-status, mf-search-box')).toBeNull();
+    expect(el.querySelector('[data-filter-row]')).toBeNull();
+    el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
+    await settle(fixture);
+    for (const column of ['Name', 'Latest published', 'Draft', 'Status']) {
+      expect(el.querySelector(`[aria-label="Filter by ${column}"]`)).not.toBeNull();
+    }
+    expect(el.querySelector<HTMLSelectElement>('[aria-label="Filter by Status"]')!.value).toBe(
+      'active',
+    );
+    expect(el.querySelector('[data-filter-count]')).toBeNull();
   });
 
   it('shows empty and error states', async () => {
@@ -594,6 +670,9 @@ describe('WorkflowVersionPage draft editor', () => {
     expect(a.steps.listStepDefinitions).toHaveBeenLastCalledWith(
       undefined,
       'zzz',
+      undefined,
+      undefined,
+      undefined,
       undefined,
       undefined,
       true,

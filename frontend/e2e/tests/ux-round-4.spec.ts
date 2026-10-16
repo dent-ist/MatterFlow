@@ -405,9 +405,8 @@ test.describe('Round 4: administration naming', () => {
     });
     await page.goto('/admin/audit');
     await page.getByRole('button', { name: /^Filters/ }).click();
-    await page.getByLabel('Object type').selectOption('Task');
-    await page.getByLabel('Object id').fill(String(task.taskId));
-    await page.getByRole('button', { name: 'Apply filters' }).click();
+    await page.getByRole('combobox', { name: 'Filter by Object type' }).selectOption('Task');
+    await page.getByRole('textbox', { name: 'Filter by Object id' }).fill(String(task.taskId));
     const group = page.locator('tr[data-group]').first();
     await expect(group).toBeVisible();
     const object = group.locator('[data-group-object]');
@@ -584,7 +583,7 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     await page.goto('/dashboard');
     await expect(page.getByRole('search', { name: 'Search MatterFlow' })).toHaveCount(1);
     await page.goto('/admin/users');
-    await expect(page.getByRole('searchbox', { name: 'Search users' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Filters/ })).toBeVisible();
     const searches = page.getByRole('search');
     const names = await searches.evaluateAll((els) =>
       els.map((e) => e.getAttribute('aria-label') ?? ''),

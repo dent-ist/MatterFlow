@@ -708,6 +708,9 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
         this.steps.listStepDefinitions(
           undefined,
           this.libQ().trim() || undefined,
+          undefined,
+          undefined,
+          undefined,
           this.libTags().length > 0 ? this.libTags() : undefined,
           this.libMatch() === 'any' ? 'any' : undefined,
           true,

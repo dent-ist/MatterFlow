@@ -27,9 +27,7 @@ test.describe('Access Pending and role grant', () => {
     ).toBeVisible();
 
     // The administrator finds the user under Pending access and grants a role.
-    await page.goto('/admin/users');
-    await page.getByRole('searchbox', { name: 'Search users' }).fill(newcomer.username);
-    await page.getByRole('searchbox', { name: 'Search users' }).press('Enter');
+    await page.goto(`/admin/users?account=${encodeURIComponent(newcomer.username)}`);
     const row = page.locator(`tr[data-user="${newcomer.userId}"]`);
     await expect(row).toBeVisible();
     await row.getByRole('button', { name: 'Grant access' }).click();

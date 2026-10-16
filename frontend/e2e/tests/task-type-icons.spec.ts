@@ -113,7 +113,7 @@ test.describe('Task type icons and the type-first Create Task', () => {
     await page.locator('[data-save] button').click();
     await expect(page.getByText('Saved.').first()).toBeVisible();
 
-    await page.goto(`/admin/task-types?q=${encodeURIComponent(world.taskType.name)}`);
+    await page.goto(`/admin/task-types?name=${encodeURIComponent(world.taskType.name)}`);
     await expect(
       page.locator(`[data-row="${world.taskType.name}"] svg[data-icon="mail"]`),
     ).toBeVisible();

@@ -45,3 +45,8 @@ export function matterColumnDefs(refLabel = 'Matter reference'): FilterDef[] {
     },
   ];
 }
+
+/** The API argument of a tri-state filter's text value (`'true'` / `'false'`; empty = no filter). */
+export function triBool(value: string): boolean | undefined {
+  return value === 'true' ? true : value === 'false' ? false : undefined;
+}

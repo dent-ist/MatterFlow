@@ -15,6 +15,7 @@ import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/au
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
 import { ApiError } from '../../../core/http/api-error';
+import { fakeQuery } from '../../../shared/testing/org-testing';
 import { PodsPage } from './pods-page';
 
 const summary = (podId: number, name: string, extra: Partial<PodSummary> = {}): PodSummary => ({
@@ -44,6 +45,7 @@ const detailOf = (pod: PodSummary, members: PodMemberDto[] = []): PodDetail => (
 
 describe('PodsPage', () => {
   let fixture: ComponentFixture<PodsPage>;
+  let query: ReturnType<typeof fakeQuery>;
   let api: {
     [K in keyof PodsClient]: ReturnType<typeof vi.fn>;
   };
@@ -77,10 +79,13 @@ describe('PodsPage', () => {
   const text = (sel: string): string => q(sel).textContent!.replace(/\s+/g, ' ').trim();
 
   async function create(...permissions: Permission[]): Promise<void> {
+    localStorage.clear();
+    query = fakeQuery();
     TestBed.configureTestingModule({
       providers: [
         MessageService,
         provideRouter([]),
+        query.provider,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: PodsClient, useValue: api },
       ],
@@ -149,33 +154,53 @@ describe('PodsPage', () => {
     expect(q<HTMLButtonElement>('[data-primary]').disabled).toBe(true);
   });
 
-  it('lists active pods first and sends the URL state (search, status, page size, sort) to the API', async () => {
+  it('lists active pods first and sends the URL state (name, status, page size, sort) to the API', async () => {
     await create('Pod.View', 'Pod.Manage');
-    expect(api.listPods).toHaveBeenLastCalledWith(undefined, true, 1, 25, undefined);
+    expect(api.listPods).toHaveBeenLastCalledWith(undefined, undefined, true, 1, 25, undefined);
 
-    fixture.componentRef.setInput('q', 'alp');
-    fixture.componentRef.setInput('status', 'inactive');
+    query.set({ name: ' alp ', status: 'inactive' });
     fixture.componentRef.setInput('size', '50');
     fixture.componentRef.setInput('sort', '-memberCount');
     await settle();
-    expect(api.listPods).toHaveBeenLastCalledWith('alp', false, 1, 50, '-memberCount');
+    expect(api.listPods).toHaveBeenLastCalledWith(undefined, 'alp', false, 1, 50, '-memberCount');
 
-    fixture.componentRef.setInput('status', 'all');
+    query.set({ status: 'all' });
     await settle();
-    expect(api.listPods).toHaveBeenLastCalledWith('alp', undefined, 1, 50, '-memberCount');
+    expect(api.listPods).toHaveBeenLastCalledWith(
+      undefined,
+      'alp',
+      undefined,
+      1,
+      50,
+      '-memberCount',
+    );
   });
 
-  it('writes search, status and sort changes to the URL, searching as you type', async () => {
+  it('has the Name and Status column filters instead of a search box and a status select, closed by default', async () => {
+    await create('Pod.View', 'Pod.Manage');
+
+    expect(el().querySelector('#pods-search, #pods-status, mf-search-box')).toBeNull();
+    expect(el().querySelector('[data-filter-row]')).toBeNull();
+    await click('[data-filters-toggle]');
+    expect(q('[aria-label="Filter by Name"]')).not.toBeNull();
+    // Active is the default: shown in its cell, not counted.
+    expect(q<HTMLSelectElement>('[aria-label="Filter by Status"]').value).toBe('active');
+    expect(el().querySelector('[data-filter-count]')).toBeNull();
+  });
+
+  it('writes name, status and sort changes to the URL', async () => {
     await create('Pod.View', 'Pod.Manage');
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    await click('[data-filters-toggle]');
 
-    await type('#pods-search', 'alp', 350);
+    await type('[aria-label="Filter by Name"]', 'alp', 350);
     expect(navigate).toHaveBeenLastCalledWith([], {
-      queryParams: { q: 'alp', page: null },
+      queryParams: { name: 'alp', page: null },
       queryParamsHandling: 'merge',
+      replaceUrl: true,
     });
 
-    const select = q<HTMLSelectElement>('#pods-status');
+    const select = q<HTMLSelectElement>('[aria-label="Filter by Status"]');
     select.value = 'inactive';
     select.dispatchEvent(new Event('change'));
     expect(navigate).toHaveBeenLastCalledWith([], {
@@ -188,6 +213,23 @@ describe('PodsPage', () => {
       queryParams: { sort: '-name', page: null },
       queryParamsHandling: 'merge',
     });
+  });
+
+  it('shows the filtered empty state inside the table: headers and filter row stay, Clear filters restores the list', async () => {
+    api['listPods'].mockReturnValue(of({ items: [], total: 0, page: 1, pageSize: 25 }));
+    await create('Pod.View', 'Pod.Manage');
+    query.set({ name: 'nothing' });
+    await settle();
+
+    expect(el().querySelector('td[data-empty="filtered"]')?.textContent).toContain(
+      'No pods match these filters',
+    );
+    expect(el().querySelector('thead th')).not.toBeNull();
+    expect(el().querySelector('[data-filter-row]')).not.toBeNull(); // opened by the address
+    expect(el().querySelector('mf-pager')).toBeNull();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    await click('td[data-empty] p-button');
+    expect(navigate).toHaveBeenCalled();
   });
 
   it('requires a name, then creates the pod and opens it for member management', async () => {
@@ -359,6 +401,7 @@ describe('PodsPage', () => {
 
     expect(el().querySelector('[data-error]')).not.toBeNull();
     await click('[data-error] p-button');
-    expect(el().querySelector('[data-pods]')).not.toBeNull();
+    expect(el().querySelector('[data-error]')).toBeNull();
+    expect(el().querySelector('[data-pod="1"]')).not.toBeNull();
   });
 });

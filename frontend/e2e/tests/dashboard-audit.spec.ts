@@ -400,9 +400,8 @@ test.describe('Audit Logs browser (smoke)', () => {
     await page.goto('/admin/audit');
     await expect(page.getByRole('heading', { name: 'Audit Logs', level: 1 })).toBeVisible();
     await page.getByRole('button', { name: /^Filters/ }).click(); // the filter form is folded away until asked for
-    await page.getByLabel('Object type').selectOption('Task');
-    await page.getByLabel('Object id').fill(String(task.taskId));
-    await page.getByRole('button', { name: 'Apply filters' }).click();
+    await page.getByRole('combobox', { name: 'Filter by Object type' }).selectOption('Task');
+    await page.getByRole('textbox', { name: 'Filter by Object id' }).fill(String(task.taskId));
 
     const created = page
       .locator('tr[data-event]')
@@ -415,7 +414,7 @@ test.describe('Audit Logs browser (smoke)', () => {
     await expect(page).toHaveURL(new RegExp(`/tasks/${task.taskId}$`));
   });
 
-  test('filtering by event type and text narrows the list and Reset clears it', async ({
+  test('filtering by event type and text narrows the list, live, and Clear filters clears it', async ({
     page,
     seed,
   }) => {
@@ -423,15 +422,18 @@ test.describe('Audit Logs browser (smoke)', () => {
 
     await page.goto('/admin/audit');
     await page.getByRole('button', { name: /^Filters/ }).click();
-    await page.getByLabel('Event type').selectOption('CLIENT_CREATED');
-    await page.getByLabel('Search summary or field').fill(client.clientNumber);
-    await page.getByRole('button', { name: 'Apply filters' }).click();
+    await page
+      .getByRole('combobox', { name: 'Filter by Event type' })
+      .selectOption('CLIENT_CREATED');
+    await page
+      .getByRole('textbox', { name: 'Filter by Summary or field' })
+      .fill(client.clientNumber);
     const rows = page.locator('tr[data-event]');
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText(`Client ${client.clientNumber} created`);
 
-    await page.getByRole('button', { name: 'Reset' }).click();
-    await expect(page.getByLabel('Event type')).toHaveValue('');
+    await page.getByRole('button', { name: 'Clear filters' }).click();
+    await expect(page.getByRole('combobox', { name: 'Filter by Event type' })).toHaveValue('');
   });
 
   test('the log is read only: there is no export, edit or delete action', async ({ page }) => {

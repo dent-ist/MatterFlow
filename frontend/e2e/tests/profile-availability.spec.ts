@@ -83,8 +83,7 @@ test.describe('My profile: availability and work hours', () => {
     );
 
     // The administrator sees the chip in the Users list.
-    await page.goto('/admin/users?status=active');
-    await page.getByRole('searchbox', { name: 'Search users' }).fill(name);
+    await page.goto(`/admin/users?status=active&name=${encodeURIComponent(name)}`);
     const row = page.locator('tbody tr', { hasText: name });
     await expect(row.locator('[data-availability-chip]')).toContainText(
       `Out of office until ${until.short}`,
@@ -101,8 +100,7 @@ test.describe('My profile: availability and work hours', () => {
     await expect(me.getByText('Welcome back')).toBeVisible();
     await expect(me.locator('[data-ooo-label]')).toHaveCount(0);
 
-    await page.reload();
-    await page.getByRole('searchbox', { name: 'Search users' }).fill(name);
+    await page.reload(); // the Name filter is in the address
     await expect(
       page.locator('tbody tr', { hasText: name }).locator('[data-availability-chip]'),
     ).toHaveText(/Available|Off hours/);
@@ -243,8 +241,7 @@ test.describe('My profile: availability and work hours', () => {
     const name = await displayNameOf(admin, userId);
     const until = inDays(7);
 
-    await page.goto('/admin/users?status=active');
-    await page.getByRole('searchbox', { name: 'Search users' }).fill(name);
+    await page.goto(`/admin/users?status=active&name=${encodeURIComponent(name)}`);
     const row = page.locator('tbody tr', { hasText: name });
     await row.getByRole('button', { name: `Edit availability of ${name}` }).click();
     const dialog = page.getByRole('dialog', { name: `Availability of ${name}` });
@@ -263,8 +260,10 @@ test.describe('My profile: availability and work hours', () => {
     );
 
     // The availability filter next to the status filter.
-    await page.getByRole('searchbox', { name: 'Search users' }).fill('');
-    await page.getByLabel('Availability', { exact: true }).selectOption('OUT_OF_OFFICE');
+    await page.getByRole('textbox', { name: 'Filter by Name' }).fill('');
+    await page
+      .getByRole('combobox', { name: 'Filter by Availability' })
+      .selectOption('OUT_OF_OFFICE');
     await expect(page).toHaveURL(/availability=OUT_OF_OFFICE/);
     await expect(page.locator('tbody tr', { hasText: name })).toBeVisible();
     await expect(
@@ -381,8 +380,7 @@ test.describe('My profile: accessibility (axe wcag2a, wcag2aa, wcag21aa)', () =>
       await me.keyboard.press('Escape');
 
       await page.setViewportSize({ width: size.width, height: size.height });
-      await page.goto('/admin/users?status=active');
-      await page.getByRole('searchbox', { name: 'Search users' }).fill(name);
+      await page.goto(`/admin/users?status=active&name=${encodeURIComponent(name)}`);
       await expect(
         page.locator('tbody tr', { hasText: name }).locator('[data-availability-chip]'),
       ).toBeVisible();
@@ -482,11 +480,12 @@ test.describe('profile screenshots', () => {
 
       const view = await asUser('ke\\kekim');
       await view.setViewportSize({ width: size.w, height: size.h });
-      await view.goto('/admin/users?status=active');
-      await view.getByRole('searchbox', { name: 'Search users' }).fill('e2e-shot');
+      await view.goto('/admin/users?status=active&name=e2e-shot');
       await expect(view.locator('tbody tr').first()).toBeVisible();
       await shot(view, size.n, '06-users-chips', false);
-      await view.getByLabel('Availability', { exact: true }).selectOption('OUT_OF_OFFICE');
+      await view
+        .getByRole('combobox', { name: 'Filter by Availability' })
+        .selectOption('OUT_OF_OFFICE');
       await shot(view, size.n, '07-users-filter-out-of-office', false);
 
       await view.getByLabel('Availability', { exact: true }).selectOption('all');

@@ -83,15 +83,15 @@ test.describe('task types tabs screenshots', () => {
         for (const v of await axeViolations(page)) problems.push(`${name} ${size.w}: ${v}`);
       };
 
-      await page.goto(`/admin/task-types?q=${token}`);
+      await page.goto(`/admin/task-types?name=${token}`);
       await expect(page.locator('table[data-task-types] tbody tr').first()).toBeVisible();
       await shoot('tab-1-task-types');
 
-      await page.goto(`/admin/workflows?q=${token}`);
+      await page.goto(`/admin/workflows?name=${token}`);
       await expect(page.locator('table[data-workflows] tbody tr').first()).toBeVisible();
       await shoot('tab-2-workflows');
 
-      await page.goto(`/admin/steps?q=${token}`);
+      await page.goto(`/admin/steps?title=${token}`);
       await expect(page.locator('table[data-steps] tbody tr').first()).toBeVisible();
       await shoot('tab-3-workflow-steps');
 

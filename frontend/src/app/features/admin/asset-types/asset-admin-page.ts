@@ -79,7 +79,8 @@ export class AssetAdminPage implements HasUnsavedChanges {
   protected async select(key: string): Promise<void> {
     if (this.hasUnsavedChanges() && !(await this.leave.ask())) return;
     await this.router.navigate([], {
-      queryParams: { tab: key === 'types' ? null : key },
+      // The Asset Types filters belong to that tab only.
+      queryParams: { tab: key === 'types' ? null : key, name: null, status: null },
       queryParamsHandling: 'merge',
     });
   }

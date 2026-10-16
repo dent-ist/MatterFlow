@@ -988,7 +988,7 @@ export interface IAuditSearchClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    searchAuditEvents(objectType?: string | undefined, objectId?: string | undefined, actor?: number | undefined, eventType?: string | undefined, from?: string | undefined, to?: string | undefined, q?: string | undefined, correlationId?: string | undefined, cursor?: number | undefined, pageSize?: number | undefined): Observable<AuditSearchPage>;
+    searchAuditEvents(objectType?: string | undefined, objectId?: string | undefined, actor?: number[] | undefined, eventType?: string | undefined, from?: string | undefined, to?: string | undefined, q?: string | undefined, correlationId?: string | undefined, cursor?: number | undefined, pageSize?: number | undefined): Observable<AuditSearchPage>;
     /**
      * @return OK
      */
@@ -1021,7 +1021,7 @@ export class AuditSearchClient implements IAuditSearchClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    searchAuditEvents(objectType?: string | undefined, objectId?: string | undefined, actor?: number | undefined, eventType?: string | undefined, from?: string | undefined, to?: string | undefined, q?: string | undefined, correlationId?: string | undefined, cursor?: number | undefined, pageSize?: number | undefined): Observable<AuditSearchPage> {
+    searchAuditEvents(objectType?: string | undefined, objectId?: string | undefined, actor?: number[] | undefined, eventType?: string | undefined, from?: string | undefined, to?: string | undefined, q?: string | undefined, correlationId?: string | undefined, cursor?: number | undefined, pageSize?: number | undefined): Observable<AuditSearchPage> {
         let url_ = this.baseUrl + "/api/v1/audit/search?";
         if (objectType === null)
             throw new globalThis.Error("The parameter 'objectType' cannot be null.");
@@ -1034,7 +1034,7 @@ export class AuditSearchClient implements IAuditSearchClient {
         if (actor === null)
             throw new globalThis.Error("The parameter 'actor' cannot be null.");
         else if (actor !== undefined)
-            url_ += "actor=" + encodeURIComponent("" + actor) + "&";
+            actor && actor.forEach(item => { url_ += "actor=" + encodeURIComponent("" + item) + "&"; });
         if (eventType === null)
             throw new globalThis.Error("The parameter 'eventType' cannot be null.");
         else if (eventType !== undefined)
@@ -3409,13 +3409,14 @@ export class MeClient implements IMeClient {
 export interface IPodsClient {
     /**
      * @param q (optional) 
+     * @param name (optional) 
      * @param active (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listPods(q?: string | undefined, active?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfPodSummary>;
+    listPods(q?: string | undefined, name?: string | undefined, active?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfPodSummary>;
     /**
      * @return Created
      */
@@ -3475,18 +3476,23 @@ export class PodsClient implements IPodsClient {
 
     /**
      * @param q (optional) 
+     * @param name (optional) 
      * @param active (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listPods(q?: string | undefined, active?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfPodSummary> {
+    listPods(q?: string | undefined, name?: string | undefined, active?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfPodSummary> {
         let url_ = this.baseUrl + "/api/v1/pods?";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
         else if (q !== undefined)
             url_ += "q=" + encodeURIComponent("" + q) + "&";
+        if (name === null)
+            throw new globalThis.Error("The parameter 'name' cannot be null.");
+        else if (name !== undefined)
+            url_ += "name=" + encodeURIComponent("" + name) + "&";
         if (active === null)
             throw new globalThis.Error("The parameter 'active' cannot be null.");
         else if (active !== undefined)
@@ -4464,11 +4470,18 @@ export interface IUsersClient {
     /**
      * @param status (optional) 
      * @param search (optional) 
+     * @param name (optional) 
+     * @param account (optional) 
+     * @param email (optional) 
+     * @param roleId (optional) 
+     * @param availability (optional) 
+     * @param registeredFrom (optional) 
+     * @param registeredTo (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    listUsers(status?: string | undefined, search?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfUserSummaryDto>;
+    listUsers(status?: string | undefined, search?: string | undefined, name?: string | undefined, account?: string | undefined, email?: string | undefined, roleId?: number[] | undefined, availability?: string | undefined, registeredFrom?: string | undefined, registeredTo?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfUserSummaryDto>;
     /**
      * @return OK
      */
@@ -4507,11 +4520,18 @@ export class UsersClient implements IUsersClient {
     /**
      * @param status (optional) 
      * @param search (optional) 
+     * @param name (optional) 
+     * @param account (optional) 
+     * @param email (optional) 
+     * @param roleId (optional) 
+     * @param availability (optional) 
+     * @param registeredFrom (optional) 
+     * @param registeredTo (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    listUsers(status?: string | undefined, search?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfUserSummaryDto> {
+    listUsers(status?: string | undefined, search?: string | undefined, name?: string | undefined, account?: string | undefined, email?: string | undefined, roleId?: number[] | undefined, availability?: string | undefined, registeredFrom?: string | undefined, registeredTo?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfUserSummaryDto> {
         let url_ = this.baseUrl + "/api/v1/users?";
         if (status === null)
             throw new globalThis.Error("The parameter 'status' cannot be null.");
@@ -4521,6 +4541,34 @@ export class UsersClient implements IUsersClient {
             throw new globalThis.Error("The parameter 'search' cannot be null.");
         else if (search !== undefined)
             url_ += "search=" + encodeURIComponent("" + search) + "&";
+        if (name === null)
+            throw new globalThis.Error("The parameter 'name' cannot be null.");
+        else if (name !== undefined)
+            url_ += "name=" + encodeURIComponent("" + name) + "&";
+        if (account === null)
+            throw new globalThis.Error("The parameter 'account' cannot be null.");
+        else if (account !== undefined)
+            url_ += "account=" + encodeURIComponent("" + account) + "&";
+        if (email === null)
+            throw new globalThis.Error("The parameter 'email' cannot be null.");
+        else if (email !== undefined)
+            url_ += "email=" + encodeURIComponent("" + email) + "&";
+        if (roleId === null)
+            throw new globalThis.Error("The parameter 'roleId' cannot be null.");
+        else if (roleId !== undefined)
+            roleId && roleId.forEach(item => { url_ += "roleId=" + encodeURIComponent("" + item) + "&"; });
+        if (availability === null)
+            throw new globalThis.Error("The parameter 'availability' cannot be null.");
+        else if (availability !== undefined)
+            url_ += "availability=" + encodeURIComponent("" + availability) + "&";
+        if (registeredFrom === null)
+            throw new globalThis.Error("The parameter 'registeredFrom' cannot be null.");
+        else if (registeredFrom !== undefined)
+            url_ += "registeredFrom=" + encodeURIComponent("" + registeredFrom) + "&";
+        if (registeredTo === null)
+            throw new globalThis.Error("The parameter 'registeredTo' cannot be null.");
+        else if (registeredTo !== undefined)
+            url_ += "registeredTo=" + encodeURIComponent("" + registeredTo) + "&";
         if (page === null)
             throw new globalThis.Error("The parameter 'page' cannot be null.");
         else if (page !== undefined)
@@ -9599,6 +9647,9 @@ export interface IStepDefinitionsClient {
     /**
      * @param sort (optional) 
      * @param q (optional) 
+     * @param title (optional) 
+     * @param description (optional) 
+     * @param used (optional) 
      * @param tags (optional) 
      * @param tagMatch (optional) 
      * @param isActive (optional) 
@@ -9606,7 +9657,7 @@ export interface IStepDefinitionsClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    listStepDefinitions(sort?: string | undefined, q?: string | undefined, tags?: string[] | undefined, tagMatch?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary>;
+    listStepDefinitions(sort?: string | undefined, q?: string | undefined, title?: string | undefined, description?: string | undefined, used?: boolean | undefined, tags?: string[] | undefined, tagMatch?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary>;
     /**
      * @return Created
      */
@@ -9652,6 +9703,9 @@ export class StepDefinitionsClient implements IStepDefinitionsClient {
     /**
      * @param sort (optional) 
      * @param q (optional) 
+     * @param title (optional) 
+     * @param description (optional) 
+     * @param used (optional) 
      * @param tags (optional) 
      * @param tagMatch (optional) 
      * @param isActive (optional) 
@@ -9659,7 +9713,7 @@ export class StepDefinitionsClient implements IStepDefinitionsClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    listStepDefinitions(sort?: string | undefined, q?: string | undefined, tags?: string[] | undefined, tagMatch?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary> {
+    listStepDefinitions(sort?: string | undefined, q?: string | undefined, title?: string | undefined, description?: string | undefined, used?: boolean | undefined, tags?: string[] | undefined, tagMatch?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary> {
         let url_ = this.baseUrl + "/api/v1/step-definitions?";
         if (sort === null)
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
@@ -9669,6 +9723,18 @@ export class StepDefinitionsClient implements IStepDefinitionsClient {
             throw new globalThis.Error("The parameter 'q' cannot be null.");
         else if (q !== undefined)
             url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (title === null)
+            throw new globalThis.Error("The parameter 'title' cannot be null.");
+        else if (title !== undefined)
+            url_ += "Title=" + encodeURIComponent("" + title) + "&";
+        if (description === null)
+            throw new globalThis.Error("The parameter 'description' cannot be null.");
+        else if (description !== undefined)
+            url_ += "Description=" + encodeURIComponent("" + description) + "&";
+        if (used === null)
+            throw new globalThis.Error("The parameter 'used' cannot be null.");
+        else if (used !== undefined)
+            url_ += "Used=" + encodeURIComponent("" + used) + "&";
         if (tags === null)
             throw new globalThis.Error("The parameter 'tags' cannot be null.");
         else if (tags !== undefined)
@@ -10082,14 +10148,17 @@ export interface IWorkflowsClient {
     /**
      * @param sort (optional) 
      * @param q (optional) 
+     * @param name (optional) 
      * @param isActive (optional) 
+     * @param hasPublished (optional) 
+     * @param hasDraft (optional) 
      * @param taskTypeId (optional) 
      * @param stepId (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    listWorkflows(sort?: string | undefined, q?: string | undefined, isActive?: boolean | undefined, taskTypeId?: number | undefined, stepId?: number | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary>;
+    listWorkflows(sort?: string | undefined, q?: string | undefined, name?: string | undefined, isActive?: boolean | undefined, hasPublished?: boolean | undefined, hasDraft?: boolean | undefined, taskTypeId?: number | undefined, stepId?: number | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary>;
     /**
      * @return Created
      */
@@ -10152,14 +10221,17 @@ export class WorkflowsClient implements IWorkflowsClient {
     /**
      * @param sort (optional) 
      * @param q (optional) 
+     * @param name (optional) 
      * @param isActive (optional) 
+     * @param hasPublished (optional) 
+     * @param hasDraft (optional) 
      * @param taskTypeId (optional) 
      * @param stepId (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    listWorkflows(sort?: string | undefined, q?: string | undefined, isActive?: boolean | undefined, taskTypeId?: number | undefined, stepId?: number | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary> {
+    listWorkflows(sort?: string | undefined, q?: string | undefined, name?: string | undefined, isActive?: boolean | undefined, hasPublished?: boolean | undefined, hasDraft?: boolean | undefined, taskTypeId?: number | undefined, stepId?: number | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary> {
         let url_ = this.baseUrl + "/api/v1/workflows?";
         if (sort === null)
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
@@ -10169,10 +10241,22 @@ export class WorkflowsClient implements IWorkflowsClient {
             throw new globalThis.Error("The parameter 'q' cannot be null.");
         else if (q !== undefined)
             url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (name === null)
+            throw new globalThis.Error("The parameter 'name' cannot be null.");
+        else if (name !== undefined)
+            url_ += "Name=" + encodeURIComponent("" + name) + "&";
         if (isActive === null)
             throw new globalThis.Error("The parameter 'isActive' cannot be null.");
         else if (isActive !== undefined)
             url_ += "IsActive=" + encodeURIComponent("" + isActive) + "&";
+        if (hasPublished === null)
+            throw new globalThis.Error("The parameter 'hasPublished' cannot be null.");
+        else if (hasPublished !== undefined)
+            url_ += "HasPublished=" + encodeURIComponent("" + hasPublished) + "&";
+        if (hasDraft === null)
+            throw new globalThis.Error("The parameter 'hasDraft' cannot be null.");
+        else if (hasDraft !== undefined)
+            url_ += "HasDraft=" + encodeURIComponent("" + hasDraft) + "&";
         if (taskTypeId === null)
             throw new globalThis.Error("The parameter 'taskTypeId' cannot be null.");
         else if (taskTypeId !== undefined)

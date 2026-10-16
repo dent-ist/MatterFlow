@@ -58,6 +58,8 @@ const fail = (status: number, code: string, message: string): Observable<never> 
       ),
   );
 
+const noUser = () => fail(404, 'NOT_FOUND', 'The user does not exist.');
+const noRole = () => fail(404, 'NOT_FOUND', 'The role does not exist.');
 const group = (code: string): string => code.split('.')[0];
 const view = (...groups: string[]): string[] =>
   PERMISSIONS.filter((p) => groups.some((g) => p.startsWith(g + '.') && p.endsWith('.View')));
@@ -155,11 +157,18 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
         if (status === 'pending' && !this.isPending(u)) return false;
         if (status === 'active' && !u.isActive) return false;
         if (status === 'inactive' && u.isActive) return false;
+        const has = (v: string | undefined, t?: string) =>
+          !t || (v ?? '').toLowerCase().includes(t.trim().toLowerCase());
         return (
-          !needle ||
-          [u.displayName, u.email ?? '', u.windowsAccount].some((v) =>
-            v.toLowerCase().includes(needle),
-          )
+          has(u.displayName, q.name) &&
+          has(u.windowsAccount, q.account) &&
+          has(u.email, q.email) &&
+          (!q.availability || this.summary(u).availability?.state === q.availability) &&
+          (!q.roleIds?.length || u.roleIds.some((id) => q.roleIds?.includes(id))) &&
+          (!needle ||
+            [u.displayName, u.email ?? '', u.windowsAccount].some((v) =>
+              v.toLowerCase().includes(needle),
+            ))
         );
       })
       .sort(
@@ -187,12 +196,12 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
 
   getUser(userId: number): Observable<UserDetailDto> {
     const u = this.find(userId);
-    return u ? of(this.detail(u)) : fail(404, 'NOT_FOUND', 'The user does not exist.');
+    return u ? of(this.detail(u)) : noUser();
   }
 
   setUserRoles(userId: number, roleIds: number[]): Observable<UserDetailDto> {
     const u = this.find(userId);
-    if (!u) return fail(404, 'NOT_FOUND', 'The user does not exist.');
+    if (!u) return noUser();
     const dropsAdmin = this.hasAdminRole(u) && !roleIds.some((id) => this.role(id)?.isSystemAdmin);
     if (dropsAdmin && u.isActive && this.activeAdmins().every((a) => a.userId === u.userId)) {
       return fail(409, 'LAST_ADMIN', 'At least one active System Admin is required.');
@@ -205,7 +214,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
 
   setUserActive(userId: number, isActive: boolean): Observable<UserDetailDto> {
     const u = this.find(userId);
-    if (!u) return fail(404, 'NOT_FOUND', 'The user does not exist.');
+    if (!u) return noUser();
     if (!isActive && userId === this.currentUserId) {
       return fail(400, 'VALIDATION_FAILED', 'You cannot deactivate your own account.');
     }
@@ -228,7 +237,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
     email: string | undefined,
   ): Observable<UserDetailDto> {
     const u = this.find(userId);
-    if (!u) return fail(404, 'NOT_FOUND', 'The user does not exist.');
+    if (!u) return noUser();
     u.displayName = displayName.trim();
     u.email = email?.trim() || undefined;
     u.version++;
@@ -257,7 +266,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
 
   getRole(roleId: number): Observable<RoleDetailDto> {
     const r = this.role(roleId);
-    return r ? of(this.roleDetail(r)) : fail(404, 'NOT_FOUND', 'The role does not exist.');
+    return r ? of(this.roleDetail(r)) : noRole();
   }
 
   createRole(request: CreateRoleRequest): Observable<RoleDetailDto> {
@@ -278,7 +287,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
 
   updateRole(roleId: number, request: UpdateRoleRequest): Observable<RoleDetailDto> {
     const r = this.role(roleId);
-    if (!r) return fail(404, 'NOT_FOUND', 'The role does not exist.');
+    if (!r) return noRole();
     if (r.isSystemAdmin) {
       return fail(
         409,
@@ -298,7 +307,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
 
   deleteRole(roleId: number): Observable<void> {
     const r = this.role(roleId);
-    if (!r) return fail(404, 'NOT_FOUND', 'The role does not exist.');
+    if (!r) return noRole();
     if (r.isSystemAdmin) {
       return fail(409, 'IMMUTABLE_FIELD', 'The System Admin role cannot be deleted.');
     }
@@ -419,7 +428,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
   /** Stub of `PUT /users/{id}/pods` (the server rules are tested against the real API): one primary among the pods, no new inactive pod. */
   setUserPods(userId: number, request: SetUserPodsRequest): Observable<UserPodDto[]> {
     const u = this.find(userId);
-    if (!u) return fail(404, 'NOT_FOUND', 'The user does not exist.');
+    if (!u) return noUser();
     const ids = [...new Set(request.podIds)];
     const bad = (id: number) =>
       !u.podIds.includes(id) && !this.pods.find((p) => p.podId === id)?.isActive;

@@ -1,12 +1,15 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   Injector,
+  afterNextRender,
   computed,
   effect,
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
@@ -18,21 +21,28 @@ import {
   WorkflowsClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
+import { statusDef, triBool } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
+import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { AssocChips, AssocItem } from '../assoc-chips';
 import { AssocFilter } from '../assoc-filter';
 import { ActiveBadge, Badge } from '../../../shared/ui/badge';
-import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-table';
-import { isActiveParam } from '../../../shared/ui/list-helpers';
+import { SortHeader } from '../../../shared/ui/data-table';
+import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { GridBody } from '../../../shared/ui/grid-body';
 import { Pager } from '../../../shared/ui/pager';
-import { SearchBox } from '../../../shared/ui/search-box';
+
+/** The columns of the grid, in order; the keys the filter definitions point at. */
+const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status'] as const;
 
 /**
- * Admin: the Workflows tab of the Workflows page (UX S16), the workflow list. Search by name, status filter (Active by default), sortable by name, server paged; state lives in the
- * URL. Each row shows the latest published version and any draft in progress. Needs `Workflow.Manage` (route guard).
+ * Admin: the Workflows tab of the Workflows page (UX S16), the workflow list. Inline column filters (Name, Latest published, Draft,
+ * Status with Active by default), sortable by name, server paged; state lives in the URL (`name`, `hasPublished`, `hasDraft`, `status`,
+ * `taskType`, `step`, `sort`, `page`, `size`). Each row shows the latest published version and any draft in progress. Needs `Workflow.Manage` (route guard).
  */
 @Component({
   selector: 'mf-workflows-list-page',
@@ -43,10 +53,10 @@ import { SearchBox } from '../../../shared/ui/search-box';
     RouterLink,
     Button,
     Pager,
-    SearchBox,
-    StatusFilter,
     SortHeader,
-    ListState,
+    GridBody,
+    FiltersBar,
+    ColumnFilterRow,
     AssocChips,
     AssocFilter,
   ],
@@ -54,24 +64,10 @@ import { SearchBox } from '../../../shared/ui/search-box';
   host: { class: 'mf-fill' },
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
   template: `
-    <div class="pg-filters" role="search">
-      <mf-search-box
-        inputId="wf-search"
-        label="Search workflows"
-        placeholder="Workflow name"
-        [value]="q() ?? ''"
-        (searchChange)="search($event)"
-      />
-      <mf-status-filter
-        inputId="wf-status"
-        [value]="statusFilter()"
-        (valueChange)="setStatus($event)"
-      />
-    </div>
+    <mf-filters-bar [filters]="filters" controls="workflow-filter-row" [clearAlso]="['q']" />
 
     @if (taskTypeId() !== undefined) {
       <mf-assoc-filter
-        [filters]="filters"
         kind="task type"
         [name]="taskTypeName()"
         [count]="state() === 'ready' ? total() : null"
@@ -79,7 +75,6 @@ import { SearchBox } from '../../../shared/ui/search-box';
       />
     } @else if (stepId() !== undefined) {
       <mf-assoc-filter
-        [filters]="filters"
         kind="step"
         [name]="stepName()"
         [count]="state() === 'ready' ? total() : null"
@@ -87,87 +82,94 @@ import { SearchBox } from '../../../shared/ui/search-box';
       />
     }
 
-    <mf-list-state
-      noun="workflows"
-      emptyText="No workflows yet. Create the first workflow."
-      [state]="state()"
-      [empty]="rows().length === 0"
-      [filtered]="hasFilter()"
-      [columns]="5"
-      (retry)="load()"
-      (clear)="clear()"
-    >
-      <p-button mfEmptyAction label="New workflow" (onClick)="go('/admin/workflows/new')" />
-      <div class="mf-table-wrap" mfScrollArea="Workflows list">
-        <div class="mf-scroll">
-          <table class="pg-table" data-workflows>
-            <caption class="pg-sr">
-              Workflows
-            </caption>
-            <thead>
-              <tr>
-                <th
-                  mfSort="name"
-                  [sort]="sort()"
-                  [defaultSort]="defaultSort"
-                  (sorted)="setSort($event)"
-                >
-                  Name
-                </th>
-                <th scope="col">Task types</th>
-                <th scope="col">Latest published</th>
-                <th scope="col">Draft</th>
-                <th scope="col">Status</th>
+    <div class="mf-table-wrap" mfScrollArea="Workflows list" #scroll>
+      <div class="mf-scroll">
+        <table class="pg-table" data-workflows>
+          <caption class="pg-sr">
+            Workflows
+          </caption>
+          <thead>
+            <tr>
+              <th
+                mfSort="name"
+                [sort]="sort()"
+                [defaultSort]="defaultSort"
+                (sorted)="setSort($event)"
+              >
+                Name
+              </th>
+              <th scope="col">Task types</th>
+              <th scope="col">Latest published</th>
+              <th scope="col">Draft</th>
+              <th scope="col">Status</th>
+            </tr>
+            @if (filters.rowVisible()) {
+              <tr
+                mfColumnFilterRow
+                id="workflow-filter-row"
+                [filters]="filters"
+                [columns]="columns"
+              ></tr>
+            }
+          </thead>
+          <tbody
+            mfGridBody
+            noun="workflows"
+            emptyText="No workflows yet. Create the first workflow."
+            [state]="state()"
+            [empty]="rows().length === 0"
+            [filtered]="filters.activeCount() > 0"
+            [columns]="5"
+            (retry)="load()"
+            (clear)="clear()"
+          >
+            <p-button mfEmptyAction label="New workflow" (onClick)="go('/admin/workflows/new')" />
+            @for (w of rows(); track w.workflowDefinitionId) {
+              <tr [attr.data-row]="w.name">
+                <td>
+                  <a class="pg-link" [routerLink]="['/admin/workflows', w.workflowDefinitionId]">{{
+                    w.name
+                  }}</a>
+                  @if (w.description) {
+                    <div class="pg-muted">{{ w.description }}</div>
+                  }
+                </td>
+                <td data-task-types>
+                  <mf-assoc-chips
+                    [items]="chipsOf(w)"
+                    [label]="'Task types of ' + w.name"
+                    noun="task types"
+                    [moreLink]="canOpenTaskTypes() ? '/admin/task-types' : null"
+                    [moreQuery]="taskTypesQuery(w)"
+                    emptyText="No task type"
+                  />
+                </td>
+                <td>
+                  @if (w.publishedVersionNo) {
+                    <mf-badge tone="success" icon="pi-check-circle">Published</mf-badge>
+                    v{{ w.publishedVersionNo }} ({{ stepsLabel(w.publishedStepCount) }})
+                  } @else {
+                    <span class="pg-muted">Not published</span>
+                  }
+                </td>
+                <td>
+                  @if (w.draftVersionNo) {
+                    <mf-badge tone="warning" icon="pi-pencil">Draft</mf-badge>
+                    v{{ w.draftVersionNo }}
+                  } @else {
+                    <span class="pg-muted">None</span>
+                  }
+                </td>
+                <td>
+                  <mf-active-badge [active]="w.isActive" />
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              @for (w of rows(); track w.workflowDefinitionId) {
-                <tr [attr.data-row]="w.name">
-                  <td>
-                    <a
-                      class="pg-link"
-                      [routerLink]="['/admin/workflows', w.workflowDefinitionId]"
-                      >{{ w.name }}</a
-                    >
-                    @if (w.description) {
-                      <div class="pg-muted">{{ w.description }}</div>
-                    }
-                  </td>
-                  <td data-task-types>
-                    <mf-assoc-chips
-                      [items]="chipsOf(w)"
-                      [label]="'Task types of ' + w.name"
-                      noun="task types"
-                      [moreLink]="canOpenTaskTypes() ? '/admin/task-types' : null"
-                      [moreQuery]="taskTypesQuery(w)"
-                      emptyText="No task type"
-                    />
-                  </td>
-                  <td>
-                    @if (w.publishedVersionNo) {
-                      <mf-badge tone="success" icon="pi-check-circle">Published</mf-badge>
-                      v{{ w.publishedVersionNo }} ({{ stepsLabel(w.publishedStepCount) }})
-                    } @else {
-                      <span class="pg-muted">Not published</span>
-                    }
-                  </td>
-                  <td>
-                    @if (w.draftVersionNo) {
-                      <mf-badge tone="warning" icon="pi-pencil">Draft</mf-badge>
-                      v{{ w.draftVersionNo }}
-                    } @else {
-                      <span class="pg-muted">None</span>
-                    }
-                  </td>
-                  <td>
-                    <mf-active-badge [active]="w.isActive" />
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+            }
+          </tbody>
+        </table>
       </div>
+    </div>
+    @if (state() === 'ready' && total() > 0) {
       <mf-pager
         [page]="pageNumber()"
         [pageSize]="pageSize()"
@@ -176,7 +178,7 @@ import { SearchBox } from '../../../shared/ui/search-box';
         (pageChange)="goToPage($event)"
         (pageSizeChange)="setPageSize($event)"
       />
-    </mf-list-state>
+    }
   `,
 })
 export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
@@ -185,15 +187,42 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   private readonly auth = inject(AuthStore);
 
   protected readonly defaultSort = 'name';
+  protected readonly columns = COLUMNS;
+  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
   /**
-   * `?taskType=<id>` (from a task type's Workflows chips) and `?step=<id>` (from a step's "Used in" link): no control, a removable
+   * Inline column filters: Name (`name`), Latest published (`hasPublished`), Draft (`hasDraft`) and Status (`status`, Active by default).
+   * Besides these, `?taskType=<id>` (from a task type's Workflows chips) and `?step=<id>` (from a step's "Used in" link): no control, a removable
    * chip each, shown with a "Filtered by ..." line. The server filters (`taskTypeId`, `stepId`).
    */
-  protected readonly filters = new ListFilters({
+  protected readonly filters: ListFilters = new ListFilters({
     screen: 'workflows',
     noun: 'workflows',
     defs: computed((): FilterDef[] => [
+      { key: 'name', label: 'Name', column: 'name', type: 'text' },
+      {
+        key: 'hasPublished',
+        label: 'Latest published',
+        column: 'published',
+        type: 'triState',
+        options: [
+          { value: '', label: 'Any' },
+          { value: 'true', label: 'Published' },
+          { value: 'false', label: 'Not published' },
+        ],
+      },
+      {
+        key: 'hasDraft',
+        label: 'Draft',
+        column: 'draft',
+        type: 'triState',
+        options: [
+          { value: '', label: 'Any' },
+          { value: 'true', label: 'Has a draft' },
+          { value: 'false', label: 'No draft' },
+        ],
+      },
+      statusDef(),
       {
         key: 'taskType',
         label: 'Task type',
@@ -233,6 +262,10 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
 
   constructor() {
     super();
+    // The controls move into the sheet while the grid scrolls sideways.
+    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
+      injector: this.injector,
+    });
     // The names of the filter chips ("Task type: Data Processing"); the id stands in when the record cannot be read.
     effect(() => {
       const id = this.taskTypeId();
@@ -254,13 +287,8 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
     });
   }
 
-  protected override extraFilters(): Record<string, unknown> {
-    return { taskType: this.taskTypeId() !== undefined, step: this.stepId() !== undefined };
-  }
-
-  protected override watch(): void {
-    this.taskTypeId();
-    this.stepId();
+  protected override listFilters() {
+    return this.filters;
   }
 
   /** The Task Types tab limited to a workflow (`?workflow=<id>`). */
@@ -295,8 +323,11 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
     return firstValueFrom(
       this.api.listWorkflows(
         this.sort() || undefined,
-        this.q()?.trim() || undefined,
-        isActiveParam(this.statusFilter()),
+        undefined,
+        this.filters.text('name') || undefined,
+        isActiveParam(parseStatus(this.filters.text('status'))),
+        triBool(this.filters.text('hasPublished')),
+        triBool(this.filters.text('hasDraft')),
         this.taskTypeId(),
         this.stepId(),
         this.pageNumber(),

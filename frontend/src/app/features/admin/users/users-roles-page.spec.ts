@@ -76,7 +76,7 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
     expect(el().querySelector('h1')!.textContent).toBe('Users');
     expect(tabs().map((t) => t.textContent!.trim())).toEqual(['Users', 'Roles']);
     expect(selected()).toEqual(['Users']);
-    expect(el().querySelector('#users-search')).not.toBeNull();
+    expect(el().querySelector('mf-filters-bar')).not.toBeNull();
 
     await harness.navigateByUrl('/admin/roles');
     await settle();

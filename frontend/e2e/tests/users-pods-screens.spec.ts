@@ -41,7 +41,8 @@ test.describe('users-pods screenshots', () => {
     const auditor = await seed.user(['Compliance Auditor'], 'auditor');
     const shot = (p: Page, name: string, size: { w: number; h: number }) =>
       p.screenshot({ path: path.join(OUT!, `${name}-${size.w}x${size.h}.png`) });
-    const grid = (p: Page) => p.goto(`/admin/users?status=all&q=${encodeURIComponent('e2e-')}`);
+    const grid = (p: Page) =>
+      p.goto(`/admin/users?status=all&account=${encodeURIComponent('e2e-')}`);
 
     for (const size of SIZES) {
       await page.setViewportSize({ width: size.w, height: size.h });

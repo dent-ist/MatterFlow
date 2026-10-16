@@ -42,10 +42,18 @@ export class HttpIdentityAdminApi extends IdentityAdminApi {
   }
 
   listUsers(q: UserListQuery): Observable<PagedResultOfUserSummaryDto> {
+    const { status, search, name, account, email, roleIds, availability } = q;
     return this.withUsers((c) =>
       c.listUsers(
-        q.status && q.status !== 'all' ? q.status : undefined,
-        q.search?.trim() || undefined,
+        status === 'all' ? undefined : status,
+        search,
+        name,
+        account,
+        email,
+        roleIds,
+        availability,
+        q.registeredFrom,
+        q.registeredTo,
         q.page,
         q.pageSize,
       ),
@@ -103,8 +111,8 @@ export class HttpIdentityAdminApi extends IdentityAdminApi {
 
   listActivePods(): Observable<PodChoice[]> {
     // The list endpoint pages at 100; a checklist of more active pods would not be usable anyway.
-    return this.withPods((c) => c.listPods(undefined, true, 1, 100, 'name')).pipe(
-      map((r) => r.items.map((p) => ({ podId: p.podId, name: p.name }))),
+    return this.withPods((c) => c.listPods(undefined, undefined, true, 1, 100, 'name')).pipe(
+      map((r) => r.items), // PodSummary carries podId and name, so it is a PodChoice
     );
   }
 

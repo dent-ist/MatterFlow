@@ -105,7 +105,7 @@ describe('TaskTypesPage', () => {
     await settle(fixture);
     expect(names()).toEqual([...names()].sort((a, b) => b!.localeCompare(a!)));
 
-    fixture.componentRef.setInput('q', 'COLLECTION');
+    await TestBed.inject(Router).navigateByUrl('/admin/task-types?name=COLLECTION');
     await settle(fixture);
     expect(names()).toContain('Collection');
     const actions = row('Collection').querySelector('.mf-row-actions')!;
@@ -114,9 +114,33 @@ describe('TaskTypesPage', () => {
       'Deactivate Collection',
     ]);
 
-    fixture.componentRef.setInput('q', 'no such type');
+    await TestBed.inject(Router).navigateByUrl('/admin/task-types?name=no%20such%20type');
     await settle(fixture);
     expect(el().querySelector('[data-empty=filtered]')).not.toBeNull();
+    expect(el().querySelector('thead th')).not.toBeNull(); // the headers stay
+    expect(el().querySelector('[data-filter-row]')).not.toBeNull(); // opened by the address
+  });
+
+  it('filters by the request form status in the browser', async () => {
+    await new Promise<void>((resolve) =>
+      api.create({ name: 'Collection', description: undefined }).subscribe(() => resolve()),
+    );
+    await (fixture.componentInstance as unknown as { load(): Promise<void> }).load();
+    await settle(fixture);
+    const names = () =>
+      Array.from(el().querySelectorAll('tbody tr')).map((r) => r.getAttribute('data-row'));
+    expect(names()).toEqual(expect.arrayContaining(['Collection', 'Data Processing']));
+
+    // Collection has no form yet; Data Processing has a published one.
+    await TestBed.inject(Router).navigateByUrl('/admin/task-types?form=none');
+    await settle(fixture);
+    expect(names()).toEqual(['Collection']);
+    await TestBed.inject(Router).navigateByUrl('/admin/task-types?form=published');
+    await settle(fixture);
+    expect(names()).toEqual(['Data Processing']);
+    expect(
+      el().querySelector<HTMLSelectElement>('[aria-label="Filter by Request form"]')!.value,
+    ).toBe('published');
   });
 
   it('warns about a type without an eligible workflow and deactivates and reactivates', async () => {

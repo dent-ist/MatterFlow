@@ -64,7 +64,8 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     await expect(page.getByRole('tab', { name: 'Workflows' })).toBeFocused();
     await expect(page.getByRole('heading', { name: 'Task Types', level: 1 })).toBeVisible();
     await expect(page.getByRole('button', { name: 'New workflow' })).toBeVisible();
-    await expect(page.getByRole('searchbox', { name: 'Search workflows' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Filters/ })).toBeVisible();
+    await expect(page.getByRole('searchbox')).toHaveCount(0);
     await expect(page).toHaveTitle('Task Types - Workflows - MatterFlow');
     await expect(crumbs(page)).toHaveText(['Administration', 'Task Types', 'Workflows']);
 
@@ -72,7 +73,8 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     await expect(page).toHaveURL(/\/admin\/steps$/);
     await expect(page.getByRole('tab', { name: 'Workflow Steps' })).toBeFocused();
     await expect(page.getByRole('button', { name: 'New step' })).toBeVisible();
-    await expect(page.getByRole('searchbox', { name: 'Search steps' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Filters/ })).toBeVisible();
+    await expect(page.getByRole('searchbox')).toHaveCount(0);
     await expect(page).toHaveTitle('Task Types - Workflow Steps - MatterFlow');
     await expect(crumbs(page)).toHaveText(['Administration', 'Task Types', 'Workflow Steps']);
 
@@ -206,7 +208,7 @@ test.describe('Task type, workflow and step cross-links', () => {
     seed,
   }) => {
     const w = await world(seed);
-    await page.goto(`/admin/task-types?q=${w.token}`);
+    await page.goto(`/admin/task-types?name=${w.token}`);
     const many = page.locator(`[data-row="${w.many.name}"]`);
     await expect(many).toBeVisible();
     const chips = many.locator('[data-assoc-chip]');
@@ -234,7 +236,7 @@ test.describe('Task type, workflow and step cross-links', () => {
     seed,
   }) => {
     const w = await world(seed);
-    await page.goto(`/admin/task-types?q=${w.token}`);
+    await page.goto(`/admin/task-types?name=${w.token}`);
     await page.locator(`[data-row="${w.many.name}"] [data-assoc-more]`).click();
     await expect(page).toHaveURL(new RegExp(`/admin/workflows\\?taskType=${w.many.id}$`));
     await expect(page.getByRole('tab', { name: 'Workflows' })).toHaveAttribute(
@@ -254,7 +256,7 @@ test.describe('Task type, workflow and step cross-links', () => {
     await expect(page).toHaveURL(/\/admin\/workflows$/);
     await expect(page.locator('[data-assoc-filter]')).toHaveCount(0);
 
-    await page.goto(`/admin/task-types?q=${w.token}`);
+    await page.goto(`/admin/task-types?name=${w.token}`);
     await page.locator(`[data-row="${w.single.name}"] [data-assoc-all]`).click();
     await expect(page).toHaveURL(new RegExp(`/admin/workflows\\?taskType=${w.single.id}$`));
     await expect(page.locator('tbody tr')).toHaveCount(1);
@@ -277,7 +279,7 @@ test.describe('Task type, workflow and step cross-links', () => {
       );
     }
     const lonely = await seed.workflow({ name: `Lonely flow ${token}` });
-    await page.goto(`/admin/workflows?q=${token}`);
+    await page.goto(`/admin/workflows?name=${token}`);
     const row = page.locator(`[data-row="${workflow.name}"]`);
     await expect(row.locator('[data-assoc-chip]')).toHaveCount(3);
     await expect(row.locator('[data-assoc-more]')).toHaveText('+2 more');
@@ -303,7 +305,7 @@ test.describe('Task type, workflow and step cross-links', () => {
     await expect(page).toHaveURL(/\/admin\/task-types$/);
     await expect(page.locator('[data-assoc-filter]')).toHaveCount(0);
 
-    await page.goto(`/admin/workflows?q=${token}`);
+    await page.goto(`/admin/workflows?name=${token}`);
     await page
       .locator(`[data-row="${workflow.name}"] [data-assoc-chip="${types[0].name}"] a`)
       .click();
@@ -327,7 +329,7 @@ test.describe('Task type, workflow and step cross-links', () => {
     });
     await seed.workflow({ name: `Other ${token}` });
 
-    await page.goto(`/admin/steps?q=${token}`);
+    await page.goto(`/admin/steps?title=${token}`);
     const sharedRow = page.locator(`[data-row="${shared.title}"]`);
     await expect(sharedRow.locator('[data-used-in]')).toHaveText('Used in 2 workflows');
     const spareRow = page.locator(`[data-row="${spare.title}"]`);
@@ -359,8 +361,8 @@ test.describe('Task type, workflow and step cross-links', () => {
     ]) {
       await page.setViewportSize(size);
       for (const url of [
-        `/admin/task-types?q=${w.token}`,
-        `/admin/workflows?q=${w.token}`,
+        `/admin/task-types?name=${w.token}`,
+        `/admin/workflows?name=${w.token}`,
         `/admin/workflows?taskType=${w.many.id}`,
         `/admin/task-types?workflow=${w.w4.workflowDefinitionId}`,
         '/admin/steps',

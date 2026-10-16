@@ -11,6 +11,8 @@ export interface ListFiltersLike {
   activeCount(): number;
   /** Read by the list's reload effect, so a change of any filter reloads. */
   values(): unknown;
+  /** The filters as URL parameters: a stable text key of what the list depends on (see `ServerListPage.watch`). */
+  queryParams(): unknown;
   clear(also?: readonly string[]): void;
   reportResults(total: number): void;
 }
@@ -119,9 +121,18 @@ export abstract class ServerListPage<T> extends ListQueryPage {
   /** Fetch the current page; read the URL signals (`q()`, `statusFilter()`, `pageNumber()`, `pageSize()`, `sort()`). */
   protected abstract fetch(): Promise<{ items: T[]; total: number }>;
 
+  /**
+   * The filters as text: a computed, so a change of the definitions alone (options that arrive later, a count in a label) does not look
+   * like a change of the filters and does not reload the list.
+   */
+  private readonly filtersKey = computed(() => {
+    const filters = this.listFilters();
+    return filters ? JSON.stringify(filters.queryParams()) : '';
+  });
+
   /** Read any extra signals the request depends on, so a change reloads the list. */
   protected watch(): void {
-    this.listFilters()?.values();
+    this.filtersKey();
   }
 
   constructor() {
@@ -168,13 +179,21 @@ export abstract class LocalListPage<T> extends ListQueryPage {
   /** Value to sort by for a sort field; strings sort with locale rules, numbers numerically. */
   protected abstract sortValue(row: T, field: string): string | number;
 
+  /** Pages on the shared column filters check their other filters here (read from `ListFilters`, so a change recomputes the rows). */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- the default accepts every row; pages override it
+  protected matchesFilters(_row: T): boolean {
+    return true;
+  }
+
   private readonly matching = computed(() => {
     const status = this.statusFilter();
     const needle = (this.q() ?? '').trim().toLowerCase();
+    this.listFilters()?.values();
     const rows = this.all().filter(
       (r) =>
         (status === 'all' || this.isActiveRow(r) === (status === 'active')) &&
-        (!needle || this.searchText(r).toLowerCase().includes(needle)),
+        (!needle || this.searchText(r).toLowerCase().includes(needle)) &&
+        this.matchesFilters(r),
     );
     const expression = (this.sort() || this.defaultSort).split(',')[0];
     const desc = expression.startsWith('-');

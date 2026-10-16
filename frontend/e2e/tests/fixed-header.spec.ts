@@ -234,10 +234,11 @@ test.describe('Fixed-header screens at 1366x768', () => {
     await expect(region.locator('tbody tr').first()).toBeVisible();
     const closed = await box(region);
     await page.getByRole('button', { name: /^Filters/ }).click();
-    await expect(page.getByRole('search', { name: 'Filter audit events' })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Filter by Summary or field' })).toBeVisible();
     const open = await box(region);
+    // The filter row is one more sticky head row inside the grid: it costs the grid a few dozen pixels, not a form's height.
     expect(open.height).toBeGreaterThan(150);
-    expect(open.height).toBeLessThan(closed.height);
+    expect(open.height).toBeLessThanOrEqual(closed.height);
     expect(await documentOverflow(page)).toBeLessThanOrEqual(0);
   });
 

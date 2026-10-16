@@ -84,7 +84,6 @@ const TEXT: Record<TaskTypesTab, string> = {
         @switch (current()) {
           @case ('task-types') {
             <mf-task-types-page
-              [q]="q()"
               [status]="status()"
               [page]="page()"
               [size]="size()"
@@ -93,7 +92,6 @@ const TEXT: Record<TaskTypesTab, string> = {
           }
           @case ('workflows') {
             <mf-workflows-list-page
-              [q]="q()"
               [status]="status()"
               [page]="page()"
               [size]="size()"
@@ -102,13 +100,10 @@ const TEXT: Record<TaskTypesTab, string> = {
           }
           @case ('steps') {
             <mf-steps-list-page
-              [q]="q()"
               [status]="status()"
               [page]="page()"
               [size]="size()"
               [sort]="sort()"
-              [tags]="tags()"
-              [tagMatch]="tagMatch()"
             />
           }
         }
@@ -122,13 +117,10 @@ export class TaskTypesAdminPage {
 
   /** The `:tab` path segment (`task-types`, `workflows` or `steps`). */
   readonly tab = input<string>();
-  readonly q = input<string>();
   readonly status = input<string>();
   readonly page = input<string>();
   readonly size = input<string>();
   readonly sort = input<string>();
-  readonly tags = input<string | readonly string[] | null>();
-  readonly tagMatch = input<string>();
 
   /** Only the tabs the person may use, in the order of the model. */
   protected readonly tabs = computed<MfTab[]>(() => {

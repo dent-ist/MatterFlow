@@ -2,11 +2,15 @@ import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  OnDestroy,
+  ElementRef,
+  Injector,
+  afterNextRender,
   computed,
+  effect,
   inject,
   signal,
-  viewChildren,
+  untracked,
+  viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -14,12 +18,10 @@ import {
   AuditFacets,
   AuditSearchClient,
   AuditSearchItem,
-  UserSummaryDto,
   UsersClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
-import { DateInput } from 'form-engine';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { fieldLabel, friendlyText } from '../../../shared/ui/audit-format';
 import {
@@ -31,43 +33,28 @@ import {
   groupObjectItem,
   splitGroup,
 } from './audit-links';
-import { ListState } from '../../../shared/ui/data-table';
+import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
+import { FilterDef, FilterOption } from '../../../shared/filters/filter-def';
+import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { ListFilters } from '../../../shared/filters/list-filters';
+import { LoadState } from '../../../shared/ui/data-table';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
+import { GridBody } from '../../../shared/ui/grid-body';
 import { PageHeader } from '../../../shared/ui/page-header';
 
-type LoadState = 'loading' | 'ready' | 'error';
-
-interface Filters {
-  objectType: string;
-  objectId: string;
-  actor: UserSummaryDto | null;
-  actorId: string;
-  eventType: string;
-  from: string;
-  to: string;
-  q: string;
-  correlationId: string;
-}
-
-const EMPTY: Filters = {
-  objectType: '',
-  objectId: '',
-  actor: null,
-  actorId: '',
-  eventType: '',
-  from: '',
-  to: '',
-  q: '',
-  correlationId: '',
-};
-
 const PAGE_SIZE = 50;
-const ACTOR_DEBOUNCE_MS = 250;
+/** People offered in the Who filter: the first pages of the user list (100 each). */
+const ACTOR_PAGES = 5;
+
+/** The columns of the grid, in order; the keys the filter definitions point at. */
+const COLUMNS = ['details', 'when', 'who', 'what', 'object'] as const;
 
 /**
- * Admin Audit Log (UX Audit screen, Audit.View): filter bar (object, actor, event type, dates in the viewer's zone, free text), results
- * newest first with a readable sentence per event, expandable old/new values, an optional grouping of the events of one operation
- * (bulk actions), links to the audited object, and cursor paging ("Load more"). Read only: there is no export.
+ * Admin Audit Log (UX Audit screen, Audit.View): inline column filters (When with presets in the viewer's zone, Who, What happened:
+ * event type and summary or field text, Object: type and id) that apply live and live in the address (`from`, `to`, `actor`,
+ * `eventType`, `q`, `objectType`, `objectId`, `correlationId`), results newest first with a readable sentence per event, expandable
+ * old/new values, an optional grouping of the events of one operation (bulk actions), links to the audited object, and cursor paging
+ * ("Load more"). Read only: there is no export.
  */
 @Component({
   selector: 'mf-audit-page',
@@ -75,31 +62,33 @@ const ACTOR_DEBOUNCE_MS = 250;
     FixedPage,
     ScrollArea,
     PageHeader,
-    DateInput,
-    ListState,
     RouterLink,
     MfDatePipe,
     NgTemplateOutlet,
+    GridBody,
+    FiltersBar,
+    ColumnFilterRow,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './audit-page.html',
   styleUrl: './audit-page.scss',
 })
-export class AuditPage implements OnDestroy {
+export class AuditPage {
   private readonly api = inject(AuditSearchClient);
   private readonly users = inject(UsersClient);
   private readonly auth = inject(AuthStore);
+  private readonly injector = inject(Injector);
+  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
   protected readonly zone = inject(USER_TIME_ZONE);
-  private actorTimer: ReturnType<typeof setTimeout> | undefined;
   private requestId = 0;
 
   protected readonly canView = computed(() => this.auth.has('Audit.View'));
   protected readonly canLookUpUsers = computed(() => this.auth.has('User.View'));
+  protected readonly columns = COLUMNS;
 
-  protected readonly draft = signal<Filters>({ ...EMPTY });
-  /** The filters the shown results were loaded with. */
-  protected readonly applied = signal<Filters>({ ...EMPTY });
   protected readonly facets = signal<AuditFacets>({ objectTypes: [], eventTypes: [] });
+  /** People to choose from in the Who filter (needs User.View); inactive ones stay selectable. */
+  private readonly actors = signal<FilterOption[]>([]);
   protected readonly items = signal<AuditSearchItem[]>([]);
   protected readonly nextCursor = signal<number | null>(null);
   protected readonly state = signal<LoadState>('loading');
@@ -109,30 +98,84 @@ export class AuditPage implements OnDestroy {
   protected readonly expanded = signal<ReadonlySet<number>>(new Set());
   protected readonly openGroups = signal<ReadonlySet<string>>(new Set());
   protected readonly openFieldGroups = signal<ReadonlySet<string>>(new Set());
-  protected readonly dateError = signal('');
-  /** A date field holds text that is not a date (its own message is shown); applying is held back. */
-  protected readonly badFrom = signal(false);
-  protected readonly badTo = signal(false);
-  private readonly dateInputs = viewChildren(DateInput);
 
-  protected readonly actorMatches = signal<UserSummaryDto[]>([]);
-  protected readonly actorQuery = signal('');
+  /**
+   * One definition per filter. They apply live (text after a short pause) and are written to the address, so a filtered view can be
+   * shared. `correlationId` has no control: "Show only this operation" sets it and a removable chip shows it.
+   */
+  protected readonly filters: ListFilters = new ListFilters({
+    screen: 'audit',
+    noun: 'audit events',
+    defs: computed((): FilterDef[] => [
+      {
+        key: 'when',
+        label: 'When',
+        column: 'when',
+        type: 'dateRange',
+        fromParam: 'from',
+        toParam: 'to',
+        presets: ['today', 'last7', 'last30', 'thisMonth'],
+      },
+      this.canLookUpUsers()
+        ? {
+            key: 'actor',
+            label: 'Who',
+            column: 'who',
+            type: 'user',
+            options: this.actors(),
+            emptyLabel: 'Anyone',
+            normalize: (v) => (/^[1-9]\d{0,9}$/.test(v) ? v : null),
+          }
+        : {
+            // Without User.View there is no list of people: the user id.
+            key: 'actor',
+            label: 'Who (user id)',
+            column: 'who',
+            type: 'text',
+            maxLength: 10,
+            normalize: (v) => (/^[1-9]\d{0,9}$/.test(v) ? v : null),
+          },
+      {
+        key: 'eventType',
+        label: 'Event type',
+        column: 'what',
+        type: 'select',
+        allLabel: 'Any event',
+        options: this.facets().eventTypes.map((t) => ({ value: t, label: t })),
+      },
+      { key: 'q', label: 'Summary or field', column: 'what', type: 'text' },
+      {
+        key: 'objectType',
+        label: 'Object type',
+        column: 'object',
+        type: 'select',
+        allLabel: 'Any object',
+        options: this.facets().objectTypes.map((t) => ({ value: t, label: t })),
+      },
+      {
+        key: 'objectId',
+        label: 'Object id',
+        column: 'object',
+        type: 'text',
+        maxLength: 40,
+        disabledReason: () =>
+          this.filters.text('objectType') ? null : 'Choose an object type first',
+      },
+      {
+        key: 'correlationId',
+        label: 'Operation',
+        type: 'text',
+        noControl: true,
+        normalize: (v) =>
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) ? v : null,
+        valueLabel: () => 'One operation',
+      },
+    ]),
+  });
 
   protected readonly groups = computed<AuditGroup[]>(() => groupByCorrelation(this.items()));
-  protected readonly filtered = computed(() => {
-    const a = this.applied();
-    return Object.entries(a).some(([key, value]) =>
-      key === 'actor' ? value !== null : value !== '',
-    );
-  });
-  /** The filter form is folded away until asked for: it is tall, and the grid needs the height. */
-  protected readonly filtersOpen = signal(false);
-  protected readonly activeFilters = computed(
-    () =>
-      Object.entries(this.applied()).filter(([key, value]) =>
-        key === 'actor' ? value !== null : value !== '',
-      ).length,
-  );
+  protected readonly filtered = computed(() => this.filters.activeCount() > 0);
+  protected readonly operationId = computed(() => this.filters.text('correlationId'));
   protected readonly announcement = computed(() => {
     if (this.state() === 'loading') return 'Loading audit events';
     if (this.state() === 'error') return 'Could not load audit events';
@@ -141,47 +184,31 @@ export class AuditPage implements OnDestroy {
       ? 'No audit events'
       : `Showing ${n} audit events${this.nextCursor() !== null ? ', more available' : ''}`;
   });
+  /** The current filters, for resetting the scroll position of the grid. */
+  protected readonly resetKey = computed(() => JSON.stringify(this.filters.queryParams()));
 
   constructor() {
     if (!this.canView()) return;
     void this.loadFacets();
-    void this.load(true);
-  }
-
-  ngOnDestroy(): void {
-    clearTimeout(this.actorTimer);
-  }
-
-  protected set<K extends keyof Filters>(key: K, value: Filters[K]): void {
-    this.draft.update((d) => ({ ...d, [key]: value }));
-  }
-
-  protected apply(): void {
-    if (this.badFrom() || this.badTo()) return;
-    const { from, to } = this.draft();
-    if (from && to && from > to) {
-      this.dateError.set('The start date must not be after the end date.');
-      return;
-    }
-    this.dateError.set('');
-    this.applied.set({ ...this.draft() });
-    void this.load(true);
+    if (this.canLookUpUsers()) void this.loadActors();
+    // Loads the first page, and again whenever a filter changes.
+    effect(() => {
+      this.resetKey(); // the filters as text: options arriving later do not reload the events
+      untracked(() => void this.load(true));
+    });
+    // The controls move into the sheet while the grid scrolls sideways.
+    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
+      injector: this.injector,
+    });
   }
 
   protected reset(): void {
-    this.draft.set({ ...EMPTY });
-    this.actorQuery.set('');
-    this.actorMatches.set([]);
-    this.dateError.set('');
-    this.dateInputs().forEach((d) => d.clear());
-    this.applied.set({ ...EMPTY });
-    void this.load(true);
+    this.filters.clear();
   }
 
+  /** Narrows the list to the events of one operation (and drops the other filters, which would hide part of it). */
   protected showOperation(item: AuditSearchItem): void {
-    this.draft.set({ ...EMPTY, correlationId: item.correlationId });
-    this.applied.set({ ...this.draft() });
-    void this.load(true);
+    this.filters.applyPreset({ correlationId: item.correlationId });
   }
 
   protected loadMore(): void {
@@ -190,40 +217,6 @@ export class AuditPage implements OnDestroy {
 
   protected retry(): void {
     void this.load(true);
-  }
-
-  // ---- Actor typeahead
-
-  protected onActorInput(text: string): void {
-    this.actorQuery.set(text);
-    clearTimeout(this.actorTimer);
-    if (this.draft().actor) this.set('actor', null);
-    if (text.trim().length < 2) {
-      this.actorMatches.set([]);
-      return;
-    }
-    this.actorTimer = setTimeout(() => void this.lookUpActors(text.trim()), ACTOR_DEBOUNCE_MS);
-  }
-
-  protected pickActor(user: UserSummaryDto): void {
-    this.set('actor', user);
-    this.actorQuery.set(user.displayName);
-    this.actorMatches.set([]);
-  }
-
-  protected clearActor(): void {
-    this.set('actor', null);
-    this.actorQuery.set('');
-    this.actorMatches.set([]);
-  }
-
-  private async lookUpActors(text: string): Promise<void> {
-    try {
-      const page = await firstValueFrom(this.users.listUsers('all', text, 1, 8));
-      this.actorMatches.set(page.items);
-    } catch {
-      this.actorMatches.set([]);
-    }
   }
 
   // ---- Rows
@@ -278,6 +271,42 @@ export class AuditPage implements OnDestroy {
     }
   }
 
+  private async loadActors(): Promise<void> {
+    try {
+      const people: FilterOption[] = [];
+      const inactive: string[] = [];
+      for (let page = 1; page <= ACTOR_PAGES; page++) {
+        const result = await firstValueFrom(
+          this.users.listUsers(
+            'all',
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            page,
+            100,
+          ),
+        );
+        for (const u of result.items) {
+          people.push({ value: String(u.userId), label: u.displayName });
+          if (!u.isActive) inactive.push(String(u.userId));
+        }
+        if (people.length >= result.total) break;
+      }
+      this.actors.set(
+        people
+          .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }))
+          .map((p) => (inactive.includes(p.value) ? { ...p, hint: '(inactive)' } : p)),
+      );
+    } catch {
+      // Without the list the filter offers nobody; an actor in the address still filters and shows as a chip.
+    }
+  }
+
   private async load(reset: boolean): Promise<void> {
     const id = ++this.requestId;
     if (reset) {
@@ -288,19 +317,24 @@ export class AuditPage implements OnDestroy {
     } else {
       this.loadingMore.set(true);
     }
-    const f = this.applied();
-    const actor = f.actor?.userId ?? (f.actorId ? Number(f.actorId) : undefined);
+    const f = this.filters;
+    const rawActor = f.value('actor');
+    const actors = (Array.isArray(rawActor) ? rawActor : rawActor ? [String(rawActor)] : [])
+      .map(Number)
+      .filter((n) => Number.isInteger(n) && n > 0);
+    const range = f.value('when');
+    const when = typeof range === 'object' && 'from' in range ? range : { from: '', to: '' };
     try {
       const page = await firstValueFrom(
         this.api.searchAuditEvents(
-          f.objectType || undefined,
-          f.objectId.trim() || undefined,
-          actor && Number.isFinite(actor) ? actor : undefined,
-          f.eventType || undefined,
-          f.from || undefined,
-          f.to || undefined,
-          f.q.trim() || undefined,
-          f.correlationId || undefined,
+          f.text('objectType') || undefined,
+          f.text('objectId').trim() || undefined,
+          actors.length > 0 ? actors : undefined,
+          f.text('eventType') || undefined,
+          when.from || undefined,
+          when.to || undefined,
+          f.text('q').trim() || undefined,
+          f.text('correlationId') || undefined,
           reset ? undefined : (this.nextCursor() ?? undefined),
           PAGE_SIZE,
         ),

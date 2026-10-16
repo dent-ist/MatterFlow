@@ -1,10 +1,15 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  OnInit,
+  ElementRef,
+  Injector,
+  afterNextRender,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
+  viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
@@ -14,14 +19,20 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { TextField } from '../../../shared/ui/text-field';
-import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ActiveBadge } from '../../../shared/ui/badge';
+import { LoadState } from '../../../shared/ui/data-table';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
-import { StatusFilter } from '../../../shared/ui/data-table';
-import { SearchBox } from '../../../shared/ui/search-box';
+import { GridBody } from '../../../shared/ui/grid-body';
+import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
+import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
+import { statusDef } from '../../../shared/filters/common-defs';
+import { FilterDef } from '../../../shared/filters/filter-def';
+import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { ListFilters } from '../../../shared/filters/list-filters';
 
-type LoadState = 'loading' | 'ready' | 'error';
+/** The columns of the grid, in order; the keys the filter definitions point at. */
+const COLUMNS = ['name', 'fields', 'assets', 'status', 'actions'] as const;
 
 /**
  * Admin: Asset Types (UX S17), the first tab of the Assets set-up page. Name, description, order and active flag are edited here; the type's own fields are edited in the
@@ -34,12 +45,12 @@ type LoadState = 'loading' | 'ready' | 'error';
     ActiveBadge,
     ScrollArea,
     ConfirmDialog,
-    ErrorReference,
     RouterLink,
     Button,
-    SearchBox,
-    StatusFilter,
     TextField,
+    GridBody,
+    FiltersBar,
+    ColumnFilterRow,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -136,119 +147,99 @@ type LoadState = 'loading' | 'ready' | 'error';
       </form>
     }
 
-    <div class="pg-filters" role="search">
-      <mf-search-box
-        inputId="asset-type-search"
-        placeholder="Asset type name"
-        [value]="q()"
-        (searchChange)="onSearch($event)"
-      />
-      <mf-status-filter
-        inputId="asset-type-status"
-        [value]="statusFilter()"
-        (valueChange)="onStatus($event)"
-      />
-    </div>
+    <mf-filters-bar [filters]="filters" controls="asset-type-filter-row" [clearAlso]="['q']" />
 
-    @switch (state()) {
-      @case ('loading') {
-        <div class="pg-state" role="status" aria-busy="true">Loading asset types...</div>
-      }
-      @case ('error') {
-        <div class="pg-alert" role="alert">
-          We couldn't load the asset types.
-          <mf-error-reference />
-          <p-button label="Retry" severity="secondary" (onClick)="load()" />
-        </div>
-      }
-      @case ('ready') {
-        @if (rows().length === 0) {
-          <div class="pg-state" data-empty>
-            {{
-              q() || statusFilter() !== 'all'
-                ? 'No asset types match these filters.'
-                : 'No asset types yet.'
-            }}
-          </div>
-        } @else {
-          <div class="mf-table-wrap" mfScrollArea="Asset types list">
-            <div class="mf-scroll">
-              <table class="pg-table" data-types>
-                <caption class="pg-sr">
-                  Asset types
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Fields</th>
-                    <th scope="col">Assets</th>
-                    <th scope="col">Status</th>
-                    <th scope="col" class="mf-col-actions"><span class="pg-sr">Actions</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (t of rows(); track t.assetTypeId) {
-                    <tr [attr.data-row]="t.name">
-                      <td>
-                        <strong>{{ t.name }}</strong>
-                        @if (t.description) {
-                          <div class="pg-muted">{{ t.description }}</div>
-                        }
-                      </td>
-                      <td>
-                        @if (t.publishedFormVersionNo) {
-                          Published v{{ t.publishedFormVersionNo }}
-                        } @else {
-                          <span class="pg-muted">No published fields</span>
-                        }
-                        <a
-                          class="pg-link"
-                          [routerLink]="['/admin/asset-types', t.assetTypeId, 'form']"
-                          [attr.aria-label]="'Edit fields of ' + t.name"
-                          >Edit fields</a
-                        >
-                      </td>
-                      <td>{{ t.assetCount }}</td>
-                      <td>
-                        <mf-active-badge [active]="t.isActive" />
-                      </td>
-                      <td class="mf-col-actions">
-                        @if (canManage()) {
-                          <span class="mf-row-actions">
-                            <button
-                              type="button"
-                              class="mf-btn mf-btn--text"
-                              [attr.aria-label]="'Edit ' + t.name"
-                              (click)="startEdit(t)"
-                              data-edit
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              class="mf-btn mf-btn--text"
-                              [class.mf-btn--danger]="t.isActive"
-                              [disabled]="busy()"
-                              [attr.aria-label]="
-                                (t.isActive ? 'Deactivate ' : 'Activate ') + t.name
-                              "
-                              (click)="onToggle(t)"
-                              data-toggle
-                            >
-                              {{ t.isActive ? 'Deactivate' : 'Activate' }}
-                            </button>
-                          </span>
-                        }
-                      </td>
-                    </tr>
+    <div class="mf-table-wrap" mfScrollArea="Asset types list" #scroll>
+      <div class="mf-scroll">
+        <table class="pg-table" data-types>
+          <caption class="pg-sr">
+            Asset types
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Fields</th>
+              <th scope="col">Assets</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="mf-col-actions"><span class="pg-sr">Actions</span></th>
+            </tr>
+            @if (filters.rowVisible()) {
+              <tr
+                mfColumnFilterRow
+                id="asset-type-filter-row"
+                [filters]="filters"
+                [columns]="columns"
+              ></tr>
+            }
+          </thead>
+          <tbody
+            mfGridBody
+            noun="asset types"
+            emptyText="No asset types yet."
+            [state]="state()"
+            [empty]="rows().length === 0"
+            [filtered]="filters.activeCount() > 0"
+            [columns]="5"
+            (retry)="load()"
+            (clear)="clear()"
+          >
+            @for (t of rows(); track t.assetTypeId) {
+              <tr [attr.data-row]="t.name">
+                <td>
+                  <strong>{{ t.name }}</strong>
+                  @if (t.description) {
+                    <div class="pg-muted">{{ t.description }}</div>
                   }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        }
-      }
-    }
+                </td>
+                <td>
+                  @if (t.publishedFormVersionNo) {
+                    Published v{{ t.publishedFormVersionNo }}
+                  } @else {
+                    <span class="pg-muted">No published fields</span>
+                  }
+                  <a
+                    class="pg-link"
+                    [routerLink]="['/admin/asset-types', t.assetTypeId, 'form']"
+                    [attr.aria-label]="'Edit fields of ' + t.name"
+                    >Edit fields</a
+                  >
+                </td>
+                <td>{{ t.assetCount }}</td>
+                <td>
+                  <mf-active-badge [active]="t.isActive" />
+                </td>
+                <td class="mf-col-actions">
+                  @if (canManage()) {
+                    <span class="mf-row-actions">
+                      <button
+                        type="button"
+                        class="mf-btn mf-btn--text"
+                        [attr.aria-label]="'Edit ' + t.name"
+                        (click)="startEdit(t)"
+                        data-edit
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        class="mf-btn mf-btn--text"
+                        [class.mf-btn--danger]="t.isActive"
+                        [disabled]="busy()"
+                        [attr.aria-label]="(t.isActive ? 'Deactivate ' : 'Activate ') + t.name"
+                        (click)="onToggle(t)"
+                        data-toggle
+                      >
+                        {{ t.isActive ? 'Deactivate' : 'Activate' }}
+                      </button>
+                    </span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
   `,
   styles: `
     .pg-subtitle {
@@ -263,17 +254,26 @@ type LoadState = 'loading' | 'ready' | 'error';
     }
   `,
 })
-export class AssetTypesPage implements OnInit {
+export class AssetTypesPage {
   private readonly api = inject(AssetTypesClient);
   private readonly auth = inject(AuthStore);
   private readonly notify = inject(NotificationService);
+  private readonly injector = inject(Injector);
+  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
+  protected readonly columns = COLUMNS;
   protected readonly canManage = computed(() => this.auth.has('AssetType.Manage'));
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<AssetTypeResponse[]>([]);
-  /** The same toolbar as the other admin lists: a search box and a status filter (UXR4-13). Everything is shown until narrowed. */
-  protected readonly q = signal('');
-  protected readonly statusFilter = signal<'active' | 'inactive' | 'all'>('all');
+  /** Inline column filters: Name (`name`) and Status (`status`, Active by default). The old `q` is no longer read. */
+  protected readonly filters: ListFilters = new ListFilters({
+    screen: 'asset-types',
+    noun: 'asset types',
+    defs: computed((): FilterDef[] => [
+      { key: 'name', label: 'Name', column: 'name', type: 'text' },
+      statusDef(),
+    ]),
+  });
   protected readonly busy = signal(false);
   protected readonly announcement = signal('');
   protected readonly deactivateOpen = signal(false);
@@ -293,43 +293,50 @@ export class AssetTypesPage implements OnInit {
     this.submitted() && this.name().trim() === '' ? 'Enter a name.' : this.fieldError('name'),
   );
 
-  ngOnInit(): void {
-    void this.load();
+  constructor() {
+    // Loads the list, and again when a filter changes.
+    effect(() => {
+      this.filterKey();
+      untracked(() => void this.load());
+    });
+    // The controls move into the sheet while the grid scrolls sideways.
+    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
+      injector: this.injector,
+    });
+  }
+
+  protected clear(): void {
+    this.filters.clear(['q']);
   }
 
   protected fieldError(key: string): string | null {
     return this.serverErrors()[key] ?? null;
   }
 
+  private readonly filterKey = computed(() => JSON.stringify(this.filters.queryParams()));
+  private requestId = 0;
+
   async load(): Promise<void> {
-    this.state.set('loading');
+    const id = ++this.requestId;
+    if (this.state() === 'error') this.state.set('loading');
     try {
-      const status = this.statusFilter();
       const page = await firstValueFrom(
         this.api.listAssetTypes(
-          this.q().trim() || undefined,
           undefined,
-          status === 'all' ? undefined : status === 'active',
+          this.filters.text('name') || undefined,
+          isActiveParam(parseStatus(this.filters.text('status'))),
           1,
           100,
           'sortOrder',
         ),
       );
+      if (id !== this.requestId) return;
       this.rows.set(page.items);
       this.state.set('ready');
+      this.filters.reportResults(page.total);
     } catch {
-      this.state.set('error');
+      if (id === this.requestId) this.state.set('error');
     }
-  }
-
-  protected onSearch(value: string): void {
-    this.q.set(value);
-    void this.load();
-  }
-
-  protected onStatus(value: string): void {
-    this.statusFilter.set(value === 'active' || value === 'inactive' ? value : 'all');
-    void this.load();
   }
 
   protected startCreate(): void {

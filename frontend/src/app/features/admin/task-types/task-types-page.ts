@@ -1,11 +1,15 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
   computed,
   effect,
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -17,16 +21,30 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { TaskTypeView, TaskTypesApi } from './task-types-api';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-table';
+import { SortHeader } from '../../../shared/ui/data-table';
 import { LocalListPage } from '../../../shared/ui/list-query';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { GridBody } from '../../../shared/ui/grid-body';
+import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
+import { statusDef } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
+import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { AssocChips, AssocItem } from '../assoc-chips';
 import { AssocFilter } from '../assoc-filter';
 import { Pager } from '../../../shared/ui/pager';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
-import { SearchBox } from '../../../shared/ui/search-box';
+
+/** The columns of the grid, in order; the keys the filter definitions point at. */
+const COLUMNS = ['name', 'form', 'workflows', 'status', 'actions'] as const;
+
+/** Request form filter values (the `form` parameter) and the form statuses they match. */
+const FORM_OPTIONS = [
+  { value: 'published', label: 'Published' },
+  { value: 'draft', label: 'Draft' },
+  { value: 'retired', label: 'Retired' },
+  { value: 'none', label: 'No form' },
+] as const;
 
 /**
  * Admin: the Task Types tab of the Task Types page (UX S14). Name, request form status and the Workflows column: the eligible workflows
@@ -45,10 +63,10 @@ import { SearchBox } from '../../../shared/ui/search-box';
     ActiveBadge,
     RouterLink,
     Pager,
-    SearchBox,
-    StatusFilter,
     SortHeader,
-    ListState,
+    GridBody,
+    FiltersBar,
+    ColumnFilterRow,
     TaskTypeIcon,
     AssocChips,
     AssocFilter,
@@ -68,11 +86,29 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
     () => new Map([...this.workflowOptions()].map(([id, w]) => [id, w.name])),
   );
 
-  /** `?workflow=<id>`: a link from a workflow's page or the Workflows tab. No control; a removable chip. */
-  protected readonly filters = new ListFilters({
+  private readonly injector = inject(Injector);
+  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
+  protected readonly columns = COLUMNS;
+
+  /**
+   * Inline column filters: Name (`name`), Request form (`form`) and Status (`status`, Active by default), all applied here because the
+   * list loads whole. `?workflow=<id>` (a link from a workflow's page or the Workflows tab) has no control: a removable chip, and the
+   * server limits the list to the types that workflow is eligible for.
+   */
+  protected readonly filters: ListFilters = new ListFilters({
     screen: 'task-types',
     noun: 'task types',
     defs: computed((): FilterDef[] => [
+      { key: 'name', label: 'Name', column: 'name', type: 'text' },
+      {
+        key: 'form',
+        label: 'Request form',
+        column: 'form',
+        type: 'select',
+        allLabel: 'All forms',
+        options: FORM_OPTIONS,
+      },
+      statusDef(),
       {
         key: 'workflow',
         label: 'Workflow',
@@ -106,10 +142,34 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
       this.workflowId();
       untracked(() => void this.load());
     });
+    // The controls move into the sheet while the grid scrolls sideways.
+    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
+      injector: this.injector,
+    });
   }
 
-  protected override extraFilters(): Record<string, unknown> {
-    return { workflow: this.workflowId() !== undefined };
+  protected override listFilters() {
+    return this.filters;
+  }
+
+  protected override matchesFilters(t: TaskTypeView): boolean {
+    const name = this.filters.text('name').trim().toLowerCase();
+    if (name && !t.name.toLowerCase().includes(name)) return false;
+    const form = this.filters.text('form');
+    return !form || this.formKey(t) === form;
+  }
+
+  private formKey(t: TaskTypeView): string {
+    switch (t.formStatus) {
+      case FormVersionStatus.Published:
+        return 'published';
+      case FormVersionStatus.Draft:
+        return 'draft';
+      case FormVersionStatus.Retired:
+        return 'retired';
+      default:
+        return 'none';
+    }
   }
 
   protected override searchText(t: TaskTypeView): string {

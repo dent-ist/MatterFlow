@@ -449,7 +449,9 @@ export class CreateTaskPage implements HasUnsavedChanges {
         firstValueFrom(this.typesApi.listTaskTypes()),
         firstValueFrom(this.workflowsApi.listPublishedWorkflows()),
         this.canListPods()
-          ? firstValueFrom(this.podsApi.listPods(undefined, true, 1, 100, 'name')).catch(() => null)
+          ? firstValueFrom(this.podsApi.listPods(undefined, undefined, true, 1, 100, 'name')).catch(
+              () => null,
+            )
           : Promise.resolve(null),
         this.lookups.ensureLoaded(),
       ]);

@@ -766,7 +766,7 @@ export class TaskDetailsTab {
     if (this.store.task()?.allowedActions.canAssign) {
       if (this.auth.has('Pod.View')) {
         tasks.push(
-          firstValueFrom(this.podsApi.listPods(undefined, true, 1, 100, 'name'))
+          firstValueFrom(this.podsApi.listPods(undefined, undefined, true, 1, 100, 'name'))
             .then((r) => this.pods.set(r.items ?? []))
             .catch(() => undefined),
         );

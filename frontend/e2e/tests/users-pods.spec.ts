@@ -24,7 +24,7 @@ async function threePods(seed: Seeder): Promise<{ tag: string; names: string[]; 
 }
 
 async function gridRow(page: Page, person: Person): Promise<Locator> {
-  await page.goto(`/admin/users?status=all&q=${encodeURIComponent(person.username)}`);
+  await page.goto(`/admin/users?status=all&account=${encodeURIComponent(person.username)}`);
   const row = page.locator(`tr[data-user="${person.userId}"]`);
   await expect(row).toBeVisible();
   return row;

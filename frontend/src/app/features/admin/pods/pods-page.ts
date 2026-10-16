@@ -1,12 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   OnDestroy,
   OnInit,
   computed,
+  effect,
   inject,
   input,
   signal,
+  untracked,
+  viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
@@ -29,14 +33,22 @@ import {
 } from '../../../shared/guards/unsaved-changes.guard';
 import { ActiveBadge, Badge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { ListState, SortHeader, StatusFilter } from '../../../shared/ui/data-table';
-import { isActiveParam } from '../../../shared/ui/list-helpers';
+import { SortHeader } from '../../../shared/ui/data-table';
+import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { GridBody } from '../../../shared/ui/grid-body';
 import { Pager } from '../../../shared/ui/pager';
-import { SearchBox } from '../../../shared/ui/search-box';
+import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
+import { statusDef } from '../../../shared/filters/common-defs';
+import { FilterDef } from '../../../shared/filters/filter-def';
+import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { ListFilters } from '../../../shared/filters/list-filters';
 
 const SEARCH_DEBOUNCE_MS = 200;
+
+/** The columns of the grid, in order; the keys the filter definitions point at. */
+const COLUMNS = ['name', 'members', 'status', 'actions'] as const;
 
 /**
  * Admin: Pods (UX S13), the third tab of the Users page (`/admin/pods`). Lists Pods, creates/edits/deactivates them and manages members.
@@ -57,10 +69,10 @@ const SEARCH_DEBOUNCE_MS = 200;
     HasPermissionDirective,
     RouterLink,
     Pager,
-    SearchBox,
-    StatusFilter,
     SortHeader,
-    ListState,
+    GridBody,
+    FiltersBar,
+    ColumnFilterRow,
   ],
   templateUrl: './pods-page.html',
   styleUrl: './pods-page.scss',
@@ -77,8 +89,21 @@ export class PodsPage
   private readonly leaveConfirm = inject(LeaveConfirmService);
   protected readonly auth = inject(AuthStore);
 
-  // ---- list (URL state: q, status, page, size, sort)
+  // ---- list (URL state: name, status, page, size, sort)
   protected readonly defaultSort = 'name';
+  protected readonly columns = COLUMNS;
+  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
+  private watched: HTMLElement | undefined;
+
+  /** Inline column filters: Name (`name`, the name only) and Status (`status`, Active by default). The old `q` is no longer read. */
+  protected readonly filters: ListFilters = new ListFilters({
+    screen: 'pods',
+    noun: 'pods',
+    defs: computed((): FilterDef[] => [
+      { key: 'name', label: 'Name', column: 'name', type: 'text' },
+      statusDef(),
+    ]),
+  });
 
   // ---- editor
   protected readonly editorOpen = signal(false);
@@ -118,6 +143,21 @@ export class PodsPage
   );
 
   private candidateTimer: ReturnType<typeof setTimeout> | undefined;
+
+  constructor() {
+    super();
+    // The controls move into the sheet while the grid scrolls sideways (the grid is not on screen while the editor is open).
+    effect(() => {
+      const area = this.scroll()?.nativeElement;
+      if (!area || area === this.watched) return;
+      this.watched = area;
+      untracked(() => this.filters.watchOverflow(area));
+    });
+  }
+
+  protected override listFilters() {
+    return this.filters;
+  }
 
   ngOnInit(): void {
     void this.openFromUrl();
@@ -159,8 +199,9 @@ export class PodsPage
   protected override fetch() {
     return firstValueFrom(
       this.api.listPods(
-        this.q()?.trim() || undefined,
-        isActiveParam(this.statusFilter()),
+        undefined,
+        this.filters.text('name') || undefined,
+        isActiveParam(parseStatus(this.filters.text('status'))),
         this.pageNumber(),
         this.pageSize(),
         this.sort() || undefined,

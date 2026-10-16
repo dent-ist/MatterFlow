@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { Observable, throwError } from 'rxjs';
 import {
   AuditSearchClient,
@@ -12,6 +12,7 @@ import { Permission } from '../../../core/auth/permissions';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
 import {
   FakeMeApi,
+  fakeQuery,
   ok,
   provideFakeMe,
   settle,
@@ -21,6 +22,8 @@ import { AuditPage } from './audit-page';
 import { auditObjectRoute, auditObjectText, groupByCorrelation } from './audit-links';
 
 type Mock = ReturnType<typeof vi.fn>;
+
+const BULK = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
 
 function anItem(overrides: Partial<AuditSearchItem> = {}): AuditSearchItem {
   return {
@@ -55,13 +58,17 @@ const pageOfEvents = (items: AuditSearchItem[], nextCursor?: number): AuditSearc
 describe('AuditPage', () => {
   let api: { searchAuditEvents: Mock; getAuditFacets: Mock };
   let users: { listUsers: Mock };
+  let query: ReturnType<typeof fakeQuery>;
+  let navigate: Mock;
   let fixture: ComponentFixture<AuditPage>;
   const el = (): HTMLElement => fixture.nativeElement;
 
   async function create(
     permissions: Permission[],
     search: Observable<AuditSearchPage> = ok(pageOfEvents([anItem()])),
+    params: Record<string, string> = {},
   ): Promise<void> {
+    localStorage.clear();
     api = {
       searchAuditEvents: vi.fn().mockReturnValue(search),
       getAuditFacets: vi
@@ -73,32 +80,41 @@ describe('AuditPage', () => {
     users = {
       listUsers: vi.fn().mockReturnValue(
         ok({
-          items: [{ userId: 4, displayName: 'Dana Director', email: 'dana@example.com' }],
-          total: 1,
+          items: [
+            { userId: 4, displayName: 'Dana Director', email: 'dana@example.com', isActive: true },
+            { userId: 9, displayName: 'Old Timer', email: undefined, isActive: false },
+          ],
+          total: 2,
           page: 1,
-          pageSize: 8,
+          pageSize: 100,
         }),
       ),
     };
+    query = fakeQuery();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        query.provider,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: AuditSearchClient, useValue: api },
         { provide: UsersClient, useValue: users },
         { provide: USER_TIME_ZONE, useValue: 'America/Chicago' },
       ],
     });
+    navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true) as never;
     await TestBed.inject(AuthStore).ensureLoaded();
+    query.set(params);
     fixture = TestBed.createComponent(AuditPage);
     await settle(fixture);
   }
 
-  const set = (selector: string, value: string, event = 'input') => {
-    const input = el().querySelector<HTMLInputElement | HTMLSelectElement>(selector)!;
-    input.value = value;
-    input.dispatchEvent(new Event(event));
-  };
+  const control = <T extends HTMLElement>(name: string): T =>
+    el().querySelector<T>(`[aria-label="Filter by ${name}"]`)!;
+  async function openRow(): Promise<void> {
+    el().querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
+    await settle(fixture);
+  }
+
   const click = (selector: string) => el().querySelector<HTMLElement>(selector)!.click();
   const lastCall = () => api.searchAuditEvents.mock.calls.at(-1)!;
 
@@ -123,29 +139,35 @@ describe('AuditPage', () => {
     expect(el().textContent).toContain("can't be exported");
   });
 
-  it('fills the filter lists from the facets', async () => {
+  it('has no filter form any more: the filters are column filters, closed by default', async () => {
     await create(['Audit.View']);
 
-    const types = Array.from(el().querySelectorAll('#au-object-type option')).map(
-      (o) => o.textContent,
+    expect(el().querySelector('form[role="search"], [data-apply], [data-reset]')).toBeNull();
+    expect(el().querySelector('[data-filter-row]')).toBeNull();
+    await openRow();
+    expect(el().querySelector('[data-filter-row]')).not.toBeNull();
+    // The event and object types come from the facets; the object id waits for a type.
+    const events = Array.from(control<HTMLSelectElement>('Event type').options).map((o) =>
+      o.textContent?.trim(),
     );
-    expect(types.map((t) => t?.trim())).toEqual(['Any', 'Matter', 'Task']);
-    expect(el().querySelectorAll('#au-event-type option')).toHaveLength(3);
-    expect(el().querySelector<HTMLInputElement>('#au-object-id')!.disabled).toBe(true);
+    expect(events).toEqual(['Any event', 'FIELD_CHANGED', 'TASK_CREATED']);
+    const objects = Array.from(control<HTMLSelectElement>('Object type').options).map((o) =>
+      o.textContent?.trim(),
+    );
+    expect(objects).toEqual(['Any object', 'Matter', 'Task']);
+    expect(control<HTMLInputElement>('Object id').disabled).toBe(true);
+    expect(control<HTMLInputElement>('Summary or field')).not.toBeNull();
   });
 
-  it('sends every filter to the API when applied and resets them', async () => {
-    await create(['Audit.View']);
-
-    set('#au-object-type', 'Task', 'change');
-    await settle(fixture);
-    set('#au-object-id', ' 1042 ');
-    set('#au-event-type', 'TASK_CREATED', 'change');
-    set('#au-from', '2026-10-01');
-    set('#au-to', '2026-10-14');
-    set('#au-q', ' status ');
-    click('[data-apply]');
-    await settle(fixture);
+  it('sends every filter of the address to the API (live, no Apply button)', async () => {
+    await create(['Audit.View'], ok(pageOfEvents([anItem()])), {
+      objectType: 'Task',
+      objectId: '1042',
+      eventType: 'TASK_CREATED',
+      from: '2026-10-01',
+      to: '2026-10-14',
+      q: ' status ',
+    });
 
     expect(lastCall()).toEqual([
       'Task',
@@ -159,50 +181,60 @@ describe('AuditPage', () => {
       undefined,
       50,
     ]);
-
-    click('[data-reset]');
-    await settle(fixture);
-    expect(lastCall().slice(0, 9)).toEqual(Array(9).fill(undefined));
-    expect(el().querySelector<HTMLInputElement>('#au-q')!.value).toBe('');
+    // A link that carries filters opens the row with the values in it and counts them (the date range is one filter).
+    expect(control<HTMLInputElement>('Object id').value).toBe('1042');
+    expect(control<HTMLInputElement>('Summary or field').value).toBe('status');
+    expect(el().querySelector('[data-filter-count]')?.textContent).toBe('(5)');
   });
 
-  it('refuses a start date after the end date', async () => {
+  it('writes a changed filter to the address (and reloads when the address changes)', async () => {
     await create(['Audit.View']);
-    const calls = api.searchAuditEvents.mock.calls.length;
+    await openRow();
 
-    set('#au-from', '2026-10-14');
-    set('#au-to', '2026-10-01');
-    click('[data-apply]');
+    const type = control<HTMLSelectElement>('Event type');
+    type.value = 'TASK_CREATED';
+    type.dispatchEvent(new Event('change'));
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { eventType: 'TASK_CREATED', page: null },
+      queryParamsHandling: 'merge',
+    });
+
+    query.set({ eventType: 'TASK_CREATED' });
     await settle(fixture);
-
-    expect(el().querySelector('#au-date-error')?.textContent).toContain('must not be after');
-    expect(api.searchAuditEvents.mock.calls.length).toBe(calls);
-    expect(el().querySelector('#au-from')?.getAttribute('aria-invalid')).toBe('true');
+    expect(lastCall()[3]).toBe('TASK_CREATED');
   });
 
-  it('picks an actor from a user search (needs User.View) and filters by the user id', async () => {
-    await create(['Audit.View', 'User.View']);
+  it('offers the people of the user list in Who (needs User.View) and filters by their ids', async () => {
+    await create(['Audit.View', 'User.View'], ok(pageOfEvents([anItem()])), {
+      actor: '4',
+    });
 
-    set('#au-actor', 'Dan');
-    await new Promise((r) => setTimeout(r, 300));
-    await settle(fixture);
-    expect(users.listUsers).toHaveBeenCalledWith('all', 'Dan', 1, 8);
-    el().querySelector<HTMLElement>('#au-actor-list button')!.click();
-    click('[data-apply]');
-    await settle(fixture);
-
-    expect(lastCall()[2]).toBe(4);
+    expect(users.listUsers).toHaveBeenCalledWith(
+      'all',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      1,
+      100,
+    );
+    expect(lastCall()[2]).toEqual([4]);
+    // The link opens the row; the Who control names the person (the list is the user list, inactive people included).
+    expect(
+      el().querySelector('button[data-filter="actor"]')?.getAttribute('aria-label') ?? '',
+    ).toContain('Dana Director');
   });
 
   it('falls back to a user id field without User.View', async () => {
-    await create(['Audit.View']);
+    await create(['Audit.View'], ok(pageOfEvents([anItem()])), { actor: '12' });
 
-    expect(el().querySelector('#au-actor')).toBeNull();
-    set('#au-actor-id', '12');
-    click('[data-apply]');
-    await settle(fixture);
-
-    expect(lastCall()[2]).toBe(12);
+    expect(users.listUsers).not.toHaveBeenCalled();
+    expect(control<HTMLInputElement>('Who (user id)').value).toBe('12');
+    expect(lastCall()[2]).toEqual([12]);
   });
 
   it('expands old and new values and the operation id, and marks hidden secrets', async () => {
@@ -238,7 +270,7 @@ describe('AuditPage', () => {
   });
 
   it('groups the events of one operation by default, with one line per operation and field changes on request', async () => {
-    const bulk = { correlationId: 'bulk', correlationEventCount: 4 };
+    const bulk = { correlationId: BULK, correlationEventCount: 4 };
     await create(
       ['Audit.View'],
       ok(
@@ -264,7 +296,7 @@ describe('AuditPage', () => {
       ),
     );
     // Grouped from the start: the operation is one line and the single event stands alone.
-    const group = el().querySelector('[data-group="bulk"]')!;
+    const group = el().querySelector(`[data-group="${BULK}"]`)!;
     expect(group.querySelector('[data-headline]')?.textContent).toBe(
       'Step A completed (bulk) and 3 related changes',
     );
@@ -286,14 +318,20 @@ describe('AuditPage', () => {
     expect(el().textContent).toContain('Owner kind set to workflow step');
     expect(el().textContent).not.toContain('StepInstance');
 
-    el().querySelector<HTMLElement>('[data-group="bulk"] button.mf-btn--text')!.click();
+    el().querySelector<HTMLElement>(`[data-group="${BULK}"] button.mf-btn--text`)!.click();
+    // "Show only this operation" replaces the filters with the operation (one removable chip) and the address reloads the list.
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: expect.objectContaining({ correlationId: BULK, page: null }),
+      queryParamsHandling: 'merge',
+    });
+    query.set({ correlationId: BULK });
     await settle(fixture);
-    expect(lastCall()[7]).toBe('bulk');
+    expect(lastCall()[7]).toBe(BULK);
     expect(el().querySelector('[data-operation-banner]')).not.toBeNull();
   });
 
   it('lists every event when grouping is switched off', async () => {
-    const bulk = { correlationId: 'bulk', correlationEventCount: 2 };
+    const bulk = { correlationId: BULK, correlationEventCount: 2 };
     await create(
       ['Audit.View'],
       ok(
@@ -337,14 +375,21 @@ describe('AuditPage', () => {
     expect(el().querySelector('[data-end]')).not.toBeNull();
   });
 
-  it('shows the empty states, with and without filters', async () => {
+  it('shows the empty states inside the table, with and without filters, keeping the headers and the row', async () => {
     await create(['Audit.View'], ok(pageOfEvents([])));
-    expect(el().querySelector('[data-empty]')?.textContent).toContain('No audit events have been');
+    expect(el().querySelector('td[data-empty="none"]')?.textContent).toContain(
+      'No audit events have been',
+    );
+    expect(el().querySelector('thead th')).not.toBeNull();
 
-    set('#au-q', 'zzz');
-    click('[data-apply]');
+    query.set({ q: 'zzz' });
     await settle(fixture);
-    expect(el().querySelector('[data-empty]')?.textContent).toContain('match these filters');
+    expect(el().querySelector('td[data-empty="filtered"]')?.textContent).toContain(
+      'match these filters',
+    );
+    expect(el().querySelector('[data-filter-row]')).not.toBeNull(); // opened by the address
+    expect(el().querySelector('thead th')).not.toBeNull();
+    expect(el().querySelector('[data-load-more], [data-end]')).toBeNull();
   });
 
   it('shows an error with Retry that reloads', async () => {

@@ -18,7 +18,7 @@ export async function loadPodChoices(api: PodsClient, includeAll: boolean): Prom
     const mine = await firstValueFrom(api.listMyPods());
     const byId = new Map(mine.map((p) => [p.podId, p.name] as const));
     if (includeAll) {
-      const all = await firstValueFrom(api.listPods(undefined, true, 1, 100));
+      const all = await firstValueFrom(api.listPods(undefined, undefined, true, 1, 100));
       for (const p of all.items) byId.set(p.podId, p.name);
     }
     return {

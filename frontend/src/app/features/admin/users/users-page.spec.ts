@@ -17,6 +17,8 @@ import { UsersPage } from './users-page';
 describe('UsersPage', () => {
   let fixture: ComponentFixture<UsersPage>;
   let api: InMemoryIdentityAdminApi;
+  /** Address the page starts on (the filters are read from it). */
+  let startUrl = '/admin/users';
   const el = (): HTMLElement => fixture.nativeElement;
   const q = <T extends HTMLElement = HTMLElement>(sel: string): T => el().querySelector<T>(sel)!;
 
@@ -46,9 +48,10 @@ describe('UsersPage', () => {
     prepare: (api: InMemoryIdentityAdminApi) => void,
     ...permissions: Permission[]
   ): Promise<void> {
+    localStorage.clear();
     TestBed.configureTestingModule({
       providers: [
-        provideRouter([]),
+        provideRouter([{ path: '**', children: [] }]),
         MessageService,
         { provide: USER_TIME_ZONE, useValue: 'America/New_York' },
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
@@ -59,20 +62,34 @@ describe('UsersPage', () => {
     await TestBed.inject(AuthStore).ensureLoaded();
     api = TestBed.inject(InMemoryIdentityAdminApi);
     prepare(api);
+    await TestBed.inject(Router).navigateByUrl(startUrl);
     fixture = TestBed.createComponent(UsersPage);
     await settle();
   }
 
-  /** Picks a status in the filter next to the search box. */
+  beforeEach(() => (startUrl = '/admin/users'));
+
+  /** Opens the filter row (it is closed by default). */
+  async function openRow(): Promise<void> {
+    if (el().querySelector('[data-filter-row]')) return;
+    q('[data-filters-toggle]').click();
+    await settle();
+  }
+
+  const control = <T extends HTMLElement = HTMLElement>(column: string): T =>
+    q<T>(`[aria-label="Filter by ${column}"]`);
+
+  /** Picks a status in the Status column filter. */
   async function chooseStatus(value: string): Promise<void> {
-    const select = q<HTMLSelectElement>('#users-status');
+    await openRow();
+    const select = control<HTMLSelectElement>('Status');
     select.value = value;
     select.dispatchEvent(new Event('change'));
     await settle();
   }
 
   const statusOptions = (): string[] =>
-    Array.from(el().querySelectorAll('#users-status option')).map((o) => o.textContent!.trim());
+    Array.from(control<HTMLSelectElement>('Status').options).map((o) => o.textContent!.trim());
 
   const rows = (): string[] =>
     Array.from(el().querySelectorAll('tbody tr')).map((r) =>
@@ -81,9 +98,12 @@ describe('UsersPage', () => {
 
   it('opens on the pending queue with counts, and publishes the pending count for the nav badge', async () => {
     await create('User.View', 'User.Manage');
+    await openRow();
 
     expect(statusOptions()).toEqual(['Pending access (2)', 'Active', 'Inactive', 'All']);
-    expect(q<HTMLSelectElement>('#users-status').value).toBe('pending');
+    expect(control<HTMLSelectElement>('Status').value).toBe('pending');
+    // The default is shown, not counted.
+    expect(el().querySelector('[data-filter-count]')).toBeNull();
     expect(rows()).toEqual(['Priya Patel', 'Tariq Mahmood']);
     expect(TestBed.inject(PendingUsersStore).count()).toBe(2);
   });
@@ -94,7 +114,8 @@ describe('UsersPage', () => {
       'User.View',
     );
 
-    expect(q<HTMLSelectElement>('#users-status').value).toBe('active');
+    await openRow();
+    expect(control<HTMLSelectElement>('Status').value).toBe('active');
     expect(statusOptions()[0]).toBe('Pending access (0)');
     expect(el().querySelector('[data-pending-cue]')).toBeNull();
   });
@@ -110,7 +131,7 @@ describe('UsersPage', () => {
 
     q('[data-pending-cue]').click();
     await settle();
-    expect(q<HTMLSelectElement>('#users-status').value).toBe('pending');
+    expect(control<HTMLSelectElement>('Status').value).toBe('pending');
   });
 
   it('shows the empty state when no one is waiting', async () => {
@@ -119,20 +140,95 @@ describe('UsersPage', () => {
     await chooseStatus('active');
     await chooseStatus('pending');
 
-    expect(q('[data-empty]').textContent).toContain('No one is waiting for access.');
+    expect(q('td[data-empty]').textContent).toContain('No one is waiting for access.');
   });
 
-  it('searches and switches tabs', async () => {
+  it('has column filters instead of a search box and two selects, closed by default', async () => {
+    await create('User.View');
+
+    expect(
+      el().querySelector('#users-search, #users-status, #users-availability, mf-search-box'),
+    ).toBeNull();
+    expect(el().querySelector('[data-filter-row]')).toBeNull();
+    await openRow();
+    for (const column of [
+      'Name',
+      'Windows account',
+      'First seen',
+      'Email',
+      'Roles',
+      'Availability',
+      'Status',
+    ]) {
+      expect(
+        el().querySelector(`[aria-label^="Filter by ${column}"]`),
+        `Filter by ${column}`,
+      ).not.toBeNull();
+    }
+    // Status is a column now.
+    expect(
+      Array.from(el().querySelectorAll('thead th')).map((th) => th.textContent!.trim()),
+    ).toContain('Status');
+    expect(q('[data-user="4"] [data-status]').textContent).toContain('Pending access');
+  });
+
+  it('filters by name, as you type or on Enter, and writes it to the address', async () => {
     await create('User.View');
     await chooseStatus('active');
     expect(rows()).toContain('Dana Director');
 
-    const input = q<HTMLInputElement>('#users-search');
+    const input = control<HTMLInputElement>('Name');
     input.value = 'dana';
     input.dispatchEvent(new Event('input'));
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await settle();
     expect(rows()).toEqual(['Dana Director']);
+    expect(TestBed.inject(Router).url).toContain('name=dana');
+    expect(q('[data-filter-count]').textContent).toBe('(2)'); // Name, and Status changed from the default
+  });
+
+  it('sends the column filters of the address to the server: name, account, email, roles, availability, first seen', async () => {
+    startUrl =
+      '/admin/users?status=all&name=%20ana&account=dd&email=firm&roleId=2&roleId=5&availability=OFF_HOURS&registeredFrom=2026-10-01&registeredTo=2026-10-31';
+    const list = vi.fn();
+    await createWith((a) => {
+      const real = a.listUsers.bind(a);
+      a.listUsers = (query) => {
+        list(query);
+        return real(query);
+      };
+    }, 'User.View');
+
+    expect(list).toHaveBeenLastCalledWith({
+      status: 'all',
+      name: 'ana',
+      account: 'dd',
+      email: 'firm',
+      roleIds: [2, 5],
+      availability: 'OFF_HOURS',
+      registeredFrom: '2026-10-01',
+      registeredTo: '2026-10-31',
+      page: 1,
+      pageSize: 25,
+    });
+    // The link opens the row with the values in it: all seven filters count, the status is a change from the default.
+    expect(control<HTMLInputElement>('Name').value).toBe('ana');
+    expect(control<HTMLInputElement>('Windows account').value).toBe('dd');
+    expect(q('[data-filter-count]').textContent).toBe('(7)');
+  });
+
+  it('shows the filtered empty state inside the table with Clear filters, keeping the headers and the row', async () => {
+    startUrl = '/admin/users?status=all&name=nobody-like-this';
+    await create('User.View');
+
+    expect(q('td[data-empty="filtered"]').textContent).toContain('No users match these filters');
+    expect(el().querySelector('thead th')).not.toBeNull();
+    expect(el().querySelector('[data-filter-row]')).not.toBeNull();
+    expect(el().querySelector('mf-pager')).toBeNull();
+    q('td[data-empty] button').click();
+    await settle();
+    expect(TestBed.inject(Router).url).not.toContain('name=');
+    expect(rows().length).toBeGreaterThan(0);
   });
 
   it('grants a role to a pending user: the drawer saves, the queue shrinks', async () => {
@@ -150,6 +246,7 @@ describe('UsersPage', () => {
 
     await press('Save changes');
     expect(api.users.find((u) => u.userId === 4)!.roleIds).toEqual([5]);
+    await openRow();
     expect(statusOptions()[0]).toBe('Pending access (1)');
     expect(TestBed.inject(PendingUsersStore).count()).toBe(1);
     expect(q('[data-panel]').textContent).toContain('Task.View'); // effective permissions refreshed
@@ -235,9 +332,9 @@ describe('UsersPage', () => {
       await chooseStatus('all');
       expect(rows().length).toBeGreaterThan(2);
 
-      const select = q<HTMLSelectElement>('#users-availability');
+      const select = control<HTMLSelectElement>('Availability');
       expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
-        'All',
+        'Any',
         'Available',
         'Out of office',
         'Off hours',
@@ -250,7 +347,7 @@ describe('UsersPage', () => {
       select.value = 'OFF_HOURS';
       select.dispatchEvent(new Event('change'));
       await settle();
-      expect(el().textContent).toContain('No users match these filters.');
+      expect(el().textContent).toContain('No users match these filters');
     });
 
     it('offers "Edit availability" only with User.Manage', async () => {

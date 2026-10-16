@@ -1,26 +1,20 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { FilterChips } from '../../shared/filters/filter-chips';
-import { ListFilters } from '../../shared/filters/list-filters';
 
 /**
  * The state of a list that a link from the other tab has limited (Workflows filtered by a task type or a step, Task Types filtered by a
- * workflow): the sentence "Filtered by task type X" with the number of results, and the removable chip ("Task type: X", remove
- * button "Remove filter Task type: X") of the shared column filters. Nothing shows while the list is not filtered.
+ * workflow): the sentence "Filtered by task type X" with the number of results. The removable chip ("Task type: X", remove button
+ * "Remove filter Task type: X") is the one in the filters bar above the grid; the page shows this only while such a link filter is on.
  */
 @Component({
   selector: 'mf-assoc-filter',
-  imports: [FilterChips],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (filters().chips().length > 0) {
-      <div class="af" data-assoc-filter>
-        <p class="af__note" role="status" data-filtered-by>
-          Filtered by {{ kind() }} <strong>{{ name() }}</strong
-          >{{ detail() }}.
-        </p>
-        <mf-filter-chips [filters]="filters()" />
-      </div>
-    }
+    <div class="af" data-assoc-filter>
+      <p class="af__note" role="status" data-filtered-by>
+        Filtered by {{ kind() }} <strong>{{ name() }}</strong
+        >{{ detail() }}.
+      </p>
+    </div>
   `,
   styles: `
     .af {
@@ -41,7 +35,6 @@ import { ListFilters } from '../../shared/filters/list-filters';
   `,
 })
 export class AssocFilter {
-  readonly filters = input.required<ListFilters>();
   /** "task type", "workflow" or "step". */
   readonly kind = input.required<string>();
   readonly name = input.required<string>();

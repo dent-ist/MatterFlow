@@ -9,6 +9,7 @@ import {
   FakeMeApi,
   apiError,
   buttonByLabel,
+  fakeQuery,
   ok,
   provideFakeMe,
   settle,
@@ -21,9 +22,16 @@ type Mock = ReturnType<typeof vi.fn>;
 describe('AssetTypesPage', () => {
   let api: Record<'listAssetTypes' | 'createAssetType' | 'updateAssetType', Mock>;
   let fixture: ComponentFixture<AssetTypesPage>;
+  let query: ReturnType<typeof fakeQuery>;
+  let navigate: Mock;
   const el = (): HTMLElement => fixture.nativeElement;
 
-  async function create(permissions: Permission[]): Promise<void> {
+  async function create(
+    permissions: Permission[],
+    params: Record<string, string> = {},
+  ): Promise<void> {
+    localStorage.clear();
+    query = fakeQuery();
     api = {
       listAssetTypes: vi.fn().mockReturnValue(
         ok(
@@ -51,13 +59,16 @@ describe('AssetTypesPage', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        query.provider,
         MessageService,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: AssetTypesClient, useValue: api },
       ],
     });
     vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true) as never;
     await TestBed.inject(AuthStore).ensureLoaded();
+    query.set(params);
     fixture = TestBed.createComponent(AssetTypesPage);
     await settle(fixture);
   }
@@ -73,21 +84,10 @@ describe('AssetTypesPage', () => {
     await settle(fixture);
   }
 
-  it('has the search box and status filter of the other admin lists, sent to the API (UXR4-13)', async () => {
+  it('has Name and Status column filters instead of a search box and a status select; Active is the default', async () => {
     await create(['AssetType.Manage', 'Asset.View']);
-    expect(api.listAssetTypes).toHaveBeenLastCalledWith(
-      undefined,
-      undefined,
-      undefined,
-      1,
-      100,
-      'sortOrder',
-    );
-
-    const status = el().querySelector<HTMLSelectElement>('#asset-type-status')!;
-    status.value = 'active';
-    status.dispatchEvent(new Event('change'));
-    await settle(fixture);
+    expect(el().querySelector('#asset-type-search, #asset-type-status, mf-search-box')).toBeNull();
+    expect(el().querySelector('[data-filter-row]')).toBeNull();
     expect(api.listAssetTypes).toHaveBeenLastCalledWith(
       undefined,
       undefined,
@@ -97,17 +97,59 @@ describe('AssetTypesPage', () => {
       'sortOrder',
     );
 
-    status.value = 'inactive';
-    status.dispatchEvent(new Event('change'));
+    el().querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
     await settle(fixture);
+    expect(el().querySelector<HTMLSelectElement>('[aria-label="Filter by Status"]')!.value).toBe(
+      'active',
+    );
+    expect(el().querySelector('[data-filter-count]')).toBeNull();
+  });
+
+  it('sends the filters of the address to the API and writes changes back to it', async () => {
+    await create(['AssetType.Manage', 'Asset.View'], { name: ' doc ', status: 'inactive' });
     expect(api.listAssetTypes).toHaveBeenLastCalledWith(
       undefined,
-      undefined,
+      'doc',
       false,
       1,
       100,
       'sortOrder',
     );
+    // A link with filters opens the row with the values in it.
+    const name = el().querySelector<HTMLInputElement>('[aria-label="Filter by Name"]')!;
+    expect(name.value).toBe('doc');
+    expect(el().querySelector('[data-filter-count]')?.textContent).toBe('(2)');
+
+    const status = el().querySelector<HTMLSelectElement>('[aria-label="Filter by Status"]')!;
+    status.value = 'all';
+    status.dispatchEvent(new Event('change'));
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { status: 'all', page: null },
+      queryParamsHandling: 'merge',
+    });
+    query.set({ status: 'all' });
+    await settle(fixture);
+    expect(api.listAssetTypes).toHaveBeenLastCalledWith(
+      undefined,
+      'doc',
+      undefined,
+      1,
+      100,
+      'sortOrder',
+    );
+  });
+
+  it('shows the filtered empty state inside the table, keeping the headers and the filter row', async () => {
+    await create(['AssetType.Manage'], { name: 'zzz' });
+    api.listAssetTypes.mockReturnValue(ok(pageOfAssetTypes()));
+    query.set({ name: 'zzzz' });
+    await settle(fixture);
+
+    expect(el().querySelector('td[data-empty="filtered"]')?.textContent).toContain(
+      'No asset types match these filters',
+    );
+    expect(el().querySelector('thead th')).not.toBeNull();
+    expect(el().querySelector('[data-filter-row]')).not.toBeNull();
   });
 
   it('lists the types with their field status, asset count and a link to the form designer', async () => {
@@ -124,7 +166,7 @@ describe('AssetTypesPage', () => {
     expect(api.listAssetTypes).toHaveBeenCalledWith(
       undefined,
       undefined,
-      undefined,
+      true,
       1,
       100,
       'sortOrder',

@@ -27,9 +27,11 @@ test.describe('Administration menu and tabbed admin pages', () => {
     await page.getByRole('tab', { name: 'Roles' }).press('ArrowLeft');
     await expect(page).toHaveURL(/\/admin\/users$/);
     await expect(page.getByRole('tab', { name: 'Users' })).toBeFocused();
-    await expect(page.getByRole('searchbox', { name: 'Search users' })).toBeVisible();
-    // The status filter replaces the old tab strip and is remembered in the address.
-    await page.getByLabel('Status').selectOption('all');
+    await expect(page.getByRole('button', { name: /^Filters/ })).toBeVisible();
+    await expect(page.getByRole('searchbox')).toHaveCount(0);
+    // The Status column filter (closed row: open it) is remembered in the address.
+    await page.getByRole('button', { name: /^Filters/ }).click();
+    await page.getByRole('combobox', { name: 'Filter by Status' }).selectOption('all');
     await expect(page).toHaveURL(/status=all/);
   });
 

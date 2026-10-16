@@ -24,7 +24,7 @@ const TABS: readonly UsersTab[] = ['users', 'roles', 'pods'];
  * Administration: Users. Three tabs, Users (User.View / User.Manage), Roles (Role.Manage) and Pods (Pod.Manage / Pod.ManageMembers), kept
  * in the address: `/admin/users`, `/admin/roles` and `/admin/pods` open the matching tab. A tab the person may not use is not offered,
  * and a link to it lands on the first one they may use. Leaving the Roles or Pods tab with an unsaved edit asks first (the route's
- * leave guard). The Pods tab is a nested component, so the list state and the open pod editor of the address (`q`, `status`, `page`,
+ * leave guard). The Pods tab is a nested component, so the list state and the open pod editor of the address (`status`, `page`,
  * `size`, `sort`, `pod`) are bound here and handed down.
  */
 @Component({
@@ -55,7 +55,6 @@ const TABS: readonly UsersTab[] = ['users', 'roles', 'pods'];
           <mf-pods-page
             #pods
             [pod]="pod()"
-            [q]="q()"
             [status]="status()"
             [page]="page()"
             [size]="size()"
@@ -76,7 +75,6 @@ export class UsersRolesPage implements HasUnsavedChanges {
   readonly tab = input<string>();
   /** Query parameters of the Pods tab (its list state and the open pod editor), handed to it. */
   readonly pod = input<string>();
-  readonly q = input<string>();
   readonly status = input<string>();
   readonly page = input<string>();
   readonly size = input<string>();

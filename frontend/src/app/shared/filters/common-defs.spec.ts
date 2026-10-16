@@ -1,5 +1,5 @@
 import { convertToParamMap } from '@angular/router';
-import { ARCHIVE_STATUS_OPTIONS, matterColumnDefs, statusDef } from './common-defs';
+import { ARCHIVE_STATUS_OPTIONS, matterColumnDefs, statusDef, triBool } from './common-defs';
 import { buildChips, defaultValue, isActive, parseFilters } from './filter-def';
 
 describe('shared record-list filter definitions', () => {
@@ -49,5 +49,12 @@ describe('shared record-list filter definitions', () => {
       status: 'active',
       isSensitive: '',
     });
+  });
+
+  it('turns the text of a tri-state filter into the API argument', () => {
+    expect(triBool('true')).toBe(true);
+    expect(triBool('false')).toBe(false);
+    expect(triBool('')).toBeUndefined();
+    expect(triBool('maybe')).toBeUndefined();
   });
 });

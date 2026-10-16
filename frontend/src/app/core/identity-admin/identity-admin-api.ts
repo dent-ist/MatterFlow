@@ -37,6 +37,17 @@ export type UserStatusFilter = 'all' | 'pending' | 'active' | 'inactive';
 export interface UserListQuery {
   status?: UserStatusFilter;
   search?: string;
+  /** Column filters (fragments of that column only). */
+  name?: string;
+  account?: string;
+  email?: string;
+  /** People holding any of these roles. */
+  roleIds?: number[];
+  /** `AVAILABLE`, `OUT_OF_OFFICE` or `OFF_HOURS`, as of now (worked out by the server). */
+  availability?: string;
+  /** First-seen days (`yyyy-MM-dd`, the viewer's zone, To inclusive). */
+  registeredFrom?: string;
+  registeredTo?: string;
   page?: number;
   pageSize?: number;
 }
