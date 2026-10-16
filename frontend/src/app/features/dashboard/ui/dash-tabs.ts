@@ -20,6 +20,11 @@ export const tabId = (key: string) => `mf-dash-tab-${key}`;
 export const panelId = (key: string) => `mf-dash-panel-${key}`;
 
 /**
+ * The header row of the Dashboard (UX review 2, P4 and R3): the page heading (H1, 20 px), the tab list and, at the right end, the controls
+ * projected into it (stale text, Refresh), all on one line from 600 px. The row sticks to the top while the page scrolls (600 px and
+ * wider; the fixed-height layout never scrolls it away). With one permitted tab (or none) the tab list is not rendered and the heading
+ * names the tab.
+ *
  * The tab list of the Dashboard (WAI-ARIA tabs pattern, automatic activation): the selected tab is the only tab stop (roving tabindex),
  * Left and Right arrows move between tabs and wrap round, Home and End jump to the first and last, and moving to a tab selects it. The
  * page owns the selection (it lives in the address, `?tab=`) and renders the matching `role="tabpanel"`. On a narrow screen the list
@@ -29,39 +34,70 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
   selector: 'mf-dash-tabs',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="row">
-      <div class="tabs" role="tablist" [attr.aria-label]="label()">
-        @for (t of tabs(); track t.key) {
-          <button
-            type="button"
-            role="tab"
-            class="tab"
-            [id]="tabId(t.key)"
-            [attr.data-tab]="t.key"
-            [attr.aria-selected]="t.key === selected()"
-            [attr.aria-controls]="t.key === selected() ? panelId(t.key) : null"
-            [attr.tabindex]="t.key === selected() ? 0 : -1"
-            (click)="choose(t.key)"
-            (keydown)="onKey($event)"
-          >
-            {{ t.label }}
-          </button>
-        }
-      </div>
+    <div class="row" data-dash-head>
+      <h1 class="h1" data-page-title id="mf-dash-h1">{{ heading() }}</h1>
+      @if (showTabs()) {
+        <div class="tabs" role="tablist" [attr.aria-label]="label()">
+          @for (t of tabs(); track t.key) {
+            <button
+              type="button"
+              role="tab"
+              class="tab"
+              [id]="tabId(t.key)"
+              [attr.data-tab]="t.key"
+              [attr.aria-selected]="t.key === selected()"
+              [attr.aria-controls]="t.key === selected() ? panelId(t.key) : null"
+              [attr.tabindex]="t.key === selected() ? 0 : -1"
+              (click)="choose(t.key)"
+              (keydown)="onKey($event)"
+            >
+              {{ t.label }}
+            </button>
+          }
+        </div>
+      } @else {
+        <span class="spacer"></span>
+      }
       <!-- Controls that belong to the tab row (for example the Swimlane's refresh icon) sit at its right end, on the same line as the labels. -->
       <div class="end"><ng-content /></div>
     </div>
   `,
   styles: `
+    /* Sticky from 600 px while the page scrolls (the fallback below 768 x 561); in the fixed-height layout the row is never scrolled away. */
     :host {
       display: block;
-      margin-bottom: var(--mf-s4);
+      margin-bottom: var(--mf-s2);
+      background: var(--mf-bg, var(--mf-surface));
+    }
+    @media (min-width: 600px) {
+      :host {
+        position: sticky;
+        top: 0;
+        z-index: 9;
+      }
     }
     .row {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      gap: var(--mf-s2);
+      column-gap: var(--mf-s4);
       box-shadow: inset 0 -1px 0 var(--mf-border);
+    }
+    .h1 {
+      flex: none;
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.25;
+      font-weight: 600;
+    }
+    .spacer {
+      flex: 1 1 0;
+    }
+    @media (max-width: 599px) {
+      .h1 {
+        flex: 1 0 100%;
+        padding-top: var(--mf-s1);
+      }
     }
     .end {
       display: flex;
@@ -73,7 +109,7 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
       display: none;
     }
     .tabs {
-      flex: 1 1 auto;
+      flex: 1 1 0;
       min-width: 0;
       display: flex;
       gap: var(--mf-s1);
@@ -125,6 +161,10 @@ export class DashTabs {
   readonly tabs = input.required<readonly DashTab[]>();
   readonly selected = input.required<string>();
   readonly label = input('Dashboard views');
+  /** The page heading: "Dashboard", or the name of the only tab. */
+  readonly heading = input('Dashboard');
+  /** False hides the tab list (one permitted tab, or an empty department). */
+  readonly showTabs = input(true);
   /** The tab the person chose (click or keyboard). */
   readonly tabChange = output<string>();
 

@@ -74,6 +74,7 @@ const EDIT_REFRESH_DELAY_MS = 900;
   selector: 'mf-dash-swimlane-tab',
   imports: [SwimlaneToolbar, SwimlaneLane, SwimlaneDrawer, DashState],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   template: `
     <mf-swimlane-toolbar
       [view]="view()"
@@ -105,6 +106,7 @@ const EDIT_REFRESH_DELAY_MS = 900;
         class="board"
         data-board
         role="region"
+        tabindex="0"
         aria-label="Swimlane board"
         [attr.aria-busy]="state() === 'loading' ? 'true' : null"
         [attr.data-density]="density()"
@@ -159,6 +161,26 @@ const EDIT_REFRESH_DELAY_MS = 900;
       min-height: 0;
       min-width: 0;
     }
+    .board:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: -2px;
+    }
+    /* Fixed-height Dashboard (#137): the toolbar is pinned and the board takes what is left of the window; each lane scrolls itself. Under
+       900 px the lanes stack and the board scrolls (each lane keeps its own limited height). */
+    @media (min-width: 768px) and (min-height: 561px) {
+      .board {
+        flex: 1 1 0;
+        min-height: 0;
+        height: auto;
+        grid-template-rows: minmax(0, 1fr);
+      }
+    }
+    @media (min-width: 768px) and (max-width: 900px) and (min-height: 561px) {
+      .board {
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+    }
     /* Narrow screens: the lanes stack, each with its own limited height. */
     @media (max-width: 900px) {
       .board {
@@ -166,6 +188,7 @@ const EDIT_REFRESH_DELAY_MS = 900;
         flex-direction: column;
         height: auto;
         overflow-x: visible;
+        grid-template-rows: none;
       }
       .board > * {
         height: auto;

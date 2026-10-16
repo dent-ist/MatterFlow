@@ -769,7 +769,9 @@ describe('DashboardPage', () => {
         'Dashboard.View',
         'Dashboard.ViewUnassigned',
       ]);
-      expect(tabLabels(el)).toEqual(['Summary']);
+      // One tab: no tab list, the tab's name is the heading (R3).
+      expect(tabLabels(el)).toEqual([]);
+      expect(el.querySelector('h1')!.textContent).toContain('Summary');
       expect(el.querySelector('[data-group], mf-stat-tile, select[data-period]')).toBeNull();
       expect(el.querySelector('[data-empty]')).toBeNull();
       expect(
@@ -1316,7 +1318,11 @@ describe('DashboardPage', () => {
     // Without Dashboard.ViewSummary the server returns zeros for the counts: that must not read as "no tasks".
     let el = await open(of(empty), ['Task.View', 'Dashboard.View', 'Dashboard.ViewTrends']);
     expect(el.querySelector('[data-empty]')).toBeNull();
-    expect(el.querySelector('[role="tablist"]')).not.toBeNull();
+    // A role with one tab has no tab list: its name is the page heading and the panel is a labelled region (R3).
+    expect(el.querySelector('[role="tablist"]')).toBeNull();
+    expect(el.querySelector('h1')!.textContent).toContain('Trends');
+    expect(el.querySelector('[role="tabpanel"]')).toBeNull();
+    expect(el.querySelector('[data-refresh]')).not.toBeNull();
 
     TestBed.resetTestingModule();
     el = await open(of(empty), ['Task.View', ...DATA_TABS]);

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import type { DashboardBreakdownItem, DashboardSummary } from '../../../api/generated/api-client';
 import { LookupStore } from '../../../core/lookups/lookup-store';
+import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { priorityColors } from '../../../shared/ui/priority-badge';
 import { BarItem, BarList } from './bar-list';
 import { OVERDUE_CSS, strokeFor } from './breakdown-overdue';
@@ -36,10 +37,11 @@ export function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
  */
 @Component({
   selector: 'mf-dash-breakdowns',
-  imports: [BarList, StackedBar],
+  imports: [BarList, StackedBar, ScrollArea],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   template: `
-    <section class="bd" aria-labelledby="mf-bd-h" data-section="breakdowns">
+    <section class="bd mf-fill" aria-labelledby="mf-bd-h" data-section="breakdowns">
       <h2 id="mf-bd-h" class="sr-only" tabindex="-1" data-skip-target>Open tasks</h2>
       <p class="caption" data-bd-caption>
         Open tasks, now. Not affected by the period.
@@ -48,32 +50,34 @@ export function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
           <span class="key"><span class="sample od" aria-hidden="true"></span>Overdue</span>
         </span>
       </p>
-      <div class="grid" data-grid="breakdowns">
-        <mf-bar-list
-          heading="Priority"
-          rowHeading="Priority"
-          [items]="priorities()"
-          emptyText="No open tasks."
-        />
-        <mf-bar-list
-          heading="Task type"
-          rowHeading="Task type"
-          [items]="types()"
-          emptyText="No open tasks."
-        />
-        <mf-bar-list
-          heading="Status"
-          rowHeading="Status"
-          [items]="statuses()"
-          emptyText="No open tasks."
-        />
-        <mf-stacked-bar
-          heading="Age"
-          rowHeading="Age"
-          [segments]="aging()"
-          emptyText="No open tasks."
-          note="Days since the task was created. Informational, not a service-level target."
-        />
+      <div class="scroll" mfScrollArea="Open task breakdowns" data-bd-scroll>
+        <div class="grid" data-grid="breakdowns">
+          <mf-bar-list
+            heading="Priority"
+            rowHeading="Priority"
+            [items]="priorities()"
+            emptyText="No open tasks."
+          />
+          <mf-bar-list
+            heading="Task type"
+            rowHeading="Task type"
+            [items]="types()"
+            emptyText="No open tasks."
+          />
+          <mf-bar-list
+            heading="Status"
+            rowHeading="Status"
+            [items]="statuses()"
+            emptyText="No open tasks."
+          />
+          <mf-stacked-bar
+            heading="Age"
+            rowHeading="Age"
+            [segments]="aging()"
+            emptyText="No open tasks."
+            note="Days since the task was created. Informational, not a service-level target."
+          />
+        </div>
       </div>
     </section>
   `,
@@ -84,6 +88,9 @@ export function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
         display: block;
         container-type: inline-size;
         margin-bottom: var(--mf-s5);
+      }
+      :host(.mf-fill) {
+        margin-bottom: 0;
       }
       .sr-only {
         position: absolute;

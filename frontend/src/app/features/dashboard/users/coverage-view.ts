@@ -312,7 +312,13 @@ const dayNumber = (iso: string) => Date.parse(iso + 'T00:00:00Z') / 86_400_000;
               }
             </div>
           } @else {
-            <div class="region" role="region" aria-labelledby="cv-h" data-coverage-region>
+            <div
+              class="region"
+              role="region"
+              tabindex="0"
+              aria-labelledby="cv-h"
+              data-coverage-region
+            >
               <table class="tbl" data-coverage-table>
                 <caption class="sr-only">
                   Tasks completed per task type (rows) and person (columns)
@@ -416,6 +422,27 @@ const dayNumber = (iso: string) => Date.parse(iso + 'T00:00:00Z') / 86_400_000;
   styles: `
     :host {
       display: block;
+    }
+    /* Fixed-height Dashboard (#137): everything above is pinned, the matrix fills the rest and scrolls. */
+    @media (min-width: 768px) and (min-height: 561px) {
+      :host {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 0;
+        min-height: 0;
+      }
+      :host > * {
+        flex: none;
+      }
+      :host > .region {
+        flex: 1 1 0;
+        min-height: 8rem;
+        max-height: none;
+      }
+    }
+    .region:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: -2px;
     }
     .head {
       margin: 0 0 var(--mf-s1);

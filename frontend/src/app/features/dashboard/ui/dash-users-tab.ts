@@ -60,6 +60,7 @@ import {
   sameFilters,
   sortUsers,
 } from '../users/users-model';
+import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { UsersPrefs } from '../users/users-prefs';
 import { UsersSummary } from '../users/users-summary';
 import { UsersTable } from '../users/users-table';
@@ -100,8 +101,10 @@ export const USERS_PAGE = 200;
     UsersAssign,
     CoverageView,
     DashState,
+    ScrollArea,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   template: `
     <ng-template #viewsTpl>
       @if (canCoverage()) {
@@ -178,113 +181,117 @@ export const USERS_PAGE = 200;
         <mf-dash-state variant="stale" [updated]="updated()" (retry)="retry()" />
       }
 
-      @switch (state()) {
-        @case ('error') {
-          <mf-dash-state
-            variant="error"
-            message="The team workload could not be loaded."
-            (retry)="retry()"
-          />
-        }
-        @case ('forbidden') {
-          <p class="empty" role="status" data-users-forbidden>
-            <i class="pi pi-lock" aria-hidden="true"></i>
-            <span>You do not have access to the team workload. Ask a Pod Lead or a Director.</span>
-          </p>
-        }
-        @case ('loading') {
-          <div
-            class="grid"
-            role="status"
-            aria-busy="true"
-            aria-label="Loading the team workload"
-            data-users-loading
-          >
-            @for (n of bones; track n) {
-              <span class="bone" aria-hidden="true"></span>
+      <div class="body" mfScrollArea="Team workload" data-users-scroll>
+        @switch (state()) {
+          @case ('error') {
+            <mf-dash-state
+              variant="error"
+              message="The team workload could not be loaded."
+              (retry)="retry()"
+            />
+          }
+          @case ('forbidden') {
+            <p class="empty" role="status" data-users-forbidden>
+              <i class="pi pi-lock" aria-hidden="true"></i>
+              <span
+                >You do not have access to the team workload. Ask a Pod Lead or a Director.</span
+              >
+            </p>
+          }
+          @case ('loading') {
+            <div
+              class="grid"
+              role="status"
+              aria-busy="true"
+              aria-label="Loading the team workload"
+              data-users-loading
+            >
+              @for (n of bones; track n) {
+                <span class="bone" aria-hidden="true"></span>
+              }
+            </div>
+          }
+          @default {
+            @if (users().length === 0) {
+              <div class="empty" data-users-empty>
+                <i class="pi pi-users" aria-hidden="true"></i>
+                @if (filtered()) {
+                  <span>No people match these filters.</span>
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--icon"
+                    data-users-clear
+                    aria-label="Clear filters"
+                    title="Clear filters"
+                    (click)="clearFilters()"
+                  >
+                    <i class="pi pi-filter-slash" aria-hidden="true"></i>
+                  </button>
+                } @else {
+                  <span>There are no team members to show yet.</span>
+                }
+              </div>
+            } @else if (layout() === 'table') {
+              <mf-users-table
+                [users]="shown()"
+                [legend]="board()?.priorities ?? []"
+                [thresholds]="board()?.thresholds ?? null"
+                [density]="density()"
+                [canAssign]="canAssign()"
+                (open)="openUser($event)"
+                (assign)="assignTo($event)"
+              />
+            } @else {
+              <ul
+                class="grid"
+                data-users-grid
+                aria-labelledby="wl-h"
+                [attr.data-density]="density()"
+                [attr.aria-busy]="refreshing() ? 'true' : null"
+              >
+                @for (u of shown(); track u.userId) {
+                  <li class="cell">
+                    <mf-users-card
+                      [user]="u"
+                      [legend]="board()?.priorities ?? []"
+                      [thresholds]="board()?.thresholds ?? null"
+                      [density]="density()"
+                      [canAssign]="canAssign()"
+                      (open)="openUser($event)"
+                      (assign)="assignTo($event)"
+                    />
+                  </li>
+                }
+              </ul>
             }
-          </div>
-        }
-        @default {
-          @if (users().length === 0) {
-            <div class="empty" data-users-empty>
-              <i class="pi pi-users" aria-hidden="true"></i>
-              @if (filtered()) {
-                <span>No people match these filters.</span>
+            @if (users().length > shown().length) {
+              <p class="more" data-users-more>
+                <span>Showing {{ shown().length }} of {{ users().length }} people.</span>
                 <button
                   type="button"
                   class="mf-btn mf-btn--icon"
-                  data-users-clear
-                  aria-label="Clear filters"
-                  title="Clear filters"
-                  (click)="clearFilters()"
+                  data-users-show-more
+                  [attr.aria-label]="'Show ' + pageStep + ' more people'"
+                  [attr.title]="'Show ' + pageStep + ' more people'"
+                  (click)="showMore()"
                 >
-                  <i class="pi pi-filter-slash" aria-hidden="true"></i>
+                  <i class="pi pi-angle-down" aria-hidden="true"></i>
                 </button>
-              } @else {
-                <span>There are no team members to show yet.</span>
-              }
-            </div>
-          } @else if (layout() === 'table') {
-            <mf-users-table
-              [users]="shown()"
-              [legend]="board()?.priorities ?? []"
-              [thresholds]="board()?.thresholds ?? null"
-              [density]="density()"
-              [canAssign]="canAssign()"
-              (open)="openUser($event)"
-              (assign)="assignTo($event)"
-            />
-          } @else {
-            <ul
-              class="grid"
-              data-users-grid
-              aria-labelledby="wl-h"
-              [attr.data-density]="density()"
-              [attr.aria-busy]="refreshing() ? 'true' : null"
-            >
-              @for (u of shown(); track u.userId) {
-                <li class="cell">
-                  <mf-users-card
-                    [user]="u"
-                    [legend]="board()?.priorities ?? []"
-                    [thresholds]="board()?.thresholds ?? null"
-                    [density]="density()"
-                    [canAssign]="canAssign()"
-                    (open)="openUser($event)"
-                    (assign)="assignTo($event)"
-                  />
-                </li>
-              }
-            </ul>
-          }
-          @if (users().length > shown().length) {
-            <p class="more" data-users-more>
-              <span>Showing {{ shown().length }} of {{ users().length }} people.</span>
-              <button
-                type="button"
-                class="mf-btn mf-btn--icon"
-                data-users-show-more
-                [attr.aria-label]="'Show ' + pageStep + ' more people'"
-                [attr.title]="'Show ' + pageStep + ' more people'"
-                (click)="showMore()"
-              >
-                <i class="pi pi-angle-down" aria-hidden="true"></i>
-              </button>
-              <button
-                type="button"
-                class="mf-btn mf-btn--icon"
-                data-users-show-all
-                aria-label="Show all people"
-                title="Show all people"
-                (click)="showAll()"
-              >
-                <i class="pi pi-angle-double-down" aria-hidden="true"></i>
-              </button>
-            </p>
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--icon"
+                  data-users-show-all
+                  aria-label="Show all people"
+                  title="Show all people"
+                  (click)="showAll()"
+                >
+                  <i class="pi pi-angle-double-down" aria-hidden="true"></i>
+                </button>
+              </p>
+            }
           }
         }
-      }
+      </div>
     }
 
     <mf-users-drawer
@@ -305,6 +312,14 @@ export const USERS_PAGE = 200;
   styles: `
     :host {
       display: block;
+    }
+    /* Fixed-height Dashboard (#137): the toolbar and the summary strip are pinned; the tiles or the table scroll in this region (the table
+       header is sticky, see the global fixed-page rules). The table's own sideways scroller gives way to this one so the header can stick. */
+    .body {
+      padding-bottom: var(--mf-s1);
+    }
+    .body ::ng-deep .wrap {
+      overflow: visible;
     }
     .views {
       display: inline-flex;

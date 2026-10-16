@@ -1,13 +1,11 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   ElementRef,
   computed,
   inject,
   input,
   output,
-  signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TaskQueueRow } from '../../../api/generated/api-client';
@@ -26,8 +24,8 @@ import { DueChip } from './due-chip';
 export type PanelKind = ListKind;
 export type PanelState = 'loading' | 'ready' | 'error';
 
-/** The window in which three rows per list fit the first screen (see `shown`). */
-const SHORT_WINDOW = '(min-width: 1280px) and (max-height: 1019px)';
+/** Rows per list on the Summary: the full capped list is always shown; in the fixed-height layout the list scrolls inside its panel (#137). */
+const MAX_ROWS = 5;
 
 let nextId = 0;
 
@@ -50,6 +48,7 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
   selector: 'mf-dash-task-list',
   imports: [RouterLink, MatterRef, PriorityBadge, RowEdit, TaskTypeIcon, DueChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.fill]': 'scroll()' },
   template: `
     <section
       class="card"
@@ -102,77 +101,86 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
               <i class="pi pi-check-circle" aria-hidden="true"></i> {{ emptyText() }}
             </p>
           } @else {
-            @if (shown().length > 2 && skippable()) {
-              <button type="button" class="skip" data-skip (click)="skipList()">
-                Skip {{ heading() }} list
-              </button>
-            }
-            <ul>
-              @for (row of shown(); track row.taskId; let i = $index) {
-                <li [attr.data-task]="row.taskNumber" [attr.data-row]="i">
-                  <a class="main" [routerLink]="['/tasks', row.taskId]" [attr.title]="row.title">
-                    <span class="ref">{{ row.taskNumber }}</span>
-                    <span
-                      class="type"
-                      role="img"
-                      data-type
-                      [attr.aria-label]="row.taskTypeName"
-                      [attr.title]="row.taskTypeName"
-                    >
-                      <mf-task-type-icon [iconKey]="row.taskTypeIconKey" size="sm" />
-                    </span>
-                    <span class="title">{{ row.title }}</span>
-                  </a>
-                  <span
-                    class="client"
-                    data-client
-                    [attr.title]="row.matterRef + ' ' + row.matterName"
-                  >
-                    {{ row.clientName }}
-                    <mf-matter-ref
-                      class="matter"
-                      [value]="row.matterRef"
-                      [copy]="false"
-                      [attr.title]="row.matterName"
-                    />
-                  </span>
-                  <mf-priority-badge
-                    class="prio"
-                    [priorityId]="row.priority.priorityId"
-                    [label]="row.priority.label"
-                    [color]="row.priority.color"
-                  />
-                  <span class="when">
-                    @if (kind() === 'unassigned') {
-                      @if (row.dueDate || row.dueAtUtc) {
-                        <mf-due-chip [due]="row" [status]="row.status" />
-                      }
-                      <span class="age" data-age>{{ ageText(row) }}</span>
-                    } @else {
-                      <mf-due-chip data-due [due]="row" [status]="row.status" />
-                    }
-                  </span>
-                  @if (kind() === 'unassigned') {
-                    <div class="assign">
-                      @if (editable(row)) {
-                        <mf-row-edit
-                          field="assignee"
-                          emptyLabel="Assign to..."
-                          toastPlacement="start"
-                          [row]="row"
-                          [assignMe]="true"
-                          (rowChange)="rowChange.emit($event)"
-                        />
-                      } @else {
-                        <span class="muted">{{
-                          row.assignedUser?.displayName ?? 'Unassigned'
-                        }}</span>
-                      }
-                    </div>
-                  }
-                </li>
+            <div
+              class="rows"
+              [class.rows--scroll]="scroll()"
+              [attr.role]="scroll() ? 'region' : null"
+              [attr.tabindex]="scroll() ? 0 : null"
+              [attr.aria-label]="scroll() ? heading() + ' tasks, scrollable' : null"
+              data-rows
+            >
+              @if (shown().length > 2 && skippable()) {
+                <button type="button" class="skip" data-skip (click)="skipList()">
+                  Skip {{ heading() }} list
+                </button>
               }
-            </ul>
+              <ul>
+                @for (row of shown(); track row.taskId; let i = $index) {
+                  <li [attr.data-task]="row.taskNumber" [attr.data-row]="i">
+                    <a class="main" [routerLink]="['/tasks', row.taskId]" [attr.title]="row.title">
+                      <span class="ref">{{ row.taskNumber }}</span>
+                      <span
+                        class="type"
+                        role="img"
+                        data-type
+                        [attr.aria-label]="row.taskTypeName"
+                        [attr.title]="row.taskTypeName"
+                      >
+                        <mf-task-type-icon [iconKey]="row.taskTypeIconKey" size="sm" />
+                      </span>
+                      <span class="title">{{ row.title }}</span>
+                    </a>
+                    <span
+                      class="client"
+                      data-client
+                      [attr.title]="row.matterRef + ' ' + row.matterName"
+                    >
+                      {{ row.clientName }}
+                      <mf-matter-ref
+                        class="matter"
+                        [value]="row.matterRef"
+                        [copy]="false"
+                        [attr.title]="row.matterName"
+                      />
+                    </span>
+                    <mf-priority-badge
+                      class="prio"
+                      [priorityId]="row.priority.priorityId"
+                      [label]="row.priority.label"
+                      [color]="row.priority.color"
+                    />
+                    <span class="when">
+                      @if (kind() === 'unassigned') {
+                        @if (row.dueDate || row.dueAtUtc) {
+                          <mf-due-chip [due]="row" [status]="row.status" />
+                        }
+                        <span class="age" data-age>{{ ageText(row) }}</span>
+                      } @else {
+                        <mf-due-chip data-due [due]="row" [status]="row.status" />
+                      }
+                    </span>
+                    @if (kind() === 'unassigned') {
+                      <div class="assign">
+                        @if (editable(row)) {
+                          <mf-row-edit
+                            field="assignee"
+                            emptyLabel="Assign to..."
+                            toastPlacement="start"
+                            [row]="row"
+                            [assignMe]="true"
+                            (rowChange)="rowChange.emit($event)"
+                          />
+                        } @else {
+                          <span class="muted">{{
+                            row.assignedUser?.displayName ?? 'Unassigned'
+                          }}</span>
+                        }
+                      </div>
+                    }
+                  </li>
+                }
+              </ul>
+            </div>
           }
         }
       }
@@ -181,6 +189,35 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
   styles: `
     :host {
       display: block;
+    }
+    /* Fixed-height Summary, lists beside the tiles (#137): the panel is as tall as its share of the column, the heading row stays and the rows scroll. */
+    :host(.fill) {
+      display: flex;
+      flex-direction: column;
+      flex: 0 1 auto;
+      min-height: 9rem;
+    }
+    :host(.fill) .card {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    header {
+      flex: none;
+    }
+    .rows {
+      position: relative;
+    }
+    .rows--scroll {
+      flex: 0 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    .rows--scroll:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: -2px;
     }
     .card {
       container-type: inline-size;
@@ -458,18 +495,18 @@ export class DashTaskList {
   readonly viewAllTitle = input('');
   /** False for the last list of a page: nothing follows it to skip to. */
   readonly skippable = input(true);
+  /** The rows scroll inside the panel (the fixed-height Summary with the lists beside the tiles): they become a focusable, named region. */
+  readonly scroll = input(false);
   readonly rowChange = output<TaskQueueRow>();
   readonly retry = output<void>();
 
   protected readonly id = `mf-dash-list-${nextId++}`;
 
   /**
-   * Rows shown: at most 5 (one line each). On a short window beside the tiles (1280px wide and up, under 1020px high) the first screen has
-   * room for 3 per list, so the three lists, their headings and "View all" stay in view without scrolling (review S1); "Showing N of M"
-   * counts what is shown.
+   * Rows shown: at most 5 (one line each), on every window height. In the fixed-height layout (#137) the list scrolls inside its panel
+   * (heading, count and "View all" stay pinned), so a short window no longer cuts the list to 3 rows; "Showing N of M" counts what is shown.
    */
-  private readonly compact = signal(false);
-  protected readonly shown = computed(() => this.rows().slice(0, this.compact() ? 3 : 5));
+  protected readonly shown = computed(() => this.rows().slice(0, MAX_ROWS));
   protected readonly bones = [1, 2, 3];
 
   /** "View all" starts with the same order as the list (see `LIST_ORDER`). */
@@ -482,15 +519,6 @@ export class DashTaskList {
     () => !this.skippable() && this.undo.current()?.placement === 'start',
   );
   protected readonly orderNote = computed(() => LIST_ORDER[this.kind()].note);
-
-  constructor() {
-    if (typeof matchMedia !== 'function') return;
-    const query = matchMedia(SHORT_WINDOW);
-    this.compact.set(query.matches);
-    const onChange = (e: MediaQueryListEvent) => this.compact.set(e.matches);
-    query.addEventListener('change', onChange);
-    inject(DestroyRef).onDestroy(() => query.removeEventListener('change', onChange));
-  }
 
   /** Moves focus to the row now at `index` (or the last one), else to the list heading: used after a row has left the list. */
   focusNear(index: number): void {

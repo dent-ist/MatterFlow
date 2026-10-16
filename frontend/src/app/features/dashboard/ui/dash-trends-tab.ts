@@ -17,6 +17,7 @@ import { DashboardClient, DashboardTrend } from '../../../api/generated/api-clie
 import { QuietRequests } from '../../../core/http/interceptors';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { DashState, focusAfterRetry } from './dash-state';
+import { DASH_FIXED_QUERY, mediaMatch } from './dash-media';
 import { PeriodKey, periodDays } from '../dashboard-period';
 import { TrendChart } from './trend-chart';
 import { TrendLegend } from './trend-legend';
@@ -65,9 +66,10 @@ let nextId = 0;
   selector: 'mf-dash-trends-tab',
   imports: [TrendChart, TrendLegend, TrendMeasure, DashState],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   template: `
     <section
-      class="card"
+      class="card mf-fill"
       [attr.aria-labelledby]="id + '-h'"
       [attr.aria-busy]="busy() ? 'true' : null"
     >
@@ -107,16 +109,15 @@ let nextId = 0;
       } @else if (data(); as d) {
         <div class="layout">
           <div class="main">
-            <div class="sticky">
-              <mf-trend-chart
-                [heading]="heading"
-                [dates]="dates()"
-                [panels]="panels()"
-                [asTable]="asTable()"
-                [emptyText]="emptyText()"
-                [controls]="measureTpl"
-              />
-            </div>
+            <mf-trend-chart
+              [heading]="heading"
+              [dates]="dates()"
+              [panels]="panels()"
+              [asTable]="asTable()"
+              [fit]="fixed()"
+              [emptyText]="emptyText()"
+              [controls]="measureTpl"
+            />
           </div>
           <mf-trend-legend
             class="side"
@@ -202,8 +203,8 @@ let nextId = 0;
       font-size: var(--mf-fs-sm);
     }
     /* Chart column and control panel side by side from 1000 px: the panel is 300 to 340 px, a fixed 360 px from 1600 px (the chart gets the
-       rest). The chart column is as tall as the panel and the chart sticks under the tab row while the panel scrolls, so the chart stays
-       in view while types are ticked. The sticky offset is the shared variable of the page header (--mf-dash-sticky-top) plus 16 px. */
+       rest). Fixed-height Dashboard (#137): the layout fills the card, the two chart panels share the height of the chart column and the
+       Task Types list is the only region that scrolls on the right; below 1000 px the list sits under the chart with its own height. */
     .layout {
       display: grid;
       grid-template-columns: minmax(0, 1fr);
@@ -221,10 +222,6 @@ let nextId = 0;
       .layout {
         grid-template-columns: minmax(0, 1fr) clamp(300px, 24vw, 340px);
       }
-      .sticky {
-        position: sticky;
-        top: calc(var(--mf-dash-sticky-top, 0px) + var(--mf-s4));
-      }
       .side {
         padding: 0 0 0 var(--mf-s4);
         border-top: 0;
@@ -234,6 +231,23 @@ let nextId = 0;
     @media (min-width: 1600px) {
       .layout {
         grid-template-columns: minmax(0, 1fr) 360px;
+      }
+    }
+    @media (min-width: 768px) and (min-height: 561px) {
+      .layout {
+        flex: 1 1 0;
+        min-height: 0;
+        grid-template-rows: minmax(0, 1fr);
+      }
+      .main,
+      .side {
+        min-height: 0;
+      }
+    }
+    @media (min-width: 768px) and (max-width: 999px) and (min-height: 561px) {
+      .layout {
+        grid-template-rows: minmax(0, 1fr) minmax(0, 40%);
+        gap: var(--mf-s3);
       }
     }
     .sr-only {
@@ -265,6 +279,8 @@ export class DashTrendsTab {
   readonly refreshKey = input<string | null>(null);
 
   protected readonly id = `mf-trends-${nextId++}`;
+  /** The fixed-height layout is on: the chart panels fill the height of the tab (#137). */
+  protected readonly fixed = mediaMatch(DASH_FIXED_QUERY);
   protected readonly limitMessage = LIMIT_MESSAGE;
   protected readonly choice = signal<TrendChoice>(DEFAULT_CHOICE);
   protected readonly slots = signal<ReadonlyMap<number, number>>(new Map());

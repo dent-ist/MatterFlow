@@ -73,83 +73,94 @@ export const SEARCH_ABOVE = 8;
         />
       }
 
-      <ul class="list scroll mf-scroll" data-type-list>
-        <li class="row">
-          <label class="pick">
-            <input type="checkbox" data-all [checked]="showAll()" (change)="allChange.emit()" />
-            @if (!twoLine() && showAll()) {
-              <mf-trend-sample [style]="allStyle" />
-            }
-            <span class="name">All task types</span>
-            @if (allHidden()) {
-              <span
-                class="retired"
-                data-hidden-for-scale
-                title="Hidden for scale while task types are compared"
-                >(hidden for scale)</span
-              >
-            }
-          </label>
-          @if (!twoLine()) {
-            @if (allTotal(); as t) {
-              <ng-container *ngTemplateOutlet="totalTpl; context: { $implicit: t, id: 'all' }" />
-            }
-          }
-        </li>
-        @if (twoLine() && showAll()) {
-          <li class="row sub">
-            <a
-              routerLink="/tasks"
-              class="sublink"
-              data-legend="created"
-              [queryParams]="params(data().createdQuery)"
-            >
-              <mf-trend-sample [style]="styles.created" />
-              Created <strong>{{ sum('created') }}</strong>
-            </a>
-          </li>
-          <li class="row sub">
-            <a
-              routerLink="/tasks"
-              class="sublink"
-              data-legend="completed"
-              [queryParams]="params(data().completedQuery)"
-            >
-              <mf-trend-sample [style]="styles.completed" />
-              Completed <strong>{{ sum('completed') }}</strong>
-            </a>
-          </li>
-        }
-        @for (r of visibleRows(); track r.id) {
-          <li class="row" [class.muted]="r.total === 0" [attr.data-type]="r.id">
+      <div
+        class="scroll mf-scroll"
+        role="region"
+        tabindex="0"
+        aria-label="Task types, scrollable"
+        data-type-scroll
+      >
+        <ul class="list" data-type-list>
+          <li class="row">
             <label class="pick">
-              <input
-                type="checkbox"
-                [attr.data-type-box]="r.id"
-                [checked]="isSelected(r.id)"
-                (change)="onType(r.id, $event)"
-              />
-              @if (isSelected(r.id)) {
-                <mf-trend-sample [style]="styleOf(r.id)" />
+              <input type="checkbox" data-all [checked]="showAll()" (change)="allChange.emit()" />
+              @if (!twoLine() && showAll()) {
+                <mf-trend-sample [style]="allStyle" />
               }
-              <mf-task-type-icon [iconKey]="r.iconKey" size="sm" />
-              <span class="name" [title]="r.name">{{ r.name }}</span>
-              @if (!r.isActive) {
-                <span class="retired">(inactive)</span>
+              <span class="name">All task types</span>
+              @if (allHidden()) {
+                <span
+                  class="retired"
+                  data-hidden-for-scale
+                  title="Hidden for scale while task types are compared"
+                  >(hidden for scale)</span
+                >
               }
             </label>
-            <ng-container
-              *ngTemplateOutlet="
-                totalTpl;
-                context: { $implicit: { count: r.total, query: r.query, label: r.name }, id: r.id }
-              "
-            />
+            @if (!twoLine()) {
+              @if (allTotal(); as t) {
+                <ng-container *ngTemplateOutlet="totalTpl; context: { $implicit: t, id: 'all' }" />
+              }
+            }
           </li>
-        }
-        @if (visibleRows().length === 0) {
-          <li class="empty" data-no-match>No task types match.</li>
-        }
-      </ul>
+          @if (twoLine() && showAll()) {
+            <li class="row sub">
+              <a
+                routerLink="/tasks"
+                class="sublink"
+                data-legend="created"
+                [queryParams]="params(data().createdQuery)"
+              >
+                <mf-trend-sample [style]="styles.created" />
+                Created <strong>{{ sum('created') }}</strong>
+              </a>
+            </li>
+            <li class="row sub">
+              <a
+                routerLink="/tasks"
+                class="sublink"
+                data-legend="completed"
+                [queryParams]="params(data().completedQuery)"
+              >
+                <mf-trend-sample [style]="styles.completed" />
+                Completed <strong>{{ sum('completed') }}</strong>
+              </a>
+            </li>
+          }
+          @for (r of visibleRows(); track r.id) {
+            <li class="row" [class.muted]="r.total === 0" [attr.data-type]="r.id">
+              <label class="pick">
+                <input
+                  type="checkbox"
+                  [attr.data-type-box]="r.id"
+                  [checked]="isSelected(r.id)"
+                  (change)="onType(r.id, $event)"
+                />
+                @if (isSelected(r.id)) {
+                  <mf-trend-sample [style]="styleOf(r.id)" />
+                }
+                <mf-task-type-icon [iconKey]="r.iconKey" size="sm" />
+                <span class="name" [title]="r.name">{{ r.name }}</span>
+                @if (!r.isActive) {
+                  <span class="retired">(inactive)</span>
+                }
+              </label>
+              <ng-container
+                *ngTemplateOutlet="
+                  totalTpl;
+                  context: {
+                    $implicit: { count: r.total, query: r.query, label: r.name },
+                    id: r.id,
+                  }
+                "
+              />
+            </li>
+          }
+          @if (visibleRows().length === 0) {
+            <li class="empty" data-no-match>No task types match.</li>
+          }
+        </ul>
+      </div>
       <p class="msg" role="status" aria-live="polite" data-limit-msg>{{ message() }}</p>
     </div>
 
@@ -225,6 +236,35 @@ export const SEARCH_ABOVE = 8;
     .scroll {
       max-height: max(14rem, calc(100vh - 24rem));
       overflow: auto;
+    }
+    .scroll:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: -2px;
+    }
+    /* Fixed-height Dashboard (#137): the panel is as tall as the tab's chart column; the controls above the list stay put and the list is
+       the only thing that scrolls. */
+    @media (min-width: 768px) and (min-height: 561px) {
+      :host {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+      }
+      .group {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+      .group > * {
+        flex: none;
+      }
+      .group > .scroll {
+        flex: 1 1 0;
+        min-height: 5rem;
+        max-height: none;
+        overscroll-behavior: contain;
+      }
     }
     .row {
       display: flex;

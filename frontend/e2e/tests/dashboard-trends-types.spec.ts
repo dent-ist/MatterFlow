@@ -246,7 +246,7 @@ test.describe('Trends by task type', () => {
     await expect(page.locator('[data-panel="backlog"]')).toBeVisible();
   });
 
-  test('the chart uses its card: wide, at least 320 px tall, sticky beside the panel and not above 1000 px', async ({
+  test('the chart uses its card: wide, panels share the window height (at least 160 px each), legend beside it from 1000 px', async ({
     page,
   }) => {
     const flows = page.locator('[data-panel="flows"] svg');
@@ -254,25 +254,24 @@ test.describe('Trends by task type', () => {
     await openTrends(page);
     let b = (await flows.boundingBox())!;
     expect(b.width).toBeGreaterThanOrEqual(640);
-    expect(b.height).toBeGreaterThanOrEqual(320);
+    // Fixed-height Dashboard (#137): the two panels share what the window leaves (flows 1.6 : backlog 1), each at least 160 px.
+    expect(b.height).toBeGreaterThanOrEqual(160);
     const backlog = (await page.locator('[data-panel="backlog"] svg').boundingBox())!;
-    expect(backlog.height).toBeGreaterThanOrEqual(200);
+    expect(backlog.height).toBeGreaterThanOrEqual(160);
+    expect(b.height).toBeGreaterThan(backlog.height);
     expect(Math.abs(backlog.width - b.width)).toBeLessThan(1);
-    const position = () =>
-      page.locator('mf-dash-trends-tab .sticky').evaluate((e) => getComputedStyle(e).position);
-    expect(await position()).toBe('sticky');
     // The legend column is 300 to 340 px between 1000 and 1599 px.
     const side = (await page.locator('mf-trend-legend').boundingBox())!;
     expect(side.width).toBeGreaterThanOrEqual(300);
     expect(side.width).toBeLessThanOrEqual(345);
 
     await page.setViewportSize({ width: 1920, height: 1080 });
-    // The chart fills its column (the page itself stops at 1360 px until the page chrome package lifts the cap, so the absolute width of
-    // 1000 px at 1920 is not reachable yet) and the legend column is 360 px from 1600 px.
+    // The chart fills its column (at least 1000 px wide at 1920: the width cap is lifted for Trends, #93) and the legend column is 360 px from 1600 px.
     const main = page.locator('mf-dash-trends-tab .main');
     await expect
       .poll(async () => (await main.boundingBox())!.width - (await flows.boundingBox())!.width)
       .toBeLessThan(2);
+    expect((await flows.boundingBox())!.width).toBeGreaterThanOrEqual(1000);
     const wide = (await page.locator('mf-trend-legend').boundingBox())!;
     expect(wide.width).toBeGreaterThanOrEqual(360);
     expect(wide.width).toBeLessThanOrEqual(400);
@@ -280,10 +279,14 @@ test.describe('Trends by task type', () => {
     // The drawing follows the window (no fixed viewBox scaling) and stacks below 1000 px.
     await page.setViewportSize({ width: 800, height: 900 });
     await expect.poll(async () => (await flows.boundingBox())!.width).toBeLessThan(800);
-    expect(await position()).toBe('static');
     b = (await flows.boundingBox())!;
-    expect(b.height).toBeGreaterThanOrEqual(320);
+    expect(b.height).toBeGreaterThanOrEqual(160);
     await page.setViewportSize({ width: 375, height: 812 });
+    // Below 768 px the page scrolls and the panels keep their own heights (320 and 200 px).
+    await expect.poll(async () => (await flows.boundingBox())!.height).toBeGreaterThanOrEqual(320);
+    expect(
+      (await page.locator('[data-panel="backlog"] svg').boundingBox())!.height,
+    ).toBeGreaterThanOrEqual(200);
     await expect.poll(async () => (await flows.boundingBox())!.width).toBeLessThan(375);
     await expect(page.locator('[data-measure-select="flows"]')).toBeVisible();
     await expect(page.locator('[data-measure="flows"]')).toBeHidden();

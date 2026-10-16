@@ -5,9 +5,12 @@ import {
   ElementRef,
   TemplateRef,
   computed,
+  effect,
   inject,
   input,
   signal,
+  untracked,
+  viewChildren,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -61,6 +64,7 @@ function shortDay(date: string): string {
   selector: 'mf-trend-chart',
   imports: [RouterLink, NgTemplateOutlet, TrendSample, TaskTypeIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.fit]': 'fit()' },
   template: `
     @if (!hasLines()) {
       <p class="note" data-empty>{{ emptyText() }}</p>
@@ -150,7 +154,7 @@ function shortDay(date: string): string {
         (keydown)="onKey($event)"
       >
         @for (p of geo(); track p.key; let pi = $index) {
-          <section class="panel" [attr.data-panel]="p.key">
+          <section class="panel" [class.panel--flows]="p.key === 'flows'" [attr.data-panel]="p.key">
             <div class="panel-head">
               <h4 class="panel-title">{{ p.title }}</h4>
               @if (controls(); as tpl) {
@@ -162,13 +166,15 @@ function shortDay(date: string): string {
             } @else {
               <div
                 class="panel-plot"
+                #pp
+                [attr.data-panel-plot]="p.key"
                 (pointermove)="onPointer($event, pi)"
                 (pointerleave)="clearActive()"
               >
                 <svg
                   class="chart"
                   [attr.viewBox]="'0 0 ' + width() + ' ' + p.height"
-                  [style.height.px]="p.height"
+                  [style.height.px]="fit() ? null : p.height"
                   aria-hidden="true"
                 >
                   @for (b of p.weekendBands; track b.date) {
@@ -340,6 +346,51 @@ function shortDay(date: string): string {
     .panel-plot {
       position: relative;
     }
+    /* Fixed-height Dashboard (#137, "fit"): the panels share the height the tab gives the chart (flows 1.6 : backlog 1, the 320 : 200 of
+       the contract), each plot at least 160 px; the drawing is measured per panel and redrawn at that height. When the minimums do not fit
+       the chart scrolls as a last resort. */
+    :host(.fit) {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+    }
+    :host(.fit) .plot {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: auto;
+    }
+    :host(.fit) .panel {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 0;
+      min-height: 12.5rem;
+    }
+    :host(.fit) .panel--flows {
+      flex-grow: 1.6;
+    }
+    :host(.fit) .panel-head {
+      flex: none;
+    }
+    :host(.fit) .panel-plot {
+      flex: 1 1 0;
+      min-height: 160px;
+    }
+    :host(.fit) .chart {
+      position: absolute;
+      inset: 0;
+      height: 100%;
+    }
+    :host(.fit) .foot {
+      flex: none;
+    }
+    :host(.fit) .table-wrap {
+      flex: 1 1 0;
+      min-height: 0;
+      max-height: none;
+    }
     .tip-group {
       margin-top: 2px;
       font-weight: 600;
@@ -489,6 +540,8 @@ export class TrendChart {
   /** The panels to draw, top to bottom (the tab leaves the backlog panel out when it is hidden). */
   readonly panels = input.required<readonly PanelView[]>();
   readonly asTable = input(false);
+  /** The panels fill the height of the host (the fixed-height Dashboard) instead of using their own 320 and 200 px. */
+  readonly fit = input(false);
   /** Said when no panel has a line to draw. */
   readonly emptyText = input('Select a line in the list to draw it.');
   /** Said in a panel that has no line while another has. */
@@ -500,6 +553,9 @@ export class TrendChart {
   protected readonly right = RIGHT;
   /** Width of the drawing in px (measured). */
   protected readonly width = signal(DEFAULT_WIDTH);
+  /** Measured height of each panel's plot area in px (only used while `fit`). */
+  protected readonly measured = signal<Readonly<Record<string, number>>>({});
+  private readonly plotEls = viewChildren<ElementRef<HTMLElement>>('pp');
   /** Index of the day shown in the tooltip (hover or arrow keys). */
   protected readonly active = signal<number | null>(null);
   /** The panel the pointer is in; the tooltip is drawn there (the keyboard uses the first). */
@@ -515,7 +571,34 @@ export class TrendChart {
         if (w >= 120 && Math.abs(w - this.width()) >= 1) this.width.set(w);
       });
       ro.observe(host);
-      inject(DestroyRef).onDestroy(() => ro.disconnect());
+      // The per-panel observer only exists while the chart fills the height of its tab (`fit`).
+      let panelRo: ResizeObserver | null = null;
+      effect(() => {
+        const els = this.plotEls();
+        const fit = this.fit();
+        untracked(() => {
+          panelRo?.disconnect();
+          if (!fit) return;
+          panelRo ??= new ResizeObserver((entries) => {
+            const next = { ...this.measured() };
+            let changed = false;
+            for (const e of entries) {
+              const key = (e.target as HTMLElement | undefined)?.dataset['panelPlot'];
+              const h = Math.round(e.contentRect.height);
+              if (key && h >= 60 && next[key] !== h) {
+                next[key] = h;
+                changed = true;
+              }
+            }
+            if (changed) this.measured.set(next);
+          });
+          for (const el of els) panelRo.observe(el.nativeElement);
+        });
+      });
+      inject(DestroyRef).onDestroy(() => {
+        ro.disconnect();
+        panelRo?.disconnect();
+      });
     }
   }
 
@@ -599,14 +682,15 @@ export class TrendChart {
     return shown.map((panel, pi) => {
       const isLast = pi === lastDrawn;
       const bottom = isLast ? BOTTOM_LAST : BOTTOM_OTHER;
-      const plotHeight = panel.height - TOP - bottom;
+      const height = this.fit() ? (this.measured()[panel.key] ?? panel.height) : panel.height;
+      const plotHeight = height - TOP - bottom;
       const scale = niceScale(peakOf(panel.lines));
       const y = (value: number) => TOP + plotHeight * (1 - value / scale.max);
       return {
         key: panel.key,
         title: panel.title,
         lines: panel.lines,
-        height: panel.height,
+        height,
         top: TOP,
         plotHeight,
         isLast,

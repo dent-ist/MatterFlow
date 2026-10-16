@@ -10,18 +10,24 @@ let nextId = 0;
   selector: 'mf-dash-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="sec" [attr.aria-labelledby]="id" [attr.data-section]="name()">
+    <section class="sec mf-fill" [attr.aria-labelledby]="id" [attr.data-section]="name()">
       <div class="head">
         <h2 [id]="id" tabindex="-1" data-skip-target>{{ heading() }}</h2>
         <ng-content select="[mfSectionActions]" />
       </div>
-      <div class="body"><ng-content /></div>
+      <div class="body mf-fill"><ng-content /></div>
     </section>
   `,
   styles: `
     :host {
       display: block;
       margin-bottom: var(--mf-s5);
+    }
+    /* In the fixed-height Dashboard (#137) a section with class "mf-fill" fills the tab and its body passes the height on. */
+    @media (min-width: 768px) and (min-height: 561px) {
+      :host(.mf-fill) {
+        margin-bottom: 0;
+      }
     }
     .head {
       display: flex;

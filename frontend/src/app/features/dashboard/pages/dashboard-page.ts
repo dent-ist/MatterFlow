@@ -30,7 +30,7 @@ import { UndoService } from '../../../core/notify/undo.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { formatCalendarDay, mfDate, parseDateOnly } from '../../../core/time/time';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { PageHeader } from '../../../shared/ui/page-header';
+import { FixedPage } from '../../../shared/ui/fixed-page';
 import {
   DUE_SOON_CAPTION,
   DUE_SOON_WINDOW,
@@ -52,6 +52,7 @@ import {
 import { DashBreakdownsTab } from '../ui/dash-breakdowns-tab';
 import { canonicalParams, clearedTabParams, sameParams, tabFallback } from '../dash-url-state';
 import { FRESH_FOR_MS, STALE_CHECK_MS, staleAgeText } from '../dash-stale';
+import { DASH_FIXED_QUERY, DASH_FIXED_WIDE_QUERY, mediaMatch } from '../ui/dash-media';
 import { DashNote } from '../ui/dash-note';
 import { DashState, focusAfterRetry } from '../ui/dash-state';
 import { DashSection } from '../ui/dash-section';
@@ -102,7 +103,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
 @Component({
   selector: 'mf-dashboard-page',
   imports: [
-    PageHeader,
+    FixedPage,
     DashState,
     DashNote,
     DashBreakdownsTab,
@@ -119,366 +120,384 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-page-header heading="Dashboard" />
+    <mf-fixed-page class="dash" [class.dash--wide]="wide()" [attr.data-dash-tab]="activeTab()">
+      <p class="sr-only" role="status" aria-live="polite" data-dash-live>{{ live() }}</p>
 
-    <p class="sr-only" role="status" aria-live="polite" data-dash-live>{{ live() }}</p>
-
-    <ng-template #periodControl>
-      <label class="period">
-        <span>Completed and created in</span>
-        <select
-          class="mf-control"
-          data-period
-          [value]="period()"
-          (change)="setPeriod($any($event.target).value)"
-        >
-          @for (p of periods; track p.key) {
-            <option [value]="p.key" [selected]="p.key === period()">{{ p.label }}</option>
-          }
-        </select>
-      </label>
-    </ng-template>
-
-    @if (visibleTabs().length === 0) {
-      <!-- Dashboard.View without any tab permission: nothing to show but a pointer. -->
-      <p class="note" data-no-tabs-note>
-        <i class="pi pi-info-circle" aria-hidden="true"></i>
-        <span>
-          No Dashboard tab is turned on for your role. Ask an administrator to add one (Summary,
-          Breakdowns, Trends, Swimlane or Users) to your role.
-          @if (canSeeMyWork()) {
-            Your assigned tasks are in <a routerLink="/my-work" data-my-work-link>My Work</a>.
-          }
-        </span>
-      </p>
-    } @else {
-      <!-- One outlet for the tab row in every state, so the Refresh button is the same element while the page loads and after: a second
-           outlet in each branch made Angular replace the button when the first read finished, and the keyboard focus on it was lost. -->
-      @if (showTabs()) {
-        <ng-container *ngTemplateOutlet="tabList" />
-      }
-      @if (notice(); as note) {
-        <mf-dash-note [text]="note" (dismiss)="notice.set(null)" />
-      }
-      @if (summaryTab() && refreshFailed()) {
-        <mf-dash-state variant="stale" [updated]="updated()" (retry)="retryRefresh()" />
-      }
-      @switch (viewState()) {
-        @case ('board') {
-          <!-- Swimlane and Users read their own endpoints: nothing here waits for, or dies with, the shared summary request. -->
-          <ng-container *ngTemplateOutlet="boardPanel" />
-        }
-        @case ('loading') {
-          <div
-            class="panel"
-            role="tabpanel"
-            [attr.data-tabpanel]="activeTab()"
-            [id]="panelId(activeTab()!)"
-            [attr.aria-labelledby]="tabId(activeTab()!)"
+      <ng-template #periodControl>
+        <label class="period">
+          <span>Completed and created in</span>
+          <select
+            class="mf-control"
+            data-period
+            [value]="period()"
+            (change)="setPeriod($any($event.target).value)"
           >
-            <div
-              class="skeletons"
-              role="status"
-              aria-busy="true"
-              aria-label="Loading the dashboard"
-            >
-              @for (n of skeletonTiles; track n) {
-                <div class="skeleton"></div>
-              }
-            </div>
-          </div>
-        }
-        @case ('error') {
-          <div
-            class="panel"
-            role="tabpanel"
-            [attr.data-tabpanel]="activeTab()"
-            [id]="panelId(activeTab()!)"
-            [attr.aria-labelledby]="tabId(activeTab()!)"
-          >
-            <mf-dash-state
-              variant="error"
-              message="The dashboard could not be loaded."
-              (retry)="retryFirstLoad()"
-            />
-          </div>
-        }
-        @default {
-          @if (data(); as d) {
-            @if (isEmpty()) {
-              <div class="empty" data-empty>
-                <i class="pi pi-inbox empty-icon" aria-hidden="true"></i>
-                <p>No open tasks, and none were created or completed in this period.</p>
-                <div class="empty-period"><ng-container *ngTemplateOutlet="periodControl" /></div>
-                <a *mfHasPermission="'Task.Create'" class="cta" routerLink="/tasks/new">
-                  Create the first task
-                </a>
-              </div>
-            } @else {
-              @switch (activeTab()) {
-                @case ('summary') {
-                  <div
-                    class="panel"
-                    role="tabpanel"
-                    data-tabpanel="summary"
-                    [id]="panelId('summary')"
-                    [attr.aria-labelledby]="tabId('summary')"
-                  >
-                    <div class="summary" [class.summary--queue]="!fullSummary()">
-                      @if (fullSummary()) {
-                        <div class="summary-tiles">
-                          <div
-                            role="group"
-                            aria-labelledby="attn-h"
-                            class="group"
-                            data-group="attention"
-                          >
-                            <h2 id="attn-h">Needs attention</h2>
-                            <div class="tiles">
-                              <mf-stat-tile
-                                label="Overdue"
-                                icon="pi-exclamation-circle"
-                                tone="danger"
-                                emphasis="attention"
-                                linkText="View overdue tasks"
-                                [value]="d.overdue.count"
-                                [query]="d.overdue.query"
-                                [sort]="overdueOrder"
-                                caption="Excludes ASAP tasks"
-                                [detail]="overdueSeverity(d)"
-                                detailIcon="pi-flag-fill"
-                              />
-                              <mf-stat-tile
-                                label="Unassigned"
-                                icon="pi-user-minus"
-                                tone="strong"
-                                emphasis="attention"
-                                linkText="View unassigned tasks"
-                                [value]="d.unassigned.count"
-                                [query]="d.unassigned.query"
-                                caption="No person assigned"
-                              />
-                              <mf-stat-tile
-                                label="On hold"
-                                icon="pi-pause-circle"
-                                tone="warning"
-                                emphasis="attention"
-                                linkText="View tasks on hold"
-                                [value]="d.onHold.count"
-                                [query]="d.onHold.query"
-                                caption="Waiting on client, custodian or internal"
-                              />
-                              <mf-stat-tile
-                                label="ASAP open"
-                                icon="pi-bolt"
-                                tone="asap"
-                                emphasis="quiet"
-                                linkText="View ASAP tasks"
-                                [value]="d.asapOpen.count"
-                                [query]="d.asapOpen.query"
-                                caption="No due date"
-                              />
-                            </div>
-                          </div>
-                          <div
-                            role="group"
-                            aria-labelledby="ov-h"
-                            class="group"
-                            data-group="overview"
-                          >
-                            <div class="group-head">
-                              <h2 id="ov-h">Overview</h2>
-                              <ng-container *ngTemplateOutlet="periodControl" />
-                            </div>
-                            <div class="tiles">
-                              <mf-stat-tile
-                                label="Open"
-                                icon="pi-folder-open"
-                                emphasis="quiet"
-                                linkText="View open tasks"
-                                [value]="d.open.count"
-                                [query]="d.open.query"
-                                caption="New, in progress and on hold"
-                              />
-                              <mf-stat-tile
-                                label="Due soon"
-                                icon="pi-clock"
-                                emphasis="quiet"
-                                linkText="View tasks due soon"
-                                [value]="d.dueSoon.count"
-                                [query]="d.dueSoon.query"
-                                [caption]="dueSoonCaption"
-                                [hint]="dueSoonHint(d)"
-                              />
-                              <mf-stat-tile
-                                label="Completed"
-                                icon="pi-check-circle"
-                                emphasis="quiet"
-                                linkText="View completed tasks"
-                                [value]="d.completed.count"
-                                [query]="d.completed.query"
-                                [caption]="periodCaption()"
-                              />
-                              <mf-stat-tile
-                                label="Created"
-                                icon="pi-plus-circle"
-                                emphasis="quiet"
-                                linkText="View created tasks"
-                                [value]="d.created.count"
-                                [query]="d.created.query"
-                                [caption]="periodCaption()"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      }
-                      @if (panels().length > 0) {
-                        <!-- No section headings: each list heading names its list (Unassigned, Overdue, Due soon). -->
-                        <div
-                          class="summary-lists"
-                          role="group"
-                          aria-label="Unassigned, overdue and due soon tasks"
-                          data-lists
-                        >
-                          @for (panel of panels(); track panel.kind) {
-                            <mf-dash-task-list
-                              [kind]="panel.kind"
-                              [heading]="panel.heading"
-                              [emptyText]="panel.emptyText"
-                              [viewAllText]="panel.viewAllText"
-                              [viewAllTitle]="panel.viewAllTitle"
-                              [rows]="listOf(panel.kind).rows"
-                              [total]="listOf(panel.kind).total"
-                              [state]="listOf(panel.kind).state"
-                              [query]="panel.query"
-                              [skippable]="panel.kind !== lastKind()"
-                              (rowChange)="onRowChange(panel.kind, $event)"
-                              (retry)="reloadList(panel.kind)"
-                            />
-                          }
-                        </div>
-                      }
-                    </div>
-                  </div>
-                }
-                @case ('breakdowns') {
-                  <div
-                    class="panel"
-                    role="tabpanel"
-                    data-tabpanel="breakdowns"
-                    [id]="panelId('breakdowns')"
-                    [attr.aria-labelledby]="tabId('breakdowns')"
-                  >
-                    <mf-dash-breakdowns [summary]="data()" />
-                  </div>
-                }
-                @case ('trends') {
-                  <div
-                    class="panel"
-                    role="tabpanel"
-                    data-tabpanel="trends"
-                    [id]="panelId('trends')"
-                    [attr.aria-labelledby]="tabId('trends')"
-                  >
-                    <mf-dash-section heading="Created and completed" name="trend">
-                      <span mfSectionActions class="head-period" data-trend-period>
-                        <ng-container *ngTemplateOutlet="periodControl" />
-                      </span>
-                      @defer (on immediate) {
-                        <mf-dash-trends-tab
-                          [period]="period()"
-                          [caption]="periodCaption()"
-                          [refreshKey]="d.generatedAtUtc"
-                        />
-                      } @placeholder {
-                        <p class="soon-load" role="status">Loading the trend.</p>
-                      }
-                    </mf-dash-section>
-                  </div>
-                }
-              }
+            @for (p of periods; track p.key) {
+              <option [value]="p.key" [selected]="p.key === period()">{{ p.label }}</option>
             }
-          }
-        }
-      }
-    }
+          </select>
+        </label>
+      </ng-template>
 
-    <ng-template #boardPanel>
-      @switch (activeTab()) {
-        @case ('swimlane') {
-          <div
-            class="panel"
-            role="tabpanel"
-            data-tabpanel="swimlane"
-            [id]="panelId('swimlane')"
-            [attr.aria-labelledby]="tabId('swimlane')"
-          >
-            @defer (on immediate) {
-              <mf-dash-swimlane-tab />
-            } @placeholder {
-              <p class="soon-load" role="status">Loading the swimlane board.</p>
-            }
-          </div>
-        }
-        @case ('users') {
-          <div
-            class="panel"
-            role="tabpanel"
-            data-tabpanel="users"
-            [id]="panelId('users')"
-            [attr.aria-labelledby]="tabId('users')"
-          >
-            @defer (on immediate) {
-              <mf-dash-users-tab />
-            } @placeholder {
-              <p class="soon-load" role="status">Loading team workload.</p>
-            }
-          </div>
-        }
-      }
-    </ng-template>
+      <!-- One outlet for the header row (heading, tab list, Refresh) in every state, so the Refresh button is the same element while the page loads and after: a second
+         outlet in each branch made Angular replace the button when the first read finished, and the keyboard focus on it was lost. -->
+      <ng-container *ngTemplateOutlet="tabList" />
 
-    <ng-template #tabList>
-      <mf-dash-tabs
-        [tabs]="visibleTabs()"
-        [selected]="activeTab() ?? ''"
-        (tabChange)="selectTab($event)"
-      >
-        @if (activeTab()) {
-          <!-- Only when the figures are 10 minutes old: the age as text (warning style, icon and words), announced once when it appears. At 375 px it is read, not shown. -->
-          <span class="age" role="status" aria-live="polite" data-stale-age-live>
-            @if (staleText(); as text) {
-              <span class="age-text" data-stale-age>
-                <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>{{ text }}
-              </span>
+      @if (visibleTabs().length === 0) {
+        <!-- Dashboard.View without any tab permission: nothing to show but a pointer. -->
+        <p class="note" data-no-tabs-note>
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          <span>
+            No Dashboard tab is turned on for your role. Ask an administrator to add one (Summary,
+            Breakdowns, Trends, Swimlane or Users) to your role.
+            @if (canSeeMyWork()) {
+              Your assigned tasks are in <a routerLink="/my-work" data-my-work-link>My Work</a>.
             }
           </span>
-          <!-- One icon-only Refresh for every tab, acting on the tab shown; the time of the last read is its tooltip, not visible text. -->
-          <button
-            type="button"
-            class="mf-btn mf-btn--icon"
-            data-refresh
-            [attr.aria-label]="refreshLabel()"
-            [attr.title]="refreshTip()"
-            [attr.aria-disabled]="refreshBusy() ? 'true' : null"
-            [attr.aria-busy]="refreshBusy() ? 'true' : null"
-            (click)="refreshActive()"
-          >
-            <i
-              class="pi"
-              [class]="refreshBusy() ? 'pi-spin pi-spinner' : 'pi-refresh'"
-              aria-hidden="true"
-            ></i>
-          </button>
+        </p>
+      } @else {
+        @if (notice(); as note) {
+          <mf-dash-note [text]="note" (dismiss)="notice.set(null)" />
         }
-      </mf-dash-tabs>
-    </ng-template>
+        @if (summaryTab() && refreshFailed()) {
+          <mf-dash-state variant="stale" [updated]="updated()" (retry)="retryRefresh()" />
+        }
+        @switch (viewState()) {
+          @case ('board') {
+            <!-- Swimlane and Users read their own endpoints: nothing here waits for, or dies with, the shared summary request. -->
+            <ng-container *ngTemplateOutlet="boardPanel" />
+          }
+          @case ('loading') {
+            <div
+              class="panel mf-fill"
+              [attr.role]="panelRole()"
+              [attr.data-tabpanel]="activeTab()"
+              [id]="panelId(activeTab()!)"
+              [attr.aria-labelledby]="labelledBy()"
+            >
+              <div
+                class="skeletons"
+                role="status"
+                aria-busy="true"
+                aria-label="Loading the dashboard"
+              >
+                @for (n of skeletonTiles; track n) {
+                  <div class="skeleton"></div>
+                }
+              </div>
+            </div>
+          }
+          @case ('error') {
+            <div
+              class="panel mf-fill"
+              [attr.role]="panelRole()"
+              [attr.data-tabpanel]="activeTab()"
+              [id]="panelId(activeTab()!)"
+              [attr.aria-labelledby]="labelledBy()"
+            >
+              <mf-dash-state
+                variant="error"
+                message="The dashboard could not be loaded."
+                (retry)="retryFirstLoad()"
+              />
+            </div>
+          }
+          @default {
+            @if (data(); as d) {
+              @if (isEmpty()) {
+                <div class="empty" data-empty>
+                  <i class="pi pi-inbox empty-icon" aria-hidden="true"></i>
+                  <p>No open tasks, and none were created or completed in this period.</p>
+                  <div class="empty-period"><ng-container *ngTemplateOutlet="periodControl" /></div>
+                  <a *mfHasPermission="'Task.Create'" class="cta" routerLink="/tasks/new">
+                    Create the first task
+                  </a>
+                </div>
+              } @else {
+                @switch (activeTab()) {
+                  @case ('summary') {
+                    <div
+                      class="panel mf-fill"
+                      [attr.role]="panelRole()"
+                      data-tabpanel="summary"
+                      [id]="panelId('summary')"
+                      [attr.aria-labelledby]="labelledBy()"
+                    >
+                      <div
+                        class="summary"
+                        [class.summary--queue]="!fullSummary()"
+                        [attr.role]="summaryScrolls() ? 'region' : null"
+                        [attr.tabindex]="summaryScrolls() ? 0 : null"
+                        [attr.aria-label]="summaryScrolls() ? 'Summary, scrollable' : null"
+                      >
+                        @if (fullSummary()) {
+                          <div class="summary-tiles">
+                            <div
+                              role="group"
+                              aria-labelledby="attn-h"
+                              class="group"
+                              data-group="attention"
+                            >
+                              <h2 id="attn-h">Needs attention</h2>
+                              <div class="tiles">
+                                <mf-stat-tile
+                                  label="Overdue"
+                                  icon="pi-exclamation-circle"
+                                  tone="danger"
+                                  emphasis="attention"
+                                  linkText="View overdue tasks"
+                                  [value]="d.overdue.count"
+                                  [query]="d.overdue.query"
+                                  [sort]="overdueOrder"
+                                  caption="Excludes ASAP tasks"
+                                  [detail]="overdueSeverity(d)"
+                                  detailIcon="pi-flag-fill"
+                                />
+                                <mf-stat-tile
+                                  label="Unassigned"
+                                  icon="pi-user-minus"
+                                  tone="strong"
+                                  emphasis="attention"
+                                  linkText="View unassigned tasks"
+                                  [value]="d.unassigned.count"
+                                  [query]="d.unassigned.query"
+                                  caption="No person assigned"
+                                />
+                                <mf-stat-tile
+                                  label="On hold"
+                                  icon="pi-pause-circle"
+                                  tone="warning"
+                                  emphasis="attention"
+                                  linkText="View tasks on hold"
+                                  [value]="d.onHold.count"
+                                  [query]="d.onHold.query"
+                                  caption="Waiting on client, custodian or internal"
+                                />
+                                <mf-stat-tile
+                                  label="ASAP open"
+                                  icon="pi-bolt"
+                                  tone="asap"
+                                  emphasis="quiet"
+                                  linkText="View ASAP tasks"
+                                  [value]="d.asapOpen.count"
+                                  [query]="d.asapOpen.query"
+                                  caption="No due date"
+                                />
+                              </div>
+                            </div>
+                            <div
+                              role="group"
+                              aria-labelledby="ov-h"
+                              class="group"
+                              data-group="overview"
+                            >
+                              <div class="group-head">
+                                <h2 id="ov-h">Overview</h2>
+                                <ng-container *ngTemplateOutlet="periodControl" />
+                              </div>
+                              <div class="tiles">
+                                <mf-stat-tile
+                                  label="Open"
+                                  icon="pi-folder-open"
+                                  emphasis="quiet"
+                                  linkText="View open tasks"
+                                  [value]="d.open.count"
+                                  [query]="d.open.query"
+                                  caption="New, in progress and on hold"
+                                />
+                                <mf-stat-tile
+                                  label="Due soon"
+                                  icon="pi-clock"
+                                  emphasis="quiet"
+                                  linkText="View tasks due soon"
+                                  [value]="d.dueSoon.count"
+                                  [query]="d.dueSoon.query"
+                                  [caption]="dueSoonCaption"
+                                  [hint]="dueSoonHint(d)"
+                                />
+                                <mf-stat-tile
+                                  label="Completed"
+                                  icon="pi-check-circle"
+                                  emphasis="quiet"
+                                  linkText="View completed tasks"
+                                  [value]="d.completed.count"
+                                  [query]="d.completed.query"
+                                  [caption]="periodCaption()"
+                                />
+                                <mf-stat-tile
+                                  label="Created"
+                                  icon="pi-plus-circle"
+                                  emphasis="quiet"
+                                  linkText="View created tasks"
+                                  [value]="d.created.count"
+                                  [query]="d.created.query"
+                                  [caption]="periodCaption()"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        }
+                        @if (panels().length > 0) {
+                          <!-- No section headings: each list heading names its list (Unassigned, Overdue, Due soon). -->
+                          <div
+                            class="summary-lists"
+                            role="group"
+                            aria-label="Unassigned, overdue and due soon tasks"
+                            data-lists
+                          >
+                            @for (panel of panels(); track panel.kind) {
+                              <mf-dash-task-list
+                                [kind]="panel.kind"
+                                [heading]="panel.heading"
+                                [emptyText]="panel.emptyText"
+                                [viewAllText]="panel.viewAllText"
+                                [viewAllTitle]="panel.viewAllTitle"
+                                [rows]="listOf(panel.kind).rows"
+                                [total]="listOf(panel.kind).total"
+                                [state]="listOf(panel.kind).state"
+                                [query]="panel.query"
+                                [skippable]="panel.kind !== lastKind()"
+                                [scroll]="fixedWide()"
+                                (rowChange)="onRowChange(panel.kind, $event)"
+                                (retry)="reloadList(panel.kind)"
+                              />
+                            }
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                  @case ('breakdowns') {
+                    <div
+                      class="panel mf-fill"
+                      [attr.role]="panelRole()"
+                      data-tabpanel="breakdowns"
+                      [id]="panelId('breakdowns')"
+                      [attr.aria-labelledby]="labelledBy()"
+                    >
+                      <mf-dash-breakdowns [summary]="data()" />
+                    </div>
+                  }
+                  @case ('trends') {
+                    <div
+                      class="panel mf-fill"
+                      [attr.role]="panelRole()"
+                      data-tabpanel="trends"
+                      [id]="panelId('trends')"
+                      [attr.aria-labelledby]="labelledBy()"
+                    >
+                      <mf-dash-section class="mf-fill" heading="Created and completed" name="trend">
+                        <span mfSectionActions class="head-period" data-trend-period>
+                          <ng-container *ngTemplateOutlet="periodControl" />
+                        </span>
+                        @defer (on immediate) {
+                          <mf-dash-trends-tab
+                            [period]="period()"
+                            [caption]="periodCaption()"
+                            [refreshKey]="d.generatedAtUtc"
+                          />
+                        } @placeholder {
+                          <p class="soon-load" role="status">Loading the trend.</p>
+                        }
+                      </mf-dash-section>
+                    </div>
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      <ng-template #boardPanel>
+        @switch (activeTab()) {
+          @case ('swimlane') {
+            <div
+              class="panel mf-fill"
+              [attr.role]="panelRole()"
+              data-tabpanel="swimlane"
+              [id]="panelId('swimlane')"
+              [attr.aria-labelledby]="labelledBy()"
+            >
+              @defer (on immediate) {
+                <mf-dash-swimlane-tab />
+              } @placeholder {
+                <p class="soon-load" role="status">Loading the swimlane board.</p>
+              }
+            </div>
+          }
+          @case ('users') {
+            <div
+              class="panel mf-fill"
+              [attr.role]="panelRole()"
+              data-tabpanel="users"
+              [id]="panelId('users')"
+              [attr.aria-labelledby]="labelledBy()"
+            >
+              @defer (on immediate) {
+                <mf-dash-users-tab />
+              } @placeholder {
+                <p class="soon-load" role="status">Loading team workload.</p>
+              }
+            </div>
+          }
+        }
+      </ng-template>
+
+      <ng-template #tabList>
+        <mf-dash-tabs
+          [tabs]="visibleTabs()"
+          [selected]="activeTab() ?? ''"
+          [heading]="heading()"
+          [showTabs]="tabRow()"
+          (tabChange)="selectTab($event)"
+        >
+          @if (activeTab() && showTabs()) {
+            <!-- Only when the figures are 10 minutes old: the age as text (warning style, icon and words), announced once when it appears. At 375 px it is read, not shown. -->
+            <span class="age" role="status" aria-live="polite" data-stale-age-live>
+              @if (staleText(); as text) {
+                <span class="age-text" data-stale-age>
+                  <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>{{ text }}
+                </span>
+              }
+            </span>
+            <!-- One icon-only Refresh for every tab, acting on the tab shown; the time of the last read is its tooltip, not visible text. -->
+            <button
+              type="button"
+              class="mf-btn mf-btn--icon"
+              data-refresh
+              [attr.aria-label]="refreshLabel()"
+              [attr.title]="refreshTip()"
+              [attr.aria-disabled]="refreshBusy() ? 'true' : null"
+              [attr.aria-busy]="refreshBusy() ? 'true' : null"
+              (click)="refreshActive()"
+            >
+              <i
+                class="pi"
+                [class]="refreshBusy() ? 'pi-spin pi-spinner' : 'pi-refresh'"
+                aria-hidden="true"
+              ></i>
+            </button>
+          }
+        </mf-dash-tabs>
+      </ng-template>
+    </mf-fixed-page>
   `,
   styles: `
-    /* A readable measure on wide monitors: the page is left-aligned and stops at 1360px instead of stretching every card. */
+    /* A readable measure on wide monitors: the page is left-aligned and stops at 1360px instead of stretching every card. Swimlane, Users
+       (Workload and Coverage) and Trends use the whole content area from 1600 px (P5); the left edge and the gutter do not move. */
     :host {
       display: block;
+    }
+    /* Positioned, so absolutely placed helpers inside (visually hidden text, skip links) are clipped with the page and never add document scroll. */
+    .dash {
+      position: relative;
       max-width: 1360px;
+    }
+    @media (min-width: 1600px) {
+      .dash--wide {
+        max-width: none;
+      }
     }
     .group h2 {
       margin: 0 0 var(--mf-s2);
@@ -504,6 +523,43 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
     @media (min-width: 1280px) {
       .summary:not(.summary--queue) {
         grid-template-columns: minmax(0, clamp(360px, 27vw, 452px)) minmax(0, 1fr);
+      }
+    }
+    /* Fixed-height layout (#137, window at least 768 x 561): the header row stays, the tab panel fills the rest and only regions inside scroll.
+       Summary: from 1280 px the tiles stay (they scroll only on a very short window) and each list scrolls inside its panel; under 1280 px
+       the lists sit under the tiles and the Summary scrolls as one region. */
+    @media (min-width: 768px) and (min-height: 561px) {
+      .summary {
+        flex: 1 1 0;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+      }
+      .summary:focus-visible {
+        outline: 2px solid var(--mf-focus);
+        outline-offset: -2px;
+      }
+    }
+    @media (min-width: 1280px) and (min-height: 561px) {
+      .summary {
+        overflow: visible;
+        grid-template-rows: minmax(0, 1fr);
+        align-items: stretch;
+      }
+      .summary-tiles {
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+      }
+      /* Two tiles across in the tile column: both groups fit a 768 px window without scrolling. */
+      .summary-tiles .tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--mf-s2);
+      }
+      .summary-lists {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
       }
     }
     .note {
@@ -680,6 +736,12 @@ export class DashboardPage implements OnInit {
   private summarySeq = 0;
   private listsSeq = -1;
 
+  /** The fixed-height layout (#137) is on: the page fills the window and never scrolls itself. */
+  protected readonly fixed = mediaMatch(DASH_FIXED_QUERY);
+  /** Fixed layout and wide enough for the lists beside the tiles: each list scrolls inside its own panel. */
+  protected readonly fixedWide = mediaMatch(DASH_FIXED_WIDE_QUERY);
+  /** Fixed layout with the lists under the tiles (under 1280 px): the Summary scrolls as one region. */
+  protected readonly summaryScrolls = computed(() => this.fixed() && !this.fixedWide());
   protected readonly periods = PERIOD_PRESETS;
   protected readonly skeletonTiles = [1, 2, 3, 4, 5, 6, 7, 8];
   protected readonly panelId = panelId;
@@ -850,6 +912,24 @@ export class DashboardPage implements OnInit {
     const d = this.data();
     return d ? mfDate(d.generatedAtUtc, this.zone, 'datetime') : null;
   });
+  /** The tab list is drawn only with two or more permitted tabs (R3); with one, its name is the page heading and Refresh stays. */
+  protected readonly tabRow = computed(() => this.showTabs() && this.visibleTabs().length > 1);
+  /** The page heading (H1): "Dashboard", or the name of the only permitted tab (R3). */
+  protected readonly heading = computed(() => {
+    const tabs = this.visibleTabs();
+    return tabs.length === 1 ? tabs[0].label : 'Dashboard';
+  });
+  /** Panels are `tabpanel`s of the tab list; with no tab list they are regions named by the heading (no orphan tabpanel). */
+  protected readonly panelRole = computed(() => (this.tabRow() ? 'tabpanel' : 'region'));
+  protected readonly labelledBy = computed(() => {
+    const tab = this.activeTab();
+    return this.tabRow() && tab ? tabId(tab) : 'mf-dash-h1';
+  });
+  /** Tabs whose content uses the whole width from 1600 px (Swimlane, Users with Coverage, Trends); Summary and Breakdowns keep the reading cap (P5). */
+  protected readonly wide = computed(() => {
+    const tab = this.activeTab();
+    return tab === 'swimlane' || tab === 'users' || tab === 'trends';
+  });
   /** The tab row is always there (P2/P7: an error stays inside the tab), except on the empty Summary, which has no other tab to offer. */
   protected readonly showTabs = computed(
     () => !(this.summaryTab() && this.state() === 'ready' && !!this.data() && this.isEmpty()),
@@ -936,7 +1016,12 @@ export class DashboardPage implements OnInit {
         }
       });
     });
+    // While the page scrolls (below 768 px or on a very short window) the header row sticks to the top from 600 px: a focused element
+    // is scrolled clear of it (WCAG 2.2 SC 2.4.11).
+    const root = typeof document === 'undefined' ? null : document.documentElement;
+    root?.style.setProperty('scroll-padding-top', '4rem');
     this.destroyRef.onDestroy(() => {
+      root?.style.removeProperty('scroll-padding-top');
       if (this.countTimer) clearTimeout(this.countTimer);
     });
   }
