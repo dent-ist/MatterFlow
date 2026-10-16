@@ -34,163 +34,170 @@
 
     <div class="au-sr" role="status" aria-live="polite">{{ announcement() }}</div>
 
-    <div class="mf-table-wrap" mfScrollArea="Audit events list" [resetKey]="resetKey()" #scroll>
-      <div class="mf-scroll">
-        <table class="au-table">
-          <caption class="au-sr">
-            Audit events, newest first
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col"><span class="au-sr">Details</span></th>
-              <th scope="col">When</th>
-              <th scope="col">Who</th>
-              <th scope="col">What happened</th>
-              <th scope="col">Object</th>
-            </tr>
-            @if (filters.rowVisible()) {
-              <tr
-                mfColumnFilterRow
-                id="audit-filter-row"
-                [filters]="filters"
-                [columns]="columns"
-              ></tr>
-            }
-          </thead>
-          <tbody
-            mfGridBody
-            noun="audit events"
-            emptyText="No audit events have been recorded yet."
-            [state]="state()"
-            [empty]="items().length === 0"
-            [filtered]="filtered()"
-            [columns]="5"
-            (retry)="retry()"
-            (clear)="reset()"
-          >
-            @if (grouped()) {
-              @for (g of groups(); track g.key) {
-                @if (g.items.length > 1) {
-                  <tr class="au-group" [attr.data-group]="g.items[0].correlationId">
-                    <td>
-                      <button
-                        type="button"
-                        class="au-toggle"
-                        [attr.aria-expanded]="isGroupOpen(g)"
-                        [attr.aria-label]="
-                          (isGroupOpen(g) ? 'Hide' : 'Show') +
-                          ' the ' +
-                          g.items.length +
-                          ' events of this operation'
-                        "
-                        (click)="toggleGroup(g)"
-                      >
-                        <i
-                          class="pi"
-                          [class]="isGroupOpen(g) ? 'pi-chevron-down' : 'pi-chevron-right'"
-                          aria-hidden="true"
-                        ></i>
-                      </button>
-                    </td>
-                    <td>
-                      <time [attr.datetime]="g.items[0].occurredAtUtc">{{
-                        g.items[0].occurredAtUtc | mfDate
-                      }}</time>
-                    </td>
-                    <td>{{ g.items[0].actor.displayName }}</td>
-                    <td>
-                      <strong data-headline>{{ headline(g) }}</strong>
-                      <span class="au-muted"> ({{ g.items.length }} events in one operation)</span>
-                      <button
-                        type="button"
-                        class="mf-btn mf-btn--text"
-                        (click)="showOperation(g.items[0])"
-                      >
-                        Show only this operation
-                      </button>
-                    </td>
-                    <td data-group-object>
-                      @let first = objectItem(g);
-                      @if (route(first); as link) {
-                        <a class="au-linkout" [routerLink]="link">{{ objectText(first) }}</a>
-                      } @else {
-                        {{ objectText(first) }}
+    <div class="mf-fill">
+      <div class="mf-table-wrap" mfScrollArea="Audit events list" [resetKey]="resetKey()" #scroll>
+        <div class="mf-scroll">
+          <table class="au-table">
+            <caption class="au-sr">
+              Audit events, newest first
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col"><span class="au-sr">Details</span></th>
+                <th scope="col">When</th>
+                <th scope="col">Who</th>
+                <th scope="col">What happened</th>
+                <th scope="col">Object</th>
+              </tr>
+              @if (filters.rowVisible()) {
+                <tr
+                  mfColumnFilterRow
+                  id="audit-filter-row"
+                  [filters]="filters"
+                  [columns]="columns"
+                ></tr>
+              }
+            </thead>
+            <tbody
+              mfGridBody
+              noun="audit events"
+              emptyText="No audit events have been recorded yet."
+              [state]="state()"
+              [empty]="items().length === 0"
+              [filtered]="filtered()"
+              [columns]="5"
+              (retry)="retry()"
+              (clear)="reset()"
+            >
+              @if (grouped()) {
+                @for (g of groups(); track g.key) {
+                  @if (g.items.length > 1) {
+                    <tr class="au-group" [attr.data-group]="g.items[0].correlationId">
+                      <td>
+                        <button
+                          type="button"
+                          class="au-toggle"
+                          [attr.aria-expanded]="isGroupOpen(g)"
+                          [attr.aria-label]="
+                            (isGroupOpen(g) ? 'Hide' : 'Show') +
+                            ' the ' +
+                            g.items.length +
+                            ' events of this operation'
+                          "
+                          (click)="toggleGroup(g)"
+                        >
+                          <i
+                            class="pi"
+                            [class]="isGroupOpen(g) ? 'pi-chevron-down' : 'pi-chevron-right'"
+                            aria-hidden="true"
+                          ></i>
+                        </button>
+                      </td>
+                      <td>
+                        <time [attr.datetime]="g.items[0].occurredAtUtc">{{
+                          g.items[0].occurredAtUtc | mfDate
+                        }}</time>
+                      </td>
+                      <td>{{ g.items[0].actor.displayName }}</td>
+                      <td>
+                        <strong data-headline>{{ headline(g) }}</strong>
+                        <span class="au-muted">
+                          ({{ g.items.length }} events in one operation)</span
+                        >
+                        <button
+                          type="button"
+                          class="mf-btn mf-btn--text"
+                          (click)="showOperation(g.items[0])"
+                        >
+                          Show only this operation
+                        </button>
+                      </td>
+                      <td data-group-object>
+                        @let first = objectItem(g);
+                        @if (route(first); as link) {
+                          <a class="au-linkout" [routerLink]="link">{{ objectText(first) }}</a>
+                        } @else {
+                          {{ objectText(first) }}
+                        }
+                      </td>
+                    </tr>
+                    @if (isGroupOpen(g)) {
+                      @let parts = split(g);
+                      @for (item of parts.happened; track item.auditEventId) {
+                        <ng-container
+                          *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: true }"
+                        />
                       }
-                    </td>
-                  </tr>
-                  @if (isGroupOpen(g)) {
-                    @let parts = split(g);
-                    @for (item of parts.happened; track item.auditEventId) {
-                      <ng-container
-                        *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: true }"
-                      />
-                    }
-                    @if (parts.fields.length > 0) {
-                      @if (parts.happened.length > 0) {
-                        <tr class="au-nested au-fields-toggle">
-                          <td></td>
-                          <td colspan="4">
-                            <button
-                              type="button"
-                              class="mf-btn mf-btn--text"
-                              data-view-changes
-                              [attr.aria-expanded]="isFieldsOpen(g)"
-                              (click)="toggleFields(g)"
-                            >
-                              {{ isFieldsOpen(g) ? 'Hide' : 'View' }}
-                              {{ parts.fields.length }}
-                              {{ parts.fields.length === 1 ? 'field change' : 'field changes' }}
-                            </button>
-                          </td>
-                        </tr>
-                      }
-                      @if (parts.happened.length === 0 || isFieldsOpen(g)) {
-                        @for (item of parts.fields; track item.auditEventId) {
-                          <ng-container
-                            *ngTemplateOutlet="
-                              eventRows;
-                              context: { $implicit: item, nested: true }
-                            "
-                          />
+                      @if (parts.fields.length > 0) {
+                        @if (parts.happened.length > 0) {
+                          <tr class="au-nested au-fields-toggle">
+                            <td></td>
+                            <td colspan="4">
+                              <button
+                                type="button"
+                                class="mf-btn mf-btn--text"
+                                data-view-changes
+                                [attr.aria-expanded]="isFieldsOpen(g)"
+                                (click)="toggleFields(g)"
+                              >
+                                {{ isFieldsOpen(g) ? 'Hide' : 'View' }}
+                                {{ parts.fields.length }}
+                                {{ parts.fields.length === 1 ? 'field change' : 'field changes' }}
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                        @if (parts.happened.length === 0 || isFieldsOpen(g)) {
+                          @for (item of parts.fields; track item.auditEventId) {
+                            <ng-container
+                              *ngTemplateOutlet="
+                                eventRows;
+                                context: { $implicit: item, nested: true }
+                              "
+                            />
+                          }
                         }
                       }
                     }
+                  } @else {
+                    <ng-container
+                      *ngTemplateOutlet="
+                        eventRows;
+                        context: { $implicit: g.items[0], nested: false }
+                      "
+                    />
                   }
-                } @else {
+                }
+              } @else {
+                @for (item of items(); track item.auditEventId) {
                   <ng-container
-                    *ngTemplateOutlet="eventRows; context: { $implicit: g.items[0], nested: false }"
+                    *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: false }"
                   />
                 }
               }
-            } @else {
-              @for (item of items(); track item.auditEventId) {
-                <ng-container
-                  *ngTemplateOutlet="eventRows; context: { $implicit: item, nested: false }"
-                />
-              }
-            }
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
 
-    @if (state() === 'ready' && items().length > 0) {
-      <div class="au-foot">
-        @if (nextCursor() !== null) {
-          <button
-            type="button"
-            class="mf-btn"
-            data-load-more
-            [disabled]="loadingMore()"
-            (click)="loadMore()"
-          >
-            {{ loadingMore() ? 'Loading...' : 'Load more' }}
-          </button>
-        } @else {
-          <span class="au-muted" data-end>End of the results.</span>
-        }
-      </div>
-    }
+      @if (state() === 'ready' && items().length > 0) {
+        <div class="au-foot">
+          @if (nextCursor() !== null) {
+            <button
+              type="button"
+              class="mf-btn"
+              data-load-more
+              [disabled]="loadingMore()"
+              (click)="loadMore()"
+            >
+              {{ loadingMore() ? 'Loading...' : 'Load more' }}
+            </button>
+          } @else {
+            <span class="au-muted" data-end>End of the results.</span>
+          }
+        </div>
+      }
+    </div>
   </mf-fixed-page>
 }
 

@@ -391,4 +391,40 @@ describe('ListFilters', { timeout: 20_000 }, () => {
       expect(f.resultTotal()).toBe(23);
     });
   });
+
+  describe('overflow watch', () => {
+    class FakeObserver {
+      static last: FakeObserver | undefined;
+      constructor(readonly callback: () => void) {
+        FakeObserver.last = this;
+      }
+      observe(): void {
+        /* the test calls the callback itself */
+      }
+      disconnect(): void {
+        /* nothing to release */
+      }
+    }
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('holds sheet mode until the grid area changes width, so a row that causes the overflow cannot flap', async () => {
+      vi.stubGlobal('ResizeObserver', FakeObserver);
+      const f = await open('/list');
+      const area = { scrollWidth: 1300, clientWidth: 1100, querySelector: () => null };
+      f.watchOverflow(area as unknown as HTMLElement);
+      expect(f.sheetMode()).toBe(true);
+
+      // In sheet mode the row is not rendered, the grid fits: the hold keeps the sheet while the width is the same.
+      area.scrollWidth = 1100;
+      FakeObserver.last!.callback();
+      expect(f.sheetMode()).toBe(true);
+
+      // A wider area (the window grew) lets the row come back.
+      area.clientWidth = 1300;
+      area.scrollWidth = 1300;
+      FakeObserver.last!.callback();
+      expect(f.sheetMode()).toBe(false);
+    });
+  });
 });

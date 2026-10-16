@@ -51,11 +51,14 @@ test.describe('Administration menu and tabbed admin pages', () => {
     await expect(page.getByRole('button', { name: 'New asset type' })).toBeVisible();
   });
 
-  test('the search box and the status filter line up on the Pods tab', async ({ page }) => {
+  test('the Name and Status filters line up in the filter row of the Pods tab', async ({
+    page,
+  }) => {
     await page.goto('/admin/pods');
     await expect(page.getByRole('tab', { name: 'Pods' })).toHaveAttribute('aria-selected', 'true');
-    const search = await page.getByRole('searchbox', { name: 'Search' }).last().boundingBox();
-    const status = await page.getByLabel('Status').boundingBox();
-    expect(Math.abs(search!.y - status!.y)).toBeLessThan(1);
+    await page.getByRole('button', { name: /^Filters/ }).click();
+    const name = await page.getByRole('textbox', { name: 'Filter by Name' }).boundingBox();
+    const status = await page.getByRole('combobox', { name: 'Filter by Status' }).boundingBox();
+    expect(Math.abs(name!.y - status!.y)).toBeLessThan(1);
   });
 });

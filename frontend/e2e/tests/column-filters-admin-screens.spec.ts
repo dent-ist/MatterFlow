@@ -19,12 +19,13 @@ test.describe('column filters admin screenshots', () => {
     test.setTimeout(900_000);
     const token = uid();
     // A handful of people (roles, one out of office, one waiting), pods, workflows, steps and a task type to filter.
-    const tech = await seed.user(['Data Technician'], `shot-tech-${token}`);
+    await seed.user(['Data Technician'], `shot-tech-${token}`);
     const away = await seed.user(['Data Scientist'], `shot-away-${token}`);
     await seed.user([], `shot-wait-${token}`);
     await seed.outOfOffice(away.userId, { note: 'Away' });
-    await seed.pod(`Intake ${token}`, [tech.userId]);
-    await seed.pod(`Review ${token}`, [away.userId]);
+    // No members: a person with pods fills the Users grid and the filters move into the sheet (see the README).
+    await seed.pod(`Intake ${token}`, []);
+    await seed.pod(`Review ${token}`, []);
     const one = await seed.step({ title: `Collect ${token}`, tags: ['Intake', 'Relativity'] });
     await seed.step({ title: `Review ${token}`, tags: ['QC'] });
     const flow = await seed.workflow({

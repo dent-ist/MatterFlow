@@ -283,7 +283,19 @@ export class ListFilters {
   watchOverflow(area: HTMLElement | null | undefined): void {
     if (!area || typeof ResizeObserver !== 'function') return;
     const table = area.querySelector('table');
-    const check = () => this.overflowing.set(area.scrollWidth > area.clientWidth + 1);
+    // The filter row itself can cause the overflow (its controls have a minimum width) and it is not rendered in sheet mode: without a
+    // hold the grid would then fit, the row would come back, overflow again, and so on. An overflow holds until the area changes width.
+    let heldAt: number | null = null;
+    const check = () => {
+      const width = area.clientWidth;
+      if (area.scrollWidth > width + 1) {
+        heldAt = width;
+        this.overflowing.set(true);
+      } else if (!(heldAt === width && this.overflowing())) {
+        heldAt = null;
+        this.overflowing.set(false);
+      }
+    };
     const observer = new ResizeObserver(check);
     observer.observe(area);
     if (table) observer.observe(table);

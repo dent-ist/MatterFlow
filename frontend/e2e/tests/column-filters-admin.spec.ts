@@ -53,8 +53,9 @@ test.describe('Column filters on the administration lists', () => {
 
       // Status is a column now: the waiting person is Pending access.
       await expect(rows.filter({ hasText: waiting.username })).toContainText('Pending access');
+      // Pending access is the default while someone waits (this stack has waiting people): shown, never written to the address.
       await select(page, 'Status').selectOption('pending');
-      await expect(page).toHaveURL(/status=pending/);
+      await expect(page).not.toHaveURL(/status=/);
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(waiting.username);
       await select(page, 'Status').selectOption('all');
@@ -67,8 +68,9 @@ test.describe('Column filters on the administration lists', () => {
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(tech.username);
       await multi(page, 'Roles').click();
-      await page.getByRole('button', { name: 'Clear' }).click();
-      await page.getByRole('button', { name: 'Done' }).click();
+      const panel = page.getByRole('dialog', { name: 'Filter by Roles' });
+      await panel.getByRole('button', { name: 'Clear', exact: true }).click();
+      await panel.getByRole('button', { name: 'Done' }).click();
       await expect(rows).toHaveCount(3);
 
       // Availability: worked out by the server, so the page count follows it.
@@ -341,8 +343,7 @@ test.describe('Column filters on the administration lists', () => {
       seed,
     }) => {
       await page.setViewportSize({ width: 1366, height: 768 });
-      const token = uid();
-      await seed.client({ name: `Audited ${token}` });
+      const client = await seed.client();
       await page.goto('/admin/audit');
       const rows = grid(page, 'Audit events list').locator(
         'tbody tr[data-event], tbody tr[data-group]',
@@ -356,10 +357,10 @@ test.describe('Column filters on the administration lists', () => {
       await toggle(page).click();
       await select(page, 'Event type').selectOption('CLIENT_CREATED');
       await expect(page).toHaveURL(/eventType=CLIENT_CREATED/);
-      await text(page, 'Summary or field').fill(token);
-      await expect(page).toHaveURL(new RegExp(`q=${token}`));
+      await text(page, 'Summary or field').fill(client.clientNumber);
+      await expect(page).toHaveURL(new RegExp(`q=${client.clientNumber}`));
       await expect(rows).toHaveCount(1);
-      await expect(rows.first()).toContainText(token);
+      await expect(rows.first()).toContainText(`Client ${client.clientNumber} created`);
 
       // Object type enables the object id.
       await select(page, 'Event type').selectOption('');
@@ -377,8 +378,8 @@ test.describe('Column filters on the administration lists', () => {
       await page.keyboard.press('Escape');
 
       // A filtered address restores the view; with no match the headers and the row stay.
-      await page.goto(`/admin/audit?q=${token}-nothing`);
-      await expect(text(page, 'Summary or field')).toHaveValue(`${token}-nothing`);
+      await page.goto('/admin/audit?q=zz-nothing-like-this');
+      await expect(text(page, 'Summary or field')).toHaveValue('zz-nothing-like-this');
       await expect(
         grid(page, 'Audit events list').locator('td[data-empty="filtered"]'),
       ).toBeVisible();
@@ -387,25 +388,24 @@ test.describe('Column filters on the administration lists', () => {
       await expect(page).not.toHaveURL(/q=/);
     });
 
-    test('Show only this operation is one removable chip', async ({ page, seed }) => {
+    test('an operation in the address is one removable chip with the banner', async ({
+      page,
+      seed,
+      admin,
+    }) => {
       await page.setViewportSize({ width: 1366, height: 768 });
-      const token = uid();
-      await seed.client({ name: `Op ${token}` });
-      await page.goto(`/admin/audit?q=${token}`);
-      const first = grid(page, 'Audit events list').locator('tbody tr[data-event]').first();
-      await expect(first).toBeVisible();
-      await first.getByRole('button', { name: /^Show details of event/ }).click();
-      await page
-        .getByRole('button', { name: /Show all events of this operation|Show only this operation/ })
-        .first()
-        .click()
-        .catch(() => undefined);
-      // A single-event operation has no such button: the chip appears only for operations with several events.
-      if (await page.locator('[data-operation-banner]').count()) {
-        await expect(chips(page)).toContainText('Operation: One operation');
-        await page.getByRole('button', { name: 'Show all events' }).click();
-        await expect(page).not.toHaveURL(/correlationId=/);
-      }
+      const client = await seed.client();
+      const found = await admin.get<{ items: { correlationId: string }[] }>(
+        `/api/v1/audit/search?q=${client.clientNumber}`,
+      );
+      const operation = found.items[0].correlationId;
+      await page.goto(`/admin/audit?correlationId=${operation}`);
+      await expect(page.locator('[data-operation-banner]')).toBeVisible();
+      await expect(chips(page)).toContainText('Operation: One operation');
+      await expect(grid(page, 'Audit events list').locator('tbody tr').first()).toBeVisible();
+      await page.getByRole('button', { name: 'Remove filter Operation: One operation' }).click();
+      await expect(page).not.toHaveURL(/correlationId=/);
+      await expect(page.locator('[data-operation-banner]')).toHaveCount(0);
     });
   });
 
@@ -435,7 +435,7 @@ test.describe('Column filters on the administration lists', () => {
       await page.goto(url);
       await expect(grid(page, region).locator('tbody tr').first()).toBeVisible();
       expect(await axeViolations(page), `${url} closed`).toEqual([]);
-      await toggle(page).click();
+      await openRow(page); // a link that carries filters opens the row by itself
       await expect(text(page, column)).toBeVisible();
       expect(await axeViolations(page), `${url} open`).toEqual([]);
       await text(page, column).fill(token);

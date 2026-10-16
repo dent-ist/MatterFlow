@@ -60,6 +60,8 @@ const fail = (status: number, code: string, message: string): Observable<never> 
 
 const noUser = () => fail(404, 'NOT_FOUND', 'The user does not exist.');
 const noRole = () => fail(404, 'NOT_FOUND', 'The role does not exist.');
+const lastAdmin = () => fail(409, 'LAST_ADMIN', 'At least one active System Admin is required.');
+const dupName = () => fail(409, 'DUPLICATE_NAME', 'A role with this name already exists.');
 const group = (code: string): string => code.split('.')[0];
 const view = (...groups: string[]): string[] =>
   PERMISSIONS.filter((p) => groups.some((g) => p.startsWith(g + '.') && p.endsWith('.View')));
@@ -164,7 +166,6 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
           has(u.windowsAccount, q.account) &&
           has(u.email, q.email) &&
           (!q.availability || this.summary(u).availability?.state === q.availability) &&
-          (!q.roleIds?.length || u.roleIds.some((id) => q.roleIds?.includes(id))) &&
           (!needle ||
             [u.displayName, u.email ?? '', u.windowsAccount].some((v) =>
               v.toLowerCase().includes(needle),
@@ -204,7 +205,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
     if (!u) return noUser();
     const dropsAdmin = this.hasAdminRole(u) && !roleIds.some((id) => this.role(id)?.isSystemAdmin);
     if (dropsAdmin && u.isActive && this.activeAdmins().every((a) => a.userId === u.userId)) {
-      return fail(409, 'LAST_ADMIN', 'At least one active System Admin is required.');
+      return lastAdmin();
     }
 
     u.roleIds = [...new Set(roleIds)];
@@ -223,7 +224,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
       this.hasAdminRole(u) &&
       this.activeAdmins().every((a) => a.userId === u.userId)
     ) {
-      return fail(409, 'LAST_ADMIN', 'At least one active System Admin is required.');
+      return lastAdmin();
     }
 
     u.isActive = isActive;
@@ -271,7 +272,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
 
   createRole(request: CreateRoleRequest): Observable<RoleDetailDto> {
     if (this.nameTaken(request.name)) {
-      return fail(409, 'DUPLICATE_NAME', 'A role with this name already exists.');
+      return dupName();
     }
 
     const role: MemRole = {
@@ -296,7 +297,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
       );
     }
     if (this.nameTaken(request.name, roleId)) {
-      return fail(409, 'DUPLICATE_NAME', 'A role with this name already exists.');
+      return dupName();
     }
 
     r.name = request.name.trim();

@@ -366,17 +366,18 @@ test.describe('Round 4: administration naming', () => {
     await expect(admin).toHaveAttribute('aria-current', 'page');
   });
 
-  test('UXR4-13: Asset Types has the same search and status toolbar as the other lists', async ({
+  test('UXR4-13: Asset Types has the same Name and Status column filters as the other lists', async ({
     page,
     admin,
   }) => {
     const name = `Findable ${uid()}`;
     await admin.post('/api/v1/asset-types', { name, description: null });
     await page.goto('/admin/asset-types');
-    await page.getByRole('searchbox', { name: 'Search' }).last().fill(name);
+    await page.getByRole('button', { name: /^Filters/ }).click();
+    await page.getByRole('textbox', { name: 'Filter by Name' }).fill(name);
     await expect(page.locator('[data-types] tr[data-row]')).toHaveCount(1);
     await expect(page.locator(`[data-row="${name}"]`)).toBeVisible();
-    await page.getByLabel('Status').selectOption('inactive');
+    await page.getByRole('combobox', { name: 'Filter by Status' }).selectOption('inactive');
     await expect(page.locator('[data-types] tr[data-row]')).toHaveCount(0);
   });
 
@@ -386,7 +387,8 @@ test.describe('Round 4: administration naming', () => {
   }) => {
     await seed.user([], 'waiting'); // no role: stays in Access Pending
     await page.goto('/admin/users');
-    await expect(page.getByLabel('Status')).toHaveValue('pending');
+    await page.getByRole('button', { name: /^Filters/ }).click();
+    await expect(page.getByRole('combobox', { name: 'Filter by Status' })).toHaveValue('pending');
   });
 
   test('UXR4-15: a grouped audit row shows the Object it is about', async ({

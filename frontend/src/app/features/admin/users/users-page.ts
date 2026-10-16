@@ -122,6 +122,10 @@ export class UsersPage implements OnInit {
   ]);
 
   protected readonly columns = COLUMNS;
+  /** One array per load of the roles: the Roles control keeps what the person ticked while the list reloads under it. */
+  private readonly roleOptions = computed(() =>
+    this.roles().map((r) => ({ value: String(r.roleId), label: r.name })),
+  );
 
   /**
    * What the list depends on, as text: the definitions carry the status labels with the pending count, which every reload refreshes, so
@@ -150,7 +154,7 @@ export class UsersPage implements OnInit {
         column: 'roles',
         type: 'multiSelect',
         emptyLabel: 'Any role',
-        options: this.roles().map((r) => ({ value: String(r.roleId), label: r.name })),
+        options: this.roleOptions(),
         normalize: (v) => (/^[1-9]\d{0,9}$/.test(v) ? v : null),
       },
       {
@@ -559,7 +563,15 @@ export class UsersPage implements OnInit {
       const items = this.tab() === 'active' ? list.items.filter((u) => !u.isPending) : list.items;
       this.users.set(items);
       this.total.set(list.total - (list.items.length - items.length));
-      this.counts.set(counts);
+      // Only a real change: the Status labels carry the pending count and a new object would rebuild the filter controls.
+      const known = this.counts();
+      if (
+        known.pending !== counts.pending ||
+        known.active !== counts.active ||
+        known.inactive !== counts.inactive
+      ) {
+        this.counts.set(counts);
+      }
       this.pending.set(counts.pending);
       this.filters.reportResults(this.total());
     } catch {

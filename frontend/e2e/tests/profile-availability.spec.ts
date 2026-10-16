@@ -269,7 +269,7 @@ test.describe('My profile: availability and work hours', () => {
     await expect(
       page.locator('tbody tr [data-availability-chip]:not([data-state=OUT_OF_OFFICE])'),
     ).toHaveCount(0);
-    await page.getByLabel('Availability', { exact: true }).selectOption('AVAILABLE');
+    await page.getByRole('combobox', { name: 'Filter by Availability' }).selectOption('AVAILABLE');
     await expect(page.locator('tbody tr', { hasText: name })).toHaveCount(0);
 
     // The person sees it on their own profile and in the header, with the note.
