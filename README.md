@@ -122,7 +122,8 @@ The same flow is covered by an automated test: `backend/tests/MatterFlow.Integra
 ## Local SQL Server (docker compose)
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d --wait   # SQL Server 2022 on localhost:1433, empty database MatterFlow
+docker compose -f docker-compose.dev.yml up -d --wait sqlserver   # SQL Server 2022 on localhost:1433
+docker compose -f docker-compose.dev.yml run --rm --no-deps sqlserver-init   # creates the empty database MatterFlow
 docker compose -f docker-compose.dev.yml down           # stop; add -v to also delete the data volume
 ```
 
