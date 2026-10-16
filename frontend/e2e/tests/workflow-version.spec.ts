@@ -7,7 +7,6 @@ test.describe('Workflow version snapshot (SCN-014)', () => {
   test('SCN-014: a task keeps the steps of the version it was created on after a new version is published', async ({
     page,
     seed,
-    admin,
   }) => {
     const world = await seed.world({
       steps: [{ title: 'Alpha' }, { title: 'Beta' }, { title: 'Gamma' }],

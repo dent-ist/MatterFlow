@@ -403,7 +403,7 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 test.describe('profile screenshots', () => {
   test.skip(!OUT, 'set E2E_SCREENSHOTS to the output folder');
 
-  test('capture', async ({ page, asUser, seed, admin }) => {
+  test('capture', async ({ asUser, seed, admin }) => {
     test.setTimeout(300_000);
     fs.mkdirSync(OUT!, { recursive: true });
     const world = await seed.world();
