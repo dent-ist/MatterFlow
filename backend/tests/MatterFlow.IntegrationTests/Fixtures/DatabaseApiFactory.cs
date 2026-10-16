@@ -43,6 +43,13 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
         builder.UseSetting("Dev:Users:0:Roles:0", "Director");
         builder.UseSetting("Dev:Users:1:Username", @"KE\scientist");
         builder.UseSetting("Dev:Users:1:Roles:0", "Data Scientist");
+        // appsettings.Development.json lists extra Dev:Users (user1..user10); configuration merges arrays by index, so the entries
+        // above would inherit their display names and emails and the rest would still be seeded. Blank everything the tests do not own.
+        builder.UseSetting("Dev:Users:0:Email", "");
+        builder.UseSetting("Dev:Users:1:DisplayName", "");
+        builder.UseSetting("Dev:Users:1:Email", "");
+        for (var i = 2; i < 10; i++)
+            builder.UseSetting($"Dev:Users:{i}:Username", "");
         builder.ConfigureServices(services => services
             .AddControllers()
             .AddApplicationPart(typeof(DatabaseApiFactory).Assembly));
