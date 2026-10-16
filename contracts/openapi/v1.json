@@ -706,10 +706,11 @@
             "name": "actor",
             "in": "query",
             "schema": {
-              "maximum": 2147483647,
-              "minimum": 1,
-              "type": "integer",
-              "format": "int32"
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
             }
           },
           {
@@ -2196,6 +2197,15 @@
             }
           },
           {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "maxLength": 100,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
             "name": "active",
             "in": "query",
             "schema": {
@@ -2870,6 +2880,71 @@
             "in": "query",
             "schema": {
               "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "account",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "roleId",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          },
+          {
+            "name": "availability",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "registeredFrom",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "registeredTo",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
               "minLength": 0,
               "type": "string"
             }
@@ -6827,6 +6902,31 @@
             }
           },
           {
+            "name": "Title",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "Description",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "Used",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "Tags",
             "in": "query",
             "schema": {
@@ -7178,7 +7278,30 @@
             }
           },
           {
+            "name": "Name",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
             "name": "IsActive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "HasPublished",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "HasDraft",
             "in": "query",
             "schema": {
               "type": "boolean"

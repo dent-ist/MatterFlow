@@ -18,7 +18,7 @@ public sealed partial class PodService(DbContext db, IPermissionChecker permissi
     private const int UniqueIndexViolation = 2601;
     private const int UniqueConstraintViolation = 2627;
 
-    public async Task<PagedResult<PodSummary>> ListAsync(string? search, bool? active, string? sort, PageRequest page, CancellationToken ct)
+    public async Task<PagedResult<PodSummary>> ListAsync(string? search, string? name, bool? active, string? sort, PageRequest page, CancellationToken ct)
     {
         var query = db.Set<Pod>().AsNoTracking().AsQueryable();
         if (!string.IsNullOrWhiteSpace(search))
@@ -26,6 +26,10 @@ public sealed partial class PodService(DbContext db, IPermissionChecker permissi
             var term = search.Trim();
             query = query.Where(p => p.Name.Contains(term) || (p.Description != null && p.Description.Contains(term)));
         }
+
+        // Column filter: fragment of the name only (parameterised Contains; % and _ are literal).
+        if (name?.Trim() is { Length: > 0 } nameFragment)
+            query = query.Where(p => p.Name.Contains(nameFragment));
 
         if (active is { } isActive)
             query = query.Where(p => p.IsActive == isActive);

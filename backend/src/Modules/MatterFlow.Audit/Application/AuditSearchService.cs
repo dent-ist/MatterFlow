@@ -12,7 +12,7 @@ namespace MatterFlow.Audit.Application;
 public sealed record AuditSearchFilter(
     string? ObjectType,
     string? ObjectId,
-    int? ActorUserId,
+    IReadOnlyCollection<int>? ActorUserIds,
     string? EventType,
     string? From,
     string? To,
@@ -101,8 +101,13 @@ public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display
             query = query.Where(e => e.ObjectId == id);
         }
 
-        if (filter.ActorUserId is { } actor)
-            query = query.Where(e => e.ActorUserId == actor);
+        if (filter.ActorUserIds is { Count: > 0 } actors)
+        {
+            int[] actorIds = [.. actors.Distinct()];
+            query = actorIds.Length == 1
+                ? query.Where(e => e.ActorUserId == actorIds[0])
+                : query.Where(e => e.ActorUserId != null && actorIds.Contains(e.ActorUserId.Value));
+        }
 
         if (!string.IsNullOrWhiteSpace(filter.EventType))
         {

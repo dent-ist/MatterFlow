@@ -57,6 +57,28 @@ public sealed class WorkflowAdminService(
             workflows = workflows.Where(w => w.Name.Contains(q) || (w.Description != null && w.Description.Contains(q)));
         }
 
+        // Column filters (each box searches its own column, parameterised Contains; % and _ are literal).
+        if (query.Name?.Trim() is { Length: > 0 } nameFragment)
+        {
+            workflows = workflows.Where(w => w.Name.Contains(nameFragment));
+        }
+
+        if (query.HasPublished is { } hasPublished)
+        {
+            var published = db.Set<WorkflowVersion>().AsNoTracking().Where(v => v.Status == WorkflowVersionStatus.Published);
+            workflows = hasPublished
+                ? workflows.Where(w => published.Any(v => v.WorkflowDefinitionId == w.Id))
+                : workflows.Where(w => !published.Any(v => v.WorkflowDefinitionId == w.Id));
+        }
+
+        if (query.HasDraft is { } hasDraft)
+        {
+            var drafts = db.Set<WorkflowVersion>().AsNoTracking().Where(v => v.Status == WorkflowVersionStatus.Draft);
+            workflows = hasDraft
+                ? workflows.Where(w => drafts.Any(v => v.WorkflowDefinitionId == w.Id))
+                : workflows.Where(w => !drafts.Any(v => v.WorkflowDefinitionId == w.Id));
+        }
+
         if (query.TaskTypeId is { } taskTypeId)
         {
             var eligible = (await taskTypes.ListWorkflowLinksAsync(taskTypeId: taskTypeId, cancellationToken: ct)).Select(l => l.WorkflowDefinitionId).ToList();

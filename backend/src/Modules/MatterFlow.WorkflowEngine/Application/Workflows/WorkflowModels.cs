@@ -186,7 +186,7 @@ public sealed record WorkflowVersionActionRequest
 /// <summary>Workflow list filters.</summary>
 public sealed class WorkflowListQuery
 {
-    internal static readonly string[] Keys = ["page", "pageSize", "q", "isActive", "sort", "taskTypeId", "stepId"];
+    internal static readonly string[] Keys = ["page", "pageSize", "q", "name", "isActive", "sort", "taskTypeId", "stepId", "hasPublished", "hasDraft"];
 
     /// <summary>Sort fields accepted by <see cref="Sort"/> (prefix with <c>-</c> for descending).</summary>
     internal static readonly string[] SortFields = ["name", "-name"];
@@ -199,8 +199,18 @@ public sealed class WorkflowListQuery
     [StringLength(200)]
     public string? Q { get; init; }
 
+    /// <summary>Column filter: fragment of the name only (<c>q</c> also searches the description).</summary>
+    [StringLength(200)]
+    public string? Name { get; init; }
+
     /// <summary>Filter by active state; omit for all.</summary>
     public bool? IsActive { get; init; }
+
+    /// <summary>True: only workflows with a published version; false: only workflows without one.</summary>
+    public bool? HasPublished { get; init; }
+
+    /// <summary>True: only workflows with a draft in progress; false: only workflows without one.</summary>
+    public bool? HasDraft { get; init; }
 
     /// <summary>Only the workflows this Task Type may use (an unknown Task Type has none).</summary>
     public int? TaskTypeId { get; init; }

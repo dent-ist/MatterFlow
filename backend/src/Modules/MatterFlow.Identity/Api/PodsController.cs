@@ -23,6 +23,7 @@ public class PodsController(PodService pods, CurrentUser currentUser) : Controll
 
     /// <summary>Lists Pods by name, optionally filtered by a search term and active state.</summary>
     /// <param name="q">Matches the name or description.</param>
+    /// <param name="name">Column filter: fragment of the name only.</param>
     /// <param name="active">Only active (true) or only inactive (false) Pods; omit for both.</param>
     /// <param name="page">1-based page number.</param>
     /// <param name="pageSize">Items per page (default 25, max 100).</param>
@@ -33,6 +34,7 @@ public class PodsController(PodService pods, CurrentUser currentUser) : Controll
     [ProducesResponseType<PagedResult<PodSummary>>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> List(
         [FromQuery, StringLength(100)] string? q,
+        [FromQuery, StringLength(100)] string? name,
         [FromQuery] bool? active,
         [FromQuery, Range(1, int.MaxValue)] int page = PageRequest.FirstPage,
         [FromQuery, Range(1, PageRequest.MaxPageSize)] int pageSize = PageRequest.DefaultPageSize,
@@ -42,7 +44,7 @@ public class PodsController(PodService pods, CurrentUser currentUser) : Controll
         if (sort is not null && !Sorts.Split(", ").Contains(sort))
             return PodResults.Failure(Error.Validation("sort", "INVALID", $"sort must be one of: {Sorts}."));
 
-        return Ok(await pods.ListAsync(q, active, sort, new PageRequest(page, pageSize), cancellationToken));
+        return Ok(await pods.ListAsync(q, name, active, sort, new PageRequest(page, pageSize), cancellationToken));
     }
 
     /// <summary>Gets a Pod with its members and their roles.</summary>

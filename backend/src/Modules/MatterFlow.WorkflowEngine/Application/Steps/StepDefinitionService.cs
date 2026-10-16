@@ -154,7 +154,7 @@ public sealed record StepActiveRequest
 /// <summary>Step library list filters.</summary>
 public sealed class StepDefinitionListQuery
 {
-    internal static readonly string[] Keys = ["page", "pageSize", "q", "isActive", "sort", "tags", "tagMatch"];
+    internal static readonly string[] Keys = ["page", "pageSize", "q", "title", "description", "isActive", "sort", "tags", "tagMatch", "used"];
 
     /// <summary>Sort fields accepted by <see cref="Sort"/> (prefix with <c>-</c> for descending).</summary>
     internal static readonly string[] SortFields = ["title", "-title", "usedInVersions", "-usedInVersions", "usedInWorkflows", "-usedInWorkflows"];
@@ -166,6 +166,17 @@ public sealed class StepDefinitionListQuery
     /// <summary>Title, description or tag text fragment.</summary>
     [StringLength(200)]
     public string? Q { get; init; }
+
+    /// <summary>Column filter: fragment of the title only.</summary>
+    [StringLength(200)]
+    public string? Title { get; init; }
+
+    /// <summary>Column filter: fragment of the description only.</summary>
+    [StringLength(200)]
+    public string? Description { get; init; }
+
+    /// <summary>True: only steps used in at least one workflow version; false: only steps no workflow version uses.</summary>
+    public bool? Used { get; init; }
 
     /// <summary>Only steps with these tags (case-insensitive); repeat the parameter for several. See <see cref="TagMatch"/>.</summary>
     public string[]? Tags { get; init; }
@@ -236,6 +247,25 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
                 s.Title.Contains(q)
                 || (s.Description != null && s.Description.Contains(q))
                 || tagLinks.Any(t => t.StepDefinitionId == s.Id && t.Tag.Key.Contains(q)));
+        }
+
+        // Column filters (each box searches its own column, parameterised Contains; % and _ are literal).
+        if (query.Title?.Trim() is { Length: > 0 } titleFragment)
+        {
+            steps = steps.Where(s => s.Title.Contains(titleFragment));
+        }
+
+        if (query.Description?.Trim() is { Length: > 0 } descriptionFragment)
+        {
+            steps = steps.Where(s => s.Description != null && s.Description.Contains(descriptionFragment));
+        }
+
+        if (query.Used is { } used)
+        {
+            var uses = db.Set<WorkflowVersionStep>().AsNoTracking();
+            steps = used
+                ? steps.Where(s => uses.Any(v => v.SourceStepDefinitionId == s.Id))
+                : steps.Where(s => !uses.Any(v => v.SourceStepDefinitionId == s.Id));
         }
 
         var tagMatch = query.TagMatch?.Trim().ToLowerInvariant();

@@ -20,7 +20,7 @@ public class AuditSearchController(AuditSearchService search) : ControllerBase
     /// </summary>
     /// <param name="objectType">Object type, for example <c>Task</c>.</param>
     /// <param name="objectId">Object id; needs <c>objectType</c>.</param>
-    /// <param name="actor">Acting user id.</param>
+    /// <param name="actor">Acting user id; repeat the parameter for several people (any of them).</param>
     /// <param name="eventType">Event code, for example <c>TASK_STATUS_CHANGED</c>.</param>
     /// <param name="from">First day (viewer's zone), <c>yyyy-MM-dd</c>.</param>
     /// <param name="to">Last day (viewer's zone, inclusive), <c>yyyy-MM-dd</c>.</param>
@@ -34,7 +34,7 @@ public class AuditSearchController(AuditSearchService search) : ControllerBase
     public async Task<ActionResult<AuditSearchPage>> Search(
         [FromQuery, StringLength(40)] string? objectType,
         [FromQuery, StringLength(40)] string? objectId,
-        [FromQuery, Range(1, int.MaxValue)] int? actor,
+        [FromQuery] int[]? actor,
         [FromQuery, StringLength(64)] string? eventType,
         [FromQuery, StringLength(10)] string? from,
         [FromQuery, StringLength(10)] string? to,

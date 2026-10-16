@@ -3,6 +3,7 @@ using MatterFlow.Audit.Contracts;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
 using MatterFlow.Identity.Pods;
+using MatterFlow.SharedKernel.Availability;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
@@ -23,6 +24,27 @@ public static class UserListStatuses
     public static bool IsValid(string? value) => value is null or All or Pending or Active or Inactive;
 }
 
+/// <summary>Filters of the users list. The column filters combine with AND; <see cref="Search"/> is the older any-column search.</summary>
+/// <param name="Status"><c>all</c>, <c>pending</c>, <c>active</c> or <c>inactive</c> (null = all).</param>
+/// <param name="Search">Display name, e-mail or Windows account fragment.</param>
+/// <param name="Name">Fragment of the display name only.</param>
+/// <param name="Account">Fragment of a Windows account only.</param>
+/// <param name="Email">Fragment of the e-mail only.</param>
+/// <param name="RoleIds">Only people holding any of these roles.</param>
+/// <param name="Availability"><c>AVAILABLE</c>, <c>OUT_OF_OFFICE</c> or <c>OFF_HOURS</c>, evaluated now.</param>
+/// <param name="RegisteredFrom">First day (viewer's zone) of the first-seen date.</param>
+/// <param name="RegisteredTo">Last day (viewer's zone, inclusive) of the first-seen date.</param>
+public sealed record UserListFilter(
+    string? Status = null,
+    string? Search = null,
+    string? Name = null,
+    string? Account = null,
+    string? Email = null,
+    IReadOnlyCollection<int>? RoleIds = null,
+    string? Availability = null,
+    DateOnly? RegisteredFrom = null,
+    DateOnly? RegisteredTo = null);
+
 /// <summary>
 /// Users queue and role assignment (architecture 6; baseline 6.4). Every change is audited, invalidates the effective-permission
 /// cache and honors the guard rails: no self-deactivation and always at least one active System Admin.
@@ -34,7 +56,8 @@ public sealed class UserAdministration(
     ICurrentUser currentUser,
     IPermissionChecker callerPermissions,
     IClock clock,
-    IUserAvailabilityReader availability)
+    IUserAvailabilityReader availability,
+    IUserTimeZone timeZone)
 {
     /// <summary>Access Pending: active with no effective permission (same rule as <c>AccessSnapshot.IsPending</c>).</summary>
     private static readonly Expression<Func<AppUser, bool>> PendingExpr = u =>
@@ -42,8 +65,9 @@ public sealed class UserAdministration(
 
     private IQueryable<AppUser> Users => db.Set<AppUser>().AsNoTracking();
 
-    public async Task<PagedResult<UserSummaryDto>> ListAsync(string? status, string? search, PageRequest page, CancellationToken ct)
+    public async Task<PagedResult<UserSummaryDto>> ListAsync(UserListFilter filter, PageRequest page, CancellationToken ct)
     {
+        var status = filter.Status;
         var query = Users;
         query = status switch
         {
@@ -53,29 +77,77 @@ public sealed class UserAdministration(
             _ => query,
         };
 
-        if (!string.IsNullOrWhiteSpace(search))
+        if (!string.IsNullOrWhiteSpace(filter.Search))
         {
-            var like = "%" + EscapeLike(search.Trim()) + "%";
+            var like = "%" + EscapeLike(filter.Search.Trim()) + "%";
             query = query.Where(u =>
                 EF.Functions.Like(u.DisplayName, like, "\\")
                 || (u.Email != null && EF.Functions.Like(u.Email, like, "\\"))
                 || u.Identities.Any(i => EF.Functions.Like(i.Username, like, "\\")));
         }
 
-        var total = await query.CountAsync(ct);
+        // Column filters (each box searches its own column, parameterised Contains; % and _ are literal).
+        if (filter.Name?.Trim() is { Length: > 0 } name)
+            query = query.Where(u => u.DisplayName.Contains(name));
+        if (filter.Account?.Trim() is { Length: > 0 } account)
+            query = query.Where(u => u.Identities.Any(i => i.Username.Contains(account)));
+        if (filter.Email?.Trim() is { Length: > 0 } email)
+            query = query.Where(u => u.Email != null && u.Email.Contains(email));
+        if (filter.RoleIds is { Count: > 0 } roleFilter)
+        {
+            int[] roleIds = [.. roleFilter.Distinct()];
+            query = query.Where(u => u.Roles.Any(ur => roleIds.Contains(ur.RoleId)));
+        }
+
+        // Registered between two calendar days of the viewer's zone (the To day is inclusive).
+        if (filter.RegisteredFrom is { } from)
+        {
+            var fromUtc = timeZone.ToUtc(from.ToDateTime(TimeOnly.MinValue));
+            query = query.Where(u => u.CreatedAtUtc >= fromUtc);
+        }
+
+        if (filter.RegisteredTo is { } to)
+        {
+            var beforeUtc = to == DateOnly.MaxValue ? DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc) : timeZone.ToUtc(to.AddDays(1).ToDateTime(TimeOnly.MinValue));
+            query = query.Where(u => u.CreatedAtUtc < beforeUtc);
+        }
 
         // Pending first (oldest waiting first), then active, then inactive; stable by name.
-        var ordered = status == UserListStatuses.Pending
-            ? query.OrderBy(u => u.CreatedAtUtc).ThenBy(u => u.Id)
-            : query
+        IOrderedQueryable<AppUser> Ordered(IQueryable<AppUser> source) => status == UserListStatuses.Pending
+            ? source.OrderBy(u => u.CreatedAtUtc).ThenBy(u => u.Id)
+            : source
                 .OrderByDescending(u => u.IsActive && !u.Roles.Any(ur => ur.Role.IsActive && (ur.Role.IsSystemAdmin || ur.Role.Permissions.Any(rp => rp.Permission.IsActive))))
                 .ThenByDescending(u => u.IsActive)
                 .ThenBy(u => u.DisplayName)
                 .ThenBy(u => u.Id);
 
-        var rows = await ordered
-            .Skip(page.Skip)
-            .Take(page.PageSize)
+        int total;
+        IQueryable<AppUser> pageQuery;
+        if (filter.Availability is { } wantedState)
+        {
+            // Availability is worked out in code (schedule, time zone, out-of-office dates), not by a column: evaluate the people the other
+            // filters left, in the list's own order, keep the ones in the wanted state and page over those.
+            var now = clock.UtcNow;
+            var ids = await Ordered(query).Select(u => u.Id).ToListAsync(ct);
+            var evaluated = new Dictionary<int, AvailabilityEvaluation>();
+            foreach (var chunk in ids.Chunk(500))
+            {
+                foreach (var (id, evaluation) in await availability.EvaluateAsync(chunk, now, ct))
+                    evaluated[id] = evaluation;
+            }
+
+            var matching = ids.Where(id => evaluated.TryGetValue(id, out var e) && e.State == wantedState).ToList();
+            total = matching.Count;
+            int[] pageIds = [.. matching.Skip(page.Skip).Take(page.PageSize)];
+            pageQuery = Ordered(query.Where(u => pageIds.Contains(u.Id)));
+        }
+        else
+        {
+            total = await query.CountAsync(ct);
+            pageQuery = Ordered(query).Skip(page.Skip).Take(page.PageSize);
+        }
+
+        var rows = await pageQuery
             .Select(u => new
             {
                 User = u,
