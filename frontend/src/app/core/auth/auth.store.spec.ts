@@ -130,4 +130,51 @@ describe('AuthStore', () => {
     await tick();
     expect(api.calls).toBe(2);
   });
+
+  describe('hasAnyDashboardTab (Dashboard menu item and landing, R2)', () => {
+    const ROLES: Record<string, string[]> = {
+      Director: [
+        'Dashboard.View',
+        'Dashboard.ViewSummary',
+        'Dashboard.ViewBreakdowns',
+        'Dashboard.ViewTrends',
+        'Dashboard.ViewSwimlane',
+        'Dashboard.ViewUsers',
+        'Dashboard.ViewCoverage',
+      ],
+      'Project Manager': ['Dashboard.View', 'Dashboard.ViewSummary', 'Dashboard.ViewSwimlane'],
+      'Pod Lead': [
+        'Dashboard.View',
+        'Dashboard.ViewSummary',
+        'Dashboard.ViewSwimlane',
+        'Dashboard.ViewUsers',
+        'Dashboard.ViewCoverage',
+      ],
+      'Data Technician': ['Dashboard.View', 'Dashboard.ViewUnassigned'],
+      'Data Scientist': ['Dashboard.View', 'Dashboard.ViewUnassigned'],
+    };
+
+    for (const [role, permissions] of Object.entries(ROLES)) {
+      it(`keeps the item for the seeded ${role} role`, async () => {
+        const { store } = setup(profileOf({ permissions: permissions as never }));
+        await store.ensureLoaded();
+        expect(store.hasAnyDashboardTab()).toBe(true);
+      });
+    }
+
+    it.each([
+      ['Dashboard.View only', ['Dashboard.View'], false],
+      [
+        'Dashboard.View + ViewCoverage only (a sub-view of Users)',
+        ['Dashboard.View', 'Dashboard.ViewCoverage'],
+        false,
+      ],
+      ['Dashboard.View + ViewTrends', ['Dashboard.View', 'Dashboard.ViewTrends'], true],
+      ['a tab permission without Dashboard.View', ['Dashboard.ViewSummary'], false],
+    ])('%s', async (_name, permissions, expected) => {
+      const { store } = setup(profileOf({ permissions: permissions as never }));
+      await store.ensureLoaded();
+      expect(store.hasAnyDashboardTab()).toBe(expected);
+    });
+  });
 });

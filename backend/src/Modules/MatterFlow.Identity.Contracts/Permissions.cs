@@ -191,7 +191,7 @@ public static class Permissions
     /// </summary>
     public static class Dashboard
     {
-        /// <summary>Open the Dashboard. Needed for every tab.</summary>
+        /// <summary>Open the Dashboard. Needed for every tab. Also turn on at least one Dashboard tab permission; otherwise the menu item is hidden.</summary>
         public const string View = "Dashboard.View";
 
         /// <summary>Summary tab: the headline counts and tiles, the overdue and due soon lists, and (with Task.Assign) the unassigned queue.</summary>

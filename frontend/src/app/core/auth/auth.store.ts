@@ -4,7 +4,7 @@ import { ApiError } from '../http/api-error';
 import { Clock } from '../time/clock';
 import { MeApi } from './me-api';
 import { MeProfile } from './me.models';
-import { Permission } from './permissions';
+import { DASHBOARD_TAB_PERMISSION_CODES, Permission } from './permissions';
 
 export type AuthLoadState = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -54,6 +54,14 @@ export class AuthStore {
   /** True when the user holds at least one of the codes (empty list = no requirement). */
   hasAny(codes: readonly (Permission | string)[]): boolean {
     return codes.length === 0 || codes.some((c) => this.has(c));
+  }
+
+  /**
+   * Dashboard.View together with at least one tab permission: the one rule behind the Dashboard menu item and the Dashboard as a landing page
+   * (a role with Dashboard.View only has nothing to show there). The route itself stays reachable and explains itself.
+   */
+  hasAnyDashboardTab(): boolean {
+    return this.has('Dashboard.View') && this.hasAny(DASHBOARD_TAB_PERMISSION_CODES);
   }
 
   /** Loads /me once; concurrent callers share the request. Never rejects. */

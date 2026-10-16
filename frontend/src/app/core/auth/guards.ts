@@ -15,6 +15,7 @@ export const APP_PATHS = {
 
 /** Screens a user can land on when they have no Task.View, in navigation order (first permitted wins). */
 const LANDING_FALLBACKS: readonly { path: string; permissions: Permission[] }[] = [
+  // The Dashboard only when a tab is turned on (see AuthStore.hasAnyDashboardTab); handled in defaultLandingPath.
   { path: APP_PATHS.dashboard, permissions: ['Dashboard.View'] },
   { path: '/pods/work', permissions: ['Pod.View'] },
   { path: '/clients', permissions: ['Client.View'] },
@@ -33,7 +34,11 @@ export function defaultLandingPath(store: AuthStore): string {
   if (store.has('Task.View')) {
     return store.profile()?.hasWork ? APP_PATHS.myWork : APP_PATHS.taskQueue;
   }
-  return LANDING_FALLBACKS.find((f) => store.hasAny(f.permissions))?.path ?? APP_PATHS.forbidden;
+  return (
+    LANDING_FALLBACKS.find((f) =>
+      f.path === APP_PATHS.dashboard ? store.hasAnyDashboardTab() : store.hasAny(f.permissions),
+    )?.path ?? APP_PATHS.forbidden
+  );
 }
 
 /**

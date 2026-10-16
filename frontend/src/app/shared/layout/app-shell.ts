@@ -105,7 +105,10 @@ export class AppShell {
   }
 
   private visible(items: NavItem[]): NavItem[] {
-    return items.filter((i) => this.auth.hasAny(i.permissions));
+    return items.filter(
+      (i) =>
+        this.auth.hasAny(i.permissions) && (!i.needsDashboardTab || this.auth.hasAnyDashboardTab()),
+    );
   }
 
   protected skipToMain(event: Event): void {

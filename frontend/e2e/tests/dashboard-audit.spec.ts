@@ -351,7 +351,8 @@ test.describe('Dashboard actions and click-through', () => {
     page,
   }) => {
     await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/dashboard\?tab=summary/);
+    // A plain link is not rewritten (P9): the first permitted tab is the default and needs no parameter.
+    await expect(page).toHaveURL(/\/dashboard$/);
     const tabs = page.getByRole('tablist', { name: 'Dashboard views' });
     await expect(tabs.getByRole('tab')).toHaveText([
       'Summary',
@@ -379,7 +380,11 @@ test.describe('Dashboard actions and click-through', () => {
 
     // No ?tab= in the address: Summary, whatever tab was used last.
     await page.goto('/dashboard');
-    await expect(page).toHaveURL(/tab=summary/);
+    await expect(tabs.getByRole('tab', { name: 'Summary' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(page).toHaveURL(/\/dashboard$/);
     // A tab change is a history entry: Back returns to the previous tab.
     await tabs.getByRole('tab', { name: 'Trends' }).click();
     await expect(page).toHaveURL(/tab=trends/);

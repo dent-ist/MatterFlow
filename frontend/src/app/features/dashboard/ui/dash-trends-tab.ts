@@ -2,6 +2,8 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
+  Injector,
   computed,
   effect,
   inject,
@@ -12,8 +14,9 @@ import {
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DashboardClient, DashboardTrend } from '../../../api/generated/api-client';
+import { QuietRequests } from '../../../core/http/interceptors';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { ErrorReference } from '../../../shared/ui/error-reference';
+import { DashState, focusAfterRetry } from './dash-state';
 import { PeriodKey, periodDays } from '../dashboard-period';
 import { TrendChart } from './trend-chart';
 import { TrendLegend } from './trend-legend';
@@ -60,7 +63,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-dash-trends-tab',
-  imports: [TrendChart, TrendLegend, TrendMeasure, ErrorReference],
+  imports: [TrendChart, TrendLegend, TrendMeasure, DashState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section
@@ -100,11 +103,7 @@ let nextId = 0;
       }
 
       @if (state() === 'error') {
-        <div class="alert" role="alert" data-trend-error>
-          <span>The trend could not be loaded.</span>
-          <mf-error-reference />
-          <button type="button" class="mf-btn" data-trend-retry (click)="retry()">Retry</button>
-        </div>
+        <mf-dash-state variant="error" message="The trend could not be loaded." (retry)="retry()" />
       } @else if (data(); as d) {
         <div class="layout">
           <div class="main">
@@ -237,17 +236,6 @@ let nextId = 0;
         grid-template-columns: minmax(0, 1fr) 360px;
       }
     }
-    .alert {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s3);
-      padding: var(--mf-s3) var(--mf-s4);
-      color: var(--mf-danger);
-      background: var(--mf-danger-bg);
-      border: 1px solid var(--mf-danger);
-      border-radius: var(--mf-radius);
-    }
     .sr-only {
       position: absolute;
       width: 1px;
@@ -260,6 +248,9 @@ let nextId = 0;
 })
 export class DashTrendsTab {
   private readonly api = inject(DashboardClient);
+  private readonly quiet = inject(QuietRequests);
+  private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly prefs = inject(TrendPrefs);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -286,6 +277,7 @@ export class DashTrendsTab {
 
   private requestId = 0;
   private loadedGen: string | null = null;
+  private retrying = false;
   private lastKey: string | null = null;
   private urlSeen = false;
 
@@ -465,6 +457,7 @@ export class DashTrendsTab {
   // ---- data
 
   protected retry(): void {
+    this.retrying = true;
     this.loadedGen = null;
     this.ensure(this.days(), this.refreshKey(), this.choice().types);
   }
@@ -489,36 +482,48 @@ export class DashTrendsTab {
     const id = ++this.requestId;
     if (this.data()) this.busy.set(true);
     else this.state.set('loading');
-    this.api
-      .getDashboardTrend(
-        days,
-        ids.length > 0 ? ids : undefined,
-        undefined,
-        fresh ? true : undefined,
-      )
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (trend) => {
-          if (id !== this.requestId) return;
-          this.data.set(trend);
-          this.loadedGen = gen;
-          this.state.set('ready');
-          this.busy.set(false);
-          this.prune(trend);
-        },
-        error: (e: unknown) => {
-          if (id !== this.requestId) return;
-          this.busy.set(false);
-          if ((e as { status?: number }).status === 400 && ids.length > 0) {
-            // A remembered or shared task type that no longer exists: drop the selection and read the rest.
-            this.applyChoice({ ...this.choice(), types: [] }, true);
-            this.live.set('A selected task type no longer exists and was removed.');
-            this.fetch(gen, days, [], fresh);
-            return;
-          }
-          if (!this.data()) this.state.set('error');
-        },
-      });
+    const start = () =>
+      this.api
+        .getDashboardTrend(
+          days,
+          ids.length > 0 ? ids : undefined,
+          undefined,
+          fresh ? true : undefined,
+        )
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (trend) => {
+            if (id !== this.requestId) return;
+            this.data.set(trend);
+            this.loadedGen = gen;
+            this.state.set('ready');
+            this.busy.set(false);
+            this.finishRetry('ready');
+            this.prune(trend);
+          },
+          error: (e: unknown) => {
+            if (id !== this.requestId) return;
+            this.busy.set(false);
+            if ((e as { status?: number }).status === 400 && ids.length > 0) {
+              // A remembered or shared task type that no longer exists: drop the selection and read the rest.
+              this.applyChoice({ ...this.choice(), types: [] }, true);
+              this.live.set('A selected task type no longer exists and was removed.');
+              this.fetch(gen, days, [], fresh);
+              return;
+            }
+            if (!this.data()) this.state.set('error');
+            this.finishRetry('failed');
+          },
+        });
+    // A first read shows its failure inline (no toast); a later refresh keeps the figures on screen and stays quiet.
+    if (this.data()) this.quiet.run(start);
+    else this.quiet.runInline(start);
+  }
+
+  private finishRetry(outcome: 'ready' | 'failed'): void {
+    if (!this.retrying) return;
+    this.retrying = false;
+    focusAfterRetry(this.host.nativeElement, this.injector, outcome);
   }
 
   /** A checked type the legend no longer lists (inactive and without tasks in this period) leaves the selection. */

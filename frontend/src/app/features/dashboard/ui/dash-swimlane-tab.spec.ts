@@ -273,7 +273,7 @@ describe('DashSwimlaneTab', () => {
     vi.restoreAllMocks();
   });
 
-  it('reads the board with the default view and writes the view into the address', async () => {
+  it('reads the board with the default view and keeps the defaults out of the address (P9)', async () => {
     await open();
     expect(getBoard).toHaveBeenCalledWith(
       7,
@@ -287,10 +287,33 @@ describe('DashSwimlaneTab', () => {
       undefined,
       undefined,
     );
-    expect(url()).toContain('group=none');
-    expect(url()).toContain('sort=priority');
-    expect(url()).toContain('days=7');
+    expect(url()).not.toContain('group=');
+    expect(url()).not.toContain('sort=');
+    expect(url()).not.toContain('days=');
     expect(url()).toContain('tab=swimlane');
+  });
+
+  it('opens a link that writes the defaults explicitly and normalises it without a new history entry (P9)', async () => {
+    const navigate = vi.spyOn(Router.prototype, 'navigate');
+    await open(of(board()), '/dashboard?tab=swimlane&group=none&sort=priority&days=7');
+    expect(url()).toBe('/dashboard?tab=swimlane');
+    expect(navigate).toHaveBeenCalledWith([], expect.objectContaining({ replaceUrl: true }));
+  });
+
+  it('keeps a non-default parameter in the address and drops the default ones (P9)', async () => {
+    await open(of(board()), '/dashboard?tab=swimlane&group=assignee&sort=priority');
+    expect(url()).toBe('/dashboard?tab=swimlane&group=assignee');
+  });
+
+  it('does not touch the address of a plain Swimlane link (P9)', async () => {
+    const navigate = vi.spyOn(Router.prototype, 'navigate');
+    await open(of(board()), '/dashboard?tab=swimlane');
+    expect(url()).toBe('/dashboard?tab=swimlane');
+    const changed = navigate.mock.calls.filter(
+      ([, extras]) =>
+        extras?.queryParams && Object.values(extras.queryParams).some((v) => v !== null),
+    );
+    expect(changed).toEqual([]);
   });
 
   it('shows the four lanes as columns with the exact count, the lane hint and the age of the oldest card', async () => {
@@ -351,13 +374,13 @@ describe('DashSwimlaneTab', () => {
     TestBed.resetTestingModule();
 
     await open(throwError(() => new Error('down')));
-    const alert = q('[data-swimlane-error]');
+    const alert = q('[data-dash-state="error"]');
     expect(alert.getAttribute('role')).toBe('alert');
     expect(text(alert)).toContain('could not be loaded');
     getBoard.mockReturnValue(of(board()));
-    alert.querySelector<HTMLButtonElement>('[data-swimlane-retry]')!.click();
+    alert.querySelector<HTMLButtonElement>('[data-dash-retry]')!.click();
     await settle();
-    expect(q('[data-swimlane-error]')).toBeNull();
+    expect(q('[data-dash-state="error"]')).toBeNull();
     expect(qa('mf-swimlane-card').length).toBe(4);
   });
 
@@ -367,11 +390,11 @@ describe('DashSwimlaneTab', () => {
     (harness.routeDebugElement!.componentInstance as DashSwimlaneTab).refresh();
     await settle();
     expect(qa('mf-swimlane-card').length).toBe(4);
-    expect(text(q('[data-swimlane-stale]'))).toContain('could not be refreshed');
+    expect(text(q('[data-dash-state="stale"]'))).toContain('Could not refresh.');
     getBoard.mockReturnValue(of(board()));
-    q<HTMLButtonElement>('[data-swimlane-stale-retry]').click();
+    q<HTMLButtonElement>('[data-dash-state="stale"] [data-dash-retry]').click();
     await settle();
-    expect(q('[data-swimlane-stale]')).toBeNull();
+    expect(q('[data-dash-state="stale"]')).toBeNull();
     expect(text(q('[data-swimlane-live]'))).toContain('Board refreshed. 4 tasks.');
   });
 

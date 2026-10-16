@@ -28,9 +28,25 @@ export const SKIP_ERROR_TOAST = new HttpContextToken<boolean>(() => false);
 @Injectable({ providedIn: 'root' })
 export class QuietRequests {
   private depth = 0;
+  private inlineDepth = 0;
 
   get active(): boolean {
     return this.depth > 0;
+  }
+
+  /** True while a request starts whose failure the page shows inline (Dashboard tabs): no toast, but the error reference is kept for the alert. */
+  get inline(): boolean {
+    return this.inlineDepth > 0;
+  }
+
+  /** Like `run`, for a first load that renders its error inline: the toast is never shown, the reference still reaches the alert. */
+  runInline<T>(start: () => T): T {
+    this.inlineDepth++;
+    try {
+      return start();
+    } finally {
+      this.inlineDepth--;
+    }
   }
 
   /** Runs `start` (which must subscribe to the request synchronously) with the toast for its errors turned off. */
@@ -59,14 +75,17 @@ export const csrfInterceptor: HttpInterceptorFn = (req, next) => {
 /** Converts failures to `ApiError`, toasts non-field errors, refreshes permissions on 403. */
 export const problemDetailsInterceptor: HttpInterceptorFn = (req, next) => {
   const injector = inject(Injector);
-  const quiet = injector.get(QuietRequests).active;
+  const quietRequests = injector.get(QuietRequests);
+  const quiet = quietRequests.active;
+  const inline = quietRequests.inline;
   return next(req).pipe(
     catchError((error: unknown) => {
       if (!(error instanceof HttpErrorResponse)) return throwError(() => error);
       return decodeBlobBody(error).pipe(
         mergeMap((decoded) => {
           const apiError = ApiError.from(decoded);
-          if (!quiet && !req.context.get(SKIP_ERROR_TOAST)) {
+          if (inline && !quiet) injector.get(ErrorReferenceStore).reference.set(apiError.traceId);
+          if (!quiet && !inline && !req.context.get(SKIP_ERROR_TOAST)) {
             const toast = toastFor(apiError);
             if (toast) {
               const show = () =>

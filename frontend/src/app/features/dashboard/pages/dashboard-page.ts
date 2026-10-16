@@ -17,7 +17,6 @@ import {
 import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { map } from 'rxjs';
 import {
   DashboardClient,
   DashboardSummary,
@@ -31,14 +30,12 @@ import { UndoService } from '../../../core/notify/undo.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { formatCalendarDay, mfDate, parseDateOnly } from '../../../core/time/time';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PageHeader } from '../../../shared/ui/page-header';
 import {
   DUE_SOON_CAPTION,
   DUE_SOON_WINDOW,
   LIST_ORDER,
   ListKind,
-  clearedUsersParams,
   dueSoonThrough,
   queueArgsFor,
 } from '../dashboard-links';
@@ -53,15 +50,17 @@ import {
   isDashboardTab,
 } from '../dashboard-prefs';
 import { DashBreakdownsTab } from '../ui/dash-breakdowns-tab';
+import { canonicalParams, clearedTabParams, sameParams, tabFallback } from '../dash-url-state';
+import { FRESH_FOR_MS, STALE_CHECK_MS, staleAgeText } from '../dash-stale';
+import { DashNote } from '../ui/dash-note';
+import { DashState, focusAfterRetry } from '../ui/dash-state';
 import { DashSection } from '../ui/dash-section';
-import { clearedViewParams } from '../swimlane/swimlane-model';
 import { DashSwimlaneTab } from '../ui/dash-swimlane-tab';
 import { DashTab, DashTabs, panelId, tabId } from '../ui/dash-tabs';
 import { DashUsersTab } from '../ui/dash-users-tab';
 import { StatTile } from '../ui/stat-tile';
 import { DashTaskList, PanelState } from '../ui/task-list-panel';
 import { DashTrendsTab } from '../ui/dash-trends-tab';
-import { clearedTrendParams } from '../ui/trend-model';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -104,7 +103,8 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
   selector: 'mf-dashboard-page',
   imports: [
     PageHeader,
-    ErrorReference,
+    DashState,
+    DashNote,
     DashBreakdownsTab,
     DashTrendsTab,
     DashSection,
@@ -122,19 +122,6 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
     <mf-page-header heading="Dashboard" />
 
     <p class="sr-only" role="status" aria-live="polite" data-dash-live>{{ live() }}</p>
-
-    @if (refreshFailed()) {
-      <div class="stale" role="status" data-stale>
-        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-        <span>
-          The dashboard could not be refreshed. Showing the figures from {{ updated() }}.
-          <mf-error-reference />
-        </span>
-        <button type="button" class="mf-btn" data-stale-retry (click)="retryRefresh()">
-          Retry
-        </button>
-      </div>
-    }
 
     <ng-template #periodControl>
       <label class="period">
@@ -170,19 +157,50 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
       @if (showTabs()) {
         <ng-container *ngTemplateOutlet="tabList" />
       }
-      @switch (state()) {
+      @if (notice(); as note) {
+        <mf-dash-note [text]="note" (dismiss)="notice.set(null)" />
+      }
+      @if (summaryTab() && refreshFailed()) {
+        <mf-dash-state variant="stale" [updated]="updated()" (retry)="retryRefresh()" />
+      }
+      @switch (viewState()) {
+        @case ('board') {
+          <!-- Swimlane and Users read their own endpoints: nothing here waits for, or dies with, the shared summary request. -->
+          <ng-container *ngTemplateOutlet="boardPanel" />
+        }
         @case ('loading') {
-          <div class="skeletons" role="status" aria-busy="true" aria-label="Loading the dashboard">
-            @for (n of skeletonTiles; track n) {
-              <div class="skeleton"></div>
-            }
+          <div
+            class="panel"
+            role="tabpanel"
+            [attr.data-tabpanel]="activeTab()"
+            [id]="panelId(activeTab()!)"
+            [attr.aria-labelledby]="tabId(activeTab()!)"
+          >
+            <div
+              class="skeletons"
+              role="status"
+              aria-busy="true"
+              aria-label="Loading the dashboard"
+            >
+              @for (n of skeletonTiles; track n) {
+                <div class="skeleton"></div>
+              }
+            </div>
           </div>
         }
         @case ('error') {
-          <div class="alert" role="alert" data-error>
-            <span>The dashboard could not be loaded.</span>
-            <mf-error-reference />
-            <button type="button" class="mf-btn" (click)="load()">Retry</button>
+          <div
+            class="panel"
+            role="tabpanel"
+            [attr.data-tabpanel]="activeTab()"
+            [id]="panelId(activeTab()!)"
+            [attr.aria-labelledby]="tabId(activeTab()!)"
+          >
+            <mf-dash-state
+              variant="error"
+              message="The dashboard could not be loaded."
+              (retry)="retryFirstLoad()"
+            />
           </div>
         }
         @default {
@@ -378,14 +396,8 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                     </mf-dash-section>
                   </div>
                 }
-                @default {
-                  <ng-container *ngTemplateOutlet="boardPanel" />
-                }
               }
             }
-          } @else {
-            <!-- Only the Swimlane and Users tabs: they read their own endpoints, there is no summary to wait for. -->
-            <ng-container *ngTemplateOutlet="boardPanel" />
           }
         }
       }
@@ -433,12 +445,20 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
         (tabChange)="selectTab($event)"
       >
         @if (activeTab()) {
+          <!-- Only when the figures are 10 minutes old: the age as text (warning style, icon and words), announced once when it appears. At 375 px it is read, not shown. -->
+          <span class="age" role="status" aria-live="polite" data-stale-age-live>
+            @if (staleText(); as text) {
+              <span class="age-text" data-stale-age>
+                <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>{{ text }}
+              </span>
+            }
+          </span>
           <!-- One icon-only Refresh for every tab, acting on the tab shown; the time of the last read is its tooltip, not visible text. -->
           <button
             type="button"
             class="mf-btn mf-btn--icon"
             data-refresh
-            aria-label="Refresh"
+            [attr.aria-label]="refreshLabel()"
             [attr.title]="refreshTip()"
             [attr.aria-disabled]="refreshBusy() ? 'true' : null"
             [attr.aria-busy]="refreshBusy() ? 'true' : null"
@@ -535,20 +555,26 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
       font-size: var(--mf-fs-sm);
       color: var(--mf-text-muted);
     }
-    .stale {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--mf-s2);
-      margin: 0 0 var(--mf-s4);
-      padding: var(--mf-s2) var(--mf-s3);
-      color: var(--mf-warning);
-      background: var(--mf-warning-bg);
-      border: 1px solid var(--mf-warning);
-      border-radius: var(--mf-radius);
-      font-size: var(--mf-fs-sm);
+    .age {
+      display: inline-flex;
+      min-width: 0;
     }
-    .stale span {
-      flex: 1;
+    .age-text {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      color: var(--mf-warning);
+      font-size: var(--mf-fs-sm);
+      white-space: nowrap;
+    }
+    @media (max-width: 480px) {
+      .age-text {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
     }
     /* Compact fixed-width tiles, left-aligned: they never stretch to fill the row. */
     .tiles,
@@ -593,16 +619,6 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
       50% {
         opacity: 0.55;
       }
-    }
-    .alert {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s3);
-      padding: var(--mf-s3) var(--mf-s4);
-      color: var(--mf-danger);
-      background: var(--mf-danger-bg);
-      border: 1px solid var(--mf-danger);
-      border-radius: var(--mf-radius);
     }
     .empty-icon {
       display: block;
@@ -654,6 +670,12 @@ export class DashboardPage implements OnInit {
   private readonly listIds: Record<ListKind, number> = { unassigned: 0, overdue: 0, dueSoon: 0 };
   private countTimer: ReturnType<typeof setTimeout> | null = null;
   private lastLoadedAt = 0;
+  private inflight = false;
+  private retrying = false;
+  /** When the summary on screen was last read successfully (epoch ms). */
+  private readonly summaryOkAt = signal<number | null>(null);
+  /** The clock for the age text; moved on every 30 s check and whenever a read succeeds or the tab becomes visible. */
+  private readonly now = signal(0);
   /** Counts the summary reads that were meant to refresh the lists; `listsSeq` is the one the lists on screen belong to. */
   private summarySeq = 0;
   private listsSeq = -1;
@@ -695,10 +717,6 @@ export class DashboardPage implements OnInit {
   private readonly allowedTabs = computed(() =>
     this.visibleTabs().map((t) => t.key as DashboardTab),
   );
-  /** Whether any shown tab reads the shared summary request. */
-  private readonly needsSummary = computed(() =>
-    this.allowedTabs().some((t) => SUMMARY_DATA_TABS.includes(t)),
-  );
   /** The Summary tab is shown (Dashboard.ViewSummary or Dashboard.ViewUnassigned). */
   protected readonly canSummary = computed(() => this.allowedTabs().includes('summary'));
   /** The department-wide part of Summary: the tiles and the Overdue / Due soon lists. Without it (Dashboard.ViewUnassigned only) Summary is the unassigned queue alone. */
@@ -709,15 +727,28 @@ export class DashboardPage implements OnInit {
   protected readonly canAssign = computed(() => this.auth.has('Task.Assign'));
 
   /** The `?tab=` of the address; the tab shown is this one, else Summary (a plain /dashboard link always opens the page that answers "what needs attention"). */
-  private readonly tabParam = toSignal(this.route.queryParamMap.pipe(map((p) => p.get('tab'))), {
-    initialValue: this.route.snapshot.queryParamMap.get('tab'),
+  private readonly queryParams = toSignal(this.route.queryParamMap, {
+    initialValue: this.route.snapshot.queryParamMap,
   });
+  private readonly tabParam = computed(() => this.queryParams().get('tab'));
   /** The tab shown: the one in the address when it is permitted, else the first permitted tab (a deep link to a forbidden tab falls back); null without any tab. */
   protected readonly activeTab = computed<DashboardTab | null>(() => {
     const fromUrl = this.tabParam();
     const allowed = this.allowedTabs();
     return isDashboardTab(fromUrl) && allowed.includes(fromUrl) ? fromUrl : (allowed[0] ?? null);
   });
+
+  /** Summary, Breakdowns and Trends read the shared summary request; Swimlane and Users never do (P2). */
+  protected readonly summaryTab = computed(() => {
+    const tab = this.activeTab();
+    return tab !== null && SUMMARY_DATA_TABS.includes(tab);
+  });
+  /** What the page body shows: the board tabs never wait on the summary (P2); the others follow the state of the shared summary read. */
+  protected readonly viewState = computed<LoadState | 'board'>(() =>
+    this.summaryTab() ? this.state() : 'board',
+  );
+  /** A one-line note under the tab row: why the tab shown is not the one in the link (R1). Dropped when the person moves to another tab. */
+  protected readonly notice = signal<string | null>(null);
 
   /**
    * The lists of the Summary tab: the Unassigned queue (with Dashboard.ViewUnassigned, or Dashboard.ViewSummary and Task.Assign),
@@ -784,18 +815,45 @@ export class DashboardPage implements OnInit {
           : this.updated();
     return at ? `Refresh. Updated ${at}. Refreshes itself every 5 minutes.` : 'Refresh';
   });
+  /** The last successful read of the tab shown (epoch ms), for the age text (P6). */
+  private readonly activeOkAt = computed(() => {
+    switch (this.activeTab()) {
+      case 'swimlane':
+        return this.swimlane()?.lastOkAt() ?? null;
+      case 'users':
+        return this.users()?.lastOkAt() ?? null;
+      default:
+        return this.summaryOkAt();
+    }
+  });
+  /** A failed refresh of the tab shown: its banner already says so, so the age text stays away (it must not say the same thing twice). */
+  private readonly activeFailed = computed(() => {
+    switch (this.activeTab()) {
+      case 'swimlane':
+        return this.swimlane()?.refreshFailed() ?? false;
+      case 'users':
+        return this.users()?.failed() ?? false;
+      default:
+        return this.refreshFailed();
+    }
+  });
+  /** "Updated 14 min ago" once the figures on screen are 10 minutes old (two missed refreshes); null in a normal session (P6, decision S stays). */
+  protected readonly staleText = computed(() =>
+    this.activeFailed() ? null : staleAgeText(this.activeOkAt(), this.now()),
+  );
+  protected readonly refreshLabel = computed(() => {
+    const text = this.staleText();
+    return text ? `Refresh. ${text}.` : 'Refresh';
+  });
   protected readonly periodCaption = computed(() => presetOf(this.period()).caption);
   protected readonly updated = computed(() => {
     const d = this.data();
     return d ? mfDate(d.generatedAtUtc, this.zone, 'datetime') : null;
   });
-  /** The tab row shows while loading and on every tab, but not in the error state or on the empty summary (which has no tabs to offer). */
-  protected readonly showTabs = computed(() => {
-    const state = this.state();
-    if (state === 'error') return false;
-    if (state === 'loading') return true;
-    return !this.data() || !this.isEmpty();
-  });
+  /** The tab row is always there (P2/P7: an error stays inside the tab), except on the empty Summary, which has no other tab to offer. */
+  protected readonly showTabs = computed(
+    () => !(this.summaryTab() && this.state() === 'ready' && !!this.data() && this.isEmpty()),
+  );
   /**
    * Nothing open and nothing created or completed in the period. Only meaningful with the whole Summary tab (Dashboard.ViewSummary; the counts are redacted to zero for
    * everyone else, which must not read as "no tasks"), and only when no board tab needs the tab list.
@@ -823,12 +881,48 @@ export class DashboardPage implements OnInit {
         if (this.state() === 'ready') this.load({ silent: true, fresh: true });
       });
     });
-    // Keep the address in step with the tab shown: add a missing or unknown ?tab=, so a reload or a shared link lands here.
+    // Keep the address in step with the tab shown (P9, R1): a link to a tab the person cannot open (or that does not exist) shows the first
+    // permitted tab with a note, and the address is rewritten once, replacing the entry: defaults and unknown parameters leave it, a plain
+    // link or one that already says the right thing is not touched.
     effect(() => {
       const tab = this.activeTab();
-      const param = this.tabParam();
+      const params = this.queryParams();
+      const requested = this.tabParam();
+      const allowed = this.allowedTabs();
       untracked(() => {
-        if (tab && param !== tab) void this.navigateToTab(tab, true);
+        if (!tab) return;
+        const fallback = tabFallback(requested, allowed);
+        if (fallback) {
+          this.notice.set(
+            fallback.kind === 'forbidden'
+              ? `${DASHBOARD_TAB_LABELS[fallback.tab]} is not available for your role. Showing ${DASHBOARD_TAB_LABELS[tab]}.`
+              : `That tab does not exist. Showing ${DASHBOARD_TAB_LABELS[tab]}.`,
+          );
+        }
+        const canonical = canonicalParams(params, tab);
+        if (!sameParams(params, canonical)) {
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: canonical,
+            replaceUrl: true,
+          });
+        }
+      });
+    });
+    // The note belongs to the navigation that caused it: another tab (a click, Back) drops it.
+    let shownTab: DashboardTab | null | undefined;
+    effect(() => {
+      const tab = this.activeTab();
+      untracked(() => {
+        if (shownTab !== undefined && shownTab !== tab) this.notice.set(null);
+        shownTab = tab;
+      });
+    });
+    // Summary, Breakdowns and Trends read the shared summary when one of them is shown; a payload read under a minute ago is reused (P2).
+    effect(() => {
+      const shown = this.summaryTab();
+      untracked(() => {
+        if (shown) this.ensureSummary();
       });
     });
     // The lists belong to the Summary tab and are read when it is shown (not on the other tabs): arriving on it with older lists reads them.
@@ -849,7 +943,7 @@ export class DashboardPage implements OnInit {
 
   ngOnInit(): void {
     this.prefs.ensureLoaded();
-    this.load();
+    this.now.set(this.clock.now().getTime());
     this.startAutoRefresh();
   }
 
@@ -858,6 +952,7 @@ export class DashboardPage implements OnInit {
   protected selectTab(key: string): void {
     if (!isDashboardTab(key) || !this.allowedTabs().includes(key) || key === this.activeTab())
       return;
+    this.notice.set(null);
     // A user's tab change is a history entry (Back returns to the previous tab); only the normalising redirect replaces.
     void this.navigateToTab(key, false);
   }
@@ -865,13 +960,8 @@ export class DashboardPage implements OnInit {
   private navigateToTab(tab: DashboardTab, replace: boolean): Promise<boolean> {
     return this.router.navigate([], {
       relativeTo: this.route,
-      // The Swimlane tab's own parameters (group, sort, filters...) do not follow the person to another tab.
-      queryParams: {
-        tab,
-        ...(tab === 'swimlane' ? {} : clearedViewParams()),
-        ...(tab === 'trends' ? {} : clearedTrendParams()),
-        ...(tab === 'users' ? {} : clearedUsersParams()),
-      },
+      // The parameters of the tab left do not follow the person to another tab.
+      queryParams: { tab, ...clearedTabParams(tab) },
       queryParamsHandling: 'merge',
       replaceUrl: replace,
     });
@@ -913,13 +1003,10 @@ export class DashboardPage implements OnInit {
     options: { silent?: boolean; fresh?: boolean; lists?: boolean; announce?: boolean } = {},
   ): void {
     const { silent = false, fresh = false, lists = true, announce = false } = options;
-    if (!this.needsSummary()) {
-      // Only the Swimlane and Users tabs: they read their own endpoints, there is no summary to load.
-      this.state.set('ready');
-      this.refreshFailed.set(false);
-      return;
-    }
+    // Swimlane and Users read their own endpoints and never ask for the summary (P2).
+    if (!this.summaryTab()) return;
     const id = ++this.requestId;
+    this.inflight = true;
     const background = silent && !!this.data();
     if (background) this.refreshing.set(true);
     else {
@@ -935,11 +1022,15 @@ export class DashboardPage implements OnInit {
         .subscribe({
           next: (summary) => {
             if (id !== this.requestId) return;
+            this.inflight = false;
             this.data.set(summary);
             this.state.set('ready');
             this.refreshing.set(false);
             this.refreshFailed.set(false);
             this.lastLoadedAt = this.clock.now().getTime();
+            this.summaryOkAt.set(this.lastLoadedAt);
+            this.now.set(this.lastLoadedAt);
+            this.finishRetry('ready');
             if (announce) this.live.set(`Dashboard refreshed. Updated ${this.updated()}.`);
             if (this.focusRefreshWhenDone) {
               this.focusRefreshWhenDone = false;
@@ -959,15 +1050,45 @@ export class DashboardPage implements OnInit {
           },
           error: () => {
             if (id !== this.requestId) return;
+            this.inflight = false;
             this.refreshing.set(false);
             this.focusRefreshWhenDone = false;
             // A failed background refresh keeps the figures on screen; only a first load shows the error state.
             if (this.data()) this.refreshFailed.set(true);
             else this.state.set('error');
+            this.finishRetry('failed');
           },
         });
+    // A first load shows its failure inline in the tab (no toast, the reference goes to the alert); a background one in the stale banner.
     if (background) this.quiet.run(start);
-    else start();
+    else this.quiet.runInline(start);
+  }
+
+  /**
+   * Called when Summary, Breakdowns or Trends is shown: reads the summary unless one is on its way or the payload on screen is under a
+   * minute old (switching among the three tabs, or back from another tab, must not refetch).
+   */
+  private ensureSummary(): void {
+    if (this.inflight) return;
+    const data = this.data();
+    if (!data) {
+      this.load();
+      return;
+    }
+    if (this.clock.now().getTime() - this.lastLoadedAt < FRESH_FOR_MS) return;
+    this.load({ silent: true });
+  }
+
+  /** Retry in the error state of a tab: reads again; focus follows the P7 rule when the answer is in. */
+  protected retryFirstLoad(): void {
+    this.retrying = true;
+    this.load();
+  }
+
+  private finishRetry(outcome: 'ready' | 'failed'): void {
+    if (!this.retrying) return;
+    this.retrying = false;
+    focusAfterRetry(this.host.nativeElement, this.injector, outcome);
   }
 
   // ---- lists
@@ -1095,21 +1216,21 @@ export class DashboardPage implements OnInit {
       if (typeof document !== 'undefined' && document.querySelector('mf-dash-task-list .im-pop')) {
         return;
       }
-      if (this.state() === 'ready') this.load({ silent: true });
+      // The timer acts on the tab on screen only: Swimlane and Users refresh themselves, a hidden tab does no work.
+      if (this.summaryTab() && this.state() === 'ready') this.load({ silent: true });
     };
     const timer = setInterval(tick, AUTO_REFRESH_MS);
+    const ageTimer = setInterval(() => this.now.set(this.clock.now().getTime()), STALE_CHECK_MS);
     // Back on the tab after a long absence: catch up at once instead of waiting for the next tick.
     const onVisible = () => {
-      if (
-        document.visibilityState === 'visible' &&
-        this.clock.now().getTime() - this.lastLoadedAt >= AUTO_REFRESH_MS
-      ) {
-        tick();
-      }
+      if (document.visibilityState !== 'visible') return;
+      this.now.set(this.clock.now().getTime());
+      if (this.clock.now().getTime() - this.lastLoadedAt >= AUTO_REFRESH_MS) tick();
     };
     document.addEventListener('visibilitychange', onVisible);
     this.destroyRef.onDestroy(() => {
       clearInterval(timer);
+      clearInterval(ageTimer);
       document.removeEventListener('visibilitychange', onVisible);
     });
   }

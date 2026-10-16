@@ -112,8 +112,13 @@ describe('landingGuard', () => {
   });
 
   it('goes to the Dashboard without Task.View only when the user may open it', async () => {
-    setup(profileOf({ permissions: ['Client.View', 'Dashboard.View'] }));
+    setup(profileOf({ permissions: ['Client.View', 'Dashboard.View', 'Dashboard.ViewSwimlane'] }));
     expect(await run(landingGuard)).toBe('/dashboard');
+  });
+
+  it('skips a Dashboard with no tab turned on (R2): the first permitted screen instead', async () => {
+    setup(profileOf({ permissions: ['Client.View', 'Dashboard.View', 'Dashboard.ViewCoverage'] }));
+    expect(await run(landingGuard)).toBe('/clients');
   });
 
   it('never lands on the Dashboard without Dashboard.View: the first permitted screen instead', async () => {

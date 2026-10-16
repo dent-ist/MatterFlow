@@ -42,8 +42,8 @@ test.describe('Swimlane tab', () => {
     await page.getByRole('tab', { name: 'Swimlane' }).click();
     await expect(page).toHaveURL(/tab=swimlane/);
     await expect(page.getByRole('region', { name: 'Swimlane board' })).toBeVisible();
-    // The board's own parameters do not follow the person to another tab.
-    await expect(page).toHaveURL(/group=none/);
+    // The address carries only what differs from the default (P9): the default board adds nothing but the tab.
+    await expect(page).toHaveURL(/\/dashboard\?tab=swimlane$/);
     await page.getByRole('tab', { name: 'Users' }).click();
     await expect(page).toHaveURL(/tab=users/);
     await expect(page).not.toHaveURL(/group=/);
@@ -126,7 +126,9 @@ test.describe('Swimlane tab', () => {
       );
       await page.getByLabel('Sort', { exact: true }).selectOption({ label });
       const data = await (await response).json();
-      await expect(page).toHaveURL(new RegExp(`sort=${key}`));
+      // The default sort is not written to the address (P9).
+      if (key === 'priority') await expect(page).not.toHaveURL(/sort=/);
+      else await expect(page).toHaveURL(new RegExp(`sort=${key}`));
       const refs = data.lanes
         .find((l: Json) => l.status === 'IN_PROGRESS')
         .cards.map((c: Json) => c.ref);
@@ -422,12 +424,12 @@ test.describe('Swimlane tab', () => {
         : route.continue(),
     );
     await page.goto(base);
-    await expect(page.locator('[data-swimlane-error]')).toContainText('could not be loaded');
-    await expect(page.locator('[data-swimlane-error]')).toContainText('Reference');
+    await expect(page.locator('[data-dash-state="error"]')).toContainText('could not be loaded');
+    await expect(page.locator('[data-dash-state="error"]')).toContainText('Reference');
     fail = false;
     await page.getByRole('button', { name: 'Retry' }).click();
     await expect(cards(page, 'NEW').first()).toBeVisible();
-    await expect(page.locator('[data-swimlane-error]')).toHaveCount(0);
+    await expect(page.locator('[data-dash-state="error"]')).toHaveCount(0);
   });
 
   test('stacks the lanes below 900 px and scrolls the board sideways in between', async ({

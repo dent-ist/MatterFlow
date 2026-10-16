@@ -28,7 +28,8 @@ import { LookupStore } from '../../../core/lookups/lookup-store';
 import { UndoService } from '../../../core/notify/undo.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { mfDate } from '../../../core/time/time';
-import { ErrorReference } from '../../../shared/ui/error-reference';
+import { withoutDefaults } from '../dash-url-state';
+import { DashState, focusAfterRetry } from './dash-state';
 import { loadPodChoices } from '../../../shared/work-queue/pod-options';
 import { SwimlaneDrawer } from '../swimlane/swimlane-drawer';
 import { LaneMove, SwimlaneLane } from '../swimlane/swimlane-lane';
@@ -71,7 +72,7 @@ const EDIT_REFRESH_DELAY_MS = 900;
  */
 @Component({
   selector: 'mf-dash-swimlane-tab',
-  imports: [SwimlaneToolbar, SwimlaneLane, SwimlaneDrawer, ErrorReference],
+  imports: [SwimlaneToolbar, SwimlaneLane, SwimlaneDrawer, DashState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-swimlane-toolbar
@@ -90,24 +91,15 @@ const EDIT_REFRESH_DELAY_MS = 900;
     <p class="sr-only" role="status" aria-live="polite" data-swimlane-live>{{ live() }}</p>
 
     @if (refreshFailed()) {
-      <div class="stale" role="status" data-swimlane-stale>
-        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-        <span>
-          The board could not be refreshed. Showing the tasks from {{ updated() }}.
-          <mf-error-reference />
-        </span>
-        <button type="button" class="mf-btn" data-swimlane-stale-retry (click)="refresh()">
-          Retry
-        </button>
-      </div>
+      <mf-dash-state variant="stale" [updated]="updated()" (retry)="retry()" />
     }
 
     @if (state() === 'error') {
-      <div class="alert" role="alert" data-swimlane-error>
-        <span>The swimlane board could not be loaded.</span>
-        <mf-error-reference />
-        <button type="button" class="mf-btn" data-swimlane-retry (click)="load()">Retry</button>
-      </div>
+      <mf-dash-state
+        variant="error"
+        message="The swimlane board could not be loaded."
+        (retry)="retry()"
+      />
     } @else {
       <div
         class="board"
@@ -180,32 +172,6 @@ const EDIT_REFRESH_DELAY_MS = 900;
         max-height: 34rem;
       }
     }
-    .stale {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--mf-s2);
-      margin: 0 0 var(--mf-s3);
-      padding: var(--mf-s2) var(--mf-s3);
-      color: var(--mf-warning);
-      background: var(--mf-warning-bg);
-      border: 1px solid var(--mf-warning);
-      border-radius: var(--mf-radius);
-      font-size: var(--mf-fs-sm);
-    }
-    .stale span {
-      flex: 1;
-    }
-    .alert {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s3);
-      padding: var(--mf-s3) var(--mf-s4);
-      color: var(--mf-danger);
-      background: var(--mf-danger-bg);
-      border: 1px solid var(--mf-danger);
-      border-radius: var(--mf-radius);
-    }
   `,
 })
 export class DashSwimlaneTab implements OnInit {
@@ -227,6 +193,10 @@ export class DashSwimlaneTab implements OnInit {
 
   private requestId = 0;
   private lastLoadedAt = 0;
+  /** A Retry the person pressed is in flight: when it ends, focus follows the P7 rule. */
+  private retrying = false;
+  /** When the board on screen was last read successfully (epoch ms); the page shows "Updated N min ago" from it once it is old (P6). */
+  readonly lastOkAt = signal<number | null>(null);
   private editTimer: ReturnType<typeof setTimeout> | null = null;
   private undoSeen = 0;
 
@@ -236,7 +206,7 @@ export class DashSwimlaneTab implements OnInit {
   protected readonly board = signal<SwimlaneBoard | null>(null);
   /** True while a refresh is running (the Dashboard's tab row shows it on its refresh icon). */
   readonly refreshing = signal(false);
-  protected readonly refreshFailed = signal(false);
+  readonly refreshFailed = signal(false);
   protected readonly live = signal('');
   protected readonly collapsed = signal<ReadonlySet<string>>(new Set());
   private readonly selectedId = signal<number | null>(null);
@@ -357,8 +327,14 @@ export class DashSwimlaneTab implements OnInit {
   ngOnInit(): void {
     const params = this.route.snapshot.queryParamMap;
     this.view.set(viewFromParams(params, this.prefs.remembered()));
-    // Write the view into the address (replacing the entry), so a reload or a copied link lands on the same board.
-    void this.writeUrl(true);
+    // A link that names a display choice (even the default one) is what the person wants: remember it, so the address can leave defaults out.
+    if (params.has('group') || params.has('sort') || params.has('days')) {
+      const v = this.view();
+      this.prefs.remember({ groupBy: v.groupBy, sort: v.sort, days: v.days });
+    }
+    // Write only what differs from the default into the address (replacing the entry); a plain link is not rewritten. A link that names
+    // another tab is being redirected by the page: leave the address to it.
+    if ([null, 'swimlane'].includes(params.get('tab'))) void this.writeUrl(true);
     this.load();
     this.startAutoRefresh();
     void this.loadPods();
@@ -385,7 +361,7 @@ export class DashSwimlaneTab implements OnInit {
   private writeUrl(replace: boolean): Promise<boolean> {
     return this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: viewToParams(this.view()),
+      queryParams: withoutDefaults('swimlane', viewToParams(this.view())),
       queryParamsHandling: 'merge',
       replaceUrl: replace,
     });
@@ -459,6 +435,8 @@ export class DashSwimlaneTab implements OnInit {
             this.refreshing.set(false);
             this.refreshFailed.set(false);
             this.lastLoadedAt = this.clock.now().getTime();
+            this.lastOkAt.set(this.lastLoadedAt);
+            this.finishRetry('ready');
             this.remember(board);
             if (announce) {
               const total = board.lanes.reduce((n, l) => n + l.count, 0);
@@ -471,10 +449,24 @@ export class DashSwimlaneTab implements OnInit {
             // A failed background read keeps the board on screen; only a first load shows the error state.
             if (this.board()) this.refreshFailed.set(true);
             else this.state.set('error');
+            this.finishRetry('failed');
           },
         });
     if (background) this.quiet.run(start);
-    else start();
+    else this.quiet.runInline(start);
+  }
+
+  /** The Retry of the error or stale state: reads again and puts the focus where P7 says when the answer is in. */
+  protected retry(): void {
+    this.retrying = true;
+    if (this.board()) this.refresh();
+    else this.load();
+  }
+
+  private finishRetry(outcome: 'ready' | 'failed'): void {
+    if (!this.retrying) return;
+    this.retrying = false;
+    focusAfterRetry(this.host.nativeElement, this.injector, outcome);
   }
 
   /** The people and task types seen so far feed the filter menus (a filter then does not remove its own alternatives). */

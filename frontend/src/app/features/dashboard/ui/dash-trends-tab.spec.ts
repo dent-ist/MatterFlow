@@ -491,11 +491,11 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     it('shows an error with Retry when the first read fails', async () => {
       let fail = true;
       await open('/trends', () => (fail ? throwError(() => ({ status: 500 })) : of(aTrend())));
-      expect(el.querySelector('[data-trend-error]')).not.toBeNull();
+      expect(el.querySelector('[data-dash-state="error"]')).not.toBeNull();
       fail = false;
-      el.querySelector<HTMLButtonElement>('[data-trend-retry]')!.click();
+      el.querySelector<HTMLButtonElement>('[data-dash-retry]')!.click();
       await settle();
-      expect(el.querySelector('[data-trend-error]')).toBeNull();
+      expect(el.querySelector('[data-dash-state="error"]')).toBeNull();
       expect(panelLines('flows').length).toBe(2);
     });
   });

@@ -171,7 +171,7 @@ test.describe('users screenshots', () => {
 
     await page.route('**/api/v1/dashboard/workload**', (route) => route.abort());
     await page.goto(base);
-    await expect(page.locator('[data-users-error]')).toBeVisible();
+    await expect(page.locator('[data-dash-state="error"]')).toBeVisible();
     await shot('11-error-1366');
   });
 });

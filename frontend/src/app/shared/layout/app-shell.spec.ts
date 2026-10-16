@@ -32,14 +32,22 @@ describe('AppShell header search', () => {
   const navLabels = (fixture: { nativeElement: HTMLElement }): string[] =>
     Array.from(fixture.nativeElement.querySelectorAll('nav a')).map((a) => a.textContent!.trim());
 
-  it('shows the Dashboard menu item only with Dashboard.View (a tab permission alone is not enough)', async () => {
+  it('shows the Dashboard menu item only with Dashboard.View and a tab permission (R2; ViewCoverage alone does not count)', async () => {
     expect(navLabels(await create(['Task.View']))).not.toContain('Dashboard');
     TestBed.resetTestingModule();
     expect(navLabels(await create(['Task.View', 'Dashboard.ViewSummary']))).not.toContain(
       'Dashboard',
     );
     TestBed.resetTestingModule();
-    expect(navLabels(await create(['Task.View', 'Dashboard.View']))).toContain('Dashboard');
+    expect(navLabels(await create(['Task.View', 'Dashboard.View']))).not.toContain('Dashboard');
+    TestBed.resetTestingModule();
+    expect(
+      navLabels(await create(['Task.View', 'Dashboard.View', 'Dashboard.ViewCoverage'])),
+    ).not.toContain('Dashboard');
+    TestBed.resetTestingModule();
+    expect(
+      navLabels(await create(['Task.View', 'Dashboard.View', 'Dashboard.ViewTrends'])),
+    ).toContain('Dashboard');
   });
 
   it('shows the global search combobox to anyone who may view a searchable type', async () => {

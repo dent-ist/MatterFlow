@@ -7,6 +7,8 @@ export interface NavItem {
   path: string;
   /** Visible when the user holds ANY of these; empty = every active user. (UX Appendix C) */
   permissions: Permission[];
+  /** Also needs at least one Dashboard tab permission (`AuthStore.hasAnyDashboardTab`): a Dashboard with no tab is a dead end. */
+  needsDashboardTab?: boolean;
   /** Shows the pending-users count next to the label. */
   pendingBadge?: boolean;
   /** Other paths whose pages belong to this item (a second tab of the same page); the item is highlighted on them too. */
@@ -15,7 +17,13 @@ export interface NavItem {
 
 /** Left navigation (UX 2.1). Items are hidden, never disabled, without the matching View permission. */
 export const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', icon: 'pi pi-home', path: '/dashboard', permissions: ['Dashboard.View'] },
+  {
+    label: 'Dashboard',
+    icon: 'pi pi-home',
+    path: '/dashboard',
+    permissions: ['Dashboard.View'],
+    needsDashboardTab: true,
+  },
   { label: 'My Work', icon: 'pi pi-user', path: '/my-work', permissions: ['Task.View'] },
   { label: 'Task Queue', icon: 'pi pi-list-check', path: '/tasks', permissions: ['Task.View'] },
   { label: 'Pod Work', icon: 'pi pi-users', path: '/pods/work', permissions: ['Pod.View'] },

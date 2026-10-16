@@ -24,10 +24,11 @@ import {
 } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
 import { QuietRequests } from '../../../core/http/interceptors';
-import { USER_TIME_ZONE } from '../../../core/time/clock';
+import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { mfDate } from '../../../core/time/time';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
-import { ErrorReference } from '../../../shared/ui/error-reference';
+import { withoutDefaults } from '../dash-url-state';
+import { DashState, focusAfterRetry } from '../ui/dash-state';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { CoverageDrawer, CoverageTarget } from './coverage-drawer';
 import {
@@ -77,7 +78,7 @@ const dayNumber = (iso: string) => Date.parse(iso + 'T00:00:00Z') / 86_400_000;
  */
 @Component({
   selector: 'mf-coverage-view',
-  imports: [DateInput, SearchBox, TaskTypeIcon, ErrorReference, CoverageDrawer],
+  imports: [DateInput, SearchBox, TaskTypeIcon, DashState, CoverageDrawer],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h3 class="head" id="cv-h" data-coverage-heading>
@@ -217,25 +218,16 @@ const dayNumber = (iso: string) => Date.parse(iso + 'T00:00:00Z') / 86_400_000;
     <p class="sr-only" role="status" aria-live="polite" data-coverage-live>{{ live() }}</p>
 
     @if (refreshFailed()) {
-      <div class="stale" role="status" data-coverage-stale>
-        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-        <span>
-          The coverage could not be refreshed. Showing the figures from {{ updated() }}.
-          <mf-error-reference />
-        </span>
-        <button type="button" class="mf-btn" data-coverage-stale-retry (click)="refresh()">
-          Retry
-        </button>
-      </div>
+      <mf-dash-state variant="stale" [updated]="updated()" (retry)="retry()" />
     }
 
     @switch (state()) {
       @case ('error') {
-        <div class="alert" role="alert" data-coverage-error>
-          <span>The task type coverage could not be loaded.</span>
-          <mf-error-reference />
-          <button type="button" class="mf-btn" data-coverage-retry (click)="load()">Retry</button>
-        </div>
+        <mf-dash-state
+          variant="error"
+          message="The task type coverage could not be loaded."
+          (retry)="retry()"
+        />
       }
       @case ('forbidden') {
         <p class="empty" role="status" data-coverage-forbidden>
@@ -734,21 +726,6 @@ const dayNumber = (iso: string) => Date.parse(iso + 'T00:00:00Z') / 86_400_000;
         opacity: 0.55;
       }
     }
-    .stale {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--mf-s2);
-      margin: 0 0 var(--mf-s3);
-      padding: var(--mf-s2) var(--mf-s3);
-      color: var(--mf-warning);
-      background: var(--mf-warning-bg);
-      border: 1px solid var(--mf-warning);
-      border-radius: var(--mf-radius);
-      font-size: var(--mf-fs-sm);
-    }
-    .stale span {
-      flex: 1;
-    }
     .alert {
       display: flex;
       flex-wrap: wrap;
@@ -784,6 +761,10 @@ export class CoverageView implements OnInit {
   private readonly prefs = inject(CoveragePrefs);
   private readonly quiet = inject(QuietRequests);
   private readonly zone = inject(USER_TIME_ZONE);
+  private readonly clock = inject(Clock);
+  private retrying = false;
+  /** When the matrix on screen was last read successfully (epoch ms); the page shows "Updated N min ago" from it once it is old (P6). */
+  readonly lastOkAt = signal<number | null>(null);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
@@ -815,7 +796,7 @@ export class CoverageView implements OnInit {
   protected readonly board = signal<CoverageBoard | null>(null);
   /** True while a refresh is running (the Dashboard's tab row shows it on its refresh icon). */
   readonly refreshing = signal(false);
-  protected readonly refreshFailed = signal(false);
+  readonly refreshFailed = signal(false);
   protected readonly live = signal('');
   protected readonly activeR = signal(0);
   protected readonly activeC = signal(0);
@@ -879,7 +860,11 @@ export class CoverageView implements OnInit {
     this.prefs.ensureLoaded();
     const params = this.route.snapshot.queryParamMap;
     this.period.set(periodFromParams((k) => params.get(k), this.prefs.period()));
-    void this.writeUrl();
+    // A link that names a period (even the default one) is what the person wants: remember it, so the address can leave the default out.
+    if (params.has('cp') && this.period().period !== 'custom') {
+      this.prefs.remember({ period: this.period().period });
+    }
+    if ([null, 'users'].includes(params.get('tab'))) void this.writeUrl();
     this.load();
   }
 
@@ -912,7 +897,7 @@ export class CoverageView implements OnInit {
   private writeUrl(): Promise<boolean> {
     return this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: periodToParams(this.period()),
+      queryParams: withoutDefaults('users', periodToParams(this.period())),
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
@@ -973,6 +958,8 @@ export class CoverageView implements OnInit {
             this.state.set('ready');
             this.refreshing.set(false);
             this.refreshFailed.set(false);
+            this.lastOkAt.set(this.clock.now().getTime());
+            this.finishRetry('ready');
             this.podsSeen.emit(
               new Map(board.users.flatMap((u) => u.pods.map((p) => [p.podId, p.name] as const))),
             );
@@ -991,10 +978,24 @@ export class CoverageView implements OnInit {
             }
             if (this.board()) this.refreshFailed.set(true);
             else this.state.set('error');
+            this.finishRetry('failed');
           },
         });
     if (background) this.quiet.run(start);
-    else start();
+    else this.quiet.runInline(start);
+  }
+
+  /** The Retry of the error or stale state: reads again and puts the focus where P7 says when the answer is in. */
+  protected retry(): void {
+    this.retrying = true;
+    if (this.board()) this.refresh();
+    else this.load();
+  }
+
+  private finishRetry(outcome: 'ready' | 'failed'): void {
+    if (!this.retrying) return;
+    this.retrying = false;
+    focusAfterRetry(this.host.nativeElement, this.injector, outcome);
   }
 
   // ---- cells

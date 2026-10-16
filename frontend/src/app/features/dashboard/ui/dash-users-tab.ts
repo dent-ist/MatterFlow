@@ -31,7 +31,8 @@ import { UndoService } from '../../../core/notify/undo.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { mfDate } from '../../../core/time/time';
 import { USERS_VIEW_PARAM } from '../dashboard-links';
-import { ErrorReference } from '../../../shared/ui/error-reference';
+import { withoutDefaults } from '../dash-url-state';
+import { DashState, focusAfterRetry } from './dash-state';
 import { loadPodChoices } from '../../../shared/work-queue/pod-options';
 import { CoverageView } from '../users/coverage-view';
 import { UsersAssign } from '../users/users-assign';
@@ -98,7 +99,7 @@ export const USERS_PAGE = 200;
     UsersDrawer,
     UsersAssign,
     CoverageView,
-    ErrorReference,
+    DashState,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -174,41 +175,16 @@ export const USERS_PAGE = 200;
       <p class="sr-only" role="status" aria-live="polite" data-users-live>{{ live() }}</p>
 
       @if (refreshFailed()) {
-        <div class="stale" role="status" data-users-stale>
-          <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-          <span>
-            The team workload could not be refreshed. Showing the figures from {{ updated() }}.
-            <mf-error-reference />
-          </span>
-          <button
-            type="button"
-            class="mf-btn mf-btn--icon"
-            data-users-stale-retry
-            aria-label="Retry"
-            title="Retry"
-            (click)="refresh()"
-          >
-            <i class="pi pi-refresh" aria-hidden="true"></i>
-          </button>
-        </div>
+        <mf-dash-state variant="stale" [updated]="updated()" (retry)="retry()" />
       }
 
       @switch (state()) {
         @case ('error') {
-          <div class="alert" role="alert" data-users-error>
-            <span>The team workload could not be loaded.</span>
-            <mf-error-reference />
-            <button
-              type="button"
-              class="mf-btn mf-btn--icon"
-              data-users-retry
-              aria-label="Retry"
-              title="Retry"
-              (click)="load()"
-            >
-              <i class="pi pi-refresh" aria-hidden="true"></i>
-            </button>
-          </div>
+          <mf-dash-state
+            variant="error"
+            message="The team workload could not be loaded."
+            (retry)="retry()"
+          />
         }
         @case ('forbidden') {
           <p class="empty" role="status" data-users-forbidden>
@@ -403,32 +379,6 @@ export const USERS_PAGE = 200;
       border: 1px dashed var(--mf-border-strong);
       border-radius: var(--mf-radius-lg);
     }
-    .stale {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--mf-s2);
-      margin: 0 0 var(--mf-s3);
-      padding: var(--mf-s2) var(--mf-s3);
-      color: var(--mf-warning);
-      background: var(--mf-warning-bg);
-      border: 1px solid var(--mf-warning);
-      border-radius: var(--mf-radius);
-      font-size: var(--mf-fs-sm);
-    }
-    .stale span {
-      flex: 1;
-    }
-    .alert {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s3);
-      padding: var(--mf-s3) var(--mf-s4);
-      color: var(--mf-danger);
-      background: var(--mf-danger-bg);
-      border: 1px solid var(--mf-danger);
-      border-radius: var(--mf-radius);
-    }
   `,
 })
 export class DashUsersTab implements OnInit {
@@ -449,6 +399,15 @@ export class DashUsersTab implements OnInit {
 
   private requestId = 0;
   private lastLoadedAt = 0;
+  private retrying = false;
+  private readonly workloadOkAt = signal<number | null>(null);
+  /** When the figures of the view on screen were last read successfully (epoch ms); the page shows "Updated N min ago" from it once it is old (P6). */
+  readonly failed = computed(() =>
+    this.view() === 'coverage' ? (this.coverage()?.refreshFailed() ?? false) : this.refreshFailed(),
+  );
+  readonly lastOkAt = computed(() =>
+    this.view() === 'coverage' ? (this.coverage()?.lastOkAt() ?? null) : this.workloadOkAt(),
+  );
   private editTimer: ReturnType<typeof setTimeout> | null = null;
   private undoSeen = 0;
 
@@ -465,7 +424,7 @@ export class DashUsersTab implements OnInit {
   readonly refreshing = computed(() => this.reading() || (this.coverage()?.refreshing() ?? false));
   private readonly reading = signal(false);
   private readonly coverage = viewChild(CoverageView);
-  protected readonly refreshFailed = signal(false);
+  readonly refreshFailed = signal(false);
   protected readonly live = signal('');
   protected readonly bones = Array.from({ length: 24 }, (_, i) => i);
   protected readonly version = signal(0);
@@ -559,9 +518,12 @@ export class DashUsersTab implements OnInit {
     const asked = this.route.snapshot.queryParamMap.get(USERS_VIEW_PARAM);
     const wanted = isTabView(asked) ? asked : this.prefs.view();
     this.view.set(wanted === 'coverage' && this.canCoverage() ? 'coverage' : 'workload');
+    // A link that names the view (even the default one) is what the person wants: remember it, so the address can leave the default out.
+    if (isTabView(asked)) this.prefs.remember({ view: this.view() });
     this.initialised = true;
     if (this.view() === 'workload') this.load();
-    else void this.writeUrl();
+    else if ([null, 'users'].includes(this.route.snapshot.queryParamMap.get('tab')))
+      void this.writeUrl();
     this.startAutoRefresh();
     void this.loadPods();
   }
@@ -651,7 +613,10 @@ export class DashUsersTab implements OnInit {
   private writeUrl(): Promise<boolean> {
     return this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: filtersToParams(this.filters()),
+      queryParams: withoutDefaults('users', {
+        ...filtersToParams(this.filters()),
+        [USERS_VIEW_PARAM]: this.view() === 'coverage' ? 'coverage' : null,
+      }),
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
@@ -691,6 +656,8 @@ export class DashUsersTab implements OnInit {
             this.reading.set(false);
             this.refreshFailed.set(false);
             this.lastLoadedAt = this.clock.now().getTime();
+            this.workloadOkAt.set(this.lastLoadedAt);
+            this.finishRetry('ready');
             if (announce) {
               this.live.set(
                 `Team workload refreshed. ${plural(board.users.length, 'person', 'people')}.`,
@@ -707,10 +674,24 @@ export class DashUsersTab implements OnInit {
             // A failed background read keeps the cards on screen; only a first load shows the error state.
             if (this.board()) this.refreshFailed.set(true);
             else this.state.set('error');
+            this.finishRetry('failed');
           },
         });
     if (background) this.quiet.run(start);
-    else start();
+    else this.quiet.runInline(start);
+  }
+
+  /** The Retry of the error or stale state: reads again and puts the focus where P7 says when the answer is in. */
+  protected retry(): void {
+    this.retrying = true;
+    if (this.board()) this.refresh();
+    else this.load();
+  }
+
+  private finishRetry(outcome: 'ready' | 'failed'): void {
+    if (!this.retrying) return;
+    this.retrying = false;
+    focusAfterRetry(this.host.nativeElement, this.injector, outcome);
   }
 
   private async loadPods(): Promise<void> {

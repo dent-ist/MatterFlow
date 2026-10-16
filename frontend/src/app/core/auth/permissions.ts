@@ -56,3 +56,16 @@ export const PERMISSIONS = [
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
+
+/**
+ * The permissions that open a Dashboard tab (in addition to Dashboard.View). `Dashboard.ViewCoverage` is not here: it is a sub-view of the
+ * Users tab and opens nothing by itself.
+ */
+export const DASHBOARD_TAB_PERMISSION_CODES = [
+  'Dashboard.ViewSummary',
+  'Dashboard.ViewUnassigned',
+  'Dashboard.ViewBreakdowns',
+  'Dashboard.ViewTrends',
+  'Dashboard.ViewSwimlane',
+  'Dashboard.ViewUsers',
+] as const satisfies readonly Permission[];

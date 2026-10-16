@@ -22,6 +22,7 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { aBoard } from '../users/users-testing';
 import { aRow, pageOf, provideLookups } from '../../../shared/work-queue/work-queue-testing';
 import { aTrend } from '../ui/trend-testing';
+import { STALE_CHECK_MS } from '../dash-stale';
 import { AUTO_REFRESH_MS, DashboardPage } from './dashboard-page';
 
 const OPEN = 'status=NEW&status=IN_PROGRESS&status=ON_HOLD';
@@ -194,6 +195,8 @@ describe('DashboardPage', () => {
   let getTaskQueue: ReturnType<typeof vi.fn>;
   let assignTask: ReturnType<typeof vi.fn>;
   let harness: RouterTestingHarness;
+  const T0 = Date.parse('2026-10-14T15:45:00Z');
+  let clockMs = T0;
 
   async function open(
     response: unknown = of(summary()),
@@ -241,7 +244,7 @@ describe('DashboardPage', () => {
         MessageService,
         ...provideLookups(),
         { provide: USER_TIME_ZONE, useValue: 'UTC' },
-        { provide: Clock, useValue: { now: () => new Date('2026-10-14T15:45:00Z') } },
+        { provide: Clock, useValue: { now: () => new Date(clockMs) } },
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();
@@ -263,6 +266,7 @@ describe('DashboardPage', () => {
   const text = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
   beforeEach(() => {
+    clockMs = T0;
     unassignedRows = [unassignedRow];
     try {
       localStorage.clear();
@@ -382,12 +386,14 @@ describe('DashboardPage', () => {
     getDashboard.mockReturnValueOnce(throwError(() => new Error('down')));
     el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
     await settle();
-    const retry = el.querySelector<HTMLButtonElement>('[data-stale-retry]')!;
+    const retry = el.querySelector<HTMLButtonElement>(
+      '[data-dash-state="stale"] [data-dash-retry]',
+    )!;
     retry.focus();
     getDashboard.mockReturnValue(of(summary()));
     retry.click();
     await settle();
-    expect(el.querySelector('[data-stale]')).toBeNull();
+    expect(el.querySelector('[data-dash-state="stale"]')).toBeNull();
     expect(document.activeElement).toBe(el.querySelector('[data-refresh]'));
     el.remove();
   });
@@ -439,9 +445,9 @@ describe('DashboardPage', () => {
       expect(selected.getAttribute('aria-controls')).toBe(panels[0].id);
     });
 
-    it('opens on Summary, puts ?tab= in the address and the page header stays the only H1', async () => {
+    it('opens on Summary, leaves a plain address alone (P9) and the page header stays the only H1', async () => {
       const el = await open();
-      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=summary');
+      expect(TestBed.inject(Router).url).toBe('/dashboard');
       expect(el.querySelectorAll('h1').length).toBe(1);
       expect(el.querySelector('[data-tabpanel="summary"]')).not.toBeNull();
     });
@@ -613,7 +619,7 @@ describe('DashboardPage', () => {
       TestBed.resetTestingModule();
       el = await open();
       expect(text(selectedTab(el))).toBe('Summary');
-      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=summary');
+      expect(TestBed.inject(Router).url).toBe('/dashboard');
     });
 
     it('adds a history entry for a tab change, so Back returns to the previous tab', async () => {
@@ -699,7 +705,7 @@ describe('DashboardPage', () => {
       const el = await open(of(summary()), ['Task.View', 'Dashboard.View']);
       expect(el.querySelector('[role="tablist"]')).toBeNull();
       expect(el.querySelector('[data-group]')).toBeNull();
-      expect(el.querySelector('[data-error], [data-empty]')).toBeNull();
+      expect(el.querySelector('[data-dash-state="error"], [data-empty]')).toBeNull();
       expect(text(el.querySelector('[data-no-tabs-note]'))).toBe(
         'No Dashboard tab is turned on for your role. Ask an administrator to add one (Summary, Breakdowns, Trends, Swimlane or Users) to your role. Your assigned tasks are in My Work.',
       );
@@ -728,7 +734,7 @@ describe('DashboardPage', () => {
       expect(tabLabels(el)).toEqual(['Breakdowns', 'Trends']);
       expect(selected(el)).toBe('Breakdowns');
       expect(el.querySelector('[data-tabpanel="breakdowns"]')).not.toBeNull();
-      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=breakdowns');
+      expect(TestBed.inject(Router).url).toBe('/dashboard');
     });
 
     it('a deep link to a forbidden tab falls back to the first permitted tab', async () => {
@@ -1287,16 +1293,18 @@ describe('DashboardPage', () => {
     getDashboard.mockReturnValue(throwError(() => new Error('boom')));
     el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
     await settle();
-    expect(el.querySelector('[data-stale]')!.textContent).toContain('could not be refreshed');
-    expect(el.querySelector('[data-error]')).toBeNull();
+    expect(el.querySelector('[data-dash-state="stale"]')!.textContent).toContain(
+      'Could not refresh.',
+    );
+    expect(el.querySelector('[data-dash-state="error"]')).toBeNull();
     expect(el.querySelector('[data-group="attention"]')).not.toBeNull();
     // The refresh ran quietly (no generic error toast); the banner is the one message.
     expect(run).toHaveBeenCalledTimes(1);
 
     getDashboard.mockReturnValue(of(summary()));
-    el.querySelector<HTMLButtonElement>('[data-stale-retry]')!.click();
+    el.querySelector<HTMLButtonElement>('[data-dash-state="stale"] [data-dash-retry]')!.click();
     await settle();
-    expect(el.querySelector('[data-stale]')).toBeNull();
+    expect(el.querySelector('[data-dash-state="stale"]')).toBeNull();
   });
 
   it('shows the empty state only to people who can see department figures, with a create button only if they can create tasks', async () => {
@@ -1352,15 +1360,249 @@ describe('DashboardPage', () => {
 
   it('shows an error with Retry that loads again', async () => {
     const el = await open(throwError(() => new Error('boom')));
-    expect(el.querySelector('[data-error]')!.textContent).toContain(
+    expect(el.querySelector('[data-dash-state="error"]')!.textContent).toContain(
       'The dashboard could not be loaded.',
     );
 
     getDashboard.mockReturnValue(of(summary()));
-    el.querySelector<HTMLButtonElement>('[data-error] button')!.click();
+    el.querySelector<HTMLButtonElement>('[data-dash-state="error"] [data-dash-retry]')!.click();
     await settle();
     expect(getDashboard).toHaveBeenCalledTimes(2);
-    expect(el.querySelector('[data-error]')).toBeNull();
+    expect(el.querySelector('[data-dash-state="error"]')).toBeNull();
     expect(el.querySelector('[data-group="attention"]')).not.toBeNull();
+  });
+
+  describe('shell foundations (UX review 2, WP1)', () => {
+    const tabRow = (el: HTMLElement) => el.querySelector('mf-dash-tabs [role="tablist"]');
+    const boom = () => throwError(() => new Error('boom'));
+
+    it('P2: a failing summary does not blank Users or Swimlane, and they never ask for it', async () => {
+      for (const tab of ['users', 'swimlane']) {
+        TestBed.resetTestingModule();
+        const el = await open(boom(), ALL, `/dashboard?tab=${tab}`);
+        expect(getDashboard).not.toHaveBeenCalled();
+        expect(tabRow(el)).not.toBeNull();
+        expect(el.querySelector(`[data-tabpanel="${tab}"]`)).not.toBeNull();
+        expect(el.querySelector('[data-dash-state="error"]')).toBeNull();
+        expect(el.querySelector('mf-dash-tabs [data-refresh]')).not.toBeNull();
+      }
+    });
+
+    it('P2/P7: a failing summary shows one inline error inside the Summary panel; tab row, Refresh and period stay; Retry loads again', async () => {
+      const el = await open(boom());
+      const panel = el.querySelector('[data-tabpanel="summary"]')!;
+      expect(panel.querySelector('[data-dash-state="error"]')).not.toBeNull();
+      expect(el.querySelectorAll('[role="alert"]').length).toBe(1);
+      expect(tabRow(el)).not.toBeNull();
+      expect(el.querySelector('mf-dash-tabs [data-refresh]')).not.toBeNull();
+      expect(text(panel)).toContain('The dashboard could not be loaded.');
+      // The other tabs are one click away and keep their own panels.
+      getDashboard.mockReturnValue(of(summary()));
+      el.querySelector<HTMLButtonElement>('[data-dash-state="error"] [data-dash-retry]')!.click();
+      await settle();
+      expect(el.querySelector('[data-dash-state="error"]')).toBeNull();
+      expect(el.querySelector('[data-group="attention"]')).not.toBeNull();
+    });
+
+    it('P2: a deep link to Trends with a failing summary keeps its address and its tab row', async () => {
+      const el = await open(boom(), ALL, '/dashboard?tab=trends&types=3');
+      expect(el.querySelector('[data-tabpanel="trends"] [data-dash-state="error"]')).not.toBeNull();
+      expect(tabRow(el)).not.toBeNull();
+      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends&types=3');
+    });
+
+    it('P2: Users and Swimlane can be reached from a failed Summary', async () => {
+      const el = await open(boom());
+      el.querySelector<HTMLButtonElement>('[data-tab="users"]')!.click();
+      await settle();
+      expect(el.querySelector('[data-tabpanel="users"]')).not.toBeNull();
+      expect(el.querySelector('[data-dash-state="error"]')).toBeNull();
+    });
+
+    it('P2: Summary, Breakdowns and Trends share one payload: switching among them within a minute does not refetch', async () => {
+      const el = await open();
+      expect(getDashboard).toHaveBeenCalledTimes(1);
+      for (const tab of ['breakdowns', 'trends', 'summary', 'breakdowns']) {
+        el.querySelector<HTMLButtonElement>(`[data-tab="${tab}"]`)!.click();
+        await settle();
+      }
+      expect(getDashboard).toHaveBeenCalledTimes(1);
+    });
+
+    it('P2: coming back to a summary tab after a minute reads it again in the background, keeping the figures', async () => {
+      const el = await open();
+      el.querySelector<HTMLButtonElement>('[data-tab="users"]')!.click();
+      await settle();
+      clockMs += 61_000;
+      el.querySelector<HTMLButtonElement>('[data-tab="breakdowns"]')!.click();
+      await settle();
+      expect(getDashboard).toHaveBeenCalledTimes(2);
+      expect(el.querySelector('[data-tabpanel="breakdowns"]')).not.toBeNull();
+    });
+
+    it('P2: the five-minute timer reads the summary only while a summary tab is shown', async () => {
+      const spy = vi.spyOn(globalThis, 'setInterval');
+      const el = await open(of(summary()), ALL, '/dashboard?tab=users');
+      const tick = spy.mock.calls.find((c) => c[1] === AUTO_REFRESH_MS)![0] as () => void;
+      tick();
+      await settle();
+      expect(getDashboard).not.toHaveBeenCalled();
+      el.querySelector<HTMLButtonElement>('[data-tab="breakdowns"]')!.click();
+      await settle();
+      expect(getDashboard).toHaveBeenCalledTimes(1);
+      clockMs += AUTO_REFRESH_MS;
+      tick();
+      await settle();
+      expect(getDashboard).toHaveBeenCalledTimes(2);
+    });
+
+    describe('P6: staleness text', () => {
+      const ageText = (el: HTMLElement) => text(el.querySelector('[data-stale-age]'));
+      async function openWithClock() {
+        const spy = vi.spyOn(globalThis, 'setInterval');
+        const el = await open();
+        const check = spy.mock.calls.find((c) => c[1] === STALE_CHECK_MS)![0] as () => void;
+        const advance = async (minutes: number) => {
+          clockMs = T0 + minutes * 60_000;
+          check();
+          await settle();
+        };
+        return { el, advance };
+      }
+
+      it('shows nothing in a fresh session and at 9 minutes, "Updated 10 min ago" at 10', async () => {
+        const { el, advance } = await openWithClock();
+        expect(el.querySelector('[data-stale-age]')).toBeNull();
+        await advance(9);
+        expect(el.querySelector('[data-stale-age]')).toBeNull();
+        expect(el.querySelector('[data-refresh]')!.getAttribute('aria-label')).toBe('Refresh');
+        await advance(10);
+        expect(ageText(el)).toBe('Updated 10 min ago');
+        expect(el.querySelector('[data-stale-age] .pi')).not.toBeNull();
+        expect(el.querySelector('[data-refresh]')!.getAttribute('aria-label')).toBe(
+          'Refresh. Updated 10 min ago.',
+        );
+        await advance(14);
+        expect(ageText(el)).toBe('Updated 14 min ago');
+      });
+
+      it('sits in a polite live region that exists before the text appears', async () => {
+        const { el } = await openWithClock();
+        const live = el.querySelector('[data-stale-age-live]')!;
+        expect(live.getAttribute('role')).toBe('status');
+        expect(live.getAttribute('aria-live')).toBe('polite');
+      });
+
+      it('disappears after a successful refresh', async () => {
+        const { el, advance } = await openWithClock();
+        await advance(12);
+        expect(ageText(el)).toBe('Updated 12 min ago');
+        el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
+        await settle();
+        expect(el.querySelector('[data-stale-age]')).toBeNull();
+      });
+
+      it('does not repeat itself while the failed-refresh banner is shown', async () => {
+        const { el, advance } = await openWithClock();
+        getDashboard.mockReturnValue(boom());
+        await advance(12);
+        el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
+        await settle();
+        expect(el.querySelector('[data-dash-state="stale"]')).not.toBeNull();
+        expect(el.querySelector('[data-stale-age]')).toBeNull();
+      });
+
+      it('follows the tab shown: the Users tab starts its own clock', async () => {
+        const { el, advance } = await openWithClock();
+        el.querySelector<HTMLButtonElement>('[data-tab="users"]')!.click();
+        await settle();
+        await advance(11);
+        expect(ageText(el)).toBe('Updated 11 min ago');
+      });
+    });
+
+    describe('R1: note when a link points to a tab the role cannot see', () => {
+      const POD_LEAD: Permission[] = [
+        'Task.View',
+        'Dashboard.View',
+        'Dashboard.ViewSummary',
+        'Dashboard.ViewSwimlane',
+      ];
+      const note = (el: HTMLElement) => el.querySelector('[data-dash-note]');
+
+      it('names the forbidden tab, falls back to the first permitted one and rewrites the address', async () => {
+        const el = await open(of(summary()), POD_LEAD, '/dashboard?tab=breakdowns');
+        expect(text(note(el))).toBe('Breakdowns is not available for your role. Showing Summary.');
+        expect(note(el)!.getAttribute('role')).toBe('status');
+        expect(TestBed.inject(Router).url).toBe('/dashboard?tab=summary');
+        expect(el.querySelector('[data-tabpanel="summary"]')).not.toBeNull();
+      });
+
+      it('says so for a tab that does not exist', async () => {
+        const el = await open(of(summary()), POD_LEAD, '/dashboard?tab=xyz');
+        expect(text(note(el))).toBe('That tab does not exist. Showing Summary.');
+      });
+
+      it('shows no note to a role that may open the tab, nor on a plain link', async () => {
+        let el = await open(of(summary()), ALL, '/dashboard?tab=breakdowns');
+        expect(note(el)).toBeNull();
+        TestBed.resetTestingModule();
+        el = await open(of(summary()), POD_LEAD);
+        expect(note(el)).toBeNull();
+      });
+
+      it('can be dismissed, and goes away when another tab is chosen', async () => {
+        const el = await open(of(summary()), POD_LEAD, '/dashboard?tab=breakdowns');
+        el.querySelector<HTMLButtonElement>('[data-dash-note-close]')!.click();
+        await settle();
+        expect(note(el)).toBeNull();
+        TestBed.resetTestingModule();
+        const el2 = await open(of(summary()), POD_LEAD, '/dashboard?tab=trends');
+        expect(note(el2)).not.toBeNull();
+        el2.querySelector<HTMLButtonElement>('[data-tab="swimlane"]')!.click();
+        await settle();
+        expect(note(el2)).toBeNull();
+      });
+
+      it('names the first permitted tab when it is not Summary', async () => {
+        const el = await open(
+          of(summary()),
+          ['Dashboard.View', 'Dashboard.ViewSwimlane'],
+          '/dashboard?tab=users',
+        );
+        expect(text(note(el))).toBe('Users is not available for your role. Showing Swimlane.');
+        expect(TestBed.inject(Router).url).toBe('/dashboard?tab=swimlane');
+      });
+    });
+
+    it('P9: opening a Swimlane-only user at ?tab=swimlane leaves the address exactly as it was', async () => {
+      const navigate = vi.spyOn(Router.prototype, 'navigate');
+      await open(
+        of(summary()),
+        ['Dashboard.View', 'Dashboard.ViewSwimlane'],
+        '/dashboard?tab=swimlane',
+      );
+      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=swimlane');
+      // Whatever the tab asks the router for removes defaults only: no parameter is added.
+      for (const [, extras] of navigate.mock.calls) {
+        expect(Object.values(extras?.queryParams ?? {}).every((v) => v === null)).toBe(true);
+      }
+    });
+
+    it('P9: default values written explicitly are removed with replace, not push', async () => {
+      const navigate = vi.spyOn(Router.prototype, 'navigate');
+      await open(
+        of(summary()),
+        ['Dashboard.View', 'Dashboard.ViewSwimlane'],
+        '/dashboard?tab=swimlane&group=none&sort=priority&days=7',
+      );
+      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=swimlane');
+      expect(navigate.mock.calls.every(([, extras]) => extras?.replaceUrl === true)).toBe(true);
+    });
+
+    it('P9: unknown parameters are dropped when the address is normalised', async () => {
+      await open(of(summary()), ALL, '/dashboard?tab=breakdowns&utm_source=mail');
+      expect(TestBed.inject(Router).url).toBe('/dashboard?tab=breakdowns');
+    });
   });
 });

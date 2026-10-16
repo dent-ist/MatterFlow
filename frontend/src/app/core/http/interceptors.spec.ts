@@ -212,6 +212,18 @@ describe('HTTP interceptors', () => {
     expect(messages.add).toHaveBeenCalledTimes(1);
   });
 
+  it('QuietRequests.runInline never toasts but hands the error reference to the inline alert', () => {
+    const { http, ctrl, messages } = setup();
+    TestBed.inject(QuietRequests).runInline(() =>
+      http.get('/inline').subscribe({ error: () => undefined }),
+    );
+    ctrl
+      .expectOne('/inline')
+      .flush({ traceId: 'abc-123' }, { status: 500, statusText: 'Server Error' });
+    expect(messages.add).not.toHaveBeenCalled();
+    expect(TestBed.inject(ErrorReferenceStore).reference()).toBe('abc-123');
+  });
+
   it('parses problem details from blob error bodies (generated NSwag client)', async () => {
     const { http, ctrl, messages } = setup();
     let caught: unknown;

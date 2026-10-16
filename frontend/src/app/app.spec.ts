@@ -158,12 +158,12 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     expect(document.body.textContent).not.toContain('Create task');
   });
 
-  it('shows the Dashboard item only with Dashboard.View', async () => {
+  it('shows the Dashboard item only with Dashboard.View and a tab permission', async () => {
     configure('technician');
     const stub = TestBed.inject(MeApi) as StubMeApi;
     stub.scenarios['technician'] = {
       ...stub.scenarios['technician'],
-      permissions: ['Task.View', 'Dashboard.View'],
+      permissions: ['Task.View', 'Dashboard.View', 'Dashboard.ViewSwimlane'],
     };
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/');

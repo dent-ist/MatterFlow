@@ -109,7 +109,7 @@ test.describe('swimlane screenshots', () => {
       route.fulfill({ status: 500, json: { code: 'INTERNAL_ERROR', traceId: 'trace-0001' } }),
     );
     await page.goto(`${base}&group=none`);
-    await expect(page.locator('[data-swimlane-error]')).toBeVisible();
+    await expect(page.locator('[data-dash-state="error"]')).toBeVisible();
     await shot('11-error-1366');
     await page.unroute('**/api/v1/dashboard/swimlane**');
 
