@@ -88,7 +88,6 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
       const labels = ADMIN_NAV_ITEMS.map((i) => i.label);
       expect(labels).toEqual([
         'Users',
-        'Pods',
         'Task Types',
         'Labels',
         'Assets',
