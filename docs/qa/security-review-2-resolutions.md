@@ -130,7 +130,7 @@ The browser adds Angular's own sanitizer on every render and removes images, fra
 - Existing `CommentHtmlTests` and `CommentHtmlHostileInputTests` (nesting, timing, stack) still pass on the shared implementation.
 - `TaskRichDescriptionApiTests` (integration): create, update, read through the API with a table, hostile HTML, plain text, empty content, every limit error (`HTML_TOO_LARGE`, `TOO_LONG`, `TABLE_TOO_LARGE`, `TOO_COMPLEX`), a legacy text description (unchanged echo is a no-op, title-only edit keeps text, a real edit converts), audit rows hold plain text, comments with tables.
 - `EmailHtmlTests` (unit): `.eml` HTML body with a table kept and scripts, styles and images gone, over-limit and hostile nesting fall back to the text body with a warning, pasted HTML sanitized and its header lines removed.
-- `TaskDescriptionFormatSchemaTests`: script 25 keeps existing rows `TEXT`, check constraint, not null.
+- `TaskDescriptionFormatSchemaTests`: script 26 keeps existing rows `TEXT`, check constraint, not null.
 - Frontend: `paste-clean.spec.ts` (Outlook sample, hostile paste, idempotence, depth, 200 cells), editor specs (hostile paste and drop, tables, keyboard), details-tab and create-page specs. Playwright `rich-description.spec.ts` in Chromium: Outlook paste kept through save and reload, hostile paste neutralised in the editor, on the server and on the page (no dialog, `window.__pwn` unset), email file and pasted email keep their table, legacy text unchanged, axe on the table, keyboard table editing, the 200-cell error.
 
 ### Findings of the work itself

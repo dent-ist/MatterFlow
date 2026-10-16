@@ -6,7 +6,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>25-task-description-format.sql (decision R): existing descriptions stay TEXT, the format is TEXT or HTML, and a missing value defaults to TEXT.</summary>
+/// <summary>26-task-description-format.sql (decision R): existing descriptions stay TEXT, the format is TEXT or HTML, and a missing value defaults to TEXT.</summary>
 [Collection(SqlServerCollection.Name)]
 public class TaskDescriptionFormatSchemaTests(SqlServerFixture sql)
 {
@@ -45,7 +45,7 @@ public class TaskDescriptionFormatSchemaTests(SqlServerFixture sql)
     public async Task Descriptions_written_before_the_script_stay_text_and_new_rows_default_to_text()
     {
         var cs = await sql.CreateDatabaseAsync();
-        await RunAsync(cs, new ScriptsBefore(25));
+        await RunAsync(cs, new ScriptsBefore(26));
         await ScalarAsync(cs, Fixtures);
         await ScalarAsync(cs, "INSERT dbo.Task (MatterId, TaskTypeId, WorkflowInstanceId, Title, Description, PriorityId, RequestorName) VALUES (1, 1, 1, N'Old', N'Plain <b>text</b>', 1, N'R');");
 

@@ -337,8 +337,8 @@ erDiagram
     int TaskTypeId FK "immutable"
     int FormVersionId FK "immutable"
     nvarchar_300 Title
-    nvarchar_max Description "sanitized HTML, or plain text for rows before script 25"
-    varchar_4 DescriptionFormat "TEXT or HTML (script 25)"
+    nvarchar_max Description "sanitized HTML, or plain text for rows before script 26"
+    varchar_4 DescriptionFormat "TEXT or HTML (script 26)"
     nvarchar_200 RequestorName
     nvarchar_320 RequestorEmail
     datetime2 RequestedAt "email sent time"
@@ -424,7 +424,7 @@ erDiagram
 | FormVersionId | int | no | FK -> FormVersion (the Task Type form version at creation); **immutable** |
 | Title | nvarchar(300) | no | |
 | Description | nvarchar(max) | yes | sanitized rich text (basic formatting and tables, decision R) when `DescriptionFormat = 'HTML'`; plain text when `'TEXT'` |
-| DescriptionFormat | varchar(4) | no | `'TEXT'` (default; every row before script 25, shown escaped) or `'HTML'` (new and edited descriptions); `CK_Task_DescriptionFormat`; script 25 |
+| DescriptionFormat | varchar(4) | no | `'TEXT'` (default; every row before script 26, shown escaped) or `'HTML'` (new and edited descriptions); `CK_Task_DescriptionFormat`; script 26 |
 | RequestorName | nvarchar(200) | **no** | required (addendum C). Not an app user. |
 | RequestorEmail | nvarchar(320) | yes | CHECK `RequestorEmail LIKE '%_@_%'` when not null |
 | RequestedAt | datetime2(3) | yes | sent time from the source email, or null |

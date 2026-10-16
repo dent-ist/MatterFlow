@@ -1,4 +1,4 @@
--- 25-task-description-format.sql
+-- 26-task-description-format.sql
 -- Purpose: dbo.Task.DescriptionFormat, how dbo.Task.Description is stored: 'TEXT' (plain text, shown escaped with line breaks) or 'HTML'
 --   (sanitized rich text with basic formatting and tables, decision R). Existing rows stay 'TEXT' until their description is edited;
 --   new and edited descriptions are 'HTML'. The application sanitizes on every write, so an 'HTML' value is always the sanitized form.
