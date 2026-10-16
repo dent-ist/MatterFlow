@@ -288,6 +288,35 @@ let nextId = 0;
           grid-column: 2 / -1;
         }
       }
+      /* A phone: the share is in the table view; the bar gets the room. */
+      @container (max-width: 20rem) {
+        .row {
+          grid-template-columns: minmax(3.5rem, 5.5rem) minmax(3rem, 1fr) 2rem;
+        }
+        .pct {
+          display: none;
+        }
+      }
+      /* Forced colours drop backgrounds: the plain bar is drawn with the system highlight, the priority bars keep their outline. */
+      @media (forced-colors: active) {
+        .bar {
+          forced-color-adjust: none;
+          background: Highlight !important;
+          border: 1px solid CanvasText;
+        }
+        .bar.outlined {
+          background: Canvas !important;
+          border-color: CanvasText !important;
+        }
+        .track {
+          border: 1px solid GrayText;
+        }
+        .marker {
+          forced-color-adjust: none;
+          background: Canvas !important;
+          border-color: CanvasText !important;
+        }
+      }
       /* Long names wrap to a second line instead of being cut off (a title attribute is not reachable by touch or keyboard). */
       .name {
         min-width: 0;
