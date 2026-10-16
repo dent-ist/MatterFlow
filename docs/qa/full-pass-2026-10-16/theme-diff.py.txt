@@ -1,0 +1,16 @@
+import sys,os
+from PIL import Image, ImageChops
+import numpy as np
+d=sys.argv[1]
+rows=[]
+for f in sorted(os.listdir(d+'/A')):
+    a=Image.open(f'{d}/A/{f}').convert('RGB'); b=Image.open(f'{d}/B/{f}').convert('RGB')
+    if a.size!=b.size: rows.append((f,'size',a.size,b.size)); continue
+    x=np.abs(np.asarray(a,dtype=int)-np.asarray(b,dtype=int)).sum(axis=2)
+    n=int((x>30).sum())
+    if n:
+        ys,xs=np.where(x>30); rows.append((f,n,(xs.min(),ys.min(),xs.max(),ys.max())))
+        os.makedirs(d+'/diff',exist_ok=True)
+        m=Image.fromarray(((x>30)*255).astype('uint8')); m.save(f'{d}/diff/{f}')
+    else: rows.append((f,0))
+for r in rows: print(*r)

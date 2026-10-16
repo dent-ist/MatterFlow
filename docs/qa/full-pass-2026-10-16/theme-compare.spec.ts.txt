@@ -1,0 +1,389 @@
+import { Page, expect as pwExpect } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+import { test } from '../support/fixtures';
+import { ADMIN_USER } from '../support/api';
+
+/**
+ * Theme regression drive (QA full pass): the same screens and interactions are driven in two builds of the app, served from two API
+ * instances on the same database (A = E2E_BASE_URL, B = E2E_BASE_URL_B), and a screenshot of each step is written to
+ * $THEME_OUT/{A,B}/<name>.png. The pictures are compared afterwards (pixel diff).
+ */
+const A = process.env['E2E_BASE_URL'] ?? 'http://127.0.0.1:5191';
+const B = process.env['E2E_BASE_URL_B'] ?? 'http://127.0.0.1:5192';
+const OUT = process.env['THEME_OUT'] ?? '/tmp/theme';
+
+type Step = { name: string; run: (p: Page) => Promise<void>; full?: boolean };
+
+test('theme drive', async ({ browser, seed }) => {
+  test.setTimeout(900_000);
+  const world = await seed.world({ stepCount: 3 });
+  const rich = await seed.taskWithDescription(
+    world,
+    '<p>Hello <strong>bold</strong> <em>italic</em> and a list:</p><ul><li>one</li><li>two</li></ul><table><tbody><tr><td>a</td><td>b</td></tr></tbody></table>',
+    { title: 'Theme task with description' },
+  );
+  const taskId = rich['taskId'] ?? rich['id'];
+  const taskNumber = rich['taskNumber'] ?? rich['number'] ?? taskId;
+  await seed.task(world, { title: 'Second theme task', isAsap: true });
+  const formWorld = await seed.world({
+    stepCount: 2,
+    fields: [
+      { key: 'f_text', label: 'Short text', control: 'TEXT', required: true, helpText: 'Help text for short text' },
+      { key: 'f_area', label: 'Long text', control: 'TEXTAREA' },
+      { key: 'f_num', label: 'Amount', control: 'NUMBER' },
+      { key: 'f_check', label: 'Confirmed', control: 'CHECKBOX' },
+      { key: 'f_sel', label: 'Choice', control: 'SELECT', options: [{ key: 'a', label: 'Alpha' }, { key: 'b', label: 'Beta' }, { key: 'c', label: 'Gamma' }] },
+      { key: 'f_radio', label: 'Radio choice', control: 'RADIO', options: [{ key: 'a', label: 'Alpha' }, { key: 'b', label: 'Beta' }] },
+      { key: 'f_multi', label: 'Many', control: 'MULTISELECT', options: [{ key: 'a', label: 'Alpha' }, { key: 'b', label: 'Beta' }, { key: 'c', label: 'Gamma' }] },
+      { key: 'f_date', label: 'A date', control: 'DATE' },
+      { key: 'f_dt', label: 'A date and time', control: 'DATETIME' },
+      { key: 'f_url', label: 'A link', control: 'URL' },
+    ],
+  });
+  const pod = await seed.pod(undefined, []);
+  const notes: string[] = [];
+
+  const settle = async (p: Page) => {
+    await p.waitForLoadState('networkidle').catch(() => undefined);
+    await p.waitForTimeout(600);
+  };
+  const goto = (url: string) => async (p: Page) => {
+    await p.goto(url);
+    await settle(p);
+  };
+  const click = (p: Page, sel: string) => p.locator(sel).first().click({ timeout: 4000 });
+  const tryDo = async (p: Page, what: string, fn: () => Promise<unknown>) => {
+    try {
+      await fn();
+    } catch (e) {
+      notes.push(`${what}: ${(e as Error).message.split('\n')[0]}`);
+    }
+  };
+
+  const steps: Step[] = [
+    { name: '01-dashboard-summary', run: goto('/dashboard?tab=summary') },
+    { name: '02-dashboard-breakdowns', run: goto('/dashboard?tab=breakdowns') },
+    { name: '03-dashboard-trends', run: goto('/dashboard?tab=trends') },
+    { name: '04-dashboard-swimlane', run: goto('/dashboard?tab=swimlane') },
+    { name: '05-dashboard-users', run: goto('/dashboard?tab=users') },
+    { name: '06-task-queue', run: goto('/tasks') },
+    {
+      name: '07-task-queue-filter-open',
+      run: async (p) => {
+        await goto('/tasks')(p);
+        // open every column filter control in turn (selects, multiselects, inputs)
+        const triggers = p.locator('thead [role=combobox], thead .p-select, thead .p-multiselect');
+        const n = await triggers.count();
+        notes.push(`task queue filter controls: ${n}`);
+        if (n) {
+          await triggers.first().click();
+          await p.waitForTimeout(500);
+        }
+      },
+    },
+    {
+      name: '08-task-queue-filter-open2',
+      run: async (p) => {
+        await goto('/tasks')(p);
+        const triggers = p.locator('thead [role=combobox], thead .p-select, thead .p-multiselect');
+        if ((await triggers.count()) > 1) {
+          await triggers.nth(1).click();
+          await p.waitForTimeout(500);
+        }
+      },
+    },
+    { name: '09-task-detail', run: goto(`/tasks/${taskId}`), full: true },
+    {
+      name: '10-task-detail-menus',
+      run: async (p) => {
+        await goto(`/tasks/${taskId}`)(p);
+        const combos = p.locator('main [role=combobox], main .p-select');
+        notes.push(`task detail comboboxes: ${await combos.count()}`);
+        await tryDo(p, 'task detail first select', async () => {
+          await combos.first().click({ timeout: 3000 });
+          await p.waitForTimeout(500);
+        });
+      },
+    },
+    {
+      name: '11-task-detail-dialog',
+      run: async (p) => {
+        await goto(`/tasks/${taskId}`)(p);
+        for (const label of [/assign/i, /hold/i, /cancel/i, /link/i, /more/i]) {
+          const b = p.getByRole('button', { name: label }).first();
+          if (await b.isVisible().catch(() => false)) {
+            await b.click().catch(() => undefined);
+            await p.waitForTimeout(600);
+            if (await p.locator('.p-dialog').first().isVisible().catch(() => false)) {
+              notes.push(`dialog opened via ${label}`);
+              return;
+            }
+          }
+        }
+        notes.push('no dialog opened on task detail');
+      },
+    },
+    {
+      name: '12-create-task-chooser',
+      run: goto('/tasks/new'),
+    },
+    {
+      name: '13-create-task-form',
+      run: async (p) => {
+        await goto(`/tasks/new?taskType=${world.taskType.id}`)(p);
+        await tryDo(p, 'type matter', async () => {
+          await p.getByRole('combobox', { name: 'Matter (required)' }).fill(String(world.matter.matterNumber ?? world.matter.reference ?? ''));
+          await p.waitForTimeout(800);
+        });
+        await tryDo(p, 'title', () => p.getByRole('textbox', { name: 'Title (required)' }).fill('Theme title'));
+        await tryDo(p, 'description', async () => {
+          const ed = p.locator('[data-description-field] [role=textbox]');
+          await ed.click();
+          await ed.pressSequentially('Rich text here');
+        });
+      },
+      full: true,
+    },
+    {
+      name: '14-create-task-priority-open',
+      run: async (p) => {
+        await goto(`/tasks/new?taskType=${world.taskType.id}`)(p);
+        await tryDo(p, 'priority', async () => {
+          await p.getByLabel('Priority (required)').click({ timeout: 3000 });
+          await p.waitForTimeout(500);
+        });
+      },
+    },
+    {
+      name: '15-create-task-assignee-open',
+      run: async (p) => {
+        await goto(`/tasks/new?taskType=${world.taskType.id}`)(p);
+        await tryDo(p, 'assignee', async () => {
+          await p.getByRole('combobox', { name: 'Assignee', exact: true }).click({ timeout: 3000 });
+          await p.waitForTimeout(500);
+        });
+      },
+    },
+    { name: '60-form-task-fields', run: goto(`/tasks/new?taskType=${formWorld.taskType.id}`), full: true },
+    {
+      name: '61-form-select-open',
+      run: async (p) => {
+        await goto(`/tasks/new?taskType=${formWorld.taskType.id}`)(p);
+        await tryDo(p, 'select open', async () => {
+          await p.locator('[data-field=f_sel] .p-select').click({ timeout: 4000 });
+          await p.waitForTimeout(600);
+        });
+      },
+    },
+    {
+      name: '62-form-select-picked-multiselect-open',
+      run: async (p) => {
+        await goto(`/tasks/new?taskType=${formWorld.taskType.id}`)(p);
+        await tryDo(p, 'select pick', async () => {
+          await p.locator('[data-field=f_sel] .p-select').click({ timeout: 4000 });
+          await p.getByRole('option', { name: 'Beta' }).click();
+        });
+        await tryDo(p, 'multiselect open', async () => {
+          await p.locator('[data-field=f_multi] .p-multiselect').click({ timeout: 4000 });
+          await p.waitForTimeout(600);
+        });
+      },
+    },
+    {
+      name: '63-form-multiselect-picked',
+      run: async (p) => {
+        await goto(`/tasks/new?taskType=${formWorld.taskType.id}`)(p);
+        await tryDo(p, 'multiselect pick', async () => {
+          await p.locator('[data-field=f_multi] .p-multiselect').click({ timeout: 4000 });
+          await p.getByRole('option', { name: 'Alpha' }).click();
+          await p.getByRole('option', { name: 'Gamma' }).click();
+          await p.keyboard.press('Escape');
+          await p.waitForTimeout(500);
+        });
+        await tryDo(p, 'check', () => p.locator('[data-field=f_check] .p-checkbox').click({ timeout: 3000 }));
+        await tryDo(p, 'radio', () => p.locator('[data-field=f_radio] .p-radiobutton').first().click({ timeout: 3000 }));
+        await tryDo(p, 'number', async () => {
+          const n = p.locator('[data-field=f_num] input');
+          await n.fill('1234.5');
+          await n.blur();
+        });
+        await tryDo(p, 'area', () => p.locator('[data-field=f_area] textarea').fill('Some long text\nwith lines'));
+        await p.waitForTimeout(400);
+      },
+      full: true,
+    },
+    {
+      name: '64-form-focus-states',
+      run: async (p) => {
+        await goto(`/tasks/new?taskType=${formWorld.taskType.id}`)(p);
+        await tryDo(p, 'focus checkbox', async () => {
+          await p.locator('[data-field=f_check] input').focus();
+          await p.keyboard.press('Space');
+        });
+        await tryDo(p, 'focus number', () => p.locator('[data-field=f_num] input').focus());
+        await p.waitForTimeout(300);
+      },
+    },
+    {
+      name: '65-form-validation-errors',
+      run: async (p) => {
+        await goto(`/tasks/new?taskType=${formWorld.taskType.id}`)(p);
+        await tryDo(p, 'submit empty', async () => {
+          await p.getByRole('button', { name: 'Create task', exact: true }).click({ timeout: 3000 });
+          await p.waitForTimeout(800);
+        });
+      },
+      full: true,
+    },
+    {
+      name: '66-create-task-toast',
+      run: async (p) => {
+        await goto(`/tasks/new?taskType=${formWorld.taskType.id}`)(p);
+        await tryDo(p, 'fill and create', async () => {
+          await p.getByRole('combobox', { name: 'Matter (required)' }).fill(String(formWorld.client.clientNumber ?? ''));
+          await p.waitForTimeout(900);
+          await p.getByRole('option').first().click({ timeout: 3000 });
+          await p.getByRole('textbox', { name: 'Title (required)' }).fill('Toast theme task');
+          await p.getByRole('textbox', { name: 'Requestor name (required)' }).fill('Rita');
+          await p.locator('[data-field=f_text] input').fill('x');
+          await p.getByRole('button', { name: 'Create task', exact: true }).click();
+          await p.waitForTimeout(900);
+        });
+      },
+    },
+    { name: '16-my-work', run: goto('/my-work') },
+    { name: '17-pod-work', run: goto('/pods/work') },
+    { name: '18-clients', run: goto('/clients') },
+    { name: '19-matters', run: goto('/matters') },
+    { name: '20-projects', run: goto('/projects') },
+    { name: '21-assets', run: goto('/assets') },
+    { name: '22-search', run: goto('/search') },
+    { name: '23-profile', run: goto('/profile'), full: true },
+    { name: '30-admin-users', run: goto('/admin/users') },
+    {
+      name: '31-admin-users-filter-open',
+      run: async (p) => {
+        await goto('/admin/users')(p);
+        const triggers = p.locator('thead [role=combobox], thead .p-select, thead .p-multiselect');
+        notes.push(`users filter controls: ${await triggers.count()}`);
+        await tryDo(p, 'users filter', async () => {
+          await triggers.first().click({ timeout: 3000 });
+          await p.waitForTimeout(500);
+        });
+      },
+    },
+    { name: '32-admin-pods', run: goto('/admin/pods') },
+    { name: '33-admin-roles', run: goto('/admin/roles') },
+    { name: '34-admin-task-types', run: goto('/admin/task-types') },
+    { name: '35-admin-task-type-new', run: goto('/admin/task-types/new'), full: true },
+    { name: '36-admin-workflows', run: goto('/admin/workflows') },
+    { name: '37-admin-steps', run: goto('/admin/steps') },
+    { name: '38-admin-asset-types', run: goto('/admin/asset-types') },
+    { name: '39-admin-custom-fields', run: goto('/admin/custom-fields') },
+    { name: '40-admin-priorities', run: goto('/admin/priorities') },
+    { name: '41-admin-status-labels', run: goto('/admin/status-labels') },
+    { name: '42-admin-audit', run: goto('/admin/audit') },
+    {
+      name: '43-admin-users-edit-dialog',
+      run: async (p) => {
+        await goto('/admin/users')(p);
+        await tryDo(p, 'open a user', async () => {
+          await p.locator('tbody tr').first().click({ timeout: 3000 });
+          await settle(p);
+        });
+      },
+    },
+    {
+      name: '44-admin-pods-new',
+      run: async (p) => {
+        await goto('/admin/pods')(p);
+        await tryDo(p, 'new pod', async () => {
+          await p.getByRole('button', { name: /new pod|add pod|create/i }).first().click({ timeout: 3000 });
+          await p.waitForTimeout(700);
+        });
+      },
+    },
+    {
+      name: '45-toast',
+      run: async (p) => {
+        await goto('/profile')(p);
+        // Setting out of office and back raises a toast in every build.
+        await tryDo(p, 'toast', async () => {
+          await p.getByRole('button', { name: /save/i }).first().click({ timeout: 3000 });
+          await p.waitForTimeout(700);
+        });
+      },
+    },
+    {
+      name: '46-tooltip',
+      run: async (p) => {
+        await goto('/dashboard?tab=summary')(p);
+        await tryDo(p, 'hover', async () => {
+          await p.locator('[data-refresh]').hover({ timeout: 3000 });
+          await p.waitForTimeout(1200);
+        });
+      },
+    },
+    {
+      name: '47-shortcuts-dialog',
+      run: async (p) => {
+        await goto('/my-work')(p);
+        await p.keyboard.press('Shift+?');
+        await p.waitForTimeout(700);
+      },
+    },
+    {
+      name: '48-account-menu',
+      run: async (p) => {
+        await goto('/my-work')(p);
+        await tryDo(p, 'menu', () => click(p, '[data-testid=user-menu]'));
+        await p.waitForTimeout(400);
+      },
+    },
+    {
+      name: '49-out-of-office-dialog',
+      run: async (p) => {
+        await goto('/my-work')(p);
+        await tryDo(p, 'ooo', async () => {
+          await click(p, '[data-testid=user-menu]');
+          await p.getByRole('menuitem', { name: /Set out of office/ }).click({ timeout: 3000 });
+          await p.waitForTimeout(900);
+        });
+      },
+    },
+  ];
+
+  for (const side of ['A', 'B']) fs.mkdirSync(path.join(OUT, side), { recursive: true });
+  const ctxOpts = (base: string) => ({
+    baseURL: base,
+    locale: 'en-US',
+    timezoneId: 'America/New_York',
+    viewport: { width: 1440, height: 900 },
+    reducedMotion: 'reduce' as const,
+    extraHTTPHeaders: { 'X-Dev-User': ADMIN_USER },
+  });
+  const ca = await browser.newContext(ctxOpts(A));
+  const cb = await browser.newContext(ctxOpts(B));
+  const pa = await ca.newPage();
+  const pb = await cb.newPage();
+  const errs: string[] = [];
+  pa.on('pageerror', (e) => errs.push('A ' + e.message));
+  pb.on('pageerror', (e) => errs.push('B ' + e.message));
+  void pod;
+  void taskNumber;
+  for (const step of steps) {
+    for (const [side, p] of [['A', pa], ['B', pb]] as const) {
+      try {
+        await step.run(p);
+        await p.screenshot({ path: path.join(OUT, side, step.name + '.png'), fullPage: !!step.full, animations: 'disabled' });
+      } catch (e) {
+        notes.push(`${side} ${step.name}: ${(e as Error).message.split('\n')[0]}`);
+      }
+    }
+  }
+  fs.writeFileSync(path.join(OUT, 'notes.txt'), notes.join('\n') + '\n' + errs.join('\n') + '\n');
+  await ca.close();
+  await cb.close();
+  pwExpect(true).toBe(true);
+});
