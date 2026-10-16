@@ -366,7 +366,7 @@ function shortDay(date: string): string {
       display: flex;
       flex-direction: column;
       flex: 1 1 0;
-      min-height: 12.5rem;
+      min-height: auto;
     }
     :host(.fit) .panel--flows {
       flex-grow: 1.6;

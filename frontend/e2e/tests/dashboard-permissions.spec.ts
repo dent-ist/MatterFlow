@@ -81,7 +81,9 @@ test.describe('Dashboard permissions', () => {
     const page = await asUser(user.username);
 
     await page.goto('/dashboard');
-    await expect(page.getByRole('tab')).toHaveText(['Summary']);
+    // One permitted tab: no tab list, the tab's name is the page heading (R3, #100).
+    await expect(page.getByRole('tab')).toHaveCount(0);
+    await expect(page.getByRole('heading', { level: 1, name: 'Summary' })).toBeVisible();
     const body = await (await page.request.get('/api/v1/dashboard?fresh=true')).json();
     expect(body.open.count).toBeGreaterThan(0);
     expect(body.byStatus).toEqual([]);
@@ -101,7 +103,9 @@ test.describe('Dashboard permissions', () => {
     const page = await asUser(user.username);
 
     await page.goto('/dashboard');
-    await expect(page.getByRole('tab')).toHaveText(['Summary']);
+    // One permitted tab: no tab list, the tab's name is the page heading (R3, #100).
+    await expect(page.getByRole('tab')).toHaveCount(0);
+    await expect(page.getByRole('heading', { level: 1, name: 'Summary' })).toBeVisible();
     const panel = page.locator('[data-tabpanel="summary"]');
     await expect(panel.locator('[data-panel="unassigned"]')).toBeVisible();
     await expect(panel.locator('[data-panel="unassigned"] li').first()).toBeVisible();

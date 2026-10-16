@@ -480,6 +480,8 @@ test.describe('axe (#137)', () => {
   for (const size of [SIZES[0], SIZES[1], { width: 375, height: 812 }]) {
     for (const tab of TABS) {
       test(`${tab.name} at ${size.width}x${size.height} is axe clean`, async ({ page }) => {
+        // The shared test database grows with every suite (the Coverage matrix has a cell per person and task type).
+        test.setTimeout(240_000);
         await open(page, tab, size);
         expect(await axeViolations(page)).toEqual([]);
         expect(

@@ -325,8 +325,8 @@ test.describe('Trends by task type', () => {
     );
     const page = await asUser(trendsOnly.username);
     await page.goto('/dashboard');
-    await expect(page.getByRole('tab', { name: 'Trends' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Summary' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { level: 1, name: 'Trends' })).toBeVisible();
+    await expect(page.getByRole('tab')).toHaveCount(0);
     await expect(page.getByRole('group', { name: /tasks over time/i })).toBeVisible();
     await expect(lines(page)).toHaveCount(3);
     expect((await page.request.get('/api/v1/dashboard/trend?periodDays=7')).status()).toBe(200);
