@@ -457,7 +457,7 @@ Not bugs, checked and fine: after "Assign to me" the tile and the queue count dr
 
 ### Recommendation 1 (Overdue list by priority, Critical count in the tile): done
 
-Fixed in `COMMIT_SHA` (issue #82).
+Fixed in `b63768f` (issue #82).
 - The Summary Overdue list now asks the Task Queue for `sort=priority&dir=asc` (priority, then most overdue first, then created and id), 6 rows as before, with the rule under the heading ("Critical first, then longest overdue."). "View all overdue tasks" and the Overdue tile open the queue with the same filter and sort. Rows keep the priority badge and "Overdue Nd".
 - The Overdue tile has a second line with a flag icon and words, for example "27 Critical, 12 High" (new `overdueCritical` and `overdueHigh` counts in `GET /api/v1/dashboard`, each with the queue query that lists them; priorities are matched by badge colour token `critical` / `high`; zero without Dashboard.ViewSummary). The line wraps at 375 px.
 - Due soon is unchanged (the review raises the ordering issue for Overdue only).
