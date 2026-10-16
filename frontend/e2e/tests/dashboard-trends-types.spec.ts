@@ -62,6 +62,16 @@ const lines = (page: Page) => page.locator('[data-plot] polyline.series:not(.par
 const box = (page: Page, id: number) => page.locator(`[data-type-box="${id}"]`);
 const row = (page: Page, id: number) => page.locator(`[data-type="${id}"]`);
 
+/**
+ * Opens the Trends tab and reads it fresh. The server keeps a trend for a few seconds and every test loads it as the same user, so a plain
+ * visit can be served the legend of another test's read, from before this file's task types existed; Refresh bypasses that cache.
+ */
+async function openTrends(page: Page): Promise<void> {
+  await page.goto(TREND);
+  await page.getByRole('button', { name: 'Refresh' }).click();
+  await expect(page.locator('[data-dash-live]')).toContainText('Dashboard refreshed');
+}
+
 /** Narrows a legend that other tests' types may have made long to the task types whose names contain `text`. */
 async function search(page: Page, text: string): Promise<void> {
   const field = page.getByRole('searchbox', { name: 'Search task types' });
@@ -72,7 +82,7 @@ test.describe('Trends by task type', () => {
   test('starts as the All task types chart and draws a line for every type that is checked', async ({
     page,
   }) => {
-    await page.goto(TREND);
+    await openTrends(page);
     await expect(page.getByRole('group', { name: /created and completed per day/i })).toBeVisible();
     await expect(lines(page)).toHaveCount(2);
     await expect(page.getByRole('checkbox', { name: 'All task types' })).toBeChecked();
@@ -143,7 +153,7 @@ test.describe('Trends by task type', () => {
       });
       more.push({ id: t.id, name: t.name });
     }
-    await page.goto(TREND);
+    await openTrends(page);
     await search(page, tag);
     // Ten task types with this test's tag in their names: two from the setup and eight more.
     const mine = [types[1], types[2], ...more];
@@ -199,7 +209,7 @@ test.describe('Trends by task type', () => {
   test('the Due dates group adds Overdue, On time and Completed late lines to the default chart', async ({
     page,
   }) => {
-    await page.goto(TREND);
+    await openTrends(page);
     const group = page.getByRole('group', { name: 'Due dates' });
     await expect(group).toContainText("Uses each task's current due date");
     await group.getByRole('checkbox', { name: 'Overdue' }).check();
