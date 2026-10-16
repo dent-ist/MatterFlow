@@ -15,10 +15,9 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DashboardClient, DashboardTrend } from '../../../api/generated/api-client';
 import { QuietRequests } from '../../../core/http/interceptors';
-import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { DashState, focusAfterRetry } from './dash-state';
 import { DASH_FIXED_QUERY, mediaMatch } from './dash-media';
-import { PeriodKey, periodDays } from '../dashboard-period';
+import { Period, periodArgs, periodId } from '../dashboard-period';
 import { TrendChart } from './trend-chart';
 import { TrendLegend } from './trend-legend';
 import { MeasureOption, TrendMeasure } from './trend-measure';
@@ -268,12 +267,10 @@ export class DashTrendsTab {
   private readonly prefs = inject(TrendPrefs);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly clock = inject(Clock);
-  private readonly zone = inject(USER_TIME_ZONE);
   private readonly destroyRef = inject(DestroyRef);
 
-  /** The period preset of the page. */
-  readonly period = input.required<PeriodKey>();
+  /** The period of the page (shared with Summary and Coverage). */
+  readonly period = input.required<Period>();
   readonly caption = input<string | null>(null);
   /** Changes whenever the page read its figures again (Refresh, the automatic refresh): the trend is read again with it. */
   readonly refreshKey = input<string | null>(null);
@@ -296,8 +293,6 @@ export class DashTrendsTab {
   private retrying = false;
   private lastKey: string | null = null;
   private urlSeen = false;
-
-  private readonly days = computed(() => periodDays(this.period(), this.clock.now(), this.zone));
 
   protected readonly heading = 'Tasks over time';
   protected readonly backlogChoices: readonly MeasureOption<BacklogChoice>[] = backlogOptions().map(
@@ -368,10 +363,10 @@ export class DashTrendsTab {
     });
 
     effect(() => {
-      const days = this.days();
+      const period = this.period();
       const key = this.refreshKey();
       const ids = this.choice().types;
-      untracked(() => this.ensure(days, key, ids));
+      untracked(() => this.ensure(period, key, ids));
     });
   }
 
@@ -475,11 +470,11 @@ export class DashTrendsTab {
   protected retry(): void {
     this.retrying = true;
     this.loadedGen = null;
-    this.ensure(this.days(), this.refreshKey(), this.choice().types);
+    this.ensure(this.period(), this.refreshKey(), this.choice().types);
   }
 
-  private ensure(days: number, key: string | null, ids: readonly number[]): void {
-    const gen = `${days}|${key}`;
+  private ensure(period: Period, key: string | null, ids: readonly number[]): void {
+    const gen = `${periodId(period)}|${key}`;
     const current = this.data();
     if (
       current &&
@@ -491,17 +486,21 @@ export class DashTrendsTab {
     // A later page refresh reads fresh figures; a first read, a new period or another task type may use the short server cache.
     const fresh = this.lastKey !== null && this.lastKey !== key;
     this.lastKey = key;
-    this.fetch(gen, days, [...ids], fresh);
+    this.fetch(gen, period, [...ids], fresh);
   }
 
-  private fetch(gen: string, days: number, ids: number[], fresh: boolean): void {
+  private fetch(gen: string, period: Period, ids: number[], fresh: boolean): void {
+    const args = periodArgs(period);
     const id = ++this.requestId;
     if (this.data()) this.busy.set(true);
     else this.state.set('loading');
     const start = () =>
       this.api
         .getDashboardTrend(
-          days,
+          args.period,
+          args.from,
+          args.to,
+          undefined,
           ids.length > 0 ? ids : undefined,
           undefined,
           fresh ? true : undefined,
@@ -524,7 +523,7 @@ export class DashTrendsTab {
               // A remembered or shared task type that no longer exists: drop the selection and read the rest.
               this.applyChoice({ ...this.choice(), types: [] }, true);
               this.live.set('A selected task type no longer exists and was removed.');
-              this.fetch(gen, days, [], fresh);
+              this.fetch(gen, period, [], fresh);
               return;
             }
             if (!this.data()) this.state.set('error');

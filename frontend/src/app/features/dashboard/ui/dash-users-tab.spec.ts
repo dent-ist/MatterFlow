@@ -1,3 +1,4 @@
+import { DashboardPrefs } from '../dashboard-prefs';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -183,6 +184,9 @@ describe('DashUsersTab', () => {
     });
     await TestBed.inject(AuthStore).ensureLoaded();
     harness = await RouterTestingHarness.create();
+    // The Dashboard page applies the shared period from the address before its tabs read; this host stands in for it.
+    const named = new URL(url, 'http://localhost').searchParams;
+    TestBed.inject(DashboardPrefs).applyAddress((k) => named.get(k));
     await harness.navigateByUrl(url, DashUsersTab);
     await settle();
     host = harness.routeNativeElement as HTMLElement;
@@ -940,7 +944,14 @@ describe('DashUsersTab', () => {
       expect(text(q('[data-coverage-heading]'))).toBe(
         'Task type coverage - use this to plan training and cross-coverage, not to rank people',
       );
-      expect(getCoverage).toHaveBeenCalledWith(undefined, undefined, 30, undefined, undefined);
+      expect(getCoverage).toHaveBeenCalledWith(
+        '30d',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
       expect(JSON.parse(localStorage.getItem('mf.dashboard.users.v1.5')!).view).toBe('coverage');
       q<HTMLButtonElement>('[data-view="workload"]').click();
       await settle();
@@ -984,8 +995,8 @@ describe('DashUsersTab', () => {
       expect(text(zero)).toBe('0');
       expect(zero.classList.contains('cell--zero')).toBe(true);
       expect(zero.getAttribute('data-step')).toBe('0');
-      expect(cell(1, 10).getAttribute('aria-label')).toBe(
-        'Priya Shah: 7 Production tasks completed in the last 90 days'.replace('90', '30'),
+      expect(cell(1, 10).getAttribute('aria-label')).toContain(
+        'Priya Shah: 7 Production tasks completed from Jul 18',
       );
       expect(cell(1, 11).getAttribute('title')).toBe(cell(1, 11).getAttribute('aria-label'));
       expect(cell(2, 11).closest('td')!.getAttribute('data-gap')).toBe('true'); // 0 Review for someone who completed other work
@@ -1048,23 +1059,53 @@ describe('DashUsersTab', () => {
       expect(q('[data-summary="thin"]')!.classList.contains('chip--warn')).toBe(true);
     });
 
-    it('changes the period (presets and a custom range) and writes it to the address', async () => {
+    it('offers the shared period list plus 6 and 12 months, and writes a choice to the address', async () => {
       await coverage();
-      await choose('[data-coverage-period]', '90');
-      expect(getCoverage).toHaveBeenLastCalledWith(undefined, undefined, 90, undefined, undefined);
-      expect(url()).toContain('cp=90');
-      expect(text(q('[data-coverage-frame]'))).toContain('in the last 90 days');
-      await choose('[data-coverage-period]', '365');
-      expect(getCoverage).toHaveBeenLastCalledWith(undefined, undefined, 365, undefined, undefined);
-      await choose('[data-coverage-period]', 'custom');
-      expect(url()).toContain('cp=custom');
-      expect(q('#cv-from')).not.toBeNull();
+      const select = q<HTMLSelectElement>(
+        '[data-coverage-frame] select[data-period], select[data-period]',
+      );
+      expect(Array.from(select.options).map((o) => text(o))).toEqual([
+        '7 days',
+        '30 days',
+        '90 days',
+        'This month',
+        'Last month',
+        'Last 6 months',
+        'Last 12 months',
+        'Custom',
+      ]);
+      expect(text(q('mf-period-control label'))).toBe('Period');
+      await choose('select[data-period]', '90d');
+      expect(getCoverage).toHaveBeenLastCalledWith(
+        '90d',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
+      expect(url()).toContain('period=90d');
+      expect(text(q('[data-coverage-frame]'))).toContain('completed from Jul 18');
+      await choose('select[data-period]', '12m');
+      expect(getCoverage).toHaveBeenLastCalledWith(
+        '12m',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
+      await choose('select[data-period]', 'custom');
+      expect(url()).toContain('period=custom');
+      expect(url()).toContain('from=');
+      expect(q('mf-period-control mf-date-input')).not.toBeNull();
       await reopen(
         of(board()),
-        '/dashboard?tab=users&view=coverage&cp=custom&cfrom=2026-01-01&cto=2026-02-01',
+        '/dashboard?tab=users&view=coverage&period=custom&from=2026-01-01&to=2026-02-01',
         COV,
       );
       expect(getCoverage).toHaveBeenLastCalledWith(
+        'custom',
         '2026-01-01',
         '2026-02-01',
         undefined,
@@ -1076,7 +1117,14 @@ describe('DashUsersTab', () => {
     it('filters by pod through the API and by name on the page', async () => {
       await coverage();
       await choose('[data-coverage-pod]', '2');
-      expect(getCoverage).toHaveBeenLastCalledWith(undefined, undefined, 30, 2, undefined);
+      expect(getCoverage).toHaveBeenLastCalledWith(
+        '30d',
+        undefined,
+        undefined,
+        undefined,
+        2,
+        undefined,
+      );
       expect(url()).toContain('upod=2');
       const calls = getCoverage.mock.calls.length;
       await reopen(of(board()), '/dashboard?tab=users&view=coverage&uq=tess', COV);

@@ -110,7 +110,7 @@ export interface Option {
         </select>
       </div>
       <div class="fld">
-        <label class="lbl" for="sl-days">Completed in last</label>
+        <label class="lbl" for="sl-days">Done in the last</label>
         <select
           id="sl-days"
           class="mf-control mf-control--compact"

@@ -16,7 +16,6 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DateInput } from 'form-engine';
 import {
   CoverageBoard,
   CoverageUser,
@@ -27,17 +26,15 @@ import { QuietRequests } from '../../../core/http/interceptors';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { mfDate } from '../../../core/time/time';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
-import { withoutDefaults } from '../dash-url-state';
+import { DashboardPrefs } from '../dashboard-prefs';
+import { Period, periodArgs, periodForTab, periodId, periodPhrase } from '../dashboard-period';
+import { PeriodControl } from '../ui/period-control';
 import { DashState, focusAfterRetry } from '../ui/dash-state';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { CoverageDrawer, CoverageTarget } from './coverage-drawer';
 import {
-  CoveragePeriod,
-  DEFAULT_PERIOD,
   Matrix,
   MatrixCell,
-  PERIODS,
-  PeriodKey,
   RELATIVE_LABELS,
   STEP_COLORS,
   STEP_LABELS,
@@ -48,12 +45,7 @@ import {
   buildMatrix,
   cellLabel,
   isOrder,
-  isPeriodKey,
   isScale,
-  periodArgs,
-  periodFromParams,
-  periodPhrase,
-  periodToParams,
   plural,
   thinText,
 } from './coverage-model';
@@ -62,11 +54,6 @@ import { UsersFilters } from './users-model';
 import { PodOption } from './users-toolbar';
 
 type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
-
-/** The longest period the API accepts, in days. */
-const MAX_DAYS = 366;
-
-const dayNumber = (iso: string) => Date.parse(iso + 'T00:00:00Z') / 86_400_000;
 
 /**
  * The Coverage view of the Users tab: a heat map of how many tasks each person completed per task type in a period, for planning training
@@ -78,7 +65,7 @@ const dayNumber = (iso: string) => Date.parse(iso + 'T00:00:00Z') / 86_400_000;
  */
 @Component({
   selector: 'mf-coverage-view',
-  imports: [DateInput, SearchBox, TaskTypeIcon, DashState, CoverageDrawer],
+  imports: [PeriodControl, SearchBox, TaskTypeIcon, DashState, CoverageDrawer],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h3 class="head" id="cv-h" data-coverage-heading>
@@ -94,43 +81,7 @@ const dayNumber = (iso: string) => Date.parse(iso + 'T00:00:00Z') / 86_400_000;
     </p>
 
     <div class="bar" role="toolbar" aria-label="Coverage controls">
-      <div class="fld">
-        <label class="lbl" for="cv-period">Period</label>
-        <select
-          id="cv-period"
-          class="mf-control mf-control--compact"
-          data-coverage-period
-          [value]="period().period"
-          (change)="onPeriod($any($event.target).value)"
-        >
-          @for (p of periods; track p.key) {
-            <option [value]="p.key" [selected]="p.key === period().period">{{ p.label }}</option>
-          }
-          <option value="custom" [selected]="period().period === 'custom'">Custom range</option>
-        </select>
-      </div>
-      @if (period().period === 'custom') {
-        <div class="fld">
-          <label class="lbl" for="cv-from">From</label>
-          <mf-date-input
-            inputId="cv-from"
-            label="from"
-            [commitOnly]="true"
-            [isoValue]="period().from"
-            (isoChange)="setCustom({ from: $event })"
-          />
-        </div>
-        <div class="fld">
-          <label class="lbl" for="cv-to">To</label>
-          <mf-date-input
-            inputId="cv-to"
-            label="to"
-            [commitOnly]="true"
-            [isoValue]="period().to"
-            (isoChange)="setCustom({ to: $event })"
-          />
-        </div>
-      }
+      <mf-period-control [period]="period()" [longWindows]="true" />
       @if (pods().length > 0 || filters().pod !== null) {
         <div class="fld">
           <label class="lbl" for="cv-pod">Pod</label>
@@ -210,10 +161,6 @@ const dayNumber = (iso: string) => Date.parse(iso + 'T00:00:00Z') / 86_400_000;
       </button>
       <span class="grow"></span>
     </div>
-
-    @if (rangeProblem(); as problem) {
-      <p class="alert" role="alert" data-coverage-range>{{ problem }}</p>
-    }
 
     <p class="sr-only" role="status" aria-live="polite" data-coverage-live>{{ live() }}</p>
 
@@ -801,7 +748,6 @@ export class CoverageView implements OnInit {
   /** Read once the board arrives: the tab learns the pods seen. */
   readonly podsSeen = output<Map<number, string>>();
 
-  protected readonly periods = PERIODS;
   protected readonly steps: Exclude<Step, 0>[] = [1, 2, 3, 4];
   protected readonly colors = STEP_COLORS;
   protected readonly stepLabels = STEP_LABELS;
@@ -809,7 +755,9 @@ export class CoverageView implements OnInit {
   protected readonly bones = [1, 2, 3, 4, 5];
   protected readonly plural = plural;
 
-  protected readonly period = signal<CoveragePeriod>(DEFAULT_PERIOD);
+  private readonly dashPrefs = inject(DashboardPrefs);
+  /** The page's shared period (Coverage also offers the 6 and 12 month windows). */
+  protected readonly period = computed<Period>(() => periodForTab(this.dashPrefs.period(), true));
   protected readonly scale = this.prefs.scale;
   protected readonly typeOrder = this.prefs.typeOrder;
   protected readonly userOrder = this.prefs.userOrder;
@@ -824,7 +772,9 @@ export class CoverageView implements OnInit {
   protected readonly activeC = signal(0);
   protected readonly target = signal<CoverageTarget | null>(null);
 
-  protected readonly phrase = computed(() => periodPhrase(this.period(), this.board()));
+  protected readonly phrase = computed(() =>
+    periodPhrase(this.board(), this.clock.now().getFullYear()),
+  );
   protected readonly updated = computed(() => {
     const b = this.board();
     return b ? mfDate(b.generatedAtUtc, this.zone, 'datetime') : null;
@@ -844,17 +794,6 @@ export class CoverageView implements OnInit {
         })
       : null;
   });
-  protected readonly rangeProblem = computed(() => {
-    const p = this.period();
-    if (p.period !== 'custom') return null;
-    if (!p.from || !p.to) return 'Choose both dates of the custom range.';
-    if (p.from > p.to) return 'The start of the period is after its end.';
-    if (dayNumber(p.to) - dayNumber(p.from) + 1 > MAX_DAYS) {
-      return `The period can be at most ${MAX_DAYS} days.`;
-    }
-    return null;
-  });
-
   protected nz(step: Step): Exclude<Step, 0> {
     return (step === 0 ? 1 : step) as Exclude<Step, 0>;
   }
@@ -866,13 +805,22 @@ export class CoverageView implements OnInit {
   private lastPod: number | null | undefined;
 
   constructor() {
+    // The period is shared with Summary and Trends: a new one (the control, a link, Back) reads the matrix again.
+    let lastPeriod: string | undefined;
+    effect(() => {
+      const id = periodId(this.period());
+      untracked(() => {
+        if (lastPeriod !== undefined && id !== lastPeriod) this.load({ silent: !!this.board() });
+        lastPeriod = id;
+      });
+    });
     // The pod is part of the request: a change of the pod filter (made here or by Back in the address) reads the matrix again.
     effect(() => {
       const pod = this.filters().pod;
       untracked(() => {
         if (this.lastPod === undefined || pod === this.lastPod) return;
         this.lastPod = pod;
-        this.reload();
+        this.load({ silent: !!this.board() });
       });
     });
   }
@@ -880,49 +828,7 @@ export class CoverageView implements OnInit {
   ngOnInit(): void {
     this.lastPod = this.filters().pod;
     this.prefs.ensureLoaded();
-    const params = this.route.snapshot.queryParamMap;
-    this.period.set(periodFromParams((k) => params.get(k), this.prefs.period()));
-    // A link that names a period (even the default one) is what the person wants: remember it, so the address can leave the default out.
-    if (params.has('cp') && this.period().period !== 'custom') {
-      this.prefs.remember({ period: this.period().period });
-    }
-    if ([null, 'users'].includes(params.get('tab'))) void this.writeUrl();
     this.load();
-  }
-
-  // ---- the period
-
-  protected onPeriod(value: string): void {
-    if (!isPeriodKey(value)) return;
-    if (value === 'custom') {
-      const b = this.board();
-      this.period.set({ period: 'custom', from: b?.from ?? null, to: b?.to ?? null });
-    } else {
-      this.period.set({ period: value, from: null, to: null });
-      this.prefs.remember({ period: value });
-    }
-    void this.writeUrl();
-    this.reload();
-  }
-
-  protected setCustom(patch: { from?: string | null; to?: string | null }): void {
-    this.period.update((p) => ({ ...p, period: 'custom' as PeriodKey, ...patch }));
-    void this.writeUrl();
-    this.reload();
-  }
-
-  private reload(): void {
-    if (this.rangeProblem()) return;
-    this.load({ silent: !!this.board() });
-  }
-
-  private writeUrl(): Promise<boolean> {
-    return this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: withoutDefaults('users', periodToParams(this.period())),
-      queryParamsHandling: 'merge',
-      replaceUrl: true,
-    });
   }
 
   // ---- display choices
@@ -954,7 +860,6 @@ export class CoverageView implements OnInit {
 
   protected load(options: { silent?: boolean; announce?: boolean } = {}): void {
     const { silent = false, announce = false } = options;
-    if (this.rangeProblem()) return;
     const id = ++this.requestId;
     const background = silent && !!this.board();
     if (background) this.refreshing.set(true);
@@ -966,9 +871,10 @@ export class CoverageView implements OnInit {
     const start = () =>
       this.api
         .getDashboardCoverage(
+          args.period,
           args.from,
           args.to,
-          args.periodDays,
+          undefined,
           this.filters().pod ?? undefined,
           undefined,
         )

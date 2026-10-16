@@ -1,14 +1,9 @@
 import { contrastRatio } from '../../../shared/ui/color-contrast';
 import {
-  PERIODS,
   STEP_COLORS,
   absoluteStep,
   buildMatrix,
   cellLabel,
-  periodArgs,
-  periodFromParams,
-  periodPhrase,
-  periodToParams,
   relativeStep,
   stepOf,
   thinText,
@@ -48,57 +43,6 @@ describe('coverage model', () => {
       }
       const light = steps.map((s) => contrastRatio(STEP_COLORS[s].bg, '#FFFFFF'));
       expect(light).toEqual([...light].sort((a, b) => a - b));
-    });
-  });
-
-  describe('period', () => {
-    it('reads the address and falls back to the remembered period', () => {
-      const get = (q: Record<string, string>) => (k: string) => q[k] ?? null;
-      expect(periodFromParams(get({ cp: '90' }))).toEqual({ period: '90', from: null, to: null });
-      expect(periodFromParams(get({}), '365').period).toBe('365');
-      expect(
-        periodFromParams(get({ cp: 'custom', cfrom: '2026-01-01', cto: '2026-02-01' })),
-      ).toEqual({
-        period: 'custom',
-        from: '2026-01-01',
-        to: '2026-02-01',
-      });
-      // A custom range that is not valid is ignored.
-      expect(
-        periodFromParams(get({ cp: 'custom', cfrom: '2026-03-01', cto: '2026-02-01' })).period,
-      ).toBe('30');
-      expect(periodFromParams(get({ cp: 'nope' })).period).toBe('30');
-    });
-
-    it('writes the address and the API arguments', () => {
-      expect(periodToParams({ period: '90', from: null, to: null })).toEqual({
-        cp: '90',
-        cfrom: null,
-        cto: null,
-      });
-      expect(periodToParams({ period: 'custom', from: '2026-01-01', to: '2026-02-01' })).toEqual({
-        cp: 'custom',
-        cfrom: '2026-01-01',
-        cto: '2026-02-01',
-      });
-      expect(periodArgs({ period: '180', from: null, to: null })).toEqual({ periodDays: 183 });
-      expect(periodArgs({ period: 'custom', from: '2026-01-01', to: '2026-02-01' })).toEqual({
-        from: '2026-01-01',
-        to: '2026-02-01',
-      });
-      expect(PERIODS.map((p) => p.label)).toEqual([
-        'Last 30 days',
-        'Last 90 days',
-        'Last 6 months',
-        'Last 12 months',
-      ]);
-    });
-
-    it('reads in a sentence', () => {
-      expect(periodPhrase({ period: '90', from: null, to: null })).toBe('in the last 90 days');
-      expect(periodPhrase({ period: 'custom', from: '2026-01-01', to: '2026-02-01' })).toBe(
-        'from Jan 1, 2026 to Feb 1, 2026',
-      );
     });
   });
 

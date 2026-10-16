@@ -7,7 +7,11 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// <summary>Query of the Dashboard task type coverage matrix (epic #68, issue #73 addendum Q).</summary>
 public class CoverageQuery
 {
-    public static readonly IReadOnlyList<string> Keys = ["from", "to", "periodDays", "podId", "includeInactive"];
+    public static readonly IReadOnlyList<string> Keys = ["period", "from", "to", "periodDays", "podId", "includeInactive"];
+
+    /// <summary>Period keyword: <c>7d</c>, <c>30d</c> (default), <c>90d</c>, <c>this-month</c>, <c>last-month</c>, <c>6m</c>, <c>12m</c> or <c>custom</c> (with <c>from</c> and <c>to</c>). Resolved in the viewer's time zone.</summary>
+    [FromQuery(Name = "period")]
+    public string? Period { get; init; }
 
     /// <summary>First local day of the period (<c>yyyy-MM-dd</c>, the viewer's zone). Needs <c>to</c>.</summary>
     [FromQuery(Name = "from")]
@@ -17,7 +21,7 @@ public class CoverageQuery
     [FromQuery(Name = "to")]
     public DateOnly? To { get; init; }
 
-    /// <summary>A period of this many days ending today (default 30, at most 366); ignored when <c>from</c> and <c>to</c> are given.</summary>
+    /// <summary>Deprecated, kept for one release: a period of this many days ending today (at most 366). <c>period</c>, <c>from</c> and <c>to</c> win.</summary>
     [FromQuery(Name = "periodDays"), Range(1, 366)]
     public int? PeriodDays { get; init; }
 

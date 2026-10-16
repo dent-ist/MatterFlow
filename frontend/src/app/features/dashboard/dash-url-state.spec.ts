@@ -11,7 +11,7 @@ import { DASHBOARD_TABS } from './dashboard-prefs';
 import { viewToParams, DEFAULT_VIEW } from './swimlane/swimlane-model';
 import { DEFAULT_CHOICE, choiceToParams } from './ui/trend-model';
 import { filtersToParams, DEFAULT_FILTERS } from './users/users-model';
-import { DEFAULT_PERIOD, periodToParams } from './users/coverage-model';
+import { DEFAULT_PERIOD, periodToParams } from './dashboard-period';
 
 const map = (o: Record<string, string | string[]>) => convertToParamMap(o);
 
@@ -21,7 +21,7 @@ describe('dash URL defaults (one list per tab)', () => {
     expect(DASH_DEFAULTS.breakdowns).toEqual({});
     expect(DASH_DEFAULTS.trends).toEqual({ metric: DEFAULT_CHOICE.metric });
     expect(DASH_DEFAULTS.swimlane).toEqual({ group: 'none', sort: 'priority', days: '7' });
-    expect(DASH_DEFAULTS.users).toEqual({ view: 'workload', uavail: 'all', cp: '30' });
+    expect(DASH_DEFAULTS.users).toEqual({ view: 'workload', uavail: 'all' });
     expect(Object.keys(DASH_DEFAULTS).sort()).toEqual([...DASHBOARD_TABS].sort());
   });
 
@@ -37,16 +37,14 @@ describe('dash URL defaults (one list per tab)', () => {
     expect(grouped['days']).toBeNull();
   });
 
-  it('writes nothing for default Users filters, Workload view and the 30 day Coverage period', () => {
+  it('writes nothing for default Users filters, Workload view and the 30 day period', () => {
     const p = withoutDefaults('users', {
       ...filtersToParams(DEFAULT_FILTERS),
       view: 'workload',
       ...periodToParams(DEFAULT_PERIOD),
     });
     expect(Object.values(p).every((v) => v === null)).toBe(true);
-    expect(
-      withoutDefaults('users', periodToParams({ ...DEFAULT_PERIOD, period: '90' }))['cp'],
-    ).toBe('90');
+    expect(periodToParams({ ...DEFAULT_PERIOD, key: '90d' }).period).toBe('90d');
   });
 
   it('writes nothing for the default Trends choice (as before)', () => {
@@ -90,12 +88,53 @@ describe('canonicalParams', () => {
     expect(canonicalParams(map({ tab: 'breakdowns' }), 'summary')).toEqual({ tab: 'summary' });
   });
 
-  it('keeps the new page-wide parameters of other issues', () => {
-    expect(canonicalParams(map({ tab: 'summary', pod: '3', period: '90' }), 'summary')).toEqual({
+  it('keeps the page-wide pod and a valid period, whatever the tab', () => {
+    expect(canonicalParams(map({ tab: 'summary', pod: '3', period: '90d' }), 'summary')).toEqual({
       tab: 'summary',
       pod: '3',
-      period: '90',
+      period: '90d',
     });
+    expect(canonicalParams(map({ tab: 'users', period: '12m' }), 'users')).toEqual({
+      tab: 'users',
+      period: '12m',
+    });
+  });
+
+  it('leaves the default period (30 days) out and drops dates that do not belong to a custom period', () => {
+    expect(canonicalParams(map({ tab: 'trends', period: '30d' }), 'trends')).toEqual({
+      tab: 'trends',
+    });
+    expect(
+      canonicalParams(
+        map({ tab: 'trends', period: '90d', from: '2026-01-01', to: '2026-01-09' }),
+        'trends',
+      ),
+    ).toEqual({ tab: 'trends', period: '90d' });
+  });
+
+  it('keeps a valid custom range and drops an invalid one with its dates (memory applies)', () => {
+    const good = map({ tab: 'trends', period: 'custom', from: '2026-10-01', to: '2026-10-09' });
+    expect(canonicalParams(good, 'trends')).toEqual({
+      tab: 'trends',
+      period: 'custom',
+      from: '2026-10-01',
+      to: '2026-10-09',
+    });
+    const bads: Record<string, string>[] = [
+      { period: 'custom', from: '2026-10-09', to: '2026-10-01' },
+      { period: 'custom', from: '2024-01-01', to: '2026-10-01' },
+      { period: 'custom' },
+      { period: 'quarter' },
+      { from: '2026-10-01', to: '2026-10-09' },
+    ];
+    for (const bad of bads) {
+      expect(canonicalParams(map({ tab: 'trends', ...bad }), 'trends')).toEqual({ tab: 'trends' });
+    }
+  });
+
+  it('keeps the period when the person moves between tabs', () => {
+    expect('period' in clearedTabParams('trends')).toBe(false);
+    expect('from' in clearedTabParams('users')).toBe(false);
   });
 });
 

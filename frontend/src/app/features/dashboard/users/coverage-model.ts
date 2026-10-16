@@ -1,5 +1,4 @@
 import { CoverageBoard, CoverageTaskType, CoverageUser } from '../../../api/generated/api-client';
-import { formatDateOnly } from '../../../core/time/time';
 
 // ---- colour steps
 
@@ -49,74 +48,6 @@ export function relativeStep(n: number, rowMax: number): Step {
 
 export function stepOf(n: number, scale: Scale, rowMax: number): Step {
   return scale === 'absolute' ? absoluteStep(n) : relativeStep(n, rowMax);
-}
-
-// ---- the period
-
-export const PERIODS = [
-  { key: '30', label: 'Last 30 days', days: 30 },
-  { key: '90', label: 'Last 90 days', days: 90 },
-  { key: '180', label: 'Last 6 months', days: 183 },
-  { key: '365', label: 'Last 12 months', days: 365 },
-] as const;
-export type PeriodKey = (typeof PERIODS)[number]['key'] | 'custom';
-export const isPeriodKey = (v: unknown): v is PeriodKey =>
-  v === 'custom' || PERIODS.some((p) => p.key === v);
-
-export interface CoveragePeriod {
-  period: PeriodKey;
-  /** `yyyy-MM-dd`, only for a custom range. */
-  from: string | null;
-  to: string | null;
-}
-
-export const DEFAULT_PERIOD: CoveragePeriod = { period: '30', from: null, to: null };
-
-const ISO = /^\d{4}-\d{2}-\d{2}$/;
-
-/** The period named by the address (`cp=90`, or `cp=custom&cfrom=..&cto=..`); anything invalid falls back to the remembered period. */
-export function periodFromParams(
-  get: (key: string) => string | null,
-  fallback: PeriodKey = '30',
-): CoveragePeriod {
-  const key = get('cp');
-  const from = get('cfrom');
-  const to = get('cto');
-  if (key === 'custom' && from && to && ISO.test(from) && ISO.test(to) && from <= to) {
-    return { period: 'custom', from, to };
-  }
-  if (isPeriodKey(key) && key !== 'custom') return { period: key, from: null, to: null };
-  return { period: fallback === 'custom' ? '30' : fallback, from: null, to: null };
-}
-
-export function periodToParams(p: CoveragePeriod): Record<string, string | null> {
-  return {
-    cp: p.period,
-    cfrom: p.period === 'custom' ? p.from : null,
-    cto: p.period === 'custom' ? p.to : null,
-  };
-}
-
-/** The API arguments (`from`, `to`, `periodDays`) of a period. */
-export function periodArgs(p: CoveragePeriod): {
-  from?: string;
-  to?: string;
-  periodDays?: number;
-} {
-  if (p.period === 'custom' && p.from && p.to) return { from: p.from, to: p.to };
-  return { periodDays: PERIODS.find((x) => x.key === p.period)?.days ?? 30 };
-}
-
-/** "in the last 90 days" / "from Oct 1, 2026 to Oct 15, 2026": the period as it reads in a sentence. */
-export function periodPhrase(p: CoveragePeriod, board?: Pick<CoverageBoard, 'from' | 'to'> | null) {
-  if (p.period === 'custom') {
-    const from = board?.from ?? p.from;
-    const to = board?.to ?? p.to;
-    return from && to
-      ? `from ${formatDateOnly(from)} to ${formatDateOnly(to)}`
-      : 'in the chosen period';
-  }
-  return `in the ${PERIODS.find((x) => x.key === p.period)?.label.toLowerCase() ?? 'last 30 days'}`;
 }
 
 // ---- the matrix

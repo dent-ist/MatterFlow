@@ -293,7 +293,7 @@ test.describe('Swimlane tab', () => {
     const response = page.waitForResponse(
       (r) => r.url().includes('/dashboard/swimlane') && r.url().includes('completedDays=30'),
     );
-    await page.getByLabel('Completed in last').selectOption('30');
+    await page.getByLabel('Done in the last').selectOption('30');
     expect((await response).ok()).toBe(true);
     await expect(page).toHaveURL(/days=30/);
     await page.getByLabel('Group by').selectOption({ label: 'Priority' });
@@ -302,13 +302,13 @@ test.describe('Swimlane tab', () => {
 
     // A plain Swimlane link (no board parameters) opens with the remembered choices, and writes them into the address.
     await page.goto(`/dashboard?tab=swimlane&q=${board.tag}`);
-    await expect(page.getByLabel('Completed in last')).toHaveValue('30');
+    await expect(page.getByLabel('Done in the last')).toHaveValue('30');
     await expect(page.getByLabel('Group by')).toHaveValue('priority');
     await expect(page.getByLabel('Density')).toHaveValue('compact');
     await expect(page).toHaveURL(/group=priority/);
     await expect(page).toHaveURL(/days=30/);
     // Put the defaults back for the tests that follow.
-    await page.getByLabel('Completed in last').selectOption('7');
+    await page.getByLabel('Done in the last').selectOption('7');
     await page.getByLabel('Group by').selectOption({ label: 'None' });
     await page.getByLabel('Density').selectOption('comfortable');
   });

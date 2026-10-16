@@ -584,7 +584,6 @@ export class DashUsersTab implements OnInit {
       relativeTo: this.route,
       queryParams: {
         [USERS_VIEW_PARAM]: view === 'coverage' ? 'coverage' : null,
-        ...(view === 'coverage' ? {} : { cp: null, cfrom: null, cto: null }),
       },
       queryParamsHandling: 'merge',
     });

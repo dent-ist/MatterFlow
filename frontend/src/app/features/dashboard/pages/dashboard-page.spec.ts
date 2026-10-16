@@ -30,7 +30,7 @@ const count = (n: number, query: string) => ({ count: n, query });
 
 function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
   return {
-    period: { days: 30, from: '2026-09-15', to: '2026-10-14' },
+    period: { days: 30, from: '2026-09-15', to: '2026-10-14', key: '30d' },
     timeZone: 'UTC',
     generatedAtUtc: '2026-10-14T15:42:00Z',
     open: count(128, OPEN),
@@ -204,7 +204,9 @@ describe('DashboardPage', () => {
     url = '/dashboard',
   ) {
     getDashboard = vi.fn().mockReturnValue(response);
-    getDashboardTrend = vi.fn((_days: number, ids?: number[]) => of(aTrend(ids ?? [])));
+    getDashboardTrend = vi.fn((_p: string, _f: unknown, _t: unknown, _d: unknown, ids?: number[]) =>
+      of(aTrend(ids ?? [])),
+    );
     getTaskQueue = vi.fn((...args: unknown[]) =>
       of(
         args[6] === true
@@ -279,7 +281,7 @@ describe('DashboardPage', () => {
 
   it('puts Needs attention first: overdue, unassigned and on hold, each with a count, an icon and a link that says what it opens', async () => {
     const el = await open();
-    expect(getDashboard).toHaveBeenCalledWith(30, undefined);
+    expect(getDashboard).toHaveBeenCalledWith('30d', undefined, undefined, undefined, undefined);
 
     const group = el.querySelector('[data-group="attention"]')!;
     expect(text(group.querySelector('h2'))).toBe('Needs attention');
@@ -334,8 +336,8 @@ describe('DashboardPage', () => {
       'Created',
     ]);
     expect(tiles.map((t) => text(t.querySelector('.value')))).toEqual(['128', '6', '94', '101']);
-    expect(tiles[2].textContent).toContain('Last 30 days');
-    expect(tiles[3].textContent).toContain('Last 30 days');
+    expect(tiles[2].textContent).toContain('Sep 15 to Oct 14');
+    expect(tiles[3].textContent).toContain('Sep 15 to Oct 14');
     // Every tile has its own small icon next to the label.
     for (const t of tiles) expect(t.querySelector('.label .pi')).not.toBeNull();
     expect(tiles[2].querySelector('a')!.getAttribute('href')).toBe(
@@ -343,7 +345,14 @@ describe('DashboardPage', () => {
     );
     // The period control sits in the Overview row, named for what it changes, not in the page header.
     expect(group.querySelector('select[data-period]')).not.toBeNull();
-    expect(text(group.querySelector('label.period'))).toContain('Completed and created in');
+    expect(text(group.querySelector('mf-period-control label'))).toContain('Period');
+    expect(text(group.querySelector('[data-period-note]'))).toBe(
+      'Applies to Completed and Created. Open, Overdue, Due soon, Unassigned, On hold and ASAP are not affected.',
+    );
+    const describedBy = group
+      .querySelector('select[data-period]')!
+      .getAttribute('aria-describedby');
+    expect(describedBy).toBe(group.querySelector('[data-period-note]')!.id);
     expect(el.querySelector('mf-page-header select[data-period]')).toBeNull();
     // The refresh icon sits in the tab row; "Updated <time>" is its tooltip, never visible text.
     const refresh = el.querySelector<HTMLButtonElement>('mf-dash-tabs [data-refresh]')!;
@@ -691,7 +700,7 @@ describe('DashboardPage', () => {
       await settle();
       expect(el.querySelectorAll('select[data-period]').length).toBe(1);
       expect(el.querySelector('[data-section="trend"] select[data-period]')).not.toBeNull();
-      expect(text(el.querySelector('label.period'))).toContain('Completed and created in');
+      expect(text(el.querySelector('mf-period-control label'))).toBe('Period');
     });
   });
 
@@ -965,7 +974,7 @@ describe('DashboardPage', () => {
     await new Promise((r) => setTimeout(r, 900));
     harness.detectChanges();
     expect(getDashboard).toHaveBeenCalledTimes(2);
-    expect(getDashboard).toHaveBeenLastCalledWith(30, true);
+    expect(getDashboard).toHaveBeenLastCalledWith('30d', undefined, undefined, undefined, true);
     expect(getTaskQueue.mock.calls.filter((c) => c[6] === true).length).toBe(2);
     expect(text(panel().querySelector('[data-total]'))).toBe('17');
     el.remove();
@@ -985,7 +994,7 @@ describe('DashboardPage', () => {
     await undo.run();
     await settle();
     expect(getDashboard.mock.calls.length).toBeGreaterThan(reads);
-    expect(getDashboard).toHaveBeenLastCalledWith(30, true);
+    expect(getDashboard).toHaveBeenLastCalledWith('30d', undefined, undefined, undefined, true);
     expect(getTaskQueue.mock.calls.length).toBeGreaterThan(queueReads);
     expect(el.querySelector('[data-panel="unassigned"] [data-task="TSK-21"]')).not.toBeNull();
   });
@@ -1142,7 +1151,15 @@ describe('DashboardPage', () => {
 
   it('shows the daily trend with its legend and data table on the Trends tab, read with the period from its own request', async () => {
     const el = await open(of(summary()), ALL, '/dashboard?tab=trends');
-    expect(getDashboardTrend).toHaveBeenCalledWith(30, undefined, undefined, undefined);
+    expect(getDashboardTrend).toHaveBeenCalledWith(
+      '30d',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    );
     const trend = el.querySelector('[data-section="trend"] mf-dash-trends-tab')!;
     expect(trend.querySelector('[data-plot] svg')).not.toBeNull();
     expect(text(trend.querySelector('[data-legend="created"]'))).toBe('Created 9');
@@ -1153,51 +1170,171 @@ describe('DashboardPage', () => {
     expect(trend.querySelectorAll('tbody tr').length).toBe(3);
   });
 
-  it('offers period presets that apply to created and completed only', async () => {
+  it('offers one period list, writes a choice to the address and reads the counts again', async () => {
     const el = await open();
     const select = el.querySelector<HTMLSelectElement>('select[data-period]')!;
     expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
-      'This week',
+      '7 days',
+      '30 days',
+      '90 days',
       'This month',
-      'Last 30 days',
-      'Last quarter',
+      'Last month',
+      'Custom',
     ]);
     expect(select.closest('[data-group="overview"]')).not.toBeNull();
-    expect(el.textContent).toContain('Completed and created in');
+    expect(select.value).toBe('30d');
+    expect(TestBed.inject(Router).url).toBe('/dashboard');
 
-    // 14 Oct 2026 is a Wednesday: the week so far is 3 days, the month 14.
-    select.value = 'week';
-    select.dispatchEvent(new Event('change'));
-    await settle();
-    expect(getDashboard).toHaveBeenLastCalledWith(3, true);
-    expect(el.querySelector('[data-group="overview"]')!.textContent).toContain('This week');
+    const pick = async (value: string) => {
+      select.value = value;
+      select.dispatchEvent(new Event('change'));
+      await settle();
+    };
+    await pick('7d');
+    expect(getDashboard).toHaveBeenLastCalledWith('7d', undefined, undefined, undefined, true);
+    expect(TestBed.inject(Router).url).toBe('/dashboard?period=7d');
+    // 14 Oct 2026: the caption is the resolved range.
+    expect(el.querySelector('[data-group="overview"]')!.textContent).toContain('Oct 8 to Oct 14');
 
-    select.value = 'month';
-    select.dispatchEvent(new Event('change'));
-    await settle();
-    expect(getDashboard).toHaveBeenLastCalledWith(14, true);
+    await pick('this-month');
+    expect(getDashboard).toHaveBeenLastCalledWith(
+      'this-month',
+      undefined,
+      undefined,
+      undefined,
+      true,
+    );
+    expect(el.querySelector('[data-group="overview"]')!.textContent).toContain('Oct 1 to Oct 14');
 
-    select.value = 'quarter';
-    select.dispatchEvent(new Event('change'));
-    await settle();
-    expect(getDashboard).toHaveBeenLastCalledWith(90, true);
+    await pick('last-month');
+    expect(TestBed.inject(Router).url).toBe('/dashboard?period=last-month');
+    expect(el.querySelector('[data-group="overview"]')!.textContent).toContain('Sep 1 to Sep 30');
+
+    // The default is not written to the address.
+    await pick('30d');
+    expect(TestBed.inject(Router).url).toBe('/dashboard');
     // Changing the period does not reload the lists (they do not depend on it).
     expect(getTaskQueue).toHaveBeenCalledTimes(3);
   });
 
-  it('remembers the period per user and shows the same period on the Trends tab', async () => {
-    let el = await open();
+  it('sends a custom range as from and to, and keeps the previous period when the range is not valid', async () => {
+    const el = await open(of(summary()), ALL, '/dashboard?period=7d');
     const select = el.querySelector<HTMLSelectElement>('select[data-period]')!;
-    select.value = 'quarter';
+    expect(select.value).toBe('7d');
+    select.value = 'custom';
     select.dispatchEvent(new Event('change'));
     await settle();
+    // Custom starts from the range on screen.
+    expect(getDashboard).toHaveBeenLastCalledWith(
+      'custom',
+      '2026-10-08',
+      '2026-10-14',
+      undefined,
+      true,
+    );
+    expect(TestBed.inject(Router).url).toBe(
+      '/dashboard?period=custom&from=2026-10-08&to=2026-10-14',
+    );
+
+    const type = async (id: string, value: string) => {
+      const input = el.querySelector<HTMLInputElement>('#' + id + ', [id$="-' + id + '"]')!;
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      input.dispatchEvent(new Event('blur'));
+      await settle();
+    };
+    const calls = getDashboard.mock.calls.length;
+    await type('from', '2026-10-20');
+    expect(text(el.querySelector('[data-period-error]'))).toContain(
+      'The start of the period is after its end.',
+    );
+    expect(text(el.querySelector('[data-period-error]'))).toContain(
+      'Still showing Oct 8 to Oct 14',
+    );
+    expect(getDashboard.mock.calls.length).toBe(calls);
+    expect(TestBed.inject(Router).url).toBe(
+      '/dashboard?period=custom&from=2026-10-08&to=2026-10-14',
+    );
+
+    await type('from', '2025-01-01');
+    expect(text(el.querySelector('[data-period-error]'))).toContain('at most 366 days');
+    expect(getDashboard.mock.calls.length).toBe(calls);
+
+    await type('from', '2026-10-01');
+    expect(el.querySelector('[data-period-error]')).toBeNull();
+    expect(getDashboard).toHaveBeenLastCalledWith(
+      'custom',
+      '2026-10-01',
+      '2026-10-14',
+      undefined,
+      true,
+    );
+  });
+
+  it('remembers the choice per user, shows the same period on the Trends tab and keeps a link as it is', async () => {
+    let el = await open();
+    const select = el.querySelector<HTMLSelectElement>('select[data-period]')!;
+    select.value = '90d';
+    select.dispatchEvent(new Event('change'));
+    await settle();
+    expect(JSON.parse(localStorage.getItem('mf.dashboard.v2.1') ?? '{}')).toEqual({
+      period: '90d',
+    });
 
     TestBed.resetTestingModule();
     el = await open(of(summary()), ALL, '/dashboard?tab=trends');
-    expect(getDashboard).toHaveBeenCalledWith(90, undefined);
-    expect(getDashboardTrend).toHaveBeenCalledWith(90, undefined, undefined, undefined);
-    expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe('quarter');
-    expect(text(el.querySelector('[data-section="trend"]'))).toContain('Last quarter');
+    expect(getDashboard).toHaveBeenCalledWith('90d', undefined, undefined, undefined, undefined);
+    expect(getDashboardTrend).toHaveBeenCalledWith(
+      '90d',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    );
+    expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe('90d');
+    // The remembered period is not written to the address by itself.
+    expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends');
+
+    // A link that names a period wins over memory (and is what the recipient sees).
+    TestBed.resetTestingModule();
+    el = await open(of(summary()), ALL, '/dashboard?tab=trends&period=7d');
+    expect(getDashboardTrend.mock.calls[0][0]).toBe('7d');
+    expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe('7d');
+    expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends&period=7d');
+  });
+
+  it('migrates a period saved by the old list and keeps the address clean', async () => {
+    for (const [old, now] of [
+      ['quarter', '90d'],
+      ['week', '7d'],
+      ['month', 'this-month'],
+      ['30d', '30d'],
+    ] as const) {
+      TestBed.resetTestingModule();
+      localStorage.setItem('mf.dashboard.v2.1', JSON.stringify({ period: old }));
+      const el = await open();
+      expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe(now);
+      expect(getDashboard).toHaveBeenCalledWith(now, undefined, undefined, undefined, undefined);
+      expect(TestBed.inject(Router).url).toBe('/dashboard');
+      expect(JSON.parse(localStorage.getItem('mf.dashboard.v2.1')!)).toEqual({ period: now });
+    }
+  });
+
+  it('shows a long Coverage window as 30 days on Summary and Trends, and ignores a bad range in the link', async () => {
+    let el = await open(of(summary()), ALL, '/dashboard?period=12m');
+    expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe('30d');
+    expect(getDashboard).toHaveBeenCalledWith('30d', undefined, undefined, undefined, undefined);
+
+    TestBed.resetTestingModule();
+    el = await open(
+      of(summary()),
+      ALL,
+      '/dashboard?tab=trends&period=custom&from=2026-10-09&to=2026-10-01',
+    );
+    expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe('30d');
+    expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends');
   });
 
   it('works when browser storage is blocked: tabs and the address still work', async () => {
@@ -1221,7 +1358,7 @@ describe('DashboardPage', () => {
     el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
     expect(el.querySelector('[aria-busy="true"][aria-label]')).toBeNull();
     await settle();
-    expect(getDashboard).toHaveBeenLastCalledWith(30, true);
+    expect(getDashboard).toHaveBeenLastCalledWith('30d', undefined, undefined, undefined, true);
     expect(el.querySelector('[data-group="attention"]')).toBe(before);
   });
 
@@ -1268,7 +1405,13 @@ describe('DashboardPage', () => {
     tick();
     await settle();
     expect(getDashboard).toHaveBeenCalledTimes(2);
-    expect(getDashboard).toHaveBeenLastCalledWith(30, undefined);
+    expect(getDashboard).toHaveBeenLastCalledWith(
+      '30d',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    );
     expect(el.querySelector('[data-lists]')).toBe(before);
   });
 

@@ -5823,10 +5823,33 @@
         "operationId": "GetDashboard",
         "parameters": [
           {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
             "name": "periodDays",
             "in": "query",
             "schema": {
-              "maximum": 365,
+              "maximum": 366,
               "minimum": 1,
               "type": "integer",
               "format": "int32"
@@ -5862,10 +5885,33 @@
         "operationId": "GetDashboardTrend",
         "parameters": [
           {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
             "name": "periodDays",
             "in": "query",
             "schema": {
-              "maximum": 365,
+              "maximum": 366,
               "minimum": 1,
               "type": "integer",
               "format": "int32"
@@ -6072,6 +6118,13 @@
         ],
         "operationId": "GetDashboardCoverage",
         "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "from",
             "in": "query",
@@ -10034,7 +10087,8 @@
         "required": [
           "days",
           "from",
-          "to"
+          "to",
+          "key"
         ],
         "type": "object",
         "properties": {
@@ -10049,6 +10103,9 @@
           "to": {
             "type": "string",
             "format": "date"
+          },
+          "key": {
+            "type": "string"
           }
         }
       },

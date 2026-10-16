@@ -56,6 +56,8 @@ async function tokenColor(page: Page, token: string): Promise<string> {
   }, token);
 }
 
+const esc = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 test.describe('Users tab: workload', () => {
   test('is the fifth tab, shows a card per person and keeps its own address', async ({ page }) => {
     await page.goto('/dashboard');
@@ -818,11 +820,15 @@ test.describe('Users tab: coverage', () => {
     );
     await expect(cell(page, b, cov.typeIds.review)).toHaveAttribute(
       'aria-label',
-      `${b.displayName}: 0 ${cov.typeNames.review} tasks completed in the last 30 days`,
+      new RegExp(
+        `^${esc(b.displayName)}: 0 ${esc(cov.typeNames.review)} tasks completed from \\w{3} \\d+ to \\w{3} \\d+`,
+      ),
     );
     await expect(cell(page, a, cov.typeIds.production)).toHaveAttribute(
       'aria-label',
-      `${a.displayName}: 3 ${cov.typeNames.production} tasks completed in the last 30 days`,
+      new RegExp(
+        `^${esc(a.displayName)}: 3 ${esc(cov.typeNames.production)} tasks completed from \\w{3} \\d+ to \\w{3} \\d+`,
+      ),
     );
     // Relative to the row by default: A has the most Production, so the darkest step; absolute: 3 is step 2.
     await expect(
@@ -842,21 +848,21 @@ test.describe('Users tab: coverage', () => {
     await expect(page.locator(`[data-type-name="${cov.typeNames.review}"]`)).toBeVisible();
     await expect(page.locator(`[data-type-name="${cov.typeNames.production}"]`)).toHaveCount(0);
     await page.getByRole('button', { name: 'Training gaps' }).click();
-    await page.getByLabel('Period').selectOption('90');
-    await expect(page).toHaveURL(/cp=90/);
+    await page.getByLabel('Period', { exact: true }).selectOption('90d');
+    await expect(page).toHaveURL(/period=90d/);
     await expect(cell(page, cov.people.a, cov.typeIds.production)).toHaveAttribute(
       'aria-label',
-      /in the last 90 days/,
+      /completed from /,
     );
     await page.getByLabel('People', { exact: true }).selectOption('total');
     await expect(page.locator('thead th[data-person]').first()).toContainText(
       cov.people.a.displayName,
     );
-    await page.getByLabel('Period').selectOption('custom');
-    await expect(page).toHaveURL(/cp=custom/);
+    await page.getByLabel('Period', { exact: true }).selectOption('custom');
+    await expect(page).toHaveURL(/period=custom&from=\d{4}-\d{2}-\d{2}&to=\d{4}-\d{2}-\d{2}/);
     await page.reload();
     await expect(page.locator('[data-coverage-table]')).toBeVisible();
-    await expect(page.getByLabel('Period')).toHaveValue('custom');
+    await expect(page.getByLabel('Period', { exact: true })).toHaveValue('custom');
   });
 
   test('a cell opens the completed tasks, with a link to the Task Queue', async ({ page }) => {

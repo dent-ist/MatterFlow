@@ -58,6 +58,8 @@ public class PermissionCatalogTests
     public void Angular_permission_union_matches_the_json_catalog()
     {
         var ts = File.ReadAllText(Path.Combine(RepoRoot(), "frontend", "src", "app", "core", "auth", "permissions.ts"));
+        // Only the PERMISSIONS array: later arrays (the Dashboard tab permission codes) repeat some of its entries.
+        ts = ts[..ts.IndexOf("export type Permission", StringComparison.Ordinal)];
         var angular = Regex.Matches(ts, @"^\s*'([A-Za-z]+\.[A-Za-z]+)',\s*$", RegexOptions.Multiline).Select(m => m.Groups[1].Value);
 
         angular.Order().ShouldBe(Catalog().Select(c => c.Code).Order());

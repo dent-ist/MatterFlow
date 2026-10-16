@@ -22,23 +22,10 @@ public sealed class CoverageService(DbContext db, IClock clock, IUserTimeZone ti
         ArgumentNullException.ThrowIfNull(query);
         var queueClock = QueueClock.Create(clock.UtcNow, timeZone);
 
-        DateOnly from, to;
-        if (query.From is not null || query.To is not null)
-        {
-            if (query.From is null || query.To is null)
-                return Error.Validation("from", "PERIOD_INVALID", "Give both from and to, or neither.");
-            if (query.From > query.To)
-                return Error.Validation("from", "PERIOD_INVALID", "The start of the period is after its end.");
-            if (query.To.Value.DayNumber - query.From.Value.DayNumber + 1 > CoverageRules.MaxDays)
-                return Error.Validation("to", "PERIOD_TOO_LONG", $"The period can be at most {CoverageRules.MaxDays} days.");
-            from = query.From.Value;
-            to = query.To.Value;
-        }
-        else
-        {
-            to = queueClock.Today;
-            from = DashboardRules.PeriodStart(to, query.PeriodDays ?? CoverageRules.DefaultDays);
-        }
+        var resolved = DashboardPeriods.Resolve(query.Period, query.From, query.To, query.PeriodDays, queueClock.Today);
+        if (resolved.IsFailure)
+            return resolved.Error!;
+        var (from, to) = (resolved.Value.From, resolved.Value.To);
 
         var fromUtc = queueClock.StartOfDayUtc(from);
         var toUtc = queueClock.EndOfDayUtc(to);

@@ -13,7 +13,7 @@ public sealed record AgingBand(string Key, string Label, int MinDays, int? MaxDa
 public static class DashboardRules
 {
     public const int DefaultPeriodDays = 30;
-    public const int MaxPeriodDays = 365;
+    public const int MaxPeriodDays = 366;
 
     /// <summary>Most Task Types the Trends tab draws a line for at once.</summary>
     public const int MaxTrendTypes = 8;
@@ -60,9 +60,13 @@ public static class DashboardRules
     /// <summary>Due soon: open with an explicit due date, not yet overdue, due by the end of <paramref name="lastDay"/> (ASAP excluded).</summary>
     public static string DueSoon(DateOnly lastDay) => Open("asap=false", "overdue=false", "dueTo=" + Date(lastDay));
 
-    public static string Completed(DateOnly from) => Status(TaskStatusCode.Completed, "completedFrom=" + Date(from));
+    /// <summary>Completed Tasks from <paramref name="from"/>; <paramref name="to"/> is given only when the period ends before today (a period that ends today stays open-ended, so the list grows with the day).</summary>
+    public static string Completed(DateOnly from, DateOnly? to = null) =>
+        Status(TaskStatusCode.Completed, to is { } end ? ["completedFrom=" + Date(from), "completedTo=" + Date(end)] : ["completedFrom=" + Date(from)]);
 
-    public static string Created(DateOnly from) => "createdFrom=" + Date(from);
+    /// <summary>Created Tasks from <paramref name="from"/>; see <see cref="Completed"/> for <paramref name="to"/>.</summary>
+    public static string Created(DateOnly from, DateOnly? to = null) =>
+        to is { } end ? "createdFrom=" + Date(from) + "&createdTo=" + Date(end) : "createdFrom=" + Date(from);
 
     public static string Join(IEnumerable<string> parts) => string.Join('&', parts);
 

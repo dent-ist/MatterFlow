@@ -6,11 +6,23 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// <summary>The Dashboard request: how many days back "created" and "completed" look.</summary>
 public class DashboardQuery
 {
-    public static readonly IReadOnlyList<string> Keys = ["periodDays", "fresh"];
+    public static readonly IReadOnlyList<string> Keys = ["period", "from", "to", "periodDays", "fresh"];
 
-    /// <summary>Length of the period in days, counting today (default 30, 1 to 365).</summary>
+    /// <summary>Period keyword: <c>7d</c>, <c>30d</c> (default), <c>90d</c>, <c>this-month</c>, <c>last-month</c>, <c>6m</c>, <c>12m</c> or <c>custom</c> (with <c>from</c> and <c>to</c>). Resolved in the viewer's time zone.</summary>
+    [FromQuery(Name = "period")]
+    public string? Period { get; init; }
+
+    /// <summary>First local day of a custom period (<c>yyyy-MM-dd</c>). Needs <c>to</c>; at most 366 days up to it.</summary>
+    [FromQuery(Name = "from")]
+    public DateOnly? From { get; init; }
+
+    /// <summary>Last local day of a custom period, included. Needs <c>from</c>.</summary>
+    [FromQuery(Name = "to")]
+    public DateOnly? To { get; init; }
+
+    /// <summary>Deprecated, kept for one release: a period of this many days ending today (1 to 366). <c>period</c>, <c>from</c> and <c>to</c> win.</summary>
     [FromQuery(Name = "periodDays"), Range(1, DashboardRules.MaxPeriodDays)]
-    public int PeriodDays { get; init; } = DashboardRules.DefaultPeriodDays;
+    public int? PeriodDays { get; init; }
 
     /// <summary>True: skip the short server-side cache and compute the figures now (the Refresh button and a refresh after an edit on the page).</summary>
     [FromQuery(Name = "fresh")]
@@ -49,8 +61,8 @@ public sealed record DashboardAgingBucket(
     [property: Required] string Query,
     [property: Required] int Overdue = 0);
 
-/// <summary>The period the "completed" and "created" counts cover (viewer's local dates, both inclusive).</summary>
-public sealed record DashboardPeriod([property: Required] int Days, [property: Required] DateOnly From, [property: Required] DateOnly To);
+/// <summary>The period the "completed" and "created" counts cover (viewer's local dates, both inclusive). <c>Key</c> is the period keyword it was resolved from (<c>custom</c> for a date range).</summary>
+public sealed record DashboardPeriod([property: Required] int Days, [property: Required] DateOnly From, [property: Required] DateOnly To, [property: Required] string Key);
 
 /// <summary>
 /// The operational Dashboard (baseline 12.2). Department-wide (addendum E) but redacted by the caller's Dashboard tab permissions: the headline counts
@@ -81,11 +93,23 @@ public sealed record DashboardSummary(
 /// <summary>The request of the Trends tab: the period, the Task Types to draw a line for (at most <see cref="DashboardRules.MaxTrendTypes"/>) and optionally one metric.</summary>
 public class DashboardTrendQuery
 {
-    public static readonly IReadOnlyList<string> Keys = ["periodDays", "taskTypeIds", "metric", "fresh"];
+    public static readonly IReadOnlyList<string> Keys = ["period", "from", "to", "periodDays", "taskTypeIds", "metric", "fresh"];
 
-    /// <summary>Length of the period in days, counting today (default 30, 1 to 365).</summary>
+    /// <summary>Period keyword: <c>7d</c>, <c>30d</c> (default), <c>90d</c>, <c>this-month</c>, <c>last-month</c>, <c>6m</c>, <c>12m</c> or <c>custom</c> (with <c>from</c> and <c>to</c>). Resolved in the viewer's time zone.</summary>
+    [FromQuery(Name = "period")]
+    public string? Period { get; init; }
+
+    /// <summary>First local day of a custom period (<c>yyyy-MM-dd</c>). Needs <c>to</c>; at most 366 days up to it.</summary>
+    [FromQuery(Name = "from")]
+    public DateOnly? From { get; init; }
+
+    /// <summary>Last local day of a custom period, included. Needs <c>from</c>.</summary>
+    [FromQuery(Name = "to")]
+    public DateOnly? To { get; init; }
+
+    /// <summary>Deprecated, kept for one release: a period of this many days ending today (1 to 366). <c>period</c>, <c>from</c> and <c>to</c> win.</summary>
     [FromQuery(Name = "periodDays"), Range(1, DashboardRules.MaxPeriodDays)]
-    public int PeriodDays { get; init; } = DashboardRules.DefaultPeriodDays;
+    public int? PeriodDays { get; init; }
 
     /// <summary>Task Type ids to return a series for (repeat the parameter, at most 8, active or inactive). The <c>all</c> series and the <c>types</c> legend are always returned.</summary>
     [FromQuery(Name = "taskTypeIds")]

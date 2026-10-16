@@ -249,7 +249,7 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
         (await TrendAsync(five)).GetProperty("byTaskType").GetArrayLength().ShouldBe(5);
         await ProblemAsync(await RawAsync($"taskTypeIds={_alpha}&taskTypeIds=999999"), HttpStatusCode.BadRequest, "UNKNOWN_TASK_TYPE");
 
-        foreach (var bad in new[] { "periodDays=0", "periodDays=366", "periodDays=x", "taskTypeIds=abc", "bogus=1" })
+        foreach (var bad in new[] { "periodDays=0", "periodDays=367", "periodDays=x", "taskTypeIds=abc", "bogus=1" })
             await ProblemAsync(await RawAsync(bad), HttpStatusCode.BadRequest, "VALIDATION_FAILED");
         (await TrendAsync("fresh=true")).GetProperty("all").GetArrayLength().ShouldBe(30);
     }

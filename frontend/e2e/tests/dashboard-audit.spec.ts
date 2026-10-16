@@ -329,24 +329,30 @@ test.describe('Dashboard actions and click-through', () => {
     }
   });
 
-  test('the period presets drive created and completed only, and the choice sticks', async ({
+  test('the period list drives created and completed only, is in the address and sticks', async ({
     page,
   }) => {
     await page.goto('/dashboard');
     const week = page.waitForRequest(
-      (r) => /periodDays=\d+/.test(r.url()) && r.url().includes('/api/v1/dashboard'),
+      (r) => /[?&]period=7d/.test(r.url()) && r.url().includes('/api/v1/dashboard'),
     );
-    await page.getByLabel('Completed and created in').selectOption({ label: 'This week' });
+    await page.getByLabel('Period', { exact: true }).selectOption({ label: '7 days' });
     await week;
+    await expect(page).toHaveURL(/\/dashboard\?period=7d$/);
+    // The tile captions read the resolved range ("Oct 10 to Oct 16").
     await expect(
       page
         .getByRole('group', { name: 'Overview', exact: true })
-        .locator('.caption', { hasText: 'This week' })
+        .locator('.caption', { hasText: / to / })
         .first(),
     ).toBeVisible();
 
     await page.reload();
-    await expect(page.locator('select[data-period]')).toHaveValue('week');
+    await expect(page.locator('select[data-period]')).toHaveValue('7d');
+    // Without the parameter the remembered choice applies, and the address stays clean.
+    await page.goto('/dashboard');
+    await expect(page.locator('select[data-period]')).toHaveValue('7d');
+    await expect(page).toHaveURL(/\/dashboard$/);
   });
 
   test('tabs: the address, reload and a shared link keep the tab, and a plain /dashboard link opens Summary', async ({

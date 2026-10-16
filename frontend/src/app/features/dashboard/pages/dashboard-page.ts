@@ -39,7 +39,16 @@ import {
   dueSoonThrough,
   queueArgsFor,
 } from '../dashboard-links';
-import { PERIOD_PRESETS, PeriodKey, isPeriodKey, periodDays, presetOf } from '../dashboard-period';
+import {
+  PERIOD_SCOPE_NOTE,
+  Period,
+  periodArgs,
+  periodForTab,
+  periodId,
+  rangeText,
+  resolveRange,
+} from '../dashboard-period';
+import { PeriodControl } from '../ui/period-control';
 import {
   DASHBOARD_TABS,
   DASHBOARD_TAB_LABELS,
@@ -117,27 +126,12 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
     StatTile,
     DashSwimlaneTab,
     DashUsersTab,
+    PeriodControl,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-fixed-page class="dash" [class.dash--wide]="wide()" [attr.data-dash-tab]="activeTab()">
       <p class="sr-only" role="status" aria-live="polite" data-dash-live>{{ live() }}</p>
-
-      <ng-template #periodControl>
-        <label class="period">
-          <span>Completed and created in</span>
-          <select
-            class="mf-control"
-            data-period
-            [value]="period()"
-            (change)="setPeriod($any($event.target).value)"
-          >
-            @for (p of periods; track p.key) {
-              <option [value]="p.key" [selected]="p.key === period()">{{ p.label }}</option>
-            }
-          </select>
-        </label>
-      </ng-template>
 
       <!-- One outlet for the header row (heading, tab list, Refresh) in every state, so the Refresh button is the same element while the page loads and after: a second
          outlet in each branch made Angular replace the button when the first read finished, and the keyboard focus on it was lost. -->
@@ -208,7 +202,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                 <div class="empty" data-empty>
                   <i class="pi pi-inbox empty-icon" aria-hidden="true"></i>
                   <p>No open tasks, and none were created or completed in this period.</p>
-                  <div class="empty-period"><ng-container *ngTemplateOutlet="periodControl" /></div>
+                  <div class="empty-period"><mf-period-control [period]="period()" /></div>
                   <a *mfHasPermission="'Task.Create'" class="cta" routerLink="/tasks/new">
                     Create the first task
                   </a>
@@ -293,7 +287,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                             >
                               <div class="group-head">
                                 <h2 id="ov-h">Overview</h2>
-                                <ng-container *ngTemplateOutlet="periodControl" />
+                                <mf-period-control [period]="period()" [scopeNote]="scopeNote" />
                               </div>
                               <div class="tiles">
                                 <mf-stat-tile
@@ -388,7 +382,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                     >
                       <mf-dash-section class="mf-fill" heading="Created and completed" name="trend">
                         <span mfSectionActions class="head-period" data-trend-period>
-                          <ng-container *ngTemplateOutlet="periodControl" />
+                          <mf-period-control [period]="period()" />
                         </span>
                         @defer (on immediate) {
                           <mf-dash-trends-tab
@@ -604,13 +598,6 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
       clip: rect(0 0 0 0);
       white-space: nowrap;
     }
-    .period {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      font-size: var(--mf-fs-sm);
-      color: var(--mf-text-muted);
-    }
     .age {
       display: inline-flex;
       min-width: 0;
@@ -726,6 +713,8 @@ export class DashboardPage implements OnInit {
   private readonly listIds: Record<ListKind, number> = { unassigned: 0, overdue: 0, dueSoon: 0 };
   private countTimer: ReturnType<typeof setTimeout> | null = null;
   private lastLoadedAt = 0;
+  /** The period (`periodId`) the summary on screen was read for. */
+  private dataPeriod: string | null = null;
   private inflight = false;
   private retrying = false;
   /** When the summary on screen was last read successfully (epoch ms). */
@@ -742,11 +731,12 @@ export class DashboardPage implements OnInit {
   protected readonly fixedWide = mediaMatch(DASH_FIXED_WIDE_QUERY);
   /** Fixed layout with the lists under the tiles (under 1280 px): the Summary scrolls as one region. */
   protected readonly summaryScrolls = computed(() => this.fixed() && !this.fixedWide());
-  protected readonly periods = PERIOD_PRESETS;
+  protected readonly scopeNote = PERIOD_SCOPE_NOTE;
   protected readonly skeletonTiles = [1, 2, 3, 4, 5, 6, 7, 8];
   protected readonly panelId = panelId;
   protected readonly tabId = tabId;
-  protected readonly period = this.prefs.period;
+  /** The period of Summary and Trends: the shared one (address, else memory); the long Coverage windows read as the default here. */
+  protected readonly period = computed<Period>(() => periodForTab(this.prefs.period(), false));
   protected readonly state = signal<LoadState>('loading');
   protected readonly data = signal<DashboardSummary | null>(null);
   protected readonly refreshing = signal(false);
@@ -907,7 +897,20 @@ export class DashboardPage implements OnInit {
     const text = this.staleText();
     return text ? `Refresh. ${text}.` : 'Refresh';
   });
-  protected readonly periodCaption = computed(() => presetOf(this.period()).caption);
+  /** The resolved range under the Summary tiles and the Trends heading ("Sep 17 to Oct 16"): the server's answer when it is for this period, else worked out here. */
+  protected readonly periodCaption = computed(() => {
+    const period = this.period();
+    const d = this.data()?.period;
+    const answered =
+      d &&
+      d.key === period.key &&
+      (period.key !== 'custom' || (d.from === period.from && d.to === period.to));
+    const now = this.clock.now();
+    const range = answered
+      ? { from: d.from, to: d.to, days: d.days }
+      : resolveRange(period, now, this.zone);
+    return rangeText(range, now.getFullYear());
+  });
   protected readonly updated = computed(() => {
     const d = this.data();
     return d ? mfDate(d.generatedAtUtc, this.zone, 'datetime') : null;
@@ -951,6 +954,19 @@ export class DashboardPage implements OnInit {
   });
   constructor() {
     void this.lookups.ensureLoaded();
+    // The shared period (P3) is the address when it names one, else the remembered choice; settled before the first read.
+    this.prefs.applyAddress((k) => this.route.snapshot.queryParamMap.get(k));
+    effect(() => {
+      const params = this.queryParams();
+      untracked(() => this.prefs.applyAddress((k) => params.get(k)));
+    });
+    // A new period (the control, a pasted link, Back) reads the counts again when a tab that shows them is on screen; the other tabs read when opened.
+    effect(() => {
+      const id = periodId(this.period());
+      untracked(() => {
+        if (this.data() && this.summaryTab() && id !== this.dataPeriod) this.refreshNumbers();
+      });
+    });
     // An Undo of an assignment puts the task back in a list that had already dropped it: read the lists and counts again.
     this.undoSeen = this.undo.settled();
     effect(() => {
@@ -1052,12 +1068,6 @@ export class DashboardPage implements OnInit {
     });
   }
 
-  protected setPeriod(value: string): void {
-    if (!isPeriodKey(value) || value === this.period()) return;
-    this.prefs.setPeriod(value as PeriodKey);
-    this.refreshNumbers();
-  }
-
   /** Retry in the failed-refresh banner. When it works the banner (and the focused Retry) goes away, so focus goes back to Refresh. */
   protected retryRefresh(): void {
     this.focusRefreshWhenDone = true;
@@ -1098,16 +1108,18 @@ export class DashboardPage implements OnInit {
       this.state.set('loading');
       this.refreshFailed.set(false);
     }
-    const days = periodDays(this.period(), this.clock.now(), this.zone);
+    const args = periodArgs(this.period());
+    const readFor = periodId(this.period());
     // A background read reports its failure in the banner; the generic error toast would say the same thing again, elsewhere.
     const start = () =>
       this.api
-        .getDashboard(days, fresh ? true : undefined)
+        .getDashboard(args.period, args.from, args.to, undefined, fresh ? true : undefined)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (summary) => {
             if (id !== this.requestId) return;
             this.inflight = false;
+            this.dataPeriod = readFor;
             this.data.set(summary);
             this.state.set('ready');
             this.refreshing.set(false);
@@ -1158,6 +1170,10 @@ export class DashboardPage implements OnInit {
     const data = this.data();
     if (!data) {
       this.load();
+      return;
+    }
+    if (this.dataPeriod !== periodId(this.period())) {
+      this.refreshNumbers();
       return;
     }
     if (this.clock.now().getTime() - this.lastLoadedAt < FRESH_FOR_MS) return;

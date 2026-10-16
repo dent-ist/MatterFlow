@@ -1,6 +1,7 @@
 import { ParamMap, Params } from '@angular/router';
 import { DashboardTab, isDashboardTab } from './dashboard-prefs';
 import { USERS_AVAILABILITY_PARAM, USERS_VIEW_PARAM } from './dashboard-links';
+import { DEFAULT_PERIOD_KEY, periodFromParams } from './dashboard-period';
 import { DEFAULT_VIEW } from './swimlane/swimlane-model';
 import { DEFAULT_CHOICE } from './ui/trend-model';
 
@@ -38,9 +39,6 @@ export const DASH_TAB_PARAMS: Record<DashboardTab, readonly string[]> = {
     'uload',
     'uprio',
     USERS_VIEW_PARAM,
-    'cp',
-    'cfrom',
-    'cto',
     'cov',
     'unopod',
     'sprio',
@@ -48,8 +46,11 @@ export const DASH_TAB_PARAMS: Record<DashboardTab, readonly string[]> = {
   ],
 };
 
-/** Page-wide parameters (scope and period of P1 and P3); they have no default of their own yet and follow the person across tabs. */
-export const DASH_SHARED_PARAMS: readonly string[] = ['pod', 'period'];
+/**
+ * Page-wide parameters (scope of P1, period of P3: `period`, and `from` / `to` for a custom range); they follow the person across tabs. The period
+ * default (30 days) and the dates of a period that is not custom are removed by `canonicalParams`, which knows the rule.
+ */
+export const DASH_SHARED_PARAMS: readonly string[] = ['pod', 'period', 'from', 'to'];
 
 /** The default of each parameter, per tab: the value that is NOT written to the address. */
 export const DASH_DEFAULTS: Record<DashboardTab, Readonly<Record<string, string>>> = {
@@ -61,7 +62,7 @@ export const DASH_DEFAULTS: Record<DashboardTab, Readonly<Record<string, string>
     sort: DEFAULT_VIEW.sort,
     days: String(DEFAULT_VIEW.days),
   },
-  users: { [USERS_VIEW_PARAM]: 'workload', [USERS_AVAILABILITY_PARAM]: 'all', cp: '30' },
+  users: { [USERS_VIEW_PARAM]: 'workload', [USERS_AVAILABILITY_PARAM]: 'all' },
 };
 
 const KNOWN: ReadonlySet<string> = new Set([
@@ -101,11 +102,22 @@ export function withoutDefaults<T extends Record<string, string | null>>(
  */
 export function canonicalParams(raw: ParamMap, shown: DashboardTab): Params {
   const out: Params = {};
+  const period = periodFromParams((k) => raw.get(k));
   for (const key of raw.keys) {
     if (!KNOWN.has(key)) continue;
     const values = raw.getAll(key);
     if (key === 'tab') {
       out[key] = shown;
+      continue;
+    }
+    // The period: only a valid one stays (an unknown key or a reversed, over-long or incomplete range is dropped and memory applies), the
+    // default is left out and the dates stay only with a custom range.
+    if (key === 'period') {
+      if (period && period.key !== DEFAULT_PERIOD_KEY) out[key] = period.key;
+      continue;
+    }
+    if (key === 'from' || key === 'to') {
+      if (period?.key === 'custom') out[key] = period[key];
       continue;
     }
     const kept = values.filter((v) => DASH_DEFAULTS[shown][key] !== v);

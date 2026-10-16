@@ -318,7 +318,7 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
             await DrillAsync(d.GetProperty("created"), NewYork);
         }
 
-        foreach (var bad in new[] { "periodDays=0", "periodDays=366", "periodDays=abc", "periodDays=-5", "unknown=1" })
+        foreach (var bad in new[] { "periodDays=0", "periodDays=367", "periodDays=abc", "periodDays=-5", "unknown=1" })
             await ProblemAsync(await _h.Admin.GetAsync("/api/v1/dashboard?" + bad), HttpStatusCode.BadRequest, "VALIDATION_FAILED");
     }
 

@@ -7,7 +7,7 @@ import { DashboardClient, DashboardTrend } from '../../../api/generated/api-clie
 import { AuthStore } from '../../../core/auth/auth.store';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { PeriodKey } from '../dashboard-period';
+import { Period } from '../dashboard-period';
 import { DashTrendsTab } from './dash-trends-tab';
 import { aTrend, manyTypes } from './trend-testing';
 
@@ -21,7 +21,7 @@ import { aTrend, manyTypes } from './trend-testing';
   />`,
 })
 class Host {
-  period = signal<PeriodKey>('30d');
+  period = signal<Period>({ key: '30d', from: null, to: null });
   key = signal('k1');
 }
 
@@ -34,8 +34,13 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
   let el: HTMLElement;
   let extra = manyTypes(0);
 
-  const respond = (_days: number, ids?: number[]): Observable<DashboardTrend> =>
-    of(aTrend(ids ?? [], extra));
+  const respond = (
+    _p: string,
+    _f: unknown,
+    _t: unknown,
+    _d: unknown,
+    ids?: number[],
+  ): Observable<DashboardTrend> => of(aTrend(ids ?? [], extra));
 
   async function open(url = '/trends', answer: typeof respond = respond) {
     getTrend = vi.fn(answer);
@@ -96,7 +101,15 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
   it('starts with two panels: Created and Completed of All task types, and Overdue at the end of the day, and every type listed unchecked', async () => {
     await open();
     expect(getTrend).toHaveBeenCalledTimes(1);
-    expect(getTrend).toHaveBeenCalledWith(30, undefined, undefined, undefined);
+    expect(getTrend).toHaveBeenCalledWith(
+      '30d',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    );
     expect(text(el.querySelector('h3'))).toBe('Tasks over time');
     expect(Array.from(el.querySelectorAll('[data-panel] h4')).map((h) => text(h))).toEqual([
       'Tasks created and completed per day',
@@ -148,7 +161,15 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
   it('checking a task type switches to its first single measure, hides All for scale, announces it, reads once, and puts the choice in the address and in storage', async () => {
     await open();
     await check(5);
-    expect(getTrend).toHaveBeenLastCalledWith(30, [5], undefined, undefined);
+    expect(getTrend).toHaveBeenLastCalledWith(
+      '30d',
+      undefined,
+      undefined,
+      undefined,
+      [5],
+      undefined,
+      undefined,
+    );
     // All task types is hidden by default while types are compared (T2): one line per panel, the type's.
     expect(panelLines('flows').length).toBe(1);
     expect(panelLines('backlog').length).toBe(1);
@@ -174,7 +195,15 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
 
     // Another type needs one more read; unchecking needs none.
     await check(7);
-    expect(getTrend).toHaveBeenLastCalledWith(30, [5, 7], undefined, undefined);
+    expect(getTrend).toHaveBeenLastCalledWith(
+      '30d',
+      undefined,
+      undefined,
+      undefined,
+      [5, 7],
+      undefined,
+      undefined,
+    );
     expect(url()).toBe('/trends?types=5,7&metric=created&all=1');
     expect(panelLines('flows').length).toBe(3);
     const calls = getTrend.mock.calls.length;
@@ -397,7 +426,15 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
         JSON.stringify({ types: [5], all: 'auto', metric: 'created', bmetric: 'overdue' }),
       );
       await open('/trends?types=7,5&metric=completed&all=0');
-      expect(getTrend).toHaveBeenCalledWith(30, [7, 5], undefined, undefined);
+      expect(getTrend).toHaveBeenCalledWith(
+        '30d',
+        undefined,
+        undefined,
+        undefined,
+        [7, 5],
+        undefined,
+        undefined,
+      );
       expect(box(7).checked).toBe(true);
       expect(box(5).checked).toBe(true);
       expect(el.querySelector<HTMLInputElement>('[data-all]')!.checked).toBe(false);
@@ -414,7 +451,15 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
         JSON.stringify({ types: [7], all: 'auto', metric: 'late', bmetric: 'overdue' }),
       );
       await open('/trends');
-      expect(getTrend).toHaveBeenCalledWith(30, [7], undefined, undefined);
+      expect(getTrend).toHaveBeenCalledWith(
+        '30d',
+        undefined,
+        undefined,
+        undefined,
+        [7],
+        undefined,
+        undefined,
+      );
       expect(box(7).checked).toBe(true);
       expect(url()).toBe('/trends?types=7&metric=late');
     });
@@ -456,11 +501,27 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
       host.key.set('k2');
       harness.detectChanges();
       await settle();
-      expect(getTrend).toHaveBeenLastCalledWith(30, undefined, undefined, true);
-      host.period.set('week');
+      expect(getTrend).toHaveBeenLastCalledWith(
+        '30d',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        true,
+      );
+      host.period.set({ key: '7d', from: null, to: null });
       harness.detectChanges();
       await settle();
-      expect(getTrend).toHaveBeenLastCalledWith(3, undefined, undefined, undefined);
+      expect(getTrend).toHaveBeenLastCalledWith(
+        '7d',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
     });
 
     it('drops a remembered task type the server does not know and shows the rest', async () => {
@@ -468,7 +529,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
         STORE_KEY(1),
         JSON.stringify({ types: [999], all: 'auto', metric: 'created', bmetric: 'overdue' }),
       );
-      await open('/trends', (_d, ids) =>
+      await open('/trends', (_p, _f, _t, _d, ids) =>
         ids && ids.includes(999) ? throwError(() => ({ status: 400 })) : of(aTrend([], extra)),
       );
       expect(getTrend).toHaveBeenCalledTimes(2);

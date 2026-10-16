@@ -8556,19 +8556,25 @@ export class TaskActivityClient implements ITaskActivityClient {
 
 export interface IDashboardClient {
     /**
+     * @param period (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
      * @param periodDays (optional) 
      * @param fresh (optional) 
      * @return OK
      */
-    getDashboard(periodDays?: number | undefined, fresh?: boolean | undefined): Observable<DashboardSummary>;
+    getDashboard(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, fresh?: boolean | undefined): Observable<DashboardSummary>;
     /**
+     * @param period (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
      * @param periodDays (optional) 
      * @param taskTypeIds (optional) 
      * @param metric (optional) 
      * @param fresh (optional) 
      * @return OK
      */
-    getDashboardTrend(periodDays?: number | undefined, taskTypeIds?: number[] | undefined, metric?: string | undefined, fresh?: boolean | undefined): Observable<DashboardTrend>;
+    getDashboardTrend(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, taskTypeIds?: number[] | undefined, metric?: string | undefined, fresh?: boolean | undefined): Observable<DashboardTrend>;
 }
 
 @Injectable({
@@ -8585,12 +8591,27 @@ export class DashboardClient implements IDashboardClient {
     }
 
     /**
+     * @param period (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
      * @param periodDays (optional) 
      * @param fresh (optional) 
      * @return OK
      */
-    getDashboard(periodDays?: number | undefined, fresh?: boolean | undefined): Observable<DashboardSummary> {
+    getDashboard(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, fresh?: boolean | undefined): Observable<DashboardSummary> {
         let url_ = this.baseUrl + "/api/v1/dashboard?";
+        if (period === null)
+            throw new globalThis.Error("The parameter 'period' cannot be null.");
+        else if (period !== undefined)
+            url_ += "period=" + encodeURIComponent("" + period) + "&";
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent("" + from) + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent("" + to) + "&";
         if (periodDays === null)
             throw new globalThis.Error("The parameter 'periodDays' cannot be null.");
         else if (periodDays !== undefined)
@@ -8645,14 +8666,29 @@ export class DashboardClient implements IDashboardClient {
     }
 
     /**
+     * @param period (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
      * @param periodDays (optional) 
      * @param taskTypeIds (optional) 
      * @param metric (optional) 
      * @param fresh (optional) 
      * @return OK
      */
-    getDashboardTrend(periodDays?: number | undefined, taskTypeIds?: number[] | undefined, metric?: string | undefined, fresh?: boolean | undefined): Observable<DashboardTrend> {
+    getDashboardTrend(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, taskTypeIds?: number[] | undefined, metric?: string | undefined, fresh?: boolean | undefined): Observable<DashboardTrend> {
         let url_ = this.baseUrl + "/api/v1/dashboard/trend?";
+        if (period === null)
+            throw new globalThis.Error("The parameter 'period' cannot be null.");
+        else if (period !== undefined)
+            url_ += "period=" + encodeURIComponent("" + period) + "&";
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent("" + from) + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent("" + to) + "&";
         if (periodDays === null)
             throw new globalThis.Error("The parameter 'periodDays' cannot be null.");
         else if (periodDays !== undefined)
@@ -8738,6 +8774,7 @@ export interface IDashboardBoardClient {
      */
     getDashboardWorkload(podId?: number | undefined, availability?: string | undefined, q?: string | undefined): Observable<WorkloadBoard>;
     /**
+     * @param period (optional) 
      * @param from (optional) 
      * @param to (optional) 
      * @param periodDays (optional) 
@@ -8745,7 +8782,7 @@ export interface IDashboardBoardClient {
      * @param includeInactive (optional) 
      * @return OK
      */
-    getDashboardCoverage(from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, podId?: number | undefined, includeInactive?: boolean | undefined): Observable<CoverageBoard>;
+    getDashboardCoverage(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, podId?: number | undefined, includeInactive?: boolean | undefined): Observable<CoverageBoard>;
 }
 
 @Injectable({
@@ -8927,6 +8964,7 @@ export class DashboardBoardClient implements IDashboardBoardClient {
     }
 
     /**
+     * @param period (optional) 
      * @param from (optional) 
      * @param to (optional) 
      * @param periodDays (optional) 
@@ -8934,8 +8972,12 @@ export class DashboardBoardClient implements IDashboardBoardClient {
      * @param includeInactive (optional) 
      * @return OK
      */
-    getDashboardCoverage(from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, podId?: number | undefined, includeInactive?: boolean | undefined): Observable<CoverageBoard> {
+    getDashboardCoverage(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, podId?: number | undefined, includeInactive?: boolean | undefined): Observable<CoverageBoard> {
         let url_ = this.baseUrl + "/api/v1/dashboard/coverage?";
+        if (period === null)
+            throw new globalThis.Error("The parameter 'period' cannot be null.");
+        else if (period !== undefined)
+            url_ += "period=" + encodeURIComponent("" + period) + "&";
         if (from === null)
             throw new globalThis.Error("The parameter 'from' cannot be null.");
         else if (from !== undefined)
@@ -11644,6 +11686,7 @@ export interface DashboardPeriod {
     days: number;
     from: string;
     to: string;
+    key: string;
 
     [key: string]: any;
 }

@@ -36,12 +36,18 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         // Dashboard.ViewUnassigned alone: only the size of the unassigned queue (and the query that lists it), none of the department-wide counts.
         var showUnassigned = showSummary || (canView && permissions.Has(Permissions.Dashboard.ViewUnassigned));
         var sections = (showSummary ? 1 : 0) | (showBreakdowns ? 2 : 0) | (showUnassigned ? 4 : 0);
-        var cacheKey = $"{me}|{query.PeriodDays}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{sections}";
+        var resolved = DashboardPeriods.Resolve(query.Period, query.From, query.To, query.PeriodDays, today);
+        if (resolved.IsFailure)
+            return resolved.Error!;
+        var period = resolved.Value;
+        var cacheKey = $"{me}|{period.Key}|{period.From:yyyy-MM-dd}|{period.To:yyyy-MM-dd}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{sections}";
         if (!query.Fresh && cache.TryGet(cacheKey, out var cached))
             return cached;
 
-        var from = DashboardRules.PeriodStart(today, query.PeriodDays);
+        var from = period.From;
         var fromUtc = queueClock.StartOfDayUtc(from);
+        var toUtc = queueClock.EndOfDayUtc(period.To);
+        DateOnly? endsBeforeToday = period.To < today ? period.To : null;
         var dueSoonDay = today.AddDays(TaskQueueRules.DueSoonDays);
 
         var tasks = db.Set<WorkTask>().AsNoTracking();
@@ -69,8 +75,8 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             OnHold = tasks.Count(t => t.Status == TaskStatusCode.OnHold),
             DueSoon = openDueSoon.Count(),
             AsapOpen = open.Count(t => t.DueDate == null),
-            Completed = tasks.Count(t => t.Status == TaskStatusCode.Completed && t.StatusChangedAtUtc >= fromUtc),
-            Created = tasks.Count(t => t.CreatedAtUtc >= fromUtc),
+            Completed = tasks.Count(t => t.Status == TaskStatusCode.Completed && t.StatusChangedAtUtc >= fromUtc && t.StatusChangedAtUtc < toUtc),
+            Created = tasks.Count(t => t.CreatedAtUtc >= fromUtc && t.CreatedAtUtc < toUtc),
         }).FirstOrDefaultAsync(ct)
         : showUnassigned ? await tasks.Select(_ => new
         {
@@ -144,7 +150,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         head ??= new { Open = 0, Unassigned = 0, Overdue = 0, OverdueCritical = 0, OverdueHigh = 0, OnHold = 0, DueSoon = 0, AsapOpen = 0, Completed = 0, Created = 0 };
 
         var summary = new DashboardSummary(
-            new DashboardPeriod(query.PeriodDays, from, today),
+            new DashboardPeriod(period.Days, from, period.To, period.Key),
             queueClock.ZoneId,
             DateTime.SpecifyKind(queueClock.NowUtc, DateTimeKind.Utc),
             new DashboardCount(head.Open, DashboardRules.OpenQuery),
@@ -153,8 +159,8 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             new DashboardCount(head.OnHold, DashboardRules.OnHold),
             new DashboardCount(head.DueSoon, DashboardRules.DueSoon(dueSoonDay)),
             new DashboardCount(head.AsapOpen, DashboardRules.AsapOpen),
-            new DashboardCount(head.Completed, DashboardRules.Completed(from)),
-            new DashboardCount(head.Created, DashboardRules.Created(from)),
+            new DashboardCount(head.Completed, DashboardRules.Completed(from, endsBeforeToday)),
+            new DashboardCount(head.Created, DashboardRules.Created(from, endsBeforeToday)),
             typeItems,
             priorityItems,
             statusItems,

@@ -9,7 +9,7 @@ public class DashboardCacheTests
 {
     private static DashboardSummary Summary(int open) =>
         new(
-            new DashboardPeriod(30, new DateOnly(2026, 9, 15), new DateOnly(2026, 10, 14)),
+            new DashboardPeriod(30, new DateOnly(2026, 9, 15), new DateOnly(2026, 10, 14), "30d"),
             "America/New_York",
             new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc),
             new DashboardCount(open, "q"),
