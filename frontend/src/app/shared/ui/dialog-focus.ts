@@ -46,9 +46,7 @@ export class DialogFocus {
     const selector = this.triggerSelector;
     this.trigger = null;
     this.triggerSelector = null;
-    setTimeout(() => {
-      this.observer?.disconnect();
-      this.observer = null;
+    const restore = (): void => {
       // The page may already have moved focus on purpose (for example to the step a dialog link pointed at): leave that alone.
       const active = document.activeElement;
       if (active && active !== document.body && !active.closest('.p-dialog-mask')) return;
@@ -66,6 +64,22 @@ export class DialogFocus {
         target.setAttribute('tabindex', '-1');
       }
       target.focus({ preventScroll: true });
+    };
+    setTimeout(() => {
+      this.observer?.disconnect();
+      this.observer = null;
+      restore();
+      // PrimeNG keeps a closing dialog (and its focus trap, which pulls focus back to the first control inside) in the page until its
+      // leave animation ends, and focus that sat on the removed dialog falls to <body> then: restore once more when the dialog is gone.
+      if (!document.querySelector('.p-dialog-mask')) return;
+      const watcher = new MutationObserver(() => {
+        if (document.querySelector('.p-dialog-mask')) return;
+        watcher.disconnect();
+        clearTimeout(giveUp);
+        setTimeout(restore, 0);
+      });
+      const giveUp = setTimeout(() => watcher.disconnect(), 2000);
+      watcher.observe(document.body, { childList: true, subtree: true });
     }, 0);
   }
 

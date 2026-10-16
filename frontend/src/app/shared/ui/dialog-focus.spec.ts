@@ -77,4 +77,36 @@ describe('DialogFocus', () => {
     expect(document.activeElement).toBe(fresh);
     fixture.nativeElement.remove();
   });
+
+  it('puts focus back on the opener once a closing dialog has left the page, even if the dialog pulled focus in while it was leaving', async () => {
+    const fixture = TestBed.createComponent(Host);
+    document.body.appendChild(fixture.nativeElement);
+    await fixture.whenStable();
+    const opener = fixture.nativeElement.querySelector('#opener') as HTMLButtonElement;
+    opener.focus();
+
+    // PrimeNG renders the dialog in a mask on <body>.
+    const mask = document.createElement('div');
+    mask.className = 'p-dialog-mask';
+    const input = document.createElement('input');
+    mask.appendChild(input);
+    document.body.appendChild(mask);
+
+    fixture.componentInstance.open.set(true);
+    await fixture.whenStable();
+    input.focus();
+    fixture.componentInstance.open.set(false);
+    await fixture.whenStable();
+    await later();
+    // The first restore put focus on the opener; the dialog's focus trap takes it back while the dialog animates out...
+    input.focus();
+    expect(document.activeElement).toBe(input);
+    // ...and when the mask is removed, focus would fall to <body>: it goes to the opener instead.
+    mask.remove();
+    await later();
+    await later();
+
+    expect(document.activeElement).toBe(opener);
+    fixture.nativeElement.remove();
+  });
 });
