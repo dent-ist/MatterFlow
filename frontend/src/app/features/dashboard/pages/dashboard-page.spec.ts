@@ -1209,6 +1209,26 @@ describe('DashboardPage', () => {
     expect(el.querySelector('[aria-busy="true"]')).not.toBeNull();
   });
 
+  it('keeps the same Refresh button, and the focus on it, when the first read finishes', async () => {
+    const first = new Subject<DashboardSummary>();
+    const el = await open(first);
+    document.body.appendChild(el);
+    const button = el.querySelector<HTMLButtonElement>('[data-refresh]')!;
+    expect(el.querySelector('[aria-busy="true"]')).not.toBeNull();
+    button.focus();
+
+    first.next(summary());
+    first.complete();
+    await settle();
+
+    expect(el.querySelector('[aria-busy="true"]')).toBeNull();
+    expect(el.querySelector('[data-group="attention"]')).not.toBeNull();
+    expect(el.querySelectorAll('[data-refresh]').length).toBe(1);
+    expect(el.querySelector('[data-refresh]')).toBe(button);
+    expect(document.activeElement).toBe(button);
+    el.remove();
+  });
+
   it('shows an error with Retry that loads again', async () => {
     const el = await open(throwError(() => new Error('boom')));
     expect(el.querySelector('[data-error]')!.textContent).toContain(

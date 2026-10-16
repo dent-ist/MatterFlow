@@ -198,9 +198,13 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
         </span>
       </p>
     } @else {
+      <!-- One outlet for the tab row in every state, so the Refresh button is the same element while the page loads and after: a second
+           outlet in each branch made Angular replace the button when the first read finished, and the keyboard focus on it was lost. -->
+      @if (showTabs()) {
+        <ng-container *ngTemplateOutlet="tabList" />
+      }
       @switch (state()) {
         @case ('loading') {
-          <ng-container *ngTemplateOutlet="tabList" />
           <div class="skeletons" role="status" aria-busy="true" aria-label="Loading the dashboard">
             @for (n of skeletonTiles; track n) {
               <div class="skeleton"></div>
@@ -226,7 +230,6 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                 </a>
               </div>
             } @else {
-              <ng-container *ngTemplateOutlet="tabList" />
               @switch (activeTab()) {
                 @case ('summary') {
                   <div
@@ -440,7 +443,6 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
             }
           } @else {
             <!-- Only the Swimlane and Users tabs: they read their own endpoints, there is no summary to wait for. -->
-            <ng-container *ngTemplateOutlet="tabList" />
             <ng-container *ngTemplateOutlet="boardPanel" />
           }
         }
@@ -850,6 +852,13 @@ export class DashboardPage implements OnInit {
   protected readonly updated = computed(() => {
     const d = this.data();
     return d ? mfDate(d.generatedAtUtc, this.zone, 'datetime') : null;
+  });
+  /** The tab row shows while loading and on every tab, but not in the error state or on the empty summary (which has no tabs to offer). */
+  protected readonly showTabs = computed(() => {
+    const state = this.state();
+    if (state === 'error') return false;
+    if (state === 'loading') return true;
+    return !this.data() || !this.isEmpty();
   });
   /**
    * Nothing open and nothing created or completed in the period. Only meaningful with the whole Summary tab (Dashboard.ViewSummary; the counts are redacted to zero for
