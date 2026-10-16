@@ -19,7 +19,7 @@ describe('dash URL defaults (one list per tab)', () => {
   it('lists the defaults of every tab', () => {
     expect(DASH_DEFAULTS.summary).toEqual({});
     expect(DASH_DEFAULTS.breakdowns).toEqual({});
-    expect(DASH_DEFAULTS.trends).toEqual({ all: '1', metric: DEFAULT_CHOICE.metric });
+    expect(DASH_DEFAULTS.trends).toEqual({ metric: DEFAULT_CHOICE.metric });
     expect(DASH_DEFAULTS.swimlane).toEqual({ group: 'none', sort: 'priority', days: '7' });
     expect(DASH_DEFAULTS.users).toEqual({ view: 'workload', uavail: 'all', cp: '30' });
     expect(Object.keys(DASH_DEFAULTS).sort()).toEqual([...DASHBOARD_TABS].sort());
@@ -56,6 +56,13 @@ describe('dash URL defaults (one list per tab)', () => {
 });
 
 describe('canonicalParams', () => {
+  it('keeps an explicit all=1 / all=0 on Trends: they differ from the automatic default (no parameter)', () => {
+    for (const all of ['0', '1']) {
+      const raw = map({ tab: 'trends', types: 'a,b', all });
+      expect(canonicalParams(raw, 'trends')['all']).toBe(all);
+    }
+  });
+
   it('leaves a link alone when it already says the right thing', () => {
     const raw = map({ tab: 'swimlane' });
     expect(sameParams(raw, canonicalParams(raw, 'swimlane'))).toBe(true);

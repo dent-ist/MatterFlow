@@ -102,9 +102,9 @@ test.describe('Dashboard shell: tabs are independent (P2) and errors stay in the
     await page.unroute(SUMMARY_API);
     await page.getByRole('button', { name: 'Retry' }).click();
     await expect(page.locator('[data-dash-state="error"]')).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: 'Open by priority' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Open tasks', level: 2 })).toBeVisible();
     // Focus lands on the first control of the refreshed content, not on a vanished button.
-    await expect(page.locator('body')).not.toBeFocused();
+    await expect(page.getByRole('button', { name: 'View as table for Priority' })).toBeFocused();
   });
 
   test('a deep link to Trends keeps its context when the summary fails', async ({ page }) => {

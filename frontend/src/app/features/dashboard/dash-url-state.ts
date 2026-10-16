@@ -55,7 +55,7 @@ export const DASH_SHARED_PARAMS: readonly string[] = ['pod', 'period'];
 export const DASH_DEFAULTS: Record<DashboardTab, Readonly<Record<string, string>>> = {
   summary: {},
   breakdowns: {},
-  trends: { all: '1', metric: DEFAULT_CHOICE.metric },
+  trends: { metric: DEFAULT_CHOICE.metric },
   swimlane: {
     group: DEFAULT_VIEW.groupBy,
     sort: DEFAULT_VIEW.sort,
