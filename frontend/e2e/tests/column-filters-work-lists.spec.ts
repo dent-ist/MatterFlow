@@ -163,6 +163,9 @@ test.describe('Column filters on the work lists', () => {
       await expect(page.getByRole('textbox', { name: 'Filter by Title or Ref' })).toHaveValue(
         token,
       );
+      // The view is remembered once the list has loaded (it can be empty: the priority is just a filter to remember).
+      await expect(page.locator('tbody [data-loading]')).toHaveCount(0);
+      await expect(page.locator('tr[data-task], tbody [data-empty]').first()).toBeVisible();
 
       // Same browser, plain link: the view comes back (the search text is not remembered) and says so.
       await page.goto('/tasks');

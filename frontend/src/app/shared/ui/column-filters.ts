@@ -180,6 +180,9 @@ export interface FilterOption {
       width: 100%;
       min-width: 0;
       font-weight: 400;
+      /* The arrow of a native select takes room of its own: tight side padding keeps the widest choice ("Out of office") whole in a
+         narrow column instead of clipping it. */
+      padding-inline: var(--mf-s1);
     }
   `,
 })

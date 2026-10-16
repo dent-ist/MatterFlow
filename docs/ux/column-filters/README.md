@@ -252,8 +252,11 @@ Screenshots (`<name>-<width>x<height>.png`): `work-queue-filters-open`, `work-qu
 
 ### Also in this change
 
-- The Availability select in the Users filter row (Batch 4) clipped "Out of office": the column now has a minimum width that fits the widest choice and the arrow.
+- The Availability select in the Users filter row (Batch 4) clipped "Out of office": the select in a filter row now has tight side padding (`.cf__select`), so the widest choice and the arrow fit the column it already had. (Widening the column was tried first: it makes the Users grid overflow into the sheet more often, which is the wrong trade.) `admin-users-availability-select-1366x768.png` shows it.
 - Quick view buttons no longer render `title="null"` when they have no tooltip.
+- The work table's header row is exactly 40 px when the filter row is shown (the filter row sticks under it at 40 px), and Columns is the same 32 px as Filters and More filters.
+- A text filter in the work table fills its cell and no longer asks for room: an input's own preferred width (20 characters) had widened the Matter column and squeezed the Title into two lines (6 rows instead of 8 on screen at 1366x768); the table sizes its columns by their content, unlike the record lists, which use a fixed layout.
+- Tests that were flaky or tied to a layout accident: the Users e2e tests ran on a grid that is borderline at 1366 px (they asserted "closed by default" through the sheet fallback); they use 1600 px and a plain link now. The Audit smoke test opened an event row while the live Object id filter was still about to reload the list; it waits for that load.
 
 ### Deferred
 

@@ -203,8 +203,3 @@ tr.mf-selected {
     margin-top: var(--mf-s3);
   }
 }
-
-/* The Availability filter is a native select: its widest choice, "Out of office", and the arrow must fit, or the text is clipped. */
-.mf-col-availability {
-  min-width: 11.5rem;
-}

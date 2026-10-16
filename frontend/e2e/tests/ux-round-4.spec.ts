@@ -444,9 +444,9 @@ test.describe('Round 4: queues, wording and accessibility', () => {
       (await page.getByRole('button', { name: 'Columns' }).boundingBox())!,
     ];
     expect(columns.height).toBe(filters.height);
-    // "Sorted by" and Columns sit in a bar directly above the grid (below the Filters row), at its right end.
+    // "Sorted by", Columns, More filters and Filters are one bar directly above the grid (one line at this width).
     const header = (await page.locator('table thead').first().boundingBox())!;
-    expect(columns.y).toBeGreaterThan(filters.y);
+    expect(Math.abs(columns.y - filters.y)).toBeLessThan(2);
     expect(columns.y + columns.height).toBeLessThanOrEqual(header.y + 1);
 
     const client = await seed.client();
@@ -476,7 +476,7 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     expect(await card.locator('li').count()).toBeLessThanOrEqual(9);
   });
 
-  test('UXR4-18: a task due today reads "Due today" in the header like the queues, and a Title or Ref filter is counted once and not repeated as a chip', async ({
+  test('UXR4-18: a task due today reads "Due today" in the header like the queues, and a Title or Ref filter sits in the filter row, not in a chip', async ({
     page,
     seed,
   }) => {
@@ -490,8 +490,9 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     await expect(page.locator('[data-due]')).not.toContainText('Due soon');
 
     await page.goto(`/tasks?q=${encodeURIComponent(task.taskNumber)}`);
+    // A link with a filter and no status asks for every status: the filter and "Status: All" are the two filters it carries.
     await expect(page.getByRole('button', { name: /^Filters/ })).toHaveText(
-      /^\s*Filters\s*\(1\)\s*$/,
+      /^\s*Filters\s*\(2\)\s*$/,
     );
     await expect(page.getByRole('textbox', { name: 'Filter by Title or Ref' })).toHaveValue(
       task.taskNumber,

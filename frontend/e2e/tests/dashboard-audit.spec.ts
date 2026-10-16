@@ -406,6 +406,9 @@ test.describe('Audit Logs browser (smoke)', () => {
     await page.getByRole('button', { name: /^Filters/ }).click(); // the filter form is folded away until asked for
     await page.getByRole('combobox', { name: 'Filter by Object type' }).selectOption('Task');
     await page.getByRole('textbox', { name: 'Filter by Object id' }).fill(String(task.taskId));
+    // The id applies live after a pause and reloads the list, which closes an opened row: wait for that load before opening one.
+    await expect(page).toHaveURL(new RegExp(`objectId=${task.taskId}(&|$)`));
+    await expect(page.locator('tr[data-event]')).toHaveCount(1); // only this task's own event is left once the id has applied
 
     const created = page
       .locator('tr[data-event]')

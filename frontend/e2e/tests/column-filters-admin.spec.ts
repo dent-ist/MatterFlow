@@ -30,14 +30,16 @@ test.describe('Column filters on the administration lists', () => {
       page,
       seed,
     }) => {
-      await page.setViewportSize({ width: 1366, height: 768 });
+      // 1600 px: the Users grid is borderline at 1366 (a person with pods fills its width and the filters then move into the sheet by design),
+      // and these tests are about the filters, not about that fallback.
+      await page.setViewportSize({ width: 1600, height: 900 });
       const token = uid();
       const tech = await seed.user(['Data Technician'], `tech-${token}`);
       const away = await seed.user(['Data Scientist'], `away-${token}`);
       const waiting = await seed.user([], `wait-${token}`);
       await seed.outOfOffice(away.userId, { note: 'Away' });
 
-      await page.goto('/admin/users?status=all');
+      await page.goto('/admin/users');
       const rows = grid(page, 'Users list').locator('tbody tr');
       await expect(rows.first()).toBeVisible();
       // No search box and no status or availability select: the filters are column filters, closed by default.
@@ -46,6 +48,8 @@ test.describe('Column filters on the administration lists', () => {
         0,
       );
       await expect(toggle(page)).toHaveAttribute('aria-pressed', 'false');
+      await page.goto('/admin/users?status=all');
+      await expect(rows.first()).toBeVisible();
 
       await page.goto(`/admin/users?status=all&account=${token}`);
       await expect(text(page, 'Windows account')).toHaveValue(token); // the address opened the row
@@ -94,7 +98,9 @@ test.describe('Column filters on the administration lists', () => {
     });
 
     test('First seen takes a date range and presets in the viewer zone', async ({ page, seed }) => {
-      await page.setViewportSize({ width: 1366, height: 768 });
+      // 1600 px: the Users grid is borderline at 1366 (a person with pods fills its width and the filters then move into the sheet by design),
+      // and these tests are about the filters, not about that fallback.
+      await page.setViewportSize({ width: 1600, height: 900 });
       const token = uid();
       await seed.user(['Data Technician'], `seen-${token}`);
       await page.goto(`/admin/users?status=all&account=${token}`);
@@ -116,7 +122,9 @@ test.describe('Column filters on the administration lists', () => {
       page,
       seed,
     }) => {
-      await page.setViewportSize({ width: 1366, height: 768 });
+      // 1600 px: the Users grid is borderline at 1366 (a person with pods fills its width and the filters then move into the sheet by design),
+      // and these tests are about the filters, not about that fallback.
+      await page.setViewportSize({ width: 1600, height: 900 });
       await seed.user([], `cue-${uid()}`); // someone is waiting
       await page.goto('/admin/users');
       await expect(grid(page, 'Users list').locator('tbody tr').first()).toBeVisible();

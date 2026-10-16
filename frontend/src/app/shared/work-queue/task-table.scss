@@ -338,7 +338,15 @@ th[aria-sort='descending'] .wt-sort {
   }
 }
 
-/* The inline column filters are a second header row, 40 px high like the header row above it (see styles/_fixed-page.scss). */
+/* The inline column filters are a second header row, 40 px high like the header row above it (see styles/_fixed-page.scss): the filter row
+   sticks at 40 px, so the header row must be exactly that (a 32 px sort button and 4 px above and below it). */
+.wt thead:has(.mf-filter-row) th {
+  padding-block: var(--mf-s1);
+  /* The line under the header row is the shadow of the sticky header; a collapsed border would add half a pixel to its height. */
+  border-bottom: 0;
+  box-shadow: inset 0 -1px 0 var(--mf-border);
+}
+
 .wt .mf-filter-row td {
   height: 40px;
   padding: var(--mf-s1) var(--mf-s2);
@@ -349,4 +357,11 @@ th[aria-sort='descending'] .wt-sort {
 .wt--compact .mf-filter-row td {
   padding-block: var(--mf-s1);
   height: 40px;
+}
+
+/* A text filter must not widen its column: this table sizes its columns by their content, and an input's own preferred width (20
+   characters) would take the room from the Title. It fills the cell instead of asking for room. */
+:host ::ng-deep .mf-filter-row .cf__input {
+  width: 0;
+  min-width: 100%;
 }
