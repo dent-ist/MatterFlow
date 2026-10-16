@@ -70,8 +70,11 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .re-me {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
       margin-left: var(--mf-s2);
-      padding: 0;
+      padding: 0 var(--mf-s1);
       border: 0;
       background: none;
       color: var(--mf-link);
@@ -121,7 +124,7 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
               (inactive)
             }
           } @else {
-            Unassigned
+            {{ emptyLabel() }}
           }
         }
       }
@@ -175,6 +178,10 @@ export class RowEdit {
   readonly transitions = input<TaskTransitionOption[] | null>(null);
   /** Assignee cell only: adds an "Assign to me" button next to the menu for a Task nobody is assigned to (the Dashboard's unassigned queue). */
   readonly assignMe = input(false);
+  /** Assignee cell only: the visible text of the trigger while nobody is assigned ("Assign to..." in the Dashboard lists, so "Unassigned" is not repeated on every row). */
+  readonly emptyLabel = input('Unassigned');
+  /** Where the Undo toast of a change is shown: `start` (bottom left of the page) keeps it off a right-aligned column of buttons. */
+  readonly toastPlacement = input<'end' | 'start'>('end');
   readonly rowChange = output<TaskQueueRow>();
   /** The Task as the server returned it after a change (or after a conflict refresh), for screens that show the whole Task. */
   readonly taskChange = output<TaskResponse>();
@@ -205,6 +212,10 @@ export class RowEdit {
         return `${r.priority.label}, change priority of ${r.taskNumber}`;
       case 'assignee': {
         const user = r.assignedUser;
+        if (!user && this.emptyLabel() !== 'Unassigned') {
+          // Starts with the visible text (WCAG 2.5.3) and carries the task number.
+          return `${this.emptyLabel()} ${r.taskNumber}`;
+        }
         const shown = user ? user.displayName + (user.isActive ? '' : ' (inactive)') : 'Unassigned';
         return `${shown}, change assignee of ${r.taskNumber}`;
       }
@@ -458,8 +469,11 @@ export class RowEdit {
       const task = await firstValueFrom(call(before.rowVersion));
       this.rowChange.emit(rowFromTask(before, task));
       this.taskChange.emit(task);
-      if (undo) this.undoService.offer(success(task), () => this.undoChange(task.taskId, undo));
-      else this.notify.success(success(task));
+      if (undo) {
+        this.undoService.offer(success(task), () => this.undoChange(task.taskId, undo), {
+          placement: this.toastPlacement(),
+        });
+      } else this.notify.success(success(task));
     } catch (error) {
       this.rowChange.emit(before);
       if (error instanceof ApiError && error.code === 'CONCURRENCY_CONFLICT') {

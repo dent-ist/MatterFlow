@@ -1,25 +1,33 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   computed,
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TaskQueueRow } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { calendarDayInZone, dayIndex, describeDue, parseDateOnly } from '../../../core/time/time';
+import { calendarDayInZone, dayIndex } from '../../../core/time/time';
+import { UndoService } from '../../../core/notify/undo.service';
+import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { LIST_ORDER, ListKind, queueParamsSorted } from '../dashboard-links';
+import { DueChip } from './due-chip';
 
 export type PanelKind = ListKind;
 export type PanelState = 'loading' | 'ready' | 'error';
+
+/** The window in which three rows per list fit the first screen (see `shown`). */
+const SHORT_WINDOW = '(min-width: 1280px) and (max-height: 1019px)';
 
 let nextId = 0;
 
@@ -32,25 +40,47 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
 }
 
 /**
- * A short list of tasks to act on (Unassigned queue, Overdue, Due soon): reference (link to the Task), title, matter, priority, and the
- * age of the task or its due date; the unassigned queue also has the inline Assignee menu and "Assign to me" for people who may assign.
+ * A short list of tasks to act on (Unassigned, Overdue, Due soon). One line per row where the list is wide enough (container query, not
+ * the window): reference (link to the Task), task type icon, title, client, priority, the due chip (days overdue in the Overdue list;
+ * age and, when there is one, the due chip in the Unassigned list), and for the Unassigned list the inline "Assign to..." menu and
+ * "Assign to me" for people who may assign. Narrower lists wrap to a title line and a meta line (with the matter number).
  * Rows are Task Queue rows, so every editor is the same one the queue uses. "View all" opens the full filtered, sorted Task Queue.
  */
 @Component({
   selector: 'mf-dash-task-list',
-  imports: [RouterLink, MatterRef, PriorityBadge, RowEdit],
+  imports: [RouterLink, MatterRef, PriorityBadge, RowEdit, TaskTypeIcon, DueChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="card" [attr.aria-labelledby]="id" [attr.data-panel]="kind()">
+    <section
+      class="card"
+      [class.card--toast]="toastOpen()"
+      [attr.aria-labelledby]="id"
+      [attr.data-panel]="kind()"
+    >
       <header>
         <h3 [id]="id" tabindex="-1" data-skip-target>{{ heading() }}</h3>
         @if (state() === 'ready' && total() > 0) {
           <span class="count" data-total>{{ total() }}</span>
         }
+        @if (orderNote(); as note) {
+          <span class="order" data-order>{{ note }}</span>
+        }
+        @if (state() === 'ready' && total() > shown().length) {
+          <span class="more" data-more>Showing {{ shown().length }} of {{ total() }}</span>
+        }
+        @if (state() === 'ready' && total() > 0) {
+          <a
+            class="all"
+            routerLink="/tasks"
+            [queryParams]="allParams()"
+            [attr.title]="viewAllTitle() || null"
+            [attr.aria-label]="viewAllTitle() || null"
+            data-view-all
+          >
+            {{ viewAllText() }} <i class="pi pi-arrow-right" aria-hidden="true"></i>
+          </a>
+        }
       </header>
-      @if (orderNote(); as note) {
-        <p class="order" data-order>{{ note }}</p>
-      }
       @switch (state()) {
         @case ('loading') {
           <div class="bones" role="status" aria-busy="true">
@@ -67,59 +97,68 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
           </p>
         }
         @default {
-          @if (rows().length === 0) {
+          @if (shown().length === 0) {
             <p class="msg" data-empty>
               <i class="pi pi-check-circle" aria-hidden="true"></i> {{ emptyText() }}
             </p>
           } @else {
-            @if (rows().length > 2 && skippable()) {
+            @if (shown().length > 2 && skippable()) {
               <button type="button" class="skip" data-skip (click)="skipList()">
                 Skip {{ heading() }} list
               </button>
             }
             <ul>
-              @for (row of rows(); track row.taskId) {
-                <li [attr.data-task]="row.taskNumber">
+              @for (row of shown(); track row.taskId; let i = $index) {
+                <li [attr.data-task]="row.taskNumber" [attr.data-row]="i">
                   <a class="main" [routerLink]="['/tasks', row.taskId]" [attr.title]="row.title">
                     <span class="ref">{{ row.taskNumber }}</span>
+                    <span
+                      class="type"
+                      role="img"
+                      data-type
+                      [attr.aria-label]="row.taskTypeName"
+                      [attr.title]="row.taskTypeName"
+                    >
+                      <mf-task-type-icon [iconKey]="row.taskTypeIconKey" size="sm" />
+                    </span>
                     <span class="title">{{ row.title }}</span>
                   </a>
-                  <div class="meta">
+                  <span
+                    class="client"
+                    data-client
+                    [attr.title]="row.matterRef + ' ' + row.matterName"
+                  >
+                    {{ row.clientName }}
                     <mf-matter-ref
+                      class="matter"
                       [value]="row.matterRef"
                       [copy]="false"
                       [attr.title]="row.matterName"
                     />
-                    <mf-priority-badge
-                      [priorityId]="row.priority.priorityId"
-                      [label]="row.priority.label"
-                      [color]="row.priority.color"
-                    />
+                  </span>
+                  <mf-priority-badge
+                    class="prio"
+                    [priorityId]="row.priority.priorityId"
+                    [label]="row.priority.label"
+                    [color]="row.priority.color"
+                  />
+                  <span class="when">
                     @if (kind() === 'unassigned') {
+                      @if (row.dueDate || row.dueAtUtc) {
+                        <mf-due-chip [due]="row" [status]="row.status" />
+                      }
                       <span class="age" data-age>{{ ageText(row) }}</span>
                     } @else {
-                      @let due = dueOf(row);
-                      @if (due.kind === 'overdue') {
-                        <span class="due due--overdue" data-due>
-                          <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-                          {{ due.dateText }} · <strong>{{ due.badge }}</strong>
-                        </span>
-                      } @else {
-                        <span class="due due--soon" data-due>
-                          <i class="pi pi-clock" aria-hidden="true"></i>
-                          {{ due.dateText }}
-                          @if (relativeDay(row); as rel) {
-                            · <strong>{{ rel }}</strong>
-                          }
-                        </span>
-                      }
+                      <mf-due-chip data-due [due]="row" [status]="row.status" />
                     }
-                  </div>
+                  </span>
                   @if (kind() === 'unassigned') {
                     <div class="assign">
                       @if (editable(row)) {
                         <mf-row-edit
                           field="assignee"
+                          emptyLabel="Assign to..."
+                          toastPlacement="start"
                           [row]="row"
                           [assignMe]="true"
                           (rowChange)="rowChange.emit($event)"
@@ -135,14 +174,6 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
               }
             </ul>
           }
-          @if (total() > rows().length) {
-            <p class="more" data-more>Showing {{ rows().length }} of {{ total() }}.</p>
-          }
-          @if (total() > 0) {
-            <a class="all" routerLink="/tasks" [queryParams]="allParams()" data-view-all>
-              {{ viewAllText() }} <i class="pi pi-arrow-right" aria-hidden="true"></i>
-            </a>
-          }
         }
       }
     </section>
@@ -152,20 +183,25 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
       display: block;
     }
     .card {
-      height: 100%;
+      container-type: inline-size;
       box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      padding: var(--mf-s4);
+      padding: var(--mf-s2) var(--mf-s3);
       background: var(--mf-surface);
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius-lg);
     }
+    /* A toast along the bottom (under 1024px) must not cover the last row: room for it while it is open. */
+    @media (max-width: 1023px) {
+      .card--toast {
+        padding-bottom: 5.5rem;
+      }
+    }
     header {
       display: flex;
-      align-items: baseline;
+      flex-wrap: wrap;
+      align-items: center;
       gap: var(--mf-s2);
-      margin-bottom: var(--mf-s2);
+      min-height: 2rem;
     }
     h3 {
       margin: 0;
@@ -176,40 +212,160 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
       color: var(--mf-text-muted);
       font-variant-numeric: tabular-nums;
     }
+    .order,
+    .more {
+      min-width: 0;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+    }
+    .order {
+      flex: 1 1 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .more {
+      flex: none;
+      margin-left: auto;
+      white-space: nowrap;
+    }
+    .order + .more {
+      margin-left: 0;
+    }
+    .all {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      min-height: 24px;
+      margin-left: auto;
+      font-size: var(--mf-fs-sm);
+      color: var(--mf-link);
+      white-space: nowrap;
+    }
+    .order ~ .all,
+    .more ~ .all {
+      margin-left: 0;
+    }
     ul {
       margin: 0;
       padding: 0;
       list-style: none;
     }
+    /* Wide list: one line of 44px. */
     li {
-      display: grid;
-      gap: var(--mf-s1);
-      padding: var(--mf-s2) 0;
+      box-sizing: border-box;
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: var(--mf-s2);
+      min-height: 44px;
+      padding: 2px 0;
+      font-size: var(--mf-fs-sm);
     }
     li + li {
       border-top: 1px solid var(--mf-border);
     }
-    .main {
-      display: flex;
-      align-items: baseline;
-      gap: var(--mf-s2);
-      min-width: 0;
-    }
     a.main {
+      flex: 1 1 0;
       display: flex;
-      align-items: baseline;
+      align-items: center;
       gap: var(--mf-s2);
-      min-width: 0;
+      min-width: 6rem;
+      min-height: 24px;
       color: var(--mf-text);
       text-decoration: none;
     }
     a.main:hover .title {
       text-decoration: underline;
     }
-    .order {
-      margin: 0 0 var(--mf-s2);
+    .type {
+      flex: none;
+      display: inline-flex;
       color: var(--mf-text-muted);
+    }
+    .client {
+      flex: 0 1 6.5rem;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--mf-text-muted);
+    }
+    .matter {
+      display: none;
+    }
+    .prio {
+      flex: none;
+    }
+    .when {
+      flex: none;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      width: 6rem;
+      line-height: 1.25;
+    }
+    .age {
       font-size: var(--mf-fs-xs);
+      color: var(--mf-text-muted);
+    }
+    .assign {
+      flex: none;
+      display: flex;
+      align-items: center;
+      font-size: var(--mf-fs-sm);
+    }
+    /* Narrow list: a title line, then a line with the rest (and the matter number). */
+    @container (max-width: 539px) {
+      .order {
+        order: 5;
+        flex: 1 1 100%;
+        white-space: normal;
+      }
+      li {
+        flex-wrap: wrap;
+        padding: var(--mf-s2) 0;
+      }
+      a.main {
+        flex: 1 1 100%;
+      }
+      .client {
+        flex: 0 1 auto;
+        max-width: 100%;
+      }
+      .matter {
+        display: inline-flex;
+        margin-left: var(--mf-s1);
+      }
+      .when {
+        flex-direction: row;
+        align-items: center;
+        gap: var(--mf-s2);
+        width: auto;
+      }
+    }
+    .ref {
+      flex: none;
+      font-family: var(--mf-font-mono);
+      font-size: var(--mf-fs-sm);
+      font-weight: 600;
+      color: var(--mf-link);
+    }
+    .title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    @container (max-width: 539px) {
+      .title {
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
     }
     /* Visible only while it has focus: the keyboard way past a long list. */
     .skip {
@@ -241,46 +397,10 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
       outline: 2px solid var(--mf-focus);
       outline-offset: 2px;
     }
-    .ref {
-      flex: none;
-      font-family: var(--mf-font-mono);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-      color: var(--mf-link);
-    }
-    .title {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .meta {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s1) var(--mf-s3);
-      font-size: var(--mf-fs-sm);
-      color: var(--mf-text-muted);
-    }
-    .due {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-    }
-    .due--overdue {
-      color: var(--mf-due-overdue, var(--mf-danger));
-    }
-    .due--soon {
-      color: var(--mf-due-soon, var(--mf-warning));
-    }
-    .assign {
-      font-size: var(--mf-fs-sm);
-    }
     .muted {
       color: var(--mf-text-muted);
     }
-    .msg,
-    .more {
+    .msg {
       margin: 0 0 var(--mf-s2);
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
@@ -296,12 +416,6 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
       font: inherit;
       text-decoration: underline;
       cursor: pointer;
-    }
-    .all {
-      margin-top: auto;
-      padding-top: var(--mf-s2);
-      font-size: var(--mf-fs-sm);
-      color: var(--mf-link);
     }
     .bones {
       display: grid;
@@ -328,6 +442,7 @@ export class DashTaskList {
   private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly undo = inject(UndoService);
 
   readonly kind = input.required<PanelKind>();
   readonly heading = input.required<string>();
@@ -339,12 +454,22 @@ export class DashTaskList {
   readonly query = input.required<string>();
   readonly emptyText = input('Nothing here.');
   readonly viewAllText = input('View all');
+  /** Tooltip of the "View all" link (for example the window of the list). */
+  readonly viewAllTitle = input('');
   /** False for the last list of a page: nothing follows it to skip to. */
   readonly skippable = input(true);
   readonly rowChange = output<TaskQueueRow>();
   readonly retry = output<void>();
 
   protected readonly id = `mf-dash-list-${nextId++}`;
+
+  /**
+   * Rows shown: at most 5 (one line each). On a short window beside the tiles (1280px wide and up, under 1020px high) the first screen has
+   * room for 3 per list, so the three lists, their headings and "View all" stay in view without scrolling (review S1); "Showing N of M"
+   * counts what is shown.
+   */
+  private readonly compact = signal(false);
+  protected readonly shown = computed(() => this.rows().slice(0, this.compact() ? 3 : 5));
   protected readonly bones = [1, 2, 3];
 
   /** "View all" starts with the same order as the list (see `LIST_ORDER`). */
@@ -352,7 +477,20 @@ export class DashTaskList {
     const order = LIST_ORDER[this.kind()];
     return queueParamsSorted(this.query(), order.sort, order.dir);
   });
+  /** The assignment toast is open and this is the last list of the page: it leaves room for the toast under 1024px (see the styles). */
+  protected readonly toastOpen = computed(
+    () => !this.skippable() && this.undo.current()?.placement === 'start',
+  );
   protected readonly orderNote = computed(() => LIST_ORDER[this.kind()].note);
+
+  constructor() {
+    if (typeof matchMedia !== 'function') return;
+    const query = matchMedia(SHORT_WINDOW);
+    this.compact.set(query.matches);
+    const onChange = (e: MediaQueryListEvent) => this.compact.set(e.matches);
+    query.addEventListener('change', onChange);
+    inject(DestroyRef).onDestroy(() => query.removeEventListener('change', onChange));
+  }
 
   /** Moves focus to the row now at `index` (or the last one), else to the list heading: used after a row has left the list. */
   focusNear(index: number): void {
@@ -379,22 +517,5 @@ export class DashTaskList {
   protected ageText(row: TaskQueueRow): string {
     const days = ageInDays(row.createdAtUtc, this.clock.now(), this.zone);
     return days === 0 ? 'Created today' : days === 1 ? '1 day old' : `${days} days old`;
-  }
-
-  /** "Today" or "Tomorrow" for a task due within two days, so the list can be scanned without reading dates (DASH-18). */
-  protected relativeDay(row: TaskQueueRow): string | null {
-    const today = dayIndex(calendarDayInZone(this.clock.now(), this.zone));
-    const dueDay = row.dueAtUtc
-      ? calendarDayInZone(row.dueAtUtc, this.zone)
-      : row.dueDate
-        ? parseDateOnly(row.dueDate)
-        : null;
-    if (!dueDay) return null;
-    const diff = dayIndex(dueDay) - today;
-    return diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : null;
-  }
-
-  protected dueOf(row: TaskQueueRow) {
-    return describeDue(row, this.clock.now(), this.zone, row.status);
   }
 }

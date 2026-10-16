@@ -30,12 +30,20 @@ import { QuietRequests } from '../../../core/http/interceptors';
 import { LookupStore } from '../../../core/lookups/lookup-store';
 import { UndoService } from '../../../core/notify/undo.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { mfDate } from '../../../core/time/time';
+import { formatCalendarDay, mfDate, parseDateOnly } from '../../../core/time/time';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { priorityColors } from '../../../shared/ui/priority-badge';
-import { LIST_ORDER, ListKind, clearedUsersParams, queueArgsFor } from '../dashboard-links';
+import {
+  DUE_SOON_CAPTION,
+  DUE_SOON_WINDOW,
+  LIST_ORDER,
+  ListKind,
+  clearedUsersParams,
+  dueSoonThrough,
+  queueArgsFor,
+} from '../dashboard-links';
 import { PERIOD_PRESETS, PeriodKey, isPeriodKey, periodDays, presetOf } from '../dashboard-period';
 import {
   DASHBOARD_TABS,
@@ -60,12 +68,13 @@ import { clearedTrendParams } from '../ui/trend-model';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
-/** One list panel of the "Tasks to act on" section: what it is called and the Task Queue query behind it. */
+/** One list panel of the Summary tab: what it is called and the Task Queue query behind it. */
 interface PanelSpec {
   kind: ListKind;
   heading: string;
   emptyText: string;
   viewAllText: string;
+  viewAllTitle: string;
   query: string;
 }
 
@@ -80,7 +89,8 @@ export const AUTO_REFRESH_MS = 5 * 60_000;
 /** Pause after an inline edit before the counts are read again (several quick edits make one read). */
 const COUNT_REFRESH_DELAY_MS = 700;
 
-const LIST_SIZE: Record<ListKind, number> = { unassigned: 8, overdue: 6, dueSoon: 6 };
+/** Rows per list on the Summary (one line each, review S1); the list's total decides "Showing 5 of N" and the "View all" link. */
+const LIST_SIZE: Record<ListKind, number> = { unassigned: 5, overdue: 5, dueSoon: 5 };
 const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
 
 /** Glossary: sentence case ("No pod", "Other pods"); the API still sends some Title Case labels. */
@@ -163,26 +173,6 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
           }
         </select>
       </label>
-    </ng-template>
-
-    <ng-template #listsGrid let-items let-narrow="narrow">
-      <div class="grid grid--lists" [class.grid--narrow]="narrow" data-lists>
-        @for (panel of items; track panel.kind) {
-          <mf-dash-task-list
-            [kind]="panel.kind"
-            [heading]="panel.heading"
-            [emptyText]="panel.emptyText"
-            [viewAllText]="panel.viewAllText"
-            [rows]="listOf(panel.kind).rows"
-            [total]="listOf(panel.kind).total"
-            [state]="listOf(panel.kind).state"
-            [query]="panel.query"
-            [skippable]="panel.kind !== lastKind()"
-            (rowChange)="onRowChange(panel.kind, $event)"
-            (retry)="reloadList(panel.kind)"
-          />
-        }
-      </div>
     </ng-template>
 
     @if (visibleTabs().length === 0) {
@@ -281,7 +271,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                                 linkText="View tasks on hold"
                                 [value]="d.onHold.count"
                                 [query]="d.onHold.query"
-                                caption="Waiting on something"
+                                caption="Waiting on client, custodian or internal"
                               />
                               <mf-stat-tile
                                 label="ASAP open"
@@ -291,7 +281,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                                 linkText="View ASAP tasks"
                                 [value]="d.asapOpen.count"
                                 [query]="d.asapOpen.query"
-                                caption="No due date, handle promptly"
+                                caption="No due date"
                               />
                             </div>
                           </div>
@@ -322,7 +312,8 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                                 linkText="View tasks due soon"
                                 [value]="d.dueSoon.count"
                                 [query]="d.dueSoon.query"
-                                caption="Next 2 days, excludes ASAP"
+                                [caption]="dueSoonCaption"
+                                [hint]="dueSoonHint(d)"
                               />
                               <mf-stat-tile
                                 label="Completed"
@@ -347,31 +338,30 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                         </div>
                       }
                       @if (panels().length > 0) {
-                        <mf-dash-section
-                          class="summary-main"
-                          heading="Tasks to act on"
-                          name="lists"
+                        <!-- No section headings: each list heading names its list (Unassigned, Overdue, Due soon). -->
+                        <div
+                          class="summary-lists"
+                          role="group"
+                          aria-label="Unassigned, overdue and due soon tasks"
+                          data-lists
                         >
-                          <ng-container
-                            *ngTemplateOutlet="
-                              listsGrid;
-                              context: { $implicit: mainPanels(), narrow: false }
-                            "
-                          />
-                        </mf-dash-section>
-                      }
-                      @if (morePanels().length > 0) {
-                        <mf-dash-section class="summary-more" heading="Deadlines" name="lists-more">
-                          <ng-container
-                            *ngTemplateOutlet="
-                              listsGrid;
-                              context: {
-                                $implicit: morePanels(),
-                                narrow: morePanels().length === 1,
-                              }
-                            "
-                          />
-                        </mf-dash-section>
+                          @for (panel of panels(); track panel.kind) {
+                            <mf-dash-task-list
+                              [kind]="panel.kind"
+                              [heading]="panel.heading"
+                              [emptyText]="panel.emptyText"
+                              [viewAllText]="panel.viewAllText"
+                              [viewAllTitle]="panel.viewAllTitle"
+                              [rows]="listOf(panel.kind).rows"
+                              [total]="listOf(panel.kind).total"
+                              [state]="listOf(panel.kind).state"
+                              [query]="panel.query"
+                              [skippable]="panel.kind !== lastKind()"
+                              (rowChange)="onRowChange(panel.kind, $event)"
+                              (retry)="reloadList(panel.kind)"
+                            />
+                          }
+                        </div>
                       }
                     </div>
                   </div>
@@ -530,19 +520,21 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     .group {
       margin-bottom: var(--mf-s5);
     }
-    /* Summary: tiles on the left and the unassigned queue beside them from 1180px; the other lists in a row below. */
+    /* Summary: tiles on the left and the three lists (one line per row) in a column beside them from 1280px; stacked below the tiles under that. */
     .summary {
       display: grid;
       grid-template-columns: minmax(0, 1fr);
       column-gap: var(--mf-s5);
       align-items: start;
     }
-    .summary-more {
-      grid-column: 1 / -1;
+    .summary-lists {
+      display: grid;
+      gap: var(--mf-s2);
+      min-width: 0;
     }
-    @media (min-width: 1180px) {
+    @media (min-width: 1280px) {
       .summary:not(.summary--queue) {
-        grid-template-columns: minmax(0, 452px) minmax(0, 1fr);
+        grid-template-columns: minmax(0, clamp(360px, 27vw, 452px)) minmax(0, 1fr);
       }
     }
     .note {
@@ -636,16 +628,8 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       gap: var(--mf-s4);
       align-items: start;
     }
-    /* Task lists: as many columns as fit, never wider than a comfortable list; a single list does not stretch across the page. */
-    .grid--lists {
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
-      align-items: start;
-    }
-    .grid--narrow {
-      max-width: 36rem;
-    }
     @media (max-width: 900px) {
-      .grid:not(.grid--lists) {
+      .grid {
         grid-template-columns: minmax(0, 1fr);
       }
     }
@@ -787,16 +771,17 @@ export class DashboardPage implements OnInit {
   });
 
   /**
-   * The lists of "Tasks to act on" on the Summary tab: the Unassigned queue (with Dashboard.ViewUnassigned, or Dashboard.ViewSummary and Task.Assign),
+   * The lists of the Summary tab: the Unassigned queue (with Dashboard.ViewUnassigned, or Dashboard.ViewSummary and Task.Assign),
    * and with Dashboard.ViewSummary also Overdue and Due soon.
    * Their own work is in My Work.
    */
   protected readonly panels = computed<PanelSpec[]>(() => {
     const unassigned = (query: string): PanelSpec => ({
       kind: 'unassigned',
-      heading: 'Unassigned queue',
+      heading: 'Unassigned',
       emptyText: 'No unassigned tasks.',
-      viewAllText: 'View all unassigned tasks',
+      viewAllText: 'View all',
+      viewAllTitle: 'View all unassigned tasks',
       query,
     });
     if (!this.canSummary()) return [];
@@ -812,21 +797,20 @@ export class DashboardPage implements OnInit {
         kind: 'overdue',
         heading: 'Overdue',
         emptyText: 'Nothing is overdue.',
-        viewAllText: 'View all overdue tasks',
+        viewAllText: 'View all',
+        viewAllTitle: 'View all overdue tasks',
         query: d.overdue.query,
       },
       {
         kind: 'dueSoon',
         heading: 'Due soon',
-        emptyText: 'Nothing is due in the next 2 days.',
-        viewAllText: 'View all tasks due soon',
+        emptyText: 'Nothing is due today or in the next 2 days.',
+        viewAllText: 'View all',
+        viewAllTitle: `View all tasks due soon: ${DUE_SOON_WINDOW.toLowerCase()}`,
         query: d.dueSoon.query,
       },
     ];
   });
-  /** Summary layout: the first list sits beside the tiles, the others (Overdue, Due soon) form a row below. */
-  protected readonly mainPanels = computed(() => this.panels().slice(0, 1));
-  protected readonly morePanels = computed(() => this.panels().slice(1));
   protected readonly lastKind = computed(() => this.panels().at(-1)?.kind ?? null);
 
   /** The refresh button in the tab row is busy while the data of the tab shown is being read again. */
@@ -1065,6 +1049,15 @@ export class DashboardPage implements OnInit {
     sort: LIST_ORDER.overdue.sort,
     dir: LIST_ORDER.overdue.dir,
   };
+
+  protected readonly dueSoonCaption = DUE_SOON_CAPTION;
+
+  /** Tooltip and description of the Due soon tile: the window in words and its last day ("through Oct 18"). */
+  protected dueSoonHint(d: DashboardSummary): string | null {
+    const to = dueSoonThrough(d.dueSoon.query);
+    const day = to ? parseDateOnly(to) : null;
+    return day ? `${DUE_SOON_CAPTION}, through ${formatCalendarDay(day)}` : null;
+  }
 
   /** The severity line of the Overdue tile, for example "11 Critical, 30 High" (null when neither is overdue). */
   protected overdueSeverity(d: DashboardSummary): string | null {

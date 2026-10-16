@@ -9,7 +9,13 @@ import { UndoService } from '../../core/notify/undo.service';
   selector: 'mf-undo-toast',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="ut" role="status" aria-live="polite" aria-atomic="true">
+    <div
+      class="ut"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      [class.ut--start]="undo.current()?.placement === 'start'"
+    >
       @if (undo.current(); as offer) {
         <div
           class="ut__box"
@@ -52,6 +58,25 @@ import { UndoService } from '../../core/notify/undo.service';
       bottom: var(--mf-s4);
       z-index: 1200;
       max-width: min(32rem, calc(100vw - 2 * var(--mf-s4)));
+    }
+    /* Bottom left of the main column (the Dashboard lists: the right edge holds the row buttons). Below 1024px: the full width at the bottom. */
+    .ut--start {
+      right: auto;
+      left: calc(220px + var(--mf-s5));
+      /* Ends before the lists that sit beside the Dashboard tiles at 1366px. */
+      max-width: 24rem;
+    }
+    @media (max-width: 1099px) {
+      .ut--start {
+        left: calc(56px + var(--mf-s4));
+      }
+    }
+    @media (max-width: 1023px) {
+      .ut--start {
+        left: var(--mf-s4);
+        right: var(--mf-s4);
+        max-width: none;
+      }
     }
     .ut__box {
       display: flex;

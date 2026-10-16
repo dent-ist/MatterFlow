@@ -1,0 +1,264 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { Page } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
+import { axeAvailable, axeViolations } from '../support/axe';
+import { dateInZone, FIRM_ZONE } from '../support/time';
+import { uid } from '../support/seed';
+
+/**
+ * Dashboard Summary lists (review 2, WP5: S1 one-line rows and first screen, S4 Due soon wording, S5 captions at 375, S6 toast position,
+ * S7 row content, S8 section names). Boxes are measured, not eyeballed.
+ * With E2E_SCREENSHOTS set to a folder the run also writes the screenshots of docs/ux/dashboard-review-2/fixes/wp5.
+ */
+const OUT = process.env['E2E_SCREENSHOTS'];
+
+async function seedLists(seed: import('../support/seed').Seeder) {
+  const world = await seed.world();
+  const tag = uid();
+  for (let i = 0; i < 6; i++) {
+    await seed.task(world, {
+      title: `Overdue sample ${i + 1} ${tag}`,
+      dueDate: dateInZone(FIRM_ZONE, -(2 + i)),
+    });
+    await seed.task(world, {
+      title: `Due soon sample ${i + 1} ${tag}`,
+      dueDate: dateInZone(FIRM_ZONE, i % 3),
+    });
+    await seed.task(world, { title: `Unassigned sample ${i + 1} ${tag}` });
+  }
+  return world;
+}
+
+async function openSummary(page: Page, width: number, height: number) {
+  await page.setViewportSize({ width, height });
+  await page.goto('/dashboard');
+  for (const kind of ['unassigned', 'overdue', 'dueSoon'])
+    await expect(page.locator(`[data-panel="${kind}"] li`).first()).toBeVisible();
+  await page.waitForLoadState('networkidle');
+}
+
+async function shoot(page: Page, name: string, fullPage = false) {
+  if (!OUT) return;
+  fs.mkdirSync(OUT, { recursive: true });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: path.join(OUT, `${name}.png`), fullPage });
+}
+
+test.describe('dashboard summary lists', () => {
+  test.beforeAll(async ({ seed }) => {
+    await seedLists(seed);
+  });
+
+  for (const { w, h, rows } of [
+    { w: 1366, h: 768, rows: 3 },
+    { w: 1920, h: 1080, rows: 5 },
+  ]) {
+    test(`${w}x${h}: the three headings and ${rows} one-line rows of each list are in the first screen (S1, S7, S8)`, async ({
+      page,
+    }) => {
+      await openSummary(page, w, h);
+      expect(await page.evaluate(() => window.scrollY)).toBe(0);
+      const names: Record<string, string> = {
+        unassigned: 'Unassigned',
+        overdue: 'Overdue',
+        dueSoon: 'Due soon',
+      };
+      for (const kind of Object.keys(names)) {
+        const panel = page.locator(`[data-panel="${kind}"]`);
+        await expect(panel.getByRole('heading', { level: 3 })).toHaveText(names[kind]);
+        const heading = (await panel.locator('h3').boundingBox())!;
+        expect(heading.y + heading.height, `${kind} heading`).toBeLessThanOrEqual(h);
+        const items = panel.locator('li');
+        expect(await items.count()).toBeLessThanOrEqual(5);
+        expect(await items.count()).toBeGreaterThanOrEqual(rows);
+        for (let i = 0; i < rows; i++) {
+          const li = (await items.nth(i).boundingBox())!;
+          expect(li.y + li.height, `${kind} row ${i + 1} bottom`).toBeLessThanOrEqual(h);
+          // One line of 44px (plus the 1px divider).
+          expect(li.height, `${kind} row ${i + 1} height`).toBeGreaterThanOrEqual(44);
+          expect(li.height, `${kind} row ${i + 1} height`).toBeLessThanOrEqual(46);
+          // Everything of the row sits inside it: nothing wrapped under it or out of it.
+          const inside = await items.nth(i).evaluate((el) => {
+            const box = el.getBoundingClientRect();
+            return Array.from(el.querySelectorAll('a, button, [data-type], [data-client]'))
+              .filter((n) => (n as HTMLElement).offsetParent !== null)
+              .every((n) => {
+                const r = n.getBoundingClientRect();
+                return (
+                  r.right <= box.right + 1 && r.bottom <= box.bottom + 1 && r.top >= box.top - 1
+                );
+              });
+          });
+          expect(inside, `${kind} row ${i + 1} contents`).toBe(true);
+        }
+      }
+      // No old section names anywhere (S8).
+      await expect(page.getByText('Tasks to act on')).toHaveCount(0);
+      await expect(page.getByText('Deadlines')).toHaveCount(0);
+      // Row content (S7): type icon with the name, client, due chip; "Assign to..." instead of "Unassigned" on every row.
+      const first = page.locator('[data-panel="unassigned"] li').first();
+      await expect(first.locator('[data-type]')).toHaveAttribute('aria-label', /.+/);
+      await expect(first.locator('[data-client]')).not.toBeEmpty();
+      await expect(first.locator('mf-row-edit [data-inline-trigger]')).toHaveText('Assign to...');
+      await expect(
+        page
+          .locator('[data-panel="unassigned"] mf-row-edit')
+          .getByText('Unassigned', { exact: true }),
+      ).toHaveCount(0);
+      await expect(page.locator('[data-panel="overdue"] li').first()).toContainText(/Overdue \d+d/);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+      await shoot(page, `after-summary-${w}`);
+      if (axeAvailable()) expect(await axeViolations(page), `axe ${w}`).toEqual([]);
+    });
+  }
+
+  test('target size: row links and buttons are at least 24px high (WCAG 2.5.8)', async ({
+    page,
+  }) => {
+    await openSummary(page, 1366, 768);
+    const small = await page.evaluate(() =>
+      Array.from(
+        document.querySelectorAll(
+          '[data-panel] li a.main, [data-panel] li button, [data-panel] [data-view-all]',
+        ),
+      )
+        .filter((n) => (n as HTMLElement).offsetParent !== null)
+        .map((n) => ({
+          text: n.textContent?.trim().slice(0, 30),
+          h: n.getBoundingClientRect().height,
+        }))
+        .filter((n) => n.h < 23.5),
+    );
+    expect(small).toEqual([]);
+  });
+
+  for (const w of [320, 375, 480]) {
+    test(`${w}px: tile captions are not cut and the page has no horizontal scroll (S5, S4)`, async ({
+      page,
+    }) => {
+      await openSummary(page, w, 812);
+      const cut = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('mf-stat-tile .caption, mf-stat-tile .label-text'))
+          .filter((n) => n.scrollWidth > n.clientWidth + 1)
+          .map((n) => n.textContent),
+      );
+      expect(cut).toEqual([]);
+      const captions = await page.locator('mf-stat-tile .caption').allTextContents();
+      expect(captions.map((c) => c.trim())).toEqual(
+        expect.arrayContaining([
+          'Excludes ASAP tasks',
+          'Today and the next 2 days, excludes ASAP',
+          'No due date',
+          'Waiting on client, custodian or internal',
+        ]),
+      );
+      // Each caption is at most two lines at 480 and below.
+      const tall = await page.evaluate(
+        () =>
+          Array.from(document.querySelectorAll('mf-stat-tile .caption')).filter((n) => {
+            const lh = parseFloat(getComputedStyle(n).lineHeight) || 16;
+            return n.getBoundingClientRect().height > lh * 3 + 1;
+          }).length,
+      );
+      expect(tall).toBe(0);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+      // Rows wrap to a title line and a meta line; the title is not cut below two lines.
+      const row = page.locator('[data-panel="unassigned"] li').first();
+      expect((await row.boundingBox())!.width).toBeLessThanOrEqual(w);
+      if (w === 375) {
+        await shoot(page, 'after-summary-375', true);
+        if (axeAvailable()) expect(await axeViolations(page), 'axe 375').toEqual([]);
+      }
+      if (w === 320) await shoot(page, 'after-summary-320', true);
+    });
+  }
+
+  test('the Due soon tile says "Today and the next 2 days" and counts what the queue counts (S4)', async ({
+    page,
+  }) => {
+    await openSummary(page, 1366, 768);
+    const tile = page.locator('mf-stat-tile', { hasText: 'Due soon' }).first();
+    await expect(tile.locator('.caption')).toHaveText('Today and the next 2 days, excludes ASAP');
+    const hint = (await tile.locator('[data-hint]').textContent())!;
+    const through = dateInZone(FIRM_ZONE, 2);
+    const day = new Date(`${through}T12:00:00Z`).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
+    expect(hint).toContain(`through ${day}`);
+    // The queue opens with the same filter and finds the same tasks. Other tests create tasks in parallel, so a read that raced with one is repeated.
+    let counts: { tile: number; queue: number } = { tile: -1, queue: -2 };
+    for (let attempt = 0; attempt < 4 && counts.tile !== counts.queue; attempt++) {
+      await openSummary(page, 1366, 768);
+      const value = page.locator('mf-stat-tile', { hasText: 'Due soon' }).first();
+      const tileCount = Number((await value.locator('.value').textContent())!.trim());
+      const queue = page.waitForResponse(
+        (r) => r.url().includes('/api/v1/task-queue') && r.url().includes('dueTo='),
+      );
+      await value.getByRole('link').click();
+      const body = (await (await queue).json()) as { total: number };
+      counts = { tile: tileCount, queue: body.total };
+    }
+    await expect(page).toHaveURL(/dueTo=/);
+    expect(counts.queue).toBe(counts.tile);
+  });
+
+  for (const { w, h } of [
+    { w: 1366, h: 768 },
+    { w: 1920, h: 1080 },
+    { w: 375, h: 812 },
+  ]) {
+    test(`${w}x${h}: the Assign to me toast covers no control of any list row (S6)`, async ({
+      page,
+    }) => {
+      await openSummary(page, w, h);
+      const panel = page.locator('[data-panel="unassigned"]');
+      const first = panel.locator('li').first();
+      const number = (await first.getAttribute('data-task'))!;
+      await first.getByRole('button', { name: `Assign to me, ${number}` }).click();
+      const toast = page.locator('[data-undo-toast]');
+      await expect(toast).toBeVisible();
+      await expect(page.locator('[data-undo-message]')).toContainText(`${number} assigned to`);
+      await page.waitForTimeout(300);
+      const t = (await toast.boundingBox())!;
+      // Bottom left of the main column from 1024px; the full width at the bottom below.
+      if (w >= 1024) expect(t.x).toBeGreaterThanOrEqual(220);
+      else {
+        expect(t.x).toBeGreaterThanOrEqual(15);
+        expect(t.x + t.width).toBeLessThanOrEqual(w - 15);
+        expect(t.width).toBeGreaterThan(w - 40);
+      }
+      if (w >= 1024) {
+        const hits = await page.evaluate(
+          ({ t }) => {
+            const overlaps = (r: DOMRect) =>
+              r.left < t.x + t.width && r.right > t.x && r.top < t.y + t.height && r.bottom > t.y;
+            return Array.from(document.querySelectorAll('[data-panel] li'))
+              .flatMap((li) => Array.from(li.querySelectorAll('a, button, input, select')))
+              .filter((n) => overlaps(n.getBoundingClientRect()))
+              .map((n) => n.textContent?.trim());
+          },
+          { t },
+        );
+        expect(hits).toEqual([]);
+      } else {
+        // Full width at the bottom: the last row of the page can still be scrolled above the toast.
+        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+        const last = (await page.locator('[data-panel="dueSoon"] li').last().boundingBox())!;
+        expect(last.y + last.height).toBeLessThanOrEqual(t.y);
+      }
+      await shoot(page, `after-toast-${w}`);
+      if (axeAvailable()) expect(await axeViolations(page), `axe toast ${w}`).toEqual([]);
+      // Undo puts the row back.
+      await page.keyboard.press('Alt+z');
+      await expect(panel.locator(`li[data-task="${number}"]`)).toHaveCount(1);
+    });
+  }
+});

@@ -2,7 +2,13 @@ import { convertToParamMap } from '@angular/router';
 import { buildChips, parseFilters } from '../../shared/filters/filter-def';
 import { queueFilterDefs } from '../../shared/filters/queue-defs';
 import { parseQueueState } from '../../shared/work-queue/queue-filters';
-import { queueArgsFor, queueParams, queueParamsSorted } from './dashboard-links';
+import {
+  DUE_SOON_CAPTION,
+  dueSoonThrough,
+  queueArgsFor,
+  queueParams,
+  queueParamsSorted,
+} from './dashboard-links';
 
 describe('queueParams', () => {
   it('turns repeated keys into arrays and single keys into strings', () => {
@@ -225,5 +231,17 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
     const state = parseQueueState(convertToParamMap(queueParams(query)));
     check(state);
     expect(chipLabels(query)).toEqual(chips);
+  });
+});
+
+describe('Due soon wording (S4)', () => {
+  it('is plain words for today and the next 2 days, and the last day comes from the query', () => {
+    expect(DUE_SOON_CAPTION).toBe('Today and the next 2 days, excludes ASAP');
+    expect(dueSoonThrough('status=NEW&asap=false&overdue=false&dueTo=2026-10-18')).toBe(
+      '2026-10-18',
+    );
+    expect(dueSoonThrough('status=NEW')).toBeNull();
+    expect(dueSoonThrough('dueTo=soon')).toBeNull();
+    expect(dueSoonThrough(null)).toBeNull();
   });
 });

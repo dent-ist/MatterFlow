@@ -3,6 +3,8 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { RouterLink } from '@angular/router';
 import { queueParams } from '../dashboard-links';
 
+let nextTileId = 0;
+
 /** `strong` is the neutral attention tone (a dark edge, no colour meaning); `asap` is the blue outlined ASAP treatment of the pattern standard. */
 export type TileTone = 'danger' | 'warning' | 'info' | 'strong' | 'asap' | 'neutral';
 
@@ -28,6 +30,8 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'strong' | 'asap' | 'neut
         [queryParams]="params()"
         [attr.data-emphasis]="emphasis()"
         [attr.data-tone]="activeTone()"
+        [attr.title]="hint()"
+        [attr.aria-describedby]="hint() ? hintId : null"
       >
         <ng-container *ngTemplateOutlet="body; context: { link: true }" />
       </a>
@@ -48,7 +52,7 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'strong' | 'asap' | 'neut
       </span>
       <span class="value">{{ value() }}</span>
       @if (caption(); as c) {
-        <span class="caption" [attr.title]="c">{{ c }}</span>
+        <span class="caption">{{ c }}</span>
       }
       @if (detail(); as d) {
         <span class="detail" data-detail>
@@ -57,6 +61,9 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'strong' | 'asap' | 'neut
           }
           <span>{{ d }}</span>
         </span>
+      }
+      @if (hint(); as h) {
+        <span class="sr-only" [id]="hintId" data-hint>{{ h }}</span>
       }
       @if (link) {
         <!-- Part of the link's name (what it opens, for voice control and screen readers); not drawn: the arrow and the hover say it. -->
@@ -151,12 +158,11 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'strong' | 'asap' | 'neut
       line-height: 1.1;
       font-variant-numeric: tabular-nums;
     }
+    /* Captions wrap (never an ellipsis): "Excludes ASAP tasks" must be readable at every width (WCAG 1.4.10). */
     .caption {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
       font-size: var(--mf-fs-xs);
       color: var(--mf-text-muted);
+      overflow-wrap: anywhere;
     }
     /* A second line that may wrap (the severity of the count): icon and words, so colour is never the only carrier. */
     .detail {
@@ -175,7 +181,8 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'strong' | 'asap' | 'neut
     [data-tone='danger'] .detail .pi {
       color: var(--mf-danger);
     }
-    .go {
+    .go,
+    .sr-only {
       position: absolute;
       width: 1px;
       height: 1px;
@@ -260,6 +267,9 @@ export class StatTile {
   /** The Task Queue query string (no leading `?`) behind the number. */
   readonly query = input.required<string>();
   readonly caption = input<string | null>(null);
+  /** Longer text for the tooltip and the accessible description of the link (for example the resolved end date of a window). */
+  readonly hint = input<string | null>(null);
+  protected readonly hintId = `mf-tile-hint-${nextTileId++}`;
   /** A second, wrapping line under the caption (for example "11 Critical, 30 High"), with an optional PrimeIcons class. */
   readonly detail = input<string | null>(null);
   readonly detailIcon = input<string | null>(null);

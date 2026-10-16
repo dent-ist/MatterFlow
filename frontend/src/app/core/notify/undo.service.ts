@@ -8,6 +8,8 @@ export interface UndoOffer {
   readonly id: number;
   readonly message: string;
   readonly undo: () => Promise<void>;
+  /** `start`: bottom left of the page (a screen whose right edge holds buttons); the default is the corner of the other toasts. */
+  readonly placement: 'end' | 'start';
 }
 
 /**
@@ -24,9 +26,13 @@ export class UndoService {
   private seq = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
 
-  offer(message: string, undo: () => Promise<void>): void {
+  offer(
+    message: string,
+    undo: () => Promise<void>,
+    options: { placement?: 'end' | 'start' } = {},
+  ): void {
     this.working.set(false);
-    this.current.set({ id: ++this.seq, message, undo });
+    this.current.set({ id: ++this.seq, message, undo, placement: options.placement ?? 'end' });
     this.start();
   }
 

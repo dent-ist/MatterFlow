@@ -37,6 +37,19 @@ export function queueArgsFor(query: string, sort: string, dir: 'asc' | 'desc', p
 export type ListKind = 'unassigned' | 'overdue' | 'dueSoon';
 
 /**
+ * The window of "Due soon": due today and the two days after it (three calendar days, due today counts as soon). One wording for the
+ * tile, the list and the "View all" link; plain words, not a date range, so a cached page never shows a stale date.
+ */
+export const DUE_SOON_WINDOW = 'Today and the next 2 days';
+export const DUE_SOON_CAPTION = `${DUE_SOON_WINDOW}, excludes ASAP`;
+
+/** The last day of the Due soon window (`dueTo` of its Task Queue query, `YYYY-MM-DD`), or null. */
+export function dueSoonThrough(query: string | null | undefined): string | null {
+  const to = queueParams(query)['dueTo'];
+  return typeof to === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(to) ? to : null;
+}
+
+/**
  * The order each dashboard list shows, and "View all" starts with: the unassigned queue by priority and then age (oldest first), the
  * overdue list by priority and then longest overdue (the queue's `priority` sort breaks ties by due date, oldest first), the due-soon list by due date (soonest first).
  */
@@ -46,7 +59,7 @@ export const LIST_ORDER: Record<
 > = {
   unassigned: { sort: 'priorityAge', dir: 'asc', note: 'Highest priority first, then oldest.' },
   overdue: { sort: 'priority', dir: 'asc', note: 'Critical first, then longest overdue.' },
-  dueSoon: { sort: 'due', dir: 'asc', note: null },
+  dueSoon: { sort: 'due', dir: 'asc', note: `${DUE_SOON_WINDOW}, soonest first.` },
 };
 
 /** The Task Queue query of every open, unassigned task (what the department sees, and what a person with Task.Assign picks work from). */

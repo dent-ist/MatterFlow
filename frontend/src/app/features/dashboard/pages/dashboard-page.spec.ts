@@ -336,21 +336,25 @@ describe('DashboardPage', () => {
     expect(el.textContent).not.toContain('refreshes every 5 minutes');
   });
 
-  it('lays Summary out as tiles beside the unassigned queue with Overdue and Due soon in a row below, in this order', async () => {
+  it('lays Summary out as tiles beside one column of lists (Unassigned, Overdue, Due soon), with no section headings', async () => {
     const el = await open();
     const panel = el.querySelector('[data-tabpanel="summary"] .summary')!;
     const parts = Array.from(panel.children).map((c) => c.className.split(' ')[0] || c.tagName);
-    expect(parts).toEqual(['summary-tiles', 'summary-main', 'summary-more']);
+    expect(parts).toEqual(['summary-tiles', 'summary-lists']);
     expect(
-      Array.from(panel.querySelectorAll('.summary-main [data-panel]')).map((p) =>
+      Array.from(panel.querySelectorAll('.summary-lists [data-panel]')).map((p) =>
         p.getAttribute('data-panel'),
       ),
-    ).toEqual(['unassigned']);
-    expect(
-      Array.from(panel.querySelectorAll('.summary-more [data-panel]')).map((p) =>
-        p.getAttribute('data-panel'),
-      ),
-    ).toEqual(['overdue', 'dueSoon']);
+    ).toEqual(['unassigned', 'overdue', 'dueSoon']);
+    // S8: the list headings carry the names; the old section names are gone.
+    expect(Array.from(panel.querySelectorAll('.summary-lists h3')).map((h) => text(h))).toEqual([
+      'Unassigned',
+      'Overdue',
+      'Due soon',
+    ]);
+    expect(panel.querySelector('[data-section]')).toBeNull();
+    expect(el.textContent).not.toContain('Tasks to act on');
+    expect(el.textContent).not.toContain('Deadlines');
     // The two tile groups are the first thing in the tile column: Needs attention, then Overview.
     expect(
       Array.from(panel.querySelectorAll('.summary-tiles > [data-group]')).map((g) =>
@@ -831,7 +835,7 @@ describe('DashboardPage', () => {
   it('lists the unassigned tasks by priority then age with reference, title, matter, priority, age and the assignee editor', async () => {
     const el = await open();
     const panel = el.querySelector('[data-panel="unassigned"]')!;
-    expect(text(panel.querySelector('h3'))).toBe('Unassigned queue');
+    expect(text(panel.querySelector('h3'))).toBe('Unassigned');
     expect(text(panel.querySelector('[data-order]'))).toBe('Highest priority first, then oldest.');
     expect(text(panel.querySelector('[data-total]'))).toBe('17');
     const row = panel.querySelector('li')!;
@@ -839,6 +843,16 @@ describe('DashboardPage', () => {
     expect(text(row.querySelector('.ref'))).toBe('TSK-21');
     expect(text(row.querySelector('.title'))).toBe('Unassigned intake');
     expect(text(row.querySelector('mf-matter-ref'))).toContain('00343-00012');
+    // Row content (S7): task type icon with its name, client (matter number and name in the tooltip), due chip when there is a date.
+    expect(row.querySelector('[data-type]')!.getAttribute('aria-label')).toBe(
+      unassignedRow.taskTypeName,
+    );
+    expect(text(row.querySelector('[data-client]'))).toContain(unassignedRow.clientName);
+    expect(row.querySelector('[data-client]')!.getAttribute('title')).toContain('00343-00012');
+    expect(text(row.querySelector('mf-row-edit [data-inline-trigger]'))).toBe('Assign to...');
+    expect(row.querySelector('mf-row-edit [data-inline-trigger]')!.getAttribute('aria-label')).toBe(
+      'Assign to... TSK-21',
+    );
     expect(row.querySelector('mf-priority-badge')!.textContent).toContain('Critical');
     expect(text(row.querySelector('[data-age]'))).toBe('10 days old');
     expect(row.querySelector('mf-row-edit [data-inline-trigger]')).not.toBeNull();
@@ -846,9 +860,9 @@ describe('DashboardPage', () => {
     expect(panel.querySelector<HTMLAnchorElement>('[data-view-all]')!.getAttribute('href')).toBe(
       '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true&sort=priorityAge&dir=asc',
     );
-    // The list asks the Task Queue for priority then age, 8 rows.
+    // The list asks the Task Queue for priority then age, 5 rows.
     const call = getTaskQueue.mock.calls.find((c) => c[6] === true)!;
-    expect(call.slice(27)).toEqual(['priorityAge', 'asc', 1, 8]);
+    expect(call.slice(27)).toEqual(['priorityAge', 'asc', 1, 5]);
   });
 
   it('keeps the tab stops down: a row has one link and its actions, the matter reference is plain text, and a list can be skipped', async () => {
@@ -868,9 +882,9 @@ describe('DashboardPage', () => {
 
     // "Skip ... list" is the first stop of a long list and moves focus to the next list's heading.
     const skip = el.querySelector<HTMLButtonElement>('[data-panel="unassigned"] [data-skip]')!;
-    expect(text(skip)).toBe('Skip Unassigned queue list');
+    expect(text(skip)).toBe('Skip Unassigned list');
     skip.click();
-    expect(document.activeElement).toBe(el.querySelector('[data-section="lists-more"] h2'));
+    expect(document.activeElement).toBe(el.querySelector('[data-panel="overdue"] h3'));
     // A one-row list has nothing to skip.
     expect(el.querySelector('[data-panel="overdue"] [data-skip]')).toBeNull();
   });
@@ -899,7 +913,7 @@ describe('DashboardPage', () => {
     const panel = () => el.querySelector('[data-panel="unassigned"]')!;
     const tile = () =>
       text(el.querySelector('[data-group="attention"] mf-stat-tile:nth-child(2) .value'));
-    expect(text(panel().querySelector('[data-more]'))).toBe('Showing 2 of 17.');
+    expect(text(panel().querySelector('[data-more]'))).toBe('Showing 2 of 17');
     expect(tile()).toBe('17');
 
     // The server's next answer (after the quiet period): one task fewer.
@@ -913,7 +927,7 @@ describe('DashboardPage', () => {
     expect(panel().querySelector('[data-task="TSK-21"]')).toBeNull();
     expect(panel().querySelectorAll('li').length).toBe(1);
     expect(text(panel().querySelector('[data-total]'))).toBe('16');
-    expect(text(panel().querySelector('[data-more]'))).toBe('Showing 1 of 16.');
+    expect(text(panel().querySelector('[data-more]'))).toBe('Showing 1 of 16');
     expect(tile()).toBe('16');
     // Focus did not fall to the body: it is on the row that took its place.
     expect(document.activeElement).toBe(panel().querySelector('li a.main'));
@@ -954,11 +968,13 @@ describe('DashboardPage', () => {
   it('lists overdue and due-soon tasks with their due dates and "View all" links to the sorted queue', async () => {
     const el = await open();
     const overdue = el.querySelector('[data-panel="overdue"]')!;
-    expect(text(overdue.querySelector('[data-due]'))).toContain('Oct 10, 2026');
     expect(text(overdue.querySelector('[data-due]'))).toContain('Overdue 4d');
-    // The list asks the Task Queue for priority then the most overdue (due ascending), 6 rows, filtered to overdue.
+    expect(overdue.querySelector('[data-due] [title]')!.getAttribute('title')).toContain(
+      'Oct 10, 2026',
+    );
+    // The list asks the Task Queue for priority then the most overdue (due ascending), 5 rows, filtered to overdue.
     const call = getTaskQueue.mock.calls.find((c) => c[18] === true)!;
-    expect(call.slice(27)).toEqual(['priority', 'asc', 1, 6]);
+    expect(call.slice(27)).toEqual(['priority', 'asc', 1, 5]);
     expect(text(overdue.querySelector('[data-order]'))).toBe(
       'Critical first, then longest overdue.',
     );
@@ -968,13 +984,45 @@ describe('DashboardPage', () => {
     );
 
     const soon = el.querySelector('[data-panel="dueSoon"]')!;
-    expect(text(soon.querySelector('[data-due]'))).toContain('Oct 15, 2026');
-    // Due within two days: a relative cue next to the date (today is Oct 14).
+    // Due within two days: the relative word instead of the date (today is Oct 14); the date is the tooltip.
+    expect(soon.querySelector('[data-due] [title]')!.getAttribute('title')).toContain(
+      'Oct 15, 2026',
+    );
     expect(text(soon.querySelector('[data-due]'))).toContain('Tomorrow');
     expect(
       soon.querySelector<HTMLAnchorElement>('[data-view-all]')!.getAttribute('href'),
     ).toContain('dueTo=2026-10-16&sort=due&dir=asc');
     expect(text(soon.querySelector('[data-total]'))).toBe('6');
+  });
+
+  it('words the tile captions so none is cut: Due soon is today and the next 2 days (S4), with the last day in the tooltip', async () => {
+    const el = await open();
+    const tiles = Array.from(el.querySelectorAll('mf-stat-tile'));
+    const caption = (label: string) =>
+      text(
+        tiles
+          .find((t) => text(t.querySelector('.label-text')) === label)!
+          .querySelector('.caption'),
+      );
+    expect(caption('Due soon')).toBe('Today and the next 2 days, excludes ASAP');
+    expect(caption('ASAP open')).toBe('No due date');
+    expect(caption('On hold')).toBe('Waiting on client, custodian or internal');
+    expect(caption('Overdue')).toBe('Excludes ASAP tasks');
+    const soon = tiles.find((t) => text(t.querySelector('.label-text')) === 'Due soon')!;
+    expect(text(soon.querySelector('[data-hint]'))).toBe(
+      'Today and the next 2 days, excludes ASAP, through Oct 16, 2026',
+    );
+    expect(soon.querySelector('a')!.getAttribute('aria-describedby')).toBe(
+      soon.querySelector('[data-hint]')!.id,
+    );
+    // The list says the same words (its note and the View all tooltip).
+    const list = el.querySelector('[data-panel="dueSoon"]')!;
+    expect(text(list.querySelector('[data-order]'))).toBe(
+      'Today and the next 2 days, soonest first.',
+    );
+    expect(list.querySelector('[data-view-all]')!.getAttribute('title')).toBe(
+      'View all tasks due soon: today and the next 2 days',
+    );
   });
 
   it('names only the severities that are overdue in the Overdue tile, and none when neither is', async () => {
