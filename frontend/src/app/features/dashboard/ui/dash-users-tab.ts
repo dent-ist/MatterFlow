@@ -238,6 +238,9 @@ export const USERS_PAGE = 200;
                 [thresholds]="board()?.thresholds ?? null"
                 [density]="density()"
                 [canAssign]="canAssign()"
+                [sort]="sort()"
+                [reversed]="sortReversed()"
+                (sortRequest)="setTableSort($event)"
                 (open)="openUser($event)"
                 (assign)="assignTo($event)"
               />
@@ -456,9 +459,12 @@ export class DashUsersTab implements OnInit {
 
   protected readonly canAssign = computed(() => this.auth.has('Task.Assign'));
   protected readonly filtered = computed(() => filterCount(this.filters()) > 0);
-  protected readonly users = computed(() =>
-    sortUsers(filterUsers(this.board()?.users ?? [], this.filters()), this.sort()),
-  );
+  /** The table header reverses the order of the chosen sort; the toolbar select resets it. */
+  protected readonly sortReversed = signal(false);
+  protected readonly users = computed(() => {
+    const sorted = sortUsers(filterUsers(this.board()?.users ?? [], this.filters()), this.sort());
+    return this.sortReversed() ? sorted.reverse() : sorted;
+  });
   /** A large department draws 200 people at a time (the page stays quick); Show more or Show all draws the rest. */
   protected readonly pageStep = USERS_PAGE;
   private readonly limit = signal(USERS_PAGE);
@@ -609,7 +615,14 @@ export class DashUsersTab implements OnInit {
     this.limit.set(Number.MAX_SAFE_INTEGER);
   }
 
+  /** A click on a table header: another column sorts by it, the same column reverses the order. */
+  protected setTableSort(request: { sort: UserSort; reversed: boolean }): void {
+    if (request.sort !== this.sort()) this.setSort(request.sort);
+    this.sortReversed.set(request.reversed);
+  }
+
   protected setSort(sort: UserSort): void {
+    this.sortReversed.set(false);
     this.limit.set(USERS_PAGE);
     this.prefs.remember({ sort });
     this.live.set(

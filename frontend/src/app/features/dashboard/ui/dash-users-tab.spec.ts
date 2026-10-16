@@ -82,6 +82,7 @@ describe('DashUsersTab', () => {
   let getQueue: ReturnType<typeof vi.fn>;
   let getCoverage: ReturnType<typeof vi.fn>;
   let tasks: Record<string, ReturnType<typeof vi.fn>>;
+  let getQueueRows: TaskQueueRow[];
   let harness: RouterTestingHarness;
   let host: HTMLElement;
 
@@ -108,7 +109,7 @@ describe('DashUsersTab', () => {
                 rowVersion: 'b',
               }),
             ])
-          : pageOf([unassigned(21, 1, 'Critical'), unassigned(22, 3, 'Normal')]),
+          : pageOf(getQueueRows),
       );
     });
     tasks = {
@@ -130,6 +131,22 @@ describe('DashUsersTab', () => {
           assignedUser: { userId: 3, displayName: 'Cy Tan', isActive: true },
           assignedPod: undefined,
           rowVersion: 'next',
+        }),
+      ),
+      assignTasksBatch: vi.fn((body: { items: { taskId: number }[] }) =>
+        of({
+          results: body.items.map((i) => ({
+            taskId: i.taskId,
+            succeeded: true,
+            task: {
+              taskId: i.taskId,
+              taskNumber: `TSK-${i.taskId}`,
+              status: 'IN_PROGRESS',
+              statusLabel: 'In Progress',
+              assignedUser: { userId: 3, displayName: 'Cy Tan', isActive: true },
+              rowVersion: 'next',
+            },
+          })),
         }),
       ),
       setTaskPriority: vi.fn(),
@@ -204,7 +221,9 @@ describe('DashUsersTab', () => {
   };
 
   beforeEach(() => {
+    getQueueRows = [unassigned(21, 1, 'Critical'), unassigned(22, 3, 'Normal')];
     try {
+      sessionStorage.removeItem('mf.users.assign.allPods');
       localStorage.clear();
     } catch {
       /* ignore */
@@ -595,6 +614,7 @@ describe('DashUsersTab', () => {
       const args = getQueue.mock.calls.at(-1)!;
       expect(args[1]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
       expect(args[6]).toBe(true);
+      expect(args[3]).toEqual([1]);
       expect(args[27]).toBe('priorityAge');
       expect(dialog().querySelectorAll('[data-assign-row]').length).toBe(2);
       expect(dialog().querySelector('[data-assign-hint]')).toBeNull();
@@ -672,12 +692,129 @@ describe('DashUsersTab', () => {
       await open();
       getQueue.mockReturnValue(of(pageOf([])));
       await openPicker('Cy Tan');
-      expect(text(dialog().querySelector('[data-assign-empty]'))).toContain('no unassigned tasks');
+      expect(text(dialog().querySelector('[data-assign-empty]'))).toContain(
+        "No unassigned tasks in Cy's pods. Show all pods",
+      );
       document.querySelector<HTMLButtonElement>('button[aria-label="Close assign work"]')!.click();
       await settle();
       getQueue.mockReturnValue(throwError(() => new Error('x')));
       await openPicker('Ann Lee');
       expect(dialog().querySelector('[data-assign-error]')).not.toBeNull();
+    });
+
+    it('shows every pod when the switch is on, and remembers the choice for the session', async () => {
+      try {
+        sessionStorage.removeItem('mf.users.assign.allPods');
+      } catch {
+        // no storage in this run
+      }
+      await open();
+      await openPicker('Cy Tan');
+      const toggle = dialog().querySelector<HTMLInputElement>('[data-assign-allpods]')!;
+      expect(toggle.checked).toBe(false);
+      toggle.click();
+      await settle();
+      expect(getQueue.mock.calls.at(-1)![3]).toBeUndefined();
+      expect(text(dialog().querySelector('[data-assign-order]'))).not.toContain('in Pod A');
+      document.querySelector<HTMLButtonElement>('button[aria-label="Close assign work"]')!.click();
+      await settle();
+      await openPicker('Cy Tan');
+      expect(dialog().querySelector<HTMLInputElement>('[data-assign-allpods]')!.checked).toBe(true);
+      dialog().querySelector<HTMLInputElement>('[data-assign-allpods]')!.click();
+      await settle();
+    });
+
+    it('lists every pod with a note when the person is in no pod', async () => {
+      await open(of(aBoard([aUser(9, 'Ben Grant', [0, 0, 0, 0], { pods: [] })])));
+      await openPicker('Ben Grant');
+      expect(getQueue.mock.calls.at(-1)![3]).toBeUndefined();
+      expect(text(dialog().querySelector('[data-assign-nopod]'))).toBe(
+        'Ben Grant is not in a pod.',
+      );
+      expect(dialog().querySelector('[data-assign-allpods]')).toBeNull();
+    });
+
+    it('shows the type, client and due chip of each row', async () => {
+      await open();
+      await openPicker('Cy Tan');
+      const row = dialog().querySelector('[data-assign-row]')!;
+      expect(row.querySelector('[data-type]')).not.toBeNull();
+      expect(row.querySelector('[data-client]')).not.toBeNull();
+    });
+
+    it('assigns the next 3 after a confirmation that lists them, in one request', async () => {
+      getQueueRows = [
+        unassigned(21, 1, 'Critical'),
+        unassigned(22, 2, 'High'),
+        unassigned(23, 3, 'Normal'),
+        unassigned(24, 3, 'Normal'),
+      ];
+      await open();
+      await openPicker('Cy Tan');
+      dialog().querySelector<HTMLButtonElement>('[data-assign-next]')!.click();
+      await settle();
+      expect(tasks['assignTasksBatch']).not.toHaveBeenCalled();
+      expect(text(dialog().querySelector('[data-assign-confirm]'))).toContain(
+        'Assign these 3 tasks to Cy Tan?',
+      );
+      expect(dialog().querySelectorAll('[data-confirm-row]').length).toBe(3);
+      dialog().querySelector<HTMLButtonElement>('[data-assign-confirm-ok]')!.click();
+      await settle();
+      expect(tasks['assignTasksBatch']).toHaveBeenCalledTimes(1);
+      const body = tasks['assignTasksBatch'].mock.calls[0][0];
+      expect(body.userId).toBe(3);
+      expect(body.items.map((i: { taskId: number }) => i.taskId)).toEqual([21, 22, 23]);
+      expect(text(dialog().querySelector('[data-assign-live]'))).toBe(
+        '3 tasks assigned to Cy Tan.',
+      );
+      expect(TestBed.inject(UndoService).current()!.message).toContain(
+        '3 tasks assigned to Cy Tan',
+      );
+    });
+
+    it('repeats the heavy-load warning in the confirmation and caps selected rows at 10', async () => {
+      getQueueRows = Array.from({ length: 12 }, (_, i) => unassigned(30 + i, 3, 'Normal'));
+      await open();
+      await openPicker('Hal Moe');
+      expect(dialog().querySelector('[data-assign-hint]')).not.toBeNull();
+      const checks = [...dialog().querySelectorAll<HTMLInputElement>('[data-assign-check]')];
+      for (const c of checks.slice(0, 10)) c.click();
+      await settle();
+      expect(checks[10].disabled).toBe(true);
+      expect(text(dialog().querySelector('[data-assign-selected]'))).toBe('Assign 10 selected');
+      dialog().querySelector<HTMLButtonElement>('[data-assign-selected]')!.click();
+      await settle();
+      expect(text(dialog().querySelector('[data-assign-confirm-hint]'))).toContain('heavy load');
+    });
+
+    it('keeps the tasks that were assigned and lists the one that failed', async () => {
+      getQueueRows = [unassigned(21, 1, 'Critical'), unassigned(22, 2, 'High')];
+      await open();
+      tasks['assignTasksBatch'].mockReturnValue(
+        of({
+          results: [
+            {
+              taskId: 21,
+              succeeded: true,
+              task: {
+                taskId: 21,
+                taskNumber: 'TSK-21',
+                status: 'IN_PROGRESS',
+                statusLabel: 'In Progress',
+                rowVersion: 'n',
+              },
+            },
+            { taskId: 22, succeeded: false, errorCode: 'CONCURRENCY_CONFLICT', message: 'x' },
+          ],
+        }),
+      );
+      await openPicker('Cy Tan');
+      dialog().querySelector<HTMLButtonElement>('[data-assign-next]')!.click();
+      await settle();
+      dialog().querySelector<HTMLButtonElement>('[data-assign-confirm-ok]')!.click();
+      await settle();
+      expect(text(dialog().querySelector('[data-assign-failures]'))).toContain('TSK-22');
+      expect(text(dialog().querySelector('[data-assign-live]'))).toBe('1 task assigned to Cy Tan.');
     });
 
     it('is not offered without the Assign permission', async () => {

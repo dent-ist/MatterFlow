@@ -623,6 +623,29 @@ public sealed class TaskService
         return assigned.IsFailure ? assigned.Error! : await _presenter.GetAsync(taskId, assigned.Value, ct);
     }
 
+    /// <summary>
+    /// Assigns up to 10 tasks to one user, one ordinary assignment each (own transaction, own audit entries, New starts). A task that fails
+    /// (changed meanwhile, closed, gone) is reported in its result and the others are kept.
+    /// </summary>
+    public async Task<Result<AssignTasksBatchResponse>> AssignBatchAsync(AssignTasksBatchRequest request, CancellationToken ct)
+    {
+        if (request.Items.Count is < 1 or > AssignTasksBatchRequest.MaxItems)
+            return Error.Validation("items", "OUT_OF_RANGE", $"Select between 1 and {AssignTasksBatchRequest.MaxItems} tasks.");
+        if (request.Items.Select(i => i.TaskId).Distinct().Count() != request.Items.Count)
+            return Error.Validation("items", "DUPLICATE", "A task can appear only once.");
+
+        var results = new List<AssignTaskBatchResult>(request.Items.Count);
+        foreach (var item in request.Items)
+        {
+            var one = await AssignAsync(item.TaskId, new AssignTaskRequest { RowVersion = item.RowVersion, PodId = item.PodId, UserId = request.UserId }, ct);
+            results.Add(one.IsFailure
+                ? new AssignTaskBatchResult(item.TaskId, false, null, one.Error!.Code, one.Error.Message)
+                : new AssignTaskBatchResult(item.TaskId, true, one.Value, null, null));
+        }
+
+        return new AssignTasksBatchResponse(results);
+    }
+
     private async Task<Result<CommandNotes>> AssignCoreAsync(long taskId, AssignTaskRequest request, CancellationToken ct)
     {
         var task = await _tx.LockTaskAsync(taskId, ct);

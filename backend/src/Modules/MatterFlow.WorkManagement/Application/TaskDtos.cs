@@ -305,6 +305,35 @@ public sealed class AssignTaskRequest
     public int? UserId { get; init; }
 }
 
+/// <summary>One task of an <see cref="AssignTasksBatchRequest"/>: its id, the row version the caller saw and the Pod to keep (as in a single assignment).</summary>
+public sealed class AssignTaskBatchItem
+{
+    [Range(1, long.MaxValue)]
+    public long TaskId { get; init; }
+
+    [Required]
+    public string RowVersion { get; init; } = string.Empty;
+
+    public int? PodId { get; init; }
+}
+
+/// <summary>Assigns up to <see cref="MaxItems"/> tasks to one user. Each task is an ordinary assignment (own transaction, audit and auto-start); a failure does not undo the others.</summary>
+public sealed class AssignTasksBatchRequest
+{
+    public const int MaxItems = 10;
+
+    [Range(1, int.MaxValue)]
+    public int UserId { get; init; }
+
+    [Required, MinLength(1), MaxLength(MaxItems)]
+    public List<AssignTaskBatchItem> Items { get; init; } = [];
+}
+
+/// <summary>The outcome of one task of a batch: the updated task, or why it was not assigned (<c>CONCURRENCY_CONFLICT</c>, <c>TASK_NOT_EDITABLE</c>, <c>NOT_FOUND</c>...).</summary>
+public sealed record AssignTaskBatchResult(long TaskId, bool Succeeded, TaskResponse? Task, string? ErrorCode, string? Message);
+
+public sealed record AssignTasksBatchResponse(IReadOnlyList<AssignTaskBatchResult> Results);
+
 /// <summary>Sets the priority.</summary>
 public sealed class SetTaskPriorityRequest
 {

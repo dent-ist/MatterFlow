@@ -195,6 +195,11 @@ export async function seedWorkload(
     unassignedTitles.push(title);
     await seed.task({ ...world, matter }, { title, priorityId: priorities[n].id });
   }
+  // One unassigned task that belongs to Pod A: the assign picker lists it by default for people in that pod.
+  await seed.task(
+    { ...world, matter },
+    { title: `PodA backlog ${tag}`, priorityId: priorities[3].id, assignedPodId: podA.podId },
+  );
   void client;
   return { tag, priorities, people, podA, podB, unassignedTitles, world };
 }

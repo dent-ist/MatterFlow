@@ -101,6 +101,7 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
       [loading]="loading()"
       [busy]="busy()"
       [outlined]="assignMe()"
+      [icon]="triggerIcon()"
       [footnote]="footnote()"
       (opened)="onOpened()"
       (searched)="onSearch($event)"
@@ -180,6 +181,8 @@ export class RowEdit {
   readonly assignMe = input(false);
   /** Assignee cell only: the visible text of the trigger while nobody is assigned ("Assign to..." in the Dashboard lists, so "Unassigned" is not repeated on every row). */
   readonly emptyLabel = input('Unassigned');
+  /** Assignee cell only: shows this PrimeIcons class (for example `pi-user-edit`) as an icon button named "Reassign <number>" instead of the assignee's name. */
+  readonly triggerIcon = input<string | null>(null);
   /** Where the Undo toast of a change is shown: `start` (bottom left of the page) keeps it off a right-aligned column of buttons. */
   readonly toastPlacement = input<'end' | 'start'>('end');
   readonly rowChange = output<TaskQueueRow>();
@@ -211,6 +214,7 @@ export class RowEdit {
       case 'priority':
         return `${r.priority.label}, change priority of ${r.taskNumber}`;
       case 'assignee': {
+        if (this.triggerIcon()) return `Reassign ${r.taskNumber}`;
         const user = r.assignedUser;
         if (!user && this.emptyLabel() !== 'Unassigned') {
           // Starts with the visible text (WCAG 2.5.3) and carries the task number.

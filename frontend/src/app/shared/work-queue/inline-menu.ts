@@ -43,6 +43,7 @@ let nextId = 0;
       type="button"
       class="im-trigger"
       [class.im-outlined]="outlined()"
+      [class.im-icon]="!!icon()"
       data-inline-trigger
       aria-haspopup="true"
       [attr.aria-expanded]="open()"
@@ -53,12 +54,16 @@ let nextId = 0;
       (click)="toggle($event)"
       (keydown)="onTriggerKey($event)"
     >
-      <span class="im-value"><ng-content /></span>
-      <i
-        class="pi"
-        [class]="busy() ? 'pi-spin pi-spinner' : 'pi-chevron-down'"
-        aria-hidden="true"
-      ></i>
+      @if (icon(); as glyph) {
+        <i class="pi" [class]="busy() ? 'pi-spin pi-spinner' : glyph" aria-hidden="true"></i>
+      } @else {
+        <span class="im-value"><ng-content /></span>
+        <i
+          class="pi"
+          [class]="busy() ? 'pi-spin pi-spinner' : 'pi-chevron-down'"
+          aria-hidden="true"
+        ></i>
+      }
     </button>
     @if (open()) {
       <div
@@ -170,6 +175,12 @@ let nextId = 0;
       border-color: var(--mf-border-strong);
       background: var(--mf-surface-alt);
     }
+    /* Icon-only trigger (a row action such as Reassign): a 24 px minimum target. */
+    .im-trigger.im-icon {
+      justify-content: center;
+      min-width: 1.75rem;
+      padding: 0;
+    }
     .im-trigger[aria-disabled='true'] {
       cursor: progress;
       opacity: 0.7;
@@ -274,6 +285,8 @@ export class InlineMenu implements OnDestroy {
   readonly busy = input(false);
   /** Draws the trigger with a border at rest (it is the main action of a list, not a value in a table cell). */
   readonly outlined = input(false);
+  /** A PrimeIcons class (for example `pi-user-edit`): the trigger is then this icon alone, with `label` as its accessible name. */
+  readonly icon = input<string | null>(null);
   /** A line under the options, for example why the list is limited. */
   readonly footnote = input<string | null>(null);
 

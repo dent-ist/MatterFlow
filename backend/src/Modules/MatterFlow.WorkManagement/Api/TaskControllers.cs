@@ -93,6 +93,16 @@ public class TasksController(TaskService tasks, TaskLifecycleService lifecycle) 
     public async Task<ActionResult<TaskResponse>> Assign(long taskId, [FromBody] AssignTaskRequest request, CancellationToken cancellationToken) =>
         (await tasks.AssignAsync(taskId, request, cancellationToken)).OrThrow();
 
+    /// <summary>
+    /// Assigns at most 10 tasks to one user in one request (the Users tab's "Assign the next 3" and checked rows). Every task is an ordinary
+    /// assignment with its own audit entries and auto-start; the response lists the result per task and a failed task does not undo the others.
+    /// </summary>
+    [HttpPost("assign-batch", Name = "AssignTasksBatch")]
+    [Authorize(Policy = TaskPolicies.Assign)]
+    [ProducesResponseType<AssignTasksBatchResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<AssignTasksBatchResponse>> AssignBatch([FromBody] AssignTasksBatchRequest request, CancellationToken cancellationToken) =>
+        (await tasks.AssignBatchAsync(request, cancellationToken)).OrThrow();
+
     /// <summary>Sets the priority of a Task that is New, In Progress or On Hold.</summary>
     [HttpPost("{taskId:long}/priority", Name = "SetTaskPriority")]
     [Authorize(Policy = TaskPolicies.SetPriority)]

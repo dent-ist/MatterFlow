@@ -28,12 +28,13 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { describeDue } from '../../../core/time/time';
 import { DialogFocus } from '../../../shared/ui/dialog-focus';
 import { ErrorReference } from '../../../shared/ui/error-reference';
-import { MatterRef } from '../../../shared/ui/matter-ref';
+import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { StatusBadge } from '../../../shared/ui/status-badge';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { emptyState, queueArgs } from '../../../shared/work-queue/queue-filters';
+import { DueChip } from '../ui/due-chip';
 import { backOnText } from './users-card';
 import {
   LOAD_ICONS,
@@ -47,7 +48,29 @@ import {
 type LoadState = 'loading' | 'ready' | 'error';
 
 /** How many open tasks the drawer lists (most urgent first); "Open in Task Queue" has all of them. */
-export const DRAWER_PAGE = 50;
+export const DRAWER_PAGE = 100;
+
+/** Overdue first, then priority (the list's own order), then the earliest due date; tasks without one last. Stable for equal keys. */
+export function drawerOrder(
+  rows: readonly TaskQueueRow[],
+  now: Date,
+  zone: string,
+): TaskQueueRow[] {
+  const key = (r: TaskQueueRow) => {
+    const d = describeDue(r, now, zone, r.status);
+    return {
+      overdue: d.overdue ? 0 : 1,
+      prio: r.priority.sortOrder,
+      due: r.isAsap ? 0 : Date.parse(r.dueAtUtc ?? r.dueDate ?? '') || Number.MAX_SAFE_INTEGER,
+    };
+  };
+  return rows
+    .map((r, i) => ({ r, i, k: key(r) }))
+    .sort(
+      (a, b) => a.k.overdue - b.k.overdue || a.k.prio - b.k.prio || a.k.due - b.k.due || a.i - b.i,
+    )
+    .map((x) => x.r);
+}
 
 const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
 
@@ -66,7 +89,8 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
     RowEdit,
     PriorityBadge,
     StatusBadge,
-    MatterRef,
+    TaskTypeIcon,
+    DueChip,
     ErrorReference,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -148,6 +172,10 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
                 <span class="muted">({{ total() }})</span>
               }
             </h3>
+            @if (state() === 'ready' && rows().length > 1) {
+              <p class="muted order" data-drawer-order>Overdue first, then priority.</p>
+            }
+            <p class="sr-only" role="status" aria-live="polite" data-drawer-live>{{ live() }}</p>
             @switch (state()) {
               @case ('loading') {
                 <div class="bones" role="status" aria-busy="true">
@@ -191,9 +219,25 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
                           <a class="ref mf-ref" [routerLink]="['/tasks', r.taskId]">{{
                             r.taskNumber
                           }}</a>
+                          <span
+                            class="type"
+                            role="img"
+                            data-type
+                            [attr.aria-label]="r.taskTypeName"
+                            [attr.title]="r.taskTypeName"
+                          >
+                            <mf-task-type-icon [iconKey]="r.taskTypeIconKey" size="sm" />
+                          </span>
                           <span class="title" [attr.title]="r.title">{{ r.title }}</span>
                         </div>
                         <div class="meta">
+                          <span class="field" data-field="status">
+                            @if (editable('status', r)) {
+                              <mf-row-edit field="status" [row]="r" (rowChange)="onRow($event)" />
+                            } @else {
+                              <mf-status-badge [code]="r.status" [label]="r.statusLabel" />
+                            }
+                          </span>
                           <span class="field" data-field="priority">
                             @if (editable('priority', r)) {
                               <mf-row-edit field="priority" [row]="r" (rowChange)="onRow($event)" />
@@ -205,21 +249,18 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
                               />
                             }
                           </span>
-                          <span class="field" data-field="status">
-                            @if (editable('status', r)) {
-                              <mf-row-edit field="status" [row]="r" (rowChange)="onRow($event)" />
-                            } @else {
-                              <mf-status-badge [code]="r.status" [label]="r.statusLabel" />
-                            }
-                          </span>
-                          <mf-matter-ref [value]="r.matterRef" [copy]="false" />
-                          <span class="due" [class.due--overdue]="dueOf(r).overdue">{{
-                            dueText(r)
-                          }}</span>
+                          @if (r.dueDate || r.dueAtUtc || r.isAsap) {
+                            <mf-due-chip data-due [due]="r" [status]="r.status" />
+                          }
                         </div>
                         @if (editable('assignee', r)) {
-                          <div class="field assignee" data-field="assignee">
-                            <mf-row-edit field="assignee" [row]="r" (rowChange)="onRow($event)" />
+                          <div class="reassign" data-field="assignee" data-reassign>
+                            <mf-row-edit
+                              field="assignee"
+                              triggerIcon="pi-user-edit"
+                              [row]="r"
+                              (rowChange)="onRow($event)"
+                            />
                           </div>
                         }
                       </li>
@@ -324,8 +365,23 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
       padding: 0;
       list-style: none;
     }
+    .order {
+      margin: 0 0 var(--mf-s2);
+    }
+    .type {
+      flex: none;
+      display: inline-flex;
+      align-self: center;
+      color: var(--mf-text-muted);
+    }
+    .reassign {
+      grid-row: 1 / span 2;
+      grid-column: 2;
+      align-self: center;
+    }
     .row {
       display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: var(--mf-s1);
       padding: var(--mf-s2) var(--mf-s3);
       background: var(--mf-surface);
@@ -433,6 +489,7 @@ export class UsersDrawer {
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<TaskQueueRow[]>([]);
   protected readonly total = signal(0);
+  protected readonly live = signal('');
   protected readonly visible = computed(() => this.user() !== null);
   protected readonly canAssign = computed(() => this.auth.has('Task.Assign'));
   protected readonly avail = computed(() =>
@@ -491,7 +548,7 @@ export class UsersDrawer {
         const run = () => firstValueFrom(this.queue.getTaskQueue(...queueArgs(state)));
         const page = await (quiet ? this.quiet.run(run) : run());
         if (this.destroyed || seq !== this.seq) return;
-        this.rows.set(page.items);
+        this.rows.set(drawerOrder(page.items, this.clock.now(), this.zone));
         this.total.set(page.total);
         this.state.set('ready');
       } catch {
@@ -529,6 +586,9 @@ export class UsersDrawer {
     if (committed && !stays) {
       this.rows.set(list.filter((r) => r.taskId !== next.taskId));
       this.total.update((n) => Math.max(0, n - 1));
+      if (next.assignedUser && next.assignedUser.userId !== id) {
+        this.live.set(`${next.taskNumber} reassigned to ${next.assignedUser.displayName}`);
+      }
       this.focusAfter(at);
     } else {
       this.rows.set(list.map((r) => (r.taskId === next.taskId ? next : r)));
@@ -540,12 +600,15 @@ export class UsersDrawer {
     afterNextRender(
       () => {
         const active = document.activeElement;
-        if (active && active !== document.body && !active.closest('.p-dialog-mask')) return;
+        // Focus the user already moved elsewhere inside the drawer stays; a removed row, the body or a closing menu hands it on.
+        if (active?.isConnected && active.closest('.mf-users-drawer [data-task-id]')) return;
         const rows = [...document.querySelectorAll<HTMLElement>('.mf-users-drawer [data-task-id]')];
+        const row = rows[Math.min(index, rows.length - 1)];
+        // Reassign first, then any inline control, then the number link (a comma selector would pick the first in document order).
         const target =
-          rows[Math.min(index, rows.length - 1)]?.querySelector<HTMLElement>(
-            '[data-inline-trigger], a',
-          ) ??
+          row?.querySelector<HTMLElement>('[data-reassign] [data-inline-trigger]') ??
+          row?.querySelector<HTMLElement>('[data-inline-trigger]') ??
+          row?.querySelector<HTMLElement>('a') ??
           document.querySelector<HTMLElement>(
             '.mf-users-drawer button[aria-label="Close person details"]',
           );

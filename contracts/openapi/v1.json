@@ -4707,6 +4707,46 @@
         }
       }
     },
+    "/api/v1/tasks/assign-batch": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "operationId": "AssignTasksBatch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignTasksBatchRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignTasksBatchRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignTasksBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignTasksBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tasks/{taskId}/priority": {
       "post": {
         "tags": [
@@ -8526,6 +8566,71 @@
           }
         }
       },
+      "AssignTaskBatchItem": {
+        "required": [
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "maximum": 9223372036854776000,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int64"
+          },
+          "rowVersion": {
+            "type": "string"
+          },
+          "podId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "AssignTaskBatchResult": {
+        "required": [
+          "taskId",
+          "succeeded",
+          "task",
+          "errorCode",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "succeeded": {
+            "type": "boolean"
+          },
+          "task": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskResponse"
+              }
+            ]
+          },
+          "errorCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AssignTaskRequest": {
         "required": [
           "rowVersion"
@@ -8548,6 +8653,42 @@
               "integer"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "AssignTasksBatchRequest": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "maxItems": 10,
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssignTaskBatchItem"
+            }
+          }
+        }
+      },
+      "AssignTasksBatchResponse": {
+        "required": [
+          "results"
+        ],
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssignTaskBatchResult"
+            }
           }
         }
       },

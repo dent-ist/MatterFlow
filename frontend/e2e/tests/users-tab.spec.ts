@@ -433,6 +433,11 @@ test.describe('Users tab: workload', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.locator('[data-assign-hint]')).toHaveCount(0);
     await expect(dialog.locator('[data-assign-order]')).toContainText('highest priority first');
+    // Default: the unassigned tasks of the person's pods only (#132); the switch shows everything.
+    await expect(dialog.locator('[data-assign-row]')).toHaveCount(1);
+    await expect(dialog.locator('[data-assign-row]').first()).toContainText(`PodA backlog`);
+    await expect(dialog.locator('[data-assign-row] [data-type]').first()).toBeVisible();
+    await dialog.locator('[data-assign-allpods]').check();
     await dialog
       .getByRole('searchbox', { name: 'Search unassigned tasks' })
       .fill(`Unassigned ${wl.tag}`);
@@ -475,6 +480,192 @@ test.describe('Users tab: workload', () => {
     await expect(page.locator('[data-assign-hint]')).toContainText(
       'already has a heavy load (12 open tasks, more than 8)',
     );
+  });
+
+  test('the table fits 1366 and 1920 without sideways scroll, sorts by its headers and follows the toolbar', async ({
+    page,
+  }) => {
+    for (const width of [1366, 1920]) {
+      await page.setViewportSize({ width, height: 768 });
+      await openUsers(page);
+      await page.getByRole('button', { name: 'Table' }).click();
+      const table = page.locator('[data-users-table]');
+      await expect(table).toBeVisible();
+      const fits = await table.evaluate((t) => t.scrollWidth <= t.parentElement!.clientWidth);
+      expect(fits, `${width}px`).toBe(true);
+      await expect(page.locator('[data-sort-key="load"]')).toBeInViewport();
+      await expect(page.locator('[data-assign-work]').first()).toBeInViewport();
+      await page.getByRole('button', { name: 'Cards' }).click();
+    }
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.getByRole('button', { name: 'Table' }).click();
+    const openers = (t: Locator) => t.locator('tbody td.num.strong');
+    const table = page.locator('[data-users-table]');
+    // One stacked cell per person, with the words in its accessible text.
+    await expect(table.locator('[data-priority-counts] .sr-only').first()).toHaveText(
+      /^\d+ \w+(, \d+ \w+){3}$/,
+    );
+    await expect(table.locator('thead th', { hasText: /^Critical$/ })).toHaveCount(0);
+    const sortSelect = page.getByLabel('Sort', { exact: true });
+    const header = table.locator('thead th', { has: page.locator('[data-sort-key="open"]') });
+    await page.locator('[data-sort-key="open"]').click();
+    await expect(header).toHaveAttribute('aria-sort', 'descending');
+    await expect(sortSelect).toHaveValue('open');
+    const desc = (await openers(table).allTextContents()).map(Number);
+    expect(desc).toEqual([...desc].sort((a, b) => b - a));
+    await page.locator('[data-sort-key="open"]').click();
+    await expect(header).toHaveAttribute('aria-sort', 'ascending');
+    const asc = (await openers(table).allTextContents()).map(Number);
+    expect(asc).toEqual([...asc].sort((a, b) => a - b));
+    // Keyboard: a header is a button.
+    await page.locator('[data-sort-key="name"]').focus();
+    await page.keyboard.press('Enter');
+    await expect(sortSelect).toHaveValue('name');
+    await expect(
+      table.locator('thead th', { has: page.locator('[data-sort-key="name"]') }),
+    ).toHaveAttribute('aria-sort', 'ascending');
+    await expect(header).toHaveAttribute('aria-sort', 'none');
+  });
+
+  test('below 900 px the table scrolls sideways and keeps the person column in view', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await openUsers(page);
+    await page.getByRole('button', { name: 'Table' }).click();
+    const wrap = page.locator('[data-users-table]').locator('xpath=..');
+    await expect(wrap).toBeVisible();
+    await wrap.evaluate((el) => (el.scrollLeft = 300));
+    const person = page.locator('[data-users-table] tbody th.person').first();
+    const w = (await wrap.boundingBox())!;
+    const p = (await person.boundingBox())!;
+    expect(p.x).toBeGreaterThanOrEqual(w.x - 1);
+    expect(p.x + p.width).toBeLessThanOrEqual(w.x + w.width);
+  });
+
+  test('the drawer rows have a Reassign icon instead of an assignee menu, list overdue first and reassign with focus, announcement and Undo', async ({
+    page,
+  }) => {
+    await openUsers(page);
+    const heavy = card(page, 'heavy');
+    await heavy.locator('[data-user-open]').click();
+    const drawer = page.locator('[data-users-drawer]');
+    const rows = drawer.locator('[data-drawer-tasks] li');
+    await expect(rows).toHaveCount(12);
+    await expect(drawer.locator('[data-drawer-order]')).toHaveText('Overdue first, then priority.');
+    await expect(drawer.getByRole('button', { name: /^Reassign / })).toHaveCount(12);
+    await expect(
+      drawer.locator('[data-field="assignee"] [data-inline-trigger]').first(),
+    ).not.toContainText(person('heavy').displayName);
+    // Overdue tasks come first and say so in text.
+    await expect(rows.first()).toContainText('Overdue');
+    const firstOverdueFlags = await rows.evaluateAll((els) =>
+      els.map((e) => /Overdue/.test(e.textContent ?? '')),
+    );
+    const firstNonOverdue = firstOverdueFlags.indexOf(false);
+    expect(firstOverdueFlags.slice(firstNonOverdue).some(Boolean)).toBe(false);
+    // Target size.
+    const size = (await drawer
+      .getByRole('button', { name: /^Reassign / })
+      .first()
+      .boundingBox())!;
+    expect(size.width).toBeGreaterThanOrEqual(24);
+    expect(size.height).toBeGreaterThanOrEqual(24);
+
+    const ref = (await rows.first().locator('.mf-ref').first().textContent())!.trim();
+    await drawer.getByRole('button', { name: `Reassign ${ref}` }).click();
+    await page.getByRole('textbox', { name: 'Search people' }).fill(person('idle').displayName);
+    await page.getByRole('menuitemradio', { name: person('idle').displayName }).click();
+    await expect(drawer.locator('[data-drawer-live]')).toContainText(
+      `${ref} reassigned to ${person('idle').displayName}`,
+    );
+    await expect(rows).toHaveCount(11);
+    await expect(heavy.locator('[data-open-total]')).toHaveText('11', { timeout: 15_000 });
+    await expect(rows.first().getByRole('button', { name: /^Reassign / })).toBeFocused();
+    await page.getByRole('button', { name: 'Undo' }).click();
+    await expect(heavy.locator('[data-open-total]')).toHaveText('12', { timeout: 15_000 });
+  });
+
+  test('"Assign the next 3" asks first, repeats the warning, assigns three in one request and Undo restores them', async ({
+    page,
+  }) => {
+    await openUsers(page);
+    await card(page, 'heavyCritical').locator('[data-assign-work]').click();
+    const dialog = page.locator('[data-assign-dialog]');
+    await expect(dialog).toBeVisible();
+    await dialog.locator('[data-assign-allpods]').check();
+    await dialog.locator('[data-assign-next]').click();
+    const confirm = dialog.locator('[data-assign-confirm]');
+    await expect(confirm).toContainText('Assign these 3 tasks to');
+    await expect(confirm.locator('[data-confirm-row]')).toHaveCount(3);
+    await expect(confirm.locator('[data-assign-confirm-hint]')).toContainText('heavy load');
+    await dialog.locator('[data-assign-confirm-back]').click();
+    await expect(confirm).toHaveCount(0);
+    await page.keyboard.press('Escape');
+
+    await card(page, 'idle').locator('[data-assign-work]').click();
+    await dialog.locator('[data-assign-allpods]').check();
+    await dialog
+      .getByRole('searchbox', { name: 'Search unassigned tasks' })
+      .fill(`Unassigned ${wl.tag}`);
+    await expect(dialog.locator('[data-assign-row]')).toHaveCount(4);
+    // Other picks: the selection button counts the checked rows.
+    await dialog.locator('[data-assign-check]').nth(3).check();
+    await expect(dialog.locator('[data-assign-selected]')).toHaveText('Assign 1 selected');
+    await dialog.locator('[data-assign-check]').nth(3).uncheck();
+    await dialog.locator('[data-assign-next]').click();
+    await expect(dialog.locator('[data-assign-confirm-hint]')).toHaveCount(0);
+    const refs = await dialog
+      .locator('[data-confirm-row]')
+      .evaluateAll((els) => els.map((e) => e.getAttribute('data-confirm-row')!));
+    expect(refs).toHaveLength(3);
+    await dialog.locator('[data-assign-confirm-ok]').click();
+    await expect(page.getByText(/3 tasks assigned to/).first()).toBeVisible();
+    for (const n of [1, 2, 3]) {
+      const found = await (
+        await page.request.get(
+          `/api/v1/task-queue?q=${encodeURIComponent(`Unassigned ${wl.tag} ${n}`)}`,
+        )
+      ).json();
+      expect(found.items[0].assignedUser.userId).toBe(person('idle').userId);
+      expect(found.items[0].status).toBe('IN_PROGRESS');
+    }
+    await page.keyboard.press('Escape');
+    await expect(card(page, 'idle').locator('[data-open-total]')).toHaveText('3', {
+      timeout: 15_000,
+    });
+    await page.getByRole('button', { name: 'Undo' }).click();
+    await expect(card(page, 'idle')).toHaveAttribute('data-state', 'free', { timeout: 15_000 });
+  });
+
+  test('screenshots of the table, drawer and picker (only with WP10B_SHOTS=<directory>)', async ({
+    page,
+  }) => {
+    const dir = process.env['WP10B_SHOTS'];
+    test.skip(!dir, 'set WP10B_SHOTS to a directory to write the screenshots');
+    test.setTimeout(300_000);
+    for (const [width, height] of [
+      [1366, 768],
+      [1920, 1080],
+      [375, 812],
+    ]) {
+      await page.setViewportSize({ width, height });
+      await openUsers(page);
+      await page.getByRole('button', { name: 'Table' }).click();
+      await expect(page.locator('[data-users-table]')).toBeVisible();
+      await page.screenshot({ path: `${dir}/users-table-${width}.png` });
+      await page.getByRole('button', { name: 'Cards' }).click();
+      await card(page, 'heavy').locator('[data-user-open]').click();
+      await expect(page.locator('[data-drawer-tasks] li').first()).toBeVisible();
+      await page.screenshot({ path: `${dir}/users-drawer-${width}.png` });
+      await page.locator('[data-drawer-assign]').click();
+      await page.locator('[data-assign-dialog] [data-assign-allpods]').check();
+      await expect(page.locator('[data-assign-row]').first()).toBeVisible();
+      await page.screenshot({ path: `${dir}/users-assign-${width}.png` });
+      await page.locator('[data-assign-next]').click();
+      await expect(page.locator('[data-assign-confirm]')).toBeVisible();
+      await page.screenshot({ path: `${dir}/users-assign-confirm-${width}.png` });
+    }
   });
 
   test('the legend explains the colours, the marks, the load levels and what the view is not', async ({
@@ -522,26 +713,42 @@ test.describe('Users tab: workload', () => {
     expect(b.x + b.width).toBeLessThanOrEqual(375);
   });
 
-  test('has no axe violations on the cards, the table, the drawer and the picker', async ({
+  test('has no axe violations on the cards, the table, the drawer and the picker at 1366, 1920 and 375', async ({
     page,
   }) => {
     test.skip(!axeAvailable(), 'axe-core not installed (set E2E_AXE_PATH to axe.min.js)');
-    test.setTimeout(300_000);
-    await openUsers(page);
-    expect(await axeViolations(page)).toEqual([]);
-    await page.getByRole('button', { name: 'Legend and help' }).click();
-    expect(await axeViolations(page)).toEqual([]);
-    await page.getByRole('button', { name: 'Table' }).click();
-    await expect(page.locator('[data-users-table]')).toBeVisible();
-    expect(await axeViolations(page)).toEqual([]);
-    await page.getByRole('button', { name: 'Cards' }).click();
-    await card(page, 'heavy').locator('[data-user-open]').click();
-    await expect(page.locator('[data-drawer-tasks] li').first()).toBeVisible();
-    // A modal drawer makes the page behind it inert, so the dialogs are checked on their own.
-    expect(await axeViolations(page, '.mf-users-drawer')).toEqual([]);
-    await page.locator('[data-drawer-assign]').click();
-    await expect(page.locator('[data-assign-dialog]')).toBeVisible();
-    expect(await axeViolations(page, '.mf-users-assign')).toEqual([]);
+    test.setTimeout(400_000);
+    for (const [width, height] of [
+      [1366, 768],
+      [1920, 1080],
+      [375, 812],
+    ]) {
+      await page.setViewportSize({ width, height });
+      await openUsers(page);
+      await page.getByRole('button', { name: 'Cards' }).click();
+      expect(await axeViolations(page), `cards ${width}`).toEqual([]);
+      if (width === 1366) {
+        await page.getByRole('button', { name: 'Legend and help' }).click();
+        expect(await axeViolations(page), 'legend').toEqual([]);
+        await page.keyboard.press('Escape');
+      }
+      await page.getByRole('button', { name: 'Table' }).click();
+      await expect(page.locator('[data-users-table]')).toBeVisible();
+      expect(await axeViolations(page), `table ${width}`).toEqual([]);
+      await page.getByRole('button', { name: 'Cards' }).click();
+      await card(page, 'heavy').locator('[data-user-open]').click();
+      await expect(page.locator('[data-drawer-tasks] li').first()).toBeVisible();
+      // A modal drawer makes the page behind it inert, so the dialogs are checked on their own.
+      expect(await axeViolations(page, '.mf-users-drawer'), `drawer ${width}`).toEqual([]);
+      await page.locator('[data-drawer-assign]').click();
+      await expect(page.locator('[data-assign-dialog]')).toBeVisible();
+      await page.locator('[data-assign-dialog] [data-assign-allpods]').check();
+      await expect(page.locator('[data-assign-row]').first()).toBeVisible();
+      expect(await axeViolations(page, '.mf-users-assign'), `picker ${width}`).toEqual([]);
+      await page.locator('[data-assign-next]').click();
+      await expect(page.locator('[data-assign-confirm]')).toBeVisible();
+      expect(await axeViolations(page, '.mf-users-assign'), `confirm ${width}`).toEqual([]);
+    }
   });
 });
 

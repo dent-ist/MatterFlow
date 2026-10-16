@@ -395,6 +395,58 @@ public sealed class TaskEditApiTests(SqlServerFixture sql) : IAsyncLifetime
         await ProblemAsync(await _h.Admin.PostAsJsonAsync($"/api/v1/tasks/{TaskId(closed)}/assignment", new { userId = viewerId, rowVersion = RowVersion(closed) }), HttpStatusCode.Conflict, "TASK_NOT_EDITABLE");
     }
 
+    // ---- batch assignment (Users tab "Assign the next 3")
+
+    [Fact]
+    public async Task Batch_assign_assigns_each_task_with_its_own_audit_and_keeps_the_others_when_one_fails()
+    {
+        await _h.UserWithAsync(@"KEen", TaskHarness.AllTaskPermissions);
+        var benId = await _h.UserIdAsync(@"KEen");
+        var a = await _h.CreateTaskAsync(_w);
+        var b = await _h.CreateTaskAsync(_w);
+        var c = await _h.CreateTaskAsync(_w);
+        // b changes meanwhile (someone else assigns it): its row version is stale in the batch.
+        await _h.PostAsync(TaskId(b), "assignment", new { userId = benId, rowVersion = RowVersion(b) });
+
+        var response = await _h.Admin.PostAsJsonAsync("/api/v1/tasks/assign-batch", new
+        {
+            userId = benId,
+            items = new[] { a, b, c }.Select(t => new { taskId = TaskId(t), rowVersion = RowVersion(t) }).ToArray(),
+        });
+        var body = await OkAsync(response);
+        var results = body.GetProperty("results").EnumerateArray().ToList();
+        results.Select(r => r.GetProperty("succeeded").GetBoolean()).ShouldBe([true, false, true]);
+        results[1].GetProperty("errorCode").GetString().ShouldBe("CONCURRENCY_CONFLICT");
+        results[0].GetProperty("task").GetProperty("status").GetString().ShouldBe("IN_PROGRESS");
+
+        foreach (var t in new[] { a, c })
+        {
+            var events = await _h.AuditAsync(TaskId(t));
+            events.Count(e => e.EventType == "TASK_ASSIGNED").ShouldBe(1);
+            events.Count(e => e.EventType == "TASK_STATUS_CHANGED").ShouldBe(1);
+            (await _h.GetTaskAsync(TaskId(t))).GetProperty("assignedUser").GetProperty("userId").GetInt32().ShouldBe(benId);
+        }
+    }
+
+    [Fact]
+    public async Task Batch_assign_needs_Task_Assign_and_at_most_ten_distinct_tasks()
+    {
+        var benId = await _h.UserIdAsync(@"KEen-none").ContinueWith(_ => 0);
+        var task = await _h.CreateTaskAsync(_w);
+        var viewer = await _h.UserWithAsync(@"KEiewer2", "Task.View");
+        var viewerId = await _h.UserIdAsync(@"KEiewer2");
+        var item = new { taskId = TaskId(task), rowVersion = RowVersion(task) };
+
+        await ProblemAsync(await viewer.PostAsJsonAsync("/api/v1/tasks/assign-batch", new { userId = viewerId, items = new[] { item } }), HttpStatusCode.Forbidden, "PERMISSION_DENIED");
+        Status(await _h.GetTaskAsync(TaskId(task))).ShouldBe("NEW");
+
+        var eleven = Enumerable.Range(0, 11).Select(_ => item).ToArray();
+        (await _h.Admin.PostAsJsonAsync("/api/v1/tasks/assign-batch", new { userId = viewerId, items = eleven })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await _h.Admin.PostAsJsonAsync("/api/v1/tasks/assign-batch", new { userId = viewerId, items = Array.Empty<object>() })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await _h.Admin.PostAsJsonAsync("/api/v1/tasks/assign-batch", new { userId = viewerId, items = new[] { item, item } })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        Status(await _h.GetTaskAsync(TaskId(task))).ShouldBe("NEW");
+    }
+
     // ---- priority
 
     [Fact]
