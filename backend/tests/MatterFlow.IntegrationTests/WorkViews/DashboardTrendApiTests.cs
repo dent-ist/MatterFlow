@@ -20,7 +20,13 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
     private const string Kiritimati = "Pacific/Kiritimati";
     private const string PagoPago = "Pacific/Pago_Pago";
 
-    private readonly DateTime _now = DateTime.UtcNow;
+    /// <summary>
+    /// The instant the host's clock and the seeded data are built around. Fixed, so the run does not depend on the time of day it happens at: this one is
+    /// 23:30 the evening before in New York and 16:30 the day before in Pago Pago, where the UTC date and the viewer's date differ (the case that is hardest
+    /// for date-only due dates). <c>MF_TEST_NOW</c> (an ISO instant) replaces it to run the same tests at another moment.
+    /// </summary>
+    private readonly DateTime _now = DateTime.Parse(
+        Environment.GetEnvironmentVariable("MF_TEST_NOW") ?? "2026-10-14T03:30:00Z", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
     private DatabaseApiFactory _factory = null!;
     private TaskHarness _h = null!;
     private int _alpha, _beta, _gamma, _delta, _epsilon;
@@ -34,7 +40,7 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
 
     public async Task InitializeAsync()
     {
-        _factory = new DatabaseApiFactory(await sql.CreateDatabaseAsync());
+        _factory = new DatabaseApiFactory(await sql.CreateDatabaseAsync()) { Clock = new Audit.FixedClock(_now) };
         _h = new TaskHarness(_factory);
         var world = await _h.CreateWorldAsync();
         _alpha = world.TaskTypeId;
@@ -59,7 +65,7 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
             new(_beta, Ago(9), null),                                                            // ASAP: in no due-date line
             new(_beta, Ago(12), Ago(7.2), DueDate: UtcDay(-9), DueAt: Ago(8.5)),                 // completed late
             new(_beta, Ago(12), Ago(5.4), DueDate: UtcDay(-5), DueAt: Ago(5)),                   // completed on time
-            new(_gamma, Ago(14), null, Cancelled: Ago(8), DueDate: UtcDay(-9)),                  // cancelled: closes its overdue
+            new(_gamma, Ago(14), null, Cancelled: Ago(8), DueDate: UtcDay(-12)),                 // cancelled: closes its overdue (due 3 or more days before, so the date in any zone is before it)
             new(_gamma, Ago(3), null, DueDate: UtcDay(3)),                                       // not due yet
             new(_alpha, Ago(30), Ago(2.2), DueDate: UtcDay(-6)),                                 // date-only, completed days after the date: late
             new(_alpha, Ago(30), Ago(3.5), DueDate: UtcDay(-1)),                                 // date-only, completed before the date: on time
@@ -364,7 +370,7 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
             page.GetProperty("total").GetInt32().ShouldBe(t.GetProperty("overdue").GetInt32());
         }
 
-        // A closed Task stops being overdue: the cancelled one (due 9 days back, cancelled 8 days back) was overdue only on those days.
+        // A closed Task stops being overdue: the cancelled one (due 12 days back, cancelled 8 days back) was overdue only on the days in between.
         var gamma = await TrendAsync($"periodDays=30&taskTypeIds={_gamma}", zone);
         var overdue = Column(gamma.GetProperty("byTaskType")[0].GetProperty("points"), "overdue");
         overdue[29].ShouldBe(0);

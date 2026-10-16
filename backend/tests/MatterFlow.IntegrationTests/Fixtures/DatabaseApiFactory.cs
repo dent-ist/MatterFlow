@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MatterFlow.IntegrationTests.Fixtures;
 
@@ -17,6 +18,9 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
     : WebApplicationFactory<Program>
 {
     public const string AdminAccount = @"ke\kekim";
+
+    /// <summary>A clock the host uses instead of the system clock, for tests whose result depends on the time of day or the zone.</summary>
+    public MatterFlow.SharedKernel.Time.IClock? Clock { get; init; }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -50,9 +54,15 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
         builder.UseSetting("Dev:Users:1:Email", "");
         for (var i = 2; i < 10; i++)
             builder.UseSetting($"Dev:Users:{i}:Username", "");
-        builder.ConfigureServices(services => services
-            .AddControllers()
-            .AddApplicationPart(typeof(DatabaseApiFactory).Assembly));
+        builder.ConfigureServices(services =>
+        {
+            services.AddControllers().AddApplicationPart(typeof(DatabaseApiFactory).Assembly);
+            if (Clock is { } clock)
+            {
+                services.RemoveAll<MatterFlow.SharedKernel.Time.IClock>();
+                services.AddSingleton(clock);
+            }
+        });
     }
 
     /// <summary>
