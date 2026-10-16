@@ -64,8 +64,12 @@ test.describe('Dashboard drill-through', () => {
 });
 
 test.describe('Dashboard actions and click-through', () => {
-  const chips = (page: import('@playwright/test').Page) =>
-    page.getByRole('list', { name: 'Active filters' });
+  type Page = import('@playwright/test').Page;
+  /** Chips of the filters that have no column in the grid (the filter row shows the others). */
+  const chips = (page: Page) => page.getByRole('list', { name: 'Active filters' });
+  /** The control of a filter in the Task Queue's filter row, which is open when a link brings filters. */
+  const control = (page: Page, key: string) =>
+    page.locator(`tr[data-filter-row] [data-filter="${key}"]`);
 
   test('Needs attention counts open the Task Queue and the filter arrives as a chip; ASAP open is the quiet fourth tile', async ({
     page,
@@ -89,20 +93,20 @@ test.describe('Dashboard actions and click-through', () => {
     await expect(attention.getByRole('link')).toHaveCount(4);
     await attention.getByRole('link', { name: /^Overdue\s*\d+\b/ }).click();
     await expect(page).toHaveURL(/overdue=true/);
-    await expect(chips(page)).toContainText('Overdue only');
+    await expect(chips(page)).toContainText('Overdue: Overdue only');
 
     await page.goBack();
     await attention.getByRole('link', { name: /^Unassigned\s*\d+\b/ }).click();
-    await expect(chips(page)).toContainText('Assignee: Unassigned');
+    await expect(control(page, 'assignee')).toContainText('Unassigned');
 
     await page.goBack();
     await attention.getByRole('link', { name: /^ASAP open\s*\d+\b/ }).click();
-    await expect(chips(page)).toContainText('ASAP only');
+    await expect(chips(page)).toContainText('ASAP: ASAP only');
 
     await page.goBack();
     await attention.getByRole('link', { name: /^On hold\s*\d+\b/ }).click();
     await expect(page).toHaveURL(/status=ON_HOLD/);
-    await expect(chips(page)).toContainText('Status: On Hold');
+    await expect(control(page, 'status')).toContainText('On Hold');
   });
 
   test('the Task Queue still filters to tasks without a pod (noPod) and shows a chip', async ({
@@ -134,7 +138,7 @@ test.describe('Dashboard actions and click-through', () => {
     const priorityBars = page.locator('mf-bar-list', { hasText: 'Open by priority' });
     await priorityBars.getByRole('link').first().click();
     await expect(page).toHaveURL(/priority=\d+/);
-    await expect(chips(page)).toContainText('Priority:');
+    await expect(control(page, 'priority')).not.toHaveText('All');
 
     await page.goto('/dashboard?tab=trends');
     await page
@@ -233,7 +237,7 @@ test.describe('Dashboard actions and click-through', () => {
     await overdue.getByRole('link', { name: /View all overdue tasks/ }).click();
     await expect(page).toHaveURL(/overdue=true/);
     await expect(page).toHaveURL(/sort=due/);
-    await expect(chips(page)).toContainText('Overdue only');
+    await expect(chips(page)).toContainText('Overdue: Overdue only');
   });
 
   test('the period presets drive created and completed only, and the choice sticks', async ({

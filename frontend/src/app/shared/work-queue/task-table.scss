@@ -329,13 +329,6 @@ th[aria-sort='descending'] .wt-sort {
   cursor: pointer;
 }
 
-.wt-bone {
-  display: block;
-  height: 12px;
-  border-radius: var(--mf-radius);
-  background: var(--mf-surface-alt);
-}
-
 /* Inside a fixed-header page the grid's own box scrolls and the "scroll sideways" hint would only take pinned height: the region
    is named "... list, scrollable" and the edge shadows show where columns are hidden. */
 @media (min-width: 768px) and (min-height: 561px) {
@@ -345,16 +338,15 @@ th[aria-sort='descending'] .wt-sort {
   }
 }
 
-/* Nothing to list: the message sits in the first row, under the column headers. */
-.wt-empty-row:hover td {
-  background: transparent;
+/* The inline column filters are a second header row, 40 px high like the header row above it (see styles/_fixed-page.scss). */
+.wt .mf-filter-row td {
+  height: 40px;
+  padding: var(--mf-s1) var(--mf-s2);
+  font-weight: 400;
+  white-space: normal;
 }
-.wt-empty-row td {
-  padding: var(--mf-s4);
-  border-bottom: 0;
-}
-.wt-empty-row .wl-empty,
-.wt-empty-row ::ng-deep .wl-empty {
-  border: 0;
-  background: transparent;
+
+.wt--compact .mf-filter-row td {
+  padding-block: var(--mf-s1);
+  height: 40px;
 }

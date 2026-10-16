@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TaskQueueRow } from '../../api/generated/api-client';
+import { ListFilters } from '../filters/list-filters';
 import { Pager } from '../ui/pager';
 import { Density } from './column-prefs';
 import { PAGE_SIZES, SortDirection } from './queue-filters';
@@ -22,7 +23,8 @@ export type WorkListState = 'loading' | 'ready' | 'error';
   template: `
     <div class="wl-sr" role="status" aria-live="polite">{{ announcement() }}</div>
 
-    @if (state() === 'error') {
+    @if (state() === 'error' && rows().length > 0) {
+      <!-- The rows of the last load stay on screen; with no rows the error is a row of the table. -->
       <div class="wl-alert" role="alert">
         Something went wrong. Try again.
         <mf-error-reference />
@@ -30,32 +32,29 @@ export type WorkListState = 'loading' | 'ready' | 'error';
       </div>
     }
 
-    <!-- The column headers always show, also when there is nothing to list (the empty message sits right under them). -->
+    <!-- The column headers and the filter row always show; loading, error and empty are rows of the table body. -->
     <mf-task-table
       [rows]="rows()"
       [columns]="columns()"
       [caption]="caption()"
-      [loading]="state() === 'loading'"
+      [state]="state()"
+      [filters]="filters()"
+      [filterRowId]="filterRowId()"
+      [filtered]="filtered()"
+      [emptyText]="emptyText()"
       [density]="density()"
       [sort]="sort()"
       [dir]="dir()"
       [showAssign]="showAssign()"
       [newSince]="newSince()"
       (sortChange)="sortChange.emit($event)"
+      (retry)="retry.emit()"
+      (clearFilters)="clearFilters.emit()"
+      (columnsShown)="columnsShown.emit($event)"
       (assignToMe)="assignToMe.emit($event)"
       (rowChange)="rowChange.emit($event)"
     >
-      <div table-empty class="wl-empty" data-empty>
-        @if (filtered()) {
-          <p>No tasks match these filters.</p>
-          <button type="button" class="mf-btn wl-button" (click)="clearFilters.emit()">
-            Clear filters
-          </button>
-        } @else {
-          <p>{{ emptyText() }}</p>
-          <ng-content select="[empty-action]" />
-        }
-      </div>
+      <ng-content select="[empty-action]" ngProjectAs="[empty-action]" />
     </mf-task-table>
     <div class="wl-footrow">
       @if (state() === 'ready' && !filtered() && rows().length > 0 && rows().length < 5) {
@@ -86,6 +85,9 @@ export class WorkList {
   readonly sort = input<string | null>(null);
   readonly dir = input<SortDirection | null>(null);
   readonly caption = input('Tasks');
+  /** The column filters (the row under the headers). */
+  readonly filters = input<ListFilters | null>(null);
+  readonly filterRowId = input('work-filter-row');
   /** True when filters are applied, so an empty list says "No tasks match these filters". */
   readonly filtered = input(false);
   readonly emptyText = input('No tasks yet.');
@@ -98,6 +100,7 @@ export class WorkList {
   readonly pageSizeChange = output<number>();
   readonly retry = output<void>();
   readonly clearFilters = output<void>();
+  readonly columnsShown = output<string[]>();
   readonly assignToMe = output<TaskQueueRow>();
   readonly rowChange = output<TaskQueueRow>();
 

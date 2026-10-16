@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, HostListener, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ParamMap, Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Observable } from 'rxjs';
 import {
@@ -8,27 +8,32 @@ import {
   TaskQueuePage as TaskQueueData,
 } from '../../../api/generated/api-client';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import {
-  BuiltInViewKey,
-  QueueFilters,
-  QueueState,
-  builtInFilters,
-  emptyState,
-  queueArgs,
-} from '../../../shared/work-queue/queue-filters';
-import { isBareState } from '../../../shared/work-queue/last-view';
-import { loadPodChoices } from '../../../shared/work-queue/pod-options';
-import { QueuePageBase } from '../../../shared/work-queue/queue-page';
-import { PodOption, WorkFilterBar } from '../../../shared/work-queue/work-filter-bar';
-import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
-import { WorkList } from '../../../shared/work-queue/work-list';
+import { FilterOption } from '../../../shared/filters/filter-def';
+import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { ListFilters } from '../../../shared/filters/list-filters';
+import { filtersToValues, queueFilterDefs } from '../../../shared/filters/queue-defs';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { PodOption, loadPodChoices } from '../../../shared/work-queue/pod-options';
+import { QueuePageBase } from '../../../shared/work-queue/queue-page';
+import { QuickViews } from '../../../shared/work-queue/quick-views';
+import {
+  BuiltInViewKey,
+  OPEN_STATUSES,
+  QueueState,
+  builtInFilters,
+  queueArgs,
+} from '../../../shared/work-queue/queue-filters';
+import { WorkList } from '../../../shared/work-queue/work-list';
+import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
 
 /**
- * Task Queue (UX S03, ticket 49): every Task for anyone with Task.View. Search, quick views, filters, chips, sortable columns,
- * configurable columns and server paging; all state lives in the URL, so a dashboard link such as `/tasks?overdue=true&status=NEW`
- * opens the same list. A bare `/tasks` starts on the "All open" view. Rows are read-only; the title opens the Task.
+ * Task Queue (UX S03, ticket 49): every Task for anyone with Task.View. Inline column filters under the headers (Title or Ref, Matter,
+ * Client, Project, Task type, Workflow, Priority, Pod, Assignee, Creator, Requestor, Due, Status, Created, Updated; ASAP, Overdue and Closed
+ * in More filters), quick views as presets, chips, sortable and configurable columns and server paging. All state lives in the URL, so a
+ * dashboard link such as `/tasks?overdue=true&status=NEW` opens the same list. A plain `/tasks` starts on the open statuses (shown in the
+ * Status cell, not counted) or on the view the user last used, with a "Restored your last view" notice. Rows are editable inline; the
+ * title opens the Task.
  */
 @Component({
   selector: 'mf-task-queue-page',
@@ -37,7 +42,8 @@ import { PageHeader } from '../../../shared/ui/page-header';
     PageHeader,
     Button,
     HasPermissionDirective,
-    WorkFilterBar,
+    FiltersBar,
+    QuickViews,
     WorkList,
     WorkViewControls,
   ],
@@ -47,21 +53,17 @@ import { PageHeader } from '../../../shared/ui/page-header';
     <mf-fixed-page>
       <mf-page-header heading="Task Queue"> </mf-page-header>
 
-      <mf-work-filter-bar
-        [filters]="state().filters"
-        [names]="chipNames()"
-        [pods]="pods()"
-        [userId]="userId()"
-        [viewContext]="viewContext()"
-        [showViews]="true"
-        [defaultStatus]="defaultStatus()"
-        (filtersChange)="setFilters($event)"
-        (viewSelect)="applyView($event)"
-        (clearAll)="clearFilters()"
+      <mf-filters-bar
+        [filters]="filters"
+        controls="work-filter-row"
+        (showColumn)="showColumn($event)"
       >
-      </mf-work-filter-bar>
-
-      <div class="wl-gridbar" data-grid-toolbar>
+        <mf-quick-views
+          mfBarStart
+          [filters]="state().filters"
+          [context]="viewContext()"
+          (viewSelect)="applyView($event)"
+        />
         <mf-work-view-controls
           [sort]="state().sort"
           [dir]="state().dir"
@@ -71,7 +73,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
           (columnsChange)="setColumns($event)"
           (densityChange)="setDensity($event)"
         />
-      </div>
+      </mf-filters-bar>
       <mf-work-list
         [rows]="rows()"
         [total]="total()"
@@ -83,6 +85,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
         [sort]="state().sort"
         [dir]="state().dir"
         [filtered]="filtered()"
+        [filters]="filters"
         caption="Task Queue"
         emptyText="No open tasks."
         (sortChange)="sortBy($event)"
@@ -91,6 +94,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
         (retry)="load()"
         (clearFilters)="clearFilters()"
         (rowChange)="replaceRow($event)"
+        (columnsShown)="shownColumns.set($event)"
       >
         <p-button
           empty-action
@@ -111,40 +115,59 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
   protected readonly pods = signal<PodOption[]>([]);
   private readonly primary = signal<number | null>(null);
 
-  /** A bare `/tasks` is sent to the last view, or "All open", before anything loads. */
-  private pendingDefault = false;
+  private readonly defs = computed(() =>
+    queueFilterDefs(this.queueLookups(), {
+      defaultStatus: OPEN_STATUSES,
+      names: {
+        client: (id) => this.recordName('client', id),
+        matter: (id) => this.recordName('matter', id),
+        project: (id) => this.recordName('project', id),
+      },
+    }),
+  );
+
+  protected readonly filters = new ListFilters({
+    screen: 'task-queue',
+    noun: 'tasks',
+    openByDefault: true,
+    defs: this.defs,
+    visibleColumns: this.shownColumns,
+  });
+
+  /** A bare `/tasks` is sent to the view the user last used before anything loads. */
+  private pendingRestore = false;
 
   constructor() {
     super('queue');
     const keys = this.route.snapshot?.queryParamMap?.keys ?? [];
     if (keys.length === 0) {
-      this.pendingDefault = true;
-      // The view the user last used, or All open.
-      this.navigate(
-        this.lastView() ?? {
-          ...emptyState(),
-          filters: builtInFilters('allOpen', this.viewContext()),
-        },
-        true,
-      );
+      const last = this.lastView();
+      if (last) {
+        this.pendingRestore = true;
+        this.restore(last);
+      }
     }
     void this.loadPods();
   }
 
-  protected override defaultFilters(): QueueFilters {
-    return builtInFilters('allOpen', this.viewContext());
+  protected override defaultStatus(): readonly string[] {
+    return OPEN_STATUSES;
   }
 
-  protected override shouldLoad(state: QueueState): boolean {
-    if (this.pendingDefault) {
-      if (isBareState(state)) return false;
-      this.pendingDefault = false;
+  protected override shouldLoad(params: ParamMap): boolean {
+    if (this.pendingRestore) {
+      if (params.keys.length === 0) return false;
+      this.pendingRestore = false;
     }
     return true;
   }
 
   protected override fetch(state: QueueState): Observable<TaskQueueData> {
     return this.api.getTaskQueue(...queueArgs(state));
+  }
+
+  protected override podFilterOptions(): FilterOption[] {
+    return this.pods().map((p) => ({ value: String(p.id), label: p.name }));
   }
 
   protected override podName(id: number): string | null {
@@ -155,31 +178,13 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
     return this.primary();
   }
 
+  /** A quick view is a preset: it writes its column filters (and only those) to the address. */
   protected applyView(key: BuiltInViewKey): void {
-    const s = this.state();
-    this.navigate({
-      ...emptyState(),
-      pageSize: s.pageSize,
-      filters: builtInFilters(key, this.viewContext()),
-    });
+    this.filters.applyPreset(filtersToValues(builtInFilters(key, this.viewContext())));
   }
 
   protected go(path: string): void {
     void this.navigator.navigateByUrl(path);
-  }
-
-  /** `/` jumps to the search box (UX S03), unless the user is typing somewhere. */
-  @HostListener('document:keydown', ['$event'])
-  protected onKey(event: KeyboardEvent): void {
-    if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
-    const target = event.target as HTMLElement | null;
-    if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
-    if (target?.isContentEditable) return;
-    const box = document.getElementById('fb-q');
-    if (box) {
-      event.preventDefault();
-      box.focus();
-    }
   }
 
   private async loadPods(): Promise<void> {

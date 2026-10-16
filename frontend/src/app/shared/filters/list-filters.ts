@@ -16,6 +16,8 @@ import {
   isEmpty,
   paramsOf,
   parseFilters,
+  sameValue,
+  serializeExplicit,
   printText,
   serializeFilters,
   serializeValue,
@@ -138,7 +140,10 @@ export class ListFilters {
     this.moreDefs = computed(() => {
       const cols = this.visible();
       return this.defs().filter(
-        (d) => !d.noControl && (!d.column || (!!cols && !cols.includes(d.column))),
+        (d) =>
+          !d.noControl &&
+          !d.disabledReason?.() &&
+          (!d.column || (!!cols && !cols.includes(d.column))),
       );
     });
     this.printLine = computed(() => {
@@ -250,10 +255,37 @@ export class ListFilters {
 
   private write(params: QueryParams, replace?: boolean): void {
     void this.router.navigate([], {
-      queryParams: { ...params, page: null },
+      queryParams: { ...this.keepBareDefaults(params), page: null },
       queryParamsHandling: 'merge',
       ...(replace ? { replaceUrl: true } : {}),
     });
+  }
+
+  /**
+   * A filter whose default applies to a plain link only (`defaultOnlyBare`) must be written as soon as the address carries another filter,
+   * or the link would then read as "no limit" and the list would widen by itself (Task Queue Status while a Priority is chosen).
+   */
+  private keepBareDefaults(params: QueryParams): QueryParams {
+    const bareDefs = this.defs().filter((d) => d.defaultOnlyBare);
+    if (bareDefs.length === 0) return params;
+    const current = this.params();
+    const isSet = (p: string) => (p in params ? params[p] !== null : current.has(p));
+    const result: QueryParams = { ...params };
+    for (const def of bareDefs) {
+      if (paramsOf(def).some(isSet)) continue;
+      const others = this.defs().some((d) => d.key !== def.key && paramsOf(d).some(isSet));
+      if (paramsOf(def).some((p) => p in params)) {
+        // Being reset to the default: keep it written only while another filter makes the link a deep link.
+        if (others) Object.assign(result, serializeExplicit(def, defaultValue(def)));
+        continue;
+      }
+      // Untouched: what the person sees now stays, even when removing another chip would turn the link into a plain one.
+      const current = this.value(def.key);
+      if (others || !sameValue(current, defaultValue(def))) {
+        Object.assign(result, serializeExplicit(def, current));
+      }
+    }
+    return result;
   }
 
   // ---- open state, sheet, viewport

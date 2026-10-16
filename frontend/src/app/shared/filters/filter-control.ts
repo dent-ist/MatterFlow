@@ -91,6 +91,7 @@ let nextUid = 0;
               [options]="listOptions()"
               [value]="filters().list(d.key)"
               [emptyLabel]="d.emptyLabel ?? 'All'"
+              [groups]="d.valueGroups ?? []"
               [inline]="inline()"
               (valueChange)="filters().set(d.key, $event)"
             />

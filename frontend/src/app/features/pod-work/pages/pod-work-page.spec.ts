@@ -13,11 +13,12 @@ import {
   pageOf,
   provideClock,
   provideLookups,
+  provideQueueChoices,
 } from '../../../shared/work-queue/work-queue-testing';
 import { PodWorkPage } from './pod-work-page';
 
 /** Positions of the arguments of `getPodWork` (Pod and view first, then the shared filters). */
-const ARG = { podId: 0, view: 1, q: 2, status: 3, pod: 5, assignee: 7, sort: 24, page: 26 };
+const ARG = { podId: 0, view: 1, q: 2, status: 3, pod: 5, assignee: 7, sort: 29, page: 31 };
 
 const PODS = [
   { podId: 5, name: 'Pod A', isMember: true, isPrimary: true },
@@ -84,6 +85,7 @@ describe('PodWorkPage', () => {
           ),
         ),
         ...provideLookups(),
+        ...provideQueueChoices(),
         ...provideClock('2026-10-14T15:00:00Z', 'UTC'),
         { provide: PodWorkClient, useValue: { getPodWork } },
         { provide: TasksClient, useValue: { assignTask } },
@@ -97,6 +99,14 @@ describe('PodWorkPage', () => {
     harness = await RouterTestingHarness.create();
     await harness.navigateByUrl(url, PodWorkPage);
     await settle();
+    // Under load the first render can lag behind whenStable: wait for the page itself, never a fixed time.
+    await vi.waitFor(() => {
+      harness.detectChanges();
+      expect(harness.routeNativeElement?.querySelector('mf-fixed-page')).not.toBeNull();
+      expect(
+        harness.routeNativeElement?.querySelector('[role="tab"], [data-empty]'),
+      ).not.toBeNull();
+    });
     return harness.routeNativeElement as HTMLElement;
   }
 
@@ -227,12 +237,60 @@ describe('PodWorkPage', () => {
     expect(el.querySelector('[data-members-empty]')!.textContent).toContain('No members yet.');
   });
 
-  it('never filters by Pod in the filter panel because the Pod selector already does', async () => {
-    const el = await open('/pods/work?podId=5');
-    el.querySelector<HTMLButtonElement>('.fb-button')!.click();
-    harness.detectChanges();
-    expect(el.querySelector('#fb-pod')).toBeNull();
+  const control = (el: HTMLElement, key: string) =>
+    el.querySelector<HTMLElement>(`tr[data-filter-row] [data-filter="${key}"]`);
+
+  it('never filters by Pod because the Pod selector already does', async () => {
+    const el = await open('/pods/work?podId=5&pod=7');
+    expect(control(el, 'pod')).toBeNull();
+    expect(el.querySelector('[data-more-filters]')).not.toBeNull();
+    expect(el.querySelector('[data-chip="pod"]')).toBeNull();
     expect(lastArgs()[ARG.pod]).toBeUndefined();
+  });
+
+  it('shows the filter row open, one control per shown column, with the open statuses only', async () => {
+    const el = await open('/pods/work?podId=5');
+    expect(el.querySelector('tr[data-filter-row]')).not.toBeNull();
+    for (const key of ['q', 'matterText', 'priority', 'assignee', 'due', 'status']) {
+      expect(control(el, key), key).not.toBeNull();
+    }
+    control(el, 'status')!.click();
+    await settle();
+    const options = Array.from(document.querySelectorAll('mf-filter-popover [data-option]')).map(
+      (o) => o.getAttribute('data-option'),
+    );
+    expect(options).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
+    document.querySelectorAll('mf-filter-popover').forEach((n) => n.remove());
+  });
+
+  it('shows Assignee disabled with the reason on the Unassigned tab, and usable on the others', async () => {
+    let el = await open('/pods/work?podId=5&assignee=9');
+    expect(control(el, 'assignee')!.hasAttribute('disabled')).toBe(true);
+    expect(
+      control(el, 'assignee')!.closest('[data-filter-disabled]')!.getAttribute('title'),
+    ).toContain('nobody holds');
+    expect(lastArgs()[ARG.assignee]).toBeUndefined();
+
+    TestBed.resetTestingModule();
+    el = await open('/pods/work?podId=5&view=members&assignee=9');
+    expect(control(el, 'assignee')!.hasAttribute('disabled')).toBe(false);
+    expect(lastArgs()[ARG.assignee]).toEqual([9]);
+  });
+
+  it('filters by a column text without touching the tab counts it receives', async () => {
+    const el = await open('/pods/work?podId=5');
+    const input = control(el, 'matterText') as HTMLInputElement;
+    input.value = '343';
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    await settle();
+    expect(query()['matterText']).toBe('343');
+    expect(query()['podId']).toBe('5');
+    // The tabs keep the counts of the response, whatever the grid below says.
+    const tabs = Array.from(el.querySelectorAll('[role="tab"]')).map((t) =>
+      t.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(tabs[0]).toBe('Unassigned (6)');
   });
 
   it('assigns a task to me, says that a New task was started, and reloads', async () => {
@@ -298,12 +356,12 @@ describe('PodWorkPage', () => {
 
   it('says what is waiting in the Pod when its queue is empty, and shows an error with Retry', async () => {
     let el = await open('/pods/work?podId=5', { response: of(podPage([])) });
-    expect(el.querySelector('[data-empty]')!.textContent).toContain('Nothing waiting in Pod A.');
+    expect(el.querySelector('tbody [data-empty]')!.textContent).toContain(
+      'Nothing waiting in Pod A.',
+    );
 
     TestBed.resetTestingModule();
     el = await open('/pods/work?podId=5', { response: throwError(() => new Error('boom')) });
-    expect(el.querySelector('[role="alert"]')!.textContent).toContain(
-      'Something went wrong. Try again.',
-    );
+    expect(el.querySelector('tbody [data-error]')!.textContent).toContain("Couldn't load tasks");
   });
 });

@@ -839,7 +839,7 @@ describe('DashboardPage', () => {
     );
     // The list asks the Task Queue for priority then age, 8 rows.
     const call = getTaskQueue.mock.calls.find((c) => c[6] === true)!;
-    expect(call.slice(22)).toEqual(['priorityAge', 'asc', 1, 8]);
+    expect(call.slice(27)).toEqual(['priorityAge', 'asc', 1, 8]);
   });
 
   it('keeps the tab stops down: a row has one link and its actions, the matter reference is plain text, and a list can be skipped', async () => {

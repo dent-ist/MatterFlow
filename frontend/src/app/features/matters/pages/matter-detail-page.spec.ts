@@ -29,6 +29,7 @@ import {
   pageOf,
   provideClock,
   provideLookups,
+  provideQueueChoices,
 } from '../../../shared/work-queue/work-queue-testing';
 import { MatterDetailPage } from './matter-detail-page';
 
@@ -66,6 +67,7 @@ describe('MatterDetailPage', () => {
         { provide: TaskQueueClient, useValue: queue },
         query.provider,
         ...provideLookups(),
+        ...provideQueueChoices(),
         ...provideClock('2026-10-14T15:00:00Z'),
         {
           provide: AuditEventsClient,
@@ -164,13 +166,20 @@ describe('MatterDetailPage', () => {
 
     tab('Projects').click();
     expect(navigate).toHaveBeenCalledWith([], {
-      // The Assets tab's filters, paging and sort belong to that tab only.
+      // The filters of the Tasks and Assets tabs, and the Assets paging and sort, belong to their tab only.
       queryParams: {
         tab: 'projects',
         name: null,
         typeId: null,
         extref: null,
+        q: null,
         status: null,
+        project: null,
+        priority: null,
+        assignee: null,
+        unassigned: null,
+        dueFrom: null,
+        dueTo: null,
         page: null,
         size: null,
         sort: null,
@@ -235,12 +244,15 @@ describe('MatterDetailPage', () => {
       '/tasks/1042',
     );
 
-    const filter = el().querySelector<HTMLSelectElement>('[data-status-filter]')!;
-    filter.value = 'all';
-    filter.dispatchEvent(new Event('change'));
+    // The "Show" select is the Status column filter now: open by default, every status on request, from the address.
+    const grid = el().querySelector('mf-scoped-tasks')!;
+    expect(grid.querySelector('[data-filter-row]')).toBeNull(); // closed by default
+    expect(grid.querySelector('[data-status-filter]')).toBeNull();
+    query.set({ status: '' });
     await settle(fixture);
     args = queue.getTaskQueue.mock.calls.at(-1)!;
     expect(args[1]).toBeUndefined();
+    expect(grid.querySelector('[data-filters-toggle]')!.textContent).toContain('(1)');
 
     expect(el().querySelector('mf-scoped-tasks [data-create-task]')).toBeNull();
     buttonByLabel(el(), 'Create task in this matter')!.click();
@@ -252,12 +264,35 @@ describe('MatterDetailPage', () => {
     queue.getTaskQueue.mockReturnValue(ok(pageOf([])));
     await openTab('projects');
     await openTab(undefined);
-    expect(el().querySelector('[data-empty=tasks]')?.textContent).toContain('No open tasks.');
+    expect(el().querySelector('mf-scoped-tasks tbody [data-empty]')?.textContent).toContain(
+      'No open tasks.',
+    );
 
     queue.getTaskQueue.mockReturnValue(apiError(500, { title: 'x', status: 500 } as never));
     await openTab('projects');
     await openTab(undefined);
-    expect(el().querySelector('[data-error]')).not.toBeNull();
+    expect(el().querySelector('mf-scoped-tasks tbody [data-error]')).not.toBeNull();
+    expect(el().querySelector('mf-scoped-tasks thead th')).not.toBeNull(); // the headers stay
+  });
+
+  it('filters the matter tasks by the shared column filters from the address, with a Project choice', async () => {
+    await create(['Matter.View', 'Task.View', 'Project.View']);
+    const grid = el().querySelector('mf-scoped-tasks')!;
+    grid.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
+    await settle(fixture);
+    for (const name of ['Title or Ref', 'Priority', 'Assignee', 'Due', 'Status'])
+      expect(grid.querySelector(`[aria-label^="Filter by ${name}"]`), name).not.toBeNull();
+    expect(grid.querySelector('select[aria-label="Filter by Project"]')).not.toBeNull();
+
+    query.set({ q: 'dedup', priority: '2', project: '3', dueTo: '2026-10-31' });
+    await settle(fixture);
+    const args = queue.getTaskQueue.mock.calls.at(-1)!;
+    expect(args[0]).toBe('dedup');
+    expect(args[2]).toEqual([2]);
+    expect(args[9]).toBe(7); // the matter
+    expect(args[10]).toBe(3); // the project filter
+    expect(args[16]).toBe('2026-10-31');
+    expect(args[1]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']); // Open by default
   });
 
   it('lists the matter assets in the Assets tab with column filters, server-side, and links to the asset', async () => {

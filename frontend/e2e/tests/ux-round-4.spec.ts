@@ -476,7 +476,7 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     expect(await card.locator('li').count()).toBeLessThanOrEqual(9);
   });
 
-  test('UXR4-18: a task due today reads "Due today" in the header like the queues, and a search is not counted as a filter', async ({
+  test('UXR4-18: a task due today reads "Due today" in the header like the queues, and a Title or Ref filter is counted once and not repeated as a chip', async ({
     page,
     seed,
   }) => {
@@ -490,7 +490,13 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     await expect(page.locator('[data-due]')).not.toContainText('Due soon');
 
     await page.goto(`/tasks?q=${encodeURIComponent(task.taskNumber)}`);
-    await expect(page.getByRole('button', { name: /^Filters/ })).toHaveText(/^\s*Filters\s*$/);
+    await expect(page.getByRole('button', { name: /^Filters/ })).toHaveText(
+      /^\s*Filters\s*\(1\)\s*$/,
+    );
+    await expect(page.getByRole('textbox', { name: 'Filter by Title or Ref' })).toHaveValue(
+      task.taskNumber,
+    );
+    // The column is on screen, so the filter is in the row and there is no chip for it.
     await expect(page.getByRole('list', { name: 'Active filters' })).toHaveCount(0);
   });
 

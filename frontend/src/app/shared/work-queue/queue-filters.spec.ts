@@ -1,10 +1,8 @@
 import { convertToParamMap } from '@angular/router';
 import {
   BUILT_IN_VIEWS,
-  ChipNames,
   OPEN_STATUSES,
   activeBuiltIn,
-  buildChips,
   builtInFilters,
   dateDaysAgo,
   emptyFilters,
@@ -15,18 +13,6 @@ import {
   queueArgs,
   toQueryParams,
 } from './queue-filters';
-
-const names: ChipNames = {
-  statusLabel: (c) => c,
-  priorityLabel: (id) => `P${id}`,
-  podName: (id) => `Pod ${id}`,
-  userName: (id) => `User ${id}`,
-  clientName: (id) => `Client ${id}`,
-  matterName: (id) => `Matter ${id}`,
-  projectName: (id) => `Project ${id}`,
-  typeName: (id) => `Type ${id}`,
-  workflowName: (id) => `Workflow ${id}`,
-};
 
 const parse = (params: Record<string, string | string[]>) =>
   parseQueueState(convertToParamMap(params));
@@ -93,6 +79,11 @@ describe('queue filter state', () => {
       requestor: 'zed',
       completedFrom: '2026-03-01',
       completedTo: '2026-03-31',
+      matterText: '',
+      clientText: '',
+      projectText: '',
+      updatedFrom: null,
+      updatedTo: null,
     });
     expect([s.sort, s.dir, s.page, s.pageSize]).toEqual(['due', 'desc', 3, 100]);
   });
@@ -172,10 +163,6 @@ describe('queue filter state', () => {
     expect(queueArgs(state)[4]).toBe(true);
     expect(queueArgs({ ...state, filters: { ...state.filters, noPod: false } })[4]).toBeUndefined();
     expect(queueArgs(state, { omitPod: true })[4]).toBeUndefined();
-
-    const chips = buildChips(state.filters, names);
-    expect(chips.map((c) => c.label)).toEqual(['Status: NEW', 'Pod: No pod']);
-    expect(chips[1].remove(state.filters).noPod).toBe(false);
   });
 
   it('accepts the priorityAge sort used by the Dashboard', () => {
@@ -183,57 +170,58 @@ describe('queue filter state', () => {
   });
 });
 
-describe('filter chips', () => {
-  it('has one removable chip per value, and removing it clears only that value', () => {
-    const f = { ...emptyFilters(), priority: [1, 2], pod: [4], overdue: true as boolean | null };
-    const chips = buildChips(f, names);
-    expect(chips.map((c) => c.label)).toEqual([
-      'Priority: P1',
-      'Priority: P2',
-      'Pod: Pod 4',
-      'Overdue only',
-    ]);
+describe('column text and updated filters', () => {
+  it('round-trips the Matter, Client and Project text filters and the Updated range through the URL and the API arguments', () => {
+    const state = parse({
+      matterText: ' 343-12 ',
+      clientText: 'Acme',
+      projectText: 'Phase 1',
+      updatedFrom: '2026-10-01',
+      updatedTo: '2026-10-07',
+    });
+    expect(state.filters.matterText).toBe('343-12');
+    expect(state.filters.updatedTo).toBe('2026-10-07');
+    expect(filterCount(state.filters)).toBe(4);
 
-    const removed = chips[0].remove(f);
-    expect(removed.priority).toEqual([2]);
-    expect(removed.pod).toEqual([4]);
-    expect(chips[3].remove(f).overdue).toBeNull();
+    const params = toQueryParams(state);
+    expect(params['matterText']).toBe('343-12');
+    expect(params['clientText']).toBe('Acme');
+    expect(params['projectText']).toBe('Phase 1');
+    expect(params['updatedFrom']).toBe('2026-10-01');
+    expect(params['updatedTo']).toBe('2026-10-07');
+
+    // The positional arguments of the generated client, in order: ..., completedTo, matterText, clientText, projectText, updatedFrom, updatedTo, sort.
+    const args = queueArgs(state);
+    expect(args.slice(20, 27)).toEqual([
+      undefined,
+      undefined,
+      '343-12',
+      'Acme',
+      'Phase 1',
+      '2026-10-01',
+      '2026-10-07',
+    ]);
   });
 
-  it('shows the three open statuses as a single "Status: Open" chip', () => {
-    const chips = buildChips({ ...emptyFilters(), status: [...OPEN_STATUSES] }, names);
-    expect(chips.map((c) => c.label)).toEqual(['Status: Open']);
-    expect(chips[0].remove({ ...emptyFilters(), status: [...OPEN_STATUSES] }).status).toEqual([]);
+  it('ignores a malformed updated date and writes nothing for empty text', () => {
+    const state = parse({ updatedFrom: 'yesterday', matterText: '   ' });
+    expect(state.filters.updatedFrom).toBeNull();
+    expect(toQueryParams(state)['matterText']).toBeNull();
+    expect(toQueryParams(state)['updatedFrom']).toBeNull();
   });
+});
 
-  it('describes search, assignee, date ranges, asap and ids from a deep link', () => {
-    const f = {
-      ...emptyFilters(),
-      q: 'dedup',
-      unassigned: true,
-      assignee: [7],
-      client: 10,
-      matter: 11,
-      project: 12,
-      type: [13],
-      workflow: [14],
-      createdFrom: '2026-01-01',
-      dueTo: '2026-02-28',
-      asap: false as boolean | null,
-    };
-    expect(buildChips(f, names).map((c) => c.label)).toEqual([
-      'Search: dedup',
-      'Assignee: User 7',
-      'Assignee: Unassigned',
-      'Client: Client 10',
-      'Matter: Matter 11',
-      'Project: Project 12',
-      'Type: Type 13',
-      'Workflow: Workflow 14',
-      'Created: from Jan 1, 2026',
-      'Due: until Feb 28, 2026',
-      'Has a due date',
-    ]);
+describe('explicit status', () => {
+  it('writes an empty status as "status=" only when the page starts on a default status', () => {
+    const state = emptyState();
+    expect(toQueryParams(state)['status']).toBeNull();
+    expect(toQueryParams(state, { explicitStatus: true })['status']).toBe('');
+    expect(
+      toQueryParams(
+        { ...state, filters: { ...state.filters, status: ['NEW'] } },
+        { explicitStatus: true },
+      )['status'],
+    ).toEqual(['NEW']);
   });
 });
 
@@ -280,8 +268,8 @@ describe('API arguments', () => {
   it('passes only what is set, with the sort direction only when sorting', () => {
     const state = { ...emptyState(), page: 2, pageSize: 25 };
     const args = queueArgs(state);
-    expect(args.slice(0, 22).every((a) => a === undefined)).toBe(true);
-    expect(args.slice(22)).toEqual([undefined, undefined, 2, 25]);
+    expect(args.slice(0, 27).every((a) => a === undefined)).toBe(true);
+    expect(args.slice(27)).toEqual([undefined, undefined, 2, 25]);
 
     const sorted = queueArgs({
       ...state,
@@ -293,7 +281,7 @@ describe('API arguments', () => {
     expect(sorted[1]).toEqual(['NEW']);
     expect(sorted[17]).toBe(false); // asap
     expect(sorted[18]).toBe(true); // overdue
-    expect(sorted.slice(22)).toEqual(['due', 'desc', 2, 25]);
+    expect(sorted.slice(27)).toEqual(['due', 'desc', 2, 25]);
   });
 
   it('can leave the pod filter out (Pod Work has its own Pod)', () => {

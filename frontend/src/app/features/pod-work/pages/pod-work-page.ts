@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ParamMap } from '@angular/router';
 import { Observable, firstValueFrom } from 'rxjs';
 import {
   PodWorkClient,
@@ -9,9 +10,13 @@ import {
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { loadLastPod, saveLastPod } from '../../../shared/work-queue/column-prefs';
-import { QueueState, queueArgs } from '../../../shared/work-queue/queue-filters';
+import { FilterOption } from '../../../shared/filters/filter-def';
+import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { ListFilters } from '../../../shared/filters/list-filters';
+import { queueFilterDefs, withoutFilters } from '../../../shared/filters/queue-defs';
+import { OPEN_STATUSES, QueueState, queueArgs } from '../../../shared/work-queue/queue-filters';
+import { PodOption } from '../../../shared/work-queue/pod-options';
 import { QueuePageBase } from '../../../shared/work-queue/queue-page';
-import { PodOption, WorkFilterBar } from '../../../shared/work-queue/work-filter-bar';
 import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
@@ -27,7 +32,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
  */
 @Component({
   selector: 'mf-pod-work-page',
-  imports: [FixedPage, PageHeader, ScrollArea, WorkFilterBar, WorkList, WorkTabs, WorkViewControls],
+  imports: [FixedPage, PageHeader, ScrollArea, FiltersBar, WorkList, WorkTabs, WorkViewControls],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
@@ -94,25 +99,15 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
           </ul>
         }
 
-        <mf-work-filter-bar
-          [filters]="state().filters"
-          [names]="chipNames()"
-          [pods]="podOptions()"
-          [userId]="userId()"
-          [hidden]="['pod']"
-          [hasTabs]="true"
-          (filtersChange)="setFilters($event)"
-          (clearAll)="clearFilters()"
-        >
+        <div class="wp-tabrow" data-tab-row>
           <mf-work-tabs
-            fb-tabs
             label="Pod Work views"
             idPrefix="pw"
             [tabs]="tabs()"
             [selected]="tab()"
             (selectedChange)="selectTab($event)"
           />
-        </mf-work-filter-bar>
+        </div>
 
         <div
           class="mf-fill"
@@ -171,7 +166,11 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
             }
           }
 
-          <div class="wl-gridbar" data-grid-toolbar>
+          <mf-filters-bar
+            [filters]="filters"
+            controls="work-filter-row"
+            (showColumn)="showColumn($event)"
+          >
             <mf-work-view-controls
               [sort]="state().sort"
               [dir]="state().dir"
@@ -181,7 +180,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
               (columnsChange)="setColumns($event)"
               (densityChange)="setDensity($event)"
             />
-          </div>
+          </mf-filters-bar>
           <mf-work-list
             [rows]="rows()"
             [total]="total()"
@@ -193,6 +192,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
             [sort]="state().sort"
             [dir]="state().dir"
             [filtered]="filtered()"
+            [filters]="filters"
             [caption]="'Pod Work: ' + (data()?.pod?.name ?? '')"
             [emptyText]="emptyText()"
             [showAssign]="canAssign()"
@@ -203,6 +203,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
             (clearFilters)="clearFilters()"
             (rowChange)="replaceRow($event)"
             (assignToMe)="assignToMe($event)"
+            (columnsShown)="shownColumns.set($event)"
           />
         </div>
       }
@@ -217,6 +218,33 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
   protected readonly tab = computed<TabKey>(() => {
     const view = this.state().view;
     return view === 'members' || view === 'attention' || view === 'all' ? view : 'queue';
+  });
+
+  private readonly defs = computed(() => {
+    const lookups = this.queueLookups();
+    return queueFilterDefs(lookups, {
+      // The Pod is the scope of the page (the picker in the header), not a filter.
+      omit: ['pod'],
+      disabled:
+        this.tab() === 'queue'
+          ? { assignee: () => 'This tab lists the tasks nobody holds yet.' }
+          : {},
+      // Pod Work lists open tasks only.
+      statuses: () => (lookups.statuses ?? []).filter((o) => OPEN_STATUSES.includes(o.value)),
+      names: {
+        client: (id) => this.recordName('client', id),
+        matter: (id) => this.recordName('matter', id),
+        project: (id) => this.recordName('project', id),
+      },
+    });
+  });
+
+  protected readonly filters = new ListFilters({
+    screen: 'pod-work',
+    noun: 'tasks',
+    openByDefault: true,
+    defs: this.defs,
+    visibleColumns: this.shownColumns,
   });
 
   protected readonly pods = computed(() => this.data()?.pods ?? []);
@@ -264,9 +292,9 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
     }
   }
 
-  protected override shouldLoad(state: QueueState): boolean {
+  protected override shouldLoad(params: ParamMap): boolean {
     if (this.pendingRemembered) {
-      if (state.podId === null) return false;
+      if (!params.has('podId')) return false;
       this.pendingRemembered = false;
     }
     return true;
@@ -295,6 +323,10 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
     return this.pods().find((p) => p.podId === id)?.name ?? null;
   }
 
+  protected override podFilterOptions(): FilterOption[] {
+    return [];
+  }
+
   protected selectPod(value: string): void {
     const podId = Number(value);
     if (!Number.isInteger(podId) || podId <= 0) return;
@@ -308,13 +340,14 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
 
   protected selectTab(key: string): void {
     if (key === this.tab()) return;
+    // The person filter starts again on every tab (By member sets it with "Show tasks"); the Unassigned tab owns it.
     this.navigate({
       ...this.state(),
       view: key === 'queue' ? null : key,
       page: 1,
       sort: null,
       dir: null,
-      filters: { ...this.state().filters, assignee: [], unassigned: false },
+      filters: withoutFilters(this.state().filters, ['assignee']),
     });
   }
 

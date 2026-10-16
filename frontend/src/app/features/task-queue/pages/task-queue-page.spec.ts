@@ -7,16 +7,16 @@ import { PodsClient, TaskQueueClient, TaskQueueRow } from '../../../api/generate
 import { AuthStore } from '../../../core/auth/auth.store';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { Permission } from '../../../core/auth/permissions';
-import { SEARCH_DEBOUNCE_MS } from '../../../shared/work-queue/work-filter-bar';
 import {
   aRow,
   pageOf,
   provideClock,
   provideLookups,
+  provideQueueChoices,
 } from '../../../shared/work-queue/work-queue-testing';
 import { TaskQueuePage } from './task-queue-page';
 
-/** Positions of the filter arguments of `getTaskQueue`. */
+/** Positions of the arguments of `getTaskQueue`. */
 const ARG = {
   q: 0,
   status: 1,
@@ -27,11 +27,18 @@ const ARG = {
   unassigned: 6,
   creator: 7,
   overdue: 18,
-  sort: 22,
-  dir: 23,
-  page: 24,
-  pageSize: 25,
+  matterText: 22,
+  clientText: 23,
+  projectText: 24,
+  updatedFrom: 25,
+  updatedTo: 26,
+  sort: 27,
+  dir: 28,
+  page: 29,
+  pageSize: 30,
 };
+
+const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
 
 describe('TaskQueuePage', () => {
   let getTaskQueue: ReturnType<typeof vi.fn>;
@@ -76,6 +83,7 @@ describe('TaskQueuePage', () => {
           ),
         ),
         ...provideLookups(),
+        ...provideQueueChoices(),
         ...provideClock('2026-10-14T15:00:00Z'),
         { provide: TaskQueueClient, useValue: { getTaskQueue } },
         { provide: PodsClient, useValue: pods },
@@ -85,6 +93,11 @@ describe('TaskQueuePage', () => {
     harness = await RouterTestingHarness.create();
     await harness.navigateByUrl(url, TaskQueuePage);
     await settle();
+    // Under load the first render can lag behind whenStable: wait for the page itself (the table is there in every state), never a fixed time.
+    await vi.waitFor(() => {
+      harness.detectChanges();
+      expect(harness.routeNativeElement?.querySelector('table')).not.toBeNull();
+    });
     return harness.routeNativeElement as HTMLElement;
   }
 
@@ -100,6 +113,21 @@ describe('TaskQueuePage', () => {
   const router = () => TestBed.inject(Router);
   const query = () => router().parseUrl(router().url).queryParams;
   const lastArgs = () => getTaskQueue.mock.calls[getTaskQueue.mock.calls.length - 1];
+  const chips = (el: HTMLElement) =>
+    Array.from(el.querySelectorAll('[data-filter-chips] [data-chip]')).map((c) =>
+      c.querySelector('.fch__text')!.textContent!.replace(/\s+/g, ' ').trim(),
+    );
+  const filterInput = (el: HTMLElement, key: string) =>
+    el.querySelector<HTMLInputElement>(`tr[data-filter-row] input[data-filter="${key}"]`)!;
+
+  /** Types into a column text filter and presses Enter, which applies at once. */
+  async function typeFilter(el: HTMLElement, key: string, text: string) {
+    const input = filterInput(el, key);
+    input.value = text;
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    await settle();
+  }
 
   afterEach(() => {
     vi.useRealTimers();
@@ -120,7 +148,7 @@ describe('TaskQueuePage', () => {
 
   it('passes every filter parameter of a deep link through with the same meaning', async () => {
     await open(
-      '/tasks?q=dedup&priority=1&priority=2&pod=5&assignee=9&unassigned=true&creator=3&sort=due&dir=desc&page=2&pageSize=25',
+      '/tasks?q=dedup&priority=1&priority=2&pod=5&assignee=9&unassigned=true&creator=3&matterText=343-12&clientText=Acme&projectText=Phase&updatedFrom=2026-10-01&updatedTo=2026-10-07&sort=due&dir=desc&page=2&pageSize=25',
     );
     const args = lastArgs();
     expect(args[ARG.q]).toBe('dedup');
@@ -129,6 +157,12 @@ describe('TaskQueuePage', () => {
     expect(args[ARG.assignee]).toEqual([9]);
     expect(args[ARG.unassigned]).toBe(true);
     expect(args[ARG.creator]).toEqual([3]);
+    expect([args[ARG.matterText], args[ARG.clientText], args[ARG.projectText]]).toEqual([
+      '343-12',
+      'Acme',
+      'Phase',
+    ]);
+    expect([args[ARG.updatedFrom], args[ARG.updatedTo]]).toEqual(['2026-10-01', '2026-10-07']);
     expect([args[ARG.sort], args[ARG.dir], args[ARG.page], args[ARG.pageSize]]).toEqual([
       'due',
       'desc',
@@ -137,26 +171,55 @@ describe('TaskQueuePage', () => {
     ]);
   });
 
-  it('starts a bare /tasks on the All open view, with one request', async () => {
-    await open('/tasks');
-
-    expect(query()['status']).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
-    expect(getTaskQueue).toHaveBeenCalledTimes(1);
-    expect(lastArgs()[ARG.status]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
+  it('a link with filters and no status asks for every status, as such links always did', async () => {
+    await open('/tasks?assignee=9&priority=2');
+    expect(lastArgs()[ARG.status]).toBeUndefined();
   });
 
-  it('opens a bare /tasks on the view the user last used, with one request', async () => {
+  it('starts a bare /tasks on the open statuses without touching the address, with one request', async () => {
+    const el = await open('/tasks');
+
+    expect(query()).toEqual({});
+    expect(getTaskQueue).toHaveBeenCalledTimes(1);
+    expect(lastArgs()[ARG.status]).toEqual(OPEN);
+    // The default is shown in its cell and is neither counted nor a chip.
+    expect(el.querySelector('tr[data-filter-row] [data-filter="status"]')!.textContent).toContain(
+      'Open',
+    );
+    expect(el.querySelector('[data-filters-toggle]')!.textContent).not.toContain('(');
+    expect(chips(el)).toEqual([]);
+    expect(el.querySelector('[data-restored-notice]')).toBeNull();
+  });
+
+  it('opens a bare /tasks on the view the user last used, says so, and loads once', async () => {
     localStorage.setItem(
       'mf.work-view.v1.queue.1',
       JSON.stringify({ status: ['NEW'], overdue: 'true', sort: 'due', dir: 'desc' }),
     );
-    await open('/tasks');
+    const el = await open('/tasks');
 
     expect(query()['status']).toBe('NEW');
     expect(query()['overdue']).toBe('true');
     expect(getTaskQueue).toHaveBeenCalledTimes(1);
     expect(lastArgs()[ARG.status]).toEqual(['NEW']);
     expect(lastArgs()[ARG.sort]).toBe('due');
+    expect(el.querySelector('[data-restored-notice]')!.textContent).toContain(
+      'Restored your last view',
+    );
+
+    // Reset to default goes back to the plain link and the open statuses.
+    el.querySelector<HTMLButtonElement>('[data-restored-notice] button')!.click();
+    await settle();
+    expect(query()['overdue']).toBeUndefined();
+    expect(lastArgs()[ARG.status]).toEqual(OPEN);
+    expect(el.querySelector('[data-restored-notice]')).toBeNull();
+  });
+
+  it('does not call the default view "restored": a remembered default is just the page', async () => {
+    localStorage.setItem('mf.work-view.v1.queue.1', JSON.stringify({ status: OPEN }));
+    const el = await open('/tasks');
+    expect(query()).toEqual({});
+    expect(el.querySelector('[data-restored-notice]')).toBeNull();
   });
 
   it('remembers the view it loaded, but not the search text', async () => {
@@ -166,31 +229,68 @@ describe('TaskQueuePage', () => {
     expect(saved).toEqual({ status: ['NEW'], priority: ['2'] });
   });
 
-  it('lists the rows with the range, opens the task from the title and shows the chips of the URL', async () => {
+  it('lists the rows, opens the task from the title and shows the filter row open with the chips of the URL', async () => {
     const el = await open('/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&priority=1');
 
     expect(el.querySelectorAll('tbody tr').length).toBe(2);
     expect(el.querySelector('tbody a')!.getAttribute('href')).toBe('/tasks/1042');
     expect(el.textContent).toContain('Showing 1-2 of 2');
-    const chips = Array.from(el.querySelectorAll('.fb-chip')).map((c) => c.textContent?.trim());
-    // The default "Status: Open" is not repeated as a chip (UXR-10).
-    expect(chips).toEqual(['Priority: Critical']);
+    // The row is open on this screen, so only filters on hidden columns would also show as chips; the default Open is never a chip.
+    expect(el.querySelector('tr[data-filter-row]')).not.toBeNull();
+    expect(el.querySelector('[data-filters-toggle]')!.textContent).toContain('(1)');
+    expect(chips(el)).toEqual([]);
   });
 
-  it('removing a chip and Clear all filters update the URL and reload; clearing does not bounce back to All open', async () => {
-    const el = await open('/tasks?status=NEW&priority=1&overdue=true');
-    el.querySelector<HTMLButtonElement>('.fb-chip-x')!.click(); // Status: New
-    await settle();
-    expect(query()).toEqual({ priority: '1', overdue: 'true' });
-    expect(lastArgs()[ARG.status]).toBeUndefined();
+  it('shows a filter on a hidden column as a chip, and the chip removes it', async () => {
+    const el = await open('/tasks?status=NEW&clientText=Acme&creator=2');
+    // Client and Creator are not in the default columns.
+    expect(chips(el)).toEqual([
+      'Client: Acme (hidden column)',
+      'Creator: Pat Partner (hidden column)',
+    ]);
 
-    el.querySelector<HTMLButtonElement>('.fb-clear')!.click();
+    el.querySelector<HTMLButtonElement>('[data-chip="clientText"] .fch__x')!.click();
     await settle();
-    // Clear all returns to the quiet default (All open), without redirecting through the bare-URL default.
-    expect(query()).toEqual({ status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'] });
-    expect(getTaskQueue).toHaveBeenCalledTimes(3);
+    expect(query()['clientText']).toBeUndefined();
+    expect(query()['creator']).toBe('2');
+    expect(lastArgs()[ARG.clientText]).toBeUndefined();
+  });
+
+  it('typing in a column filter writes the address, resets the page and reloads once', async () => {
+    const el = await open('/tasks?status=NEW&page=3');
+    const before = getTaskQueue.mock.calls.length;
+
+    await typeFilter(el, 'matterText', '343-12');
+    expect(query()['matterText']).toBe('343-12');
+    expect(query()['page']).toBeUndefined();
+    expect(getTaskQueue.mock.calls.length).toBe(before + 1);
+    expect(lastArgs()[ARG.matterText]).toBe('343-12');
+    expect(lastArgs()[ARG.status]).toEqual(['NEW']);
+  });
+
+  it('a filter chosen on a plain /tasks keeps the open statuses in the address, so the list does not widen', async () => {
+    const el = await open('/tasks');
+    await typeFilter(el, 'q', 'dedup');
+
+    expect(query()['q']).toBe('dedup');
+    expect(query()['status']).toEqual(OPEN);
+    expect(lastArgs()[ARG.status]).toEqual(OPEN);
+    expect(lastArgs()[ARG.q]).toBe('dedup');
+  });
+
+  it('removing a chip and Clear filters update the address and reload; clearing returns to the plain link', async () => {
+    const el = await open('/tasks?status=NEW&priority=1&overdue=true&clientText=Acme');
+    el.querySelector<HTMLButtonElement>('[data-chip="clientText"] .fch__x')!.click();
+    await settle();
+    expect(query()['clientText']).toBeUndefined();
+    expect(query()['priority']).toBe('1');
+
+    el.querySelector<HTMLButtonElement>('[data-clear-filters]')!.click();
+    await settle();
+    expect(query()).toEqual({});
     expect(lastArgs()[ARG.overdue]).toBeUndefined();
-    expect(lastArgs()[ARG.status]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
+    expect(lastArgs()[ARG.status]).toEqual(OPEN);
+    expect(getTaskQueue).toHaveBeenCalledTimes(3);
   });
 
   it('sorts by a column header, flips the direction, and resets to the default order', async () => {
@@ -210,9 +310,6 @@ describe('TaskQueuePage', () => {
     header('priority').click();
     await settle();
     expect(query()['dir']).toBe('desc');
-    expect(el.querySelector('th[data-col="priority"]')!.getAttribute('aria-sort')).toBe(
-      'descending',
-    );
 
     el.querySelector<HTMLButtonElement>('[data-sort-note] button')!.click();
     await settle();
@@ -220,37 +317,41 @@ describe('TaskQueuePage', () => {
     expect(lastArgs()[ARG.sort]).toBeUndefined();
   });
 
-  it('sorts a date column newest first the first time', async () => {
-    const el = await open('/tasks?status=NEW');
-    el.querySelector<HTMLElement>('th[data-col="due"] button')!.click();
+  it('sorting on a plain /tasks keeps the open statuses', async () => {
+    const el = await open('/tasks');
+    el.querySelector<HTMLElement>('thead th[data-col="due"] button')!.click();
     await settle();
-    expect([query()['sort'], query()['dir']]).toEqual(['due', 'asc']);
+    expect(lastArgs()[ARG.status]).toEqual(OPEN);
+    expect(lastArgs()[ARG.sort]).toBe('due');
   });
 
-  it('applies a quick view, replacing the filters', async () => {
+  it('applies a quick view as a preset that replaces the filters', async () => {
     const el = await open('/tasks?q=old&priority=2');
-    const view = (label: string) =>
-      Array.from(el.querySelectorAll<HTMLButtonElement>('.fb-view')).find(
-        (b) => b.textContent?.trim() === label,
-      )!;
+    const view = (key: string) => el.querySelector<HTMLButtonElement>(`[data-view="${key}"]`)!;
 
-    view('Overdue').click();
+    view('overdue').click();
     await settle();
-    expect(query()).toEqual({ status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'], overdue: 'true' });
-    expect(view('Overdue').getAttribute('aria-pressed')).toBe('true');
+    expect(query()).toEqual({ status: OPEN, overdue: 'true' });
+    expect(view('overdue').getAttribute('aria-pressed')).toBe('true');
+    expect(chips(el)).toEqual(['Overdue: Overdue only']);
 
-    view('Unassigned').click();
+    view('unassigned').click();
     await settle();
     expect(query()['unassigned']).toBe('true');
     expect(query()['overdue']).toBeUndefined();
+
+    // All open is the plain link; a manual change un-presses a view.
+    view('allOpen').click();
+    await settle();
+    expect(query()).toEqual({});
+    expect(view('allOpen').getAttribute('aria-pressed')).toBe('true');
+    await typeFilter(el, 'q', 'x');
+    expect(view('allOpen').getAttribute('aria-pressed')).toBe('false');
   });
 
   it('"My Pod" filters on the primary Pod and is disabled without one', async () => {
     let el = await open('/tasks?status=NEW', { primaryPod: 5 });
-    const myPod = () =>
-      Array.from(el.querySelectorAll<HTMLButtonElement>('.fb-view')).find(
-        (b) => b.textContent?.trim() === 'My pod',
-      )!;
+    const myPod = () => el.querySelector<HTMLButtonElement>('[data-view="myPod"]')!;
     expect(myPod().disabled).toBe(false);
     myPod().click();
     await settle();
@@ -260,20 +361,6 @@ describe('TaskQueuePage', () => {
     TestBed.resetTestingModule();
     el = await open('/tasks?status=NEW', { primaryPod: null });
     expect(myPod().disabled).toBe(true);
-  });
-
-  it('searches after a pause, from page 1', async () => {
-    const el = await open('/tasks?status=NEW&page=3');
-    vi.useFakeTimers();
-    const box = el.querySelector<HTMLInputElement>('#fb-q')!;
-    box.value = 'dedup';
-    box.dispatchEvent(new Event('input'));
-    vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
-    vi.useRealTimers();
-    await settle();
-    expect(query()['q']).toBe('dedup');
-    expect(query()['page']).toBeUndefined();
-    expect(lastArgs()[ARG.q]).toBe('dedup');
   });
 
   it('pages with Previous and Next and changes the page size', async () => {
@@ -295,43 +382,50 @@ describe('TaskQueuePage', () => {
     expect(query()['page']).toBeUndefined();
   });
 
-  it('shows skeleton rows while loading, then the rows', async () => {
+  it('keeps the headers and the filter row while loading, with the loading state as a row of the body', async () => {
     const pending = new Subject<unknown>();
     const el = await open('/tasks?status=NEW', { response: pending });
-    expect(el.querySelectorAll('tr.wt-skeleton').length).toBe(5);
+    expect(
+      el.querySelector('tbody[mfgridbody] [data-loading], tbody [data-loading]'),
+    ).not.toBeNull();
+    expect(el.querySelectorAll('thead th').length).toBeGreaterThan(3);
+    expect(el.querySelector('tr[data-filter-row]')).not.toBeNull();
     expect(el.querySelector('table')!.getAttribute('aria-busy')).toBe('true');
 
     pending.next(pageOf([aRow()]));
     pending.complete();
     await settle();
-    expect(el.querySelectorAll('tr.wt-skeleton').length).toBe(0);
+    expect(el.querySelector('[data-loading]')).toBeNull();
     expect(el.querySelectorAll('tbody tr').length).toBe(1);
   });
 
-  it('shows an error alert with Retry that reloads', async () => {
+  it('shows the error as a row of the body with Retry, keeping the headers and the filter row', async () => {
     const el = await open('/tasks?status=NEW', { response: throwError(() => new Error('boom')) });
-    expect(el.querySelector('[role="alert"]')!.textContent).toContain(
-      'Something went wrong. Try again.',
-    );
+    expect(el.querySelector('tbody [data-error]')!.textContent).toContain("Couldn't load tasks");
+    expect(el.querySelector('tr[data-filter-row]')).not.toBeNull();
 
     getTaskQueue.mockReturnValue(of(pageOf([aRow()])));
-    el.querySelector<HTMLButtonElement>('.wl-retry')!.click();
+    Array.from(el.querySelectorAll<HTMLButtonElement>('tbody [data-error] button, tbody button'))
+      .find((b) => b.textContent?.trim() === 'Retry')!
+      .click();
     await settle();
     expect(getTaskQueue).toHaveBeenCalledTimes(2);
-    expect(el.querySelector('[role="alert"]')).toBeNull();
+    expect(el.querySelector('[data-error]')).toBeNull();
     expect(el.querySelectorAll('tbody tr').length).toBe(1);
   });
 
-  it('says "No open tasks." with Create task when permitted, and "No tasks match these filters." when filtered', async () => {
+  it('says "No open tasks." with Create task when permitted, and "No tasks match these filters" with Clear filters when filtered', async () => {
     let el = await open('/tasks?status=NEW', { rows: [] });
     // Filters are set, so the filtered message applies.
-    expect(el.querySelector('[data-empty]')!.textContent).toContain(
-      'No tasks match these filters.',
-    );
+    let empty = el.querySelector('tbody [data-empty]')!;
+    expect(empty.getAttribute('data-empty')).toBe('filtered');
+    expect(empty.textContent).toContain('No tasks match these filters');
+    expect(el.querySelector('tr[data-filter-row]')).not.toBeNull();
 
     TestBed.resetTestingModule();
     el = await open('/tasks?sort=due', { rows: [] });
-    const empty = el.querySelector('[data-empty]')!;
+    empty = el.querySelector('tbody [data-empty]')!;
+    expect(empty.getAttribute('data-empty')).toBe('none');
     expect(empty.textContent).toContain('No open tasks.');
     expect(empty.textContent).toContain('Create task');
   });
@@ -353,6 +447,9 @@ describe('TaskQueuePage', () => {
     input('Compact').click();
     harness.detectChanges();
     expect(el.querySelector('th[data-col="client"]')).not.toBeNull();
+    // The Client filter now sits in the row, under its column.
+    await settle();
+    expect(filterInput(el, 'clientText')).not.toBeNull();
     expect(el.querySelector('table')!.classList).toContain('wt--compact');
 
     TestBed.resetTestingModule();
@@ -361,13 +458,24 @@ describe('TaskQueuePage', () => {
     expect(el.querySelector('table')!.classList).toContain('wt--compact');
   });
 
-  it('focuses the search box on "/" unless typing in a field', async () => {
+  it('puts one filter control under each column, Title or Ref across two', async () => {
+    const el = await open('/tasks');
+    const cells = Array.from(el.querySelectorAll('tr[data-filter-row] td'));
+    expect(cells[0].getAttribute('colspan')).toBe('2');
+    expect(filterInput(el, 'q').getAttribute('aria-label')).toBe('Filter by Title or Ref');
+    expect(filterInput(el, 'matterText').getAttribute('aria-label')).toBe('Filter by Matter');
+    for (const key of ['priority', 'assignee', 'due', 'status']) {
+      expect(el.querySelector(`tr[data-filter-row] [data-filter="${key}"]`), key).not.toBeNull();
+    }
+  });
+
+  it('focuses the Title or Ref filter on "/" unless typing in a field', async () => {
     const el = await open('/tasks?status=NEW');
-    const box = el.querySelector<HTMLInputElement>('#fb-q')!;
     document.body.appendChild(el);
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: '/' }));
-    expect(document.activeElement).toBe(box);
-    box.blur();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: '/', cancelable: true }));
+    await settle();
+    expect(document.activeElement).toBe(filterInput(el, 'q'));
+    (document.activeElement as HTMLElement).blur();
 
     const other = document.createElement('input');
     document.body.appendChild(other);

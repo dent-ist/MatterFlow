@@ -58,19 +58,29 @@ describe('WorkList', () => {
   it('says no tasks match the filters and offers to clear them', async () => {
     await create([], { filtered: true });
     expect(el().querySelector('table thead th')).not.toBeNull();
-    expect(el().querySelector('[data-empty]')!.textContent).toContain(
-      'No tasks match these filters.',
+    expect(el().querySelector('tbody [data-empty]')!.textContent).toContain(
+      'No tasks match these filters',
     );
     let cleared = 0;
     fixture.componentInstance.clearFilters.subscribe(() => cleared++);
-    el().querySelector<HTMLButtonElement>('[data-empty] button')!.click();
+    el().querySelector<HTMLButtonElement>('tbody [data-empty] button')!.click();
     expect(cleared).toBe(1);
   });
 
-  it('shows five skeleton rows while loading', async () => {
+  it('shows loading as a row of the table body', async () => {
     await create([], { state: 'loading' });
-    expect(el().querySelectorAll('tr.wt-skeleton').length).toBe(5);
+    expect(el().querySelector('tbody [data-loading]')).not.toBeNull();
     expect(el().querySelector('[role="status"]')!.textContent).toContain('Loading');
+  });
+
+  it('shows the error as a row of the body when there is nothing to keep, with Retry', async () => {
+    await create([], { state: 'error' });
+    expect(el().querySelector('table thead th')).not.toBeNull();
+    expect(el().querySelector('tbody [data-error]')!.textContent).toContain("Couldn't load tasks");
+    let retried = 0;
+    fixture.componentInstance.retry.subscribe(() => retried++);
+    el().querySelector<HTMLButtonElement>('tbody [data-error] button, tbody button')!.click();
+    expect(retried).toBe(1);
   });
 
   it('shows an alert with Retry and keeps the previous rows on error', async () => {

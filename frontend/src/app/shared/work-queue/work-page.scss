@@ -119,3 +119,9 @@
   justify-content: flex-end;
   margin: 0 0 var(--mf-s2);
 }
+
+/* The tabs of My Work and Pod Work: one row with a rule under it; the filter bar sits below, inside the tab panel. */
+.wp-tabrow {
+  margin-bottom: var(--mf-s2);
+  border-bottom: 2px solid var(--mf-border);
+}

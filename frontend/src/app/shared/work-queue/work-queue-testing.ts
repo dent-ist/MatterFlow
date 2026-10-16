@@ -1,8 +1,10 @@
-import { Provider } from '@angular/core';
+import { Provider, signal } from '@angular/core';
 import { of } from 'rxjs';
 import { PrioritiesClient, StatusLabelsClient, TaskQueueRow } from '../../api/generated/api-client';
 import { SEEDED_PRIORITIES, SEEDED_STATUS_LABELS } from '../../core/lookups/lookups-testing';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
+import { FilterOption } from '../filters/filter-def';
+import { QueueChoices } from './queue-choices';
 
 /** Builders and fakes shared by the work-queue component tests. */
 export function aRow(overrides: Partial<TaskQueueRow> = {}): TaskQueueRow {
@@ -67,5 +69,26 @@ export function provideClock(now: string, zone = 'America/Chicago'): Provider[] 
   return [
     { provide: Clock, useValue: { now: () => new Date(now) } },
     { provide: USER_TIME_ZONE, useValue: zone },
+  ];
+}
+
+/** The people, task types and workflows the column filters offer, without asking the server (tests give them directly). */
+export function provideQueueChoices(
+  choices: {
+    people?: FilterOption[];
+    types?: FilterOption[];
+    workflows?: FilterOption[];
+  } = {},
+): Provider[] {
+  return [
+    {
+      provide: QueueChoices,
+      useValue: {
+        people: signal(choices.people ?? []),
+        types: signal(choices.types ?? []),
+        workflows: signal(choices.workflows ?? []),
+        ensure: () => undefined,
+      },
+    },
   ];
 }

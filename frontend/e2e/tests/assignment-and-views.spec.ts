@@ -112,7 +112,7 @@ test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
     await myWork.expectNotListed(others.title);
   });
 
-  test('My Work: search and Filters share the tab row, the sort note and Columns sit above the grid, new tasks are marked until the next visit', async ({
+  test('My Work: the tabs have their own row, the sort note, Columns and Filters share one bar above the grid, new tasks are marked until the next visit', async ({
     seed,
     asUser,
   }) => {
@@ -125,15 +125,15 @@ test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
     await myWork.open();
     await myWork.expectListed(first.title);
     const y = async (loc: ReturnType<typeof page.locator>) => (await loc.boundingBox())!.y;
-    const search = page.getByRole('searchbox', { name: 'Search title or ref' });
     const tab = myWork.tab(/^Active/);
-    expect(Math.abs((await y(search)) - (await y(tab)))).toBeLessThan(24);
     const filters = page.getByRole('button', { name: /^Filters/ });
-    expect(Math.abs((await y(filters)) - (await y(tab)))).toBeLessThan(24);
     const columns = page.getByRole('button', { name: 'Columns' });
     const head = page.locator('table thead').first();
+    // Tabs first; under them one bar holds Columns and Filters (same line); then the grid with its filter row.
     expect(await y(columns)).toBeGreaterThan(await y(tab));
+    expect(Math.abs((await y(filters)) - (await y(columns)))).toBeLessThan(24);
     expect(await y(columns)).toBeLessThan(await y(head));
+    await expect(page.getByRole('textbox', { name: 'Filter by Title or Ref' })).toBeVisible();
     await expect(page.locator('[data-sort-note]')).toContainText('Sorted by Priority');
     await expect(page.locator('[data-near-empty]')).toContainText(
       "That's everything on your plate.",
@@ -184,7 +184,7 @@ test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
     await podWork.expectNotListed(inA.title, colleague.title, noPod.title);
   });
 
-  test('the Task Queue shows everything to anyone with Task.View and filters by search', async ({
+  test('the Task Queue shows everything to anyone with Task.View and filters by Title or Ref', async ({
     seed,
     asUser,
   }) => {
@@ -198,6 +198,6 @@ test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
     await queue.search(task.title);
     await queue.expectListed(task.title);
     await queue.search(`nothing-matches-${uid()}`);
-    await expect(page.locator('[data-empty]')).toContainText('No tasks match these filters');
+    await expect(page.locator('tbody [data-empty]')).toContainText('No tasks match these filters');
   });
 });

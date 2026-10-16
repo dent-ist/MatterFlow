@@ -1,5 +1,7 @@
 import { convertToParamMap } from '@angular/router';
-import { ChipNames, buildChips, parseQueueState } from '../../shared/work-queue/queue-filters';
+import { buildChips, parseFilters } from '../../shared/filters/filter-def';
+import { queueFilterDefs } from '../../shared/filters/queue-defs';
+import { parseQueueState } from '../../shared/work-queue/queue-filters';
 import { queueArgsFor, queueParams, queueParamsSorted } from './dashboard-links';
 
 describe('queueParams', () => {
@@ -43,7 +45,7 @@ describe('queueArgsFor', () => {
     );
     expect(args[1]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']); // status
     expect(args[6]).toBe(true); // unassigned
-    expect(args.slice(22)).toEqual(['priorityAge', 'asc', 1, 8]);
+    expect(args.slice(27)).toEqual(['priorityAge', 'asc', 1, 8]);
   });
 
   it('carries overdue and the due-soon window', () => {
@@ -65,16 +67,23 @@ describe('queueArgsFor', () => {
  */
 describe('every dashboard link opens the Task Queue with matching filters and chips', () => {
   const OPEN = 'status=NEW&status=IN_PROGRESS&status=ON_HOLD';
-  const names: ChipNames = {
-    statusLabel: (c) => c,
-    priorityLabel: (id) => `P${id}`,
-    podName: (id) => `Pod ${id}`,
-    userName: (id) => `User ${id}`,
-    clientName: (id) => `Client ${id}`,
-    matterName: (id) => `Matter ${id}`,
-    projectName: (id) => `Project ${id}`,
-    typeName: (id) => `Type ${id}`,
-    workflowName: (id) => `Workflow ${id}`,
+  const ids = (n: number, label: (id: number) => string) =>
+    Array.from({ length: n }, (_, i) => ({ value: String(i + 1), label: label(i + 1) }));
+  const lookups = {
+    statuses: ['NEW', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'CANCELLED'].map((c) => ({
+      value: c,
+      label: c,
+    })),
+    priorities: ids(9, (id) => `P${id}`),
+    pods: ids(9, (id) => `Pod ${id}`),
+    users: ids(12, (id) => `User ${id}`),
+    types: ids(12, (id) => `Type ${id}`),
+  };
+  /** What the shared filter bar shows as chips for a dashboard link (the bar's chips are built from these definitions). */
+  const chipLabels = (query: string): string[] => {
+    const defs = queueFilterDefs(lookups);
+    const values = parseFilters(defs, convertToParamMap(queueParams(query)));
+    return defs.flatMap((d) => buildChips(d, values[d.key], false)).map((c) => c.label);
   };
 
   const cases: [string, string, (s: ReturnType<typeof parseQueueState>) => void, string[]][] = [
@@ -94,7 +103,7 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
       'overdue',
       `${OPEN}&overdue=true`,
       (s) => expect(s.filters.overdue).toBe(true),
-      ['Status: Open', 'Overdue only'],
+      ['Status: Open', 'Overdue: Overdue only'],
     ],
     [
       'on hold',
@@ -106,7 +115,7 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
       'ASAP open',
       `${OPEN}&asap=true`,
       (s) => expect(s.filters.asap).toBe(true),
-      ['Status: Open', 'ASAP only'],
+      ['Status: Open', 'ASAP: ASAP only'],
     ],
     [
       'due soon',
@@ -117,14 +126,14 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
           false,
           '2026-10-16',
         ]),
-      ['Status: Open', 'Due: until Oct 16, 2026', 'Has a due date', 'Not overdue'],
+      ['Status: Open', 'Due: until Oct 16, 2026', 'ASAP: Has a due date', 'Overdue: Not overdue'],
     ],
     [
       'completed in the period',
       'status=COMPLETED&completedFrom=2026-09-15',
       (s) =>
         expect([s.filters.status, s.filters.completedFrom]).toEqual([['COMPLETED'], '2026-09-15']),
-      ['Status: COMPLETED', 'Completed: from Sep 15, 2026'],
+      ['Status: COMPLETED', 'Closed: from Sep 15, 2026'],
     ],
     [
       'created in the period',
@@ -147,7 +156,7 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
           '2026-10-12',
           '2026-10-12',
         ]),
-      ['Status: COMPLETED', 'Completed: Oct 12, 2026'],
+      ['Status: COMPLETED', 'Closed: Oct 12, 2026'],
     ],
     [
       'pod',
@@ -171,13 +180,13 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
       'task type',
       `${OPEN}&type=7`,
       (s) => expect(s.filters.type).toEqual([7]),
-      ['Status: Open', 'Type: Type 7'],
+      ['Status: Open', 'Task type: Type 7'],
     ],
     [
       'other task types',
       `${OPEN}&type=8&type=9`,
       (s) => expect(s.filters.type).toEqual([8, 9]),
-      ['Status: Open', 'Type: Type 8', 'Type: Type 9'],
+      ['Status: Open', 'Task type: Type 8', 'Task type: Type 9'],
     ],
     [
       'status bar',
@@ -202,7 +211,7 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
       'my overdue',
       `${OPEN}&assignee=9&overdue=true`,
       (s) => expect([s.filters.assignee, s.filters.overdue]).toEqual([[9], true]),
-      ['Status: Open', 'Assignee: User 9', 'Overdue only'],
+      ['Status: Open', 'Assignee: User 9', 'Overdue: Overdue only'],
     ],
     [
       'created by me',
@@ -215,6 +224,6 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
   it.each(cases)('%s', (_name, query, check, chips) => {
     const state = parseQueueState(convertToParamMap(queueParams(query)));
     check(state);
-    expect(buildChips(state.filters, names).map((c) => c.label)).toEqual(chips);
+    expect(chipLabels(query)).toEqual(chips);
   });
 });

@@ -14,7 +14,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { FILTER_TRIGGER_STYLES, FilterPopover } from './filter-popover';
-import { FilterOption } from './filter-def';
+import { FilterOption, ValueGroup } from './filter-def';
 
 /** A tick applies 400 ms after the last one (never per tick), or at once when the panel closes. */
 export const MULTI_COMMIT_MS = 400;
@@ -164,6 +164,8 @@ export class ColumnMultiselectFilter {
   readonly value = input<readonly string[]>([]);
   /** What the button says when nothing is chosen. */
   readonly emptyLabel = input('All');
+  /** Named sets of values: a choice equal to one reads as its name ("Open") in the button. */
+  readonly groups = input<readonly ValueGroup[]>([]);
   /** The sheet shows the checkbox group in place instead of a popover. */
   readonly inline = input(false);
   readonly disabled = input(false);
@@ -185,6 +187,10 @@ export class ColumnMultiselectFilter {
   protected readonly summary = computed(() => {
     const d = this.draft();
     if (d.length === 0) return this.emptyLabel();
+    const group = this.groups().find(
+      (g) => g.values.length === d.length && g.values.every((v) => d.includes(v)),
+    );
+    if (group) return group.label;
     if (d.length === 1) {
       return this.options().find((o) => o.value === d[0])?.label ?? d[0];
     }

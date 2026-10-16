@@ -28,4 +28,18 @@ internal static class TextMatch
 
         return sb.Append('%').ToString();
     }
+
+    /// <summary>The padded Matter reference (<c>00343-00012</c>) of a typed pair such as <c>343-12</c>, or null when the text is not a pair.</summary>
+    public static string? PairReference(string text)
+    {
+        var parts = text.Split('-', StringSplitOptions.TrimEntries);
+        return parts is { Length: 2 }
+            && MatterFlow.SharedKernel.ValueObjects.BusinessNumber.TryParse(parts[0], out var client)
+            && MatterFlow.SharedKernel.ValueObjects.BusinessNumber.TryParse(parts[1], out var matter)
+            ? $"{client.Value}-{matter.Value}"
+            : null;
+    }
+
+    /// <summary>True for a non-empty run of the digits 0-9.</summary>
+    public static bool IsDigits(string text) => text.Length > 0 && text.All(c => c is >= '0' and <= '9');
 }

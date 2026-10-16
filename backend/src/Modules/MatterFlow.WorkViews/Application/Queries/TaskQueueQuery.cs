@@ -17,6 +17,7 @@ public class TaskQueueQuery
     [
         "q", "status", "priority", "pod", "noPod", "assignee", "unassigned", "creator", "client", "matter", "project", "type", "workflow",
         "createdFrom", "createdTo", "dueFrom", "dueTo", "asap", "overdue", "requestor", "completedFrom", "completedTo",
+        "matterText", "clientText", "projectText", "updatedFrom", "updatedTo",
     ];
 
     /// <summary>All parameters of the Task Queue.</summary>
@@ -110,6 +111,29 @@ public class TaskQueueQuery
     [FromQuery(Name = "completedTo")]
     public DateOnly? CompletedTo { get; init; }
 
+    /// <summary>
+    /// Matter column filter: text contained in the Matter reference (<c>00343-00012</c>, or the typed pair <c>343-12</c>) or the Matter name
+    /// (case-insensitive, <c>%</c> <c>_</c> <c>[</c> literal). Combines with <c>matter</c> (an id) as AND.
+    /// </summary>
+    [FromQuery(Name = "matterText"), StringLength(200)]
+    public string? MatterText { get; init; }
+
+    /// <summary>Client column filter: text contained in the Client name, or digits contained in the Client number.</summary>
+    [FromQuery(Name = "clientText"), StringLength(200)]
+    public string? ClientText { get; init; }
+
+    /// <summary>Project column filter: text contained in the Project name (Tasks without a Project never match).</summary>
+    [FromQuery(Name = "projectText"), StringLength(200)]
+    public string? ProjectText { get; init; }
+
+    /// <summary>Last updated on or after this date (<c>yyyy-MM-dd</c>, start of the day in the viewer's zone); Tasks never updated do not match.</summary>
+    [FromQuery(Name = "updatedFrom")]
+    public DateOnly? UpdatedFrom { get; init; }
+
+    /// <summary>Last updated on or before this date (end of that day in the viewer's zone).</summary>
+    [FromQuery(Name = "updatedTo")]
+    public DateOnly? UpdatedTo { get; init; }
+
     /// <summary><c>default</c> (priority, ASAP above due dates, oldest), <c>priority</c>, <c>priorityAge</c> (priority, then oldest), <c>due</c>, <c>created</c>, <c>number</c>, <c>status</c> or <c>completed</c>.</summary>
     [FromQuery(Name = "sort"), StringLength(20)]
     public string? Sort { get; init; }
@@ -174,7 +198,12 @@ public sealed record TaskQueueFilter(
     bool? Overdue,
     string? Requestor,
     DateOnly? CompletedFrom,
-    DateOnly? CompletedTo)
+    DateOnly? CompletedTo,
+    string? MatterText = null,
+    string? ClientText = null,
+    string? ProjectText = null,
+    DateOnly? UpdatedFrom = null,
+    DateOnly? UpdatedTo = null)
 {
     /// <summary>Parses and validates the filter part of a query.</summary>
     public static Result<TaskQueueFilter> From(TaskQueueQuery query)
@@ -211,7 +240,12 @@ public sealed record TaskQueueFilter(
             query.Overdue,
             Clean(query.Requestor),
             query.CompletedFrom,
-            query.CompletedTo);
+            query.CompletedTo,
+            Clean(query.MatterText),
+            Clean(query.ClientText),
+            Clean(query.ProjectText),
+            query.UpdatedFrom,
+            query.UpdatedTo);
     }
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();

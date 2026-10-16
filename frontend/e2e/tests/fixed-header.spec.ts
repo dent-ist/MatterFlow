@@ -26,7 +26,7 @@ const documentOverflow = (page: Page) =>
 /** Body rows that are fully inside the scrolling region, under the sticky header. */
 async function visibleRows(page: Page, region: Locator, rowSelector: string): Promise<number> {
   const area = await box(region);
-  const head = await box(region.locator('thead th').first());
+  const head = await box(region.locator('thead').first()); // the header row and the filter row
   const rows = await page.locator(rowSelector).all();
   let count = 0;
   for (const row of rows) {
@@ -58,7 +58,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
   });
 
-  test('Task Queue: title, search, Filters and the column headers stay at the same place while the rows scroll', async ({
+  test('Task Queue: title, Filters and the column headers and the filter row stay at the same place while the rows scroll', async ({
     page,
   }) => {
     await page.goto('/tasks');
@@ -68,14 +68,15 @@ test.describe('Fixed-header screens at 1366x768', () => {
     await expect(region.locator('tr[data-task]').first()).toBeVisible();
     await expect(page.locator('mf-fixed-page')).toHaveAttribute('data-fixed-page', '');
 
-    const search = page.getByRole('searchbox', { name: 'Search title or ref' });
+    const filterRow = region.locator('tr[data-filter-row] td').first();
+    await expect(filterRow).toBeVisible(); // open by default on the work lists
     const filters = page.getByRole('button', { name: /^Filters/ });
     const header = region.locator('thead th').first();
     const firstRow = region.locator('tr[data-task]').first();
     const pager = page.getByRole('navigation', { name: 'Pagination' });
     const before = {
       heading: await box(heading),
-      search: await box(search),
+      filterRow: await box(filterRow),
       filters: await box(filters),
       header: await box(header),
       row: await box(firstRow),
@@ -92,7 +93,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
 
     expect(await box(heading)).toEqual(before.heading);
     expect(await box(filters)).toEqual(before.filters);
-    expect(await box(filters)).toEqual(before.filters);
+    expect(await box(filterRow)).toEqual(before.filterRow); // the filter row is sticky under the header row
     expect(await box(header)).toEqual(before.header); // sticky column header
     expect(await box(pager)).toEqual(before.pager); // pinned pager bar
     expect((await box(firstRow)).y).toBeLessThan(before.row.y - 200); // the rows moved
@@ -242,18 +243,24 @@ test.describe('Fixed-header screens at 1366x768', () => {
     expect(await documentOverflow(page)).toBeLessThanOrEqual(0);
   });
 
-  test('the Task Queue Filters panel stays inside the pinned area with its own scroll', async ({
+  test('the Task Queue filter row is one more sticky head row: it costs the grid a few dozen pixels, not a panel', async ({
     page,
   }) => {
     await page.goto('/tasks');
     const region = page.getByRole('region', { name: 'Task Queue list, scrollable' });
     await expect(region.locator('tr[data-task]').first()).toBeVisible();
-    await page.getByRole('button', { name: /^Filters/ }).click();
-    const panel = page.getByRole('group', { name: 'Filters' });
-    await expect(panel).toBeVisible();
-    expect((await box(panel)).height).toBeLessThanOrEqual(768 * 0.4 + 2);
-    expect((await box(region)).height).toBeGreaterThan(120);
+    const toggle = page.getByRole('button', { name: /^Filters/ });
+    const open = await box(region);
+    await toggle.click(); // close it (open by default)
+    await expect(page.locator('tr[data-filter-row]')).toHaveCount(0);
+    const closed = await box(region);
+    // Closed, the grid is taller by the filter row (40 px) at most, plus the chips line that takes its place.
+    expect(closed.height - open.height).toBeGreaterThanOrEqual(0);
+    expect(closed.height - open.height).toBeLessThanOrEqual(90);
+    expect(open.height).toBeGreaterThan(300);
     expect(await documentOverflow(page)).toBeLessThanOrEqual(0);
+    await toggle.click();
+    await expect(page.locator('tr[data-filter-row]')).toBeVisible();
   });
 
   test('inline Status menu and the Columns chooser are not clipped by the scrolling grid', async ({

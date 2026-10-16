@@ -1,6 +1,9 @@
 import { firstValueFrom } from 'rxjs';
 import { PodsClient } from '../../api/generated/api-client';
-import { PodOption } from './work-filter-bar';
+export interface PodOption {
+  id: number;
+  name: string;
+}
 
 export interface PodChoices {
   options: PodOption[];

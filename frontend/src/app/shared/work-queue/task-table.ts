@@ -10,9 +10,14 @@ import {
   output,
   signal,
   viewChild,
+  effect,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { LoadState } from '../ui/data-table';
 import { ScrollArea } from '../ui/fixed-page';
+import { ColumnFilterRow } from '../filters/column-filter-row';
+import { ListFilters } from '../filters/list-filters';
+import { GridBody } from '../ui/grid-body';
 import { TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
@@ -28,7 +33,6 @@ import { InlineField, canEditField } from './inline-edit';
 import { SortDirection } from './queue-filters';
 import { RowEdit } from './row-edit';
 
-const SKELETON_ROWS = [0, 1, 2, 3, 4];
 /** Box widths (px) under which the lowest-priority columns drop out. */
 const PROGRESS_FOLDS_BELOW = 1060;
 const MATTER_HIDES_BELOW = 960;
@@ -51,6 +55,8 @@ const PROJECT_HIDES_BELOW = 800;
     RowEdit,
     ScrollArea,
     StatusBadge,
+    GridBody,
+    ColumnFilterRow,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -94,28 +100,29 @@ const PROJECT_HIDES_BELOW = 800;
               <th scope="col" class="wt-actions">Actions</th>
             }
           </tr>
-        </thead>
-        <tbody>
-          @if (loading() && rows().length === 0) {
-            @for (n of skeleton; track n) {
-              <tr class="wt-skeleton" aria-hidden="true">
-                @for (col of shownColumns(); track col.key) {
-                  <td><span class="wt-bone"></span></td>
-                }
-                @if (showAssign()) {
-                  <td class="wt-actions"><span class="wt-bone"></span></td>
-                }
-              </tr>
+          @if (filters(); as f) {
+            @if (f.rowVisible()) {
+              <tr
+                mfColumnFilterRow
+                [id]="filterRowId()"
+                [filters]="f"
+                [columns]="filterColumns()"
+              ></tr>
             }
           }
-          @if (!loading() && rows().length === 0) {
-            <!-- Nothing to list: the headers stay and the message (projected by the list) takes the first row. -->
-            <tr class="wt-empty-row">
-              <td [attr.colspan]="shownColumns().length + (showAssign() ? 1 : 0)">
-                <ng-content select="[table-empty]" />
-              </td>
-            </tr>
-          }
+        </thead>
+        <!-- The headers and the filter row stay in every state: loading, error and empty are rows of the body. -->
+        <tbody
+          mfGridBody
+          noun="tasks"
+          [state]="gridState()"
+          [empty]="rows().length === 0"
+          [filtered]="filtered()"
+          [emptyText]="emptyText()"
+          [columns]="columnCount()"
+          (retry)="retry.emit()"
+          (clear)="clearFilters.emit()"
+        >
           @for (row of rows(); track row.taskId) {
             <tr [class.wt-row--overdue]="row.isOverdue" [attr.data-task]="row.taskNumber">
               @for (col of shownColumns(); track col.key) {
@@ -333,6 +340,7 @@ const PROJECT_HIDES_BELOW = 800;
               }
             </tr>
           }
+          <span mfEmptyAction><ng-content select="[empty-action]" /></span>
         </tbody>
       </table>
     </div>
@@ -358,7 +366,14 @@ export class TaskTable {
   readonly resetKey = input<unknown>(undefined);
   /** The scrolling region's name: "Task Queue list". */
   protected readonly listLabel = computed(() => `${this.caption()} list`);
-  readonly loading = input(false);
+  /** loading: skeleton text row (dimmed rows while refreshing); error: the error row; ready: the rows or the empty row. */
+  readonly state = input<LoadState>('ready');
+  /** The column filters; the row shows under the headers while it is open. */
+  readonly filters = input<ListFilters | null>(null);
+  readonly filterRowId = input('work-filter-row');
+  /** True while a filter is active: an empty list then says "No tasks match these filters". */
+  readonly filtered = input(false);
+  readonly emptyText = input('No tasks yet.');
   readonly density = input<Density>('comfortable');
   /** Current API sort field; null shows no sort indicator (the default order applies). */
   readonly sort = input<string | null>(null);
@@ -371,12 +386,20 @@ export class TaskTable {
   readonly hideContext = input(false);
 
   readonly sortChange = output<string>();
+  readonly retry = output<void>();
+  readonly clearFilters = output<void>();
+  /** The keys of the columns that are on screen now (the table folds some away on a narrow window). */
+  readonly columnsShown = output<string[]>();
   readonly assignToMe = output<TaskQueueRow>();
   /** A row changed from the table (an inline edit): the optimistic row, then the server's row or the original again. */
   readonly rowChange = output<TaskQueueRow>();
 
   constructor() {
     const destroyRef = inject(DestroyRef);
+    effect(() => {
+      const keys = this.shownKeys();
+      this.columnsShown.emit(keys === '' ? [] : keys.split(','));
+    });
     afterNextRender(() => {
       const el = this.wrap()?.nativeElement;
       if (!el) return;
@@ -385,6 +408,8 @@ export class TaskTable {
         this.overflowing.set(el.scrollWidth > el.clientWidth + 1);
       };
       measure();
+      // Where the grid overflows sideways the filters move into the sheet.
+      this.filters()?.watchOverflow(el);
       if (typeof ResizeObserver === 'undefined') return;
       const observer = new ResizeObserver(measure);
       observer.observe(el);
@@ -394,7 +419,12 @@ export class TaskTable {
     });
   }
 
-  protected readonly skeleton = SKELETON_ROWS;
+  protected readonly loading = computed(() => this.state() === 'loading');
+  /** Rows kept while a refresh runs or fails are shown dimmed; the body states only replace an empty list. */
+  protected readonly gridState = computed<LoadState>(() => {
+    const state = this.state();
+    return this.rows().length > 0 ? 'ready' : state;
+  });
   /**
    * Columns in table order. Below the width thresholds the lowest-priority columns drop out so Status and Due never scroll out of view
    * (UXR4-02): Workflow progress moves under the title below 1100 px, the Matter column goes below 960 px (the line under the title
@@ -409,6 +439,20 @@ export class TaskTable {
     if (width > 0 && width < PROJECT_HIDES_BELOW) dropped.add('project');
     return WORK_COLUMNS.filter((c) => c.locked || (wanted.has(c.key) && !dropped.has(c.key)));
   });
+
+  protected readonly columnCount = computed(
+    () => this.shownColumns().length + (this.showAssign() ? 1 : 0),
+  );
+  /** The filter row's cells: the shown columns, and an empty cell for the Actions column. */
+  protected readonly filterColumns = computed(() => [
+    ...this.shownColumns().map((c) => c.key),
+    ...(this.showAssign() ? ['actions'] : []),
+  ]);
+  private readonly shownKeys = computed(() =>
+    this.shownColumns()
+      .map((c) => c.key)
+      .join(','),
+  );
 
   /** True when the Workflow progress column was asked for but is folded under the title because the table is narrow. */
   protected readonly foldProgress = computed(

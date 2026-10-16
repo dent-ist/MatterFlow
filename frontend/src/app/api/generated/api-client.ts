@@ -8968,13 +8968,18 @@ export interface ITaskQueueClient {
      * @param requestor (optional) 
      * @param completedFrom (optional) 
      * @param completedTo (optional) 
+     * @param matterText (optional) 
+     * @param clientText (optional) 
+     * @param projectText (optional) 
+     * @param updatedFrom (optional) 
+     * @param updatedTo (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getTaskQueue(q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage>;
+    getTaskQueue(q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage>;
 }
 
 @Injectable({
@@ -9013,13 +9018,18 @@ export class TaskQueueClient implements ITaskQueueClient {
      * @param requestor (optional) 
      * @param completedFrom (optional) 
      * @param completedTo (optional) 
+     * @param matterText (optional) 
+     * @param clientText (optional) 
+     * @param projectText (optional) 
+     * @param updatedFrom (optional) 
+     * @param updatedTo (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getTaskQueue(q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage> {
+    getTaskQueue(q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage> {
         let url_ = this.baseUrl + "/api/v1/task-queue?";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
@@ -9109,6 +9119,26 @@ export class TaskQueueClient implements ITaskQueueClient {
             throw new globalThis.Error("The parameter 'completedTo' cannot be null.");
         else if (completedTo !== undefined)
             url_ += "completedTo=" + encodeURIComponent("" + completedTo) + "&";
+        if (matterText === null)
+            throw new globalThis.Error("The parameter 'matterText' cannot be null.");
+        else if (matterText !== undefined)
+            url_ += "matterText=" + encodeURIComponent("" + matterText) + "&";
+        if (clientText === null)
+            throw new globalThis.Error("The parameter 'clientText' cannot be null.");
+        else if (clientText !== undefined)
+            url_ += "clientText=" + encodeURIComponent("" + clientText) + "&";
+        if (projectText === null)
+            throw new globalThis.Error("The parameter 'projectText' cannot be null.");
+        else if (projectText !== undefined)
+            url_ += "projectText=" + encodeURIComponent("" + projectText) + "&";
+        if (updatedFrom === null)
+            throw new globalThis.Error("The parameter 'updatedFrom' cannot be null.");
+        else if (updatedFrom !== undefined)
+            url_ += "updatedFrom=" + encodeURIComponent("" + updatedFrom) + "&";
+        if (updatedTo === null)
+            throw new globalThis.Error("The parameter 'updatedTo' cannot be null.");
+        else if (updatedTo !== undefined)
+            url_ += "updatedTo=" + encodeURIComponent("" + updatedTo) + "&";
         if (sort === null)
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
         else if (sort !== undefined)
@@ -9196,13 +9226,18 @@ export interface IMyWorkClient {
      * @param requestor (optional) 
      * @param completedFrom (optional) 
      * @param completedTo (optional) 
+     * @param matterText (optional) 
+     * @param clientText (optional) 
+     * @param projectText (optional) 
+     * @param updatedFrom (optional) 
+     * @param updatedTo (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getMyWork(view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage>;
+    getMyWork(view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage>;
 }
 
 @Injectable({
@@ -9242,13 +9277,18 @@ export class MyWorkClient implements IMyWorkClient {
      * @param requestor (optional) 
      * @param completedFrom (optional) 
      * @param completedTo (optional) 
+     * @param matterText (optional) 
+     * @param clientText (optional) 
+     * @param projectText (optional) 
+     * @param updatedFrom (optional) 
+     * @param updatedTo (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getMyWork(view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage> {
+    getMyWork(view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage> {
         let url_ = this.baseUrl + "/api/v1/my-work?";
         if (view === null)
             throw new globalThis.Error("The parameter 'view' cannot be null.");
@@ -9342,6 +9382,26 @@ export class MyWorkClient implements IMyWorkClient {
             throw new globalThis.Error("The parameter 'completedTo' cannot be null.");
         else if (completedTo !== undefined)
             url_ += "completedTo=" + encodeURIComponent("" + completedTo) + "&";
+        if (matterText === null)
+            throw new globalThis.Error("The parameter 'matterText' cannot be null.");
+        else if (matterText !== undefined)
+            url_ += "matterText=" + encodeURIComponent("" + matterText) + "&";
+        if (clientText === null)
+            throw new globalThis.Error("The parameter 'clientText' cannot be null.");
+        else if (clientText !== undefined)
+            url_ += "clientText=" + encodeURIComponent("" + clientText) + "&";
+        if (projectText === null)
+            throw new globalThis.Error("The parameter 'projectText' cannot be null.");
+        else if (projectText !== undefined)
+            url_ += "projectText=" + encodeURIComponent("" + projectText) + "&";
+        if (updatedFrom === null)
+            throw new globalThis.Error("The parameter 'updatedFrom' cannot be null.");
+        else if (updatedFrom !== undefined)
+            url_ += "updatedFrom=" + encodeURIComponent("" + updatedFrom) + "&";
+        if (updatedTo === null)
+            throw new globalThis.Error("The parameter 'updatedTo' cannot be null.");
+        else if (updatedTo !== undefined)
+            url_ += "updatedTo=" + encodeURIComponent("" + updatedTo) + "&";
         if (sort === null)
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
         else if (sort !== undefined)
@@ -9430,13 +9490,18 @@ export interface IPodWorkClient {
      * @param requestor (optional) 
      * @param completedFrom (optional) 
      * @param completedTo (optional) 
+     * @param matterText (optional) 
+     * @param clientText (optional) 
+     * @param projectText (optional) 
+     * @param updatedFrom (optional) 
+     * @param updatedTo (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage>;
+    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage>;
 }
 
 @Injectable({
@@ -9477,13 +9542,18 @@ export class PodWorkClient implements IPodWorkClient {
      * @param requestor (optional) 
      * @param completedFrom (optional) 
      * @param completedTo (optional) 
+     * @param matterText (optional) 
+     * @param clientText (optional) 
+     * @param projectText (optional) 
+     * @param updatedFrom (optional) 
+     * @param updatedTo (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage> {
+    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage> {
         let url_ = this.baseUrl + "/api/v1/pod-work?";
         if (podId === null)
             throw new globalThis.Error("The parameter 'podId' cannot be null.");
@@ -9581,6 +9651,26 @@ export class PodWorkClient implements IPodWorkClient {
             throw new globalThis.Error("The parameter 'completedTo' cannot be null.");
         else if (completedTo !== undefined)
             url_ += "completedTo=" + encodeURIComponent("" + completedTo) + "&";
+        if (matterText === null)
+            throw new globalThis.Error("The parameter 'matterText' cannot be null.");
+        else if (matterText !== undefined)
+            url_ += "matterText=" + encodeURIComponent("" + matterText) + "&";
+        if (clientText === null)
+            throw new globalThis.Error("The parameter 'clientText' cannot be null.");
+        else if (clientText !== undefined)
+            url_ += "clientText=" + encodeURIComponent("" + clientText) + "&";
+        if (projectText === null)
+            throw new globalThis.Error("The parameter 'projectText' cannot be null.");
+        else if (projectText !== undefined)
+            url_ += "projectText=" + encodeURIComponent("" + projectText) + "&";
+        if (updatedFrom === null)
+            throw new globalThis.Error("The parameter 'updatedFrom' cannot be null.");
+        else if (updatedFrom !== undefined)
+            url_ += "updatedFrom=" + encodeURIComponent("" + updatedFrom) + "&";
+        if (updatedTo === null)
+            throw new globalThis.Error("The parameter 'updatedTo' cannot be null.");
+        else if (updatedTo !== undefined)
+            url_ += "updatedTo=" + encodeURIComponent("" + updatedTo) + "&";
         if (sort === null)
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
         else if (sort !== undefined)

@@ -11,11 +11,26 @@ import {
   pageOf,
   provideClock,
   provideLookups,
+  provideQueueChoices,
 } from '../../../shared/work-queue/work-queue-testing';
 import { MyWorkPage } from './my-work-page';
 
 /** Positions of the arguments of `getMyWork` (the view comes first, then the shared filters). */
-const ARG = { view: 0, q: 1, status: 2, pod: 4, completedFrom: 21, sort: 23, page: 25 };
+const ARG = {
+  view: 0,
+  q: 1,
+  status: 2,
+  pod: 4,
+  assignee: 6,
+  unassigned: 7,
+  creator: 8,
+  dueFrom: 16,
+  asap: 18,
+  completedFrom: 21,
+  matterText: 23,
+  sort: 28,
+  page: 30,
+};
 
 const COUNTS = { active: 7, dueSoon: 2, completed: 5, createdByMe: 3 };
 
@@ -42,6 +57,7 @@ describe('MyWorkPage', () => {
           new FakeMeApi(withPermissions(...(options.permissions ?? ['Task.View', 'Pod.View']))),
         ),
         ...provideLookups(),
+        ...provideQueueChoices(),
         ...provideClock('2026-10-14T15:00:00Z', 'UTC'),
         { provide: MyWorkClient, useValue: { getMyWork } },
         {
@@ -57,6 +73,11 @@ describe('MyWorkPage', () => {
     harness = await RouterTestingHarness.create();
     await harness.navigateByUrl(url, MyWorkPage);
     await settle();
+    // Under load the first render can lag behind whenStable: wait for the page itself (the table is there in every state), never a fixed time.
+    await vi.waitFor(() => {
+      harness.detectChanges();
+      expect(harness.routeNativeElement?.querySelector('table')).not.toBeNull();
+    });
     return harness.routeNativeElement as HTMLElement;
   }
 
@@ -93,9 +114,12 @@ describe('MyWorkPage', () => {
     );
   });
 
-  it('opens on the tab the user last used when the URL names none', async () => {
+  it('opens on the tab the user last used when the URL names none, and says so', async () => {
     localStorage.setItem('mf.work-view.v1.my-work.1', JSON.stringify({ view: 'dueSoon' }));
-    await open('/my-work');
+    const el = await open('/my-work');
+    expect(el.querySelector('[data-restored-notice]')!.textContent).toContain(
+      'Restored your last view',
+    );
 
     expect(query()['view']).toBe('dueSoon');
     expect(getMyWork).toHaveBeenCalledTimes(1);
@@ -160,49 +184,125 @@ describe('MyWorkPage', () => {
     expect(el.querySelector('[data-help]')!.textContent).not.toContain('last 90 days');
   });
 
+  const chips = (el: HTMLElement) =>
+    Array.from(el.querySelectorAll('[data-filter-chips] [data-chip]')).map((c) =>
+      c.querySelector('.fch__text')!.textContent!.replace(/\s+/g, ' ').trim(),
+    );
+  const control = (el: HTMLElement, key: string) =>
+    el.querySelector<HTMLElement>(`tr[data-filter-row] [data-filter="${key}"]`)!;
+
   it('applies filters and removes them with their chips', async () => {
     const el = await open('/my-work?pod=5&status=ON_HOLD');
     expect(lastArgs()[ARG.pod]).toEqual([5]);
     expect(lastArgs()[ARG.status]).toEqual(['ON_HOLD']);
-    const chips = Array.from(el.querySelectorAll('.fb-chip')).map((c) => c.textContent?.trim());
-    expect(chips).toEqual(['Status: On Hold', 'Pod: Pod A']);
+    // The Status column is on screen, so its filter is in the row; Pod is not, so its filter is a chip.
+    expect(chips(el)).toEqual(['Pod: Pod A (hidden column)']);
+    expect(control(el, 'status').textContent).toContain('On Hold');
 
-    el.querySelector<HTMLButtonElement>('.fb-chip-x')!.click();
+    el.querySelector<HTMLButtonElement>('[data-chip="pod"] .fch__x')!.click();
     await settle();
-    expect(query()['status']).toBeUndefined();
-    expect(query()['pod']).toBe('5');
+    expect(query()['pod']).toBeUndefined();
+    expect(query()['status']).toBe('ON_HOLD');
   });
 
-  it('keeps the Pod filter and the status filter but never offers an assignee filter', async () => {
+  it('has no default status: every status of the tab until one is chosen', async () => {
+    await open('/my-work');
+    expect(lastArgs()[ARG.status]).toBeUndefined();
+  });
+
+  it('shows the filter row open on the first visit with one control per shown column', async () => {
     const el = await open('/my-work');
-    el.querySelector<HTMLButtonElement>('.fb-button')!.click();
+    expect(el.querySelector('tr[data-filter-row]')).not.toBeNull();
+    for (const key of ['q', 'matterText', 'priority', 'due', 'status']) {
+      expect(control(el, key), key).not.toBeNull();
+    }
+  });
+
+  it('shows what each tab decides itself as disabled controls with the reason, and does not send them', async () => {
+    localStorage.setItem(
+      'mf.work-table.v3.my-work.1',
+      JSON.stringify({
+        columns: ['ref', 'title', 'priority', 'assignee', 'creator', 'due', 'status'],
+        density: 'comfortable',
+      }),
+    );
+    let el = await open('/my-work?assignee=9&creator=3');
+    // Active: Assignee is "me" by definition.
+    expect(control(el, 'assignee').hasAttribute('disabled')).toBe(true);
+    expect(
+      control(el, 'assignee').closest('[data-filter-disabled]')!.getAttribute('title'),
+    ).toContain('assigned to you');
+    expect(control(el, 'creator').hasAttribute('disabled')).toBe(false);
+    expect(lastArgs()[ARG.assignee]).toBeUndefined();
+    expect(lastArgs()[ARG.creator]).toEqual([3]);
+
+    TestBed.resetTestingModule();
+    el = await open('/my-work?view=createdByMe&assignee=9');
+    // Created by me: Assignee is a filter, Creator is the tab.
+    expect(control(el, 'assignee').hasAttribute('disabled')).toBe(false);
+    expect(lastArgs()[ARG.assignee]).toEqual([9]);
+    expect(lastArgs()[ARG.creator]).toBeUndefined();
+
+    TestBed.resetTestingModule();
+    el = await open('/my-work?view=dueSoon&dueFrom=2026-10-01&asap=true');
+    expect(control(el, 'due').hasAttribute('disabled')).toBe(true);
+    expect(lastArgs()[ARG.dueFrom]).toBeUndefined();
+    expect(lastArgs()[ARG.asap]).toBeUndefined();
+  });
+
+  it('limits the Status choices to what the tab can show', async () => {
+    const el = await open('/my-work?view=completed');
+    control(el, 'status').click();
     harness.detectChanges();
-    expect(el.querySelector('#fb-pod')).not.toBeNull();
-    expect(el.querySelector('#fb-assignee')).toBeNull();
+    await settle();
+    const options = Array.from(document.querySelectorAll('mf-filter-popover [data-option]')).map(
+      (o) => o.getAttribute('data-option'),
+    );
+    expect(options).toEqual(['COMPLETED', 'CANCELLED']);
+    document.querySelectorAll('mf-filter-popover').forEach((n) => n.remove());
   });
 
-  it('puts the search box and Filters on the tab row and the sort note and Columns in a bar above the grid', async () => {
+  it('changing tab drops the filters the new tab owns and the statuses it cannot show, and keeps the rest', async () => {
+    const el = await open(
+      '/my-work?view=createdByMe&assignee=9&priority=1&status=NEW&status=COMPLETED',
+    );
+    tab(el, 'Active').click();
+    await settle();
+    expect(query()['view']).toBeUndefined();
+    expect(query()['assignee']).toBeUndefined();
+    expect(query()['priority']).toBe('1');
+    expect(query()['status']).toBe('NEW');
+
+    tab(el, 'Due soon').click();
+    await settle();
+    expect(query()['status']).toBe('NEW');
+
+    tab(el, 'Completed').click();
+    await settle();
+    // NEW cannot be on the Completed tab; an explicit empty status is not written when none is left.
+    expect(query()['status']).toBeUndefined();
+    expect(query()['priority']).toBe('1');
+  });
+
+  it('puts the tabs on their own row and the sort note, Columns and Filters in one bar above the grid', async () => {
     const el = await open('/my-work');
-    // The first render can lag behind whenStable on a busy machine: wait for the search box.
     await vi.waitFor(() => {
       harness.detectChanges();
-      expect(el.querySelector('#fb-q')).not.toBeNull();
       expect(el.querySelector('[data-grid-toolbar] [data-sort-note]')).not.toBeNull();
     });
-    const tabRow = el.querySelector('.fb-tabrow')!;
+    const tabRow = el.querySelector('[data-tab-row]')!;
     expect(tabRow.querySelector('[role="tablist"]')).not.toBeNull();
-    expect(tabRow.querySelector('#fb-q')).not.toBeNull();
-    expect(tabRow.querySelector('.fb-button')).not.toBeNull();
-    // The sort note and Columns sit in a bar directly above the grid, not in the title row.
-    const bar = el.querySelector('[data-grid-toolbar]')!;
+    expect(tabRow.querySelector('[data-filters-toggle]')).toBeNull();
+    // The bar is inside the tab panel: sort note, Columns and the Filters button together, directly above the grid.
+    const bar = el.querySelector('[role="tabpanel"] [data-grid-toolbar]')!;
     expect(bar.querySelector('[data-sort-note]')!.textContent).toContain('Sorted by Priority');
     expect(bar.querySelector('.cc-button')).not.toBeNull();
-    expect(el.querySelector('[data-page-actions] [data-sort-note]')).toBeNull();
+    expect(bar.querySelector('[data-filters-toggle]')).not.toBeNull();
     expect(
       bar.compareDocumentPosition(el.querySelector('mf-work-list')!) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(el.querySelector('[data-search-hint]')!.classList).toContain('sb__hint--float');
+    expect(el.querySelector('#fb-q')).toBeNull();
   });
 
   it('marks tasks created since the previous visit as New, then forgets them at the next visit', async () => {
@@ -243,7 +343,7 @@ describe('MyWorkPage', () => {
       rows: [],
       response: of(pageOf([], { counts: { active: 0, dueSoon: 0, completed: 0, createdByMe: 0 } })),
     });
-    const empty = el.querySelector('[data-empty]')!;
+    const empty = el.querySelector('tbody [data-empty]')!;
     expect(empty.textContent).toContain(
       'Nothing assigned to you right now. Check Pod Work for unassigned tasks.',
     );
@@ -254,24 +354,26 @@ describe('MyWorkPage', () => {
       permissions: ['Task.View'],
       response: of(pageOf([], { counts: COUNTS })),
     });
-    expect(el.querySelector('[data-empty] a')).toBeNull();
+    expect(el.querySelector('tbody [data-empty] a')).toBeNull();
   });
 
   it('shows the filtered empty state and an error with Retry', async () => {
     let el = await open('/my-work?q=zzz', { response: of(pageOf([], { counts: COUNTS })) });
-    expect(el.querySelector('[data-empty]')!.textContent).toContain(
-      'No tasks match these filters.',
+    expect(el.querySelector('tbody [data-empty]')!.textContent).toContain(
+      'No tasks match these filters',
     );
+    expect(el.querySelector('tr[data-filter-row]')).not.toBeNull();
 
     TestBed.resetTestingModule();
     el = await open('/my-work', { response: throwError(() => new Error('boom')) });
-    expect(el.querySelector('[role="alert"]')!.textContent).toContain(
-      'Something went wrong. Try again.',
-    );
+    expect(el.querySelector('tbody [data-error]')!.textContent).toContain("Couldn't load tasks");
+    expect(el.querySelector('tr[data-filter-row]')).not.toBeNull();
     getMyWork.mockReturnValue(of(pageOf([aRow()], { counts: COUNTS })));
-    el.querySelector<HTMLButtonElement>('.wl-retry')!.click();
+    Array.from(el.querySelectorAll<HTMLButtonElement>('tbody button'))
+      .find((b) => b.textContent?.trim() === 'Retry')!
+      .click();
     await settle();
-    expect(el.querySelector('[role="alert"]')).toBeNull();
+    expect(el.querySelector('[data-error]')).toBeNull();
   });
 
   it('sorts and pages through the URL', async () => {

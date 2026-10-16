@@ -249,7 +249,7 @@ export class FiltersBar {
       return;
     const target = event.target as HTMLElement | null;
     if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
-    if (target?.isContentEditable || target?.closest('[role="dialog"]')) return;
+    if (target?.isContentEditable || target?.closest?.('[role="dialog"]')) return;
     const f = this.filters();
     if (!f.defs().some((d) => d.type === 'text' && !d.noControl && !d.disabledReason?.())) return;
     event.preventDefault();

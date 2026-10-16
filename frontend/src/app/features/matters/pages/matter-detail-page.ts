@@ -29,7 +29,7 @@ import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { MatterAssets } from '../../../shared/ui/matter-assets';
 import { MatterRef } from '../../../shared/ui/matter-ref';
-import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
+import { SCOPED_TASK_PARAMS, ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
 import { PageTitle } from '../../../core/title/page-title';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
@@ -168,6 +168,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                         [matterId]="m.matterId"
                         [canCreate]="m.isActive"
                         [showCreate]="false"
+                        [projectOptions]="projectOptions()"
                       />
                     }
                     @case ('projects') {
@@ -384,6 +385,12 @@ export class MatterDetailPage {
     const t = this.tab();
     return t === 'projects' || t === 'assets' ? t : 'tasks';
   });
+  protected readonly projectOptions = computed(() =>
+    this.projects().map((p) => ({
+      value: String(p.projectId),
+      label: p.isActive ? p.name : `${p.name} (archived)`,
+    })),
+  );
   protected readonly toggleOpen = signal(false);
   protected readonly blockedOpen = signal(false);
   protected readonly blockedCount = signal(0);
@@ -414,13 +421,13 @@ export class MatterDetailPage {
 
   protected select(key: string): void {
     void this.router.navigate([], {
-      // The Assets tab's filters, paging and sort belong to that tab only.
+      // The filters of the Tasks and Assets tabs, and the Assets paging and sort, belong to their tab only.
       queryParams: {
         tab: key === 'tasks' ? null : key,
         name: null,
         typeId: null,
         extref: null,
-        status: null,
+        ...Object.fromEntries(SCOPED_TASK_PARAMS.map((p) => [p, null])),
         page: null,
         size: null,
         sort: null,

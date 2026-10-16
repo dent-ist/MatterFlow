@@ -1,7 +1,13 @@
 import { convertToParamMap } from '@angular/router';
 import { parseQueueState } from '../work-queue/queue-filters';
 import { parseFilters, serializeFilters } from './filter-def';
-import { queueFilterDefs } from './queue-defs';
+import { builtInFilters, emptyFilters } from '../work-queue/queue-filters';
+import {
+  QUEUE_FILTER_PARAMS,
+  filtersToValues,
+  queueFilterDefs,
+  withoutFilters,
+} from './queue-defs';
 
 /**
  * Link contract: the shared filters read every deep link the app generates (dashboard tiles and breakdowns, trend legends, the
@@ -91,5 +97,175 @@ describe('work list filters on the shared definitions', () => {
     expect(values['status']).toEqual(['NEW']);
     expect(values['client']).toBe('');
     expect(parseQueueState(params).filters.priority).toEqual([3]);
+  });
+});
+
+describe('work list definitions for the column filters', () => {
+  it('puts every filter on the column of the same name, Title or Ref across Ref and Title', () => {
+    const defs = queueFilterDefs();
+    const column = (key: string) => defs.find((d) => d.key === key)?.column;
+    expect(column('q')).toBe('ref');
+    expect(defs.find((d) => d.key === 'q')?.span).toBe(2);
+    expect(
+      Object.fromEntries(
+        [
+          'matterText',
+          'clientText',
+          'projectText',
+          'type',
+          'workflow',
+          'priority',
+          'pod',
+          'assignee',
+          'creator',
+          'requestor',
+          'due',
+          'status',
+          'created',
+          'updated',
+        ].map((k) => [k, column(k)]),
+      ),
+    ).toEqual({
+      matterText: 'matter',
+      clientText: 'client',
+      projectText: 'project',
+      type: 'type',
+      workflow: 'workflow',
+      priority: 'priority',
+      pod: 'pod',
+      assignee: 'assignee',
+      creator: 'creator',
+      requestor: 'requestor',
+      due: 'due',
+      status: 'status',
+      created: 'created',
+      updated: 'updated',
+    });
+    // ASAP, Overdue and Closed have no column: they are in More filters. The id parameters of links have no control at all.
+    for (const key of ['asap', 'overdue', 'completed']) expect(column(key)).toBeUndefined();
+    for (const key of ['client', 'matter', 'project'])
+      expect(defs.find((d) => d.key === key)?.noControl).toBe(true);
+  });
+
+  it('keeps the parameter names of the API, new ones included', () => {
+    expect([...QUEUE_FILTER_PARAMS].sort()).toEqual(
+      [
+        'q',
+        'status',
+        'matterText',
+        'clientText',
+        'projectText',
+        'type',
+        'workflow',
+        'priority',
+        'pod',
+        'noPod',
+        'assignee',
+        'unassigned',
+        'creator',
+        'requestor',
+        'dueFrom',
+        'dueTo',
+        'createdFrom',
+        'createdTo',
+        'updatedFrom',
+        'updatedTo',
+        'completedFrom',
+        'completedTo',
+        'asap',
+        'overdue',
+        'client',
+        'matter',
+        'project',
+      ].sort(),
+    );
+  });
+
+  it('reads the new text and updated parameters', () => {
+    const defs = queueFilterDefs();
+    const values = parseFilters(
+      defs,
+      convertToParamMap({
+        matterText: '343-12',
+        clientText: 'Acme',
+        projectText: 'Phase',
+        updatedFrom: '2026-10-01',
+      }),
+    );
+    expect(values['matterText']).toBe('343-12');
+    expect(values['clientText']).toBe('Acme');
+    expect(values['projectText']).toBe('Phase');
+    expect(values['updated']).toEqual({ from: '2026-10-01', to: '' });
+  });
+
+  it('leaves out what a page does not filter (Pod Work has no Pod) and disables what a tab owns', () => {
+    const noPod = queueFilterDefs({}, { omit: ['pod'] });
+    expect(noPod.some((d) => d.key === 'pod')).toBe(false);
+
+    const defs = queueFilterDefs(
+      {},
+      {
+        disabled: { assignee: () => 'This tab lists the tasks assigned to you.', due: () => 'Tab' },
+      },
+    );
+    expect(defs.find((d) => d.key === 'assignee')?.disabledReason?.()).toContain('assigned to you');
+    // ASAP and Overdue follow Due.
+    expect(defs.find((d) => d.key === 'asap')?.disabledReason?.()).toBe('Tab');
+    expect(defs.find((d) => d.key === 'overdue')?.disabledReason?.()).toBe('Tab');
+    expect(defs.find((d) => d.key === 'priority')?.disabledReason).toBeUndefined();
+  });
+
+  it('gives a screen a default status for a plain link only', () => {
+    const status = queueFilterDefs({}, { defaultStatus: ['NEW', 'ON_HOLD'] }).find(
+      (d) => d.key === 'status',
+    )!;
+    expect(status.default).toEqual(['NEW', 'ON_HOLD']);
+    expect(status.defaultOnlyBare).toBe(true);
+    expect(queueFilterDefs().find((d) => d.key === 'status')?.default).toBeUndefined();
+  });
+
+  it('turns the filters a tab owns into nothing before they reach the API', () => {
+    const f = {
+      ...emptyFilters(),
+      assignee: [3],
+      unassigned: true,
+      creator: [4],
+      dueFrom: '2026-10-01',
+      asap: true,
+      overdue: false,
+      pod: [1],
+      noPod: true,
+      priority: [2],
+      status: ['NEW'],
+    };
+    const out = withoutFilters(f, ['assignee', 'due', 'asap', 'overdue', 'pod', 'status']);
+    expect(out.assignee).toEqual([]);
+    expect(out.unassigned).toBe(false);
+    expect(out.dueFrom).toBeNull();
+    expect(out.asap).toBeNull();
+    expect(out.overdue).toBeNull();
+    expect(out.pod).toEqual([]);
+    expect(out.noPod).toBe(false);
+    expect(out.status).toEqual([]);
+    expect(out.creator).toEqual([4]);
+    expect(out.priority).toEqual([2]);
+  });
+
+  it('turns the quick views into filter values and back into the same parameters', () => {
+    const defs = queueFilterDefs({}, { defaultStatus: ['NEW', 'IN_PROGRESS', 'ON_HOLD'] });
+    const ctx = { userId: 9, primaryPodId: 5, recentFrom: '2026-09-14' };
+    const view = (key: Parameters<typeof builtInFilters>[0]) =>
+      serializeFilters(defs, filtersToValues(builtInFilters(key, ctx)));
+    const set = (o: Record<string, unknown>) => Object.entries(o).filter(([, v]) => v !== null);
+
+    expect(set(view('allOpen'))).toEqual([]);
+    expect(Object.fromEntries(set(view('unassigned')))).toEqual({ unassigned: 'true' });
+    expect(Object.fromEntries(set(view('overdue')))).toEqual({ overdue: 'true' });
+    expect(Object.fromEntries(set(view('myPod')))).toEqual({ pod: ['5'] });
+    expect(Object.fromEntries(set(view('createdByMe')))).toEqual({ creator: ['9'], status: '' });
+    expect(Object.fromEntries(set(view('recentlyCompleted')))).toEqual({
+      status: ['COMPLETED'],
+      completedFrom: '2026-09-14',
+    });
   });
 });

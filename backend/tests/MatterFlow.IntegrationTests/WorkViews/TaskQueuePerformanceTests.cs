@@ -129,6 +129,57 @@ public sealed partial class TaskQueuePerformanceTests(SqlServerFixture sql, ITes
     }
 
     [Fact]
+    public async Task The_column_text_filters_stay_fast_at_5000_tasks_and_add_no_statements()
+    {
+        var http = _logged.CreateClient();
+        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
+
+        var open = "status=NEW&status=IN_PROGRESS&status=ON_HOLD&pageSize=100";
+        (string Name, string Query, int? Total)[] cases =
+        [
+            ("matter reference", $"/api/v1/task-queue?{open}&matterText=343-12", TaskCount * 9 / 10),
+            ("matter name", $"/api/v1/task-queue?{open}&matterText=merger%20review", TaskCount * 9 / 10),
+            ("client name", $"/api/v1/task-queue?{open}&clientText=acme", TaskCount * 9 / 10),
+            ("client number", $"/api/v1/task-queue?{open}&clientText=343", TaskCount * 9 / 10),
+            ("no match", $"/api/v1/task-queue?{open}&matterText=nowhere", 0),
+            ("project, none have one", $"/api/v1/task-queue?{open}&projectText=phase", 0),
+            ("updated range", $"/api/v1/task-queue?{open}&updatedFrom=2000-01-01", null),
+            ("title and matter and client together", $"/api/v1/task-queue?{open}&q=seeded&matterText=343&clientText=acme", null),
+            ("my work with a text filter", "/api/v1/my-work?pageSize=100&matterText=343", null),
+            ("pod work with a text filter", "/api/v1/pod-work?pageSize=100&clientText=acme", null),
+        ];
+
+        var baseline = new Dictionary<string, int>();
+        foreach (var (name, query, total) in cases)
+        {
+            var warm = await OkAsync(await http.GetAsync(query));
+            if (total is { } expected)
+                warm.GetProperty("total").GetInt32().ShouldBe(expected, name);
+
+            var timings = new List<long>();
+            var statements = 0;
+            for (var i = 0; i < 3; i++)
+            {
+                _commands.Clear();
+                var watch = Stopwatch.StartNew();
+                await OkAsync(await http.GetAsync(query));
+                watch.Stop();
+                timings.Add(watch.ElapsedMilliseconds);
+                statements = _commands.Snapshot().Count;
+            }
+
+            output.WriteLine($"{name}: ms {string.Join(", ", timings)}, {statements} statements");
+            timings.Order().ElementAt(1).ShouldBeLessThan(1500, name);
+            // The text filters are conditions inside the existing reads, never extra reads and never one read per row.
+            baseline[name] = statements;
+            statements.ShouldBeLessThan(query.Contains("my-work") || query.Contains("pod-work") ? 25 : 15, name);
+        }
+
+        baseline["matter reference"].ShouldBe(baseline["client name"]);
+    }
+
+    [Fact]
     public async Task The_page_query_is_answered_from_the_queue_index_without_touching_the_table_rows()
     {
         // The statement EF Core generates for the id page of the open queue, with literal statuses.

@@ -38,6 +38,12 @@ export interface FlagOption {
   readonly label: string;
 }
 
+/** A set of option values that has a name of its own ("Open" for New, In Progress and On Hold). */
+export interface ValueGroup {
+  readonly label: string;
+  readonly values: readonly string[];
+}
+
 export interface FilterDef {
   /** Stable key: the name in `ListFilters.value(key)`, `data-filter` for tests and the chip id. */
   readonly key: string;
@@ -61,6 +67,11 @@ export interface FilterDef {
   readonly default?: string | readonly string[];
   /** True when the default value counts as an active filter anyway (rare). */
   readonly defaultCounts?: boolean;
+  /**
+   * The default applies to a plain link only (Task Queue: a bare `/tasks` starts on the open statuses). A link that carries any other
+   * filter and no value for this filter means "no limit", exactly as such links always did; writes then keep the value in the address.
+   */
+  readonly defaultOnlyBare?: boolean;
   /** Returns why the control is unavailable ("Set by the Due soon tab"), or null/undefined when it is usable. */
   readonly disabledReason?: () => string | null | undefined;
   /** Number of columns the cell spans ("Filter by Title or Ref"). */
@@ -75,6 +86,8 @@ export interface FilterDef {
   readonly emptyLabel?: string;
   /** Longest text for a text filter. */
   readonly maxLength?: number;
+  /** multiSelect: named sets of values; a choice equal to one reads "Open" in the button, one chip and the print line. */
+  readonly valueGroups?: readonly ValueGroup[];
   /** Cleans one value read from the URL (upper-case a status code, accept only ids); null drops it. */
   readonly normalize?: (value: string) => string | null;
 }
@@ -269,7 +282,34 @@ export function serializeValue(def: FilterDef, value: FilterValue): QueryParams 
 
 export function parseFilters(defs: readonly FilterDef[], params: ParamMap): FilterValues {
   const out: Record<string, FilterValue> = {};
-  for (const def of defs) out[def.key] = parseValue(def, params);
+  const bare = !hasFilterParams(defs, params);
+  for (const def of defs) {
+    const value = parseValue(def, params);
+    // A default that only a plain link gets: a link with other filters and none for this one asks for no limit.
+    out[def.key] =
+      def.defaultOnlyBare && !bare && !paramsOf(def).some((p) => params.has(p))
+        ? emptyValue(def)
+        : value;
+  }
+  return out;
+}
+
+/** The parameters that write `value` even when it is the default (for filters whose default applies to a plain link only). */
+export function serializeExplicit(def: FilterDef, value: FilterValue): QueryParams {
+  const out: QueryParams = {};
+  for (const p of paramsOf(def)) out[p] = null;
+  if (typeof value === 'string') {
+    out[paramOf(def)] = value;
+  } else if (!isRange(value)) {
+    const plain: string[] = [];
+    for (const v of value) {
+      const flag = def.flagOptions?.[v];
+      if (flag) out[flag.param] = 'true';
+      else plain.push(v);
+    }
+    if (plain.length > 0) out[paramOf(def)] = plain;
+    else if (Object.values(out).every((x) => x === null)) out[paramOf(def)] = '';
+  }
   return out;
 }
 
@@ -292,6 +332,13 @@ export function hasFilterParams(defs: readonly FilterDef[], params: ParamMap): b
 export function isActive(def: FilterDef, value: FilterValue): boolean {
   if (def.defaultCounts) return !isEmpty(value);
   return !sameValue(value, defaultValue(def));
+}
+
+/** The named group a list value equals exactly (order does not matter), or undefined. */
+export function groupOf(def: FilterDef, value: readonly string[]): ValueGroup | undefined {
+  return def.valueGroups?.find(
+    (g) => g.values.length === value.length && g.values.every((v) => value.includes(v)),
+  );
 }
 
 export function optionLabel(def: FilterDef, value: string): string {
@@ -318,7 +365,7 @@ export function valueText(def: FilterDef, value: FilterValue): string {
     return value === '' ? (selectOptions(def)[0]?.label ?? '') : optionLabel(def, value);
   }
   if (isRange(value)) return rangeText(def, value);
-  return value.map((v) => optionLabel(def, v)).join(', ');
+  return groupOf(def, value)?.label ?? value.map((v) => optionLabel(def, v)).join(', ');
 }
 
 /** Wording of the tri-state choices: options[1] is the "yes" text, options[2] the "no" text. */
@@ -365,6 +412,10 @@ export function buildChips(
     ];
   }
   if (typeof value !== 'string' && !isRange(value)) {
+    const group = groupOf(def, value);
+    if (group) {
+      return [{ ...base, id: def.key, label: `${def.label}: ${group.label}`, remaining: [] }];
+    }
     return value.map((v) => ({
       ...base,
       id: `${def.key}:${v}`,
@@ -385,6 +436,8 @@ export function buildChips(
 /** "Status Active, Priority Critical or High": the line printed above a filtered grid. */
 export function printText(def: FilterDef, value: FilterValue): string {
   if (typeof value !== 'string' && !isRange(value)) {
+    const group = groupOf(def, value);
+    if (group) return `${def.label} ${group.label}`;
     return `${def.label} ${value.map((v) => optionLabel(def, v)).join(' or ')}`;
   }
   return `${def.label} ${valueText(def, value)}`;

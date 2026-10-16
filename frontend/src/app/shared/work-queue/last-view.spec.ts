@@ -48,4 +48,51 @@ describe('last view memory', () => {
     });
     expect(() => saveLastView('queue', 1, emptyState())).not.toThrow();
   });
+
+  describe('on a screen whose plain link starts on a default status', () => {
+    const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
+    const view = (status: string[], rest: Partial<ReturnType<typeof emptyState>> = {}) => ({
+      ...emptyState(),
+      ...rest,
+      filters: { ...emptyState().filters, ...(rest.filters ?? {}), status },
+    });
+
+    it('does not call the default status a remembered view', () => {
+      saveLastView('queue', 1, view(OPEN), { explicitStatus: true });
+      expect(loadLastView('queue', 1, OPEN)).toBeNull();
+    });
+
+    it('remembers "every status" as a view of its own', () => {
+      saveLastView('queue', 1, view([]), { explicitStatus: true });
+      const back = loadLastView('queue', 1, OPEN)!;
+      expect(back.filters.status).toEqual([]);
+    });
+
+    it('remembers a status, a filter beside the default status, and a sort', () => {
+      saveLastView('queue', 1, view(['NEW']), { explicitStatus: true });
+      expect(loadLastView('queue', 1, OPEN)!.filters.status).toEqual(['NEW']);
+
+      saveLastView(
+        'queue',
+        1,
+        view(OPEN, { filters: { ...emptyState().filters, overdue: true } }),
+        {
+          explicitStatus: true,
+        },
+      );
+      const back = loadLastView('queue', 1, OPEN)!;
+      expect(back.filters.status).toEqual(OPEN);
+      expect(back.filters.overdue).toBe(true);
+
+      saveLastView('queue', 1, view(OPEN, { sort: 'due', dir: 'asc' }), { explicitStatus: true });
+      expect(loadLastView('queue', 1, OPEN)!.sort).toBe('due');
+    });
+
+    it('reads a view saved before the default existed (no status key) as the default status', () => {
+      localStorage.setItem('mf.work-view.v1.queue.1', JSON.stringify({ priority: ['2'] }));
+      const back = loadLastView('queue', 1, OPEN)!;
+      expect(back.filters.status).toEqual(OPEN);
+      expect(back.filters.priority).toEqual([2]);
+    });
+  });
 });

@@ -25,9 +25,14 @@ export class WorkListPage {
     for (const title of titles) await expect(this.row(title)).toHaveCount(0);
   }
 
-  /** Searches by title or reference so the row of interest is on the first page whatever else is in the shared database. */
+  /** The Title or Ref column filter (the filter row is open by default on the work lists). */
+  get titleFilter(): Locator {
+    return this.page.getByRole('textbox', { name: 'Filter by Title or Ref' });
+  }
+
+  /** Filters by title or reference so the row of interest is on the first page whatever else is in the shared database. */
   async search(text: string): Promise<void> {
-    const box = this.page.getByRole('searchbox', { name: 'Search title or ref' });
+    const box = this.titleFilter;
     await box.fill(text);
     await box.press('Enter');
   }

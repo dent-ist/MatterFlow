@@ -13,46 +13,49 @@ import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { TaskQueueClient, TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
+import { LookupStore } from '../../core/lookups/lookup-store';
 import { HasPermissionDirective } from '../directives/has-permission.directive';
+import { FilterDef, FilterOption } from '../filters/filter-def';
+import { FiltersBar } from '../filters/filters-bar';
+import { ListFilters } from '../filters/list-filters';
+import { LoadState } from '../ui/data-table';
 import { Pager } from '../ui/pager';
-import { OPEN_STATUSES } from './queue-filters';
+import { QueueChoices, mergeOptions } from './queue-choices';
+import { OPEN_STATUSES, parseQueueState, queueArgs } from './queue-filters';
 import { TaskTable } from './task-table';
-import { ErrorReference } from '../ui/error-reference';
-
-type LoadState = 'loading' | 'ready' | 'error';
-type StatusScope = 'open' | 'all';
 
 const PAGE_SIZE = 25;
 const MATTER_COLUMNS = ['ref', 'title', 'project', 'priority', 'assignee', 'due', 'status'];
 const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'];
 
+/** The query parameters of this grid's filters; the Matter page drops them when another tab is chosen. */
+export const SCOPED_TASK_PARAMS: readonly string[] = [
+  'q',
+  'status',
+  'project',
+  'priority',
+  'assignee',
+  'unassigned',
+  'dueFrom',
+  'dueTo',
+];
+
+const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
+
 /**
  * The Tasks tab of a Matter (UX S06) and the task list of a Project: the shared work-queue table over the Task Queue endpoint filtered by
- * `matter` (and `project`), an Open/All status filter, paging, and a Create Task button that prefills the Matter (and Project).
- * Rendered only while its tab is open, so nothing loads before then. Needs `Task.View`; without it a short notice replaces the table.
+ * `matter` (and `project`), with the same inline column filters as the work lists (Title or Ref, Project on a Matter, Priority, Assignee,
+ * Due and Status, which starts on the open statuses), chips, the Filters sheet on a narrow screen, paging, and a Create Task button that
+ * prefills the Matter (and Project). The filters live in the address (`q`, `status`, `project`, `priority`, `assignee`, `dueFrom`,
+ * `dueTo`); paging and sorting stay in the page. Rendered only while its tab is open, so nothing loads before then. Needs `Task.View`;
+ * without it a short notice replaces the table.
  */
 @Component({
   selector: 'mf-scoped-tasks',
-  imports: [ErrorReference, Button, HasPermissionDirective, Pager, TaskTable],
+  imports: [Button, HasPermissionDirective, Pager, TaskTable, FiltersBar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styles: `
-    .st-bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: end;
-      justify-content: space-between;
-      gap: var(--mf-s3);
-      margin-bottom: var(--mf-s3);
-    }
-    .st-filter {
-      display: grid;
-      gap: var(--mf-s1);
-    }
-    .st-filter label {
-      font-weight: 600;
-      font-size: var(--mf-fs-sm);
-    }
     .st-state {
       padding: var(--mf-s5) var(--mf-s4);
       text-align: center;
@@ -61,56 +64,15 @@ const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'
       border: 1px dashed var(--mf-border-strong);
       border-radius: var(--mf-radius);
     }
-    .st-alert {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s3);
-      margin-bottom: var(--mf-s3);
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px solid var(--mf-danger);
-      border-radius: var(--mf-radius);
-      color: var(--mf-danger);
-    }
-    /* Pinned above the grid of a fixed-header page: one row, the label beside the select. */
-    @media (min-width: 768px) and (min-height: 561px) {
-      .st-bar {
-        align-items: center;
-        margin-bottom: var(--mf-s2);
-      }
-      .st-filter {
-        grid-auto-flow: column;
-        align-items: center;
-        gap: var(--mf-s2);
-      }
-    }
-    .st-sr {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-    }
   `,
   template: `
     @if (!canView()) {
       <div class="st-state" data-no-access="tasks">You don't have permission to view tasks.</div>
     } @else {
-      <div class="st-bar">
-        <div class="st-filter">
-          <label [for]="id + '-status'">Show</label>
-          <select
-            class="mf-control"
-            [id]="id + '-status'"
-            data-status-filter
-            [value]="scope()"
-            (change)="setScope($any($event.target).value)"
-          >
-            <option value="open" [selected]="scope() === 'open'">Open tasks</option>
-            <option value="all" [selected]="scope() === 'all'">All tasks</option>
-          </select>
-        </div>
+      <mf-filters-bar [filters]="filters" [controls]="filterRowId">
         @if (showCreate()) {
           <p-button
+            mfBarStart
             *mfHasPermission="'Task.Create'"
             label="Create task"
             icon="pi pi-plus"
@@ -120,42 +82,32 @@ const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'
             (onClick)="create()"
           />
         }
-      </div>
+      </mf-filters-bar>
 
-      <div class="st-sr" role="status" aria-live="polite">{{ announcement() }}</div>
-
-      @if (state() === 'error') {
-        <div class="st-alert" role="alert" data-error>
-          We couldn't load the tasks.
-          <mf-error-reference />
-          <p-button label="Retry" severity="secondary" (onClick)="load()" />
-        </div>
-      }
-
-      @if (state() === 'loading' || rows().length > 0) {
-        <mf-task-table
-          [rows]="rows()"
-          [columns]="columns()"
-          [caption]="caption()"
-          [hideContext]="true"
-          [loading]="state() === 'loading'"
-          [sort]="sort()"
-          [dir]="dir()"
-          [resetKey]="scope() + '|' + sort() + '|' + dir() + '|' + page()"
-          (sortChange)="sortBy($event)"
+      <mf-task-table
+        [rows]="rows()"
+        [columns]="columns()"
+        [caption]="caption()"
+        [hideContext]="true"
+        [state]="state()"
+        [filters]="filters"
+        [filterRowId]="filterRowId"
+        [filtered]="filters.activeCount() > 0"
+        [emptyText]="emptyText()"
+        [sort]="sort()"
+        [dir]="dir()"
+        [resetKey]="filterKey() + '|' + sort() + '|' + dir() + '|' + page()"
+        (sortChange)="sortBy($event)"
+        (retry)="load()"
+        (clearFilters)="filters.clear()"
+      />
+      @if (rows().length > 0) {
+        <mf-pager
+          [page]="page()"
+          [pageSize]="pageSize"
+          [total]="total()"
+          (pageChange)="goTo($event)"
         />
-        @if (rows().length > 0) {
-          <mf-pager
-            [page]="page()"
-            [pageSize]="pageSize"
-            [total]="total()"
-            (pageChange)="goTo($event)"
-          />
-        }
-      } @else if (state() === 'ready') {
-        <div class="st-state" data-empty="tasks">
-          {{ scope() === 'open' ? 'No open tasks.' : 'No tasks yet.' }}
-        </div>
       }
     }
   `,
@@ -164,22 +116,25 @@ export class ScopedTasks {
   readonly matterId = input.required<number>();
   /** Show only the Tasks of this Project. */
   readonly projectId = input<number | null>(null);
+  /** The Matter's projects, for the Project filter on a Matter's Tasks tab. */
+  readonly projectOptions = input<readonly FilterOption[]>([]);
   /** False disables Create Task (an inactive Matter takes no new Tasks). */
   readonly canCreate = input(true);
   /** False where the page header already offers the one Create Task button (Matter detail, UXR-40). */
   readonly showCreate = input(true);
 
   private static nextId = 0;
-  protected readonly id = `st-${ScopedTasks.nextId++}`;
+  protected readonly filterRowId = `scoped-task-filter-${ScopedTasks.nextId++}`;
 
   private readonly api = inject(TaskQueueClient);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStore);
+  private readonly lookups = inject(LookupStore);
+  private readonly choices = inject(QueueChoices);
 
   protected readonly pageSize = PAGE_SIZE;
   protected readonly canView = computed(() => this.auth.has('Task.View'));
   protected readonly state = signal<LoadState>('loading');
-  protected readonly scope = signal<StatusScope>('open');
   protected readonly page = signal(1);
   protected readonly sort = signal<string | null>(null);
   protected readonly dir = signal<'asc' | 'desc' | null>(null);
@@ -191,28 +146,115 @@ export class ScopedTasks {
   protected readonly caption = computed(() =>
     this.projectId() === null ? 'Tasks of this matter' : 'Tasks of this project',
   );
-  protected readonly announcement = computed(() => {
-    if (this.state() === 'loading') return 'Loading tasks';
-    if (this.state() === 'error') return 'Could not load tasks';
-    return this.total() === 0 ? 'No tasks' : `${this.total()} tasks`;
+
+  private readonly people = computed<FilterOption[]>(() => {
+    const seen = new Map<string, FilterOption>();
+    for (const r of this.rows()) {
+      const u = r.assignedUser;
+      if (u && !seen.has(String(u.userId))) {
+        seen.set(String(u.userId), {
+          value: String(u.userId),
+          label: u.displayName,
+          ...(u.isActive ? {} : { hint: '(inactive)' }),
+        });
+      }
+    }
+    return [...seen.values()];
+  });
+
+  private readonly defs = computed((): FilterDef[] => {
+    const lookups = this.lookups;
+    const defs: FilterDef[] = [
+      { key: 'q', label: 'Title or Ref', column: 'ref', type: 'text', span: 2 },
+      ...(this.projectId() === null
+        ? ([
+            {
+              key: 'project',
+              label: 'Project',
+              column: 'project',
+              type: 'select',
+              allLabel: 'All projects',
+              options: this.projectOptions(),
+              normalize: asId,
+            },
+          ] satisfies FilterDef[])
+        : []),
+      {
+        key: 'priority',
+        label: 'Priority',
+        column: 'priority',
+        type: 'multiSelect',
+        options: lookups.priorities().map((p) => ({ value: String(p.id), label: p.label })),
+        normalize: asId,
+      },
+      {
+        key: 'assignee',
+        label: 'Assignee',
+        column: 'assignee',
+        type: 'user',
+        options: mergeOptions(this.choices.people(), this.people()),
+        flagOptions: { unassigned: { param: 'unassigned', label: 'Unassigned' } },
+        normalize: asId,
+      },
+      {
+        key: 'due',
+        label: 'Due',
+        column: 'due',
+        type: 'dateRange',
+        fromParam: 'dueFrom',
+        toParam: 'dueTo',
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        column: 'status',
+        type: 'multiSelect',
+        default: OPEN_STATUSES,
+        valueGroups: [{ label: 'Open', values: OPEN_STATUSES }],
+        options: ['NEW', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'CANCELLED'].map((code) => ({
+          value: code,
+          label: lookups.statusLabel(code),
+        })),
+        normalize: (v) =>
+          ['NEW', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'CANCELLED'].includes(v.toUpperCase())
+            ? v.toUpperCase()
+            : null,
+      },
+    ];
+    return defs;
+  });
+
+  protected readonly filters = new ListFilters({
+    screen: 'scoped-tasks',
+    noun: 'tasks',
+    defs: this.defs,
+    visibleColumns: signal(null),
+  });
+
+  /** The filters as text: a change reloads (options arriving later never do). */
+  protected readonly filterKey = computed(() => JSON.stringify(this.filters.queryParams()));
+
+  protected readonly emptyText = computed(() => {
+    const status = this.filters.list('status');
+    return status.length === OPEN_STATUSES.length && status.every((s) => OPEN_STATUSES.includes(s))
+      ? 'No open tasks.'
+      : 'No tasks yet.';
   });
 
   private requestId = 0;
 
   constructor() {
+    void this.lookups.ensureLoaded();
     effect(() => {
       this.matterId();
       this.projectId();
+      this.filterKey();
       untracked(() => {
+        // A new filter starts again on the first page.
+        this.page.set(1);
         if (this.canView()) void this.load();
       });
     });
-  }
-
-  protected setScope(value: string): void {
-    this.scope.set(value === 'all' ? 'all' : 'open');
-    this.page.set(1);
-    void this.load();
   }
 
   protected goTo(page: number): void {
@@ -242,40 +284,29 @@ export class ScopedTasks {
     const id = ++this.requestId;
     this.state.set('loading');
     try {
-      const page = await firstValueFrom(
-        this.api.getTaskQueue(
-          undefined,
-          this.scope() === 'open' ? [...OPEN_STATUSES] : undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          this.matterId(),
-          this.projectId() ?? undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          this.sort() ?? undefined,
-          this.dir() ?? undefined,
-          this.page(),
-          PAGE_SIZE,
-        ),
-      );
+      // The address holds this grid's filters; the Matter (and the fixed Project) come from the page, paging and sorting from here.
+      const parsed = parseQueueState(this.filters.params());
+      const status = this.filters.list('status');
+      const request = queueArgs({
+        ...parsed,
+        filters: {
+          ...parsed.filters,
+          status: [...status],
+          matter: this.matterId(),
+          project: this.projectId() ?? parsed.filters.project,
+        },
+        sort: this.sort(),
+        dir: this.dir(),
+        page: this.page(),
+        pageSize: PAGE_SIZE,
+      });
+      const page = await firstValueFrom(this.api.getTaskQueue(...request));
       if (id !== this.requestId) return;
       this.rows.set(page.items);
       this.total.set(page.total);
       this.state.set('ready');
+      this.filters.reportResults(page.total);
+      this.choices.ensure();
     } catch {
       if (id === this.requestId) this.state.set('error');
     }

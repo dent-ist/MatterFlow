@@ -1,22 +1,30 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ParamMap, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import {
   MyWorkClient,
   MyWorkPage as MyWorkData,
   PodsClient,
 } from '../../../api/generated/api-client';
-import { dateDaysAgo, QueueState, queueArgs } from '../../../shared/work-queue/queue-filters';
-import { isBareState } from '../../../shared/work-queue/last-view';
-import { loadPodChoices } from '../../../shared/work-queue/pod-options';
-import { QueuePageBase } from '../../../shared/work-queue/queue-page';
-import { recordVisit } from '../../../shared/work-queue/last-visit';
-import { PodOption, WorkFilterBar } from '../../../shared/work-queue/work-filter-bar';
-import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
-import { WorkList } from '../../../shared/work-queue/work-list';
-import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
+import { FilterOption } from '../../../shared/filters/filter-def';
+import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { ListFilters } from '../../../shared/filters/list-filters';
+import { queueFilterDefs, withoutFilters } from '../../../shared/filters/queue-defs';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { recordVisit } from '../../../shared/work-queue/last-visit';
+import { PodOption, loadPodChoices } from '../../../shared/work-queue/pod-options';
+import { QueuePageBase } from '../../../shared/work-queue/queue-page';
+import {
+  CLOSED_STATUSES,
+  OPEN_STATUSES,
+  QueueState,
+  dateDaysAgo,
+  queueArgs,
+} from '../../../shared/work-queue/queue-filters';
+import { WorkList } from '../../../shared/work-queue/work-list';
+import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
+import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
 
 type TabKey = 'active' | 'dueSoon' | 'completed' | 'createdByMe';
 
@@ -31,37 +39,55 @@ const TAB_LABELS: Readonly<Record<TabKey, string>> = {
 const COMPLETED_WINDOW_DAYS = 90;
 
 /**
+ * Filters a tab decides itself (shown disabled with the reason): the tabs for my own tasks always mean "assigned to me", Created by me
+ * always means "created by me", and Due soon is a window on the due date.
+ */
+const OWNED: Readonly<Record<TabKey, readonly string[]>> = {
+  active: ['assignee'],
+  dueSoon: ['assignee', 'due', 'asap', 'overdue'],
+  completed: ['assignee'],
+  createdByMe: ['creator'],
+};
+
+const OWNED_REASON: Readonly<Record<TabKey, string>> = {
+  active: 'This tab lists the tasks assigned to you.',
+  dueSoon: 'Set by the Due soon tab: tasks assigned to you that are due within 2 days or overdue.',
+  completed: 'This tab lists the closed tasks assigned to you.',
+  createdByMe: 'This tab lists the tasks you created.',
+};
+
+/** The statuses that mean something on a tab; the Status filter offers these and a tab change drops the others. */
+const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
+  active: OPEN_STATUSES,
+  dueSoon: OPEN_STATUSES,
+  completed: CLOSED_STATUSES,
+  createdByMe: [...OPEN_STATUSES, ...CLOSED_STATUSES],
+};
+
+/**
  * My Work (UX S02, ticket 50): everything assigned to me from all my Pods, in the tabs Active, Due Soon, Completed and Created by Me,
- * most urgent first. Tab counts follow the filters. The tab and filters live in the URL.
+ * most urgent first, with the shared inline column filters. Tab counts follow the filters. The tab and filters live in the URL. A filter
+ * the current tab decides itself (Assignee on my own tabs, Creator on Created by me, Due on Due soon) shows disabled with the reason and
+ * is not sent; changing tab drops the filters the new tab owns, so every count is worked out under the same filters.
  */
 @Component({
   selector: 'mf-my-work-page',
-  imports: [FixedPage, PageHeader, RouterLink, WorkFilterBar, WorkList, WorkTabs, WorkViewControls],
+  imports: [FixedPage, PageHeader, RouterLink, FiltersBar, WorkList, WorkTabs, WorkViewControls],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
     <mf-fixed-page>
       <mf-page-header heading="My Work"> </mf-page-header>
 
-      <mf-work-filter-bar
-        [filters]="state().filters"
-        [names]="chipNames()"
-        [pods]="pods()"
-        [userId]="userId()"
-        [hidden]="['assignee']"
-        [hasTabs]="true"
-        (filtersChange)="setFilters($event)"
-        (clearAll)="clearFilters()"
-      >
+      <div class="wp-tabrow" data-tab-row>
         <mf-work-tabs
-          fb-tabs
           label="My Work views"
           idPrefix="mw"
           [tabs]="tabs()"
           [selected]="tab()"
           (selectedChange)="selectTab($event)"
         />
-      </mf-work-filter-bar>
+      </div>
 
       <div class="mf-fill" role="tabpanel" id="mw-panel" [attr.aria-labelledby]="'mw-tab-' + tab()">
         @switch (tab()) {
@@ -85,7 +111,11 @@ const COMPLETED_WINDOW_DAYS = 90;
           }
         }
 
-        <div class="wl-gridbar" data-grid-toolbar>
+        <mf-filters-bar
+          [filters]="filters"
+          controls="work-filter-row"
+          (showColumn)="showColumn($event)"
+        >
           <mf-work-view-controls
             [sort]="state().sort"
             [dir]="state().dir"
@@ -97,7 +127,7 @@ const COMPLETED_WINDOW_DAYS = 90;
             (columnsChange)="setColumns($event)"
             (densityChange)="setDensity($event)"
           />
-        </div>
+        </mf-filters-bar>
         <mf-work-list
           [rows]="rows()"
           [total]="total()"
@@ -109,6 +139,7 @@ const COMPLETED_WINDOW_DAYS = 90;
           [sort]="state().sort"
           [dir]="state().dir"
           [filtered]="filtered()"
+          [filters]="filters"
           caption="My Work"
           [newSince]="tab() === 'active' || tab() === 'dueSoon' ? lastVisit : null"
           [emptyText]="emptyText()"
@@ -118,6 +149,7 @@ const COMPLETED_WINDOW_DAYS = 90;
           (retry)="load()"
           (clearFilters)="clearFilters()"
           (rowChange)="replaceRow($event)"
+          (columnsShown)="shownColumns.set($event)"
         >
           @if (tab() === 'active' && auth.has('Pod.View')) {
             <a empty-action class="wp-link" routerLink="/pods/work">Check Pod Work</a>
@@ -148,6 +180,33 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
   protected readonly tab = computed<TabKey>(() => {
     const view = this.state().view;
     return view && view in TAB_LABELS ? (view as TabKey) : 'active';
+  });
+
+  private readonly defs = computed(() => {
+    const owned = OWNED[this.tab()];
+    const reason = () => OWNED_REASON[this.tab()];
+    const disabled = Object.fromEntries(
+      [...new Set(owned)].map((key) => [key === 'asap' || key === 'overdue' ? 'due' : key, reason]),
+    );
+    const allowed = STATUSES[this.tab()];
+    const lookups = this.queueLookups();
+    return queueFilterDefs(lookups, {
+      disabled,
+      statuses: () => (lookups.statuses ?? []).filter((o) => allowed.includes(o.value)),
+      names: {
+        client: (id) => this.recordName('client', id),
+        matter: (id) => this.recordName('matter', id),
+        project: (id) => this.recordName('project', id),
+      },
+    });
+  });
+
+  protected readonly filters = new ListFilters({
+    screen: 'my-work',
+    noun: 'tasks',
+    openByDefault: true,
+    defs: this.defs,
+    visibleColumns: this.shownColumns,
   });
 
   protected readonly defaultOrder = computed(() =>
@@ -185,34 +244,38 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
   /** When the user last opened My Work (ms), read once on arrival: tasks created after it show "New". Null on the first visit. */
   protected readonly lastVisit: number | null;
 
+  /** The remembered view is applied once, before anything loads. */
+  private pendingRestore = false;
+
   constructor() {
     super('my-work');
     this.lastVisit = recordVisit(this.userId(), this.clock.now().getTime());
     const keys = this.route.snapshot?.queryParamMap?.keys ?? [];
     const remembered = keys.length === 0 ? this.lastView() : null;
     if (remembered) {
-      // Open on the tab and filters the user last used.
-      this.pendingRemembered = true;
-      this.navigate(remembered, true);
+      // Open on the tab and filters the user last used, and say so.
+      this.pendingRestore = true;
+      this.restore(remembered);
     }
     void loadPodChoices(this.podsApi, this.auth.has('Pod.View')).then((c) =>
       this.pods.set(c.options),
     );
   }
 
-  /** The remembered view is applied once, before anything loads. */
-  private pendingRemembered = false;
-
-  protected override shouldLoad(state: QueueState): boolean {
-    if (this.pendingRemembered) {
-      if (isBareState(state)) return false;
-      this.pendingRemembered = false;
+  protected override shouldLoad(params: ParamMap): boolean {
+    if (this.pendingRestore) {
+      if (params.keys.length === 0) return false;
+      this.pendingRestore = false;
     }
     return true;
   }
 
   protected override podName(id: number): string | null {
     return this.pods().find((p) => p.id === id)?.name ?? null;
+  }
+
+  protected override podFilterOptions(): FilterOption[] {
+    return this.pods().map((p) => ({ value: String(p.id), label: p.name }));
   }
 
   protected override fetch(state: QueueState): Observable<MyWorkData> {
@@ -232,12 +295,18 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
 
   protected selectTab(key: string): void {
     if (key === this.tab()) return;
+    const next = (key in TAB_LABELS ? key : 'active') as TabKey;
+    const s = this.state();
+    // The new tab owns some columns and offers some statuses: what it cannot use is dropped, so the counts of all tabs agree.
+    const kept = withoutFilters(s.filters, OWNED[next]);
+    const status = kept.status.filter((code) => STATUSES[next].includes(code));
     this.navigate({
-      ...this.state(),
-      view: key === 'active' ? null : key,
+      ...s,
+      view: next === 'active' ? null : next,
       page: 1,
       sort: null,
       dir: null,
+      filters: { ...kept, status },
     });
   }
 

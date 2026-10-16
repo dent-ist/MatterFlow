@@ -326,6 +326,48 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                 || (t.RequestorEmail != null && EF.Functions.Like(EF.Functions.Collate(t.RequestorEmail.ToLower(), TextMatch.Collation), pattern, TextMatch.Escape)));
         }
 
+        if (f.MatterText is { } matterText)
+        {
+            // Column filter: the Matter reference (or the typed pair 343-12) or the Matter name, case-insensitive, wildcards literal. A subquery on
+            // the small Matter table, not an id list, so the cost does not grow with the number of Matters that match.
+            var pattern = TextMatch.ContainsPattern(matterText);
+            var pair = TextMatch.PairReference(matterText);
+            rows = rows.Where(t => db.Set<Matter>().Any(m => m.Id == t.MatterId
+                && (EF.Functions.Like(EF.Functions.Collate(m.MatterRef.ToLower(), TextMatch.Collation), pattern, TextMatch.Escape)
+                    || EF.Functions.Like(EF.Functions.Collate(m.Name.ToLower(), TextMatch.Collation), pattern, TextMatch.Escape)
+                    || (pair != null && m.MatterRef == pair))));
+        }
+
+        if (f.ClientText is { } clientText)
+        {
+            // The Client name, or digits contained in the Client number (the first five characters of the Matter reference are the number).
+            var pattern = TextMatch.ContainsPattern(clientText);
+            var digits = TextMatch.IsDigits(clientText);
+            var numberPattern = "%" + clientText + "%";
+            rows = rows.Where(t => db.Set<Matter>().Any(m => m.Id == t.MatterId
+                && (db.Set<Client>().Any(c => c.Id == m.ClientId && EF.Functions.Like(EF.Functions.Collate(c.Name.ToLower(), TextMatch.Collation), pattern, TextMatch.Escape))
+                    || (digits && EF.Functions.Like(m.MatterRef.Substring(0, 5), numberPattern)))));
+        }
+
+        if (f.ProjectText is { } projectText)
+        {
+            var pattern = TextMatch.ContainsPattern(projectText);
+            rows = rows.Where(t => t.ProjectId != null && db.Set<Project>().Any(p => p.Id == t.ProjectId
+                && EF.Functions.Like(EF.Functions.Collate(p.Name.ToLower(), TextMatch.Collation), pattern, TextMatch.Escape)));
+        }
+
+        if (f.UpdatedFrom is { } updatedFrom)
+        {
+            var start = c.StartOfDayUtc(updatedFrom);
+            rows = rows.Where(t => t.ModifiedAtUtc != null && t.ModifiedAtUtc >= start);
+        }
+
+        if (f.UpdatedTo is { } updatedTo)
+        {
+            var end = c.EndOfDayUtc(updatedTo);
+            rows = rows.Where(t => t.ModifiedAtUtc != null && t.ModifiedAtUtc < end);
+        }
+
         if (f.CompletedFrom is { } completedFrom)
         {
             var start = c.StartOfDayUtc(completedFrom);

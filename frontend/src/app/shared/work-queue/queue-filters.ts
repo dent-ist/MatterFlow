@@ -1,5 +1,4 @@
 import { ParamMap } from '@angular/router';
-import { formatDateOnly } from '../../core/time/time';
 
 /**
  * Filter, sort and paging state shared by the Task Queue, My Work and Pod Work. It round-trips through the URL query string
@@ -30,6 +29,12 @@ export interface QueueFilters {
   requestor: string;
   completedFrom: string | null;
   completedTo: string | null;
+  /** Column text filters: contained in the Matter reference or name / the Client name or number / the Project name. */
+  matterText: string;
+  clientText: string;
+  projectText: string;
+  updatedFrom: string | null;
+  updatedTo: string | null;
 }
 
 export type SortDirection = 'asc' | 'desc';
@@ -85,6 +90,11 @@ export function emptyFilters(): QueueFilters {
     requestor: '',
     completedFrom: null,
     completedTo: null,
+    matterText: '',
+    clientText: '',
+    projectText: '',
+    updatedFrom: null,
+    updatedTo: null,
   };
 }
 
@@ -168,6 +178,11 @@ export function parseQueueState(params: ParamMap): QueueState {
       requestor: params.get('requestor')?.trim() ?? '',
       completedFrom: date(params, 'completedFrom'),
       completedTo: date(params, 'completedTo'),
+      matterText: params.get('matterText')?.trim() ?? '',
+      clientText: params.get('clientText')?.trim() ?? '',
+      projectText: params.get('projectText')?.trim() ?? '',
+      updatedFrom: date(params, 'updatedFrom'),
+      updatedTo: date(params, 'updatedTo'),
     },
     sort: sort && SORT_FIELDS.includes(sort) ? sort : null,
     dir: dir === 'asc' || dir === 'desc' ? dir : null,
@@ -180,14 +195,21 @@ export function parseQueueState(params: ParamMap): QueueState {
 
 export type QueryParamValue = string | string[] | null;
 
-/** The query string for a state: a `null` removes the parameter (use with `queryParamsHandling: ''`). */
-export function toQueryParams(state: QueueState): Record<string, QueryParamValue> {
+/**
+ * The query string for a state: a `null` removes the parameter (use with `queryParamsHandling: 'merge'`). With `explicitStatus` an empty
+ * status list is written as `status=` ("every status"): a screen whose plain link starts on the open statuses (Task Queue) must not read
+ * a link that says nothing about status as that default.
+ */
+export function toQueryParams(
+  state: QueueState,
+  options: { explicitStatus?: boolean } = {},
+): Record<string, QueryParamValue> {
   const f = state.filters;
   const list = (values: readonly (string | number)[]): QueryParamValue =>
     values.length ? values.map(String) : null;
   return {
     q: f.q || null,
-    status: list(f.status),
+    status: f.status.length === 0 && options.explicitStatus ? '' : list(f.status),
     priority: list(f.priority),
     pod: list(f.pod),
     noPod: f.noPod ? 'true' : null,
@@ -208,6 +230,11 @@ export function toQueryParams(state: QueueState): Record<string, QueryParamValue
     requestor: f.requestor || null,
     completedFrom: f.completedFrom,
     completedTo: f.completedTo,
+    matterText: f.matterText || null,
+    clientText: f.clientText || null,
+    projectText: f.projectText || null,
+    updatedFrom: f.updatedFrom,
+    updatedTo: f.updatedTo,
     sort: state.sort,
     dir: state.sort && state.dir ? state.dir : null,
     page: state.page > 1 ? String(state.page) : null,
@@ -242,183 +269,11 @@ export function filterCount(f: QueueFilters): number {
     f.overdue !== null,
     f.requestor,
     f.completedFrom || f.completedTo,
+    f.matterText,
+    f.clientText,
+    f.projectText,
+    f.updatedFrom || f.updatedTo,
   ].filter(Boolean).length;
-}
-
-// ---- chips
-
-export interface FilterChip {
-  /** Stable key, also the `remove` target. */
-  key: string;
-  label: string;
-  /** Returns the filters with this chip removed. */
-  remove: (f: QueueFilters) => QueueFilters;
-}
-
-export interface ChipNames {
-  statusLabel: (code: string) => string;
-  priorityLabel: (id: number) => string;
-  podName: (id: number) => string;
-  userName: (id: number) => string;
-  clientName: (id: number) => string;
-  matterName: (id: number) => string;
-  projectName: (id: number) => string;
-  typeName: (id: number) => string;
-  workflowName: (id: number) => string;
-}
-
-function without<T>(list: readonly T[], item: T): T[] {
-  return list.filter((x) => x !== item);
-}
-
-/** One removable chip per active filter value; each says what it filters in words. */
-export function buildChips(f: QueueFilters, names: ChipNames): FilterChip[] {
-  const chips: FilterChip[] = [];
-  if (f.q) chips.push({ key: 'q', label: `Search: ${f.q}`, remove: (x) => ({ ...x, q: '' }) });
-  if (sameSet(f.status, OPEN_STATUSES)) {
-    chips.push({
-      key: 'status:open',
-      label: 'Status: Open',
-      remove: (x) => ({ ...x, status: [] }),
-    });
-  } else {
-    for (const code of f.status) {
-      chips.push({
-        key: `status:${code}`,
-        label: `Status: ${names.statusLabel(code)}`,
-        remove: (x) => ({ ...x, status: without(x.status, code) }),
-      });
-    }
-  }
-  for (const p of f.priority) {
-    chips.push({
-      key: `priority:${p}`,
-      label: `Priority: ${names.priorityLabel(p)}`,
-      remove: (x) => ({ ...x, priority: without(x.priority, p) }),
-    });
-  }
-  for (const p of f.pod) {
-    chips.push({
-      key: `pod:${p}`,
-      label: `Pod: ${names.podName(p)}`,
-      remove: (x) => ({ ...x, pod: without(x.pod, p) }),
-    });
-  }
-  if (f.noPod) {
-    chips.push({
-      key: 'noPod',
-      label: 'Pod: No pod',
-      remove: (x) => ({ ...x, noPod: false }),
-    });
-  }
-  for (const a of f.assignee) {
-    chips.push({
-      key: `assignee:${a}`,
-      label: `Assignee: ${names.userName(a)}`,
-      remove: (x) => ({ ...x, assignee: without(x.assignee, a) }),
-    });
-  }
-  if (f.unassigned) {
-    chips.push({
-      key: 'unassigned',
-      label: 'Assignee: Unassigned',
-      remove: (x) => ({ ...x, unassigned: false }),
-    });
-  }
-  for (const c of f.creator) {
-    chips.push({
-      key: `creator:${c}`,
-      label: `Creator: ${names.userName(c)}`,
-      remove: (x) => ({ ...x, creator: without(x.creator, c) }),
-    });
-  }
-  if (f.client !== null) {
-    chips.push({
-      key: 'client',
-      label: `Client: ${names.clientName(f.client)}`,
-      remove: (x) => ({ ...x, client: null }),
-    });
-  }
-  if (f.matter !== null) {
-    chips.push({
-      key: 'matter',
-      label: `Matter: ${names.matterName(f.matter)}`,
-      remove: (x) => ({ ...x, matter: null }),
-    });
-  }
-  if (f.project !== null) {
-    chips.push({
-      key: 'project',
-      label: `Project: ${names.projectName(f.project)}`,
-      remove: (x) => ({ ...x, project: null }),
-    });
-  }
-  for (const t of f.type) {
-    chips.push({
-      key: `type:${t}`,
-      label: `Type: ${names.typeName(t)}`,
-      remove: (x) => ({ ...x, type: without(x.type, t) }),
-    });
-  }
-  for (const w of f.workflow) {
-    chips.push({
-      key: `workflow:${w}`,
-      label: `Workflow: ${names.workflowName(w)}`,
-      remove: (x) => ({ ...x, workflow: without(x.workflow, w) }),
-    });
-  }
-  if (f.createdFrom || f.createdTo) {
-    chips.push({
-      key: 'created',
-      label: `Created: ${range(f.createdFrom, f.createdTo)}`,
-      remove: (x) => ({ ...x, createdFrom: null, createdTo: null }),
-    });
-  }
-  if (f.dueFrom || f.dueTo) {
-    chips.push({
-      key: 'due',
-      label: `Due: ${range(f.dueFrom, f.dueTo)}`,
-      remove: (x) => ({ ...x, dueFrom: null, dueTo: null }),
-    });
-  }
-  if (f.completedFrom || f.completedTo) {
-    chips.push({
-      key: 'completed',
-      // "Completed" when the list is limited to completed tasks (the Dashboard's Completed tile), "Closed" when cancelled ones count too.
-      label: `${sameSet(f.status, ['COMPLETED']) ? 'Completed' : 'Closed'}: ${range(f.completedFrom, f.completedTo)}`,
-      remove: (x) => ({ ...x, completedFrom: null, completedTo: null }),
-    });
-  }
-  if (f.asap !== null) {
-    chips.push({
-      key: 'asap',
-      label: f.asap ? 'ASAP only' : 'Has a due date',
-      remove: (x) => ({ ...x, asap: null }),
-    });
-  }
-  if (f.overdue !== null) {
-    chips.push({
-      key: 'overdue',
-      label: f.overdue ? 'Overdue only' : 'Not overdue',
-      remove: (x) => ({ ...x, overdue: null }),
-    });
-  }
-  if (f.requestor) {
-    chips.push({
-      key: 'requestor',
-      label: `Requestor: ${f.requestor}`,
-      remove: (x) => ({ ...x, requestor: '' }),
-    });
-  }
-  return chips;
-}
-
-/** "Oct 1, 2026 to Oct 16, 2026": chips read dates the way the rest of the app does, not as ISO (UAT2-20). */
-function range(from: string | null, to: string | null): string {
-  const a = from ? formatDateOnly(from) : '';
-  const b = to ? formatDateOnly(to) : '';
-  if (from && to) return from === to ? a : `${a} to ${b}`;
-  return from ? `from ${a}` : `until ${b}`;
 }
 
 export function sameSet(a: readonly string[], b: readonly string[]): boolean {
@@ -526,6 +381,11 @@ export function queueArgs(
   requestor: string | undefined,
   completedFrom: string | undefined,
   completedTo: string | undefined,
+  matterText: string | undefined,
+  clientText: string | undefined,
+  projectText: string | undefined,
+  updatedFrom: string | undefined,
+  updatedTo: string | undefined,
   sort: string | undefined,
   dir: string | undefined,
   page: number | undefined,
@@ -556,6 +416,11 @@ export function queueArgs(
     f.requestor || undefined,
     f.completedFrom ?? undefined,
     f.completedTo ?? undefined,
+    f.matterText || undefined,
+    f.clientText || undefined,
+    f.projectText || undefined,
+    f.updatedFrom ?? undefined,
+    f.updatedTo ?? undefined,
     state.sort ?? undefined,
     state.sort ? (state.dir ?? undefined) : undefined,
     state.page,

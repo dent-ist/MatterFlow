@@ -28,6 +28,7 @@ import {
   pageOf,
   provideClock,
   provideLookups,
+  provideQueueChoices,
 } from '../../../shared/work-queue/work-queue-testing';
 import { ProjectDetailPage } from './project-detail-page';
 import { ProjectFormPage } from './project-form-page';
@@ -89,6 +90,7 @@ describe('Projects pages', () => {
           useValue: { listAuditEvents: vi.fn().mockReturnValue(ok({ items: [] })) },
         },
         ...provideLookups(),
+        ...provideQueueChoices(),
         ...provideClock('2026-10-14T15:00:00Z'),
       ],
     });
@@ -395,6 +397,8 @@ describe('Projects pages', () => {
         '/tasks/1042',
       );
       expect(el().querySelector('mf-scoped-tasks [data-create-task]')).toBeNull(); // needs Task.Create
+      // A project's tasks have no Project filter (the project is the page).
+      expect(el().querySelector('mf-scoped-tasks [aria-label="Filter by Project"]')).toBeNull();
     });
 
     it('offers Create task prefilled with the matter and the project', async () => {

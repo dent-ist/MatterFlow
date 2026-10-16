@@ -337,15 +337,35 @@ describe('TaskTable', () => {
     expect(sorts.every((s) => s === 'none')).toBe(true);
   });
 
-  it('shows five skeleton rows while loading and marks the table busy', async () => {
-    await create([], ['ref', 'title'], { loading: true });
-    expect(el().querySelectorAll('tbody tr.wt-skeleton').length).toBe(5);
+  it('shows loading as one row of the body under the headers and marks the table busy', async () => {
+    await create([], ['ref', 'title'], { state: 'loading' });
+    expect(el().querySelectorAll('thead th').length).toBe(2);
+    expect(el().querySelectorAll('tbody tr').length).toBe(1);
+    expect(el().querySelector('tbody [data-loading]')!.textContent).toContain('Loading tasks');
     expect(el().querySelector('table')!.getAttribute('aria-busy')).toBe('true');
   });
 
+  it('shows the error and the empty list as a row of the body, with the headers staying', async () => {
+    await create([], ['ref', 'title'], { state: 'error' });
+    expect(el().querySelector('thead th')).not.toBeNull();
+    expect(el().querySelector('tbody [data-error]')).not.toBeNull();
+
+    fixture.componentRef.setInput('state', 'ready');
+    fixture.componentRef.setInput('emptyText', 'No tasks here.');
+    fixture.detectChanges();
+    expect(el().querySelector('tbody [data-empty="none"]')!.textContent).toContain(
+      'No tasks here.',
+    );
+    fixture.componentRef.setInput('filtered', true);
+    fixture.detectChanges();
+    expect(el().querySelector('tbody [data-empty="filtered"]')!.textContent).toContain(
+      'No tasks match these filters',
+    );
+  });
+
   it('keeps the old rows, dimmed, while refreshing', async () => {
-    await create([aRow()], ['ref', 'title'], { loading: true });
-    expect(el().querySelectorAll('tbody tr.wt-skeleton').length).toBe(0);
+    await create([aRow()], ['ref', 'title'], { state: 'loading' });
+    expect(el().querySelector('tbody [data-loading]')).toBeNull();
     expect(el().querySelectorAll('tbody tr').length).toBe(1);
     expect(el().querySelector('.wt-wrap')!.classList).toContain('wt-dim');
   });
