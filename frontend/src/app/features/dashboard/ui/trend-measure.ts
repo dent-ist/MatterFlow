@@ -30,6 +30,7 @@ export interface MeasureOption<T extends string> {
               [checked]="o.value === value()"
               (change)="valueChange.emit(o.value)"
             />
+            <span class="mark" aria-hidden="true">&#10003;</span>
             <span>{{ o.label }}</span>
           </label>
         }
@@ -99,8 +100,12 @@ export interface MeasureOption<T extends string> {
       background: var(--mf-surface-alt);
       box-shadow: inset 0 -3px 0 var(--mf-primary);
     }
-    .opt.on span::before {
-      content: '\\2713\\a0';
+    .mark {
+      display: none;
+      margin-right: 0.35em;
+    }
+    .opt.on .mark {
+      display: inline;
     }
     .select {
       display: none;

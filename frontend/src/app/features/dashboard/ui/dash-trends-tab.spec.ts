@@ -241,13 +241,9 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     await open();
     const group = el.querySelector('[data-measure=flows]')!;
     expect(group.getAttribute('role')).toBe('radiogroup');
-    expect(Array.from(group.querySelectorAll('label')).map((l) => text(l))).toEqual([
-      'Created and completed',
-      'Created',
-      'Completed',
-      'On time',
-      'Completed late',
-    ]);
+    expect(Array.from(group.querySelectorAll('label span:last-child')).map((l) => text(l))).toEqual(
+      ['Created and completed', 'Created', 'Completed', 'On time', 'Completed late'],
+    );
     expect(el.querySelector('[data-measure-select=flows]')).not.toBeNull();
     // The select (below 600 px) works the same.
     const select = el.querySelector<HTMLSelectElement>('[data-measure-select=flows]')!;

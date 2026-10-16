@@ -8,10 +8,10 @@ import { TaskApi } from '../support/tasks';
 import { dateInZone, FIRM_ZONE } from '../support/time';
 
 /**
- * Screenshot run for docs/ux/dashboard-trends-types (not a test: skipped unless E2E_SCREENSHOTS is set to the output folder, and it needs
+ * Screenshot run for docs/ux/dashboard-trends-types and docs/ux/dashboard-review-2/fixes/wp8a (not a test: skipped unless E2E_SCREENSHOTS is set to the output folder, and it needs
  * the docker SQL Server of the stack because tasks are back-dated over 30 days in the database, which the API cannot do):
  *   E2E_SCREENSHOTS=docs/ux/dashboard-trends-types frontend/e2e/run-local.sh -g "trends screenshots"
- * Seeds 10 task types and about 150 tasks, back-dates their created, completed and due dates, then takes the Trends tab at 1366x768 and 375x812.
+ * Seeds 10 task types and about 150 tasks, back-dates their created, completed and due dates, then takes the Trends tab at 1366x768, 1920x1080, 768x1024 and 375x812.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 const SQL_PASSWORD = 'MatterFlow_Dev1!';
@@ -155,18 +155,21 @@ test.describe('trends screenshots', () => {
 
     for (const [w, h] of [
       [1366, 768],
+      [1920, 1080],
+      [768, 1024],
       [375, 812],
     ]) {
       await page.setViewportSize({ width: w, height: h });
       await page.addInitScript(() => localStorage.clear());
       await page.goto('/dashboard?tab=trends');
       await ready(page);
-      await shot(`01-all-only-${w}`);
+      await shot(`01-default-${w}`);
 
+      // Three types: All task types is hidden for scale, the type lines use the plot.
       await box(page, top[0]).check();
       await box(page, top[1]).check();
       await box(page, top[2]).check();
-      await expect(lines(page)).toHaveCount(4);
+      await expect(lines(page)).toHaveCount(6);
       await shot(`02-three-types-${w}`);
       await page.locator('[data-plot]').focus();
       await page.keyboard.press('ArrowLeft');
@@ -174,43 +177,41 @@ test.describe('trends screenshots', () => {
       await shot(`03-tooltip-${w}`);
 
       for (const name of top.slice(3, 8)) await box(page, name).check();
-      await expect(lines(page)).toHaveCount(9);
+      await expect(lines(page)).toHaveCount(16);
       await shot(`04-eight-types-${w}`);
+      // The legend list scrolls on its own and the chart stays in view (sticky from 1000 px).
+      await page.locator('[data-type-list]').evaluate((e) => e.scrollTo(0, e.scrollHeight));
+      await page.mouse.wheel(0, 400);
+      await shot(`05-sticky-scrolled-${w}`, true);
+      await page.evaluate(() => window.scrollTo(0, 0));
 
       await box(page, top[8]).click();
       await expect(page.locator('[data-limit-msg]')).toContainText('Pick up to 8');
       await page.locator('[data-limit-msg]').scrollIntoViewIfNeeded();
-      await shot(`05-limit-message-${w}`, true);
+      await shot(`06-limit-message-${w}`, true);
 
       await page.getByRole('button', { name: /View as table/ }).click();
       await expect(page.locator('tbody tr').first()).toBeVisible();
-      await shot(`06-table-8-types-${w}`);
+      await shot(`07-table-8-types-${w}`);
       await page.getByRole('button', { name: /View as chart/ }).click();
 
       await page.locator('[data-clear]').click();
-      for (const name of top.slice(0, 3)) await box(page, name).check();
-      await page.getByRole('radio', { name: 'Overdue' }).check();
-      await expect(page.getByRole('heading', { name: /Overdue tasks/ })).toBeVisible();
-      await shot(`07-three-types-overdue-${w}`);
-      await page.getByRole('button', { name: /View as table/ }).click();
-      await shot(`08-table-3-types-overdue-${w}`);
-      await page.getByRole('button', { name: /View as chart/ }).click();
+      await expect(page.locator('[data-measure-option="both"]')).toBeChecked();
+      await shot(`08-measure-both-${w}`);
+      const measure = w < 600 ? page.locator('[data-measure-select="flows"]') : null;
+      if (measure) await measure.selectOption('onTime');
+      else await page.locator('[data-measure-option="onTime"]').check();
+      await expect(
+        page.getByRole('heading', { name: 'Tasks completed on time per day' }),
+      ).toBeVisible();
+      await shot(`09-measure-on-time-${w}`);
 
-      await page.locator('[data-clear]').click();
-      await page
-        .getByRole('group', { name: 'Due dates' })
-        .getByRole('checkbox', { name: 'Overdue' })
-        .check();
-      await page
-        .getByRole('group', { name: 'Due dates' })
-        .getByRole('checkbox', { name: 'On time' })
-        .check();
-      await page
-        .getByRole('group', { name: 'Due dates' })
-        .getByRole('checkbox', { name: 'Completed late' })
-        .check();
-      await expect(lines(page)).toHaveCount(5);
-      await shot(`09-due-dates-${w}`);
+      // A legacy address: Overdue per task type lives in the backlog panel.
+      await page.goto(
+        `/dashboard?tab=trends&types=${types[0].id},${types[1].id},${types[2].id}&metric=overdue`,
+      );
+      await ready(page);
+      await shot(`10-legacy-overdue-types-${w}`);
     }
   });
 });

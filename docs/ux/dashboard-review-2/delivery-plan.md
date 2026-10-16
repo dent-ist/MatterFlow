@@ -126,3 +126,9 @@ Rules for developer agents: branch from `origin/dev`, rebase before each push, t
 ### Definition of done per package
 
 Issues closed, tests green twice, axe clean, three screenshots per changed screen, bundle budget, UX docs updated, and the epic tasklist ticked.
+
+## 5. Status
+
+(One line per work package; keep the other packages' lines when merging.)
+
+- WP8a Trends frontend (#115, #114, #116, #119): delivered in `trend-chart`, `trend-model`, `trend-legend`, `dash-trends-tab` and the new `trend-measure`. Frontend only (the existing `all` and `byTaskType` day series already carry every measure; no API change). Two stacked panels (flows 320 px, backlog 200 px, same x scale and cursor), nice y axis (peak 21 gives 25), All task types hidden for scale while comparing, segmented measure controls plus a never-disabled "Compare task types" list, sticky chart. Extension points for WP8b (Open series, direct labels, Monday ticks, 375 layout) are listed in `docs/ux/dashboard-trends-types/README.md` (Design, last paragraph). Screenshots: `fixes/wp8a/`.

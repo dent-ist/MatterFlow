@@ -1050,7 +1050,8 @@ describe('DashboardPage', () => {
     expect(trend.querySelector('[data-plot] svg')).not.toBeNull();
     expect(text(trend.querySelector('[data-legend="created"]'))).toBe('Created 9');
     expect(text(trend.querySelector('[data-legend="completed"]'))).toBe('Completed 6');
-    trend.querySelector<HTMLButtonElement>('.toggle')!.click();
+    // The header has two toggles (Hide backlog, View as table): the table one is the last.
+    Array.from(trend.querySelectorAll<HTMLButtonElement>('.toggle')).pop()!.click();
     harness.detectChanges();
     expect(trend.querySelectorAll('tbody tr').length).toBe(3);
   });
