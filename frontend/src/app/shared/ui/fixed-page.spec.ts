@@ -94,11 +94,12 @@ const FIXED_URLS = [
   '/admin/asset-types?tab=link-roles',
   '/admin/custom-fields',
   '/admin/audit',
+  // Fixed-height Dashboard (#137): the page never scrolls, only regions inside each tab do.
+  '/dashboard',
 ];
 
-/** Screens that keep the normal page scroll: the dashboard, forms, the designers, the task page and the system pages. */
+/** Screens that keep the normal page scroll: forms, the designers, the task page and the system pages. */
 const NORMAL_URLS = [
-  '/dashboard',
   '/tasks/new',
   '/tasks/7',
   '/clients/new',

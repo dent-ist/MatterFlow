@@ -32,6 +32,8 @@ const TABS: { name: TabName; url: string; ready: string }[] = [
   { name: 'coverage', url: '/dashboard?tab=users&view=coverage', ready: '[data-coverage-region]' },
 ];
 
+test.describe.configure({ timeout: 240_000 });
+
 let tag: string;
 
 test.beforeAll(async ({ admin, seed }) => {
@@ -80,7 +82,10 @@ async function open(
     await expect(page.locator('[data-layout]').first()).toBeVisible({ timeout: 20_000 });
     await page.locator(`[data-layout="${tab.name === 'table' ? 'table' : 'cards'}"]`).click();
   }
-  await expect(page.locator(tab.ready).first()).toBeVisible({ timeout: 20_000 });
+  // The Coverage matrix of a shared test database (hundreds of task types) takes a while to draw.
+  await expect(page.locator(tab.ready).first()).toBeVisible({
+    timeout: tab.name === 'coverage' ? 120_000 : 20_000,
+  });
   await page.waitForLoadState('networkidle');
 }
 
@@ -113,14 +118,13 @@ test.describe('no page scroll on any tab (#137)', () => {
         // The tab panel ends inside the window as well (nothing hangs below the fold).
         const panel = (await page.locator('[data-tabpanel]').first().boundingBox())!;
         expect(panel.y + panel.height).toBeLessThanOrEqual(size.height + 1);
+        await shoot(page, `${tab.name}-${size.width}`);
         // Scrolling the wheel over the page leaves the header where it was.
         await page.mouse.move(size.width / 2, size.height / 2);
         await page.mouse.wheel(0, 600);
         await page.waitForTimeout(150);
         expect((await docOverflow(page)).top).toBe(0);
         await headerInView(page, size.height);
-        if (size.width === 1366 || tab.name === 'trends')
-          await shoot(page, `${tab.name}-${size.width}`);
       });
     }
   }
@@ -480,8 +484,6 @@ test.describe('axe (#137)', () => {
   for (const size of [SIZES[0], SIZES[1], { width: 375, height: 812 }]) {
     for (const tab of TABS) {
       test(`${tab.name} at ${size.width}x${size.height} is axe clean`, async ({ page }) => {
-        // The shared test database grows with every suite (the Coverage matrix has a cell per person and task type).
-        test.setTimeout(240_000);
         await open(page, tab, size);
         expect(await axeViolations(page)).toEqual([]);
         expect(

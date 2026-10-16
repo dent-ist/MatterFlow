@@ -32,7 +32,7 @@ One shared mechanism (`frontend/src/app/shared/ui/fixed-page.ts`, `frontend/src/
 | app shell | `ShellLayout` counts the fixed pages on screen; while one is shown the root is exactly one window tall (`100dvh`, below the dev banner if there is one), the main area does not scroll, and the left nav scrolls by itself. |
 | compact parts | `mf-page-header` (22 px title, description on the title row cut with an ellipsis and a tooltip, actions right), `mf-tabs`, `mf-search-box` (no visible label, hint only while focused), `mf-status-filter` (label beside the select) switch to compact styles when they sit inside a fixed page. |
 
-The page header, tabs and toolbar are simply whatever sits above the scroll area; nothing needs to be slotted. Dashboard, Create Task, the create/edit forms, the workflow designer and version page, the task detail page, the step/task type forms and the system pages (Access Pending, 403, 404, error) do not use it and keep the normal page scroll.
+The page header, tabs and toolbar are simply whatever sits above the scroll area; nothing needs to be slotted. The Dashboard uses it since #137 (fixed height, only regions inside each tab scroll; see `docs/ux/dashboard-review-2/fixes/wp2/README.md`). Create Task, the create/edit forms, the workflow designer and version page, the task detail page, the step/task type forms and the system pages (Access Pending, 403, 404, error) do not use it and keep the normal page scroll.
 
 ## Screens
 
@@ -114,7 +114,7 @@ The inline Status, Priority and Assignee menus are `position: fixed` (and close 
 
 ## Tests
 
-- Unit: `shared/ui/fixed-page.spec.ts` resolves every URL of the list above in the real route tree and asserts its component uses `mf-fixed-page` (22 URLs), asserts that the forms, the dashboard, the designers, the task page and the system pages do not (24 URLs), and covers the shell counter, the focusable named region, the scrolled flag, the reset on navigation and the scroll memory.
+- Unit: `shared/ui/fixed-page.spec.ts` resolves every URL of the list above in the real route tree and asserts its component uses `mf-fixed-page` (22 URLs), asserts that the forms, the designers, the task page and the system pages do not (24 URLs), and covers the shell counter, the focusable named region, the scrolled flag, the reset on navigation and the scroll memory.
 - E2E: `e2e/tests/fixed-header.spec.ts` seeds 64 tasks and long client/matter lists and asserts that title, search, Filters and the header row keep the same position while rows move (Task Queue, My Work, Pod Work, Clients, Client page), at least 8 rows at 1366x768, paging and sorting scroll back to the top, the Audit and Task Queue filter panels do not push the grid away, the inline Status menu and the Columns chooser are not clipped, keyboard scrolling and the skip link, a focused link is not under the sticky header, Back restores the position, print shows the whole grid, the Create Task action bar stays at the bottom, and at 375 px wide, under 561 px high the page scrolls normally while the Dashboard is unchanged.
 - Screenshots: `E2E_SCREENSHOTS=docs/ux/fixed-header/after E2E_SEED_BULK=1 frontend/e2e/run-local.sh -g "fixed-header screenshots"` (`e2e/tests/fixed-header-screens.spec.ts`; `E2E_SEED_BULK=1` seeds the long lists first).
 

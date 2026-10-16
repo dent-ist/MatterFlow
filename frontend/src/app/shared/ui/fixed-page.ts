@@ -35,7 +35,7 @@ import {
  * 1366x768 screen is 683x384 CSS px), the page scrolls normally and nothing is pinned, so reflow and zoom (WCAG 1.4.10) keep working.
  * The breakpoints live in `styles/_fixed-page.scss` ("FIXED_MODE") and in `FIXED_MODE_QUERY` below, which must agree.
  *
- * Dashboard, Create Task, the edit and create forms, the workflow designer, the task detail page and the system pages do NOT use it.
+ * The Dashboard uses it too (fixed height, #137; only regions inside each tab scroll). Create Task, the edit and create forms, the workflow designer, the task detail page and the system pages do NOT use it.
  */
 /** How long after Back/Forward a grid that is created late (its data arrives first) still gets its old position back. */
 const RESTORE_WINDOW_MS = 5000;

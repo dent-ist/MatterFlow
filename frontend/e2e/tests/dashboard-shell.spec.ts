@@ -111,9 +111,10 @@ test.describe('Dashboard shell: tabs are independent (P2) and errors stay in the
     await failSummary(page);
     await page.goto('/dashboard?tab=trends&metric=completed');
     await expect(page.locator('[data-tabpanel="trends"] [data-dash-state="error"]')).toBeVisible();
-    // A role with only Trends has no tab list: the tab's name is the heading (R3).
-    await expect(page.getByRole('heading', { level: 1, name: 'Trends' })).toBeVisible();
-    await expect(page.getByRole('tab')).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: 'Trends' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     await expect(page).toHaveURL(/tab=trends&metric=completed/);
   });
 

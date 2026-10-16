@@ -793,6 +793,10 @@ describe('DashboardPage', () => {
         'Dashboard.ViewBreakdowns',
       ]);
       expect(tabLabels(el)).toEqual(['Summary', 'Breakdowns']);
+      // Two tabs: the heading is "Dashboard" in the tab row and the panel is a tabpanel (R3 regression).
+      expect(el.querySelector('h1')!.textContent).toContain('Dashboard');
+      expect(el.querySelector('[data-dash-head] [role="tablist"]')).not.toBeNull();
+      expect(el.querySelector('[role="tabpanel"]')).not.toBeNull();
       expect(el.querySelector('[data-group]')).toBeNull();
       expect(el.querySelectorAll('[data-panel]').length).toBe(1);
     });

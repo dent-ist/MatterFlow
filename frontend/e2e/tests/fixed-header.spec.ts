@@ -424,10 +424,13 @@ test.describe('Fixed-header screens fall back to normal page scrolling', () => {
     expect(await documentOverflow(page)).toBeLessThanOrEqual(0);
   });
 
-  test('the Dashboard keeps the normal page scroll', async ({ page }) => {
+  test('the Dashboard is a fixed page too (#137): the document does not scroll', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/dashboard');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.locator('mf-fixed-page')).toHaveCount(0);
+    await expect(page.locator('mf-fixed-page')).toHaveCount(1);
+    expect(await documentOverflow(page)).toBeLessThanOrEqual(0);
   });
 });

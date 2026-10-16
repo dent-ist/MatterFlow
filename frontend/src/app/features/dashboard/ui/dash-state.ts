@@ -159,7 +159,11 @@ export function focusAfterRetry(
       }
       const content = scope.querySelector<HTMLElement>('[role="tabpanel"]') ?? scope;
       const first = Array.from(content.querySelectorAll<HTMLElement>(FOCUSABLE)).find(
-        (el) => !el.closest('[data-dash-state], [hidden], [inert]') && isShown(el),
+        (el) =>
+          // A scroll region (focusable only so the keyboard can scroll it) is not the first control of the content.
+          !el.matches('[role="region"][tabindex="0"]') &&
+          !el.closest('[data-dash-state], [hidden], [inert]') &&
+          isShown(el),
       );
       first?.focus();
     },
