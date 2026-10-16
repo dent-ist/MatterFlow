@@ -11526,6 +11526,7 @@ export interface DashboardAgingBucket {
     maxDays: number | undefined;
     count: number;
     query: string;
+    overdue: number;
 
     [key: string]: any;
 }
@@ -11538,6 +11539,7 @@ export interface DashboardBreakdownItem {
     query: string | undefined;
     isOther: boolean;
     iconKey?: string | undefined;
+    overdue: number;
 
     [key: string]: any;
 }

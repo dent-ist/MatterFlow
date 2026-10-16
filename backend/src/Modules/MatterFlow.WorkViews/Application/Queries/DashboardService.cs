@@ -89,11 +89,16 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
 
         // Breakdowns tab: open Tasks by status, priority and type, and their age.
         var departmentOpen = showBreakdowns ? open : open.Where(_ => false);
+        // Each row also carries how many of its Tasks are overdue (the Overdue tile's predicate): a second grouped read over the overdue subset.
+        var departmentOverdue = departmentOpen.Where(overdue);
         var byStatus = await departmentOpen.GroupBy(t => t.Status).Select(g => new { Status = g.Key, Count = g.Count() }).ToListAsync(ct);
         var byPriority = await departmentOpen.GroupBy(t => t.PriorityId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct);
         var byType = await departmentOpen.GroupBy(t => t.TaskTypeId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct);
+        var overdueByStatus = (await departmentOverdue.GroupBy(t => t.Status).Select(g => new { Status = g.Key, Count = g.Count() }).ToListAsync(ct)).ToDictionary(x => x.Status, x => x.Count);
+        var overdueByPriority = (await departmentOverdue.GroupBy(t => t.PriorityId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct)).ToDictionary(x => x.Id, x => x.Count);
+        var overdueByType = (await departmentOverdue.GroupBy(t => t.TaskTypeId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct)).ToDictionary(x => x.Id, x => x.Count);
 
-        IReadOnlyList<DashboardAgingBucket> aging = showBreakdowns ? await AgingAsync(departmentOpen, queueClock, ct) : [];
+        IReadOnlyList<DashboardAgingBucket> aging = showBreakdowns ? await AgingAsync(departmentOpen, departmentOverdue, queueClock, ct) : [];
 
         var statusLabels = await db.Set<TaskStatusLabel>().AsNoTracking().ToDictionaryAsync(l => l.StatusCode, l => l.DisplayLabel, ct);
         var priorityRows = await db.Set<Priority>().AsNoTracking().OrderBy(p => p.SortOrder).Select(p => new { p.Id, p.Label, p.IsActive }).ToListAsync(ct);
@@ -110,14 +115,16 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
                 StatusLabel(s.ToCode()),
                 byStatus.FirstOrDefault(x => x.Status == s)?.Count ?? 0,
                 DashboardRules.Status(s),
-                false))
+                false,
+                null,
+                overdueByStatus.GetValueOrDefault(s)))
             .ToList();
 
         var priorityCounts = byPriority.ToDictionary(p => p.Id, p => p.Count);
         var priorityItems = priorityRows
             .Where(_ => showBreakdowns)
             .Where(p => p.IsActive || priorityCounts.ContainsKey(p.Id))
-            .Select(p => new DashboardBreakdownItem(p.Id, null, p.Label, priorityCounts.GetValueOrDefault(p.Id), DashboardRules.Open("priority=" + p.Id), false))
+            .Select(p => new DashboardBreakdownItem(p.Id, null, p.Label, priorityCounts.GetValueOrDefault(p.Id), DashboardRules.Open("priority=" + p.Id), false, null, overdueByPriority.GetValueOrDefault(p.Id)))
             .ToList();
 
         var typeItems = DashboardRules.TopWithOther(
@@ -128,7 +135,8 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
                 t.Count,
                 DashboardRules.Open("type=" + t.Id),
                 false,
-                row?.IconKey)),
+                row?.IconKey,
+                overdueByType.GetValueOrDefault(t.Id))),
             DashboardRules.TopTypes,
             "Other task types",
             rest => DashboardRules.Open([.. rest.Select(r => "type=" + r.Id)]));
@@ -157,8 +165,8 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         return summary;
     }
 
-    /// <summary>Open Tasks per age band; the band edges are the viewer's local midnights so the drill-through (createdFrom/createdTo) lists the same Tasks.</summary>
-    private async Task<IReadOnlyList<DashboardAgingBucket>> AgingAsync(IQueryable<WorkTask> open, QueueClock queueClock, CancellationToken ct)
+    /// <summary>Open Tasks per age band, and how many of them are overdue; the band edges are the viewer's local midnights so the drill-through (createdFrom/createdTo) lists the same Tasks.</summary>
+    private async Task<IReadOnlyList<DashboardAgingBucket>> AgingAsync(IQueryable<WorkTask> open, IQueryable<WorkTask> overdue, QueueClock queueClock, CancellationToken ct)
     {
         var today = queueClock.Today;
         var bands = DashboardRules.AgingBands;
@@ -166,20 +174,32 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             Lower: b.MaxDays is { } max ? queueClock.StartOfDayUtc(today.AddDays(-max)) : DateTime.MinValue,
             Upper: queueClock.StartOfDayUtc(today.AddDays(1 - b.MinDays)))).ToList();
 
+        // One statement, one scalar subquery per band and measure; six bands (see DashboardRules.AgingBands).
         var (l0, u0) = edges[0];
         var (l1, u1) = edges[1];
         var (l2, u2) = edges[2];
         var (l3, u3) = edges[3];
+        var (l4, u4) = edges[4];
+        var (l5, u5) = edges[5];
         var counts = await open.Select(_ => new
         {
             B0 = open.Count(t => t.CreatedAtUtc >= l0 && t.CreatedAtUtc < u0),
             B1 = open.Count(t => t.CreatedAtUtc >= l1 && t.CreatedAtUtc < u1),
             B2 = open.Count(t => t.CreatedAtUtc >= l2 && t.CreatedAtUtc < u2),
             B3 = open.Count(t => t.CreatedAtUtc >= l3 && t.CreatedAtUtc < u3),
+            B4 = open.Count(t => t.CreatedAtUtc >= l4 && t.CreatedAtUtc < u4),
+            B5 = open.Count(t => t.CreatedAtUtc >= l5 && t.CreatedAtUtc < u5),
+            O0 = overdue.Count(t => t.CreatedAtUtc >= l0 && t.CreatedAtUtc < u0),
+            O1 = overdue.Count(t => t.CreatedAtUtc >= l1 && t.CreatedAtUtc < u1),
+            O2 = overdue.Count(t => t.CreatedAtUtc >= l2 && t.CreatedAtUtc < u2),
+            O3 = overdue.Count(t => t.CreatedAtUtc >= l3 && t.CreatedAtUtc < u3),
+            O4 = overdue.Count(t => t.CreatedAtUtc >= l4 && t.CreatedAtUtc < u4),
+            O5 = overdue.Count(t => t.CreatedAtUtc >= l5 && t.CreatedAtUtc < u5),
         }).FirstOrDefaultAsync(ct);
 
-        int[] values = counts is null ? [0, 0, 0, 0] : [counts.B0, counts.B1, counts.B2, counts.B3];
-        return [.. bands.Select((b, i) => new DashboardAgingBucket(b.Key, b.Label, b.MinDays, b.MaxDays, values[i], DashboardRules.Aging(b, today)))];
+        int[] values = counts is null ? new int[6] : [counts.B0, counts.B1, counts.B2, counts.B3, counts.B4, counts.B5];
+        int[] overdues = counts is null ? new int[6] : [counts.O0, counts.O1, counts.O2, counts.O3, counts.O4, counts.O5];
+        return [.. bands.Select((b, i) => new DashboardAgingBucket(b.Key, b.Label, b.MinDays, b.MaxDays, values[i], DashboardRules.Aging(b, today), overdues[i]))];
     }
 
     private static Expression<Func<WorkTask, bool>> Not(Expression<Func<WorkTask, bool>> predicate) =>

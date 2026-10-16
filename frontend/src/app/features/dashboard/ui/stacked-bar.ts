@@ -2,12 +2,15 @@ import { ChangeDetectionStrategy, Component, computed, input, signal } from '@an
 import { RouterLink } from '@angular/router';
 import { queueParams } from '../dashboard-links';
 import { sharePercent } from './bar-list';
+import { OVERDUE_CSS, overdueParams, overdueShare, overdueText } from './breakdown-overdue';
 
 /** One segment of the bar (an age band). */
 export interface Segment {
   label: string;
   count: number;
   query: string;
+  /** How many of `count` are overdue (Breakdowns B1); undefined: no split. */
+  overdue?: number;
 }
 
 let nextId = 0;
@@ -19,8 +22,10 @@ let nextId = 0;
  */
 export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
   { bg: '#DCE8F8', fg: '#102A54' },
-  { bg: '#A9C6EE', fg: '#102A54' },
+  { bg: '#B5CDF0', fg: '#102A54' },
+  { bg: '#84A8E0', fg: '#102A54' },
   { bg: '#3B6AB4', fg: '#FFFFFF' },
+  { bg: '#25498A', fg: '#FFFFFF' },
   { bg: '#16356B', fg: '#FFFFFF' },
 ];
 
@@ -60,6 +65,9 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
               <tr>
                 <th scope="col">{{ rowHeading() }}</th>
                 <th scope="col" class="num">Tasks</th>
+                @if (hasOverdue()) {
+                  <th scope="col" class="num">Overdue</th>
+                }
                 <th scope="col" class="num">Share</th>
               </tr>
             </thead>
@@ -70,6 +78,15 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
                     <a routerLink="/tasks" [queryParams]="params(s.query)">{{ s.label }}</a>
                   </th>
                   <td class="num">{{ s.count }}</td>
+                  @if (hasOverdue()) {
+                    <td class="num">
+                      @if ((s.overdue ?? 0) > 0) {
+                        <a routerLink="/tasks" [queryParams]="od(s)">{{ s.overdue }}</a>
+                      } @else {
+                        {{ s.overdue ?? 0 }}
+                      }
+                    </td>
+                  }
                   <td class="num">{{ share(s.count) }}</td>
                 </tr>
               }
@@ -84,168 +101,259 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
         >
           @for (s of segments(); track $index) {
             @if (s.count > 0) {
-              <a
+              <div
                 role="listitem"
                 class="seg"
-                routerLink="/tasks"
-                [queryParams]="params(s.query)"
                 [style.flex-grow]="s.count"
                 [style.background]="ramp($index).bg"
                 [style.color]="ramp($index).fg"
                 [attr.aria-label]="s.label + ': ' + s.count + ' tasks, ' + share(s.count)"
-                [attr.title]="s.label + ': ' + s.count + ' (' + share(s.count) + ')'"
-                ><span aria-hidden="true">{{ s.count }}</span></a
               >
+                <a
+                  class="seglink"
+                  tabindex="-1"
+                  aria-hidden="true"
+                  routerLink="/tasks"
+                  [queryParams]="params(s.query)"
+                  [attr.title]="s.label + ': ' + s.count + ' (' + share(s.count) + ')'"
+                  ><span>{{ s.count }}</span></a
+                >
+                @if ((s.overdue ?? 0) > 0) {
+                  <a
+                    class="od"
+                    tabindex="-1"
+                    aria-hidden="true"
+                    routerLink="/tasks"
+                    [queryParams]="od(s)"
+                    [style.width.%]="overdueWidth(s)"
+                  ></a>
+                }
+              </div>
             }
           }
         </div>
         <ul class="legend">
           @for (s of segments(); track $index) {
-            <li>
-              <a
-                class="row"
-                routerLink="/tasks"
-                [queryParams]="params(s.query)"
-                [attr.aria-label]="s.label + ': ' + s.count + ' tasks, ' + share(s.count)"
-              >
+            <li class="r">
+              <div class="row">
                 <span class="swatch" aria-hidden="true" [style.background]="ramp($index).bg"></span>
-                <span class="name">{{ s.label }}</span>
+                <a
+                  class="name rowlink"
+                  routerLink="/tasks"
+                  [queryParams]="params(s.query)"
+                  [attr.aria-label]="s.label + ': ' + s.count + ' tasks, ' + share(s.count)"
+                  >{{ s.label }}</a
+                >
                 <span class="count">{{ s.count }}</span>
                 <span class="pct">{{ share(s.count) }}</span>
-              </a>
+                @if ((s.overdue ?? 0) > 0) {
+                  <a class="od-text" routerLink="/tasks" [queryParams]="od(s)"
+                    >{{ odText(s) }}<span class="sr-only"> in {{ s.label }}</span></a
+                  >
+                }
+              </div>
             </li>
           }
         </ul>
       }
     </section>
   `,
-  styles: `
-    :host {
-      display: block;
-    }
-    .card {
-      height: 100%;
-      box-sizing: border-box;
-      padding: var(--mf-s4);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-lg);
-    }
-    header {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: var(--mf-s3);
-      margin-bottom: var(--mf-s3);
-    }
-    h3 {
-      margin: 0;
-      font-size: var(--mf-fs-lg);
-    }
-    .toggle {
-      background: none;
-      border: 0;
-      padding: 0;
-      color: var(--mf-link);
-      font: inherit;
-      font-size: var(--mf-fs-sm);
-      cursor: pointer;
-      text-decoration: underline;
-    }
-    .note {
-      margin: 0 0 var(--mf-s3);
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-    }
-    .stack {
-      display: flex;
-      gap: 2px;
-      height: 2rem;
-      margin-bottom: var(--mf-s3);
-    }
-    .seg {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 1.75rem;
-      flex-basis: 0;
-      overflow: hidden;
-      box-shadow: inset 0 0 0 1px var(--mf-primary);
-      font-size: var(--mf-fs-sm);
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      text-decoration: none;
-      border-radius: var(--mf-radius);
-    }
-    .seg:hover {
-      box-shadow: inset 0 0 0 2px var(--mf-text);
-    }
-    .legend {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      display: grid;
-      gap: var(--mf-s1);
-    }
-    .row {
-      display: grid;
-      grid-template-columns: 0.875rem 1fr 2.5rem 3rem;
-      align-items: center;
-      gap: var(--mf-s2);
-      padding: var(--mf-s1) var(--mf-s2);
-      border-radius: var(--mf-radius);
-      color: var(--mf-text);
-      text-decoration: none;
-    }
-    .row:hover {
-      background: var(--mf-selected-bg);
-    }
-    .swatch {
-      width: 0.875rem;
-      height: 0.875rem;
-      border-radius: 2px;
-      box-shadow: inset 0 0 0 1px var(--mf-primary);
-    }
-    .count {
-      text-align: right;
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
-    }
-    .pct {
-      text-align: right;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-      font-variant-numeric: tabular-nums;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th,
-    td {
-      padding: var(--mf-s1) var(--mf-s2);
-      text-align: left;
-      font-weight: 400;
-      border-bottom: 1px solid var(--mf-border);
-    }
-    thead th {
-      font-weight: 600;
-      font-size: var(--mf-fs-sm);
-      background: var(--mf-surface-alt);
-    }
-    .num {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip: rect(0 0 0 0);
-      white-space: nowrap;
-    }
-  `,
+  styles: [
+    OVERDUE_CSS,
+    `
+      :host {
+        display: block;
+      }
+      .card {
+        height: 100%;
+        box-sizing: border-box;
+        padding: var(--mf-s4);
+        background: var(--mf-surface);
+        border: 1px solid var(--mf-border);
+        border-radius: var(--mf-radius-lg);
+        container-type: inline-size;
+      }
+      header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--mf-s3);
+        margin-bottom: var(--mf-s3);
+      }
+      h3 {
+        margin: 0;
+        font-size: var(--mf-fs-lg);
+      }
+      .toggle {
+        background: none;
+        border: 0;
+        padding: 0;
+        color: var(--mf-link);
+        font: inherit;
+        font-size: var(--mf-fs-sm);
+        cursor: pointer;
+        text-decoration: underline;
+      }
+      .note {
+        margin: 0 0 var(--mf-s3);
+        color: var(--mf-text-muted);
+        font-size: var(--mf-fs-sm);
+      }
+      .stack {
+        display: flex;
+        gap: 2px;
+        height: 2.5rem;
+        margin-bottom: var(--mf-s3);
+      }
+      .seg {
+        position: relative;
+        min-width: 1.75rem;
+        flex-basis: 0;
+        overflow: hidden;
+        box-shadow: inset 0 0 0 1px var(--mf-primary);
+        font-size: var(--mf-fs-sm);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        border-radius: var(--mf-radius);
+      }
+      .seg:hover {
+        box-shadow: inset 0 0 0 2px var(--mf-text);
+      }
+      .seglink {
+        position: absolute;
+        inset: 0 0 0.5rem 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: inherit;
+        text-decoration: none;
+      }
+      /* The overdue share of the band: a hatched strip along the bottom, from the right edge, proportional to the band. */
+      .seg .od {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        height: 0.5rem;
+      }
+      .legend {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: var(--mf-s1);
+      }
+      .r {
+        position: relative;
+        border-radius: var(--mf-radius);
+      }
+      .r:hover {
+        background: var(--mf-selected-bg);
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 0.875rem minmax(4rem, 1fr) 2.25rem 2.75rem 5.5rem;
+        align-items: center;
+        gap: var(--mf-s2);
+        padding: var(--mf-s1) var(--mf-s2);
+        color: var(--mf-text);
+      }
+      .rowlink {
+        color: inherit;
+        text-decoration: none;
+      }
+      .rowlink::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: var(--mf-radius);
+      }
+      .rowlink:focus-visible {
+        outline: none;
+      }
+      .rowlink:focus-visible::after {
+        outline: 2px solid var(--mf-focus);
+        outline-offset: -2px;
+      }
+      .seglink:focus-visible {
+        outline: 2px solid var(--mf-focus);
+        outline-offset: -2px;
+      }
+      .od-text {
+        position: relative;
+        z-index: 1;
+        justify-self: start;
+        min-height: 24px;
+        display: inline-flex;
+        align-items: center;
+      }
+      @media (forced-colors: active) {
+        .seg {
+          forced-color-adjust: none;
+          background: Canvas !important;
+          color: CanvasText !important;
+          border: 1px solid CanvasText;
+        }
+        .swatch {
+          forced-color-adjust: none;
+          background: Highlight !important;
+          border: 1px solid CanvasText;
+        }
+      }
+      @container (max-width: 30rem) {
+        .row {
+          grid-template-columns: 0.875rem minmax(4rem, 1fr) 2rem 2.5rem;
+        }
+        .od-text {
+          grid-column: 2 / -1;
+        }
+      }
+      .swatch {
+        width: 0.875rem;
+        height: 0.875rem;
+        border-radius: 2px;
+        box-shadow: inset 0 0 0 1px var(--mf-primary);
+      }
+      .count {
+        text-align: right;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+      .pct {
+        text-align: right;
+        color: var(--mf-text-muted);
+        font-size: var(--mf-fs-sm);
+        font-variant-numeric: tabular-nums;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: var(--mf-s1) var(--mf-s2);
+        text-align: left;
+        font-weight: 400;
+        border-bottom: 1px solid var(--mf-border);
+      }
+      thead th {
+        font-weight: 600;
+        font-size: var(--mf-fs-sm);
+        background: var(--mf-surface-alt);
+      }
+      .num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+    `,
+  ],
 })
 export class StackedBar {
   readonly heading = input.required<string>();
@@ -258,12 +366,28 @@ export class StackedBar {
   protected readonly asTable = signal(false);
   protected readonly total = computed(() => this.segments().reduce((sum, s) => sum + s.count, 0));
 
+  protected readonly hasOverdue = computed(() =>
+    this.segments().some((s) => s.overdue !== undefined),
+  );
+
   protected toggle(): void {
     this.asTable.update((v) => !v);
   }
 
   protected params(query: string) {
     return queueParams(query);
+  }
+
+  protected od(s: Segment) {
+    return overdueParams(s.query) ?? {};
+  }
+
+  protected odText(s: Segment): string {
+    return overdueText(s.overdue ?? 0);
+  }
+
+  protected overdueWidth(s: Segment): number {
+    return overdueShare(s.overdue ?? 0, s.count);
   }
 
   protected share(count: number): string {

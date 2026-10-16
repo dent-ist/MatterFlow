@@ -298,6 +298,8 @@ Dashboard                                             Period: [Last 30 days v]
 
 **Tabs (epic #68).** The page has five tabs (WAI-ARIA tabs, `?tab=` in the address, never remembered): Summary, Breakdowns, Trends, Swimlane and Users, all for `Dashboard.ViewDepartment`. Swimlane is specified below; Users (team workload) is issue #73.
 
+**Breakdowns tab (epic #85).** One caption, "Open tasks, now. Not affected by the period.", with the legend (Not overdue / Overdue), then four cards, each with one title (H3 under a visually hidden H2 "Open tasks"): Priority, Task type, Status and Age. Every bar is split into not overdue and overdue: the bar length is the row total, the overdue segment (existing danger tokens, hatched, 2 px minimum) is proportional and links to the Task Queue with the row's filter plus `overdue=true`, and "N overdue" (hidden at 0) is the same link as text; the row link to the total is unchanged and "View as table" adds an Overdue column. Overdue is the Overdue tile's definition (ASAP never overdue, closed tasks excluded), so the overdue of the rows of each card adds up to the tile. Age has six buckets (constants in `DashboardRules.AgingBands`, Age = whole days since creation in the viewer's zone): 0-2, 3-7, 8-14, 15-30, 31-60 and more than 60 days; they add up to Open, each links with `createdFrom`/`createdTo`, the caption "not a service-level target" stays. Low priority is drawn with a dashed 2 px outline and a lighter fill, Normal with a solid 1 px outline (no new colour token). Grid by the width of the tab (container query; the tab keeps its 1360 px cap): four equal cards from 1300 px, two columns flowing top to bottom from 700 px, one below; cards are never stretched and the DOM and tab order stay Priority, Task type, Status, Age. API: `overdue` on every breakdown row and aging bucket of `GET /api/v1/dashboard` (additive); the age bucket list grew from four to six. Screenshots: `docs/ux/dashboard-review-2/fixes/wp7/`.
+
 #### S01b Swimlane tab (issue #72)
 
 **Purpose.** Show where every open task stands as cards in four lanes, and who holds what, without drag and drop. An operational view, not a performance evaluation: no per-person completion figures, speed or ranking.
@@ -1219,7 +1221,7 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S01-1 Tiles show Open, Unassigned, Overdue, On Hold, Completed (period) with correct counts.
 - [ ] UAT-S01-2 Each tile/bar drills to Task Queue with matching filters, and the count matches the list total.
 - [ ] UAT-S01-3 Overdue excludes ASAP, Completed, Cancelled.
-- [ ] UAT-S01-4 Open-by Pod/Type/Priority/Status charts have text values and "View as table".
+- [ ] UAT-S01-4 The Priority, Task type, Status and Age cards have text values, an overdue share per row ("N overdue", linked to the queue with `overdue=true`) and "View as table" with an Overdue column; Age has six buckets that add up to Open.
 - [ ] UAT-S01-5 Recently created/completed lists link to tasks.
 - [ ] UAT-S01-6 Without `Dashboard.View` the Dashboard item is hidden and the route is 403; with it but without a tab permission a note points to My Work; each tab appears only with its own permission.
 - [ ] UAT-S01-7 No staff productivity, billing, or export features.

@@ -248,7 +248,15 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
                 continue;
             var page = await QueueAsync(row.GetProperty("query").GetString()!, NewYork);
             page.GetProperty("total").GetInt32().ShouldBe(row.GetProperty("count").GetInt32(), row.GetProperty("label").GetString());
+
+            // The overdue figure of the row equals the queue with overdue=true added to the row's own query.
+            var late = await QueueAsync(row.GetProperty("query").GetString() + "&overdue=true", NewYork);
+            late.GetProperty("total").GetInt32().ShouldBe(row.GetProperty("overdue").GetInt32(), "overdue of " + row.GetProperty("label").GetString());
         }
+
+        // The overdue of the rows adds up to the Overdue tile in every breakdown (ASAP and closed Tasks are never in it).
+        foreach (var group in new[] { "byStatus", "byPriority", "byTaskType" })
+            d.GetProperty(group).EnumerateArray().Sum(r => r.GetProperty("overdue").GetInt32()).ShouldBe(d.GetProperty("overdue").GetProperty("count").GetInt32(), group);
     }
 
     [Theory]
@@ -258,21 +266,32 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
     {
         var d = await DashboardAsync(zone: zone);
         var buckets = d.GetProperty("aging").EnumerateArray().ToList();
-        buckets.Select(b => b.GetProperty("key").GetString()).ShouldBe(["0-2", "3-7", "8-14", "15+"]);
+        buckets.Select(b => b.GetProperty("key").GetString()).ShouldBe(["0-2", "3-7", "8-14", "15-30", "31-60", "61+"]);
 
         var today = LocalDate(zone, _now);
-        int[] expected = [0, 0, 0, 0];
+        int[] expected = [0, 0, 0, 0, 0, 0];
+        int[] expectedOverdue = [0, 0, 0, 0, 0, 0];
         foreach (var s in _seeds.Where(s => s.IsOpen))
         {
             var age = today.DayNumber - LocalDate(zone, s.CreatedAtUtc).DayNumber;
-            expected[age <= 2 ? 0 : age <= 7 ? 1 : age <= 14 ? 2 : 3]++;
+            var band = age <= 2 ? 0 : age <= 7 ? 1 : age <= 14 ? 2 : age <= 30 ? 3 : age <= 60 ? 4 : 5;
+            expected[band]++;
+            if (Overdue(s, zone))
+                expectedOverdue[band]++;
         }
 
         buckets.Select(b => b.GetProperty("count").GetInt32()).ShouldBe(expected);
+        buckets.Select(b => b.GetProperty("overdue").GetInt32()).ShouldBe(expectedOverdue);
+        buckets.Sum(b => b.GetProperty("overdue").GetInt32()).ShouldBe(d.GetProperty("overdue").GetProperty("count").GetInt32());
         buckets.Sum(b => b.GetProperty("count").GetInt32()).ShouldBe(d.GetProperty("open").GetProperty("count").GetInt32());
-        expected.ShouldBe([_seeds.Count(s => s.IsOpen && s.CreatedAtUtc > _now.AddDays(-2.5)), 2, 1, 3], "0-2 days, then 5/6 days, 11 days, 22/45/100 days");
+        expected.ShouldBe([_seeds.Count(s => s.IsOpen && s.CreatedAtUtc > _now.AddDays(-2.5)), 2, 1, 1, 1, 1], "0-2 days, then 5/6 days, 11 days, 22, 45 and 100 days");
         foreach (var bucket in buckets)
+        {
             await DrillAsync(bucket, zone);
+            // The overdue share drills into the queue with overdue=true and lists exactly the counted Tasks.
+            var page = await QueueAsync(bucket.GetProperty("query").GetString() + "&overdue=true", zone);
+            page.GetProperty("total").GetInt32().ShouldBe(bucket.GetProperty("overdue").GetInt32(), "overdue of " + bucket.GetProperty("key").GetString());
+        }
     }
 
     [Fact]
@@ -352,6 +371,7 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
         Total(breakdowns, "byStatus").ShouldBe(open);
         Total(breakdowns, "byPriority").ShouldBe(open);
         Total(breakdowns, "aging").ShouldBe(open);
+        breakdowns.GetProperty("byPriority").EnumerateArray().Sum(r => r.GetProperty("overdue").GetInt32()).ShouldBe(admin.GetProperty("overdue").GetProperty("count").GetInt32(), "Breakdowns alone still carry the overdue share");
         breakdowns.GetProperty("byTaskType").GetArrayLength().ShouldBeGreaterThan(0);
 
         // Trends only.
@@ -403,6 +423,6 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
             d.GetProperty(name).GetProperty("count").GetInt32().ShouldBe(0);
         d.GetProperty("byTaskType").GetArrayLength().ShouldBe(0);
         d.GetProperty("byStatus").GetArrayLength().ShouldBe(3);
-        d.GetProperty("aging").GetArrayLength().ShouldBe(4);
+        d.GetProperty("aging").GetArrayLength().ShouldBe(6);
     }
 }

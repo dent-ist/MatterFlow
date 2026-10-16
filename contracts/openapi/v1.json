@@ -9783,7 +9783,8 @@
           "minDays",
           "maxDays",
           "count",
-          "query"
+          "query",
+          "overdue"
         ],
         "type": "object",
         "properties": {
@@ -9810,6 +9811,11 @@
           },
           "query": {
             "type": "string"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },
@@ -9820,7 +9826,8 @@
           "label",
           "count",
           "query",
-          "isOther"
+          "isOther",
+          "overdue"
         ],
         "type": "object",
         "properties": {
@@ -9858,6 +9865,11 @@
               "null",
               "string"
             ]
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },

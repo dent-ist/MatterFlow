@@ -465,13 +465,13 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     ).toHaveCount(0);
   });
 
-  test('UXR4-17: Open by task type lists the top 8 types before "Other task types"', async ({
+  test('UXR4-17: the Task type breakdown lists the top 8 types before "Other task types"', async ({
     page,
     seed,
   }) => {
     for (let i = 0; i < 2; i++) await seed.task(await seed.world());
     await page.goto('/dashboard?tab=breakdowns');
-    const card = page.getByRole('region', { name: 'Open by task type' });
+    const card = page.getByRole('region', { name: 'Task type' });
     await expect(card.locator('li').first()).toBeVisible();
     expect(await card.locator('li').count()).toBeLessThanOrEqual(9);
   });

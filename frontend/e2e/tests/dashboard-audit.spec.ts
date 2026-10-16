@@ -136,7 +136,7 @@ test.describe('Dashboard actions and click-through', () => {
     await expect(chips(page)).toContainText('Created:');
 
     await page.goBack();
-    const priorityBars = page.locator('mf-bar-list', { hasText: 'Open by priority' });
+    const priorityBars = page.locator('mf-bar-list', { hasText: 'Priority' });
     await priorityBars.getByRole('link').first().click();
     await expect(page).toHaveURL(/priority=\d+/);
     await expect(control(page, 'priority')).not.toHaveText('All');
@@ -368,7 +368,7 @@ test.describe('Dashboard actions and click-through', () => {
     await tabs.getByRole('tab', { name: 'Breakdowns' }).click();
     await expect(page).toHaveURL(/tab=breakdowns/);
     await expect(page.getByRole('tabpanel')).toHaveCount(1);
-    await expect(page.getByRole('heading', { name: 'Open by priority' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Priority', exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Open by pod' })).toHaveCount(0);
 
     await page.reload();

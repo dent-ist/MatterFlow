@@ -26,6 +26,7 @@ public sealed record DashboardCount([property: Required] int Count, [property: R
 /// <param name="Id">The Task Type or Priority id; null for the "other" row and for statuses.</param>
 /// <param name="Code">The status code for the status breakdown; otherwise null.</param>
 /// <param name="IconKey">The Task Type icon key for the task-type breakdown (not the "other" row); otherwise null.</param>
+/// <param name="Overdue">How many of the <c>Count</c> open Tasks are overdue (the Overdue tile's definition: ASAP never is). The Task Queue lists them with <c>Query</c> plus <c>overdue=true</c>.</param>
 public sealed record DashboardBreakdownItem(
     int? Id,
     string? Code,
@@ -33,17 +34,20 @@ public sealed record DashboardBreakdownItem(
     [property: Required] int Count,
     string? Query,
     [property: Required] bool IsOther,
-    string? IconKey = null);
+    string? IconKey = null,
+    [property: Required] int Overdue = 0);
 
 /// <summary>An age band of open Tasks (calendar days since creation in the viewer's zone). Informational, not an SLA.</summary>
 /// <param name="MaxDays">Null for the open-ended last band.</param>
+/// <param name="Overdue">How many of the <c>Count</c> Tasks are overdue (list them with <c>Query</c> plus <c>overdue=true</c>).</param>
 public sealed record DashboardAgingBucket(
     [property: Required] string Key,
     [property: Required] string Label,
     [property: Required] int MinDays,
     int? MaxDays,
     [property: Required] int Count,
-    [property: Required] string Query);
+    [property: Required] string Query,
+    [property: Required] int Overdue = 0);
 
 /// <summary>The period the "completed" and "created" counts cover (viewer's local dates, both inclusive).</summary>
 public sealed record DashboardPeriod([property: Required] int Days, [property: Required] DateOnly From, [property: Required] DateOnly To);

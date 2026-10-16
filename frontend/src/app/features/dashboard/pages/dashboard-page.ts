@@ -19,7 +19,6 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import {
-  DashboardBreakdownItem,
   DashboardClient,
   DashboardSummary,
   TaskQueueClient,
@@ -34,7 +33,6 @@ import { formatCalendarDay, mfDate, parseDateOnly } from '../../../core/time/tim
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PageHeader } from '../../../shared/ui/page-header';
-import { priorityColors } from '../../../shared/ui/priority-badge';
 import {
   DUE_SOON_CAPTION,
   DUE_SOON_WINDOW,
@@ -54,13 +52,12 @@ import {
   SUMMARY_DATA_TABS,
   isDashboardTab,
 } from '../dashboard-prefs';
-import { BarItem, BarList } from '../ui/bar-list';
+import { DashBreakdownsTab } from '../ui/dash-breakdowns-tab';
 import { DashSection } from '../ui/dash-section';
 import { clearedViewParams } from '../swimlane/swimlane-model';
 import { DashSwimlaneTab } from '../ui/dash-swimlane-tab';
 import { DashTab, DashTabs, panelId, tabId } from '../ui/dash-tabs';
 import { DashUsersTab } from '../ui/dash-users-tab';
-import { Segment, StackedBar } from '../ui/stacked-bar';
 import { StatTile } from '../ui/stat-tile';
 import { DashTaskList, PanelState } from '../ui/task-list-panel';
 import { DashTrendsTab } from '../ui/dash-trends-tab';
@@ -93,25 +90,6 @@ const COUNT_REFRESH_DELAY_MS = 700;
 const LIST_SIZE: Record<ListKind, number> = { unassigned: 5, overdue: 5, dueSoon: 5 };
 const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
 
-/** Glossary: sentence case ("No pod", "Other pods"); the API still sends some Title Case labels. */
-function sentence(label: string): string {
-  if (label === 'No Pod') return 'No pod';
-  if (label === 'Other Pods') return 'Other pods';
-  if (label === 'Other Task Types') return 'Other task types';
-  return label;
-}
-
-function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
-  return items.map((i) => ({
-    label: sentence(i.label),
-    count: i.count,
-    query: i.query ?? null,
-    tone: i.code ?? null,
-    muted: i.isOther,
-    iconKey: i.iconKey ?? null,
-  }));
-}
-
 /**
  * Dashboard (UX S01, baseline 12.2), organised in three tabs (WAI-ARIA tabs; the selection lives in the address as `?tab=`, each change is
  * a history entry and a plain /dashboard link opens Summary): Summary (Needs attention, Overview, the unassigned queue with inline assignment, Overdue and Due soon),
@@ -127,8 +105,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
   imports: [
     PageHeader,
     ErrorReference,
-    BarList,
-    StackedBar,
+    DashBreakdownsTab,
     DashTrendsTab,
     DashSection,
     DashTaskList,
@@ -374,35 +351,7 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                     [id]="panelId('breakdowns')"
                     [attr.aria-labelledby]="tabId('breakdowns')"
                   >
-                    <mf-dash-section heading="Open tasks by" name="breakdowns">
-                      <div class="grid" data-grid="breakdowns">
-                        <mf-bar-list
-                          heading="Open by priority"
-                          rowHeading="Priority"
-                          [items]="priorities()"
-                          emptyText="No open tasks."
-                        />
-                        <mf-bar-list
-                          heading="Open by task type"
-                          rowHeading="Task type"
-                          [items]="types()"
-                          emptyText="No open tasks."
-                        />
-                        <mf-bar-list
-                          heading="Open by status"
-                          rowHeading="Status"
-                          [items]="statuses()"
-                          emptyText="No open tasks."
-                        />
-                        <mf-stacked-bar
-                          heading="Age of open tasks"
-                          rowHeading="Age"
-                          [segments]="aging()"
-                          emptyText="No open tasks."
-                          note="Days since the task was created. Informational, not a service-level target."
-                        />
-                      </div>
-                    </mf-dash-section>
+                    <mf-dash-breakdowns [summary]="data()" />
                   </div>
                 }
                 @case ('trends') {
@@ -862,27 +811,6 @@ export class DashboardPage implements OnInit {
       d.completed.count === 0
     );
   });
-  protected readonly types = computed(() => toBars(this.data()?.byTaskType ?? []));
-  protected readonly statuses = computed(() => toBars(this.data()?.byStatus ?? []));
-  /** In priority order (most urgent first, as the API sends them), coloured like the priority badges. */
-  protected readonly priorities = computed<BarItem[]>(() => {
-    const store = this.lookups.priorities();
-    return (this.data()?.byPriority ?? []).map((i) => {
-      const found = store.find((p) => p.id === i.id);
-      const colors = priorityColors(found?.color);
-      return {
-        label: i.label,
-        count: i.count,
-        query: i.query ?? null,
-        fill: colors.bg,
-        outline: colors.fg,
-      };
-    });
-  });
-  protected readonly aging = computed<Segment[]>(() =>
-    (this.data()?.aging ?? []).map((b) => ({ label: b.label, count: b.count, query: b.query })),
-  );
-
   constructor() {
     void this.lookups.ensureLoaded();
     // An Undo of an assignment puts the task back in a list that had already dropped it: read the lists and counts again.

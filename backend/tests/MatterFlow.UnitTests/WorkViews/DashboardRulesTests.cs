@@ -76,11 +76,25 @@ public class DashboardRulesTests
         var bands = DashboardRules.AgingBands;
         DashboardRules.Aging(bands[0], Today).ShouldBe("status=NEW&status=IN_PROGRESS&status=ON_HOLD&createdFrom=2026-10-12&createdTo=2026-10-14");
         DashboardRules.Aging(bands[1], Today).ShouldContain("createdFrom=2026-10-07&createdTo=2026-10-11");
-        bands.Count.ShouldBe(4);
+        bands.Count.ShouldBe(6);
         bands[2].MaxDays.ShouldBe(14);
-        bands[3].Label.ShouldBe("15+ days");
-        DashboardRules.Aging(bands[3], Today).ShouldBe("status=NEW&status=IN_PROGRESS&status=ON_HOLD&createdTo=2026-09-29");
+        bands[3].Label.ShouldBe("15-30 days");
+        DashboardRules.Aging(bands[3], Today).ShouldBe("status=NEW&status=IN_PROGRESS&status=ON_HOLD&createdFrom=2026-09-14&createdTo=2026-09-29");
+        DashboardRules.Aging(bands[4], Today).ShouldBe("status=NEW&status=IN_PROGRESS&status=ON_HOLD&createdFrom=2026-08-15&createdTo=2026-09-13");
+        bands[5].Label.ShouldBe("More than 60 days");
+        DashboardRules.Aging(bands[5], Today).ShouldBe("status=NEW&status=IN_PROGRESS&status=ON_HOLD&createdTo=2026-08-14");
     }
+
+    [Theory]
+    [InlineData(0, "0-2")]
+    [InlineData(14, "8-14")]
+    [InlineData(15, "15-30")]
+    [InlineData(30, "15-30")]
+    [InlineData(31, "31-60")]
+    [InlineData(60, "31-60")]
+    [InlineData(61, "61+")]
+    public void Every_age_in_days_falls_into_exactly_one_band(int age, string key) =>
+        DashboardRules.AgingBands.Single(b => age >= b.MinDays && (b.MaxDays is null || age <= b.MaxDays)).Key.ShouldBe(key);
 
     private static DashboardBreakdownItem Item(int id, string label, int count) => new(id, null, label, count, "pod=" + id, false);
 
@@ -115,6 +129,15 @@ public class DashboardRulesTests
         var result = DashboardRules.TopWithOther(items, 3, "Other", rest => DashboardRules.Open([.. rest.Select(r => "pod=" + r.Id)]));
         result[^1].Query.ShouldBe("status=NEW&status=IN_PROGRESS&status=ON_HOLD&pod=4&pod=5&pod=6");
         result[^1].Count.ShouldBe(6 + 5 + 4);
+    }
+
+    [Fact]
+    public void Other_adds_up_the_overdue_of_the_folded_items()
+    {
+        var items = Enumerable.Range(1, 6).Select(i => Item(i, "Type " + i, 10 - i) with { Overdue = i }).ToList();
+        var result = DashboardRules.TopWithOther(items, 3, "Other");
+        result[^1].Overdue.ShouldBe(4 + 5 + 6);
+        result.Sum(i => i.Overdue).ShouldBe(items.Sum(i => i.Overdue));
     }
 
     private static readonly DateTime Now = new(2026, 10, 14, 20, 0, 0, DateTimeKind.Utc);

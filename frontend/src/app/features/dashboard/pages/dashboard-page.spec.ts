@@ -49,6 +49,7 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
         id: 3,
         code: undefined,
         query: `${OPEN}&type=3`,
+        overdue: 4,
         isOther: false,
       },
       {
@@ -57,6 +58,7 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
         id: undefined,
         code: undefined,
         query: undefined,
+        overdue: 0,
         isOther: true,
       },
     ],
@@ -67,11 +69,20 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
         id: 1,
         code: undefined,
         query: `${OPEN}&priority=1`,
+        overdue: 2,
         isOther: false,
       },
     ],
     byStatus: [
-      { label: 'New', count: 80, id: undefined, code: 'NEW', query: 'status=NEW', isOther: false },
+      {
+        label: 'New',
+        count: 80,
+        id: undefined,
+        code: 'NEW',
+        query: 'status=NEW',
+        overdue: 0,
+        isOther: false,
+      },
     ],
     aging: [
       {
@@ -80,15 +91,17 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
         minDays: 0,
         maxDays: 2,
         count: 30,
+        overdue: 3,
         query: `${OPEN}&createdFrom=2026-10-12&createdTo=2026-10-14`,
       },
       {
-        key: '15+',
-        label: '15+ days',
-        minDays: 15,
+        key: '61+',
+        label: 'More than 60 days',
+        minDays: 61,
         maxDays: undefined,
         count: 10,
-        query: `${OPEN}&createdTo=2026-09-29`,
+        overdue: 0,
+        query: `${OPEN}&createdTo=2026-08-14`,
       },
     ],
     ...overrides,
@@ -1059,13 +1072,37 @@ describe('DashboardPage', () => {
     const el = await open(of(summary()), ALL, '/dashboard?tab=breakdowns');
     const bars = el.querySelector('[data-section="breakdowns"]')!;
     const lists = Array.from(bars.querySelectorAll('mf-bar-list'));
+    // One title per card (H3), under a visually hidden H2 "Open tasks"; the unit is said once in the caption (Breakdowns B5).
     expect(lists.map((l) => text(l.querySelector('h3')))).toEqual([
-      'Open by priority',
-      'Open by task type',
-      'Open by status',
+      'Priority',
+      'Task type',
+      'Status',
     ]);
-    expect(text(bars.querySelector('mf-stacked-bar h3'))).toBe('Age of open tasks');
+    expect(text(bars.querySelector('mf-stacked-bar h3'))).toBe('Age');
+    expect(text(bars.querySelector('h2.sr-only'))).toBe('Open tasks');
+    expect(bars.querySelectorAll('h2').length).toBe(1);
+    expect(text(bars.querySelector('[data-bd-caption]'))).toContain(
+      'Open tasks, now. Not affected by the period.',
+    );
+    expect(bars.textContent).not.toMatch(/Open by|Open tasks by/);
     expect(bars.textContent).not.toContain('Open by pod');
+    // Reading order of the cards = DOM order.
+    expect(Array.from(bars.querySelectorAll('h3')).map((h) => h.textContent!.trim())).toEqual([
+      'Priority',
+      'Task type',
+      'Status',
+      'Age',
+    ]);
+
+    // Every bar is split into not overdue and overdue: the text links to the queue with overdue=true.
+    const critical0 = lists[0].querySelector('li')!;
+    expect(text(critical0.querySelector('.od-text'))).toContain('2 overdue');
+    expect(critical0.querySelector('.od-text')!.getAttribute('href')).toContain(
+      'priority=1&overdue=true',
+    );
+    expect(lists[1].querySelectorAll('li')[1].querySelector('.od-text')).toBeNull();
+    expect(text(bars.querySelector('mf-stacked-bar .od-text'))).toContain('3 overdue');
+    expect(bars.querySelector('[data-bd-legend]')!.textContent).toContain('Overdue');
 
     const typeRows = Array.from(lists[1].querySelectorAll('li'));
     expect(

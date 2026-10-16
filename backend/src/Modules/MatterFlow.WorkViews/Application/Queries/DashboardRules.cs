@@ -28,7 +28,9 @@ public static class DashboardRules
         new("0-2", "0-2 days", 0, 2),
         new("3-7", "3-7 days", 3, 7),
         new("8-14", "8-14 days", 8, 14),
-        new("15+", "15+ days", 15, null),
+        new("15-30", "15-30 days", 15, 30),
+        new("31-60", "31-60 days", 31, 60),
+        new("61+", "More than 60 days", 61, null),
     ];
 
     /// <summary>The Task Queue status filter for open Tasks.</summary>
@@ -93,7 +95,7 @@ public static class DashboardRules
         var kept = ordered.Take(top).ToList();
         var rest = ordered.Skip(top).Sum(i => i.Count);
         var folded = ordered.Skip(top).ToList();
-        kept.Add(new DashboardBreakdownItem(null, null, otherLabel, rest, restQuery?.Invoke(folded), true));
+        kept.Add(new DashboardBreakdownItem(null, null, otherLabel, rest, restQuery?.Invoke(folded), true, null, folded.Sum(i => i.Overdue)));
         return kept;
     }
 
