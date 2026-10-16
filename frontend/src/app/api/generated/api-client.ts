@@ -11573,6 +11573,8 @@ export interface DashboardSummary {
     byPriority: DashboardBreakdownItem[];
     byStatus: DashboardBreakdownItem[];
     aging: DashboardAgingBucket[];
+    overdueCritical: DashboardCount;
+    overdueHigh: DashboardCount;
 
     [key: string]: any;
 }

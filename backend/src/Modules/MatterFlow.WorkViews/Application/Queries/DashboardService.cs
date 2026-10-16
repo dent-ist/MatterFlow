@@ -50,6 +50,13 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         Expression<Func<WorkTask, bool>> dueSoon = t => t.DueDate != null && t.DueDate <= dueSoonDay;
         var openDueSoon = open.Where(dueSoon).Where(Not(overdue));
 
+        // Overdue severity (Overdue tile caption): the priorities whose badge token is critical or high.
+        var severityRows = showSummary
+            ? await db.Set<Priority>().AsNoTracking().Where(p => p.Color == PriorityColors.Critical || p.Color == PriorityColors.High).Select(p => new { p.Id, p.Color }).ToListAsync(ct)
+            : [];
+        var criticalIds = severityRows.Where(p => p.Color == PriorityColors.Critical).Select(p => p.Id).ToList();
+        var highIds = severityRows.Where(p => p.Color == PriorityColors.High).Select(p => p.Id).ToList();
+
         // Headline counts (Summary tab): one statement with a scalar subquery per number. With Dashboard.ViewUnassigned alone only the size of the
         // unassigned queue is read: the department-wide counts are neither computed nor sent.
         var head = showSummary ? await tasks.Select(_ => new
@@ -57,6 +64,8 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             Open = open.Count(),
             Unassigned = open.Count(t => t.AssignedUserId == null),
             Overdue = open.Count(overdue),
+            OverdueCritical = open.Where(overdue).Count(t => criticalIds.Contains(t.PriorityId)),
+            OverdueHigh = open.Where(overdue).Count(t => highIds.Contains(t.PriorityId)),
             OnHold = tasks.Count(t => t.Status == TaskStatusCode.OnHold),
             DueSoon = openDueSoon.Count(),
             AsapOpen = open.Count(t => t.DueDate == null),
@@ -68,6 +77,8 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             Open = 0,
             Unassigned = open.Count(t => t.AssignedUserId == null),
             Overdue = 0,
+            OverdueCritical = 0,
+            OverdueHigh = 0,
             OnHold = 0,
             DueSoon = 0,
             AsapOpen = 0,
@@ -122,7 +133,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             "Other task types",
             rest => DashboardRules.Open([.. rest.Select(r => "type=" + r.Id)]));
 
-        head ??= new { Open = 0, Unassigned = 0, Overdue = 0, OnHold = 0, DueSoon = 0, AsapOpen = 0, Completed = 0, Created = 0 };
+        head ??= new { Open = 0, Unassigned = 0, Overdue = 0, OverdueCritical = 0, OverdueHigh = 0, OnHold = 0, DueSoon = 0, AsapOpen = 0, Completed = 0, Created = 0 };
 
         var summary = new DashboardSummary(
             new DashboardPeriod(query.PeriodDays, from, today),
@@ -139,7 +150,9 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             typeItems,
             priorityItems,
             statusItems,
-            aging);
+            aging,
+            new DashboardCount(head.OverdueCritical, DashboardRules.OverdueWith(criticalIds)),
+            new DashboardCount(head.OverdueHigh, DashboardRules.OverdueWith(highIds)));
         cache.Set(cacheKey, summary);
         return summary;
     }

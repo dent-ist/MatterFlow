@@ -38,6 +38,9 @@ public static class DashboardRules
 
     public static string Overdue { get; } = Open("overdue=true");
 
+    /// <summary>Overdue and one of the given priorities (the plain overdue query when there are none).</summary>
+    public static string OverdueWith(IReadOnlyList<int> priorityIds) => Open(["overdue=true", .. priorityIds.Order().Select(id => "priority=" + id)]);
+
     public static string OnHold { get; } = Status(TaskStatusCode.OnHold);
 
     public static string AsapOpen { get; } = Open("asap=true");

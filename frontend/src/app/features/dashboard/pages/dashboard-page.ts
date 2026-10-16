@@ -258,7 +258,10 @@ function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
                                 linkText="View overdue tasks"
                                 [value]="d.overdue.count"
                                 [query]="d.overdue.query"
+                                [sort]="overdueOrder"
                                 caption="Excludes ASAP tasks"
+                                [detail]="overdueSeverity(d)"
+                                detailIcon="pi-flag-fill"
                               />
                               <mf-stat-tile
                                 label="Unassigned"
@@ -1056,6 +1059,20 @@ export class DashboardPage implements OnInit {
   }
 
   // ---- lists
+
+  /** The order "View overdue tasks" opens in: the same as the Overdue list. */
+  protected readonly overdueOrder = {
+    sort: LIST_ORDER.overdue.sort,
+    dir: LIST_ORDER.overdue.dir,
+  };
+
+  /** The severity line of the Overdue tile, for example "11 Critical, 30 High" (null when neither is overdue). */
+  protected overdueSeverity(d: DashboardSummary): string | null {
+    const parts: string[] = [];
+    if (d.overdueCritical.count > 0) parts.push(`${d.overdueCritical.count} Critical`);
+    if (d.overdueHigh.count > 0) parts.push(`${d.overdueHigh.count} High`);
+    return parts.length ? parts.join(', ') : null;
+  }
 
   protected listOf(kind: ListKind): ListData {
     return this.lists[kind]();

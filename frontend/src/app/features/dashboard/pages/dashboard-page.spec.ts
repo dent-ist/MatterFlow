@@ -35,6 +35,8 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
     open: count(128, OPEN),
     unassigned: count(17, `${OPEN}&unassigned=true`),
     overdue: count(9, `${OPEN}&overdue=true`),
+    overdueCritical: count(2, `${OPEN}&overdue=true&priority=1`),
+    overdueHigh: count(3, `${OPEN}&overdue=true&priority=2`),
     onHold: count(12, 'status=ON_HOLD'),
     dueSoon: count(6, `${OPEN}&asap=false&overdue=false&dueTo=2026-10-16`),
     asapOpen: count(4, `${OPEN}&asap=true`),
@@ -284,6 +286,13 @@ describe('DashboardPage', () => {
       '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true',
     );
     expect(tiles[0].textContent).toContain('Excludes ASAP tasks');
+    // The severity of the Overdue count: icon and words, and the tile opens the queue in the order of the list.
+    expect(text(tiles[0].querySelector('[data-detail]'))).toBe('2 Critical, 3 High');
+    expect(tiles[0].querySelector('[data-detail] .pi')).not.toBeNull();
+    expect(tiles[0].querySelector('a')!.getAttribute('href')).toBe(
+      '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&overdue=true&sort=priority&dir=asc',
+    );
+    expect(tiles[1].querySelector('[data-detail]')).toBeNull();
     // Colour follows the pattern standard: On hold is the warning amber of its badge, Unassigned is neutral, ASAP is the quiet blue outline
     // (never the red of Overdue, and a smaller number than the three attention tiles).
     expect(tiles.map((t) => t.querySelector('a')!.getAttribute('data-tone'))).toEqual([
@@ -947,8 +956,15 @@ describe('DashboardPage', () => {
     const overdue = el.querySelector('[data-panel="overdue"]')!;
     expect(text(overdue.querySelector('[data-due]'))).toContain('Oct 10, 2026');
     expect(text(overdue.querySelector('[data-due]'))).toContain('Overdue 4d');
+    // The list asks the Task Queue for priority then the most overdue (due ascending), 6 rows, filtered to overdue.
+    const call = getTaskQueue.mock.calls.find((c) => c[18] === true)!;
+    expect(call.slice(27)).toEqual(['priority', 'asc', 1, 6]);
+    expect(text(overdue.querySelector('[data-order]'))).toBe(
+      'Critical first, then longest overdue.',
+    );
+    expect(overdue.querySelector('mf-priority-badge')).not.toBeNull();
     expect(overdue.querySelector<HTMLAnchorElement>('[data-view-all]')!.getAttribute('href')).toBe(
-      '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&overdue=true&sort=due&dir=asc',
+      '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&overdue=true&sort=priority&dir=asc',
     );
 
     const soon = el.querySelector('[data-panel="dueSoon"]')!;
@@ -959,6 +975,25 @@ describe('DashboardPage', () => {
       soon.querySelector<HTMLAnchorElement>('[data-view-all]')!.getAttribute('href'),
     ).toContain('dueTo=2026-10-16&sort=due&dir=asc');
     expect(text(soon.querySelector('[data-total]'))).toBe('6');
+  });
+
+  it('names only the severities that are overdue in the Overdue tile, and none when neither is', async () => {
+    const only = await open(
+      of(
+        summary({
+          overdueCritical: count(11, `${OPEN}&overdue=true&priority=1`),
+          overdueHigh: count(0, OPEN),
+        }),
+      ),
+    );
+    expect(text(only.querySelector('mf-stat-tile [data-detail]'))).toBe('11 Critical');
+  });
+
+  it('shows no severity line when nothing overdue is Critical or High', async () => {
+    const el = await open(
+      of(summary({ overdueCritical: count(0, OPEN), overdueHigh: count(0, OPEN) })),
+    );
+    expect(el.querySelector('mf-stat-tile [data-detail]')).toBeNull();
   });
 
   it('shows the lists as calm empty messages, not zero rows', async () => {

@@ -1,3 +1,4 @@
+import { axeAvailable, axeViolations } from '../support/axe';
 import { TaskQueuePage } from '../pages/queues.pages';
 import { expect, test } from '../support/fixtures';
 import { dateInZone, FIRM_ZONE } from '../support/time';
@@ -236,8 +237,94 @@ test.describe('Dashboard actions and click-through', () => {
     await expect(overdue.locator('li').first()).toContainText('Overdue');
     await overdue.getByRole('link', { name: /View all overdue tasks/ }).click();
     await expect(page).toHaveURL(/overdue=true/);
-    await expect(page).toHaveURL(/sort=due/);
+    await expect(page).toHaveURL(/sort=priority&dir=asc/);
     await expect(chips(page)).toContainText('Overdue: Overdue only');
+  });
+
+  test.describe('overdue list by priority (dashboard review 2, recommendation 1)', () => {
+    const RANK: Record<string, number> = { Critical: 0, High: 1, Normal: 2, Low: 3 };
+
+    async function seedOverdue(seed: import('../support/seed').Seeder) {
+      const world = await seed.world();
+      const page = await seed.admin.get<Record<string, unknown>>('/api/v1/priorities');
+      const list = (Array.isArray(page) ? page : (page['items'] as unknown[])) as {
+        id: number;
+        label: string;
+      }[];
+      const id = (label: string) => list.find((p) => p.label === label)!.id;
+      // The Normal task is far more overdue than the Critical one: a due-date order would put it first.
+      await seed.task(world, {
+        title: `Late normal ${uid()}`,
+        priorityId: id('Normal'),
+        dueDate: dateInZone(FIRM_ZONE, -30),
+      });
+      await seed.task(world, {
+        title: `Late critical ${uid()}`,
+        priorityId: id('Critical'),
+        dueDate: dateInZone(FIRM_ZONE, -1),
+      });
+    }
+
+    test('lists Critical first, names the rule, shows the severity in the tile and opens the queue in the same order', async ({
+      page,
+      seed,
+    }) => {
+      await seedOverdue(seed);
+      await page.goto('/dashboard');
+      await page.getByRole('button', { name: 'Refresh' }).click();
+
+      const overdue = page.locator('[data-panel="overdue"]');
+      await expect(overdue.locator('[data-order]')).toHaveText(
+        'Critical first, then longest overdue.',
+      );
+      await expect(overdue.locator('li').first()).toBeVisible();
+      const labels = await overdue.locator('li mf-priority-badge').allInnerTexts();
+      const ranks = labels.map((l) => RANK[l.trim()] ?? 9);
+      expect(ranks.length).toBeGreaterThan(0);
+      expect(ranks[0]).toBe(0);
+      expect([...ranks].sort((a, b) => a - b)).toEqual(ranks);
+      // Each row keeps its days overdue next to the priority.
+      await expect(overdue.locator('li').first().locator('[data-due]')).toContainText(
+        /Overdue \d+d/,
+      );
+
+      // The tile names the Critical count in words with an icon, and opens the queue in the list's order.
+      const tile = page.getByRole('link', { name: /^Overdue\s*\d+\b/ });
+      const detail = tile.locator('[data-detail]');
+      await expect(detail).toContainText(/\d+ Critical/);
+      await expect(detail.locator('.pi')).toHaveCount(1);
+      await tile.click();
+      await expect(page).toHaveURL(/overdue=true/);
+      await expect(page).toHaveURL(/sort=priority&dir=asc/);
+      await expect(chips(page)).toContainText('Overdue: Overdue only');
+    });
+
+    for (const size of [
+      { width: 1366, height: 768 },
+      { width: 375, height: 812 },
+    ]) {
+      test(`axe is clean on the Summary tab with the severity line at ${size.width}`, async ({
+        page,
+        seed,
+      }) => {
+        test.skip(
+          !axeAvailable(),
+          'axe-core is not installed (npm ci) and E2E_AXE_PATH is not set',
+        );
+        await seedOverdue(seed);
+        await page.setViewportSize(size);
+        await page.goto('/dashboard');
+        await page.getByRole('button', { name: 'Refresh' }).click();
+        await expect(page.locator('[data-panel="overdue"] li').first()).toBeVisible();
+        await expect(page.locator('[data-detail]').first()).toBeVisible();
+        expect(await axeViolations(page)).toEqual([]);
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+          ),
+        ).toBe(true);
+      });
+    }
   });
 
   test('the period presets drive created and completed only, and the choice sticks', async ({

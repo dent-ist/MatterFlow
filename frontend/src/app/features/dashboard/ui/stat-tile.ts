@@ -50,6 +50,14 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'strong' | 'asap' | 'neut
       @if (caption(); as c) {
         <span class="caption" [attr.title]="c">{{ c }}</span>
       }
+      @if (detail(); as d) {
+        <span class="detail" data-detail>
+          @if (detailIcon(); as di) {
+            <i class="pi" [class]="di" aria-hidden="true"></i>
+          }
+          <span>{{ d }}</span>
+        </span>
+      }
       @if (link) {
         <!-- Part of the link's name (what it opens, for voice control and screen readers); not drawn: the arrow and the hover say it. -->
         <span class="go">{{ linkText() }}</span>
@@ -150,6 +158,23 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'strong' | 'asap' | 'neut
       font-size: var(--mf-fs-xs);
       color: var(--mf-text-muted);
     }
+    /* A second line that may wrap (the severity of the count): icon and words, so colour is never the only carrier. */
+    .detail {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--mf-s1);
+      font-size: var(--mf-fs-xs);
+      font-weight: 600;
+      color: var(--mf-text);
+      overflow-wrap: anywhere;
+    }
+    .detail .pi {
+      margin-top: 1px;
+      font-size: var(--mf-fs-xs);
+    }
+    [data-tone='danger'] .detail .pi {
+      color: var(--mf-danger);
+    }
     .go {
       position: absolute;
       width: 1px;
@@ -235,6 +260,11 @@ export class StatTile {
   /** The Task Queue query string (no leading `?`) behind the number. */
   readonly query = input.required<string>();
   readonly caption = input<string | null>(null);
+  /** A second, wrapping line under the caption (for example "11 Critical, 30 High"), with an optional PrimeIcons class. */
+  readonly detail = input<string | null>(null);
+  readonly detailIcon = input<string | null>(null);
+  /** The order the Task Queue opens in (null: the queue's default). */
+  readonly sort = input<{ sort: string; dir: 'asc' | 'desc' } | null>(null);
   /** PrimeIcons class, for example `pi-exclamation-circle`. */
   readonly icon = input<string | null>(null);
   readonly tone = input<TileTone>('neutral');
@@ -242,7 +272,10 @@ export class StatTile {
   /** Words after the label of the link, for example "View overdue tasks". */
   readonly linkText = input('View these tasks');
 
-  protected readonly params = computed(() => queueParams(this.query()));
+  protected readonly params = computed(() => {
+    const order = this.sort();
+    return order ? { ...queueParams(this.query()), ...order } : queueParams(this.query());
+  });
   /** Zero is calm: the tone is only shown while there is something to look at. */
   protected readonly activeTone = computed(() =>
     this.value() > 0 && this.tone() !== 'neutral' ? this.tone() : null,

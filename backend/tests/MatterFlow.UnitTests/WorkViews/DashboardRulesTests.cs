@@ -17,6 +17,13 @@ public class DashboardRulesTests
         DashboardRules.Date(DashboardRules.PeriodStart(Today, days)).ShouldBe(expectedFrom);
 
     [Fact]
+    public void The_severity_queries_are_the_overdue_query_with_the_priorities_and_fall_back_to_plain_overdue()
+    {
+        DashboardRules.OverdueWith([3, 1]).ShouldBe(DashboardRules.Overdue + "&priority=1&priority=3");
+        DashboardRules.OverdueWith([]).ShouldBe(DashboardRules.Overdue);
+    }
+
+    [Fact]
     public void Open_means_new_in_progress_and_on_hold()
     {
         DashboardRules.OpenQuery.ShouldBe("status=NEW&status=IN_PROGRESS&status=ON_HOLD");

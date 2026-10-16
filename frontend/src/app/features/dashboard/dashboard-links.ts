@@ -38,14 +38,14 @@ export type ListKind = 'unassigned' | 'overdue' | 'dueSoon';
 
 /**
  * The order each dashboard list shows, and "View all" starts with: the unassigned queue by priority and then age (oldest first), the
- * overdue and due-soon lists by due date (soonest first).
+ * overdue list by priority and then longest overdue (the queue's `priority` sort breaks ties by due date, oldest first), the due-soon list by due date (soonest first).
  */
 export const LIST_ORDER: Record<
   ListKind,
   { sort: string; dir: 'asc' | 'desc'; note: string | null }
 > = {
   unassigned: { sort: 'priorityAge', dir: 'asc', note: 'Highest priority first, then oldest.' },
-  overdue: { sort: 'due', dir: 'asc', note: null },
+  overdue: { sort: 'priority', dir: 'asc', note: 'Critical first, then longest overdue.' },
   dueSoon: { sort: 'due', dir: 'asc', note: null },
 };
 

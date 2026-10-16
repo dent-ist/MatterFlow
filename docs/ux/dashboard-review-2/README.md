@@ -452,3 +452,14 @@ Not bugs, checked and fine: after "Assign to me" the tile and the queue count dr
 - The 5-minute auto-refresh timer in this run (code read and earlier rounds' fake-clock tests), the Swimlane keyboard model and tree roles, the Coverage drawer, the Swimlane inline status dialogs, the Users assign flow beyond opening the picker.
 - Seed realism: 16 percent ASAP, 21 percent overdue, 79 percent of open tasks 15 days or older, 17 of 26 task types never completed in the period. Findings that depend on those shares (B1, B2, C3) need a look at real data before sizing.
 - Print output, and whether `@media print` rules exist for this page beyond what the global styles provide (a print rule exists in the global CSS; not rendered).
+
+## Fix log
+
+### Recommendation 1 (Overdue list by priority, Critical count in the tile): done
+
+Fixed in `COMMIT_SHA` (issue #82).
+- The Summary Overdue list now asks the Task Queue for `sort=priority&dir=asc` (priority, then most overdue first, then created and id), 6 rows as before, with the rule under the heading ("Critical first, then longest overdue."). "View all overdue tasks" and the Overdue tile open the queue with the same filter and sort. Rows keep the priority badge and "Overdue Nd".
+- The Overdue tile has a second line with a flag icon and words, for example "27 Critical, 12 High" (new `overdueCritical` and `overdueHigh` counts in `GET /api/v1/dashboard`, each with the queue query that lists them; priorities are matched by badge colour token `critical` / `high`; zero without Dashboard.ViewSummary). The line wraps at 375 px.
+- Due soon is unchanged (the review raises the ordering issue for Overdue only).
+- Screenshots in `fixes/`: `before-*` is the old behaviour reproduced on the same data (the request rewritten to `sort=due`, new lines removed), `after-*` is the real build. Seed: 8 Critical, 4 High, 8 Normal overdue tasks (the seed was run more than once, hence the larger counts).
+- Tests: `DashboardOverdueOrderTests` (order with 8 Critical beyond the 6-row cap, caption counts and queries, permissions), `DashboardRulesTests`, `dashboard-page.spec`, e2e in `dashboard-audit.spec` (order, rule, tile, deep link, axe at 1366 and 375).

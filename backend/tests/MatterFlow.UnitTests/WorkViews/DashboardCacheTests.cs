@@ -23,7 +23,9 @@ public class DashboardCacheTests
             [],
             [],
             [],
-            []);
+            [],
+            new DashboardCount(0, "q"),
+            new DashboardCount(0, "q"));
 
     private static DashboardCache Cache(int seconds, FakeTime time) => new(Options.Create(new DashboardOptions { CacheSeconds = seconds }), time);
 

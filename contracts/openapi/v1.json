@@ -9915,7 +9915,9 @@
           "byTaskType",
           "byPriority",
           "byStatus",
-          "aging"
+          "aging",
+          "overdueCritical",
+          "overdueHigh"
         ],
         "type": "object",
         "properties": {
@@ -9976,6 +9978,12 @@
             "items": {
               "$ref": "#/components/schemas/DashboardAgingBucket"
             }
+          },
+          "overdueCritical": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "overdueHigh": {
+            "$ref": "#/components/schemas/DashboardCount"
           }
         }
       },
