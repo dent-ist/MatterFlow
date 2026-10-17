@@ -58,6 +58,7 @@ test.describe('My Work vocabulary and tab rules', () => {
     await myWork.open();
 
     // Tab names, counts and tooltips.
+    await expect(myWork.tab(/^Active/)).toContainText('(7)');
     const tabs = (await page.getByRole('tab').allTextContents()).map((t) =>
       t.replace(/\s+/g, ' ').trim(),
     );

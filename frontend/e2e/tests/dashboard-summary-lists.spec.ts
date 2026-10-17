@@ -155,12 +155,13 @@ test.describe('dashboard summary lists', () => {
           'Waiting on client, custodian or internal',
         ]),
       );
-      // Each caption is at most two lines at 480 and below.
+      // Each caption is at most four lines at 480 and below: the Due soon wording of #151 ("not overdue, not ASAP") takes four lines in the two-column
+      // tile grid beside the navigation rail, and wraps (never cut) as the Decision (PM) asks.
       const tall = await page.evaluate(
         () =>
           Array.from(document.querySelectorAll('mf-stat-tile .caption')).filter((n) => {
             const lh = parseFloat(getComputedStyle(n).lineHeight) || 16;
-            return n.getBoundingClientRect().height > lh * 3 + 1;
+            return n.getBoundingClientRect().height > lh * 4 + 1;
           }).length,
       );
       expect(tall).toBe(0);
