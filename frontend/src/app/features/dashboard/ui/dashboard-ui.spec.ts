@@ -106,8 +106,11 @@ describe('dashboard UI', () => {
   it('swaps the bars for a table of the same numbers', async () => {
     const el = await render();
     const toggle = () => el.querySelector<HTMLButtonElement>('mf-bar-list .toggle')!;
+    expect(toggle().textContent).toContain('View as pie');
+    toggle().click(); // bars -> pie
+    fixture.detectChanges();
     expect(toggle().textContent).toContain('View as table');
-    toggle().click();
+    toggle().click(); // pie -> table
     fixture.detectChanges();
     const rows = Array.from(el.querySelectorAll('mf-bar-list tbody tr'));
     expect(
@@ -128,9 +131,9 @@ describe('dashboard UI', () => {
     expect(rows[3].querySelector('.bar')).toBeNull();
     expect(rows[3].textContent).toContain('0');
     expect(rows[0].querySelector('.bar')).not.toBeNull();
-    // Names wrap instead of being cut off (a title is not available to touch or keyboard users).
-    expect(rows[0].querySelector('.name')!.getAttribute('title')).toBeNull();
+    // Names wrap to two lines (three on a phone); the full name is the title, the link label and the table view.
+    expect(rows[0].querySelector('.name')!.getAttribute('title')).toBe('Pod A');
     const toggle = el.querySelector('mf-bar-list .toggle')!;
-    expect(toggle.textContent!.replace(/\s+/g, ' ').trim()).toBe('View as table for Open by Pod');
+    expect(toggle.textContent!.replace(/\s+/g, ' ').trim()).toBe('View as pie for Open by Pod');
   });
 });

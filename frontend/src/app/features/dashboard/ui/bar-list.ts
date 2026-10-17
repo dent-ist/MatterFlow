@@ -1,4 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  afterNextRender,
+  computed,
+  ElementRef,
+  inject,
+  input,
+  OnInit,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { queueParams } from '../dashboard-links';
@@ -11,6 +23,16 @@ import {
   overdueText,
   strokeFill,
 } from './breakdown-overdue';
+import { BreakdownPie } from './breakdown-pie';
+import {
+  BreakdownMode,
+  BreakdownPrefs,
+  DEFAULT_MODE,
+  NEXT_MODE,
+  nextModeLabel,
+} from './breakdown-view';
+import { PieSlice, groupSlices, paletteColor, sharePercent, toneColor } from './breakdown-slices';
+import { PointerFocus } from './pointer-focus';
 
 /** One bar: a text label, its number, and the Task Queue query it drills into (null: not linkable). */
 export interface BarItem {
@@ -31,12 +53,7 @@ export interface BarItem {
   stroke?: BarStroke;
 }
 
-/** "42%", or "<1%" for a small non-zero share; no decimals, so a list can add up to 99 or 101. */
-export function sharePercent(count: number, total: number): string {
-  if (total <= 0 || count <= 0) return '0%';
-  const value = (count / total) * 100;
-  return value < 1 ? '<1%' : `${Math.round(value)}%`;
-}
+export { sharePercent };
 
 let nextId = 0;
 
@@ -47,26 +64,34 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-bar-list',
-  imports: [RouterLink, TaskTypeIcon],
+  imports: [RouterLink, TaskTypeIcon, BreakdownPie, PointerFocus],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="card" [attr.aria-labelledby]="id + '-h'">
       <header>
         <h3 [id]="id + '-h'">{{ heading() }}</h3>
         @if (items().length > 0) {
-          <button type="button" class="toggle" [attr.aria-pressed]="asTable()" (click)="toggle()">
-            {{ asTable() ? 'View as bars' : 'View as table'
-            }}<span class="sr-only"> for {{ heading() }}</span>
+          <button type="button" class="toggle" data-view-toggle (click)="toggle()">
+            {{ nextLabel() }}<span class="sr-only"> for {{ heading() }}</span>
           </button>
         }
       </header>
       @if (note(); as n) {
         <p class="note">{{ n }}</p>
       }
-      @if (items().length === 0) {
-        <p class="empty">{{ emptyText() }}</p>
-      } @else if (asTable()) {
-        <div class="mf-scroll">
+      <div
+        #body
+        class="body"
+        data-bd-body
+        mfPointerFocus
+        [attr.data-mode]="mode()"
+        [attr.role]="overflowing() ? 'region' : null"
+        [attr.tabindex]="overflowing() ? 0 : null"
+        [attr.aria-label]="overflowing() ? heading() + ', scrollable' : null"
+      >
+        @if (items().length === 0) {
+          <p class="empty">{{ emptyText() }}</p>
+        } @else if (mode() === 'table') {
           <table>
             <caption class="sr-only">
               {{
@@ -114,72 +139,79 @@ let nextId = 0;
               }
             </tbody>
           </table>
-        </div>
-      } @else {
-        <ul class="bars">
-          @for (item of items(); track $index) {
-            <li class="r">
-              <div class="row">
-                <span class="namecell">
-                  @if (item.iconKey) {
-                    <mf-task-type-icon class="ti" [iconKey]="item.iconKey" size="md" />
-                  }
-                  @if (item.query; as q) {
-                    <a
-                      class="name rowlink"
-                      routerLink="/tasks"
-                      [queryParams]="params(q)"
-                      [attr.aria-label]="rowLabel(item)"
-                      >{{ item.label }}</a
-                    >
-                  } @else {
-                    <span class="name">{{ item.label }}</span>
-                  }
-                </span>
-                <span class="track" aria-hidden="true">
-                  @if (item.count > 0) {
-                    <span
-                      class="bar"
-                      [class.muted]="item.muted"
-                      [style.width.%]="width(item.count)"
-                      [style.background]="barFill(item)"
-                      [style.border-color]="item.outline ?? null"
-                      [style.border-style]="item.outline ? (item.stroke ?? normal).style : null"
-                      [style.border-width.px]="item.outline ? (item.stroke ?? normal).width : null"
-                      [class.outlined]="!!item.outline"
-                    >
-                      @if ((item.overdue ?? 0) > 0) {
-                        @if (overdueLink(item); as od) {
-                          <a
-                            class="od"
-                            tabindex="-1"
-                            routerLink="/tasks"
-                            [queryParams]="od"
-                            [style.width.%]="overdueWidth(item)"
-                          ></a>
-                        } @else {
-                          <span class="od" [style.width.%]="overdueWidth(item)"></span>
-                        }
-                      }
-                    </span>
-                  }
-                </span>
-                <span class="count">{{ item.count }}</span>
-                <span class="pct">{{ share(item.count) }}</span>
-                @if ((item.overdue ?? 0) > 0) {
-                  @if (overdueLink(item); as od) {
-                    <a class="od-text" routerLink="/tasks" [queryParams]="od"
-                      >{{ odText(item) }}<span class="sr-only"> in {{ item.label }}</span></a
-                    >
-                  } @else {
-                    <span class="od-text plain">{{ odText(item) }}</span>
-                  }
-                }
-              </div>
-            </li>
+        } @else if (mode() === 'pie') {
+          @defer (when mode() === 'pie') {
+            <mf-breakdown-pie [heading]="heading()" [slices]="slices()" [emptyText]="emptyText()" />
           }
-        </ul>
-      }
+        } @else {
+          <ul class="bars">
+            @for (item of items(); track $index) {
+              <li class="r">
+                <div class="row">
+                  <span class="namecell">
+                    @if (item.iconKey) {
+                      <mf-task-type-icon class="ti" [iconKey]="item.iconKey" size="md" />
+                    }
+                    @if (item.query; as q) {
+                      <a
+                        class="name rowlink"
+                        routerLink="/tasks"
+                        [queryParams]="params(q)"
+                        [attr.title]="item.label"
+                        [attr.aria-label]="rowLabel(item)"
+                        >{{ item.label }}</a
+                      >
+                    } @else {
+                      <span class="name" [attr.title]="item.label">{{ item.label }}</span>
+                    }
+                  </span>
+                  <span class="track" aria-hidden="true">
+                    @if (item.count > 0) {
+                      <span
+                        class="bar"
+                        [class.muted]="item.muted"
+                        [style.width.%]="width(item.count)"
+                        [style.background]="barFill(item)"
+                        [style.border-color]="item.outline ?? null"
+                        [style.border-style]="item.outline ? (item.stroke ?? normal).style : null"
+                        [style.border-width.px]="
+                          item.outline ? (item.stroke ?? normal).width : null
+                        "
+                        [class.outlined]="!!item.outline"
+                      >
+                        @if ((item.overdue ?? 0) > 0) {
+                          @if (overdueLink(item); as od) {
+                            <a
+                              class="od"
+                              tabindex="-1"
+                              routerLink="/tasks"
+                              [queryParams]="od"
+                              [style.width.%]="overdueWidth(item)"
+                            ></a>
+                          } @else {
+                            <span class="od" [style.width.%]="overdueWidth(item)"></span>
+                          }
+                        }
+                      </span>
+                    }
+                  </span>
+                  <span class="count">{{ item.count }}</span>
+                  <span class="pct">{{ share(item.count) }}</span>
+                  @if ((item.overdue ?? 0) > 0) {
+                    @if (overdueLink(item); as od) {
+                      <a class="od-text" routerLink="/tasks" [queryParams]="od"
+                        >{{ odText(item) }}<span class="sr-only"> in {{ item.label }}</span></a
+                      >
+                    } @else {
+                      <span class="od-text plain">{{ odText(item) }}</span>
+                    }
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
     </section>
   `,
   styles: [
@@ -188,7 +220,11 @@ let nextId = 0;
       :host {
         display: block;
       }
+      /* The card is a column: the title row stays where it is and only the body scrolls, when the card is given a height (the Task type
+         card on a wide Breakdowns tab, where the list can grow with every new task type). */
       .card {
+        display: flex;
+        flex-direction: column;
         height: 100%;
         box-sizing: border-box;
         padding: var(--mf-s4);
@@ -218,6 +254,16 @@ let nextId = 0;
         cursor: pointer;
         text-decoration: underline;
       }
+      .body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
+        overscroll-behavior: contain;
+      }
+      .body:focus-visible {
+        outline: 2px solid var(--mf-focus);
+        outline-offset: -2px;
+      }
       .note,
       .empty {
         margin: 0 0 var(--mf-s3);
@@ -240,7 +286,7 @@ let nextId = 0;
       }
       .row {
         display: grid;
-        grid-template-columns: minmax(5rem, 11rem) minmax(3rem, 1fr) 2.25rem 2.75rem 5.5rem;
+        grid-template-columns: minmax(10rem, 1.2fr) minmax(3rem, 1fr) 2.25rem 2.75rem 5.5rem;
         align-items: center;
         gap: var(--mf-s3);
         padding: var(--mf-s1) var(--mf-s2);
@@ -278,10 +324,10 @@ let nextId = 0;
         display: inline-flex;
         align-items: center;
       }
-      /* A narrow card (four across at 1360 px, or a phone): the overdue text moves under the bar. */
+      /* A narrow card (three across at 1360 px, or a phone): the overdue text moves under the bar and the name keeps the larger share. */
       @container (max-width: 30rem) {
         .row {
-          grid-template-columns: minmax(4rem, 6.5rem) minmax(3rem, 1fr) 2rem 2.5rem;
+          grid-template-columns: minmax(7rem, 1.2fr) minmax(3rem, 1fr) 2.25rem 2.5rem;
           gap: var(--mf-s1) var(--mf-s2);
         }
         .od-text {
@@ -291,7 +337,11 @@ let nextId = 0;
       /* A phone: the share is in the table view; the bar gets the room. */
       @container (max-width: 20rem) {
         .row {
-          grid-template-columns: minmax(3.5rem, 5.5rem) minmax(3rem, 1fr) 2rem;
+          grid-template-columns: minmax(5rem, 1.2fr) minmax(2.5rem, 1fr) 2.25rem;
+        }
+        .name {
+          -webkit-line-clamp: 3;
+          line-clamp: 3;
         }
         .pct {
           display: none;
@@ -317,10 +367,16 @@ let nextId = 0;
           border-color: CanvasText !important;
         }
       }
-      /* Long names wrap to a second line instead of being cut off (a title attribute is not reachable by touch or keyboard). */
+      /* A long name wraps to two lines (three on a phone) and is cut after that; the full name is the title and the link's label, and the
+         table view shows it whole. The numbers never wrap. */
       .name {
         min-width: 0;
         overflow-wrap: anywhere;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        overflow: hidden;
         font-size: var(--mf-fs-md);
         line-height: 1.25;
       }
@@ -361,6 +417,10 @@ let nextId = 0;
       .bar.outlined {
         border: 1px solid;
       }
+      .count,
+      .pct {
+        white-space: nowrap;
+      }
       .count {
         text-align: right;
         font-weight: 600;
@@ -383,7 +443,12 @@ let nextId = 0;
         font-weight: 400;
         border-bottom: 1px solid var(--mf-border);
       }
+      /* The column titles stay at the top of the body while the rows scroll under them. */
       thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        box-shadow: inset 0 -1px 0 var(--mf-border);
         font-weight: 600;
         font-size: var(--mf-fs-sm);
         background: var(--mf-surface-alt);
@@ -412,7 +477,7 @@ let nextId = 0;
     `,
   ],
 })
-export class BarList {
+export class BarList implements OnInit {
   readonly heading = input.required<string>();
   readonly items = input.required<readonly BarItem[]>();
   /** First column heading of the table view, e.g. "Pod". */
@@ -422,16 +487,79 @@ export class BarList {
 
   protected readonly id = `mf-bars-${nextId++}`;
   protected readonly normal = NORMAL_STROKE;
-  protected readonly asTable = signal(false);
+  /** Key of the card in the remembered choices ("priority"); without one the choice is not remembered. */
+  readonly cardKey = input<string | null>(null);
+
+  private readonly prefs = inject(BreakdownPrefs);
+  private readonly destroyRef = inject(DestroyRef);
+  protected readonly mode = signal<BreakdownMode>(DEFAULT_MODE);
+  /** True while the body is taller than its box: it then scrolls and is a named, focusable region. */
+  protected readonly overflowing = signal(false);
+  private readonly body = viewChild<ElementRef<HTMLElement>>('body');
   protected readonly total = computed(() => this.items().reduce((sum, i) => sum + i.count, 0));
   private readonly max = computed(() => Math.max(0, ...this.items().map((i) => i.count)));
 
   /** True when the rows carry an overdue figure (the table gets its column). */
   protected readonly hasOverdue = computed(() => this.items().some((i) => i.overdue !== undefined));
 
-  protected toggle(): void {
-    this.asTable.update((v) => !v);
+  constructor() {
+    afterNextRender(() => {
+      const el = this.body()?.nativeElement;
+      if (!el || typeof ResizeObserver === 'undefined') return;
+      const measure = () => this.overflowing.set(el.scrollHeight > el.clientHeight + 1);
+      const observer = new ResizeObserver(measure);
+      observer.observe(el);
+      for (const child of Array.from(el.children)) observer.observe(child);
+      const mutations = new MutationObserver(() => {
+        observer.disconnect();
+        observer.observe(el);
+        for (const child of Array.from(el.children)) observer.observe(child);
+        measure();
+      });
+      mutations.observe(el, { childList: true });
+      this.destroyRef.onDestroy(() => {
+        observer.disconnect();
+        mutations.disconnect();
+      });
+      measure();
+    });
   }
+
+  ngOnInit(): void {
+    const key = this.cardKey();
+    if (key) this.mode.set(this.prefs.load(key));
+  }
+
+  protected nextLabel(): string {
+    return nextModeLabel(this.mode());
+  }
+
+  protected toggle(): void {
+    const next = NEXT_MODE[this.mode()];
+    this.mode.set(next);
+    const key = this.cardKey();
+    if (key) this.prefs.save(key, next);
+  }
+
+  /** The rows as pie slices, in the colours of the bars; at most eight, the rest grouped as "Other". */
+  protected readonly slices = computed<PieSlice[]>(() =>
+    groupSlices(
+      this.items().map((item, index) => ({
+        label: item.label,
+        count: item.count,
+        overdue: item.overdue,
+        query: item.query ?? null,
+        fill: item.muted
+          ? 'var(--mf-border-strong)'
+          : strokeFill(
+              item.fill ?? toneColor(item.tone) ?? paletteColor(index),
+              item.stroke ?? NORMAL_STROKE,
+            ),
+        outline: item.outline ?? (item.muted ? 'var(--mf-text-muted)' : null),
+        dashed: item.stroke?.style === 'dashed',
+      })),
+    ),
+  );
 
   /** The longest bar fills the track; the others are in proportion to it. The share of all tasks is printed as text next to the bar. */
   protected width(count: number): number {
@@ -478,15 +606,6 @@ export class BarList {
   }
 
   protected color(tone: string | null | undefined): string {
-    switch (tone) {
-      case 'NEW':
-        return 'var(--mf-st-new-fg)';
-      case 'IN_PROGRESS':
-        return 'var(--mf-st-progress-fg)';
-      case 'ON_HOLD':
-        return 'var(--mf-st-hold-fg)';
-      default:
-        return 'var(--mf-primary)';
-    }
+    return toneColor(tone) ?? 'var(--mf-primary)';
   }
 }

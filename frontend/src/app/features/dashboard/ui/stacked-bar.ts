@@ -1,8 +1,24 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { queueParams } from '../dashboard-links';
-import { sharePercent } from './bar-list';
 import { OVERDUE_CSS, overdueParams, overdueShare, overdueText } from './breakdown-overdue';
+import { BreakdownPie } from './breakdown-pie';
+import { PieSlice, sharePercent } from './breakdown-slices';
+import {
+  BreakdownMode,
+  BreakdownPrefs,
+  DEFAULT_MODE,
+  NEXT_MODE,
+  nextModeLabel,
+} from './breakdown-view';
 
 /** One segment of the bar (an age band). */
 export interface Segment {
@@ -35,16 +51,15 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
  */
 @Component({
   selector: 'mf-stacked-bar',
-  imports: [RouterLink],
+  imports: [RouterLink, BreakdownPie],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="card" [attr.aria-labelledby]="id + '-h'">
       <header>
         <h3 [id]="id + '-h'">{{ heading() }}</h3>
         @if (total() > 0) {
-          <button type="button" class="toggle" [attr.aria-pressed]="asTable()" (click)="toggle()">
-            {{ asTable() ? 'View as bar' : 'View as table'
-            }}<span class="sr-only"> for {{ heading() }}</span>
+          <button type="button" class="toggle" data-view-toggle (click)="toggle()">
+            {{ nextLabel() }}<span class="sr-only"> for {{ heading() }}</span>
           </button>
         }
       </header>
@@ -53,7 +68,11 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
       }
       @if (total() === 0) {
         <p class="note">{{ emptyText() }}</p>
-      } @else if (asTable()) {
+      } @else if (mode() === 'pie') {
+        @defer (when mode() === 'pie') {
+          <mf-breakdown-pie [heading]="heading()" [slices]="slices()" [emptyText]="emptyText()" />
+        }
+      } @else if (mode() === 'table') {
         <div class="mf-scroll">
           <table>
             <caption class="sr-only">
@@ -355,7 +374,7 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
     `,
   ],
 })
-export class StackedBar {
+export class StackedBar implements OnInit {
   readonly heading = input.required<string>();
   readonly segments = input.required<readonly Segment[]>();
   readonly rowHeading = input('Band');
@@ -363,16 +382,44 @@ export class StackedBar {
   readonly emptyText = input('Nothing to show.');
 
   protected readonly id = `mf-stack-${nextId++}`;
-  protected readonly asTable = signal(false);
+  /** Key of the card in the remembered choices ("age"); without one the choice is not remembered. */
+  readonly cardKey = input<string | null>(null);
+
+  private readonly prefs = inject(BreakdownPrefs);
+  protected readonly mode = signal<BreakdownMode>(DEFAULT_MODE);
   protected readonly total = computed(() => this.segments().reduce((sum, s) => sum + s.count, 0));
 
   protected readonly hasOverdue = computed(() =>
     this.segments().some((s) => s.overdue !== undefined),
   );
 
-  protected toggle(): void {
-    this.asTable.update((v) => !v);
+  ngOnInit(): void {
+    const key = this.cardKey();
+    if (key) this.mode.set(this.prefs.load(key));
   }
+
+  protected nextLabel(): string {
+    return nextModeLabel(this.mode());
+  }
+
+  protected toggle(): void {
+    const next = NEXT_MODE[this.mode()];
+    this.mode.set(next);
+    const key = this.cardKey();
+    if (key) this.prefs.save(key, next);
+  }
+
+  /** The bands as pie slices, in the colours of the segments (light to dark with age). */
+  protected readonly slices = computed<PieSlice[]>(() =>
+    this.segments().map((s, i) => ({
+      label: s.label,
+      count: s.count,
+      overdue: s.overdue,
+      query: s.query,
+      fill: this.ramp(i).bg,
+      outline: 'var(--mf-primary)',
+    })),
+  );
 
   protected params(query: string) {
     return queueParams(query);

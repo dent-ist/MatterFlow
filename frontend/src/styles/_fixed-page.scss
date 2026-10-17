@@ -302,3 +302,8 @@
 .pg-form {
   --mf-card-pad: var(--mf-s5);
 }
+
+/* A scrolling region the pointer has just pressed shows no focus ring; the keyboard still does (see PointerFocus). The doubled pseudo-class outranks the rules above. */
+[data-pointer-focus]:focus-visible:focus-visible {
+  outline: none;
+}

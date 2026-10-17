@@ -1156,8 +1156,8 @@ describe('DashboardPage', () => {
     // One title per card (H3), under a visually hidden H2 "Open tasks"; the unit is said once in the caption (Breakdowns B5).
     expect(lists.map((l) => text(l.querySelector('h3')))).toEqual([
       'Priority',
-      'Task type',
       'Status',
+      'Task type',
     ]);
     expect(text(bars.querySelector('mf-stacked-bar h3'))).toBe('Age');
     expect(text(bars.querySelector('h2.sr-only'))).toBe('Open tasks');
@@ -1167,11 +1167,11 @@ describe('DashboardPage', () => {
     );
     expect(bars.textContent).not.toMatch(/Open by|Open tasks by/);
     expect(bars.textContent).not.toContain('Open by pod');
-    // Reading order of the cards = DOM order.
+    // Reading order of the cards = DOM order (the three columns of the wide layout: Priority and Status, Task type, Age).
     expect(Array.from(bars.querySelectorAll('h3')).map((h) => h.textContent!.trim())).toEqual([
       'Priority',
-      'Task type',
       'Status',
+      'Task type',
       'Age',
     ]);
 
@@ -1181,11 +1181,11 @@ describe('DashboardPage', () => {
     expect(critical0.querySelector('.od-text')!.getAttribute('href')).toContain(
       'priority=1&overdue=true',
     );
-    expect(lists[1].querySelectorAll('li')[1].querySelector('.od-text')).toBeNull();
+    expect(lists[2].querySelectorAll('li')[1].querySelector('.od-text')).toBeNull();
     expect(text(bars.querySelector('mf-stacked-bar .od-text'))).toContain('3 overdue');
     expect(bars.querySelector('[data-bd-legend]')!.textContent).toContain('Overdue');
 
-    const typeRows = Array.from(lists[1].querySelectorAll('li'));
+    const typeRows = Array.from(lists[2].querySelectorAll('li'));
     expect(
       typeRows.map((r) =>
         [
@@ -1204,8 +1204,18 @@ describe('DashboardPage', () => {
     expect(text(bars.querySelector('mf-stacked-bar'))).toContain(
       'Informational, not a service-level target',
     );
-    // Every chart can be viewed as a table.
+    // Every chart can be viewed as a table or a pie: each card starts as bars, so its toggle offers the pie.
     expect(bars.querySelectorAll('.toggle').length).toBe(4);
+    expect(
+      Array.from(bars.querySelectorAll('[data-view-toggle]')).map((b) =>
+        b.textContent!.replace(/\s+/g, ' ').trim(),
+      ),
+    ).toEqual([
+      'View as pie for Priority',
+      'View as pie for Status',
+      'View as pie for Task type',
+      'View as pie for Age',
+    ]);
     expect(el.textContent).not.toMatch(/billing|revenue|productivity/i);
   });
 

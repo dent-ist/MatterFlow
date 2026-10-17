@@ -99,8 +99,8 @@ test.describe('Dashboard Breakdowns', () => {
     await expect(section.getByRole('heading', { level: 2 })).toHaveText('Open tasks');
     await expect(section.getByRole('heading', { level: 3 })).toHaveText([
       'Priority',
-      'Task type',
       'Status',
+      'Task type',
       'Age',
     ]);
     await expect(section.getByRole('heading', { name: /^Open (by|tasks by)/ })).toHaveCount(0);
@@ -131,7 +131,7 @@ test.describe('Dashboard Breakdowns', () => {
       );
       const columns = new Set(lefts).size;
       const wide = box!.width;
-      const expected = wide >= 1300 ? 4 : wide >= 700 ? 2 : 1;
+      const expected = wide >= 1300 ? 3 : wide >= 700 ? 2 : 1;
       expect(columns, `${width}px viewport, tab ${Math.round(wide)}px`).toBe(expected);
       // No horizontal scroll.
       expect(
@@ -147,9 +147,13 @@ test.describe('Dashboard Breakdowns', () => {
           return Math.round(card.bottom - last.getBoundingClientRect().bottom);
         }),
       );
-      for (const gap of gaps) expect(gap, `${width}px`).toBeLessThanOrEqual(40);
+      // (The Task type card of the wide layout is as tall as the tab and scrolls its list inside; it is checked in its own test.)
+      for (const [i, gap] of gaps.entries()) {
+        if (wide >= 1300 && i === 2) continue;
+        expect(gap, `${width}px`).toBeLessThanOrEqual(40);
+      }
 
-      // Tab order = reading order: Priority, Task type, Status, Age.
+      // Tab order = reading order: Priority, Status, Task type, Age.
       const order = await grid.evaluate((g) => {
         const focusables = Array.from(g.querySelectorAll<HTMLElement>('a[href], button')).filter(
           (e) => e.tabIndex >= 0,
@@ -159,7 +163,7 @@ test.describe('Dashboard Breakdowns', () => {
         );
       });
       const firstSeen = [...new Set(order)];
-      expect(firstSeen).toEqual(['Priority', 'Task type', 'Status', 'Age']);
+      expect(firstSeen).toEqual(['Priority', 'Status', 'Task type', 'Age']);
     }
   });
 
@@ -207,6 +211,8 @@ test.describe('Dashboard Breakdowns', () => {
         });
     expect(await stroke('Normal')).toBe('solid 1px');
     expect(await stroke('Low')).toBe('dashed 2px');
+    // Bars -> pie -> table.
+    await priority.getByRole('button', { name: /View as pie/ }).click();
     await priority.getByRole('button', { name: /View as table/ }).click();
     await expect(priority.locator('thead th')).toHaveText([
       'Priority',
@@ -217,21 +223,221 @@ test.describe('Dashboard Breakdowns', () => {
     await expect(priority.locator('tbody .marker')).not.toHaveCount(0);
   });
 
-  test('axe is clean at 1366, 1920 and 375 (bars, table view and the age bar)', async ({
-    page,
-  }) => {
+  test('axe is clean at 1366, 1920, 768 and 375 (bars, pie and table views)', async ({ page }) => {
     test.skip(!axeAvailable(), 'axe-core not installed (set E2E_AXE_PATH to axe.min.js)');
+    test.setTimeout(240_000);
     for (const [width, height] of [
       [1366, 768],
       [1920, 1080],
+      [768, 1024],
       [375, 812],
     ]) {
       await page.setViewportSize({ width, height });
       const section = await openBreakdowns(page);
       expect(await axeViolations(page), `${width} bars`).toEqual([]);
       for (const toggle of await section.locator('.toggle').all()) await toggle.click();
+      await expect(section.locator('[data-pie]')).toHaveCount(4);
+      expect(await axeViolations(page), `${width} pies`).toEqual([]);
+      for (const toggle of await section.locator('.toggle').all()) await toggle.click();
+      await expect(section.locator('table')).toHaveCount(4);
       expect(await axeViolations(page), `${width} tables`).toEqual([]);
+      // Back to bars (the choice is remembered per card).
+      for (const toggle of await section.locator('.toggle').all()) await toggle.click();
+      await expect(section.locator('.bars, .stack')).toHaveCount(4);
     }
+  });
+
+  test('wide layout: Priority above Status in the left column, Task type in the middle, Age on the right, equal widths', async ({
+    page,
+  }) => {
+    for (const [width, height] of [
+      [1366, 768],
+      [1920, 1080],
+    ]) {
+      await page.setViewportSize({ width, height });
+      const section = await openBreakdowns(page);
+      const box = async (name: string) =>
+        (await section
+          .locator('mf-bar-list, mf-stacked-bar')
+          .filter({ has: page.getByRole('heading', { name, exact: true }) })
+          .boundingBox())!;
+      const [priority, status, type, age] = [
+        await box('Priority'),
+        await box('Status'),
+        await box('Task type'),
+        await box('Age'),
+      ];
+      expect(Math.abs(priority.x - status.x), `${width} same column`).toBeLessThan(2);
+      expect(status.y, `${width} Priority above Status`).toBeGreaterThan(
+        priority.y + priority.height - 1,
+      );
+      expect(type.x).toBeGreaterThan(priority.x + priority.width - 1);
+      const tab = (await section.locator('[data-grid="breakdowns"]').boundingBox())!.width;
+      if (tab >= 1300) {
+        // Three equal columns.
+        expect(age.x, `${width} Age in the third column`).toBeGreaterThan(type.x + type.width - 1);
+        expect(Math.abs(priority.width - type.width), `${width} equal columns`).toBeLessThan(3);
+        expect(Math.abs(type.width - age.width)).toBeLessThan(3);
+      } else {
+        // The tab is narrower than 1300 px (a 1366 px window has a 1122 px tab): two columns, Task type and Age on the right.
+        expect(Math.abs(age.x - type.x), `${width} two columns`).toBeLessThan(2);
+      }
+      // The Task type card is as tall as the tab; its title stays and the list scrolls inside it when it is long.
+      const body = section.locator('mf-bar-list').nth(2).locator('[data-bd-body]');
+      const m = await body.evaluate((e) => ({ sh: e.scrollHeight, ch: e.clientHeight }));
+      if (m.sh > m.ch + 1) {
+        await expect(body).toHaveAttribute('tabindex', '0');
+        const title = (await section.locator('mf-bar-list').nth(2).locator('h3').boundingBox())!;
+        await body.evaluate((e) => (e.scrollTop = e.scrollHeight));
+        expect((await section.locator('mf-bar-list').nth(2).locator('h3').boundingBox())!.y).toBe(
+          title.y,
+        );
+      }
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+        ),
+      ).toBe(true);
+    }
+  });
+
+  test('a long Task type list scrolls inside its card at 1920 under a pinned title, the page does not', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    // Thirty task types: the summary the page reads is padded with copies of its first task type row.
+    await page.route(/\/api\/v1\/dashboard\?/, async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      const first = json.byTaskType[0];
+      if (first)
+        json.byTaskType = Array.from({ length: 30 }, (_, i) => ({
+          ...first,
+          label: `Long list type ${i + 1} with a rather long descriptive name`,
+          id: 90000 + i,
+        }));
+      await route.fulfill({ response, json });
+    });
+    const section = await openBreakdowns(page);
+    const card = section.locator('mf-bar-list').nth(2);
+    const body = card.locator('[data-bd-body]');
+    await expect(card.locator('li')).toHaveCount(30);
+    await expect(body).toHaveAttribute('role', 'region');
+    await expect(body).toHaveAttribute('tabindex', '0');
+    const m = await body.evaluate((e) => ({ sh: e.scrollHeight, ch: e.clientHeight }));
+    expect(m.sh).toBeGreaterThan(m.ch + 50);
+    const title = (await card.locator('h3').boundingBox())!;
+    const cardBox = (await card.boundingBox())!;
+    const tab = (await page.locator('[data-bd-scroll]').boundingBox())!;
+    expect(cardBox.y + cardBox.height).toBeLessThanOrEqual(tab.y + tab.height + 1);
+    await body.evaluate((e) => (e.scrollTop = e.scrollHeight));
+    expect((await card.locator('h3').boundingBox())!.y).toBe(title.y);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollHeight <= document.documentElement.clientHeight,
+      ),
+    ).toBe(true);
+    // A mouse press inside the list shows no ring.
+    await body.click({ position: { x: 2, y: 2 }, force: true });
+    expect(await body.evaluate((e) => getComputedStyle(e).outlineStyle)).toBe('none');
+  });
+
+  test('Task type names wrap to at most two lines at 1366 and numbers never wrap', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    const section = await openBreakdowns(page);
+    const lines = await section
+      .locator('mf-bar-list')
+      .nth(2)
+      .locator('.name')
+      .evaluateAll((els) =>
+        els.map((e) =>
+          Math.round(e.getBoundingClientRect().height / parseFloat(getComputedStyle(e).lineHeight)),
+        ),
+      );
+    expect(lines.length).toBeGreaterThan(0);
+    for (const n of lines) expect(n).toBeLessThanOrEqual(2);
+    const numbers = await section
+      .locator('mf-bar-list .count, mf-bar-list .pct')
+      .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height < 24));
+    expect(numbers.every(Boolean)).toBe(true);
+  });
+
+  test('the toggle walks table, bars, pie; the pie legend equals the bars and the queue links, and the choice is remembered', async ({
+    page,
+    seed,
+  }) => {
+    const world = await seed.world();
+    await seed.task(world, { title: `BD pie ${uid()}`, dueDate: dateInZone(FIRM_ZONE, -2) });
+    const section = await openBreakdowns(page);
+    const priority = section.locator('mf-bar-list').first();
+    const toggle = priority.locator('[data-view-toggle]');
+    await expect(toggle).toHaveText(/View as pie/);
+    const bars = await priority.locator('li').evaluateAll((lis) =>
+      lis.map((li) => ({
+        label: li.querySelector('.name')!.textContent!.trim(),
+        count: Number(li.querySelector('.count')!.textContent),
+        href: li.querySelector('a.rowlink')?.getAttribute('href') ?? null,
+        od: li.querySelector('.od-text')?.getAttribute('href') ?? null,
+      })),
+    );
+    await toggle.click();
+    await expect(priority.locator('[data-pie]')).toBeVisible();
+    await expect(toggle).toHaveText(/View as table/);
+    const pie = await priority.locator('[data-pie-legend] li').evaluateAll((lis) =>
+      lis.map((li) => ({
+        label: li.querySelector('.name')!.textContent!.trim(),
+        count: Number(li.querySelector('.count')!.textContent),
+        href: li.querySelector('a.rowlink')?.getAttribute('href') ?? null,
+        od: li.querySelector('.od-text')?.getAttribute('href') ?? null,
+      })),
+    );
+    expect(pie).toEqual(bars);
+    const total = bars.reduce((n, b) => n + b.count, 0);
+    await expect(priority.locator('[data-pie-centre]')).toHaveText(String(total));
+    await expect(priority.locator('svg[role="img"]')).toHaveAttribute(
+      'aria-label',
+      new RegExp(`${total} tasks`),
+    );
+    // The queue agrees with the first legend row.
+    const first = bars.find((b) => b.count > 0 && b.href)!;
+    const queue = await seed.admin.get<{ total: number }>(
+      `/api/v1/task-queue?pageSize=1&${new URL(first.href!, 'http://x').searchParams.toString()}`,
+    );
+    expect(queue.total).toBe(first.count);
+    // Remembered per card: reload keeps the pie on Priority and bars elsewhere.
+    await page.reload();
+    await expect(section.locator('mf-bar-list').first().locator('[data-pie]')).toBeVisible();
+    await expect(section.locator('mf-bar-list').nth(1).locator('[data-pie]')).toHaveCount(0);
+    expect(page.url()).not.toMatch(/pie|view/);
+    await section.locator('mf-bar-list').first().locator('[data-view-toggle]').click();
+    await expect(section.locator('mf-bar-list').first().locator('table')).toBeVisible();
+    await expect(section.locator('mf-bar-list').first().locator('[data-view-toggle]')).toHaveText(
+      /View as bars/,
+    );
+    await section.locator('mf-bar-list').first().locator('[data-view-toggle]').click();
+    await expect(section.locator('mf-bar-list').first().locator('.bars')).toBeVisible();
+  });
+
+  test('a mouse press on the cards area shows no focus ring; the keyboard still does', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    const section = await openBreakdowns(page);
+    const region = page.getByRole('region', { name: 'Open task breakdowns, scrollable' });
+    const outline = () => region.evaluate((e) => getComputedStyle(e).outlineStyle);
+    await section.locator('[data-grid="breakdowns"]').click({ position: { x: 2, y: 2 } });
+    await region.click({ position: { x: 5, y: 5 }, force: true });
+    expect(await outline()).toBe('none');
+    await region.focus();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowUp');
+    await region.evaluate((e) => (e as HTMLElement).blur());
+    await region.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    expect(await outline()).toBe('solid');
   });
 
   test('screenshots', async ({ page, seed }) => {
@@ -247,9 +453,16 @@ test.describe('Dashboard Breakdowns', () => {
       [375, 812],
     ]) {
       await page.setViewportSize({ width, height });
-      await openBreakdowns(page);
+      const section = await openBreakdowns(page);
       await page.waitForTimeout(300);
-      await page.screenshot({ path: path.join(SHOTS!, `breakdowns-${width}.png`), fullPage: true });
+      await page.screenshot({ path: path.join(SHOTS!, `bars-${width}.png`), fullPage: true });
+      for (const view of ['pie', 'table']) {
+        for (const t of await section.locator('[data-view-toggle]').all()) await t.click();
+        await expect(section.locator(view === 'pie' ? '[data-pie]' : 'table')).toHaveCount(4);
+        await page.waitForTimeout(300);
+        await page.screenshot({ path: path.join(SHOTS!, `${view}-${width}.png`), fullPage: true });
+      }
+      for (const t of await section.locator('[data-view-toggle]').all()) await t.click();
     }
     await page.setViewportSize({ width: 1366, height: 900 });
     const section = await openBreakdowns(page);
