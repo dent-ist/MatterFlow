@@ -29,6 +29,28 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, input } from '@a
     }
   `,
   styles: `
+    /* Fixed widths of the narrow columns: the skeleton and the real rows give the Title the same width (the table's own rules are
+       at its style budget, so they live here, next to the placeholders that depend on them). */
+    .wt th[data-col='ref'],
+    .wt th[data-col='age'] {
+      min-width: 5.5rem;
+    }
+
+    .wt th[data-col='priority'] {
+      min-width: 8.7rem;
+    }
+
+    .wt:not(.wt--narrow) th[data-col='due'] {
+      min-width: 14.9rem;
+    }
+
+    .wt th[data-col='status'] {
+      min-width: 10.2rem;
+    }
+
+    .wt th[data-col='progress'] {
+      min-width: 11.9rem;
+    }
     tr[mfTaskSkeleton] td {
       height: var(--mf-row-h);
       padding: 2px var(--mf-s2);
