@@ -144,3 +144,4 @@ Issues closed, tests green twice, axe clean, four screenshots per changed screen
 (One line per work package; keep other packages' lines when merging.)
 
 - Planning: epic #138 and issues #139 to #193 created; PM requirements review comments posted on every issue; #168 closed as not planned.
+- WP3 Page state (2026-10-17, commit e6690d4): #143 done, #145 done, #144 done, #170 done, #183 done. Unit specs, e2e (`my-work-page-state.spec.ts`, axe at 1366/1920/768/375), lint, prettier and tsc green; initial bundle 622.87 kB. Screenshots in `fixes/wp3/`. The 30 minute visit gap and the first-non-empty-tab rule are verified by unit tests with fixed clocks; the restored-view notice names the tab with the current labels (Due soon, Completed) until #171 renames them.
