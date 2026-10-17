@@ -81,6 +81,16 @@ public sealed record MyWorkCounts(
     [property: Required] int Completed,
     [property: Required] int CreatedByMe);
 
+/// <summary>
+/// The needs-attention strip of My Work (M1): counts over the person's whole open assigned set, never narrowed by the grid's filters. Overdue and
+/// DueToday do not overlap; Asap is never overdue or due today; OnHold is the status On Hold. Each equals the Active tab's total under the matching filter.
+/// </summary>
+public sealed record MyWorkAttention(
+    [property: Required] int Overdue,
+    [property: Required] int DueToday,
+    [property: Required] int Asap,
+    [property: Required] int OnHold);
+
 /// <summary>A page of My Work for one tab with the counts of every tab.</summary>
 public sealed record MyWorkPage(
     [property: Required] IReadOnlyList<TaskQueueRow> Items,
@@ -89,7 +99,8 @@ public sealed record MyWorkPage(
     [property: Required] int PageSize,
     [property: Required] string TimeZone,
     [property: Required] string View,
-    [property: Required] MyWorkCounts Counts);
+    [property: Required] MyWorkCounts Counts,
+    [property: Required] MyWorkAttention Attention);
 
 /// <summary>A Pod in the Pod Work selector: the user's own Pods first (primary flagged), then the others.</summary>
 public sealed record PodChoice(

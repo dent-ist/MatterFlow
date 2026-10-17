@@ -28,6 +28,7 @@ import { PodOption } from '../../../shared/work-queue/pod-options';
 import { QueuePageBase } from '../../../shared/work-queue/queue-page';
 import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
 import { WorkList } from '../../../shared/work-queue/work-list';
+import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
@@ -41,7 +42,16 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
  */
 @Component({
   selector: 'mf-pod-work-page',
-  imports: [FixedPage, PageHeader, ScrollArea, FiltersBar, WorkList, WorkTabs, WorkViewControls],
+  imports: [
+    FixedPage,
+    PageHeader,
+    ScrollArea,
+    FiltersBar,
+    WorkList,
+    WorkStrip,
+    WorkTabs,
+    WorkViewControls,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
@@ -91,22 +101,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
           Choose a Pod to see its work.
         </div>
       } @else {
-        @if (data(); as d) {
-          <ul class="wp-summary" aria-label="Pod summary" data-summary>
-            <li>
-              Unassigned <strong>{{ d.summary.unassignedToPerson }}</strong>
-            </li>
-            <li>
-              Assigned <strong>{{ d.summary.assigned }}</strong>
-            </li>
-            <li>
-              Overdue <strong>{{ d.summary.overdue }}</strong>
-            </li>
-            <li>
-              On Hold <strong>{{ d.summary.onHold }}</strong>
-            </li>
-          </ul>
-        }
+        <mf-work-strip label="Pod summary" [items]="summaryItems()" />
 
         <div class="wp-tabrow" data-tab-row>
           <mf-work-tabs
@@ -266,6 +261,17 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
   protected readonly canAssign = computed(
     () => this.auth.has('Task.Assign') && this.tab() !== 'members',
   );
+
+  /** The Pod's header numbers (counts equal the tab totals, UAT-S04-6): facts about the work, never a ranking. */
+  protected readonly summaryItems = computed<WorkStripItem[]>(() => {
+    const sum = this.data()?.summary;
+    return [
+      { key: 'unassigned', label: 'Unassigned', count: sum?.unassignedToPerson ?? null },
+      { key: 'assigned', label: 'Assigned', count: sum?.assigned ?? null },
+      { key: 'overdue', label: 'Overdue', count: sum?.overdue ?? null, alert: true },
+      { key: 'onHold', label: 'On Hold', count: sum?.onHold ?? null },
+    ];
+  });
 
   protected readonly tabs = computed<WorkTab[]>(() => {
     const counts = this.data()?.counts;

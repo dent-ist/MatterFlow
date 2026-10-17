@@ -36,6 +36,7 @@ const ARG = {
 };
 
 const COUNTS = { active: 7, dueSoon: 2, completed: 5, createdByMe: 3 };
+const ATTENTION = { overdue: 9, dueToday: 3, asap: 14, onHold: 0 };
 
 describe('MyWorkPage', () => {
   let getMyWork: ReturnType<typeof vi.fn>;
@@ -52,7 +53,10 @@ describe('MyWorkPage', () => {
     const rows = options.rows ?? [aRow()];
     getMyWork = vi
       .fn()
-      .mockReturnValue(options.response ?? of(pageOf(rows, { view: 'active', counts: COUNTS })));
+      .mockReturnValue(
+        options.response ??
+          of(pageOf(rows, { view: 'active', counts: COUNTS, attention: ATTENTION })),
+      );
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: 'my-work', component: MyWorkPage }]),
@@ -120,6 +124,66 @@ describe('MyWorkPage', () => {
     expect(el.querySelector('[role="tabpanel"]')!.getAttribute('aria-labelledby')).toBe(
       'mw-tab-active',
     );
+  });
+
+  describe('needs-attention strip', () => {
+    const item = (el: HTMLElement, key: string) =>
+      el.querySelector<HTMLButtonElement>(`[data-strip-item="${key}"]`)!;
+
+    it('shows the four counts above the tabs, a zero muted but present', async () => {
+      const el = await open('/my-work');
+      const strip = el.querySelector('[data-strip]')!;
+      expect(strip.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+        'Overdue 9 Due today 3 ASAP 14 On hold 0',
+      );
+      expect(strip.getAttribute('title')).toBe(
+        'All your open tasks, not affected by the filters below',
+      );
+      expect(item(el, 'onHold').classList).toContain('zero');
+      expect(
+        strip.compareDocumentPosition(el.querySelector('[data-tab-row]')!) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('applies its filter on Active, replaces another strip item and toggles off on a second click', async () => {
+      const el = await open('/my-work?view=completed');
+      item(el, 'overdue').click();
+      await settle();
+      expect(query()['view']).toBeUndefined();
+      expect(query()['overdue']).toBe('true');
+      expect(item(el, 'overdue').getAttribute('aria-pressed')).toBe('true');
+
+      item(el, 'dueToday').click();
+      await settle();
+      expect(query()['overdue']).toBe('false');
+      expect(query()['dueFrom']).toBe('2026-10-14');
+      expect(query()['dueTo']).toBe('2026-10-14');
+
+      item(el, 'onHold').click();
+      await settle();
+      expect(query()['dueFrom']).toBeUndefined();
+      expect(query()['status']).toBe('ON_HOLD');
+
+      item(el, 'onHold').click();
+      await settle();
+      expect(query()['status']).not.toBe('ON_HOLD');
+      expect(item(el, 'onHold').getAttribute('aria-pressed')).toBe('false');
+
+      item(el, 'asap').click();
+      await settle();
+      expect(query()['asap']).toBe('true');
+      expect(lastArgs()[ARG.asap]).toBe(true);
+    });
+
+    it('keeps the counts when a filter is on and shows -- while they are unknown', async () => {
+      const el = await open('/my-work?asap=true');
+      expect(item(el, 'asap').getAttribute('aria-pressed')).toBe('true');
+      expect(item(el, 'overdue').textContent).toContain('9');
+      TestBed.resetTestingModule();
+      const bare = await open('/my-work', { response: of(pageOf([aRow()], { counts: COUNTS })) });
+      expect(item(bare, 'overdue').textContent).toContain('--');
+    });
   });
 
   it('opens on the tab the user last used when the URL names none, and says so', async () => {

@@ -8,20 +8,6 @@
   font-size: var(--mf-fs-sm);
 }
 
-.wp-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--mf-s2) var(--mf-s5);
-  margin: 0 0 var(--mf-s3);
-  padding: 0;
-  list-style: none;
-  color: var(--mf-text-muted);
-}
-
-.wp-summary strong {
-  color: var(--mf-text);
-}
-
 .wp-field {
   display: grid;
   gap: var(--mf-s1);
@@ -102,10 +88,6 @@
 
   .wp-members {
     margin-bottom: 0;
-  }
-
-  .wp-summary {
-    margin-bottom: var(--mf-s2);
   }
 
   .wp-help {

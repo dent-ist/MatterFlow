@@ -12123,6 +12123,15 @@ export interface MeResponse {
     [key: string]: any;
 }
 
+export interface MyWorkAttention {
+    overdue: number;
+    dueToday: number;
+    asap: number;
+    onHold: number;
+
+    [key: string]: any;
+}
+
 export interface MyWorkCounts {
     active: number;
     dueSoon: number;
@@ -12140,6 +12149,7 @@ export interface MyWorkPage {
     timeZone: string;
     view: string;
     counts: MyWorkCounts;
+    attention: MyWorkAttention;
 
     [key: string]: any;
 }

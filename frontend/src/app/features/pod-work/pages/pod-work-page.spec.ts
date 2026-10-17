@@ -148,7 +148,7 @@ describe('PodWorkPage', () => {
 
   it('shows the Pod summary and a count on every tab', async () => {
     const el = await open('/pods/work?x=1');
-    const summary = el.querySelector('[data-summary]')!.textContent!.replace(/\s+/g, ' ');
+    const summary = el.querySelector('[data-strip]')!.textContent!.replace(/\s+/g, ' ');
     expect(summary).toContain('Unassigned 6');
     expect(summary).toContain('Assigned 31');
     expect(summary).toContain('Overdue 3');

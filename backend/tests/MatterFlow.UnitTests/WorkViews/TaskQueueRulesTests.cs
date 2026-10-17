@@ -76,6 +76,47 @@ public class TaskQueueRulesTests
         TaskQueueRules.DueSoonDays.ShouldBe(2);
     }
 
+    [Theory]
+    [InlineData("America/New_York")]
+    [InlineData("America/Los_Angeles")]
+    [InlineData("Pacific/Kiritimati")]
+    [InlineData("UTC")]
+    public void The_needs_attention_counts_never_overlap_except_on_hold_and_match_the_grid_filters(string zone)
+    {
+        var now = new DateTime(2026, 10, 14, 4, 30, 0, DateTimeKind.Utc);
+        var clock = ClockIn(zone, now);
+        var tz = UserTimeZone.Resolve(zone).Zone;
+        var tasks = new List<WorkTask>();
+        foreach (var status in new[] { TaskStatusCode.New, TaskStatusCode.InProgress, TaskStatusCode.OnHold, TaskStatusCode.Completed, TaskStatusCode.Cancelled })
+        {
+            tasks.Add(Task(status, null));
+            for (var offset = -2; offset <= 2; offset++)
+                tasks.Add(Task(status, clock.Today.AddDays(offset)));
+            foreach (var hours in new[] { -30, -6, -1, 1, 6, 30 })
+            {
+                var at = now.AddHours(hours);
+                tasks.Add(Task(status, DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(at, tz)), at));
+            }
+        }
+
+        var overdue = TaskQueueRules.Overdue(clock).Compile();
+        var dueToday = TaskQueueRules.DueToday(clock).Compile();
+        var asap = TaskQueueRules.Asap.Compile();
+        var open = TaskQueueRules.Open.Compile();
+        foreach (var t in tasks)
+        {
+            (overdue(t) && dueToday(t)).ShouldBeFalse($"Overdue and Due today are disjoint: {zone} {t.Status} {t.DueDate} {t.DueAtUtc}");
+            (asap(t) && (overdue(t) || dueToday(t))).ShouldBeFalse("ASAP is never overdue or due today");
+            if (!open(t))
+                (overdue(t) || dueToday(t) || asap(t)).ShouldBeFalse("closed tasks are in no strip item");
+            // The grid filter dueFrom=dueTo=today with overdue=false.
+            var grid = open(t) && t.DueDate == clock.Today && !overdue(t);
+            dueToday(t).ShouldBe(grid);
+        }
+
+        tasks.Count(dueToday).ShouldBeGreaterThan(0);
+    }
+
     [Fact]
     public void Due_soon_and_overdue_default_order_is_overdue_first_then_due_moment_then_priority_then_oldest_then_id()
     {

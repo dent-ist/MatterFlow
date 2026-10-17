@@ -144,6 +144,22 @@ public static class TaskQueueRules
             && !((t.DueAtUtc != null && t.DueAtUtc < now) || (t.DueAtUtc == null && t.DueDate < today));
     }
 
+    /// <summary>Open, due on the viewer's local date and not yet overdue (a timed task already past is Overdue, not due today). The grid's dueFrom=dueTo=today with overdue=false.</summary>
+    public static Expression<Func<WorkTask, bool>> DueToday(QueueClock clock)
+    {
+        ArgumentNullException.ThrowIfNull(clock);
+        var now = clock.NowUtc;
+        var today = clock.Today;
+        return t =>
+            (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold)
+            && t.DueDate == today
+            && !(t.DueAtUtc != null && t.DueAtUtc < now);
+    }
+
+    /// <summary>Open with no due date (ASAP); never overdue, never due today.</summary>
+    public static Expression<Func<WorkTask, bool>> Asap { get; } =
+        t => (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold) && t.DueDate == null;
+
     /// <summary>Combines predicates with OR.</summary>
     public static Expression<Func<WorkTask, bool>> Or(Expression<Func<WorkTask, bool>> left, Expression<Func<WorkTask, bool>> right)
     {

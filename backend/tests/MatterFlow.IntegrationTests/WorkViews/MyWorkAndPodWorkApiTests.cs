@@ -65,6 +65,37 @@ public sealed class MyWorkAndPodWorkApiTests(SqlServerFixture sql)
         TitlesOf(await MyWorkAsync(d, d.TechAClient, "view=createdByMe")).ShouldBe(Of("created-by-tech", "created-by-tech-b"));
     }
 
+    [Theory]
+    [InlineData("UTC")]
+    [InlineData("America/Los_Angeles")]
+    [InlineData("Pacific/Kiritimati")]
+    public async Task The_needs_attention_strip_counts_the_whole_open_set_and_equals_the_grid_for_the_same_filter(string zone)
+    {
+        var d = await DataAsync();
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById(zone))).ToString("yyyy-MM-dd");
+        foreach (var client in new[] { d.TechAClient, d.TechBClient })
+        {
+            var plain = await d.GetAsync("/api/v1/my-work?pageSize=100", client, zone);
+            var strip = plain.GetProperty("attention");
+            async Task<int> TotalAsync(string filter) =>
+                (await d.GetAsync("/api/v1/my-work?pageSize=1&" + filter, client, zone)).GetProperty("total").GetInt32();
+
+            strip.GetProperty("overdue").GetInt32().ShouldBe(await TotalAsync("overdue=true"));
+            strip.GetProperty("dueToday").GetInt32().ShouldBe(await TotalAsync($"dueFrom={today}&dueTo={today}&overdue=false"));
+            strip.GetProperty("asap").GetInt32().ShouldBe(await TotalAsync("asap=true"));
+            strip.GetProperty("onHold").GetInt32().ShouldBe(await TotalAsync("status=ON_HOLD"));
+
+            // The strip is a stable overview: no grid filter and no tab changes it.
+            var filtered = await d.GetAsync($"/api/v1/my-work?view=dueSoon&pod={d.PodB}&status=IN_PROGRESS", client, zone);
+            filtered.GetProperty("attention").ToString().ShouldBe(strip.ToString());
+        }
+
+        var a = (await d.GetAsync("/api/v1/my-work", d.TechAClient, "UTC")).GetProperty("attention");
+        a.GetProperty("overdue").GetInt32().ShouldBe(1);
+        a.GetProperty("asap").GetInt32().ShouldBe(4);
+        a.GetProperty("onHold").GetInt32().ShouldBe(1);
+    }
+
     [Fact]
     public async Task My_work_filters_apply_to_the_rows_and_to_every_tab_count()
     {

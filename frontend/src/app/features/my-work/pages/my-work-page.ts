@@ -31,11 +31,14 @@ import { QueuePageBase } from '../../../shared/work-queue/queue-page';
 import {
   CLOSED_STATUSES,
   OPEN_STATUSES,
+  QueueFilters,
   QueueState,
+  dateDaysAgo,
   queueArgs,
 } from '../../../shared/work-queue/queue-filters';
 import { openInQueueParams } from '../../../shared/work-queue/queue-link';
 import { WorkList } from '../../../shared/work-queue/work-list';
+import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
 import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
 import {
@@ -106,6 +109,14 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
   createdByMe: [...OPEN_STATUSES, ...CLOSED_STATUSES],
 };
 
+/** The needs-attention items in their order; the counts come from the response (`attention`), Overdue is the only red one. */
+const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
+  { key: 'overdue', label: 'Overdue', alert: true },
+  { key: 'dueToday', label: 'Due today' },
+  { key: 'asap', label: 'ASAP' },
+  { key: 'onHold', label: 'On hold' },
+];
+
 /**
  * My Work (UX S02, ticket 50): everything assigned to me from all my Pods, in the tabs Active, Due soon and overdue, Closed and Created by
  * me, most urgent first, with the shared inline column filters. Tab counts follow the filters. The tab and filters live in the URL. A filter
@@ -121,6 +132,7 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
     CopyParts,
     FiltersBar,
     WorkList,
+    WorkStrip,
     WorkTabs,
     WorkViewControls,
   ],
@@ -129,6 +141,15 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
   template: `
     <mf-fixed-page>
       <mf-page-header heading="My Work"> </mf-page-header>
+
+      <mf-work-strip
+        label="Needs attention"
+        hint="All your open tasks, not affected by the filters below"
+        [items]="stripItems()"
+        [interactive]="true"
+        [active]="activeStrip()"
+        (pick)="pickStrip($event)"
+      />
 
       <div class="wp-tabrow" data-tab-row>
         <mf-work-tabs
@@ -350,6 +371,39 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     }));
   });
 
+  /**
+   * The needs-attention strip (M1): counts over the whole open assigned set, never narrowed by the grid's filters. A new item (A5, "New")
+   * is one more entry here, in `STRIP` and in `stripPatch`.
+   */
+  protected readonly stripItems = computed<WorkStripItem[]>(() => {
+    const a = this.data()?.attention;
+    return STRIP.map((item) => ({
+      ...item,
+      count: a ? a[item.key as keyof typeof a] : null,
+    }));
+  });
+
+  /** The strip item whose filter is on (Active tab only), so a second click can switch it off. */
+  protected readonly activeStrip = computed<string | null>(() => {
+    if (this.tab() !== 'active') return null;
+    const f = this.state().filters;
+    const dueless = !f.dueFrom && !f.dueTo;
+    if (
+      f.status.length === 1 &&
+      f.status[0] === 'ON_HOLD' &&
+      f.overdue === null &&
+      f.asap === null &&
+      dueless
+    )
+      return 'onHold';
+    if (f.overdue === true && f.asap === null && dueless) return 'overdue';
+    if (f.asap === true && f.overdue === null && dueless) return 'asap';
+    const today = dateDaysAgo(this.clock.now(), 0, this.zone);
+    if (f.dueFrom === today && f.dueTo === today && f.overdue === false && f.asap === null)
+      return 'dueToday';
+    return null;
+  });
+
   /** True while the Closed tab applies its default 90-day window (no closed-date range, not "all time"). */
   protected readonly windowed = computed(() => {
     const s = this.state();
@@ -447,7 +501,7 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
   }
 
   protected override mergeCounts(current: MyWorkData, fresh: MyWorkData): MyWorkData {
-    return { ...current, counts: fresh.counts };
+    return { ...current, counts: fresh.counts, attention: fresh.attention };
   }
 
   protected override loaded(data: MyWorkData): void {
@@ -485,21 +539,56 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
 
   protected selectTab(key: string): void {
     if (key === this.tab()) return;
+    this.navigate(
+      this.tabState((key in TAB_LABELS ? key : 'active') as TabKey, this.state().filters),
+    );
+  }
+
+  /** The state of a tab: what it cannot use is dropped (columns it owns, statuses it does not offer), so the counts of all tabs agree. */
+  private tabState(next: TabKey, filters: QueueFilters): QueueState {
     if (this.filters.noticeMessage()) this.filters.dismissRestored();
-    const next = (key in TAB_LABELS ? key : 'active') as TabKey;
-    const s = this.state();
-    // The new tab owns some columns and offers some statuses: what it cannot use is dropped, so the counts of all tabs agree.
-    const kept = withoutFilters(s.filters, OWNED[next]);
+    const kept = withoutFilters(filters, OWNED[next]);
     const status = kept.status.filter((code) => STATUSES[next].includes(code));
-    this.navigate({
-      ...s,
+    return {
+      ...this.state(),
       view: next === 'active' ? null : next,
       page: 1,
       sort: null,
       dir: null,
       closedAll: false,
       filters: { ...kept, status },
-    });
+    };
+  }
+
+  /** A strip item applies its filter on Active (switching to it), replacing any other strip item; the pressed one switches off. */
+  protected pickStrip(key: string): void {
+    const f = this.state().filters;
+    const base: QueueFilters = {
+      ...f,
+      overdue: null,
+      asap: null,
+      dueFrom: null,
+      dueTo: null,
+      status: f.status.length === 1 && f.status[0] === 'ON_HOLD' ? [] : f.status,
+    };
+    const patch: Partial<QueueFilters> = key === this.activeStrip() ? {} : this.stripPatch(key);
+    this.navigate(this.tabState('active', { ...base, ...patch }));
+  }
+
+  private stripPatch(key: string): Partial<QueueFilters> {
+    const today = dateDaysAgo(this.clock.now(), 0, this.zone);
+    switch (key) {
+      case 'overdue':
+        return { overdue: true };
+      case 'dueToday':
+        return { dueFrom: today, dueTo: today, overdue: false };
+      case 'asap':
+        return { asap: true };
+      case 'onHold':
+        return { status: ['ON_HOLD'] };
+      default:
+        return {};
+    }
   }
 
   /** "Show older": an explicit all-time state (`closed=all`, chip "Closed: all time"), not a date in the year 2000. */

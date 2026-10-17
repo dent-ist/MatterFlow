@@ -107,7 +107,18 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
             view == ViewDueSoon ? total : await dueSoon.CountAsync(ct),
             view == ViewCompleted ? total : await completed.CountAsync(ct),
             view == ViewCreatedByMe ? total : await created.CountAsync(ct));
-        return new MyWorkPage(items, total, page.Page, page.PageSize, queueClock.ZoneId, view, counts);
+        return new MyWorkPage(items, total, page.Page, page.PageSize, queueClock.ZoneId, view, counts, await AttentionAsync(me, queueClock, ct));
+    }
+
+    /// <summary>The needs-attention strip: the whole open assigned set (no grid filters), each count from the same predicate the filter uses.</summary>
+    private async Task<MyWorkAttention> AttentionAsync(int me, QueueClock queueClock, CancellationToken ct)
+    {
+        var open = db.Set<WorkTask>().AsNoTracking().Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Open);
+        return new MyWorkAttention(
+            await open.Where(TaskQueueRules.Overdue(queueClock)).CountAsync(ct),
+            await open.Where(TaskQueueRules.DueToday(queueClock)).CountAsync(ct),
+            await open.Where(TaskQueueRules.Asap).CountAsync(ct),
+            await open.CountAsync(t => t.Status == TaskStatusCode.OnHold, ct));
     }
 
     // ---- Pod Work

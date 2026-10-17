@@ -11329,6 +11329,33 @@
           }
         }
       },
+      "MyWorkAttention": {
+        "required": [
+          "overdue",
+          "dueToday",
+          "asap",
+          "onHold"
+        ],
+        "type": "object",
+        "properties": {
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dueToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "asap": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onHold": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "MyWorkCounts": {
         "required": [
           "active",
@@ -11364,7 +11391,8 @@
           "pageSize",
           "timeZone",
           "view",
-          "counts"
+          "counts",
+          "attention"
         ],
         "type": "object",
         "properties": {
@@ -11394,6 +11422,9 @@
           },
           "counts": {
             "$ref": "#/components/schemas/MyWorkCounts"
+          },
+          "attention": {
+            "$ref": "#/components/schemas/MyWorkAttention"
           }
         }
       },
