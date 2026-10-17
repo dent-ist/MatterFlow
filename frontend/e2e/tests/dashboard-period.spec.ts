@@ -30,6 +30,9 @@ const NOTE =
 
 test.describe.configure({ timeout: 180_000 });
 
+/** A Pod the run owns: the figures of its scope change only through this file, while the rest of the database keeps growing under other workers. */
+let ownPod = 0;
+
 test.beforeAll(async ({ admin, seed }) => {
   test.setTimeout(240_000);
   const world = await seed.world();
@@ -40,7 +43,7 @@ test.beforeAll(async ({ admin, seed }) => {
       dueDate: dateInZone(FIRM_ZONE, 3 + i),
     });
   }
-  await seedBoard(admin, seed, { tasks: 24 });
+  ownPod = (await seedBoard(admin, seed, { tasks: 24 })).podId;
 });
 
 async function shoot(page: Page, name: string): Promise<void> {
@@ -290,17 +293,19 @@ test.describe('custom ranges', () => {
     const summary = page.waitForResponse(
       (r) => r.url().includes('/api/v1/dashboard?') && r.url().includes(`from=${start}`),
     );
-    await openSummary(page, `/dashboard?period=custom&from=${start}&to=${end}`);
+    // Scoped to the Pod this file owns: a count over the whole database would move between the two reads whenever another worker creates a task.
+    await openSummary(page, `/dashboard?period=custom&from=${start}&to=${end}&pod=${ownPod}`);
     const body = (await (await summary).json()) as {
       period: { days: number; from: string; to: string };
       created: { count: number };
       completed: { count: number };
     };
     expect(body.period).toMatchObject({ days: 31, from: start, to: end });
+    expect(body.created.count).toBeGreaterThan(0);
     await expect(tile(page, 'Created').locator('.value')).toHaveText(String(body.created.count));
 
     const trend = await page.request.get(
-      `/api/v1/dashboard/trend?period=custom&from=${start}&to=${end}`,
+      `/api/v1/dashboard/trend?period=custom&from=${start}&to=${end}&podScope=${ownPod}`,
     );
     const t = (await trend.json()) as { all: { created: number; completed: number }[] };
     expect(t.all).toHaveLength(31);
@@ -309,30 +314,27 @@ test.describe('custom ranges', () => {
   });
 
   test('tile totals equal Trends totals for every preset', async ({ page }) => {
+    // Scoped to the owned Pod, so the two reads cannot straddle another worker's new task and the totals are compared exactly.
     for (const key of ['7d', '30d', '90d', 'this-month', 'last-month']) {
-      const s = (await (
-        await page.request.get(`/api/v1/dashboard?period=${key}&fresh=true`)
-      ).json()) as {
+      const q = `period=${key}&fresh=true&podScope=${ownPod}`;
+      const s = (await (await page.request.get(`/api/v1/dashboard?${q}`)).json()) as {
         period: { from: string; to: string };
         created: { count: number };
         completed: { count: number };
       };
-      const t = (await (
-        await page.request.get(`/api/v1/dashboard/trend?period=${key}&fresh=true`)
-      ).json()) as {
+      const t = (await (await page.request.get(`/api/v1/dashboard/trend?${q}`)).json()) as {
         period: { from: string; to: string };
         all: { created: number; completed: number }[];
       };
       expect(t.period, key).toEqual(s.period);
-      // Other tests create tasks while this one runs: a read that raced with one is allowed one step of difference.
       expect(
-        Math.abs(t.all.reduce((n, d) => n + d.created, 0) - s.created.count),
+        t.all.reduce((n, d) => n + d.created, 0),
         key,
-      ).toBeLessThanOrEqual(3);
+      ).toBe(s.created.count);
       expect(
-        Math.abs(t.all.reduce((n, d) => n + d.completed, 0) - s.completed.count),
+        t.all.reduce((n, d) => n + d.completed, 0),
         key,
-      ).toBeLessThanOrEqual(3);
+      ).toBe(s.completed.count);
     }
   });
 });
