@@ -84,6 +84,19 @@ let nextId = 0;
         (click)="$event.stopPropagation()"
         (keydown)="onPopKey($event)"
       >
+        @if (lead(); as action) {
+          <!-- A first choice above the search box (Assign to me): not one of the people, so it stays when the search narrows the list. -->
+          <button
+            type="button"
+            class="im-item im-lead"
+            data-lead
+            [attr.aria-label]="action.ariaLabel"
+            (click)="pickLead()"
+          >
+            <i class="pi pi-user" aria-hidden="true"></i>
+            <span class="im-text">{{ action.label }}</span>
+          </button>
+        }
         @if (searchable()) {
           <input
             #search
@@ -244,6 +257,16 @@ let nextId = 0;
       text-align: left;
       cursor: pointer;
     }
+    .im-lead {
+      margin-bottom: var(--mf-s1);
+      border-bottom: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius) var(--mf-radius) 0 0;
+      font-weight: 600;
+    }
+    .im-lead .pi {
+      width: 1rem;
+      color: var(--mf-text-muted);
+    }
     .im-item:hover:not([aria-disabled='true']),
     .im-item:focus-visible {
       background: var(--mf-surface-alt);
@@ -318,12 +341,16 @@ export class InlineMenu implements OnDestroy {
   /** A line under the options, for example why the list is limited. */
   readonly footnote = input<string | null>(null);
 
+  /** A first choice above the search box and the options (for example "Assign to me"): its visible text and its accessible name. */
+  readonly lead = input<{ label: string; ariaLabel: string } | null>(null);
+
   /** Says that something in the list is still being checked; read out politely once. */
   readonly checking = input(false);
 
   readonly opened = output<void>();
   readonly searched = output<string>();
   readonly picked = output<MenuOption>();
+  readonly leadPicked = output<void>();
 
   protected readonly uid = `im-${nextId++}`;
   protected readonly open = signal(false);
@@ -420,6 +447,11 @@ export class InlineMenu implements OnDestroy {
     this.picked.emit(o);
   }
 
+  protected pickLead(): void {
+    this.close(true);
+    this.leadPicked.emit();
+  }
+
   protected onSearch(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.query.set(value);
@@ -469,7 +501,7 @@ export class InlineMenu implements OnDestroy {
   private focusables(): HTMLElement[] {
     return Array.from(
       this.host.nativeElement.querySelectorAll<HTMLElement>(
-        '.im-search, .im-item:not([aria-disabled="true"])',
+        '.im-lead, .im-search, .im-item:not([aria-disabled="true"])',
       ),
     );
   }

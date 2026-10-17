@@ -158,6 +158,7 @@ Closed unless stated. The SHA is the commit that delivered the issue (follow-up 
 | #105 | S6 Assign toast (B5) | closed | `0999d84` | WP5 |
 | #106 | S7 Type, client, due chip | closed | `0999d84` | WP5 |
 | #107 | S8 Section names | closed | `0999d84` | WP5 |
+| #101, #106, #107 (owner feedback) | Summary lists: "Assign to me" is the first choice of the Assign menu, Assign column before the client, one shared grid, rows fit without a scrollbar on tall windows (see `fixes/lists-feedback`) | follow-up | this commit | WP5 |
 | #108 | S9 Technician Summary | closed | `f3c6093`, `b9cbe09` | WP6 |
 | #109 | Breakdowns B1 Overdue share | closed | `0b52de5` | WP7 |
 | #110 | Breakdowns B2 Age buckets | closed | `0b52de5` | WP7 |

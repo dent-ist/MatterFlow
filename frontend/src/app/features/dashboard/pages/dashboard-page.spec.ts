@@ -276,6 +276,13 @@ describe('DashboardPage', () => {
     return harness.routeNativeElement as HTMLElement;
   }
 
+  /** Opens the assignee menu of the first row under `scope` and picks its first choice, "Assign to me". */
+  function assignToMe(scope: Element) {
+    scope.querySelector<HTMLButtonElement>('mf-row-edit [data-inline-trigger]')!.click();
+    harness.detectChanges();
+    scope.querySelector<HTMLButtonElement>('[data-lead]')!.click();
+  }
+
   async function settle() {
     for (let i = 0; i < 3; i++) {
       await new Promise((r) => setTimeout(r));
@@ -911,14 +918,25 @@ describe('DashboardPage', () => {
     );
     expect(text(row.querySelector('[data-client]'))).toContain(unassignedRow.clientName);
     expect(row.querySelector('[data-client]')!.getAttribute('title')).toContain('00343-00012');
-    expect(text(row.querySelector('mf-row-edit [data-inline-trigger]'))).toBe('Assign to...');
+    expect(text(row.querySelector('mf-row-edit [data-inline-trigger]'))).toBe('Assign');
     expect(row.querySelector('mf-row-edit [data-inline-trigger]')!.getAttribute('aria-label')).toBe(
-      'Assign to... TSK-21',
+      'Assign TSK-21',
     );
     expect(row.querySelector('mf-priority-badge')!.textContent).toContain('Critical');
     expect(text(row.querySelector('[data-age]'))).toBe('10 days old');
     expect(row.querySelector('mf-row-edit [data-inline-trigger]')).not.toBeNull();
-    expect(row.querySelector('[data-assign-me]')).not.toBeNull();
+    // "Assign to me" is the first choice of that menu, not a link of its own; the menu sits before the client column (the other lists' order plus the menu).
+    expect(row.querySelector('[data-assign-me]')).toBeNull();
+    const cells = Array.from(row.children).map((c) => c.className.split(' ')[0]);
+    expect(cells).toEqual(['main', 'assign', 'client', 'prio', 'when']);
+    expect(
+      row.querySelector('mf-row-edit [data-inline-trigger]')!.getAttribute('aria-expanded'),
+    ).toBe('false');
+    row.querySelector<HTMLButtonElement>('mf-row-edit [data-inline-trigger]')!.click();
+    harness.detectChanges();
+    const lead = el.querySelector<HTMLButtonElement>('[data-lead]')!;
+    expect(lead.getAttribute('aria-label')).toBe('Assign TSK-21 to me');
+    expect(el.querySelector('.im-pop')!.firstElementChild).toBe(lead);
     expect(panel.querySelector<HTMLAnchorElement>('[data-view-all]')!.getAttribute('href')).toBe(
       '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true&sort=priorityAge&dir=asc',
     );
@@ -935,9 +953,9 @@ describe('DashboardPage', () => {
     ];
     const el = await open();
     const row = el.querySelector('[data-panel="unassigned"] li')!;
-    // Task link, the assignee menu and Assign to me; no matter link and no copy button.
+    // Task link and the assignee menu ("Assign to me" is inside it); no matter link and no copy button.
     expect(row.querySelectorAll('a').length).toBe(1);
-    expect(row.querySelectorAll('button').length).toBe(2);
+    expect(row.querySelectorAll('button').length).toBe(1);
     expect(row.querySelector('mf-matter-ref a')).toBeNull();
     const overdueRow = el.querySelector('[data-panel="overdue"] li')!;
     expect(overdueRow.querySelectorAll('a, button').length).toBe(1);
@@ -981,7 +999,7 @@ describe('DashboardPage', () => {
     // The server's next answer (after the quiet period): one task fewer.
     unassignedRows = [secondUnassigned];
     getDashboard.mockReturnValue(of(summary({ unassigned: count(16, `${OPEN}&unassigned=true`) })));
-    panel().querySelector<HTMLButtonElement>('[data-assign-me]')!.click();
+    assignToMe(panel());
     await settle();
 
     expect(assignTask).toHaveBeenCalledWith(21, { rowVersion: 'AAAA', podId: 5, userId: 1 });
@@ -1017,7 +1035,7 @@ describe('DashboardPage', () => {
 
   it('puts the task back when the assignment is undone (the lists are read again)', async () => {
     const el = await open();
-    el.querySelector<HTMLButtonElement>('[data-assign-me]')!.click();
+    assignToMe(el);
     await settle();
     expect(el.querySelector('[data-panel="unassigned"] [data-task="TSK-21"]')).toBeNull();
     const reads = getDashboard.mock.calls.length;

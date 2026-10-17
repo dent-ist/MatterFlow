@@ -364,28 +364,35 @@ describe('RowEdit', () => {
     expect(tasks['assignTask']).toHaveBeenCalled();
   });
 
-  it('assignee: "Assign to me" appears only when asked for and only for an unassigned task, and assigns the signed-in user', async () => {
+  it('assignee: "Assign to me" is the first choice of the menu only when asked for and only for an unassigned task, and assigns the signed-in user', async () => {
     const unassigned = aRow({ status: 'NEW', assignedUser: undefined });
     await create('assignee', unassigned);
-    expect(el().querySelector('[data-assign-me]')).toBeNull();
+    await open();
+    expect(document.querySelector('[data-lead]')).toBeNull();
 
     TestBed.resetTestingModule();
     await create('assignee', aRow());
     fixture.componentRef.setInput('assignMe', true);
     fixture.detectChanges();
-    expect(el().querySelector('[data-assign-me]')).toBeNull();
+    await open();
+    expect(document.querySelector('[data-lead]')).toBeNull();
 
     TestBed.resetTestingModule();
     await create('assignee', unassigned);
     fixture.componentRef.setInput('assignMe', true);
     fixture.detectChanges();
-    const button = el().querySelector<HTMLButtonElement>('[data-assign-me]')!;
-    expect(button.getAttribute('aria-label')).toBe('Assign to me, TSK-1042');
-    // WCAG 2.5.3: the accessible name starts with the visible text.
-    expect(button.getAttribute('aria-label')!.startsWith(button.textContent!.trim())).toBe(true);
+    // No separate link next to the menu any more.
+    expect(el().querySelector('[data-assign-me]')).toBeNull();
     expect(trigger().getAttribute('aria-label')).toBe('Unassigned, change assignee of TSK-1042');
     expect(trigger().classList).toContain('im-outlined');
-    button.click();
+    await open();
+    const lead = el().querySelector<HTMLButtonElement>('[data-lead]')!;
+    expect(lead.getAttribute('aria-label')).toBe('Assign TSK-1042 to me');
+    expect(lead.textContent!.trim()).toBe('Assign to me');
+    // First in the menu: above the search box and the people.
+    const pop = el().querySelector('.im-pop')!;
+    expect(pop.firstElementChild).toBe(lead);
+    lead.click();
     await fixture.whenStable();
     expect(tasks['assignTask']).toHaveBeenCalledWith(1042, {
       rowVersion: 'AAAA',

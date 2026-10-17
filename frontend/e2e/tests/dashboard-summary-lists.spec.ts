@@ -5,6 +5,7 @@ import { expect, test } from '../support/fixtures';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { dateInZone, FIRM_ZONE } from '../support/time';
 import { uid } from '../support/seed';
+import { assignToMeFromRow } from '../support/summary-lists';
 
 /**
  * Dashboard Summary lists (review 2, WP5: S1 one-line rows and first screen, S4 Due soon wording, S5 captions at 375, S6 toast position,
@@ -75,8 +76,8 @@ test.describe('dashboard summary lists', () => {
         for (let i = 0; i < rows; i++) {
           const li = (await items.nth(i).boundingBox())!;
           expect(li.y + li.height, `${kind} row ${i + 1} bottom`).toBeLessThanOrEqual(h);
-          // One line of 44px (plus the 1px divider).
-          expect(li.height, `${kind} row ${i + 1} height`).toBeGreaterThanOrEqual(44);
+          // One line: 44 px (plus the 1px divider), down to the 32 px floor where the panel is short.
+          expect(li.height, `${kind} row ${i + 1} height`).toBeGreaterThanOrEqual(32);
           expect(li.height, `${kind} row ${i + 1} height`).toBeLessThanOrEqual(46);
           // Everything of the row sits inside it: nothing wrapped under it or out of it.
           const inside = await items.nth(i).evaluate((el) => {
@@ -96,17 +97,170 @@ test.describe('dashboard summary lists', () => {
       // No old section names anywhere (S8).
       await expect(page.getByText('Tasks to act on')).toHaveCount(0);
       await expect(page.getByText('Deadlines')).toHaveCount(0);
-      // Row content (S7): type icon with the name, client, due chip; "Assign to..." instead of "Unassigned" on every row.
+      // Row content (S7): type icon with the name, client, due chip; "Assign to..." instead of "Unassigned" on every row (just "Assign" since the owner's feedback on the lists).
       const first = page.locator('[data-panel="unassigned"] li').first();
       await expect(first.locator('[data-type]')).toHaveAttribute('aria-label', /.+/);
       await expect(first.locator('[data-client]')).not.toBeEmpty();
-      await expect(first.locator('mf-row-edit [data-inline-trigger]')).toHaveText('Assign to...');
+      await expect(first.locator('mf-row-edit [data-inline-trigger]')).toHaveText('Assign');
+      await expect(first.getByRole('button', { name: /^Assign TSK-\d+$/ })).toBeVisible();
+      // "Assign to me" is not a link of its own any more: it is the first choice of the menu.
+      await expect(first.locator('[data-assign-me]')).toHaveCount(0);
+      await expect(first.getByText('Assign to me')).toHaveCount(0);
       await expect(
         page
           .locator('[data-panel="unassigned"] mf-row-edit')
           .getByText('Unassigned', { exact: true }),
       ).toHaveCount(0);
       await expect(page.locator('[data-panel="overdue"] li').first()).toContainText(/Overdue \d+d/);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+      await shoot(page, `after-summary-${w}`);
+      if (axeAvailable()) expect(await axeViolations(page), `axe ${w}`).toEqual([]);
+    });
+  }
+
+  for (const { w, h } of [
+    { w: 1920, h: 1080 },
+    { w: 2560, h: 1440 },
+  ]) {
+    test(`${w}x${h}: the three lists fit their rows exactly, with no vertical and no horizontal scrollbar (owner feedback on #101, #106, #107)`, async ({
+      page,
+    }) => {
+      await openSummary(page, w, h);
+      for (const kind of ['unassigned', 'overdue', 'dueSoon']) {
+        const panel = page.locator(`[data-panel="${kind}"]`);
+        // Data is present: five rows (the seed above tags six per list), so the fit is measured with full lists.
+        await expect(panel.locator('li')).toHaveCount(5);
+        for (const sel of ['[data-rows]', 'ul']) {
+          const m = await panel
+            .locator(sel)
+            .first()
+            .evaluate((el) => ({
+              sh: el.scrollHeight,
+              ch: el.clientHeight,
+              sw: el.scrollWidth,
+              cw: el.clientWidth,
+            }));
+          expect(m.sh, `${kind} ${sel} vertical scroll`).toBeLessThanOrEqual(m.ch);
+          expect(m.sw, `${kind} ${sel} horizontal scroll`).toBeLessThanOrEqual(m.cw);
+        }
+        // The last row ends inside the panel and rows keep the 32 px floor.
+        const box = (await panel.boundingBox())!;
+        const last = (await panel.locator('li').last().boundingBox())!;
+        expect(last.y + last.height, `${kind} last row inside`).toBeLessThanOrEqual(
+          box.y + box.height,
+        );
+        for (const li of await panel.locator('li').all()) {
+          expect((await li.boundingBox())!.height).toBeGreaterThanOrEqual(31.5);
+        }
+      }
+      await shoot(page, `after-summary-${w}-fit`);
+      if (axeAvailable()) expect(await axeViolations(page), `axe fit ${w}`).toEqual([]);
+    });
+  }
+
+  test('1366x768: a window too short for the 32 px rows still scrolls inside the panel (region, heading pinned)', async ({
+    page,
+  }) => {
+    await openSummary(page, 1366, 768);
+    let scrolls = 0;
+    for (const kind of ['unassigned', 'overdue', 'dueSoon']) {
+      const rows = page.locator(`[data-panel="${kind}"] [data-rows]`);
+      await expect(rows).toHaveAttribute('role', 'region');
+      const m = await rows.evaluate((el) => ({ sh: el.scrollHeight, ch: el.clientHeight }));
+      if (m.sh > m.ch + 1) scrolls++;
+      // No horizontal scrollbar even here.
+      expect(await rows.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    }
+    expect(scrolls).toBeGreaterThan(0);
+    await shoot(page, 'after-summary-1366-scroll');
+  });
+
+  test('the three lists share one column order and grid: the Assign menu sits before the client in Unassigned, and the client, priority and due columns line up', async ({
+    page,
+  }) => {
+    await openSummary(page, 1920, 1080);
+    const xs = async (kind: string) =>
+      page
+        .locator(`[data-panel="${kind}"] li`)
+        .first()
+        .evaluate((li) => {
+          const left = (sel: string) => {
+            const n = li.querySelector(sel);
+            return n ? Math.round(n.getBoundingClientRect().left) : null;
+          };
+          return {
+            ref: left('.ref'),
+            type: left('[data-type]'),
+            title: left('.title'),
+            assign: left('.assign'),
+            client: left('[data-client]'),
+            prio: left('mf-priority-badge'),
+            when: left('.when'),
+          };
+        });
+    const [u, o, d] = [await xs('unassigned'), await xs('overdue'), await xs('dueSoon')];
+    // Order: ref, type, title, [assign], client, priority, due/age.
+    expect(u.ref!).toBeLessThan(u.type!);
+    expect(u.type!).toBeLessThan(u.title!);
+    expect(u.title!).toBeLessThan(u.assign!);
+    expect(u.assign!).toBeLessThan(u.client!);
+    expect(u.client!).toBeLessThan(u.prio!);
+    expect(u.prio!).toBeLessThan(u.when!);
+    expect(o.assign).toBeNull();
+    // Same x positions for the shared columns.
+    expect(o.ref).toBe(u.ref);
+    expect(o.type).toBe(u.type);
+    expect(o.title).toBe(u.title);
+    expect(o.client).toBe(u.client);
+    expect(o.prio).toBe(u.prio);
+    expect(o.when).toBe(u.when);
+    expect(d).toEqual(o);
+    // The title does not collide with the Assign menu or the client.
+    const gap = await page
+      .locator('[data-panel="unassigned"] li')
+      .first()
+      .evaluate((li) => {
+        const title = li.querySelector('a.main')!.getBoundingClientRect();
+        const assign = li.querySelector('.assign')!.getBoundingClientRect();
+        return assign.left - title.right;
+      });
+    expect(gap).toBeGreaterThanOrEqual(8);
+  });
+
+  test('the Assign menu offers "Assign to me" first, above the search box and the people; Escape closes it and returns focus', async ({
+    page,
+  }) => {
+    await openSummary(page, 1366, 768);
+    const first = page.locator('[data-panel="unassigned"] li').first();
+    const number = (await first.getAttribute('data-task'))!;
+    const trigger = first.getByRole('button', { name: `Assign ${number}`, exact: true });
+    await trigger.click();
+    const pop = page.locator('.im-pop');
+    const lead = pop.getByRole('button', { name: `Assign ${number} to me`, exact: true });
+    await expect(lead).toBeVisible();
+    await expect(pop.getByRole('textbox', { name: 'Search people' })).toBeVisible();
+    const lb = (await lead.boundingBox())!;
+    const sb = (await pop.getByRole('textbox', { name: 'Search people' }).boundingBox())!;
+    expect(lb.y + lb.height).toBeLessThanOrEqual(sb.y);
+    await page.keyboard.press('Escape');
+    await expect(pop).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+  });
+
+  for (const { w, h } of [
+    { w: 1024, h: 768 },
+    { w: 768, h: 1024 },
+  ]) {
+    test(`${w}x${h}: the stacked lists keep the grid and show no horizontal scroll`, async ({
+      page,
+    }) => {
+      await openSummary(page, w, h);
+      for (const kind of ['unassigned', 'overdue', 'dueSoon']) {
+        const rows = page.locator(`[data-panel="${kind}"] [data-rows]`);
+        expect(await rows.evaluate((el) => el.scrollWidth <= el.clientWidth), kind).toBe(true);
+      }
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
       ).toBe(true);
@@ -225,7 +379,7 @@ test.describe('dashboard summary lists', () => {
       const panel = page.locator('[data-panel="unassigned"]');
       const first = panel.locator('li').first();
       const number = (await first.getAttribute('data-task'))!;
-      await first.getByRole('button', { name: `Assign to me, ${number}` }).click();
+      await assignToMeFromRow(first, number);
       const toast = page.locator('[data-undo-toast]');
       await expect(toast).toBeVisible();
       await expect(page.locator('[data-undo-message]')).toContainText(`${number} assigned to`);

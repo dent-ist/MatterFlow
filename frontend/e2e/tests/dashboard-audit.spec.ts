@@ -3,6 +3,7 @@ import { TaskQueuePage } from '../pages/queues.pages';
 import { expect, test } from '../support/fixtures';
 import { dateInZone, FIRM_ZONE } from '../support/time';
 import { uid } from '../support/seed';
+import { assignToMeByKeyboard } from '../support/summary-lists';
 import { TaskApi } from '../support/tasks';
 
 test.describe('Dashboard drill-through', () => {
@@ -166,9 +167,7 @@ test.describe('Dashboard actions and click-through', () => {
     const recount = page.waitForRequest(
       (r) => r.url().includes('/api/v1/dashboard') && r.url().includes('fresh=true'),
     );
-    const button = first.getByRole('button', { name: `Assign to me, ${number}` });
-    await button.focus();
-    await page.keyboard.press('Enter');
+    await assignToMeByKeyboard(first, number);
 
     // The row leaves the queue at once and the header count follows.
     await expect(panel.locator(`li[data-task="${number}"]`)).toHaveCount(0);

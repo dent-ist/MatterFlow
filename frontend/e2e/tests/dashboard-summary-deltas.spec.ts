@@ -5,6 +5,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { Json } from '../support/api';
 import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
+import { assignToMeFromRow } from '../support/summary-lists';
 import { dateInZone, FIRM_ZONE } from '../support/time';
 
 /**
@@ -425,7 +426,7 @@ test.describe('Technician Summary (S9)', () => {
     const total = Number(await queue(page).locator('[data-total]').textContent());
     const first = queue(page).locator('li').first();
     const number = (await first.getAttribute('data-task'))!;
-    await first.getByRole('button', { name: `Assign to me, ${number}` }).click();
+    await assignToMeFromRow(first, number);
     await expect(queue(page).locator(`li[data-task="${number}"]`)).toHaveCount(0);
     await expect(queue(page).locator('[data-total]')).toHaveText(String(total - 1));
     await expect(page.locator('[data-dash-live]')).toContainText(`${number} assigned to`);

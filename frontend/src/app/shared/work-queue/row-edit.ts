@@ -70,27 +70,6 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
   selector: 'mf-row-edit',
   imports: [InlineMenu, InlineStatusFlow, PriorityBadge, StatusBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: `
-    .re-me {
-      display: inline-flex;
-      align-items: center;
-      min-height: 24px;
-      margin-left: var(--mf-s2);
-      padding: 0 var(--mf-s1);
-      border: 0;
-      background: none;
-      color: var(--mf-link);
-      font: inherit;
-      font-size: var(--mf-fs-sm);
-      text-decoration: underline;
-      text-underline-offset: 2px;
-      cursor: pointer;
-    }
-    .re-me:disabled {
-      color: var(--mf-text-disabled);
-      cursor: default;
-    }
-  `,
   template: `
     @let r = row();
     <mf-inline-menu
@@ -104,6 +83,8 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
       [checking]="completion().state === 'checking'"
       [busy]="busy()"
       [outlined]="assignMe()"
+      [lead]="leadAction()"
+      (leadPicked)="assignToMe()"
       [icon]="triggerIcon()"
       [footnote]="footnote()"
       (opened)="onOpened()"
@@ -133,18 +114,6 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
         }
       }
     </mf-inline-menu>
-    @if (field() === 'assignee' && assignMe() && !r.assignedUser && myId() > 0) {
-      <button
-        type="button"
-        class="re-me"
-        data-assign-me
-        [disabled]="busy()"
-        [attr.aria-label]="'Assign to me, ' + r.taskNumber"
-        (click)="assignToMe()"
-      >
-        Assign to me
-      </button>
-    }
     @if (flow(); as action) {
       <mf-inline-status-flow
         [row]="r"
@@ -182,9 +151,9 @@ export class RowEdit {
    * instead of the lifecycle matrix and the caller's permissions.
    */
   readonly transitions = input<TaskTransitionOption[] | null>(null);
-  /** Assignee cell only: adds an "Assign to me" button next to the menu for a Task nobody is assigned to (the Dashboard's unassigned queue). */
+  /** Assignee cell only: offers "Assign to me" as the first choice of the menu, above the search box, for a Task nobody is assigned to (the Dashboard's unassigned queue). */
   readonly assignMe = input(false);
-  /** Assignee cell only: the visible text of the trigger while nobody is assigned ("Assign to..." in the Dashboard lists, so "Unassigned" is not repeated on every row). */
+  /** Assignee cell only: the visible text of the trigger while nobody is assigned ("Assign" in the Dashboard lists, so "Unassigned" is not repeated on every row). */
   readonly emptyLabel = input('Unassigned');
   /** Assignee cell only: shows this PrimeIcons class (for example `pi-user-edit`) as an icon button named "Reassign <number>" instead of the assignee's name. */
   readonly triggerIcon = input<string | null>(null);
@@ -309,6 +278,14 @@ export class RowEdit {
           : list;
       }
     }
+  });
+
+  /** The first menu choice for an unassigned Task when `assignMe` is on: named with the task number, like the other row actions. */
+  protected readonly leadAction = computed(() => {
+    const r = this.row();
+    return this.field() === 'assignee' && this.assignMe() && !r.assignedUser && this.myId() > 0
+      ? { label: 'Assign to me', ariaLabel: `Assign ${r.taskNumber} to me` }
+      : null;
   });
 
   /** Assigns the Task to the signed-in user, exactly as picking them in the menu would (a New Task starts, Undo is offered). */

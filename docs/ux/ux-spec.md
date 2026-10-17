@@ -270,7 +270,7 @@ Screen IDs map to baseline §19 (item number in brackets). Each spec: purpose, l
 Dashboard  [Summary] [Breakdowns] [Trends] [Swimlane] [Users]     Scope [My pods v]  Updated 12 min ago  (refresh)
 +---------------------------------+ +----------------------------------------------+
 | Needs attention                 | | Unassigned                          View all |
-| [Overdue 9 ] [Unassigned 17]    | |  TSK-1051 [type] Title  Client  High  Due 2d |
+| [Overdue 9 ] [Unassigned 17]    | |  TSK-1051 [type] Title [Assign v] Client High Age |
 | [On hold 12] [ASAP open 3]      | |  (5 rows, one line each at list width > 540) |
 | Overview        Period [30 days v] | Overdue (Critical first)            View all |
 | [Open 128  ] [Due soon 14 ]     | |  ...                                         |
@@ -278,7 +278,7 @@ Dashboard  [Summary] [Breakdowns] [Trends] [Swimlane] [Users]     Scope [My pods
 +---------------------------------+ +----------------------------------------------+
   tiles scroll only on a very short window      each list scrolls inside its panel
 ```
-The page is one fixed-height screen (see Page chrome). The other tabs are specified below: Breakdowns (four cards), Trends (two chart panels and the Task Types list), Swimlane (S01b) and Users (Workload and Coverage).
+The page is one fixed-height screen (see Page chrome). The three Summary lists use one column order, the order of the other work lists: reference, task type icon, title, client, priority, due chip (days overdue in Overdue; age and, when there is one, the due chip in Unassigned). The Unassigned list has one extra column, the **Assign** menu, placed immediately before the client column (owner feedback on #101, #106, #107). Its trigger reads just "Assign" (accessible name "Assign TSK-n"); the menu opens with **Assign to me** as its first choice (accessible name "Assign TSK-n to me"), above the search box and the people, and picking it assigns the viewer, removes the row, announces it and offers Undo at bottom left. There is no separate "Assign to me" link. The three lists share one column grid (same x positions for client, priority and due). A long title truncates with an ellipsis; a list never scrolls sideways. Row height adapts to the panel: 44 px, shrinking to a 32 px floor (24 px targets), so five rows fit with no scrollbar on a tall window (1920 x 1080 and up); on a window too short for the floor the rows scroll inside the panel (a named, focusable region). The other tabs are specified below: Breakdowns (four cards), Trends (two chart panels and the Task Types list), Swimlane (S01b) and Users (Workload and Coverage).
 **Components.** `mf-stat-tile` (number, label, caption, delta, link), `mf-dash-task-list` (the three Summary lists), `mf-bar-list` and `mf-stacked-bar` (Breakdowns, with the "View as table" toggle), `mf-trend-chart` with `mf-trend-measure` and `mf-trend-legend`, the Swimlane and Users components, and the shared `mf-period-control`, `mf-scope-control`, `mf-dash-state` (error, stale, empty) and `mf-dash-skeleton` (loading).
 **Behavior.**
 - Every tile, list "View all", bar and overdue share is a link to `/tasks` with the equivalent filters preset (e.g. Overdue tile: `status=open&overdue=true`; Unassigned = no assigned user; a pod scope adds the `pod` filter). Counts honour the Task Queue definitions exactly, so counts match the list the user lands on.

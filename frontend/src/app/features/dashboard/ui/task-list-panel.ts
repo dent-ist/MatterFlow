@@ -159,6 +159,24 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
                       </span>
                       <span class="title">{{ row.title }}</span>
                     </a>
+                    @if (kind() === 'unassigned') {
+                      <div class="assign">
+                        @if (editable(row)) {
+                          <mf-row-edit
+                            field="assignee"
+                            emptyLabel="Assign"
+                            toastPlacement="start"
+                            [row]="row"
+                            [assignMe]="true"
+                            (rowChange)="rowChange.emit($event)"
+                          />
+                        } @else {
+                          <span class="muted">{{
+                            row.assignedUser?.displayName ?? 'Unassigned'
+                          }}</span>
+                        }
+                      </div>
+                    }
                     <span
                       class="client"
                       data-client
@@ -188,24 +206,6 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
                         <mf-due-chip data-due [due]="row" [status]="row.status" />
                       }
                     </span>
-                    @if (kind() === 'unassigned') {
-                      <div class="assign">
-                        @if (editable(row)) {
-                          <mf-row-edit
-                            field="assignee"
-                            emptyLabel="Assign to..."
-                            toastPlacement="start"
-                            [row]="row"
-                            [assignMe]="true"
-                            (rowChange)="rowChange.emit($event)"
-                          />
-                        } @else {
-                          <span class="muted">{{
-                            row.assignedUser?.displayName ?? 'Unassigned'
-                          }}</span>
-                        }
-                      </div>
-                    }
                   </li>
                 }
               </ul>
@@ -238,11 +238,21 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
     .rows {
       position: relative;
     }
+    /* The rows shrink with the panel: ul and li are flex items, so the row height gives way (44 px down to the 32 px floor) before the
+       region scrolls. Only a window too short for the floor shows a vertical scrollbar; there is never a horizontal one. */
     .rows--scroll {
+      display: flex;
+      flex-direction: column;
       flex: 0 1 auto;
       min-height: 0;
-      overflow-y: auto;
+      overflow: hidden auto;
       overscroll-behavior: contain;
+    }
+    .rows--scroll ul {
+      display: flex;
+      flex: 0 1 auto;
+      flex-direction: column;
+      min-height: 0;
     }
     .rows--scroll:focus-visible {
       outline: 2px solid var(--mf-focus);
@@ -318,26 +328,31 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
       padding: 0;
       list-style: none;
     }
-    /* Wide list: one line of 44px. */
+    /* Wide list: one line of 44 px (down to 32 px where the panel is short, see .rows--scroll) on a column grid shared by the three lists. */
     li {
       box-sizing: border-box;
-      display: flex;
-      flex-wrap: nowrap;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 11rem) 5.5rem 6.5rem;
       align-items: center;
-      gap: var(--mf-s2);
+      column-gap: var(--mf-s3);
       min-height: 44px;
-      padding: 2px 0;
       font-size: var(--mf-fs-sm);
+    }
+    [data-panel='unassigned'] li {
+      grid-template-columns: minmax(0, 1fr) 6.5rem minmax(0, 11rem) 5.5rem 6.5rem;
+    }
+    .rows--scroll li {
+      flex: 0 1 44px;
+      min-height: 32px;
     }
     li + li {
       border-top: 1px solid var(--mf-border);
     }
     a.main {
-      flex: 1 1 0;
       display: flex;
       align-items: center;
       gap: var(--mf-s2);
-      min-width: 6rem;
+      min-width: 0;
       min-height: 24px;
       color: var(--mf-text);
       text-decoration: none;
@@ -351,7 +366,6 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
       color: var(--mf-text-muted);
     }
     .client {
-      flex: 0 1 6.5rem;
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -362,26 +376,31 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
       display: none;
     }
     .prio {
-      flex: none;
+      justify-self: start;
+      min-width: 0;
     }
     .when {
-      flex: none;
       display: flex;
       flex-direction: column;
       align-items: flex-start;
       justify-content: center;
-      width: 6rem;
-      line-height: 1.25;
+      min-width: 0;
+      line-height: 1.15;
     }
     .age {
       font-size: var(--mf-fs-xs);
       color: var(--mf-text-muted);
     }
     .assign {
-      flex: none;
       display: flex;
       align-items: center;
+      min-width: 0;
       font-size: var(--mf-fs-sm);
+    }
+    .assign .muted {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     /* Narrow list: a title line, then a line with the rest (and the matter number). */
     @container (max-width: 539px) {
@@ -390,15 +409,20 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
         flex: 1 1 100%;
         white-space: normal;
       }
-      li {
+      li,
+      [data-panel='unassigned'] li {
+        display: flex;
         flex-wrap: wrap;
+        gap: var(--mf-s2);
         padding: var(--mf-s2) 0;
+      }
+      .rows--scroll li {
+        flex: none;
       }
       a.main {
         flex: 1 1 100%;
       }
       .client {
-        flex: 0 1 auto;
         max-width: 100%;
       }
       .matter {
@@ -414,6 +438,7 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
     }
     .ref {
       flex: none;
+      min-width: 8.5ch;
       font-family: var(--mf-font-mono);
       font-size: var(--mf-fs-sm);
       font-weight: 600;
@@ -502,6 +527,19 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
       height: 44px;
       border-radius: var(--mf-radius);
       background: var(--mf-surface-alt);
+    }
+    /* Same shrink as the rows, so the list does not change height when the rows arrive. */
+    :host(.fill) .bones {
+      display: flex;
+      flex: 0 1 auto;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    :host(.fill) .bone {
+      flex: 0 1 44px;
+      height: auto;
+      min-height: 32px;
     }
     .sr-only {
       position: absolute;
