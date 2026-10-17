@@ -1949,7 +1949,13 @@ describe('DashboardPage', () => {
       const el = await open(of(summary()), ALL, '/dashboard?tab=users&upod=3&uavail=out');
       expect(router().url).toBe('/dashboard?tab=users&pod=3&uavail=out');
       expect(select(el).value).toBe('3');
-      expect(getDashboardWorkload).toHaveBeenLastCalledWith(undefined, 'out', undefined, '3');
+      expect(getDashboardWorkload).toHaveBeenLastCalledWith(
+        undefined,
+        'out',
+        undefined,
+        '3',
+        false,
+      );
     });
 
     it('choosing a scope reads the figures and lists again for it, writes pod to the address, remembers it and announces it', async () => {
@@ -1994,11 +2000,23 @@ describe('DashboardPage', () => {
       el.querySelector<HTMLButtonElement>('[data-tab="users"]')!.click();
       await settle();
       expect(router().url).toBe('/dashboard?pod=2&tab=users');
-      expect(getDashboardWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, '2');
+      expect(getDashboardWorkload).toHaveBeenLastCalledWith(
+        undefined,
+        'all',
+        undefined,
+        '2',
+        false,
+      );
       const summaryReads = getDashboard.mock.calls.length;
       await pickScope(el, '1');
       expect(getDashboard.mock.calls.length).toBe(summaryReads);
-      expect(getDashboardWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, '1');
+      expect(getDashboardWorkload).toHaveBeenLastCalledWith(
+        undefined,
+        'all',
+        undefined,
+        '1',
+        false,
+      );
       expect(router().url).toBe('/dashboard?pod=1&tab=users');
 
       // Swimlane gets it too, and the summary tabs read it when opened.

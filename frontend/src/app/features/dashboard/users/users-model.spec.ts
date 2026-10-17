@@ -2,9 +2,14 @@ import { convertToParamMap } from '@angular/router';
 import { WorkloadUser } from '../../../api/generated/api-client';
 import { assignHint } from './users-assign';
 import { backOnText, bandOf } from './users-card';
+import { contrastRatio } from '../../../shared/ui/color-contrast';
 import {
+  CAN_TAKE_WORK_NOW,
+  CLEARED_FILTERS,
   DEFAULT_FILTERS,
+  IDLE_TINT_PERCENT,
   apiAvailability,
+  capacitySegments,
   cardState,
   cardSummary,
   countsOf,
@@ -13,6 +18,7 @@ import {
   filtersFromParams,
   filtersToParams,
   hasFilterParams,
+  loadHelp,
   loadLevelOf,
   segmentsOf,
   sortUsers,
@@ -107,6 +113,56 @@ describe('users model', () => {
     });
   });
 
+  describe('capacity strip (U1) and Idle tint (U7)', () => {
+    it('stacks the people by load level; the counts add up to the people and the widths to 100', () => {
+      const heavy = aUser(6, 'Hal Moe', [5, 5, 0, 0]);
+      const segs = capacitySegments([...all, heavy]);
+      expect(segs.map((s) => [s.level, s.count])).toEqual([
+        ['IDLE', 1],
+        ['LIGHT', 3],
+        ['NORMAL', 1],
+        ['HEAVY', 1],
+      ]);
+      expect(segs.reduce((n, s) => n + s.percent, 0)).toBeCloseTo(100);
+      expect(capacitySegments([]).every((s) => s.count === 0 && s.percent === 0)).toBe(true);
+    });
+
+    it('"Show people who can take work now" is available, Idle or Light', () => {
+      expect(CAN_TAKE_WORK_NOW).toEqual({ availability: 'available', load: ['idle', 'light'] });
+    });
+
+    it('names a level with its threshold for chips and tooltips', () => {
+      const t = { lightMax: 3, normalMax: 8 };
+      expect(loadHelp('IDLE', t)).toBe('Idle: no open tasks');
+      expect(loadHelp('LIGHT', t)).toBe('Light: 1 to 3 open tasks');
+      expect(loadHelp('NORMAL', t)).toBe('Normal: 4 to 8 open tasks');
+      expect(loadHelp('HEAVY', t)).toBe('Heavy: more than 8 open tasks');
+    });
+
+    it('keeps the Idle tint readable: text 4.5:1 and the outline 3:1 on the tint (tokens of docs/ux/tokens.css)', () => {
+      const mix = (a: string, b: string, pct: number) => {
+        const ch = (h: string, i: number) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+        return (
+          '#' +
+          [0, 1, 2]
+            .map((i) =>
+              Math.round(ch(a, i) * (pct / 100) + ch(b, i) * (1 - pct / 100))
+                .toString(16)
+                .padStart(2, '0'),
+            )
+            .join('')
+            .toUpperCase()
+        );
+      };
+      const tint = mix('#E5F5EA', '#FFFFFF', IDLE_TINT_PERCENT);
+      expect(contrastRatio('#146C2E', tint)).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio('#1B1F27', tint)).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio('#146C2E', '#FFFFFF')).toBeGreaterThanOrEqual(3);
+      // Lighter than the old solid Idle fill, never darker.
+      expect(contrastRatio(tint, '#FFFFFF')).toBeLessThan(contrastRatio('#E5F5EA', '#FFFFFF'));
+    });
+  });
+
   describe('sorting', () => {
     it('availability and load: available, then off hours, then out of office; lighter first; then name', () => {
       expect(names(sortUsers(all, 'load'))).toEqual([
@@ -142,6 +198,16 @@ describe('users model', () => {
       ]);
     });
 
+    it('fewest open tasks puts the lightest load first, equal people by name', () => {
+      expect(names(sortUsers(all, 'fewest'))).toEqual([
+        'Cy Tan',
+        'Dee Fox',
+        'Eve Kim',
+        'Ann Lee',
+        'Bob Ray',
+      ]);
+    });
+
     it('does not change the list it is given', () => {
       const copy = [...all];
       sortUsers(all, 'name');
@@ -173,21 +239,38 @@ describe('users model', () => {
         uq: null,
         uload: null,
         uprio: null,
+        unopod: null,
       });
       const f = {
         availability: 'available' as const,
         q: 'x',
         load: ['idle' as const, 'heavy' as const],
         priority: 1,
+        includeNoPod: true,
       };
       expect(filtersToParams(f)).toEqual({
         uavail: 'available',
         uq: 'x',
         uload: 'idle,heavy',
         uprio: '1',
+        unopod: '1',
       });
+      // The population switch is no filter: it is not counted.
       expect(filterCount(f)).toBe(4);
+      expect(filterCount({ ...DEFAULT_FILTERS, includeNoPod: true })).toBe(0);
       expect(filterCount(DEFAULT_FILTERS)).toBe(0);
+    });
+
+    it('reads the population switch (unopod=1 only) and keeps it when the filters are cleared', () => {
+      expect(DEFAULT_FILTERS.includeNoPod).toBe(false);
+      expect(filtersFromParams(convertToParamMap({ unopod: '1' })).includeNoPod).toBe(true);
+      expect(filtersFromParams(convertToParamMap({ unopod: 'true' })).includeNoPod).toBe(false);
+      expect(hasFilterParams(convertToParamMap({ unopod: '1' }))).toBe(true);
+      // Clear filters puts back every filter and leaves the population alone.
+      expect(Object.keys(CLEARED_FILTERS)).not.toContain('includeNoPod');
+      expect({ ...DEFAULT_FILTERS, includeNoPod: true, ...CLEARED_FILTERS }.includeNoPod).toBe(
+        true,
+      );
     });
 
     it('applies load, priority and off hours on the page; off hours is read from the API as all', () => {

@@ -8,6 +8,7 @@ import {
   OPEN_UNASSIGNED_QUERY,
   USERS_AVAILABILITY_PARAM,
   USERS_LOAD_PARAM,
+  USERS_NOPOD_PARAM,
   USERS_PRIORITY_PARAM,
   USERS_Q_PARAM,
   queueParams,
@@ -15,13 +16,14 @@ import {
 
 // ---- the view (what the toolbar chooses)
 
-export const USER_SORTS = ['load', 'name', 'priority', 'open'] as const;
+export const USER_SORTS = ['load', 'name', 'priority', 'open', 'fewest'] as const;
 export type UserSort = (typeof USER_SORTS)[number];
 export const USER_SORT_LABELS: Record<UserSort, string> = {
   load: 'Availability and load',
   name: 'Name',
   priority: 'Highest priority',
   open: 'Open tasks',
+  fewest: 'Fewest open tasks',
 };
 /** `available` is everyone not out of office (the API's meaning); `off` (off hours) is applied on the page. */
 export const AVAILABILITY_FILTERS = ['all', 'available', 'off', 'out'] as const;
@@ -65,6 +67,11 @@ export interface UsersFilters {
   load: LoadFilter[];
   /** Highest open priority to show (a priority id), or null for all. */
   priority: number | null;
+  /**
+   * The population (U4, #130), not a filter: false (default) lists the people who can take work (active, in a pod or holding an open task); true adds
+   * the rest (`unopod=1`). It is not counted by `filterCount` and "Clear filters" leaves it alone.
+   */
+  includeNoPod: boolean;
 }
 
 export const DEFAULT_FILTERS: UsersFilters = {
@@ -72,6 +79,7 @@ export const DEFAULT_FILTERS: UsersFilters = {
   q: '',
   load: [],
   priority: null,
+  includeNoPod: false,
 };
 
 export function sameFilters(a: UsersFilters, b: UsersFilters): boolean {
@@ -79,14 +87,19 @@ export function sameFilters(a: UsersFilters, b: UsersFilters): boolean {
     a.availability === b.availability &&
     a.q === b.q &&
     a.priority === b.priority &&
+    a.includeNoPod === b.includeNoPod &&
     a.load.join() === b.load.join()
   );
 }
 
 export function hasFilterParams(params: ParamMap): boolean {
-  return [USERS_AVAILABILITY_PARAM, USERS_Q_PARAM, USERS_LOAD_PARAM, USERS_PRIORITY_PARAM].some(
-    (k) => params.has(k),
-  );
+  return [
+    USERS_AVAILABILITY_PARAM,
+    USERS_Q_PARAM,
+    USERS_LOAD_PARAM,
+    USERS_PRIORITY_PARAM,
+    USERS_NOPOD_PARAM,
+  ].some((k) => params.has(k));
 }
 
 export function filtersFromParams(params: ParamMap): UsersFilters {
@@ -98,6 +111,7 @@ export function filtersFromParams(params: ParamMap): UsersFilters {
     q: (params.get(USERS_Q_PARAM) ?? '').trim(),
     load: LOAD_FILTERS.filter((l) => load.includes(l)),
     priority: Number.isInteger(prio) && prio > 0 ? prio : null,
+    includeNoPod: params.get(USERS_NOPOD_PARAM) === '1',
   };
 }
 
@@ -108,6 +122,7 @@ export function filtersToParams(f: UsersFilters): Record<string, string | null> 
     [USERS_Q_PARAM]: f.q || null,
     [USERS_LOAD_PARAM]: f.load.length ? f.load.join(',') : null,
     [USERS_PRIORITY_PARAM]: f.priority === null ? null : String(f.priority),
+    [USERS_NOPOD_PARAM]: f.includeNoPod ? '1' : null,
   };
 }
 
@@ -119,6 +134,14 @@ export function filterCount(f: UsersFilters): number {
     (f.priority !== null ? 1 : 0)
   );
 }
+
+/** The filters "Clear filters" puts back: everything except the population switch. */
+export const CLEARED_FILTERS: Partial<UsersFilters> = {
+  availability: 'all',
+  q: '',
+  load: [],
+  priority: null,
+};
 
 /** What the API is asked for: it knows all, available and out; "off hours" is read as "all" and narrowed on the page. */
 export function apiAvailability(f: UsersFilters): 'all' | 'available' | 'out' {
@@ -181,7 +204,47 @@ export function thresholdText(t: WorkloadThresholds | null | undefined): string[
   ];
 }
 
+/** The visible and spoken name of a load level: the word, then what it means with the thresholds ("Light: 1 to 3 open tasks"). */
+export function loadHelp(level: LoadLevel, t: WorkloadThresholds | null | undefined): string {
+  return thresholdText(t)[['IDLE', 'LIGHT', 'NORMAL', 'HEAVY'].indexOf(level)].replace(/\.$/, '');
+}
+
+// ---- the capacity strip (U1, #127)
+
+export interface CapacitySegment {
+  level: LoadLevel;
+  count: number;
+  /** Share of the bar in percent (the counts add up to the people on the board). */
+  percent: number;
+}
+
+/** The people by load level, in the chips' order; the segments' widths follow the counts (a level nobody is in has none). */
+export function capacitySegments(
+  users: readonly Pick<WorkloadUser, 'loadLevel'>[],
+): CapacitySegment[] {
+  const levels: LoadLevel[] = ['IDLE', 'LIGHT', 'NORMAL', 'HEAVY'];
+  const total = users.length;
+  return levels.map((level) => {
+    const count = users.filter((u) => loadLevelOf(u) === level).length;
+    return { level, count, percent: total === 0 ? 0 : (count / total) * 100 };
+  });
+}
+
+/** What "Assign work > Show people who can take work now" sets: not out of office, Idle or Light, fewest open tasks first. */
+export const CAN_TAKE_WORK_NOW: Partial<UsersFilters> = {
+  availability: 'available',
+  load: ['idle', 'light'],
+};
+
 // ---- colours
+
+/**
+ * The fill of an Idle tile, chip, strip segment and pill (U7, #133): the existing Idle token (`--mf-success-bg`) at 45% over the surface. A fact, not
+ * a trophy: the saturated fills are for Heavy and Out of office. Text stays `--mf-success` or `--mf-text` (4.5:1) and the thin outline `--mf-success` (3:1);
+ * `users-model.spec.ts` checks both with the token values. Components that style with CSS repeat the same expression.
+ */
+export const IDLE_TINT_PERCENT = 45;
+export const IDLE_TINT = `color-mix(in srgb, var(--mf-success-bg) ${IDLE_TINT_PERCENT}%, var(--mf-surface))`;
 
 /**
  * The colour token of a user's card: the highest priority among the open tasks (token or `#RRGGBB`, the same value the priority badge
@@ -270,6 +333,8 @@ export function sortUsers(users: readonly WorkloadUser[], sort: UserSort): Workl
       );
     case 'open':
       return list.sort((a, b) => b.openTotal - a.openTotal || byName(a, b));
+    case 'fewest':
+      return list.sort((a, b) => a.openTotal - b.openTotal || byName(a, b));
     default:
       return list.sort(
         (a, b) =>

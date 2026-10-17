@@ -249,7 +249,7 @@ describe('DashUsersTab', () => {
   describe('cards', () => {
     it('asks the workload endpoint with the filters of the address', async () => {
       await open(of(board()), '/dashboard?tab=users&uavail=out&uq=ann');
-      expect(getWorkload).toHaveBeenCalledWith(undefined, 'out', 'ann', 'all');
+      expect(getWorkload).toHaveBeenCalledWith(undefined, 'out', 'ann', 'all', false);
       expect(q<HTMLSelectElement>('[data-filter="availability"]').value).toBe('out');
     });
 
@@ -342,6 +342,181 @@ describe('DashUsersTab', () => {
     });
   });
 
+  describe('capacity strip (U1)', () => {
+    const seg = (k: string) => q<HTMLButtonElement>(`[data-capacity-bar] [data-segment="${k}"]`);
+
+    it('stacks the people by load level with the chips counts, names every segment and clears on a second click', async () => {
+      await open();
+      expect(
+        qa('[data-capacity-bar] [data-segment]').map((b) => b.getAttribute('data-segment')),
+      ).toEqual(['idle', 'light', 'normal', 'heavy']);
+      expect(seg('light').getAttribute('aria-label')).toBe('Filter: 3 light');
+      expect(seg('heavy').getAttribute('aria-label')).toBe('Filter: 1 heavy');
+      // The widths follow the counts.
+      expect(seg('light').style.flexGrow).toBe('3');
+      expect(q('[data-capacity]').getAttribute('role')).toBe('group');
+      expect(q('[data-capacity]').getAttribute('aria-label')).toBe(
+        'Capacity: 1 idle, 3 light, 1 normal, 1 heavy, 1 out of office',
+      );
+      seg('heavy').click();
+      await settle();
+      expect(url()).toContain('uload=heavy');
+      expect(seg('heavy').getAttribute('aria-pressed')).toBe('true');
+      expect(q('[data-chip="heavy"]').getAttribute('aria-pressed')).toBe('true');
+      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual(['Hal Moe']);
+      seg('heavy').click();
+      await settle();
+      expect(url()).not.toContain('uload');
+      expect(qa('[data-user-card]').length).toBe(6);
+      // The chip toggles the same filter, in step with the strip.
+      q<HTMLButtonElement>('[data-chip="light"]').click();
+      await settle();
+      expect(seg('light').getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('links the unassigned count to the Task Queue within the scope', async () => {
+      await open();
+      const scope = TestBed.inject(DashScope);
+      scope.ensureLoaded();
+      scope.applyAddress((k) => (k === 'pod' ? '2' : null));
+      await settle();
+      const link = q('[data-summary-unassigned]');
+      expect(text(link)).toContain('4 unassigned tasks');
+      expect(link.getAttribute('href')).toContain('unassigned=true');
+    });
+
+    it('Assign work has two entries: people who can take work now (Available, Idle or Light, fewest open tasks first) and the unassigned queue', async () => {
+      await open();
+      const trigger = q<HTMLButtonElement>('[data-assign-work-menu]');
+      expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
+      trigger.click();
+      await settle();
+      expect(q('[data-assign-menu]').getAttribute('role')).toBe('menu');
+      expect(qa('[role="menuitem"]').map(text)).toEqual([
+        'Show people who can take work now',
+        'Open the unassigned queue',
+      ]);
+      expect(q('[data-menu-queue]').getAttribute('href')).toContain('unassigned=true');
+      q<HTMLButtonElement>('[data-menu-can-take]').click();
+      await settle();
+      expect(q('[data-assign-menu]')).toBeNull();
+      expect(url()).toContain('uavail=available');
+      expect(url()).toContain('uload=idle,light');
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'available', undefined, 'all', false);
+      expect(q<HTMLSelectElement>('[data-sort]').value).toBe('fewest');
+      // Idle or Light, fewest open tasks first (the fake API does not drop the out of office Dee Fox; the real one does for Available).
+      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual([
+        'Cy Tan',
+        'Dee Fox',
+        'Eve Kim',
+        'Ann Lee',
+      ]);
+    });
+
+    it('Escape closes the Assign work menu and returns the focus to its button', async () => {
+      await open();
+      q<HTMLButtonElement>('[data-assign-work-menu]').click();
+      await settle();
+      q('[data-assign-menu]').dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      );
+      await settle();
+      expect(q('[data-assign-menu]')).toBeNull();
+      expect(document.activeElement).toBe(q('[data-assign-work-menu]'));
+    });
+
+    it('has no Assign work menu without Task.Assign', async () => {
+      await open(
+        of(board()),
+        '/dashboard?tab=users',
+        PERMS.filter((p) => p !== 'Task.Assign'),
+      );
+      expect(q('[data-assign-work-menu]')).toBeNull();
+      expect(q('[data-capacity]')).not.toBeNull();
+    });
+  });
+
+  describe('people who can take work (U4)', () => {
+    it('says how many are hidden, shows them on request (unopod=1) and hides them again', async () => {
+      await open(of(board({ hiddenCount: 30 })));
+      expect(text(q('[data-users-population-text]'))).toBe(
+        'Showing 6 people who can take work. 30 others are hidden.',
+      );
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', false);
+      q<HTMLButtonElement>('[data-users-population-toggle]').click();
+      await settle();
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', true);
+      expect(url()).toContain('unopod=1');
+      expect(text(q('[data-users-population-text]'))).toBe('Including people without a pod.');
+      expect(q('[data-users-population-toggle]').getAttribute('aria-pressed')).toBe('true');
+      q<HTMLButtonElement>('[data-users-population-toggle]').click();
+      await settle();
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', false);
+      expect(url()).not.toContain('unopod');
+    });
+
+    it('reads unopod=1 from the address, keeps it when the filters are cleared, and is quiet when nobody is hidden', async () => {
+      await open(of(board()), '/dashboard?tab=users&unopod=1&uavail=out');
+      expect(getWorkload).toHaveBeenCalledWith(undefined, 'out', undefined, 'all', true);
+      q<HTMLButtonElement>('[data-clear-filters]').click();
+      await settle();
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', true);
+      expect(url()).toContain('unopod=1');
+      await reopen(of(board({ hiddenCount: 0 })));
+      expect(q('[data-users-population]')).toBeNull();
+    });
+
+    it('says nothing under a Pod scope, which lists that Pod and hides nobody', async () => {
+      await open(of(board({ hiddenCount: 5 })));
+      expect(q('[data-users-population]')).not.toBeNull();
+      const scope = TestBed.inject(DashScope);
+      scope.ensureLoaded();
+      scope.applyAddress((k) => (k === 'pod' ? '2' : null));
+      await settle();
+      expect(q('[data-users-population]')).toBeNull();
+    });
+  });
+
+  describe('toolbar labels (U2)', () => {
+    it('puts the text Workload | Coverage switch first, only with the Coverage permission', async () => {
+      await open(of(board()), '/dashboard?tab=users', [...PERMS, 'Dashboard.ViewCoverage']);
+      const views = q('[data-users-views]');
+      expect(qa('[data-users-views] button').map(text)).toEqual(['Workload', 'Coverage']);
+      expect(q('[role="toolbar"]').firstElementChild).toBe(views.parentElement);
+      expect(q('[data-view="workload"]').getAttribute('aria-pressed')).toBe('true');
+      expect(views.querySelector('[role="tablist"]')).toBeNull();
+      await reopen(of(board()));
+      expect(q('[data-users-views]')).toBeNull();
+      expect(text(q('#wl-h'))).toBe('Workload');
+    });
+
+    it('labels the icon buttons with their state and gives the legend a word', async () => {
+      await open();
+      expect(q('[data-density="compact"]').getAttribute('aria-label')).toBe('Tile size: dense');
+      expect(q('[data-density="comfortable"]').getAttribute('aria-label')).toBe(
+        'Tile size: standard',
+      );
+      expect(q('[data-layout="table"]').getAttribute('aria-label')).toBe('Layout: table');
+      expect(q('[data-layout="cards"]').getAttribute('aria-pressed')).toBe('true');
+      expect(q('[data-density="compact"] .pi').className).not.toBe(
+        q('[data-density="comfortable"] .pi').className,
+      );
+      expect(q('[data-legend-toggle]').getAttribute('aria-label')).toBe('Legend and help');
+      expect(text(q('.legend-word'))).toBe('Legend');
+    });
+
+    it('names each chip with its thresholds', async () => {
+      await open();
+      expect(q('[data-chip="idle"]').getAttribute('aria-label')).toContain('no open tasks');
+      expect(q('[data-chip="light"]').getAttribute('aria-label')).toContain('1 to 3 open tasks');
+      expect(q('[data-chip="light"]').getAttribute('title')).toContain('1 to 3');
+      expect(q('[data-chip="normal"]').getAttribute('aria-label')).toContain('4 to 8 open tasks');
+      expect(q('[data-chip="heavy"]').getAttribute('aria-label')).toContain(
+        'more than 8 open tasks',
+      );
+    });
+  });
+
   describe('quick filter chips', () => {
     it('count the team by load, out of office and off hours, and link the unassigned tasks to the Task Queue', async () => {
       await open();
@@ -365,12 +540,12 @@ describe('DashUsersTab', () => {
       await open();
       q<HTMLButtonElement>('[data-chip="out"]').click();
       await settle();
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'out', undefined, 'all');
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'out', undefined, 'all', false);
       expect(url()).toContain('uavail=out');
       expect(q('[data-chip="out"]').getAttribute('aria-pressed')).toBe('true');
       q<HTMLButtonElement>('[data-chip="out"]').click();
       await settle();
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all');
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', false);
       expect(url()).not.toContain('uavail');
     });
 
@@ -445,27 +620,27 @@ describe('DashUsersTab', () => {
       await open();
       expect(q('[data-filter="pod"]')).toBeNull();
       await choose('[data-filter="availability"]', 'available');
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'available', undefined, 'all');
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'available', undefined, 'all', false);
       expect(url()).toContain('uavail=available');
       q<HTMLButtonElement>('[data-clear-filters]').click();
       await settle();
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all');
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', false);
       expect(url()).not.toContain('uavail');
     });
 
     it('reads the workload for the page-wide scope and again when the scope changes', async () => {
       await open();
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all');
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', false);
       const scope = TestBed.inject(DashScope);
       scope.ensureLoaded();
       scope.applyAddress((k) => (k === 'pod' ? '2' : null));
       await settle();
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, '2');
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, '2', false);
       const reads = getWorkload.mock.calls.length;
       scope.applyAddress((k) => (k === 'pod' ? 'mine' : null));
       await settle();
       expect(getWorkload.mock.calls.length).toBe(reads + 1);
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'mine');
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'mine', false);
     });
 
     it('links the Unassigned chip to the Task Queue with the pods of the scope', async () => {
@@ -548,7 +723,7 @@ describe('DashUsersTab', () => {
       expect(text(q('[data-users-empty]'))).toContain('No people match these filters.');
       q<HTMLButtonElement>('[data-users-clear]').click();
       await settle();
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all');
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', false);
     });
 
     it('explains a team with nobody in it', async () => {

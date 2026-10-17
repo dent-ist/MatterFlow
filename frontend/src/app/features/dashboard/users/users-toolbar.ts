@@ -6,7 +6,7 @@ import {
   AVAILABILITY_FILTERS,
   AVAILABILITY_LABELS,
   AvailabilityFilter,
-  DEFAULT_FILTERS,
+  CLEARED_FILTERS,
   DENSITIES,
   Density,
   LAYOUTS,
@@ -35,6 +35,7 @@ import { UsersGlyph } from './users-glyph';
   template: `
     @let f = filters();
     <div class="bar" role="toolbar" aria-label="Team workload controls">
+      <ng-content />
       <mf-search-box
         class="search"
         role="search"
@@ -94,14 +95,13 @@ import { UsersGlyph } from './users-glyph';
       </div>
       <span class="grow"></span>
       <span class="tools">
-        <ng-content />
         @if (count() > 0) {
           <button
             type="button"
-            class="mf-btn mf-btn--icon clear"
+            class="mf-btn mf-btn--icon tip clear"
             data-clear-filters
+            [attr.data-tip]="'Clear filters (' + count() + ')'"
             [attr.aria-label]="'Clear filters (' + count() + ')'"
-            [attr.title]="'Clear filters (' + count() + ')'"
             (click)="clear()"
           >
             <i class="pi pi-filter-slash" aria-hidden="true"></i>
@@ -112,37 +112,39 @@ import { UsersGlyph } from './users-glyph';
           @for (d of densities; track d) {
             <button
               type="button"
-              class="mf-btn mf-btn--icon toggle"
+              class="mf-btn mf-btn--icon tip toggle"
               [attr.data-density]="d"
+              [attr.data-tip]="
+                d === 'compact' ? 'Dense tiles: name and count only' : 'Standard tiles'
+              "
               [attr.aria-pressed]="density() === d"
-              [attr.aria-label]="d === 'compact' ? 'Dense tiles' : 'Standard tiles'"
-              [attr.title]="d === 'compact' ? 'Dense tiles: name and count only' : 'Standard tiles'"
+              [attr.aria-label]="d === 'compact' ? 'Tile size: dense' : 'Tile size: standard'"
               (click)="densityChange.emit(d)"
             >
               <i
                 class="pi"
-                [class]="d === 'compact' ? 'pi-window-minimize' : 'pi-window-maximize'"
+                [class]="d === 'compact' ? 'pi-th-large' : 'pi-stop'"
                 aria-hidden="true"
               ></i>
             </button>
           }
         </span>
-        <span class="pair" role="group" aria-label="View">
+        <span class="pair" role="group" aria-label="Layout" data-layout-group>
           @for (l of layouts; track l) {
             <button
               type="button"
-              class="mf-btn mf-btn--icon toggle"
+              class="mf-btn mf-btn--icon tip toggle"
               [attr.data-layout]="l"
-              [attr.aria-pressed]="layout() === l"
-              [attr.aria-label]="l === 'cards' ? 'Cards' : 'Table'"
-              [attr.title]="
+              [attr.data-tip]="
                 l === 'cards' ? 'Cards: one tile per person' : 'Table: one row per person'
               "
+              [attr.aria-pressed]="layout() === l"
+              [attr.aria-label]="l === 'cards' ? 'Layout: cards' : 'Layout: table'"
               (click)="layoutChange.emit(l)"
             >
               <i
                 class="pi"
-                [class]="l === 'cards' ? 'pi-th-large' : 'pi-list'"
+                [class]="l === 'cards' ? 'pi-id-card' : 'pi-table'"
                 aria-hidden="true"
               ></i>
             </button>
@@ -150,16 +152,17 @@ import { UsersGlyph } from './users-glyph';
         </span>
         <button
           type="button"
-          class="mf-btn mf-btn--icon toggle"
+          class="mf-btn tip toggle legend-btn"
           data-legend-toggle
+          data-tip="Legend and help"
           aria-label="Legend and help"
-          title="Legend and help"
           [attr.aria-pressed]="legendOpen()"
           [attr.aria-expanded]="legendOpen()"
           [attr.aria-controls]="legendOpen() ? 'wl-legend' : null"
           (click)="legendOpen.set(!legendOpen())"
         >
           <i class="pi pi-info-circle" aria-hidden="true"></i>
+          <span class="legend-word" aria-hidden="true">Legend</span>
         </button>
       </span>
     </div>
@@ -217,12 +220,21 @@ import { UsersGlyph } from './users-glyph';
               <li>{{ line }}</li>
             }
           </ul>
+          <p class="small" data-legend-capacity>
+            The bar above the chips shows the same levels; a click on a segment or a chip filters
+            the tiles.
+          </p>
         </div>
         <div>
           <h3>Names and details</h3>
           <p class="small">
             Hover or focus a tile for the full status (for example "Out of office until Nov 3"). A
             click opens the person's tasks. The user-plus icon on a tile assigns work.
+          </p>
+          <h3>Who is counted</h3>
+          <p class="small" data-legend-population>
+            People who can take work: active people who are in a pod or hold an open task. The
+            others are hidden until you choose Show them (Include people without a pod).
           </p>
           <h3>What this is not</h3>
           <p class="small" data-frame>
@@ -263,6 +275,44 @@ import { UsersGlyph } from './users-glyph';
     .pair {
       display: inline-flex;
       gap: var(--mf-s1);
+    }
+    .mf-btn {
+      min-height: 32px;
+    }
+    .mf-btn--icon {
+      min-width: 32px;
+    }
+    /* A text tooltip on hover and on keyboard focus (a title shows on hover only). */
+    .tip {
+      position: relative;
+    }
+    .tip[data-tip]:hover::after,
+    .tip[data-tip]:focus-visible::after {
+      content: attr(data-tip);
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      z-index: 30;
+      padding: 3px var(--mf-s2);
+      color: var(--mf-surface);
+      background: var(--mf-text);
+      border-radius: var(--mf-radius);
+      font-size: var(--mf-fs-xs);
+      font-weight: 400;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .legend-btn {
+      gap: 6px;
+      padding: 0 var(--mf-s2);
+    }
+    .legend-word {
+      display: none;
+    }
+    @media (min-width: 1100px) {
+      .legend-word {
+        display: inline;
+      }
     }
     .tools {
       display: inline-flex;
@@ -345,7 +395,7 @@ import { UsersGlyph } from './users-glyph';
     }
     .swatch--free {
       color: var(--mf-success);
-      background: var(--mf-success-bg);
+      background: color-mix(in srgb, var(--mf-success-bg) 45%, var(--mf-surface));
     }
     .swatch--ooo {
       color: var(--mf-text);
@@ -433,6 +483,6 @@ export class UsersToolbar {
   }
 
   protected clear(): void {
-    this.filtersChange.emit({ ...DEFAULT_FILTERS });
+    this.filtersChange.emit({ ...CLEARED_FILTERS });
   }
 }

@@ -476,6 +476,7 @@ export class UsersTable {
   private static readonly NATURAL: Record<UserSort, 'ascending' | 'descending'> = {
     name: 'ascending',
     open: 'descending',
+    fewest: 'ascending',
     priority: 'descending',
     load: 'ascending',
   };

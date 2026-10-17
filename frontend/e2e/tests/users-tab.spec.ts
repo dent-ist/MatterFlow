@@ -149,14 +149,15 @@ test.describe('Users tab: workload', () => {
     ).toEqual(['Critical', 'High', 'Normal']);
   });
 
-  test('idle is green and out of office is hatched grey, with icons and no sentences; the words are in the name and tooltip', async ({
+  test('idle is a light green tint and out of office is hatched grey, with icons and no sentences; the words are in the name and tooltip', async ({
     page,
   }) => {
     await openUsers(page);
     const idle = card(page, 'idle');
     await expect(idle.locator('[data-state-icon]')).toHaveClass(/pi-check-circle/);
     await expect(idle.locator('[data-open-total]')).toHaveCount(0);
-    expect(await idle.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
+    // Idle is a quiet tint of the Idle token (U7): not the saturated token fill (checked in detail in users-capacity.spec.ts).
+    expect(await idle.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(
       await tokenColor(page, '--mf-success-bg'),
     );
     await expect(idle.locator('[data-user-open]')).toHaveAttribute(

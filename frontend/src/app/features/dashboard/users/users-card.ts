@@ -8,7 +8,15 @@ import { availabilityDisplay, shortDay } from '../../../core/availability/availa
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone } from '../../../core/time/time';
 import { levelBars, priorityColors } from '../../../shared/ui/priority-badge';
-import { Density, cardState, cardSummary, loadLevelOf, segmentsOf, toneOf } from './users-model';
+import {
+  Density,
+  IDLE_TINT,
+  cardState,
+  cardSummary,
+  loadLevelOf,
+  segmentsOf,
+  toneOf,
+} from './users-model';
 import { UsersGlyph } from './users-glyph';
 
 /** The colours, icon and phrase of a person's state: priority colours when something is open, green when free, hatched grey when out of office. */
@@ -150,8 +158,9 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
     .tile:hover {
       border-color: var(--mf-border-strong);
     }
+    /* Idle (U7): the lightest tint of the Idle token with a thin outline; saturated fills are for Heavy and Out of office. */
     .tile--free {
-      background: var(--mf-success-bg);
+      background: color-mix(in srgb, var(--mf-success-bg) 45%, var(--mf-surface));
       border-color: var(--mf-success);
     }
     .tile--ooo {
@@ -384,7 +393,7 @@ export function bandOf(u: WorkloadUser): Band {
       return {
         icon: 'pi-check-circle',
         label: 'No open tasks',
-        bg: 'var(--mf-success-bg)',
+        bg: IDLE_TINT,
         fg: 'var(--mf-success)',
       };
     default: {

@@ -1,19 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import {
   WorkloadSummary,
   WorkloadThresholds,
   WorkloadUser,
 } from '../../../api/generated/api-client';
-import { DashScope } from '../dash-scope';
 import {
   AvailabilityFilter,
   LOAD_ICONS,
+  LOAD_LABELS,
   LoadFilter,
   UsersFilters,
+  loadHelp,
   loadLevelOf,
-  thresholdText,
-  unassignedQueueParams,
 } from './users-model';
 
 interface Chip {
@@ -22,6 +20,8 @@ interface Chip {
   icon: string;
   title: string;
   count: string;
+  /** The accessible name: the word, the people and what it means with its thresholds. */
+  label: string;
   pressed: boolean;
 }
 
@@ -34,44 +34,40 @@ interface Chip {
  */
 @Component({
   selector: 'mf-users-summary',
-  imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="chips" role="group" aria-label="Quick filters" data-summary>
-      @for (c of chips(); track c.key) {
-        <button
-          type="button"
-          class="chip"
-          [class]="'chip chip--' + c.key"
-          [attr.data-chip]="c.key"
-          [attr.aria-pressed]="c.pressed"
-          [attr.title]="c.title"
-          (click)="toggle(c.key)"
-        >
-          <i class="pi" [class]="c.icon" aria-hidden="true"></i>
-          <span class="w">{{ c.word }}</span>
-          <strong class="n" data-n>{{ c.count }}</strong>
-        </button>
-      }
-      <a
-        class="chip chip--unassigned"
-        data-summary-unassigned
-        routerLink="/tasks"
-        [queryParams]="queue()"
-        title="Open tasks nobody has: open them in the Task Queue"
-        [attr.aria-label]="'Unassigned tasks: ' + unassigned() + '. Open in the Task Queue'"
-      >
-        <i class="pi pi-inbox" aria-hidden="true"></i>
-        <span class="w">Unassigned</span>
-        <strong class="n" data-n>{{ unassigned() }}</strong>
-        <i class="pi pi-external-link go" aria-hidden="true"></i>
-      </a>
+    <div class="row">
+      <div class="chips" role="group" aria-label="Quick filters" data-summary>
+        @for (c of chips(); track c.key) {
+          <button
+            type="button"
+            class="chip"
+            [class]="'chip chip--' + c.key"
+            [attr.data-chip]="c.key"
+            [attr.aria-pressed]="c.pressed"
+            [attr.title]="c.title"
+            [attr.aria-label]="c.label"
+            (click)="toggle(c.key)"
+          >
+            <i class="pi" [class]="c.icon" aria-hidden="true"></i>
+            <span class="w">{{ c.word }}</span>
+            <strong class="n" data-n>{{ c.count }}</strong>
+          </button>
+        }
+      </div>
+      <ng-content />
     </div>
   `,
   styles: `
     :host {
       display: block;
       margin-bottom: var(--mf-s2);
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s1) var(--mf-s4);
     }
     .chips {
       display: flex;
@@ -80,6 +76,9 @@ interface Chip {
     }
     /* On a phone the chips are one line that scrolls sideways inside itself, so the tiles start higher. */
     @media (max-width: 560px) {
+      .row {
+        display: block;
+      }
       .chips {
         flex-wrap: nowrap;
         padding-bottom: 2px;
@@ -126,9 +125,10 @@ interface Chip {
     .n {
       font-variant-numeric: tabular-nums;
     }
+    /* Idle is a fact, not a trophy (U7): the lightest tint of the Idle token and a thin outline. */
     .chip--idle {
       color: var(--mf-success);
-      background: var(--mf-success-bg);
+      background: color-mix(in srgb, var(--mf-success-bg) 45%, var(--mf-surface));
       border-color: var(--mf-success);
     }
     .chip--idle[aria-pressed='true'] {
@@ -145,13 +145,6 @@ interface Chip {
         var(--mf-surface) 5px 10px
       );
     }
-    .chip--unassigned .pi:first-child {
-      color: var(--mf-warning);
-    }
-    .go {
-      color: var(--mf-text-muted);
-      font-size: 0.7rem;
-    }
   `,
 })
 export class UsersSummary {
@@ -163,64 +156,50 @@ export class UsersSummary {
   readonly loadToggle = output<LoadFilter>();
   readonly availabilityToggle = output<AvailabilityFilter>();
 
-  /** The queue behind Unassigned: under a Pod scope only the scope's Pods, as the number counts. */
-  protected readonly queue = computed(() => unassignedQueueParams(this.scope.queueParam()));
-  private readonly scope = inject(DashScope);
-  protected readonly unassigned = computed(() => {
-    const s = this.summary();
-    return s ? String(s.unassignedTasks) : '-';
-  });
-
   protected readonly chips = computed<Chip[]>(() => {
     const f = this.filters();
     const users = this.users();
     const ready = this.summary() !== null;
     const count = (n: number) => (ready ? String(n) : '-');
     const byLevel = (l: string) => users.filter((u) => loadLevelOf(u) === l).length;
-    const help = thresholdText(this.thresholds());
+    const t = this.thresholds();
+    const people = (n: number) => (ready ? ` ${n} ${n === 1 ? 'person' : 'people'}.` : '');
     // Out of office: counted on the page while the board holds everyone (or only them); with "Available" the API hides them, so the
     // team summary (which ignores the availability filter) has the number.
     const out = users.filter((u) => u.availability?.state === 'OUT_OF_OFFICE').length;
     const outCount = f.availability === 'available' ? (this.summary()?.outOfOffice ?? 0) : out;
+    const level = (
+      key: 'idle' | 'light' | 'normal' | 'heavy',
+      lv: 'IDLE' | 'LIGHT' | 'NORMAL' | 'HEAVY',
+    ): Chip => {
+      const text = loadHelp(lv, t);
+      const n = byLevel(lv);
+      return {
+        key,
+        word: LOAD_LABELS[lv],
+        icon: LOAD_ICONS[lv],
+        title: text + '. Show only these people.',
+        count: count(n),
+        label: `${LOAD_LABELS[lv]}${ready ? ', ' + n : ''}. ${text}.${people(n)}`.replace(
+          /\.\s+\./g,
+          '.',
+        ),
+        pressed: f.load.includes(key),
+      };
+    };
+    const off = users.filter((u) => u.availability?.state === 'OFF_HOURS').length;
     return [
-      {
-        key: 'idle',
-        word: 'Idle',
-        icon: LOAD_ICONS.IDLE,
-        title: 'Idle: no open tasks. ' + help[0],
-        count: count(byLevel('IDLE')),
-        pressed: f.load.includes('idle'),
-      },
-      {
-        key: 'light',
-        word: 'Light',
-        icon: LOAD_ICONS.LIGHT,
-        title: help[1],
-        count: count(byLevel('LIGHT')),
-        pressed: f.load.includes('light'),
-      },
-      {
-        key: 'normal',
-        word: 'Normal',
-        icon: LOAD_ICONS.NORMAL,
-        title: help[2],
-        count: count(byLevel('NORMAL')),
-        pressed: f.load.includes('normal'),
-      },
-      {
-        key: 'heavy',
-        word: 'Heavy',
-        icon: LOAD_ICONS.HEAVY,
-        title: help[3],
-        count: count(byLevel('HEAVY')),
-        pressed: f.load.includes('heavy'),
-      },
+      level('idle', 'IDLE'),
+      level('light', 'LIGHT'),
+      level('normal', 'NORMAL'),
+      level('heavy', 'HEAVY'),
       {
         key: 'out',
         word: 'Out of office',
         icon: 'pi-calendar-minus',
         title: 'Out of office: show only these people',
         count: count(outCount),
+        label: `Out of office${ready ? ', ' + outCount : ''}. Show only these people.`,
         pressed: f.availability === 'out',
       },
       {
@@ -228,7 +207,8 @@ export class UsersSummary {
         word: 'Off hours',
         icon: 'pi-moon',
         title: 'Off hours: outside their working hours right now',
-        count: count(users.filter((u) => u.availability?.state === 'OFF_HOURS').length),
+        count: count(off),
+        label: `Off hours${ready ? ', ' + off : ''}. Outside their working hours right now.`,
         pressed: f.availability === 'off',
       },
     ];

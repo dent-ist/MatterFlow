@@ -13,7 +13,6 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
@@ -35,9 +34,12 @@ import { DashState, focusAfterRetry } from './dash-state';
 import { DashScope } from '../dash-scope';
 import { CoverageView } from '../users/coverage-view';
 import { UsersAssign } from '../users/users-assign';
+import { UsersCapacity } from '../users/users-capacity';
 import { UsersCard } from '../users/users-card';
 import { UsersDrawer } from '../users/users-drawer';
 import {
+  CAN_TAKE_WORK_NOW,
+  CLEARED_FILTERS,
   DEFAULT_FILTERS,
   Density,
   Layout,
@@ -63,6 +65,7 @@ import { UsersPrefs } from '../users/users-prefs';
 import { UsersSummary } from '../users/users-summary';
 import { UsersTable } from '../users/users-table';
 import { UsersToolbar } from '../users/users-toolbar';
+import { UsersViews } from '../users/users-views';
 
 type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
 
@@ -90,8 +93,9 @@ export const USERS_PAGE = 200;
 @Component({
   selector: 'mf-dash-users-tab',
   imports: [
-    NgTemplateOutlet,
     UsersToolbar,
+    UsersViews,
+    UsersCapacity,
     UsersSummary,
     UsersCard,
     UsersTable,
@@ -104,35 +108,6 @@ export const USERS_PAGE = 200;
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
-    <ng-template #viewsTpl>
-      @if (canCoverage()) {
-        <div class="views" role="group" aria-label="Users view" data-users-views>
-          <button
-            type="button"
-            class="mf-btn mf-btn--icon toggle"
-            data-view="workload"
-            aria-label="Workload"
-            title="Workload: who has room and what is open"
-            [attr.aria-pressed]="view() === 'workload'"
-            (click)="setView('workload')"
-          >
-            <i class="pi pi-users" aria-hidden="true"></i>
-          </button>
-          <button
-            type="button"
-            class="mf-btn mf-btn--icon toggle"
-            data-view="coverage"
-            aria-label="Coverage"
-            title="Coverage: task types each person has completed"
-            [attr.aria-pressed]="view() === 'coverage'"
-            (click)="setView('coverage')"
-          >
-            <i class="pi pi-table" aria-hidden="true"></i>
-          </button>
-        </div>
-      }
-    </ng-template>
-
     @if (view() === 'workload') {
       <mf-users-toolbar
         [filters]="filters()"
@@ -146,18 +121,29 @@ export const USERS_PAGE = 200;
         (densityChange)="setDensity($event)"
         (layoutChange)="setLayout($event)"
       >
-        <ng-container *ngTemplateOutlet="viewsTpl" />
+        @if (canCoverage()) {
+          <mf-users-views [view]="view()" (viewChange)="setView($event)" />
+        }
       </mf-users-toolbar>
-    } @else {
+    } @else if (canCoverage()) {
       <div class="views-row">
-        <ng-container *ngTemplateOutlet="viewsTpl" />
+        <mf-users-views [view]="view()" (viewChange)="setView($event)" />
       </div>
     }
 
     @if (view() === 'coverage') {
       <mf-coverage-view [filters]="filters()" (filtersChange)="patchFilters($event)" />
     } @else {
-      <h2 class="sr-only" id="wl-h">Team workload</h2>
+      <h2 class="sr-only" id="wl-h">{{ canCoverage() ? 'Team workload' : 'Workload' }}</h2>
+      <mf-users-capacity
+        [users]="board()?.users ?? []"
+        [summary]="board()?.summary ?? null"
+        [filters]="filters()"
+        [thresholds]="board()?.thresholds ?? null"
+        [canAssign]="canAssign()"
+        (loadToggle)="toggleLoad($event)"
+        (showCanTake)="showCanTakeWork()"
+      />
       <mf-users-summary
         [summary]="board()?.summary ?? null"
         [users]="board()?.users ?? []"
@@ -165,7 +151,22 @@ export const USERS_PAGE = 200;
         [thresholds]="board()?.thresholds ?? null"
         (loadToggle)="toggleLoad($event)"
         (availabilityToggle)="toggleAvailability($event)"
-      />
+      >
+        @if (populationLine(); as line) {
+          <p class="population" data-users-population>
+            <span data-users-population-text>{{ line.text }}</span>
+            <button
+              type="button"
+              class="link"
+              data-users-population-toggle
+              [attr.aria-pressed]="filters().includeNoPod"
+              (click)="toggleNoPod()"
+            >
+              {{ line.action }}
+            </button>
+          </p>
+        }
+      </mf-users-summary>
 
       <p class="sr-only" role="status" aria-live="polite" data-users-live>{{ live() }}</p>
 
@@ -316,17 +317,31 @@ export const USERS_PAGE = 200;
     .body ::ng-deep .wrap {
       overflow: visible;
     }
-    .views {
-      display: inline-flex;
-      gap: var(--mf-s1);
-    }
     .views-row {
-      margin-bottom: var(--mf-s3);
+      margin-bottom: var(--mf-s2);
     }
-    .toggle[aria-pressed='true'] {
-      background: var(--mf-selected-bg);
-      border-color: var(--mf-primary);
+    /* The population line (U4) sits at the right end of the chips' row and wraps under them when there is no room. */
+    .population {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 0 var(--mf-s2);
+      margin: 0;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+    .population .link {
+      padding: 0;
       color: var(--mf-primary);
+      background: none;
+      border: 0;
+      font: inherit;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      cursor: pointer;
+    }
+    .population .link:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 1px;
     }
     .mf-btn:focus-visible {
       outline: 2px solid var(--mf-focus);
@@ -448,6 +463,23 @@ export class DashUsersTab implements OnInit {
   });
 
   protected readonly canAssign = computed(() => this.auth.has('Task.Assign'));
+  /**
+   * The quiet line about the population (U4, #130). Only under All pods (a Pod scope lists that Pod's members and hides nobody): with people hidden it says
+   * how many and offers to show them; with the switch on it offers to hide them again.
+   */
+  protected readonly populationLine = computed<{ text: string; action: string } | null>(() => {
+    const board = this.board();
+    if (!board || !this.scope.isAll() || this.state() === 'error') return null;
+    if (this.filters().includeNoPod) {
+      return { text: 'Including people without a pod.', action: 'Hide them' };
+    }
+    if (board.hiddenCount <= 0) return null;
+    const n = board.summary.total;
+    return {
+      text: `Showing ${plural(n, 'person', 'people')} who can take work. ${board.hiddenCount} ${board.hiddenCount === 1 ? 'other is' : 'others are'} hidden.`,
+      action: 'Show them',
+    };
+  });
   protected readonly filtered = computed(() => filterCount(this.filters()) > 0);
   /** The table header reverses the order of the chosen sort; the toolbar select resets it. */
   protected readonly sortReversed = signal(false);
@@ -552,7 +584,11 @@ export class DashUsersTab implements OnInit {
       return;
     }
     // Load, priority and off hours are applied on the page; the rest is a new read.
-    if (next.q === before.q && apiAvailability(next) === apiAvailability(before)) {
+    if (
+      next.q === before.q &&
+      apiAvailability(next) === apiAvailability(before) &&
+      next.includeNoPod === before.includeNoPod
+    ) {
       this.live.set(`${plural(this.users().length, 'person', 'people')} shown.`);
       return;
     }
@@ -588,7 +624,18 @@ export class DashUsersTab implements OnInit {
   }
 
   protected clearFilters(): void {
-    this.patchFilters({ ...DEFAULT_FILTERS });
+    this.patchFilters({ ...CLEARED_FILTERS });
+  }
+
+  /** Include people without a pod, or hide them again (`unopod=1`). */
+  protected toggleNoPod(): void {
+    this.patchFilters({ includeNoPod: !this.filters().includeNoPod });
+  }
+
+  /** Assign work > "Show people who can take work now": not out of office, Idle or Light, fewest open tasks first. */
+  protected showCanTakeWork(): void {
+    this.patchFilters(CAN_TAKE_WORK_NOW);
+    this.setSort('fewest');
   }
 
   protected showMore(): void {
@@ -610,7 +657,7 @@ export class DashUsersTab implements OnInit {
     this.limit.set(USERS_PAGE);
     this.prefs.remember({ sort });
     this.live.set(
-      `Sorted by ${{ load: 'availability and load', name: 'name', priority: 'highest priority', open: 'open tasks' }[sort]}.`,
+      `Sorted by ${{ load: 'availability and load', name: 'name', priority: 'highest priority', open: 'open tasks', fewest: 'fewest open tasks' }[sort]}.`,
     );
   }
 
@@ -658,7 +705,13 @@ export class DashUsersTab implements OnInit {
     const f = this.filters();
     const start = () =>
       this.api
-        .getDashboardWorkload(undefined, apiAvailability(f), f.q || undefined, this.scope.scope())
+        .getDashboardWorkload(
+          undefined,
+          apiAvailability(f),
+          f.q || undefined,
+          this.scope.scope(),
+          f.includeNoPod,
+        )
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (board) => {
