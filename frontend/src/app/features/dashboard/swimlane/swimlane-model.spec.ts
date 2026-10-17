@@ -1,7 +1,9 @@
 import { convertToParamMap } from '@angular/router';
 import { SwimlaneBoard, SwimlaneGroup, SwimlaneLane } from '../../../api/generated/api-client';
 import {
+  DEFAULT_LANE,
   DEFAULT_VIEW,
+  LANE_CODES,
   GroupNode,
   LaneModel,
   SwimlaneView,
@@ -12,6 +14,10 @@ import {
   cardToRow,
   clearedViewParams,
   filterCount,
+  laneFromParam,
+  laneParam,
+  rememberLane,
+  rememberedLane,
   hasViewParams,
   laneOf,
   laneQueueParams,
@@ -536,5 +542,28 @@ describe('Task Queue link of a truncated lane', () => {
       status: ['NEW'],
       unassigned: 'true',
     });
+  });
+});
+
+describe('lane switcher address values (WP9b)', () => {
+  it('maps the four lanes to short address values and back', () => {
+    expect(LANE_CODES.map(laneParam)).toEqual(['new', 'progress', 'hold', 'done']);
+    for (const code of LANE_CODES) expect(laneFromParam(laneParam(code))).toBe(code);
+    expect(laneFromParam('completed')).toBeNull();
+    expect(laneFromParam(null)).toBeNull();
+    expect(laneParam(DEFAULT_LANE)).toBe('progress');
+  });
+
+  it('remembers the lane for the session and tolerates unavailable storage', () => {
+    sessionStorage.clear();
+    expect(rememberedLane()).toBeNull();
+    rememberLane('ON_HOLD');
+    expect(rememberedLane()).toBe('ON_HOLD');
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    expect(rememberedLane()).toBeNull();
+    vi.restoreAllMocks();
+    sessionStorage.clear();
   });
 });

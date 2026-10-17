@@ -27,6 +27,7 @@ import { LookupStore } from '../../../core/lookups/lookup-store';
 import { UndoService } from '../../../core/notify/undo.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { mfDate } from '../../../core/time/time';
+import { FIXED_MODE_QUERY } from '../../../shared/ui/fixed-page';
 import { withoutDefaults } from '../dash-url-state';
 import { DashState, focusAfterRetry } from './dash-state';
 import { DashScope } from '../dash-scope';
@@ -36,7 +37,10 @@ import {
   DEFAULT_VIEW,
   Density,
   GroupBy,
+  DEFAULT_LANE,
   LANE_CODES,
+  LANE_PARAM,
+  LANE_SWITCHER_QUERY,
   LaneCode,
   LaneModel,
   SwimlaneView,
@@ -45,8 +49,12 @@ import {
   filterCount,
   hasViewParams,
   isGroupBy,
+  laneFromParam,
   laneOf,
+  laneParam,
   laneQueueParams,
+  rememberedLane,
+  rememberLane,
   sameView,
   viewFromParams,
   viewToParams,
@@ -81,6 +89,7 @@ const EDIT_REFRESH_DELAY_MS = 900;
       [people]="peopleOptions()"
       [types]="typeOptions()"
       [priorities]="priorityOptions()"
+      [compact]="switcher()"
       (viewChange)="patchView($event)"
       (densityChange)="setDensity($event)"
       (expandAll)="expandAll()"
@@ -100,22 +109,49 @@ const EDIT_REFRESH_DELAY_MS = 900;
         (retry)="retry()"
       />
     } @else {
+      @if (switcher()) {
+        <div class="switcher" role="tablist" aria-label="Swimlane lanes" data-lane-switcher>
+          @for (lane of lanes(); track lane.code) {
+            <button
+              type="button"
+              role="tab"
+              class="stab"
+              [id]="laneTabId(lane.code)"
+              [attr.data-lane-tab]="lane.code"
+              [attr.aria-selected]="lane.code === activeLane()"
+              [attr.aria-controls]="lane.code === activeLane() ? lanePanelId : null"
+              [attr.tabindex]="lane.code === activeLane() ? 0 : -1"
+              (click)="chooseLane(lane.code)"
+              (keydown)="onSwitcherKey($event)"
+            >
+              {{ lane.label }}
+              <span class="stab-n" data-lane-tab-count>{{ lane.count }}</span>
+            </button>
+          }
+        </div>
+      }
       <div
         class="board"
+        [class.board--single]="switcher()"
+        [class.board--natural]="natural()"
         data-board
-        role="region"
-        tabindex="0"
-        aria-label="Swimlane board"
+        [attr.role]="switcher() ? 'tabpanel' : 'region'"
+        [attr.id]="switcher() ? lanePanelId : null"
+        [attr.aria-labelledby]="switcher() ? laneTabId(activeLane()) : null"
+        [attr.tabindex]="switcher() ? null : 0"
+        [attr.aria-label]="switcher() ? null : 'Swimlane board'"
         [attr.aria-busy]="state() === 'loading' ? 'true' : null"
         [attr.data-density]="density()"
       >
-        @for (lane of lanes(); track lane.code) {
+        @for (lane of shownLanes(); track lane.code) {
           <mf-swimlane-lane
             [model]="lane"
             [groupBy]="shownGroupBy()"
             [density]="density()"
             [loading]="state() === 'loading'"
             [filtered]="filtersOn()"
+            [single]="switcher()"
+            [natural]="natural()"
             [queueParams]="queueParamsOf(lane.code)"
             (openCard)="openCard($event)"
             (cardChange)="onCardChange($event)"
@@ -163,8 +199,13 @@ const EDIT_REFRESH_DELAY_MS = 900;
       outline: 2px solid var(--mf-focus);
       outline-offset: -2px;
     }
-    /* Fixed-height Dashboard (#137): the toolbar is pinned and the board takes what is left of the window; each lane scrolls itself. Under
-       900 px the lanes stack and the board scrolls (each lane keeps its own limited height). */
+    /* Very wide screens (#126): a lane stops at 480 px and the board stays left aligned; the rest is blank space, not stretched cards. */
+    @media (min-width: 2200px) {
+      .board {
+        grid-template-columns: repeat(4, minmax(17rem, 480px));
+      }
+    }
+    /* Fixed-height Dashboard (#137): the toolbar is pinned and the board takes what is left of the window; each lane scrolls itself. */
     @media (min-width: 768px) and (min-height: 561px) {
       .board {
         flex: 1 1 0;
@@ -173,25 +214,92 @@ const EDIT_REFRESH_DELAY_MS = 900;
         grid-template-rows: minmax(0, 1fr);
       }
     }
-    @media (min-width: 768px) and (max-width: 900px) and (min-height: 561px) {
-      .board {
-        overflow-y: auto;
-        overflow-x: hidden;
+    /* Under 900 px (W4) the four lanes are replaced by the lane switcher and ONE lane at a time. In the fixed-height page (768 px and up,
+       561 px high) that lane fills what is left and scrolls; below that the page scrolls and the lane has its natural height. */
+    .board--single {
+      display: flex;
+      flex-direction: column;
+      height: auto;
+      overflow: visible;
+      padding-bottom: 0;
+    }
+    .board--single > * {
+      flex: 1 1 auto;
+    }
+    .board--natural > * {
+      flex: none;
+    }
+    @media (min-width: 768px) and (min-height: 561px) {
+      .board--single {
+        flex: 1 1 0;
+        min-height: 0;
       }
     }
-    /* Narrow screens: the lanes stack, each with its own limited height. */
-    @media (max-width: 900px) {
-      .board {
-        display: flex;
-        flex-direction: column;
-        height: auto;
-        overflow-x: visible;
-        grid-template-rows: none;
+    .switcher {
+      display: flex;
+      gap: 0;
+      margin-bottom: var(--mf-s2);
+      padding: 0;
+      background: var(--mf-bg, var(--mf-surface));
+      border-bottom: 1px solid var(--mf-border);
+    }
+    /* Sticky under the Dashboard tab row (sticky from 600 px, 44 px high) while the page scrolls; not on a window so short (400 px) that the two
+       rows would take a quarter of it: then it scrolls away with the page. */
+    .switcher {
+      position: sticky;
+      top: 0;
+      z-index: 8;
+    }
+    @media (min-width: 600px) {
+      .switcher {
+        top: 2.75rem;
       }
-      .board > * {
-        height: auto;
-        max-height: 34rem;
+    }
+    @media (max-height: 400px) {
+      .switcher {
+        position: static;
       }
+    }
+    /* Four equal tabs that always fit (271 px at 375 with the app rail): the lane name over its count; a long name wraps instead of being cut. */
+    .stab {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      min-height: 2.75rem;
+      padding: var(--mf-s1) 2px;
+      color: var(--mf-text-muted);
+      background: none;
+      border: 0;
+      border-bottom: 3px solid transparent;
+      font: inherit;
+      font-size: var(--mf-fs-xs);
+      font-weight: 500;
+      line-height: 1.2;
+      text-align: center;
+      cursor: pointer;
+    }
+    .stab[aria-selected='true'] {
+      color: var(--mf-text);
+      font-weight: 600;
+      border-bottom-color: var(--mf-primary);
+    }
+    .stab:hover {
+      color: var(--mf-text);
+      background: var(--mf-surface-alt);
+    }
+    .stab:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: -2px;
+    }
+    .stab-n {
+      font-size: var(--mf-fs-sm);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--mf-text);
     }
   `,
 })
@@ -281,6 +389,21 @@ export class DashSwimlaneTab implements OnInit {
     });
   });
 
+  // ---- the lane switcher (W4)
+
+  protected readonly lanePanelId = 'mf-sl-lane-panel';
+  protected readonly laneTabId = (code: string) => `mf-sl-lane-tab-${code}`;
+  /** Below 900 px: the lane switcher and one lane (a media query, so a rotated phone or a resized window follows). */
+  protected readonly switcher = signal(false);
+  /** The fixed-height page (768 x 561 px and up) gives the one lane a scroll box of its own; below it the page scrolls. */
+  private readonly fixedMode = signal(false);
+  protected readonly natural = computed(() => this.switcher() && !this.fixedMode());
+  /** The lane the switcher shows (also kept while the board is wide, so rotating a phone keeps it). */
+  protected readonly activeLane = signal<LaneCode>(DEFAULT_LANE);
+  protected readonly shownLanes = computed<LaneModel[]>(() =>
+    this.switcher() ? this.lanes().filter((l) => l.code === this.activeLane()) : this.lanes(),
+  );
+
   protected readonly selectedCard = computed<SwimlaneCard | null>(() => {
     const id = this.selectedId();
     if (id === null) return null;
@@ -341,14 +464,34 @@ export class DashSwimlaneTab implements OnInit {
         this.load();
       });
     });
+    // The lane named by the address (a pasted link, Back).
+    effect(() => {
+      const lane = laneFromParam(this.params().get(LANE_PARAM));
+      untracked(() => {
+        if (lane && lane !== this.activeLane()) this.activeLane.set(lane);
+      });
+    });
+    this.watchMedia(LANE_SWITCHER_QUERY, this.switcher);
+    this.watchMedia(FIXED_MODE_QUERY, this.fixedMode);
     this.destroyRef.onDestroy(() => {
       if (this.editTimer) clearTimeout(this.editTimer);
     });
   }
 
+  private watchMedia(query: string, target: { set(value: boolean): void }): void {
+    if (typeof matchMedia !== 'function') return;
+    const list = matchMedia(query);
+    target.set(list.matches);
+    const onChange = (e: MediaQueryListEvent) => target.set(e.matches);
+    list.addEventListener('change', onChange);
+    this.destroyRef.onDestroy(() => list.removeEventListener('change', onChange));
+  }
+
   ngOnInit(): void {
     const params = this.route.snapshot.queryParamMap;
     this.view.set(viewFromParams(params, this.prefs.remembered()));
+    // The lane of the address, else the one chosen earlier in this session, else In progress.
+    this.activeLane.set(laneFromParam(params.get(LANE_PARAM)) ?? rememberedLane() ?? DEFAULT_LANE);
     // A link that names a display choice (even the default one) is what the person wants: remember it, so the address can leave defaults out.
     if (params.has('group') || params.has('sort') || params.has('days')) {
       const v = this.view();
@@ -382,10 +525,49 @@ export class DashSwimlaneTab implements OnInit {
   private writeUrl(replace: boolean): Promise<boolean> {
     return this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: withoutDefaults('swimlane', viewToParams(this.view())),
+      queryParams: withoutDefaults('swimlane', {
+        ...viewToParams(this.view()),
+        [LANE_PARAM]: laneParam(this.activeLane()),
+      }),
       queryParamsHandling: 'merge',
       replaceUrl: replace,
     });
+  }
+
+  protected chooseLane(code: LaneCode): void {
+    if (code === this.activeLane()) return;
+    this.activeLane.set(code);
+    rememberLane(code);
+    void this.writeUrl(true);
+  }
+
+  /** WAI-ARIA tabs, automatic activation: arrows move (and wrap), Home and End jump; the focus stays on the tab. */
+  protected onSwitcherKey(event: KeyboardEvent): void {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const at = LANE_CODES.indexOf(this.activeLane());
+    let to: number;
+    switch (event.key) {
+      case 'ArrowRight':
+        to = (at + 1) % LANE_CODES.length;
+        break;
+      case 'ArrowLeft':
+        to = (at - 1 + LANE_CODES.length) % LANE_CODES.length;
+        break;
+      case 'Home':
+        to = 0;
+        break;
+      case 'End':
+        to = LANE_CODES.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    this.chooseLane(LANE_CODES[to]);
+    // The tab elements stay in place when the lane changes, so the focus can move now and stays on the tab.
+    this.host.nativeElement
+      .querySelector<HTMLElement>(`[data-lane-tab="${LANE_CODES[to]}"]`)
+      ?.focus();
   }
 
   protected expandAll(): void {
@@ -610,6 +792,8 @@ export class DashSwimlaneTab implements OnInit {
   // ---- keyboard between lanes
 
   protected moveLane(move: LaneMove): void {
+    // One lane on screen (the phone layout): the lane switcher moves between lanes.
+    if (this.switcher()) return;
     const lanes = this.laneRefs();
     const at = LANE_CODES.indexOf(move.from as LaneCode);
     // The nearest lane in that direction that has a card to land on.

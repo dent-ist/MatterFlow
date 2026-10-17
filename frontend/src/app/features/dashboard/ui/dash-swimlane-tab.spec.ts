@@ -23,6 +23,8 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { provideLookups } from '../../../shared/work-queue/work-queue-testing';
 import { aCard, aLane } from '../swimlane/swimlane-testing';
 import { LANE_PAGE } from '../swimlane/swimlane-lane';
+import { LANE_SWITCHER_QUERY } from '../swimlane/swimlane-model';
+import { FIXED_MODE_QUERY } from '../../../shared/ui/fixed-page';
 import { SWIMLANE_REFRESH_MS, DashSwimlaneTab } from './dash-swimlane-tab';
 
 const PERMS: Permission[] = [
@@ -1259,6 +1261,130 @@ describe('DashSwimlaneTab', () => {
       await settle();
       expect(q('[data-more-menu] [data-expand-all]')).not.toBeNull();
       expect(q('[data-more-menu] [data-collapse-all]')).not.toBeNull();
+    });
+  });
+
+  describe('lane switcher below 900 px (WP9b, #125)', () => {
+    /** A window of the given kind: the lane switcher query and the fixed-height query answer as asked. */
+    const phone = (fixed: boolean) =>
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: query === LANE_SWITCHER_QUERY ? true : query === FIXED_MODE_QUERY ? fixed : false,
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }));
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      try {
+        sessionStorage.clear();
+      } catch {
+        /* ignore */
+      }
+    });
+    const tabs = () => qa<HTMLButtonElement>('[data-lane-tab]');
+
+    it('shows a tablist with the four lane names and counts and only the In progress lane by default', async () => {
+      phone(false);
+      await open();
+      const list = q('[data-lane-switcher]');
+      expect(list.getAttribute('role')).toBe('tablist');
+      expect(list.getAttribute('aria-label')).toBe('Swimlane lanes');
+      expect(tabs().map((t) => text(t))).toEqual([
+        expect.stringMatching(/^New \d+$/),
+        expect.stringMatching(/^In Progress \d+$/),
+        expect.stringMatching(/^On Hold \d+$/),
+        expect.stringMatching(/^Completed \d+$/),
+      ]);
+      expect(qa('[data-lane]').map((l) => l.getAttribute('data-lane'))).toEqual(['IN_PROGRESS']);
+      expect(tabs().map((t) => t.getAttribute('aria-selected'))).toEqual([
+        'false',
+        'true',
+        'false',
+        'false',
+      ]);
+      expect(tabs().map((t) => t.tabIndex)).toEqual([-1, 0, -1, -1]);
+      const panel = q('[data-board]');
+      expect(panel.getAttribute('role')).toBe('tabpanel');
+      expect(panel.getAttribute('aria-labelledby')).toBe(tabs()[1].id);
+      expect(tabs()[1].getAttribute('aria-controls')).toBe(panel.id);
+      expect(qa('[data-lane-tab] a')).toEqual([]);
+      expect(q('[data-lane="IN_PROGRESS"] a[data-lane-count]')).not.toBeNull();
+      expect(url()).not.toContain('lane=');
+    });
+
+    it('a click changes the lane, writes lane= only when it is not the default and keeps the focus on the tab', async () => {
+      phone(false);
+      await open();
+      tabs()[2].focus();
+      tabs()[2].click();
+      await settle();
+      expect(qa('[data-lane]').map((l) => l.getAttribute('data-lane'))).toEqual(['ON_HOLD']);
+      expect(url()).toContain('lane=hold');
+      expect(document.activeElement).toBe(tabs()[2]);
+      expect(q('[data-board]').getAttribute('aria-labelledby')).toBe(tabs()[2].id);
+      tabs()[1].click();
+      await settle();
+      expect(url()).not.toContain('lane=');
+    });
+
+    it('arrow keys, Home and End move between the tabs and select them (roving tabindex, wrap round)', async () => {
+      phone(false);
+      await open();
+      tabs()[1].focus();
+      key(tabs()[1], 'ArrowRight');
+      await settle();
+      expect(document.activeElement).toBe(tabs()[2]);
+      expect(tabs()[2].getAttribute('aria-selected')).toBe('true');
+      expect(tabs()[2].tabIndex).toBe(0);
+      key(tabs()[2], 'End');
+      await settle();
+      expect(document.activeElement).toBe(tabs()[3]);
+      key(tabs()[3], 'ArrowRight');
+      await settle();
+      expect(document.activeElement).toBe(tabs()[0]);
+      key(tabs()[0], 'ArrowLeft');
+      await settle();
+      expect(document.activeElement).toBe(tabs()[3]);
+      key(tabs()[3], 'Home');
+      await settle();
+      expect(document.activeElement).toBe(tabs()[0]);
+      expect(url()).toContain('lane=new');
+    });
+
+    it('opens on the lane named by the address, then on the one chosen earlier in the session', async () => {
+      phone(false);
+      await open(of(board()), '/dashboard?tab=swimlane&lane=done');
+      expect(qa('[data-lane]').map((l) => l.getAttribute('data-lane'))).toEqual(['COMPLETED']);
+      host.remove();
+      TestBed.resetTestingModule();
+      await open(of(board()), '/dashboard?tab=swimlane');
+      expect(qa('[data-lane]').map((l) => l.getAttribute('data-lane'))).toEqual(['IN_PROGRESS']);
+      tabs()[0].click();
+      await settle();
+      host.remove();
+      TestBed.resetTestingModule();
+      await open(of(board()), '/dashboard?tab=swimlane');
+      expect(qa('[data-lane]').map((l) => l.getAttribute('data-lane'))).toEqual(['NEW']);
+      expect(url()).toContain('lane=new');
+    });
+
+    it('gives the lane its natural height on a scrolling page and a scroll box of its own in the fixed-height page', async () => {
+      phone(false);
+      await open();
+      expect(q('.lane--natural')).not.toBeNull();
+      expect(q('[data-skip-lane]')).toBeNull();
+      host.remove();
+      TestBed.resetTestingModule();
+      phone(true);
+      await open();
+      expect(q('.lane--natural')).toBeNull();
+    });
+
+    it('shows no switcher and all four lanes from 900 px', async () => {
+      await open();
+      expect(q('[data-lane-switcher]')).toBeNull();
+      expect(qa('[data-lane]').length).toBe(4);
+      expect(q('[data-board]').getAttribute('role')).toBe('region');
     });
   });
 });

@@ -48,7 +48,12 @@ let nextId = 0;
   },
   template: `
     @let m = model();
-    <section class="lane" [attr.aria-labelledby]="hid" [attr.data-lane]="m.code">
+    <section
+      class="lane"
+      [class.lane--natural]="natural()"
+      [attr.aria-labelledby]="hid"
+      [attr.data-lane]="m.code"
+    >
       <header class="head">
         <h3 class="name" [id]="hid">{{ m.label }}</h3>
         <a
@@ -85,9 +90,11 @@ let nextId = 0;
             <span>{{ emptyText() }}</span>
           </p>
         } @else {
-          <button type="button" class="skip" data-skip-lane (click)="skipLane.emit(m.code)">
-            Skip {{ m.label }} lane
-          </button>
+          @if (!single()) {
+            <button type="button" class="skip" data-skip-lane (click)="skipLane.emit(m.code)">
+              Skip {{ m.label }} lane
+            </button>
+          }
           @if (tree()) {
             <ul
               class="rows rows--tree"
@@ -310,6 +317,17 @@ let nextId = 0;
     .count--caveat {
       border-style: dashed;
       text-decoration-style: dashed;
+    }
+    /* Phone layout (W4): the only lane shown takes its natural height and the page scrolls; no scroll box of its own, header not sticky. */
+    .lane--natural {
+      flex: none;
+    }
+    .lane--natural .head {
+      position: static;
+    }
+    .lane--natural .body {
+      flex: none;
+      overflow: visible;
     }
     .hint {
       flex: 1 1 auto;
@@ -539,6 +557,10 @@ export class SwimlaneLane {
   readonly groupBy = input<GroupBy>('none');
   readonly density = input<Density>('comfortable');
   readonly loading = input(false);
+  /** The only lane on screen (the phone layout): there is no other lane to skip to. */
+  readonly single = input(false);
+  /** The lane has its natural height (the page scrolls) instead of a scroll box of its own. */
+  readonly natural = input(false);
   /** Why the lane may be empty: filters on, or simply nothing there. */
   readonly filtered = input(false);
   /** Task Queue query parameters that list this lane's tasks (for the truncation note). */

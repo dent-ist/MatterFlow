@@ -25,7 +25,9 @@ const lane = (page: Page, code: string): Locator => page.locator(`[data-lane="${
 const cards = (page: Page, code: string): Locator => lane(page, code).locator('mf-swimlane-card');
 
 async function openBoard(page: Page, query = '', url = base): Promise<void> {
-  await page.goto(`${url}${query}`);
+  // Below 900 px the board shows one lane (the lane switcher, WP9b): ask for New, which the tests read.
+  const narrow = (page.viewportSize()?.width ?? 1440) < 900;
+  await page.goto(`${url}${query}${narrow ? '&lane=new' : ''}`);
   await expect(cards(page, 'NEW').first()).toBeVisible();
   await expect(page.locator('[data-board][aria-busy="true"]')).toHaveCount(0);
 }
@@ -428,17 +430,18 @@ test.describe('Swimlane accessibility (WP9a)', () => {
       [375, 812],
     ]) {
       await page.setViewportSize({ width: w, height: h });
+      const lane1 = w < 900 ? '&lane=new' : '';
       await openBoard(page);
       expect(await axeViolations(page), `comfortable ${w}`).toEqual([]);
       await shot(page, `12-comfortable-${w}`);
-      await page.goto(`${base}&group=clientMatter&sort=clientMatter`);
+      await page.goto(`${base}&group=clientMatter&sort=clientMatter${lane1}`);
       await expect(lane(page, 'NEW').getByRole('tree')).toBeVisible();
       expect(await axeViolations(page), `tree ${w}`).toEqual([]);
       await shot(page, `13-tree-${w}`);
-      await page.goto(`${base}&group=assignee`);
+      await page.goto(`${base}&group=assignee${lane1}`);
       await expect(cards(page, 'NEW').first()).toBeVisible();
       expect(await axeViolations(page), `assignee ${w}`).toEqual([]);
-      await page.goto(`${base}&group=priority`);
+      await page.goto(`${base}&group=priority${lane1}`);
       await expect(cards(page, 'NEW').first()).toBeVisible();
       expect(await axeViolations(page), `priority ${w}`).toEqual([]);
       await page.getByRole('button', { name: 'More options' }).click();

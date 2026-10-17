@@ -3,11 +3,13 @@ import {
   Component,
   ElementRef,
   Injector,
+  DestroyRef,
   afterNextRender,
   effect,
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 
 /**
@@ -50,23 +52,32 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
     <div class="row" data-dash-head>
       <h1 class="h1" data-page-title id="mf-dash-h1">{{ heading() }}</h1>
       @if (showTabs()) {
-        <div class="tabs" role="tablist" [attr.aria-label]="label()">
-          @for (t of tabs(); track t.key) {
-            <button
-              type="button"
-              role="tab"
-              class="tab"
-              [id]="tabId(t.key)"
-              [attr.data-tab]="t.key"
-              [attr.aria-selected]="t.key === selected()"
-              [attr.aria-controls]="t.key === selected() ? panelId(t.key) : null"
-              [attr.tabindex]="t.key === selected() ? 0 : -1"
-              (click)="choose(t.key)"
-              (keydown)="onKey($event)"
-            >
-              {{ t.label }}
-            </button>
-          }
+        <div
+          class="strip"
+          [attr.data-more-start]="edges().start"
+          [attr.data-more-end]="edges().end"
+        >
+          <div class="tabs" role="tablist" [attr.aria-label]="label()" (scroll)="measure()">
+            @for (t of tabs(); track t.key) {
+              <button
+                type="button"
+                role="tab"
+                class="tab"
+                [id]="tabId(t.key)"
+                [attr.data-tab]="t.key"
+                [attr.aria-selected]="t.key === selected()"
+                [attr.aria-controls]="t.key === selected() ? panelId(t.key) : null"
+                [attr.tabindex]="t.key === selected() ? 0 : -1"
+                (click)="choose(t.key)"
+                (keydown)="onKey($event)"
+              >
+                {{ t.label }}
+              </button>
+            }
+          </div>
+          <!-- Scroll hints for a tab list wider than its room (phones): a fade and a chevron at the edge that has more tabs. -->
+          <i class="hint hint--start pi pi-chevron-left" aria-hidden="true"></i>
+          <i class="hint hint--end pi pi-chevron-right" aria-hidden="true"></i>
         </div>
       } @else {
         <span class="spacer"></span>
@@ -127,8 +138,38 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
     }
     /* The tab list is the only part of the row that may be wider than the window: it scrolls inside itself (contain: inline-size, so what is inside never
        adds to the width of the row or the document, whatever the number or the width of the tabs). */
-    .tabs {
+    .strip {
+      position: relative;
       flex: 1 1 0;
+      min-width: 0;
+      max-width: 100%;
+    }
+    .hint {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      display: none;
+      align-items: center;
+      width: 1.75rem;
+      color: var(--mf-text);
+      font-size: 0.75rem;
+      pointer-events: none;
+    }
+    .hint--start {
+      left: 0;
+      justify-content: flex-start;
+      background: linear-gradient(to right, var(--mf-bg, var(--mf-surface)) 40%, transparent);
+    }
+    .hint--end {
+      right: 0;
+      justify-content: flex-end;
+      background: linear-gradient(to left, var(--mf-bg, var(--mf-surface)) 40%, transparent);
+    }
+    .strip[data-more-start='true'] .hint--start,
+    .strip[data-more-end='true'] .hint--end {
+      display: flex;
+    }
+    .tabs {
       min-width: 0;
       max-width: 100%;
       contain: inline-size;
@@ -175,7 +216,7 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
     /* Last, so it wins over the base rules above: the tab list keeps a line of its own on a phone and the Scope select and Refresh wrap below it (P1)
        instead of squeezing the tabs to nothing. */
     @media (max-width: 599px) {
-      .tabs {
+      .strip {
         flex: 1 0 100%;
       }
       .end {
@@ -189,6 +230,11 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
 export class DashTabs {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
+  private readonly destroyRef = inject(DestroyRef);
+  private observed: HTMLElement | null = null;
+  private resizer: ResizeObserver | null = null;
+  /** Whether the tab list has more tabs out of view at its start and at its end (drives the scroll hints). */
+  protected readonly edges = signal({ start: false, end: false });
   protected readonly tabId = tabId;
   protected readonly panelId = panelId;
 
@@ -202,7 +248,40 @@ export class DashTabs {
   /** The tab the person chose (click or keyboard). */
   readonly tabChange = output<string>();
 
+  /** Reads the scroll position of the tab list. */
+  protected measure(): void {
+    const el = this.host.nativeElement.querySelector<HTMLElement>('.tabs');
+    if (!el) return;
+    // The tab list changes size when the controls beside it arrive (the Scope select) without the host changing: watch it too.
+    if (this.observed !== el) {
+      this.observed = el;
+      this.resizer?.observe(el);
+    }
+    const start = el.scrollLeft > 1;
+    const end = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+    const now = this.edges();
+    if (now.start !== start || now.end !== end) this.edges.set({ start, end });
+  }
+
   constructor() {
+    afterNextRender(
+      () => {
+        if (typeof ResizeObserver !== 'undefined') {
+          const ro = new ResizeObserver(() => this.measure());
+          this.resizer = ro;
+          ro.observe(this.host.nativeElement);
+          this.destroyRef.onDestroy(() => ro.disconnect());
+        }
+        this.measure();
+      },
+      { injector: this.injector },
+    );
+    // The tab list exists once the tabs are shown (it may arrive after the first render): start watching its size and read it.
+    effect(() => {
+      this.showTabs();
+      this.tabs();
+      afterNextRender(() => this.measure(), { injector: this.injector });
+    });
     // On a phone the five tabs scroll sideways: a tab chosen by a link (or a reload) is brought into view inside the tab list.
     effect(() => {
       const key = this.selected();

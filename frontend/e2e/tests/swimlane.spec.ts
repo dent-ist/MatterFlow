@@ -22,7 +22,9 @@ const lane = (page: Page, code: string): Locator => page.locator(`[data-lane="${
 const cards = (page: Page, code: string): Locator => lane(page, code).locator('mf-swimlane-card');
 
 async function openBoard(page: Page, query = ''): Promise<void> {
-  await page.goto(`${base}${query}`);
+  // Below 900 px the board shows one lane (the lane switcher, WP9b): ask for New, which the tests read.
+  const narrow = (page.viewportSize()?.width ?? 1440) < 900;
+  await page.goto(`${base}${query}${narrow ? '&lane=new' : ''}`);
   await expect(cards(page, 'NEW').first()).toBeVisible();
 }
 
@@ -448,24 +450,23 @@ test.describe('Swimlane tab', () => {
     await expect(page.locator('[data-dash-state="error"]')).toHaveCount(0);
   });
 
-  test('stacks the lanes below 900 px and scrolls the board sideways in between', async ({
+  test('below 900 px one lane at a time with a lane switcher (WP9b), the four lanes from 900 px', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 800, height: 900 });
     await openBoard(page);
-    const a = (await lane(page, 'NEW').boundingBox())!;
-    const b = (await lane(page, 'IN_PROGRESS').boundingBox())!;
-    expect(b.y).toBeGreaterThan(a.y + a.height - 2);
-    expect(Math.abs(b.x - a.x)).toBeLessThan(2);
+    await expect(page.locator('[data-lane-switcher]')).toBeVisible();
+    await expect(page.locator('[data-lane]')).toHaveCount(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
 
     await page.setViewportSize({ width: 1024, height: 768 });
-    await expect(async () => {
-      const x = (await lane(page, 'IN_PROGRESS').boundingBox())!;
-      expect(x.y).toBeLessThan(a.y + 60);
-    }).toPass();
+    await expect(page.locator('[data-lane-switcher]')).toHaveCount(0);
+    await expect(page.locator('[data-lane]')).toHaveCount(4);
+    const a = (await lane(page, 'NEW').boundingBox())!;
+    const x = (await lane(page, 'IN_PROGRESS').boundingBox())!;
+    expect(x.y).toBeLessThan(a.y + 60);
     // No horizontal scroll of the page: the board scrolls inside itself.
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,

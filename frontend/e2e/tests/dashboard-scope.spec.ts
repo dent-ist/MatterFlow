@@ -444,7 +444,7 @@ test.describe('Dashboard Scope', () => {
       await expect(lead.locator('[data-user-card]').first()).toBeVisible();
       await lead.waitForTimeout(500);
       await lead.screenshot({ path: path.join(SHOTS!, `users-pod-b-${width}.png`) });
-      await lead.goto('/dashboard?tab=swimlane');
+      await lead.goto('/dashboard?tab=swimlane&lane=new');
       await expect(lead.locator('[data-lane="NEW"]')).toBeVisible();
       await lead.waitForTimeout(500);
       await lead.screenshot({ path: path.join(SHOTS!, `swimlane-${width}.png`) });

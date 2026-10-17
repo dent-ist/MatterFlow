@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,6 +13,7 @@ import { SearchBox } from '../../../shared/ui/search-box';
 import {
   COMPLETED_WINDOWS,
   DEFAULT_COMPLETED_DAYS,
+  DEFAULT_VIEW,
   Density,
   GROUP_BYS,
   GROUP_LABELS,
@@ -41,7 +43,7 @@ export interface Option {
  */
 @Component({
   selector: 'mf-swimlane-toolbar',
-  imports: [SearchBox],
+  imports: [SearchBox, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'onDocumentClick($event)' },
   template: `
@@ -58,34 +60,9 @@ export interface Option {
         [value]="v.q"
         (searchChange)="viewChange.emit({ q: $event })"
       />
-      <div class="fld">
-        <label class="lbl" for="sl-group">Group</label>
-        <select
-          id="sl-group"
-          class="mf-control mf-control--compact"
-          data-group-by
-          [value]="v.groupBy"
-          (change)="onGroup($any($event.target).value)"
-        >
-          @for (g of groupBys; track g) {
-            <option [value]="g" [selected]="g === v.groupBy">{{ groupLabels[g] }}</option>
-          }
-        </select>
-      </div>
-      <div class="fld">
-        <label class="lbl" for="sl-sort">Sort</label>
-        <select
-          id="sl-sort"
-          class="mf-control mf-control--compact"
-          data-sort
-          [value]="v.sort"
-          (change)="onSort($any($event.target).value)"
-        >
-          @for (s of sorts; track s) {
-            <option [value]="s" [selected]="s === v.sort">{{ sortLabels[s] }}</option>
-          }
-        </select>
-      </div>
+      @if (!compact()) {
+        <ng-container *ngTemplateOutlet="groupSort" />
+      }
       <button
         type="button"
         class="mf-btn"
@@ -96,8 +73,8 @@ export interface Option {
       >
         <i class="pi pi-filter" aria-hidden="true"></i>
         Filters
-        @if (count() > 0) {
-          <span class="n" data-filter-count>({{ count() }})</span>
+        @if (shownCount() > 0) {
+          <span class="n" data-filter-count>({{ shownCount() }})</span>
         }
       </button>
       <span class="grow"></span>
@@ -208,8 +185,48 @@ export interface Option {
       </div>
     </div>
 
+    <ng-template #groupSort>
+      <div class="fld">
+        <label class="lbl" for="sl-group">Group</label>
+        <select
+          id="sl-group"
+          class="mf-control mf-control--compact"
+          data-group-by
+          [value]="v.groupBy"
+          (change)="onGroup($any($event.target).value)"
+        >
+          @for (g of groupBys; track g) {
+            <option [value]="g" [selected]="g === v.groupBy">{{ groupLabels[g] }}</option>
+          }
+        </select>
+      </div>
+      <div class="fld">
+        <label class="lbl" for="sl-sort">Sort</label>
+        <select
+          id="sl-sort"
+          class="mf-control mf-control--compact"
+          data-sort
+          [value]="v.sort"
+          (change)="onSort($any($event.target).value)"
+        >
+          @for (s of sorts; track s) {
+            <option [value]="s" [selected]="s === v.sort">{{ sortLabels[s] }}</option>
+          }
+        </select>
+      </div>
+    </ng-template>
+
     @if (panel()) {
-      <div id="sl-filters" class="panel" role="group" aria-label="Filters" data-filter-panel>
+      <div
+        id="sl-filters"
+        class="panel"
+        role="group"
+        [attr.aria-label]="compact() ? 'Filters, group and sort' : 'Filters'"
+        data-filter-panel
+      >
+        @if (compact()) {
+          <ng-container *ngTemplateOutlet="groupSort" />
+        }
         <div class="fld fld--col">
           <label class="lbl" for="sl-assignee">Assignee</label>
           <select
@@ -441,6 +458,8 @@ export class SwimlaneToolbar {
   readonly people = input<Option[]>([]);
   readonly types = input<Option[]>([]);
   readonly priorities = input<Option[]>([]);
+  /** The phone layout (W4): the bar is Search, Filters and "..."; Group and Sort move into the Filters panel. */
+  readonly compact = input(false);
 
   readonly viewChange = output<Partial<SwimlaneView>>();
   readonly densityChange = output<Density>();
@@ -465,6 +484,13 @@ export class SwimlaneToolbar {
     return out;
   });
   protected readonly count = computed(() => filterCount(this.view()));
+  /** The number on the Filters button. Where Group and Sort live in its panel (compact), a non-default one counts too, so it is never invisible. */
+  protected readonly shownCount = computed(
+    () =>
+      this.count() +
+      (this.compact() && this.view().groupBy !== DEFAULT_VIEW.groupBy ? 1 : 0) +
+      (this.compact() && this.view().sort !== DEFAULT_VIEW.sort ? 1 : 0),
+  );
 
   protected num(value: string): number | null {
     const n = Number(value);

@@ -4,7 +4,7 @@ import { USERS_AVAILABILITY_PARAM, USERS_VIEW_PARAM } from './dashboard-links';
 import { DEFAULT_PERIOD_KEY, periodFromParams } from './dashboard-period';
 import { LEGACY_USERS_POD_PARAM, SCOPE_PARAM, parseScope, scopeFromAddress } from './dash-scope';
 import { TECH_PRIORITY_PARAM, TECH_TYPE_PARAM } from './dash-technician';
-import { DEFAULT_VIEW } from './swimlane/swimlane-model';
+import { DEFAULT_LANE, DEFAULT_VIEW, laneParam } from './swimlane/swimlane-model';
 import { DEFAULT_CHOICE } from './ui/trend-model';
 
 /**
@@ -52,6 +52,7 @@ export const DASH_DEFAULTS: Record<DashboardTab, Readonly<Record<string, string>
     group: DEFAULT_VIEW.groupBy,
     sort: DEFAULT_VIEW.sort,
     days: String(DEFAULT_VIEW.days),
+    lane: laneParam(DEFAULT_LANE),
   },
   users: { [USERS_VIEW_PARAM]: 'workload', [USERS_AVAILABILITY_PARAM]: 'all', cov: 'type' },
 };

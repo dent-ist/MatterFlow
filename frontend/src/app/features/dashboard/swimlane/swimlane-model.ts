@@ -525,3 +525,49 @@ export function laneQueueParams(
   if (view.overdue) params['overdue'] = 'true';
   return params;
 }
+
+// ---- the lane switcher (W4, #125): below 900 px one lane at a time
+
+/** Below this width the four lanes are replaced by the lane switcher and one lane. Keep in step with the 900 px rule of the board. */
+export const LANE_SWITCHER_QUERY = '(max-width: 899.98px)';
+/** The address parameter that names the selected lane; the default lane is left out (P9). */
+export const LANE_PARAM = 'lane';
+/** The lane shown first: the largest working lane. */
+export const DEFAULT_LANE: LaneCode = 'IN_PROGRESS';
+
+const LANE_PARAMS: Record<LaneCode, string> = {
+  NEW: 'new',
+  IN_PROGRESS: 'progress',
+  ON_HOLD: 'hold',
+  COMPLETED: 'done',
+};
+
+/** The address value of a lane (`new`, `progress`, `hold`, `done`). */
+export function laneParam(code: LaneCode): string {
+  return LANE_PARAMS[code];
+}
+
+/** The lane an address value names, or null when it names none. */
+export function laneFromParam(value: string | null): LaneCode | null {
+  const found = (Object.entries(LANE_PARAMS) as [LaneCode, string][]).find(([, v]) => v === value);
+  return found ? found[0] : null;
+}
+
+const LANE_STORAGE_KEY = 'mf.dashboard.swimlane.lane';
+
+/** The lane chosen earlier in this browser session (sessionStorage), or null. Storage may be unavailable: then nothing is remembered. */
+export function rememberedLane(): LaneCode | null {
+  try {
+    return laneFromParam(sessionStorage.getItem(LANE_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export function rememberLane(code: LaneCode): void {
+  try {
+    sessionStorage.setItem(LANE_STORAGE_KEY, laneParam(code));
+  } catch {
+    /* storage unavailable: the choice lasts until the tab is left */
+  }
+}
