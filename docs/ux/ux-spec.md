@@ -129,11 +129,15 @@ Always show the (configurable) label text plus an icon; pill, 12 px semibold, 4 
 
 | Code | Default label | Fg / Bg | Icon |
 |---|---|---|---|
-| `NEW` | New | #1F4E9C / #E3ECFA | circle-dot |
+| `NEW` | New | #374151 / #FFFFFF, outlined | dot (filled circle) |
 | `IN_PROGRESS` | In Progress | #0B5E55 / #DDF3EF | play-circle |
-| `ON_HOLD` | On Hold | #8A4B00 / #FFF4DB | pause-circle |
+| `ON_HOLD` | On Hold | #111827 / #A9B0BB | pause-circle |
 | `COMPLETED` | Completed | #146C2E / #E5F5EA | check-circle |
 | `CANCELLED` | Cancelled | #4B5563 / #ECEEF1 | x-circle |
+
+**One colour language (My Work review M9, #162).** Each colour means one thing across every list, the Dashboard and the Swimlane: the **left stripe is overdue** (red `--mf-due-overdue`, always together with the "Overdue Nd" text); **amber is High priority** (and the generic warnings); **grey with a pause icon is On Hold**; **blue with a bolt is ASAP** (blue is also the link and brand colour, but never a status). New is therefore a neutral, outlined pill with a dot, not blue; On Hold is no longer amber. Contrast: both pills pass 4.5:1 (New 10.3:1, On Hold 8.1:1) and the On Hold fill is clearly darker than the High fill in greyscale, so the two stay apart without colour; the pause icon and the label are the non-colour cues, and forced-colours mode keeps the pill border, icon and text. Charts that colour by status use the same family (New dark slate `--mf-st-new-fg`, In Progress teal, On Hold mid grey `--mf-border-strong`) and always name the row in text.
+
+**On Hold rows (#165, #182).** The row says why: the Status cell shows the pill and, on a second muted line, the reason (the latest hold comment as plain text, one line with an ellipsis; the tooltip and the screen reader text hold up to 200 characters, `...` after a cut). A pause marker with the accessible name "On hold" starts the Ref cell; the title and ref are not dimmed because the task still needs attention. In Compact density there is no second line (tooltip only); at phone width the reason moves under the title as "Waiting: ...". A task on hold without a hold comment (data from before the rule) shows the pill and the marker only.
 
 ### 4.5 Priority badges
 Admin-defined labels ordered by `SortOrder` (first = most urgent). Badge = label text + small level-bar glyph (1 to 4 bars by rank) so it is not colour-only. Defaults: **Critical** (white on #B42318), **High** (#5C2E00 on #FFD9A8), **Normal** (#1B1F27 on #E3E7EE), **Low** (#3B4350 on #F1F3F6). Admin colour overrides are validated for 4.5:1 text contrast on the Priorities screen; extra priorities use a neutral style plus glyph. Priority is never shown as a number.
@@ -141,11 +145,11 @@ Admin-defined labels ordered by `SortOrder` (first = most urgent). Badge = label
 ### 4.6 Due date display (`DueCell`)
 | Case | Display | Style |
 |---|---|---|
-| No due date | **ASAP** | Bold blue outlined pill. Never red. Tooltip "No due date set. Handle promptly." Never overdue, never counted as overdue. |
+| No due date | **ASAP** | Bold blue outlined pill with a bolt (blue means ASAP only, M9). Never red. Tooltip "No due date set. Handle promptly." Never overdue, never counted as overdue. |
 | Future date, more than 2 days away | `Oct 28, 2026` | Normal |
 | Due today or within 2 days | date + "Due soon" | Amber text + clock icon [UX-PROPOSAL: 2-day threshold] |
 | Date + time | `Oct 28, 2026 3:00 PM` | Same colour rules |
-| Overdue (date-only: after 23:59 firm time on that date; with time: after that time) and status not Completed/Cancelled | date + "Overdue 4d" | Red text + alert icon |
+| Overdue (date-only: after 23:59 firm time on that date; with time: after that time) and status not Completed/Cancelled | date + "Overdue 4d" | Red text + alert icon; the row (table) or card (Swimlane) gets the red left stripe (M9) |
 | Completed/Cancelled | Date, muted | No overdue styling |
 Dates render in the **single firm timezone** (tooltip shows the zone abbreviation). Storage is UTC (backend concern).
 

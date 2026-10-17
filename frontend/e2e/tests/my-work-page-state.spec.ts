@@ -143,6 +143,10 @@ test.describe('My Work page state', () => {
     const page = await asUser(me.username);
     const myWork = new MyWorkPage(page);
     await myWork.open('?view=dueSoon&priority=1&priority=2');
+    // A view is remembered once its list has loaded (the heading shows earlier): wait for that before leaving, as a person would.
+    await expect
+      .poll(() => page.evaluate((k) => localStorage.getItem(k), viewKey(me.userId)))
+      .toContain('dueSoon');
     await page.goto('/pods/work'); // away, then back through the nav with no query string
     await page.getByRole('link', { name: 'My Work', exact: true }).first().click();
     const notice = page.locator('[data-restored-notice]');
