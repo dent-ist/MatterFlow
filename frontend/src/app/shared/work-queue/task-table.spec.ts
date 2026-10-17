@@ -6,6 +6,7 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
 import { Permission } from '../../core/auth/permissions';
 import { aRow, provideClock, provideLookups } from './work-queue-testing';
+import { KeyboardShortcuts } from '../layout/keyboard-shortcuts';
 import { TaskTable } from './task-table';
 
 describe('TaskTable', () => {
@@ -637,5 +638,81 @@ describe('TaskTable', () => {
       'Oct 16, 2026, 9:30 PM CDT',
     );
     expect(cells[1].textContent?.trim()).toBe('-');
+  });
+
+  describe('keyboard (#181)', () => {
+    const key = (target: Element, k: string, init: KeyboardEventInit = {}) => {
+      const event = new KeyboardEvent('keydown', {
+        key: k,
+        bubbles: true,
+        cancelable: true,
+        ...init,
+      });
+      target.dispatchEvent(event);
+      return event;
+    };
+    const rows = [aRow({ taskId: 1 }), aRow({ taskId: 2 }), aRow({ taskId: 3 })];
+    const title = (id: number) =>
+      el().querySelector<HTMLElement>(`a.wt-title[data-task-id="${id}"]`)!;
+    const perms: Permission[] = ['Task.SetPriority', 'Task.ChangeStatus'];
+
+    it('j, k and the arrows move between the title links; the ends stay put', async () => {
+      await create(rows, ['priority', 'status'], { from: 'my-work' }, perms);
+      title(1).focus();
+      key(title(1), 'j');
+      expect(document.activeElement).toBe(title(2));
+      key(title(2), 'ArrowDown');
+      expect(document.activeElement).toBe(title(3));
+      key(title(3), 'j');
+      expect(document.activeElement).toBe(title(3));
+      key(title(3), 'k');
+      expect(document.activeElement).toBe(title(2));
+      key(title(2), 'ArrowUp');
+      expect(document.activeElement).toBe(title(1));
+      key(title(1), 'ArrowUp');
+      expect(document.activeElement).toBe(title(1));
+    });
+
+    it('keeps the link carrying from= (Enter is the link itself)', async () => {
+      await create(rows, ['status'], { from: 'my-work' });
+      expect(title(1).getAttribute('href')).toBe('/tasks/1?from=my-work');
+    });
+
+    it('s and p click the Status and Priority triggers of the row; p does nothing without the permission', async () => {
+      await create(rows, ['priority', 'status'], {}, ['Task.ChangeStatus']);
+      const status = el().querySelector<HTMLElement>(
+        'tr[data-task="TSK-1042"] td[data-col="status"] [data-inline-trigger]',
+      )!;
+      const click = vi.spyOn(status, 'click');
+      title(2).focus();
+      expect(key(title(1), 's').defaultPrevented).toBe(true);
+      expect(click).toHaveBeenCalled();
+      expect(key(title(1), 'p').defaultPrevented).toBe(false);
+    });
+
+    it('character keys do nothing while the shortcuts are off, arrows still work', async () => {
+      await create(rows, ['status'], {}, perms);
+      TestBed.inject(KeyboardShortcuts).setEnabled(false);
+      title(1).focus();
+      expect(key(title(1), 'j').defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(title(1));
+      key(title(1), 'ArrowDown');
+      expect(document.activeElement).toBe(title(2));
+    });
+
+    it('leaves keys typed in a text field alone, and ignores Ctrl+J', async () => {
+      await create(rows, ['status']);
+      const input = document.createElement('input');
+      cell('title').appendChild(input);
+      expect(key(input, 'j').defaultPrevented).toBe(false);
+      expect(key(title(1), 'j', { ctrlKey: true }).defaultPrevented).toBe(false);
+    });
+
+    it('waits while a g is pending (g then p is Pod Work)', async () => {
+      await create(rows, ['priority'], {}, perms);
+      const service = TestBed.inject(KeyboardShortcuts);
+      service.handleGo(new KeyboardEvent('keydown', { key: 'g' }));
+      expect(key(title(1), 'p').defaultPrevented).toBe(false);
+    });
   });
 });

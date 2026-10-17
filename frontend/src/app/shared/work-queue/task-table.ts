@@ -41,6 +41,8 @@ import { InlineField, canEditField } from './inline-edit';
 import { CLOSED_STATUSES, SortDirection } from './queue-filters';
 import { hasStepLink, stepLinkLabel, stepQueryParams } from './step-link';
 import { RowEdit } from './row-edit';
+import { KeyboardShortcuts, isEditable } from '../layout/keyboard-shortcuts';
+import { isShortcut } from '../layout/shortcut-registry';
 import { TaskSkeleton } from './task-skeleton';
 
 /**
@@ -496,6 +498,9 @@ const NARROW_BELOW = 760;
 export class TaskTable {
   private readonly clock = inject(Clock);
   protected readonly auth = inject(AuthStore);
+  private readonly shortcuts = inject(KeyboardShortcuts);
+  /** The title link to go back to when a menu opened with S or P closes (#181). */
+  private returnTo: HTMLElement | null = null;
   protected readonly holdTitle = holdTitle;
   private readonly zone = inject(USER_TIME_ZONE);
   private readonly router = inject(Router);
@@ -554,6 +559,67 @@ export class TaskTable {
   protected readonly linkState = computed(() =>
     this.from() ? { returnTo: this.here() } : undefined,
   );
+
+  /**
+   * Keyboard model of the grid (#181). It reads only stable hooks, not the cell layout: `tr[data-task]` for a row, `a.wt-title` for the
+   * title link, `td[data-col=status|priority] [data-inline-trigger]` for the menus. Down/Up move between the title links of the rows;
+   * J and K do the same and S and P open the Status and Priority menus, but only while the keyboard shortcuts are on (single-character
+   * keys, WCAG 2.1.4). Keys typed into a control, or inside an open menu, are left alone. Enter is the link's own.
+   */
+  private readonly onGridKey = (event: KeyboardEvent): void => {
+    if (event.defaultPrevented || event.isComposing) return;
+    const target = event.target as HTMLElement;
+    if (isEditable(target) || target.closest('.im-pop')) return;
+    const row = target.closest<HTMLElement>('tr[data-task]');
+    if (!row) return;
+    const arrow = event.key === 'ArrowDown' || event.key === 'ArrowUp';
+    const character = !arrow;
+    if (character && (!this.shortcuts.enabled() || this.shortcuts.sequencePending())) return;
+    const step = isShortcut('row-next', event) ? 1 : isShortcut('row-prev', event) ? -1 : 0;
+    if (step !== 0) {
+      const rows = Array.from(
+        row.closest('tbody')?.querySelectorAll<HTMLElement>('tr[data-task]') ?? [],
+      );
+      const next = rows[rows.indexOf(row) + step];
+      event.preventDefault();
+      next?.querySelector<HTMLElement>('a.wt-title')?.focus();
+      return;
+    }
+    const menu = isShortcut('row-status', event)
+      ? 'status'
+      : isShortcut('row-priority', event)
+        ? 'priority'
+        : null;
+    if (!menu) return;
+    const trigger = row.querySelector<HTMLElement>(`td[data-col="${menu}"] [data-inline-trigger]`);
+    // No trigger means the person may not change it (or the column is folded away): the key does nothing.
+    if (!trigger) return;
+    event.preventDefault();
+    this.returnTo = row.querySelector<HTMLElement>('a.wt-title');
+    trigger.click();
+  };
+
+  /** After a menu opened with S or P closes, focus goes back to the row's title link, so J and K keep working. */
+  private readonly onGridFocus = (event: FocusEvent): void => {
+    const back = this.returnTo;
+    if (!back) return;
+    const target = event.target as HTMLElement;
+    if (target.closest('.im-pop')) return;
+    this.returnTo = null;
+    if (!target.matches('[data-inline-trigger]') || target.closest('tr') !== back.closest('tr'))
+      return;
+    // The trigger gets focus while the menu is still being removed; once that has settled, and nothing else (a dialog) took the focus,
+    // the row's title link is where the person continues.
+    setTimeout(() => {
+      if (
+        document.activeElement === target &&
+        !document.querySelector('.im-pop') &&
+        back.isConnected
+      ) {
+        back.focus();
+      }
+    });
+  };
 
   /** A plain click on a title remembers the row, so Back can focus it again. */
   protected drillOut(event: MouseEvent, row: TaskQueueRow): void {
@@ -625,6 +691,13 @@ export class TaskTable {
         this.overflowing.set(el.scrollWidth > el.clientWidth + 1);
       };
       measure();
+      // The keyboard model listens on the scrolling region (rows come and go under it).
+      el.addEventListener('keydown', this.onGridKey);
+      el.addEventListener('focusin', this.onGridFocus);
+      destroyRef.onDestroy(() => {
+        el.removeEventListener('keydown', this.onGridKey);
+        el.removeEventListener('focusin', this.onGridFocus);
+      });
       // Where the grid overflows sideways the filters move into the sheet.
       this.filters()?.watchOverflow(el);
       if (typeof ResizeObserver === 'undefined') return;

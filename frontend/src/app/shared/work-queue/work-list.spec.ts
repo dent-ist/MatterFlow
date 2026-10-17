@@ -4,6 +4,8 @@ import { DrillReturn } from './drill';
 import { TaskQueueRow } from '../../api/generated/api-client';
 import { WorkTab, WorkTabs } from './work-tabs';
 import { WorkList } from './work-list';
+import { SkipTarget } from '../layout/skip-target';
+import { ShortcutRegistry } from '../layout/shortcut-registry';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
 import { aRow, provideClock, provideLookups } from './work-queue-testing';
 
@@ -133,6 +135,34 @@ describe('WorkList', () => {
     fixture.detectChanges();
     expect(el().querySelector('[data-near-empty]')).toBeNull();
   });
+
+  it('offers "Skip to task list" while it is on screen; it focuses the first row title, else the list (#181)', async () => {
+    await create([aRow({ taskId: 5 }), aRow({ taskId: 6 })]);
+    const skip = TestBed.inject(SkipTarget);
+    expect(skip.target()?.label).toBe('Skip to task list');
+    skip.target()!.focus();
+    expect((document.activeElement as HTMLElement).getAttribute('data-task-id')).toBe('5');
+    fixture.destroy();
+    expect(skip.target()).toBeNull();
+  });
+
+  it('skips to the list itself when there are no rows, and lists the row keys in the help', async () => {
+    await create([], { emptyText: 'No tasks yet.' });
+    TestBed.inject(SkipTarget).target()!.focus();
+    expect((document.activeElement as HTMLElement).classList.contains('wt-wrap')).toBe(true);
+    const ids = TestBed.inject(ShortcutRegistry)
+      .all()
+      .map((s) => s.id);
+    expect(ids).toEqual(
+      expect.arrayContaining(['row-next', 'row-prev', 'row-status', 'row-priority']),
+    );
+    fixture.destroy();
+    expect(
+      TestBed.inject(ShortcutRegistry)
+        .all()
+        .some((s) => s.id === 'row-next'),
+    ).toBe(false);
+  });
 });
 
 describe('WorkTabs', () => {
@@ -260,6 +290,8 @@ describe('WorkList drill-in (M7)', () => {
   });
 
   it('focuses the page heading when the row is no longer on the page', async () => {
+    // A heading left over from a page another spec rendered would be found first.
+    document.querySelectorAll('[data-page-title]').forEach((e) => e.remove());
     const h1 = document.createElement('h1');
     h1.setAttribute('data-page-title', '');
     document.body.appendChild(h1);

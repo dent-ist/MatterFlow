@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ConfirmDialog } from '../ui/confirm-dialog';
+import { KeyboardShortcuts } from './keyboard-shortcuts';
 import { ShortcutHelpState } from './shortcut-help-state';
 import { ShortcutRegistry } from './shortcut-registry';
 
@@ -16,6 +17,25 @@ import { ShortcutRegistry } from './shortcut-registry';
       [(visible)]="state.open"
     >
       <div data-shortcut-help>
+        <div class="sh__switch">
+          <label class="sh__switchlabel">
+            <input
+              type="checkbox"
+              role="switch"
+              data-shortcuts-switch
+              [checked]="keyboard.enabled()"
+              (change)="keyboard.setEnabled(asChecked($event))"
+            />
+            <span
+              >Keyboard shortcuts: <strong>{{ keyboard.enabled() ? 'on' : 'off' }}</strong></span
+            >
+          </label>
+          <p class="sh__switchnote">
+            Turns off every single-key shortcut below (J, K, S, P, G then a letter, / and ?). Ctrl +
+            K, Esc and the arrow keys keep working. Your choice is remembered for you on this
+            browser.
+          </p>
+        </div>
         @for (group of registry.groups(); track group.id) {
           <section class="sh__group">
             <h3 class="sh__heading">{{ group.heading }}</h3>
@@ -25,8 +45,8 @@ import { ShortcutRegistry } from './shortcut-registry';
                   <dt>
                     @for (k of item.keys; track k; let last = $last) {
                       <kbd>{{ k }}</kbd>
-                      @if (!last) {
-                        <span class="sh__or" aria-hidden="true"> </span>
+                      @if (!last && item.sequence) {
+                        <span class="sh__then">then</span>
                       }
                     }
                   </dt>
@@ -40,6 +60,32 @@ import { ShortcutRegistry } from './shortcut-registry';
     </mf-confirm-dialog>
   `,
   styles: `
+    .sh__switch {
+      margin-bottom: var(--mf-s3);
+      padding-bottom: var(--mf-s3);
+      border-bottom: 1px solid var(--mf-border);
+    }
+    .sh__switchlabel {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      min-height: var(--mf-target-min, 2rem);
+      cursor: pointer;
+    }
+    .sh__switchlabel input {
+      width: 1.125rem;
+      height: 1.125rem;
+    }
+    .sh__switchnote {
+      margin: 0;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+    .sh__then {
+      margin-right: var(--mf-s1);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
     .sh__group + .sh__group {
       margin-top: var(--mf-s3);
     }
@@ -79,4 +125,9 @@ import { ShortcutRegistry } from './shortcut-registry';
 export class ShortcutHelp {
   protected readonly registry = inject(ShortcutRegistry);
   protected readonly state = inject(ShortcutHelpState);
+  protected readonly keyboard = inject(KeyboardShortcuts);
+
+  protected asChecked(event: Event): boolean {
+    return (event.target as HTMLInputElement).checked;
+  }
 }

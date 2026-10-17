@@ -1,5 +1,6 @@
 import {
   ChangeDetectionStrategy,
+  DestroyRef,
   Component,
   ElementRef,
   Injector,
@@ -13,6 +14,8 @@ import {
 } from '@angular/core';
 import { MyWorkBucketCounts, TaskQueueRow } from '../../api/generated/api-client';
 import { ListFilters } from '../filters/list-filters';
+import { SkipTarget } from '../layout/skip-target';
+import { ROW_SHORTCUTS, ShortcutRegistry } from '../layout/shortcut-registry';
 import { PageFooter } from '../ui/page-footer';
 import { Pager } from '../ui/pager';
 import { Density } from './column-prefs';
@@ -145,6 +148,14 @@ export class WorkList {
   private returnHandled = false;
 
   constructor() {
+    // The work pages' first Tab stop (#181): "Skip to task list" moves to the first row (or the list itself while there are no rows),
+    // and the row keys are listed in the shortcut help while a list is on screen.
+    const destroyRef = inject(DestroyRef);
+    const offs = [
+      inject(SkipTarget).register({ label: 'Skip to task list', focus: () => this.focusList() }),
+      ...ROW_SHORTCUTS.map((def) => inject(ShortcutRegistry).register(def)),
+    ];
+    destroyRef.onDestroy(() => offs.forEach((off) => off()));
     // Coming back from a task (browser Back or "Back to ..."): focus the title link of the row that was left, else the page heading.
     effect(() => {
       const from = this.from();
@@ -172,13 +183,18 @@ export class WorkList {
       if (this.state() !== 'ready' || !this.focusAfterRetry) return;
       this.focusAfterRetry = false;
       queueMicrotask(() => {
-        const root = this.host.nativeElement;
-        const target =
-          root.querySelector<HTMLElement>('tbody a.wt-title') ??
-          root.querySelector<HTMLElement>('.wt-wrap');
-        target?.focus();
+        this.focusList();
       });
     });
+  }
+
+  /** The first row's title link, or the list's scroll region when there is no row. */
+  private focusList(): void {
+    const root = this.host.nativeElement;
+    const target =
+      root.querySelector<HTMLElement>('tbody tr[data-task] a.wt-title') ??
+      root.querySelector<HTMLElement>('.wt-wrap');
+    target?.focus();
   }
 
   protected onRetry(): void {

@@ -1,3 +1,8 @@
+@if (skipTarget.target(); as skip) {
+  <a class="mf-skip" href="#mf-list" data-skip-list (click)="skipToList($event)">{{
+    skip.label
+  }}</a>
+}
 <a class="mf-skip" href="#mf-main" (click)="skipToMain($event)">Skip to main content</a>
 
 <header class="mf-header" [class.mf-header--search-open]="searchOpen()">

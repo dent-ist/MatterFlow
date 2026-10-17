@@ -6,8 +6,10 @@ export interface ShortcutDef {
   /** Stable id; the handler and the help refer to it. */
   id: string;
   group: ShortcutGroupId;
-  /** The key caps shown in the help (one per alternative key, not a chord). */
+  /** The key caps shown in the help (one per alternative key, or the keys of a sequence in order). */
   keys: string[];
+  /** The keys are pressed one after the other (`g` then `m`), not as alternatives. */
+  sequence?: boolean;
   /** What it does, in the help's words. */
   does: string;
   /** The handler's test for a keydown event (omitted for keys that belong to a widget, such as arrows in a menu). */
@@ -71,12 +73,88 @@ export const FOCUS_FILTER_SHORTCUT = {
   matches: (e: KeyboardEvent) => e.key === '/' && plain(e),
 } as const;
 
-const BY_ID = new Map<string, ShortcutDef>(GLOBAL_SHORTCUTS.map((s) => [s.id, s]));
+const lower = (e: KeyboardEvent): string => e.key.toLowerCase();
+
+/** Row shortcuts of the work lists (#181). They act only while focus is on a row of the grid and the user has shortcuts switched on. A screen registers them while its list is open. */
+export const ROW_SHORTCUTS: readonly ShortcutDef[] = [
+  {
+    id: 'row-next',
+    group: 'work-lists',
+    keys: ['J', '↓'],
+    does: 'Move to the next task in the list',
+    matches: (e) => plain(e) && !e.shiftKey && (e.key === 'j' || e.key === 'ArrowDown'),
+  },
+  {
+    id: 'row-prev',
+    group: 'work-lists',
+    keys: ['K', '↑'],
+    does: 'Move to the previous task in the list',
+    matches: (e) => plain(e) && !e.shiftKey && (e.key === 'k' || e.key === 'ArrowUp'),
+  },
+  {
+    id: 'row-open',
+    group: 'work-lists',
+    keys: ['Enter'],
+    does: 'Open the task you are on',
+  },
+  {
+    id: 'row-status',
+    group: 'work-lists',
+    keys: ['S'],
+    does: 'Open the Status menu of the task you are on',
+    matches: (e) => plain(e) && !e.shiftKey && lower(e) === 's',
+  },
+  {
+    id: 'row-priority',
+    group: 'work-lists',
+    keys: ['P'],
+    does: 'Open the Priority menu of the task you are on (if you may change it)',
+    matches: (e) => plain(e) && !e.shiftKey && lower(e) === 'p',
+  },
+];
+
+/** `g` then a letter goes to a work page (#181); the second key must follow within `GO_SEQUENCE_MS`. */
+export const GO_SEQUENCE_MS = 1500;
+export const GO_START: Pick<ShortcutDef, 'id' | 'matches'> = {
+  id: 'go-start',
+  matches: (e) => plain(e) && !e.shiftKey && e.key === 'g',
+};
+export interface GoTarget {
+  id: string;
+  key: string;
+  path: string;
+  does: string;
+  /** The permission that shows the page in the navigation. */
+  permission: string;
+}
+export const GO_TARGETS: readonly GoTarget[] = [
+  { id: 'go-my-work', key: 'm', path: '/my-work', does: 'Go to My Work', permission: 'Task.View' },
+  { id: 'go-tasks', key: 't', path: '/tasks', does: 'Go to Task Queue', permission: 'Task.View' },
+  {
+    id: 'go-pod-work',
+    key: 'p',
+    path: '/pods/work',
+    does: 'Go to Pod Work',
+    permission: 'Pod.View',
+  },
+];
+export const goShortcut = (t: GoTarget): ShortcutDef => ({
+  id: t.id,
+  group: 'anywhere',
+  keys: ['G', t.key.toUpperCase()],
+  sequence: true,
+  does: t.does,
+});
+
+const BY_ID = new Map<string, ShortcutDef>(
+  [...GLOBAL_SHORTCUTS, ...ROW_SHORTCUTS].map((s) => [s.id, s]),
+);
 
 /** Whether a keydown event is the shortcut with this id: the handlers call this, so a key and its help line cannot drift apart. */
 export function isShortcut(id: string, event: KeyboardEvent): boolean {
   const def = BY_ID.get(id);
   if (def) return def.matches?.(event) ?? false;
+  if (id === GO_START.id) return GO_START.matches!(event);
   return id === FOCUS_FILTER_SHORTCUT.id && FOCUS_FILTER_SHORTCUT.matches(event);
 }
 

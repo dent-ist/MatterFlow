@@ -24,6 +24,8 @@ import { GlobalSearch } from '../search/global-search';
 import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem } from './nav-items';
 import { DRILL_SOURCES, parseFrom } from '../work-queue/drill';
 import { ShortcutHelpState } from './shortcut-help-state';
+import { KeyboardShortcuts } from './keyboard-shortcuts';
+import { SkipTarget } from './skip-target';
 import { isShortcut } from './shortcut-registry';
 import { ShellLayout } from '../ui/fixed-page';
 import { UserMenu } from './user-menu';
@@ -73,6 +75,9 @@ export class AppShell {
     SEARCH_TYPES.some((t) => this.auth.has(t.permission)),
   );
   private readonly help = inject(ShortcutHelpState);
+  private readonly shortcuts = inject(KeyboardShortcuts);
+  /** Set while a page offers a first stop of its own ("Skip to task list" on the work pages, #181). */
+  protected readonly skipTarget = inject(SkipTarget);
   /** The shortcut list loads the first time it is opened. */
   protected readonly helpHost = signal<Type<unknown> | null>(null);
   protected readonly navItems = computed(() => this.visible(NAV_ITEMS));
@@ -85,6 +90,7 @@ export class AppShell {
   );
 
   constructor() {
+    this.shortcuts.listGoShortcuts();
     this.router.events
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
@@ -201,6 +207,11 @@ export class AppShell {
     );
   }
 
+  protected skipToList(event: Event): void {
+    event.preventDefault();
+    this.skipTarget.target()?.focus();
+  }
+
   protected skipToMain(event: Event): void {
     event.preventDefault();
     this.main()?.nativeElement.focus();
@@ -229,7 +240,8 @@ export class AppShell {
       this.searchButton()?.nativeElement.focus();
       return;
     }
-    if (isShortcut('help', event)) {
+    if (this.shortcuts.handleGo(event)) return;
+    if (isShortcut('help', event) && this.shortcuts.enabled()) {
       const target = event.target as HTMLElement | null;
       const typing =
         !!target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable);

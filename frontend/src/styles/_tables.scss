@@ -102,3 +102,8 @@ td.mf-col-actions {
   color: var(--mf-text-muted);
   font-weight: 400;
 }
+
+/* Keyboard (#181): the row that holds focus stays highlighted while J, K or the arrows move through the grid. */
+.wt tbody tr[data-task]:focus-within > td {
+  background: var(--mf-surface-alt);
+}

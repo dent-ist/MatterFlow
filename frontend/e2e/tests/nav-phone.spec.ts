@@ -61,7 +61,9 @@ test.describe('Phone navigation (below 640 px)', () => {
     await expect(menu).toHaveAttribute('aria-expanded', 'false');
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden();
 
-    // Tab order: skip link, then Menu.
+    // Tab order: the skip links ("Skip to task list" on a work page, #181, then "Skip to main content"), then Menu.
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('link', { name: 'Skip to task list' })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
     await page.keyboard.press('Tab');

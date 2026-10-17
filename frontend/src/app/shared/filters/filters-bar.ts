@@ -13,6 +13,7 @@ import {
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { KeyboardShortcuts } from '../layout/keyboard-shortcuts';
 import { FOCUS_FILTER_SHORTCUT, ShortcutRegistry, isShortcut } from '../layout/shortcut-registry';
 import { FiltersToggle } from '../ui/column-filters';
 import { FilterChips, FilterNotice } from './filter-chips';
@@ -241,6 +242,7 @@ export class FiltersBar {
 
   private readonly injector = inject(Injector);
   private readonly router = inject(Router);
+  private readonly shortcuts = inject(KeyboardShortcuts);
 
   /** Whether `/` works here: the screen has a text filter with a control. */
   private readonly hasTextFilter = computed(() =>
@@ -276,6 +278,8 @@ export class FiltersBar {
   @HostListener('document:keydown', ['$event'])
   protected onSlash(event: KeyboardEvent): void {
     if (!isShortcut('focus-filter', event) || event.defaultPrevented) return;
+    // A single-key shortcut: it stays quiet when the person switched the keyboard shortcuts off (WCAG 2.1.4, #181).
+    if (!this.shortcuts.enabled()) return;
     const target = event.target as HTMLElement | null;
     if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
     if (target?.isContentEditable || target?.closest?.('[role="dialog"]')) return;

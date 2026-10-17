@@ -163,8 +163,14 @@ export class WorkTabs {
     const tab = this.host.nativeElement.querySelector<HTMLElement>(
       `#${this.idPrefix()}-tab-${key}`,
     );
-    if (tab && typeof tab.scrollIntoView === 'function') {
-      tab.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    // Not `scrollIntoView`: besides scrolling the document sideways, it makes the browser start the next Tab press from the tab list, so the
+    // first Tab of the page skipped the skip links (the nav-phone skip-link failure, #181). Only the tab strip scrolls.
+    const strip = tab?.parentElement;
+    if (tab && strip) {
+      const t = tab.getBoundingClientRect();
+      const l = strip.getBoundingClientRect();
+      if (t.left < l.left) strip.scrollLeft -= l.left - t.left;
+      else if (t.right > l.right) strip.scrollLeft += t.right - l.right;
     }
     this.measure();
   }
