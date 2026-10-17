@@ -8,7 +8,7 @@ interface StatusStyle {
 
 /** Fixed per-code look (UX 4.4); only the label text is configurable. */
 const STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
-  NEW: { tone: 'new', icon: 'pi-circle-on' },
+  NEW: { tone: 'new', icon: 'pi-circle-fill' },
   IN_PROGRESS: { tone: 'progress', icon: 'pi-play-circle' },
   ON_HOLD: { tone: 'hold', icon: 'pi-pause-circle' },
   COMPLETED: { tone: 'done', icon: 'pi-check-circle' },
@@ -53,6 +53,9 @@ const STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
     }
     .pi {
       font-size: var(--mf-fs-xs);
+    }
+    .pi-circle-fill {
+      font-size: 0.5rem;
     }
   `,
 })

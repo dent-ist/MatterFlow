@@ -71,6 +71,61 @@ describe('TaskTable', () => {
     expect(headers).toEqual(['Ref', 'Title', 'Status']);
   });
 
+  describe('On Hold rows (#165, #182)', () => {
+    const held = (extra: Partial<TaskQueueRow> = {}) =>
+      aRow({
+        status: 'ON_HOLD',
+        statusLabel: 'On Hold',
+        holdReason: 'Waiting for the custodian',
+        holdReasonTruncated: false,
+        ...extra,
+      });
+
+    it('shows the reason under the pill, a pause marker named On hold in Ref, and the full text as the tooltip', async () => {
+      await create([held()], ['ref', 'title', 'status']);
+      const line = cell('status').querySelector('[data-hold-reason]')!;
+      expect(line.textContent?.trim()).toBe('Waiting for the custodian');
+      expect(cell('status').querySelector('div')!.getAttribute('title')).toBe(
+        'Waiting for the custodian',
+      );
+      const mark = cell('ref').querySelector('[data-hold-mark]')!;
+      expect(mark.getAttribute('aria-label')).toBe('On hold');
+      expect(mark.getAttribute('role')).toBe('img');
+      expect(cell('title').querySelector('[data-hold-hint]')!.textContent).toContain(
+        'Waiting: Waiting for the custodian',
+      );
+      expect(cell('title').querySelector('.wt-title')!.classList.contains('wt-dim')).toBe(false);
+    });
+
+    it('adds an ellipsis to the tooltip of a reason the server cut', async () => {
+      await create([held({ holdReason: 'x'.repeat(200), holdReasonTruncated: true })], ['status']);
+      expect(cell('status').querySelector('div')!.getAttribute('title')).toBe(
+        'x'.repeat(200) + '...',
+      );
+    });
+
+    it('draws no line in Compact density (only the tooltip and the screen reader text)', async () => {
+      await create([held()], ['status'], { density: 'compact' });
+      const host = cell('status').querySelector('mf-hold-note')!;
+      expect(host.classList.contains('quiet')).toBe(true);
+      expect(cell('status').querySelector('div')!.getAttribute('title')).toBe(
+        'Waiting for the custodian',
+      );
+    });
+
+    it('shows nothing for an On Hold row without a reason, for a resumed row, or in the status of other rows', async () => {
+      await create(
+        [held({ holdReason: undefined }), aRow({ taskId: 2, holdReason: 'stale' })],
+        ['ref', 'status'],
+      );
+      const rows = el().querySelectorAll('tbody tr');
+      expect(rows[0].querySelector('[data-hold-reason]')).toBeNull();
+      expect(rows[0].querySelector('[data-hold-mark]')).not.toBeNull();
+      expect(rows[1].querySelector('[data-hold-reason]')).toBeNull();
+      expect(rows[1].querySelector('[data-hold-mark]')).toBeNull();
+    });
+  });
+
   it('shows ASAP as a plain label with a small icon (not a pill) and never as overdue', async () => {
     await create([aRow({ isAsap: true, isOverdue: false })], ['due']);
     const pill = cell('due').querySelector('.wt-asap')!;

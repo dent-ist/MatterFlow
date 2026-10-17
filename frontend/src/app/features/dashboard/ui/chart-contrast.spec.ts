@@ -19,6 +19,11 @@ const t: Record<string, string> = {
   'mf-info': '#1F4E9C',
   'mf-info-bg': '#E3ECFA',
   'mf-st-progress-fg': '#0B5E55',
+  'mf-st-new-fg': '#374151',
+  'mf-st-new-bg': '#FFFFFF',
+  'mf-st-hold-fg': '#111827',
+  'mf-st-hold-bg': '#A9B0BB',
+  'mf-border-strong': '#6B7280',
   'mf-pr-critical-fg': '#FFFFFF',
   'mf-pr-critical-bg': '#B42318',
   'mf-pr-high-fg': '#5C2E00',
@@ -118,5 +123,25 @@ describe('dashboard chart colours', () => {
     expect(overdueShare(0, 53)).toBe(0);
     expect(overdueShare(5, 0)).toBe(0);
     expect(overdueShare(60, 53)).toBe(100);
+  });
+
+  describe('one colour language (M9)', () => {
+    it('the New and On Hold pills read at 4.5:1, and On Hold is clearly darker than the amber High pill in greyscale', () => {
+      expect(contrastRatio(t['mf-st-new-fg'], t['mf-st-new-bg'])).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(t['mf-st-hold-fg'], t['mf-st-hold-bg'])).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(t['mf-st-hold-bg'], t['mf-pr-high-bg'])).toBeGreaterThanOrEqual(1.3);
+    });
+
+    it('the status colours of the charts (New, In Progress, On Hold) are 3:1 on the card and apart from each other', () => {
+      const colors = ['mf-st-new-fg', 'mf-st-progress-fg', 'mf-border-strong'];
+      for (const name of colors) {
+        expect(contrastRatio(t[name], t['mf-surface']), name).toBeGreaterThanOrEqual(3);
+      }
+      expect(contrastRatio(t['mf-st-new-fg'], t['mf-border-strong'])).toBeGreaterThanOrEqual(1.5);
+    });
+
+    it('the white level glyph on the red overdue bar is readable', () => {
+      expect(contrastRatio('#FFFFFF', t['mf-danger'])).toBeGreaterThanOrEqual(4.5);
+    });
   });
 });

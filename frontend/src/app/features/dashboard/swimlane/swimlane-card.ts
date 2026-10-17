@@ -91,11 +91,12 @@ export function initials(name: string): string {
       >
         <span
           class="bar"
+          [class.bar--overdue]="c.isOverdue && !closed()"
           aria-hidden="true"
           data-level-glyph
-          [style.background]="colors().bg"
-          [style.box-shadow]="'inset 0 0 0 1px ' + colors().fg"
-          [style.color]="colors().fg"
+          [style.background]="overdueBar() ? null : colors().bg"
+          [style.box-shadow]="overdueBar() ? null : 'inset 0 0 0 1px ' + colors().fg"
+          [style.color]="overdueBar() ? null : colors().fg"
         >
           @for (on of bars(); track $index) {
             <span class="lvl-bar" [class.on]="on"></span>
@@ -153,9 +154,10 @@ export function initials(name: string): string {
       >
         <span
           class="bar"
+          [class.bar--overdue]="c.isOverdue && !closed()"
           aria-hidden="true"
-          [style.background]="colors().bg"
-          [style.box-shadow]="'inset 0 0 0 1px ' + colors().fg"
+          [style.background]="overdueBar() ? null : colors().bg"
+          [style.box-shadow]="overdueBar() ? null : 'inset 0 0 0 1px ' + colors().fg"
         ></span>
         <div class="body">
           <h4 class="title">
@@ -303,6 +305,17 @@ export function initials(name: string): string {
       flex: none;
       width: 0.5rem;
       border-radius: calc(var(--mf-radius-lg) - 1px) 0 0 calc(var(--mf-radius-lg) - 1px);
+    }
+    /* The leading bar means overdue everywhere (M9): red, with the level glyph (compact) and the priority badge (comfortable) saying the priority. */
+    .bar--overdue {
+      background: var(--mf-due-overdue);
+      color: #fff;
+    }
+    @media (forced-colors: active) {
+      .bar--overdue {
+        background: CanvasText;
+        forced-color-adjust: none;
+      }
     }
     .body {
       flex: 1;
@@ -641,6 +654,7 @@ export class SwimlaneCardView {
   protected readonly closed = computed(() =>
     ['COMPLETED', 'CANCELLED'].includes(this.card().status),
   );
+  protected readonly overdueBar = computed(() => this.card().isOverdue && !this.closed());
   protected readonly colors = computed(() => priorityColors(this.card().priority.color));
   protected readonly percent = computed(() => {
     const c = this.card();

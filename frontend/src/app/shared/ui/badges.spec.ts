@@ -103,6 +103,15 @@ describe('shared badges', () => {
     expect(badge.querySelector('.pi-pause-circle')).not.toBeNull();
     expect(badge.style.background).toContain('--mf-st-hold-bg');
 
+    // New is a neutral outlined pill with a dot, so blue means ASAP only (M9).
+    host.code.set('NEW');
+    fixture.detectChanges();
+    const fresh = el.querySelector<HTMLElement>('[data-status="NEW"]')!;
+    expect(fresh.querySelector('.pi-circle-fill')).not.toBeNull();
+    host.code.set('ON_HOLD');
+    fixture.detectChanges();
+    badge = el.querySelector<HTMLElement>('[data-status]')!;
+
     TestBed.inject(LookupStore).setStatusLabels(
       statuses.rows.map((s) => (s.code === 'ON_HOLD' ? { ...s, displayLabel: 'Waiting' } : s)),
     );

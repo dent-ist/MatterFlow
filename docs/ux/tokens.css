@@ -21,9 +21,9 @@
   --mf-success: #146C2E; --mf-success-bg: #E5F5EA;
   --mf-info: #1F4E9C;    --mf-info-bg: #E3ECFA;
   /* Status badges (text / bg / border) */
-  --mf-st-new-fg: #1F4E9C;        --mf-st-new-bg: #E3ECFA;
+  --mf-st-new-fg: #374151;        --mf-st-new-bg: #FFFFFF;   /* neutral outlined pill + dot: blue means ASAP only (M9) */
   --mf-st-progress-fg: #0B5E55;   --mf-st-progress-bg: #DDF3EF;
-  --mf-st-hold-fg: #8A4B00;       --mf-st-hold-bg: #FFF4DB;
+  --mf-st-hold-fg: #111827;       --mf-st-hold-bg: #A9B0BB;  /* grey + pause icon: amber means High priority only (M9) */
   --mf-st-done-fg: #146C2E;       --mf-st-done-bg: #E5F5EA;
   --mf-st-cancel-fg: #4B5563;     --mf-st-cancel-bg: #ECEEF1;
   /* Priority badges: default set; admin may override colour but must pass 4.5:1 (validated in designer) */

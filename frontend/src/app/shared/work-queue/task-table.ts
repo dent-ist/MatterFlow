@@ -33,6 +33,7 @@ import { MatterRef } from '../ui/matter-ref';
 import { PriorityBadge } from '../ui/priority-badge';
 import { CopyPart } from '../ui/copy-parts';
 import { StatusBadge } from '../ui/status-badge';
+import { HoldNote, holdTitle } from './hold-note';
 import { WORK_COLUMNS, ColumnDef, Density } from './column-prefs';
 import { InlineField, canEditField } from './inline-edit';
 import { CLOSED_STATUSES, SortDirection } from './queue-filters';
@@ -61,6 +62,7 @@ const PROJECT_HIDES_BELOW = 800;
     RowEdit,
     ScrollArea,
     StatusBadge,
+    HoldNote,
     GridBody,
     ColumnFilterRow,
     NgTemplateOutlet,
@@ -142,6 +144,13 @@ const PROJECT_HIDES_BELOW = 800;
                 <td [attr.data-col]="col.key">
                   @switch (col.key) {
                     @case ('ref') {
+                      @if (row.status === 'ON_HOLD') {
+                        <mf-hold-note
+                          kind="mark"
+                          [holdReason]="row.holdReason"
+                          [truncated]="row.holdReasonTruncated"
+                        />
+                      }
                       <span class="wt-mono">{{ row.taskNumber }}</span>
                       @if (isNew(row)) {
                         <span
@@ -169,6 +178,13 @@ const PROJECT_HIDES_BELOW = 800;
                             (click)="drillOut($event, row)"
                             >{{ row.title }}</a
                           >
+                          @if (row.status === 'ON_HOLD' && row.holdReason) {
+                            <mf-hold-note
+                              kind="hint"
+                              [holdReason]="row.holdReason"
+                              [truncated]="row.holdReasonTruncated"
+                            />
+                          }
                           @if (isNew(row) || !hideContext() || foldProgress()) {
                             <span class="wt-subline">
                               @if (isNew(row)) {
@@ -323,15 +339,24 @@ const PROJECT_HIDES_BELOW = 800;
                       }
                     }
                     @case ('status') {
-                      @if (editable('status', row)) {
-                        <mf-row-edit
-                          field="status"
-                          [row]="row"
-                          (rowChange)="rowChange.emit($event)"
-                        />
-                      } @else {
-                        <mf-status-badge [code]="row.status" [label]="row.statusLabel" />
-                      }
+                      <div [attr.title]="holdTitle(row)">
+                        @if (editable('status', row)) {
+                          <mf-row-edit
+                            field="status"
+                            [row]="row"
+                            (rowChange)="rowChange.emit($event)"
+                          />
+                        } @else {
+                          <mf-status-badge [code]="row.status" [label]="row.statusLabel" />
+                        }
+                        @if (row.status === 'ON_HOLD' && row.holdReason) {
+                          <mf-hold-note
+                            [holdReason]="row.holdReason"
+                            [truncated]="row.holdReasonTruncated"
+                            [quiet]="density() === 'compact'"
+                          />
+                        }
+                      </div>
                     }
                     @case ('closed') {
                       @if (row.closedAtUtc) {
@@ -407,6 +432,7 @@ const PROJECT_HIDES_BELOW = 800;
 export class TaskTable {
   private readonly clock = inject(Clock);
   protected readonly auth = inject(AuthStore);
+  protected readonly holdTitle = holdTitle;
   private readonly zone = inject(USER_TIME_ZONE);
   private readonly router = inject(Router);
   private readonly drill = inject(DrillReturn);

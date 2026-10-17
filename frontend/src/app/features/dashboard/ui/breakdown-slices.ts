@@ -33,7 +33,8 @@ export function toneColor(tone: string | null | undefined): string | null {
     case 'IN_PROGRESS':
       return 'var(--mf-st-progress-fg)';
     case 'ON_HOLD':
-      return 'var(--mf-st-hold-fg)';
+      // Grey, like the pill (M9): the chart needs a mid grey that stays apart from New's dark slate; labels name every row.
+      return 'var(--mf-border-strong)';
     default:
       return null;
   }

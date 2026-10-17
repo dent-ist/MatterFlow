@@ -1110,6 +1110,21 @@ describe('DashSwimlaneTab', () => {
     const remember = (density: string) =>
       localStorage.setItem('mf.dashboard.swimlane.v1.5', JSON.stringify({ density }));
 
+    it('turns the leading bar red on an overdue card and keeps the level glyph for the priority (M9)', async () => {
+      remember('compact');
+      await open();
+      const overdue = [...document.querySelectorAll('mf-swimlane-card')].find((c) =>
+        c.querySelector('[data-card-ref]')?.textContent?.includes('TSK-1'),
+      )!;
+      const bar = overdue.querySelector<HTMLElement>('.bar')!;
+      expect(bar.classList.contains('bar--overdue')).toBe(true);
+      expect(bar.style.background).toBe('');
+      expect(bar.querySelectorAll('.lvl-bar').length).toBeGreaterThan(0);
+      expect(overdue.textContent).toContain('Overdue');
+      const calm = lane('IN_PROGRESS').querySelector('mf-swimlane-card .bar')!;
+      expect(calm.classList.contains('bar--overdue')).toBe(false);
+    });
+
     it('draws a remembered Compact setting as one line: level glyph, type, number, title, initials with the flag, due chip', async () => {
       remember('compact');
       await open();
