@@ -641,6 +641,8 @@ describe('TaskTable', () => {
   });
 
   describe('keyboard (#181)', () => {
+    // The switch is stored in localStorage; do not leave it off for the specs that follow.
+    afterEach(() => localStorage.clear());
     const key = (target: Element, k: string, init: KeyboardEventInit = {}) => {
       const event = new KeyboardEvent('keydown', {
         key: k,
@@ -670,6 +672,16 @@ describe('TaskTable', () => {
       key(title(2), 'ArrowUp');
       expect(document.activeElement).toBe(title(1));
       key(title(1), 'ArrowUp');
+      expect(document.activeElement).toBe(title(1));
+    });
+
+    it('skips rows of a collapsed group (hidden rows)', async () => {
+      await create(rows, ['status']);
+      el().querySelector('tr[data-task]:nth-of-type(2)')?.setAttribute('hidden', '');
+      title(1).focus();
+      key(title(1), 'j');
+      expect(document.activeElement).toBe(title(3));
+      key(title(3), 'k');
       expect(document.activeElement).toBe(title(1));
     });
 

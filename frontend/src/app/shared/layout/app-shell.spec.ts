@@ -10,6 +10,8 @@ import { ok, settle } from '../testing/org-testing';
 import { AppShell } from './app-shell';
 
 describe('AppShell header search', () => {
+  beforeEach(() => localStorage.clear());
+
   async function create(permissions: Permission[]) {
     TestBed.configureTestingModule({
       providers: [

@@ -319,6 +319,7 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
     await expect(help).toBeVisible();
     await page.getByRole('switch', { name: /Keyboard shortcuts/ }).check();
     await page.keyboard.press('Escape');
+    await expect(help).toBeHidden();
     await titles(page).first().focus();
     await page.keyboard.press('j');
     expect(await focusedRowIndex(page)).toBe(1);

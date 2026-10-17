@@ -578,7 +578,7 @@ export class TaskTable {
     const step = isShortcut('row-next', event) ? 1 : isShortcut('row-prev', event) ? -1 : 0;
     if (step !== 0) {
       const rows = Array.from(
-        row.closest('tbody')?.querySelectorAll<HTMLElement>('tr[data-task]') ?? [],
+        row.closest('tbody')?.querySelectorAll<HTMLElement>('tr[data-task]:not([hidden])') ?? [],
       );
       const next = rows[rows.indexOf(row) + step];
       event.preventDefault();
