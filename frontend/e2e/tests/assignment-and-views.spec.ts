@@ -112,7 +112,7 @@ test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
     await myWork.expectNotListed(others.title);
   });
 
-  test('My Work: the tabs have their own row, the sort note, Columns and Filters share one bar above the grid, new tasks are marked until the next visit', async ({
+  test('My Work: the tabs have their own row, the sort note, Columns and Filters share one bar above the grid, new tasks stay marked for the whole visit', async ({
     seed,
     asUser,
   }) => {
@@ -140,13 +140,24 @@ test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
     );
     await expect(page.locator('[data-new-marker]')).toHaveCount(0);
 
-    // A task assigned after that visit is marked New on the next one, and not on the one after.
+    // A task assigned after the visit began is marked New, and stays marked for the whole visit (the first use itself marks nothing:
+    // here the visit is set to begin between the two tasks; the 30 minute rule is covered by the unit tests).
+    await new Promise((r) => setTimeout(r, 1100));
+    const since = Date.now();
+    await new Promise((r) => setTimeout(r, 1100));
     const second = await seed.task(world, { title: `Second ${uid()}`, assignedUserId: me.userId });
+    await page.evaluate(
+      ([key, value]) => localStorage.setItem(key, value),
+      [
+        `mf.my-work.visit.v2.${me.userId}`,
+        JSON.stringify({ lastActiveAt: Date.now(), visitSince: since }),
+      ],
+    );
     await myWork.open();
     await expect(myWork.row(second.title).locator('[data-new-marker]')).toHaveText('New');
     await expect(myWork.row(first.title).locator('[data-new-marker]')).toHaveCount(0);
     await myWork.open();
-    await expect(page.locator('[data-new-marker]')).toHaveCount(0);
+    await expect(myWork.row(second.title).locator('[data-new-marker]')).toHaveText('New');
   });
 
   test('SCN-007: Pod Work shows only the chosen Pod and includes colleagues work', async ({

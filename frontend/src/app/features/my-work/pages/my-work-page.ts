@@ -12,7 +12,7 @@ import { ListFilters } from '../../../shared/filters/list-filters';
 import { queueFilterDefs, withoutFilters } from '../../../shared/filters/queue-defs';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
-import { recordVisit } from '../../../shared/work-queue/last-visit';
+import { touchVisit, trackVisitActivity } from '../../../shared/work-queue/last-visit';
 import { PodOption, loadPodChoices } from '../../../shared/work-queue/pod-options';
 import { QueuePageBase } from '../../../shared/work-queue/queue-page';
 import {
@@ -37,6 +37,15 @@ const TAB_LABELS: Readonly<Record<TabKey, string>> = {
 
 /** The Completed tab shows tasks closed in the last 90 days unless the user asks for older ones (UX S02). */
 const COMPLETED_WINDOW_DAYS = 90;
+
+/**
+ * The tab a plain visit opens: Active, unless it is empty (count 0) and another tab is not; then Created by me, then Closed. Due soon
+ * is part of Active, so it never leads.
+ */
+export function firstNonEmptyTab(counts: Readonly<Record<TabKey, number>>): TabKey {
+  if (counts.active > 0) return 'active';
+  return (['createdByMe', 'completed'] as const).find((key) => counts[key] > 0) ?? 'active';
+}
 
 /**
  * Filters a tab decides itself (shown disabled with the reason): the tabs for my own tasks always mean "assigned to me", Created by me
@@ -241,17 +250,27 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
           : 'You have not created any tasks.',
   );
 
-  /** When the user last opened My Work (ms), read once on arrival: tasks created after it show "New". Null on the first visit. */
+  /**
+   * Where the current visit began (ms; a visit ends after more than 30 minutes without activity), read once on arrival: tasks assigned
+   * after it show "New". Opening a task and pressing Back does not change it. Null on the first use.
+   */
   protected readonly lastVisit: number | null;
 
   /** The remembered view is applied once, before anything loads. */
   private pendingRestore = false;
+  /** A plain visit (no query string, nothing restored) opens the first tab that has something in it, once. */
+  private landing = false;
+  /** The tab the landing rule chose: it is not stored as the last view. */
+  private skipRemember = false;
 
   constructor() {
     super('my-work');
-    this.lastVisit = recordVisit(this.userId(), this.clock.now().getTime());
+    const now = () => this.clock.now().getTime();
+    this.lastVisit = touchVisit(this.userId(), now());
+    trackVisitActivity(this.userId(), now);
     const keys = this.route.snapshot?.queryParamMap?.keys ?? [];
     const remembered = keys.length === 0 ? this.lastView() : null;
+    this.landing = keys.length === 0 && !remembered;
     if (remembered) {
       // Open on the tab and filters the user last used, and say so.
       this.pendingRestore = true;
@@ -260,6 +279,35 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     void loadPodChoices(this.podsApi, this.auth.has('Pod.View')).then((c) =>
       this.pods.set(c.options),
     );
+  }
+
+  /** Only Active and Due soon are restored as the landing view: Closed and Created by me are reference tabs reached on purpose. */
+  protected override lastView(): QueueState | null {
+    const view = super.lastView();
+    return view && (view.view === null || view.view === 'active' || view.view === 'dueSoon')
+      ? view
+      : null;
+  }
+
+  protected override restoredLabel(view: QueueState): string | null {
+    return TAB_LABELS[view.view && view.view in TAB_LABELS ? (view.view as TabKey) : 'active'];
+  }
+
+  protected override rememberView(): boolean {
+    const remember = !this.skipRemember;
+    this.skipRemember = false;
+    return remember;
+  }
+
+  protected override loaded(data: MyWorkData): void {
+    touchVisit(this.userId(), this.clock.now().getTime());
+    if (!this.landing) return;
+    this.landing = false;
+    const next = firstNonEmptyTab(data.counts);
+    if (next === 'active') return;
+    this.skipRemember = true;
+    this.filters.showNotice(`Nothing is assigned to you, so this opens ${TAB_LABELS[next]}.`);
+    this.navigate({ ...this.state(), view: next, page: 1, sort: null, dir: null }, true);
   }
 
   protected override shouldLoad(params: ParamMap): boolean {
@@ -295,6 +343,7 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
 
   protected selectTab(key: string): void {
     if (key === this.tab()) return;
+    if (this.filters.noticeMessage()) this.filters.dismissRestored();
     const next = (key in TAB_LABELS ? key : 'active') as TabKey;
     const s = this.state();
     // The new tab owns some columns and offers some statuses: what it cannot use is dropped, so the counts of all tabs agree.

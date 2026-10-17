@@ -1,10 +1,21 @@
 import { emptyState } from './queue-filters';
-import { isBareState, loadLastView, saveLastView } from './last-view';
+import { forgetLastView, isBareState, loadLastView, saveLastView } from './last-view';
 
 describe('last view memory', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     localStorage.clear();
+  });
+
+  it('forgets the view of one screen and user, and leaves the other preferences', () => {
+    const state = { ...emptyState(), view: 'dueSoon' };
+    saveLastView('my-work', 7, state);
+    saveLastView('queue', 7, { ...emptyState(), sort: 'due' });
+    localStorage.setItem('mf.work-table.v3.my-work.7', '{"columns":[],"density":"compact"}');
+    forgetLastView('my-work', 7);
+    expect(loadLastView('my-work', 7)).toBeNull();
+    expect(loadLastView('queue', 7)).not.toBeNull();
+    expect(localStorage.getItem('mf.work-table.v3.my-work.7')).toContain('compact');
   });
 
   it('remembers filters, sort, page size and tab per user and screen, but not the search text or page', () => {

@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { of, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { MyWorkClient, PodsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
@@ -13,7 +13,7 @@ import {
   provideLookups,
   provideQueueChoices,
 } from '../../../shared/work-queue/work-queue-testing';
-import { MyWorkPage } from './my-work-page';
+import { MyWorkPage, firstNonEmptyTab } from './my-work-page';
 
 /** Positions of the arguments of `getMyWork` (the view comes first, then the shared filters). */
 const ARG = {
@@ -305,29 +305,207 @@ describe('MyWorkPage', () => {
     expect(el.querySelector('#fb-q')).toBeNull();
   });
 
-  it('marks tasks created since the previous visit as New, then forgets them at the next visit', async () => {
+  it('marks tasks assigned since the visit began as New and keeps them for the whole visit', async () => {
     const rows = [
       aRow({ taskId: 1, taskNumber: 'TSK-1', createdAtUtc: '2026-10-14T12:00:00Z' }),
       aRow({ taskId: 2, taskNumber: 'TSK-2', createdAtUtc: '2026-10-01T12:00:00Z' }),
     ];
-    // First ever visit: nothing is marked.
-    let el = await open('/my-work', { rows, response: of(pageOf(rows, { counts: COUNTS })) });
+    const response = () => of(pageOf(rows, { counts: COUNTS }));
+    // First ever use: nothing is marked.
+    let el = await open('/my-work', { rows, response: response() });
     expect(el.querySelectorAll('[data-new-marker]').length).toBe(0);
-    const key = Object.keys(localStorage).find((k) => k.startsWith('mf.my-work.last-visit'))!;
-    expect(Number(localStorage.getItem(key))).toBe(new Date('2026-10-14T15:00:00Z').getTime());
+    const key = Object.keys(localStorage).find((k) => k.startsWith('mf.my-work.visit.v2'))!;
+    const stored = () => JSON.parse(localStorage.getItem(key)!);
+    expect(stored()).toEqual({
+      lastActiveAt: new Date('2026-10-14T15:00:00Z').getTime(),
+      visitSince: null,
+    });
 
-    // An earlier visit: the task created after it is New, the older one is not.
+    // A visit that began on Oct 10: the task assigned after it is New, the older one is not.
     TestBed.resetTestingModule();
-    localStorage.setItem(key, String(new Date('2026-10-10T00:00:00Z').getTime()));
-    el = await open('/my-work', { rows, response: of(pageOf(rows, { counts: COUNTS })) });
-    const marked = el.querySelectorAll('[data-new-marker]');
-    expect(marked.length).toBe(1);
-    expect(marked[0].closest('tr')!.getAttribute('data-task')).toBe('TSK-1');
+    const since = new Date('2026-10-10T00:00:00Z').getTime();
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        lastActiveAt: new Date('2026-10-14T14:50:00Z').getTime(),
+        visitSince: since,
+      }),
+    );
+    el = await open('/my-work', { rows, response: response() });
+    expect(el.querySelectorAll('[data-new-marker]').length).toBe(1);
+    expect(el.querySelector('[data-new-marker]')!.closest('tr')!.getAttribute('data-task')).toBe(
+      'TSK-1',
+    );
 
-    // The visit above was recorded, so the marker is gone the next time.
+    // Opening a task and pressing Back (a new page instance in the same visit): the same marker, the visit did not move.
     TestBed.resetTestingModule();
-    el = await open('/my-work', { rows, response: of(pageOf(rows, { counts: COUNTS })) });
+    el = await open('/my-work', { rows, response: response() });
+    expect(el.querySelectorAll('[data-new-marker]').length).toBe(1);
+    expect(stored().visitSince).toBe(since);
+
+    // More than 30 minutes later a new visit begins at the last activity: the markers are gone.
+    TestBed.resetTestingModule();
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        lastActiveAt: new Date('2026-10-14T14:00:00Z').getTime(),
+        visitSince: since,
+      }),
+    );
+    el = await open('/my-work', { rows, response: response() });
     expect(el.querySelectorAll('[data-new-marker]').length).toBe(0);
+    expect(stored().visitSince).toBe(new Date('2026-10-14T14:00:00Z').getTime());
+  });
+
+  it('restores Due soon and names the view and the filters in the notice', async () => {
+    localStorage.setItem(
+      'mf.work-view.v1.my-work.1',
+      JSON.stringify({ view: 'dueSoon', priority: ['1', '2'] }),
+    );
+    const el = await open('/my-work');
+    expect(query()['view']).toBe('dueSoon');
+    expect(el.querySelector('[data-restored-text]')!.textContent).toMatch(
+      /^Restored your last view: Due soon, Priority /,
+    );
+  });
+
+  it.each(['completed', 'createdByMe'])(
+    'does not restore the %s tab: a plain visit opens Active',
+    async (view) => {
+      localStorage.setItem('mf.work-view.v1.my-work.1', JSON.stringify({ view, sort: 'due' }));
+      const el = await open('/my-work');
+      expect(query()).toEqual({});
+      expect(lastArgs()[ARG.view]).toBe('active');
+      expect(el.querySelector('[data-restored-notice]')).toBeNull();
+    },
+  );
+
+  it('Reset to default goes to the plain list, forgets the view and keeps the column preferences', async () => {
+    localStorage.setItem('mf.work-view.v1.my-work.1', JSON.stringify({ view: 'dueSoon' }));
+    localStorage.setItem(
+      'mf.work-table.v3.my-work.1',
+      JSON.stringify({ columns: ['ref', 'title'], density: 'compact' }),
+    );
+    const el = await open('/my-work');
+    expect(query()['view']).toBe('dueSoon');
+    el.querySelector<HTMLButtonElement>('[data-restored-notice] button')!.click();
+    await settle();
+    expect(query()).toEqual({});
+    expect(lastArgs()[ARG.view]).toBe('active');
+    expect(el.querySelector('[data-restored-notice]')).toBeNull();
+    expect(el.querySelector('[data-sort-note]')).not.toBeNull();
+    expect(document.activeElement?.hasAttribute('data-page-title')).toBe(true);
+    expect(localStorage.getItem('mf.work-table.v3.my-work.1')).toContain('compact');
+
+    // The next plain visit starts on Active with no notice.
+    TestBed.resetTestingModule();
+    const again = await open('/my-work');
+    expect(query()).toEqual({});
+    expect(again.querySelector('[data-restored-notice]')).toBeNull();
+  });
+
+  it('Dismiss only hides the notice: the view stays and is restored again', async () => {
+    localStorage.setItem('mf.work-view.v1.my-work.1', JSON.stringify({ view: 'dueSoon' }));
+    const el = await open('/my-work');
+    el.querySelector<HTMLButtonElement>('[data-restored-notice] button[aria-label]')!.click();
+    await settle();
+    expect(el.querySelector('[data-restored-notice]')).toBeNull();
+    expect(query()['view']).toBe('dueSoon');
+    TestBed.resetTestingModule();
+    await open('/my-work');
+    expect(query()['view']).toBe('dueSoon');
+  });
+
+  describe('landing tab', () => {
+    const counts = (c: Partial<typeof COUNTS>) => ({ ...COUNTS, ...c });
+    it('picks Active, then Created by me, then Closed; Due soon never leads', () => {
+      expect(firstNonEmptyTab(counts({}))).toBe('active');
+      expect(firstNonEmptyTab(counts({ active: 0, createdByMe: 4 }))).toBe('createdByMe');
+      expect(firstNonEmptyTab(counts({ active: 0, createdByMe: 0 }))).toBe('completed');
+      expect(firstNonEmptyTab(counts({ active: 0, createdByMe: 0, completed: 0 }))).toBe('active');
+      expect(
+        firstNonEmptyTab(counts({ active: 0, dueSoon: 3, createdByMe: 0, completed: 0 })),
+      ).toBe('active');
+    });
+
+    it('opens Created by me once, with a notice, when Active is empty (replace, not push)', async () => {
+      const empty = of(pageOf([], { counts: counts({ active: 0 }) }));
+      const el = await open('/my-work', { response: empty });
+      expect(query()['view']).toBe('createdByMe');
+      expect(lastArgs()[ARG.view]).toBe('createdByMe');
+      expect(getMyWork).toHaveBeenCalledTimes(2);
+      expect(el.querySelector('[data-restored-text]')!.textContent).toContain(
+        'Nothing is assigned to you, so this opens Created by me.',
+      );
+      expect(el.querySelector('[data-restored-notice] button[aria-label]')).not.toBeNull();
+      expect(el.querySelectorAll('[data-restored-notice] button').length).toBe(1);
+      // Not stored as the last view, so it does not trap the person.
+      expect(localStorage.getItem('mf.work-view.v1.my-work.1')).not.toContain('createdByMe');
+      // Switching back to Active does not bounce again.
+      tab(el, 'Active').click();
+      await settle();
+      expect(query()['view']).toBeUndefined();
+      expect(getMyWork).toHaveBeenCalledTimes(3);
+    });
+
+    it('does not redirect a deep link or when every tab is empty', async () => {
+      await open('/my-work?view=dueSoon', {
+        response: of(pageOf([], { counts: counts({ active: 0 }) })),
+      });
+      expect(query()['view']).toBe('dueSoon');
+      expect(getMyWork).toHaveBeenCalledTimes(1);
+      TestBed.resetTestingModule();
+      localStorage.clear();
+      await open('/my-work', {
+        response: of(
+          pageOf([], { counts: { active: 0, dueSoon: 0, completed: 0, createdByMe: 0 } }),
+        ),
+      });
+      expect(query()['view']).toBeUndefined();
+      expect(getMyWork).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('rows of another tab', () => {
+    it('are cleared at once when the tab changes and the request fails; the counts stay', async () => {
+      const el = await open('/my-work?view=dueSoon');
+      expect(el.querySelectorAll('tr[data-task]').length).toBe(1);
+      getMyWork.mockReturnValue(throwError(() => new Error('offline')));
+      tab(el, 'Completed').click();
+      await settle();
+      expect(el.querySelectorAll('tr[data-task]').length).toBe(0);
+      expect(el.querySelector('tbody [data-error], tbody [role="alert"]')).not.toBeNull();
+      expect(el.querySelector('.wl-alert')).toBeNull();
+      expect(tab(el, 'Active').textContent).toContain('(7)');
+    });
+
+    it('stay, dimmed, when only a filter changes, and a late response of an abandoned tab is ignored', async () => {
+      const el = await open('/my-work');
+      const pending: ((v: unknown) => void)[] = [];
+      getMyWork.mockImplementation(
+        () =>
+          new Observable((sub) => {
+            pending.push((v) => (sub.next(v), sub.complete()));
+          }),
+      );
+      await router().navigate([], { queryParams: { q: 'x' }, queryParamsHandling: 'merge' });
+      await settle();
+      expect(el.querySelectorAll('tr[data-task]').length).toBe(1);
+
+      tab(el, 'Due soon').click();
+      await settle();
+      expect(el.querySelectorAll('tr[data-task]').length).toBe(0);
+      tab(el, 'Completed').click();
+      await settle();
+      const [, dueSoon, completed] = pending;
+      completed(pageOf([aRow({ taskId: 9, taskNumber: 'TSK-C' })], { counts: COUNTS }));
+      dueSoon(pageOf([aRow({ taskId: 8, taskNumber: 'TSK-D' })], { counts: COUNTS }));
+      await settle();
+      const shown = Array.from(el.querySelectorAll('tr[data-task]')).map((r) =>
+        r.getAttribute('data-task'),
+      );
+      expect(shown).toEqual(['TSK-C']);
+    });
   });
 
   it('closes a short list with a friendly line that links to Pod Work and the Task Queue', async () => {

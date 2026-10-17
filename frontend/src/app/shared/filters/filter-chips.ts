@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { FilterChip } from './filter-def';
 import { ListFilters } from './list-filters';
+import { restoreSummary } from './restore-summary';
 
 /**
  * Compact removable chips for the active filters (docs/ux/column-filters-review.md 4.5): one chip per active value ("Priority:
@@ -162,10 +163,12 @@ export class FilterChips {
     @if (filters().restored()) {
       <p class="fn" role="status" data-restored-notice>
         <i class="pi pi-history" aria-hidden="true"></i>
-        <span>Restored your last view.</span>
-        <button type="button" class="mf-btn mf-btn--text" (click)="filters().resetToDefault()">
-          Reset to default
-        </button>
+        <span data-restored-text>{{ text() }}</span>
+        @if (!filters().noticeMessage()) {
+          <button type="button" class="mf-btn mf-btn--text" (click)="filters().resetToDefault()">
+            Reset to default
+          </button>
+        }
         <button
           type="button"
           class="mf-btn mf-btn--text"
@@ -199,4 +202,9 @@ export class FilterChips {
 })
 export class FilterNotice {
   readonly filters = input.required<ListFilters>();
+  protected readonly text = computed(
+    () =>
+      this.filters().noticeMessage() ??
+      restoreSummary(this.filters().restoredTab(), this.filters().chips()),
+  );
 }

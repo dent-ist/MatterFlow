@@ -19,6 +19,7 @@ import { QueuePageBase } from '../../../shared/work-queue/queue-page';
 import { QuickViews } from '../../../shared/work-queue/quick-views';
 import {
   BuiltInViewKey,
+  activeBuiltIn,
   OPEN_STATUSES,
   QueueState,
   builtInFilters,
@@ -148,6 +149,14 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
       }
     }
     void this.loadPods();
+  }
+
+  /** The quick view last chosen: rows clear when another one is chosen, and stay (dimmed) while filters are edited by hand. */
+  private quickView = 'custom';
+
+  protected override contentKey(state: QueueState): string {
+    this.quickView = activeBuiltIn(state.filters, this.viewContext()) ?? this.quickView;
+    return this.quickView;
   }
 
   protected override defaultStatus(): readonly string[] {

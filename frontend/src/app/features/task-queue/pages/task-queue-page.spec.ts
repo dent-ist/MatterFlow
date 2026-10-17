@@ -203,16 +203,20 @@ describe('TaskQueuePage', () => {
     expect(getTaskQueue).toHaveBeenCalledTimes(1);
     expect(lastArgs()[ARG.status]).toEqual(['NEW']);
     expect(lastArgs()[ARG.sort]).toBe('due');
-    expect(el.querySelector('[data-restored-notice]')!.textContent).toContain(
-      'Restored your last view',
+    expect(el.querySelector('[data-restored-text]')!.textContent).toMatch(
+      /^Restored your last view: .*Status/,
     );
 
-    // Reset to default goes back to the plain link and the open statuses.
+    // Reset to default goes back to the plain link and the open statuses, and forgets the view.
     el.querySelector<HTMLButtonElement>('[data-restored-notice] button')!.click();
     await settle();
-    expect(query()['overdue']).toBeUndefined();
+    expect(query()).toEqual({});
     expect(lastArgs()[ARG.status]).toEqual(OPEN);
     expect(el.querySelector('[data-restored-notice]')).toBeNull();
+    TestBed.resetTestingModule();
+    const again = await open('/tasks');
+    expect(query()).toEqual({});
+    expect(again.querySelector('[data-restored-notice]')).toBeNull();
   });
 
   it('does not call the default view "restored": a remembered default is just the page', async () => {

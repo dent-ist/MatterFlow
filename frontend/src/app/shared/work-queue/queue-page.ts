@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { Signal, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router, convertToParamMap } from '@angular/router';
@@ -17,7 +18,7 @@ import {
   normalizeColumns,
   savePrefs,
 } from './column-prefs';
-import { loadLastView, saveLastView } from './last-view';
+import { forgetLastView, loadLastView, saveLastView } from './last-view';
 import {
   QueueState,
   ViewContext,
@@ -50,6 +51,7 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   protected readonly clock = inject(Clock);
   protected readonly zone = inject(USER_TIME_ZONE);
   protected readonly choices = inject(QueueChoices);
+  private readonly document = inject(DOCUMENT);
 
   /** The column filters (created by the page, from its definitions). */
   protected abstract readonly filters: ListFilters;
@@ -73,8 +75,14 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
 
   protected readonly loadState = signal<WorkListState>('loading');
   protected readonly data = signal<TData | null>(null);
-  protected readonly rows = computed(() => this.data()?.items ?? []);
-  protected readonly total = computed(() => this.data()?.total ?? 0);
+  /**
+   * True from the moment another tab (quick view, Pod) is requested until its first response: `data` still holds the previous tab (the
+   * tab counts and the Pod list come from it) but its rows must not show under the new tab.
+   */
+  private readonly staleRows = signal(false);
+  private shownKey: string | null = null;
+  protected readonly rows = computed(() => (this.staleRows() ? [] : (this.data()?.items ?? [])));
+  protected readonly total = computed(() => (this.staleRows() ? 0 : (this.data()?.total ?? 0)));
 
   protected readonly userId = computed(() => this.auth.profile()?.userId ?? null);
   protected readonly prefs = signal<TablePrefs>({ columns: [], density: 'comfortable' });
@@ -190,10 +198,47 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
       : loadLastView(this.pageKey, this.userId(), this.defaultStatus());
   }
 
-  /** Applies a remembered view to a plain link and says so ("Restored your last view"). */
+  /** The tab (or quick view, or Pod) the rows belong to: rows are kept, dimmed, only while a reload asks for the same one. */
+  protected contentKey(state: QueueState): string {
+    return `${state.view ?? ''}|${state.podId ?? ''}`;
+  }
+
+  /** The name of the restored view's tab for the notice ("Due soon and overdue"); null when the screen has no tabs. */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected restoredLabel(_view: QueueState): string | null {
+    return null;
+  }
+
+  /** False to leave the stored last view alone after this load (a landing tab chosen by the page, not by the person). */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected rememberView(_state: QueueState): boolean {
+    return true;
+  }
+
+  /** Applies a remembered view to a plain link and says so ("Restored your last view: ..."). */
   protected restore(view: QueueState): void {
-    this.filters.markRestored();
+    this.filters.resetHandler = () => this.resetView();
+    this.filters.markRestored(this.restoredLabel(view));
     this.navigate(view, true);
+  }
+
+  /** "Reset to default": the plain list URL, the remembered view forgotten (column and density preferences stay), focus on the heading. */
+  protected resetView(): void {
+    if (this.pageKey !== 'pod-work') forgetLastView(this.pageKey, this.userId());
+    const cleared: Record<string, null> = {};
+    for (const key of this.params().keys) cleared[key] = null;
+    void this.router
+      .navigate([], {
+        relativeTo: this.route,
+        queryParams: cleared,
+        queryParamsHandling: 'merge',
+      })
+      .then(() => {
+        this.filters.announcement.set('View reset to default');
+        const heading = this.document.querySelector<HTMLElement>('[data-page-title]');
+        heading?.setAttribute('tabindex', '-1');
+        heading?.focus();
+      });
   }
 
   /** Fetches one page for the state. */
@@ -228,13 +273,17 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
 
   async load(state: QueueState = this.state()): Promise<void> {
     const id = ++this.requestId;
+    const key = this.contentKey(state);
+    this.staleRows.set(this.shownKey !== null && key !== this.shownKey);
     this.loadState.set('loading');
     try {
       const result = await firstValueFrom(this.fetch(this.apiState(state)));
       if (id !== this.requestId) return;
+      this.shownKey = key;
+      this.staleRows.set(false);
       this.data.set(result);
       this.loadState.set('ready');
-      if (this.pageKey !== 'pod-work') {
+      if (this.pageKey !== 'pod-work' && this.rememberView(state)) {
         saveLastView(this.pageKey, this.userId(), state, {
           explicitStatus: this.defaultStatus().length > 0,
         });

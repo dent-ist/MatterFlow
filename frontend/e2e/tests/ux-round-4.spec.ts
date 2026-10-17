@@ -97,12 +97,13 @@ test.describe('Round 4: layout and responsive', () => {
     const title = `Intake: new custodian ${uid()}`;
     const task = await seed.task(world, { title, assignedUserId: me.userId });
     await page.setViewportSize({ width: 1280, height: 900 });
-    // The marker shows for tasks assigned since the previous visit: the first visit records "now", so go back in time through storage.
-    await page.addInitScript(() => {
-      for (const key of Object.keys(localStorage)) {
-        if (key.includes('last-visit')) localStorage.setItem(key, String(Date.now() - 86_400_000));
-      }
-    });
+    // The marker shows for tasks assigned since the current visit began: the first use marks nothing, so start the visit a day ago.
+    await page.addInitScript((userId) => {
+      localStorage.setItem(
+        `mf.my-work.visit.v2.${userId}`,
+        JSON.stringify({ lastActiveAt: Date.now(), visitSince: Date.now() - 86_400_000 }),
+      );
+    }, me.userId);
     await page.goto('/my-work');
     const row = page.locator(`tr[data-task="${task.taskNumber}"]`);
     await expect(row).toBeVisible();

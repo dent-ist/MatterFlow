@@ -92,6 +92,12 @@ export class ListFilters {
 
   /** "Restored your last view": set by a page that applied a remembered view to a plain link. */
   readonly restored = signal(false);
+  /** What was restored, in words ("Due soon and overdue"): the start of the notice text; set by the page with the restored view. */
+  readonly restoredTab = signal<string | null>(null);
+  /** A notice of another kind than "restored" ("Nothing is assigned to you, so this opens Created by me."): shown instead, no Reset. */
+  readonly noticeMessage = signal<string | null>(null);
+  /** "Reset to default" of the page that restored a view (plain list URL, forgets the view); without one it only clears the filters. */
+  resetHandler: (() => void) | null = null;
   /** Text for the polite live region; empty until a filter change has loaded. */
   readonly announcement = signal('');
   readonly resultTotal = signal<number | null>(null);
@@ -350,7 +356,15 @@ export class ListFilters {
   // ---- last view notice
 
   /** A page that applied a remembered view to a plain link calls this, so the "Restored your last view" notice shows. */
-  markRestored(): void {
+  markRestored(tab: string | null = null): void {
+    this.restoredTab.set(tab);
+    this.noticeMessage.set(null);
+    this.restored.set(true);
+  }
+
+  /** Shows a dismissible notice with its own text (the notice component is the same as the restored view's). */
+  showNotice(message: string): void {
+    this.noticeMessage.set(message);
     this.restored.set(true);
   }
 
@@ -360,7 +374,12 @@ export class ListFilters {
 
   /** "Reset to default" in the notice. */
   resetToDefault(): void {
-    this.clear();
+    if (this.resetHandler) {
+      this.restored.set(false);
+      this.resetHandler();
+    } else {
+      this.clear();
+    }
   }
 
   // ---- live region

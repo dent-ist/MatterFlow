@@ -80,3 +80,12 @@ export function loadLastView(
     return null;
   }
 }
+
+/** Deletes the remembered view of a screen ("Reset to default"). Column and density preferences are separate and stay. */
+export function forgetLastView(page: RememberedPage, userId: number | null): void {
+  try {
+    storage()?.removeItem(key(page, userId));
+  } catch {
+    // Nothing to forget.
+  }
+}
