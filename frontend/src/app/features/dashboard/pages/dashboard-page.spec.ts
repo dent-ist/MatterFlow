@@ -1080,13 +1080,13 @@ describe('DashboardPage', () => {
           .find((t) => text(t.querySelector('.label-text')) === label)!
           .querySelector('.caption'),
       );
-    expect(caption('Due soon')).toBe('Today and the next 2 days, excludes ASAP');
+    expect(caption('Due soon')).toBe('Today and the next 2 days, not overdue, not ASAP');
     expect(caption('ASAP open')).toBe('No due date');
     expect(caption('On hold')).toBe('Waiting on client, custodian or internal');
     expect(caption('Overdue')).toBe('Excludes ASAP tasks');
     const soon = tiles.find((t) => text(t.querySelector('.label-text')) === 'Due soon')!;
     expect(text(soon.querySelector('[data-hint]'))).toBe(
-      'Today and the next 2 days, excludes ASAP, through Oct 16, 2026',
+      'Today and the next 2 days, not overdue, not ASAP, through Oct 16, 2026',
     );
     expect(soon.querySelector('a')!.getAttribute('aria-describedby')).toBe(
       soon.querySelector('[data-hint]')!.id,
@@ -2222,7 +2222,7 @@ describe('DashboardPage', () => {
         '14 more than in the same days last month',
       );
       expect(completed.querySelector('a')!.getAttribute('title')).toBe(
-        'Compared with Sep 1 to Sep 14: 80 completed.',
+        'Completed (cancelled not counted). Compared with Sep 1 to Sep 14: 80 completed.',
       );
       expect(overdue.querySelector('a')!.getAttribute('title')).toContain(
         'At the end of yesterday: 6',

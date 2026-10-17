@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
 import { ColumnChooser } from './column-chooser';
 import { Density } from './column-prefs';
 import { SortDirection } from './queue-filters';
@@ -55,6 +64,25 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
         }
       }
     </div>
+    @if (tabHelp(); as help) {
+      <div class="vc-sort vc-tab" data-tab-help>
+        <button
+          type="button"
+          class="vc-info"
+          aria-label="About this tab"
+          aria-controls="vc-tab-help"
+          [attr.aria-expanded]="tabInfo()"
+          (click)="tabInfo.set(!tabInfo())"
+          (keydown.escape)="tabInfo.set(false)"
+        >
+          <i class="pi pi-question-circle" aria-hidden="true"></i>
+        </button>
+        @if (tabInfo()) {
+          <p id="vc-tab-help" class="vc-rule" role="note" data-tab-help-text>{{ help }}</p>
+        }
+      </div>
+    }
+    <ng-content select="[tab-actions]" />
     <mf-column-chooser
       [columns]="columns()"
       [density]="density()"
@@ -70,6 +98,8 @@ export class WorkViewControls {
   readonly defaultOrder = input('Default order: Priority, ASAP first, Due date, Oldest');
   /** The short name of the default sort column ("Priority"). */
   readonly defaultLabel = input('Priority');
+  /** The help of the current tab, behind an "About this tab" button (M3: no always-visible paragraph). */
+  readonly tabHelp = input<string | null>(null);
   readonly columns = input.required<readonly string[]>();
   readonly density = input<Density>('comfortable');
 
@@ -78,6 +108,15 @@ export class WorkViewControls {
   readonly densityChange = output<Density>();
 
   protected readonly info = signal(false);
+  protected readonly tabInfo = signal(false);
+
+  constructor() {
+    // A popover belongs to the tab it was opened on.
+    effect(() => {
+      this.tabHelp();
+      untracked(() => this.tabInfo.set(false));
+    });
+  }
   protected readonly sortLabel = computed(() => SORT_LABELS[this.sort() ?? ''] ?? this.sort());
   protected readonly dirIcon = computed(() => {
     const desc =

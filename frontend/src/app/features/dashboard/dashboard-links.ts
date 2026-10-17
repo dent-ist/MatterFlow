@@ -1,5 +1,6 @@
 import { Params, convertToParamMap } from '@angular/router';
 import { parseQueueState, queueArgs } from '../../shared/work-queue/queue-filters';
+import { DUE_SOON_CAPTION, DUE_SOON_WINDOW } from '../../shared/work-queue/work-vocabulary';
 
 /**
  * Turns a Task Queue query string from the dashboard API (`status=NEW&status=IN_PROGRESS&unassigned=true`) into router query
@@ -40,8 +41,7 @@ export type ListKind = 'unassigned' | 'overdue' | 'dueSoon';
  * The window of "Due soon": due today and the two days after it (three calendar days, due today counts as soon). One wording for the
  * tile, the list and the "View all" link; plain words, not a date range, so a cached page never shows a stale date.
  */
-export const DUE_SOON_WINDOW = 'Today and the next 2 days';
-export const DUE_SOON_CAPTION = `${DUE_SOON_WINDOW}, excludes ASAP`;
+export { DUE_SOON_CAPTION, DUE_SOON_WINDOW };
 
 /** The last day of the Due soon window (`dueTo` of its Task Queue query, `YYYY-MM-DD`), or null. */
 export function dueSoonThrough(query: string | null | undefined): string | null {

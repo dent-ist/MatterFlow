@@ -154,11 +154,18 @@ public class TaskQueueQuery
 /// <summary>My Work: the queue filters plus the tab.</summary>
 public class MyWorkQuery : TaskQueueQuery
 {
-    public static readonly IReadOnlyList<string> MyWorkKeys = [.. Keys, "view"];
+    public static readonly IReadOnlyList<string> MyWorkKeys = [.. Keys, "view", "closedWindow"];
 
     /// <summary><c>active</c> (default), <c>dueSoon</c>, <c>completed</c> or <c>createdByMe</c>.</summary>
     [FromQuery(Name = "view"), StringLength(20)]
     public string? View { get; init; }
+
+    /// <summary>
+    /// The Closed tab's time window when no closed-date range is given: <c>default</c> (the last 90 days) or <c>all</c> (all time, the explicit
+    /// "Show older" state). A closed-date range (<c>completedFrom</c>/<c>completedTo</c>) wins over it.
+    /// </summary>
+    [FromQuery(Name = "closedWindow"), StringLength(10)]
+    public string? ClosedWindow { get; init; }
 }
 
 /// <summary>Pod Work: the queue filters (except <c>pod</c>) plus the Pod and the tab.</summary>

@@ -31,6 +31,7 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { formatCalendarDay, mfDate, parseDateOnly } from '../../../core/time/time';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { FixedPage } from '../../../shared/ui/fixed-page';
+import { COMPLETED_HINT } from '../../../shared/work-queue/work-vocabulary';
 import {
   DUE_SOON_CAPTION,
   DUE_SOON_WINDOW,
@@ -333,7 +334,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                                   [query]="d.completed.query"
                                   [caption]="periodCaption()"
                                   [delta]="completedDelta()"
-                                  [hint]="previousHint(d.completedPrevious, 'completed')"
+                                  [hint]="completedHint(d)"
                                 />
                                 <mf-stat-tile
                                   label="Created"
@@ -1474,6 +1475,12 @@ export class DashboardPage implements OnInit {
     const to = dueSoonThrough(d.dueSoon.query);
     const day = to ? parseDateOnly(to) : null;
     return day ? `${DUE_SOON_CAPTION}, through ${formatCalendarDay(day)}` : null;
+  }
+
+  /** Tooltip of the Completed tile: cancelled tasks are not counted (the My Work Closed tab counts them), then the comparison. */
+  protected completedHint(d: DashboardSummary): string {
+    const previous = this.previousHint(d.completedPrevious, 'completed');
+    return previous ? `${COMPLETED_HINT}. ${previous}` : COMPLETED_HINT;
   }
 
   /** The severity line of the Overdue tile, for example "11 Critical, 30 High" (null when neither is overdue). */

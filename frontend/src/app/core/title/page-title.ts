@@ -15,8 +15,10 @@ export function documentTitle(page: string | null | undefined): string {
 export class MfTitleStrategy extends TitleStrategy {
   private readonly title = inject(Title);
 
+  private readonly page = inject(PageTitle);
+
   override updateTitle(snapshot: RouterStateSnapshot): void {
-    this.title.setTitle(documentTitle(this.buildTitle(snapshot)));
+    this.title.setTitle(documentTitle(this.page.pinned() ?? this.buildTitle(snapshot)));
   }
 }
 
@@ -28,7 +30,23 @@ export class MfTitleStrategy extends TitleStrategy {
 export class PageTitle {
   private readonly title = inject(Title);
 
+  private pinnedName: string | null = null;
+
   set(page: string | null | undefined): void {
     if (page?.trim()) this.title.setTitle(documentTitle(page));
+  }
+
+  /** The page name a list page keeps through query-parameter navigations ("My Work: Closed"); `unpin` when the page goes. */
+  pinned(): string | null {
+    return this.pinnedName;
+  }
+
+  pin(page: string): void {
+    this.pinnedName = page.trim() || null;
+    this.set(page);
+  }
+
+  unpin(): void {
+    this.pinnedName = null;
   }
 }

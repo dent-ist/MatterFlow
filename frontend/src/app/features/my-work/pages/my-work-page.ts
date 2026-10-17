@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { ParamMap, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import {
@@ -6,6 +15,7 @@ import {
   MyWorkPage as MyWorkData,
   PodsClient,
 } from '../../../api/generated/api-client';
+import { PageTitle } from '../../../core/title/page-title';
 import { FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
@@ -19,28 +29,35 @@ import {
   CLOSED_STATUSES,
   OPEN_STATUSES,
   QueueState,
-  dateDaysAgo,
   queueArgs,
 } from '../../../shared/work-queue/queue-filters';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
 import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
+import {
+  CLOSED_LABEL,
+  DUE_SOON_AND_OVERDUE_LABEL,
+  EMPTY_TEXT,
+  TAB_HELP,
+  TAB_TOOLTIPS,
+} from '../../../shared/work-queue/work-vocabulary';
 
-type TabKey = 'active' | 'dueSoon' | 'completed' | 'createdByMe';
+export type TabKey = 'active' | 'dueSoon' | 'completed' | 'createdByMe';
 
-const TAB_LABELS: Readonly<Record<TabKey, string>> = {
+/**
+ * The tab names (M5, BUG-13): Active, Due soon and overdue, Closed (completed or cancelled), Created by me. The URL values (`view=dueSoon`,
+ * `view=completed`) are unchanged so old links and the Dashboard keep working.
+ */
+export const TAB_LABELS: Readonly<Record<TabKey, string>> = {
   active: 'Active',
-  dueSoon: 'Due soon',
-  completed: 'Completed',
+  dueSoon: DUE_SOON_AND_OVERDUE_LABEL,
+  completed: CLOSED_LABEL,
   createdByMe: 'Created by me',
 };
 
-/** The Completed tab shows tasks closed in the last 90 days unless the user asks for older ones (UX S02). */
-const COMPLETED_WINDOW_DAYS = 90;
-
 /**
  * The tab a plain visit opens: Active, unless it is empty (count 0) and another tab is not; then Created by me, then Closed. Due soon
- * is part of Active, so it never leads.
+ * and overdue is part of Active, so it never leads.
  */
 export function firstNonEmptyTab(counts: Readonly<Record<TabKey, number>>): TabKey {
   if (counts.active > 0) return 'active';
@@ -49,7 +66,7 @@ export function firstNonEmptyTab(counts: Readonly<Record<TabKey, number>>): TabK
 
 /**
  * Filters a tab decides itself (shown disabled with the reason): the tabs for my own tasks always mean "assigned to me", Created by me
- * always means "created by me", and Due soon is a window on the due date.
+ * always means "created by me", and Due soon and overdue is a window on the due date.
  */
 const OWNED: Readonly<Record<TabKey, readonly string[]>> = {
   active: ['assignee'],
@@ -60,7 +77,8 @@ const OWNED: Readonly<Record<TabKey, readonly string[]>> = {
 
 const OWNED_REASON: Readonly<Record<TabKey, string>> = {
   active: 'This tab lists the tasks assigned to you.',
-  dueSoon: 'Set by the Due soon tab: tasks assigned to you that are due within 2 days or overdue.',
+  dueSoon:
+    'Set by the Due soon and overdue tab: tasks assigned to you that are overdue or due within 2 days.',
   completed: 'This tab lists the closed tasks assigned to you.',
   createdByMe: 'This tab lists the tasks you created.',
 };
@@ -74,9 +92,9 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
 };
 
 /**
- * My Work (UX S02, ticket 50): everything assigned to me from all my Pods, in the tabs Active, Due Soon, Completed and Created by Me,
- * most urgent first, with the shared inline column filters. Tab counts follow the filters. The tab and filters live in the URL. A filter
- * the current tab decides itself (Assignee on my own tabs, Creator on Created by me, Due on Due soon) shows disabled with the reason and
+ * My Work (UX S02, ticket 50): everything assigned to me from all my Pods, in the tabs Active, Due soon and overdue, Closed and Created by
+ * me, most urgent first, with the shared inline column filters. Tab counts follow the filters. The tab and filters live in the URL. A filter
+ * the current tab decides itself (Assignee on my own tabs, Creator on Created by me, Due on Due soon and overdue) shows disabled with the reason and
  * is not sent; changing tab drops the filters the new tab owns, so every count is worked out under the same filters.
  */
 @Component({
@@ -99,27 +117,6 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
       </div>
 
       <div class="mf-fill" role="tabpanel" id="mw-panel" [attr.aria-labelledby]="'mw-tab-' + tab()">
-        @switch (tab()) {
-          @case ('dueSoon') {
-            <p class="wp-help" data-help>
-              Due Soon lists your open tasks with a due date in the next 2 days, plus overdue ones.
-              ASAP tasks have no due date, so they are not included.
-            </p>
-          }
-          @case ('completed') {
-            <p class="wp-help" data-help>
-              @if (windowed()) {
-                Showing tasks completed or cancelled in the last 90 days, newest first.
-                <button type="button" class="mf-btn mf-btn--text" (click)="showOlder()">
-                  Show older
-                </button>
-              } @else {
-                Completed and cancelled tasks, newest first.
-              }
-            </p>
-          }
-        }
-
         <mf-filters-bar
           [filters]="filters"
           controls="work-filter-row"
@@ -129,13 +126,20 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
             [sort]="state().sort"
             [dir]="state().dir"
             [defaultOrder]="defaultOrder()"
-            [defaultLabel]="tab() === 'completed' ? 'Closed date' : 'Priority'"
+            [defaultLabel]="defaultLabel()"
+            [tabHelp]="tabHelp()"
             [columns]="prefs().columns"
             [density]="prefs().density"
             (resetSort)="resetSort()"
             (columnsChange)="setColumns($event)"
             (densityChange)="setDensity($event)"
-          />
+          >
+            @if (windowed()) {
+              <button tab-actions type="button" class="mf-btn mf-btn--text" (click)="showOlder()">
+                Show older
+              </button>
+            }
+          </mf-work-view-controls>
         </mf-filters-bar>
         <mf-work-list
           [rows]="rows()"
@@ -149,7 +153,8 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
           [dir]="state().dir"
           [filtered]="filtered()"
           [filters]="filters"
-          caption="My Work"
+          [caption]="'My Work: ' + tabLabel()"
+          [scope]="tabLabel()"
           [newSince]="tab() === 'active' || tab() === 'dueSoon' ? lastVisit : null"
           [emptyText]="emptyText()"
           (sortChange)="sortBy($event)"
@@ -162,6 +167,11 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
         >
           @if (tab() === 'active' && auth.has('Pod.View')) {
             <a empty-action class="wp-link" routerLink="/pods/work">Check Pod Work</a>
+          }
+          @if (windowed()) {
+            <button empty-action type="button" class="mf-btn mf-btn--text" (click)="showOlder()">
+              Show older
+            </button>
           }
           @if (tab() === 'active') {
             <p near-empty data-everything>
@@ -183,6 +193,7 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
 export class MyWorkPage extends QueuePageBase<MyWorkData> {
   private readonly api = inject(MyWorkClient);
   private readonly podsApi = inject(PodsClient);
+  private readonly pageTitle = inject(PageTitle);
 
   protected readonly pods = signal<PodOption[]>([]);
 
@@ -194,12 +205,19 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
   private readonly defs = computed(() => {
     const owned = OWNED[this.tab()];
     const reason = () => OWNED_REASON[this.tab()];
-    const disabled = Object.fromEntries(
+    const disabled: Record<string, () => string | null> = Object.fromEntries(
       [...new Set(owned)].map((key) => [key === 'asap' || key === 'overdue' ? 'due' : key, reason]),
     );
+    // "Closed: all time" only means something on the Closed tab, and a closed-date range replaces it.
+    const range = this.state().filters;
+    disabled['closedWindow'] = () =>
+      this.tab() !== 'completed' || range.completedFrom || range.completedTo
+        ? 'Applies to the Closed tab.'
+        : null;
     const allowed = STATUSES[this.tab()];
     const lookups = this.queueLookups();
     return queueFilterDefs(lookups, {
+      closedWindow: true,
       disabled,
       statuses: () => (lookups.statuses ?? []).filter((o) => allowed.includes(o.value)),
       names: {
@@ -218,11 +236,39 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     visibleColumns: this.shownColumns,
   });
 
+  protected readonly tabLabel = computed(() => TAB_LABELS[this.tab()]);
+
   protected readonly defaultOrder = computed(() =>
     this.tab() === 'completed'
       ? 'Default order: Newest closed first'
-      : 'Default order: Priority, ASAP first, Due date, Oldest',
+      : this.tab() === 'dueSoon'
+        ? 'Default order: Overdue first, then due date, then priority'
+        : 'Default order: Priority, ASAP first, Due date, Oldest',
   );
+
+  protected readonly defaultLabel = computed(() =>
+    this.tab() === 'completed'
+      ? 'Closed date'
+      : this.tab() === 'dueSoon'
+        ? 'Overdue first, then due date'
+        : 'Priority',
+  );
+
+  /** The help of Due soon and overdue and Closed, behind the "About this tab" button. */
+  protected readonly tabHelp = computed(() => {
+    switch (this.tab()) {
+      case 'dueSoon':
+        return TAB_HELP.dueSoon;
+      case 'completed': {
+        if (this.windowed()) return TAB_HELP.completed;
+        return this.state().closedAll
+          ? TAB_HELP.completedAllTime
+          : 'Completed or cancelled tasks in the closed-date range you chose.';
+      }
+      default:
+        return null;
+    }
+  });
 
   protected readonly tabs = computed<WorkTab[]>(() => {
     const counts = this.data()?.counts;
@@ -231,22 +277,30 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
       label: TAB_LABELS[key],
       count: counts ? counts[key] : null,
       emphasize: key === 'active' || key === 'dueSoon',
+      hint: TAB_TOOLTIPS[key],
     }));
   });
 
-  /** True while the Completed tab applies its default 90-day window (no closed-date filter set). */
+  /** True while the Closed tab applies its default 90-day window (no closed-date range, not "all time"). */
   protected readonly windowed = computed(() => {
-    const f = this.state().filters;
-    return this.tab() === 'completed' && !f.completedFrom && !f.completedTo;
+    const s = this.state();
+    return (
+      this.tab() === 'completed' &&
+      !s.closedAll &&
+      !s.filters.completedFrom &&
+      !s.filters.completedTo
+    );
   });
 
   protected readonly emptyText = computed(() =>
     this.tab() === 'active'
       ? 'Nothing assigned to you right now. Check Pod Work for unassigned tasks.'
       : this.tab() === 'dueSoon'
-        ? 'Nothing is due soon.'
+        ? EMPTY_TEXT.dueSoon
         : this.tab() === 'completed'
-          ? 'No completed tasks in this period.'
+          ? this.windowed()
+            ? EMPTY_TEXT.completed
+            : 'No tasks were closed in this period.'
           : 'You have not created any tasks.',
   );
 
@@ -279,6 +333,16 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     void loadPodChoices(this.podsApi, this.auth.has('Pod.View')).then((c) =>
       this.pods.set(c.options),
     );
+    // The browser title names the tab ("My Work: Closed - MatterFlow") and follows tab changes without a reload (M8).
+    effect(() => this.pageTitle.pin(`My Work: ${this.tabLabel()}`));
+    inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
+    // A closed-date range replaces "all time": the stale flag does not come back when the range is cleared.
+    effect(() => {
+      const s = this.state();
+      if (s.closedAll && (s.filters.completedFrom || s.filters.completedTo)) {
+        untracked(() => this.navigate({ ...s, closedAll: false }, true));
+      }
+    });
   }
 
   /** Only Active and Due soon are restored as the landing view: Closed and Created by me are reference tabs reached on purpose. */
@@ -327,18 +391,9 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
   }
 
   protected override fetch(state: QueueState): Observable<MyWorkData> {
-    const view = this.tab();
-    const effective =
-      view === 'completed' && !state.filters.completedFrom && !state.filters.completedTo
-        ? {
-            ...state,
-            filters: {
-              ...state.filters,
-              completedFrom: dateDaysAgo(this.clock.now(), COMPLETED_WINDOW_DAYS, this.zone),
-            },
-          }
-        : state;
-    return this.api.getMyWork(view, ...queueArgs(effective));
+    // The Closed tab's 90-day window is the API's default; "Show older" asks for all time. A closed-date range wins over both.
+    const closedWindow = this.tab() === 'completed' && state.closedAll ? 'all' : undefined;
+    return this.api.getMyWork(this.tab(), closedWindow, ...queueArgs(state));
   }
 
   protected selectTab(key: string): void {
@@ -355,12 +410,19 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
       page: 1,
       sort: null,
       dir: null,
+      closedAll: false,
       filters: { ...kept, status },
     });
   }
 
+  /** "Show older": an explicit all-time state (`closed=all`, chip "Closed: all time"), not a date in the year 2000. */
   protected showOlder(): void {
     const s = this.state();
-    this.navigate({ ...s, filters: { ...s.filters, completedFrom: '2000-01-01' }, page: 1 });
+    this.navigate({
+      ...s,
+      closedAll: true,
+      filters: { ...s.filters, completedFrom: null, completedTo: null },
+      page: 1,
+    });
   }
 }

@@ -85,6 +85,8 @@ export class WorkList {
   readonly sort = input<string | null>(null);
   readonly dir = input<SortDirection | null>(null);
   readonly caption = input('Tasks');
+  /** The tab the list shows ("Closed"), appended to the range announcement: "Showing 1-50 of 87 in Closed" (M8). */
+  readonly scope = input<string | null>(null);
   /** The column filters (the row under the headers). */
   readonly filters = input<ListFilters | null>(null);
   readonly filterRowId = input('work-filter-row');
@@ -111,6 +113,7 @@ export class WorkList {
     if (this.state() === 'error') return 'Could not load tasks';
     if (total === 0) return 'No tasks';
     const from = (this.page() - 1) * this.pageSize() + 1;
-    return `Showing ${from}-${Math.min(total, this.page() * this.pageSize())} of ${total}`;
+    const where = this.scope() ? ` in ${this.scope()}` : '';
+    return `Showing ${from}-${Math.min(total, this.page() * this.pageSize())} of ${total}${where}`;
   });
 }

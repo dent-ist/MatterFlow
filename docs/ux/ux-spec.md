@@ -283,7 +283,7 @@ The page is one fixed-height screen (see Page chrome). The other tabs are specif
 **Behavior.**
 - Every tile, list "View all", bar and overdue share is a link to `/tasks` with the equivalent filters preset (e.g. Overdue tile: `status=open&overdue=true`; Unassigned = no assigned user; a pod scope adds the `pod` filter). Counts honour the Task Queue definitions exactly, so counts match the list the user lands on.
 - Overdue counts exclude ASAP tasks and Completed/Cancelled (never ASAP). The tile caption reads "Excludes ASAP tasks". The Overdue list is ordered by priority (Critical first), then most days overdue, and the tile carries the Critical and High counts as text with an icon (issue #82).
-- Due soon is "Today and the next 2 days, excludes ASAP" (one constant; the resolved end date is in the tile's tooltip). On hold doubles as the baseline's blocked/on-hold indicator ("Waiting on client, custodian or internal"). Tile captions wrap, never an ellipsis.
+- Due soon is "Today and the next 2 days, not overdue, not ASAP" (one constant in `shared/work-queue/work-vocabulary.ts`; the resolved end date is in the tile's tooltip). The Completed tile counts completed tasks only; its tooltip says "Completed (cancelled not counted)". See the work vocabulary in 8.2. On hold doubles as the baseline's blocked/on-hold indicator ("Waiting on client, custodian or internal"). Tile captions wrap, never an ellipsis.
 - The Summary lists read Task Queue rows: number, type icon, title, client, priority, due chip and the row actions (assign to me, with an Undo toast at the bottom left of the main column, full width on a phone). A row is one line of 44 px when its list is wider than 540 px and two lines below; buttons and links are at least 24 px high. Every list holds 5 rows and scrolls inside its panel from 1280 px.
 - Breakdowns and Trends use the priority and status badge colours and the categorical palette; every bar and line has a text value. No per-person productivity chart, no hours, no revenue; the "Open by Pod" chart is gone (the Scope replaces it).
 **Page chrome (UX review 2, WP2, issues #137, #92, #93, #100).** The Dashboard is a fixed-height page (`mf-fixed-page`): from a window of 768 x 561 px the document never scrolls, the header row stays and only regions inside the tabs scroll (the Summary lists inside their panels from 1280 px and the whole Summary as one region below; the Breakdowns cards; the Task Types list of Trends while its two chart panels share the height; the Swimlane lane bodies; the Users cards, table and Coverage matrix). Under that size the page scrolls normally (reflow and 200 % zoom). The header row is one line of at most 56 px: the H1 (20 px; the tab's name when only one tab is permitted), the tab list (it scrolls inside itself on a phone, never the page), then Scope, the age text and Refresh at the right end; it is sticky from 600 px. Summary and Breakdowns keep a 1360 px reading cap; Swimlane, Users and Trends use the whole width from 1600 px (a lane is at most 480 px wide above 2200 px). Details per tab: `docs/ux/dashboard-review-2/fixes/wp2/README.md`.
@@ -328,7 +328,7 @@ The page is one fixed-height screen (see Page chrome). The other tabs are specif
 
 ```text
 My Work
-[ Active (23) ] [ Due Soon (4) ] [ Completed ] [ Created by Me ]
+[ Active (23) ] [ Due soon and overdue (4) ] [ Closed (87) ] [ Created by me ]
 Search in my work [____________]  Filters: [Pod v] [Priority v] [Status v] [Matter v]   (chips: x Pod A)
 +----+----------+-----------------------------+------------+----------+-------------+-------------+--------------+
 | !  | Ref      | Title                       | Matter     | Priority | Workflow    | Due         | Status       |
@@ -341,14 +341,15 @@ Showing 1-23 of 23                                           < 1 2 >
 ```
 **Tabs.**
 - **Active** (default): assigned to me (`AssignedUserId = me`), status NEW / IN_PROGRESS / ON_HOLD.
-- **Due Soon**: my active tasks with an explicit due date in the next 2 days or overdue. ASAP tasks are **not** in Due Soon (they have no due date) [UX-PROPOSAL; reason: avoids ASAP flooding]. Tab help text says so.
-- **Completed**: my Completed/Cancelled tasks, newest first, 90-day default window with date filter.
-- **Created by Me**: tasks I created, any status, any assignee.
+- **Due soon and overdue** (URL `view=dueSoon`): my open tasks that are overdue, plus those with an explicit due date today or in the next 2 days. ASAP tasks are **not** here (they have no due date; find them under Active) [UX-PROPOSAL; reason: avoids ASAP flooding]. The count equals the Dashboard's Overdue plus Due soon for the same person. Default order: overdue first (oldest due first), then due date, then priority, then oldest created, then id (issue #154; Active keeps the addendum G rule below). The tab help is behind an "About this tab" info button next to the "Sorted by" note, not a paragraph.
+- **Closed** (URL `view=completed`): my Completed or Cancelled tasks, newest first, the last 90 days by default (the tab tooltip and its info button say so). "Show older" is an explicit all-time state: URL `closed=all` (API `closedWindow=all`), chip "Closed: all time" (removing it returns to the 90 days); a chosen closed-date range still uses `completedFrom`/`completedTo`, and an old `completedFrom=2000-01-01` link shows its real date chip.
+- **Created by me**: tasks I created, any status, any assignee.
 Tab counts update with filters.
 **Columns.** Ref, Title, Matter (combined ref + matter name in tooltip), Priority badge, Workflow progress (current step name + "n of m resolved" + mini progress bar with text), Due (`DueCell`), Status badge, Pod, Requestor (optional). Default sort per Task Queue rule (below). Header sort available.
-**Default sort (addendum G).** Priority (admin order, Critical first); within priority, **ASAP first**, then explicit due dates ascending (overdue/oldest due first); ASAP ties by age oldest first; explicit-date ties by age oldest first. See S03 for the definition and a visual cue.
+**Page, caption and live region (issue #161).** The browser title is "My Work: <tab> - MatterFlow" (and "Pod Work: <tab> - MatterFlow"), the table caption "My Work: <tab>" and the polite live region "Showing 1-50 of 87 in <tab>"; all follow a tab change without a reload.
+**Default sort of Active (addendum G).** Priority (admin order, Critical first); within priority, **ASAP first**, then explicit due dates ascending (overdue/oldest due first); ASAP ties by age oldest first; explicit-date ties by age oldest first. See S03 for the definition and a visual cue.
 **Row actions.** Open; "Change status" quick menu (valid transitions only); inline Priority (if `Task.SetPriority`); "Unassign / Reassign" via assignee picker (if permitted). Assigning a user from a NEW task moves it to In Progress; the inline control shows the helper "Assigning a person starts the task."
-**States.** Empty Active: "Nothing assigned to you right now. Check Pod Work for unassigned tasks." (link). Loading skeleton. Error banner with Retry.
+**States.** Empty Active: "Nothing assigned to you right now. Check Pod Work for unassigned tasks." (link). Empty Due soon and overdue: "Nothing is overdue and nothing is due in the next 2 days." Empty Closed: "No tasks were closed in the last 90 days." with Show older. Loading skeleton. Error banner with Retry.
 **Permissions.** Needs `Task.View`. Inline controls follow permission; read-only users see plain text.
 
 ---
@@ -1124,6 +1125,17 @@ Create task, Create and add another, Save changes, Save draft, Publish version <
 | Priority admin | "Order from most to least urgent. Users see labels, not numbers." |
 | Pod lead | "Pod leads are a role. Assign the Pod Lead role under Users & Roles." |
 
+**Work vocabulary (BUG-13, M5; one set of words on the Dashboard, My Work, the Task Queue links and the docs).**
+| Term | Meaning |
+|---|---|
+| Due soon | Open task (New, In Progress, On Hold) with an explicit due date today or in the next 2 days (the viewer's zone), not overdue, not ASAP. Never overlaps Overdue. |
+| Overdue | Open task whose due moment has passed. |
+| Due soon and overdue | The My Work tab holding both. Its count equals Dashboard Overdue + Due soon for the same person and scope. |
+| Completed | Status Completed only (Dashboard tile and Trends). The tile tooltip says "Completed (cancelled not counted)". |
+| Closed | Completed or Cancelled (My Work tab and the Closed column). |
+| Tab tooltips | Active "Open tasks assigned to you"; Due soon and overdue "Overdue plus due in the next 2 days. ASAP tasks have no due date and are listed under Active"; Closed "Completed or cancelled in the last 90 days (use Show older for more)"; Created by me "Tasks you created, any status or assignee". |
+| Dashboard Due soon caption | "Today and the next 2 days, not overdue, not ASAP". |
+
 ### 8.3 Validation messages
 | Condition | Message |
 |---|---|
@@ -1240,10 +1252,13 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 
 ### S02 My Work
 - [ ] UAT-S02-1 Shows tasks assigned to me from all my Pods (SCN-007).
-- [ ] UAT-S02-2 Active tab = New/In Progress/On Hold only; Completed tab shows completed/cancelled.
-- [ ] UAT-S02-3 Due Soon excludes ASAP; includes overdue explicit dates.
+- [ ] UAT-S02-2 Active tab = New/In Progress/On Hold only; the Closed tab shows completed and cancelled.
+- [ ] UAT-S02-3 Due soon and overdue excludes ASAP; includes overdue explicit dates; its count equals Dashboard Overdue + Due soon for the same person (UAT-S01 Due soon excludes overdue and ASAP).
 - [ ] UAT-S02-4 Created by Me shows tasks I created regardless of assignee.
-- [ ] UAT-S02-5 Default sort: priority, then ASAP first, then due ascending, then oldest.
+- [ ] UAT-S02-5 Active default sort: priority, then ASAP first, then due ascending, then oldest.
+- [ ] UAT-S02-5b Due soon and overdue default sort: overdue first (oldest due first), then due date, then priority; a header sort replaces it and Reset sort restores it.
+- [ ] UAT-S02-8 Tab names are Active, Due soon and overdue, Closed, Created by me; `?view=completed` opens Closed; the browser title, table caption and live region name the tab.
+- [ ] UAT-S02-9 Closed: "Show older" gives the chip "Closed: all time" and the count of all time; removing the chip returns to 90 days.
 - [ ] UAT-S02-6 Columns show priority, Matter ref, workflow progress (step n/m), due/ASAP, status.
 - [ ] UAT-S02-7 Inline priority/assign only appears with permission.
 - [ ] UAT-S02-8 Empty/loading/error states.

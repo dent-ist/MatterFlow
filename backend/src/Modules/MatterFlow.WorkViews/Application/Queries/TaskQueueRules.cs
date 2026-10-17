@@ -39,6 +39,8 @@ public sealed class TaskSortRow
 
     public DateOnly? DueDate { get; init; }
 
+    public DateTime? DueAtUtc { get; init; }
+
     public DateTime? DueSortKey { get; init; }
 
     public DateTime CreatedAtUtc { get; init; }
@@ -62,7 +64,16 @@ public static class TaskQueueRules
     /// <summary>Priority (most urgent first), then oldest first; ignores due dates (the Dashboard's unassigned queue).</summary>
     public const string SortPriorityAge = "priorityAge";
 
-    /// <summary>Due soon: an explicit due date today or within this many days (ASAP excluded, overdue included).</summary>
+    /// <summary>
+    /// The default order of My Work's "Due soon and overdue" tab (overdue first, then due moment, then priority). A default only: it is not in
+    /// <see cref="SortFields"/>, so a request cannot name it.
+    /// </summary>
+    public const string SortDueSoonDefault = "dueSoonDefault";
+
+    /// <summary>
+    /// Due soon: an explicit due date today or within this many days. ASAP has no date, so it is never due soon. The Dashboard's "Due soon" is
+    /// this window without the overdue tasks; My Work's "Due soon and overdue" tab is this window with them (BUG-13).
+    /// </summary>
     public const int DueSoonDays = 2;
 
     public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge];
@@ -99,6 +110,24 @@ public static class TaskQueueRules
             (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold)
             && t.DueDate != null
             && ((t.DueAtUtc != null && t.DueAtUtc < endUtc) || (t.DueAtUtc == null && t.DueDate <= lastDay));
+    }
+
+    /// <summary>
+    /// The Dashboard's "Due soon": open, an explicit due date today or within <see cref="DueSoonDays"/> days, and not overdue. It is
+    /// <see cref="DueSoon"/> without <see cref="Overdue"/>, so Overdue + Due soon on the Dashboard equals My Work's "Due soon and overdue" (BUG-13);
+    /// a unit test and an integration test hold the two together.
+    /// </summary>
+    public static Expression<Func<WorkTask, bool>> DueSoonExcludingOverdue(QueueClock clock)
+    {
+        ArgumentNullException.ThrowIfNull(clock);
+        var now = clock.NowUtc;
+        var today = clock.Today;
+        var lastDay = today.AddDays(DueSoonDays);
+        return t =>
+            (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold)
+            && t.DueDate != null
+            && t.DueDate <= lastDay
+            && !((t.DueAtUtc != null && t.DueAtUtc < now) || (t.DueAtUtc == null && t.DueDate < today));
     }
 
     /// <summary>Combines predicates with OR.</summary>
@@ -158,6 +187,25 @@ public static class TaskQueueRules
             default:
                 return WithDefaultTail(rows.OrderBy(r => r.PrioritySortOrder));
         }
+    }
+
+    /// <summary>
+    /// Overdue first (oldest due moment first), then the due moment ascending, then priority (most urgent first), then oldest created, then id.
+    /// The overdue test is the viewer's, like <see cref="Overdue"/>, so the two always agree.
+    /// </summary>
+    public static IOrderedQueryable<TaskSortRow> OrderDueSoon(IQueryable<TaskSortRow> rows, QueueClock clock)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        ArgumentNullException.ThrowIfNull(clock);
+        var now = clock.NowUtc;
+        var today = clock.Today;
+        return rows
+            .OrderBy(r => (r.DueAtUtc != null && r.DueAtUtc < now) || (r.DueAtUtc == null && r.DueDate != null && r.DueDate < today) ? 0 : 1)
+            .ThenBy(r => r.DueSortKey == null ? 1 : 0)
+            .ThenBy(r => r.DueSortKey)
+            .ThenBy(r => r.PrioritySortOrder)
+            .ThenBy(r => r.CreatedAtUtc)
+            .ThenBy(r => r.Id);
     }
 
     private static IOrderedQueryable<TaskSortRow> WithDefaultTail(IOrderedQueryable<TaskSortRow> ordered) =>

@@ -29,6 +29,8 @@ export interface QueueDefOptions {
   statuses?: () => readonly FilterOption[];
   /** The statuses a plain link starts on (Task Queue: the open ones). A link with other filters and no status asks for every status. */
   defaultStatus?: readonly string[];
+  /** My Work, Closed tab: adds the "Closed: all time" chip of `closed=all` ("Show older"; removing it returns to the 90-day window). */
+  closedWindow?: boolean;
   /** Names for the link-only record chips (`?matter=12` shows "Matter: 00343-00012"). */
   names?: {
     client?: (id: string) => string;
@@ -164,6 +166,20 @@ export function queueFilterDefs(
       fromParam: 'completedFrom',
       toParam: 'completedTo',
     },
+    ...(options.closedWindow
+      ? [
+          {
+            key: 'closedWindow',
+            label: 'Closed',
+            type: 'select',
+            param: 'closed',
+            noControl: true,
+            options: [{ value: 'all', label: 'all time' }],
+            normalize: (v: string) => (v.toLowerCase() === 'all' ? 'all' : null),
+            ...off('closedWindow'),
+          } satisfies FilterDef,
+        ]
+      : []),
     {
       key: 'asap',
       label: 'ASAP',

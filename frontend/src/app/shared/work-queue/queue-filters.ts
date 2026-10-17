@@ -48,6 +48,8 @@ export interface QueueState {
   pageSize: number;
   /** Tab of My Work / Pod Work. */
   view: string | null;
+  /** My Work, Closed tab: "Show older" is an explicit all-time state (`closed=all`), not a date. A closed-date range wins over it. */
+  closedAll: boolean;
   podId: number | null;
 }
 
@@ -106,6 +108,7 @@ export function emptyState(): QueueState {
     page: 1,
     pageSize: DEFAULT_PAGE_SIZE,
     view: null,
+    closedAll: false,
     podId: null,
   };
 }
@@ -189,6 +192,7 @@ export function parseQueueState(params: ParamMap): QueueState {
     page: Number.isInteger(page) && page >= 1 ? page : 1,
     pageSize: PAGE_SIZES.includes(size) ? size : DEFAULT_PAGE_SIZE,
     view: params.get('view'),
+    closedAll: params.get('closed')?.toLowerCase() === 'all',
     podId: id(params, 'podId'),
   };
 }
@@ -240,6 +244,7 @@ export function toQueryParams(
     page: state.page > 1 ? String(state.page) : null,
     pageSize: state.pageSize === DEFAULT_PAGE_SIZE ? null : String(state.pageSize),
     view: state.view,
+    closed: state.closedAll ? 'all' : null,
     podId: state.podId === null ? null : String(state.podId),
   };
 }

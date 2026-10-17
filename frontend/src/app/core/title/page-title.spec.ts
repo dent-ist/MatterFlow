@@ -38,4 +38,29 @@ describe('document title (UXR-01)', () => {
     await router.navigateByUrl('/clients');
     expect(title.getTitle()).toBe('Clients - MatterFlow');
   });
+
+  it('keeps a pinned list-page name through query-parameter navigations until the page unpins it', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([
+          { path: 'my-work', title: 'My Work', component: Blank },
+          { path: 'clients', title: 'Clients', component: Blank },
+        ]),
+        { provide: TitleStrategy, useExisting: MfTitleStrategy },
+      ],
+    });
+    const router = TestBed.inject(Router);
+    const title = TestBed.inject(Title);
+    const page = TestBed.inject(PageTitle);
+
+    await router.navigateByUrl('/my-work');
+    page.pin('My Work: Closed');
+    expect(title.getTitle()).toBe('My Work: Closed - MatterFlow');
+    await router.navigateByUrl('/my-work?view=completed');
+    expect(title.getTitle()).toBe('My Work: Closed - MatterFlow');
+
+    page.unpin();
+    await router.navigateByUrl('/clients');
+    expect(title.getTitle()).toBe('Clients - MatterFlow');
+  });
 });

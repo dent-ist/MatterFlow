@@ -18,18 +18,19 @@ import { MyWorkPage, firstNonEmptyTab } from './my-work-page';
 /** Positions of the arguments of `getMyWork` (the view comes first, then the shared filters). */
 const ARG = {
   view: 0,
-  q: 1,
-  status: 2,
-  pod: 4,
-  assignee: 6,
-  unassigned: 7,
-  creator: 8,
-  dueFrom: 16,
-  asap: 18,
-  completedFrom: 21,
-  matterText: 23,
-  sort: 28,
-  page: 30,
+  closedWindow: 1,
+  q: 2,
+  status: 3,
+  pod: 5,
+  assignee: 7,
+  unassigned: 8,
+  creator: 9,
+  dueFrom: 17,
+  asap: 19,
+  completedFrom: 22,
+  matterText: 24,
+  sort: 29,
+  page: 31,
 };
 
 const COUNTS = { active: 7, dueSoon: 2, completed: 5, createdByMe: 3 };
@@ -107,7 +108,12 @@ describe('MyWorkPage', () => {
     const tabs = Array.from(el.querySelectorAll('[role="tab"]')).map((t) =>
       t.textContent?.replace(/\s+/g, ' ').trim(),
     );
-    expect(tabs).toEqual(['Active (7)', 'Due soon (2)', 'Completed (5)', 'Created by me (3)']);
+    expect(tabs).toEqual([
+      'Active (7)',
+      'Due soon and overdue (2)',
+      'Closed (5)',
+      'Created by me (3)',
+    ]);
     expect(tab(el, 'Active').getAttribute('aria-selected')).toBe('true');
     expect(el.querySelector('[role="tabpanel"]')!.getAttribute('aria-labelledby')).toBe(
       'mw-tab-active',
@@ -150,13 +156,22 @@ describe('MyWorkPage', () => {
 
   it('switches tabs through the URL and loads that view', async () => {
     const el = await open('/my-work');
-    tab(el, 'Due soon').click();
+    tab(el, 'Due soon and overdue').click();
     await settle();
 
     expect(query()['view']).toBe('dueSoon');
     expect(lastArgs()[ARG.view]).toBe('dueSoon');
-    expect(tab(el, 'Due soon').getAttribute('aria-selected')).toBe('true');
-    expect(el.querySelector('[data-help]')!.textContent).toContain('ASAP');
+    expect(tab(el, 'Due soon and overdue').getAttribute('aria-selected')).toBe('true');
+    // The help is behind an info button, not an always-visible paragraph (D4).
+    expect(el.querySelector('[data-help]')).toBeNull();
+    el.querySelector<HTMLButtonElement>('[data-tab-help] button')!.click();
+    await settle();
+    expect(el.querySelector('[data-tab-help-text]')!.textContent).toContain(
+      'ASAP tasks have no due date',
+    );
+    expect(el.querySelector('[data-tab-help] button')!.getAttribute('aria-label')).toBe(
+      'About this tab',
+    );
 
     tab(el, 'Active').click();
     await settle();
@@ -166,22 +181,72 @@ describe('MyWorkPage', () => {
   it('opens a tab from a link and keeps the filters when switching', async () => {
     const el = await open('/my-work?view=createdByMe&priority=1');
     expect(lastArgs()[ARG.view]).toBe('createdByMe');
-    tab(el, 'Completed').click();
+    tab(el, 'Closed').click();
     await settle();
     expect(query()['view']).toBe('completed');
     expect(query()['priority']).toBe('1');
   });
 
-  it('limits the Completed tab to the last 90 days until the user asks for older tasks', async () => {
+  it('limits the Closed tab to the last 90 days until the user asks for older tasks (all time, not a date)', async () => {
     const el = await open('/my-work?view=completed');
-    expect(lastArgs()[ARG.completedFrom]).toBe('2026-07-16');
-    expect(el.querySelector('[data-help]')!.textContent).toContain('last 90 days');
-
-    el.querySelector<HTMLButtonElement>('[data-help] button')!.click();
+    // The 90-day window is the API's default: no date and no all-time flag is sent.
+    expect(lastArgs()[ARG.completedFrom]).toBeUndefined();
+    expect(lastArgs()[ARG.closedWindow]).toBeUndefined();
+    el.querySelector<HTMLButtonElement>('[data-tab-help] button')!.click();
     await settle();
-    expect(query()['completedFrom']).toBe('2000-01-01');
+    expect(el.querySelector('[data-tab-help-text]')!.textContent).toContain('last 90 days');
+
+    const older = Array.from(el.querySelectorAll<HTMLButtonElement>('button')).find(
+      (b) => b.textContent?.trim() === 'Show older',
+    )!;
+    older.click();
+    await settle();
+    expect(query()['closed']).toBe('all');
+    expect(query()['completedFrom']).toBeUndefined();
+    expect(lastArgs()[ARG.closedWindow]).toBe('all');
+    expect(lastArgs()[ARG.completedFrom]).toBeUndefined();
+    expect(chips(el)).toContain('Closed: all time');
+    expect(
+      Array.from(el.querySelectorAll('button')).some((b) => b.textContent?.trim() === 'Show older'),
+    ).toBe(false);
+    el.querySelector<HTMLButtonElement>('[data-tab-help] button')!.click();
+    await settle();
+    expect(el.querySelector('[data-tab-help-text]')!.textContent).toContain('all time');
+
+    // Removing the chip returns to the 90-day window.
+    const chip = el.querySelector<HTMLElement>('[data-filter-chips] [data-chip]')!;
+    chip.querySelector<HTMLButtonElement>('button')!.click();
+    await settle();
+    expect(query()['closed']).toBeUndefined();
+    expect(lastArgs()[ARG.closedWindow]).toBeUndefined();
+  });
+
+  it('reads an old Show older link (completedFrom=2000-01-01) as the date it says', async () => {
+    const el = await open('/my-work?view=completed&completedFrom=2000-01-01');
     expect(lastArgs()[ARG.completedFrom]).toBe('2000-01-01');
-    expect(el.querySelector('[data-help]')!.textContent).not.toContain('last 90 days');
+    expect(lastArgs()[ARG.closedWindow]).toBeUndefined();
+    expect(chips(el)).toEqual(['Closed: from Jan 1, 2000']);
+  });
+
+  it('opens the Closed tab for the old view=completed link and names the tabs everywhere', async () => {
+    const el = await open('/my-work?view=completed');
+    expect(tab(el, 'Closed').getAttribute('aria-selected')).toBe('true');
+    expect(document.title).toBe('My Work: Closed - MatterFlow');
+    expect(el.querySelector('caption')!.textContent!.trim()).toBe('My Work: Closed');
+    expect(el.querySelector('.wl-sr')!.textContent).toContain('in Closed');
+  });
+
+  it('words the tab tooltips and the empty states from the one vocabulary', async () => {
+    const el = await open('/my-work');
+    const title = (name: string) => tab(el, name).getAttribute('title');
+    expect(title('Active')).toBe('Open tasks assigned to you');
+    expect(title('Due soon and overdue')).toBe(
+      'Overdue plus due in the next 2 days. ASAP tasks have no due date and are listed under Active',
+    );
+    expect(title('Closed')).toBe(
+      'Completed or cancelled in the last 90 days (use Show older for more)',
+    );
+    expect(title('Created by me')).toBe('Tasks you created, any status or assignee');
   });
 
   const chips = (el: HTMLElement) =>
@@ -273,11 +338,11 @@ describe('MyWorkPage', () => {
     expect(query()['priority']).toBe('1');
     expect(query()['status']).toBe('NEW');
 
-    tab(el, 'Due soon').click();
+    tab(el, 'Due soon and overdue').click();
     await settle();
     expect(query()['status']).toBe('NEW');
 
-    tab(el, 'Completed').click();
+    tab(el, 'Closed').click();
     await settle();
     // NEW cannot be on the Completed tab; an explicit empty status is not written when none is left.
     expect(query()['status']).toBeUndefined();
@@ -365,7 +430,7 @@ describe('MyWorkPage', () => {
     const el = await open('/my-work');
     expect(query()['view']).toBe('dueSoon');
     expect(el.querySelector('[data-restored-text]')!.textContent).toMatch(
-      /^Restored your last view: Due soon, Priority /,
+      /^Restored your last view: Due soon and overdue, Priority /,
     );
   });
 
@@ -471,7 +536,7 @@ describe('MyWorkPage', () => {
       const el = await open('/my-work?view=dueSoon');
       expect(el.querySelectorAll('tr[data-task]').length).toBe(1);
       getMyWork.mockReturnValue(throwError(() => new Error('offline')));
-      tab(el, 'Completed').click();
+      tab(el, 'Closed').click();
       await settle();
       expect(el.querySelectorAll('tr[data-task]').length).toBe(0);
       expect(el.querySelector('tbody [data-error], tbody [role="alert"]')).not.toBeNull();
@@ -492,10 +557,10 @@ describe('MyWorkPage', () => {
       await settle();
       expect(el.querySelectorAll('tr[data-task]').length).toBe(1);
 
-      tab(el, 'Due soon').click();
+      tab(el, 'Due soon and overdue').click();
       await settle();
       expect(el.querySelectorAll('tr[data-task]').length).toBe(0);
-      tab(el, 'Completed').click();
+      tab(el, 'Closed').click();
       await settle();
       const [, dueSoon, completed] = pending;
       completed(pageOf([aRow({ taskId: 9, taskNumber: 'TSK-C' })], { counts: COUNTS }));

@@ -339,8 +339,8 @@ test.describe('Column filters on the work lists', () => {
       const onActive = await counts();
 
       // Opening the other tabs (the Completed one with its 90-day window) leaves every count where it was.
-      await myWork.tab(/^Completed/).click();
-      await expect(page.locator('[data-help]')).toContainText('last 90 days');
+      await myWork.tab(/^Closed/).click();
+      await expect(page.locator('[data-help]')).toHaveCount(0); // the help is behind an info button now
       expect(await counts()).toEqual(onActive);
       await myWork.tab(/^Created by me/).click();
       await expect(page.getByRole('tab', { name: /^Created by me/ })).toHaveAttribute(

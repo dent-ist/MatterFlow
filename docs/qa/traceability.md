@@ -258,7 +258,7 @@ All K tests use an `IN_PROGRESS` task with a 5-step workflow unless stated. FND-
 | | CON-05 | IT | Concurrent edits to config entities (Role, TaskType, FormVersion draft) | 409 on stale version | #24, #34, #29 |
 | Views | VIEW-02 | IT | Dashboard tile counts vs queue totals for same filters; overdue excludes ASAP/Completed/Cancelled | Equal; drill-through filters reproduce counts (UAT-S01-2,3) | #9 (H) |
 | | VIEW-03 | IT | Queue filters combine (client, matter forms `343`, `00343-00012`, status, priority, assignee inactive, unassigned, asap, overdue, `field.<key>` on filterable only, unknown filter) | Correct sets; unknown filter 400; URL state | #9 (H) |
-| | VIEW-04 | IT | My Work tabs: Active, Due Soon (excludes ASAP, includes overdue explicit), Completed (Completed and Cancelled), Created by Me | Per UAT-S02-* | #9 (H) |
+| | VIEW-04 | IT | My Work tabs: Active, Due soon and overdue (excludes ASAP, includes overdue explicit; equals Dashboard Overdue + Due soon), Closed (Completed and Cancelled; 90 days or all time), Created by me | Per UAT-S02-* | #9 (H) |
 | | VIEW-05 | IT | Dashboard without `Dashboard.View` or a tab permission | 403 / tab hidden / redacted payload (UAT-S01-6) | #9 (H) |
 | | VIEW-06 | E2E | Inline priority/assignee change with Undo; read-only on closed tasks | UAT-S03-9, S03-10 | #9 (H) |
 | Search | SRCH-04 | IT | LIKE wildcard escaping (`%`, `_`, `[`), min 2 chars, cap 5 per type, case-insensitivity, task number forms (`TSK-1042`, `1042` FND-17) | Safe; grouped; stable | #10 (I) |

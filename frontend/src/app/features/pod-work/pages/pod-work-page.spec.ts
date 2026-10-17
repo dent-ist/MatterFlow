@@ -129,6 +129,15 @@ describe('PodWorkPage', () => {
 
   afterEach(() => localStorage.clear());
 
+  it('names the tab in the browser title, the table caption and the live region (M8)', async () => {
+    const el = await open('/pods/work?view=attention');
+    expect(document.title).toBe('Pod Work: Overdue and on hold - MatterFlow');
+    expect(el.querySelector('caption')!.textContent!.trim()).toMatch(
+      /^Pod Work: Overdue and on hold/,
+    );
+    expect(el.querySelector('.wl-sr')!.textContent).toContain('in Overdue and on hold');
+  });
+
   it('asks for the default Pod (the server picks the primary one) and the Pod queue', async () => {
     const el = await open('/pods/work?x=1');
     expect(lastArgs()[ARG.podId]).toBeUndefined();

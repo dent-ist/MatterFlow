@@ -123,7 +123,7 @@ test.describe('Summary deltas (S3)', () => {
     );
     await expect(tile(page, 'Completed').getByRole('link')).toHaveAttribute(
       'title',
-      /^Compared with .+: 2 completed\.$/,
+      /^Completed \(cancelled not counted\)\. Compared with .+: 2 completed\.$/,
     );
     await shoot(page, 'deltas-neutral-1366');
   });

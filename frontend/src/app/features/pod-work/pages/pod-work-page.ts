@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { Observable, firstValueFrom } from 'rxjs';
 import {
@@ -8,6 +16,7 @@ import {
   TasksClient,
 } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
+import { PageTitle } from '../../../core/title/page-title';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { loadLastPod, saveLastPod } from '../../../shared/work-queue/column-prefs';
 import { FilterOption } from '../../../shared/filters/filter-def';
@@ -193,7 +202,8 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
             [dir]="state().dir"
             [filtered]="filtered()"
             [filters]="filters"
-            [caption]="'Pod Work: ' + (data()?.pod?.name ?? '')"
+            [caption]="caption()"
+            [scope]="tabLabel()"
             [emptyText]="emptyText()"
             [showAssign]="canAssign()"
             (sortChange)="sortBy($event)"
@@ -265,6 +275,16 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
     ];
   });
 
+  protected readonly tabLabel = computed(
+    () => this.tabs().find((t) => t.key === this.tab())?.label ?? '',
+  );
+
+  /** "Pod Work: Unassigned (Pod A)": the page, the tab and, after it, the Pod (M8). */
+  protected readonly caption = computed(() => {
+    const pod = this.data()?.pod?.name;
+    return `Pod Work: ${this.tabLabel()}${pod ? ` (${pod})` : ''}`;
+  });
+
   protected readonly emptyText = computed(() => {
     const name = this.data()?.pod?.name ?? 'this Pod';
     switch (this.tab()) {
@@ -282,8 +302,12 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
   /** The remembered Pod is applied once, when the URL names none. */
   private pendingRemembered = false;
 
+  private readonly pageTitle = inject(PageTitle);
+
   constructor() {
     super('pod-work');
+    effect(() => this.pageTitle.pin(`Pod Work: ${this.tabLabel()}`));
+    inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
     const keys = this.route.snapshot?.queryParamMap?.keys ?? [];
     const remembered = loadLastPod(this.userId());
     if (!keys.includes('podId') && remembered !== null) {

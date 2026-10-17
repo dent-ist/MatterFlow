@@ -131,6 +131,15 @@ describe('queue filter state', () => {
     expect(again).toEqual(original);
   });
 
+  it('reads closed=all as the explicit all-time Closed window and writes it back (C4)', () => {
+    const state = parse({ view: 'completed', closed: 'all' });
+    expect(state.closedAll).toBe(true);
+    expect(state.filters.completedFrom).toBeNull();
+    expect(toQueryParams(state)['closed']).toBe('all');
+    expect(parse({ view: 'completed', closed: 'nope' }).closedAll).toBe(false);
+    expect(toQueryParams(emptyState())['closed']).toBeNull();
+  });
+
   it('drops defaults from the URL: page 1, the default page size and a direction without a sort', () => {
     const params = toQueryParams({ ...emptyState(), dir: 'desc' });
     expect(params['page']).toBeNull();

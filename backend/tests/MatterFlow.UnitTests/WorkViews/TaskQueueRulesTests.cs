@@ -22,6 +22,7 @@ public class TaskQueueRulesTests
             PrioritySortOrder = priority,
             Status = status,
             DueDate = date,
+            DueAtUtc = atUtc,
             DueSortKey = DueDates.SortKey(date, atUtc),
             CreatedAtUtc = Created.AddDays(createdDays),
             StatusChangedAtUtc = Created.AddDays(createdDays),
@@ -29,6 +30,75 @@ public class TaskQueueRulesTests
 
     private static List<long> Ids(IQueryable<TaskSortRow> rows, string sort = TaskQueueRules.SortDefault, bool descending = false) =>
         [.. TaskQueueRules.Order(rows, sort, descending).Select(r => r.Id)];
+
+    // ---- one vocabulary (BUG-13)
+
+    [Theory]
+    [InlineData("America/New_York")]
+    [InlineData("America/Los_Angeles")]
+    [InlineData("Pacific/Kiritimati")]
+    [InlineData("UTC")]
+    public void Dashboards_due_soon_is_the_my_work_window_without_the_overdue_ones_and_never_overlaps_overdue(string zone)
+    {
+        var now = new DateTime(2026, 10, 14, 4, 30, 0, DateTimeKind.Utc);
+        var clock = ClockIn(zone, now);
+        var today = clock.Today;
+        var tasks = new List<WorkTask>();
+        foreach (var status in new[] { TaskStatusCode.New, TaskStatusCode.OnHold, TaskStatusCode.Completed, TaskStatusCode.Cancelled })
+        {
+            tasks.Add(Task(status, null));
+            for (var offset = -3; offset <= 4; offset++)
+            {
+                var date = today.AddDays(offset);
+                tasks.Add(Task(status, date));
+                // A timed due: an instant a few hours around now, whose local date is the task's due date.
+                foreach (var hours in new[] { -6, -1, 1, 30 })
+                {
+                    var at = now.AddHours(hours);
+                    tasks.Add(new WorkTask { Status = status, DueDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(at, UserTimeZone.Resolve(zone).Zone)), DueAtUtc = at });
+                }
+            }
+        }
+
+        var dueSoonAndOverdue = TaskQueueRules.DueSoon(clock).Compile();
+        var overdue = TaskQueueRules.Overdue(clock).Compile();
+        var dueSoon = TaskQueueRules.DueSoonExcludingOverdue(clock).Compile();
+        foreach (var t in tasks)
+        {
+            dueSoon(t).ShouldBe(dueSoonAndOverdue(t) && !overdue(t), $"{zone} {t.Status} {t.DueDate} {t.DueAtUtc}");
+            (dueSoon(t) && overdue(t)).ShouldBeFalse("Due soon and Overdue never overlap");
+            if (t.DueDate is null)
+                dueSoonAndOverdue(t).ShouldBeFalse("ASAP is never due soon");
+            if (overdue(t))
+                dueSoonAndOverdue(t).ShouldBeTrue("an overdue task is on the Due soon and overdue tab");
+        }
+
+        TaskQueueRules.DueSoonDays.ShouldBe(2);
+    }
+
+    [Fact]
+    public void Due_soon_and_overdue_default_order_is_overdue_first_then_due_moment_then_priority_then_oldest_then_id()
+    {
+        var now = new DateTime(2026, 10, 14, 16, 0, 0, DateTimeKind.Utc); // noon in New York
+        var clock = ClockIn("America/New_York", now);
+        var today = new DateOnly(2026, 10, 14);
+        var rows = new[]
+        {
+            Row(1, priority: 3, today.AddDays(2)),
+            Row(2, priority: 1, today.AddDays(2)), // same day, more urgent: before 1
+            Row(3, priority: 3, today.AddDays(-13)),
+            Row(4, priority: 3, today, atUtc: now.AddHours(3)), // later today, timed: not overdue
+            Row(5, priority: 3, today, atUtc: now.AddHours(-2)), // earlier today, timed: overdue
+            Row(6, priority: 2, today), // date-only today: not overdue, and its stored key (the end of the date) is after the timed one
+            Row(7, priority: 3, today.AddDays(-1)),
+            Row(8, priority: 3, today.AddDays(2), createdDays: -5), // same day and priority as 1, older: before 1
+            Row(9, priority: 3, today.AddDays(-13), createdDays: 2), // same due and priority as 3, created later: after 3
+        };
+
+        var ids = TaskQueueRules.OrderDueSoon(rows.AsQueryable(), clock).Select(r => r.Id).ToList();
+
+        ids.ShouldBe([3, 9, 7, 5, 4, 6, 2, 8, 1]);
+    }
 
     // ---- overdue
 

@@ -49,8 +49,11 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
 
     // ---- My Work
 
-    /// <summary>The Completed tab shows tasks closed in the last this-many days unless a closed-date range is given (UX S02).</summary>
-    private const int CompletedWindowDays = 90;
+    /// <summary>The Closed tab shows tasks closed in the last this-many days unless a closed-date range or <c>closedWindow=all</c> is given (UX S02).</summary>
+    private const int ClosedWindowDays = 90;
+
+    public const string ClosedWindowAll = "all";
+    public const string ClosedWindowDefault = "default";
 
     public async Task<Result<MyWorkPage>> MyWorkAsync(MyWorkQuery query, CancellationToken ct)
     {
@@ -61,20 +64,31 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         if (view is null)
             return Error.Validation("view", "UNKNOWN_VIEW", $"Unknown view '{query.View}'. Allowed: {string.Join(", ", MyWorkViews)}.");
 
-        var request = Prepare(query, view == ViewCompleted ? TaskQueueRules.SortCompleted : TaskQueueRules.SortDefault);
+        var closedWindow = string.IsNullOrWhiteSpace(query.ClosedWindow) ? ClosedWindowDefault : query.ClosedWindow.Trim().ToLowerInvariant();
+        if (closedWindow is not (ClosedWindowAll or ClosedWindowDefault))
+            return Error.Validation("closedWindow", "UNKNOWN_CLOSED_WINDOW", $"Unknown closedWindow '{query.ClosedWindow}'. Allowed: {ClosedWindowDefault}, {ClosedWindowAll}.");
+
+        var defaultSort = view switch
+        {
+            ViewCompleted => TaskQueueRules.SortCompleted,
+            ViewDueSoon => TaskQueueRules.SortDueSoonDefault,
+            _ => TaskQueueRules.SortDefault,
+        };
+        var request = Prepare(query, defaultSort);
         if (request.IsFailure)
             return request.Error!;
 
         var (filter, page, sort, descending, queueClock) = request.Value;
-        // The closed-date range (the Completed tab's 90-day window or the user's own range) belongs to the Completed tab only: applied to
-        // every tab's count it would zero "Active" and "Created by me" as soon as the Completed tab is opened. With no range the Completed
-        // count always uses the default window, so it reads the same on every tab.
-        var closedFrom = filter.CompletedFrom ?? (filter.CompletedTo is null ? queueClock.Today.AddDays(-CompletedWindowDays) : null);
+        // The closed-date range (the Closed tab's 90-day window, "all time" or the user's own range) belongs to the Closed tab only: applied to
+        // every tab's count it would zero "Active" and "Created by me" as soon as the Closed tab is opened. With no range the Closed count
+        // uses the window the request names (the last 90 days by default, all time with closedWindow=all), so it reads the same on every tab.
+        var noRange = filter.CompletedFrom is null && filter.CompletedTo is null;
+        var closedFrom = filter.CompletedFrom ?? (noRange && closedWindow == ClosedWindowDefault ? queueClock.Today.AddDays(-ClosedWindowDays) : null);
         var filtered = ApplyFilter(db.Set<WorkTask>().AsNoTracking(), filter with { CompletedFrom = null, CompletedTo = null }, queueClock);
-        var closedWindow = ApplyFilter(db.Set<WorkTask>().AsNoTracking(), filter with { CompletedFrom = closedFrom }, queueClock);
+        var closedRows = ApplyFilter(db.Set<WorkTask>().AsNoTracking(), filter with { CompletedFrom = closedFrom }, queueClock);
         var active = filtered.Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Open);
         var dueSoon = filtered.Where(t => t.AssignedUserId == me).Where(TaskQueueRules.DueSoon(queueClock));
-        var completed = closedWindow.Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Closed);
+        var completed = closedRows.Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Closed);
         var created = filtered.Where(t => t.CreatedByUserId == me);
 
         var current = view switch
@@ -406,11 +420,13 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                            PrioritySortOrder = p.SortOrder,
                            Status = t.Status,
                            DueDate = t.DueDate,
+                           DueAtUtc = t.DueAtUtc,
                            DueSortKey = t.DueSortKey,
                            CreatedAtUtc = t.CreatedAtUtc,
                            StatusChangedAtUtc = t.StatusChangedAtUtc,
                        };
-        var ids = await TaskQueueRules.Order(sortRows, sort, descending).Select(r => r.Id).Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
+        var ordered = sort == TaskQueueRules.SortDueSoonDefault ? TaskQueueRules.OrderDueSoon(sortRows, queueClock) : TaskQueueRules.Order(sortRows, sort, descending);
+        var ids = await ordered.Select(r => r.Id).Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
         return (await LoadRowsAsync(ids, queueClock, ct), total);
     }
 

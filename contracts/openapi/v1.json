@@ -6576,6 +6576,15 @@
             }
           },
           {
+            "name": "closedWindow",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
             "name": "q",
             "in": "query",
             "schema": {

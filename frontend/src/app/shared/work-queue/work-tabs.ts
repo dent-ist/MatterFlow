@@ -2,9 +2,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  afterNextRender,
+  effect,
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 
 export interface WorkTab {
@@ -14,6 +17,8 @@ export interface WorkTab {
   count?: number | null;
   /** Bold the count while it is above zero (Active, Due soon). Other non-zero counts stay normal weight; zero counts are muted. */
   emphasize?: boolean;
+  /** Tooltip: what the tab holds. */
+  hint?: string;
 }
 
 /**
@@ -24,7 +29,14 @@ export interface WorkTab {
   selector: 'mf-work-tabs',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="tabs" role="tablist" [attr.aria-label]="label()">
+    <div
+      class="tabs"
+      role="tablist"
+      [attr.aria-label]="label()"
+      [class.fade-start]="fadeStart()"
+      [class.fade-end]="fadeEnd()"
+      (scroll)="measure()"
+    >
       @for (tab of tabs(); track tab.key; let i = $index) {
         <button
           type="button"
@@ -33,6 +45,7 @@ export interface WorkTab {
           [id]="idPrefix() + '-tab-' + tab.key"
           [attr.aria-selected]="tab.key === selected()"
           [attr.aria-controls]="idPrefix() + '-panel'"
+          [attr.title]="tab.hint ?? null"
           [tabindex]="tab.key === selected() ? 0 : -1"
           (click)="selectedChange.emit(tab.key)"
           (keydown)="onKey($event, i)"
@@ -62,6 +75,22 @@ export interface WorkTab {
       /* Keeps the selected tab's 3 px underline (it overlaps the row's border by 2 px) inside the scrolling box. */
       margin-bottom: -2px;
       padding-bottom: 2px;
+    }
+    /* Edge fades while there is more to scroll to (narrow screens); the selected tab is scrolled into view. */
+    .tabs.fade-start {
+      mask-image: linear-gradient(to right, transparent 0, #000 var(--mf-s5));
+    }
+    .tabs.fade-end {
+      mask-image: linear-gradient(to left, transparent 0, #000 var(--mf-s5));
+    }
+    .tabs.fade-start.fade-end {
+      mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        #000 var(--mf-s5),
+        #000 calc(100% - var(--mf-s5)),
+        transparent 100%
+      );
     }
     .tab {
       flex: none;
@@ -102,6 +131,36 @@ export class WorkTabs {
   /** Prefix of the element ids (`<prefix>-tab-<key>`, and the panel `<prefix>-panel`). */
   readonly idPrefix = input('work');
   readonly selectedChange = output<string>();
+
+  protected readonly fadeStart = signal(false);
+  protected readonly fadeEnd = signal(false);
+
+  constructor() {
+    afterNextRender(() => this.measure());
+    effect(() => {
+      const key = this.selected();
+      this.tabs();
+      queueMicrotask(() => this.reveal(key));
+    });
+  }
+
+  /** Shows the edge fades only while the strip has more to scroll to on that side. */
+  protected measure(): void {
+    const strip = this.host.nativeElement.querySelector<HTMLElement>('.tabs');
+    if (!strip) return;
+    this.fadeStart.set(strip.scrollLeft > 1);
+    this.fadeEnd.set(strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 1);
+  }
+
+  private reveal(key: string): void {
+    const tab = this.host.nativeElement.querySelector<HTMLElement>(
+      `#${this.idPrefix()}-tab-${key}`,
+    );
+    if (tab && typeof tab.scrollIntoView === 'function') {
+      tab.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    }
+    this.measure();
+  }
 
   protected onKey(event: KeyboardEvent, index: number): void {
     const count = this.tabs().length;

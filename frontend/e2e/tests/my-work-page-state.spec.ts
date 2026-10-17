@@ -46,7 +46,7 @@ test.describe('My Work page state', () => {
     await page.route('**/api/v1/my-work?**', (route) =>
       fail && route.request().url().includes('view=completed') ? route.abort() : route.continue(),
     );
-    await myWork.tab(/^Completed/).click();
+    await myWork.tab(/^Closed/).click();
     await expect(page.locator('tbody').getByRole('button', { name: 'Retry' })).toBeVisible();
     await expect(page.getByText(title)).toHaveCount(0);
     await expect(page.locator('[data-sort-note]')).toContainText('Closed date');
@@ -85,10 +85,10 @@ test.describe('My Work page state', () => {
     });
     await myWork.tab(/^Due soon/).click();
     await expect(page.getByText(title)).toHaveCount(0);
-    await myWork.tab(/^Completed/).click();
+    await myWork.tab(/^Closed/).click();
     await page.waitForTimeout(2200);
     await expect(page.getByText(title)).toHaveCount(0);
-    await expect(myWork.tab(/^Completed/)).toHaveAttribute('aria-selected', 'true');
+    await expect(myWork.tab(/^Closed/)).toHaveAttribute('aria-selected', 'true');
   });
 
   test('BUG-3: the New markers survive opening a task and pressing Back', async ({
@@ -147,7 +147,7 @@ test.describe('My Work page state', () => {
     await page.getByRole('link', { name: 'My Work', exact: true }).first().click();
     const notice = page.locator('[data-restored-notice]');
     await expect(notice).toBeVisible();
-    await expect(notice).toContainText('Restored your last view: Due soon, Priority');
+    await expect(notice).toContainText('Restored your last view: Due soon and overdue, Priority');
     await expect(page).toHaveURL(/view=dueSoon/);
     await shot(page, 'm6-restored-notice-1366x768');
     if (axeAvailable()) expect(await axeViolations(page), 'notice').toEqual([]);

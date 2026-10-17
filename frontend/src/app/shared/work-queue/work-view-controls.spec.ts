@@ -69,4 +69,32 @@ describe('WorkViewControls', () => {
     expect(columns[0]).toEqual(['ref', 'title', 'client', 'status']);
     expect(densities).toEqual(['compact']);
   });
+
+  it('opens the help of the tab behind an "About this tab" button, closes it on Escape and when the tab changes (D4)', async () => {
+    await create({ tabHelp: 'Overdue tasks plus tasks due in the next 2 days.' });
+    expect(el().querySelector('[data-tab-help-text]')).toBeNull();
+    const info = el().querySelector<HTMLButtonElement>('[data-tab-help] button')!;
+    expect(info.getAttribute('aria-label')).toBe('About this tab');
+    expect(info.getAttribute('aria-expanded')).toBe('false');
+    info.click();
+    fixture.detectChanges();
+    expect(info.getAttribute('aria-expanded')).toBe('true');
+    expect(el().querySelector('[data-tab-help-text]')!.textContent).toContain('next 2 days');
+
+    info.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(el().querySelector('[data-tab-help-text]')).toBeNull();
+
+    info.click();
+    fixture.detectChanges();
+    fixture.componentRef.setInput('tabHelp', 'Another tab');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(el().querySelector('[data-tab-help-text]')).toBeNull();
+
+    fixture.componentRef.setInput('tabHelp', null);
+    fixture.detectChanges();
+    expect(el().querySelector('[data-tab-help]')).toBeNull();
+  });
 });

@@ -67,8 +67,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         var tasks = scope.Apply(db.Set<WorkTask>().AsNoTracking());
         var open = tasks.Where(TaskQueueRules.Open);
         var overdue = TaskQueueRules.Overdue(queueClock);
-        Expression<Func<WorkTask, bool>> dueSoon = t => t.DueDate != null && t.DueDate <= dueSoonDay;
-        var openDueSoon = open.Where(dueSoon).Where(Not(overdue));
+        var openDueSoon = tasks.Where(TaskQueueRules.DueSoonExcludingOverdue(queueClock));
 
         // Overdue severity (Overdue tile caption): the priorities whose badge token is critical or high.
         var severityRows = showSummary
@@ -256,7 +255,4 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         int[] overdues = counts is null ? new int[6] : [counts.O0, counts.O1, counts.O2, counts.O3, counts.O4, counts.O5];
         return [.. bands.Select((b, i) => new DashboardAgingBucket(b.Key, b.Label, b.MinDays, b.MaxDays, values[i], scope.Scoped(DashboardRules.Aging(b, today)), overdues[i]))];
     }
-
-    private static Expression<Func<WorkTask, bool>> Not(Expression<Func<WorkTask, bool>> predicate) =>
-        Expression.Lambda<Func<WorkTask, bool>>(Expression.Not(predicate.Body), predicate.Parameters);
 }

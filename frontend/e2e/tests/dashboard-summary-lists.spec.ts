@@ -150,7 +150,7 @@ test.describe('dashboard summary lists', () => {
       expect(captions.map((c) => c.trim())).toEqual(
         expect.arrayContaining([
           'Excludes ASAP tasks',
-          'Today and the next 2 days, excludes ASAP',
+          'Today and the next 2 days, not overdue, not ASAP',
           'No due date',
           'Waiting on client, custodian or internal',
         ]),
@@ -183,7 +183,9 @@ test.describe('dashboard summary lists', () => {
   }) => {
     await openSummary(page, 1366, 768);
     const tile = page.locator('mf-stat-tile', { hasText: 'Due soon' }).first();
-    await expect(tile.locator('.caption')).toHaveText('Today and the next 2 days, excludes ASAP');
+    await expect(tile.locator('.caption')).toHaveText(
+      'Today and the next 2 days, not overdue, not ASAP',
+    );
     const hint = (await tile.locator('[data-hint]').textContent())!;
     const through = dateInZone(FIRM_ZONE, 2);
     const day = new Date(`${through}T12:00:00Z`).toLocaleDateString('en-US', {
