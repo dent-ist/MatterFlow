@@ -12,6 +12,7 @@ import {
   TYPE_STYLES,
   TrendChoice,
   allVisible,
+  FIRST_BACKLOG,
   backlogOptions,
   buildView,
   choiceFromParams,
@@ -20,7 +21,6 @@ import {
   cleanTypeIds,
   dayQuery,
   flowOptions,
-  flowsHeading,
   freeSlot,
   hasTrendParams,
   linkNote,
@@ -40,6 +40,7 @@ const day = (date: string, n: number): DashboardTrendDay => ({
   overdue: n + 2,
   onTime: n + 3,
   late: n + 4,
+  open: n + 100,
 });
 
 function type(id: number, name: string, created: number, completed = 0): DashboardTrendType {
@@ -53,6 +54,8 @@ function type(id: number, name: string, created: number, completed = 0): Dashboa
     overdue: 0,
     onTime: 0,
     late: 0,
+    open: 0,
+    openQuery: `status=NEW&type=${id}`,
     createdQuery: `createdFrom=2026-10-01&type=${id}`,
     completedQuery: `status=COMPLETED&completedFrom=2026-10-01&type=${id}`,
     overdueQuery: `overdue=true&type=${id}`,
@@ -107,7 +110,7 @@ describe('trend model', () => {
   describe('address and storage', () => {
     it('reads the choices from the address and falls back for anything invalid', () => {
       const c = choiceFromParams(params({ types: '3,x,3,-1,9', metric: 'late', all: '1' }));
-      expect(c).toEqual({ types: [3, 9], all: 'on', metric: 'late', bmetric: 'overdue' });
+      expect(c).toEqual({ types: [3, 9], all: 'on', metric: 'late', bmetric: 'open' });
       expect(choiceFromParams(params({ metric: 'nope' }))).toEqual(DEFAULT_CHOICE);
       expect(choiceFromParams(params({ all: '0' })).all).toBe('off');
       expect(hasTrendParams(params({ tab: 'trends' }))).toBe(false);
@@ -129,7 +132,7 @@ describe('trend model', () => {
       expect(choiceToParams(c)).toEqual({
         types: '1,2',
         metric: 'ontime',
-        bmetric: null,
+        bmetric: 'overdue',
         all: '0',
         due: null,
       });
@@ -144,7 +147,10 @@ describe('trend model', () => {
     it('maps the legacy parameters: due=ontime / late are flow measures, metric=overdue and due=overdue are the backlog', () => {
       expect(choiceFromParams(params({ due: 'overdue,ontime' })).metric).toBe('onTime');
       expect(choiceFromParams(params({ due: 'late' })).metric).toBe('late');
-      expect(choiceFromParams(params({ due: 'overdue' }))).toEqual(DEFAULT_CHOICE);
+      expect(choiceFromParams(params({ due: 'overdue' }))).toEqual({
+        ...DEFAULT_CHOICE,
+        bmetric: 'overdue',
+      });
       // metric=overdue with types: the types are compared in the backlog panel (Overdue); the flow panel gets its first single measure.
       const legacy = choiceFromParams(params({ tab: 'trends', types: '5,7', metric: 'overdue' }));
       expect(legacy).toEqual({ types: [5, 7], all: 'auto', metric: 'created', bmetric: 'overdue' });
@@ -167,7 +173,7 @@ describe('trend model', () => {
         DEFAULT_CHOICE,
       );
       expect(choiceFromStored({ types: [2], showAll: true, metric: 'completed', due: [] })).toEqual(
-        { types: [2], all: 'auto', metric: 'completed', bmetric: 'overdue' },
+        { types: [2], all: 'auto', metric: 'completed', bmetric: 'open' },
       );
       expect(choiceFromStored({ types: [2], showAll: false, metric: 'overdue', due: [] }).all).toBe(
         'off',
@@ -181,11 +187,20 @@ describe('trend model', () => {
     it('picking the first type turns a two-line measure into the first single measure and says so', () => {
       const r = normalizeChoice({ ...DEFAULT_CHOICE, types: [5] }, DEFAULT_CHOICE);
       expect(r.choice.metric).toBe('created');
-      expect(r.announcement).toBe('Showing Created to compare task types.');
+      expect(r.choice.bmetric).toBe(FIRST_BACKLOG);
+      expect(r.announcement).toBe('Showing Created and Open to compare task types.');
       // A single measure stays and nothing is announced.
-      const keep = normalizeChoice({ ...DEFAULT_CHOICE, types: [5], metric: 'late' }, null);
+      const keep = normalizeChoice(
+        { ...DEFAULT_CHOICE, types: [5], metric: 'late', bmetric: 'overdue' },
+        null,
+      );
       expect(keep.choice.metric).toBe('late');
+      expect(keep.choice.bmetric).toBe('overdue');
       expect(keep.announcement).toBeNull();
+      // Only the control that changed is named.
+      expect(
+        normalizeChoice({ ...DEFAULT_CHOICE, types: [5], bmetric: 'overdue' }, null).announcement,
+      ).toBe('Showing Created to compare task types.');
     });
 
     it('All task types is automatic: hidden while types are compared, back when none is left', () => {
@@ -198,6 +213,13 @@ describe('trend model', () => {
       // ... and Created, which picking the first type chose for the user, goes back to the two-line view; other measures stay.
       expect(normalizeChoice({ ...on, types: [] }, on).choice.metric).toBe('both');
       expect(normalizeChoice({ ...on, types: [], metric: 'late' }, on).choice.metric).toBe('late');
+      // Open, which picking the first type chose for the backlog panel, goes back to Open and overdue; Overdue stays.
+      const compared: TrendChoice = { ...on, bmetric: 'open' };
+      expect(normalizeChoice({ ...compared, types: [] }, compared).choice.bmetric).toBe('both');
+      const overdueKept: TrendChoice = { ...on, bmetric: 'overdue' };
+      expect(normalizeChoice({ ...overdueKept, types: [] }, overdueKept).choice.bmetric).toBe(
+        'overdue',
+      );
       // Toggling: with types, ticking All is explicit; unticking it again is back to automatic.
       const auto: TrendChoice = { ...DEFAULT_CHOICE, types: [5], metric: 'created' };
       expect(toggleAllMode(auto).all).toBe('on');
@@ -221,12 +243,16 @@ describe('trend model', () => {
         'onTime',
         'late',
       ]);
-      expect(backlogOptions()).toEqual(['overdue']);
+      expect(backlogOptions(DEFAULT_CHOICE)).toEqual(['both', 'open', 'overdue']);
+      expect(backlogOptions({ ...DEFAULT_CHOICE, types: [5], bmetric: 'open' })).toEqual([
+        'open',
+        'overdue',
+      ]);
     });
   });
 
   describe('lines', () => {
-    it('the default view: panel 1 is Created and Completed of All task types, panel 2 is Overdue of All', () => {
+    it('the default view: panel 1 is Created and Completed of All task types, panel 2 is Open and Overdue of All', () => {
       const v = buildView(DEFAULT_CHOICE, DATA, new Map(), DATA.types);
       expect(v.defaultMode).toBe(true);
       expect(v.flows.lines.map((l) => [l.key, l.values.join()])).toEqual([
@@ -235,10 +261,12 @@ describe('trend model', () => {
       ]);
       expect(v.flows.lines[0].style).toBe(MEASURE_STYLES.created);
       expect(v.flows.height).toBe(320);
-      expect(v.flows.title).toBe('Tasks created and completed per day');
+      expect(v.flows.title).toBe('Created and completed');
       expect(v.backlog.lines.map((l) => [l.key, l.panel, l.values.join()])).toEqual([
+        ['backlog-all-open', 'backlog', '101,102'],
         ['backlog-all-overdue', 'backlog', '3,4'],
       ]);
+      expect(v.backlog.lines[0].style).toBe(MEASURE_STYLES.open);
       expect(v.backlog.height).toBe(200);
       expect(v.backlog.title).toBe('Backlog at end of day');
       expect(v.flows.measureNote).toBeNull();
@@ -247,7 +275,7 @@ describe('trend model', () => {
     it('a single flow measure draws one line of All; On time and Completed late are flow measures', () => {
       const v = buildView({ ...DEFAULT_CHOICE, metric: 'onTime' }, DATA, new Map(), DATA.types);
       expect(v.flows.lines.map((l) => [l.name, l.values.join()])).toEqual([['On time', '4,5']]);
-      expect(v.flows.title).toBe('Tasks completed on time per day');
+      expect(v.flows.title).toBe('Created and completed');
       const hidden = buildView({ ...DEFAULT_CHOICE, all: 'off' }, DATA, new Map(), DATA.types);
       expect(hidden.flows.lines).toEqual([]);
       expect(hidden.backlog.lines).toEqual([]);
@@ -289,11 +317,22 @@ describe('trend model', () => {
       expect(withAll.backlog.lines[0].values).toEqual([3, 4]);
     });
 
-    it('names panel 1 after what it draws', () => {
-      expect(flowsHeading('both')).toBe('Tasks created and completed per day');
-      expect(flowsHeading('created')).toBe('Tasks created per day');
-      expect(flowsHeading('completed')).toBe('Tasks completed per day');
-      expect(flowsHeading('late')).toBe('Tasks completed late per day');
+    it('draws Open for All task types and for each compared type in panel 2', () => {
+      const slots = new Map([[5, 0]]);
+      const one = buildView({ ...DEFAULT_CHOICE, bmetric: 'open' }, DATA, slots, DATA.types);
+      expect(one.backlog.lines.map((l) => [l.name, l.values.join()])).toEqual([
+        ['Open', '101,102'],
+      ]);
+      const compared = buildView(
+        { types: [5], all: 'auto', metric: 'created', bmetric: 'open' },
+        DATA,
+        slots,
+        DATA.types,
+      );
+      expect(compared.backlog.lines.map((l) => [l.key, l.values.join()])).toEqual([
+        ['backlog-type-5', '110,120'],
+      ]);
+      expect(compared.backlog.measureNote).toBe('Open');
     });
 
     it('gives a type the lowest free colour slot', () => {
@@ -334,6 +373,18 @@ describe('trend model', () => {
       expect(typeRows(types, 'overdue')[0].query).toContain('overdue=true');
     });
 
+    it('reads the backlog choice from the address, the legacy words and the storage', () => {
+      expect(choiceFromParams(params({ bmetric: 'open' })).bmetric).toBe('open');
+      expect(choiceFromParams(params({ bmetric: 'both' })).bmetric).toBe('both');
+      expect(choiceFromParams(params({ bmetric: 'nope' })).bmetric).toBe('both');
+      expect(choiceFromParams(params({ metric: 'overdue' })).bmetric).toBe('overdue');
+      // A written address round-trips; `both` is the default and is not written.
+      expect(choiceToParams({ ...DEFAULT_CHOICE, bmetric: 'open' })['bmetric']).toBe('open');
+      expect(choiceToParams(DEFAULT_CHOICE)['bmetric']).toBeNull();
+      expect(choiceFromStored({ types: [], bmetric: 'open' }).bmetric).toBe('open');
+      expect(choiceFromStored({ types: [], bmetric: 'x' }).bmetric).toBe('both');
+    });
+
     it('builds the Task Queue query of a day, filtered by task type, and says when the link lists more than is counted', () => {
       expect(dayQuery('created', '2026-10-02', 5, false)).toBe(
         'createdFrom=2026-10-02&createdTo=2026-10-02&type=5',
@@ -348,6 +399,13 @@ describe('trend model', () => {
         'status=NEW&status=IN_PROGRESS&status=ON_HOLD&overdue=true',
       );
       expect(dayQuery('late', '2026-10-02', 7, false)).toContain('status=COMPLETED');
+      expect(dayQuery('open', '2026-10-02', 5, false)).toBe(
+        'status=NEW&status=IN_PROGRESS&status=ON_HOLD&createdTo=2026-10-02&type=5',
+      );
+      expect(dayQuery('open', '2026-10-02', null, true)).toBe(
+        'status=NEW&status=IN_PROGRESS&status=ON_HOLD',
+      );
+      expect(linkNote('open')).toContain('created by that day');
       expect(linkNote('created')).toBeNull();
       expect(linkNote('overdue')).toContain('still open');
       expect(linkNote('onTime')).toContain('every task completed');

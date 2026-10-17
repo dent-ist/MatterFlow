@@ -102,7 +102,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
   });
   afterEach(() => vi.restoreAllMocks());
 
-  it('starts with two panels: Created and Completed of All task types, and Overdue at the end of the day, and every type listed unchecked', async () => {
+  it('starts with two panels: Created and Completed of All task types, and Open and Overdue at the end of the day, and every type listed unchecked', async () => {
     await open();
     expect(getTrend).toHaveBeenCalledTimes(1);
     expect(getTrend).toHaveBeenCalledWith(
@@ -117,11 +117,11 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     );
     expect(text(el.querySelector('h3'))).toBe('Tasks over time');
     expect(Array.from(el.querySelectorAll('[data-panel] h4')).map((h) => text(h))).toEqual([
-      'Tasks created and completed per day',
+      'Created and completed',
       'Backlog at end of day',
     ]);
     expect(panelLines('flows').length).toBe(2);
-    expect(panelLines('backlog').length).toBe(1);
+    expect(panelLines('backlog').length).toBe(2); // Open and Overdue
     expect(el.querySelector<HTMLInputElement>('[data-all]')!.checked).toBe(true);
     expect(
       Array.from(el.querySelectorAll<HTMLInputElement>('[data-type-box]')).every((b) => !b.checked),
@@ -136,7 +136,11 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     expect(text(el.querySelector('[data-two-line]'))).toBe(
       'Pick a task type and the chart switches to Created.',
     );
-    expect(el.querySelector('[data-measure-single="backlog"]')!.textContent).toBe('Overdue');
+    expect(
+      el.querySelector<HTMLInputElement>('[data-measure="backlog"] [data-measure-option="both"]')!
+        .checked,
+    ).toBe(true);
+    expect(el.querySelector('h3')!.textContent).toContain('Tasks over time');
     // The old Due dates group and Show radios are gone.
     expect(el.querySelector('[data-group="due-dates"], [data-show], [data-due]')).toBeNull();
     // No search box for a short list.
@@ -179,10 +183,10 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     // All task types is hidden by default while types are compared (T2): one line per panel, the type's.
     expect(panelLines('flows').length).toBe(1);
     expect(panelLines('backlog').length).toBe(1);
-    expect(text(el.querySelector('[data-panel=flows] h4'))).toBe('Tasks created per day');
-    expect(url()).toBe('/trends?types=5&metric=created');
-    expect(stored()).toEqual({ types: [5], all: 'auto', metric: 'created', bmetric: 'overdue' });
-    expect(live()).toBe('Showing Created to compare task types.');
+    expect(text(el.querySelector('[data-panel=flows] h4'))).toBe('Created and completed');
+    expect(url()).toBe('/trends?types=5&metric=created&bmetric=open');
+    expect(stored()).toEqual({ types: [5], all: 'auto', metric: 'created', bmetric: 'open' });
+    expect(live()).toBe('Showing Created and Open to compare task types.');
     expect(el.querySelector<HTMLInputElement>('[data-all]')!.checked).toBe(false);
     expect(text(el.querySelector('[data-hidden-for-scale]'))).toBe('(hidden for scale)');
     expect(el.querySelector('[data-measure-option="both"]')).toBeNull();
@@ -197,7 +201,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     el.querySelector<HTMLInputElement>('[data-all]')!.click();
     await settle();
     expect(panelLines('flows').length).toBe(2);
-    expect(url()).toBe('/trends?types=5&metric=created&all=1');
+    expect(url()).toBe('/trends?types=5&metric=created&bmetric=open&all=1');
 
     // Another type needs one more read; unchecking needs none.
     await check(7);
@@ -211,7 +215,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
       undefined,
       'all',
     );
-    expect(url()).toBe('/trends?types=5,7&metric=created&all=1');
+    expect(url()).toBe('/trends?types=5,7&metric=created&bmetric=open&all=1');
     expect(panelLines('flows').length).toBe(3);
     const calls = getTrend.mock.calls.length;
     await check(7);
@@ -253,7 +257,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     await choose('flows', 'late');
     expect(getTrend).toHaveBeenCalledTimes(1);
     expect(panelLines('flows').length).toBe(1);
-    expect(text(el.querySelector('[data-panel=flows] h4'))).toBe('Tasks completed late per day');
+    expect(text(el.querySelector('[data-panel=flows] h4'))).toBe('Created and completed');
     expect(url()).toBe('/trends?metric=late');
     // Back to the two-line view: the default is not written.
     await choose('flows', 'both');
@@ -263,7 +267,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     // With a type the numbers on the rows follow the measure and link to the queue; types sort by it.
     await check(5);
     await choose('flows', 'completed');
-    expect(url()).toBe('/trends?types=5&metric=completed');
+    expect(url()).toBe('/trends?types=5&metric=completed&bmetric=open');
     expect(text(el.querySelector('[data-total="5"]'))).toBe('4');
     expect(el.querySelector('[data-total="5"]')!.getAttribute('href')).toContain(
       'status=COMPLETED',
@@ -413,7 +417,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     el.querySelector<HTMLButtonElement>('[data-backlog-toggle] ~ .toggle')!.click();
     harness.detectChanges();
     expect(Array.from(el.querySelectorAll('thead th[scope=colgroup]')).map((t) => text(t))).toEqual(
-      ['Tasks created per day', 'Backlog at end of day'],
+      ['Created and completed', 'Backlog at end of day'],
     );
     expect(Array.from(el.querySelectorAll('thead th[data-col]')).map((t) => text(t))).toEqual([
       'Alpha',
@@ -430,7 +434,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     it('a shared address names the view and wins over what this browser remembers', async () => {
       localStorage.setItem(
         STORE_KEY(1),
-        JSON.stringify({ types: [5], all: 'auto', metric: 'created', bmetric: 'overdue' }),
+        JSON.stringify({ types: [5], all: 'auto', metric: 'created', bmetric: 'both' }),
       );
       await open('/trends?types=7,5&metric=completed&all=0');
       expect(getTrend).toHaveBeenCalledWith(
@@ -450,13 +454,13 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
         true,
       );
       expect(panelLines('flows').length).toBe(2);
-      expect(text(el.querySelector('[data-panel=flows] h4'))).toBe('Tasks completed per day');
+      expect(text(el.querySelector('[data-panel=flows] h4'))).toBe('Created and completed');
     });
 
     it('without parameters the remembered view is restored and the address completed', async () => {
       localStorage.setItem(
         STORE_KEY(1),
-        JSON.stringify({ types: [7], all: 'auto', metric: 'late', bmetric: 'overdue' }),
+        JSON.stringify({ types: [7], all: 'auto', metric: 'late', bmetric: 'both' }),
       );
       await open('/trends');
       expect(getTrend).toHaveBeenCalledWith(
@@ -470,7 +474,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
         'all',
       );
       expect(box(7).checked).toBe(true);
-      expect(url()).toBe('/trends?types=7&metric=late');
+      expect(url()).toBe('/trends?types=7&metric=late&bmetric=open');
     });
 
     it('follows Back and Forward: the address changes the view', async () => {
@@ -499,7 +503,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
       await open();
       await check(5);
       expect(box(5).checked).toBe(true);
-      expect(url()).toBe('/trends?types=5&metric=created');
+      expect(url()).toBe('/trends?types=5&metric=created&bmetric=open');
     });
   });
 
@@ -538,7 +542,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     it('drops a remembered task type the server does not know and shows the rest', async () => {
       localStorage.setItem(
         STORE_KEY(1),
-        JSON.stringify({ types: [999], all: 'auto', metric: 'created', bmetric: 'overdue' }),
+        JSON.stringify({ types: [999], all: 'auto', metric: 'created', bmetric: 'both' }),
       );
       await open('/trends', (_p, _f, _t, _d, ids) =>
         ids && ids.includes(999) ? throwError(() => ({ status: 400 })) : of(aTrend([], extra)),
@@ -552,11 +556,11 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     it('removes a checked inactive type that has no tasks once the period no longer lists it', async () => {
       localStorage.setItem(
         STORE_KEY(1),
-        JSON.stringify({ types: [5, 77], all: 'auto', metric: 'created', bmetric: 'overdue' }),
+        JSON.stringify({ types: [5, 77], all: 'auto', metric: 'created', bmetric: 'both' }),
       );
       await open('/trends');
       expect(box(5).checked).toBe(true);
-      expect(url()).toBe('/trends?types=5&metric=created');
+      expect(url()).toBe('/trends?types=5&metric=created&bmetric=open');
       expect(text(el.querySelector('[data-trend-live]'))).toContain('Task type 77');
     });
 
@@ -569,6 +573,61 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
       await settle();
       expect(el.querySelector('[data-dash-state="error"]')).toBeNull();
       expect(panelLines('flows').length).toBe(2);
+    });
+  });
+
+  it('weekly points (a long period): says per week and reads the weeks the server sent', async () => {
+    await open('/trends', (_p, _f, _t, _d, ids) => of(aTrend(ids ?? [], extra, 'week')));
+    expect(el.querySelectorAll('[data-per-week]').length).toBe(2);
+    expect(el.querySelector('rect.weekend')).toBeNull();
+    const plot = el.querySelector<HTMLElement>('[data-plot]')!;
+    plot.dispatchEvent(new FocusEvent('focus'));
+    await settle();
+    expect(text(el.querySelector('[data-tip-heading]'))).toBe('Week of Oct 14');
+  });
+
+  describe('on a phone (480 px and below)', () => {
+    beforeEach(() => {
+      vi.stubGlobal(
+        'matchMedia',
+        (query: string) =>
+          ({
+            matches: query === '(max-width: 480px)',
+            media: query,
+            addEventListener: () => undefined,
+            removeEventListener: () => undefined,
+          }) as unknown as MediaQueryList,
+      );
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('folds Compare task types behind a 44 px button, collapsed, with the count of checked types', async () => {
+      await open();
+      const btn = el.querySelector<HTMLButtonElement>('[data-compare-toggle]')!;
+      expect(btn).not.toBeNull();
+      expect(text(btn)).toContain('Compare task types');
+      expect(text(btn)).not.toContain('(');
+      expect(btn.getAttribute('aria-expanded')).toBe('false');
+      expect(el.querySelector('mf-trend-legend')).toBeNull();
+      // The chart is the default and stays; the table is one tap away.
+      expect(el.querySelector('[data-plot]')).not.toBeNull();
+
+      btn.click();
+      await settle();
+      expect(btn.getAttribute('aria-expanded')).toBe('true');
+      expect(btn.getAttribute('aria-controls')).toBe(
+        el.querySelector('mf-trend-legend')!.parentElement!.id,
+      );
+      await check(5);
+      expect(text(btn)).toContain('Compare task types (1)');
+      expect(panelLines('flows').length).toBe(1);
+
+      btn.click();
+      await settle();
+      expect(btn.getAttribute('aria-expanded')).toBe('false');
+      expect(el.querySelector('mf-trend-legend')).toBeNull();
+      // The choice outlives the fold.
+      expect(url()).toContain('types=5');
     });
   });
 });

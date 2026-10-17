@@ -8,6 +8,9 @@ export const DASH_FIXED_QUERY = '(min-width: 768px) and (min-height: 561px)';
 /** The fixed layout on a window wide enough for the Summary lists to sit beside the tiles (the three lists then scroll one by one). */
 export const DASH_FIXED_WIDE_QUERY = '(min-width: 1280px) and (min-height: 561px)';
 
+/** A phone: the Trends tab folds its task type list behind a button and draws the chart 16:9 (#121). */
+export const DASH_PHONE_QUERY = '(max-width: 480px)';
+
 /** A signal that follows a media query (false where `matchMedia` does not exist). Call in an injection context. */
 export function mediaMatch(query: string): Signal<boolean> {
   const out = signal(false);

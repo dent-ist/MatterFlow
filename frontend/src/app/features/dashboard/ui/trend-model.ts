@@ -1,4 +1,5 @@
 import { ParamMap } from '@angular/router';
+import { parseDateOnly } from '../../../core/time/time';
 import {
   DashboardTrend,
   DashboardTrendDay,
@@ -10,14 +11,22 @@ import {
  * panels (flows and backlog) the current choices make, the state machine of the measure controls and the "Compare task types" list, the
  * y axis scale, and how the choices travel in the address (`types`, `metric`, `bmetric`, `all`; legacy `due`) and in the browser.
  *
- * Extension points for the backlog series (WP8b, #120): add `'open'` to `BacklogMeasure` and `BACKLOG_MEASURES`, give it a `MEASURE_INFO` and
- * `MEASURE_STYLES` entry, a `DashboardTrendDay.open` column in `valuesOf`, and (if wanted) a `'both'` choice that draws Open and Overdue.
- * Everything else (panel title, segmented control, legend, table groups, tooltip groups) reads `BACKLOG_MEASURES` and `PanelView`.
+ * The backlog panel (WP8b, #120) has two stocks, `open` and `overdue`, and a `'both'` choice that draws both (the default for All task types; with task
+ * types it turns into the first single stock, Open). A new stock is a `BacklogMeasure` plus a `MEASURE_INFO` / `MEASURE_STYLES` entry and a column of
+ * `DashboardTrendDay` in `valuesOf`. Periods over 31 days arrive weekly (`granularity: 'week'`, a point is a Monday to Sunday bucket): `weekLabel`,
+ * `xTicks` and `bucketRange` below carry that to the axis, the tooltip and the table links.
  */
 
-/** What a line counts per day. `overdue` is a snapshot at the end of the day; the others are events of the day. */
-export type Measure = 'created' | 'completed' | 'overdue' | 'onTime' | 'late';
-export const MEASURES: readonly Measure[] = ['created', 'completed', 'overdue', 'onTime', 'late'];
+/** What a line counts per day (or week). `overdue` and `open` are snapshots at the end of the day; the others are events of the day. */
+export type Measure = 'created' | 'completed' | 'overdue' | 'open' | 'onTime' | 'late';
+export const MEASURES: readonly Measure[] = [
+  'created',
+  'completed',
+  'overdue',
+  'open',
+  'onTime',
+  'late',
+];
 export const MAX_TYPES = 8;
 /** Panel heights in px (T1 contract): the flows panel 320, the backlog panel 200. */
 export const FLOWS_HEIGHT = 320;
@@ -58,6 +67,12 @@ export const MEASURE_INFO: Record<Measure, MeasureInfo> = {
     heading: 'overdue',
     totalNote: 'Overdue now',
   },
+  open: {
+    label: 'Open',
+    word: 'open',
+    heading: 'open',
+    totalNote: 'Open now',
+  },
   onTime: {
     label: 'On time',
     word: 'completed on time',
@@ -77,11 +92,14 @@ export type FlowMeasure = 'created' | 'completed' | 'onTime' | 'late';
 export const FLOW_MEASURES: readonly FlowMeasure[] = ['created', 'completed', 'onTime', 'late'];
 /** What panel 1 shows: two lines of All task types (`both`) or one measure (for All and for each compared task type). */
 export type FlowChoice = 'both' | FlowMeasure;
-/** Stocks. WP8b adds `'open'` here (see the note above). */
-export type BacklogMeasure = 'overdue';
-export const BACKLOG_MEASURES: readonly BacklogMeasure[] = ['overdue'];
-export type BacklogChoice = BacklogMeasure;
-export const DEFAULT_BACKLOG: BacklogChoice = 'overdue';
+/** Stocks (a level at the end of the day or week). */
+export type BacklogMeasure = 'open' | 'overdue';
+export const BACKLOG_MEASURES: readonly BacklogMeasure[] = ['open', 'overdue'];
+/** What panel 2 shows: both stocks of All task types (`both`) or one stock (for All and for each compared task type). */
+export type BacklogChoice = 'both' | BacklogMeasure;
+export const DEFAULT_BACKLOG: BacklogChoice = 'both';
+/** The single stock `both` turns into when task types are compared. */
+export const FIRST_BACKLOG: BacklogMeasure = 'open';
 
 /** Words of the address for the measures (`metric=ontime`); the legacy spelling `onTime` is read too. */
 const FLOW_URL: Record<FlowMeasure, string> = {
@@ -98,7 +116,11 @@ export const FLOW_CHOICE_LABEL: Record<FlowChoice, string> = {
   onTime: 'On time',
   late: 'Completed late',
 };
-export const BACKLOG_CHOICE_LABEL: Record<BacklogChoice, string> = { overdue: 'Overdue' };
+export const BACKLOG_CHOICE_LABEL: Record<BacklogChoice, string> = {
+  both: 'Open and overdue',
+  open: 'Open',
+  overdue: 'Overdue',
+};
 
 export const FLOWS_TITLE = 'Created and completed';
 export const BACKLOG_TITLE = 'Backlog at end of day';
@@ -124,13 +146,14 @@ export interface LineStyle {
 
 /**
  * Line styles of the default chart (measures), in the dashboard's own tokens: Created is the brand blue, solid, round markers; Completed
- * teal, long dashes, square markers; Overdue red, dotted, up triangles; On time green, dash-dot, diamonds; Completed late amber, dash-dot-dot,
- * crosses. Keep in step with docs/ux/tokens.css (checked by trend-palette.spec.ts).
+ * teal, long dashes, square markers; Overdue red, dotted, up triangles; Open deep violet, extra long dashes, down triangles; On time green,
+ * dash-dot, diamonds; Completed late amber, dash-dot-dot, crosses. Keep in step with docs/ux/tokens.css (checked by trend-palette.spec.ts).
  */
 export const MEASURE_STYLES: Record<Measure, LineStyle> = {
   created: { color: '#1F4E9C', dash: '', marker: 'circle' },
   completed: { color: '#0B5E55', dash: '7 4', marker: 'square' },
   overdue: { color: '#B42318', dash: '2 4', marker: 'triangle' },
+  open: { color: '#5B2A86', dash: '14 4', marker: 'triangleDown' },
   onTime: { color: '#146C2E', dash: '10 3 2 3', marker: 'diamond' },
   late: { color: '#8A4B00', dash: '9 3 2 3 2 3', marker: 'cross' },
 };
@@ -243,17 +266,24 @@ export interface ChoiceChange {
  */
 export function normalizeChoice(choice: TrendChoice, previous: TrendChoice | null): ChoiceChange {
   let next = choice;
-  let announcement: string | null = null;
+  const changed: string[] = [];
   if (next.types.length > 0 && next.metric === 'both') {
     next = { ...next, metric: FIRST_SINGLE };
-    announcement = `Showing ${FLOW_CHOICE_LABEL[FIRST_SINGLE]} to compare task types.`;
+    changed.push(FLOW_CHOICE_LABEL[FIRST_SINGLE]);
   }
+  if (next.types.length > 0 && next.bmetric === 'both') {
+    next = { ...next, bmetric: FIRST_BACKLOG };
+    changed.push(BACKLOG_CHOICE_LABEL[FIRST_BACKLOG]);
+  }
+  const announcement =
+    changed.length > 0 ? `Showing ${changed.join(' and ')} to compare task types.` : null;
   if (next.types.length === 0 && previous && previous.types.length > 0) {
-    // The last type is gone: undo what picking types did (All is automatic again, Created goes back to the two-line view).
+    // The last type is gone: undo what picking types did (All is automatic again, Created and Open go back to the two-line views).
     next = {
       ...next,
       all: 'auto',
       metric: next.metric === FIRST_SINGLE ? 'both' : next.metric,
+      bmetric: next.bmetric === FIRST_BACKLOG ? 'both' : next.bmetric,
     };
   }
   return { choice: next, announcement };
@@ -271,8 +301,13 @@ export function flowOptions(choice: TrendChoice): FlowChoice[] {
   return choice.types.length > 0 ? [...FLOW_MEASURES] : ['both', ...FLOW_MEASURES];
 }
 
-export function backlogOptions(): BacklogChoice[] {
-  return [...BACKLOG_MEASURES];
+/** Measures offered by the panel 2 control: "Open and overdue" is a two-line view of All task types only. */
+export function backlogOptions(choice: TrendChoice): BacklogChoice[] {
+  return choice.types.length > 0 ? [...BACKLOG_MEASURES] : ['both', ...BACKLOG_MEASURES];
+}
+
+export function isBacklogChoice(value: unknown): value is BacklogChoice {
+  return value === 'both' || (BACKLOG_MEASURES as readonly unknown[]).includes(value);
 }
 
 export function isFlowChoice(value: unknown): value is FlowChoice {
@@ -289,6 +324,12 @@ function flowFromWord(word: string | null): FlowMeasure | null {
   if (word === null) return null;
   const w = word.toLowerCase();
   return FLOW_MEASURES.find((m) => FLOW_URL[m] === w) ?? null;
+}
+
+/** The address word of a backlog choice (`bmetric=open`); the default is not written. */
+function backlogFromWord(word: string | null): BacklogChoice | null {
+  const w = (word ?? '').toLowerCase();
+  return isBacklogChoice(w) ? w : null;
 }
 
 /**
@@ -310,12 +351,16 @@ export function choiceFromParams(params: ParamMap): TrendChoice {
   const legacyDue = flowFromWord(dueNames.find((n) => flowFromWord(n) && n !== 'created') ?? null);
   const metric = flowFromWord(params.get('metric')) ?? legacyDue ?? DEFAULT_CHOICE.metric;
   const all = params.get('all');
+  // `metric=overdue` and `due=overdue` (legacy) ask for the Overdue stock; `bmetric=` names it directly.
+  const legacyOverdue = params.get('metric') === 'overdue' || dueNames.includes('overdue');
+  const bmetric =
+    backlogFromWord(params.get('bmetric')) ?? (legacyOverdue ? 'overdue' : DEFAULT_BACKLOG);
   return normalizeChoice(
     {
       types: cleanTypeIds((params.get('types') ?? '').split(',').filter(Boolean)),
       all: all === '0' ? 'off' : all === '1' ? 'on' : 'auto',
       metric,
-      bmetric: DEFAULT_BACKLOG,
+      bmetric,
     },
     null,
   ).choice;
@@ -352,7 +397,8 @@ export function choiceFromStored(raw: unknown): TrendChoice {
   // The first version's default metric was `created` next to "both lines": without types that meant the two-line chart.
   const metric: FlowChoice =
     r['metric'] === 'both' || (legacy && types.length === 0) ? 'both' : (storedMetric ?? 'both');
-  return normalizeChoice({ types, all, metric, bmetric: DEFAULT_BACKLOG }, null).choice;
+  const bmetric = typeof r['bmetric'] === 'string' ? backlogFromWord(r['bmetric']) : null;
+  return normalizeChoice({ types, all, metric, bmetric: bmetric ?? DEFAULT_BACKLOG }, null).choice;
 }
 
 // ---- the lines
@@ -411,7 +457,7 @@ export function buildView(
   types: readonly DashboardTrendType[],
 ): TrendView {
   const defaultMode = choice.types.length === 0;
-  const flowTitle = flowsHeading(choice.metric);
+  const flowTitle = FLOWS_TITLE;
   const empty = (key: PanelKey, title: string, height: number): PanelView => ({
     key,
     title,
@@ -448,7 +494,8 @@ export function buildView(
     iconKey,
     measure,
     typeId,
-    approximate: measure === 'onTime' || measure === 'late' || measure === 'overdue',
+    approximate:
+      measure === 'onTime' || measure === 'late' || measure === 'overdue' || measure === 'open',
   });
 
   /** One measure for All task types and for each checked type. */
@@ -528,7 +575,23 @@ export function buildView(
   } else {
     flowLines = single('flows', choice.metric);
   }
-  const backlogLines = single('backlog', choice.bmetric);
+  const backlogLines =
+    choice.bmetric === 'both'
+      ? allVisible(choice)
+        ? BACKLOG_MEASURES.map((m) =>
+            line(
+              'backlog',
+              m,
+              `all-${m}`,
+              MEASURE_INFO[m].label,
+              MEASURE_STYLES[m],
+              all,
+              null,
+              null,
+            ),
+          )
+        : []
+      : single('backlog', choice.bmetric);
   return {
     defaultMode,
     flows: {
@@ -544,23 +607,10 @@ export function buildView(
       title: BACKLOG_TITLE,
       lines: backlogLines,
       height: BACKLOG_HEIGHT,
-      measureNote: !defaultMode ? BACKLOG_CHOICE_LABEL[choice.bmetric] : null,
+      measureNote:
+        !defaultMode && choice.bmetric !== 'both' ? BACKLOG_CHOICE_LABEL[choice.bmetric] : null,
     },
   };
-}
-
-/** "Tasks created and completed per day" and friends (panel 1). */
-export function flowsHeading(metric: FlowChoice): string {
-  switch (metric) {
-    case 'both':
-      return 'Tasks created and completed per day';
-    case 'onTime':
-      return 'Tasks completed on time per day';
-    case 'late':
-      return 'Tasks completed late per day';
-    default:
-      return `Tasks ${MEASURE_INFO[metric].heading} per day`;
-  }
 }
 
 // ---- the axis
@@ -691,8 +741,31 @@ export function dayQuery(
       return isToday
         ? `${OPEN_STATUSES}&overdue=true${type}`
         : `${OPEN_STATUSES}&dueTo=${date}${type}`;
+    case 'open':
+      return isToday ? `${OPEN_STATUSES}${type}` : `${OPEN_STATUSES}&createdTo=${date}${type}`;
     default:
       return `status=COMPLETED&completedFrom=${date}&completedTo=${date}${type}`;
+  }
+}
+
+/** The Task Queue query behind a flow's value over a range of days (a week bucket): the day query with `From` and `To` of the range. */
+export function rangeQuery(
+  measure: Measure,
+  range: { from: string; to: string },
+  typeId: number | null,
+  isToday: boolean,
+): string {
+  if (range.from === range.to) return dayQuery(measure, range.to, typeId, isToday);
+  const type = typeId === null ? '' : `&type=${typeId}`;
+  switch (measure) {
+    case 'created':
+      return `createdFrom=${range.from}&createdTo=${range.to}${type}`;
+    case 'overdue':
+    case 'open':
+      // A stock is read at the end of the bucket.
+      return dayQuery(measure, range.to, typeId, isToday);
+    default:
+      return `status=COMPLETED&completedFrom=${range.from}&completedTo=${range.to}${type}`;
   }
 }
 
@@ -701,10 +774,192 @@ export function linkNote(measure: Measure): string | null {
   switch (measure) {
     case 'overdue':
       return 'Overdue links list the tasks that are still open and were due by that day (today: all overdue tasks).';
+    case 'open':
+      return 'Open links list the tasks that are still open and were created by that day (today: all open tasks).';
     case 'onTime':
     case 'late':
       return 'On time and late links list every task completed that day.';
     default:
       return null;
   }
+}
+
+// ---- weekly points, ticks, labels
+
+/** One point per day, or per week (Monday to Sunday) for periods over 31 days. */
+export type Granularity = 'day' | 'week';
+
+export function granularityOf(value: string | null | undefined): Granularity {
+  return value === 'week' ? 'week' : 'day';
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function utc(date: string): Date | null {
+  const d = parseDateOnly(date);
+  return d ? new Date(Date.UTC(d.year, d.month - 1, d.day)) : null;
+}
+
+/** 0 = Sunday ... 6 = Saturday; -1 for text that is not a date. */
+export function weekdayOf(date: string): number {
+  return utc(date)?.getUTCDay() ?? -1;
+}
+
+export function addDays(date: string, days: number): string {
+  const d = utc(date);
+  if (!d) return date;
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** "Oct 6". */
+export function shortDate(date: string): string {
+  const d = parseDateOnly(date);
+  return d ? `${MONTHS[d.month - 1]} ${d.day}` : date;
+}
+
+/** "Week of Oct 6" (the Monday). */
+export function weekLabel(date: string): string {
+  return `Week of ${shortDate(date)}`;
+}
+
+/** "Tue, Oct 13" for a day, "Week of Oct 6" for a week. */
+export function pointHeading(date: string, granularity: Granularity): string {
+  if (granularity === 'week') return weekLabel(date);
+  const w = weekdayOf(date);
+  return w < 0 ? date : `${WEEKDAYS[w]}, ${shortDate(date)}`;
+}
+
+/**
+ * The days a point covers inside the period: the day itself, or its Monday to Sunday week cut to the first and last day of the period (the
+ * first and last weeks can be partial).
+ */
+export function bucketRange(
+  date: string,
+  granularity: Granularity,
+  periodFrom: string,
+  periodTo: string,
+): { from: string; to: string } {
+  if (granularity === 'day') return { from: date, to: date };
+  const end = addDays(date, 6);
+  return { from: date < periodFrom ? periodFrom : date, to: end > periodTo ? periodTo : end };
+}
+
+/** True when the point (a day, or a week) contains `today`: the last point of a period that ends today is still filling up. */
+export function containsDay(date: string, granularity: Granularity, today: string): boolean {
+  return granularity === 'day' ? date === today : date <= today && today <= addDays(date, 6);
+}
+
+/** Up to this many points per line every point has a marker; beyond it markers are drawn at the ends (and on the hovered day). */
+export const MARKER_ALL_UP_TO = 14;
+
+export function markerIndexes(count: number): number[] {
+  if (count <= MARKER_ALL_UP_TO) return Array.from({ length: count }, (_, i) => i);
+  return [0, count - 1];
+}
+
+/** Direct end labels are drawn in a panel with at most this many lines; with more only the list identifies a line. */
+export const LABEL_MAX_LINES = 4;
+/** Room reserved at the right of the plot for the end labels, in px. */
+export const LABEL_MARGIN = 96;
+/** Least distance between two end labels, in px. */
+export const LABEL_MIN_GAP = 12;
+
+/**
+ * Moves end labels apart: returns the vertical position of each label (same order as `ys`), at least `gap` px from its neighbours, as close as
+ * possible to where its line ends and inside `[lo, hi]`. Needs `(count - 1) * gap <= hi - lo` to keep the gap.
+ */
+export function nudgeLabels(ys: readonly number[], gap: number, lo: number, hi: number): number[] {
+  const order = ys.map((y, i) => i).sort((a, b) => ys[a] - ys[b] || a - b);
+  const pos = order.map((i) => Math.min(hi, Math.max(lo, ys[i])));
+  for (let k = 1; k < pos.length; k++) pos[k] = Math.max(pos[k], pos[k - 1] + gap);
+  // Pushed past the bottom: pull the stack back up.
+  if (pos.length > 0 && pos[pos.length - 1] > hi) {
+    pos[pos.length - 1] = hi;
+    for (let k = pos.length - 2; k >= 0; k--) pos[k] = Math.min(pos[k], pos[k + 1] - gap);
+  }
+  const out = new Array<number>(ys.length);
+  order.forEach((original, k) => (out[original] = pos[k]));
+  return out;
+}
+
+/** The text of an end label, cut with an ellipsis so that it fits `maxChars`; the value is always kept ("Document rev… 15"). */
+export function endLabelText(name: string, value: number, maxChars: number): string {
+  const tail = ` ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  const room = Math.max(1, maxChars - tail.length);
+  return (
+    (name.length > room ? name.slice(0, Math.max(1, room - 1)).trimEnd() + '\u2026' : name) + tail
+  );
+}
+
+export interface XTick {
+  /** Index of the point. */
+  index: number;
+  date: string;
+  text: string;
+  x: number;
+  anchor: 'start' | 'middle' | 'end';
+}
+
+/** Width of a tick label in px (12 px type). */
+const tickWidth = (text: string) => text.length * 6.8;
+const TICK_PAD = 8;
+
+/**
+ * The labels under the x axis. Daily points (up to 31 days): the first and last day and every Monday between them, left to right, a Monday is
+ * skipped when it would touch the label before it or the last day (the last day is always labelled). Weekly points: the first and last week and
+ * evenly spaced week starts in between, at most `maxLabels` in all (8 on a wide chart, 4 on a narrow one), thinned the same way. The first label
+ * starts at the axis and the last ends at its point, so neither leaves the chart. Every label carries the month ("Oct 6").
+ */
+export function xTicks(
+  dates: readonly string[],
+  granularity: Granularity,
+  x: (index: number) => number,
+  maxLabels: number,
+): XTick[] {
+  const n = dates.length;
+  if (n === 0) return [];
+  const make = (index: number): XTick => ({
+    index,
+    date: dates[index],
+    text: shortDate(dates[index]),
+    x: x(index),
+    anchor: n === 1 ? 'middle' : index === 0 ? 'start' : index === n - 1 ? 'end' : 'middle',
+  });
+  if (n === 1) return [make(0)];
+
+  let middle: number[];
+  if (granularity === 'week') {
+    const step = Math.max(1, Math.ceil((n - 1) / Math.max(1, maxLabels - 1)));
+    middle = [];
+    for (let i = n - 1 - step; i > 0; i -= step) middle.unshift(i);
+  } else {
+    middle = [];
+    for (let i = 1; i < n - 1; i++) if (weekdayOf(dates[i]) === 1) middle.push(i);
+  }
+
+  const span = (t: XTick): [number, number] => {
+    const w = tickWidth(t.text);
+    return t.anchor === 'start'
+      ? [t.x, t.x + w]
+      : t.anchor === 'end'
+        ? [t.x - w, t.x]
+        : [t.x - w / 2, t.x + w / 2];
+  };
+  const last = make(n - 1);
+  const picked: XTick[] = [make(0)];
+  for (const i of middle) {
+    const t = make(i);
+    const [a, b] = span(t);
+    const before = span(picked[picked.length - 1]);
+    const after = span(last);
+    if (a - before[1] >= TICK_PAD && after[0] - b >= TICK_PAD) picked.push(t);
+  }
+  // The first and the last label themselves can touch on a very narrow chart: the last day wins.
+  const [fa, fb] = span(picked[0]);
+  const [la] = span(last);
+  if (la - fb < TICK_PAD && picked.length === 1 && fa <= la) return [last];
+  picked.push(last);
+  return picked;
 }

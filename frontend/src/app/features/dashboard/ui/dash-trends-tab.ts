@@ -12,11 +12,12 @@ import {
   untracked,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DashboardClient, DashboardTrend } from '../../../api/generated/api-client';
 import { QuietRequests } from '../../../core/http/interceptors';
 import { DashState, focusAfterRetry } from './dash-state';
-import { DASH_FIXED_QUERY, mediaMatch } from './dash-media';
+import { DASH_FIXED_QUERY, DASH_PHONE_QUERY, mediaMatch } from './dash-media';
 import { DashScope } from '../dash-scope';
 import { Period, periodArgs, periodId } from '../dashboard-period';
 import { TrendChart } from './trend-chart';
@@ -38,7 +39,9 @@ import {
   choiceToParams,
   flowOptions,
   freeSlot,
+  granularityOf,
   hasTrendParams,
+  isBacklogChoice,
   isFlowChoice,
   namesBacklog,
   normalizeChoice,
@@ -64,7 +67,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-dash-trends-tab',
-  imports: [TrendChart, TrendLegend, TrendMeasure, DashState],
+  imports: [TrendChart, TrendLegend, TrendMeasure, DashState, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -112,6 +115,9 @@ let nextId = 0;
             <mf-trend-chart
               [heading]="heading"
               [dates]="dates()"
+              [granularity]="granularity()"
+              [periodFrom]="d.period.from"
+              [periodTo]="d.period.to"
               [panels]="panels()"
               [asTable]="asTable()"
               [fit]="fixed()"
@@ -119,18 +125,49 @@ let nextId = 0;
               [controls]="measureTpl"
             />
           </div>
-          <mf-trend-legend
-            class="side"
-            [choice]="choice()"
-            [slots]="slots()"
-            [data]="d"
-            [message]="message()"
-            (allChange)="toggleAll()"
-            (typeChange)="toggleType($event)"
-            (selectTop)="selectTop()"
-            (clear)="clearTypes()"
-            (limit)="message.set(limitMessage)"
-          />
+          @if (phone()) {
+            <div class="side compare">
+              <button
+                type="button"
+                class="compare-btn"
+                data-compare-toggle
+                [attr.aria-expanded]="compareOpen()"
+                [attr.aria-controls]="id + '-compare'"
+                (click)="compareOpen.set(!compareOpen())"
+              >
+                <span
+                  >Compare task types
+                  @if (choice().types.length > 0) {
+                    ({{ choice().types.length }})
+                  }
+                </span>
+                <span class="chev" aria-hidden="true">{{
+                  compareOpen() ? '&#9650;' : '&#9660;'
+                }}</span>
+              </button>
+              <div [id]="id + '-compare'" [hidden]="!compareOpen()">
+                @if (compareOpen()) {
+                  <ng-container *ngTemplateOutlet="legendTpl" />
+                }
+              </div>
+            </div>
+          } @else {
+            <ng-container *ngTemplateOutlet="legendTpl" />
+          }
+          <ng-template #legendTpl>
+            <mf-trend-legend
+              class="side"
+              [choice]="choice()"
+              [slots]="slots()"
+              [data]="d"
+              [message]="message()"
+              (allChange)="toggleAll()"
+              (typeChange)="toggleType($event)"
+              (selectTop)="selectTop()"
+              (clear)="clearTypes()"
+              (limit)="message.set(limitMessage)"
+            />
+          </ng-template>
         </div>
       } @else {
         <p class="note" role="status" data-trend-loading>Loading the trend.</p>
@@ -148,7 +185,7 @@ let nextId = 0;
           <mf-trend-measure
             panel="backlog"
             label="Measure of the backlog panel"
-            [options]="backlogChoices"
+            [options]="backlogChoices()"
             [value]="choice().bmetric"
             (valueChange)="setBacklogMetric($event)"
           />
@@ -250,6 +287,28 @@ let nextId = 0;
         gap: var(--mf-s3);
       }
     }
+    .compare {
+      border-top: 1px solid var(--mf-border);
+      padding-top: var(--mf-s2);
+    }
+    .compare-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      min-height: 44px;
+      padding: 0 var(--mf-s3);
+      font: inherit;
+      color: var(--mf-text);
+      background: var(--mf-surface);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius);
+      cursor: pointer;
+    }
+    .compare .side {
+      padding-top: var(--mf-s3);
+      border-top: 0;
+    }
     .sr-only {
       position: absolute;
       width: 1px;
@@ -297,9 +356,12 @@ export class DashTrendsTab {
   private urlSeen = false;
 
   protected readonly heading = 'Tasks over time';
-  protected readonly backlogChoices: readonly MeasureOption<BacklogChoice>[] = backlogOptions().map(
-    (value) => ({ value, label: BACKLOG_CHOICE_LABEL[value] }),
+  protected readonly backlogChoices = computed<MeasureOption<BacklogChoice>[]>(() =>
+    backlogOptions(this.choice()).map((value) => ({ value, label: BACKLOG_CHOICE_LABEL[value] })),
   );
+  /** A phone (480 px and below): the "Compare task types" list is folded behind a button under the chart (#121). */
+  protected readonly phone = mediaMatch(DASH_PHONE_QUERY);
+  protected readonly compareOpen = signal(false);
   /** The user hid the backlog panel (remembered, not in the address). */
   protected readonly backlogHidden = signal(false);
   protected readonly backlogShown = computed(() => !this.backlogHidden());
@@ -309,13 +371,14 @@ export class DashTrendsTab {
     return buildView(this.choice(), d, this.slots(), d?.types ?? []);
   });
   protected readonly dates = computed(() => this.data()?.all.map((p) => p.date) ?? []);
+  protected readonly granularity = computed(() => granularityOf(this.data()?.granularity));
   /** Nothing happened in the period (no created, completed, overdue or completed-with-due-date task at all). */
   protected readonly noActivity = computed(() => {
     const d = this.data();
     return (
       !!d &&
       this.choice().types.length === 0 &&
-      d.all.every((p) => p.created + p.completed + p.overdue + p.onTime + p.late === 0)
+      d.all.every((p) => p.created + p.completed + p.overdue + p.open + p.onTime + p.late === 0)
     );
   });
   /** The panels the chart draws: flows, and backlog unless hidden. */
@@ -401,7 +464,7 @@ export class DashTrendsTab {
   }
 
   protected setBacklogMetric(value: string): void {
-    const bmetric = backlogOptions().find((m) => m === value);
+    const bmetric = isBacklogChoice(value) ? value : null;
     if (bmetric && bmetric !== this.choice().bmetric) {
       this.applyChoice({ ...this.choice(), bmetric }, true);
     }

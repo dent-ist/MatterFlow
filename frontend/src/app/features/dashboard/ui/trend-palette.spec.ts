@@ -122,6 +122,8 @@ describe('trend line palette', () => {
     expect(MEASURE_STYLES.overdue.color).toBe('#B42318'); // --mf-danger
     expect(MEASURE_STYLES.onTime.color).toBe('#146C2E'); // --mf-success
     expect(MEASURE_STYLES.late.color).toBe('#8A4B00'); // --mf-warning
+    // Open (#120) has no token of its own yet: a deep violet that no other dashboard colour uses (documented in docs/ux/dashboard-trends-types/README.md).
+    expect(MEASURE_STYLES.open.color).toBe('#5B2A86');
   });
 
   it('draws every marker shape as a path of its own', () => {

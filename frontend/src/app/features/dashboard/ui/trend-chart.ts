@@ -15,19 +15,34 @@ import {
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { calendarDayInZone, mfDate, parseDateOnly } from '../../../core/time/time';
+import { calendarDayInZone, mfDate } from '../../../core/time/time';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { queueParams } from '../dashboard-links';
 import { TrendSample } from './trend-sample';
 import {
   ChartLine,
+  Granularity,
+  LABEL_MARGIN,
+  LABEL_MAX_LINES,
+  LABEL_MIN_GAP,
   PanelKey,
   PanelView,
-  dayQuery,
+  addDays,
+  bucketRange,
+  containsDay,
+  endLabelText,
   isHollow,
   linkNote,
+  markerIndexes,
   markerPath,
   niceScale,
+  nudgeLabels,
+  pointHeading,
+  rangeQuery,
+  shortDate,
+  weekdayOf,
+  weekLabel,
+  xTicks,
 } from './trend-model';
 
 export { niceMax } from './trend-model';
@@ -38,17 +53,14 @@ const TOP = 12;
 /** Room under the last panel for the day labels; the panels above it only need a little. */
 const BOTTOM_LAST = 30;
 const BOTTOM_OTHER = 8;
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-/** Up to this many days every day has a point marker; beyond it only about eight evenly spaced ones are drawn. */
-const MARKER_LIMIT = 31;
-const SPARSE_MARKERS = 8;
+/** At or below this width of the chart (a phone) the panels are 16:9 (at least 220 px) instead of 320 and 200 px. */
+const COMPACT_WIDTH = 480;
+const COMPACT_FLOWS_MIN = 220;
+const COMPACT_BACKLOG = 180;
+/** Characters of an end label that fit the reserved margin (11 px type). */
+const LABEL_CHARS = 14;
 
 let nextId = 0;
-
-function shortDay(date: string): string {
-  const d = parseDateOnly(date);
-  return d ? `${MONTHS[d.month - 1]} ${d.day}` : date;
-}
 
 /**
  * The daily lines of the Trends tab (UX `mf-trend-chart`): one or two stacked SVG line panels (flows, backlog) with no chart library. The
@@ -56,7 +68,9 @@ function shortDay(date: string): string {
  * its real pixel size. Every line differs by colour, dash pattern and marker shape (the list next to it is the control and shows the same
  * samples), the tooltip and the live read-out list the values of every visible line of both panels for the hovered or focused day, grouped
  * by panel, and "View as table" gives one column per visible line with a group header per panel and a link from each day's count to the
- * Task Queue. Operational counts only.
+ * Task Queue. A panel with 4 or fewer lines names each line at its last point (aria-hidden duplicates of the read-out), markers are drawn at the
+ * ends and on the hovered day when a line has more than 14 points, the x axis has a label on every Monday (week starts when the points are
+ * weeks) and a tap on a day shows the tooltip. Operational counts only.
  *
  * The tab passes a `controls` template (the measure control of a panel) which is drawn in each panel's header.
  */
@@ -64,7 +78,10 @@ function shortDay(date: string): string {
   selector: 'mf-trend-chart',
   imports: [RouterLink, NgTemplateOutlet, TrendSample, TaskTypeIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.fit]': 'fit()' },
+  host: {
+    '[class.fit]': 'fit()',
+    '(document:pointerdown)': 'onOutside($event)',
+  },
   template: `
     @if (!hasLines()) {
       <p class="note" data-empty>{{ emptyText() }}</p>
@@ -84,7 +101,7 @@ function shortDay(date: string): string {
           <thead>
             @if (groups().length > 1) {
               <tr>
-                <th scope="col" rowspan="2">Day</th>
+                <th scope="col" rowspan="2">{{ unit() }}</th>
                 @for (g of groups(); track g.key) {
                   <th
                     scope="colgroup"
@@ -99,7 +116,7 @@ function shortDay(date: string): string {
             }
             <tr>
               @if (groups().length <= 1) {
-                <th scope="col">Day</th>
+                <th scope="col">{{ unit() }}</th>
               }
               @for (l of allLines(); track l.key) {
                 <th scope="col" class="num" [attr.data-col]="l.key">
@@ -121,7 +138,7 @@ function shortDay(date: string): string {
                 @for (l of allLines(); track l.key) {
                   <td class="num">
                     @if (l.values[i] > 0) {
-                      <a routerLink="/tasks" [queryParams]="dayParams(l, date)">{{
+                      <a routerLink="/tasks" [queryParams]="dayParams(l, date, i)">{{
                         l.values[i]
                       }}</a>
                     } @else {
@@ -156,7 +173,12 @@ function shortDay(date: string): string {
         @for (p of geo(); track p.key; let pi = $index) {
           <section class="panel" [class.panel--flows]="p.key === 'flows'" [attr.data-panel]="p.key">
             <div class="panel-head">
-              <h4 class="panel-title">{{ p.title }}</h4>
+              <div class="ttl">
+                <h4 class="panel-title">{{ p.title }}</h4>
+                @if (weekly()) {
+                  <span class="per" data-per-week>per week</span>
+                }
+              </div>
               @if (controls(); as tpl) {
                 <ng-container *ngTemplateOutlet="tpl; context: { $implicit: p.key }" />
               }
@@ -169,7 +191,8 @@ function shortDay(date: string): string {
                 #pp
                 [attr.data-panel-plot]="p.key"
                 (pointermove)="onPointer($event, pi)"
-                (pointerleave)="clearActive()"
+                (pointerdown)="onPointer($event, pi)"
+                (pointerleave)="onLeave($event)"
               >
                 <svg
                   class="chart"
@@ -177,6 +200,15 @@ function shortDay(date: string): string {
                   [style.height.px]="fit() ? null : p.height"
                   aria-hidden="true"
                 >
+                  @if (activePoint(); as a) {
+                    <rect
+                      class="hover-band"
+                      [attr.x]="a.bandX"
+                      [attr.y]="p.top"
+                      [attr.width]="a.bandWidth"
+                      [attr.height]="p.plotHeight"
+                    />
+                  }
                   @for (b of p.weekendBands; track b.date) {
                     <rect
                       class="weekend"
@@ -189,7 +221,7 @@ function shortDay(date: string): string {
                   @for (t of p.ticks; track t.value) {
                     <line
                       [attr.x1]="left()"
-                      [attr.x2]="width() - right"
+                      [attr.x2]="width() - right()"
                       [attr.y1]="t.y"
                       [attr.y2]="t.y"
                       class="grid"
@@ -200,11 +232,19 @@ function shortDay(date: string): string {
                   }
                   @if (p.isLast) {
                     @for (x of xLabels(); track x.date) {
+                      <line
+                        class="xtick"
+                        [attr.x1]="x.x"
+                        [attr.x2]="x.x"
+                        [attr.y1]="p.top + p.plotHeight"
+                        [attr.y2]="p.top + p.plotHeight + 4"
+                      />
                       <text
                         [attr.x]="x.x"
-                        [attr.y]="p.height - 10"
+                        [attr.y]="p.height - 8"
                         [attr.text-anchor]="x.anchor"
                         class="tick"
+                        data-xtick
                       >
                         {{ x.text }}
                       </text>
@@ -214,7 +254,7 @@ function shortDay(date: string): string {
                     <text
                       class="zero-note"
                       data-zero
-                      [attr.x]="(left() + width() - right) / 2"
+                      [attr.x]="(left() + width() - right()) / 2"
                       [attr.y]="p.top + p.plotHeight / 2 - 8"
                       text-anchor="middle"
                     >
@@ -245,6 +285,19 @@ function shortDay(date: string): string {
                       />
                     }
                   }
+                  @for (e of p.endLabels; track e.key) {
+                    <g class="end-label" aria-hidden="true" [attr.data-end-label]="e.key">
+                      <line
+                        class="leader"
+                        [attr.x1]="e.x"
+                        [attr.y1]="e.py"
+                        [attr.x2]="e.x + 7"
+                        [attr.y2]="e.y"
+                        [attr.stroke]="e.color"
+                      />
+                      <text class="label" [attr.x]="e.x + 9" [attr.y]="e.y + 4">{{ e.text }}</text>
+                    </g>
+                  }
                   @if (activePoint(); as a) {
                     <line
                       class="rule"
@@ -271,7 +324,7 @@ function shortDay(date: string): string {
                       [class.tip--left]="a.x > width() * 0.6"
                       [style.left.px]="a.x"
                     >
-                      <strong>{{ a.heading }}</strong>
+                      <strong data-tip-heading>{{ a.heading }}</strong>
                       @for (g of a.groups; track g.key) {
                         @if (a.groups.length > 1) {
                           <span class="tip-group">{{ g.title }}</span>
@@ -287,7 +340,9 @@ function shortDay(date: string): string {
                         }
                       }
                       @if (a.partial) {
-                        <span class="tip-note">Today so far</span>
+                        <span class="tip-note">{{
+                          weekly() ? 'This week so far' : 'Today so far'
+                        }}</span>
                       }
                     </div>
                   }
@@ -300,12 +355,16 @@ function shortDay(date: string): string {
       </div>
       <p class="foot">
         @if (partialToday()) {
-          <span>Dotted: today so far.</span>
+          <span>{{ weekly() ? 'Dotted: this week so far.' : 'Dotted: today so far.' }}</span>
         }
         @if (hasWeekend()) {
           <span>Shaded: weekends.</span>
         }
-        <span>Hover or focus the chart to read a day.</span>
+        <span>{{
+          weekly()
+            ? 'Hover, tap or focus the chart to read a week.'
+            : 'Hover, tap or focus the chart to read a day.'
+        }}</span>
         @for (n of notes(); track n) {
           <span>{{ n }}</span>
         }
@@ -342,6 +401,15 @@ function shortDay(date: string): string {
     .panel-title {
       margin: 0;
       font-size: var(--mf-fs-md);
+    }
+    .ttl {
+      display: inline-flex;
+      align-items: baseline;
+      gap: var(--mf-s2);
+    }
+    .per {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
     }
     .panel-plot {
       position: relative;
@@ -456,7 +524,23 @@ function shortDay(date: string): string {
     }
     .tick {
       fill: var(--mf-text-muted);
+      font-size: 12px;
+    }
+    .xtick {
+      stroke: var(--mf-text-muted);
+      stroke-width: 1;
+    }
+    .hover-band {
+      fill: var(--mf-text-muted);
+      opacity: 0.1;
+    }
+    .label {
+      fill: var(--mf-text);
       font-size: 11px;
+      font-weight: 600;
+    }
+    .leader {
+      stroke-width: 1.5;
     }
     .series {
       fill: none;
@@ -532,11 +616,17 @@ function shortDay(date: string): string {
 export class TrendChart {
   private readonly zone = inject(USER_TIME_ZONE);
   private readonly clock = inject(Clock);
+  private readonly hostEl = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   /** Names the chart for the table and the screen reader. */
   readonly heading = input.required<string>();
-  /** The local days, oldest first (`yyyy-MM-dd`). */
+  /** The local days, oldest first (`yyyy-MM-dd`); with `granularity` week the Monday of each week. */
   readonly dates = input.required<readonly string[]>();
+  /** What a point is: a day, or a week (Monday to Sunday) for periods over 31 days. */
+  readonly granularity = input<Granularity>('day');
+  /** First and last day of the period (`yyyy-MM-dd`): the first and last week can be partial. Default: the first and last point. */
+  readonly periodFrom = input<string | null>(null);
+  readonly periodTo = input<string | null>(null);
   /** The panels to draw, top to bottom (the tab leaves the backlog panel out when it is hidden). */
   readonly panels = input.required<readonly PanelView[]>();
   readonly asTable = input(false);
@@ -550,7 +640,8 @@ export class TrendChart {
   readonly controls = input<TemplateRef<{ $implicit: PanelKey }> | null>(null);
 
   protected readonly id = `mf-trend-${nextId++}`;
-  protected readonly right = RIGHT;
+  protected readonly weekly = computed(() => this.granularity() === 'week');
+  protected readonly unit = computed(() => (this.weekly() ? 'Week' : 'Day'));
   /** Width of the drawing in px (measured). */
   protected readonly width = signal(DEFAULT_WIDTH);
   /** Measured height of each panel's plot area in px (only used while `fit`). */
@@ -614,6 +705,22 @@ export class TrendChart {
     return this.panelEmptyText()[key] ?? 'Select a line in the list to draw it.';
   }
 
+  /** True when a panel names its lines at their last point: it has 4 or fewer lines. The room for the labels is the same in every panel (one x scale). */
+  protected readonly labelsOn = computed(() =>
+    this.panels().some((p) => p.lines.length > 0 && p.lines.length <= LABEL_MAX_LINES),
+  );
+  protected readonly right = computed(() => (this.labelsOn() ? LABEL_MARGIN : RIGHT));
+  /** A phone: the panels are drawn 16:9 (and at least 220 px) at the full width. */
+  protected readonly compact = computed(() => this.width() <= COMPACT_WIDTH);
+
+  private panelHeight(panel: PanelView): number {
+    if (this.fit()) return this.measured()[panel.key] ?? panel.height;
+    if (!this.compact()) return panel.height;
+    return panel.key === 'flows'
+      ? Math.max(COMPACT_FLOWS_MIN, Math.round((this.width() * 9) / 16))
+      : COMPACT_BACKLOG;
+  }
+
   /** The axis labels' room: the widest tick label of any panel. */
   protected readonly left = computed(() => {
     const longest = Math.max(
@@ -624,68 +731,57 @@ export class TrendChart {
   });
 
   private x(index: number, count: number): number {
-    const plot = this.width() - this.left() - RIGHT;
+    const plot = this.width() - this.left() - this.right();
     return count <= 1 ? this.left() + plot / 2 : this.left() + (plot * index) / (count - 1);
   }
 
+  /** The labels under the x axis: every Monday (week starts when the points are weeks), the first point and the last (see `xTicks`). */
   protected readonly xLabels = computed(() => {
     const pts = this.dates();
-    if (pts.length === 0) return [];
-    const picks =
-      pts.length === 1
-        ? [0]
-        : pts.length < 5
-          ? [0, pts.length - 1]
-          : [0, Math.floor((pts.length - 1) / 2), pts.length - 1];
-    return picks.map((i, n) => ({
-      date: pts[i],
-      text: shortDay(pts[i]),
-      x: this.x(i, pts.length),
-      anchor:
-        n === 0 && picks.length > 1
-          ? 'start'
-          : n === picks.length - 1 && picks.length > 1
-            ? 'end'
-            : 'middle',
-    }));
+    return xTicks(
+      pts,
+      this.granularity(),
+      (i) => this.x(i, pts.length),
+      this.width() >= 600 ? 8 : 4,
+    );
   });
 
-  /** True when the last day of the series is today in the viewer's zone: a partial day, drawn dotted. */
-  protected readonly partialToday = computed(() => {
+  /** True when the last point holds today (in the viewer's zone), so the period ends now. */
+  private readonly endsToday = computed(() => {
     const pts = this.dates();
-    if (pts.length < 2) return false;
+    if (pts.length === 0) return false;
     const t = calendarDayInZone(this.clock.now(), this.zone);
     const today = `${t.year}-${String(t.month).padStart(2, '0')}-${String(t.day).padStart(2, '0')}`;
-    return pts[pts.length - 1] === today;
+    return containsDay(pts[pts.length - 1], this.granularity(), today);
   });
 
-  private readonly markerIndexes = computed(() => {
-    const n = this.dates().length;
-    if (n <= MARKER_LIMIT) return Array.from({ length: n }, (_, i) => i);
-    const picks = new Set<number>();
-    for (let i = 0; i < SPARSE_MARKERS; i++)
-      picks.add(Math.round((i * (n - 1)) / (SPARSE_MARKERS - 1)));
-    return [...picks];
-  });
+  /** True when the last point is still filling up (today, or the current week): drawn dotted. */
+  protected readonly partialToday = computed(() => this.dates().length >= 2 && this.endsToday());
 
-  /** Everything drawn, per panel: axis, gridlines, weekend bands and the lines in real pixels. */
+  private readonly markerSet = computed(() => markerIndexes(this.dates().length));
+
+  /** Everything drawn, per panel: axis, gridlines, weekend bands, the lines and their end labels in real pixels. */
   protected readonly geo = computed(() => {
     const pts = this.dates();
     const n = pts.length;
     const partial = this.partialToday();
-    const idx = this.markerIndexes();
+    const idx = this.markerSet();
     const left = this.left();
     const w = this.width();
-    const step = n <= 1 ? w - left - RIGHT : (w - left - RIGHT) / (n - 1);
+    const right = this.right();
+    const step = n <= 1 ? w - left - right : (w - left - right) / (n - 1);
     const shown = this.panels();
     const lastDrawn = shown.reduce((acc, p, i) => (p.lines.length > 0 ? i : acc), -1);
     return shown.map((panel, pi) => {
       const isLast = pi === lastDrawn;
       const bottom = isLast ? BOTTOM_LAST : BOTTOM_OTHER;
-      const height = this.fit() ? (this.measured()[panel.key] ?? panel.height) : panel.height;
+      const height = this.panelHeight(panel);
       const plotHeight = height - TOP - bottom;
       const scale = niceScale(peakOf(panel.lines));
       const y = (value: number) => TOP + plotHeight * (1 - value / scale.max);
+      const labelled = panel.lines.length > 0 && panel.lines.length <= LABEL_MAX_LINES;
+      const ends = panel.lines.map((l) => y(l.values[n - 1] ?? 0));
+      const spread = labelled ? nudgeLabels(ends, LABEL_MIN_GAP, TOP + 4, TOP + plotHeight) : [];
       return {
         key: panel.key,
         title: panel.title,
@@ -697,14 +793,18 @@ export class TrendChart {
         scale,
         allZero: panel.lines.every((l) => l.values.every((v) => v === 0)),
         ticks: scale.ticks.map((value) => ({ value, label: format(value), y: y(value) })),
-        weekendBands: pts
-          .map((date, i) => ({ date, cx: this.x(i, n) }))
-          .filter((p) => isWeekend(p.date))
-          .map((p) => {
-            const x = Math.max(left, p.cx - step / 2);
-            const right = Math.min(w - RIGHT, p.cx + step / 2);
-            return { date: p.date, x: round(x), width: round(right - x) };
-          }),
+        // Weekends are days: weekly points have no weekend to shade.
+        weekendBands:
+          this.granularity() === 'week'
+            ? []
+            : pts
+                .map((date, i) => ({ date, cx: this.x(i, n) }))
+                .filter((p) => isWeekend(p.date))
+                .map((p) => {
+                  const x = Math.max(left, p.cx - step / 2);
+                  const edge = Math.min(w - right, p.cx + step / 2);
+                  return { date: p.date, x: round(x), width: round(edge - x) };
+                }),
         drawn: panel.lines.map((line) => {
           const points = line.values.map((v, i) => `${round(this.x(i, n))},${round(y(v))}`);
           return {
@@ -718,6 +818,16 @@ export class TrendChart {
             })),
           };
         }),
+        endLabels: labelled
+          ? panel.lines.map((line, k) => ({
+              key: line.key,
+              color: line.style.color,
+              x: round(this.x(n - 1, n) + 4),
+              py: round(ends[k]),
+              y: round(spread[k]),
+              text: endLabelText(line.tipName ?? line.name, line.values[n - 1] ?? 0, LABEL_CHARS),
+            }))
+          : [],
         y,
       };
     });
@@ -725,37 +835,52 @@ export class TrendChart {
 
   protected readonly summary = computed(() => {
     const pts = this.dates();
-    const range = pts.length > 0 ? `${shortDay(pts[0])} to ${shortDay(pts[pts.length - 1])}` : '';
+    const weekly = this.weekly();
+    const range =
+      pts.length > 0
+        ? `${weekly ? weekLabel(pts[0]) : shortDate(pts[0])} to ${weekly ? weekLabel(pts[pts.length - 1]) : shortDate(pts[pts.length - 1])}`
+        : '';
     const parts = this.panels()
       .filter((p) => p.lines.length > 0)
       .map((panel) => {
         const items = panel.lines.map((l) => {
           const label = l.tipName ?? l.name;
-          if (l.measure === 'overdue') {
-            return `${label} ${l.values[l.values.length - 1] ?? 0} overdue now`;
+          if (l.measure === 'overdue' || l.measure === 'open') {
+            const now = l.values[l.values.length - 1] ?? 0;
+            return l.tipName === null
+              ? `${label} ${now} now`
+              : `${label} ${now} ${l.valueWord || l.measure} now`;
           }
           return `${label} ${l.values.reduce((a, b) => a + b, 0)}${l.valueWord ? ' ' + l.valueWord : ''}`;
         });
         return this.panels().length > 1 ? `${panel.title}: ${items.join(', ')}` : items.join(', ');
       });
-    return `${this.heading()}, ${range}: ${parts.join('. ')}. Use View as table for each day.`;
+    return `${this.heading()}${weekly ? ', per week' : ''}, ${range}: ${parts.join('. ')}. Use View as table for each ${weekly ? 'week' : 'day'}.`;
   });
 
-  /** Short remarks for the foot: what a day link lists and how Overdue is counted. */
+  /** Short remarks for the foot: what a day link lists and how Overdue and Open are counted. */
   protected readonly notes = computed(() => {
     const out: string[] = [];
     const measures = new Set(this.allLines().map((l) => l.measure));
+    if (this.weekly()) {
+      out.push(
+        'Each point is a week, Monday to Sunday: counts are added up over the week, Open and Overdue are the value at the end of the week (this week: now).',
+      );
+    }
     if (measures.has('overdue')) {
       out.push("Overdue is counted at the end of each day, using each task's current due date.");
     }
-    for (const m of ['overdue', 'onTime'] as const) {
+    if (measures.has('open')) {
+      out.push("Based on each task's creation and closing time; later changes are not replayed.");
+    }
+    for (const m of ['overdue', 'open', 'onTime'] as const) {
       const note = measures.has(m) || (m === 'onTime' && measures.has('late')) ? linkNote(m) : null;
       if (note && !out.includes(note)) out.push(note);
     }
     return out;
   });
 
-  protected readonly hasWeekend = computed(() => this.dates().some(isWeekend));
+  protected readonly hasWeekend = computed(() => !this.weekly() && this.dates().some(isWeekend));
 
   protected readonly activePoint = computed(() => {
     const i = this.active();
@@ -763,9 +888,17 @@ export class TrendChart {
     if (i === null || !pts[i]) return null;
     const n = pts.length;
     const geo = this.geo();
+    const cx = this.x(i, n);
+    const step =
+      n <= 1
+        ? this.width() - this.left() - this.right()
+        : (this.width() - this.left() - this.right()) / (n - 1);
+    const bandX = Math.max(this.left(), cx - step / 2);
     return {
-      x: this.x(i, n),
-      heading: dayHeading(pts[i]),
+      x: cx,
+      bandX: round(bandX),
+      bandWidth: round(Math.min(this.width() - this.right(), cx + step / 2) - bandX),
+      heading: pointHeading(pts[i], this.granularity()),
       partial: this.partialToday() && i === n - 1,
       groups: this.groupsAt(i),
       marks: geo.map((g) =>
@@ -805,9 +938,22 @@ export class TrendChart {
     if (box.width <= 0) return;
     const x = ((event.clientX - box.left) / box.width) * this.width();
     const left = this.left();
-    const index = Math.round(((x - left) / (this.width() - left - RIGHT)) * (n - 1));
+    const index = Math.round(((x - left) / (this.width() - left - this.right())) * (n - 1));
     this.tipPanel.set(panelIndex);
     this.active.set(Math.max(0, Math.min(n - 1, index)));
+  }
+
+  /** A mouse leaving the plot hides the tooltip; a finger lifting after a tap does not (the tooltip stays until a tap elsewhere or Escape). */
+  protected onLeave(event: PointerEvent): void {
+    if (event.pointerType === 'touch' || event.pointerType === 'pen') return;
+    this.clearActive();
+  }
+
+  /** A touch outside the chart dismisses a tooltip a tap opened. */
+  protected onOutside(event: Event): void {
+    if (this.active() === null) return;
+    const target = event.target as Node | null;
+    if (target && !this.hostEl.contains(target)) this.clearActive();
   }
 
   protected clearActive(): void {
@@ -858,17 +1004,26 @@ export class TrendChart {
       })
       .join('; ');
     this.readout.set(
-      `${dayHeading(pts[index])}${note ? ', ' + note.toLowerCase() : ''}: ${values}${partial ? ' (today so far)' : ''}.`,
+      `${pointHeading(pts[index], this.granularity())}${note ? ', ' + note.toLowerCase() : ''}: ${values}${partial ? (this.weekly() ? ' (this week so far)' : ' (today so far)') : ''}.`,
     );
   }
 
   protected day(date: string): string {
-    return mfDate(date, this.zone, 'date');
+    return this.weekly() ? weekLabel(date) : mfDate(date, this.zone, 'date');
   }
 
-  protected dayParams(line: ChartLine, date: string) {
+  /** The Task Queue query behind the count of a day, or of a week cut to the period (a stock: its value at the end of it). */
+  protected dayParams(line: ChartLine, date: string, index: number) {
     const dates = this.dates();
-    return queueParams(dayQuery(line.measure, date, line.typeId, date === dates[dates.length - 1]));
+    const range = bucketRange(
+      date,
+      this.granularity(),
+      this.periodFrom() ?? dates[0],
+      this.periodTo() ?? addDaysOfLast(dates, this.granularity()),
+    );
+    return queueParams(
+      rangeQuery(line.measure, range, line.typeId, index === dates.length - 1 && this.endsToday()),
+    );
   }
 }
 
@@ -882,18 +1037,14 @@ function format(value: number): string {
 }
 
 function isWeekend(date: string): boolean {
-  const d = parseDateOnly(date);
-  if (!d) return false;
-  const weekday = new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay();
+  const weekday = weekdayOf(date);
   return weekday === 0 || weekday === 6;
 }
 
-/** "Tue, Oct 13" */
-function dayHeading(date: string): string {
-  const d = parseDateOnly(date);
-  if (!d) return date;
-  const weekday = new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay();
-  return `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][weekday]}, ${MONTHS[d.month - 1]} ${d.day}`;
+/** The last day the points cover when the period is not given: the last day, or the Sunday of the last week. */
+function addDaysOfLast(dates: readonly string[], granularity: Granularity): string {
+  const last = dates[dates.length - 1] ?? '';
+  return granularity === 'week' ? addDays(last, 6) : last;
 }
 
 function round(value: number): number {
