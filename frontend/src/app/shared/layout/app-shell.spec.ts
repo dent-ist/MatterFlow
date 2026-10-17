@@ -109,4 +109,76 @@ describe('AppShell header search', () => {
     ) as HTMLButtonElement;
     expect(button.getAttribute('aria-label')).toBe('Keyboard shortcuts');
   });
+
+  describe('phone menu (#164)', () => {
+    const q = (f: { nativeElement: HTMLElement }, sel: string) =>
+      f.nativeElement.querySelector(sel) as HTMLElement;
+
+    it('has a Menu button before the logo and the search, closed by default', async () => {
+      const fixture = await create(['Task.View']);
+      const header = q(fixture, 'header');
+      const first = header.querySelector('button, a') as HTMLElement;
+      expect(first.getAttribute('aria-label')).toBe('Menu');
+      expect(first.getAttribute('aria-expanded')).toBe('false');
+      expect(first.getAttribute('aria-controls')).toBe('mf-nav');
+      expect(q(fixture, 'nav').getAttribute('aria-label')).toBe('Main');
+      expect(q(fixture, 'nav').classList).not.toContain('mf-nav--open');
+    });
+
+    it('opens the panel, moves focus into it, traps Tab, and Esc closes it and returns focus', async () => {
+      const fixture = await create(['Task.View']);
+      const button = q(fixture, '[data-testid=nav-menu-button]') as HTMLButtonElement;
+      button.click();
+      await settle(fixture);
+      expect(button.getAttribute('aria-expanded')).toBe('true');
+      expect(q(fixture, 'nav').classList).toContain('mf-nav--open');
+      expect(q(fixture, '[data-testid=nav-backdrop]')).not.toBeNull();
+      await vi.waitFor(() => expect(q(fixture, 'nav').contains(document.activeElement)).toBe(true));
+
+      const nav = q(fixture, 'nav');
+      const items = Array.from(nav.querySelectorAll<HTMLElement>('a[href], button'));
+      items[items.length - 1].focus();
+      const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+      document.dispatchEvent(tab);
+      expect(tab.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(items[0]);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await settle(fixture);
+      expect(nav.classList).not.toContain('mf-nav--open');
+      expect(button.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(button);
+    });
+
+    it('closes on the backdrop and on the Close menu button', async () => {
+      const fixture = await create(['Task.View']);
+      const button = q(fixture, '[data-testid=nav-menu-button]') as HTMLButtonElement;
+      button.click();
+      await settle(fixture);
+      q(fixture, '[data-testid=nav-backdrop]').click();
+      await settle(fixture);
+      expect(q(fixture, 'nav').classList).not.toContain('mf-nav--open');
+      expect(document.activeElement).toBe(button);
+
+      button.click();
+      await settle(fixture);
+      q(fixture, '[data-testid=nav-close]').click();
+      await settle(fixture);
+      expect(q(fixture, 'nav').classList).not.toContain('mf-nav--open');
+    });
+
+    it('offers a search icon button that shows the search row', async () => {
+      const fixture = await create(['Task.View']);
+      const button = q(fixture, '[data-testid=search-button]') as HTMLButtonElement;
+      expect(button.getAttribute('aria-label')).toBe('Search');
+      button.click();
+      await settle(fixture);
+      expect(q(fixture, 'header').classList).toContain('mf-header--search-open');
+    });
+
+    it('has no search icon when the user may not search', async () => {
+      const fixture = await create(['Pod.View']);
+      expect(q(fixture, '[data-testid=search-button]')).toBeNull();
+    });
+  });
 });

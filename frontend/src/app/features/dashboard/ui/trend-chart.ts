@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  afterNextRender,
   ElementRef,
   TemplateRef,
   computed,
@@ -684,6 +685,13 @@ export class TrendChart {
 
   constructor() {
     const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    // Measure once before the first paint so a phone never shows one frame drawn at the 640 px default (a layout shift, #121).
+    afterNextRender({
+      read: () => {
+        const w = Math.round(host.getBoundingClientRect().width);
+        if (w >= 120 && Math.abs(w - this.width()) >= 1) this.width.set(w);
+      },
+    });
     if (typeof ResizeObserver !== 'undefined') {
       const ro = new ResizeObserver((entries) => {
         const w = Math.round(entries[0]?.contentRect.width ?? 0);

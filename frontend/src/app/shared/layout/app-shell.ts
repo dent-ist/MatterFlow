@@ -7,6 +7,7 @@ import {
   inject,
   signal,
   untracked,
+  DestroyRef,
   viewChild,
   ElementRef,
   Type,
@@ -24,6 +25,9 @@ import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem } from './nav-items';
 import { ShortcutHelpState } from './shortcut-help-state';
 import { ShellLayout } from '../ui/fixed-page';
 import { UserMenu } from './user-menu';
+
+/** Phones: below this width the navigation rail collapses behind the Menu button (PM decision, #164). */
+const PHONE_QUERY = '(max-width: 639px)';
 
 /** Header (logo, persistent global search, Create Task, user), permission-gated left nav, content outlet. */
 @Component({
@@ -54,6 +58,14 @@ export class AppShell {
   private readonly router = inject(Router);
   private readonly globalSearch = viewChild(GlobalSearch);
   private readonly main = viewChild<ElementRef<HTMLElement>>('main');
+  private readonly nav = viewChild<ElementRef<HTMLElement>>('nav');
+  private readonly menuButton = viewChild<ElementRef<HTMLElement>>('menuButton');
+  private readonly searchButton = viewChild<ElementRef<HTMLElement>>('searchButton');
+
+  /** Phones (below 640 px): the navigation is an overlay panel opened by the Menu button (#164). From 640 px the rail is always shown. */
+  protected readonly menuOpen = signal(false);
+  /** Phones: the search field sits in its own row under the header, opened by the search icon. */
+  protected readonly searchOpen = signal(false);
 
   /** The header search is offered to anyone who may view at least one searchable type. */
   protected readonly canSearch = computed(() =>
@@ -77,11 +89,77 @@ export class AppShell {
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
         takeUntilDestroyed(),
       )
-      .subscribe((e) => this.url.set(e.urlAfterRedirects));
+      .subscribe((e) => {
+        this.url.set(e.urlAfterRedirects);
+        // Choosing an item closes the panel; focus goes to the page (the router's own focus handling), not back to the button.
+        this.menuOpen.set(false);
+        this.searchOpen.set(false);
+      });
+    // Growing the window past the phone breakpoint dissolves the overlay.
+    if (typeof matchMedia === 'function') {
+      const phone = matchMedia(PHONE_QUERY);
+      const onChange = (): void => {
+        if (!phone.matches) {
+          this.menuOpen.set(false);
+          this.searchOpen.set(false);
+        }
+      };
+      phone.addEventListener?.('change', onChange);
+      inject(DestroyRef).onDestroy(() => phone.removeEventListener?.('change', onChange));
+    }
     // The pending-access badge needs User.View; load it once the profile (and so the permissions) are known.
     effect(() => {
       if (this.auth.has('User.View')) untracked(() => void this.pendingUsers.refresh());
     });
+  }
+
+  protected toggleMenu(): void {
+    if (this.menuOpen()) {
+      this.closeMenu(true);
+      return;
+    }
+    this.searchOpen.set(false);
+    this.menuOpen.set(true);
+    // Focus moves into the panel once it is shown: the current item, else the first link.
+    setTimeout(() => {
+      const nav = this.nav()?.nativeElement;
+      const target =
+        nav?.querySelector<HTMLElement>('a[aria-current="page"], a.mf-active') ??
+        nav?.querySelector<HTMLElement>('a');
+      target?.focus();
+    });
+  }
+
+  protected closeMenu(restoreFocus: boolean): void {
+    if (!this.menuOpen()) return;
+    this.menuOpen.set(false);
+    if (restoreFocus) this.menuButton()?.nativeElement.focus();
+  }
+
+  protected toggleSearch(): void {
+    const open = !this.searchOpen();
+    this.searchOpen.set(open);
+    if (open) {
+      this.menuOpen.set(false);
+      setTimeout(() => this.globalSearch()?.focus());
+    }
+  }
+
+  /** Focus trap while the phone panel is open: Tab and Shift+Tab cycle through the panel's own controls. */
+  private trapTab(event: KeyboardEvent): void {
+    const nav = this.nav()?.nativeElement;
+    if (!nav) return;
+    const items = Array.from(nav.querySelectorAll<HTMLElement>('a[href], button'));
+    if (items.length === 0) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   }
 
   protected toggleHelp(): void {
@@ -121,6 +199,24 @@ export class AppShell {
   }
 
   protected onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Tab' && this.menuOpen()) {
+      this.trapTab(event);
+      return;
+    }
+    if (event.key === 'Escape' && this.menuOpen()) {
+      event.preventDefault();
+      this.closeMenu(true);
+      return;
+    }
+    if (
+      event.key === 'Escape' &&
+      this.searchOpen() &&
+      !document.querySelector('[data-search-panel]')
+    ) {
+      this.searchOpen.set(false);
+      this.searchButton()?.nativeElement.focus();
+      return;
+    }
     if (event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey) {
       const target = event.target as HTMLElement | null;
       const typing =

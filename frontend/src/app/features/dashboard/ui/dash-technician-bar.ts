@@ -61,7 +61,11 @@ import { ownWorkText, techFilterDefs } from '../dash-technician';
     .quiet {
       color: var(--mf-text-muted);
     }
+    /* A 24 px target even when the whole sentence fits on one line (the phone is now 343 px wide, #164). */
     .own a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
       margin-left: var(--mf-s1);
       color: var(--mf-link);
     }

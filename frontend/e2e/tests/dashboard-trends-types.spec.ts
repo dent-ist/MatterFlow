@@ -291,8 +291,9 @@ test.describe('Trends by task type', () => {
     await page.setViewportSize({ width: 375, height: 812 });
     // Below 768 px the page scrolls; on a phone (480 px and below) the panels are the full width of the card, 16:9 and at least 220 px (#121).
     await expect.poll(async () => (await flows.boundingBox())!.height).toBeGreaterThanOrEqual(220);
-    expect((await flows.boundingBox())!.width).toBeGreaterThanOrEqual(250);
-    expect((await flows.boundingBox())!.width).toBeLessThan(375);
+    // The navigation rail is a Menu button on a phone (#164), so the chart is the screen minus the two 16 px gutters (at least 343 px, #121).
+    expect((await flows.boundingBox())!.width).toBeGreaterThanOrEqual(343);
+    expect((await flows.boundingBox())!.width).toBeLessThanOrEqual(375);
     expect(
       (await page.locator('[data-panel="backlog"] svg').boundingBox())!.height,
     ).toBeGreaterThanOrEqual(160);

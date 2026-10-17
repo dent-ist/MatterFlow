@@ -148,6 +148,14 @@
   }
 }
 
+/* Phone-only controls are hidden from 640 px up, where the rail is unchanged. */
+.mf-menu-btn,
+.mf-search-btn,
+.mf-nav-close,
+.mf-nav-backdrop {
+  display: none;
+}
+
 .mf-badge {
   margin-left: auto;
   min-width: 1.5em;
@@ -174,6 +182,113 @@
 
   .mf-help-btn {
     display: none;
+  }
+}
+
+/*
+ * Phones (#164): below 640 px the rail is gone; the Menu button opens the same <nav> as an overlay panel with a backdrop, and
+ * the content uses the full width with a 16 px gutter. The search field moves into its own row under the header.
+ */
+@media (max-width: 639px) {
+  .mf-header {
+    flex-wrap: wrap;
+  }
+
+  .mf-menu-btn,
+  .mf-search-btn {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--mf-row-h);
+    min-height: var(--mf-row-h);
+  }
+
+  .mf-search-btn {
+    margin-left: auto;
+  }
+
+  .mf-search-btn + :is(p-button, mf-user-menu) {
+    margin-left: 0;
+  }
+
+  .mf-search {
+    display: none;
+    order: 10;
+    flex: 1 0 100%;
+    max-width: none;
+  }
+
+  .mf-header--search-open .mf-search {
+    display: block;
+  }
+
+  .mf-header ::ng-deep .mf-create .p-button-label {
+    display: none;
+  }
+
+  mf-user-menu {
+    margin-left: 0;
+  }
+
+  .mf-nav {
+    display: none;
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 40;
+    width: min(18rem, 85vw);
+    height: auto;
+    align-self: auto;
+    padding: var(--mf-s3);
+    box-shadow: var(--mf-shadow-2);
+  }
+
+  .mf-nav.mf-nav--open {
+    display: block;
+    overflow-y: auto;
+  }
+
+  .mf-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    background: rgb(0 0 0 / 40%);
+    border: 0;
+    padding: 0;
+  }
+
+  .mf-nav-close {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--mf-s2);
+    margin-bottom: var(--mf-s2);
+  }
+
+  .mf-nav-label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+
+  .mf-nav-heading {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .mf-nav a {
+    justify-content: flex-start;
+    padding: 0 var(--mf-s3);
+  }
+
+  .mf-main {
+    padding: var(--mf-s4);
   }
 }
 
