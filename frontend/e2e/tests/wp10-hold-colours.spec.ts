@@ -104,11 +104,7 @@ test.describe('WP10 hold reason and colours', () => {
       }
       await shot(page, `hold-my-work-${w}x${h}`);
       if (axeAvailable()) {
-        // Below 1000 px the short title link of the tight rows is under 24 px high (WP9 density, not this package): everything else must be clean.
-        const found = (await axeViolations(page)).filter(
-          (v) => !(w < 1000 && v.id === 'target-size'),
-        );
-        expect(found, `axe at ${w}`).toEqual([]);
+        expect(await axeViolations(page), `axe at ${w}`).toEqual([]);
       }
     }
 

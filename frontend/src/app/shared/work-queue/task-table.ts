@@ -225,7 +225,23 @@ const NARROW_BELOW = 760;
                               @if (!hideContext() || foldRef()) {
                                 <span class="wt-sub" data-title-context [attr.title]="context(row)">
                                   @if (foldRef()) {
+                                    @if (row.status === 'ON_HOLD') {
+                                      <mf-hold-note
+                                        kind="mark"
+                                        [holdReason]="row.holdReason"
+                                        [truncated]="row.holdReasonTruncated"
+                                      />
+                                    }
                                     <span class="wt-mono" data-sub-task>{{ row.taskNumber }}</span>
+                                    @if (isNew(row)) {
+                                      <span
+                                        class="wt-newdot"
+                                        role="img"
+                                        aria-label="New"
+                                        title="Assigned since your last visit"
+                                        data-new-dot
+                                      ></span>
+                                    }
                                     @if (!hideContext()) {
                                       ·
                                     }

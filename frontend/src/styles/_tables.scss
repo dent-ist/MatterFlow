@@ -35,3 +35,26 @@ td.mf-col-actions {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Work tables (shared/work-queue/task-table): fixed widths of the narrow columns, so the Title column does not move when rows arrive
+   (G4) and the skeleton rows line up. Global because the table's own style budget is full. */
+.wt th[data-col='ref'],
+.wt th[data-col='age'] {
+  min-width: 5.5rem;
+}
+
+.wt th[data-col='priority'] {
+  min-width: 8.7rem;
+}
+
+.wt:not(.wt--narrow) th[data-col='due'] {
+  min-width: 14.9rem;
+}
+
+.wt th[data-col='status'] {
+  min-width: 10.2rem;
+}
+
+.wt th[data-col='progress'] {
+  min-width: 11.9rem;
+}

@@ -52,7 +52,7 @@ export interface WorkTab {
         >
           {{ tab.label }}
           @if (tab.count === null) {
-            <span class="count count--zero" data-count-pending aria-hidden="true">(--)</span>
+            <span class="count count--pending" data-count-pending aria-hidden="true">(--)</span>
           } @else if (tab.count !== undefined) {
             <span
               class="count"
@@ -120,7 +120,8 @@ export interface WorkTab {
       font-variant-numeric: tabular-nums;
       font-weight: 400;
     }
-    .count--zero {
+    .count--zero,
+    .count--pending {
       color: var(--mf-text-muted);
     }
     .count--strong {
