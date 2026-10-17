@@ -79,7 +79,7 @@ const PROJECT_HIDES_BELOW = 800;
         [class.wt--compact]="density() === 'compact'"
         [attr.aria-busy]="loading() ? 'true' : null"
       >
-        <caption class="wt-sr">
+        <caption class="mf-sr-only">
           {{
             caption()
           }}
