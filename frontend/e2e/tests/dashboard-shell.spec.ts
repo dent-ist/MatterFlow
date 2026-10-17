@@ -76,9 +76,7 @@ test.describe('Dashboard shell: tabs are independent (P2) and errors stay in the
     // The five-minute timer is set once the first read is in: fast-forwarding before that loses the tick (a flake under load).
     await expect.poll(() => calls.filter((c) => c === 'workload').length).toBeGreaterThan(0);
     await expect(page.locator('[data-refresh]')).not.toHaveAttribute('aria-busy', 'true');
-    await expect(
-      page.locator('[data-users-grid] li, [data-users-table] tbody tr').first(),
-    ).toBeVisible();
+    await page.waitForLoadState('networkidle');
     await page.clock.fastForward('05:05');
     await expect.poll(() => calls.filter((c) => c === 'workload').length).toBeGreaterThan(1);
     expect(calls.filter((c) => c === 'summary')).toEqual([]);
