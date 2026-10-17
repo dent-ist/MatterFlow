@@ -19,7 +19,8 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
     private const string Kiritimati = "Pacific/Kiritimati";
     private const string PagoPago = "Pacific/Pago_Pago";
 
-    private readonly DateTime _now = DateTime.UtcNow;
+    /// <summary>The host clock and the seeds are built around this fixed instant (11:30 in New York, the next morning in Kiritimati), so the run does not depend on the time of day it happens at ("completed today" is otherwise empty for the half hour after a local midnight).</summary>
+    private readonly DateTime _now = new(2026, 10, 14, 15, 30, 0, DateTimeKind.Utc);
     private DatabaseApiFactory _factory = null!;
     private TaskHarness _h = null!;
     private HttpClient _techA = null!;
@@ -44,7 +45,7 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _factory = new DatabaseApiFactory(await sql.CreateDatabaseAsync());
+        _factory = new DatabaseApiFactory(await sql.CreateDatabaseAsync()) { Clock = new Audit.FixedClock(_now) };
         _h = new TaskHarness(_factory);
         var world = await _h.CreateWorldAsync();
         var admin = await _h.UserIdAsync(DatabaseApiFactory.AdminAccount);
@@ -379,8 +380,8 @@ public sealed class DashboardApiTests(SqlServerFixture sql) : IAsyncLifetime
         ShouldHaveNoSummary(trends);
         ShouldHaveNoBreakdowns(trends);
 
-        // The removed blocks are gone from the payload for everyone (the trend moved to its own endpoint).
-        foreach (var gone in new[] { "byPod", "recentlyCreated", "recentlyCompleted", "mine", "trend" })
+        // The removed blocks are gone from the payload for everyone (the trend moved to its own endpoint). `mine` is back, but with a different meaning (S9) and only for Dashboard.ViewUnassigned without Dashboard.ViewSummary: null here (DashboardDeltasApiTests).
+        foreach (var gone in new[] { "byPod", "recentlyCreated", "recentlyCompleted", "trend" })
             summary.TryGetProperty(gone, out _).ShouldBeFalse(gone);
     }
 
