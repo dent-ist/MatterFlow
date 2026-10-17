@@ -420,6 +420,8 @@ export function cardToRow(card: SwimlaneCard): TaskQueueRow {
       currentStepName: undefined,
     },
     rowVersion: card.rowVersion,
+    holdReason: undefined,
+    holdReasonTruncated: false,
   };
 }
 

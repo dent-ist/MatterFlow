@@ -51,6 +51,8 @@ export function aRow(overrides: Partial<TaskQueueRow> = {}): TaskQueueRow {
       currentStepId: 903,
     },
     rowVersion: 'AAAA',
+    holdReason: undefined,
+    holdReasonTruncated: false,
     ...overrides,
   };
 }
