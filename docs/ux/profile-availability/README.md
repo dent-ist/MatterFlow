@@ -31,7 +31,7 @@ Screenshots of the new screens at 1366x768 and 375 px wide, taken by the e2e cap
   TIMEZONE_UNKNOWN, WORK_HOURS_INVALID) map to the same places. A 409 reloads the latest values and says the edits were not saved.
 - **Preview** "Your current status" shows the API's evaluation when nothing is edited and a client-side preview of the draft otherwise.
 - **Unsaved changes**: the usual "Leave without saving?" guard (route and dialog).
-- **Users admin**: chip per user, Availability filter (All / Available / Out of office / Off hours; read from all users of the chosen status
-  because the API has no availability filter), "Edit availability" for User.Manage.
+- **Users admin**: chip per user, Availability filter (All / Available / Out of office / Off hours; `GET /users?availability=` evaluates the
+  state now, in code), "Edit availability" for User.Manage. Below about 1100 px the list scrolls sideways and says so (review round 5).
 - **Assignee menus and pickers** (Create task, task details, inline assignee menu, USER_REF picker) flag "Out of office until ..." with an
   icon; the person stays selectable.

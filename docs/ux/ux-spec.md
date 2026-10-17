@@ -10,7 +10,7 @@ Helper file: `docs/ux/tokens.css` (design tokens as CSS custom properties).
 3. Design principles
 4. Design tokens, badges, accessibility (WCAG 2.1 AA)
 5. Global patterns (app shell, tables, forms, dialogs, errors, permissions, numbers)
-6. Screen specifications S01 to S22
+6. Screen specifications S01 to S23
 7. Component inventory (Angular)
 8. Copy deck
 9. User-acceptance checklists per screen
@@ -256,6 +256,7 @@ Screen IDs map to baseline §19 (item number in brackets). Each spec: purpose, l
 | S20 | Global search typeahead (header) | 13.1 |
 | S21 | Access Pending | 6.4 |
 | S22 | System pages (403, 404, error, conflict) | n/a |
+| S23 | My profile: availability and work hours (and the header account menu) | epic #68 |
 
 **Addendum deltas applied across all screens:** no attachment upload/list/tab, no File Upload form control, no source-email file; Task Type/Workflow/Matter immutable after creation; Requestor Name (required) and Requestor Email (optional) on every Task; comments are rich text, internal, soft-deletable; no ethical-wall UI; no reports/exports; no bulk reassign; no subtasks/dependencies/related tasks/cloning.
 
@@ -1036,6 +1037,16 @@ Read-only, append-only, server-paginated; no export (addendum F). Object refs li
 ### S22 System pages
 403 "You don't have permission to view this page" (links: Go to my work, Contact admin text); 404 "We couldn't find that page"; error page with correlation id and Copy; **Conflict dialog** (§5.3) "This task was changed by someone else. [Reload latest] [Review my changes]"; session/connection lost banner "Connection lost. Retrying..."; Browser sign-in problem page for failed Windows authentication.
 
+### S23 My profile: availability and work hours (epic #68, issues #70 and #74)
+
+**Purpose.** Each person tells colleagues when they are out of office and when they usually work. It feeds the availability chip on the Users administration screen, the flag in assignee menus and pickers, the Swimlane card dot and the Dashboard Users tiles. Operational capacity only: it never ranks or rates anyone, and "Off hours" is information, never "unavailable" (work can still be assigned).
+**Who.** Anyone with `Task.View` edits their own profile (`GET/PUT /api/v1/me/availability`); `User.Manage` also edits another person from Administration > Users ("Edit availability of <name>", the same form in a dialog). A person without `User.Manage` has no such button and the API answers 403; a read-only user can still edit their own availability. Route `/profile`, title "My profile - MatterFlow", H1 with its own icon.
+**Header account menu.** The user area is a menu button (`aria-haspopup="menu"`; Enter, Space or Arrow Down opens; arrows, Home and End move; Esc closes and returns focus to the button; Tab closes). Items: My profile, "Set out of office..." (or "I'm back" while out of office), Keyboard shortcuts. While out of office the button carries "Out of office until ..." under the name (the name only, icon-only on a phone). "Set out of office..." opens a small dialog (Until optional, Note optional, plain-language sentence); Cancel, Esc and Save return focus to the menu button.
+**Layout.** Page header, a status preview ("Your current status: Available / Off hours / Out of office until Oct 20"; the API's evaluation when nothing is edited, a client preview of the draft otherwise), Status (radios Available / Out of office; Out of office adds From and Until with the shared date input, a note of 200 characters with a counter, and the sentence "You will show as out of office from Oct 16 until Oct 20 and as available again on Oct 21."), Work hours (Monday to Sunday: working-day checkbox with start and end time; "Copy Monday to all weekdays"; "Reset to Mon-Fri 9:00 AM-5:00 PM"), Time zone (type-ahead of IANA ids, the browser zone preselected for a person who never chose one), and a sticky action bar (Save changes, Discard changes). One column up to about 640 px wide from 1024 px; full width on a phone.
+**States and rules.** Live validation per field plus an error summary after Save (focused; each link moves to its field and is a 24 px target); server codes `OOO_RANGE_INVALID`, `NOTE_TOO_LONG`, `TIMEZONE_UNKNOWN`, `WORK_HOURS_INVALID` land in the same places; a 409 reloads the latest values and says the edits were not saved. An unchanged default week is saved as `workHours: null`; no working days is `[]`. Out of office covers whole local days From..Until in the person's own zone; without dates it lasts until the person sets Available. "Leave without saving?" guards the route and the dialog.
+**Keyboard.** Status radios, From/Until with their calendar buttons, Note, then per working day: checkbox, start time, end time (each native time field is several tab stops: hour, minute, AM/PM), the two helper buttons, Time zone, Save, Discard. The error summary takes focus on a failed Save.
+**Users administration.** An Availability column (chip: Available, Off hours, Out of office until ...), an Availability filter (All, Available, Out of office, Off hours; `GET /users?availability=`), "Edit availability" with `User.Manage`; below about 1100 px the list scrolls sideways and says "Scroll sideways to see every column." Screens: `docs/ux/profile-availability/` and `docs/ux/review-round-5.md`.
+
 ---
 
 ## 7. Component inventory (reusable Angular components)
@@ -1450,6 +1461,13 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S22-1 403/404/error/conflict pages match copy deck and offer next steps.
 - [ ] UAT-S22-2 Error page shows a copyable correlation id; no stack traces or privileged content.
 
+### S23 My profile
+- [ ] UAT-S23-1 A person sets Out of office with an until date and a note on My profile or from the header menu; the header says "Out of office until ..."; "I'm back" ends it; the Users screen, assignee pickers, Swimlane cards and Dashboard Users tiles show the same state.
+- [ ] UAT-S23-2 Work hours and time zone: a person in another zone with their own hours shows Available and Off hours at the right local times, also on the days clocks change.
+- [ ] UAT-S23-3 Validation: an until date before the from date, an end time before the start time and an unknown time zone are named in the error summary, each link moves to its field, and nothing is saved.
+- [ ] UAT-S23-4 Only the person themselves or a `User.Manage` holder edits availability; everyone else has no button and gets 403 from the API.
+- [ ] UAT-S23-5 Focus returns to the header menu button after the "Set out of office" dialog closes; axe is clean on every state.
+
 ---
 
 ## Appendix A: Addendum deltas applied to baseline §19
@@ -1499,6 +1517,8 @@ Internal codes fixed: NEW, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED. Rules (ad
 | `Asset.View/Create/Edit/Link` | Assets screens; link in Task |
 | `Pod.View/Manage/ManageMembers` | Pod Work, Pods admin |
 | `Role.Manage` | Users & Roles admin (incl. grant access) |
+| `User.Manage` | Administration > Users edits, and "Edit availability" for another person (everyone edits their own availability with `Task.View`) |
+| `Dashboard.ViewCoverage` | The Coverage view inside the Users tab (needs `Dashboard.View`) |
 | `TaskType.Manage` | Task Types and form designer |
 | `Workflow.Manage` | Step Library, Workflow designer |
 | `AssetType.Manage`, `CustomField.Manage`, `Priority.Manage`, `StatusLabel.Manage` | respective admin screens |

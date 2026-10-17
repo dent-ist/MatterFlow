@@ -68,6 +68,10 @@ password in any setting.
 - Script `22-user-availability.sql` (epic #68) adds `dbo.UserAvailability` and `dbo.UserWorkHour` (own availability, out-of-office dates, weekly work hours). It only
   creates tables, so it is safe to apply with the normal upgrade (no data backfill; existing users simply have no row and are treated as available during Mon-Fri
   09:00-17:00 in the firm zone `Firm:TimeZoneId`). Rollback: the tables can stay; the previous application version ignores them.
+  Availability (Available, Off hours, Out of office) is never stored: it is computed when read, in each person's own IANA time zone, so the host needs its time zone
+  data (Linux: the `tzdata` package; a container image without it rejects every saved time zone with `TIMEZONE_UNKNOWN` and evaluates in UTC). Nothing needs to run at midnight or
+  at the end of work hours; a Dashboard tab that is open picks up a change at its next 5-minute refresh. Support check for "she shows as out of office but is back":
+  Administration > Users > Availability shows what the server evaluates now, and the audit log (`USER_AVAILABILITY_CHANGED`) says who changed it and when.
 - After migrations the app syncs the permission catalog and starter roles idempotently (architecture 4.6) at every start where it has a database,
   also when `Migrations:Enabled=false`.
 
