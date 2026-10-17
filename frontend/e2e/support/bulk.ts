@@ -36,7 +36,8 @@ async function inBatches(n: number, width: number, job: (i: number) => Promise<u
 
 /**
  * Enough records to make every grid scroll: by default 64 tasks (assigned to the signed-in admin, in one pod), 30 clients, one client
- * with 40 matters, 30 projects and 60 assets, plus the audit rows all of that leaves behind. Used by the fixed-header e2e tests and by the
+ * with 40 matters, 30 projects and 60 assets, plus the audit rows all of that leaves behind. The admin is taken out of the pod again once the
+ * tasks are assigned (see below). Used by the fixed-header e2e tests and by the
  * screenshot run (`fixed-header-screens.spec.ts`).
  */
 export async function seedBulk(admin: Api, seed: Seeder, opts: BulkOptions = {}): Promise<Bulk> {
@@ -107,6 +108,9 @@ export async function seedBulk(admin: Api, seed: Seeder, opts: BulkOptions = {})
     );
     taskNumbers.push(created.taskNumber);
   });
+  // The admin had to be a member to be given tasks in the pod. Leaving them in it would change the whole run: a member of a pod opens the
+  // Dashboard on "My pods" instead of "All pods", so every later spec that reads the Dashboard as the admin would see only this pod.
+  await admin.delete(`/api/v1/pods/${pod.podId}/members/${me.userId}`);
   return {
     world,
     tag,

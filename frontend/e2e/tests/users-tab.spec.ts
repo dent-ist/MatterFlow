@@ -2,6 +2,7 @@ import { Locator, Page } from '@playwright/test';
 import { Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { TaskQueuePage } from '../pages/queues.pages';
 import {
   CoverageSeed,
   PLAN,
@@ -350,6 +351,8 @@ test.describe('Users tab: workload', () => {
 
     await page.locator('[data-summary-unassigned]').click();
     await expect(page).toHaveURL(/\/tasks\?.*unassigned=true/);
+    // The shared database holds everyone's unassigned tasks, so the seeded one is on the first page only after the Title filter narrows the list.
+    await new TaskQueuePage(page).search(wl.tag);
     await expect(page.getByRole('link', { name: `Unassigned ${wl.tag} 1` })).toBeVisible();
   });
 
@@ -762,6 +765,18 @@ test.describe('Users tab: coverage', () => {
     `/dashboard?tab=users&view=coverage&cov=matrix&uq=zcov${cov.tag}${extra}`;
   const cell = (page: Page, p: Person, typeId: number) =>
     page.locator(`[data-cell="${p.userId}:${typeId}"]`);
+  /**
+   * Opens the matrix with every task type drawn. It draws the first 60 task types alphabetically and offers "Show more", and the shared
+   * database holds hundreds of them (every spec adds its own), so the seeded types are on the first screen only in an empty database;
+   * the column totals also follow the rows that are drawn.
+   */
+  const openMatrix = async (page: Page, extra = ''): Promise<void> => {
+    await page.goto(scoped(extra));
+    await expect(page.locator('[data-coverage-table]')).toBeVisible();
+    const more = page.locator('[data-rows-more]');
+    for (let i = 0; i < 100 && (await more.count()) > 0; i++) await more.click();
+    await expect(more).toHaveCount(0);
+  };
 
   test('is offered with its own permission and not to a role that only has the Users tab', async ({
     page,
@@ -785,7 +800,7 @@ test.describe('Users tab: coverage', () => {
   test('draws the matrix with the numbers, totals and who handled each type, and states what it is for', async ({
     page,
   }) => {
-    await page.goto(scoped());
+    await openMatrix(page);
     await expect(page.locator('[data-coverage-heading]')).toHaveText(
       'Task type coverage - use this to plan training and cross-coverage, not to rank people',
     );
@@ -814,7 +829,7 @@ test.describe('Users tab: coverage', () => {
   test('a zero is blank with no hatch, gaps are outlined only with the Training gaps toggle; every cell has a sentence for a name', async ({
     page,
   }) => {
-    await page.goto(scoped());
+    await openMatrix(page);
     const { a, b } = cov.people;
     const zero = cell(page, b, cov.typeIds.review).locator('xpath=ancestor::td');
     await expect(zero).toHaveAttribute('data-step', '0');
@@ -857,7 +872,7 @@ test.describe('Users tab: coverage', () => {
   });
 
   test('the period and the orders work and are kept in the address', async ({ page }) => {
-    await page.goto(scoped());
+    await openMatrix(page);
     await page.getByLabel('Period', { exact: true }).selectOption('90d');
     await expect(page).toHaveURL(/period=90d/);
     await expect(cell(page, cov.people.a, cov.typeIds.production)).toHaveAttribute(
@@ -876,7 +891,7 @@ test.describe('Users tab: coverage', () => {
   });
 
   test('a cell opens the completed tasks, with a link to the Task Queue', async ({ page }) => {
-    await page.goto(scoped());
+    await openMatrix(page);
     const opener = cell(page, cov.people.a, cov.typeIds.production);
     await opener.focus();
     await page.keyboard.press('Enter');
@@ -893,7 +908,7 @@ test.describe('Users tab: coverage', () => {
   });
 
   test('the matrix is one tab stop with arrow keys between the cells', async ({ page }) => {
-    await page.goto(scoped());
+    await openMatrix(page);
     await expect(page.locator('[data-coverage-table]')).toBeVisible();
     await expect(page.locator('[data-cell][tabindex="0"]')).toHaveCount(1);
     const first = page.locator('[data-cell][tabindex="0"]');
@@ -914,7 +929,7 @@ test.describe('Users tab: coverage', () => {
   }) => {
     test.skip(!axeAvailable(), 'axe-core not installed (set E2E_AXE_PATH to axe.min.js)');
     test.setTimeout(300_000);
-    await page.goto(scoped());
+    await openMatrix(page);
     await expect(page.locator('[data-coverage-table]')).toBeVisible();
     expect(await axeViolations(page)).toEqual([]);
     await cell(page, cov.people.a, cov.typeIds.production).click();
@@ -922,7 +937,7 @@ test.describe('Users tab: coverage', () => {
     expect(await axeViolations(page, '.mf-coverage-drawer')).toEqual([]);
     await page.keyboard.press('Escape');
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(scoped());
+    await openMatrix(page);
     await expect(page.locator('[data-coverage-table]')).toBeVisible();
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
