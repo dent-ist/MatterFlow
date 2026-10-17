@@ -14,6 +14,10 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 
 const lane = (page: Page, code: string) => page.locator(`[data-lane="${code}"]`);
 
+/** Below 900 px the board shows one lane at a time (the lane switcher remembers the last one): ask for New, which `ready` waits for. */
+const withLane = (page: Page, url: string): string =>
+  (page.viewportSize()?.width ?? 1440) < 900 ? `${url}&lane=new` : url;
+
 async function ready(page: Page): Promise<void> {
   await expect(page.locator('[data-lane="NEW"] mf-swimlane-card').first()).toBeVisible();
   await expect(page.locator('[data-board][aria-busy="true"]')).toHaveCount(0);
@@ -38,22 +42,22 @@ test.describe('swimlane screenshots', () => {
       [375, 812],
     ]) {
       await page.setViewportSize({ width: w, height: h });
-      await page.goto(`${base}&group=none&sort=priority`);
+      await page.goto(withLane(page, `${base}&group=none&sort=priority`));
       await ready(page);
       await shot(`01-board-${w}`);
-      await page.goto(`${base}&group=priority`);
+      await page.goto(withLane(page, `${base}&group=priority`));
       await ready(page);
       await shot(`02-group-priority-${w}`);
-      await page.goto(`${base}&group=assignee`);
+      await page.goto(withLane(page, `${base}&group=assignee`));
       await ready(page);
       await shot(`03-group-assignee-${w}`);
-      await page.goto(`${base}&group=clientMatter&sort=clientMatter`);
+      await page.goto(withLane(page, `${base}&group=clientMatter&sort=clientMatter`));
       await ready(page);
       await shot(`04-client-matter-tree-${w}`);
     }
 
     await page.setViewportSize({ width: 1366, height: 768 });
-    await page.goto(`${base}&group=none`);
+    await page.goto(withLane(page, `${base}&group=none`));
     await ready(page);
     await page.getByRole('button', { name: 'More options' }).click();
     await page.getByRole('menuitemradio', { name: 'Compact' }).click();
@@ -82,7 +86,7 @@ test.describe('swimlane screenshots', () => {
       await gate;
       await route.continue();
     });
-    await page.goto(`${base}&group=none`);
+    await page.goto(withLane(page, `${base}&group=none`));
     await expect(page.locator('[data-board][aria-busy="true"]')).toBeVisible();
     await shot('09-loading-1366');
     release();
@@ -97,7 +101,7 @@ test.describe('swimlane screenshots', () => {
       body.lanes[0].truncated = true;
       await route.fulfill({ response, json: body });
     });
-    await page.goto(`${base}&group=none`);
+    await page.goto(withLane(page, `${base}&group=none`));
     await ready(page);
     await lane(page, 'NEW')
       .locator('[data-lane-body]')
@@ -110,13 +114,13 @@ test.describe('swimlane screenshots', () => {
     await page.route('**/api/v1/dashboard/swimlane**', (route) =>
       route.fulfill({ status: 500, json: { code: 'INTERNAL_ERROR', traceId: 'trace-0001' } }),
     );
-    await page.goto(`${base}&group=none`);
+    await page.goto(withLane(page, `${base}&group=none`));
     await expect(page.locator('[data-dash-state="error"]')).toBeVisible();
     await shot('11-error-1366');
     await page.unroute('**/api/v1/dashboard/swimlane**');
 
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`${base}&group=none`);
+    await page.goto(withLane(page, `${base}&group=none`));
     await ready(page);
     await page.locator('[data-lane="NEW"] [data-card-open]').first().click();
     await expect(page.locator('[data-peek]')).toBeVisible();

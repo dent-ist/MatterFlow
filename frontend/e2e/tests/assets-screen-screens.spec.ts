@@ -21,7 +21,7 @@ test.describe('assets screen screenshots', () => {
 
   test('capture', async ({ page, admin, seed }) => {
     test.setTimeout(600_000);
-    await seedBulk(admin, seed, {
+    const bulk = await seedBulk(admin, seed, {
       tasks: 0,
       clients: 2,
       matters: 8,
@@ -36,9 +36,12 @@ test.describe('assets screen screenshots', () => {
       await p.waitForTimeout(300);
       await p.screenshot({ path: path.join(OUT!, `${name}-${size.w}x${size.h}.png`) });
     };
+    // Looked up by this run's own tag: the first assets by name of a shared database are everyone else's.
     const first = (
-      await admin.get('/api/v1/assets?pageSize=5&sort=displayName&isActive=true')
-    ).items.find((a: { displayName: string }) => a.displayName.startsWith('Bulk asset'));
+      await admin.get(
+        `/api/v1/assets?name=${encodeURIComponent(`Bulk asset ${bulk.tag}`)}&pageSize=5&sort=displayName&isActive=true`,
+      )
+    ).items[0];
 
     for (const size of SIZES) {
       await page.setViewportSize({ width: size.w, height: size.h });

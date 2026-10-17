@@ -129,7 +129,11 @@ test.describe('Trends by task type', () => {
     // Unchecking a type removes its line and its part of the address.
     await box(page, types[1].id).uncheck();
     await expect(lines(page)).toHaveCount(2);
-    await expect(page).not.toHaveURL(new RegExp(`${types[1].id}`));
+    // The id is compared with the ids of the `types` parameter, not searched for in the whole address: the port and any other number in it
+    // would match a bare id (5391 contains 391), and the ids of a long-lived database reach every number.
+    await expect
+      .poll(() => (new URL(page.url()).searchParams.get('types') ?? '').split(','))
+      .not.toContain(String(types[1].id));
 
     // A fresh browser (no memory) opens the shared address as it was.
     const context = await browser.newContext({

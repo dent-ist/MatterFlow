@@ -25,8 +25,8 @@ test.describe('users-pods screenshots', () => {
     const names = [`Processing ${tag}`, `Review ${tag}`, `Intake ${tag}`, `Legacy ${tag}`];
     const ids: number[] = [];
     for (const name of names) ids.push((await seed.pod(name, [])).podId);
-    const jamal = await seed.user(['Data Technician'], 'jamal');
-    const priya = await seed.user([], 'priya');
+    const jamal = await seed.user(['Data Technician'], `${tag}-jamal`);
+    const priya = await seed.user([], `${tag}-priya`);
     await admin.put(`/api/v1/users/${jamal.userId}/pods`, {
       podIds: [ids[0], ids[1]],
       primaryPodId: ids[0],
@@ -38,11 +38,11 @@ test.describe('users-pods screenshots', () => {
       isActive: false,
       rowVersion: legacyPod.pod.rowVersion,
     });
-    const auditor = await seed.user(['Compliance Auditor'], 'auditor');
+    const auditor = await seed.user(['Compliance Auditor'], `${tag}-auditor`);
     const shot = (p: Page, name: string, size: { w: number; h: number }) =>
       p.screenshot({ path: path.join(OUT!, `${name}-${size.w}x${size.h}.png`) });
-    const grid = (p: Page) =>
-      p.goto(`/admin/users?status=all&account=${encodeURIComponent('e2e-')}`);
+    // The three accounts carry this run's tag, so the grid shows them whatever else the shared database holds (hundreds of e2e accounts).
+    const grid = (p: Page) => p.goto(`/admin/users?status=all&account=${encodeURIComponent(tag)}`);
 
     for (const size of SIZES) {
       await page.setViewportSize({ width: size.w, height: size.h });

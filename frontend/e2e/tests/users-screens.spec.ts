@@ -78,6 +78,8 @@ test.describe('users screenshots', () => {
       await expect(page.locator('[data-coverage-table]')).toBeVisible();
       await page.locator(`[data-type-name="${cov.typeNames.production}"]`).scrollIntoViewIfNeeded();
       await shot(`07-coverage-${w}`);
+      // The tab remembers the last view (Coverage, after the address above): the next width starts on the Workload again.
+      await page.evaluate(() => window.localStorage.clear());
     }
 
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -151,6 +153,11 @@ test.describe('users screenshots', () => {
     await expect(page.locator('[data-drawer-tasks] li').first()).toBeVisible();
     await shot('06-drawer-1366');
     await page.locator('[data-drawer-assign]').click();
+    // The picker lists the unassigned tasks of the person's pods; this run's own tasks have no pod, so ask for all pods and search for them.
+    await page.locator('[data-assign-allpods]').check();
+    await page
+      .getByRole('searchbox', { name: 'Search unassigned tasks' })
+      .fill(`Unassigned ${wl.tag}`);
     await expect(page.locator('[data-assign-row]').first()).toBeVisible();
     await shot('06b-assign-heavy-hint-1366');
     await page.keyboard.press('Escape');
@@ -170,6 +177,8 @@ test.describe('users screenshots', () => {
     await page.keyboard.press('Escape');
 
     await page.route('**/api/v1/dashboard/workload**', (route) => route.abort());
+    // The tab remembers Coverage after the visits above; the error to photograph is the Workload's.
+    await page.evaluate(() => window.localStorage.clear());
     await page.goto(base);
     await expect(page.locator('[data-dash-state="error"]')).toBeVisible();
     await shot('11-error-1366');
