@@ -15,11 +15,16 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// the completed Task: the Task keeps no separate "completed by" (reassignment after completion is not possible), so this is the person who held
 /// it when it was completed. Cancelled Tasks never count. For training and cross-coverage planning only (addendum Q): no ranking or score.
 /// </summary>
-public sealed class CoverageService(DbContext db, IClock clock, IUserTimeZone timeZone, IUserAvailabilityReader availability)
+public sealed class CoverageService(DbContext db, IClock clock, IUserTimeZone timeZone, IUserAvailabilityReader availability, DashboardScopeResolver scopes)
 {
     public async Task<Result<CoverageBoard>> GetAsync(CoverageQuery query, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(query);
+        var resolvedScope = await scopes.ResolveAsync(query.PodScope, query.PodId, ct);
+        if (resolvedScope.IsFailure)
+            return resolvedScope.Error!;
+        var podScope = resolvedScope.Value;
+
         var queueClock = QueueClock.Create(clock.UtcNow, timeZone);
 
         var resolved = DashboardPeriods.Resolve(query.Period, query.From, query.To, query.PeriodDays, queueClock.Today);
@@ -42,8 +47,12 @@ public sealed class CoverageService(DbContext db, IClock clock, IUserTimeZone ti
         var people = db.Set<AppUser>().AsNoTracking().Where(u =>
             (u.IsActive && u.Roles.Any(ur => ur.Role.IsActive && (ur.Role.IsSystemAdmin || ur.Role.Permissions.Any(rp => rp.Permission.IsActive))))
             || (includeInactive && !u.IsActive && completedBy.Contains(u.Id)));
-        if (query.PodId is { } podId)
-            people = people.Where(u => db.Set<PodMember>().Any(m => m.PodId == podId && m.UserId == u.Id));
+        if (!podScope.IsAll)
+        {
+            var scopePods = podScope.PodIds.ToList();
+            people = people.Where(u => db.Set<PodMember>().Any(m => scopePods.Contains(m.PodId) && m.UserId == u.Id));
+        }
+
         var users = await people.Select(u => new { u.Id, u.DisplayName, u.IsActive }).ToListAsync(ct);
         var ids = users.Select(u => u.Id).ToHashSet();
 

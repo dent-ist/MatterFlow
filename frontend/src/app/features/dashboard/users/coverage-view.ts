@@ -51,7 +51,7 @@ import {
 } from './coverage-model';
 import { CoveragePrefs } from './coverage-prefs';
 import { UsersFilters } from './users-model';
-import { PodOption } from './users-toolbar';
+import { DashScope } from '../dash-scope';
 
 type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
 
@@ -82,22 +82,6 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
 
     <div class="bar" role="toolbar" aria-label="Coverage controls">
       <mf-period-control [period]="period()" [longWindows]="true" />
-      @if (pods().length > 0 || filters().pod !== null) {
-        <div class="fld">
-          <label class="lbl" for="cv-pod">Pod</label>
-          <select
-            id="cv-pod"
-            class="mf-control mf-control--compact"
-            data-coverage-pod
-            (change)="filtersChange.emit({ pod: num($any($event.target).value) })"
-          >
-            <option value="">All pods</option>
-            @for (p of pods(); track p.id) {
-              <option [value]="p.id" [selected]="filters().pod === p.id">{{ p.label }}</option>
-            }
-          </select>
-        </div>
-      }
       <mf-search-box
         class="search"
         role="search"
@@ -741,12 +725,9 @@ export class CoverageView implements OnInit {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private requestId = 0;
 
-  /** The pod and name filters shared with the Workload view (they live in the address). */
+  /** The name filter shared with the Workload view (it lives in the address). The Pod is the page-wide scope. */
   readonly filters = input.required<UsersFilters>();
-  readonly pods = input<PodOption[]>([]);
   readonly filtersChange = output<Partial<UsersFilters>>();
-  /** Read once the board arrives: the tab learns the pods seen. */
-  readonly podsSeen = output<Map<number, string>>();
 
   protected readonly steps: Exclude<Step, 0>[] = [1, 2, 3, 4];
   protected readonly colors = STEP_COLORS;
@@ -756,6 +737,7 @@ export class CoverageView implements OnInit {
   protected readonly plural = plural;
 
   private readonly dashPrefs = inject(DashboardPrefs);
+  private readonly scope = inject(DashScope);
   /** The page's shared period (Coverage also offers the 6 and 12 month windows). */
   protected readonly period = computed<Period>(() => periodForTab(this.dashPrefs.period(), true));
   protected readonly scale = this.prefs.scale;
@@ -779,9 +761,7 @@ export class CoverageView implements OnInit {
     const b = this.board();
     return b ? mfDate(b.generatedAtUtc, this.zone, 'datetime') : null;
   });
-  protected readonly filtered = computed(
-    () => this.filters().q !== '' || this.filters().pod !== null,
-  );
+  protected readonly filtered = computed(() => this.filters().q !== '');
   protected readonly matrix = computed<Matrix | null>(() => {
     const b = this.board();
     return b
@@ -802,8 +782,6 @@ export class CoverageView implements OnInit {
     return thinText(n);
   }
 
-  private lastPod: number | null | undefined;
-
   constructor() {
     // The period is shared with Summary and Trends: a new one (the control, a link, Back) reads the matrix again.
     let lastPeriod: string | undefined;
@@ -814,19 +792,18 @@ export class CoverageView implements OnInit {
         lastPeriod = id;
       });
     });
-    // The pod is part of the request: a change of the pod filter (made here or by Back in the address) reads the matrix again.
+    // The page-wide scope is part of the request: a new one (the control, a link, Back) reads the matrix again.
+    let lastScope: string | undefined;
     effect(() => {
-      const pod = this.filters().pod;
+      const scope = this.scope.scope();
       untracked(() => {
-        if (this.lastPod === undefined || pod === this.lastPod) return;
-        this.lastPod = pod;
-        this.load({ silent: !!this.board() });
+        if (lastScope !== undefined && scope !== lastScope) this.load();
+        lastScope = scope;
       });
     });
   }
 
   ngOnInit(): void {
-    this.lastPod = this.filters().pod;
     this.prefs.ensureLoaded();
     this.load();
   }
@@ -875,8 +852,9 @@ export class CoverageView implements OnInit {
           args.from,
           args.to,
           undefined,
-          this.filters().pod ?? undefined,
           undefined,
+          undefined,
+          this.scope.scope(),
         )
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
@@ -888,9 +866,6 @@ export class CoverageView implements OnInit {
             this.refreshFailed.set(false);
             this.lastOkAt.set(this.clock.now().getTime());
             this.finishRetry('ready');
-            this.podsSeen.emit(
-              new Map(board.users.flatMap((u) => u.pods.map((p) => [p.podId, p.name] as const))),
-            );
             if (announce) {
               this.live.set(
                 `Coverage refreshed. ${plural(board.users.length, 'person', 'people')}, ${plural(board.taskTypes.length, 'task type')}.`,

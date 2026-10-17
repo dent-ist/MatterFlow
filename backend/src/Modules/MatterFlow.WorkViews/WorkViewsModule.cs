@@ -13,6 +13,7 @@ public static class WorkViewsModule
     {
         services.AddControllers().AddApplicationPart(typeof(WorkViewsModule).Assembly);
         services.AddScoped<TaskQueueService>();
+        services.AddScoped<DashboardScopeResolver>();
         services.AddScoped<DashboardService>();
         services.AddScoped<DashboardTrendService>();
         services.AddScoped<SwimlaneService>();

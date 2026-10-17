@@ -17,13 +17,18 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// Read side of the Dashboard: a handful of aggregate reads (one for the headline counts, one per breakdown, and one for aging; the Trends tab has its own endpoint, <see cref="DashboardTrendService"/>), never a read per row. It reuses <see cref="TaskQueueRules"/> so every number agrees with the Task Queue the user lands
 /// on, and each number carries the Task Queue query that lists exactly the counted Tasks. Phase 1 has no per-record visibility (addendum E).
 /// </summary>
-public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, IPermissionChecker permissions, DashboardCache cache)
+public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, IPermissionChecker permissions, DashboardCache cache, DashboardScopeResolver scopes)
 {
     public async Task<Result<DashboardSummary>> GetAsync(DashboardQuery query, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(query);
         if (currentUser.UserId is not { } me)
             return Error.Unauthenticated("Sign in to see the dashboard.");
+
+        var resolvedScope = await scopes.ResolveAsync(query.PodScope, null, ct);
+        if (resolvedScope.IsFailure)
+            return resolvedScope.Error!;
+        var scope = resolvedScope.Value;
 
         var queueClock = QueueClock.Create(clock.UtcNow, timeZone);
         var today = queueClock.Today;
@@ -40,7 +45,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         if (resolved.IsFailure)
             return resolved.Error!;
         var period = resolved.Value;
-        var cacheKey = $"{me}|{period.Key}|{period.From:yyyy-MM-dd}|{period.To:yyyy-MM-dd}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{sections}";
+        var cacheKey = $"{me}|{period.Key}|{period.From:yyyy-MM-dd}|{period.To:yyyy-MM-dd}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{sections}|{scope.Key}";
         if (!query.Fresh && cache.TryGet(cacheKey, out var cached))
             return cached;
 
@@ -50,7 +55,8 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         DateOnly? endsBeforeToday = period.To < today ? period.To : null;
         var dueSoonDay = today.AddDays(TaskQueueRules.DueSoonDays);
 
-        var tasks = db.Set<WorkTask>().AsNoTracking();
+        // Every number below is about the Tasks of the scope (all Tasks, or the Tasks whose Pod field is one of the scope's Pods) and its query carries the same Pod filter.
+        var tasks = scope.Apply(db.Set<WorkTask>().AsNoTracking());
         var open = tasks.Where(TaskQueueRules.Open);
         var overdue = TaskQueueRules.Overdue(queueClock);
         Expression<Func<WorkTask, bool>> dueSoon = t => t.DueDate != null && t.DueDate <= dueSoonDay;
@@ -104,7 +110,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         var overdueByPriority = (await departmentOverdue.GroupBy(t => t.PriorityId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct)).ToDictionary(x => x.Id, x => x.Count);
         var overdueByType = (await departmentOverdue.GroupBy(t => t.TaskTypeId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(ct)).ToDictionary(x => x.Id, x => x.Count);
 
-        IReadOnlyList<DashboardAgingBucket> aging = showBreakdowns ? await AgingAsync(departmentOpen, departmentOverdue, queueClock, ct) : [];
+        IReadOnlyList<DashboardAgingBucket> aging = showBreakdowns ? await AgingAsync(departmentOpen, departmentOverdue, queueClock, scope, ct) : [];
 
         var statusLabels = await db.Set<TaskStatusLabel>().AsNoTracking().ToDictionaryAsync(l => l.StatusCode, l => l.DisplayLabel, ct);
         var priorityRows = await db.Set<Priority>().AsNoTracking().OrderBy(p => p.SortOrder).Select(p => new { p.Id, p.Label, p.IsActive }).ToListAsync(ct);
@@ -120,7 +126,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
                 s.ToCode(),
                 StatusLabel(s.ToCode()),
                 byStatus.FirstOrDefault(x => x.Status == s)?.Count ?? 0,
-                DashboardRules.Status(s),
+                scope.Scoped(DashboardRules.Status(s)),
                 false,
                 null,
                 overdueByStatus.GetValueOrDefault(s)))
@@ -130,7 +136,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         var priorityItems = priorityRows
             .Where(_ => showBreakdowns)
             .Where(p => p.IsActive || priorityCounts.ContainsKey(p.Id))
-            .Select(p => new DashboardBreakdownItem(p.Id, null, p.Label, priorityCounts.GetValueOrDefault(p.Id), DashboardRules.Open("priority=" + p.Id), false, null, overdueByPriority.GetValueOrDefault(p.Id)))
+            .Select(p => new DashboardBreakdownItem(p.Id, null, p.Label, priorityCounts.GetValueOrDefault(p.Id), scope.Scoped(DashboardRules.Open("priority=" + p.Id)), false, null, overdueByPriority.GetValueOrDefault(p.Id)))
             .ToList();
 
         var typeItems = DashboardRules.TopWithOther(
@@ -139,13 +145,18 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
                 null,
                 typeRows.TryGetValue(t.Id, out var row) ? row.Name : "Task Type " + t.Id,
                 t.Count,
-                DashboardRules.Open("type=" + t.Id),
+                scope.Scoped(DashboardRules.Open("type=" + t.Id)),
                 false,
                 row?.IconKey,
                 overdueByType.GetValueOrDefault(t.Id))),
             DashboardRules.TopTypes,
             "Other task types",
-            rest => DashboardRules.Open([.. rest.Select(r => "type=" + r.Id)]));
+            rest => scope.Scoped(DashboardRules.Open([.. rest.Select(r => "type=" + r.Id)])));
+
+        // Under a Pod scope, the unassigned Tasks that belong to no Pod are in no scope: the Summary says how many, so they cannot be lost.
+        var unassignedNoPod = !scope.IsAll && showUnassigned
+            ? await db.Set<WorkTask>().AsNoTracking().Where(TaskQueueRules.Open).CountAsync(t => t.AssignedUserId == null && t.AssignedPodId == null, ct)
+            : 0;
 
         head ??= new { Open = 0, Unassigned = 0, Overdue = 0, OverdueCritical = 0, OverdueHigh = 0, OnHold = 0, DueSoon = 0, AsapOpen = 0, Completed = 0, Created = 0 };
 
@@ -153,26 +164,27 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             new DashboardPeriod(period.Days, from, period.To, period.Key),
             queueClock.ZoneId,
             DateTime.SpecifyKind(queueClock.NowUtc, DateTimeKind.Utc),
-            new DashboardCount(head.Open, DashboardRules.OpenQuery),
-            new DashboardCount(head.Unassigned, DashboardRules.Unassigned),
-            new DashboardCount(head.Overdue, DashboardRules.Overdue),
-            new DashboardCount(head.OnHold, DashboardRules.OnHold),
-            new DashboardCount(head.DueSoon, DashboardRules.DueSoon(dueSoonDay)),
-            new DashboardCount(head.AsapOpen, DashboardRules.AsapOpen),
-            new DashboardCount(head.Completed, DashboardRules.Completed(from, endsBeforeToday)),
-            new DashboardCount(head.Created, DashboardRules.Created(from, endsBeforeToday)),
+            new DashboardCount(head.Open, scope.Scoped(DashboardRules.OpenQuery)),
+            new DashboardCount(head.Unassigned, scope.Scoped(DashboardRules.Unassigned)),
+            new DashboardCount(head.Overdue, scope.Scoped(DashboardRules.Overdue)),
+            new DashboardCount(head.OnHold, scope.Scoped(DashboardRules.OnHold)),
+            new DashboardCount(head.DueSoon, scope.Scoped(DashboardRules.DueSoon(dueSoonDay))),
+            new DashboardCount(head.AsapOpen, scope.Scoped(DashboardRules.AsapOpen)),
+            new DashboardCount(head.Completed, scope.Scoped(DashboardRules.Completed(from, endsBeforeToday))),
+            new DashboardCount(head.Created, scope.Scoped(DashboardRules.Created(from, endsBeforeToday))),
             typeItems,
             priorityItems,
             statusItems,
             aging,
-            new DashboardCount(head.OverdueCritical, DashboardRules.OverdueWith(criticalIds)),
-            new DashboardCount(head.OverdueHigh, DashboardRules.OverdueWith(highIds)));
+            new DashboardCount(head.OverdueCritical, scope.Scoped(DashboardRules.OverdueWith(criticalIds))),
+            new DashboardCount(head.OverdueHigh, scope.Scoped(DashboardRules.OverdueWith(highIds))),
+            new DashboardScopeInfo(scope.Value, scope.PodIds, unassignedNoPod));
         cache.Set(cacheKey, summary);
         return summary;
     }
 
     /// <summary>Open Tasks per age band, and how many of them are overdue; the band edges are the viewer's local midnights so the drill-through (createdFrom/createdTo) lists the same Tasks.</summary>
-    private async Task<IReadOnlyList<DashboardAgingBucket>> AgingAsync(IQueryable<WorkTask> open, IQueryable<WorkTask> overdue, QueueClock queueClock, CancellationToken ct)
+    private async Task<IReadOnlyList<DashboardAgingBucket>> AgingAsync(IQueryable<WorkTask> open, IQueryable<WorkTask> overdue, QueueClock queueClock, DashboardScope scope, CancellationToken ct)
     {
         var today = queueClock.Today;
         var bands = DashboardRules.AgingBands;
@@ -205,7 +217,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
 
         int[] values = counts is null ? new int[6] : [counts.B0, counts.B1, counts.B2, counts.B3, counts.B4, counts.B5];
         int[] overdues = counts is null ? new int[6] : [counts.O0, counts.O1, counts.O2, counts.O3, counts.O4, counts.O5];
-        return [.. bands.Select((b, i) => new DashboardAgingBucket(b.Key, b.Label, b.MinDays, b.MaxDays, values[i], DashboardRules.Aging(b, today), overdues[i]))];
+        return [.. bands.Select((b, i) => new DashboardAgingBucket(b.Key, b.Label, b.MinDays, b.MaxDays, values[i], scope.Scoped(DashboardRules.Aging(b, today)), overdues[i]))];
     }
 
     private static Expression<Func<WorkTask, bool>> Not(Expression<Func<WorkTask, bool>> predicate) =>

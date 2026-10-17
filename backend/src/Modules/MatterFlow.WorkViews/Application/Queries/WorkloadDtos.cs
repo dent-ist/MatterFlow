@@ -7,9 +7,9 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// <summary>Query of the Dashboard Users tab (team workload).</summary>
 public class WorkloadQuery
 {
-    public static readonly IReadOnlyList<string> Keys = ["podId", "availability", "q"];
+    public static readonly IReadOnlyList<string> Keys = ["podId", "availability", "q", "podScope", "includeNoPod"];
 
-    /// <summary>Only members of this Pod. The open Task counts still cover all of the person's open Tasks.</summary>
+    /// <summary>Deprecated, kept for one release: the same as <c>podScope=&lt;id&gt;</c>. <c>podScope</c> wins. The open Task counts still cover all of the person's open Tasks.</summary>
     [FromQuery(Name = "podId")]
     public int? PodId { get; init; }
 
@@ -20,6 +20,17 @@ public class WorkloadQuery
     /// <summary>Fragment of the person's name.</summary>
     [FromQuery(Name = "q"), StringLength(200)]
     public string? Q { get; init; }
+
+    /// <summary>The page-wide scope (P1, #89): <c>all</c> (default), <c>mine</c> (the caller's active Pods, resolved on the server) or a Pod id. A Pod that does not exist is 400 <c>UNKNOWN_POD</c>; one the caller may not see is 403.</summary>
+    [FromQuery(Name = "podScope"), StringLength(20)]
+    public string? PodScope { get; init; }
+
+    /// <summary>
+    /// The "can take work" rule (U4, #130): <c>false</c> lists only active users who are members of at least one Pod or hold at least one open Task and reports the others in
+    /// <c>hiddenCount</c>; <c>true</c> lists everyone. Omitted: everyone, the population before the rule (nothing changes until a client sends it). With a Pod scope the list is that Pod's members whatever this says.
+    /// </summary>
+    [FromQuery(Name = "includeNoPod")]
+    public bool? IncludeNoPod { get; init; }
 }
 
 /// <summary>Constants of the team workload.</summary>
@@ -114,4 +125,5 @@ public sealed record WorkloadBoard(
     [property: Required] IReadOnlyList<WorkloadPriority> Priorities,
     [property: Required] IReadOnlyList<WorkloadUser> Users,
     [property: Required] WorkloadSummary Summary,
-    [property: Required] WorkloadThresholds Thresholds);
+    [property: Required] WorkloadThresholds Thresholds,
+    [property: Required] int HiddenCount = 0);

@@ -7,7 +7,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// <summary>Query of the Dashboard task type coverage matrix (epic #68, issue #73 addendum Q).</summary>
 public class CoverageQuery
 {
-    public static readonly IReadOnlyList<string> Keys = ["period", "from", "to", "periodDays", "podId", "includeInactive"];
+    public static readonly IReadOnlyList<string> Keys = ["period", "from", "to", "periodDays", "podId", "includeInactive", "podScope"];
 
     /// <summary>Period keyword: <c>7d</c>, <c>30d</c> (default), <c>90d</c>, <c>this-month</c>, <c>last-month</c>, <c>6m</c>, <c>12m</c> or <c>custom</c> (with <c>from</c> and <c>to</c>). Resolved in the viewer's time zone.</summary>
     [FromQuery(Name = "period")]
@@ -25,13 +25,17 @@ public class CoverageQuery
     [FromQuery(Name = "periodDays"), Range(1, 366)]
     public int? PeriodDays { get; init; }
 
-    /// <summary>Only members of this Pod.</summary>
+    /// <summary>Deprecated, kept for one release: the same as <c>podScope=&lt;id&gt;</c>. <c>podScope</c> wins. Only members of the Pod are listed.</summary>
     [FromQuery(Name = "podId")]
     public int? PodId { get; init; }
 
     /// <summary>Also list inactive users who completed something in the period (default true).</summary>
     [FromQuery(Name = "includeInactive")]
     public bool? IncludeInactive { get; init; }
+
+    /// <summary>The page-wide scope (P1, #89): <c>all</c> (default), <c>mine</c> (the caller's active Pods, resolved on the server) or a Pod id. A Pod that does not exist is 400 <c>UNKNOWN_POD</c>; one the caller may not see is 403.</summary>
+    [FromQuery(Name = "podScope"), StringLength(20)]
+    public string? PodScope { get; init; }
 }
 
 public static class CoverageRules

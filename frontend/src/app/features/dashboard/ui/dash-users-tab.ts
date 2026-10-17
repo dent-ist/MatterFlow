@@ -19,7 +19,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import {
   DashboardBoardClient,
-  PodsClient,
   WorkloadBoard,
   WorkloadUser,
 } from '../../../api/generated/api-client';
@@ -33,7 +32,7 @@ import { mfDate } from '../../../core/time/time';
 import { USERS_VIEW_PARAM } from '../dashboard-links';
 import { withoutDefaults } from '../dash-url-state';
 import { DashState, focusAfterRetry } from './dash-state';
-import { loadPodChoices } from '../../../shared/work-queue/pod-options';
+import { DashScope } from '../dash-scope';
 import { CoverageView } from '../users/coverage-view';
 import { UsersAssign } from '../users/users-assign';
 import { UsersCard } from '../users/users-card';
@@ -56,7 +55,6 @@ import {
   hasFilterParams,
   isTabView,
   plural,
-  podsOf,
   sameFilters,
   sortUsers,
 } from '../users/users-model';
@@ -64,7 +62,7 @@ import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { UsersPrefs } from '../users/users-prefs';
 import { UsersSummary } from '../users/users-summary';
 import { UsersTable } from '../users/users-table';
-import { PodOption, UsersToolbar } from '../users/users-toolbar';
+import { UsersToolbar } from '../users/users-toolbar';
 
 type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
 
@@ -141,7 +139,6 @@ export const USERS_PAGE = 200;
         [sort]="sort()"
         [density]="density()"
         [layout]="layout()"
-        [pods]="podOptions()"
         [priorities]="board()?.priorities ?? []"
         [thresholds]="board()?.thresholds ?? null"
         (filtersChange)="patchFilters($event)"
@@ -158,12 +155,7 @@ export const USERS_PAGE = 200;
     }
 
     @if (view() === 'coverage') {
-      <mf-coverage-view
-        [filters]="filters()"
-        [pods]="podOptions()"
-        (filtersChange)="patchFilters($event)"
-        (podsSeen)="coveragePods.set($event)"
-      />
+      <mf-coverage-view [filters]="filters()" (filtersChange)="patchFilters($event)" />
     } @else {
       <h2 class="sr-only" id="wl-h">Team workload</h2>
       <mf-users-summary
@@ -401,7 +393,7 @@ export const USERS_PAGE = 200;
 })
 export class DashUsersTab implements OnInit {
   private readonly api = inject(DashboardBoardClient);
-  private readonly pods = inject(PodsClient);
+  private readonly scope = inject(DashScope);
   private readonly auth = inject(AuthStore);
   private readonly lookups = inject(LookupStore);
   private readonly prefs = inject(UsersPrefs);
@@ -434,7 +426,6 @@ export class DashUsersTab implements OnInit {
   protected readonly density = this.prefs.density;
   protected readonly layout = this.prefs.layout;
   protected readonly view = signal<TabView>('workload');
-  protected readonly coveragePods = signal<ReadonlyMap<number, string>>(new Map());
   protected readonly canCoverage = computed(() => this.auth.has('Dashboard.ViewCoverage'));
   protected readonly state = signal<LoadState>('loading');
   protected readonly board = signal<WorkloadBoard | null>(null);
@@ -451,7 +442,6 @@ export class DashUsersTab implements OnInit {
   private readonly drawerSnapshot = signal<WorkloadUser | null>(null);
   private readonly assignId = signal<number | null>(null);
   private readonly assignSnapshot = signal<WorkloadUser | null>(null);
-  private readonly podChoices = signal<ReadonlyMap<number, string>>(new Map());
 
   private readonly params = toSignal(this.route.queryParamMap.pipe(map((p) => p)), {
     initialValue: this.route.snapshot.queryParamMap,
@@ -486,17 +476,6 @@ export class DashUsersTab implements OnInit {
     return this.board()?.users.find((u) => u.userId === id) ?? this.assignSnapshot();
   });
 
-  protected readonly podOptions = computed<PodOption[]>(() => {
-    const merged = new Map(this.podChoices());
-    for (const [id, name] of podsOf(this.board())) merged.set(id, name);
-    for (const [id, name] of this.coveragePods()) merged.set(id, name);
-    const selected = this.filters().pod;
-    if (selected !== null && !merged.has(selected)) merged.set(selected, `Pod ${selected}`);
-    return [...merged]
-      .map(([id, label]) => ({ id, label }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  });
-
   constructor() {
     void this.lookups.ensureLoaded();
     this.undoSeen = this.undo.settled();
@@ -507,6 +486,17 @@ export class DashUsersTab implements OnInit {
         if (n === this.undoSeen) return;
         this.undoSeen = n;
         if (this.view() === 'workload' && this.state() === 'ready') this.load({ silent: true });
+      });
+    });
+    // The page-wide scope changed (the control, a pasted link, Back): the workload is read again for it (the coverage view does the same itself).
+    let lastScope: string | undefined;
+    effect(() => {
+      const scope = this.scope.scope();
+      untracked(() => {
+        if (lastScope !== undefined && scope !== lastScope && this.view() === 'workload') {
+          this.load();
+        }
+        lastScope = scope;
       });
     });
     // The address changed under us (Back, a pasted link): follow it.
@@ -546,7 +536,6 @@ export class DashUsersTab implements OnInit {
     else if ([null, 'users'].includes(this.route.snapshot.queryParamMap.get('tab')))
       void this.writeUrl();
     this.startAutoRefresh();
-    void this.loadPods();
   }
 
   // ---- the view
@@ -559,15 +548,11 @@ export class DashUsersTab implements OnInit {
     this.filters.set(next);
     void this.writeUrl();
     if (this.view() === 'coverage') {
-      // The coverage view reads again when the pod changes; the name filter is applied on the page.
+      // The name filter is applied on the page.
       return;
     }
     // Load, priority and off hours are applied on the page; the rest is a new read.
-    if (
-      next.pod === before.pod &&
-      next.q === before.q &&
-      apiAvailability(next) === apiAvailability(before)
-    ) {
+    if (next.q === before.q && apiAvailability(next) === apiAvailability(before)) {
       this.live.set(`${plural(this.users().length, 'person', 'people')} shown.`);
       return;
     }
@@ -673,7 +658,7 @@ export class DashUsersTab implements OnInit {
     const f = this.filters();
     const start = () =>
       this.api
-        .getDashboardWorkload(f.pod ?? undefined, apiAvailability(f), f.q || undefined)
+        .getDashboardWorkload(undefined, apiAvailability(f), f.q || undefined, this.scope.scope())
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (board) => {
@@ -719,12 +704,6 @@ export class DashUsersTab implements OnInit {
     if (!this.retrying) return;
     this.retrying = false;
     focusAfterRetry(this.host.nativeElement, this.injector, outcome);
-  }
-
-  private async loadPods(): Promise<void> {
-    if (!this.auth.has('Pod.View')) return;
-    const choices = await loadPodChoices(this.pods, true);
-    this.podChoices.set(new Map(choices.options.map((o) => [o.id, o.name] as const)));
   }
 
   /** An edit in the drawer or an assignment changed what the cards count: read the board again shortly (several quick edits make one read). */

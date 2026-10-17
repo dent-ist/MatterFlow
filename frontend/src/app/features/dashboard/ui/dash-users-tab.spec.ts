@@ -6,12 +6,15 @@ import { MessageService } from 'primeng/api';
 import { NEVER, of, throwError } from 'rxjs';
 import {
   DashboardBoardClient,
+  DashboardClient,
   PodsClient,
   TaskQueueClient,
   TaskQueueRow,
   TasksClient,
   WorkloadBoard,
 } from '../../../api/generated/api-client';
+import { DashScope } from '../dash-scope';
+import { aMemberChoices, scopesMock } from '../dash-scope-testing';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { Permission } from '../../../core/auth/permissions';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -158,6 +161,10 @@ describe('DashUsersTab', () => {
         provideRouter([{ path: 'dashboard', component: DashUsersTab }]),
         provideFakeMe(new FakeMeApi({ ...withPermissions(...permissions), userId: 5 })),
         {
+          provide: DashboardClient,
+          useValue: { getDashboardScopes: scopesMock(aMemberChoices()) },
+        },
+        {
           provide: DashboardBoardClient,
           useValue: { getDashboardWorkload: getWorkload, getDashboardCoverage: getCoverage },
         },
@@ -241,8 +248,8 @@ describe('DashUsersTab', () => {
 
   describe('cards', () => {
     it('asks the workload endpoint with the filters of the address', async () => {
-      await open(of(board()), '/dashboard?tab=users&upod=2&uavail=out&uq=ann');
-      expect(getWorkload).toHaveBeenCalledWith(2, 'out', 'ann');
+      await open(of(board()), '/dashboard?tab=users&uavail=out&uq=ann');
+      expect(getWorkload).toHaveBeenCalledWith(undefined, 'out', 'ann', 'all');
       expect(q<HTMLSelectElement>('[data-filter="availability"]').value).toBe('out');
     });
 
@@ -358,12 +365,12 @@ describe('DashUsersTab', () => {
       await open();
       q<HTMLButtonElement>('[data-chip="out"]').click();
       await settle();
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'out', undefined);
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'out', undefined, 'all');
       expect(url()).toContain('uavail=out');
       expect(q('[data-chip="out"]').getAttribute('aria-pressed')).toBe('true');
       q<HTMLButtonElement>('[data-chip="out"]').click();
       await settle();
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined);
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all');
       expect(url()).not.toContain('uavail');
     });
 
@@ -434,17 +441,43 @@ describe('DashUsersTab', () => {
       expect(getWorkload).toHaveBeenCalledTimes(1);
     });
 
-    it('filters by pod, availability and name through the API and writes them to the address', async () => {
+    it('filters by availability and name through the API and writes them to the address; there is no Pod control (the page-wide scope replaces it)', async () => {
       await open();
-      await choose('[data-filter="pod"]', '2');
-      expect(getWorkload).toHaveBeenLastCalledWith(2, 'all', undefined);
-      expect(url()).toContain('upod=2');
+      expect(q('[data-filter="pod"]')).toBeNull();
       await choose('[data-filter="availability"]', 'available');
-      expect(getWorkload).toHaveBeenLastCalledWith(2, 'available', undefined);
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'available', undefined, 'all');
+      expect(url()).toContain('uavail=available');
       q<HTMLButtonElement>('[data-clear-filters]').click();
       await settle();
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined);
-      expect(url()).not.toContain('upod');
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all');
+      expect(url()).not.toContain('uavail');
+    });
+
+    it('reads the workload for the page-wide scope and again when the scope changes', async () => {
+      await open();
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all');
+      const scope = TestBed.inject(DashScope);
+      scope.ensureLoaded();
+      scope.applyAddress((k) => (k === 'pod' ? '2' : null));
+      await settle();
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, '2');
+      const reads = getWorkload.mock.calls.length;
+      scope.applyAddress((k) => (k === 'pod' ? 'mine' : null));
+      await settle();
+      expect(getWorkload.mock.calls.length).toBe(reads + 1);
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'mine');
+    });
+
+    it('links the Unassigned chip to the Task Queue with the pods of the scope', async () => {
+      await open();
+      const scope = TestBed.inject(DashScope);
+      scope.ensureLoaded();
+      scope.applyAddress((k) => (k === 'pod' ? 'mine' : null));
+      await settle();
+      const href = q('[data-summary-unassigned]').getAttribute('href')!;
+      expect(href).toContain('pod=1');
+      expect(href).toContain('pod=2');
+      expect(href).not.toContain('pod=3');
     });
 
     it('switches to the table, remembers it, and the density', async () => {
@@ -515,7 +548,7 @@ describe('DashUsersTab', () => {
       expect(text(q('[data-users-empty]'))).toContain('No people match these filters.');
       q<HTMLButtonElement>('[data-users-clear]').click();
       await settle();
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined);
+      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all');
     });
 
     it('explains a team with nobody in it', async () => {
@@ -951,6 +984,7 @@ describe('DashUsersTab', () => {
         undefined,
         undefined,
         undefined,
+        'all',
       );
       expect(JSON.parse(localStorage.getItem('mf.dashboard.users.v1.5')!).view).toBe('coverage');
       q<HTMLButtonElement>('[data-view="workload"]').click();
@@ -1083,6 +1117,7 @@ describe('DashUsersTab', () => {
         undefined,
         undefined,
         undefined,
+        'all',
       );
       expect(url()).toContain('period=90d');
       expect(text(q('[data-coverage-frame]'))).toContain('completed from Jul 18');
@@ -1094,6 +1129,7 @@ describe('DashUsersTab', () => {
         undefined,
         undefined,
         undefined,
+        'all',
       );
       await choose('select[data-period]', 'custom');
       expect(url()).toContain('period=custom');
@@ -1111,21 +1147,26 @@ describe('DashUsersTab', () => {
         undefined,
         undefined,
         undefined,
+        'all',
       );
     });
 
-    it('filters by pod through the API and by name on the page', async () => {
+    it('has no Pod control: the page-wide scope narrows the matrix through the API, the name on the page', async () => {
       await coverage();
-      await choose('[data-coverage-pod]', '2');
+      expect(q('[data-coverage-pod]')).toBeNull();
+      const scope = TestBed.inject(DashScope);
+      scope.ensureLoaded();
+      scope.applyAddress((k) => (k === 'pod' ? '2' : null));
+      await settle();
       expect(getCoverage).toHaveBeenLastCalledWith(
         '30d',
         undefined,
         undefined,
         undefined,
-        2,
         undefined,
+        undefined,
+        '2',
       );
-      expect(url()).toContain('upod=2');
       const calls = getCoverage.mock.calls.length;
       await reopen(of(board()), '/dashboard?tab=users&view=coverage&uq=tess', COV);
       expect(qa('thead th[data-person]').map((h) => text(h.querySelector('.pname')))).toEqual([

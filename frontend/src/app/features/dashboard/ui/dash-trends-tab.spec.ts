@@ -4,6 +4,7 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { Observable, of, throwError } from 'rxjs';
 import { DashboardClient, DashboardTrend } from '../../../api/generated/api-client';
+import { scopesMock } from '../dash-scope-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
@@ -48,7 +49,10 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
       providers: [
         provideRouter([{ path: 'trends', component: Host }]),
         provideFakeMe(new FakeMeApi(withPermissions('Dashboard.View', 'Dashboard.ViewTrends'))),
-        { provide: DashboardClient, useValue: { getDashboardTrend: getTrend } },
+        {
+          provide: DashboardClient,
+          useValue: { getDashboardTrend: getTrend, getDashboardScopes: scopesMock() },
+        },
         { provide: USER_TIME_ZONE, useValue: 'UTC' },
         { provide: Clock, useValue: { now: () => new Date('2026-10-14T15:45:00Z') } },
       ],
@@ -109,6 +113,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
       undefined,
       undefined,
       undefined,
+      'all',
     );
     expect(text(el.querySelector('h3'))).toBe('Tasks over time');
     expect(Array.from(el.querySelectorAll('[data-panel] h4')).map((h) => text(h))).toEqual([
@@ -169,6 +174,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
       [5],
       undefined,
       undefined,
+      'all',
     );
     // All task types is hidden by default while types are compared (T2): one line per panel, the type's.
     expect(panelLines('flows').length).toBe(1);
@@ -203,6 +209,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
       [5, 7],
       undefined,
       undefined,
+      'all',
     );
     expect(url()).toBe('/trends?types=5,7&metric=created&all=1');
     expect(panelLines('flows').length).toBe(3);
@@ -434,6 +441,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
         [7, 5],
         undefined,
         undefined,
+        'all',
       );
       expect(box(7).checked).toBe(true);
       expect(box(5).checked).toBe(true);
@@ -459,6 +467,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
         [7],
         undefined,
         undefined,
+        'all',
       );
       expect(box(7).checked).toBe(true);
       expect(url()).toBe('/trends?types=7&metric=late');
@@ -509,6 +518,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
         undefined,
         undefined,
         true,
+        'all',
       );
       host.period.set({ key: '7d', from: null, to: null });
       harness.detectChanges();
@@ -521,6 +531,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
         undefined,
         undefined,
         undefined,
+        'all',
       );
     });
 

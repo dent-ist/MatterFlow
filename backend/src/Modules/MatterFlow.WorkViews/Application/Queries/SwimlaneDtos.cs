@@ -8,7 +8,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 public class SwimlaneQuery
 {
     public static readonly IReadOnlyList<string> Keys =
-        ["completedDays", "groupBy", "sort", "podId", "assigneeId", "taskTypeId", "priorityId", "q", "overdueOnly", "mine"];
+        ["completedDays", "groupBy", "sort", "podId", "assigneeId", "taskTypeId", "priorityId", "q", "overdueOnly", "mine", "podScope"];
 
     /// <summary>The Completed lane shows Tasks completed or cancelled in the last this-many days counting today, in the viewer's zone (default 7, max 30).</summary>
     [FromQuery(Name = "completedDays"), Range(1, SwimlaneRules.MaxCompletedDays)]
@@ -22,7 +22,7 @@ public class SwimlaneQuery
     [FromQuery(Name = "sort"), StringLength(20)]
     public string? Sort { get; init; }
 
-    /// <summary>Only Tasks assigned to this Pod.</summary>
+    /// <summary>Deprecated, kept for one release: the same as <c>podScope=&lt;id&gt;</c>. <c>podScope</c> wins.</summary>
     [FromQuery(Name = "podId")]
     public int? PodId { get; init; }
 
@@ -49,6 +49,10 @@ public class SwimlaneQuery
     /// <summary>True: only Tasks assigned to the caller.</summary>
     [FromQuery(Name = "mine")]
     public bool? Mine { get; init; }
+
+    /// <summary>The page-wide scope (P1, #89): <c>all</c> (default), <c>mine</c> (the caller's active Pods, resolved on the server) or a Pod id. A Pod that does not exist is 400 <c>UNKNOWN_POD</c>; one the caller may not see is 403.</summary>
+    [FromQuery(Name = "podScope"), StringLength(20)]
+    public string? PodScope { get; init; }
 }
 
 /// <summary>Constants of the swimlane board.</summary>

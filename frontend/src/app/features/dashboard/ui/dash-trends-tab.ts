@@ -17,6 +17,7 @@ import { DashboardClient, DashboardTrend } from '../../../api/generated/api-clie
 import { QuietRequests } from '../../../core/http/interceptors';
 import { DashState, focusAfterRetry } from './dash-state';
 import { DASH_FIXED_QUERY, mediaMatch } from './dash-media';
+import { DashScope } from '../dash-scope';
 import { Period, periodArgs, periodId } from '../dashboard-period';
 import { TrendChart } from './trend-chart';
 import { TrendLegend } from './trend-legend';
@@ -261,6 +262,7 @@ let nextId = 0;
 })
 export class DashTrendsTab {
   private readonly api = inject(DashboardClient);
+  private readonly scope = inject(DashScope);
   private readonly quiet = inject(QuietRequests);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -366,6 +368,8 @@ export class DashTrendsTab {
       const period = this.period();
       const key = this.refreshKey();
       const ids = this.choice().types;
+      // The page-wide scope is part of the request: a new one reads the series again.
+      this.scope.scope();
       untracked(() => this.ensure(period, key, ids));
     });
   }
@@ -474,7 +478,7 @@ export class DashTrendsTab {
   }
 
   private ensure(period: Period, key: string | null, ids: readonly number[]): void {
-    const gen = `${periodId(period)}|${key}`;
+    const gen = `${periodId(period)}|${key}|${this.scope.scope()}`;
     const current = this.data();
     if (
       current &&
@@ -504,6 +508,7 @@ export class DashTrendsTab {
           ids.length > 0 ? ids : undefined,
           undefined,
           fresh ? true : undefined,
+          this.scope.scope(),
         )
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({

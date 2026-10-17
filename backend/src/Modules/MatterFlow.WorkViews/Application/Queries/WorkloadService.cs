@@ -16,7 +16,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// from <see cref="IUserAvailabilityReader"/>. The counts use <see cref="TaskQueueRules"/>, so they agree with the Task Queue. A fixed number of
 /// grouped reads regardless of the number of Tasks. Operational capacity only: no completion statistics, speed or ranking (addendum).
 /// </summary>
-public sealed class WorkloadService(DbContext db, IClock clock, IUserTimeZone timeZone, IUserAvailabilityReader availability, IOptions<DashboardOptions> options)
+public sealed class WorkloadService(DbContext db, IClock clock, IUserTimeZone timeZone, IUserAvailabilityReader availability, IOptions<DashboardOptions> options, DashboardScopeResolver scopes)
 {
     public async Task<Result<WorkloadBoard>> GetAsync(WorkloadQuery query, CancellationToken ct)
     {
@@ -25,14 +25,33 @@ public sealed class WorkloadService(DbContext db, IClock clock, IUserTimeZone ti
         if (filter is null)
             return Error.Validation("availability", "UNKNOWN_AVAILABILITY", $"Unknown availability '{query.Availability}'. Allowed: {string.Join(", ", WorkloadRules.AvailabilityFilters)}.");
 
+        var resolvedScope = await scopes.ResolveAsync(query.PodScope, query.PodId, ct);
+        if (resolvedScope.IsFailure)
+            return resolvedScope.Error!;
+        var podScope = resolvedScope.Value;
+
         var queueClock = QueueClock.Create(clock.UtcNow, timeZone);
         var thresholds = new WorkloadThresholds(Math.Max(0, options.Value.Workload.LightMax), Math.Max(options.Value.Workload.LightMax, options.Value.Workload.NormalMax));
 
         // Active users who can hold work: at least one role that carries an active permission (Access Pending users are left out).
         var people = db.Set<AppUser>().AsNoTracking().Where(u => u.IsActive
             && u.Roles.Any(ur => ur.Role.IsActive && (ur.Role.IsSystemAdmin || ur.Role.Permissions.Any(rp => rp.Permission.IsActive))));
-        if (query.PodId is { } podId)
-            people = people.Where(u => db.Set<PodMember>().Any(m => m.PodId == podId && m.UserId == u.Id));
+        var hiddenCount = 0;
+        if (!podScope.IsAll)
+        {
+            // A Pod scope lists the members of the scope's Pods ("my pods" without a Pod lists nobody).
+            var scopePods = podScope.PodIds.ToList();
+            people = people.Where(u => db.Set<PodMember>().Any(m => scopePods.Contains(m.PodId) && m.UserId == u.Id));
+        }
+        else if (query.IncludeNoPod == false)
+        {
+            // "Can take work" (U4): a member of at least one active Pod, or someone who holds an open Task (never hidden, so an overloaded person outside every Pod stays visible).
+            var everyone = await people.CountAsync(ct);
+            people = people.Where(u => db.Set<PodMember>().Any(m => m.UserId == u.Id && m.Pod.IsActive)
+                || db.Set<WorkTask>().Where(TaskQueueRules.Open).Any(t => t.AssignedUserId == u.Id));
+            hiddenCount = everyone - await people.CountAsync(ct);
+        }
+
         var users = await people.Select(u => new { u.Id, u.DisplayName }).ToListAsync(ct);
         var ids = users.Select(u => u.Id).ToList();
 
@@ -45,7 +64,8 @@ public sealed class WorkloadService(DbContext db, IClock clock, IUserTimeZone ti
             .ToListAsync(ct);
         var overdue = await CountsByUserAsync(mine.Where(TaskQueueRules.Overdue(queueClock)), ct);
         var dueSoon = await CountsByUserAsync(mine.Where(TaskQueueRules.DueSoon(queueClock)).Where(Not(TaskQueueRules.Overdue(queueClock))), ct);
-        var unassignedTasks = await open.CountAsync(t => t.AssignedUserId == null, ct);
+        // The unassigned queue of the scope (the Summary's Unassigned tile): under a Pod scope only the Tasks of that scope's Pods.
+        var unassignedTasks = await podScope.Apply(open).CountAsync(t => t.AssignedUserId == null, ct);
 
         var nextKeys = await mine.Where(t => t.DueSortKey != null)
             .GroupBy(t => t.AssignedUserId!.Value)
@@ -124,7 +144,7 @@ public sealed class WorkloadService(DbContext db, IClock clock, IUserTimeZone ti
             .ThenBy(e => e.UserId)
             .ToList();
 
-        return new WorkloadBoard(queueClock.ZoneId, DateTime.SpecifyKind(queueClock.NowUtc, DateTimeKind.Utc), legend, ordered, summary, thresholds);
+        return new WorkloadBoard(queueClock.ZoneId, DateTime.SpecifyKind(queueClock.NowUtc, DateTimeKind.Utc), legend, ordered, summary, thresholds, hiddenCount);
     }
 
     private static async Task<Dictionary<int, int>> CountsByUserAsync(IQueryable<WorkTask> tasks, CancellationToken ct) =>

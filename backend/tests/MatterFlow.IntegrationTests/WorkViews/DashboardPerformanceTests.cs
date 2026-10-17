@@ -21,6 +21,7 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
     private WebApplicationFactory<Program> _logged = null!;
     private readonly CommandLog _commands = new();
     private readonly List<int> _typeIds = [];
+    private int _podId;
 
     public async Task InitializeAsync()
     {
@@ -29,6 +30,7 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
         var world = await h.CreateWorldAsync();
         var admin = await h.UserIdAsync(DatabaseApiFactory.AdminAccount);
         var pod = await h.CreatePodAsync("Pod Perf", admin);
+        _podId = pod;
 
         // The Tasks are spread over eight Task Types (a Task cannot change its type after creation, so they are inserted with it).
         _typeIds.Add(world.TaskTypeId);
@@ -115,6 +117,42 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
 
         d.GetProperty("overdue").GetProperty("count").GetInt32().ShouldBeGreaterThan(0);
         d.GetProperty("aging").EnumerateArray().Sum(b => b.GetProperty("count").GetInt32()).ShouldBe(d.GetProperty("open").GetProperty("count").GetInt32());
+    }
+
+    [Fact]
+    public async Task A_pod_scoped_dashboard_costs_the_same_statements_and_its_counts_agree_with_the_queue()
+    {
+        // P1 (#89): the scope is one more predicate on the existing IX_Task_Pod (AssignedPodId, StatusCode) index, so no new index script is needed.
+        var http = _logged.CreateClient();
+        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
+        await OkAsync(await http.GetAsync($"/api/v1/dashboard?podScope={_podId}"));
+
+        var timings = new List<long>();
+        List<string> statements = [];
+        for (var i = 0; i < 5; i++)
+        {
+            _commands.Clear();
+            var watch = Stopwatch.StartNew();
+            await OkAsync(await http.GetAsync($"/api/v1/dashboard?periodDays=90&fresh=true&podScope={_podId}"));
+            watch.Stop();
+            timings.Add(watch.ElapsedMilliseconds);
+            statements = _commands.Snapshot();
+        }
+
+        output.WriteLine("scoped dashboard ms: " + string.Join(", ", timings) + " statements: " + statements.Count);
+        timings.Order().ElementAt(2).ShouldBeLessThan(2000);
+        statements.Count.ShouldBeLessThan(25, string.Join("\n---\n", statements));
+
+        var d = await OkAsync(await http.GetAsync($"/api/v1/dashboard?podScope={_podId}"));
+        foreach (var name in new[] { "open", "unassigned", "overdue", "onHold", "dueSoon", "asapOpen", "completed", "created" })
+        {
+            var count = d.GetProperty(name);
+            var page = await OkAsync(await http.GetAsync("/api/v1/task-queue?pageSize=1&" + count.GetProperty("query").GetString()));
+            page.GetProperty("total").GetInt32().ShouldBe(count.GetProperty("count").GetInt32(), name);
+        }
+
+        d.GetProperty("open").GetProperty("count").GetInt32().ShouldBeLessThan(TaskCount * 9 / 10);
     }
 
     [Fact]

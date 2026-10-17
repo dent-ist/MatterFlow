@@ -2,6 +2,7 @@ import { ParamMap, Params } from '@angular/router';
 import { DashboardTab, isDashboardTab } from './dashboard-prefs';
 import { USERS_AVAILABILITY_PARAM, USERS_VIEW_PARAM } from './dashboard-links';
 import { DEFAULT_PERIOD_KEY, periodFromParams } from './dashboard-period';
+import { LEGACY_USERS_POD_PARAM, SCOPE_PARAM, parseScope, scopeFromAddress } from './dash-scope';
 import { DEFAULT_VIEW } from './swimlane/swimlane-model';
 import { DEFAULT_CHOICE } from './ui/trend-model';
 
@@ -24,7 +25,6 @@ export const DASH_TAB_PARAMS: Record<DashboardTab, readonly string[]> = {
     'sort',
     'days',
     'q',
-    'pod',
     'assignee',
     'type',
     'priority',
@@ -33,7 +33,6 @@ export const DASH_TAB_PARAMS: Record<DashboardTab, readonly string[]> = {
     'lane',
   ],
   users: [
-    'upod',
     USERS_AVAILABILITY_PARAM,
     'uq',
     'uload',
@@ -47,10 +46,11 @@ export const DASH_TAB_PARAMS: Record<DashboardTab, readonly string[]> = {
 };
 
 /**
- * Page-wide parameters (scope of P1, period of P3: `period`, and `from` / `to` for a custom range); they follow the person across tabs. The period
- * default (30 days) and the dates of a period that is not custom are removed by `canonicalParams`, which knows the rule.
+ * Page-wide parameters (scope of P1: `pod`; period of P3: `period`, and `from` / `to` for a custom range); they follow the person across tabs. The
+ * defaults (the period 30 days, the scope the server names for this person) and the dates of a period that is not custom are removed by
+ * `canonicalParams`, which knows the rules.
  */
-export const DASH_SHARED_PARAMS: readonly string[] = ['pod', 'period', 'from', 'to'];
+export const DASH_SHARED_PARAMS: readonly string[] = [SCOPE_PARAM, 'period', 'from', 'to'];
 
 /** The default of each parameter, per tab: the value that is NOT written to the address. */
 export const DASH_DEFAULTS: Record<DashboardTab, Readonly<Record<string, string>>> = {
@@ -64,6 +64,12 @@ export const DASH_DEFAULTS: Record<DashboardTab, Readonly<Record<string, string>
   },
   users: { [USERS_VIEW_PARAM]: 'workload', [USERS_AVAILABILITY_PARAM]: 'all' },
 };
+
+/** What `canonicalParams` needs to know about the scope: whether the person may use a value, and which one is their default (not written). */
+export interface ScopeRule {
+  isValid(value: string): boolean;
+  defaultValue: string;
+}
 
 const KNOWN: ReadonlySet<string> = new Set([
   'tab',
@@ -100,10 +106,28 @@ export function withoutDefaults<T extends Record<string, string | null>>(
  * so a plain link is never rewritten) and set to the tab shown when it named a tab the person cannot open or none that exists; defaults
  * and unknown parameters are removed. Order is kept, repeated keys stay repeated.
  */
-export function canonicalParams(raw: ParamMap, shown: DashboardTab): Params {
+export function canonicalParams(
+  raw: ParamMap,
+  shown: DashboardTab,
+  scope: ScopeRule | null = null,
+): Params {
   const out: Params = {};
   const period = periodFromParams((k) => raw.get(k));
   for (const key of raw.keys) {
+    // The Users tab's old Pod filter (`upod`) is the scope now: read once into `pod`, unless the link names `pod` itself, and rewritten.
+    if (key === LEGACY_USERS_POD_PARAM) {
+      if (!raw.has(SCOPE_PARAM))
+        putScope(
+          out,
+          scopeFromAddress((k) => raw.get(k)),
+          scope,
+        );
+      continue;
+    }
+    if (key === SCOPE_PARAM) {
+      putScope(out, raw.get(key), scope);
+      continue;
+    }
     if (!KNOWN.has(key)) continue;
     const values = raw.getAll(key);
     if (key === 'tab') {
@@ -124,6 +148,20 @@ export function canonicalParams(raw: ParamMap, shown: DashboardTab): Params {
     if (kept.length > 0) out[key] = kept.length === 1 ? kept[0] : kept;
   }
   return out;
+}
+
+/**
+ * The scope in the address: kept when it names a scope the person may use and is not their default; dropped when it is the default, or one
+ * they cannot use (the page shows the default and says so). Before the choices are known (`rule` null) a well-formed value is kept as it is.
+ */
+function putScope(out: Params, raw: string | null, rule: ScopeRule | null): void {
+  const value = parseScope(raw);
+  if (value === null) return;
+  if (rule === null) {
+    out[SCOPE_PARAM] = value;
+    return;
+  }
+  if (rule.isValid(value) && value !== rule.defaultValue) out[SCOPE_PARAM] = value;
 }
 
 /** True when `raw` already says exactly `canonical` (no rewrite is needed). */

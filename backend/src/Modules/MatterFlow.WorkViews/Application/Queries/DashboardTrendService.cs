@@ -14,7 +14,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// Task Type catalogue and one read per metric group (created, completed, tasks with a due date) of (Task Type, instants) rows, bucketed into the viewer's local days in memory (the viewer's day edges
 /// are not UTC days, so SQL cannot group by day). The rules are those of the summary trend, so the <c>all</c> series equals it.
 /// </summary>
-public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, DashboardCache cache)
+public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, DashboardCache cache, DashboardScopeResolver scopes)
 {
     public async Task<Result<DashboardTrend>> GetAsync(DashboardTrendQuery query, CancellationToken ct)
     {
@@ -31,13 +31,18 @@ public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZ
         if (wanted.Count > DashboardRules.MaxTrendTypes)
             return Error.Validation("taskTypeIds", "TOO_MANY_TYPES", $"Pick up to {DashboardRules.MaxTrendTypes} task types to keep the chart readable.", "TOO_MANY_TYPES");
 
+        var resolvedScope = await scopes.ResolveAsync(query.PodScope, null, ct);
+        if (resolvedScope.IsFailure)
+            return resolvedScope.Error!;
+        var scope = resolvedScope.Value;
+
         var queueClock = QueueClock.Create(clock.UtcNow, timeZone);
         var today = queueClock.Today;
         var resolved = DashboardPeriods.Resolve(query.Period, query.From, query.To, query.PeriodDays, today);
         if (resolved.IsFailure)
             return resolved.Error!;
         var period = resolved.Value;
-        var cacheKey = $"trend|{me}|{period.Key}|{period.From:yyyy-MM-dd}|{period.To:yyyy-MM-dd}|{DashboardRules.TrendGranularity(period.Days)}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{metric}|{string.Join(',', wanted.Order())}";
+        var cacheKey = $"trend|{me}|{period.Key}|{period.From:yyyy-MM-dd}|{period.To:yyyy-MM-dd}|{DashboardRules.TrendGranularity(period.Days)}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{metric}|{string.Join(',', wanted.Order())}|{scope.Key}";
         if (!query.Fresh && cache.TryGet<DashboardTrend>(cacheKey, out var cached))
             return cached;
 
@@ -51,7 +56,7 @@ public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZ
         var fromUtc = queueClock.StartOfDayUtc(from);
         var toUtc = queueClock.EndOfDayUtc(to);
         DateOnly? endsBeforeToday = to < today ? to : null;
-        var tasks = db.Set<WorkTask>().AsNoTracking();
+        var tasks = scope.Apply(db.Set<WorkTask>().AsNoTracking());
 
         var needCreated = metric is null or "created";
         var needCompleted = metric is null or "completed";
@@ -106,10 +111,10 @@ public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZ
                 var n = built.Totals.GetValueOrDefault(t.Id) ?? new TrendTypeTotals(0, 0, 0, 0, 0);
                 return new DashboardTrendType(
                     t.Id, t.Name, t.IconKey, t.IsActive, n.Created, n.Completed, n.Overdue, n.OnTime, n.Late, n.Open,
-                    DashboardRules.Created(from, endsBeforeToday) + "&type=" + t.Id,
-                    DashboardRules.Completed(from, endsBeforeToday) + "&type=" + t.Id,
-                    DashboardRules.Overdue + "&type=" + t.Id,
-                    DashboardRules.OpenQuery + "&type=" + t.Id);
+                    scope.Scoped(DashboardRules.Created(from, endsBeforeToday) + "&type=" + t.Id),
+                    scope.Scoped(DashboardRules.Completed(from, endsBeforeToday) + "&type=" + t.Id),
+                    scope.Scoped(DashboardRules.Overdue + "&type=" + t.Id),
+                    scope.Scoped(DashboardRules.OpenQuery + "&type=" + t.Id));
             })
             .Where(t => t.IsActive || t.Created > 0 || t.Completed > 0 || t.Overdue > 0)
             .OrderByDescending(t => t.Created).ThenByDescending(t => t.Completed).ThenBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(t => t.Id)
@@ -124,10 +129,10 @@ public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZ
             built.All,
             built.Series,
             types,
-            DashboardRules.Created(from, endsBeforeToday),
-            DashboardRules.Completed(from, endsBeforeToday),
-            DashboardRules.Overdue,
-            DashboardRules.OpenQuery);
+            scope.Scoped(DashboardRules.Created(from, endsBeforeToday)),
+            scope.Scoped(DashboardRules.Completed(from, endsBeforeToday)),
+            scope.Scoped(DashboardRules.Overdue),
+            scope.Scoped(DashboardRules.OpenQuery));
         cache.Set(cacheKey, trend);
         return trend;
     }

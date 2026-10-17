@@ -119,7 +119,7 @@ describe('swimlane view and address', () => {
         sort: 'created',
         days: '30',
         q: ' acme ',
-        pod: '4',
+        pod: '4', // the page-wide scope now, not a filter of the board
         assignee: 'unassigned',
         type: '7',
         priority: '2',
@@ -133,7 +133,6 @@ describe('swimlane view and address', () => {
       sort: 'created',
       days: 30,
       q: 'acme',
-      pod: 4,
       assignee: 'unassigned',
       type: 7,
       priority: 2,
@@ -165,7 +164,6 @@ describe('swimlane view and address', () => {
       sort: 'priority',
       days: '7',
       q: null,
-      pod: null,
       assignee: null,
       type: null,
       priority: null,
@@ -177,7 +175,6 @@ describe('swimlane view and address', () => {
       sort: 'due',
       days: 14,
       q: 'x',
-      pod: 1,
       assignee: '5',
       type: 2,
       priority: 3,
@@ -189,7 +186,6 @@ describe('swimlane view and address', () => {
       sort: 'due',
       days: '14',
       q: 'x',
-      pod: '1',
       assignee: '5',
       type: '2',
       priority: '3',
@@ -207,9 +203,9 @@ describe('swimlane view and address', () => {
     expect(hasViewParams(convertToParamMap({ tab: 'swimlane' }))).toBe(false);
     expect(hasViewParams(convertToParamMap({ tab: 'swimlane', group: 'none' }))).toBe(true);
     expect(filterCount(DEFAULT_VIEW)).toBe(0);
-    expect(
-      filterCount({ ...DEFAULT_VIEW, pod: 1, priority: 2, overdue: true, mine: true, q: 'abc' }),
-    ).toBe(3);
+    expect(filterCount({ ...DEFAULT_VIEW, priority: 2, overdue: true, mine: true, q: 'abc' })).toBe(
+      2,
+    );
     expect(sameView(DEFAULT_VIEW, { ...DEFAULT_VIEW })).toBe(true);
     expect(sameView(DEFAULT_VIEW, { ...DEFAULT_VIEW, q: 'x' })).toBe(false);
   });
@@ -510,7 +506,6 @@ describe('Task Queue link of a truncated lane', () => {
     const v: SwimlaneView = {
       ...DEFAULT_VIEW,
       q: 'acme',
-      pod: 4,
       assignee: '9',
       type: 2,
       priority: 3,
@@ -519,11 +514,15 @@ describe('Task Queue link of a truncated lane', () => {
     expect(laneQueueParams(v, 'NEW', '2026-10-09', 1)).toEqual({
       status: ['NEW'],
       q: 'acme',
-      pod: '4',
       assignee: '9',
       type: '2',
       priority: '3',
       overdue: 'true',
+    });
+    // Under a Pod scope the link carries the scope's Pods (the lane count is about them).
+    expect(laneQueueParams(DEFAULT_VIEW, 'NEW', '', 1, ['4', '7'])).toEqual({
+      status: ['NEW'],
+      pod: ['4', '7'],
     });
     expect(laneQueueParams(DEFAULT_VIEW, 'COMPLETED', '2026-10-09', 1)).toEqual({
       status: ['COMPLETED', 'CANCELLED'],

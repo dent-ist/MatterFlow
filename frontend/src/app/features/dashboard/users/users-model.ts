@@ -1,6 +1,5 @@
 import { ParamMap } from '@angular/router';
 import {
-  WorkloadBoard,
   WorkloadPriority,
   WorkloadThresholds,
   WorkloadUser,
@@ -9,7 +8,6 @@ import {
   OPEN_UNASSIGNED_QUERY,
   USERS_AVAILABILITY_PARAM,
   USERS_LOAD_PARAM,
-  USERS_POD_PARAM,
   USERS_PRIORITY_PARAM,
   USERS_Q_PARAM,
   queueParams,
@@ -56,11 +54,11 @@ export type LoadFilter = (typeof LOAD_FILTERS)[number];
 export const isLoadFilter = (v: unknown): v is LoadFilter => LOAD_FILTERS.includes(v as LoadFilter);
 
 /**
- * The filters of the tab. Pod, availability (all, available, out) and name are sent to the API; load, priority and off hours are applied on
- * the page. All of them live in the address (`?tab=users&upod=3&uavail=out&uq=ann&uload=idle,heavy&uprio=1`).
+ * The filters of the tab. Availability (all, available, out) and name are sent to the API; load, priority and off hours are applied on
+ * the page. All of them live in the address (`?tab=users&uavail=out&uq=ann&uload=idle,heavy&uprio=1`). The Pod is not a filter of the tab: it is the
+ * page-wide Scope (`?pod=`, P1).
  */
 export interface UsersFilters {
-  pod: number | null;
   availability: AvailabilityFilter;
   q: string;
   /** Load levels to show (any of them); empty means all. */
@@ -70,7 +68,6 @@ export interface UsersFilters {
 }
 
 export const DEFAULT_FILTERS: UsersFilters = {
-  pod: null,
   availability: 'all',
   q: '',
   load: [],
@@ -79,7 +76,6 @@ export const DEFAULT_FILTERS: UsersFilters = {
 
 export function sameFilters(a: UsersFilters, b: UsersFilters): boolean {
   return (
-    a.pod === b.pod &&
     a.availability === b.availability &&
     a.q === b.q &&
     a.priority === b.priority &&
@@ -88,22 +84,16 @@ export function sameFilters(a: UsersFilters, b: UsersFilters): boolean {
 }
 
 export function hasFilterParams(params: ParamMap): boolean {
-  return [
-    USERS_POD_PARAM,
-    USERS_AVAILABILITY_PARAM,
-    USERS_Q_PARAM,
-    USERS_LOAD_PARAM,
-    USERS_PRIORITY_PARAM,
-  ].some((k) => params.has(k));
+  return [USERS_AVAILABILITY_PARAM, USERS_Q_PARAM, USERS_LOAD_PARAM, USERS_PRIORITY_PARAM].some(
+    (k) => params.has(k),
+  );
 }
 
 export function filtersFromParams(params: ParamMap): UsersFilters {
-  const pod = Number(params.get(USERS_POD_PARAM));
   const prio = Number(params.get(USERS_PRIORITY_PARAM));
   const availability = params.get(USERS_AVAILABILITY_PARAM);
   const load = (params.get(USERS_LOAD_PARAM) ?? '').split(',').filter(isLoadFilter);
   return {
-    pod: Number.isInteger(pod) && pod > 0 ? pod : null,
     availability: isAvailabilityFilter(availability) ? availability : 'all',
     q: (params.get(USERS_Q_PARAM) ?? '').trim(),
     load: LOAD_FILTERS.filter((l) => load.includes(l)),
@@ -114,7 +104,6 @@ export function filtersFromParams(params: ParamMap): UsersFilters {
 /** Router query parameters for the filters; unset ones are `null` so `merge` removes them. */
 export function filtersToParams(f: UsersFilters): Record<string, string | null> {
   return {
-    [USERS_POD_PARAM]: f.pod === null ? null : String(f.pod),
     [USERS_AVAILABILITY_PARAM]: f.availability === 'all' ? null : f.availability,
     [USERS_Q_PARAM]: f.q || null,
     [USERS_LOAD_PARAM]: f.load.length ? f.load.join(',') : null,
@@ -124,7 +113,6 @@ export function filtersToParams(f: UsersFilters): Record<string, string | null> 
 
 export function filterCount(f: UsersFilters): number {
   return (
-    (f.pod !== null ? 1 : 0) +
     (f.availability !== 'all' ? 1 : 0) +
     (f.q ? 1 : 0) +
     (f.load.length ? 1 : 0) +
@@ -330,14 +318,15 @@ export function userQueueParams(userId: number): Record<string, string | string[
   return { status: OPEN_STATUS_LIST, assignee: [String(userId)], sort: 'priority', dir: 'asc' };
 }
 
-/** The Task Queue query of every open task nobody has, highest priority first. */
-export function unassignedQueueParams() {
-  return { ...queueParams(OPEN_UNASSIGNED_QUERY), sort: 'priorityAge', dir: 'asc' };
-}
-
-/** Pod ids and names seen on the board (feeds the pod filter when the pod list is not readable). */
-export function podsOf(board: WorkloadBoard | null): Map<number, string> {
-  const map = new Map<number, string>();
-  for (const u of board?.users ?? []) for (const p of u.pods ?? []) map.set(p.podId, p.name);
-  return map;
+/**
+ * The Task Queue query of every open task nobody has, highest priority first. Under a Pod scope it carries the scope's `pod` filter, so the
+ * queue lists the tasks the Unassigned number counts.
+ */
+export function unassignedQueueParams(pods: readonly string[] = []) {
+  return {
+    ...queueParams(OPEN_UNASSIGNED_QUERY),
+    ...(pods.length > 0 ? { pod: [...pods] } : {}),
+    sort: 'priorityAge',
+    dir: 'asc',
+  };
 }

@@ -18,7 +18,7 @@ namespace MatterFlow.WorkViews.Api;
 [Route("api/v1/dashboard")]
 public class DashboardController(DashboardService dashboard, DashboardTrendService trend) : ControllerBase
 {
-    /// <summary>Gets the Dashboard for a period (<c>periodDays</c>, default 30, max 365) that drives the "completed" and "created" counts.</summary>
+    /// <summary>Gets the Dashboard for a period (<c>period</c>, default 30 days) that drives the "completed" and "created" counts, for the Tasks of the <c>podScope</c> (<c>all</c> by default).</summary>
     [HttpGet(Name = "GetDashboard")]
     [Authorize(Policy = "Perm:" + Permissions.Dashboard.View)]
     [Authorize(Policy = "Perm:" + Permissions.Dashboard.ViewSummary + "|" + Permissions.Dashboard.ViewUnassigned + "|" + Permissions.Dashboard.ViewBreakdowns + "|" + Permissions.Dashboard.ViewTrends)]
@@ -28,6 +28,18 @@ public class DashboardController(DashboardService dashboard, DashboardTrendServi
         FilterParsing.EnsureKnown(Request.Query.Keys, DashboardQuery.Keys).OrThrow();
         return (await dashboard.GetAsync(query, cancellationToken)).OrThrow();
     }
+
+    /// <summary>
+    /// What the page-wide Scope select offers the caller (P1): the default scope (<c>mine</c> for a member of at least one active Pod, otherwise <c>all</c>),
+    /// whether "My pods" is offered, and the Pods: the caller's own first, then (with <c>Pod.View</c>) the other active Pods. Needs <c>Dashboard.View</c> and any Dashboard tab permission.
+    /// </summary>
+    [HttpGet("scopes", Name = "GetDashboardScopes")]
+    [Authorize(Policy = "Perm:" + Permissions.Dashboard.View)]
+    [Authorize(Policy = "Perm:" + Permissions.Dashboard.ViewSummary + "|" + Permissions.Dashboard.ViewUnassigned + "|" + Permissions.Dashboard.ViewBreakdowns + "|" + Permissions.Dashboard.ViewTrends
+        + "|" + Permissions.Dashboard.ViewSwimlane + "|" + Permissions.Dashboard.ViewUsers + "|" + Permissions.Dashboard.ViewCoverage)]
+    [ProducesResponseType<DashboardScopeChoices>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<DashboardScopeChoices>> GetScopes([FromServices] DashboardScopeResolver scopes, CancellationToken cancellationToken) =>
+        (await scopes.ChoicesAsync(cancellationToken)).OrThrow();
 
     /// <summary>
     /// The Trends tab: created, completed, overdue and open (snapshots at the end of each local day), on time and late per local day (per week, Monday to Sunday, for periods over 31 days) (the viewer's time zone) for all

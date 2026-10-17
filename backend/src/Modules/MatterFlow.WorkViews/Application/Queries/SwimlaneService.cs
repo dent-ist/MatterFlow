@@ -19,7 +19,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// one grouped count, one ordered id read per non-empty lane, the row details of all returned cards, client numbers, availability of the assignees and
 /// one grouped read for the requested group metadata. Operational view only: no per-person completion figures.
 /// </summary>
-public sealed class SwimlaneService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, TaskQueueService queue, IUserAvailabilityReader availability)
+public sealed class SwimlaneService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, TaskQueueService queue, IUserAvailabilityReader availability, DashboardScopeResolver scopes)
 {
     private static readonly (TaskStatusCode Status, string Label)[] Lanes =
     [
@@ -54,6 +54,11 @@ public sealed class SwimlaneService(DbContext db, IClock clock, IUserTimeZone ti
                 return Error.Validation("assigneeId", "UNKNOWN_ASSIGNEE", "assigneeId must be a user id or 'unassigned'.");
         }
 
+        var resolvedScope = await scopes.ResolveAsync(query.PodScope, query.PodId, ct);
+        if (resolvedScope.IsFailure)
+            return resolvedScope.Error!;
+        var podScope = resolvedScope.Value;
+
         var queueClock = QueueClock.Create(clock.UtcNow, timeZone);
         var from = DashboardRules.PeriodStart(queueClock.Today, query.CompletedDays);
         var fromUtc = queueClock.StartOfDayUtc(from);
@@ -62,7 +67,7 @@ public sealed class SwimlaneService(DbContext db, IClock clock, IUserTimeZone ti
             string.IsNullOrWhiteSpace(query.Q) ? null : query.Q.Trim(),
             [],
             query.PriorityId is { } pr ? [pr] : [],
-            query.PodId is { } pod ? [pod] : [],
+            podScope.IsAll ? [] : podScope.PodIds.Count == 0 ? [0] : podScope.PodIds,
             false,
             assignees,
             unassigned,

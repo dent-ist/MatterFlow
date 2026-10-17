@@ -138,22 +138,6 @@ export interface Option {
 
     @if (panel()) {
       <div id="sl-filters" class="panel" role="group" aria-label="Filters" data-filter-panel>
-        @if (pods().length > 0) {
-          <div class="fld fld--col">
-            <label class="lbl" for="sl-pod">Pod</label>
-            <select
-              id="sl-pod"
-              class="mf-control mf-control--compact"
-              data-filter="pod"
-              (change)="viewChange.emit({ pod: num($any($event.target).value) })"
-            >
-              <option value="">Any pod</option>
-              @for (p of pods(); track p.id) {
-                <option [value]="p.id" [selected]="v.pod === p.id">{{ p.label }}</option>
-              }
-            </select>
-          </div>
-        }
         <div class="fld fld--col">
           <label class="lbl" for="sl-assignee">Assignee</label>
           <select
@@ -303,7 +287,6 @@ export class SwimlaneToolbar {
 
   readonly view = input.required<SwimlaneView>();
   readonly density = input<Density>('comfortable');
-  readonly pods = input<Option[]>([]);
   readonly people = input<Option[]>([]);
   readonly types = input<Option[]>([]);
   readonly priorities = input<Option[]>([]);
@@ -337,7 +320,6 @@ export class SwimlaneToolbar {
   protected clear(): void {
     this.viewChange.emit({
       q: '',
-      pod: null,
       assignee: null,
       type: null,
       priority: null,

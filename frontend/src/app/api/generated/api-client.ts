@@ -8561,9 +8561,14 @@ export interface IDashboardClient {
      * @param to (optional) 
      * @param periodDays (optional) 
      * @param fresh (optional) 
+     * @param podScope (optional) 
      * @return OK
      */
-    getDashboard(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, fresh?: boolean | undefined): Observable<DashboardSummary>;
+    getDashboard(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, fresh?: boolean | undefined, podScope?: string | undefined): Observable<DashboardSummary>;
+    /**
+     * @return OK
+     */
+    getDashboardScopes(): Observable<DashboardScopeChoices>;
     /**
      * @param period (optional) 
      * @param from (optional) 
@@ -8572,9 +8577,10 @@ export interface IDashboardClient {
      * @param taskTypeIds (optional) 
      * @param metric (optional) 
      * @param fresh (optional) 
+     * @param podScope (optional) 
      * @return OK
      */
-    getDashboardTrend(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, taskTypeIds?: number[] | undefined, metric?: string | undefined, fresh?: boolean | undefined): Observable<DashboardTrend>;
+    getDashboardTrend(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, taskTypeIds?: number[] | undefined, metric?: string | undefined, fresh?: boolean | undefined, podScope?: string | undefined): Observable<DashboardTrend>;
 }
 
 @Injectable({
@@ -8596,9 +8602,10 @@ export class DashboardClient implements IDashboardClient {
      * @param to (optional) 
      * @param periodDays (optional) 
      * @param fresh (optional) 
+     * @param podScope (optional) 
      * @return OK
      */
-    getDashboard(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, fresh?: boolean | undefined): Observable<DashboardSummary> {
+    getDashboard(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, fresh?: boolean | undefined, podScope?: string | undefined): Observable<DashboardSummary> {
         let url_ = this.baseUrl + "/api/v1/dashboard?";
         if (period === null)
             throw new globalThis.Error("The parameter 'period' cannot be null.");
@@ -8620,6 +8627,10 @@ export class DashboardClient implements IDashboardClient {
             throw new globalThis.Error("The parameter 'fresh' cannot be null.");
         else if (fresh !== undefined)
             url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        if (podScope === null)
+            throw new globalThis.Error("The parameter 'podScope' cannot be null.");
+        else if (podScope !== undefined)
+            url_ += "podScope=" + encodeURIComponent("" + podScope) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -8666,6 +8677,56 @@ export class DashboardClient implements IDashboardClient {
     }
 
     /**
+     * @return OK
+     */
+    getDashboardScopes(): Observable<DashboardScopeChoices> {
+        let url_ = this.baseUrl + "/api/v1/dashboard/scopes";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetDashboardScopes(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetDashboardScopes(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<DashboardScopeChoices>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<DashboardScopeChoices>;
+        }));
+    }
+
+    protected processGetDashboardScopes(response: HttpResponseBase): Observable<DashboardScopeChoices> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DashboardScopeChoices;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
      * @param period (optional) 
      * @param from (optional) 
      * @param to (optional) 
@@ -8673,9 +8734,10 @@ export class DashboardClient implements IDashboardClient {
      * @param taskTypeIds (optional) 
      * @param metric (optional) 
      * @param fresh (optional) 
+     * @param podScope (optional) 
      * @return OK
      */
-    getDashboardTrend(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, taskTypeIds?: number[] | undefined, metric?: string | undefined, fresh?: boolean | undefined): Observable<DashboardTrend> {
+    getDashboardTrend(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, taskTypeIds?: number[] | undefined, metric?: string | undefined, fresh?: boolean | undefined, podScope?: string | undefined): Observable<DashboardTrend> {
         let url_ = this.baseUrl + "/api/v1/dashboard/trend?";
         if (period === null)
             throw new globalThis.Error("The parameter 'period' cannot be null.");
@@ -8705,6 +8767,10 @@ export class DashboardClient implements IDashboardClient {
             throw new globalThis.Error("The parameter 'fresh' cannot be null.");
         else if (fresh !== undefined)
             url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        if (podScope === null)
+            throw new globalThis.Error("The parameter 'podScope' cannot be null.");
+        else if (podScope !== undefined)
+            url_ += "podScope=" + encodeURIComponent("" + podScope) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -8763,16 +8829,19 @@ export interface IDashboardBoardClient {
      * @param q (optional) 
      * @param overdueOnly (optional) 
      * @param mine (optional) 
+     * @param podScope (optional) 
      * @return OK
      */
-    getDashboardSwimlane(completedDays?: number | undefined, groupBy?: string | undefined, sort?: string | undefined, podId?: number | undefined, assigneeId?: string | undefined, taskTypeId?: number | undefined, priorityId?: number | undefined, q?: string | undefined, overdueOnly?: boolean | undefined, mine?: boolean | undefined): Observable<SwimlaneBoard>;
+    getDashboardSwimlane(completedDays?: number | undefined, groupBy?: string | undefined, sort?: string | undefined, podId?: number | undefined, assigneeId?: string | undefined, taskTypeId?: number | undefined, priorityId?: number | undefined, q?: string | undefined, overdueOnly?: boolean | undefined, mine?: boolean | undefined, podScope?: string | undefined): Observable<SwimlaneBoard>;
     /**
      * @param podId (optional) 
      * @param availability (optional) 
      * @param q (optional) 
+     * @param podScope (optional) 
+     * @param includeNoPod (optional) 
      * @return OK
      */
-    getDashboardWorkload(podId?: number | undefined, availability?: string | undefined, q?: string | undefined): Observable<WorkloadBoard>;
+    getDashboardWorkload(podId?: number | undefined, availability?: string | undefined, q?: string | undefined, podScope?: string | undefined, includeNoPod?: boolean | undefined): Observable<WorkloadBoard>;
     /**
      * @param period (optional) 
      * @param from (optional) 
@@ -8780,9 +8849,10 @@ export interface IDashboardBoardClient {
      * @param periodDays (optional) 
      * @param podId (optional) 
      * @param includeInactive (optional) 
+     * @param podScope (optional) 
      * @return OK
      */
-    getDashboardCoverage(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, podId?: number | undefined, includeInactive?: boolean | undefined): Observable<CoverageBoard>;
+    getDashboardCoverage(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, podId?: number | undefined, includeInactive?: boolean | undefined, podScope?: string | undefined): Observable<CoverageBoard>;
 }
 
 @Injectable({
@@ -8809,9 +8879,10 @@ export class DashboardBoardClient implements IDashboardBoardClient {
      * @param q (optional) 
      * @param overdueOnly (optional) 
      * @param mine (optional) 
+     * @param podScope (optional) 
      * @return OK
      */
-    getDashboardSwimlane(completedDays?: number | undefined, groupBy?: string | undefined, sort?: string | undefined, podId?: number | undefined, assigneeId?: string | undefined, taskTypeId?: number | undefined, priorityId?: number | undefined, q?: string | undefined, overdueOnly?: boolean | undefined, mine?: boolean | undefined): Observable<SwimlaneBoard> {
+    getDashboardSwimlane(completedDays?: number | undefined, groupBy?: string | undefined, sort?: string | undefined, podId?: number | undefined, assigneeId?: string | undefined, taskTypeId?: number | undefined, priorityId?: number | undefined, q?: string | undefined, overdueOnly?: boolean | undefined, mine?: boolean | undefined, podScope?: string | undefined): Observable<SwimlaneBoard> {
         let url_ = this.baseUrl + "/api/v1/dashboard/swimlane?";
         if (completedDays === null)
             throw new globalThis.Error("The parameter 'completedDays' cannot be null.");
@@ -8853,6 +8924,10 @@ export class DashboardBoardClient implements IDashboardBoardClient {
             throw new globalThis.Error("The parameter 'mine' cannot be null.");
         else if (mine !== undefined)
             url_ += "mine=" + encodeURIComponent("" + mine) + "&";
+        if (podScope === null)
+            throw new globalThis.Error("The parameter 'podScope' cannot be null.");
+        else if (podScope !== undefined)
+            url_ += "podScope=" + encodeURIComponent("" + podScope) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -8902,9 +8977,11 @@ export class DashboardBoardClient implements IDashboardBoardClient {
      * @param podId (optional) 
      * @param availability (optional) 
      * @param q (optional) 
+     * @param podScope (optional) 
+     * @param includeNoPod (optional) 
      * @return OK
      */
-    getDashboardWorkload(podId?: number | undefined, availability?: string | undefined, q?: string | undefined): Observable<WorkloadBoard> {
+    getDashboardWorkload(podId?: number | undefined, availability?: string | undefined, q?: string | undefined, podScope?: string | undefined, includeNoPod?: boolean | undefined): Observable<WorkloadBoard> {
         let url_ = this.baseUrl + "/api/v1/dashboard/workload?";
         if (podId === null)
             throw new globalThis.Error("The parameter 'podId' cannot be null.");
@@ -8918,6 +8995,14 @@ export class DashboardBoardClient implements IDashboardBoardClient {
             throw new globalThis.Error("The parameter 'q' cannot be null.");
         else if (q !== undefined)
             url_ += "q=" + encodeURIComponent("" + q) + "&";
+        if (podScope === null)
+            throw new globalThis.Error("The parameter 'podScope' cannot be null.");
+        else if (podScope !== undefined)
+            url_ += "podScope=" + encodeURIComponent("" + podScope) + "&";
+        if (includeNoPod === null)
+            throw new globalThis.Error("The parameter 'includeNoPod' cannot be null.");
+        else if (includeNoPod !== undefined)
+            url_ += "includeNoPod=" + encodeURIComponent("" + includeNoPod) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -8970,9 +9055,10 @@ export class DashboardBoardClient implements IDashboardBoardClient {
      * @param periodDays (optional) 
      * @param podId (optional) 
      * @param includeInactive (optional) 
+     * @param podScope (optional) 
      * @return OK
      */
-    getDashboardCoverage(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, podId?: number | undefined, includeInactive?: boolean | undefined): Observable<CoverageBoard> {
+    getDashboardCoverage(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, podId?: number | undefined, includeInactive?: boolean | undefined, podScope?: string | undefined): Observable<CoverageBoard> {
         let url_ = this.baseUrl + "/api/v1/dashboard/coverage?";
         if (period === null)
             throw new globalThis.Error("The parameter 'period' cannot be null.");
@@ -8998,6 +9084,10 @@ export class DashboardBoardClient implements IDashboardBoardClient {
             throw new globalThis.Error("The parameter 'includeInactive' cannot be null.");
         else if (includeInactive !== undefined)
             url_ += "includeInactive=" + encodeURIComponent("" + includeInactive) + "&";
+        if (podScope === null)
+            throw new globalThis.Error("The parameter 'podScope' cannot be null.");
+        else if (podScope !== undefined)
+            url_ += "podScope=" + encodeURIComponent("" + podScope) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -11691,6 +11781,30 @@ export interface DashboardPeriod {
     [key: string]: any;
 }
 
+export interface DashboardScopeChoices {
+    defaultScope: string;
+    hasPods: boolean;
+    pods: DashboardScopePod[];
+
+    [key: string]: any;
+}
+
+export interface DashboardScopeInfo {
+    scope: string;
+    podIds: number[];
+    unassignedNoPod: number;
+
+    [key: string]: any;
+}
+
+export interface DashboardScopePod {
+    podId: number;
+    name: string;
+    isMine: boolean;
+
+    [key: string]: any;
+}
+
 export interface DashboardSummary {
     period: DashboardPeriod;
     timeZone: string;
@@ -11709,6 +11823,7 @@ export interface DashboardSummary {
     aging: DashboardAgingBucket[];
     overdueCritical: DashboardCount;
     overdueHigh: DashboardCount;
+    scope: DashboardScopeInfo;
 
     [key: string]: any;
 }
@@ -13392,6 +13507,7 @@ export interface WorkloadBoard {
     users: WorkloadUser[];
     summary: WorkloadSummary;
     thresholds: WorkloadThresholds;
+    hiddenCount: number;
 
     [key: string]: any;
 }

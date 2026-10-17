@@ -160,3 +160,51 @@ describe('tabFallback (R1)', () => {
     expect(tabFallback('xyz', ['summary'])).toEqual({ kind: 'unknown' });
   });
 });
+
+describe('canonicalParams and the page-wide scope (P1)', () => {
+  const member = {
+    isValid: (v: string) => ['all', 'mine', '1', '2', '3'].includes(v),
+    defaultValue: 'mine',
+  };
+  const loner = { isValid: (v: string) => ['all', '1', '2', '3'].includes(v), defaultValue: 'all' };
+
+  it('keeps a scope that differs from the default and drops the default itself', () => {
+    expect(canonicalParams(map({ tab: 'trends', pod: 'all' }), 'trends', member)['pod']).toBe(
+      'all',
+    );
+    expect(canonicalParams(map({ pod: '2' }), 'summary', member)['pod']).toBe('2');
+    expect(canonicalParams(map({ pod: 'mine' }), 'summary', member)['pod']).toBeUndefined();
+    expect(canonicalParams(map({ pod: 'all' }), 'summary', loner)['pod']).toBeUndefined();
+    expect(canonicalParams(map({ pod: 'MINE' }), 'summary', member)['pod']).toBeUndefined();
+  });
+
+  it('drops a scope the person cannot use or that is no scope at all', () => {
+    expect(canonicalParams(map({ pod: '9' }), 'summary', member)['pod']).toBeUndefined();
+    expect(canonicalParams(map({ pod: 'mine' }), 'summary', loner)['pod']).toBeUndefined();
+    expect(canonicalParams(map({ pod: 'x' }), 'summary', member)['pod']).toBeUndefined();
+    expect(canonicalParams(map({ pod: '1 OR 1=1' }), 'summary', member)['pod']).toBeUndefined();
+  });
+
+  it('keeps a well-formed scope as it is until the choices are known', () => {
+    expect(canonicalParams(map({ pod: '5' }), 'summary', null)['pod']).toBe('5');
+    expect(canonicalParams(map({ pod: 'zzz' }), 'summary', null)['pod']).toBeUndefined();
+  });
+
+  it('reads the old Users Pod filter once into pod and rewrites the address', () => {
+    const raw = map({ tab: 'users', upod: '2', uavail: 'out' });
+    const out = canonicalParams(raw, 'users', loner);
+    expect(out).toEqual({ tab: 'users', pod: '2', uavail: 'out' });
+    expect(sameParams(raw, out)).toBe(false);
+    // A link that names both: pod wins.
+    expect(canonicalParams(map({ pod: '3', upod: '2' }), 'users', loner)['pod']).toBe('3');
+    // The old value of the default is simply dropped.
+    expect(canonicalParams(map({ upod: 'all' }), 'users', loner)['pod']).toBeUndefined();
+  });
+
+  it('does not clear the scope when a tab is chosen (it follows the person), and the tabs no longer own a pod parameter', () => {
+    for (const tab of DASHBOARD_TABS) expect(clearedTabParams(tab)['pod']).toBeUndefined();
+    expect(Object.keys(clearedTabParams('summary'))).not.toContain('upod');
+    expect(viewToParams(DEFAULT_VIEW)['pod']).toBeUndefined();
+    expect(filtersToParams(DEFAULT_FILTERS)['upod']).toBeUndefined();
+  });
+});

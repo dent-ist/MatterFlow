@@ -22,6 +22,7 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { aBoard } from '../users/users-testing';
 import { aRow, pageOf, provideLookups } from '../../../shared/work-queue/work-queue-testing';
 import { aTrend } from '../ui/trend-testing';
+import { aMemberChoices, aScopeChoices } from '../dash-scope-testing';
 import { STALE_CHECK_MS } from '../dash-stale';
 import { AUTO_REFRESH_MS, DashboardPage } from './dashboard-page';
 
@@ -43,6 +44,7 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
     asapOpen: count(4, `${OPEN}&asap=true`),
     completed: count(94, 'status=COMPLETED&completedFrom=2026-09-15'),
     created: count(101, 'createdFrom=2026-09-15'),
+    scope: { scope: 'all', podIds: [], unassignedNoPod: 0 },
     byTaskType: [
       {
         label: 'Data Processing',
@@ -191,6 +193,8 @@ describe('DashboardPage', () => {
   let getDashboard: ReturnType<typeof vi.fn>;
   const getDashboardSwimlane = vi.fn(() => of(emptyBoard()));
   let getDashboardTrend: ReturnType<typeof vi.fn>;
+  let getDashboardScopes: ReturnType<typeof vi.fn>;
+  let scopeChoices = aScopeChoices();
   const getDashboardWorkload = vi.fn(() => of(aBoard([])));
   let getTaskQueue: ReturnType<typeof vi.fn>;
   let assignTask: ReturnType<typeof vi.fn>;
@@ -204,6 +208,7 @@ describe('DashboardPage', () => {
     url = '/dashboard',
   ) {
     getDashboard = vi.fn().mockReturnValue(response);
+    getDashboardScopes = vi.fn(() => of(scopeChoices));
     getDashboardTrend = vi.fn((_p: string, _f: unknown, _t: unknown, _d: unknown, ids?: number[]) =>
       of(aTrend(ids ?? [])),
     );
@@ -234,7 +239,10 @@ describe('DashboardPage', () => {
       providers: [
         provideRouter([{ path: 'dashboard', component: DashboardPage }]),
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
-        { provide: DashboardClient, useValue: { getDashboard, getDashboardTrend } },
+        {
+          provide: DashboardClient,
+          useValue: { getDashboard, getDashboardTrend, getDashboardScopes },
+        },
         {
           provide: DashboardBoardClient,
           useValue: { getDashboardSwimlane, getDashboardWorkload },
@@ -269,6 +277,7 @@ describe('DashboardPage', () => {
 
   beforeEach(() => {
     clockMs = T0;
+    scopeChoices = aScopeChoices();
     unassignedRows = [unassignedRow];
     try {
       localStorage.clear();
@@ -281,7 +290,14 @@ describe('DashboardPage', () => {
 
   it('puts Needs attention first: overdue, unassigned and on hold, each with a count, an icon and a link that says what it opens', async () => {
     const el = await open();
-    expect(getDashboard).toHaveBeenCalledWith('30d', undefined, undefined, undefined, undefined);
+    expect(getDashboard).toHaveBeenCalledWith(
+      '30d',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'all',
+    );
 
     const group = el.querySelector('[data-group="attention"]')!;
     expect(text(group.querySelector('h2'))).toBe('Needs attention');
@@ -974,7 +990,14 @@ describe('DashboardPage', () => {
     await new Promise((r) => setTimeout(r, 900));
     harness.detectChanges();
     expect(getDashboard).toHaveBeenCalledTimes(2);
-    expect(getDashboard).toHaveBeenLastCalledWith('30d', undefined, undefined, undefined, true);
+    expect(getDashboard).toHaveBeenLastCalledWith(
+      '30d',
+      undefined,
+      undefined,
+      undefined,
+      true,
+      'all',
+    );
     expect(getTaskQueue.mock.calls.filter((c) => c[6] === true).length).toBe(2);
     expect(text(panel().querySelector('[data-total]'))).toBe('17');
     el.remove();
@@ -994,7 +1017,14 @@ describe('DashboardPage', () => {
     await undo.run();
     await settle();
     expect(getDashboard.mock.calls.length).toBeGreaterThan(reads);
-    expect(getDashboard).toHaveBeenLastCalledWith('30d', undefined, undefined, undefined, true);
+    expect(getDashboard).toHaveBeenLastCalledWith(
+      '30d',
+      undefined,
+      undefined,
+      undefined,
+      true,
+      'all',
+    );
     expect(getTaskQueue.mock.calls.length).toBeGreaterThan(queueReads);
     expect(el.querySelector('[data-panel="unassigned"] [data-task="TSK-21"]')).not.toBeNull();
   });
@@ -1159,6 +1189,7 @@ describe('DashboardPage', () => {
       undefined,
       undefined,
       undefined,
+      'all',
     );
     const trend = el.querySelector('[data-section="trend"] mf-dash-trends-tab')!;
     expect(trend.querySelector('[data-plot] svg')).not.toBeNull();
@@ -1191,7 +1222,14 @@ describe('DashboardPage', () => {
       await settle();
     };
     await pick('7d');
-    expect(getDashboard).toHaveBeenLastCalledWith('7d', undefined, undefined, undefined, true);
+    expect(getDashboard).toHaveBeenLastCalledWith(
+      '7d',
+      undefined,
+      undefined,
+      undefined,
+      true,
+      'all',
+    );
     expect(TestBed.inject(Router).url).toBe('/dashboard?period=7d');
     // 14 Oct 2026: the caption is the resolved range.
     expect(el.querySelector('[data-group="overview"]')!.textContent).toContain('Oct 8 to Oct 14');
@@ -1203,6 +1241,7 @@ describe('DashboardPage', () => {
       undefined,
       undefined,
       true,
+      'all',
     );
     expect(el.querySelector('[data-group="overview"]')!.textContent).toContain('Oct 1 to Oct 14');
 
@@ -1231,6 +1270,7 @@ describe('DashboardPage', () => {
       '2026-10-14',
       undefined,
       true,
+      'all',
     );
     expect(TestBed.inject(Router).url).toBe(
       '/dashboard?period=custom&from=2026-10-08&to=2026-10-14',
@@ -1268,6 +1308,7 @@ describe('DashboardPage', () => {
       '2026-10-14',
       undefined,
       true,
+      'all',
     );
   });
 
@@ -1283,7 +1324,14 @@ describe('DashboardPage', () => {
 
     TestBed.resetTestingModule();
     el = await open(of(summary()), ALL, '/dashboard?tab=trends');
-    expect(getDashboard).toHaveBeenCalledWith('90d', undefined, undefined, undefined, undefined);
+    expect(getDashboard).toHaveBeenCalledWith(
+      '90d',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'all',
+    );
     expect(getDashboardTrend).toHaveBeenCalledWith(
       '90d',
       undefined,
@@ -1292,6 +1340,7 @@ describe('DashboardPage', () => {
       undefined,
       undefined,
       undefined,
+      'all',
     );
     expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe('90d');
     // The remembered period is not written to the address by itself.
@@ -1316,7 +1365,14 @@ describe('DashboardPage', () => {
       localStorage.setItem('mf.dashboard.v2.1', JSON.stringify({ period: old }));
       const el = await open();
       expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe(now);
-      expect(getDashboard).toHaveBeenCalledWith(now, undefined, undefined, undefined, undefined);
+      expect(getDashboard).toHaveBeenCalledWith(
+        now,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'all',
+      );
       expect(TestBed.inject(Router).url).toBe('/dashboard');
       expect(JSON.parse(localStorage.getItem('mf.dashboard.v2.1')!)).toEqual({ period: now });
     }
@@ -1325,7 +1381,14 @@ describe('DashboardPage', () => {
   it('shows a long Coverage window as 30 days on Summary and Trends, and ignores a bad range in the link', async () => {
     let el = await open(of(summary()), ALL, '/dashboard?period=12m');
     expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe('30d');
-    expect(getDashboard).toHaveBeenCalledWith('30d', undefined, undefined, undefined, undefined);
+    expect(getDashboard).toHaveBeenCalledWith(
+      '30d',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'all',
+    );
 
     TestBed.resetTestingModule();
     el = await open(
@@ -1358,7 +1421,14 @@ describe('DashboardPage', () => {
     el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
     expect(el.querySelector('[aria-busy="true"][aria-label]')).toBeNull();
     await settle();
-    expect(getDashboard).toHaveBeenLastCalledWith('30d', undefined, undefined, undefined, true);
+    expect(getDashboard).toHaveBeenLastCalledWith(
+      '30d',
+      undefined,
+      undefined,
+      undefined,
+      true,
+      'all',
+    );
     expect(el.querySelector('[data-group="attention"]')).toBe(before);
   });
 
@@ -1411,6 +1481,7 @@ describe('DashboardPage', () => {
       undefined,
       undefined,
       undefined,
+      'all',
     );
     expect(el.querySelector('[data-lists]')).toBe(before);
   });
@@ -1756,6 +1827,268 @@ describe('DashboardPage', () => {
     it('P9: unknown parameters are dropped when the address is normalised', async () => {
       await open(of(summary()), ALL, '/dashboard?tab=breakdowns&utm_source=mail');
       expect(TestBed.inject(Router).url).toBe('/dashboard?tab=breakdowns');
+    });
+  });
+  describe('page-wide Scope (P1)', () => {
+    const router = () => TestBed.inject(Router);
+    const select = (el: HTMLElement) => el.querySelector<HTMLSelectElement>('select[data-scope]')!;
+    const pickScope = async (el: HTMLElement, value: string) => {
+      const sel = select(el);
+      sel.value = value;
+      sel.dispatchEvent(new Event('change'));
+      await settle();
+    };
+
+    it('someone in no pod gets All pods, sends podScope=all and has a labelled Scope select in the tab row, left of Refresh', async () => {
+      const el = await open();
+      expect(getDashboardScopes).toHaveBeenCalledTimes(1);
+      const sel = select(el);
+      expect(sel.value).toBe('all');
+      expect(text(el.querySelector('label[for="' + sel.id + '"]'))).toBe('Scope');
+      expect(Array.from(sel.options).map((o) => o.textContent!.trim())).toEqual(['All pods']);
+      const row = el.querySelector('[data-dash-head]')!;
+      expect(row.contains(sel)).toBe(true);
+      const refresh = row.querySelector('[data-refresh]')!;
+      expect(sel.compareDocumentPosition(refresh) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(getDashboard).toHaveBeenCalledWith(
+        '30d',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'all',
+      );
+      expect(router().url).toBe('/dashboard');
+    });
+
+    it('a member of a pod gets My pods by default (not written to the address), whatever their role', async () => {
+      scopeChoices = aMemberChoices();
+      const el = await open();
+      expect(select(el).value).toBe('mine');
+      expect(Array.from(select(el).options).map((o) => o.textContent!.trim())).toEqual([
+        'All pods',
+        'My pods',
+        'Review Alpha',
+        'Review Beta',
+        'Processing',
+      ]);
+      expect(getDashboard).toHaveBeenCalledWith(
+        '30d',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'mine',
+      );
+      expect(router().url).toBe('/dashboard');
+    });
+
+    it('a link names the scope and wins over the memory, which it does not change', async () => {
+      scopeChoices = aMemberChoices();
+      localStorage.setItem('mf.dashboard.scope.v1.1', 'all');
+      const el = await open(of(summary()), ALL, '/dashboard?tab=trends&pod=3');
+      expect(select(el).value).toBe('3');
+      expect(getDashboard).toHaveBeenCalledWith(
+        '30d',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        '3',
+      );
+      expect(getDashboardTrend).toHaveBeenCalledWith(
+        '30d',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        '3',
+      );
+      expect(router().url).toBe('/dashboard?tab=trends&pod=3');
+      expect(localStorage.getItem('mf.dashboard.scope.v1.1')).toBe('all');
+    });
+
+    it('uses the remembered choice when the link names none', async () => {
+      scopeChoices = aMemberChoices();
+      localStorage.setItem('mf.dashboard.scope.v1.1', 'all');
+      const el = await open();
+      expect(select(el).value).toBe('all');
+      expect(getDashboard).toHaveBeenCalledWith(
+        '30d',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'all',
+      );
+    });
+
+    it('a pod the person may not see falls back to the default with a note, and the address loses the parameter', async () => {
+      scopeChoices = aMemberChoices();
+      const el = await open(of(summary()), ALL, '/dashboard?pod=99');
+      expect(select(el).value).toBe('mine');
+      expect(text(el.querySelector('mf-dash-note'))).toContain(
+        'That pod is not available to you. Showing My pods.',
+      );
+      expect(router().url).toBe('/dashboard');
+      expect(getDashboard).toHaveBeenCalledWith(
+        '30d',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'mine',
+      );
+      expect(el.querySelector('[data-dash-state="error"]')).toBeNull();
+    });
+
+    it('reads the old Users pod filter once into pod and rewrites the address', async () => {
+      scopeChoices = aMemberChoices();
+      const el = await open(of(summary()), ALL, '/dashboard?tab=users&upod=3&uavail=out');
+      expect(router().url).toBe('/dashboard?tab=users&pod=3&uavail=out');
+      expect(select(el).value).toBe('3');
+      expect(getDashboardWorkload).toHaveBeenLastCalledWith(undefined, 'out', undefined, '3');
+    });
+
+    it('choosing a scope reads the figures and lists again for it, writes pod to the address, remembers it and announces it', async () => {
+      scopeChoices = aMemberChoices();
+      const el = await open();
+      const readsBefore = getTaskQueue.mock.calls.length;
+      await pickScope(el, '3');
+      expect(getDashboard).toHaveBeenLastCalledWith(
+        '30d',
+        undefined,
+        undefined,
+        undefined,
+        true,
+        '3',
+      );
+      expect(getTaskQueue.mock.calls.length).toBeGreaterThan(readsBefore);
+      expect(router().url).toBe('/dashboard?pod=3');
+      expect(localStorage.getItem('mf.dashboard.scope.v1.1')).toBe('3');
+      expect(text(el.querySelector('[data-dash-live]'))).toBe('Scope: Processing');
+
+      // Back to the default: the parameter leaves the address.
+      await pickScope(el, 'mine');
+      expect(router().url).toBe('/dashboard');
+      expect(text(el.querySelector('[data-dash-live]'))).toBe('Scope: My pods');
+    });
+
+    it('shows the skeleton while the new scope is read, never the old numbers under the new label', async () => {
+      scopeChoices = aMemberChoices();
+      const el = await open();
+      getDashboard.mockReturnValue(NEVER);
+      await pickScope(el, '1');
+      expect(
+        el.querySelector('[data-tabpanel="summary"] [role="status"][aria-busy="true"]'),
+      ).not.toBeNull();
+      expect(el.querySelector('mf-stat-tile')).toBeNull();
+      expect(select(el).value).toBe('1');
+    });
+
+    it('keeps the scope when the tab changes and reads only the tab on screen', async () => {
+      scopeChoices = aMemberChoices();
+      const el = await open(of(summary()), ALL, '/dashboard?pod=2');
+      el.querySelector<HTMLButtonElement>('[data-tab="users"]')!.click();
+      await settle();
+      expect(router().url).toBe('/dashboard?pod=2&tab=users');
+      expect(getDashboardWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, '2');
+      const summaryReads = getDashboard.mock.calls.length;
+      await pickScope(el, '1');
+      expect(getDashboard.mock.calls.length).toBe(summaryReads);
+      expect(getDashboardWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, '1');
+      expect(router().url).toBe('/dashboard?pod=1&tab=users');
+
+      // Swimlane gets it too, and the summary tabs read it when opened.
+      el.querySelector<HTMLButtonElement>('[data-tab="swimlane"]')!.click();
+      await settle();
+      expect(getDashboardSwimlane.mock.calls.at(-1)?.at(-1)).toBe('1');
+      el.querySelector<HTMLButtonElement>('[data-tab="summary"]')!.click();
+      await settle();
+      expect(getDashboard).toHaveBeenLastCalledWith(
+        '30d',
+        undefined,
+        undefined,
+        undefined,
+        true,
+        '1',
+      );
+    });
+
+    it('says how many unassigned tasks have no pod under a Pod scope, with a link that sets All pods; nothing under All pods', async () => {
+      scopeChoices = aMemberChoices();
+      const scoped = summary({ scope: { scope: 'mine', podIds: [1, 2], unassignedNoPod: 4 } });
+      const el = await open(of(scoped));
+      const hint = el.querySelector('[data-no-pod-hint]')!;
+      expect(text(hint)).toBe('4 unassigned tasks have no pod. Show all pods');
+      getDashboard.mockReturnValue(of(summary()));
+      (hint.querySelector('[data-show-all-pods]') as HTMLAnchorElement).click();
+      await settle();
+      expect(router().url).toBe('/dashboard?pod=all');
+      expect(select(el).value).toBe('all');
+      expect(el.querySelector('[data-no-pod-hint]')).toBeNull();
+    });
+
+    it('the singular and the zero case of the hint', async () => {
+      scopeChoices = aMemberChoices();
+      const one = await open(
+        of(summary({ scope: { scope: 'mine', podIds: [1], unassignedNoPod: 1 } })),
+      );
+      expect(text(one.querySelector('[data-no-pod-hint]'))).toContain(
+        '1 unassigned task has no pod.',
+      );
+      TestBed.resetTestingModule();
+      const none = await open(
+        of(summary({ scope: { scope: 'mine', podIds: [1], unassignedNoPod: 0 } })),
+      );
+      expect(none.querySelector('[data-no-pod-hint]')).toBeNull();
+    });
+
+    it('an empty pod still shows the tabs and the Scope select (only an empty department hides them)', async () => {
+      scopeChoices = aMemberChoices();
+      const empty = summary({
+        open: count(0, OPEN),
+        created: count(0, 'createdFrom=2026-09-15'),
+        completed: count(0, 'status=COMPLETED'),
+        unassigned: count(0, `${OPEN}&unassigned=true`),
+        overdue: count(0, OPEN),
+        dueSoon: count(0, OPEN),
+        onHold: count(0, 'status=ON_HOLD'),
+        asapOpen: count(0, OPEN),
+        overdueCritical: count(0, OPEN),
+        overdueHigh: count(0, OPEN),
+        scope: { scope: 'mine', podIds: [1], unassignedNoPod: 0 },
+      });
+      const el = await open(of(empty));
+      expect(el.querySelector('[data-empty]')).toBeNull();
+      expect(el.querySelector('[role="tablist"]')).not.toBeNull();
+      expect(select(el)).not.toBeNull();
+    });
+
+    it('the Technician variant (Unassigned only, no tab row) still has the control next to the heading and Refresh', async () => {
+      const el = await open(of(summary()), [
+        'Dashboard.View',
+        'Dashboard.ViewUnassigned',
+        'Task.View',
+      ]);
+      expect(el.querySelector('[role="tablist"]')).toBeNull();
+      expect(select(el)).not.toBeNull();
+      expect(el.querySelector('[data-refresh]')).not.toBeNull();
+    });
+
+    it('drill-through links of the tiles carry the pod filter the server put in their query', async () => {
+      scopeChoices = aMemberChoices();
+      const scoped = summary({
+        overdue: count(3, `${OPEN}&overdue=true&pod=1&pod=2`),
+        scope: { scope: 'mine', podIds: [1, 2], unassignedNoPod: 0 },
+      });
+      const el = await open(of(scoped));
+      const link = el.querySelector<HTMLAnchorElement>('[data-group="attention"] mf-stat-tile a')!;
+      expect(link.getAttribute('href')).toContain('pod=1&pod=2');
+      const lastQueueCall = getTaskQueue.mock.calls.at(-1)!;
+      expect(lastQueueCall).toBeDefined();
     });
   });
 });

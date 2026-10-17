@@ -14,7 +14,6 @@ import {
   filtersToParams,
   hasFilterParams,
   loadLevelOf,
-  podsOf,
   segmentsOf,
   sortUsers,
   thresholdText,
@@ -22,7 +21,7 @@ import {
   unassignedQueueParams,
   userQueueParams,
 } from './users-model';
-import { LEGEND, aBoard, aUser, outOfOffice } from './users-testing';
+import { LEGEND, aUser, outOfOffice } from './users-testing';
 
 describe('users model', () => {
   const ann = aUser(1, 'Ann Lee', [1, 2, 0, 0], { overdue: 2 });
@@ -152,11 +151,12 @@ describe('users model', () => {
 
   describe('filters and the address', () => {
     it('reads valid parameters and ignores the rest', () => {
-      const f = filtersFromParams(convertToParamMap({ upod: '3', uavail: 'out', uq: ' ann ' }));
-      expect(f).toEqual({ ...DEFAULT_FILTERS, pod: 3, availability: 'out', q: 'ann' });
-      expect(filtersFromParams(convertToParamMap({ upod: 'x', uavail: 'nope' }))).toEqual(
-        DEFAULT_FILTERS,
-      );
+      const f = filtersFromParams(convertToParamMap({ uavail: 'out', uq: ' ann ' }));
+      expect(f).toEqual({ ...DEFAULT_FILTERS, availability: 'out', q: 'ann' });
+      expect(filtersFromParams(convertToParamMap({ uavail: 'nope' }))).toEqual(DEFAULT_FILTERS);
+      // The Pod is the page-wide scope now: the old Users Pod parameter is no filter of the tab.
+      expect(filtersFromParams(convertToParamMap({ upod: '3' }))).toEqual(DEFAULT_FILTERS);
+      expect(hasFilterParams(convertToParamMap({ upod: '3' }))).toBe(false);
       expect(
         filtersFromParams(
           convertToParamMap({ uload: 'heavy,bogus,idle', uprio: '2', uavail: 'off' }),
@@ -169,27 +169,24 @@ describe('users model', () => {
 
     it('writes only what is set (null removes a parameter) and counts the filters', () => {
       expect(filtersToParams(DEFAULT_FILTERS)).toEqual({
-        upod: null,
         uavail: null,
         uq: null,
         uload: null,
         uprio: null,
       });
       const f = {
-        pod: 2,
         availability: 'available' as const,
         q: 'x',
         load: ['idle' as const, 'heavy' as const],
         priority: 1,
       };
       expect(filtersToParams(f)).toEqual({
-        upod: '2',
         uavail: 'available',
         uq: 'x',
         uload: 'idle,heavy',
         uprio: '1',
       });
-      expect(filterCount(f)).toBe(5);
+      expect(filterCount(f)).toBe(4);
       expect(filterCount(DEFAULT_FILTERS)).toBe(0);
     });
 
@@ -208,21 +205,6 @@ describe('users model', () => {
       expect(apiAvailability(f({ availability: 'off' }))).toBe('all');
       expect(apiAvailability(f({ availability: 'out' }))).toBe('out');
       expect(filterUsers(all, DEFAULT_FILTERS)).toHaveLength(all.length);
-    });
-
-    it('collects the pods seen on the board', () => {
-      const pods = podsOf(
-        aBoard([
-          ann,
-          aUser(8, 'Pat Poe', [0, 0, 0, 0], {
-            pods: [{ podId: 4, name: 'Pod D', isPrimary: false }],
-          }),
-        ]),
-      );
-      expect([...pods]).toEqual([
-        [1, 'Pod A'],
-        [4, 'Pod D'],
-      ]);
     });
   });
 
@@ -264,6 +246,14 @@ describe('users model', () => {
       expect(unassignedQueueParams()).toEqual({
         status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'],
         unassigned: 'true',
+        sort: 'priorityAge',
+        dir: 'asc',
+      });
+      // Under a Pod scope the queue carries the scope's pods, as the Unassigned number counts them.
+      expect(unassignedQueueParams(['1', '2'])).toEqual({
+        status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'],
+        unassigned: 'true',
+        pod: ['1', '2'],
         sort: 'priorityAge',
         dir: 'asc',
       });

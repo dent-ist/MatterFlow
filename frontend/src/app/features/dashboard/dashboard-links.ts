@@ -65,7 +65,7 @@ export const LIST_ORDER: Record<
 /** The Task Queue query of every open, unassigned task (what the department sees, and what a person with Task.Assign picks work from). */
 export const OPEN_UNASSIGNED_QUERY = 'status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true';
 
-/** Query parameters of the Users tab (`?tab=users&upod=..&uavail=..&uq=..`); the page clears them when another tab is chosen. */
+/** Query parameters of the Users tab (`?tab=users&uavail=..&uq=..`); the page clears them when another tab is chosen. `upod` is the old Pod filter, now the page-wide scope `pod`: only cleared here. */
 export const USERS_POD_PARAM = 'upod';
 export const USERS_AVAILABILITY_PARAM = 'uavail';
 export const USERS_Q_PARAM = 'uq';

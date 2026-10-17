@@ -49,6 +49,8 @@ import {
   resolveRange,
 } from '../dashboard-period';
 import { PeriodControl } from '../ui/period-control';
+import { DashScope } from '../dash-scope';
+import { ScopeControl } from '../ui/scope-control';
 import {
   DASHBOARD_TABS,
   DASHBOARD_TAB_LABELS,
@@ -127,6 +129,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
     DashSwimlaneTab,
     DashUsersTab,
     PeriodControl,
+    ScopeControl,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -339,6 +342,19 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                             aria-label="Unassigned, overdue and due soon tasks"
                             data-lists
                           >
+                            @if (noPodHint(); as hint) {
+                              <!-- Tasks with no pod are in no scope but All pods: a quiet line so they cannot be lost. -->
+                              <p class="no-pod" data-no-pod-hint>
+                                {{ hint.text }}
+                                <a
+                                  href="#"
+                                  class="no-pod-link"
+                                  data-show-all-pods
+                                  (click)="showAllPods($event)"
+                                  >Show all pods</a
+                                >
+                              </p>
+                            }
                             @for (panel of panels(); track panel.kind) {
                               <mf-dash-task-list
                                 [kind]="panel.kind"
@@ -455,6 +471,10 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                 </span>
               }
             </span>
+            <!-- The page-wide Scope (P1): All pods, My pods or one Pod, for every tab; left of Refresh. -->
+            @if (scope.ready()) {
+              <mf-dash-scope (scopeChange)="live.set($event)" />
+            }
             <!-- One icon-only Refresh for every tab, acting on the tab shown; the time of the last read is its tooltip, not visible text. -->
             <button
               type="button"
@@ -590,6 +610,17 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
     .head-period {
       margin-left: auto;
     }
+    .no-pod {
+      margin: 0;
+      font-size: var(--mf-fs-sm);
+      color: var(--mf-text-muted);
+    }
+    .no-pod-link {
+      display: inline-block;
+      min-height: 24px;
+      line-height: 24px;
+      color: var(--mf-link);
+    }
     .sr-only {
       position: absolute;
       width: 1px;
@@ -700,6 +731,7 @@ export class DashboardPage implements OnInit {
   private readonly auth = inject(AuthStore);
   private readonly lookups = inject(LookupStore);
   private readonly prefs = inject(DashboardPrefs);
+  protected readonly scope = inject(DashScope);
   private readonly undo = inject(UndoService);
   private readonly quiet = inject(QuietRequests);
   private readonly injector = inject(Injector);
@@ -715,6 +747,8 @@ export class DashboardPage implements OnInit {
   private lastLoadedAt = 0;
   /** The period (`periodId`) the summary on screen was read for. */
   private dataPeriod: string | null = null;
+  /** The scope the summary on screen was read for. */
+  private dataScope: string | null = null;
   private inflight = false;
   private retrying = false;
   /** When the summary on screen was last read successfully (epoch ms). */
@@ -796,9 +830,11 @@ export class DashboardPage implements OnInit {
     return tab !== null && SUMMARY_DATA_TABS.includes(tab);
   });
   /** What the page body shows: the board tabs never wait on the summary (P2); the others follow the state of the shared summary read. */
-  protected readonly viewState = computed<LoadState | 'board'>(() =>
-    this.summaryTab() ? this.state() : 'board',
-  );
+  protected readonly viewState = computed<LoadState | 'board'>(() => {
+    // Nothing is read before the scope is known, so the first read already has it.
+    if (!this.scope.ready()) return 'loading';
+    return this.summaryTab() ? this.state() : 'board';
+  });
   /** A one-line note under the tab row: why the tab shown is not the one in the link (R1). Dropped when the person moves to another tab. */
   protected readonly notice = signal<string | null>(null);
 
@@ -842,6 +878,15 @@ export class DashboardPage implements OnInit {
         query: d.dueSoon.query,
       },
     ];
+  });
+  /** "N unassigned tasks have no pod." under a Pod scope (null under All pods, or when there are none). */
+  protected readonly noPodHint = computed(() => {
+    const d = this.data();
+    const n = d?.scope?.unassignedNoPod ?? 0;
+    if (this.scope.isAll() || n === 0 || !this.panels().some((p) => p.kind === 'unassigned')) {
+      return null;
+    }
+    return { text: `${n} unassigned ${n === 1 ? 'task has' : 'tasks have'} no pod.` };
   });
   protected readonly lastKind = computed(() => this.panels().at(-1)?.kind ?? null);
 
@@ -945,6 +990,7 @@ export class DashboardPage implements OnInit {
     const d = this.data();
     return (
       this.fullSummary() &&
+      this.scope.isAll() &&
       !this.allowedTabs().some((t) => !SUMMARY_DATA_TABS.includes(t)) &&
       !!d &&
       d.open.count === 0 &&
@@ -956,9 +1002,36 @@ export class DashboardPage implements OnInit {
     void this.lookups.ensureLoaded();
     // The shared period (P3) is the address when it names one, else the remembered choice; settled before the first read.
     this.prefs.applyAddress((k) => this.route.snapshot.queryParamMap.get(k));
+    // The page-wide scope (P1): the address, else the remembered choice, else the default the server names for this person.
+    this.scope.ensureLoaded();
+    this.scope.applyAddress((k) => this.route.snapshot.queryParamMap.get(k));
     effect(() => {
       const params = this.queryParams();
-      untracked(() => this.prefs.applyAddress((k) => params.get(k)));
+      untracked(() => {
+        this.prefs.applyAddress((k) => params.get(k));
+        this.scope.applyAddress((k) => params.get(k));
+      });
+    });
+    // A new scope (the control, a pasted link, Back) reads everything the tab on screen shows again, with the skeleton and not the figures of the old scope;
+    // the other tabs read it when opened.
+    effect(() => {
+      const scope = this.scope.scope();
+      const ready = this.scope.ready();
+      untracked(() => {
+        if (ready && this.data() && this.summaryTab() && scope !== this.dataScope)
+          this.refreshScope();
+      });
+    });
+    // An address that names a Pod the person may not see shows the default scope and says so (R1 for the scope).
+    effect(() => {
+      const bad = this.scope.rejected();
+      untracked(() => {
+        if (bad !== null) {
+          this.notice.set(
+            `That pod is not available to you. Showing ${this.scope.labelOf(this.scope.defaultScope())}.`,
+          );
+        }
+      });
     });
     // A new period (the control, a pasted link, Back) reads the counts again when a tab that shows them is on screen; the other tabs read when opened.
     effect(() => {
@@ -985,6 +1058,11 @@ export class DashboardPage implements OnInit {
       const params = this.queryParams();
       const requested = this.tabParam();
       const allowed = this.allowedTabs();
+      const ready = this.scope.ready();
+      // Tracked: the address is normalised again once the scope choices are known.
+      const rule = ready
+        ? { isValid: (v: string) => this.scope.isValid(v), defaultValue: this.scope.defaultScope() }
+        : null;
       untracked(() => {
         if (!tab) return;
         const fallback = tabFallback(requested, allowed);
@@ -995,7 +1073,7 @@ export class DashboardPage implements OnInit {
               : `That tab does not exist. Showing ${DASHBOARD_TAB_LABELS[tab]}.`,
           );
         }
-        const canonical = canonicalParams(params, tab);
+        const canonical = canonicalParams(params, tab, rule);
         if (!sameParams(params, canonical)) {
           void this.router.navigate([], {
             relativeTo: this.route,
@@ -1017,8 +1095,9 @@ export class DashboardPage implements OnInit {
     // Summary, Breakdowns and Trends read the shared summary when one of them is shown; a payload read under a minute ago is reused (P2).
     effect(() => {
       const shown = this.summaryTab();
+      const ready = this.scope.ready();
       untracked(() => {
-        if (shown) this.ensureSummary();
+        if (shown && ready) this.ensureSummary();
       });
     });
     // The lists belong to the Summary tab and are read when it is shown (not on the other tabs): arriving on it with older lists reads them.
@@ -1089,6 +1168,23 @@ export class DashboardPage implements OnInit {
     this.load({ silent: true, fresh: true, announce: true });
   }
 
+  /** A new scope: the figures and the lists of the tab on screen are read again (the page shows the skeleton meanwhile, never the old scope's numbers under the new label). */
+  private refreshScope(): void {
+    this.load({ fresh: true });
+  }
+
+  protected showAllPods(event: Event): void {
+    event.preventDefault();
+    this.scope.choose('all');
+    this.live.set('Scope: All pods');
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { pod: this.scope.addressValue('all') },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
   /** Counts after a period change; the lists do not depend on the period, and the page keeps what it shows until the answer arrives. */
   private refreshNumbers(lists = false): void {
     this.load({ silent: true, fresh: true, lists });
@@ -1110,16 +1206,25 @@ export class DashboardPage implements OnInit {
     }
     const args = periodArgs(this.period());
     const readFor = periodId(this.period());
+    const readScope = this.scope.scope();
     // A background read reports its failure in the banner; the generic error toast would say the same thing again, elsewhere.
     const start = () =>
       this.api
-        .getDashboard(args.period, args.from, args.to, undefined, fresh ? true : undefined)
+        .getDashboard(
+          args.period,
+          args.from,
+          args.to,
+          undefined,
+          fresh ? true : undefined,
+          readScope,
+        )
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (summary) => {
             if (id !== this.requestId) return;
             this.inflight = false;
             this.dataPeriod = readFor;
+            this.dataScope = readScope;
             this.data.set(summary);
             this.state.set('ready');
             this.refreshing.set(false);
@@ -1170,6 +1275,10 @@ export class DashboardPage implements OnInit {
     const data = this.data();
     if (!data) {
       this.load();
+      return;
+    }
+    if (this.dataScope !== this.scope.scope()) {
+      this.refreshScope();
       return;
     }
     if (this.dataPeriod !== periodId(this.period())) {

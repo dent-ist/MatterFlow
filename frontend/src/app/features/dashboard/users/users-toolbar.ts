@@ -23,13 +23,8 @@ import {
 } from './users-model';
 import { UsersGlyph } from './users-glyph';
 
-export interface PodOption {
-  id: number;
-  label: string;
-}
-
 /**
- * The toolbar of the Users tab: search by name, pod, highest priority, availability and sort, then icon buttons: clear filters, tile size, the
+ * The toolbar of the Users tab: search by name, highest priority, availability and sort, then icon buttons: clear filters, tile size, the
  * cards or table view and the legend (pill colours, marks, load levels and what this view is not). It owns no state: every choice is emitted and the tab writes it to the address (the
  * filters) and to the remembered choices (sort, density, view).
  */
@@ -51,22 +46,6 @@ export interface PodOption {
         [value]="f.q"
         (searchChange)="filtersChange.emit({ q: $event })"
       />
-      @if (pods().length > 0 || f.pod !== null) {
-        <div class="fld">
-          <label class="lbl" for="wl-pod">Pod</label>
-          <select
-            id="wl-pod"
-            class="mf-control mf-control--compact"
-            data-filter="pod"
-            (change)="filtersChange.emit({ pod: num($any($event.target).value) })"
-          >
-            <option value="">All pods</option>
-            @for (p of pods(); track p.id) {
-              <option [value]="p.id" [selected]="f.pod === p.id">{{ p.label }}</option>
-            }
-          </select>
-        </div>
-      }
       <div class="fld">
         <label class="lbl" for="wl-prio">Highest priority</label>
         <select
@@ -414,7 +393,6 @@ export class UsersToolbar {
   readonly sort = input<UserSort>('load');
   readonly density = input<Density>('comfortable');
   readonly layout = input<Layout>('cards');
-  readonly pods = input<PodOption[]>([]);
   readonly priorities = input<readonly WorkloadPriority[]>([]);
   readonly thresholds = input<WorkloadThresholds | null>(null);
 

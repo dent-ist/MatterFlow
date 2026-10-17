@@ -18,7 +18,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import {
   DashboardBoardClient,
-  PodsClient,
   SwimlaneBoard,
   SwimlaneCard,
 } from '../../../api/generated/api-client';
@@ -30,7 +29,7 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { mfDate } from '../../../core/time/time';
 import { withoutDefaults } from '../dash-url-state';
 import { DashState, focusAfterRetry } from './dash-state';
-import { loadPodChoices } from '../../../shared/work-queue/pod-options';
+import { DashScope } from '../dash-scope';
 import { SwimlaneDrawer } from '../swimlane/swimlane-drawer';
 import { LaneMove, SwimlaneLane } from '../swimlane/swimlane-lane';
 import {
@@ -79,7 +78,6 @@ const EDIT_REFRESH_DELAY_MS = 900;
     <mf-swimlane-toolbar
       [view]="view()"
       [density]="density()"
-      [pods]="podOptions()"
       [people]="peopleOptions()"
       [types]="typeOptions()"
       [priorities]="priorityOptions()"
@@ -199,7 +197,7 @@ const EDIT_REFRESH_DELAY_MS = 900;
 })
 export class DashSwimlaneTab implements OnInit {
   private readonly api = inject(DashboardBoardClient);
-  private readonly pods = inject(PodsClient);
+  private readonly scope = inject(DashScope);
   private readonly auth = inject(AuthStore);
   private readonly lookups = inject(LookupStore);
   private readonly prefs = inject(SwimlanePrefs);
@@ -234,7 +232,6 @@ export class DashSwimlaneTab implements OnInit {
   protected readonly collapsed = signal<ReadonlySet<string>>(new Set());
   private readonly selectedId = signal<number | null>(null);
 
-  private readonly podChoices = signal<Option[]>([]);
   private readonly seenPeople = signal<ReadonlyMap<number, string>>(new Map());
   private readonly seenTypes = signal<ReadonlyMap<number, string>>(new Map());
 
@@ -294,13 +291,6 @@ export class DashSwimlaneTab implements OnInit {
     return null;
   });
 
-  protected readonly podOptions = computed<Option[]>(() => {
-    const selected = this.view().pod;
-    const list = this.podChoices();
-    return selected !== null && !list.some((p) => p.id === selected)
-      ? [...list, { id: selected, label: `Pod ${selected}` }]
-      : list;
-  });
   protected readonly peopleOptions = computed<Option[]>(() => {
     const list = this.optionsOf(this.seenPeople());
     const selected = Number(this.view().assignee);
@@ -329,6 +319,15 @@ export class DashSwimlaneTab implements OnInit {
         if (n === this.undoSeen) return;
         this.undoSeen = n;
         if (this.state() === 'ready') this.load({ silent: true });
+      });
+    });
+    // The page-wide scope changed (the control, a pasted link, Back): the board is read again for it.
+    let lastScope: string | undefined;
+    effect(() => {
+      const scope = this.scope.scope();
+      untracked(() => {
+        if (lastScope !== undefined && scope !== lastScope) this.load();
+        lastScope = scope;
       });
     });
     // The address changed under us (Back, a pasted link): follow it.
@@ -360,7 +359,6 @@ export class DashSwimlaneTab implements OnInit {
     if ([null, 'swimlane'].includes(params.get('tab'))) void this.writeUrl(true);
     this.load();
     this.startAutoRefresh();
-    void this.loadPods();
   }
 
   // ---- the view
@@ -414,6 +412,7 @@ export class DashSwimlaneTab implements OnInit {
       code,
       this.board()?.completedFrom ?? '',
       this.auth.profile()?.userId ?? 0,
+      this.scope.queueParam(),
     );
   }
 
@@ -441,13 +440,14 @@ export class DashSwimlaneTab implements OnInit {
           v.days,
           v.groupBy,
           v.sort,
-          v.pod ?? undefined,
+          undefined,
           v.assignee ?? undefined,
           v.type ?? undefined,
           v.priority ?? undefined,
           v.q || undefined,
           v.overdue ? true : undefined,
           v.mine ? true : undefined,
+          this.scope.scope(),
         )
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
@@ -496,25 +496,14 @@ export class DashSwimlaneTab implements OnInit {
   private remember(board: SwimlaneBoard): void {
     const people = new Map(this.seenPeople());
     const types = new Map(this.seenTypes());
-    const pods = new Map(this.podChoices().map((p) => [p.id, p.label] as const));
     for (const lane of board.lanes) {
       for (const c of lane.cards) {
         if (c.assignee) people.set(c.assignee.userId, c.assignee.displayName);
         types.set(c.taskTypeId, c.taskTypeName);
-        if (c.pod) pods.set(c.pod.podId, c.pod.name);
       }
     }
     if (people.size !== this.seenPeople().size) this.seenPeople.set(people);
     if (types.size !== this.seenTypes().size) this.seenTypes.set(types);
-    if (pods.size !== this.podChoices().length) this.podChoices.set(this.optionsOf(pods));
-  }
-
-  private async loadPods(): Promise<void> {
-    if (!this.auth.has('Pod.View')) return;
-    const choices = await loadPodChoices(this.pods, true);
-    const merged = new Map(this.podChoices().map((p) => [p.id, p.label] as const));
-    for (const o of choices.options) merged.set(o.id, o.name);
-    this.podChoices.set(this.optionsOf(merged));
   }
 
   private optionsOf(map: ReadonlyMap<number, string>): Option[] {

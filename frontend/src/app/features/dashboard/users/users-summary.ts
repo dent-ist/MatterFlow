@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
   WorkloadSummary,
   WorkloadThresholds,
   WorkloadUser,
 } from '../../../api/generated/api-client';
+import { DashScope } from '../dash-scope';
 import {
   AvailabilityFilter,
   LOAD_ICONS,
@@ -28,8 +29,8 @@ interface Chip {
  * The quick filters above the tiles, which are also the first part of the legend: Idle (nothing open), Light, Normal and Heavy load,
  * Out of office and Off hours, each a toggle with its icon, a short word and how many people it holds, plus "Unassigned tasks" (an icon link to
  * the Task Queue with the count). Load chips combine (any of them); Out of office and Off hours are the availability filter. Counts of the load
- * chips and Off hours follow the people on the board (pod and name filters apply); Unassigned (and Out of office while "Available" hides them)
- * come from the team summary, which ignores the pod, availability and name filters.
+ * chips and Off hours follow the people on the board (the page scope and the name filter apply); Unassigned (and Out of office while "Available" hides them)
+ * come from the team summary, which follows the page scope and ignores the availability and name filters.
  */
 @Component({
   selector: 'mf-users-summary',
@@ -56,7 +57,7 @@ interface Chip {
         class="chip chip--unassigned"
         data-summary-unassigned
         routerLink="/tasks"
-        [queryParams]="queue"
+        [queryParams]="queue()"
         title="Open tasks nobody has: open them in the Task Queue"
         [attr.aria-label]="'Unassigned tasks: ' + unassigned() + '. Open in the Task Queue'"
       >
@@ -162,7 +163,9 @@ export class UsersSummary {
   readonly loadToggle = output<LoadFilter>();
   readonly availabilityToggle = output<AvailabilityFilter>();
 
-  protected readonly queue = unassignedQueueParams();
+  /** The queue behind Unassigned: under a Pod scope only the scope's Pods, as the number counts. */
+  protected readonly queue = computed(() => unassignedQueueParams(this.scope.queueParam()));
+  private readonly scope = inject(DashScope);
   protected readonly unassigned = computed(() => {
     const s = this.summary();
     return s ? String(s.unassignedTasks) : '-';

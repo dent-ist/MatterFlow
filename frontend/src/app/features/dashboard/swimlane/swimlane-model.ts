@@ -40,7 +40,6 @@ export interface SwimlaneView {
   sort: SortKey;
   days: number;
   q: string;
-  pod: number | null;
   /** A user id as text, or `unassigned`. */
   assignee: string | null;
   type: number | null;
@@ -54,7 +53,6 @@ export const DEFAULT_VIEW: SwimlaneView = {
   sort: 'priority',
   days: DEFAULT_COMPLETED_DAYS,
   q: '',
-  pod: null,
   assignee: null,
   type: null,
   priority: null,
@@ -75,13 +73,13 @@ export function isCompletedDays(v: unknown): v is number {
   return typeof v === 'number' && (COMPLETED_WINDOWS as readonly number[]).includes(v);
 }
 
-/** The query parameters this tab owns; they are removed from the address when another tab is shown. */
+/**
+ * The query parameters this tab owns; they are removed from the address when another tab is shown. */
 export const VIEW_PARAMS = [
   'group',
   'sort',
   'days',
   'q',
-  'pod',
   'assignee',
   'type',
   'priority',
@@ -117,7 +115,6 @@ export function viewFromParams(
     sort: isSortKey(sort) ? sort : fallback.sort,
     days: isCompletedDays(days) ? days : fallback.days,
     q: (params.get('q') ?? '').trim(),
-    pod: positiveInt(params.get('pod')),
     assignee: assignee === 'unassigned' || positiveInt(assignee) !== null ? assignee : null,
     type: positiveInt(params.get('type')),
     priority: positiveInt(params.get('priority')),
@@ -133,7 +130,6 @@ export function viewToParams(view: SwimlaneView): Record<string, string | null> 
     sort: view.sort,
     days: String(view.days),
     q: view.q || null,
-    pod: view.pod === null ? null : String(view.pod),
     assignee: view.assignee,
     type: view.type === null ? null : String(view.type),
     priority: view.priority === null ? null : String(view.priority),
@@ -154,7 +150,6 @@ export function sameView(a: SwimlaneView, b: SwimlaneView): boolean {
 /** How many data filters are on (the number on the Filters button). "Only mine" has its own toggle and is not counted here. */
 export function filterCount(view: SwimlaneView): number {
   return (
-    (view.pod !== null ? 1 : 0) +
     (view.assignee !== null ? 1 : 0) +
     (view.type !== null ? 1 : 0) +
     (view.priority !== null ? 1 : 0) +
@@ -513,13 +508,15 @@ export function laneQueueParams(
   lane: LaneCode,
   completedFrom: string,
   myUserId: number,
+  pods: readonly string[] = [],
 ): Record<string, string | string[]> {
   const params: Record<string, string | string[]> = {
     status: lane === 'COMPLETED' ? ['COMPLETED', 'CANCELLED'] : [lane],
   };
   if (lane === 'COMPLETED') params['completedFrom'] = completedFrom;
   if (view.q) params['q'] = view.q;
-  if (view.pod !== null) params['pod'] = String(view.pod);
+  // The page-wide scope (P1): under a Pod scope the lane's link carries the Pods, as the lane's count is about them.
+  if (pods.length > 0) params['pod'] = [...pods];
   if (view.mine && myUserId > 0) params['assignee'] = String(myUserId);
   else if (view.assignee === 'unassigned') params['unassigned'] = 'true';
   else if (view.assignee !== null) params['assignee'] = view.assignee;

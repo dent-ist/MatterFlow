@@ -61,6 +61,7 @@ export function aBoard(
       total: users.length,
     },
     thresholds: { lightMax: 3, normalMax: 8 },
+    hiddenCount: 0,
     ...overrides,
   };
 }

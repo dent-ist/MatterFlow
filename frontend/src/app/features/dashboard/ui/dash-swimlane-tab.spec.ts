@@ -5,6 +5,7 @@ import { MessageService } from 'primeng/api';
 import { NEVER, of, throwError } from 'rxjs';
 import {
   DashboardBoardClient,
+  DashboardClient,
   PodsClient,
   SwimlaneBoard,
   SwimlaneCard,
@@ -13,6 +14,7 @@ import {
   TasksClient,
   UsersLookupClient,
 } from '../../../api/generated/api-client';
+import { scopesMock } from '../dash-scope-testing';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { Permission } from '../../../core/auth/permissions';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -199,6 +201,7 @@ describe('DashSwimlaneTab', () => {
         provideRouter([{ path: 'dashboard', component: DashSwimlaneTab }]),
         provideFakeMe(new FakeMeApi({ ...withPermissions(...permissions), userId: 5 })),
         { provide: DashboardBoardClient, useValue: { getDashboardSwimlane: getBoard } },
+        { provide: DashboardClient, useValue: { getDashboardScopes: scopesMock() } },
         { provide: TasksClient, useValue: tasks },
         {
           provide: TaskCommentsClient,
@@ -286,6 +289,7 @@ describe('DashSwimlaneTab', () => {
       undefined,
       undefined,
       undefined,
+      'all',
     );
     expect(url()).not.toContain('group=');
     expect(url()).not.toContain('sort=');
@@ -402,25 +406,26 @@ describe('DashSwimlaneTab', () => {
     it('opens a link with every parameter set, and sends them to the server', async () => {
       await open(
         of(board()),
-        '/dashboard?tab=swimlane&group=assignee&sort=created&days=14&q=acme&pod=3&assignee=unassigned&type=7&priority=2&overdue=true&mine=true',
+        '/dashboard?tab=swimlane&group=assignee&sort=created&days=14&q=acme&assignee=unassigned&type=7&priority=2&overdue=true&mine=true',
       );
       expect(getBoard).toHaveBeenCalledWith(
         14,
         'assignee',
         'created',
-        3,
+        undefined,
         'unassigned',
         7,
         2,
         'acme',
         true,
         true,
+        'all',
       );
       expect(q<HTMLSelectElement>('[data-group-by]').value).toBe('assignee');
       expect(q<HTMLSelectElement>('[data-days]').value).toBe('14');
       expect(q('[data-mine]').getAttribute('aria-pressed')).toBe('true');
-      // pod, assignee, type, priority and overdue are the five data filters; "Only mine" has its own toggle.
-      expect(text(q('[data-filter-count]'))).toBe('(5)');
+      // assignee, type, priority and overdue are the four data filters (the pod is the page-wide scope); "Only mine" has its own toggle.
+      expect(text(q('[data-filter-count]'))).toBe('(4)');
       q<HTMLButtonElement>('[data-filters]').click();
       await settle();
       expect(q<HTMLSelectElement>('[data-filter="priority"]').value).toBe('2');
@@ -441,6 +446,7 @@ describe('DashSwimlaneTab', () => {
         undefined,
         undefined,
         undefined,
+        'all',
       );
       await choose('[data-sort]', 'due');
       await choose('[data-days]', '30');
@@ -469,6 +475,7 @@ describe('DashSwimlaneTab', () => {
         undefined,
         undefined,
         undefined,
+        'all',
       );
       expect(url()).toContain('group=clientMatter');
       expect(q('[data-board]').getAttribute('data-density')).toBe('compact');
@@ -491,6 +498,7 @@ describe('DashSwimlaneTab', () => {
         undefined,
         undefined,
         true,
+        'all',
       );
       expect(JSON.parse(localStorage.getItem('mf.dashboard.swimlane.v1.5')!).mine).toBeUndefined();
     });
@@ -510,6 +518,7 @@ describe('DashSwimlaneTab', () => {
         undefined,
         undefined,
         true,
+        'all',
       );
       expect(url()).toContain('mine=true');
       q<HTMLButtonElement>('[data-filters]').click();
@@ -545,6 +554,7 @@ describe('DashSwimlaneTab', () => {
         undefined,
         undefined,
         undefined,
+        'all',
       );
     });
 

@@ -5861,6 +5861,15 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "podScope",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -5870,6 +5879,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DashboardSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/scopes": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "GetDashboardScopes",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardScopeChoices"
                 }
               }
             }
@@ -5940,6 +5969,15 @@
             "in": "query",
             "schema": {
               "type": "boolean"
+            }
+          },
+          {
+            "name": "podScope",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
             }
           }
         ],
@@ -6047,6 +6085,15 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "podScope",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -6094,6 +6141,22 @@
               "maxLength": 200,
               "minLength": 0,
               "type": "string"
+            }
+          },
+          {
+            "name": "podScope",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeNoPod",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -6164,6 +6227,15 @@
             "in": "query",
             "schema": {
               "type": "boolean"
+            }
+          },
+          {
+            "name": "podScope",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
             }
           }
         ],
@@ -10109,6 +10181,72 @@
           }
         }
       },
+      "DashboardScopeChoices": {
+        "required": [
+          "defaultScope",
+          "hasPods",
+          "pods"
+        ],
+        "type": "object",
+        "properties": {
+          "defaultScope": {
+            "type": "string"
+          },
+          "hasPods": {
+            "type": "boolean"
+          },
+          "pods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardScopePod"
+            }
+          }
+        }
+      },
+      "DashboardScopeInfo": {
+        "required": [
+          "scope",
+          "podIds",
+          "unassignedNoPod"
+        ],
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string"
+          },
+          "podIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "unassignedNoPod": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "DashboardScopePod": {
+        "required": [
+          "podId",
+          "name",
+          "isMine"
+        ],
+        "type": "object",
+        "properties": {
+          "podId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isMine": {
+            "type": "boolean"
+          }
+        }
+      },
       "DashboardSummary": {
         "required": [
           "period",
@@ -10127,7 +10265,8 @@
           "byStatus",
           "aging",
           "overdueCritical",
-          "overdueHigh"
+          "overdueHigh",
+          "scope"
         ],
         "type": "object",
         "properties": {
@@ -10194,6 +10333,9 @@
           },
           "overdueHigh": {
             "$ref": "#/components/schemas/DashboardCount"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/DashboardScopeInfo"
           }
         }
       },
@@ -16140,7 +16282,8 @@
           "priorities",
           "users",
           "summary",
-          "thresholds"
+          "thresholds",
+          "hiddenCount"
         ],
         "type": "object",
         "properties": {
@@ -16168,6 +16311,11 @@
           },
           "thresholds": {
             "$ref": "#/components/schemas/WorkloadThresholds"
+          },
+          "hiddenCount": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },

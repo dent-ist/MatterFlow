@@ -6,7 +6,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// <summary>The Dashboard request: how many days back "created" and "completed" look.</summary>
 public class DashboardQuery
 {
-    public static readonly IReadOnlyList<string> Keys = ["period", "from", "to", "periodDays", "fresh"];
+    public static readonly IReadOnlyList<string> Keys = ["period", "from", "to", "periodDays", "fresh", "podScope"];
 
     /// <summary>Period keyword: <c>7d</c>, <c>30d</c> (default), <c>90d</c>, <c>this-month</c>, <c>last-month</c>, <c>6m</c>, <c>12m</c> or <c>custom</c> (with <c>from</c> and <c>to</c>). Resolved in the viewer's time zone.</summary>
     [FromQuery(Name = "period")]
@@ -27,6 +27,10 @@ public class DashboardQuery
     /// <summary>True: skip the short server-side cache and compute the figures now (the Refresh button and a refresh after an edit on the page).</summary>
     [FromQuery(Name = "fresh")]
     public bool Fresh { get; init; }
+
+    /// <summary>The page-wide scope (P1, #89): <c>all</c> (default), <c>mine</c> (the caller's active Pods, resolved on the server) or a Pod id. A Pod that does not exist is 400 <c>UNKNOWN_POD</c>; one the caller may not see is 403.</summary>
+    [FromQuery(Name = "podScope"), StringLength(20)]
+    public string? PodScope { get; init; }
 }
 
 /// <summary>
@@ -87,13 +91,14 @@ public sealed record DashboardSummary(
     [property: Required] IReadOnlyList<DashboardBreakdownItem> ByStatus,
     [property: Required] IReadOnlyList<DashboardAgingBucket> Aging,
     [property: Required] DashboardCount OverdueCritical,
-    [property: Required] DashboardCount OverdueHigh);
+    [property: Required] DashboardCount OverdueHigh,
+    [property: Required] DashboardScopeInfo Scope);
 
 
 /// <summary>The request of the Trends tab: the period, the Task Types to draw a line for (at most <see cref="DashboardRules.MaxTrendTypes"/>) and optionally one metric.</summary>
 public class DashboardTrendQuery
 {
-    public static readonly IReadOnlyList<string> Keys = ["period", "from", "to", "periodDays", "taskTypeIds", "metric", "fresh"];
+    public static readonly IReadOnlyList<string> Keys = ["period", "from", "to", "periodDays", "taskTypeIds", "metric", "fresh", "podScope"];
 
     /// <summary>Period keyword: <c>7d</c>, <c>30d</c> (default), <c>90d</c>, <c>this-month</c>, <c>last-month</c>, <c>6m</c>, <c>12m</c> or <c>custom</c> (with <c>from</c> and <c>to</c>). Resolved in the viewer's time zone.</summary>
     [FromQuery(Name = "period")]
@@ -122,6 +127,10 @@ public class DashboardTrendQuery
     /// <summary>True: skip the short server-side cache and compute the figures now.</summary>
     [FromQuery(Name = "fresh")]
     public bool Fresh { get; init; }
+
+    /// <summary>The page-wide scope (P1, #89): <c>all</c> (default), <c>mine</c> (the caller's active Pods, resolved on the server) or a Pod id. A Pod that does not exist is 400 <c>UNKNOWN_POD</c>; one the caller may not see is 403.</summary>
+    [FromQuery(Name = "podScope"), StringLength(20)]
+    public string? PodScope { get; init; }
 }
 
 /// <summary>
