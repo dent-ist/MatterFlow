@@ -13,7 +13,7 @@ import {
 export interface WorkTab {
   key: string;
   label: string;
-  /** Count shown in parentheses; omitted while unknown. */
+  /** Count shown in parentheses; `null` while it is not known yet shows a reserved "(--)", undefined shows none. */
   count?: number | null;
   /** Bold the count while it is above zero (Active, Due soon). Other non-zero counts stay normal weight; zero counts are muted. */
   emphasize?: boolean;
@@ -51,7 +51,9 @@ export interface WorkTab {
           (keydown)="onKey($event, i)"
         >
           {{ tab.label }}
-          @if (tab.count !== undefined && tab.count !== null) {
+          @if (tab.count === null) {
+            <span class="count count--zero" data-count-pending aria-hidden="true">(--)</span>
+          } @else if (tab.count !== undefined) {
             <span
               class="count"
               [class.count--strong]="tab.emphasize && tab.count > 0"
@@ -110,8 +112,12 @@ export interface WorkTab {
       color: var(--mf-primary);
       font-weight: 600;
     }
+    /* Digits of one width and room for two of them: the number replaces "(--)" without moving the next tab (G4). */
     .count {
+      display: inline-block;
+      min-width: 2.4em;
       color: inherit;
+      font-variant-numeric: tabular-nums;
       font-weight: 400;
     }
     .count--zero {

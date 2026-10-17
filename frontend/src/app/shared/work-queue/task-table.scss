@@ -22,10 +22,6 @@
   font-size: var(--mf-fs-sm);
 }
 
-.wt-hint--show {
-  display: block;
-}
-
 @media (max-width: 1100px) {
   /* The first column stays in view while the rest scrolls. */
   .wt th:first-child,
@@ -70,15 +66,36 @@
   height: var(--mf-row-h);
 }
 
-/* Four pixels above and below a two-line title cell: nine rows fit under the filters and the strip at 1366x768 (A2). */
+/* Two pixels above and below a two-line title cell, and 6 px between its lines so the links keep 24 px of clear space (WCAG 2.2 2.5.8):
+   nine rows fit under the filters and the strip at 1366x768 (A2). */
 .wt td {
-  padding-block: var(--mf-s1);
+  padding-block: 2px;
 }
 
+/* Compact: one 36 px line (title only, Status and Due beside it), 11 rows at 1366x768. The line under the title and the folded progress go
+   to the tooltip; the "New" marker stays beside the title. */
 .wt--compact th,
 .wt--compact td {
   padding-block: 2px;
-  height: var(--mf-row-h-compact);
+  height: 36px;
+}
+
+.wt--compact .wt-titlebody {
+  display: flex;
+  gap: var(--mf-s2);
+}
+
+.wt--narrow .wt-title,
+.wt--compact .wt-title {
+  line-height: 24px;
+}
+
+.wt--compact .wt-subline {
+  display: contents;
+}
+
+.wt--compact .wt-sub {
+  display: none;
 }
 
 .wt th {
@@ -120,24 +137,45 @@ th[aria-sort='descending'] .wt-sort {
   white-space: nowrap;
 }
 
-/* Title takes the spare width: the link wraps to at most two lines, with a muted client / matter line under it. */
-.wt td[data-col='title'],
+/* Title takes the spare width: one line with an ellipsis (the whole title is the tooltip and the accessible description), and a muted
+   client / matter line under it. The other columns keep fixed widths, so nothing moves when the rows arrive (G4). */
 .wt th[data-col='title'] {
-  min-width: 180px;
-  max-width: 360px;
+  width: 99%;
+  min-width: 140px;
 }
 
 .wt-titlecell {
   display: flex;
-  align-items: flex-start;
   gap: var(--mf-s2);
-  min-width: 0;
+  width: 0;
+  min-width: 100%;
+}
+
+.wt th[data-col='ref'],
+.wt th[data-col='age'] {
+  min-width: 5.5rem;
+}
+
+.wt th[data-col='priority'] {
+  min-width: 8.7rem;
+}
+
+.wt:not(.wt--narrow) th[data-col='due'] {
+  min-width: 14.9rem;
+}
+
+.wt th[data-col='status'] {
+  min-width: 10.2rem;
+}
+
+.wt th[data-col='progress'] {
+  min-width: 11.9rem;
 }
 
 .wt-titlebody {
   display: grid;
   flex: 1;
-  gap: 2px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -205,14 +243,12 @@ th[aria-sort='descending'] .wt-sort {
 }
 
 .wt-title {
-  display: -webkit-box;
+  display: block;
   overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow-wrap: anywhere;
   color: var(--mf-link);
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Short, fixed-content columns never wrap: the Status badge, Priority, Due, Ref and dates stay whole. */
@@ -242,12 +278,13 @@ th[aria-sort='descending'] .wt-sort {
   background: var(--mf-surface-alt);
 }
 
-.wt-muted {
+.wt-muted,
+.wt-near,
+.wt-unassigned {
   color: var(--mf-text-muted);
 }
 
 .wt-unassigned {
-  color: var(--mf-text-muted);
   font-style: italic;
 }
 
@@ -271,6 +308,13 @@ th[aria-sort='descending'] .wt-sort {
   align-items: center;
   gap: var(--mf-s1);
   white-space: nowrap;
+}
+
+/* Below 760 px the label drops under the date. */
+.wt--narrow .wt-due {
+  flex-wrap: wrap;
+  width: 7.5rem;
+  white-space: normal;
 }
 
 .wt-due--overdue {
@@ -306,12 +350,11 @@ th[aria-sort='descending'] .wt-sort {
   cursor: pointer;
 }
 
-/* Inside a fixed-header page the grid's own box scrolls and the "scroll sideways" hint would only take pinned height: the region
-   is named "... list, scrollable" and the edge shadows show where columns are hidden. */
-@media (min-width: 768px) and (min-height: 561px) {
-  .wt-hint,
+/* Inside a fixed-header page (1024 px and up) the grid's own box scrolls, named "... list, scrollable", with edge shadows where columns
+   are hidden. Below that, and on short windows, the hint shows while the table is wider than its box (BUG-14). */
+@media (width < 1024px), (height <= 560px) {
   .wt-hint--show {
-    display: none;
+    display: block;
   }
 }
 
@@ -333,7 +376,8 @@ th[aria-sort='descending'] .wt-sort {
 
 /* A text filter must not widen its column: this table sizes its columns by their content, and an input's own preferred width (20
    characters) would take the room from the Title. It fills the cell instead of asking for room. */
-:host ::ng-deep .mf-filter-row .cf__input {
+:host ::ng-deep .mf-filter-row .cf__input,
+:host ::ng-deep .mf-filter-row mf-filter-control {
   width: 0;
   min-width: 100%;
 }
@@ -343,7 +387,6 @@ th[aria-sort='descending'] .wt-sort {
   position: sticky;
   left: 0;
   padding: var(--mf-s2) var(--mf-s3);
-  color: var(--mf-text-muted);
 }
 
 .wt-near > :first-child {

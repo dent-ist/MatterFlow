@@ -482,12 +482,62 @@ describe('TaskTable', () => {
     expect(sorts.every((s) => s === 'none')).toBe(true);
   });
 
-  it('shows loading as one row of the body under the headers and marks the table busy', async () => {
-    await create([], ['ref', 'title'], { state: 'loading' });
-    expect(el().querySelectorAll('thead th').length).toBe(2);
-    expect(el().querySelectorAll('tbody tr').length).toBe(1);
+  it('shows loading as eight skeleton rows under the headers, with one status row, and marks the table busy (G4)', async () => {
+    await create([], ['ref', 'title', 'status'], { state: 'loading' });
+    expect(el().querySelectorAll('thead th').length).toBe(3);
+    const skeletons = el().querySelectorAll('tbody tr[data-skeleton]');
+    expect(skeletons.length).toBe(8);
+    expect(skeletons[0].getAttribute('aria-hidden')).toBe('true');
+    // The cells carry the real columns, so the fixed widths apply.
+    expect(
+      Array.from(skeletons[0].querySelectorAll('td')).map((td) => td.getAttribute('data-col')),
+    ).toEqual(['ref', 'title', 'status']);
+    expect(el().querySelectorAll('tbody [data-loading]').length).toBe(1);
     expect(el().querySelector('tbody [data-loading]')!.textContent).toContain('Loading tasks');
     expect(el().querySelector('table')!.getAttribute('aria-busy')).toBe('true');
+  });
+
+  it('puts the whole title in the tooltip, and in Compact the line under it, the task number and the progress as well (M3, M3-Compact)', async () => {
+    await create([aRow()], ['ref', 'title']);
+    const link = () => cell('title').querySelector<HTMLAnchorElement>('a.wt-title')!;
+    expect(link().getAttribute('title')).toBe('Process Smith custodians');
+    expect(el().querySelector('table')!.classList).not.toContain('wt--compact');
+
+    fixture.componentRef.setInput('density', 'compact');
+    fixture.detectChanges();
+    expect(el().querySelector('table')!.classList).toContain('wt--compact');
+    expect(link().getAttribute('title')).toBe(
+      'Process Smith custodians\nTSK-1042 · 00343-00012 · Acme Corp · Merger Review',
+    );
+  });
+
+  it('on a tablet moves the task number under the title and lets the due cell wrap (BUG-14)', async () => {
+    await create([aRow()], ['ref', 'title', 'priority', 'due', 'status', 'pod', 'age']);
+    const keys = () => Array.from(el().querySelectorAll('th')).map((th) => th.textContent?.trim());
+    const inner = fixture.componentInstance as unknown as {
+      boxWidth: { set(n: number): void };
+      tablet: { set(v: boolean): void };
+    };
+    inner.boxWidth.set(900);
+    inner.tablet.set(true);
+    fixture.detectChanges();
+    expect(keys()).toEqual(['Title', 'Priority', 'Due', 'Status']);
+    expect(cell('title').querySelector('[data-sub-task]')!.textContent).toBe('TSK-1042');
+    expect(el().querySelector('table')!.classList).not.toContain('wt--narrow');
+
+    inner.boxWidth.set(664);
+    fixture.detectChanges();
+    expect(el().querySelector('table')!.classList).toContain('wt--narrow');
+    expect(cell('title').querySelector('[data-title-context]')!.getAttribute('title')).toBe(
+      'TSK-1042 · 00343-00012 · Acme Corp · Merger Review',
+    );
+
+    // A phone keeps the sideways-scrolling table until the cards of M11: the number stays in its own column.
+    inner.tablet.set(false);
+    inner.boxWidth.set(343);
+    fixture.detectChanges();
+    expect(keys()[0]).toBe('Ref');
+    expect(el().querySelector('[data-sub-task]')).toBeNull();
   });
 
   it('shows the error and the empty list as a row of the body, with the headers staying', async () => {

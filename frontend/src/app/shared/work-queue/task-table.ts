@@ -39,11 +39,20 @@ import { InlineField, canEditField } from './inline-edit';
 import { CLOSED_STATUSES, SortDirection } from './queue-filters';
 import { hasStepLink, stepLinkLabel, stepQueryParams } from './step-link';
 import { RowEdit } from './row-edit';
+import { TaskSkeleton } from './task-skeleton';
 
-/** Box widths (px) under which the lowest-priority columns drop out. */
+/**
+ * Box widths (px) under which the lowest-priority columns drop out. Workflow progress folds under the title below 1060 px, not the 1180
+ * px the review proposed: A2 and A3 (WP6b) took Matter out of the default set, so the title keeps 370 px at the 1098 px box of a 1366
+ * laptop, and folding there would add a third line to every row (nine rows would become seven).
+ */
 const PROGRESS_FOLDS_BELOW = 1060;
 const MATTER_HIDES_BELOW = 960;
 const PROJECT_HIDES_BELOW = 800;
+/** Tablets (viewport 640 to 1023 px): Pod, Age and the dates drop out, Ref moves under the title, and the due cell takes two lines. */
+const BAND_DROPS = ['pod', 'age', 'created', 'updated'];
+const TABLET = '(min-width: 640px) and (max-width: 1023.98px)';
+const NARROW_BELOW = 760;
 
 /**
  * The table behind Task Queue, My Work and Pod Work (UX 5.2, S02 to S04): a real `<table>` with sortable header buttons that
@@ -66,6 +75,7 @@ const PROJECT_HIDES_BELOW = 800;
     GridBody,
     ColumnFilterRow,
     NgTemplateOutlet,
+    TaskSkeleton,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -84,6 +94,7 @@ const PROJECT_HIDES_BELOW = 800;
       <table
         class="wt"
         [class.wt--compact]="density() === 'compact'"
+        [class.wt--narrow]="narrow()"
         [attr.aria-busy]="loading() ? 'true' : null"
       >
         <caption class="mf-sr-only">
@@ -125,7 +136,7 @@ const PROJECT_HIDES_BELOW = 800;
           mfGridBody
           noun="tasks"
           [state]="gridState()"
-          [empty]="rows().length === 0"
+          [empty]="rows().length === 0 && !skeleton()"
           [filtered]="filtered()"
           [emptyText]="emptyText()"
           [emptyParts]="emptyParts()"
@@ -133,6 +144,22 @@ const PROJECT_HIDES_BELOW = 800;
           (retry)="retry.emit()"
           (clear)="clearFilters.emit()"
         >
+          @if (skeleton()) {
+            <tr>
+              <td
+                class="mf-sr-only"
+                [attr.colspan]="columnCount()"
+                role="status"
+                aria-busy="true"
+                data-loading
+              >
+                Loading tasks...
+              </td>
+            </tr>
+            @for (n of skeletonRows; track n) {
+              <tr mfTaskSkeleton [columns]="shownKeyList()" [showAssign]="showAssign()"></tr>
+            }
+          }
           @for (row of rows(); track row.taskId) {
             <tr
               [class.wt-row--overdue]="row.isOverdue"
@@ -174,7 +201,7 @@ const PROJECT_HIDES_BELOW = 800;
                             [queryParams]="linkParams()"
                             [state]="linkState()"
                             [attr.data-task-id]="row.taskId"
-                            [attr.title]="row.title"
+                            [attr.title]="titleTip(row)"
                             (click)="drillOut($event, row)"
                             >{{ row.title }}</a
                           >
@@ -185,7 +212,7 @@ const PROJECT_HIDES_BELOW = 800;
                               [truncated]="row.holdReasonTruncated"
                             />
                           }
-                          @if (isNew(row) || !hideContext() || foldProgress()) {
+                          @if (isNew(row) || !hideContext() || foldProgress() || foldRef()) {
                             <span class="wt-subline">
                               @if (isNew(row)) {
                                 <span
@@ -195,9 +222,15 @@ const PROJECT_HIDES_BELOW = 800;
                                   >New</span
                                 >
                               }
-                              @if (!hideContext()) {
+                              @if (!hideContext() || foldRef()) {
                                 <span class="wt-sub" data-title-context [attr.title]="context(row)">
-                                  @if (refInSub()) {
+                                  @if (foldRef()) {
+                                    <span class="wt-mono" data-sub-task>{{ row.taskNumber }}</span>
+                                    @if (!hideContext()) {
+                                      ·
+                                    }
+                                  }
+                                  @if (refInSub() && !hideContext()) {
                                     @if (auth.canLink('matter')) {
                                       <a
                                         class="wt-mono wt-subref"
@@ -210,8 +243,10 @@ const PROJECT_HIDES_BELOW = 800;
                                     }
                                     ·
                                   }
-                                  {{ row.clientName }} · {{ row.matterName }}</span
-                                >
+                                  @if (!hideContext()) {
+                                    {{ row.clientName }} · {{ row.matterName }}
+                                  }
+                                </span>
                               }
                             </span>
                           }
@@ -449,6 +484,9 @@ export class TaskTable {
   /** Width of the table's box in px (0 until measured); narrow boxes drop the lowest-priority columns instead of scrolling. */
   protected readonly boxWidth = signal(0);
 
+  /** True on a tablet-sized window (640 to 1023 px): see `BAND_DROPS`. Phones keep the sideways-scrolling table until the cards of M11. */
+  private readonly tablet = signal(false);
+
   /** True while the table is wider than its box, so the "Scroll sideways" hint only appears when it is needed (UAT2-21). */
   protected readonly overflowing = signal(false);
 
@@ -519,6 +557,7 @@ export class TaskTable {
       if (!el) return;
       const measure = () => {
         this.boxWidth.set(el.clientWidth);
+        this.tablet.set(typeof matchMedia === 'function' && matchMedia(TABLET).matches);
         this.overflowing.set(el.scrollWidth > el.clientWidth + 1);
       };
       measure();
@@ -539,7 +578,8 @@ export class TaskTable {
     const state = this.state();
     // A failed load never leaves old rows under the message (G6): the error is the body.
     if (state === 'error') return 'error';
-    return this.rows().length > 0 ? 'ready' : state;
+    // Loading is the skeleton rows of this table, so the grid body shows its own rows for it (G4).
+    return this.rows().length > 0 || state === 'loading' ? 'ready' : state;
   });
   /**
    * Columns in table order. Below the width thresholds the lowest-priority columns drop out so Status and Due never scroll out of view
@@ -553,8 +593,26 @@ export class TaskTable {
     if (width > 0 && width < PROGRESS_FOLDS_BELOW) dropped.add('progress');
     if (width > 0 && width < MATTER_HIDES_BELOW && !this.hideContext()) dropped.add('matter');
     if (width > 0 && width < PROJECT_HIDES_BELOW) dropped.add('project');
-    return WORK_COLUMNS.filter((c) => c.locked || (wanted.has(c.key) && !dropped.has(c.key)));
+    if (width > 0 && this.tablet()) BAND_DROPS.forEach((k) => dropped.add(k));
+    if (this.foldRef()) dropped.add('ref');
+    return WORK_COLUMNS.filter((c) => (c.locked || wanted.has(c.key)) && !dropped.has(c.key));
   });
+
+  /** On a tablet the task number moves under the title, so the title is the first (sticky) column and Status, Priority and Due fit (BUG-14). */
+  protected readonly foldRef = computed(() => this.boxWidth() > 0 && this.tablet());
+
+  /**
+   * Below 760 px (tablets and phones) the due cell breaks into the date and the "Overdue 4d" label, and the title link is 24 px high: a
+   * narrow title sits right above the line under it, and two stacked links need their centres 24 px apart (WCAG 2.2 2.5.8).
+   */
+  protected readonly narrow = computed(() => this.boxWidth() > 0 && this.boxWidth() < NARROW_BELOW);
+
+  /** First load and tab change: the body shows skeleton rows (headers and filter row stay) instead of a one-row message (G4). */
+  protected readonly skeleton = computed(
+    () => this.state() === 'loading' && this.rows().length === 0,
+  );
+  protected readonly skeletonRows = [1, 2, 3, 4, 5, 6, 7, 8];
+  protected readonly shownKeyList = computed(() => this.shownColumns().map((c) => c.key));
 
   protected readonly columnCount = computed(
     () => this.shownColumns().length + (this.showAssign() ? 1 : 0),
@@ -627,6 +685,18 @@ export class TaskTable {
     return stepLinkLabel(row);
   }
 
+  /**
+   * The tooltip of a title (also its accessible description): the whole title, which the one-line cell may cut with an ellipsis; in the
+   * Compact density the line under it is hidden, so it carries that line and the progress as well.
+   */
+  protected titleTip(row: TaskQueueRow): string {
+    if (this.density() !== 'compact') return row.title;
+    const line = this.context(row);
+    const parts = [row.title, this.foldRef() ? line : `${row.taskNumber} · ${line}`];
+    if (this.foldProgress() && row.workflow.stepsTotal > 0) parts.push(this.progressTitle(row));
+    return parts.join('\n');
+  }
+
   protected progressTitle(row: TaskQueueRow): string {
     const w = row.workflow;
     if (w.stepsTotal === 0) return 'No workflow steps';
@@ -642,7 +712,8 @@ export class TaskTable {
   /** The full line under the title: "46044-00001 · Client · Matter" (the reference only where there is no Matter column). */
   protected context(row: TaskQueueRow): string {
     const text = `${row.clientName} · ${row.matterName}`;
-    return this.refInSub() ? `${row.matterRef} · ${text}` : text;
+    const line = this.refInSub() ? `${row.matterRef} · ${text}` : text;
+    return this.foldRef() ? `${row.taskNumber} · ${line}` : line;
   }
 
   /** The matter reference leads the line under the title unless the Matter column shows it (A2). */
