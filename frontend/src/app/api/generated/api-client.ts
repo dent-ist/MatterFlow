@@ -13028,6 +13028,8 @@ export interface TaskQueueRow {
     closedAtUtc: string | undefined;
     workflow: WorkflowProgress;
     rowVersion: string;
+    holdReason?: string | undefined;
+    holdReasonTruncated: boolean;
 
     [key: string]: any;
 }

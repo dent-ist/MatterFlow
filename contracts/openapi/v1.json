@@ -14263,7 +14263,8 @@
           "statusChangedAtUtc",
           "closedAtUtc",
           "workflow",
-          "rowVersion"
+          "rowVersion",
+          "holdReasonTruncated"
         ],
         "type": "object",
         "properties": {
@@ -14433,6 +14434,16 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "holdReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "holdReasonTruncated": {
+            "type": "boolean",
+            "default": false
           }
         }
       },

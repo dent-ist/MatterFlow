@@ -525,6 +525,14 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                 AssigneeIsActive = au != null && au.IsActive,
                 CreatorName = cu == null ? null : cu.DisplayName,
                 CreatorIsActive = cu != null && cu.IsActive,
+
+                // The reason of the latest hold (M12.2): read inline for On Hold rows only, so the page needs no extra statement.
+                HoldHtml = t.Status == TaskStatusCode.OnHold
+                    ? db.Set<TaskComment>().AsNoTracking()
+                        .Where(c => c.TaskId == t.Id && c.Purpose == TaskCommentPurpose.OnHold && !c.IsDeleted)
+                        .OrderByDescending(c => c.CreatedAtUtc).ThenByDescending(c => c.Id)
+                        .Select(c => c.BodyHtml).FirstOrDefault()
+                    : null,
             }).ToListAsync(ct);
 
         var labels = await db.Set<TaskStatusLabel>().AsNoTracking().ToDictionaryAsync(l => l.StatusCode, l => l.DisplayLabel, ct);
@@ -556,6 +564,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
 
             var t = d;
             var code = t.Status.ToCode();
+            var (holdReason, holdTruncated) = HoldReason(d.HoldHtml);
             result.Add(new TaskQueueRow(
                 t.Id,
                 t.Number,
@@ -592,11 +601,25 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                 DateTime.SpecifyKind(t.StatusChangedAtUtc, DateTimeKind.Utc),
                 t.Status is TaskStatusCode.Completed or TaskStatusCode.Cancelled ? DateTime.SpecifyKind(t.StatusChangedAtUtc, DateTimeKind.Utc) : (DateTime?)null,
                 progress.GetValueOrDefault(t.WorkflowInstanceId, new WorkflowProgress(0, 0, null, null)),
-                Convert.ToBase64String(t.RowVersion)));
+                Convert.ToBase64String(t.RowVersion),
+                holdReason,
+                holdTruncated));
         }
 
         return result;
     }
+
+    /// <summary>Plain text of a hold comment (markup stripped, whitespace collapsed), at most <see cref="HoldReasonMaxLength"/> characters.</summary>
+    internal static (string? Reason, bool Truncated) HoldReason(string? html)
+    {
+        var text = System.Text.RegularExpressions.Regex.Replace(CommentHtml.ToPlainText(html), @"\s+", " ").Trim();
+        if (text.Length == 0)
+            return (null, false);
+
+        return text.Length <= HoldReasonMaxLength ? (text, false) : (text[..HoldReasonMaxLength].TrimEnd(), true);
+    }
+
+    private const int HoldReasonMaxLength = 200;
 
     private static DateTime? Utc(DateTime? value) => value is { } v ? DateTime.SpecifyKind(v, DateTimeKind.Utc) : null;
 
@@ -683,5 +706,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         public string? CreatorName { get; init; }
 
         public bool CreatorIsActive { get; init; }
+
+        public string? HoldHtml { get; init; }
     }
 }
