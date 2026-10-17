@@ -73,6 +73,7 @@ import { canonicalParams, clearedTabParams, sameParams, tabFallback } from '../d
 import { FRESH_FOR_MS, STALE_CHECK_MS, staleAgeText } from '../dash-stale';
 import { DASH_FIXED_QUERY, DASH_FIXED_WIDE_QUERY, mediaMatch } from '../ui/dash-media';
 import { DashNote } from '../ui/dash-note';
+import { DashSkeleton, DashSkeletonKind } from '../ui/dash-skeleton';
 import { DashState, focusAfterRetry } from '../ui/dash-state';
 import { DashSection } from '../ui/dash-section';
 import { DashSwimlaneTab } from '../ui/dash-swimlane-tab';
@@ -125,6 +126,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
   selector: 'mf-dashboard-page',
   imports: [
     FixedPage,
+    DashSkeleton,
     DashState,
     DashNote,
     DashBreakdownsTab,
@@ -183,16 +185,11 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
               [id]="panelId(activeTab()!)"
               [attr.aria-labelledby]="labelledBy()"
             >
-              <div
-                class="skeletons"
-                role="status"
-                aria-busy="true"
-                aria-label="Loading the dashboard"
-              >
-                @for (n of skeletonTiles; track n) {
-                  <div class="skeleton"></div>
-                }
-              </div>
+              <mf-dash-skeleton
+                [kind]="skeletonKind()"
+                [chrome]="skeletonChrome()"
+                label="Loading the dashboard"
+              />
             </div>
           }
           @case ('error') {
@@ -369,8 +366,13 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                             class="summary-lists"
                             role="group"
                             aria-label="Unassigned, overdue and due soon tasks"
+                            [attr.aria-busy]="listsLoading() ? 'true' : null"
                             data-lists
                           >
+                            <!-- The lists' silhouettes are decorative: one polite status for all of them. -->
+                            <span class="sr-only" role="status" data-lists-status>{{
+                              listsLoading() ? 'Loading the task lists' : ''
+                            }}</span>
                             @if (noPodHint(); as hint) {
                               <!-- Tasks with no pod are in no scope but All pods: a quiet line so they cannot be lost. -->
                               <p class="no-pod" data-no-pod-hint>
@@ -439,7 +441,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                             [refreshKey]="d.generatedAtUtc"
                           />
                         } @placeholder {
-                          <p class="soon-load" role="status">Loading the trend.</p>
+                          <mf-dash-skeleton kind="trends" label="Loading the trend" />
                         }
                       </mf-dash-section>
                     </div>
@@ -464,7 +466,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
               @defer (on immediate) {
                 <mf-dash-swimlane-tab />
               } @placeholder {
-                <p class="soon-load" role="status">Loading the swimlane board.</p>
+                <mf-dash-skeleton kind="swimlane" label="Loading the swimlane board" />
               }
             </div>
           }
@@ -479,7 +481,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
               @defer (on immediate) {
                 <mf-dash-users-tab />
               } @placeholder {
-                <p class="soon-load" role="status">Loading team workload.</p>
+                <mf-dash-skeleton kind="users" label="Loading team workload" />
               }
             </div>
           }
@@ -695,23 +697,20 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
       }
     }
     /* Compact fixed-width tiles, left-aligned: they never stretch to fill the row. */
-    .tiles,
-    .skeletons {
+    .tiles {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(170px, 220px));
       justify-content: start;
       gap: var(--mf-s3);
     }
     @media (max-width: 480px) {
-      .tiles,
-      .skeletons {
+      .tiles {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: var(--mf-s2);
       }
     }
     @media (max-width: 340px) {
-      .tiles,
-      .skeletons {
+      .tiles {
         grid-template-columns: minmax(0, 1fr);
       }
     }
@@ -724,18 +723,6 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
     @media (max-width: 900px) {
       .grid {
         grid-template-columns: minmax(0, 1fr);
-      }
-    }
-    .skeleton {
-      height: 6.25rem;
-      background: var(--mf-surface-alt);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-lg);
-      animation: pulse 1.4s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      50% {
-        opacity: 0.55;
       }
     }
     .empty-icon {
@@ -810,7 +797,6 @@ export class DashboardPage implements OnInit {
   /** Fixed layout with the lists under the tiles (under 1280 px): the Summary scrolls as one region. */
   protected readonly summaryScrolls = computed(() => this.fixed() && !this.fixedWide());
   protected readonly scopeNote = PERIOD_SCOPE_NOTE;
-  protected readonly skeletonTiles = [1, 2, 3, 4, 5, 6, 7, 8];
   protected readonly panelId = panelId;
   protected readonly tabId = tabId;
   /** The period of Summary and Trends: the shared one (address, else memory); the long Coverage windows read as the default here. */
@@ -882,6 +868,23 @@ export class DashboardPage implements OnInit {
   });
   private readonly tabParam = computed(() => this.queryParams().get('tab'));
   /** The tab shown: the one in the address when it is permitted, else the first permitted tab (a deep link to a forbidden tab falls back); null without any tab. */
+  /** A list of the Summary is still reading its rows (they come from the Task Queue, after the figures). */
+  protected readonly listsLoading = computed(() =>
+    this.panels().some((p) => this.listOf(p.kind).state === 'loading'),
+  );
+  /** The silhouette of the tab whose first read is on its way (the summary feeds Summary, Breakdowns and Trends; the other tabs read their own endpoints). */
+  protected readonly skeletonKind = computed<DashSkeletonKind>(() => {
+    const tab = this.activeTab();
+    if (tab === 'users')
+      return this.queryParams().get('view') === 'coverage' ? 'coverage' : 'users';
+    return tab === 'breakdowns' || tab === 'trends' || tab === 'swimlane' ? tab : 'summary';
+  });
+  /** Swimlane and Users draw toolbars above their content: the silhouette of a tab that is not mounted yet (the Scope is unknown) draws them too. */
+  protected readonly skeletonChrome = computed(() => {
+    const tab = this.activeTab();
+    return tab === 'swimlane' || tab === 'users';
+  });
+
   protected readonly activeTab = computed<DashboardTab | null>(() => {
     const fromUrl = this.tabParam();
     const allowed = this.allowedTabs();

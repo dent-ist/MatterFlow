@@ -30,6 +30,7 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { mfDate } from '../../../core/time/time';
 import { USERS_VIEW_PARAM } from '../dashboard-links';
 import { withoutDefaults } from '../dash-url-state';
+import { DashSkeleton } from './dash-skeleton';
 import { DashState, focusAfterRetry } from './dash-state';
 import { DashScope } from '../dash-scope';
 import { CoverageView } from '../users/coverage-view';
@@ -102,6 +103,7 @@ export const USERS_PAGE = 200;
     UsersDrawer,
     UsersAssign,
     CoverageView,
+    DashSkeleton,
     DashState,
     ScrollArea,
   ],
@@ -165,6 +167,12 @@ export const USERS_PAGE = 200;
               {{ line.action }}
             </button>
           </p>
+        } @else if (populationGhost()) {
+          <!-- Holds the room of the line that arrives with the board (it wraps under the chips on a laptop), so the tiles do not move down. -->
+          <p class="population population--ghost" aria-hidden="true">
+            <span>Showing 000 people who can take work. 000 others are hidden.</span>
+            <span class="link">Show them</span>
+          </p>
         }
       </mf-users-summary>
 
@@ -192,17 +200,7 @@ export const USERS_PAGE = 200;
             </p>
           }
           @case ('loading') {
-            <div
-              class="grid"
-              role="status"
-              aria-busy="true"
-              aria-label="Loading the team workload"
-              data-users-loading
-            >
-              @for (n of bones; track n) {
-                <span class="bone" aria-hidden="true"></span>
-              }
-            </div>
+            <mf-dash-skeleton kind="users" label="Loading the team workload" data-users-loading />
           }
           @default {
             @if (users().length === 0) {
@@ -329,6 +327,15 @@ export const USERS_PAGE = 200;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
+    .population--ghost {
+      visibility: hidden;
+    }
+    /* The real line wraps under the chips on a laptop (the chips are wider once they hold numbers); the placeholder does the same. */
+    @media (max-width: 1599px) {
+      .population--ghost {
+        width: 100%;
+      }
+    }
     .population .link {
       padding: 0;
       color: var(--mf-primary);
@@ -378,19 +385,6 @@ export const USERS_PAGE = 200;
       gap: var(--mf-s2);
       margin: var(--mf-s3) 0 0;
       color: var(--mf-text-muted);
-    }
-    .bone {
-      display: block;
-      min-height: 3.2rem;
-      background: var(--mf-surface-alt);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-lg);
-      animation: pulse 1.4s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      50% {
-        opacity: 0.55;
-      }
     }
     .empty {
       display: flex;
@@ -450,7 +444,6 @@ export class DashUsersTab implements OnInit {
   private readonly coverage = viewChild(CoverageView);
   readonly refreshFailed = signal(false);
   protected readonly live = signal('');
-  protected readonly bones = Array.from({ length: 24 }, (_, i) => i);
   protected readonly version = signal(0);
 
   private readonly drawerId = signal<number | null>(null);
@@ -480,6 +473,10 @@ export class DashUsersTab implements OnInit {
       action: 'Show them',
     };
   });
+  /** The first read of the board is on its way and the line may come with it (the whole department). */
+  protected readonly populationGhost = computed(
+    () => this.state() === 'loading' && this.scope.isAll(),
+  );
   protected readonly filtered = computed(() => filterCount(this.filters()) > 0);
   /** The table header reverses the order of the chosen sort; the toolbar select resets it. */
   protected readonly sortReversed = signal(false);

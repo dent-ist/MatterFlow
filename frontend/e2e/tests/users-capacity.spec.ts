@@ -460,6 +460,60 @@ test.describe('Users tab: capacity, population and toolbar', () => {
   });
 });
 
+test.describe('capacity strip on a big board', () => {
+  test('every segment is a 24 px target at 375 and 1366 px, with one Idle person among hundreds, and axe finds nothing', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    // A data-heavy department made from the seeded board: one Idle person, hundreds of Light, Normal and Heavy ones. The Idle share is far under a
+    // pixel of the strip, which used to squeeze its segment below the minimum target size (axe target-size at 375 px).
+    await page.route('**/api/v1/dashboard/workload**', async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      const real = body.users as Json[];
+      const users: Json[] = [];
+      let id = 900_000;
+      for (const level of ['IDLE', 'LIGHT', 'NORMAL', 'HEAVY']) {
+        const count = level === 'IDLE' ? 1 : 150;
+        for (let i = 0; i < count; i++) {
+          const base = real[i % real.length];
+          users.push({
+            ...base,
+            userId: id++,
+            displayName: `${level} ${i + 1} ${base.displayName}`,
+            loadLevel: level,
+          });
+        }
+      }
+      body.users = users;
+      await route.fulfill({ response, json: body });
+    });
+    for (const [width, height] of [
+      [375, 812],
+      [1366, 768],
+    ]) {
+      await page.setViewportSize({ width, height });
+      await page.goto(`/dashboard?tab=users&uq=${wl.tag}`);
+      const segments = page.locator('[data-capacity-bar] [data-segment]');
+      await expect(segments).toHaveCount(4);
+      for (const level of ['idle', 'light', 'normal', 'heavy']) {
+        const box = await page
+          .locator(`[data-capacity-bar] [data-segment="${level}"]`)
+          .boundingBox();
+        expect(box!.width, `${level} width at ${width}`).toBeGreaterThanOrEqual(24);
+        expect(box!.height, `${level} height at ${width}`).toBeGreaterThanOrEqual(24);
+      }
+      // The strip stays inside its row: no horizontal page scroll.
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+      if (axeAvailable()) {
+        expect(await axeViolations(page), `strip ${width}`).toEqual([]);
+      }
+    }
+  });
+});
+
 const FIRST =
   'Ana Ben Cai Dev Eli Fay Gus Hal Ida Jon Kay Leo Mia Ned Ola Pat Quin Rae Sam Tia Uma Vic Wes Xia Yan Zoe Amir Bea Carl Dina Evan Faye Gil Hana Ivo Jade Kofi Lena Milo Nia'.split(
     ' ',

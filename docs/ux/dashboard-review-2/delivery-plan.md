@@ -129,7 +129,86 @@ Issues closed, tests green twice, axe clean, three screenshots per changed scree
 
 ## 5. Status
 
-(One line per work package; keep the other packages' lines when merging.)
+Last updated by WP12 (Polish), 2026-10-17. Every approved finding is delivered on `dev` except the part of T8 (#121) listed under "Intentionally open". The per-package notes below the tables keep the detail (what changed, what was tested, where the screenshots are).
+
+### 5.1 Issues
+
+Closed unless stated. The SHA is the commit that delivered the issue (follow-up fixes in the package note).
+
+| Issue | ID | Status | SHA | Package |
+|---|---|---|---|---|
+| #82 | S2 Overdue order, Critical count | closed | `949b47f` | other agent |
+| #89 | P1 Scope | closed | `e35531d` | WP4 |
+| #90 | P2 Tab isolation (B1) | closed | `e405d42` | WP1 |
+| #91 | P3 Period model (C4) | closed | `38d6750` | WP3 |
+| #92 | P4 Compact header | closed | `190521e` | WP2 |
+| #93 | P5 Width cap lift | closed | `190521e`, verified in `622555c` | WP2, WP9b |
+| #94 | P6 Updated N min ago | closed | `e405d42` | WP1 |
+| #95 | P7 Shared state component | closed | `e405d42`, `9a33924` | WP1 |
+| #96 | P8 Skeleton silhouettes | closed | WP12 commit (below) | WP12 |
+| #97 | P9 Defaults out of the URL (B7) | closed | `e405d42`, `9a33924` | WP1 |
+| #98 | R1 Fallback note | closed | `e405d42` | WP1 |
+| #99 | R2 Hide menu item | closed | `e405d42` | WP1 |
+| #100 | R3 Single-tab tab row | closed | `190521e` | WP2 |
+| #137 | Fixed-height tabs (added by the owner) | closed | `190521e` | WP2 |
+| #101 | S1 First-screen lists | closed | `0999d84` | WP5 |
+| #102 | S3 Tile deltas | closed | `f3c6093`, `c233c05` | WP6 |
+| #103 | S4 Due soon caption (B6) | closed | `0999d84` | WP5 |
+| #104 | S5 Captions at 375 (B3) | closed | `0999d84` | WP5 |
+| #105 | S6 Assign toast (B5) | closed | `0999d84` | WP5 |
+| #106 | S7 Type, client, due chip | closed | `0999d84` | WP5 |
+| #107 | S8 Section names | closed | `0999d84` | WP5 |
+| #108 | S9 Technician Summary | closed | `f3c6093`, `b9cbe09` | WP6 |
+| #109 | Breakdowns B1 Overdue share | closed | `0b52de5` | WP7 |
+| #110 | Breakdowns B2 Age buckets | closed | `0b52de5` | WP7 |
+| #111 | Breakdowns B3 Card grid | closed | `0b52de5` | WP7 |
+| #112 | Breakdowns B4 Low vs Normal | closed | `0b52de5` | WP7 |
+| #113 | Breakdowns B5 One title per card | closed | `0b52de5` | WP7 |
+| #114 | T1 Chart fills its card | closed (sticky dropped, see WP2) | `3d30d26`, `190521e` | WP8a, WP2 |
+| #115 | T2 Y axis (B2) | closed | `3d30d26` | WP8a |
+| #116 | T3 Stocks in a second panel | closed | `3d30d26` | WP8a |
+| #117 | T4 End labels, markers | closed | `b8dc5c2`, `4cdbbbb` | WP8b |
+| #118 | T5 Monday ticks | closed | `b8dc5c2`, `4cdbbbb` | WP8b |
+| #119 | T6 Measure selector | closed | `3d30d26` | WP8a |
+| #120 | T7 Open at end of day | closed | `cf5f30c`, `b8dc5c2`, `3046e82` | WP8b |
+| #121 | T8 375 px layout, headings | **open** (see below) | `b8dc5c2`, `4cdbbbb` | WP8b |
+| #122 | W1 One-line compact card | closed | `ba6b0d0` | WP9a |
+| #123 | W2 Lane counts link | closed | `ba6b0d0` | WP9a |
+| #124 | W3 No repeated client or matter | closed | `ba6b0d0` | WP9a |
+| #125 | W4 Lane switcher | closed | `622555c`, `c83baa3` | WP9b |
+| #126 | W5 Big-screen verification | closed (PM accepted 5 whole Comfortable cards at 1920x1080, target was 6; Compact shows 17) | `622555c` | WP9b |
+| #127 | U1 Capacity strip | closed | `bbdfd04` | WP10a |
+| #128 | U2 Text switch | closed | `bbdfd04` | WP10a |
+| #129 | U3 Table (B4) | closed | `4679df8` | WP10b |
+| #130 | U4 Can take work | closed | `bbdfd04` | WP10a |
+| #131 | U5 Drawer rows | closed | `4679df8` | WP10b |
+| #132 | U6 Assign picker | closed | `4679df8` | WP10b |
+| #133 | U7 Idle tint | closed | `bbdfd04` | WP10a |
+| #134 | C1 By task type | closed | `1af5c34` | WP11 |
+| #135 | C2 Quieter matrix | closed | `1af5c34` | WP11 |
+| #136 | C3 No one vs one person | closed | `1af5c34` | WP11 |
+
+### 5.2 Epics
+
+| Epic | State | Note |
+|---|---|---|
+| #83 Page-wide | closed with #96 | every child closed (#89-#100, #137) |
+| #84 Summary | closed | every child closed (#101-#108; #82 closed earlier) |
+| #85 Breakdowns | closed | every child closed |
+| #86 Trends | **open** | #121 is open on purpose |
+| #87 Swimlane | closed | every child closed |
+| #88 Users | closed | every child closed |
+
+### 5.3 Intentionally open
+
+- **#121 (T8) and with it epic #86.** At 375 px the chart is 271 px wide, not the 343 px of the acceptance text: the app shell keeps a 56 px rail at that width, so the content column is 271 px. Everything else of T8 is done (16:9 chart, Compare task types disclosure, tap tooltip, one title per panel). Widening the chart needs a shell decision (collapse or overlay the rail on phones), which is outside the Dashboard and was not approved in review 2. Close #121 and #86 when the shell change lands or the owner accepts 271 px.
+- Not approved and not built (section top): Wall mode, saved views, thresholds, print stylesheet, quick actions and bulk select, colour token system, copy-link icon, exports and reports.
+
+### 5.4 Work packages
+
+(One entry per work package, newest packages first within each wave; keep the other packages' entries when merging.)
+
+- WP12 Polish (#96 P8, plus a docs sweep and one accessibility fix): one `mf-dash-skeleton` component (`ui/dash-skeleton.ts`) with a silhouette per tab, used for the first read of each tab and for a new Scope. Summary: two tile groups of four and three list panels of five rows (a full list), with the Summary's own breakpoints (tiles 2 across from 1280 px beside the lists); Breakdowns: caption and four cards of four bar rows in the tab's container-query grid (4, 2 or 1 columns); Trends: two chart frames (320 : 200) with axis lines and the Task Types panel (folded on a phone, 16:9 chart); Swimlane: four lanes with three cards each (inside the real lane: three cards); Users: the tile grid of the workload tab; Coverage: matrix rows. Swimlane and Users also draw the heights of their toolbars while the page does not yet know the Scope. The Summary lists, which read their rows from the Task Queue after the figures, show five rows of 44 px (a full list, 266 px) instead of three, and the Swimlane lane header keeps the room of its "oldest" text while loading, so a list or a lane does not change height when its data arrives (this was the one shift the delayed-read tests found, 0.03 to 0.06). Sizes are in px measured on the loaded tabs: the root font size of the app is 14 px. All of it is `aria-hidden`, the host is `aria-busy="true"` and carries one visually hidden polite "Loading" status per tab (the three Summary lists and the four lanes no longer announce one each; the Swimlane's own live region says "Loading the swimlane board.", the Summary lists share one "Loading the task lists"), the pulse is an opacity animation switched off by `prefers-reduced-motion`, and a manual Refresh with figures on screen shows none (unchanged). Frontend only, no API, OpenAPI or SQL change, initial bundle 622.43 kB (unchanged), the component lives in lazy chunks. The accessibility fix: the capacity strip segments of the Users workload (`.seg`) are now at least 24 x 24 px at every width (they were 22 px high with an 18 px minimum width, which failed axe target-size when a level was a sliver of a big board); four segments and their gaps are 102 px, so they always fit. Docs: `docs/ux/ux-spec.md` S01 rewritten for the shipped Dashboard (fixed-height page, header row, Scope, Period, tabs, states, Refresh, Trends, updated acceptance list; no old tile wireframe, "Open by Pod", per-tab pod controls, old period lists, 3-row cut or "no visible Updated text" left), this Status section. Tests: unit `dash-skeleton.spec.ts` (variant per tab, one status, aria), updated swimlane, users and page specs; e2e `dashboard-skeletons.spec.ts` (reads held with a gate: the tab panel keeps its box between skeleton and loaded at 1366, 1920 and 375, layout shift of the load at most 0.02, one announcement, reduced motion, axe in the loading state, no skeleton on Refresh) and in `users-capacity.spec.ts` a board of 451 people with one Idle person (every segment at least 24 x 24 at 375 and 1366, axe). Screenshots: `fixes/wp12/` (`<tab>-skeleton-<width>.png` and `<tab>-loaded-<width>.png`).
 
 - WP8b Trends backlog and labels (#120, #117, #118, #121): `GET /dashboard/trend` additive: `open` on every point, per type and in the legend (`open`, `openQuery`), `granularity` (`day` up to 31 days, else `week`: every series of both panels bucketed Monday to Sunday, flows summed, stocks at the end of the week, 52 to 54 points for 366 days), `metric=open`, cache key carries the granularity (OpenAPI and client regenerated). Open at end of day = created by the end of the day and not Completed or Cancelled by then, no status replay; today equals the Open tile; one grouped baseline count plus one read of the period's tasks, no new index (median about 150 to 300 ms at 50,000 tasks depending on machine load), so script 28 is not used. Frontend: backlog panel `Open and overdue` (default) | `Open` | `Overdue` (`bmetric`), direct end labels with nudging (4 or fewer lines per panel), markers at the ends beyond 14 points, Monday ticks with dates (`xTicks`), "Week of" tooltips and table, one title per panel and per tab, phone layout (16:9 chart, Compare task types (N) disclosure, tap tooltip). Known gap: at 375 px the app shell's 56 px rail leaves 271 px, so the chart is 271 px wide, not the 343 px of the acceptance text. Tests: unit (`DashboardRulesTests`, `trend-axis`, `trend-model`, `trend-chart`, `dash-trends-tab`, palette), integration (`DashboardTrendApiTests` Open at several clock instants and zones, weekly, `DashboardTrendLargePerformanceTests`), e2e `dashboard-trends-types.spec.ts` (axe at 1366, 1920, 375). Screenshots: `fixes/wp8b/`.
 - WP10b Workload table, drawer, assign picker (#129, #131, #132): `POST /api/v1/tasks/assign-batch` (`Task.Assign`, 1 to 10 distinct tasks, each an ordinary assignment in its own transaction with its own audit entries and auto-start, per-task result with `CONCURRENCY_CONFLICT` etc., additive; OpenAPI and client regenerated; no SQL script). Table: sticky Person column, sortable headers with `aria-sort` in step with the toolbar Sort (a second click reverses), one "Open by priority" stacked count cell with the words in its accessible text, no horizontal scroll from 900 px up, sticky header under `--mf-dash-sticky-top`. Drawer: two-line rows with type icon and `mf-due-chip`, overdue first then priority then due date, "Reassign TSK-n" icon button (needs `Task.Assign`) instead of the assignee menu, focus to the next row, live region. Picker: the person's pods by default with an All pods switch (session), type icon, due chip, "Assign the next 3" with a confirmation that repeats the warning, checkboxes up to 10, per-task failures listed, Undo. Files: `users-table.ts`, `users-drawer.ts`, `users-assign.ts`, `inline-menu.ts` and `row-edit.ts` (icon trigger). Tests: unit (`users-table`, `users-drawer`, `dash-users-tab`), integration `TaskEditApiTests` (batch: permission, max 10, duplicates, partial failure, audit), e2e `users-tab.spec.ts` (widths, sort, drawer reassign, next 3, axe at 1366, 1920, 375). Screenshots: `fixes/wp10b/`.

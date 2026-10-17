@@ -386,7 +386,13 @@ describe('DashSwimlaneTab', () => {
   it('shows loading skeletons first, and an error with Retry and the reference when the first read fails', async () => {
     await open(NEVER);
     expect(q('[data-board]').getAttribute('aria-busy')).toBe('true');
-    expect(qa('[data-lane] .bone').length).toBe(12);
+    expect(qa('[data-lane] mf-dash-skeleton[data-skeleton="lane"]').length).toBe(4);
+    expect(qa('[data-lane] mf-dash-skeleton .bone').length).toBe(12);
+    // One announcement for the board, none from the lanes.
+    expect(q('[data-swimlane-live]').textContent).toContain('Loading the swimlane board');
+    expect(qa('[data-lane] [role="status"]').every((e) => e.closest('[aria-hidden="true"]'))).toBe(
+      true,
+    );
     host.remove();
     TestBed.resetTestingModule();
 

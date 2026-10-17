@@ -65,6 +65,8 @@ import { Option, SwimlaneToolbar } from '../swimlane/swimlane-toolbar';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
+const LOADING_LIVE = 'Loading the swimlane board.';
+
 /** How often the board refreshes itself while the tab is visible (as the Summary does). */
 export const SWIMLANE_REFRESH_MS = 5 * 60_000;
 /** Pause after an inline edit before the board is read again (several quick edits make one read). */
@@ -614,6 +616,8 @@ export class DashSwimlaneTab implements OnInit {
     else {
       this.state.set('loading');
       this.refreshFailed.set(false);
+      // The one announcement of a first read: the lanes' silhouettes are decorative.
+      this.live.set(LOADING_LIVE);
     }
     const v = this.view();
     const start = () =>
@@ -643,6 +647,7 @@ export class DashSwimlaneTab implements OnInit {
             this.lastOkAt.set(this.lastLoadedAt);
             this.finishRetry('ready');
             this.remember(board);
+            if (this.live() === LOADING_LIVE) this.live.set('');
             if (announce) {
               const total = board.lanes.reduce((n, l) => n + l.count, 0);
               this.live.set(`Board refreshed. ${total} ${total === 1 ? 'task' : 'tasks'}.`);

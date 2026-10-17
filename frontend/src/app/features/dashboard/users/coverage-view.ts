@@ -29,6 +29,7 @@ import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { DashboardPrefs } from '../dashboard-prefs';
 import { Period, periodArgs, periodForTab, periodId, periodPhrase } from '../dashboard-period';
 import { PeriodControl } from '../ui/period-control';
+import { DashSkeleton } from '../ui/dash-skeleton';
 import { DashState, focusAfterRetry } from '../ui/dash-state';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { CoverageDrawer, CoverageTarget } from './coverage-drawer';
@@ -87,6 +88,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
     PeriodControl,
     SearchBox,
     TaskTypeIcon,
+    DashSkeleton,
     DashState,
     CoverageDrawer,
     CoverageTypes,
@@ -220,17 +222,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
         </p>
       }
       @case ('loading') {
-        <div
-          class="bones"
-          role="status"
-          aria-busy="true"
-          aria-label="Loading the coverage"
-          data-coverage-loading
-        >
-          @for (n of bones; track n) {
-            <span class="bone" aria-hidden="true"></span>
-          }
-        </div>
+        <mf-dash-skeleton kind="coverage" label="Loading the coverage" data-coverage-loading />
       }
       @default {
         @if (board()) {
@@ -788,23 +780,6 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       border: 1px dashed var(--mf-border-strong);
       border-radius: var(--mf-radius-lg);
     }
-    .bones {
-      display: grid;
-      gap: var(--mf-s2);
-    }
-    .bone {
-      display: block;
-      height: 2.75rem;
-      background: var(--mf-surface-alt);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
-      animation: pulse 1.4s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      50% {
-        opacity: 0.55;
-      }
-    }
     @media (max-width: 560px) {
       .search {
         flex-basis: 100%;
@@ -847,7 +822,6 @@ export class CoverageView implements OnInit {
   protected readonly colors = STEP_COLORS;
   protected readonly stepLabels = STEP_LABELS;
   protected readonly relativeLabels = RELATIVE_LABELS;
-  protected readonly bones = [1, 2, 3, 4, 5];
   protected readonly plural = plural;
   protected readonly Math = Math;
   protected readonly statusText = STATUS_TEXT;

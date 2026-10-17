@@ -2000,7 +2000,9 @@ describe('DashboardPage', () => {
       getDashboard.mockReturnValue(NEVER);
       await pickScope(el, '1');
       expect(
-        el.querySelector('[data-tabpanel="summary"] [role="status"][aria-busy="true"]'),
+        el.querySelector(
+          '[data-tabpanel="summary"] mf-dash-skeleton[aria-busy="true"] [role="status"]',
+        ),
       ).not.toBeNull();
       expect(el.querySelector('mf-stat-tile')).toBeNull();
       expect(select(el).value).toBe('1');

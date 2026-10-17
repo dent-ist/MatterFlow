@@ -15,6 +15,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { SwimlaneCard } from '../../../api/generated/api-client';
 import { priorityColors } from '../../../shared/ui/priority-badge';
+import { DashSkeleton } from '../ui/dash-skeleton';
 import { SwimlaneCardView, initials } from './swimlane-card';
 import { Density, GroupBy, LANE_HINTS, LaneModel, LaneRow, GroupNode } from './swimlane-model';
 
@@ -39,7 +40,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-swimlane-lane',
-  imports: [SwimlaneCardView, RouterLink],
+  imports: [DashSkeleton, SwimlaneCardView, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(keydown)': 'onKey($event)',
@@ -68,7 +69,10 @@ let nextId = 0;
         >
         <p class="hint">
           {{ hint }}
-          @if (m.oldestDays !== null && m.code !== 'COMPLETED') {
+          @if (loading() && m.code !== 'COMPLETED') {
+            <!-- Holds the room of the age text, so the header keeps its height when the board arrives. -->
+            <span class="age age--ghost" aria-hidden="true">· oldest 0d</span>
+          } @else if (m.oldestDays !== null && m.code !== 'COMPLETED') {
             <span class="age" data-oldest>
               · oldest {{ m.oldestDays === 0 ? 'today' : m.oldestDays + 'd' }}
             </span>
@@ -78,12 +82,8 @@ let nextId = 0;
 
       <div class="body" data-lane-body>
         @if (loading()) {
-          <div class="bones" role="status" aria-busy="true">
-            <span class="sr-only">Loading {{ m.label }}...</span>
-            @for (n of bones; track n) {
-              <span class="bone" aria-hidden="true"></span>
-            }
-          </div>
+          <!-- Decorative: the board has one "Loading" status (it is aria-busy), not one announcement per lane. -->
+          <mf-dash-skeleton kind="lane" [compact]="density() === 'compact'" aria-hidden="true" />
         } @else if (m.rows.length === 0) {
           <p class="empty" data-lane-empty>
             <i class="pi pi-inbox" aria-hidden="true"></i>
@@ -329,6 +329,9 @@ let nextId = 0;
       flex: none;
       overflow: visible;
     }
+    .age--ghost {
+      visibility: hidden;
+    }
     .hint {
       flex: 1 1 auto;
       margin: 0;
@@ -528,30 +531,12 @@ let nextId = 0;
       clip-path: inset(50%);
       white-space: nowrap;
     }
-    .bones {
-      display: grid;
-      gap: var(--mf-s2);
-    }
-    .bone {
-      display: block;
-      height: 7rem;
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-lg);
-      animation: pulse 1.4s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      50% {
-        opacity: 0.55;
-      }
-    }
   `,
 })
 export class SwimlaneLane {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
   protected readonly hid = `mf-lane-${nextId++}`;
-  protected readonly bones = [1, 2, 3];
 
   readonly model = input.required<LaneModel>();
   readonly groupBy = input<GroupBy>('none');

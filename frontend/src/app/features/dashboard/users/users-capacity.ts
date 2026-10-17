@@ -151,7 +151,7 @@ let nextId = 0;
       flex: 1 1 18rem;
       gap: 2px;
       min-width: 0;
-      height: 22px;
+      height: 24px;
     }
     .seg {
       container-type: inline-size;
@@ -162,7 +162,9 @@ let nextId = 0;
       justify-content: center;
       gap: 4px;
       box-sizing: border-box;
-      min-width: 18px;
+      /* WCAG 2.2 target size (24 x 24): the four segments always fit (4 x 24 px and three 2 px gaps), so a level with a handful of people on a big board
+         still gets a real target and is never squeezed to a sliver beside its neighbours. */
+      min-width: 24px;
       height: 100%;
       padding: 0;
       overflow: hidden;
@@ -186,7 +188,7 @@ let nextId = 0;
         display: inline;
       }
     }
-    @container (max-width: 25px) {
+    @container (max-width: 15px) {
       .seg .pi {
         display: none;
       }

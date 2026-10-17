@@ -91,8 +91,8 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
       </header>
       @switch (state()) {
         @case ('loading') {
-          <div class="bones" role="status" aria-busy="true">
-            <span class="sr-only">Loading {{ heading() }}...</span>
+          <!-- Decorative: the Summary says "Loading" once for the three lists, not once per list. The five bones are the five rows of a full list. -->
+          <div class="bones" aria-hidden="true" data-list-loading>
             @for (n of bones; track n) {
               <span class="bone" aria-hidden="true"></span>
             }
@@ -483,13 +483,23 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
       text-decoration: underline;
       cursor: pointer;
     }
+    /* Five rows of 44 px, as a full loaded list: its height does not change when the rows arrive (px: the root font size is 14 px). */
     .bones {
       display: grid;
-      gap: var(--mf-s2);
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .bone {
+        animation: mf-list-pulse 1.4s ease-in-out infinite;
+      }
+      @keyframes mf-list-pulse {
+        50% {
+          opacity: 0.55;
+        }
+      }
     }
     .bone {
       display: block;
-      height: 2.75rem;
+      height: 44px;
       border-radius: var(--mf-radius);
       background: var(--mf-surface-alt);
     }
@@ -539,7 +549,7 @@ export class DashTaskList {
    * (heading, count and "View all" stay pinned), so a short window no longer cuts the list to 3 rows; "Showing N of M" counts what is shown.
    */
   protected readonly shown = computed(() => this.rows().slice(0, MAX_ROWS));
-  protected readonly bones = [1, 2, 3];
+  protected readonly bones = [1, 2, 3, 4, 5];
 
   /** "View all" starts with the same order as the list (see `LIST_ORDER`). */
   protected readonly allParams = computed(() => {

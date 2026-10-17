@@ -16,6 +16,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DashboardClient, DashboardTrend } from '../../../api/generated/api-client';
 import { QuietRequests } from '../../../core/http/interceptors';
+import { DashSkeleton } from './dash-skeleton';
 import { DashState, focusAfterRetry } from './dash-state';
 import { DASH_FIXED_QUERY, DASH_PHONE_QUERY, mediaMatch } from './dash-media';
 import { DashScope } from '../dash-scope';
@@ -67,7 +68,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-dash-trends-tab',
-  imports: [TrendChart, TrendLegend, TrendMeasure, DashState, NgTemplateOutlet],
+  imports: [DashSkeleton, TrendChart, TrendLegend, TrendMeasure, DashState, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -165,7 +166,7 @@ let nextId = 0;
           </ng-template>
         </div>
       } @else {
-        <p class="note" role="status" data-trend-loading>Loading the trend.</p>
+        <mf-dash-skeleton kind="trends" label="Loading the trend" data-trend-loading />
       }
       <ng-template #measureTpl let-key>
         @if (key === 'flows') {
