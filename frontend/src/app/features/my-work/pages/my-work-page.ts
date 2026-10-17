@@ -14,6 +14,7 @@ import {
   MyWorkClient,
   MyWorkPage as MyWorkData,
   PodsClient,
+  TaskQueueRow,
 } from '../../../api/generated/api-client';
 import { PageTitle } from '../../../core/title/page-title';
 import { FilterOption } from '../../../shared/filters/filter-def';
@@ -180,6 +181,7 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
           [newSince]="tab() === 'active' || tab() === 'dueSoon' ? lastVisit : null"
           [emptyParts]="emptyCopy().parts"
           [nearEmpty]="tab() === 'active'"
+          [leaving]="leaving.ids()"
           (sortChange)="sortBy($event)"
           (pageChange)="goToPage($event)"
           (pageSizeChange)="setPageSize($event)"
@@ -377,6 +379,27 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     const remember = !this.skipRemember;
     this.skipRemember = false;
     return remember;
+  }
+
+  /** Active and Due soon and overdue list open tasks, Closed lists closed ones; Created by me keeps every row. */
+  protected override leavesView(row: TaskQueueRow): boolean {
+    switch (this.tab()) {
+      case 'active':
+      case 'dueSoon':
+        return !OPEN_STATUSES.includes(row.status);
+      case 'completed':
+        return OPEN_STATUSES.includes(row.status);
+      default:
+        return false;
+    }
+  }
+
+  protected override leftText(row: TaskQueueRow): string {
+    return `${row.statusLabel.toLowerCase()}. Removed from ${this.tabLabel()}.`;
+  }
+
+  protected override mergeCounts(current: MyWorkData, fresh: MyWorkData): MyWorkData {
+    return { ...current, counts: fresh.counts };
   }
 
   protected override loaded(data: MyWorkData): void {

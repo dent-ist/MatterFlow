@@ -57,11 +57,13 @@ public sealed record TaskQueueRow(
 /// <param name="StepsResolved">Completed plus skipped steps.</param>
 /// <param name="CurrentStepNumber">Position (1-based sequence number) of the first unresolved step; null when all steps are resolved.</param>
 /// <param name="CurrentStepName">Title of that step; null when all steps are resolved.</param>
+/// <param name="CurrentStepId">Id of that step instance (the <c>?step=</c> value of the Task page); null when all steps are resolved.</param>
 public sealed record WorkflowProgress(
     [property: Required] int StepsTotal,
     [property: Required] int StepsResolved,
     int? CurrentStepNumber,
-    string? CurrentStepName);
+    string? CurrentStepName,
+    int? CurrentStepId = null);
 
 /// <summary>A page of the Task Queue. <c>timeZone</c> is the zone used for the overdue evaluation.</summary>
 public sealed record TaskQueuePage(

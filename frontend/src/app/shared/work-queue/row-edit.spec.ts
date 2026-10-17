@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { Router } from '@angular/router';
+import { NEVER, of, throwError } from 'rxjs';
 import {
   PodsClient,
   TaskQueueRow,
@@ -13,6 +15,7 @@ import { apiError } from '../../core/lookups/lookups-testing';
 import { NotificationService } from '../../core/notify/notification.service';
 import { UndoService } from '../../core/notify/undo.service';
 import { InlineField } from './inline-edit';
+import { InlineStatusFlow } from './inline-status-flow';
 import { RowEdit } from './row-edit';
 import { aRow, provideLookups } from './work-queue-testing';
 
@@ -31,7 +34,22 @@ const taskOf = (row: TaskQueueRow, patch: Record<string, unknown> = {}) => ({
   ...patch,
 });
 
+/** Stands in for the status flow, which needs the whole Task page store. */
+@Component({
+  selector: 'mf-inline-status-flow',
+  template: '',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class FlowStub {
+  readonly row = input<unknown>();
+  readonly action = input<unknown>();
+  readonly rowChange = output<unknown>();
+  readonly conflict = output<void>();
+  readonly finished = output<void>();
+}
+
 describe('RowEdit', () => {
+  let stubFlow = false;
   let fixture: ComponentFixture<RowEdit>;
   let tasks: Record<string, ReturnType<typeof vi.fn>>;
   let pods: { getPod: ReturnType<typeof vi.fn> };
@@ -74,6 +92,16 @@ describe('RowEdit', () => {
         of(taskOf(row, { status: 'IN_PROGRESS', statusLabel: 'In Progress' })),
       ),
       getTask: vi.fn(() => of(taskOf(row, { rowVersion: 'FRESH' }))),
+      getTaskCompletionCheck: vi.fn(() =>
+        of({
+          isReady: true,
+          canBulkComplete: false,
+          unresolved: [],
+          bulkCompletable: [],
+          blocked: [],
+          workflowRowVersion: 'W1',
+        }),
+      ),
     };
     pods = {
       getPod: vi.fn(() =>
@@ -98,6 +126,12 @@ describe('RowEdit', () => {
         { provide: NotificationService, useValue: notify },
       ],
     });
+    if (stubFlow) {
+      TestBed.overrideComponent(RowEdit, {
+        remove: { imports: [InlineStatusFlow] },
+        add: { imports: [FlowStub] },
+      });
+    }
     await TestBed.inject(AuthStore).ensureLoaded();
     undo = TestBed.inject(UndoService);
     undo.dismiss();
@@ -431,5 +465,68 @@ describe('RowEdit', () => {
     expect(reached).not.toHaveBeenCalled();
     document.body.removeEventListener('click', reached);
     document.body.removeEventListener('keydown', reached);
+  });
+
+  describe('Complete and the step inputs (A6)', () => {
+    beforeEach(() => (stubFlow = true));
+    afterEach(() => (stubFlow = false));
+    const permissions: Permission[] = ['Task.ChangeStatus', 'Task.Complete', 'Task.Cancel'];
+    const blockedCheck = {
+      isReady: false,
+      canBulkComplete: false,
+      unresolved: [{ stepInstanceId: 71, sequenceNo: 1, title: 'Intake' }],
+      bulkCompletable: [],
+      blocked: [{ stepInstanceId: 71, sequenceNo: 1, title: 'Intake' }],
+      workflowRowVersion: 'W1',
+    };
+
+    it('checks once per menu open and shows a spinner (and a polite note) while it runs', async () => {
+      await create('status', aRow({ status: 'IN_PROGRESS' }), permissions);
+      tasks['getTaskCompletionCheck'].mockReturnValue(NEVER);
+      await open();
+      expect(tasks['getTaskCompletionCheck']).toHaveBeenCalledTimes(1);
+      expect(tasks['getTaskCompletionCheck']).toHaveBeenCalledWith(1042);
+      expect(option('COMPLETE').querySelector('[data-option-pending]')).not.toBeNull();
+      expect(option('COMPLETE').getAttribute('aria-disabled')).toBeNull();
+      expect(el().querySelector('[data-menu-checking]')?.getAttribute('role')).toBe('status');
+    });
+
+    it('a task with missing step inputs reads "Complete... (needs step inputs)" and opens the task at that step', async () => {
+      await create('status', aRow({ status: 'IN_PROGRESS' }), permissions);
+      tasks['getTaskCompletionCheck'].mockReturnValue(of(blockedCheck));
+      const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+      await open();
+      expect(option('COMPLETE').textContent).toContain('Complete... (needs step inputs)');
+      await pick('COMPLETE');
+      expect(navigate).toHaveBeenCalledWith(['/tasks', 1042], {
+        queryParams: { tab: 'workflow', step: 71 },
+      });
+      expect(el().querySelector('mf-inline-status-flow')).toBeNull();
+    });
+
+    it('a ready task keeps the plain Complete item and opens the confirmation', async () => {
+      await create('status', aRow({ status: 'IN_PROGRESS' }), permissions);
+      await open();
+      expect(option('COMPLETE').textContent).toContain('Complete');
+      expect(option('COMPLETE').textContent).not.toContain('needs step inputs');
+      await pick('COMPLETE');
+      expect(el().querySelector('mf-inline-status-flow')).not.toBeNull();
+    });
+
+    it('a failed check behaves as before: Complete opens the confirmation, which checks again', async () => {
+      await create('status', aRow({ status: 'IN_PROGRESS' }), permissions);
+      tasks['getTaskCompletionCheck'].mockReturnValue(throwError(() => new Error('offline')));
+      await open();
+      expect(option('COMPLETE').textContent).not.toContain('needs step inputs');
+      expect(option('COMPLETE').querySelector('[data-option-pending]')).toBeNull();
+      await pick('COMPLETE');
+      expect(el().querySelector('mf-inline-status-flow')).not.toBeNull();
+    });
+
+    it('does not check when the person cannot complete, or for Cancel and Hold', async () => {
+      await create('status', aRow({ status: 'IN_PROGRESS' }), ['Task.ChangeStatus']);
+      await open();
+      expect(tasks['getTaskCompletionCheck']).not.toHaveBeenCalled();
+    });
   });
 });

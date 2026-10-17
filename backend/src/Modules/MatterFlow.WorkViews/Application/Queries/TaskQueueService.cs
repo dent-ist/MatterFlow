@@ -502,7 +502,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         var instanceIds = details.Select(d => d.WorkflowInstanceId).ToList();
         var steps = await db.Set<StepInstanceRecord>().AsNoTracking()
             .Where(s => instanceIds.Contains(s.WorkflowInstanceId))
-            .Select(s => new { s.WorkflowInstanceId, s.SequenceNo, s.Title, s.Status })
+            .Select(s => new { s.WorkflowInstanceId, s.Id, s.SequenceNo, s.Title, s.Status })
             .ToListAsync(ct);
         var progress = steps.GroupBy(s => s.WorkflowInstanceId).ToDictionary(
             g => g.Key,
@@ -513,7 +513,8 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                     g.Count(),
                     g.Count(s => s.Status is StepStatus.Completed or StepStatus.Skipped),
                     current?.SequenceNo,
-                    current?.Title);
+                    current?.Title,
+                    current?.Id);
             });
 
         var byId = details.ToDictionary(d => d.Id);

@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { TaskQueueRow } from '../../api/generated/api-client';
 import { ListFilters } from '../filters/list-filters';
+import { PageFooter } from '../ui/page-footer';
 import { Pager } from '../ui/pager';
 import { Density } from './column-prefs';
 import { PAGE_SIZES, SortDirection } from './queue-filters';
@@ -27,7 +28,7 @@ export type WorkListState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-work-list',
-  imports: [TaskTable, Pager],
+  imports: [PageFooter, TaskTable, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styleUrl: './work-list.scss',
@@ -51,6 +52,7 @@ export type WorkListState = 'loading' | 'ready' | 'error';
       [dir]="dir()"
       [showAssign]="showAssign()"
       [newSince]="newSince()"
+      [leaving]="leaving()"
       (sortChange)="sortChange.emit($event)"
       (retry)="onRetry()"
       (clearFilters)="clearFilters.emit()"
@@ -61,7 +63,7 @@ export type WorkListState = 'loading' | 'ready' | 'error';
       <ng-content select="[empty-action]" ngProjectAs="[empty-action]" />
       <ng-content select="[near-empty]" ngProjectAs="[near-empty]" />
     </mf-task-table>
-    <div class="wl-footrow">
+    <div class="wl-footrow" mfPageFooter>
       @if (rows().length > 0 && state() !== 'error') {
         <mf-pager
           class="wl-pager"
@@ -102,6 +104,8 @@ export class WorkList {
   readonly showAssign = input(false);
   /** Instant (ms) of the previous visit; rows created after it show a "New" marker. */
   readonly newSince = input<number | null>(null);
+  /** Tasks that just left the tab; their rows show muted until the page removes them. */
+  readonly leaving = input<ReadonlySet<number>>(new Set());
 
   readonly sortChange = output<string>();
   readonly pageChange = output<number>();

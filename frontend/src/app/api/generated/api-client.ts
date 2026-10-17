@@ -13437,6 +13437,7 @@ export interface WorkflowProgress {
     stepsResolved: number;
     currentStepNumber: number | undefined;
     currentStepName: string | undefined;
+    currentStepId?: number | undefined;
 
     [key: string]: any;
 }

@@ -93,3 +93,15 @@
     margin-block: var(--mf-s1);
   }
 }
+
+/* Small or short windows do not pin the grid: the bar stays at the bottom edge instead, so toasts sit above it and never cover it (A10). */
+@media not ((min-width: 768px) and (min-height: 561px)) {
+  .wl-footrow {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding-inline: var(--mf-s3);
+    background: var(--mf-surface);
+    border-top: 1px solid var(--mf-border);
+  }
+}

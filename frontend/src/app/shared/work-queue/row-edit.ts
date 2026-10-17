@@ -9,6 +9,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { Observable, firstValueFrom } from 'rxjs';
 import {
   PodsClient,
@@ -37,6 +38,7 @@ import { outOfOfficeText } from '../../core/availability/availability';
 import { USER_TIME_ZONE } from '../../core/time/clock';
 import { InlineMenu, MenuOption } from './inline-menu';
 import { InlineStatusFlow } from './inline-status-flow';
+import { stepQueryParams } from './step-link';
 
 interface Person {
   id: number;
@@ -99,6 +101,7 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
       [searchLabel]="'Search people'"
       [emptyText]="field() === 'assignee' ? 'No people found.' : 'No options.'"
       [loading]="loading()"
+      [checking]="completion().state === 'checking'"
       [busy]="busy()"
       [outlined]="assignMe()"
       [icon]="triggerIcon()"
@@ -162,7 +165,9 @@ export class RowEdit {
   private readonly zone = inject(USER_TIME_ZONE);
   private readonly notify = inject(NotificationService);
   private readonly undoService = inject(UndoService);
+  private readonly router = inject(Router);
   private destroyed = false;
+  private completionSeq = 0;
 
   constructor() {
     inject(DestroyRef).onDestroy(() => (this.destroyed = true));
@@ -195,6 +200,14 @@ export class RowEdit {
   protected readonly myId = computed(() => this.auth.profile()?.userId ?? 0);
   protected readonly loading = signal(false);
   protected readonly flow = signal<StatusAction | null>(null);
+  /**
+   * Whether Complete can go through, learned when the status menu opens (A6): `checking` while the completion check runs, `blocked` when
+   * a step needs required input first (then Complete opens the task at that step), `unknown` otherwise (as before: the dialog checks again).
+   */
+  protected readonly completion = signal<{
+    state: 'unknown' | 'checking' | 'ready' | 'blocked';
+    stepId?: number;
+  }>({ state: 'unknown' });
   private readonly people = signal<Person[]>([]);
   private readonly podMode = signal(false);
   private readonly podName = signal('');
@@ -258,12 +271,17 @@ export class RowEdit {
                   : "This action isn't available right now.",
             }));
         }
+        const completion = this.completion();
         return statusChoices(r, (p) => this.auth.has(p)).map((c) => ({
           id: c.action,
-          label: ACTION_LABELS[c.action] ?? c.action,
+          label:
+            c.action === 'COMPLETE' && completion.state === 'blocked'
+              ? 'Complete... (needs step inputs)'
+              : (ACTION_LABELS[c.action] ?? c.action),
           hint: this.lookups.statusLabel(c.target),
           disabled: !!c.blockedReason,
           reason: c.blockedReason,
+          pending: c.action === 'COMPLETE' && completion.state === 'checking',
         }));
       }
       case 'priority': {
@@ -303,6 +321,10 @@ export class RowEdit {
   // ---- opening and searching (assignee)
 
   protected async onOpened(): Promise<void> {
+    if (this.field() === 'status') {
+      void this.checkCompletion();
+      return;
+    }
     if (this.field() !== 'assignee') return;
     const podId = this.row().assignedPod?.podId;
     this.query.set('');
@@ -329,6 +351,27 @@ export class RowEdit {
       await this.lookup('');
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  /** One read of the completion check per menu open (no list-wide cost); a failure leaves Complete as it was. */
+  private async checkCompletion(): Promise<void> {
+    const r = this.row();
+    const offers = statusChoices(r, (p) => this.auth.has(p)).some((c) => c.action === 'COMPLETE');
+    if (this.statusDelegated() || this.transitions() || !offers) return;
+    const seq = ++this.completionSeq;
+    this.completion.set({ state: 'checking' });
+    try {
+      const check = await firstValueFrom(this.tasks.getTaskCompletionCheck(r.taskId));
+      if (seq !== this.completionSeq || this.destroyed) return;
+      const first = check.blocked[0];
+      this.completion.set(
+        !check.isReady && first
+          ? { state: 'blocked', stepId: first.stepInstanceId }
+          : { state: 'ready' },
+      );
+    } catch {
+      if (seq === this.completionSeq) this.completion.set({ state: 'unknown' });
     }
   }
 
@@ -442,6 +485,14 @@ export class RowEdit {
         const action = option.id as StatusAction;
         if (this.statusDelegated()) {
           this.statusAction.emit(action);
+          return;
+        }
+        const completion = this.completion();
+        if (action === 'COMPLETE' && completion.state === 'blocked' && completion.stepId) {
+          // A step needs required input: open the task on that step instead of a dialog that could only say no.
+          void this.router.navigate(['/tasks', r.taskId], {
+            queryParams: stepQueryParams(completion.stepId),
+          });
           return;
         }
         if (DIALOG_ACTIONS.includes(action)) {

@@ -78,3 +78,64 @@ a:not([class]) {
   flex: 1 1 auto;
   overflow-y: auto;
 }
+
+/*
+ * Toasts on a work page (A10): a page with a pager bar (`mfPageFooter`) sets `data-page-footer` and `--mf-page-footer-h` on the root. The
+ * toasts and the Undo toast then sit bottom left of the main column, above the bar (the Dashboard's rule), 24rem wide from 1024px and
+ * the full width with 8px margins below. Other pages keep the default corner.
+ */
+html[data-page-footer] {
+  /* PrimeNG places its toast with inline styles, so the toast needs !important; the Undo toast does not. */
+  .p-toast {
+    right: auto !important;
+    left: calc(220px + var(--mf-s5)) !important;
+    bottom: calc(var(--mf-page-footer-h, 0px) + var(--mf-s2)) !important;
+    width: 24rem;
+    max-width: 24rem;
+  }
+
+  .ut {
+    right: auto;
+    left: calc(220px + var(--mf-s5));
+    bottom: calc(var(--mf-page-footer-h, 0px) + var(--mf-s2));
+    max-width: 24rem;
+  }
+
+  @media (max-width: 1099px) {
+    .p-toast {
+      left: calc(56px + var(--mf-s4)) !important;
+    }
+
+    .ut {
+      left: calc(56px + var(--mf-s4));
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .p-toast {
+      left: 8px !important;
+      right: 8px !important;
+      width: auto;
+      max-width: none;
+    }
+
+    .ut {
+      left: 8px;
+      right: 8px;
+      max-width: none;
+    }
+  }
+}
+
+/* Work table extras kept out of the task-table component budget. */
+/* The current step of an open task: a link to the Workflow section at that step (M12.3). */
+.wt-steplink {
+  color: var(--mf-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* A row whose task just left the tab (cancelled or completed from the row): shown muted for a moment, then removed (BUG-9). */
+.wt-row--leaving td {
+  color: var(--mf-text-muted);
+}

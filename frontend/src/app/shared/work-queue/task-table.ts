@@ -12,7 +12,7 @@ import {
   viewChild,
   effect,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Params, RouterLink } from '@angular/router';
 import { LoadState } from '../ui/data-table';
 import { ScrollArea } from '../ui/fixed-page';
 import { ColumnFilterRow } from '../filters/column-filter-row';
@@ -32,6 +32,7 @@ import { StatusBadge } from '../ui/status-badge';
 import { WORK_COLUMNS, ColumnDef, Density } from './column-prefs';
 import { InlineField, canEditField } from './inline-edit';
 import { SortDirection } from './queue-filters';
+import { hasStepLink, stepLinkLabel, stepQueryParams } from './step-link';
 import { RowEdit } from './row-edit';
 
 /** Box widths (px) under which the lowest-priority columns drop out. */
@@ -126,7 +127,12 @@ const PROJECT_HIDES_BELOW = 800;
           (clear)="clearFilters.emit()"
         >
           @for (row of rows(); track row.taskId) {
-            <tr [class.wt-row--overdue]="row.isOverdue" [attr.data-task]="row.taskNumber">
+            <tr
+              [class.wt-row--overdue]="row.isOverdue"
+              [class.wt-row--leaving]="leaving().has(row.taskId)"
+              [attr.data-leaving]="leaving().has(row.taskId) ? 'true' : null"
+              [attr.data-task]="row.taskNumber"
+            >
               @for (col of shownColumns(); track col.key) {
                 <td [attr.data-col]="col.key">
                   @switch (col.key) {
@@ -172,8 +178,19 @@ const PROJECT_HIDES_BELOW = 800;
                               [attr.title]="progressTitle(row)"
                               >{{ row.workflow.stepsResolved }} of {{ row.workflow.stepsTotal }}
                               steps ·
-                              {{ row.workflow.currentStepName ?? 'All steps resolved' }}</span
-                            >
+                              @if (stepLinked(row)) {
+                                <a
+                                  class="wt-steplink"
+                                  data-step-link
+                                  [routerLink]="['/tasks', row.taskId]"
+                                  [queryParams]="stepQuery(row)"
+                                  [attr.aria-label]="stepLabel(row)"
+                                  >{{ row.workflow.currentStepName }}</a
+                                >
+                              } @else {
+                                {{ row.workflow.currentStepName ?? 'All steps resolved' }}
+                              }
+                            </span>
                           }
                         </div>
                       </div>
@@ -227,9 +244,20 @@ const PROJECT_HIDES_BELOW = 800;
                               {{ row.workflow.stepsTotal }}</span
                             >
                           </span>
-                          <span class="wt-progress-step wt-muted">{{
-                            row.workflow.currentStepName ?? 'All steps resolved'
-                          }}</span>
+                          @if (stepLinked(row)) {
+                            <a
+                              class="wt-progress-step wt-steplink"
+                              data-step-link
+                              [routerLink]="['/tasks', row.taskId]"
+                              [queryParams]="stepQuery(row)"
+                              [attr.aria-label]="stepLabel(row)"
+                              >{{ row.workflow.currentStepName }}</a
+                            >
+                          } @else {
+                            <span class="wt-progress-step wt-muted">{{
+                              row.workflow.currentStepName ?? 'All steps resolved'
+                            }}</span>
+                          }
                         </div>
                       }
                     }
@@ -403,6 +431,8 @@ export class TaskTable {
   readonly columnsShown = output<string[]>();
   readonly assignToMe = output<TaskQueueRow>();
   /** A row changed from the table (an inline edit): the optimistic row, then the server's row or the original again. */
+  /** Tasks that just left the tab: their rows show muted until the page removes them. */
+  readonly leaving = input<ReadonlySet<number>>(new Set());
   readonly rowChange = output<TaskQueueRow>();
 
   constructor() {
@@ -504,6 +534,19 @@ export class TaskTable {
     const since = this.newSince();
     // When the person was handed the Task, not when it was created (a Task created last week and assigned today is new to them).
     return since !== null && new Date(row.assignedAtUtc ?? row.createdAtUtc).getTime() > since;
+  }
+
+  /** The current step is a link to the task's Workflow section for an open task that names its step (M12.3). */
+  protected stepLinked(row: TaskQueueRow): boolean {
+    return hasStepLink(row);
+  }
+
+  protected stepQuery(row: TaskQueueRow): Params {
+    return stepQueryParams(row.workflow.currentStepId as number);
+  }
+
+  protected stepLabel(row: TaskQueueRow): string {
+    return stepLinkLabel(row);
   }
 
   protected progressTitle(row: TaskQueueRow): string {

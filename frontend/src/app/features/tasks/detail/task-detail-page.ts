@@ -357,10 +357,12 @@ export class TaskDetailPage implements HasUnsavedChanges {
         const key = `${tab ?? ''}|${step ?? ''}`;
         if (this.handledLink === key) return;
         this.handledLink = key;
-        if (tab === 'activity') this.store.activityOpen.set(true);
-        else if (isSection(tab)) this.store.showSection(tab);
         const stepId = Number(step);
-        if (step && Number.isInteger(stepId)) this.store.focusStepId.set(stepId);
+        const hasStep = !!step && Number.isInteger(stepId);
+        if (tab === 'activity') this.store.activityOpen.set(true);
+        // A link to a step (`?tab=workflow&step=5`, from My Work) lands on that step: the section heading must not take the focus.
+        else if (isSection(tab) && !(tab === 'workflow' && hasStep)) this.store.showSection(tab);
+        if (hasStep) this.store.focusStepId.set(stepId);
       });
     });
     // A request to show a section (Jump to, ?tab=): scroll there and put focus on the section's heading.

@@ -19,6 +19,7 @@ import { FilterDef, FilterOption } from '../filters/filter-def';
 import { FiltersBar } from '../filters/filters-bar';
 import { ListFilters } from '../filters/list-filters';
 import { LoadState } from '../ui/data-table';
+import { PageFooter } from '../ui/page-footer';
 import { Pager } from '../ui/pager';
 import { QueueChoices, mergeOptions } from './queue-choices';
 import { OPEN_STATUSES, parseQueueState, queueArgs } from './queue-filters';
@@ -52,7 +53,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
  */
 @Component({
   selector: 'mf-scoped-tasks',
-  imports: [Button, HasPermissionDirective, Pager, TaskTable, FiltersBar],
+  imports: [Button, HasPermissionDirective, PageFooter, Pager, TaskTable, FiltersBar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styles: `
@@ -102,12 +103,14 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
         (clearFilters)="filters.clear()"
       />
       @if (rows().length > 0) {
-        <mf-pager
-          [page]="page()"
-          [pageSize]="pageSize"
-          [total]="total()"
-          (pageChange)="goTo($event)"
-        />
+        <div mfPageFooter>
+          <mf-pager
+            [page]="page()"
+            [pageSize]="pageSize"
+            [total]="total()"
+            (pageChange)="goTo($event)"
+          />
+        </div>
       }
     }
   `,

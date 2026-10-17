@@ -153,6 +153,10 @@ public sealed class TaskQueueApiTests(SqlServerFixture sql)
         workflow.GetProperty("currentStepNumber").GetInt32().ShouldBe(1);
         workflow.GetProperty("currentStepName").GetString().ShouldBe("Intake review");
 
+        // The row names the current step by its instance id, the value the Task page takes as `?step=` (WP7, #166).
+        var detail = await d.H.GetTaskAsync(d.Id("with-project"));
+        workflow.GetProperty("currentStepId").GetInt32().ShouldBe(detail.GetProperty("workflow").GetProperty("progress").GetProperty("currentStepInstanceId").GetInt32());
+
         var timed = Row(await d.QueueAsync("q=norm-timed-past"), "norm-timed-past");
         timed.GetProperty("dueDate").GetString().ShouldBe("2000-01-02");
         timed.GetProperty("dueAtUtc").GetDateTime().ShouldBe(new DateTime(2000, 1, 2, 14, 0, 0, DateTimeKind.Utc)); // 09:00 in New York (EST)
@@ -161,6 +165,7 @@ public sealed class TaskQueueApiTests(SqlServerFixture sql)
         var done = Row(await d.QueueAsync("q=mine-done"), "mine-done");
         done.GetProperty("workflow").GetProperty("stepsResolved").GetInt32().ShouldBe(2);
         done.GetProperty("workflow").GetProperty("currentStepNumber").ValueKind.ShouldBe(JsonValueKind.Null);
+        done.GetProperty("workflow").GetProperty("currentStepId").ValueKind.ShouldBe(JsonValueKind.Null);
         done.GetProperty("completedAtUtc").ValueKind.ShouldBe(JsonValueKind.String);
     }
 

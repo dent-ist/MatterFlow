@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { By } from '@angular/platform-browser';
 import { Observable, of, throwError } from 'rxjs';
 import { MyWorkClient, PodsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -13,6 +14,7 @@ import {
   provideLookups,
   provideQueueChoices,
 } from '../../../shared/work-queue/work-queue-testing';
+import { WorkList } from '../../../shared/work-queue/work-list';
 import { MyWorkPage, firstNonEmptyTab } from './my-work-page';
 
 /** Positions of the arguments of `getMyWork` (the view comes first, then the shared filters). */
@@ -688,5 +690,82 @@ describe('MyWorkPage', () => {
     await settle();
     expect(lastArgs()[ARG.sort]).toBe('priority');
     expect(query()['sort']).toBe('priority');
+  });
+
+  describe('a row that leaves the tab (BUG-9)', () => {
+    const rowsOf = () => [
+      aRow({ taskId: 1, taskNumber: 'TSK-1' }),
+      aRow({ taskId: 2, taskNumber: 'TSK-2' }),
+    ];
+    const emit = (row: ReturnType<typeof aRow>) =>
+      harness.fixture.debugElement
+        .query(By.directive(WorkList))
+        .componentInstance.rowChange.emit(row);
+    const rowCount = (el: HTMLElement) => el.querySelectorAll('tbody tr[data-task]').length;
+
+    afterEach(() => vi.useRealTimers());
+
+    it('updates the tab counts at once, keeps the row 4 seconds, then removes it and the pager follows', async () => {
+      const el = await open('/my-work', { rows: rowsOf() });
+      getMyWork.mockReturnValue(
+        of(pageOf(rowsOf(), { view: 'active', counts: { ...COUNTS, active: 6, completed: 6 } })),
+      );
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+
+      emit(aRow({ taskId: 1, taskNumber: 'TSK-1', status: 'CANCELLED', statusLabel: 'Cancelled' }));
+      await vi.advanceTimersByTimeAsync(10);
+      harness.detectChanges();
+      expect(tab(el, 'Active').textContent).toContain('(6)');
+      expect(tab(el, 'Closed').textContent).toContain('(6)');
+      expect(rowCount(el)).toBe(2);
+      expect(el.querySelector('tr[data-task="TSK-1"]')!.getAttribute('data-leaving')).toBe('true');
+
+      await vi.advanceTimersByTimeAsync(4000);
+      harness.detectChanges();
+      expect(rowCount(el)).toBe(1);
+      expect(el.querySelector('tr[data-task="TSK-1"]')).toBeNull();
+      expect(el.querySelector('[data-range]')!.textContent).toContain('of 1');
+      expect(el.querySelector('[role="status"]')!.textContent).toBeDefined();
+    });
+
+    it('a change that keeps the row in the tab (priority, Hold) does not remove it', async () => {
+      const el = await open('/my-work', { rows: rowsOf() });
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      emit(aRow({ taskId: 1, taskNumber: 'TSK-1', status: 'ON_HOLD', statusLabel: 'On Hold' }));
+      await vi.advanceTimersByTimeAsync(6000);
+      harness.detectChanges();
+      expect(rowCount(el)).toBe(2);
+    });
+
+    it('a change that is put back (the save failed) keeps the row', async () => {
+      const el = await open('/my-work', { rows: rowsOf() });
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      emit(aRow({ taskId: 1, taskNumber: 'TSK-1', status: 'CANCELLED', statusLabel: 'Cancelled' }));
+      emit(aRow({ taskId: 1, taskNumber: 'TSK-1' }));
+      await vi.advanceTimersByTimeAsync(6000);
+      harness.detectChanges();
+      expect(rowCount(el)).toBe(2);
+      expect(el.querySelector('tr[data-task="TSK-1"]')!.getAttribute('data-leaving')).toBeNull();
+    });
+
+    it('on Closed a reopened task leaves; on Created by me nothing leaves', async () => {
+      let el = await open('/my-work?view=completed', {
+        rows: [aRow({ taskId: 1, taskNumber: 'TSK-1', status: 'COMPLETED' })],
+      });
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      emit(aRow({ taskId: 1, taskNumber: 'TSK-1', status: 'IN_PROGRESS' }));
+      await vi.advanceTimersByTimeAsync(4100);
+      harness.detectChanges();
+      expect(rowCount(el)).toBe(0);
+      vi.useRealTimers();
+      TestBed.resetTestingModule();
+
+      el = await open('/my-work?view=createdByMe', { rows: rowsOf() });
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      emit(aRow({ taskId: 1, taskNumber: 'TSK-1', status: 'CANCELLED' }));
+      await vi.advanceTimersByTimeAsync(6000);
+      harness.detectChanges();
+      expect(rowCount(el)).toBe(2);
+    });
   });
 });

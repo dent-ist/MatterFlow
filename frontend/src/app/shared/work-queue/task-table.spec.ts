@@ -280,6 +280,22 @@ describe('TaskTable', () => {
     );
   });
 
+  it('makes the current step of an open task a link to the Workflow section at that step (M12.3)', async () => {
+    await create([aRow()], ['progress']);
+    const link = cell('progress').querySelector<HTMLAnchorElement>('[data-step-link]')!;
+    expect(link.textContent?.trim()).toBe('Dedup');
+    expect(link.getAttribute('href')).toBe('/tasks/1042?tab=workflow&step=903');
+    expect(link.getAttribute('aria-label')).toBe(
+      'Workflow progress: 2 of 6 done, current step Dedup. Open step.',
+    );
+  });
+
+  it('shows the step as plain text on a closed task', async () => {
+    await create([aRow({ status: 'COMPLETED', statusLabel: 'Completed' })], ['progress']);
+    expect(cell('progress').querySelector('[data-step-link]')).toBeNull();
+    expect(cell('progress').textContent).toContain('Dedup');
+  });
+
   it('says when every step is resolved or the workflow has no steps', async () => {
     await create(
       [

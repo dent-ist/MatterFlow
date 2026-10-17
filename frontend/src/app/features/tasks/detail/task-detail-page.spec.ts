@@ -563,6 +563,22 @@ describe('TaskDetailPage layout and states', () => {
     el.remove();
   });
 
+  it('a link with ?tab=workflow&step= (from My Work) leaves the focus on the step, not the section heading', async () => {
+    const task = aTask();
+    const id = task.workflow.steps[0].stepInstanceId;
+    const { fixture, el } = await mountTaskPage(task, PERMS);
+    document.body.appendChild(el);
+    fixture.componentRef.setInput('tab', 'workflow');
+    fixture.componentRef.setInput('step', String(id));
+    await settle(fixture);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(q(el, `[data-step-id="${id}"] .step__toggle`)!.getAttribute('aria-expanded')).toBe(
+      'true',
+    );
+    expect(document.activeElement).toBe(q(el, `#step-btn-${id}`));
+    el.remove();
+  });
+
   it('shows a note in place of the Assets for a user without Asset.View', async () => {
     const { fixture, el } = await mountTaskPage(aTask(), ['Task.View']);
     expect(q(el, '[data-section=assets] [data-preview]')!.textContent).toContain("can't view");

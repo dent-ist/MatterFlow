@@ -25,6 +25,8 @@ export interface MenuOption {
   disabled?: boolean;
   /** Why a disabled option cannot be used; read out with the option. */
   reason?: string;
+  /** A check for this option is running: a small spinner shows and the option stays usable (Complete while step inputs are checked). */
+  pending?: boolean;
 }
 
 let nextId = 0;
@@ -126,6 +128,13 @@ let nextId = 0;
                     </span>
                   }
                 </span>
+                @if (o.pending) {
+                  <i
+                    class="pi pi-spin pi-spinner im-spin"
+                    aria-hidden="true"
+                    data-option-pending
+                  ></i>
+                }
                 @if (o.hint) {
                   <span class="im-hint">{{ o.hint }}</span>
                 }
@@ -135,6 +144,9 @@ let nextId = 0;
               }
             }
           </div>
+        }
+        @if (checking()) {
+          <p class="im-sr" role="status" data-menu-checking>Checking step inputs</p>
         }
         @if (footnote(); as note) {
           <p class="im-foot" data-menu-note>{{ note }}</p>
@@ -265,6 +277,18 @@ let nextId = 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
+    .im-spin {
+      font-size: 0.875rem;
+    }
+    .im-sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
     .im-note {
       margin: 0;
       padding: var(--mf-s2);
@@ -293,6 +317,9 @@ export class InlineMenu implements OnDestroy {
   readonly icon = input<string | null>(null);
   /** A line under the options, for example why the list is limited. */
   readonly footnote = input<string | null>(null);
+
+  /** Says that something in the list is still being checked; read out politely once. */
+  readonly checking = input(false);
 
   readonly opened = output<void>();
   readonly searched = output<string>();

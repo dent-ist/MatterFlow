@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { Signal, computed, effect, inject, signal, untracked } from '@angular/core';
+import { DestroyRef, Signal, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router, convertToParamMap } from '@angular/router';
 import { Observable, firstValueFrom } from 'rxjs';
@@ -27,6 +27,7 @@ import {
   toQueryParams,
 } from './queue-filters';
 import { QueueChoices, mergeOptions } from './queue-choices';
+import { RowLeaving } from './row-leaving';
 import { WorkListState } from './work-list';
 
 /** What every queue response has in common. */
@@ -152,9 +153,19 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
 
   private requestId = 0;
 
+  /**
+   * Rows whose task just left this tab (cancelled or completed from the row, reopened on Closed): shown muted for 4 seconds, then removed
+   * with the totals and the page kept right (BUG-9).
+   */
+  protected readonly leaving = new RowLeaving(
+    (taskId) => this.removeRow(taskId),
+    (taskId) => this.rowInUse(taskId),
+  );
+
   protected constructor(protected readonly pageKey: WorkPage) {
     this.prefs.set(loadPrefs(pageKey, this.auth.profile()?.userId ?? null));
     void this.lookups.ensureLoaded();
+    inject(DestroyRef).onDestroy(() => this.leaving.clear());
     effect(() => {
       const state = this.state();
       const params = this.params();
@@ -281,6 +292,7 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
       if (id !== this.requestId) return;
       this.shownKey = key;
       this.staleRows.set(false);
+      this.leaving.clear();
       this.data.set(result);
       this.loadState.set('ready');
       if (this.pageKey !== 'pod-work' && this.rememberView(state)) {
@@ -296,11 +308,81 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     }
   }
 
-  /** Swaps one row in place (an inline edit); the list is not reloaded. */
+  /** Swaps one row in place (an inline edit); the list is not reloaded. A row that no longer belongs in the tab starts to leave. */
   protected replaceRow(row: TaskQueueRow): void {
     this.data.update((d) =>
       d ? { ...d, items: d.items.map((r) => (r.taskId === row.taskId ? row : r)) } : d,
     );
+    if (this.leavesView(row)) {
+      this.leaving.start(row.taskId, () => {
+        void this.refreshCounts();
+      });
+    } else this.leaving.cancel(row.taskId);
+  }
+
+  /** True when the row, in its new state, no longer belongs in the tab on screen (My Work: Cancelled or Completed on Active). */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected leavesView(_row: TaskQueueRow): boolean {
+    return false;
+  }
+
+  /** Puts a fresh response's tab counts into the data on screen (rows and paging stay); null when the page has no counts. */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected mergeCounts(_current: TData, _fresh: TData): TData | null {
+    return null;
+  }
+
+  /** The tab counts read again without a loading state, so they are right while the row is still on screen. */
+  private async refreshCounts(): Promise<void> {
+    const id = this.requestId;
+    try {
+      const fresh = await firstValueFrom(this.fetch(this.apiState(this.state())));
+      if (id !== this.requestId) return;
+      this.data.update((d) => (d ? (this.mergeCounts(d, fresh) ?? d) : d));
+    } catch {
+      /* the counts catch up with the next load */
+    }
+  }
+
+  /** True while the person is using the row's inline menu: removal waits until they are done. */
+  private rowInUse(taskId: number): boolean {
+    const row = this.rows().find((r) => r.taskId === taskId);
+    if (!row) return false;
+    const tr = this.document.querySelector(`tr[data-task="${row.taskNumber}"]`);
+    return !!tr?.querySelector('[data-inline-trigger][aria-expanded="true"]');
+  }
+
+  /** Takes a row that left the tab off the list: the total and the pager follow, focus moves on, an empty page goes back one. */
+  private removeRow(taskId: number): void {
+    const data = this.data();
+    const row = data?.items.find((r) => r.taskId === taskId);
+    if (!data || !row) return;
+    const tr = this.document.querySelector<HTMLElement>(`tr[data-task="${row.taskNumber}"]`);
+    const active = this.document.activeElement;
+    const hadFocus = !!tr && !!active && tr.contains(active);
+    const column = active?.closest('td')?.getAttribute('data-col') ?? null;
+    const next = tr?.nextElementSibling as HTMLElement | null;
+    const wrap = tr?.closest<HTMLElement>('[role="region"]') ?? null;
+    const items = data.items.filter((r) => r.taskId !== taskId);
+    this.data.set({ ...data, items, total: Math.max(0, data.total - 1) });
+    this.filters.announcement.set(`${row.taskNumber} ${this.leftText(row)}`);
+    if (hadFocus) {
+      setTimeout(() => {
+        const target =
+          (next?.isConnected
+            ? (next.querySelector<HTMLElement>(
+                `td[data-col="${column}"] a, td[data-col="${column}"] button`,
+              ) ?? next.querySelector<HTMLElement>('a, button'))
+            : null) ?? wrap;
+        target?.focus();
+      });
+    }
+    if (items.length === 0 && this.state().page > 1) this.goToPage(this.state().page - 1);
+  }
+
+  /** The announcement after a row left: "TSK-59 cancelled. Removed from Active." */
+  protected leftText(row: TaskQueueRow): string {
+    return `${row.statusLabel.toLowerCase()}. Removed from this list.`;
   }
 
   // ---- URL
