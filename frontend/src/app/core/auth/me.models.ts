@@ -21,6 +21,6 @@ export interface MeProfile {
   /** Effective permission codes (union of all roles). */
   permissions: Permission[];
   isSystemAdmin: boolean;
-  /** True when the user has a pod membership or assignments (drives default landing page). */
+  /** True for an active Pod member or a user with an open assigned task (GET /me; created-by-me alone does not count). Drives the default landing page. */
   hasWork?: boolean;
 }

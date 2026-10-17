@@ -27,7 +27,7 @@ export class HttpMeApi extends MeApi {
         roles: dto.roles ?? [],
         permissions: dto.permissions ?? [],
         isSystemAdmin: dto.isSystemAdmin ?? false,
-        hasWork: dto.hasWork,
+        hasWork: dto.hasWork ?? false,
       })),
     );
   }

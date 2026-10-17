@@ -11266,7 +11266,8 @@
           "registeredAtUtc",
           "roles",
           "permissions",
-          "isSystemAdmin"
+          "isSystemAdmin",
+          "hasWork"
         ],
         "type": "object",
         "properties": {
@@ -11312,6 +11313,9 @@
             }
           },
           "isSystemAdmin": {
+            "type": "boolean"
+          },
+          "hasWork": {
             "type": "boolean"
           }
         }

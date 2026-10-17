@@ -28,6 +28,7 @@ public static class WorkManagementModule
         services.AddScoped<TaskAssetService>();
         services.AddScoped<TaskActivityService>();
         services.AddScoped<ITaskDirectory, TaskDirectory>();
+        services.AddScoped<MatterFlow.Identity.Contracts.IUserWorkSource>(sp => (TaskDirectory)sp.GetRequiredService<ITaskDirectory>());
         services.AddScoped<IAssetTaskLinkReader, TaskAssetLinkReader>();
         services.AddScoped<IAssetLinkRoleUsage, TaskAssetLinkRoleUsage>();
 

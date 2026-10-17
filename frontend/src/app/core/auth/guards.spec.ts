@@ -131,6 +131,26 @@ describe('landingGuard', () => {
     expect(await run(landingGuard)).toBe('/tasks');
   });
 
+  it('keeps My Work ahead of the Dashboard for a user with Task.View and work (#142)', async () => {
+    setup(
+      profileOf({
+        permissions: ['Task.View', 'Dashboard.View', 'Dashboard.ViewSummary'],
+        hasWork: true,
+      }),
+    );
+    expect(await run(landingGuard)).toBe('/my-work');
+  });
+
+  it('never lands on My Work without Task.View, even with work (#142)', async () => {
+    setup(profileOf({ permissions: ['Dashboard.View', 'Dashboard.ViewSummary'], hasWork: true }));
+    expect(await run(landingGuard)).toBe('/dashboard');
+  });
+
+  it('sends a work-holding user without Task.View to their first permitted screen (#142)', async () => {
+    setup(profileOf({ permissions: ['Client.View'], hasWork: true }));
+    expect(await run(landingGuard)).toBe('/clients');
+  });
+
   it('goes to Access Pending for pending users', async () => {
     setup(profileOf({ status: 'ACCESS_PENDING' }));
     expect(await run(landingGuard)).toBe('/access-pending');

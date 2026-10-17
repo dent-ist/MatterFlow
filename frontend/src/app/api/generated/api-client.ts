@@ -12112,6 +12112,7 @@ export interface MeResponse {
     roles: string[];
     permissions: string[];
     isSystemAdmin: boolean;
+    hasWork: boolean;
 
     [key: string]: any;
 }

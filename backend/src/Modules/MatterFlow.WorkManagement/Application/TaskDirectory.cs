@@ -8,8 +8,14 @@ using Microsoft.EntityFrameworkCore;
 namespace MatterFlow.WorkManagement.Application;
 
 /// <summary>Read-only Task lookups for other modules (<see cref="ITaskDirectory"/>).</summary>
-internal sealed class TaskDirectory(DbContext db) : ITaskDirectory
+internal sealed class TaskDirectory(DbContext db) : ITaskDirectory, MatterFlow.Identity.Contracts.IUserWorkSource
 {
+    public Task<bool> HasOpenAssignedWorkAsync(int userId, CancellationToken cancellationToken = default) =>
+        db.Set<WorkTask>().AsNoTracking().AnyAsync(
+            t => t.AssignedUserId == userId && (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold),
+            cancellationToken);
+
+
     public async Task<TaskSummary?> FindAsync(long taskId, CancellationToken cancellationToken = default) =>
         (await db.Set<WorkTask>().AsNoTracking().Where(t => t.Id == taskId).ToListAsync(cancellationToken)).Select(ToSummary).SingleOrDefault();
 

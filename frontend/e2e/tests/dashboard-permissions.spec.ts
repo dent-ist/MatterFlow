@@ -7,7 +7,7 @@ import { uid } from '../support/seed';
  * the menu item and the route follow Dashboard.View, and the role editor keeps the dependency between them.
  */
 test.describe('Dashboard permissions', () => {
-  test('without Dashboard.View the menu item is hidden, the route is a 403 and the landing page is My Work', async ({
+  test('without Dashboard.View the menu item is hidden, the route is a 403 and the landing page is the Task Queue', async ({
     seed,
     asUser,
   }) => {
@@ -19,7 +19,8 @@ test.describe('Dashboard permissions', () => {
     const page = await asUser(user.username);
 
     await page.goto('/');
-    await expect(page).toHaveURL(/\/(my-work|tasks)/);
+    // No Pod and no assigned task: the Task Queue (#142; a person with work lands on My Work, see landing.spec.ts).
+    await expect(page).toHaveURL(/\/tasks$/);
     await expect(page.getByRole('navigation').getByRole('link', { name: 'Dashboard' })).toHaveCount(
       0,
     );
