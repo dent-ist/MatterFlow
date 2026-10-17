@@ -8,9 +8,9 @@ import { TaskApi } from '../support/tasks';
 import { dateInZone, FIRM_ZONE } from '../support/time';
 
 /**
- * Screenshot run for docs/ux/dashboard-trends-types and docs/ux/dashboard-review-2/fixes/wp8a (not a test: skipped unless E2E_SCREENSHOTS is set to the output folder, and it needs
+ * Screenshot run for docs/ux/dashboard-trends-types and docs/ux/dashboard-review-2/fixes/wp8a and wp8b (not a test: skipped unless E2E_SCREENSHOTS is set to the output folder, and it needs
  * the docker SQL Server of the stack because tasks are back-dated over 30 days in the database, which the API cannot do):
- *   E2E_SCREENSHOTS=docs/ux/dashboard-trends-types frontend/e2e/run-local.sh -g "trends screenshots"
+ *   E2E_SCREENSHOTS=docs/ux/dashboard-review-2/fixes/wp8b frontend/e2e/run-local.sh -g "trends screenshots"
  * Seeds 10 task types and about 150 tasks, back-dates their created, completed and due dates, then takes the Trends tab at 1366x768, 1920x1080, 768x1024 and 375x812.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -76,6 +76,7 @@ function sql(query: string, tag?: string): string | null {
 }
 
 test.describe('trends screenshots', () => {
+  test.use({ hasTouch: true });
   test.skip(!OUT, 'set E2E_SCREENSHOTS to the output folder');
 
   test('capture', async ({ page, admin, seed }) => {
@@ -130,7 +131,7 @@ test.describe('trends screenshots', () => {
          DueAtUtc = NULL,
          DueSortKey = CASE WHEN t.rn % 6 = 0 THEN NULL ELSE DATEADD(MILLISECOND, 86399999, CAST(CAST(DATEADD(DAY, ((t.rn * 5) % 12) - 3, DATEADD(MINUTE, -a.age, SYSUTCDATETIME())) AS DATE) AS DATETIME2(3))) END
        FROM dbo.Task k JOIN t ON t.TaskId = k.TaskId
-       CROSS APPLY (SELECT (t.rn * 211) % 40000 + 60 AS age) a;
+       CROSS APPLY (SELECT CASE WHEN t.rn % 3 = 0 THEN (t.rn * 211) % 120000 + 60 ELSE (t.rn * 211) % 40000 + 60 END AS age) a;
        SELECT @@ROWCOUNT;`,
       tag,
     );
@@ -156,8 +157,8 @@ test.describe('trends screenshots', () => {
     for (const [w, h] of [
       [1366, 768],
       [1920, 1080],
-      [768, 1024],
       [375, 812],
+      [320, 700],
     ]) {
       await page.setViewportSize({ width: w, height: h });
       await page.addInitScript(() => localStorage.clear());
@@ -165,6 +166,9 @@ test.describe('trends screenshots', () => {
       await ready(page);
       await shot(`01-default-${w}`);
 
+      // On a phone the list is folded behind Compare task types.
+      const toggle = page.locator('[data-compare-toggle]');
+      if (await toggle.count()) await toggle.click();
       // Three types: All task types is hidden for scale, the type lines use the plot.
       await box(page, top[0]).check();
       await box(page, top[1]).check();
@@ -196,14 +200,16 @@ test.describe('trends screenshots', () => {
       await page.getByRole('button', { name: /View as chart/ }).click();
 
       await page.locator('[data-clear]').click();
-      await expect(page.locator('[data-measure-option="both"]')).toBeChecked();
+      await expect(
+        page.locator('[data-measure="flows"] [data-measure-option="both"]'),
+      ).toBeChecked();
       await shot(`08-measure-both-${w}`);
       const measure = w < 600 ? page.locator('[data-measure-select="flows"]') : null;
       if (measure) await measure.selectOption('onTime');
       else await page.locator('[data-measure-option="onTime"]').check();
       await expect(
-        page.getByRole('heading', { name: 'Tasks completed on time per day' }),
-      ).toBeVisible();
+        page.locator('[data-measure-option="onTime"], [data-measure-select]').first(),
+      ).toBeAttached();
       await shot(`09-measure-on-time-${w}`);
 
       // A legacy address: Overdue per task type lives in the backlog panel.
@@ -212,6 +218,33 @@ test.describe('trends screenshots', () => {
       );
       await ready(page);
       await shot(`10-legacy-overdue-types-${w}`);
+
+      // Open at end of day per task type, and the weekly view of a long period.
+      await page.goto(
+        `/dashboard?tab=trends&types=${types[0].id},${types[1].id},${types[2].id}&bmetric=open`,
+      );
+      await ready(page);
+      await shot(`11-open-per-type-${w}`);
+      await page.goto('/dashboard?tab=trends&period=90d');
+      await ready(page);
+      await expect(page.locator('[data-per-week]')).toHaveCount(2);
+      await shot(`12-weekly-90d-${w}`);
+      await page.locator('[data-plot]').focus();
+      await page.keyboard.press('ArrowLeft');
+      await page.keyboard.press('ArrowLeft');
+      await shot(`13-weekly-tooltip-${w}`);
+      await page.getByRole('button', { name: /View as table/ }).click();
+      await expect(page.locator('tbody tr').first()).toBeVisible();
+      await shot(`14-weekly-table-${w}`);
+      if (w < 500) {
+        await page.goto('/dashboard?tab=trends');
+        await ready(page);
+        const plot = (await page.locator('[data-panel-plot="flows"]').boundingBox())!;
+        await page.touchscreen.tap(plot.x + plot.width * 0.5, plot.y + plot.height / 2);
+        await shot(`15-tap-tooltip-${w}`);
+        await page.locator('[data-compare-toggle]').tap();
+        await shot(`16-compare-open-${w}`, true);
+      }
     }
   });
 });

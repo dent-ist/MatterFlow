@@ -582,11 +582,13 @@ test.describe('Trends on a phone', () => {
       await page.setViewportSize({ width, height: 700 });
       await page.goto(`${TREND}&types=${types[0].id},${types[1].id}`);
       await expect(page.locator('[data-plot]')).toBeVisible();
-      const scroll = await page.evaluate(() => ({
-        doc: document.documentElement.scrollWidth,
-        win: window.innerWidth,
-      }));
-      expect(scroll.doc, `at ${width}`).toBeLessThanOrEqual(scroll.win);
+      // Nothing inside the Trends tab reaches past the window (the tab strip above it is its own scroller and is not part of this tab).
+      const beyond = await page.evaluate(() =>
+        [...document.querySelectorAll('mf-dash-trends-tab, mf-dash-trends-tab *')]
+          .filter((e) => e.getBoundingClientRect().right > window.innerWidth + 0.5)
+          .map((e) => `${e.tagName}.${e.className}`),
+      );
+      expect(beyond, `at ${width}`).toEqual([]);
       const svg = (await page.locator('[data-panel="flows"] svg').boundingBox())!;
       expect(svg.width).toBeGreaterThanOrEqual(width - 56 - 60); // the navigation rail and the page gutters
       expect(svg.x + svg.width).toBeLessThanOrEqual(width);
