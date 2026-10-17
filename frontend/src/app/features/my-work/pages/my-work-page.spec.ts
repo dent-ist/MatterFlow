@@ -767,6 +767,7 @@ describe('MyWorkPage', () => {
       harness.detectChanges();
       expect(rowCount(el)).toBe(2);
     });
+  });
 
   it('shows the Closed column on the Closed tab, sorted newest first, and a header click flips it (C1)', async () => {
     const el = await open('/my-work?view=completed');
