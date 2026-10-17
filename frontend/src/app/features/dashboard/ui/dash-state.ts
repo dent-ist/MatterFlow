@@ -16,8 +16,8 @@ export type DashStateVariant = 'error' | 'stale' | 'empty-filtered' | 'empty';
  * The one state block of every Dashboard tab (UX review 2, P7):
  *  - `error`: a first load failed. Inline, `role="alert"`, a plain message, the error reference when the API sent one, and a text Retry.
  *  - `stale`: a refresh failed and the figures on screen are older. `role="status"` ("Could not refresh. Showing data from 10:42 AM."), Retry.
- *  - `empty-filtered`: filters hide everything; "Clear filters" undoes them.
- *  - `empty`: nothing to show; the tab passes its own message.
+ *  - `empty-filtered`: filters hide everything; "Clear filters" undoes them (the sentence can be the tab's own).
+ *  - `empty`: nothing to show; the tab passes its own message and, optionally, one action that widens the view.
  * It renders inside the tab panel, so the tab row, the Refresh button and the page header stay. Selectors: `[data-dash-state="error|stale|empty"]`
  * and the button `[data-dash-retry]`. The variants are one element at a time (exactly one `role="alert"` is on screen).
  */
@@ -56,7 +56,7 @@ export type DashStateVariant = 'error' | 'stale' | 'empty-filtered' | 'empty';
         <div class="state state--empty" role="status" data-dash-state="empty">
           <i class="pi pi-filter" aria-hidden="true"></i>
           <div class="body">
-            <span>Nothing matches these filters.</span>
+            <span>{{ filteredText() || 'Nothing matches these filters.' }}</span>
           </div>
           <button type="button" class="mf-btn" data-dash-clear (click)="clear.emit()">
             Clear filters
@@ -69,6 +69,11 @@ export type DashStateVariant = 'error' | 'stale' | 'empty-filtered' | 'empty';
           <div class="body">
             <span>{{ message() }}</span>
           </div>
+          @if (actionLabel(); as label) {
+            <button type="button" class="mf-btn" data-dash-action (click)="action.emit()">
+              {{ label }}
+            </button>
+          }
         </div>
       }
     }
@@ -120,10 +125,15 @@ export class DashState {
   readonly variant = input.required<DashStateVariant>();
   /** The text of `error` and `empty`. */
   readonly message = input('');
+  /** `empty-filtered`: the tab's own sentence ("No unassigned tasks match these filters.") instead of the default. */
+  readonly filteredText = input('');
+  /** `empty`: a button that widens what is shown ("Show all pods"). */
+  readonly actionLabel = input<string | null>(null);
   /** The time of the figures on screen (`stale`), already formatted for the person. */
   readonly updated = input<string | null>(null);
   readonly retry = output<void>();
   readonly clear = output<void>();
+  readonly action = output<void>();
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 

@@ -142,25 +142,40 @@ public sealed class TaskQueueColumnFilterTests(SqlServerFixture sql)
 
     // ---- Updated
 
+    /// <summary>
+    /// The host clock is fixed (<see cref="DatabaseApiFactory.Clock"/>) at 03:30 UTC on 14 October 2026, which is 23:30 on the 13th in New York and 17:30 on the 14th in
+    /// Kiritimati, so the days asked for do not depend on the time the suite runs at (the shared seed uses the real clock, and "today" there moves with it).
+    /// </summary>
     [Fact]
     public async Task Updated_range_keeps_the_tasks_updated_in_it_and_never_those_never_updated()
     {
-        var d = await DataAsync();
-        var page = await d.QueueAsync();
-        var items = page.GetProperty("items").EnumerateArray().ToList();
-        var updated = items.Where(i => i.GetProperty("updatedAtUtc").ValueKind != JsonValueKind.Null).Select(i => i.GetProperty("title").GetString()!).ToList();
-        var never = items.Where(i => i.GetProperty("updatedAtUtc").ValueKind == JsonValueKind.Null).Select(i => i.GetProperty("title").GetString()!).ToList();
+        var now = new DateTime(2026, 10, 14, 3, 30, 0, DateTimeKind.Utc);
+        await using var factory = new DatabaseApiFactory(await sql.CreateDatabaseAsync()) { Clock = new Audit.FixedClock(now) };
+        var h = new Tasks.TaskHarness(factory);
+        var world = await h.CreateWorldAsync();
+        var untouched = await h.CreateTaskAsync(world, extra: new() { ["title"] = "never-updated" });
+        var held = await h.CreateTaskAsync(world, extra: new() { ["title"] = "updated-hold" });
+        await h.StatusAsync(held, "ON_HOLD", "Waiting for the client");
 
-        var from = await d.QueueAsync("updatedFrom=2000-01-01");
-        TitlesOf(from).ShouldBeSet([.. updated]);
-        TitlesOf(from).ShouldNotContain(never.FirstOrDefault() ?? "none");
-        TitlesOf(await d.QueueAsync("updatedTo=1999-12-31")).ShouldBeEmpty();
-        TitlesOf(await d.QueueAsync("updatedFrom=2099-01-01")).ShouldBeEmpty();
+        async Task<List<string>> TitlesAsync(string query, string zone = "America/New_York")
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/task-queue?pageSize=100&status=NEW&status=ON_HOLD" + (query.Length > 0 ? "&" + query : string.Empty));
+            request.Headers.Add("X-Time-Zone", zone);
+            return TitlesOf(await Tasks.TaskHarness.OkAsync(await h.Admin.SendAsync(request)));
+        }
 
-        var today = d.UtcToday.ToString("yyyy-MM-dd");
-        var day = await d.QueueAsync($"updatedFrom={today}&updatedTo={d.UtcToday.AddDays(1):yyyy-MM-dd}");
-        TitlesOf(day).ShouldBeSet([.. updated]);
-        TitlesOf(await d.QueueAsync($"updatedTo={d.UtcToday.AddDays(-2):yyyy-MM-dd}")).ShouldBeEmpty();
+        (await TitlesAsync("")).ShouldBeSet(["never-updated", "updated-hold"]);
+        (await TitlesAsync("updatedFrom=2000-01-01")).ShouldBeSet(["updated-hold"]);
+        (await TitlesAsync("updatedTo=1999-12-31")).ShouldBeEmpty();
+        (await TitlesAsync("updatedFrom=2099-01-01")).ShouldBeEmpty();
+
+        // New York: the update happened on the 13th. Kiritimati: on the 14th.
+        (await TitlesAsync("updatedFrom=2026-10-13&updatedTo=2026-10-13")).ShouldBeSet(["updated-hold"]);
+        (await TitlesAsync("updatedFrom=2026-10-14")).ShouldBeEmpty();
+        (await TitlesAsync("updatedTo=2026-10-12")).ShouldBeEmpty();
+        (await TitlesAsync("updatedFrom=2026-10-14&updatedTo=2026-10-14", "Pacific/Kiritimati")).ShouldBeSet(["updated-hold"]);
+        (await TitlesAsync("updatedTo=2026-10-13", "Pacific/Kiritimati")).ShouldBeEmpty();
+        _ = untouched;
     }
 
     [Fact]

@@ -397,20 +397,14 @@ export class Seeder {
   }
 
   /**
-   * A task whose description is plain text in the old format (`DescriptionFormat = 'TEXT'`), as every task was before descriptions became
-   * rich text. The API only writes HTML now, so the row is switched back with one UPDATE inside the throwaway SQL Server container.
+   * Runs one statement in the throwaway SQL Server container of `run-local.sh` (the few setups the API cannot do: rows in an old format,
+   * or tasks with a past history). Throws when the container is unknown; check `canWriteLegacyText()` first.
    */
-  async legacyTextTask(
-    world: Pick<World, 'matter' | 'taskType' | 'workflow'>,
-    text: string,
-    overrides: Json = {},
-  ): Promise<Json> {
+  sql(statement: string): void {
     const container = process.env['E2E_SQL_CONTAINER'];
     const password = process.env['E2E_SQL_PASSWORD'];
     if (!container || !password)
       throw new Error('E2E_SQL_CONTAINER and E2E_SQL_PASSWORD are not set');
-    const task = await this.task(world, { description: 'placeholder', ...overrides });
-    const literal = text.replace(/'/g, "''").replace(/\n/g, "' + NCHAR(10) + N'");
     execFileSync(
       'docker',
       [
@@ -429,9 +423,42 @@ export class Seeder {
         'MatterFlow',
         '-b',
         '-Q',
-        `UPDATE dbo.Task SET Description = N'${literal}', DescriptionFormat = 'TEXT' WHERE TaskId = ${Number(task.taskId)}`,
+        statement,
       ],
       { stdio: 'pipe' },
+    );
+  }
+
+  /**
+   * Gives a task a past: created `createdDaysAgo` days ago and, with `completedDaysAgo`, completed that many days ago (status COMPLETED, the
+   * instants of the Dashboard's history). One UPDATE inside the SQL container, so it needs `canWriteLegacyText()`.
+   */
+  ageTask(taskId: number, opts: { createdDaysAgo: number; completedDaysAgo?: number }): void {
+    const created = `DATEADD(DAY, -${Math.trunc(opts.createdDaysAgo)}, SYSUTCDATETIME())`;
+    const done =
+      opts.completedDaysAgo === undefined
+        ? null
+        : `DATEADD(DAY, -${Math.trunc(opts.completedDaysAgo)}, SYSUTCDATETIME())`;
+    this.sql(
+      `UPDATE dbo.Task SET CreatedAt = ${created}, StatusChangedAt = ${done ?? created}` +
+        (done ? `, StatusCode = 'COMPLETED', CompletedAt = ${done}` : '') +
+        ` WHERE TaskId = ${Number(taskId)}`,
+    );
+  }
+
+  /**
+   * A task whose description is plain text in the old format (`DescriptionFormat = 'TEXT'`), as every task was before descriptions became
+   * rich text. The API only writes HTML now, so the row is switched back with one UPDATE inside the throwaway SQL Server container.
+   */
+  async legacyTextTask(
+    world: Pick<World, 'matter' | 'taskType' | 'workflow'>,
+    text: string,
+    overrides: Json = {},
+  ): Promise<Json> {
+    const task = await this.task(world, { description: 'placeholder', ...overrides });
+    const literal = text.replace(/'/g, "''").replace(/\n/g, "' + NCHAR(10) + N'");
+    this.sql(
+      `UPDATE dbo.Task SET Description = N'${literal}', DescriptionFormat = 'TEXT' WHERE TaskId = ${Number(task.taskId)}`,
     );
     return this.admin.get(`/api/v1/tasks/${task.taskId}`);
   }

@@ -55,6 +55,14 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         DateOnly? endsBeforeToday = period.To < today ? period.To : null;
         var dueSoonDay = today.AddDays(TaskQueueRules.DueSoonDays);
 
+        // Change since before (S3): Overdue and Open as they were at the end of yesterday (the Trends snapshot rules: created by then, not yet Completed or Cancelled by then, a
+        // due moment that had passed by then; no status replay), Completed and Created in the period before this one.
+        var previous = DashboardPeriods.Previous(period);
+        var previousFromUtc = queueClock.StartOfDayUtc(previous.From);
+        var previousToUtc = queueClock.EndOfDayUtc(previous.To);
+        var snap = queueClock.StartOfDayUtc(today);
+        var lastDay = today.AddDays(-1);
+
         // Every number below is about the Tasks of the scope (all Tasks, or the Tasks whose Pod field is one of the scope's Pods) and its query carries the same Pod filter.
         var tasks = scope.Apply(db.Set<WorkTask>().AsNoTracking());
         var open = tasks.Where(TaskQueueRules.Open);
@@ -83,6 +91,15 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             AsapOpen = open.Count(t => t.DueDate == null),
             Completed = tasks.Count(t => t.Status == TaskStatusCode.Completed && t.StatusChangedAtUtc >= fromUtc && t.StatusChangedAtUtc < toUtc),
             Created = tasks.Count(t => t.CreatedAtUtc >= fromUtc && t.CreatedAtUtc < toUtc),
+            OpenYesterday = tasks.Count(t => t.CreatedAtUtc <= snap
+                && (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold || t.StatusChangedAtUtc > snap)),
+            OverdueYesterday = tasks.Count(t => t.CreatedAtUtc <= snap
+                && (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold || t.StatusChangedAtUtc > snap)
+                && ((t.DueAtUtc != null && t.DueAtUtc <= snap) || (t.DueAtUtc == null && t.DueDate != null && t.DueDate <= lastDay))),
+            CompletedPrevious = tasks.Count(t => t.Status == TaskStatusCode.Completed && t.StatusChangedAtUtc >= previousFromUtc && t.StatusChangedAtUtc < previousToUtc),
+            CreatedPrevious = tasks.Count(t => t.CreatedAtUtc >= previousFromUtc && t.CreatedAtUtc < previousToUtc),
+            HadYesterday = tasks.Any(t => t.CreatedAtUtc <= snap),
+            HadBeforePrevious = tasks.Any(t => t.CreatedAtUtc < previousFromUtc),
         }).FirstOrDefaultAsync(ct)
         : showUnassigned ? await tasks.Select(_ => new
         {
@@ -96,6 +113,12 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             AsapOpen = 0,
             Completed = 0,
             Created = 0,
+            OpenYesterday = 0,
+            OverdueYesterday = 0,
+            CompletedPrevious = 0,
+            CreatedPrevious = 0,
+            HadYesterday = false,
+            HadBeforePrevious = false,
         }).FirstOrDefaultAsync(ct)
         : null;
 
@@ -158,7 +181,15 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             ? await db.Set<WorkTask>().AsNoTracking().Where(TaskQueueRules.Open).CountAsync(t => t.AssignedUserId == null && t.AssignedPodId == null, ct)
             : 0;
 
-        head ??= new { Open = 0, Unassigned = 0, Overdue = 0, OverdueCritical = 0, OverdueHigh = 0, OnHold = 0, DueSoon = 0, AsapOpen = 0, Completed = 0, Created = 0 };
+        head ??= new { Open = 0, Unassigned = 0, Overdue = 0, OverdueCritical = 0, OverdueHigh = 0, OnHold = 0, DueSoon = 0, AsapOpen = 0, Completed = 0, Created = 0, OpenYesterday = 0, OverdueYesterday = 0, CompletedPrevious = 0, CreatedPrevious = 0, HadYesterday = false, HadBeforePrevious = false };
+
+        // Dashboard.ViewUnassigned without Dashboard.ViewSummary (the Technician's Summary): the caller's own open and overdue Tasks, by the Task Queue definitions and whatever the page scope.
+        DashboardMine? mine = null;
+        if (showUnassigned && !showSummary)
+        {
+            var own = db.Set<WorkTask>().AsNoTracking().Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Open);
+            mine = new DashboardMine(await own.CountAsync(ct), await own.CountAsync(overdue, ct));
+        }
 
         var summary = new DashboardSummary(
             new DashboardPeriod(period.Days, from, period.To, period.Key),
@@ -178,7 +209,13 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             aging,
             new DashboardCount(head.OverdueCritical, scope.Scoped(DashboardRules.OverdueWith(criticalIds))),
             new DashboardCount(head.OverdueHigh, scope.Scoped(DashboardRules.OverdueWith(highIds))),
-            new DashboardScopeInfo(scope.Value, scope.PodIds, unassignedNoPod));
+            new DashboardScopeInfo(scope.Value, scope.PodIds, unassignedNoPod),
+            showSummary && head.HadYesterday ? head.OverdueYesterday : null,
+            showSummary && head.HadYesterday ? head.OpenYesterday : null,
+            showSummary && head.HadBeforePrevious ? head.CompletedPrevious : null,
+            showSummary && head.HadBeforePrevious ? head.CreatedPrevious : null,
+            showSummary ? new DashboardPreviousPeriod(previous.Kind, previous.From, previous.To) : null,
+            mine);
         cache.Set(cacheKey, summary);
         return summary;
     }

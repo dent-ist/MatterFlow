@@ -11804,11 +11804,26 @@ export interface DashboardCount {
     [key: string]: any;
 }
 
+export interface DashboardMine {
+    open: number;
+    overdue: number;
+
+    [key: string]: any;
+}
+
 export interface DashboardPeriod {
     days: number;
     from: string;
     to: string;
     key: string;
+
+    [key: string]: any;
+}
+
+export interface DashboardPreviousPeriod {
+    kind: string;
+    from: string;
+    to: string;
 
     [key: string]: any;
 }
@@ -11856,6 +11871,12 @@ export interface DashboardSummary {
     overdueCritical: DashboardCount;
     overdueHigh: DashboardCount;
     scope: DashboardScopeInfo;
+    overdueYesterday?: number | undefined;
+    openYesterday?: number | undefined;
+    completedPrevious?: number | undefined;
+    createdPrevious?: number | undefined;
+    previousPeriod?: DashboardPreviousPeriod | undefined;
+    mine?: DashboardMine | undefined;
 
     [key: string]: any;
 }

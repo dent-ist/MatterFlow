@@ -3,6 +3,7 @@ import { DashboardTab, isDashboardTab } from './dashboard-prefs';
 import { USERS_AVAILABILITY_PARAM, USERS_VIEW_PARAM } from './dashboard-links';
 import { DEFAULT_PERIOD_KEY, periodFromParams } from './dashboard-period';
 import { LEGACY_USERS_POD_PARAM, SCOPE_PARAM, parseScope, scopeFromAddress } from './dash-scope';
+import { TECH_PRIORITY_PARAM, TECH_TYPE_PARAM } from './dash-technician';
 import { DEFAULT_VIEW } from './swimlane/swimlane-model';
 import { DEFAULT_CHOICE } from './ui/trend-model';
 
@@ -17,7 +18,7 @@ import { DEFAULT_CHOICE } from './ui/trend-model';
 
 /** The query parameters each tab owns (a tab's parameters are removed from the address when another tab is chosen). */
 export const DASH_TAB_PARAMS: Record<DashboardTab, readonly string[]> = {
-  summary: [],
+  summary: [TECH_PRIORITY_PARAM, TECH_TYPE_PARAM],
   breakdowns: ['bmetric'],
   trends: ['types', 'metric', 'all', 'due'],
   swimlane: [
@@ -32,17 +33,7 @@ export const DASH_TAB_PARAMS: Record<DashboardTab, readonly string[]> = {
     'mine',
     'lane',
   ],
-  users: [
-    USERS_AVAILABILITY_PARAM,
-    'uq',
-    'uload',
-    'uprio',
-    USERS_VIEW_PARAM,
-    'cov',
-    'unopod',
-    'sprio',
-    'stype',
-  ],
+  users: [USERS_AVAILABILITY_PARAM, 'uq', 'uload', 'uprio', USERS_VIEW_PARAM, 'cov', 'unopod'],
 };
 
 /**

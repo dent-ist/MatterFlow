@@ -53,11 +53,19 @@ test.beforeAll(async ({ admin, seed }) => {
     await seed.task(world, { title: `FH unassigned ${i + 1} ${tag}` });
   }
   // Many task types, so the Trends list is longer than any window.
+  const types = [];
   for (let i = 0; i < 14; i++) {
-    await seed.taskType({
-      name: `FH type ${tag} ${String(i + 1).padStart(2, '0')}`,
-      workflows: [world.workflow],
-    });
+    types.push(
+      await seed.taskType({
+        name: `FH type ${tag} ${String(i + 1).padStart(2, '0')}`,
+        workflows: [world.workflow],
+      }),
+    );
+  }
+  // One open task in each of nine task types (the Breakdowns card shows the top eight and "Other task types"), so the cards are taller than
+  // a 1024x768 window on a database that holds nothing else: the "cards scroll" test must not depend on what other tests left behind.
+  for (const [i, type] of types.slice(0, 9).entries()) {
+    await seed.task(world, { title: `FH typed ${i + 1} ${tag}`, taskTypeId: type.id });
   }
   // A busy board (cards in the lanes, people on the Users tab).
   await seedBoard(admin, seed, { tasks: 60 });

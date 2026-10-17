@@ -8,6 +8,10 @@ public readonly record struct ResolvedPeriod(string Key, DateOnly From, DateOnly
     public int Days => To.DayNumber - From.DayNumber + 1;
 }
 
+/// <summary>The period a Dashboard period is compared with (S3, #102): the days directly before it, or for "This month" the same days of the last month.</summary>
+/// <param name="Kind"><c>previous</c> (equal length, directly before) or <c>same-days-last-month</c>.</param>
+public readonly record struct PreviousPeriod(string Kind, DateOnly From, DateOnly To);
+
 /// <summary>
 /// The one period vocabulary of the Dashboard (UX review 2, P3) for Summary, Trends and Coverage: <c>7d</c>, <c>30d</c> (default), <c>90d</c>,
 /// <c>this-month</c> (first day to today), <c>last-month</c> (the whole previous calendar month), <c>6m</c> (183 days), <c>12m</c> (365 days) and
@@ -61,6 +65,23 @@ public static class DashboardPeriods
             "this-month" => new ResolvedPeriod(key, new DateOnly(today.Year, today.Month, 1), today),
             _ => LastMonth(today),
         };
+    }
+
+    /// <summary>
+    /// The period the figures of <paramref name="period"/> are compared with: the same number of days directly before it. "This month" (first day to today) is
+    /// compared with the same days of the last month (its first day to the same day number, at most the whole month), so a month is never compared with a longer or shorter span.
+    /// </summary>
+    public static PreviousPeriod Previous(ResolvedPeriod period)
+    {
+        if (period.Key == "this-month")
+        {
+            var first = period.From.AddMonths(-1);
+            var days = Math.Min(period.Days, DateTime.DaysInMonth(first.Year, first.Month));
+            return new PreviousPeriod("same-days-last-month", first, first.AddDays(days - 1));
+        }
+
+        var length = period.Days;
+        return new PreviousPeriod("previous", period.From.AddDays(-length), period.From.AddDays(-1));
     }
 
     private static ResolvedPeriod LastMonth(DateOnly today)

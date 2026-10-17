@@ -77,6 +77,29 @@ describe('mf-dash-state', () => {
     expect(el.querySelector('[data-dash-clear]')).toBeNull();
   });
 
+  it("empty-filtered can say the tab's own sentence, and empty can offer one action that widens the view", () => {
+    const filtered = TestBed.createComponent(DashState);
+    filtered.componentRef.setInput('variant', 'empty-filtered');
+    filtered.componentRef.setInput('filteredText', 'No unassigned tasks match these filters.');
+    filtered.detectChanges();
+    expect((filtered.nativeElement as HTMLElement).textContent).toContain(
+      'No unassigned tasks match these filters.',
+    );
+    const empty = TestBed.createComponent(DashState);
+    empty.componentRef.setInput('variant', 'empty');
+    empty.componentRef.setInput('message', 'Nothing is unassigned in My pods.');
+    empty.detectChanges();
+    const el = empty.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-dash-action]')).toBeNull();
+    empty.componentRef.setInput('actionLabel', 'Show all pods');
+    empty.detectChanges();
+    let actions = 0;
+    empty.componentInstance.action.subscribe(() => actions++);
+    el.querySelector<HTMLButtonElement>('[data-dash-action]')!.click();
+    expect(actions).toBe(1);
+    expect(el.querySelector('[data-dash-action]')!.textContent!.trim()).toBe('Show all pods');
+  });
+
   it('focusAfterRetry: Retry after a failure, the first control of the content after success', async () => {
     const { fixture, el } = await render('error');
     focusAfterRetry(el, fixture.componentInstance.injector, 'failed');

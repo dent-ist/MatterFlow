@@ -68,10 +68,21 @@ public sealed record DashboardAgingBucket(
 /// <summary>The period the "completed" and "created" counts cover (viewer's local dates, both inclusive). <c>Key</c> is the period keyword it was resolved from (<c>custom</c> for a date range).</summary>
 public sealed record DashboardPeriod([property: Required] int Days, [property: Required] DateOnly From, [property: Required] DateOnly To, [property: Required] string Key);
 
+/// <summary>The period the Completed and Created counts are compared with (S3, #102), viewer's local dates, both inclusive.</summary>
+/// <param name="Kind"><c>previous</c>: the same number of days directly before the period. <c>same-days-last-month</c>: for "This month", the same days of the last month.</param>
+public sealed record DashboardPreviousPeriod([property: Required] string Kind, [property: Required] DateOnly From, [property: Required] DateOnly To);
+
+/// <summary>The viewer's own open work (S9, #108): the Task Queue definitions of Open and Overdue, assigned to the caller, whatever the page scope.</summary>
+public sealed record DashboardMine([property: Required] int Open, [property: Required] int Overdue);
+
 /// <summary>
 /// The operational Dashboard (baseline 12.2). Department-wide (addendum E) but redacted by the caller's Dashboard tab permissions: the headline counts
 /// (Open ... Created) need <c>Dashboard.ViewSummary</c> (<c>Dashboard.ViewUnassigned</c> alone gets only the Unassigned count: the size of the queue), ByTaskType, ByPriority, ByStatus and Aging need <c>Dashboard.ViewBreakdowns</c>; what the caller may not see is zero or an empty list.
 /// <c>OverdueCritical</c> and <c>OverdueHigh</c> are the overdue Tasks whose Priority carries the <c>critical</c> or <c>high</c> badge token (zero without Dashboard.ViewSummary), each with the Task Queue query that lists them.
+/// <para>
+/// Change since before (S3): <c>OverdueYesterday</c> and <c>OpenYesterday</c> are the same snapshots as the Trends point of yesterday (the end of the viewer's yesterday, no status replay; tile minus this value is the delta), <c>CompletedPrevious</c> and <c>CreatedPrevious</c> the counts of <c>PreviousPeriod</c>.
+/// Each is null (no delta line) when the scope held no Task at that time, and without <c>Dashboard.ViewSummary</c>. <c>Mine</c> (S9) is set only for <c>Dashboard.ViewUnassigned</c> without <c>Dashboard.ViewSummary</c>.
+/// </para>
 /// The Trends tab reads its series from <c>GET /api/v1/dashboard/trend</c> (<c>Dashboard.ViewTrends</c>). Overdue and the period are evaluated in the viewer's time zone (addendum M). Counts are operational facts, never billing or staff productivity measures.
 /// </summary>
 public sealed record DashboardSummary(
@@ -92,7 +103,13 @@ public sealed record DashboardSummary(
     [property: Required] IReadOnlyList<DashboardAgingBucket> Aging,
     [property: Required] DashboardCount OverdueCritical,
     [property: Required] DashboardCount OverdueHigh,
-    [property: Required] DashboardScopeInfo Scope);
+    [property: Required] DashboardScopeInfo Scope,
+    int? OverdueYesterday = null,
+    int? OpenYesterday = null,
+    int? CompletedPrevious = null,
+    int? CreatedPrevious = null,
+    DashboardPreviousPeriod? PreviousPeriod = null,
+    DashboardMine? Mine = null);
 
 
 /// <summary>The request of the Trends tab: the period, the Task Types to draw a line for (at most <see cref="DashboardRules.MaxTrendTypes"/>) and optionally one metric.</summary>

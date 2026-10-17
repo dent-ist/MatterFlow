@@ -103,9 +103,9 @@ test.describe('Dashboard permissions', () => {
     const page = await asUser(user.username);
 
     await page.goto('/dashboard');
-    // One permitted tab: no tab list, the tab's name is the page heading (R3, #100).
+    // One permitted tab and only the queue: no tab list, the heading names the content (R3, #100, S9).
     await expect(page.getByRole('tab')).toHaveCount(0);
-    await expect(page.getByRole('heading', { level: 1, name: 'Summary' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Unassigned work' })).toBeVisible();
     const panel = page.locator('[data-tabpanel="summary"]');
     await expect(panel.locator('[data-panel="unassigned"]')).toBeVisible();
     await expect(panel.locator('[data-panel="unassigned"] li').first()).toBeVisible();

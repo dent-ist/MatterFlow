@@ -127,4 +127,38 @@ public class DashboardPeriodsTests
         DashboardRules.Created(new DateOnly(2026, 9, 1), new DateOnly(2026, 9, 30)).ShouldBe("createdFrom=2026-09-01&createdTo=2026-09-30");
         DashboardRules.Completed(new DateOnly(2026, 9, 1), new DateOnly(2026, 9, 30)).ShouldBe("status=COMPLETED&completedFrom=2026-09-01&completedTo=2026-09-30");
     }
+
+    private static string PreviousRange(string? key, string today, string? from = null, string? to = null)
+    {
+        var period = Ok(key, DateOnly.Parse(today), from is null ? null : DateOnly.Parse(from), to is null ? null : DateOnly.Parse(to));
+        var previous = DashboardPeriods.Previous(period);
+        return $"{previous.Kind} {DashboardRules.Date(previous.From)}..{DashboardRules.Date(previous.To)}";
+    }
+
+    [Theory]
+    [InlineData("7d", "2026-10-14", "previous 2026-10-01..2026-10-07")]
+    [InlineData("30d", "2026-10-14", "previous 2026-08-16..2026-09-14")]
+    [InlineData("90d", "2026-10-14", "previous 2026-04-18..2026-07-16")]
+    [InlineData("last-month", "2026-10-14", "previous 2026-08-02..2026-08-31")] // September has 30 days: the 30 days before it
+    [InlineData("last-month", "2026-03-14", "previous 2026-01-04..2026-01-31")] // February has 28
+    [InlineData("12m", "2026-10-14", "previous 2024-10-15..2025-10-14")]
+    public void The_previous_period_is_the_same_number_of_days_directly_before(string key, string today, string expected) =>
+        PreviousRange(key, today).ShouldBe(expected);
+
+    [Theory]
+    [InlineData("2026-10-14", "same-days-last-month 2026-09-01..2026-09-14")]
+    [InlineData("2026-10-01", "same-days-last-month 2026-09-01..2026-09-01")]
+    [InlineData("2026-03-31", "same-days-last-month 2026-02-01..2026-02-28")] // the month has more days than the last one: never beyond its end
+    [InlineData("2028-03-31", "same-days-last-month 2028-02-01..2028-02-29")] // leap year
+    [InlineData("2026-01-10", "same-days-last-month 2025-12-01..2025-12-10")] // across the year
+    public void This_month_is_compared_with_the_same_days_of_the_last_month(string today, string expected) =>
+        PreviousRange("this-month", today).ShouldBe(expected);
+
+    [Fact]
+    public void A_custom_period_is_compared_with_the_equal_span_before_it_and_leap_days_count()
+    {
+        PreviousRange("custom", "2026-10-14", "2026-03-01", "2026-03-10").ShouldBe("previous 2026-02-19..2026-02-28");
+        PreviousRange("custom", "2028-03-14", "2028-03-01", "2028-03-10").ShouldBe("previous 2028-02-20..2028-02-29");
+        PreviousRange("custom", "2026-10-14", "2025-10-14", "2026-10-14").ShouldBe("previous 2024-10-13..2025-10-13"); // 366 days
+    }
 }

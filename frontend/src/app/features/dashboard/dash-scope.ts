@@ -66,6 +66,8 @@ export class DashScope {
 
   /** True once the choices are known (or could not be read): nothing on the page is read before, so the first read already has the right scope. */
   readonly ready = computed(() => this.state() === 'ready' || this.state() === 'failed');
+  /** The person is a member of at least one active Pod ("My pods" is offered). */
+  readonly inPod = computed(() => this.hasPods());
   readonly defaultScope = computed(() => (this.hasPods() ? this.defaultFromServer() : SCOPE_ALL));
   readonly options = computed<ScopeOption[]>(() => {
     const out: ScopeOption[] = [{ value: SCOPE_ALL, label: 'All pods', group: 'general' }];

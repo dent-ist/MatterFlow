@@ -20,10 +20,16 @@ import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/au
 import { Permission } from '../../../core/auth/permissions';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { aBoard } from '../users/users-testing';
-import { aRow, pageOf, provideLookups } from '../../../shared/work-queue/work-queue-testing';
+import {
+  aRow,
+  pageOf,
+  provideLookups,
+  provideQueueChoices,
+} from '../../../shared/work-queue/work-queue-testing';
 import { aTrend } from '../ui/trend-testing';
 import { aMemberChoices, aScopeChoices } from '../dash-scope-testing';
 import { STALE_CHECK_MS } from '../dash-stale';
+import { queueArgsFor } from '../dashboard-links';
 import { AUTO_REFRESH_MS, DashboardPage } from './dashboard-page';
 
 const OPEN = 'status=NEW&status=IN_PROGRESS&status=ON_HOLD';
@@ -253,6 +259,12 @@ describe('DashboardPage', () => {
         { provide: UsersLookupClient, useValue: { lookupUsers: () => of([]) } },
         MessageService,
         ...provideLookups(),
+        ...provideQueueChoices({
+          types: [
+            { value: '3', label: 'Data Processing' },
+            { value: '4', label: 'Redaction' },
+          ],
+        }),
         { provide: USER_TIME_ZONE, useValue: 'UTC' },
         { provide: Clock, useValue: { now: () => new Date(clockMs) } },
       ],
@@ -794,9 +806,9 @@ describe('DashboardPage', () => {
         'Dashboard.View',
         'Dashboard.ViewUnassigned',
       ]);
-      // One tab: no tab list, the tab's name is the heading (R3).
+      // One tab: no tab list; the only content is the unassigned queue, and the heading says so (R3, S9).
       expect(tabLabels(el)).toEqual([]);
-      expect(el.querySelector('h1')!.textContent).toContain('Summary');
+      expect(el.querySelector('h1')!.textContent).toContain('Unassigned work');
       expect(el.querySelector('[data-group], mf-stat-tile, select[data-period]')).toBeNull();
       expect(el.querySelector('[data-empty]')).toBeNull();
       expect(
@@ -2107,6 +2119,236 @@ describe('DashboardPage', () => {
       expect(link.getAttribute('href')).toContain('pod=1&pod=2');
       const lastQueueCall = getTaskQueue.mock.calls.at(-1)!;
       expect(lastQueueCall).toBeDefined();
+    });
+  });
+  describe('change since before (S3)', () => {
+    const delta = (tile: Element | null) => tile?.querySelector('[data-delta]') ?? null;
+    const tiles = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLElement>('.summary-tiles mf-stat-tile'));
+    const withHistory = (overrides: Partial<DashboardSummary> = {}) =>
+      summary({
+        overdueYesterday: 6,
+        openYesterday: 130,
+        completedPrevious: 80,
+        createdPrevious: 101,
+        previousPeriod: { kind: 'previous', from: '2026-08-16', to: '2026-09-14' },
+        ...overrides,
+      });
+
+    it('shows a glyph, a signed number and words on Overdue, Open, Completed and Created, and nowhere else', async () => {
+      const el = await open(of(withHistory()));
+      const [overdue, unassigned, onHold, asap, openTile, dueSoon, completed, created] = tiles(el);
+      const parts = (tile: Element) => ({
+        glyph: text(delta(tile)!.querySelector('.delta-glyph')),
+        words: text(delta(tile)!.querySelector('.delta-text')),
+        spoken: text(delta(tile)!.querySelector('.sr-only')),
+      });
+      expect(parts(overdue)).toEqual({
+        glyph: '\u25B2',
+        words: '+3 vs yesterday',
+        spoken: '3 more than yesterday',
+      });
+      expect(parts(openTile)).toEqual({
+        glyph: '\u25BC',
+        words: '-2 vs yesterday',
+        spoken: '2 fewer than yesterday',
+      });
+      expect(parts(completed)).toEqual({
+        glyph: '\u25B2',
+        words: '+14 vs previous 30 days',
+        spoken: '14 more than in the previous 30 days',
+      });
+      expect(parts(created)).toEqual({
+        glyph: '=',
+        words: 'no change vs previous 30 days',
+        spoken: 'No change compared with the previous 30 days',
+      });
+      for (const none of [unassigned, onHold, asap, dueSoon]) expect(delta(none)).toBeNull();
+      // The glyph and the visible words are decoration for a screen reader, which hears the sentence; the tile stays one link that names it.
+      expect(delta(overdue)!.querySelector('.delta-glyph')!.getAttribute('aria-hidden')).toBe(
+        'true',
+      );
+      expect(delta(overdue)!.querySelector('.delta-text')!.getAttribute('aria-hidden')).toBe(
+        'true',
+      );
+      expect(text(overdue.querySelector('a'))).toContain('3 more than yesterday');
+    });
+
+    it('styles only Overdue going up as attention; Overdue going down and every other delta are neutral', async () => {
+      let el = await open(of(withHistory()));
+      expect(el.querySelectorAll('[data-delta][data-attention]').length).toBe(1);
+      expect(delta(tiles(el)[0])!.hasAttribute('data-attention')).toBe(true);
+      TestBed.resetTestingModule();
+      el = await open(of(withHistory({ overdueYesterday: 14, openYesterday: 100 })));
+      expect(el.querySelectorAll('[data-delta][data-attention]').length).toBe(0);
+      expect(text(delta(tiles(el)[0])!.querySelector('.delta-text'))).toBe('-5 vs yesterday');
+    });
+
+    it('shows no line, no NaN and no "+0" when the API has no baseline', async () => {
+      const el = await open(of(summary()));
+      expect(el.querySelector('[data-delta]')).toBeNull();
+      expect(el.textContent).not.toMatch(/NaN|\+0 /);
+      TestBed.resetTestingModule();
+      const partial = await open(
+        of(
+          withHistory({
+            overdueYesterday: undefined,
+            createdPrevious: undefined,
+            previousPeriod: undefined,
+          }),
+        ),
+      );
+      expect(partial.querySelectorAll('[data-delta]').length).toBe(1);
+      expect(text(delta(tiles(partial)[4])!.querySelector('.delta-text'))).toBe('-2 vs yesterday');
+    });
+
+    it('names the same days of last month for This month, and keeps the tooltip with the Trends caveat', async () => {
+      const el = await open(
+        of(
+          withHistory({
+            previousPeriod: { kind: 'same-days-last-month', from: '2026-09-01', to: '2026-09-14' },
+          }),
+        ),
+        ALL,
+        '/dashboard?period=this-month',
+      );
+      const [overdue, , , , , , completed] = tiles(el);
+      expect(text(delta(completed)!.querySelector('.delta-text'))).toBe(
+        '+14 vs same days last month',
+      );
+      expect(text(delta(completed)!.querySelector('.sr-only'))).toBe(
+        '14 more than in the same days last month',
+      );
+      expect(completed.querySelector('a')!.getAttribute('title')).toBe(
+        'Compared with Sep 1 to Sep 14: 80 completed.',
+      );
+      expect(overdue.querySelector('a')!.getAttribute('title')).toContain(
+        'At the end of yesterday: 6',
+      );
+      expect(overdue.querySelector('a')!.getAttribute('title')).toContain('Trends tab');
+    });
+
+    it('keeps the line on a tile that counts zero (not a link), and the whole tile stays one link otherwise', async () => {
+      const el = await open(
+        of(withHistory({ overdue: count(0, `${OPEN}&overdue=true`), overdueYesterday: 4 })),
+      );
+      const overdue = tiles(el)[0];
+      expect(overdue.querySelector('a')).toBeNull();
+      expect(text(delta(overdue)!.querySelector('.delta-text'))).toBe('-4 vs yesterday');
+      expect(tiles(el)[4].querySelectorAll('a').length).toBe(1);
+    });
+  });
+
+  describe('Technician Summary (S9)', () => {
+    const TECH: Permission[] = ['Task.View', 'Dashboard.View', 'Dashboard.ViewUnassigned'];
+    const router = () => TestBed.inject(Router);
+    const mine = { open: 6, overdue: 1 };
+    const unassignedArgs = (query: string) => queueArgsFor(query, 'priorityAge', 'asc', 5);
+
+    it('is titled "Unassigned work", has no tab row, and tells the person their own load with a link to My Work', async () => {
+      const el = await open(of(summary({ mine })), TECH);
+      expect(el.querySelector('h1')!.textContent).toContain('Unassigned work');
+      expect(el.querySelector('[role="tablist"]')).toBeNull();
+      expect(text(el.querySelector('[data-own-work]'))).toBe(
+        'You have 6 open, 1 overdue. Open My Work',
+      );
+      expect(el.querySelector('[data-my-work-link]')!.getAttribute('href')).toBe('/my-work');
+      // The page Scope sits in the heading row; Priority and Task type are the filters of the foundation.
+      expect(el.querySelector('[data-dash-head] select[data-scope]')).not.toBeNull();
+      expect(
+        Array.from(el.querySelectorAll('[data-tech-bar] [data-field]')).map((f) =>
+          f.getAttribute('data-field'),
+        ),
+      ).toEqual(['sprio', 'stype']);
+      expect(el.querySelector('[data-tech-bar] mf-filter-control')).not.toBeNull();
+    });
+
+    it('has no strip and no own-work line for a Director, or for ViewSummary together with ViewUnassigned', async () => {
+      let el = await open(of(summary({ mine })));
+      expect(el.querySelector('[data-tech-bar], [data-own-work]')).toBeNull();
+      expect(el.querySelector('h1')!.textContent).toContain('Dashboard');
+      TestBed.resetTestingModule();
+      el = await open(of(summary({ mine })), [...TECH, 'Dashboard.ViewSummary']);
+      expect(el.querySelector('[data-tech-bar], [data-own-work]')).toBeNull();
+      expect(el.querySelectorAll('[data-group]').length).toBe(2);
+    });
+
+    it('leaves the line out when the API sent no own counts, and does not link to My Work without Task.View', async () => {
+      let el = await open(of(summary()), TECH);
+      expect(el.querySelector('[data-own-work]')).toBeNull();
+      TestBed.resetTestingModule();
+      el = await open(of(summary({ mine })), ['Dashboard.View', 'Dashboard.ViewUnassigned']);
+      expect(text(el.querySelector('[data-own-work]'))).toBe('You have 6 open, 1 overdue.');
+      expect(el.querySelector('[data-my-work-link]')).toBeNull();
+    });
+
+    it('reads the queue with the Priority and Task type of the address, and again from the first row when they change', async () => {
+      const el = await open(of(summary({ mine })), TECH, '/dashboard?sprio=1,2&stype=3');
+      const base = summary().unassigned.query;
+      expect(getTaskQueue).toHaveBeenCalledWith(
+        ...unassignedArgs(`${base}&priority=1&priority=2&type=3`),
+      );
+      expect(
+        el.querySelector('[data-panel="unassigned"] [data-view-all]')!.getAttribute('href'),
+      ).toContain('priority=1&priority=2&type=3');
+      // Filter chips come from the foundation.
+      expect(el.querySelector('mf-filter-chips')).not.toBeNull();
+      getTaskQueue.mockClear();
+      await router().navigate([], { queryParams: { sprio: '2' }, queryParamsHandling: 'merge' });
+      await settle();
+      expect(getTaskQueue).toHaveBeenCalledTimes(1);
+      expect(getTaskQueue).toHaveBeenCalledWith(...unassignedArgs(`${base}&priority=2&type=3`));
+      // Parameters that are not ids are dropped, not sent.
+      getTaskQueue.mockClear();
+      await router().navigate([], {
+        queryParams: { sprio: 'x,0,5', stype: null },
+        queryParamsHandling: 'merge',
+      });
+      await settle();
+      expect(getTaskQueue).toHaveBeenCalledWith(...unassignedArgs(`${base}&priority=5`));
+    });
+
+    it('says when a filter hides everything and clears it, and when the scope does and widens it', async () => {
+      unassignedRows = [];
+      const none = () => of(pageOf([], { total: 0 }));
+      let el = await open(of(summary({ mine })), TECH, '/dashboard?sprio=1&stype=3');
+      getTaskQueue.mockImplementation(none);
+      el.querySelector<HTMLButtonElement>('[data-dash-clear]');
+      await router().navigate([], { queryParams: { sprio: '1' }, queryParamsHandling: 'merge' });
+      await settle();
+      expect(text(el.querySelector('[data-panel="unassigned"] [data-dash-state]'))).toContain(
+        'No unassigned tasks match these filters.',
+      );
+      el.querySelector<HTMLButtonElement>('[data-dash-clear]')!.click();
+      await settle();
+      expect(router().url).toBe('/dashboard');
+
+      TestBed.resetTestingModule();
+      scopeChoices = aMemberChoices();
+      el = await open(of(summary({ mine })), TECH);
+      getTaskQueue.mockImplementation(none);
+      await router().navigate([], { queryParams: { pod: '1' }, queryParamsHandling: 'merge' });
+      await settle();
+      await settle();
+      expect(text(el.querySelector('[data-panel="unassigned"] [data-dash-state]'))).toContain(
+        'Nothing is unassigned in Review Alpha.',
+      );
+      el.querySelector<HTMLButtonElement>('[data-dash-action]')!.click();
+      await settle();
+      expect(router().url).toBe('/dashboard?pod=all');
+    });
+
+    it('a person in no pod gets All pods with a quiet note; a pod member does not', async () => {
+      let el = await open(of(summary({ mine })), TECH);
+      expect(text(el.querySelector('[data-no-pod-note]'))).toBe(
+        'You are not in a pod yet. Showing all pods.',
+      );
+      expect(el.querySelector<HTMLSelectElement>('select[data-scope]')!.value).toBe('all');
+      TestBed.resetTestingModule();
+      scopeChoices = aMemberChoices();
+      el = await open(of(summary({ mine })), TECH);
+      expect(el.querySelector('[data-no-pod-note]')).toBeNull();
+      expect(el.querySelector<HTMLSelectElement>('select[data-scope]')!.value).toBe('mine');
     });
   });
 });

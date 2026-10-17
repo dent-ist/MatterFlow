@@ -221,9 +221,9 @@ test.describe('Dashboard actions and click-through', () => {
 
     const page = await asUser(tech.username);
     await page.goto('/dashboard');
-    // One permitted tab: no tab list, the tab's name is the page heading (R3, #100).
+    // One permitted tab and only the queue: no tab list, the heading names the content (R3, #100, S9).
     await expect(page.getByRole('tab')).toHaveCount(0);
-    await expect(page.getByRole('heading', { level: 1, name: 'Summary' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Unassigned work' })).toBeVisible();
     await expect(page.locator('[data-panel="unassigned"]')).toBeVisible();
     await expect(page.locator('[data-no-tabs-note]')).toHaveCount(0);
     await page.goto('/dashboard?tab=swimlane');

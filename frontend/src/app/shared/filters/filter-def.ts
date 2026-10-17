@@ -88,6 +88,8 @@ export interface FilterDef {
   readonly maxLength?: number;
   /** multiSelect: named sets of values; a choice equal to one reads "Open" in the button, one chip and the print line. */
   readonly valueGroups?: readonly ValueGroup[];
+  /** multiSelect / user: write the chosen values as one comma list (`sprio=1,2`) instead of a repeated parameter. Both forms are always read. */
+  readonly commaList?: boolean;
   /** Cleans one value read from the URL (upper-case a status code, accept only ids); null drops it. */
   readonly normalize?: (value: string) => string | null;
 }
@@ -266,7 +268,7 @@ export function serializeValue(def: FilterDef, value: FilterValue): QueryParams 
         if (flag) out[flag.param] = 'true';
         else plain.push(v);
       }
-      if (plain.length > 0) out[paramOf(def)] = plain;
+      if (plain.length > 0) out[paramOf(def)] = def.commaList ? plain.join(',') : plain;
       else if (Object.values(out).every((x) => x === null)) out[paramOf(def)] = '';
       return out;
     }
@@ -307,7 +309,7 @@ export function serializeExplicit(def: FilterDef, value: FilterValue): QueryPara
       if (flag) out[flag.param] = 'true';
       else plain.push(v);
     }
-    if (plain.length > 0) out[paramOf(def)] = plain;
+    if (plain.length > 0) out[paramOf(def)] = def.commaList ? plain.join(',') : plain;
     else if (Object.values(out).every((x) => x === null)) out[paramOf(def)] = '';
   }
   return out;

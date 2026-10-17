@@ -48,8 +48,16 @@ import {
   rangeText,
   resolveRange,
 } from '../dashboard-period';
+import { TileDelta, YESTERDAY, previousBasis, tileDelta, yesterdayHint } from '../dashboard-deltas';
 import { PeriodControl } from '../ui/period-control';
 import { DashScope } from '../dash-scope';
+import {
+  TECH_HEADING,
+  TECH_PARAMS,
+  hasTechFilters,
+  techFilterQuery,
+  withTechFilters,
+} from '../dash-technician';
 import { ScopeControl } from '../ui/scope-control';
 import {
   DASHBOARD_TABS,
@@ -71,7 +79,8 @@ import { DashSwimlaneTab } from '../ui/dash-swimlane-tab';
 import { DashTab, DashTabs, panelId, tabId } from '../ui/dash-tabs';
 import { DashUsersTab } from '../ui/dash-users-tab';
 import { StatTile } from '../ui/stat-tile';
-import { DashTaskList, PanelState } from '../ui/task-list-panel';
+import { DashTaskList, PanelEmptyState, PanelState } from '../ui/task-list-panel';
+import { DashTechnicianBar } from '../ui/dash-technician-bar';
 import { DashTrendsTab } from '../ui/dash-trends-tab';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -84,6 +93,7 @@ interface PanelSpec {
   viewAllText: string;
   viewAllTitle: string;
   query: string;
+  emptyState?: PanelEmptyState | null;
 }
 
 interface ListData {
@@ -130,6 +140,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
     DashUsersTab,
     PeriodControl,
     ScopeControl,
+    DashTechnicianBar,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -247,6 +258,8 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                                   [query]="d.overdue.query"
                                   [sort]="overdueOrder"
                                   caption="Excludes ASAP tasks"
+                                  [delta]="overdueDelta()"
+                                  [hint]="overdueHint()"
                                   [detail]="overdueSeverity(d)"
                                   detailIcon="pi-flag-fill"
                                 />
@@ -301,6 +314,8 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                                   [value]="d.open.count"
                                   [query]="d.open.query"
                                   caption="New, in progress and on hold"
+                                  [delta]="openDelta()"
+                                  [hint]="openHint()"
                                 />
                                 <mf-stat-tile
                                   label="Due soon"
@@ -320,6 +335,8 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                                   [value]="d.completed.count"
                                   [query]="d.completed.query"
                                   [caption]="periodCaption()"
+                                  [delta]="completedDelta()"
+                                  [hint]="previousHint(d.completedPrevious, 'completed')"
                                 />
                                 <mf-stat-tile
                                   label="Created"
@@ -329,10 +346,22 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                                   [value]="d.created.count"
                                   [query]="d.created.query"
                                   [caption]="periodCaption()"
+                                  [delta]="createdDelta()"
+                                  [hint]="previousHint(d.createdPrevious, 'created')"
                                 />
                               </div>
                             </div>
                           </div>
+                        }
+                        @if (technician()) {
+                          <!-- S9: the Technician's strip (Priority and Task type filters, own work); loaded only for this variant. -->
+                          @defer (on immediate) {
+                            <mf-dash-technician-bar
+                              [mine]="d.mine"
+                              [canMyWork]="canSeeMyWork()"
+                              [notInPod]="scope.ready() && !scope.inPod()"
+                            />
+                          }
                         }
                         @if (panels().length > 0) {
                           <!-- No section headings: each list heading names its list (Unassigned, Overdue, Due soon). -->
@@ -366,6 +395,9 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                                 [total]="listOf(panel.kind).total"
                                 [state]="listOf(panel.kind).state"
                                 [query]="panel.query"
+                                [emptyState]="panel.emptyState ?? null"
+                                (emptyClear)="clearTechFilters()"
+                                (emptyAction)="showAllPods()"
                                 [skippable]="panel.kind !== lastKind()"
                                 [scroll]="fixedWide()"
                                 (rowChange)="onRowChange(panel.kind, $event)"
@@ -809,6 +841,26 @@ export class DashboardPage implements OnInit {
   protected readonly fullSummary = computed(
     () => this.canSummary() && this.auth.has('Dashboard.ViewSummary'),
   );
+  /** The Technician's Summary (S9): the unassigned queue alone, with its own filters and the own-work line. Never the full Summary. */
+  protected readonly technician = computed(() => this.canSummary() && !this.fullSummary());
+  /** The filters of the technician's queue as Task Queue terms; a change reads the queue again (page 1). */
+  private readonly techQuery = computed(() =>
+    this.technician() ? techFilterQuery(this.queryParams()) : '',
+  );
+  /** Why the technician's queue is empty, when a filter or the scope is the reason (S9 empty states). */
+  private technicianEmpty(): PanelEmptyState | null {
+    if (hasTechFilters(this.queryParams())) {
+      return { kind: 'filtered', message: 'No unassigned tasks match these filters.' };
+    }
+    if (!this.scope.isAll()) {
+      return {
+        kind: 'scope',
+        message: `Nothing is unassigned in ${this.scope.label()}.`,
+        actionLabel: 'Show all pods',
+      };
+    }
+    return null;
+  }
   protected readonly canSeeMyWork = computed(() => this.auth.has('Task.View'));
   protected readonly canAssign = computed(() => this.auth.has('Task.Assign'));
 
@@ -852,11 +904,16 @@ export class DashboardPage implements OnInit {
       viewAllTitle: 'View all unassigned tasks',
       query,
     });
+    // The Technician's queue (S9): the filters of the address are part of its query, so the list, its total and "View all" are the Task Queue's for the same filter.
+    const technicianQueue = (query: string): PanelSpec => ({
+      ...unassigned(withTechFilters(query, this.queryParams())),
+      emptyState: this.technicianEmpty(),
+    });
     if (!this.canSummary()) return [];
     const d = this.data();
     if (!d) return [];
     // Dashboard.ViewUnassigned alone: the queue is the whole Summary tab.
-    if (!this.fullSummary()) return [unassigned(d.unassigned.query)];
+    if (!this.fullSummary()) return [technicianQueue(d.unassigned.query)];
     return [
       ...(this.canAssign() || this.auth.has('Dashboard.ViewUnassigned')
         ? [unassigned(d.unassigned.query)]
@@ -956,6 +1013,49 @@ export class DashboardPage implements OnInit {
       : resolveRange(period, now, this.zone);
     return rangeText(range, now.getFullYear());
   });
+  // ---- change since before (S3)
+
+  /** The words for the period Completed and Created were compared with ("previous 30 days", "same days last month"); null without one. */
+  private readonly basis = computed(() => {
+    const d = this.data();
+    return d ? previousBasis(d.previousPeriod, d.period.days) : null;
+  });
+  protected readonly overdueDelta = computed<TileDelta | null>(() => {
+    const d = this.data();
+    return d ? tileDelta(d.overdue.count, d.overdueYesterday, YESTERDAY, true) : null;
+  });
+  protected readonly openDelta = computed<TileDelta | null>(() => {
+    const d = this.data();
+    return d ? tileDelta(d.open.count, d.openYesterday, YESTERDAY) : null;
+  });
+  protected readonly completedDelta = computed<TileDelta | null>(() => {
+    const d = this.data();
+    return d ? tileDelta(d.completed.count, d.completedPrevious, this.basis()) : null;
+  });
+  protected readonly createdDelta = computed<TileDelta | null>(() => {
+    const d = this.data();
+    return d ? tileDelta(d.created.count, d.createdPrevious, this.basis()) : null;
+  });
+  protected readonly overdueHint = computed(() => {
+    const d = this.data();
+    return d && this.overdueDelta() ? yesterdayHint(d.overdueYesterday) : null;
+  });
+  protected readonly openHint = computed(() => {
+    const d = this.data();
+    return d && this.openDelta() ? yesterdayHint(d.openYesterday) : null;
+  });
+
+  /** Tooltip and description of Completed and Created: the period compared with and its figure ("Sep 1 to Sep 14: 59 completed"). */
+  protected previousHint(value: number | null | undefined, noun: string): string | null {
+    const prev = this.data()?.previousPeriod;
+    if (!prev || value === null || value === undefined) return null;
+    const range = rangeText(
+      { from: prev.from, to: prev.to, days: this.data()?.period.days ?? 0 },
+      this.clock.now().getFullYear(),
+    );
+    return `Compared with ${range}: ${value} ${noun}.`;
+  }
+
   protected readonly updated = computed(() => {
     const d = this.data();
     return d ? mfDate(d.generatedAtUtc, this.zone, 'datetime') : null;
@@ -965,6 +1065,8 @@ export class DashboardPage implements OnInit {
   /** The page heading (H1): "Dashboard", or the name of the only permitted tab (R3). */
   protected readonly heading = computed(() => {
     const tabs = this.visibleTabs();
+    // The only content is the unassigned queue: the page says so (S9).
+    if (tabs.length === 1 && tabs[0].key === 'summary' && this.technician()) return TECH_HEADING;
     return tabs.length === 1 ? tabs[0].label : 'Dashboard';
   });
   /** Panels are `tabpanel`s of the tab list; with no tab list they are regions named by the heading (no orphan tabpanel). */
@@ -1111,6 +1213,18 @@ export class DashboardPage implements OnInit {
         }
       });
     });
+    // A change of the technician's Priority or Task type filter reads the queue again from the first row (the first read is part of the lists' own load).
+    let seenTech: string | null = null;
+    effect(() => {
+      const query = this.techQuery();
+      untracked(() => {
+        const changed = seenTech !== null && seenTech !== query;
+        seenTech = query;
+        if (changed && this.state() === 'ready' && this.activeTab() === 'summary') {
+          this.reloadList('unassigned');
+        }
+      });
+    });
     // While the page scrolls (below 768 px or on a very short window) the header row sticks to the top from 600 px: a focused element
     // is scrolled clear of it (WCAG 2.2 SC 2.4.11).
     const root = typeof document === 'undefined' ? null : document.documentElement;
@@ -1173,8 +1287,8 @@ export class DashboardPage implements OnInit {
     this.load({ fresh: true });
   }
 
-  protected showAllPods(event: Event): void {
-    event.preventDefault();
+  protected showAllPods(event?: Event): void {
+    event?.preventDefault();
     this.scope.choose('all');
     this.live.set('Scope: All pods');
     void this.router.navigate([], {
@@ -1182,6 +1296,17 @@ export class DashboardPage implements OnInit {
       queryParams: { pod: this.scope.addressValue('all') },
       queryParamsHandling: 'merge',
       replaceUrl: true,
+    });
+  }
+
+  /** "Clear filters" of the technician's empty state: removes `sprio` and `stype` from the address. */
+  protected clearTechFilters(): void {
+    const cleared: Record<string, null> = {};
+    for (const key of TECH_PARAMS) cleared[key] = null;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: cleared,
+      queryParamsHandling: 'merge',
     });
   }
 

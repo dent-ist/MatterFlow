@@ -2,6 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { queueParams } from '../dashboard-links';
+import { TileDelta } from '../dashboard-deltas';
 
 let nextTileId = 0;
 
@@ -53,6 +54,19 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'strong' | 'asap' | 'neut
       <span class="value">{{ value() }}</span>
       @if (caption(); as c) {
         <span class="caption">{{ c }}</span>
+      }
+      @if (delta(); as dl) {
+        <!-- Change since before (S3): glyph, signed number and words; the glyph and the visible words are decoration for a screen reader, which gets the sentence. -->
+        <span
+          class="delta"
+          data-delta
+          [attr.data-direction]="dl.direction"
+          [attr.data-attention]="dl.attention ? '' : null"
+        >
+          <span class="delta-glyph" aria-hidden="true">{{ dl.glyph }}</span>
+          <span class="delta-text" aria-hidden="true">{{ dl.text }}</span>
+          <span class="sr-only">{{ dl.spoken }}</span>
+        </span>
       }
       @if (detail(); as d) {
         <span class="detail" data-detail>
@@ -164,6 +178,24 @@ export type TileTone = 'danger' | 'warning' | 'info' | 'strong' | 'asap' | 'neut
       color: var(--mf-text-muted);
       overflow-wrap: anywhere;
     }
+    /* Change since before: the words are always shown with the glyph; only Overdue going up borrows the attention colour. */
+    .delta {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--mf-s1);
+      font-size: var(--mf-fs-xs);
+      font-weight: 600;
+      color: var(--mf-text-muted);
+      overflow-wrap: anywhere;
+    }
+    .delta-glyph {
+      flex: none;
+      font-size: 0.7rem;
+      line-height: 1.5;
+    }
+    .delta[data-attention] {
+      color: var(--mf-danger);
+    }
     /* A second line that may wrap (the severity of the count): icon and words, so colour is never the only carrier. */
     .detail {
       display: flex;
@@ -270,6 +302,8 @@ export class StatTile {
   /** Longer text for the tooltip and the accessible description of the link (for example the resolved end date of a window). */
   readonly hint = input<string | null>(null);
   protected readonly hintId = `mf-tile-hint-${nextTileId++}`;
+  /** Change since before (Overdue, Open, Completed, Created): null shows no line. */
+  readonly delta = input<TileDelta | null>(null);
   /** A second, wrapping line under the caption (for example "11 Critical, 30 High"), with an optional PrimeIcons class. */
   readonly detail = input<string | null>(null);
   readonly detailIcon = input<string | null>(null);

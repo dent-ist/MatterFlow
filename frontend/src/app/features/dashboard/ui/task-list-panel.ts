@@ -19,10 +19,19 @@ import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { LIST_ORDER, ListKind, queueParamsSorted } from '../dashboard-links';
+import { DashState } from './dash-state';
 import { DueChip } from './due-chip';
 
 export type PanelKind = ListKind;
 export type PanelState = 'loading' | 'ready' | 'error';
+
+/** Why a list is empty when the page knows (the Technician's queue: a filter or the scope hides everything). */
+export interface PanelEmptyState {
+  kind: 'filtered' | 'scope';
+  message: string;
+  /** `scope` only: the button that widens the view ("Show all pods"). */
+  actionLabel?: string;
+}
 
 /** Rows per list on the Summary: the full capped list is always shown; in the fixed-height layout the list scrolls inside its panel (#137). */
 const MAX_ROWS = 5;
@@ -46,7 +55,7 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
  */
 @Component({
   selector: 'mf-dash-task-list',
-  imports: [RouterLink, MatterRef, PriorityBadge, RowEdit, TaskTypeIcon, DueChip],
+  imports: [RouterLink, MatterRef, PriorityBadge, RowEdit, TaskTypeIcon, DueChip, DashState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.fill]': 'scroll()' },
   template: `
@@ -97,9 +106,29 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
         }
         @default {
           @if (shown().length === 0) {
-            <p class="msg" data-empty>
-              <i class="pi pi-check-circle" aria-hidden="true"></i> {{ emptyText() }}
-            </p>
+            @if (emptyState(); as es) {
+              <!-- The Technician's queue (S9): the state block says whether a filter or the scope hides everything, and the way out. -->
+              <div data-empty>
+                @if (es.kind === 'filtered') {
+                  <mf-dash-state
+                    variant="empty-filtered"
+                    [filteredText]="es.message"
+                    (clear)="emptyClear.emit()"
+                  />
+                } @else {
+                  <mf-dash-state
+                    variant="empty"
+                    [message]="es.message"
+                    [actionLabel]="es.actionLabel ?? null"
+                    (action)="emptyAction.emit()"
+                  />
+                }
+              </div>
+            } @else {
+              <p class="msg" data-empty>
+                <i class="pi pi-check-circle" aria-hidden="true"></i> {{ emptyText() }}
+              </p>
+            }
           } @else {
             <div
               class="rows"
@@ -490,6 +519,7 @@ export class DashTaskList {
   /** Task Queue query of the full list ("View all"). */
   readonly query = input.required<string>();
   readonly emptyText = input('Nothing here.');
+  readonly emptyState = input<PanelEmptyState | null>(null);
   readonly viewAllText = input('View all');
   /** Tooltip of the "View all" link (for example the window of the list). */
   readonly viewAllTitle = input('');
@@ -499,6 +529,8 @@ export class DashTaskList {
   readonly scroll = input(false);
   readonly rowChange = output<TaskQueueRow>();
   readonly retry = output<void>();
+  readonly emptyClear = output<void>();
+  readonly emptyAction = output<void>();
 
   protected readonly id = `mf-dash-list-${nextId++}`;
 
