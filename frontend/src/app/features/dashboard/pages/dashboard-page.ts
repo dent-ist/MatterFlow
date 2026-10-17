@@ -591,6 +591,15 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
       .lists-spacer h2 {
         margin-bottom: 0;
       }
+      /* The no-pod hint takes the place of the heading row (the spacer keeps its height), so the first list stays level with the tiles. */
+      .summary:not(.summary--queue) .summary-lists {
+        position: relative;
+      }
+      .summary:not(.summary--queue) .summary-lists > .no-pod {
+        position: absolute;
+        inset: 0 0 auto 0;
+        line-height: 1.3;
+      }
     }
     /* Fixed-height layout (#137, window at least 768 x 561): the header row stays, the tab panel fills the rest and only regions inside scroll.
        Summary: from 1280 px the tiles stay (they scroll only on a very short window) and each list scrolls inside its panel; under 1280 px

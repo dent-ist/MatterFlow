@@ -17,6 +17,28 @@ test('Summary: the Unassigned panel is level with the first row of tiles', async
   expect(Math.abs(p.y - t.y)).toBeLessThanOrEqual(2);
 });
 
+test('Summary under a pod scope: the no-pod hint takes the heading row and the panel stays level with the tiles', async ({
+  page,
+  seed,
+}) => {
+  const world = await seed.world();
+  await seed.task(world, { title: `No pod ${Date.now()}` });
+  const pod = await seed.pod(undefined, []);
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto(`/dashboard?tab=summary&pod=${pod.podId}`);
+  const hint = page.locator('[data-no-pod-hint]');
+  const tile = page.locator('[data-group="attention"] mf-stat-tile').first();
+  const panel = page.locator('[data-lists] [data-panel]').first();
+  await expect(hint).toBeVisible();
+  await expect(tile).toBeVisible();
+  await expect(panel).toBeVisible();
+  const t = (await tile.boundingBox())!;
+  const p = (await panel.boundingBox())!;
+  const h = (await hint.boundingBox())!;
+  expect(Math.abs(p.y - t.y)).toBeLessThanOrEqual(2);
+  expect(h.y + h.height).toBeLessThanOrEqual(p.y + 1);
+});
+
 test('Users: the Workload | Coverage switch does not move between the views', async ({ page }) => {
   for (const width of [1366, 1920]) {
     await page.setViewportSize({ width, height: 900 });
