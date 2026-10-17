@@ -248,11 +248,13 @@ test.describe('Users tab: workload', () => {
     await page.getByLabel('Availability', { exact: true }).selectOption({ label: 'All' });
     await expect(page.locator('[data-user-card]')).toHaveCount(PLAN.length);
 
-    await page.getByLabel('Pod', { exact: true }).selectOption({ label: `Workload B ${wl.tag}` });
+    // The Pod is the page-wide Scope now (P1), not a filter of the tab.
+    await expect(page.getByLabel('Pod', { exact: true })).toHaveCount(0);
+    await page.getByLabel('Scope', { exact: true }).selectOption({ label: `Workload B ${wl.tag}` });
     await expect(page.locator('[data-user-card]')).toHaveCount(
       PLAN.filter((p) => p.pod === 'B').length,
     );
-    await expect(page).toHaveURL(new RegExp(`upod=${wl.podB.podId}`));
+    await expect(page).toHaveURL(new RegExp(`pod=${wl.podB.podId}`));
     await page.reload();
     await expect(page.locator('[data-user-card]')).toHaveCount(
       PLAN.filter((p) => p.pod === 'B').length,

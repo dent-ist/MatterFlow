@@ -41,3 +41,5 @@ E2E_SCREENSHOTS=docs/ux/dashboard-swimlane frontend/e2e/run-local.sh -g "swimlan
 - Unit specs: `swimlane-model.spec.ts` (view and address, tree and group layout, card edits, queue link), `swimlane-prefs.spec.ts`, `dash-swimlane-tab.spec.ts` (lanes, cards, toolbar, address and remembered choices, truncation, tree roles and keyboard, inline menus and Undo, drawer focus, error and refresh behaviour), `dashboard-page.spec.ts` (tabs).
 - End to end: `frontend/e2e/tests/swimlane.spec.ts` (20 tests, see `docs/qa/e2e.md`).
 - axe-core (wcag2a, wcag2aa, wcag21aa, wcag22aa): 0 violations on the board, the tree, the assignee groups, the compact board and the open drawer.
+
+**Scope (P1, issue #89).** The Pod filter of the Filters panel is gone: the board shows the tasks of the page-wide Scope (`?pod=all|mine|<id>`, see ux-spec S01), and the lane "Open the Task Queue" links carry the scope's `pod` filter. An old `pod=<id>` link of this tab is the same scope value. The data filters in the panel are now Assignee, Task type, Priority and Overdue only.

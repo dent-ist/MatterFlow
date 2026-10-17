@@ -70,7 +70,7 @@ let nextId = 0;
     }
     @media (max-width: 480px) {
       select {
-        max-width: 11rem;
+        max-width: 8.5rem;
       }
     }
   `,

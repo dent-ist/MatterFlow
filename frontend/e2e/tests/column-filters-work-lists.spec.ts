@@ -492,7 +492,8 @@ test.describe('Column filters on the work lists', () => {
     const world = await seed.world();
     const me = await admin.get('/api/v1/me');
     await seed.task(world, { title: `Axe ${token}`, assignedUserId: me.userId });
-    const pod = await seed.pod(`Axe Pod ${token}`, [me.userId]);
+    // The admin stays out of every pod: a pod member's Dashboard opens on My pods (P1), and the Dashboard specs run as the admin.
+    const pod = await seed.pod(`Axe Pod ${token}`, []);
     await page.setViewportSize({ width: 1366, height: 768 });
 
     const screens = [

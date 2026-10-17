@@ -150,6 +150,18 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
       outline: 2px solid var(--mf-focus);
       outline-offset: -2px;
     }
+    /* Last, so it wins over the base rules above: the tab list keeps a line of its own on a phone and the Scope select and Refresh wrap below it (P1)
+       instead of squeezing the tabs to nothing. */
+    @media (max-width: 599px) {
+      .tabs {
+        flex: 1 0 100%;
+      }
+      .end {
+        flex: 1 0 100%;
+        justify-content: flex-end;
+        padding: var(--mf-s1) 0;
+      }
+    }
   `,
 })
 export class DashTabs {

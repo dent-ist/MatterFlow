@@ -71,7 +71,7 @@ test.describe('users screenshots', () => {
       await page.goto(base);
       await ready(page);
       await shot(`01-cards-${w}`);
-      await page.goto(`${base}&upod=${wl.podB.podId}`);
+      await page.goto(`${base}&pod=${wl.podB.podId}`);
       await ready(page);
       await shot(`02-pod-filter-${w}`);
       await page.goto(`/dashboard?tab=users&view=coverage&uq=zcov${cov.tag}`);
