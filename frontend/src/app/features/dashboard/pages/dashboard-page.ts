@@ -608,6 +608,18 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
         min-height: 0;
       }
     }
+    /* The Technician's Summary (S9): the strip, then the queue under it (a column, not the tiles-and-lists grid); the queue takes the rest of the height. Last, so it
+       wins over the grid rules above. */
+    .summary--queue {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      grid-template-rows: none;
+    }
+    .summary--queue .summary-lists {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
     .note {
       display: flex;
       align-items: flex-start;
