@@ -13,6 +13,9 @@ import { ColumnChooser } from './column-chooser';
 import { Density } from './column-prefs';
 import { SortDirection } from './queue-filters';
 
+/** Sorts whose first click goes newest first. */
+const DESC_FIRST: ReadonlySet<string> = new Set(['created', 'completed', 'closed', 'updated']);
+
 const SORT_LABELS: Readonly<Record<string, string>> = {
   priority: 'Priority',
   due: 'Due date',
@@ -20,6 +23,11 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
   number: 'Ref',
   status: 'Status',
   completed: 'Closed',
+  closed: 'Closed',
+  title: 'Title',
+  matter: 'Matter',
+  updated: 'Updated',
+  age: 'Age',
 };
 
 /**
@@ -130,9 +138,7 @@ export class WorkViewControls {
   }
   protected readonly sortLabel = computed(() => SORT_LABELS[this.sort() ?? ''] ?? this.sort());
   protected readonly dirIcon = computed(() => {
-    const desc =
-      (this.dir() ??
-        (this.sort() === 'created' || this.sort() === 'completed' ? 'desc' : 'asc')) === 'desc';
+    const desc = (this.dir() ?? (DESC_FIRST.has(this.sort() ?? '') ? 'desc' : 'asc')) === 'desc';
     return desc ? 'pi-sort-amount-down' : 'pi-sort-amount-up-alt';
   });
 }

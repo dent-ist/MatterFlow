@@ -231,15 +231,17 @@ test.describe('My Work links, filters and copy', () => {
     });
     const page = await asUser(me.username);
     await page.setViewportSize({ width: 1920, height: 1080 });
+    // The column choice is per tab (X1): the same customised set on every tab.
     await page.addInitScript(
-      ([k, v]) => localStorage.setItem(k, v),
+      ([keys, v]) => {
+        for (const k of keys) localStorage.setItem(k, v);
+      },
       [
-        `mf.work-table.v3.my-work.${me.userId}`,
-        JSON.stringify({
-          columns: ['ref', 'title', 'assignee', 'creator', 'priority', 'due', 'status'],
-          density: 'comfortable',
-        }),
-      ],
+        ['active', 'dueSoon', 'closed', 'createdByMe'].map(
+          (tab) => `mf.work-columns.v2.myWork.${tab}.${me.userId}`,
+        ),
+        JSON.stringify(['ref', 'title', 'assignee', 'creator', 'priority', 'due', 'status']),
+      ] as const,
     );
     const myWork = new MyWorkPage(page);
     const fixed = (key: string) =>
