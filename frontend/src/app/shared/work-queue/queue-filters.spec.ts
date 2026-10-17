@@ -94,7 +94,7 @@ describe('queue filter state', () => {
       priority: ['x', '-1', '2'],
       dueFrom: '12/31/2026',
       asap: 'maybe',
-      sort: 'title',
+      sort: 'bogus',
       dir: 'sideways',
       page: '-4',
       pageSize: '7',

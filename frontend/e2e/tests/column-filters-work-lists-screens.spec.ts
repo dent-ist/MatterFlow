@@ -109,13 +109,26 @@ test.describe('column filters work lists screenshots', () => {
 
     // My Work (as the user whose work it is) with Assignee and Creator shown, to see what each tab owns.
     const mine = await asUser(me.username);
-    await mine.addInitScript(([key, value]) => localStorage.setItem(key, value), [
-      `mf.work-table.v3.my-work.${me.userId}`,
-      JSON.stringify({
-        columns: ['ref', 'title', 'matter', 'priority', 'assignee', 'creator', 'due', 'status'],
-        density: 'comfortable',
-      }),
-    ] as const);
+    await mine.addInitScript(
+      ([keys, value]) => {
+        for (const key of keys) localStorage.setItem(key, value);
+      },
+      [
+        ['active', 'dueSoon', 'closed', 'createdByMe'].map(
+          (tab) => `mf.work-columns.v2.myWork.${tab}.${me.userId}`,
+        ),
+        JSON.stringify([
+          'ref',
+          'title',
+          'matter',
+          'priority',
+          'assignee',
+          'creator',
+          'due',
+          'status',
+        ]),
+      ] as const,
+    );
     await mine.setViewportSize({ width: 1366, height: 768 });
     await mine.goto('/my-work');
     await expect(mine.locator('tr[data-task]').first()).toBeVisible();

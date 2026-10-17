@@ -55,6 +55,9 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
     public const string ClosedWindowAll = "all";
     public const string ClosedWindowDefault = "default";
 
+    /// <summary>Case- and accent-insensitive collation of the Title sort (the database default is accent-sensitive).</summary>
+    private const string TitleCollation = "Latin1_General_100_CI_AI";
+
     public async Task<Result<MyWorkPage>> MyWorkAsync(MyWorkQuery query, CancellationToken ct)
     {
         if (currentUser.UserId is not { } me)
@@ -414,6 +417,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
 
         var sortRows = from t in rows
                        join p in db.Set<Priority>().AsNoTracking() on t.PriorityId equals p.Id
+                       join m in db.Set<Matter>().AsNoTracking() on t.MatterId equals m.Id
                        select new TaskSortRow
                        {
                            Id = t.Id,
@@ -424,6 +428,9 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                            DueSortKey = t.DueSortKey,
                            CreatedAtUtc = t.CreatedAtUtc,
                            StatusChangedAtUtc = t.StatusChangedAtUtc,
+                           ModifiedAtUtc = t.ModifiedAtUtc,
+                           TitleKey = EF.Functions.Collate(t.Title, TitleCollation),
+                           MatterRef = m.MatterRef,
                        };
         var ordered = sort == TaskQueueRules.SortDueSoonDefault ? TaskQueueRules.OrderDueSoon(sortRows, queueClock) : TaskQueueRules.Order(sortRows, sort, descending);
         var ids = await ordered.Select(r => r.Id).Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
@@ -560,6 +567,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                 Utc(t.ModifiedAtUtc),
                 Utc(t.CompletedAtUtc),
                 DateTime.SpecifyKind(t.StatusChangedAtUtc, DateTimeKind.Utc),
+                t.Status is TaskStatusCode.Completed or TaskStatusCode.Cancelled ? DateTime.SpecifyKind(t.StatusChangedAtUtc, DateTimeKind.Utc) : (DateTime?)null,
                 progress.GetValueOrDefault(t.WorkflowInstanceId, new WorkflowProgress(0, 0, null, null)),
                 Convert.ToBase64String(t.RowVersion)));
         }

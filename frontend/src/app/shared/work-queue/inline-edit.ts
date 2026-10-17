@@ -109,6 +109,10 @@ export function rowFromTask(row: TaskQueueRow, task: TaskResponse): TaskQueueRow
     updatedAtUtc: task.modifiedAtUtc ?? row.updatedAtUtc,
     completedAtUtc: task.completedAtUtc,
     statusChangedAtUtc: task.statusChangedAtUtc,
+    closedAtUtc:
+      task.status === 'COMPLETED' || task.status === 'CANCELLED'
+        ? task.statusChangedAtUtc
+        : undefined,
     rowVersion: task.rowVersion,
   };
 }

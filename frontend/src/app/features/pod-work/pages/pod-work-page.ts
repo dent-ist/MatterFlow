@@ -187,6 +187,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
               [density]="prefs().density"
               (resetSort)="resetSort()"
               (columnsChange)="setColumns($event)"
+              [defaultColumns]="columnDefaults()"
               (densityChange)="setDensity($event)"
             />
           </mf-filters-bar>
@@ -198,8 +199,8 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
             [state]="loadState()"
             [columns]="prefs().columns"
             [density]="prefs().density"
-            [sort]="state().sort"
-            [dir]="state().dir"
+            [sort]="tableSort()"
+            [dir]="tableDir()"
             [filtered]="filtered()"
             [filters]="filters"
             [caption]="caption()"
@@ -274,6 +275,10 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
       { key: 'all', label: 'All pod tasks', count: counts?.all ?? null },
     ];
   });
+
+  protected override columnTab(): string {
+    return this.tab();
+  }
 
   protected readonly tabLabel = computed(
     () => this.tabs().find((t) => t.key === this.tab())?.label ?? '',

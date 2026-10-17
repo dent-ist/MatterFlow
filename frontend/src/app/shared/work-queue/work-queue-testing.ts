@@ -42,6 +42,7 @@ export function aRow(overrides: Partial<TaskQueueRow> = {}): TaskQueueRow {
     updatedAtUtc: undefined,
     completedAtUtc: undefined,
     statusChangedAtUtc: '2026-10-01T12:00:00Z',
+    closedAtUtc: undefined,
     workflow: {
       stepsTotal: 6,
       stepsResolved: 2,

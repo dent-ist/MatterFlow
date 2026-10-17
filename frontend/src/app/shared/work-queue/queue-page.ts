@@ -11,12 +11,18 @@ import { FilterOption } from '../filters/filter-def';
 import { ListFilters } from '../filters/list-filters';
 import { QUEUE_FILTER_PARAMS, QueueLookups, withoutFilters } from '../filters/queue-defs';
 import {
+  ColumnScope,
   Density,
   TablePrefs,
   WorkPage,
-  loadPrefs,
+  columnScope,
+  defaultColumns,
+  loadColumns,
+  loadDensity,
   normalizeColumns,
-  savePrefs,
+  resetColumns,
+  saveColumns,
+  saveDensity,
 } from './column-prefs';
 import { forgetLastView, loadLastView, saveLastView } from './last-view';
 import {
@@ -24,11 +30,15 @@ import {
   ViewContext,
   dateDaysAgo,
   parseQueueState,
+  SortDirection,
   toQueryParams,
 } from './queue-filters';
 import { QueueChoices, mergeOptions } from './queue-choices';
 import { RowLeaving } from './row-leaving';
 import { WorkListState } from './work-list';
+
+/** Sorts whose first click goes newest first. */
+const DESC_FIRST: ReadonlySet<string> = new Set(['created', 'completed', 'closed', 'updated']);
 
 /** What every queue response has in common. */
 export interface QueuePageData {
@@ -74,6 +84,16 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     return state;
   });
 
+  /** What the table's headers show: the address's sort, else the tab's own default (the Closed tab: Closed, newest first). */
+  protected readonly tableSort = computed(() => {
+    const s = this.state();
+    return s.sort ?? this.defaultSort()?.field ?? null;
+  });
+  protected readonly tableDir = computed(() => {
+    const s = this.state();
+    return s.sort ? s.dir : (this.defaultSort()?.dir ?? s.dir);
+  });
+
   protected readonly loadState = signal<WorkListState>('loading');
   protected readonly data = signal<TData | null>(null);
   /**
@@ -86,7 +106,28 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   protected readonly total = computed(() => (this.staleRows() ? 0 : (this.data()?.total ?? 0)));
 
   protected readonly userId = computed(() => this.auth.profile()?.userId ?? null);
-  protected readonly prefs = signal<TablePrefs>({ columns: [], density: 'comfortable' });
+  /** Where the column choice lives: this page and the current tab (X1). */
+  protected readonly columnScope = computed<ColumnScope>(() =>
+    columnScope(this.pageKey, this.columnTab()),
+  );
+  /** Column choices made or reset in this visit, by scope: they win over storage, so a change shows at once and a reset forgets it. */
+  private readonly columnChoices = signal<Readonly<Record<string, readonly string[] | null>>>({});
+  private readonly density = signal<Density>('comfortable');
+  /** The current tab's default set, for "Reset columns". */
+  protected readonly columnDefaults = computed(() => defaultColumns(this.columnScope()));
+  /** The current tab's columns and the page's density. */
+  protected readonly prefs = computed<TablePrefs>(() => {
+    const scope = this.columnScope();
+    const chosen = this.columnChoices()[scope];
+    return {
+      columns: chosen
+        ? [...chosen]
+        : chosen === null
+          ? defaultColumns(scope)
+          : loadColumns(scope, this.userId()),
+      density: this.density(),
+    };
+  });
   /** The columns the table really shows (it folds some away on a narrow window); null until it has measured. */
   protected readonly shownColumns = signal<readonly string[] | null>(null);
   /** True while a filter beyond the page's defaults is set: drives "No tasks match these filters". */
@@ -163,7 +204,7 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   );
 
   protected constructor(protected readonly pageKey: WorkPage) {
-    this.prefs.set(loadPrefs(pageKey, this.auth.profile()?.userId ?? null));
+    this.density.set(loadDensity(pageKey, this.auth.profile()?.userId ?? null));
     void this.lookups.ensureLoaded();
     inject(DestroyRef).onDestroy(() => this.leaving.clear());
     effect(() => {
@@ -173,6 +214,16 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
         if (this.shouldLoad(params)) void this.load(state);
       });
     });
+  }
+
+  /** The tab whose column set applies (My Work and Pod Work: the tab key; Task Queue: none). */
+  protected columnTab(): string | null {
+    return null;
+  }
+
+  /** The sort a list shows while the address names none (the Closed tab: closed date, newest first), so its header carries the arrow. */
+  protected defaultSort(): { field: string; dir: SortDirection } | null {
+    return null;
   }
 
   /** The status a plain link starts on (Task Queue: the open ones); none elsewhere. */
@@ -403,10 +454,13 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
 
   protected sortBy(field: string): void {
     const s = this.state();
-    const defaultDesc = field === 'created' || field === 'completed';
-    const currentDir = s.dir ?? (defaultDesc ? 'desc' : 'asc');
-    if (s.sort === field) {
-      this.navigate({ ...s, dir: currentDir === 'asc' ? 'desc' : 'asc', page: 1 });
+    const defaultDesc = DESC_FIRST.has(field);
+    const fallback = this.defaultSort();
+    const current = s.sort ?? fallback?.field ?? null;
+    if (current === field) {
+      const currentDir =
+        s.dir ?? (s.sort ? (defaultDesc ? 'desc' : 'asc') : (fallback?.dir ?? 'asc'));
+      this.navigate({ ...s, sort: field, dir: currentDir === 'asc' ? 'desc' : 'asc', page: 1 });
     } else {
       this.navigate({ ...s, sort: field, dir: defaultDesc ? 'desc' : 'asc', page: 1 });
     }
@@ -427,20 +481,26 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   // ---- table preferences
 
   protected setColumns(columns: string[]): void {
-    this.updatePrefs({ ...this.prefs(), columns: normalizeColumns(columns) });
+    const scope = this.columnScope();
+    const next = normalizeColumns(columns);
+    const def = defaultColumns(scope);
+    if (next.length === def.length && next.every((k, i) => k === def[i])) {
+      // Back on the default (a "Reset columns" or the same boxes ticked): forget the choice, so later changes of the default apply.
+      this.columnChoices.update((c) => ({ ...c, [scope]: null }));
+      resetColumns(scope, this.userId());
+      return;
+    }
+    this.columnChoices.update((c) => ({ ...c, [scope]: next }));
+    saveColumns(scope, this.userId(), next);
   }
 
   protected setDensity(density: Density): void {
-    this.updatePrefs({ ...this.prefs(), density });
+    this.density.set(density);
+    saveDensity(this.pageKey, this.userId(), density);
   }
 
   /** A chip on a hidden column asks for its column. */
   protected showColumn(column: string): void {
     this.setColumns([...this.prefs().columns, column]);
-  }
-
-  private updatePrefs(prefs: TablePrefs): void {
-    this.prefs.set(prefs);
-    savePrefs(this.pageKey, this.userId(), prefs);
   }
 }

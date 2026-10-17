@@ -13,7 +13,7 @@ public sealed record QueueUser([property: Required] int UserId, [property: Requi
 
 /// <summary>
 /// One Task in the Task Queue, My Work or Pod Work. Due is returned as stored (<c>dueDate</c> floating date, <c>dueAtUtc</c> instant when a
-/// time was set); <c>isAsap</c> and <c>isOverdue</c> are computed for the requesting user's time zone (addendum M).
+/// time was set); <c>closedAtUtc</c> is the instant the Task last entered Completed or Cancelled (null while it is open); <c>isAsap</c> and <c>isOverdue</c> are computed for the requesting user's time zone (addendum M).
 /// </summary>
 public sealed record TaskQueueRow(
     [property: Required] long TaskId,
@@ -49,6 +49,7 @@ public sealed record TaskQueueRow(
     DateTime? UpdatedAtUtc,
     DateTime? CompletedAtUtc,
     [property: Required] DateTime StatusChangedAtUtc,
+    DateTime? ClosedAtUtc,
     [property: Required] WorkflowProgress Workflow,
     [property: Required] string RowVersion);
 

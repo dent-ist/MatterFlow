@@ -358,6 +358,54 @@ public class TaskQueueRulesTests
         Ids(rows, TaskQueueRules.SortCompleted, descending: true).ShouldBe([12, 10, 11]);
     }
 
+    [Fact]
+    public void Closed_sort_orders_by_the_closing_instant_and_puts_open_tasks_last_either_way()
+    {
+        var rows = new[]
+        {
+            Row(1, 0, null, createdDays: 5, status: TaskStatusCode.Completed),
+            Row(2, 0, null, createdDays: 2, status: TaskStatusCode.New),
+            Row(3, 0, null, createdDays: 9, status: TaskStatusCode.Cancelled),
+            Row(4, 0, null, createdDays: 7, status: TaskStatusCode.Completed),
+        }.AsQueryable();
+
+        Ids(rows, TaskQueueRules.SortClosed, descending: true).ShouldBe([3, 4, 1, 2]);
+        Ids(rows, TaskQueueRules.SortClosed, descending: false).ShouldBe([1, 4, 3, 2]);
+        Ids(rows, TaskQueueRules.SortCompleted, descending: true).ShouldBe([3, 4, 1, 2]);
+        TaskQueueRules.DefaultsToDescending(TaskQueueRules.SortClosed).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Title_and_matter_sorts_break_ties_by_id_in_both_directions()
+    {
+        static TaskSortRow R(long id, string title, string matter) => new() { Id = id, TitleKey = title, MatterRef = matter };
+        var rows = new[] { R(3, "beta", "00002-0001"), R(1, "alpha", "00002-0001"), R(2, "alpha", "00001-0007"), R(4, "Zed", "00010-0001") }.AsQueryable();
+
+        Ids(rows, TaskQueueRules.SortTitle).Take(2).ShouldBe([1, 2]);
+        Ids(rows, TaskQueueRules.SortTitle, descending: true).Take(2).ShouldBe([4, 3]);
+        Ids(rows, TaskQueueRules.SortMatter).ShouldBe([2, 1, 3, 4]);
+        Ids(rows, TaskQueueRules.SortMatter, descending: true).ShouldBe([4, 3, 1, 2]);
+    }
+
+    [Fact]
+    public void Updated_sort_puts_never_updated_last_and_age_is_created_reversed()
+    {
+        TaskSortRow R(long id, int? updatedDays, int createdDays) => new()
+        {
+            Id = id,
+            CreatedAtUtc = Created.AddDays(createdDays),
+            ModifiedAtUtc = updatedDays is { } d ? Created.AddDays(d) : null,
+        };
+        var rows = new[] { R(1, null, 1), R(2, 5, 2), R(3, 9, 3), R(4, null, 4) }.AsQueryable();
+
+        Ids(rows, TaskQueueRules.SortUpdated, descending: true).ShouldBe([3, 2, 4, 1]);
+        Ids(rows, TaskQueueRules.SortUpdated, descending: false).ShouldBe([2, 3, 1, 4]);
+        // Age ascending = the youngest (newest created) first.
+        Ids(rows, TaskQueueRules.SortAge, descending: false).ShouldBe([4, 3, 2, 1]);
+        Ids(rows, TaskQueueRules.SortAge, descending: true).ShouldBe([1, 2, 3, 4]);
+        TaskQueueRules.DefaultsToDescending(TaskQueueRules.SortAge).ShouldBeFalse();
+    }
+
     [Theory]
     [InlineData("created", true)]
     [InlineData("completed", true)]

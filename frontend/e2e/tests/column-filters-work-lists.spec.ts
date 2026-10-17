@@ -22,12 +22,24 @@ const rowControl = (page: Page, key: string) =>
 const view = (page: Page, name: string) =>
   page.getByRole('group', { name: 'Quick views' }).getByRole('button', { name, exact: true });
 
-/** Columns of a work list for one user (the chooser's choice is remembered per user and screen in the browser). */
+/** The scopes of the column choice of a screen (one per tab, X1): `mf.work-columns.v2.<scope>.<userId>`. */
+const SCOPES: Record<string, string[]> = {
+  queue: ['taskQueue'],
+  'my-work': ['myWork.active', 'myWork.dueSoon', 'myWork.closed', 'myWork.createdByMe'],
+  'pod-work': ['podWork'],
+};
+
+/** Columns of a work list for one user on every tab (the chooser's choice is remembered per user, screen and tab in the browser). */
 async function showColumns(page: Page, screen: string, userId: number, columns: string[]) {
-  await page.addInitScript(([key, value]) => localStorage.setItem(key, value), [
-    `mf.work-table.v3.${screen}.${userId}`,
-    JSON.stringify({ columns, density: 'comfortable' }),
-  ] as const);
+  await page.addInitScript(
+    ([keys, value]) => {
+      for (const key of keys) localStorage.setItem(key, value);
+    },
+    [
+      SCOPES[screen].map((scope) => `mf.work-columns.v2.${scope}.${userId}`),
+      JSON.stringify(columns),
+    ] as const,
+  );
 }
 
 test.describe('Column filters on the work lists', () => {

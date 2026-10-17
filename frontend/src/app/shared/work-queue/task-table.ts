@@ -342,6 +342,15 @@ const PROJECT_HIDES_BELOW = 800;
                         <mf-status-badge [code]="row.status" [label]="row.statusLabel" />
                       }
                     }
+                    @case ('closed') {
+                      @if (row.closedAtUtc) {
+                        <span class="wt-closed" [attr.title]="closedTitle(row.closedAtUtc)">{{
+                          dayOf(row.closedAtUtc)
+                        }}</span>
+                      } @else {
+                        <span aria-label="Not closed">-</span>
+                      }
+                    }
                     @case ('age') {
                       {{ ageDays(row) }}d
                     }
@@ -519,7 +528,9 @@ export class TaskTable {
   }
 
   private effectiveDir(field: string): SortDirection {
-    return this.dir() ?? (field === 'created' || field === 'completed' ? 'desc' : 'asc');
+    return (
+      this.dir() ?? (['created', 'completed', 'closed', 'updated'].includes(field) ? 'desc' : 'asc')
+    );
   }
 
   protected editable(field: InlineField, row: TaskQueueRow): boolean {
@@ -562,6 +573,11 @@ export class TaskTable {
       0,
       Math.floor((this.clock.now().getTime() - new Date(row.createdAtUtc).getTime()) / 86_400_000),
     );
+  }
+
+  /** The tooltip of a closed date: the time and zone ("Oct 16, 2026, 3:00 PM EDT"). */
+  protected closedTitle(instant: string): string {
+    return mfDate(instant, this.zone, 'datetime');
   }
 
   protected dayOf(instant: string): string {

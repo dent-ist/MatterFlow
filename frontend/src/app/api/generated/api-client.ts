@@ -13002,6 +13002,7 @@ export interface TaskQueueRow {
     updatedAtUtc: string | undefined;
     completedAtUtc: string | undefined;
     statusChangedAtUtc: string;
+    closedAtUtc: string | undefined;
     workflow: WorkflowProgress;
     rowVersion: string;
 

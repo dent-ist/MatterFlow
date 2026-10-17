@@ -9,8 +9,8 @@ export interface ColumnDef {
 
 export const WORK_COLUMNS: readonly ColumnDef[] = [
   { key: 'ref', label: 'Ref', locked: true, sortField: 'number' },
-  { key: 'title', label: 'Title', locked: true },
-  { key: 'matter', label: 'Matter' },
+  { key: 'title', label: 'Title', locked: true, sortField: 'title' },
+  { key: 'matter', label: 'Matter', sortField: 'matter' },
   { key: 'client', label: 'Client' },
   { key: 'project', label: 'Project' },
   { key: 'type', label: 'Task type' },
@@ -23,20 +23,59 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
   { key: 'requestor', label: 'Requestor' },
   { key: 'due', label: 'Due', sortField: 'due' },
   { key: 'status', label: 'Status', sortField: 'status' },
-  { key: 'age', label: 'Age' },
+  { key: 'closed', label: 'Closed', sortField: 'closed' },
+  { key: 'age', label: 'Age', sortField: 'age' },
   { key: 'created', label: 'Created', sortField: 'created' },
-  { key: 'updated', label: 'Updated' },
+  { key: 'updated', label: 'Updated', sortField: 'updated' },
 ];
 
 export type WorkPage = 'queue' | 'my-work' | 'pod-work';
 
-export const DEFAULT_COLUMNS: Readonly<Record<WorkPage, readonly string[]>> = {
-  // Chosen to fit a 1280 px screen without sideways scrolling (UXR-09). Project is empty for most tasks and Task type repeats
-  // what the title says, so both live in the column chooser; so do Age, Pod (Task Queue and My Work) and Workflow progress (Pod Work).
-  queue: ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status'],
-  'my-work': ['ref', 'title', 'matter', 'priority', 'progress', 'due', 'status'],
-  'pod-work': ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status'],
+/**
+ * Where a column choice lives (X1): a page, or a tab of a page. `taskQueue`, `myWork.<tab>`, `podWork.<tab>`. A missing tab key falls back to
+ * the page's own key (`podWork`), and a missing page key to the page default.
+ */
+export type ColumnScope = string;
+
+const PAGE_SCOPE: Readonly<Record<WorkPage, string>> = {
+  queue: 'taskQueue',
+  'my-work': 'myWork',
+  'pod-work': 'podWork',
 };
+
+/** The API tab values whose scope name differs ("completed" is the Closed tab). */
+const TAB_SCOPE: Readonly<Record<string, string>> = { completed: 'closed' };
+
+/** The scope of a page and its tab (null or the default tab of the page: `active`, `queue`). */
+export function columnScope(page: WorkPage, tab: string | null): ColumnScope {
+  const base = PAGE_SCOPE[page];
+  if (!tab) return base;
+  return `${base}.${TAB_SCOPE[tab] ?? tab}`;
+}
+
+// Chosen to fit a 1280 px screen without sideways scrolling (UXR-09). Project is empty for most tasks and Task type repeats what the
+// title says, so both live in the column chooser; so do Age, Pod (Task Queue and My Work) and Workflow progress (Pod Work).
+const QUEUE_DEFAULT = ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status'];
+const MY_WORK_DEFAULT = ['ref', 'title', 'matter', 'priority', 'progress', 'due', 'status'];
+
+/**
+ * The default columns per scope, most specific first (X1). To give a tab its own set (C2, B1, B3, A2, A3), add its key here
+ * (`'myWork.createdByMe': [...]`); every other tab keeps using the page default. Ref and Title are always added.
+ */
+export const DEFAULT_COLUMNS: Readonly<Record<string, readonly string[]>> = {
+  taskQueue: QUEUE_DEFAULT,
+  myWork: MY_WORK_DEFAULT,
+  podWork: QUEUE_DEFAULT,
+  // The Closed tab is sorted by the closing date, so it shows it (C1); the rest of its set is C2's.
+  'myWork.closed': [...MY_WORK_DEFAULT, 'closed'],
+};
+
+/** The default set of a scope, normalized (table order, Ref and Title included). */
+export function defaultColumns(scope: ColumnScope): string[] {
+  const dot = scope.indexOf('.');
+  const page = dot < 0 ? scope : scope.slice(0, dot);
+  return normalizeColumns(DEFAULT_COLUMNS[scope] ?? DEFAULT_COLUMNS[page] ?? QUEUE_DEFAULT);
+}
 
 export type Density = 'comfortable' | 'compact';
 
@@ -51,9 +90,35 @@ export function normalizeColumns(keys: readonly string[]): string[] {
   return WORK_COLUMNS.filter((c) => c.locked || wanted.has(c.key)).map((c) => c.key);
 }
 
-function storageKey(page: WorkPage, userId: number | null): string {
-  return `mf.work-table.v3.${page}.${userId ?? 'anon'}`;
-}
+/** The sets every screen showed before X1 (one for all tabs): a stored set equal to one of these was never customised. */
+const LEGACY_DEFAULTS: Readonly<Record<WorkPage, readonly string[]>> = {
+  queue: QUEUE_DEFAULT,
+  'my-work': MY_WORK_DEFAULT,
+  'pod-work': QUEUE_DEFAULT,
+};
+
+/** The scope that inherits a set customised before X1 (one shared set): the page's main tab. */
+const LEGACY_TARGET: Readonly<Record<WorkPage, ColumnScope>> = {
+  queue: 'taskQueue',
+  'my-work': 'myWork.active',
+  'pod-work': 'podWork',
+};
+
+const PAGE_OF: Readonly<Record<string, WorkPage>> = {
+  taskQueue: 'queue',
+  myWork: 'my-work',
+  podWork: 'pod-work',
+};
+
+const who = (userId: number | null) => userId ?? 'anon';
+/** Density stays per page (and user), as before X1. */
+const prefsKey = (page: WorkPage, userId: number | null) =>
+  `mf.work-table.v3.${page}.${who(userId)}`;
+/** The column choice: per user, page and tab; `v2` is the shape (an array of column keys). */
+const columnsKey = (scope: ColumnScope, userId: number | null) =>
+  `mf.work-columns.v2.${scope}.${who(userId)}`;
+const migratedKey = (page: WorkPage, userId: number | null) =>
+  `mf.work-columns.v2.migrated.${page}.${who(userId)}`;
 
 function storage(): Storage | null {
   try {
@@ -63,35 +128,98 @@ function storage(): Storage | null {
   }
 }
 
-/** The user's saved table preferences (per user and screen), or the defaults. Never throws: storage can be blocked or empty. */
-export function loadPrefs(page: WorkPage, userId: number | null): TablePrefs {
-  const fallback: TablePrefs = {
-    columns: normalizeColumns(DEFAULT_COLUMNS[page]),
-    density: 'comfortable',
-  };
+function readJson(key: string): unknown {
   try {
-    const raw = storage()?.getItem(storageKey(page, userId));
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw) as Partial<TablePrefs>;
-    const columns = Array.isArray(parsed.columns)
-      ? normalizeColumns(parsed.columns.filter((c): c is string => typeof c === 'string'))
-      : fallback.columns;
-    return {
-      columns,
-      density: parsed.density === 'compact' ? 'compact' : 'comfortable',
-    };
+    const raw = storage()?.getItem(key);
+    return raw ? JSON.parse(raw) : null;
   } catch {
-    return fallback;
+    return null;
   }
 }
 
-/** Saves the preferences; silently does nothing when storage is unavailable. */
-export function savePrefs(page: WorkPage, userId: number | null, prefs: TablePrefs): void {
+function strings(value: unknown): string[] | null {
+  return Array.isArray(value) ? value.filter((c): c is string => typeof c === 'string') : null;
+}
+
+function sameSet(a: readonly string[], b: readonly string[]): boolean {
+  const x = normalizeColumns(a);
+  const y = normalizeColumns(b);
+  return x.length === y.length && x.every((k, i) => k === y[i]);
+}
+
+/**
+ * One-time move of the pre-X1 choice (one set for every tab): a set equal to the old default was never customised and is dropped, so the
+ * new per-tab defaults apply; a customised set is kept for the page's main tab only. Other tabs show their defaults.
+ */
+function migrateLegacy(page: WorkPage, userId: number | null): void {
   try {
-    storage()?.setItem(storageKey(page, userId), JSON.stringify(prefs));
+    const store = storage();
+    if (!store || store.getItem(migratedKey(page, userId))) return;
+    store.setItem(migratedKey(page, userId), '1');
+    const legacy = strings(
+      (readJson(prefsKey(page, userId)) as { columns?: unknown } | null)?.columns,
+    );
+    if (!legacy || sameSet(legacy, LEGACY_DEFAULTS[page])) return;
+    const target = columnsKey(LEGACY_TARGET[page], userId);
+    if (!store.getItem(target)) store.setItem(target, JSON.stringify(normalizeColumns(legacy)));
+  } catch {
+    // Blocked storage: nothing to migrate.
+  }
+}
+
+/** The user's column choice for a scope, or that scope's default. Never throws; a corrupt value falls back silently. */
+export function loadColumns(scope: ColumnScope, userId: number | null): string[] {
+  const page = PAGE_OF[scope.split('.')[0]];
+  if (page) migrateLegacy(page, userId);
+  const stored = strings(readJson(columnsKey(scope, userId)));
+  return stored ? normalizeColumns(stored) : defaultColumns(scope);
+}
+
+/** Remembers the column choice of one scope; silently does nothing when storage is unavailable. */
+export function saveColumns(
+  scope: ColumnScope,
+  userId: number | null,
+  columns: readonly string[],
+): void {
+  try {
+    storage()?.setItem(columnsKey(scope, userId), JSON.stringify(normalizeColumns(columns)));
   } catch {
     // Private window, blocked or full storage: the preference just does not persist.
   }
+}
+
+/** Forgets the column choice of one scope ("Reset columns"): the default returns. */
+export function resetColumns(scope: ColumnScope, userId: number | null): void {
+  try {
+    storage()?.removeItem(columnsKey(scope, userId));
+  } catch {
+    // Not persisted.
+  }
+}
+
+export function loadDensity(page: WorkPage, userId: number | null): Density {
+  const d = (readJson(prefsKey(page, userId)) as { density?: unknown } | null)?.density;
+  return d === 'compact' ? 'compact' : 'comfortable';
+}
+
+export function saveDensity(page: WorkPage, userId: number | null, density: Density): void {
+  try {
+    storage()?.setItem(prefsKey(page, userId), JSON.stringify({ density }));
+  } catch {
+    // Not persisted.
+  }
+}
+
+/** The user's table preferences for a page and tab: that scope's columns and the page's density. */
+export function loadPrefs(
+  page: WorkPage,
+  userId: number | null,
+  tab: string | null = null,
+): TablePrefs {
+  return {
+    columns: loadColumns(columnScope(page, tab), userId),
+    density: loadDensity(page, userId),
+  };
 }
 
 /** Remembers the last Pod chosen on Pod Work. */

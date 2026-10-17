@@ -72,6 +72,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
           [density]="prefs().density"
           (resetSort)="resetSort()"
           (columnsChange)="setColumns($event)"
+          [defaultColumns]="columnDefaults()"
           (densityChange)="setDensity($event)"
         />
       </mf-filters-bar>
@@ -83,8 +84,8 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
         [state]="loadState()"
         [columns]="prefs().columns"
         [density]="prefs().density"
-        [sort]="state().sort"
-        [dir]="state().dir"
+        [sort]="tableSort()"
+        [dir]="tableDir()"
         [filtered]="filtered()"
         [filters]="filters"
         caption="Task Queue"

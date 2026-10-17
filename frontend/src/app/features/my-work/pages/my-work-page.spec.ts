@@ -286,13 +286,13 @@ describe('MyWorkPage', () => {
   });
 
   it('shows what each tab decides itself as disabled controls with the reason, and does not send them', async () => {
-    localStorage.setItem(
-      'mf.work-table.v3.my-work.1',
-      JSON.stringify({
-        columns: ['ref', 'title', 'priority', 'assignee', 'creator', 'due', 'status'],
-        density: 'comfortable',
-      }),
-    );
+    // A customised set on the tabs this test visits (the column choice is per tab).
+    for (const tab of ['active', 'dueSoon', 'createdByMe']) {
+      localStorage.setItem(
+        `mf.work-columns.v2.myWork.${tab}.1`,
+        JSON.stringify(['ref', 'title', 'priority', 'assignee', 'creator', 'due', 'status']),
+      );
+    }
     let el = await open('/my-work?assignee=9&creator=3');
     // Active: Assignee is "me" by definition.
     expect(control(el, 'assignee').hasAttribute('data-filter-fixed')).toBe(true);
@@ -767,5 +767,58 @@ describe('MyWorkPage', () => {
       harness.detectChanges();
       expect(rowCount(el)).toBe(2);
     });
+
+  it('shows the Closed column on the Closed tab, sorted newest first, and a header click flips it (C1)', async () => {
+    const el = await open('/my-work?view=completed');
+    const header = () => el.querySelector('th[data-col="closed"]')!;
+    expect(header().getAttribute('aria-sort')).toBe('descending');
+    // The API default applies (no sort sent) while the header shows it.
+    expect(lastArgs()[ARG.sort]).toBeUndefined();
+    el.querySelector<HTMLElement>('th[data-col="closed"] button')!.click();
+    await settle();
+    expect(query()['sort']).toBe('closed');
+    expect(query()['dir']).toBe('asc');
+    expect(lastArgs()[ARG.sort]).toBe('closed');
+    expect(header().getAttribute('aria-sort')).toBe('ascending');
+    el.querySelector<HTMLElement>('th[data-col="closed"] button')!.click();
+    await settle();
+    expect(query()['dir']).toBe('desc');
+  });
+
+  it('keeps a separate column choice per tab and resets only the current tab (X1)', async () => {
+    const el = await open('/my-work');
+    expect(el.querySelector('th[data-col="closed"]')).toBeNull();
+    const choose = async (label: string) => {
+      el.querySelector<HTMLElement>('.cc-button')!.click();
+      await settle();
+      const box = Array.from(el.querySelectorAll<HTMLInputElement>('.cc-check input')).find((i) =>
+        i.closest('label')!.textContent!.includes(label),
+      )!;
+      box.click();
+      await settle();
+    };
+    await choose('Workflow progress');
+    el.querySelector<HTMLElement>('.cc-button')!.click(); // close the panel
+    await settle();
+    expect(el.querySelector('th[data-col="progress"]')).toBeNull();
+
+    // Closed has its own set: Workflow progress is still there.
+    tab(el, 'Closed').click();
+    await settle();
+    expect(el.querySelector('th[data-col="progress"]')).not.toBeNull();
+    expect(el.querySelector('th[data-col="closed"]')).not.toBeNull();
+
+    // Back on Active the choice is kept; "Reset columns" brings the default back.
+    tab(el, 'Active').click();
+    await settle();
+    expect(el.querySelector('th[data-col="progress"]')).toBeNull();
+    el.querySelector<HTMLElement>('.cc-button')!.click();
+    await settle();
+    el.querySelector<HTMLElement>('[data-columns-reset]')!.click();
+    await settle();
+    expect(el.querySelector('th[data-col="progress"]')).not.toBeNull();
+    expect(el.querySelector('.cc [role="status"]')!.textContent).toContain(
+      'Columns reset to the default set.',
+    );
   });
 });

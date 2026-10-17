@@ -14207,6 +14207,7 @@
           "updatedAtUtc",
           "completedAtUtc",
           "statusChangedAtUtc",
+          "closedAtUtc",
           "workflow",
           "rowVersion"
         ],
@@ -14364,6 +14365,13 @@
           },
           "statusChangedAtUtc": {
             "type": "string",
+            "format": "date-time"
+          },
+          "closedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date-time"
           },
           "workflow": {

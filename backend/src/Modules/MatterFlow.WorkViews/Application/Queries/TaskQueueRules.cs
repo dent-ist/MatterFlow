@@ -46,6 +46,15 @@ public sealed class TaskSortRow
     public DateTime CreatedAtUtc { get; init; }
 
     public DateTime StatusChangedAtUtc { get; init; }
+
+    /// <summary>Last update; null for a Task nobody has changed since it was created.</summary>
+    public DateTime? ModifiedAtUtc { get; init; }
+
+    /// <summary>The Title in an accent- and case-insensitive collation (set by the query; the plain Title in tests), so the sort ignores both.</summary>
+    public string TitleKey { get; init; } = string.Empty;
+
+    /// <summary>The Matter reference (zero-padded by its generator, so the text order is the numeric order).</summary>
+    public string MatterRef { get; init; } = string.Empty;
 }
 
 /// <summary>
@@ -61,6 +70,11 @@ public static class TaskQueueRules
     public const string SortNumber = "number";
     public const string SortStatus = "status";
     public const string SortCompleted = "completed";
+    public const string SortClosed = "closed";
+    public const string SortTitle = "title";
+    public const string SortMatter = "matter";
+    public const string SortUpdated = "updated";
+    public const string SortAge = "age";
     /// <summary>Priority (most urgent first), then oldest first; ignores due dates (the Dashboard's unassigned queue).</summary>
     public const string SortPriorityAge = "priorityAge";
 
@@ -76,7 +90,7 @@ public static class TaskQueueRules
     /// </summary>
     public const int DueSoonDays = 2;
 
-    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge];
+    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge, SortClosed, SortTitle, SortMatter, SortUpdated, SortAge];
 
     /// <summary>NEW, IN_PROGRESS or ON_HOLD.</summary>
     public static Expression<Func<WorkTask, bool>> Open { get; } =
@@ -150,7 +164,7 @@ public static class TaskQueueRules
     }
 
     /// <summary>Descending is the default direction for these sorts (newest first); everything else defaults to ascending.</summary>
-    public static bool DefaultsToDescending(string sort) => sort is SortCreated or SortCompleted;
+    public static bool DefaultsToDescending(string sort) => sort is SortCreated or SortCompleted or SortClosed or SortUpdated;
 
     /// <summary>
     /// Orders the rows. <c>default</c> is the queue rule of addendum G and architecture 8.4: priority order, then ASAP above explicit due dates,
@@ -181,9 +195,23 @@ public static class TaskQueueRules
             case SortNumber:
                 return descending ? rows.OrderByDescending(r => r.Id) : rows.OrderBy(r => r.Id);
             case SortCompleted:
+            case SortClosed:
+                // The closed instant is the last status change of a Completed or Cancelled Task; open Tasks have none and come last in either direction.
                 return descending
-                    ? rows.OrderByDescending(r => r.StatusChangedAtUtc).ThenByDescending(r => r.Id)
-                    : rows.OrderBy(r => r.StatusChangedAtUtc).ThenBy(r => r.Id);
+                    ? rows.OrderBy(r => r.Status == TaskStatusCode.Completed || r.Status == TaskStatusCode.Cancelled ? 0 : 1).ThenByDescending(r => r.StatusChangedAtUtc).ThenByDescending(r => r.Id)
+                    : rows.OrderBy(r => r.Status == TaskStatusCode.Completed || r.Status == TaskStatusCode.Cancelled ? 0 : 1).ThenBy(r => r.StatusChangedAtUtc).ThenBy(r => r.Id);
+            case SortTitle:
+                return descending ? rows.OrderByDescending(r => r.TitleKey).ThenByDescending(r => r.Id) : rows.OrderBy(r => r.TitleKey).ThenBy(r => r.Id);
+            case SortMatter:
+                return descending ? rows.OrderByDescending(r => r.MatterRef).ThenByDescending(r => r.Id) : rows.OrderBy(r => r.MatterRef).ThenBy(r => r.Id);
+            case SortUpdated:
+                // Never-updated Tasks come last in either direction.
+                return descending
+                    ? rows.OrderBy(r => r.ModifiedAtUtc == null ? 1 : 0).ThenByDescending(r => r.ModifiedAtUtc).ThenByDescending(r => r.Id)
+                    : rows.OrderBy(r => r.ModifiedAtUtc == null ? 1 : 0).ThenBy(r => r.ModifiedAtUtc).ThenBy(r => r.Id);
+            case SortAge:
+                // Age ascending is the youngest first: the inverse of Created, so the arrow means what it says.
+                return descending ? rows.OrderBy(r => r.CreatedAtUtc).ThenBy(r => r.Id) : rows.OrderByDescending(r => r.CreatedAtUtc).ThenByDescending(r => r.Id);
             default:
                 return WithDefaultTail(rows.OrderBy(r => r.PrioritySortOrder));
         }

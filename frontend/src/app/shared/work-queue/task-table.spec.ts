@@ -342,7 +342,8 @@ describe('TaskTable', () => {
     const header = (key: string) => el().querySelector(`th[data-col="${key}"]`)!;
     expect(header('due').getAttribute('aria-sort')).toBe('descending');
     expect(header('priority').getAttribute('aria-sort')).toBe('none');
-    expect(header('title').getAttribute('aria-sort')).toBeNull();
+    expect(header('title').getAttribute('aria-sort')).toBe('none');
+    expect(header('matter')).toBeNull();
 
     const emitted: string[] = [];
     fixture.componentInstance.sortChange.subscribe((f) => emitted.push(f));
@@ -447,5 +448,22 @@ describe('TaskTable', () => {
       expect(cell('assignee').querySelector('[data-inline-trigger]')).toBeNull();
       expect(cell('status').querySelector('[data-inline-trigger]')).not.toBeNull();
     });
+  });
+
+  it('shows the closed date in the viewer zone with the time in the tooltip, and a dash for open tasks (C1)', async () => {
+    await create(
+      [
+        aRow({ taskId: 1, status: 'COMPLETED', closedAtUtc: '2026-10-17T02:30:00Z' }),
+        aRow({ taskId: 2, closedAtUtc: undefined }),
+      ],
+      ['closed', 'status'],
+    );
+    const cells = Array.from(el().querySelectorAll('tbody td[data-col="closed"]'));
+    // 02:30 UTC is still Oct 16 in Chicago.
+    expect(cells[0].textContent?.trim()).toBe('Oct 16, 2026');
+    expect(cells[0].querySelector('[title]')!.getAttribute('title')).toBe(
+      'Oct 16, 2026, 9:30 PM CDT',
+    );
+    expect(cells[1].textContent?.trim()).toBe('-');
   });
 });

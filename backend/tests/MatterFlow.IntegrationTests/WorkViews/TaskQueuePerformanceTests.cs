@@ -129,6 +129,42 @@ public sealed partial class TaskQueuePerformanceTests(SqlServerFixture sql, ITes
     }
 
     [Fact]
+    public async Task The_new_sort_keys_stay_fast_at_5000_tasks_and_add_no_statements()
+    {
+        var http = _logged.CreateClient();
+        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
+
+        var baseline = 0;
+        foreach (var sort in new[] { "default", "title", "matter", "updated", "age", "closed" })
+            foreach (var dir in new[] { "asc", "desc" })
+            {
+                var query = $"/api/v1/task-queue?pageSize=50&sort={sort}&dir={dir}";
+                var last = await OkAsync(await http.GetAsync(query));
+                last.GetProperty("total").GetInt32().ShouldBe(TaskCount);
+                var timings = new List<long>();
+                var statements = 0;
+                for (var i = 0; i < 5; i++)
+                {
+                    _commands.Clear();
+                    var watch = Stopwatch.StartNew();
+                    await OkAsync(await http.GetAsync(query));
+                    watch.Stop();
+                    timings.Add(watch.ElapsedMilliseconds);
+                    statements = _commands.Snapshot().Count;
+                }
+
+                output.WriteLine($"sort={sort} {dir}: ms {string.Join(", ", timings)}, {statements} statements");
+                // G3: a page of a scan sort comes back in well under 150 ms on an idle machine; the bound leaves room for a loaded one.
+                timings.Order().ElementAt(2).ShouldBeLessThan(500, $"{sort} {dir}");
+                if (sort == "default")
+                    baseline = statements;
+                else
+                    statements.ShouldBe(baseline, $"{sort} {dir}: a sort never adds a read");
+            }
+    }
+
+    [Fact]
     public async Task The_column_text_filters_stay_fast_at_5000_tasks_and_add_no_statements()
     {
         var http = _logged.CreateClient();

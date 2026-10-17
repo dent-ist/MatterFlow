@@ -41,7 +41,7 @@ export type SortDirection = 'asc' | 'desc';
 
 export interface QueueState {
   filters: QueueFilters;
-  /** API sort field (`priority`, `priorityAge`, `due`, `created`, `number`, `status`, `completed`); null = the default queue order. */
+  /** API sort field (`priority`, `priorityAge`, `due`, `created`, `number`, `status`, `completed`, `closed`, `title`, `matter`, `updated`, `age`); null = the default queue order. */
   sort: string | null;
   dir: SortDirection | null;
   page: number;
@@ -64,6 +64,11 @@ export const SORT_FIELDS: readonly string[] = [
   'status',
   'completed',
   'priorityAge',
+  'closed',
+  'title',
+  'matter',
+  'updated',
+  'age',
 ];
 export const PAGE_SIZES: readonly number[] = [25, 50, 100];
 export const DEFAULT_PAGE_SIZE = 50;

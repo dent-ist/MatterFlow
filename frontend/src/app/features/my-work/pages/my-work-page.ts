@@ -155,6 +155,7 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
             [density]="prefs().density"
             (resetSort)="resetSort()"
             (columnsChange)="setColumns($event)"
+            [defaultColumns]="columnDefaults()"
             (densityChange)="setDensity($event)"
           >
             @if (windowed()) {
@@ -172,8 +173,8 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
           [state]="loadState()"
           [columns]="prefs().columns"
           [density]="prefs().density"
-          [sort]="state().sort"
-          [dir]="state().dir"
+          [sort]="tableSort()"
+          [dir]="tableDir()"
           [filtered]="filtered()"
           [filters]="filters"
           [caption]="'My Work: ' + tabLabel()"
@@ -258,6 +259,15 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
   });
 
   protected readonly tabLabel = computed(() => TAB_LABELS[this.tab()]);
+
+  protected override columnTab(): string {
+    return this.tab();
+  }
+
+  /** The Closed tab is ordered by the closing date, newest first: its Closed header carries the arrow (C1). */
+  protected override defaultSort(): { field: string; dir: 'asc' | 'desc' } | null {
+    return this.tab() === 'completed' ? { field: 'closed', dir: 'desc' } : null;
+  }
 
   protected readonly defaultOrder = computed(() =>
     this.tab() === 'completed'

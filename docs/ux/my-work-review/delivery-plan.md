@@ -135,6 +135,19 @@ Total about 46 developer days; with four agents in parallel roughly five to six 
 - `swimlane-card.ts` and Dashboard Summary caption constants: #162 and #151 only, after the Dashboard epics close.
 - `contracts/openapi/v1.json` and the generated TS client conflict on every API change: regenerate, never hand-merge.
 
+### Column framework: extension points for WP6b (written by WP6a)
+
+All in `frontend/src/app/shared/work-queue/column-prefs.ts` unless noted.
+
+- **Default set of a tab:** add its key to `DEFAULT_COLUMNS` (`'myWork.createdByMe': [...]`, `'myWork.closed'`, `'myWork.dueSoon'`, `'myWork.active'`, `'taskQueue'`, `'podWork.<tab>'` with tab = `queue`, `attention`, `all`). Lookup order: exact scope, then the page key (`myWork`, `taskQueue`, `podWork`), then the Task Queue set. Ref and Title are always added; keys not in `WORK_COLUMNS` are dropped; table order is the order of `WORK_COLUMNS`, not of the list you write. `myWork.closed` already contains `closed` (C1); C2 (#184) refines the rest.
+- **A new column:** add a `ColumnDef` to `WORK_COLUMNS` (`sortField` makes the header a sort button, the API value must be in `SORT_FIELDS` of `queue-filters.ts` and in `TaskQueueRules.SortFields`), then its cell in the `@switch (col.key)` of `task-table.ts`. Columns are available in every chooser; being in a default set is only a `DEFAULT_COLUMNS` entry.
+- **Scope of a page and tab:** `columnScope(page, tab)`; `QueuePageBase.columnTab()` returns the tab key (My Work and Pod Work override it; Task Queue has none). The Closed tab is the API value `completed`, scope `closed`. `QueuePageBase.prefs()` is a computed of the current scope, so a tab change shows that tab's choice at once.
+- **Storage:** columns per user, page and tab in `mf.work-columns.v2.<scope>.<userId>` (array of keys; corrupt values fall back to the default); density per page and user stays in `mf.work-table.v3.<page>.<userId>`. `loadColumns`, `saveColumns`, `resetColumns`, `loadDensity`, `saveDensity`.
+- **Migration (one time per user and page, flag `mf.work-columns.v2.migrated.<page>.<userId>`):** the old one-set-for-all-tabs value equal to the old default is ignored (the user gets the new defaults); a customised set is kept for the page's main tab only (`myWork.active`, `taskQueue`, `podWork`), other tabs get their defaults. Because the old defaults equal the page defaults, changing a tab's default in `DEFAULT_COLUMNS` never touches a customised user; a user who never customised follows the new default immediately.
+- **Reset columns:** the button is WP1's (`ColumnChooser` input `defaults`, `mf-work-view-controls` input `defaultColumns`); the pages bind it to `columnDefaults()` of `QueuePageBase` (the current tab's set). It emits `columnsChange(defaultSet)`, and `setColumns` forgets the stored choice when the new set equals the default, so a later change of a tab's default reaches that user. Other tabs keep their choice.
+- **A tab's default sort shown in the header:** override `QueuePageBase.defaultSort()` (`{ field, dir }`); the table gets `tableSort()`/`tableDir()`, so the header carries the arrow while the URL has no `sort`. A header click then flips the direction. The Closed tab uses it (`closed`, newest first).
+- **Sort keys (API):** `SORT_FIELDS` (frontend) and `TaskQueueRules.SortFields` (backend) list them; descending-first keys are `DESC_FIRST` (`queue-page.ts`, `work-view-controls.ts`, `task-table.ts`) and `TaskQueueRules.DefaultsToDescending`. `age` ascending is newest created first.
+
 ### Definition of done per package
 
 Issues closed, tests green twice, axe clean, four screenshots per changed screen, bundle budget, docs updated, counts check (tab count equals grid total and Task Queue), the epic #138 tasklist ticked.

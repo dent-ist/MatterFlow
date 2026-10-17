@@ -412,6 +412,7 @@ export function cardToRow(card: SwimlaneCard): TaskQueueRow {
     updatedAtUtc: undefined,
     completedAtUtc: card.completedAtUtc,
     statusChangedAtUtc: card.completedAtUtc ?? card.createdAtUtc,
+    closedAtUtc: card.completedAtUtc,
     workflow: {
       stepsTotal: card.stepsTotal,
       stepsResolved: card.stepsResolved,
