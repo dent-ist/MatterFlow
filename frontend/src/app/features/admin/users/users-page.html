@@ -14,6 +14,9 @@
         </button>
       }
     </mf-filters-bar>
+    <p class="mf-scroll-hint" data-scroll-hint [hidden]="!overflowing()">
+      Scroll sideways to see every column.
+    </p>
     <div class="mf-table-wrap" mfScrollArea="Users list" #scroll>
       <div class="mf-scroll">
         <table>

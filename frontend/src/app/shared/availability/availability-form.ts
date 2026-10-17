@@ -311,7 +311,11 @@ interface Problem {
           </div>
         </fieldset>
 
-        <div class="av-actions mf-form-actions--sticky">
+        <div
+          class="av-actions mf-form-actions--sticky"
+          [class.av-actions--dialog]="mode() === 'dialog'"
+          data-actions
+        >
           <p-button
             type="submit"
             [label]="busy() ? 'Saving...' : 'Save changes'"

@@ -47,6 +47,19 @@
   clip-path: inset(50%);
 }
 
+.mf-scroll-hint {
+  flex: none;
+  margin: 0;
+  padding: var(--mf-s1) var(--mf-s3);
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+  background: var(--mf-surface);
+
+  &[hidden] {
+    display: none;
+  }
+}
+
 .mf-layout {
   display: flex;
   gap: var(--mf-s4);

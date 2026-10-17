@@ -29,7 +29,11 @@
     padding-left: var(--mf-s5);
   }
 
+  /* WCAG 2.2 target size (2.5.8): each link is a 24 px high target (axe target-size, review round 5). */
   a {
+    display: inline-block;
+    min-height: 24px;
+    line-height: 24px;
     color: inherit;
     text-decoration: underline;
   }
@@ -212,6 +216,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--mf-s2);
+}
+
+/* In a dialog the bar sticks to the bottom of the scrolling content box, which ends one dialog padding (1.25rem) above the dialog's edge: without
+   this the last rows of the form show through in that strip, under the buttons (review round 5, UXR5-03). */
+.av-actions--dialog {
+  bottom: -1.25rem;
 }
 
 @media (max-width: 480px) {

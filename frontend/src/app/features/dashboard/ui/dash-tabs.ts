@@ -281,7 +281,12 @@ export class DashTabs {
     afterNextRender(
       () => {
         if (typeof ResizeObserver !== 'undefined') {
-          const ro = new ResizeObserver(() => this.measure());
+          const ro = new ResizeObserver(() => {
+            this.measure();
+            // The Scope select and the Refresh button arrive after the first read and take room from the tab list: the chosen tab may have been pushed
+            // out of view (768 px, Pod Lead: "Summary, Swimlane" with Users selected and out of sight), so bring it back in.
+            this.revealSelected();
+          });
           this.resizer = ro;
           ro.observe(this.host.nativeElement);
           this.destroyRef.onDestroy(() => ro.disconnect());
@@ -305,6 +310,13 @@ export class DashTabs {
         { injector: this.injector },
       );
     });
+  }
+
+  /** Brings the selected tab into view inside the tab list (the list only, never the document). */
+  private revealSelected(): void {
+    revealInList(
+      this.host.nativeElement.querySelector<HTMLElement>(`[data-tab="${this.selected()}"]`),
+    );
   }
 
   protected choose(key: string): void {

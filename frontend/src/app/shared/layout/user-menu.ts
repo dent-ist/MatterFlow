@@ -224,7 +224,7 @@ export class UserMenu {
       const { SetOutOfOfficeDialog } = await import('../availability/set-out-of-office-dialog');
       this.oooDialog = this.container.createComponent(SetOutOfOfficeDialog);
     }
-    this.oooDialog.setInput('visible', true);
+    this.oooDialog.instance.open();
   }
 
   protected async choose(item: Item): Promise<void> {

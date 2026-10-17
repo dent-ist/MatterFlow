@@ -360,6 +360,7 @@ export function initials(name: string): string {
       line-clamp: 2;
       overflow: hidden;
       max-width: 100%;
+      min-height: 24px; /* a one-line title is still a 24 px target (WCAG 2.2 target size) */
       padding: 0;
       border: 0;
       background: none;

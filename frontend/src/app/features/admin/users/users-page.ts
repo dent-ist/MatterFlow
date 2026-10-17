@@ -1,5 +1,6 @@
 import {
   ChangeDetectionStrategy,
+  DestroyRef,
   Component,
   ElementRef,
   Injector,
@@ -109,6 +110,9 @@ export class UsersPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly injector = inject(Injector);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
+  private readonly destroyRef = inject(DestroyRef);
+  /** True while the list is wider than its box (drives the "Scroll sideways" hint). */
+  protected readonly overflowing = signal(false);
   /** Pending access when someone is waiting, else Active; applies only while the address has no `status`. */
   private readonly defaultTab = signal<Tab>('active');
   private readonly ready = signal(false);
@@ -245,9 +249,29 @@ export class UsersPage implements OnInit {
       untracked(() => void this.reload());
     });
     // The controls move into the sheet while the grid scrolls sideways.
-    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
-      injector: this.injector,
-    });
+    afterNextRender(
+      () => {
+        const area = this.scroll()?.nativeElement;
+        this.filters.watchOverflow(area);
+        this.watchScrollHint(area);
+      },
+      { injector: this.injector },
+    );
+  }
+
+  /**
+   * "Scroll sideways" hint (review round 5, UXR5-02): below about 1100 px the list is wider than its box, and the Availability and Status
+   * columns sit past the edge with nothing to say so. Shown only while the list actually overflows.
+   */
+  private watchScrollHint(area: HTMLElement | undefined): void {
+    if (!area || typeof ResizeObserver === 'undefined') return;
+    const measure = () => this.overflowing.set(area.scrollWidth > area.clientWidth + 1);
+    const observer = new ResizeObserver(measure);
+    observer.observe(area);
+    const table = area.querySelector('table');
+    if (table) observer.observe(table);
+    this.destroyRef.onDestroy(() => observer.disconnect());
+    measure();
   }
 
   async ngOnInit(): Promise<void> {

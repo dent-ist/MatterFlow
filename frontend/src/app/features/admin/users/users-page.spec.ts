@@ -356,6 +356,38 @@ describe('UsersPage', () => {
       expect(el().querySelector('[data-edit-availability]')).toBeNull();
     });
 
+    it('says "Scroll sideways" only while the list is wider than its box (the Availability column can be out of sight)', async () => {
+      const callbacks: (() => void)[] = [];
+      const original = globalThis.ResizeObserver;
+      globalThis.ResizeObserver = class {
+        constructor(callback: () => void) {
+          callbacks.push(callback);
+        }
+        observe = vi.fn();
+        disconnect = vi.fn();
+        unobserve = vi.fn();
+      } as unknown as typeof ResizeObserver;
+      try {
+        await create('User.View');
+        await chooseStatus('active');
+        const hint = q('[data-scroll-hint]');
+        expect(hint.hidden).toBe(true);
+        const area = q('.mf-table-wrap');
+        Object.defineProperty(area, 'clientWidth', { value: 600, configurable: true });
+        Object.defineProperty(area, 'scrollWidth', { value: 1000, configurable: true });
+        callbacks.forEach((c) => c());
+        fixture.detectChanges();
+        expect(hint.hidden).toBe(false);
+        expect(hint.textContent).toContain('Scroll sideways to see every column.');
+        Object.defineProperty(area, 'scrollWidth', { value: 600, configurable: true });
+        callbacks.forEach((c) => c());
+        fixture.detectChanges();
+        expect(hint.hidden).toBe(true);
+      } finally {
+        globalThis.ResizeObserver = original;
+      }
+    });
+
     it('opens the availability dialog for the chosen user', async () => {
       await create('User.View', 'User.Manage');
       await chooseStatus('active');

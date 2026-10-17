@@ -148,3 +148,43 @@ describe('DashTabs (WP9b: the tab strip on a phone)', () => {
     expect(strip().getAttribute('data-more-end')).toBe('false');
   });
 });
+
+describe('DashTabs (review round 5: the selected tab stays in view when the room changes)', () => {
+  let observers: (() => void)[];
+  const original = globalThis.ResizeObserver;
+
+  beforeEach(() => {
+    observers = [];
+    globalThis.ResizeObserver = class {
+      constructor(callback: () => void) {
+        observers.push(callback);
+      }
+      observe = vi.fn();
+      disconnect = vi.fn();
+      unobserve = vi.fn();
+    } as unknown as typeof ResizeObserver;
+  });
+  afterEach(() => {
+    globalThis.ResizeObserver = original;
+  });
+
+  it('scrolls the tab list again when the strip is resized, so a selected tab pushed out of sight (768 px, Scope arrives late) comes back', async () => {
+    const fixture = TestBed.createComponent(Host);
+    const el = fixture.nativeElement as HTMLElement;
+    document.body.appendChild(el);
+    fixture.componentInstance.selected.set('users');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const list = el.querySelector<HTMLElement>('.tabs')!;
+    const users = el.querySelector<HTMLElement>('[data-tab="users"]')!;
+    // After the resize the list is 200 px wide (from x = 0) and the Users tab sits at 260..330, outside it.
+    vi.spyOn(list, 'getBoundingClientRect').mockReturnValue(rect(0, 200));
+    vi.spyOn(users, 'getBoundingClientRect').mockReturnValue(rect(260, 330));
+    list.scrollLeft = 0;
+    expect(observers.length).toBeGreaterThan(0);
+    observers.forEach((callback) => callback());
+    expect(list.scrollLeft).toBe(130);
+    el.remove();
+  });
+});

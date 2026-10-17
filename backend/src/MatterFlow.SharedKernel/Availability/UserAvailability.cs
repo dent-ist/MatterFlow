@@ -128,8 +128,17 @@ public static class UserAvailabilityEvaluator
     private static DateTime LocalToUtc(DateOnly date, TimeOnly time, TimeZoneInfo zone)
     {
         var local = DateTime.SpecifyKind(date.ToDateTime(time), DateTimeKind.Unspecified);
-        if (zone.IsInvalidTime(local))
-            local = local.AddHours(1); // spring-forward gap: the first valid instant after it
+
+        // Spring-forward gap: the wall-clock time does not exist, so it means the first valid instant after the gap (the moment
+        // Evaluate first sees a local time at or after it). Stepping by minutes handles 30-minute gaps (Lord Howe) as well as hours.
+        while (zone.IsInvalidTime(local))
+            local = local.AddMinutes(1);
+
+        // Fall-back overlap: the time happens twice; the first occurrence (the larger offset, so the earlier instant) is when it first
+        // shows on the clock, which is what Evaluate reports as "available" or "out of office from".
+        if (zone.IsAmbiguousTime(local))
+            return DateTime.SpecifyKind(local - zone.GetAmbiguousTimeOffsets(local).Max(), DateTimeKind.Utc);
+
         return DateTime.SpecifyKind(TimeZoneInfo.ConvertTimeToUtc(local, zone), DateTimeKind.Utc);
     }
 }

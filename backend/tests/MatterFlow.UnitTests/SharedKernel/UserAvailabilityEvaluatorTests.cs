@@ -181,6 +181,64 @@ public class UserAvailabilityEvaluatorTests
         UserAvailabilityEvaluator.Evaluate(profile, Utc(2026, 10, 15, 14, 0)).State.ShouldBe(AvailabilityStates.Available);
     }
 
+    private static UserAvailabilityProfile Custom(string zone, params WorkHourSlot[] slots) =>
+        new(AvailabilityStatuses.Available, null, null, null, zone, true, slots);
+
+    [Fact]
+    public void A_work_start_inside_the_spring_forward_gap_begins_when_the_clock_first_passes_it()
+    {
+        // Sunday 2026-03-08 in New York: 02:00 -> 03:00. A 02:30 start does not exist; Evaluate shows "available" from the first local time
+        // at or after it (03:00 EDT = 07:00Z), and the "next work starts" instant must say the same, not 03:30.
+        var sunday = Custom(Ny, new WorkHourSlot(7, new TimeOnly(2, 30), new TimeOnly(10, 0)));
+        UserAvailabilityEvaluator.Evaluate(sunday, Utc(2026, 3, 8, 6, 59)).State.ShouldBe(AvailabilityStates.OffHours);
+        UserAvailabilityEvaluator.Evaluate(sunday, Utc(2026, 3, 8, 7, 0)).State.ShouldBe(AvailabilityStates.Available);
+        UserAvailabilityEvaluator.Evaluate(sunday, Utc(2026, 3, 7, 15, 0)).NextWorkStartUtc.ShouldBe(Utc(2026, 3, 8, 7, 0));
+    }
+
+    [Fact]
+    public void A_work_start_in_the_fall_back_hour_begins_at_its_first_occurrence()
+    {
+        // Sunday 2026-11-01 in New York: 02:00 EDT -> 01:00 EST, so 01:30 happens twice (05:30Z and 06:30Z). The first one is when it shows.
+        var sunday = Custom(Ny, new WorkHourSlot(7, new TimeOnly(1, 30), new TimeOnly(10, 0)));
+        UserAvailabilityEvaluator.Evaluate(sunday, Utc(2026, 11, 1, 5, 29)).State.ShouldBe(AvailabilityStates.OffHours);
+        UserAvailabilityEvaluator.Evaluate(sunday, Utc(2026, 11, 1, 5, 30)).State.ShouldBe(AvailabilityStates.Available);
+        UserAvailabilityEvaluator.Evaluate(sunday, Utc(2026, 10, 31, 15, 0)).NextWorkStartUtc.ShouldBe(Utc(2026, 11, 1, 5, 30));
+    }
+
+    [Fact]
+    public void A_half_hour_gap_and_a_quarter_hour_offset_are_handled()
+    {
+        // Lord Howe (UTC+10:30, +11:00 in summer): on Sunday 2026-10-04 the clock goes 02:00 -> 02:30 (the instant is 15:30Z the day before).
+        var lordHowe = Custom("Australia/Lord_Howe", new WorkHourSlot(7, new TimeOnly(2, 15), new TimeOnly(9, 0)));
+        UserAvailabilityEvaluator.Evaluate(lordHowe, Utc(2026, 10, 3, 15, 29)).State.ShouldBe(AvailabilityStates.OffHours);
+        UserAvailabilityEvaluator.Evaluate(lordHowe, Utc(2026, 10, 3, 15, 30)).State.ShouldBe(AvailabilityStates.Available);
+        UserAvailabilityEvaluator.Evaluate(lordHowe, Utc(2026, 10, 2, 12, 0)).NextWorkStartUtc.ShouldBe(Utc(2026, 10, 3, 15, 30));
+
+        // Kathmandu is UTC+05:45 all year: Monday 09:00 local is 03:15Z.
+        var kathmandu = Available("Asia/Kathmandu");
+        UserAvailabilityEvaluator.Evaluate(kathmandu, Utc(2026, 10, 19, 3, 14)).State.ShouldBe(AvailabilityStates.OffHours);
+        UserAvailabilityEvaluator.Evaluate(kathmandu, Utc(2026, 10, 19, 3, 15)).State.ShouldBe(AvailabilityStates.Available);
+    }
+
+    [Fact]
+    public void Out_of_office_ends_at_the_first_valid_instant_when_midnight_falls_in_a_gap()
+    {
+        // Havana: on Sunday 2026-03-08 the clock goes 00:00 -> 01:00 (CST -5 -> CDT -4), so the day starts at 01:00 CDT = 05:00Z.
+        var result = UserAvailabilityEvaluator.Evaluate(Ooo(null, new DateOnly(2026, 3, 7), "America/Havana"), Utc(2026, 3, 7, 12, 0));
+        result.OutUntilUtc.ShouldBe(Utc(2026, 3, 8, 5, 0));
+        UserAvailabilityEvaluator.Evaluate(Ooo(null, new DateOnly(2026, 3, 7), "America/Havana"), Utc(2026, 3, 8, 4, 59)).State.ShouldBe(AvailabilityStates.OutOfOffice);
+        UserAvailabilityEvaluator.Evaluate(Ooo(null, new DateOnly(2026, 3, 7), "America/Havana"), Utc(2026, 3, 8, 5, 0)).State.ShouldBe(AvailabilityStates.OffHours); // Sunday
+    }
+
+    [Fact]
+    public void Out_of_office_from_a_day_that_starts_twice_begins_at_the_first_midnight()
+    {
+        // Havana falls back on Sunday 2026-11-01 at 01:00 CDT -> 00:00 CST, so 00:00 happens twice (04:00Z and 05:00Z): the day starts at the first.
+        var profile = Ooo(new DateOnly(2026, 11, 1), new DateOnly(2026, 11, 1), "America/Havana");
+        UserAvailabilityEvaluator.Evaluate(profile, Utc(2026, 11, 1, 3, 59)).State.ShouldNotBe(AvailabilityStates.OutOfOffice);
+        UserAvailabilityEvaluator.Evaluate(profile, Utc(2026, 11, 1, 4, 0)).State.ShouldBe(AvailabilityStates.OutOfOffice);
+    }
+
     [Theory]
     [InlineData(2026, 10, 12, 1)]
     [InlineData(2026, 10, 17, 6)]

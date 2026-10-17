@@ -149,6 +149,15 @@ export class SetOutOfOfficeDialog {
     }),
   );
 
+  /**
+   * Opens the dialog with empty fields. The header calls this instead of `setInput('visible', true)`: the dialog closes itself (Esc, Cancel,
+   * the X, Save) by writing its own `visible` model, and `ComponentRef.setInput` skips a value equal to the last one it set, so a second
+   * "Set out of office..." did nothing until the page was reloaded (review round 5, UXR5-15).
+   */
+  open(): void {
+    this.onVisible(true);
+  }
+
   protected onVisible(value: boolean): void {
     this.visible.set(value);
     if (value) {

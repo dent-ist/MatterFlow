@@ -113,4 +113,21 @@ describe('SetOutOfOfficeDialog', () => {
     expect(TestBed.inject(MyAvailability).isOut()).toBe(true);
     expect(fixture.componentInstance.visible()).toBe(false);
   });
+
+  it('opens again, with empty fields, after it closed itself (Esc, Cancel, the X): the header menu item must not go dead (UXR5-15)', async () => {
+    const { fixture } = await open();
+    await type(fixture, '#ooo-until', 'Oct 20, 2026');
+    await type(fixture, '#ooo-note', 'Back soon');
+    // The dialog closes by writing its own `visible` model, which is what ComponentRef.setInput('visible', true) cannot undo.
+    fixture.componentInstance.visible.set(false);
+    await settle(fixture);
+    expect(document.querySelector('[data-ooo-dialog]')).toBeNull();
+
+    fixture.componentInstance.open();
+    await settle(fixture);
+
+    expect(fixture.componentInstance.visible()).toBe(true);
+    expect(q<HTMLInputElement>('#ooo-until').value).toBe('');
+    expect(q<HTMLTextAreaElement>('#ooo-note').value).toBe('');
+  });
 });
