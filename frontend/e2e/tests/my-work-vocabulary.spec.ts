@@ -120,7 +120,7 @@ test.describe('My Work vocabulary and tab rules', () => {
     // Active keeps its own rule: ASAP above the dated ones of the same priority.
     await myWork.tab(/^Active/).click();
     await expect(page).toHaveTitle('My Work: Active - MatterFlow');
-    expect((await titles())[0]).toBe('Asap');
+    await expect.poll(async () => (await titles())[0]).toBe('Asap');
 
     // The old link opens Closed.
     await myWork.open('?view=completed');

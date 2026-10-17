@@ -70,14 +70,14 @@
   height: var(--mf-row-h);
 }
 
-/* Six pixels above and below a two-line title cell: nine rows fit under the filters at 1366x768 (A2). */
+/* Four pixels above and below a two-line title cell: nine rows fit under the filters and the strip at 1366x768 (A2). */
 .wt td {
-  padding-block: 6px;
+  padding-block: var(--mf-s1);
 }
 
 .wt--compact th,
 .wt--compact td {
-  padding-block: var(--mf-s1);
+  padding-block: 2px;
   height: var(--mf-row-h-compact);
 }
 
