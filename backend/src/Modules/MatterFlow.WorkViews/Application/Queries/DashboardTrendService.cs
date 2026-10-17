@@ -62,9 +62,13 @@ public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZ
         var needCompleted = metric is null or "completed";
         var needDue = metric is null or "overdue" or "ontime" or "late";
         var needOpen = metric is null or "open";
-        var created = !needCreated
+        // Tasks created inside the period: one read (type, created, status, last change) feeds the Created series and, replayed per day, the Open series.
+        var inPeriod = !needCreated && !needOpen
             ? []
-            : (await tasks.Where(t => t.CreatedAtUtc >= fromUtc && t.CreatedAtUtc < toUtc).Select(t => new { t.TaskTypeId, At = t.CreatedAtUtc }).ToListAsync(ct)).Select(r => (r.TaskTypeId, r.At)).ToList();
+            : (await tasks.Where(t => t.CreatedAtUtc >= fromUtc && t.CreatedAtUtc < toUtc).Select(t => new { t.TaskTypeId, t.CreatedAtUtc, t.Status, t.StatusChangedAtUtc }).ToListAsync(ct))
+                .Select(r => new OpenTask(r.TaskTypeId, r.CreatedAtUtc, r.Status is TaskStatusCode.Completed or TaskStatusCode.Cancelled, r.StatusChangedAtUtc))
+                .ToList();
+        var created = !needCreated ? [] : inPeriod.Select(r => (r.TypeId, At: r.CreatedAtUtc)).ToList();
         var completed = !needCompleted
             ? []
             : (await tasks.Where(t => t.Status == TaskStatusCode.Completed && t.StatusChangedAtUtc >= fromUtc && t.StatusChangedAtUtc < toUtc).Select(t => new { t.TaskTypeId, At = t.StatusChangedAtUtc }).ToListAsync(ct)).Select(r => (r.TaskTypeId, r.At)).ToList();
@@ -94,13 +98,13 @@ public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZ
                 .GroupBy(t => t.TaskTypeId)
                 .Select(g => new { TypeId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(r => r.TypeId, r => r.Count, ct);
-            openTasks = (await tasks
-                .Where(t => t.CreatedAtUtc <= lastSnap
-                    && (t.CreatedAtUtc > firstSnap || ((t.Status == TaskStatusCode.Completed || t.Status == TaskStatusCode.Cancelled) && t.StatusChangedAtUtc > firstSnap)))
-                .Select(t => new { t.TaskTypeId, t.CreatedAtUtc, t.Status, t.StatusChangedAtUtc })
+            // Created before the period and closed after the first snapshot (open on the first days): the only rows not already read above.
+            var older = (await tasks
+                .Where(t => t.CreatedAtUtc < fromUtc && (t.Status == TaskStatusCode.Completed || t.Status == TaskStatusCode.Cancelled) && t.StatusChangedAtUtc > firstSnap)
+                .Select(t => new { t.TaskTypeId, t.CreatedAtUtc, t.StatusChangedAtUtc })
                 .ToListAsync(ct))
-                .Select(r => new OpenTask(r.TaskTypeId, r.CreatedAtUtc, r.Status is TaskStatusCode.Completed or TaskStatusCode.Cancelled, r.StatusChangedAtUtc))
-                .ToList();
+                .Select(r => new OpenTask(r.TaskTypeId, r.CreatedAtUtc, true, r.StatusChangedAtUtc));
+            openTasks = [.. inPeriod.Where(t => t.CreatedAtUtc <= lastSnap && (t.CreatedAtUtc > firstSnap || (t.Closed && t.StatusChangedAtUtc > firstSnap))), .. older];
         }
 
         var built = DashboardRules.TrendByTaskType(from, to, created, completed, dueTasks, queueClock.StartOfDayUtc, nowUtc, wanted, openTasks, openAtStart);

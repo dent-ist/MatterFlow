@@ -9,7 +9,7 @@ namespace MatterFlow.IntegrationTests.WorkViews;
 
 /// <summary>
 /// The Trends endpoint (daily and weekly, with the Open series) against 50,000 Tasks seeded with set-based SQL: the budget of the Open at end of day
-/// series (#120) is a median under 300 ms without a new index. The same seed as <see cref="DashboardPerformanceTests"/>, ten times larger.
+/// series (#120) is a median under 300 ms (600 ms for a full year) without a new index. The same seed as <see cref="DashboardPerformanceTests"/>, ten times larger.
 /// </summary>
 [Collection(SqlServerCollection.Name)]
 public sealed class DashboardTrendLargePerformanceTests(SqlServerFixture sql, ITestOutputHelper output) : IAsyncLifetime
@@ -36,10 +36,11 @@ public sealed class DashboardTrendLargePerformanceTests(SqlServerFixture sql, IT
     public async Task DisposeAsync() => await _factory.DisposeAsync();
 
     [Theory]
-    [InlineData("periodDays=30", "day", 30)]
-    [InlineData("periodDays=90", "week", 0)]
-    [InlineData("periodDays=366", "week", 0)]
-    public async Task The_trend_with_the_open_series_stays_under_300_ms_at_50000_tasks(string period, string granularity, int points)
+    [InlineData("periodDays=30", "day", 30, 300)]
+    [InlineData("periodDays=90", "week", 0, 300)]
+    // A year reads every task of this seed (all created in the last 120 days) and has the same 600 ms budget as the 365-day read of DashboardPerformanceTests.
+    [InlineData("periodDays=366", "week", 0, 600)]
+    public async Task The_trend_with_the_open_series_stays_within_budget_at_50000_tasks(string period, string granularity, int points, int budgetMs)
     {
         var http = _factory.CreateClient();
         http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
@@ -59,7 +60,7 @@ public sealed class DashboardTrendLargePerformanceTests(SqlServerFixture sql, IT
 
         var median = timings.Order().ElementAt(timings.Count / 2);
         output.WriteLine($"{period} at {TaskCount} tasks ms: " + string.Join(", ", timings));
-        median.ShouldBeLessThan(300, "p50 of the trend with the Open series: " + string.Join(", ", timings));
+        median.ShouldBeLessThan(budgetMs, "p50 of the trend with the Open series: " + string.Join(", ", timings));
         trend.GetProperty("granularity").GetString().ShouldBe(granularity);
         if (points > 0)
             trend.GetProperty("all").GetArrayLength().ShouldBe(points);

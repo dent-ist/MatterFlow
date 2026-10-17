@@ -108,6 +108,8 @@ public abstract class DashboardPeriodApiTestsBase(SqlServerFixture sql, string i
         return data;
     }
 
+    private static DateOnly WeekStart(DateOnly d) => d.AddDays(-(((int)d.DayOfWeek + 6) % 7));
+
     [Theory]
     [MemberData(nameof(KeysAndZones))]
     public async Task Summary_trend_and_coverage_agree_on_the_resolved_period_and_its_counts(string key, string zone)
@@ -130,9 +132,22 @@ public abstract class DashboardPeriodApiTestsBase(SqlServerFixture sql, string i
         trend.GetProperty("period").GetProperty("from").GetString().ShouldBe(Iso(from));
         trend.GetProperty("period").GetProperty("to").GetString().ShouldBe(Iso(to));
         var all = trend.GetProperty("all").EnumerateArray().ToList();
-        all.Count.ShouldBe(to.DayNumber - from.DayNumber + 1);
-        all[0].GetProperty("date").GetString().ShouldBe(Iso(from));
-        all[^1].GetProperty("date").GetString().ShouldBe(Iso(to));
+        var days = to.DayNumber - from.DayNumber + 1;
+        trend.GetProperty("granularity").GetString().ShouldBe(days > 31 ? "week" : "day");
+        if (days > 31)
+        {
+            // Weekly points (Monday to Sunday) from the week of the first day to the week of the last.
+            all.Count.ShouldBe((WeekStart(to).DayNumber - WeekStart(from).DayNumber) / 7 + 1);
+            all[0].GetProperty("date").GetString().ShouldBe(Iso(WeekStart(from)));
+            all[^1].GetProperty("date").GetString().ShouldBe(Iso(WeekStart(to)));
+        }
+        else
+        {
+            all.Count.ShouldBe(days);
+            all[0].GetProperty("date").GetString().ShouldBe(Iso(from));
+            all[^1].GetProperty("date").GetString().ShouldBe(Iso(to));
+        }
+
         all.Sum(p => p.GetProperty("created").GetInt32()).ShouldBe(created);
         all.Sum(p => p.GetProperty("completed").GetInt32()).ShouldBe(completed);
 
@@ -191,7 +206,7 @@ public abstract class DashboardPeriodApiTestsBase(SqlServerFixture sql, string i
         var legacy = await GetAsync(d, "/api/v1/dashboard", "periodDays=90", NewYork);
         legacy.GetProperty("period").GetProperty("key").GetString().ShouldBe("90d");
         legacy.GetProperty("created").GetProperty("count").GetInt32().ShouldBe(Created(d, NewYork, Expected(d, "90d", NewYork).From, to));
-        (await GetAsync(d, "/api/v1/dashboard/trend", "periodDays=366", NewYork)).GetProperty("all").GetArrayLength().ShouldBe(366);
+        (await GetAsync(d, "/api/v1/dashboard/trend", "periodDays=366", NewYork)).GetProperty("all").GetArrayLength().ShouldBeInRange(52, 54);
         (await GetAsync(d, "/api/v1/dashboard/coverage", "periodDays=7", NewYork)).GetProperty("days").GetInt32().ShouldBe(7);
 
         // The new arguments win over the old one.
