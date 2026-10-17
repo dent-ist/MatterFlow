@@ -369,6 +369,12 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                             [attr.aria-busy]="listsLoading() ? 'true' : null"
                             data-lists
                           >
+                            @if (fullSummary()) {
+                              <!-- Same height as the "Needs attention" heading beside it, so the first list starts on the first tile row. -->
+                              <div class="group lists-spacer" aria-hidden="true">
+                                <h2>Needs attention</h2>
+                              </div>
+                            }
                             <!-- The lists' silhouettes are decorative: one polite status for all of them. -->
                             <span class="sr-only" role="status" data-lists-status>{{
                               listsLoading() ? 'Loading the task lists' : ''
@@ -568,9 +574,21 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
       gap: var(--mf-s2);
       min-width: 0;
     }
+    .lists-spacer {
+      display: none;
+    }
     @media (min-width: 1280px) {
       .summary:not(.summary--queue) {
         grid-template-columns: minmax(0, clamp(360px, 27vw, 452px)) minmax(0, 1fr);
+      }
+      .lists-spacer {
+        display: block;
+        flex: none;
+        margin: 0;
+        visibility: hidden;
+      }
+      .lists-spacer h2 {
+        margin-bottom: 0;
       }
     }
     /* Fixed-height layout (#137, window at least 768 x 561): the header row stays, the tab panel fills the rest and only regions inside scroll.

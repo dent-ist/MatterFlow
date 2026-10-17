@@ -130,6 +130,11 @@ export const USERS_PAGE = 200;
     } @else if (canCoverage()) {
       <div class="views-row">
         <mf-users-views [view]="view()" (viewChange)="setView($event)" />
+        <!-- Holds the height of the Workload toolbar (a label over a select), so the switch does not move when the view changes. -->
+        <span class="views-ghost" aria-hidden="true">
+          <span class="views-ghost-label">Sort</span>
+          <span class="mf-control mf-control--compact views-ghost-box"></span>
+        </span>
       </div>
     }
 
@@ -316,7 +321,28 @@ export const USERS_PAGE = 200;
       overflow: visible;
     }
     .views-row {
+      display: flex;
+      align-items: flex-end;
+      gap: var(--mf-s2);
       margin-bottom: var(--mf-s2);
+    }
+    /* The same label-over-control structure as the Workload toolbar's selects, invisible and without width. */
+    .views-ghost {
+      display: grid;
+      gap: 2px;
+      width: 0;
+      overflow: hidden;
+      visibility: hidden;
+    }
+    .views-ghost-label {
+      font-size: var(--mf-fs-xs);
+      font-weight: 600;
+    }
+    .views-ghost-box {
+      display: block;
+      width: 0;
+      padding-inline: 0;
+      border-inline-width: 0;
     }
     /* The population line (U4) sits at the right end of the chips' row and wraps under them when there is no room. */
     .population {
