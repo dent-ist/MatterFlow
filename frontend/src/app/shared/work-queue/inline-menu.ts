@@ -396,7 +396,8 @@ export class InlineMenu implements OnDestroy {
   }
 
   protected onTriggerKey(event: KeyboardEvent): void {
-    event.stopPropagation();
+    // Keys on the trigger never reach the row, except Escape on a closed menu: it must still close the drawer or dialog around it.
+    if (event.key !== 'Escape' || this.open()) event.stopPropagation();
     if (event.key === 'ArrowDown' && !this.open() && !this.busy()) {
       event.preventDefault();
       this.show();

@@ -55,9 +55,11 @@ test.describe('swimlane screenshots', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`${base}&group=none`);
     await ready(page);
-    await page.getByRole('combobox', { name: 'Density' }).selectOption('compact');
+    await page.getByRole('button', { name: 'More options' }).click();
+    await page.getByRole('menuitemradio', { name: 'Compact' }).click();
     await shot('05-compact-1366');
-    await page.getByRole('combobox', { name: 'Density' }).selectOption('comfortable');
+    await page.getByRole('button', { name: 'More options' }).click();
+    await page.getByRole('menuitemradio', { name: 'Comfortable' }).click();
 
     await page.getByRole('button', { name: /^Filters/ }).click();
     await shot('06-filters-1366');

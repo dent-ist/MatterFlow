@@ -89,7 +89,11 @@ export const PEEK_COMMENTS = 3;
         <div class="peek" data-peek [attr.data-peek-task]="c.taskId">
           <h2 class="title">{{ task()?.title ?? c.title }}</h2>
           <p class="where">
-            {{ c.clientName }} / <span class="mf-ref">{{ c.matterRef }}</span> {{ c.matterName }}
+            {{ c.clientName }} /
+            <a class="mf-ref" [routerLink]="['/matters', c.matterId]" data-peek-matter>{{
+              c.matterRef
+            }}</a>
+            {{ c.matterName }}
             <mf-copy-button [text]="c.ref" label="task number" />
           </p>
 

@@ -237,7 +237,7 @@ test.describe('Dashboard shell: the address keeps only what differs from the def
     await page.goForward();
     await expect(page).toHaveURL(/\?tab=swimlane$/);
 
-    await page.getByLabel('Group by').selectOption({ label: 'Assignee' });
+    await page.getByLabel('Group', { exact: true }).selectOption({ label: 'Assignee' });
     await expect(page).toHaveURL(/\?tab=swimlane&group=assignee$/);
     // Back leaves the Swimlane tab altogether instead of stepping through filter states.
     await page.goBack();

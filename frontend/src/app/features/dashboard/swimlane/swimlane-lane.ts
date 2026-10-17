@@ -50,12 +50,17 @@ let nextId = 0;
     @let m = model();
     <section class="lane" [attr.aria-labelledby]="hid" [attr.data-lane]="m.code">
       <header class="head">
-        <h3 class="name" [id]="hid">
-          {{ m.label }}
-          <span class="count" data-lane-count [attr.aria-label]="m.count + ' tasks'">{{
-            m.count
-          }}</span>
-        </h3>
+        <h3 class="name" [id]="hid">{{ m.label }}</h3>
+        <a
+          class="count count--link"
+          data-lane-count
+          [class.count--caveat]="searching()"
+          [routerLink]="['/tasks']"
+          [queryParams]="countParams()"
+          [attr.aria-label]="countLabel()"
+          [attr.title]="searching() ? 'Search text is not included' : 'Open in the Task Queue'"
+          >{{ m.count }}</a
+        >
         <p class="hint">
           {{ hint }}
           @if (m.oldestDays !== null && m.code !== 'COMPLETED') {
@@ -86,6 +91,7 @@ let nextId = 0;
           @if (tree()) {
             <ul
               class="rows rows--tree"
+              [class.rows--tight]="density() === 'compact'"
               role="tree"
               [attr.aria-label]="m.label + ' tasks by client and matter'"
             >
@@ -142,6 +148,7 @@ let nextId = 0;
                     <mf-swimlane-card
                       [card]="row.card"
                       [density]="density()"
+                      [hideWhere]="true"
                       [navigable]="false"
                       (open)="openCard.emit($event)"
                       (cardChange)="cardChange.emit($event)"
@@ -151,7 +158,7 @@ let nextId = 0;
               }
             </ul>
           } @else {
-            <ul class="rows" role="list">
+            <ul class="rows" role="list" [class.rows--tight]="density() === 'compact'">
               @for (row of visibleRows(); track rowKey(row)) {
                 @if (row.type === 'group') {
                   <li class="grp" role="listitem">
@@ -188,10 +195,11 @@ let nextId = 0;
                           </span>
                         }
                       }
-                      <span
-                        class="count count--node"
-                        [attr.aria-label]="row.node.count + ' tasks'"
-                        >{{ row.node.count }}</span
+                      <span class="count count--node"
+                        >{{ row.node.count
+                        }}<span class="sr-only">
+                          {{ row.node.count === 1 ? 'task' : 'tasks' }}</span
+                        ></span
                       >
                     </button>
                   </li>
@@ -200,6 +208,7 @@ let nextId = 0;
                     <mf-swimlane-card
                       [card]="row.card"
                       [density]="density()"
+                      [hideWho]="groupBy() === 'assignee'"
                       [tabStop]="tabId() === 'card:' + row.card.taskId ? 0 : -1"
                       (open)="openCard.emit($event)"
                       (cardChange)="cardChange.emit($event)"
@@ -255,15 +264,16 @@ let nextId = 0;
       top: 0;
       z-index: 2;
       flex: none;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0 var(--mf-s2);
       padding: var(--mf-s2) var(--mf-s3);
       background: var(--mf-surface-alt);
       border-bottom: 1px solid var(--mf-border);
       border-radius: var(--mf-radius-lg) var(--mf-radius-lg) 0 0;
     }
     .name {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
       margin: 0;
       font-size: var(--mf-fs-lg);
     }
@@ -280,10 +290,33 @@ let nextId = 0;
       text-align: center;
       font-variant-numeric: tabular-nums;
     }
+    /* The lane count is a link to the Task Queue (W2): a 24 px target, underlined, with the focus ring of links. */
+    .count--link {
+      min-height: 24px;
+      line-height: 22px;
+      box-sizing: border-box;
+      color: var(--mf-link);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .count--link:hover {
+      border-color: var(--mf-link);
+    }
+    .count--link:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 2px;
+    }
+    /* With search text the target may show other tasks: the link is not drawn as an exact match. */
+    .count--caveat {
+      border-style: dashed;
+      text-decoration-style: dashed;
+    }
     .hint {
+      flex: 1 1 auto;
       margin: 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
+      text-align: right;
     }
     .body {
       flex: 1;
@@ -299,6 +332,9 @@ let nextId = 0;
       margin: 0;
       padding: 0;
       list-style: none;
+    }
+    .rows--tight {
+      gap: var(--mf-s1);
     }
     .leaf {
       min-width: 0;
@@ -325,16 +361,31 @@ let nextId = 0;
       box-sizing: border-box;
       min-width: 0;
     }
+    .node {
+      align-items: flex-start;
+    }
+    .node .chevron,
+    .node .kind,
+    .node .count--node {
+      margin-top: 0.15rem;
+    }
     .grp-btn--priority {
       border-color: currentColor;
     }
-    .grp-title,
-    .node-label {
+    .grp-title {
       flex: 1;
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    /* Tree labels wrap instead of ending in an ellipsis at 260 px lanes (W3); the count stays on the right. */
+    .node-label {
+      flex: 1;
+      min-width: 0;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      line-height: 1.3;
     }
     .node-name {
       margin-left: var(--mf-s1);
@@ -504,6 +555,17 @@ export class SwimlaneLane {
   private readonly active = signal<string | null>(null);
 
   protected readonly tree = computed(() => this.groupBy() === 'clientMatter');
+  /** The count link carries every filter the Task Queue can show, but not the search text (the link then says so). */
+  protected readonly searching = computed(() => 'q' in this.queueParams());
+  protected readonly countParams = computed(() => {
+    const rest = { ...this.queueParams() };
+    delete rest['q'];
+    return rest;
+  });
+  protected readonly countLabel = computed(() => {
+    const m = this.model();
+    return `${m.count} ${m.label} tasks in the Task Queue${this.searching() ? '. Search text is not included' : ''}`;
+  });
   protected get hint(): string {
     return LANE_HINTS[this.model().code];
   }
@@ -623,7 +685,7 @@ export class SwimlaneLane {
    * Arrow keys on a lane item (a card title, a group header or a tree item). Up and Down move to the previous and next item, Home and End to the
    * first and last. In the tree, Right opens a closed node or steps into it, Left closes an open node or steps out to its parent; in the other
    * modes Left and Right move to the neighbouring lane. Shift with Left or Right moves between lanes in every mode. Enter or Space on a
-   * group toggles it, on a tree card opens it; `m` opens the status menu of the card. Keys typed inside a menu or field are left alone.
+   * group toggles it, on a tree card opens it; `m` opens the status menu of the card (the drawer on a one-line card). Keys typed inside a menu or field are left alone.
    */
   protected onKey(event: KeyboardEvent): void {
     const el = event.target as HTMLElement;
@@ -686,9 +748,12 @@ export class SwimlaneLane {
       }
     } else if ((key === 'm' || key === 'M') && !isGroup) {
       stop();
-      el.closest('li')
-        ?.querySelector<HTMLElement>('[data-field="status"] [data-inline-trigger]')
-        ?.click();
+      // The one-line card has no menus: there `m` opens the drawer, where the Status menu is.
+      const li = el.closest('li');
+      (
+        li?.querySelector<HTMLElement>('[data-field="status"] [data-inline-trigger]') ??
+        li?.querySelector<HTMLElement>('[data-card-open]')
+      )?.click();
     }
   }
 

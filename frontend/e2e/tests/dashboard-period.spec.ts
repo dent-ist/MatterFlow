@@ -119,7 +119,9 @@ test.describe('the list, the label and the scope note', () => {
 
   test('Swimlane has its own window, "Done in the last"', async ({ page }) => {
     await page.goto('/dashboard?tab=swimlane');
-    await expect(page.getByLabel('Done in the last')).toBeVisible();
+    // The window lives in the "..." menu of the Swimlane toolbar.
+    await page.getByRole('button', { name: 'More options' }).click();
+    await expect(page.getByRole('group', { name: 'Done in the last' })).toBeVisible();
     await expect(page.getByLabel('Completed in last')).toHaveCount(0);
   });
 });

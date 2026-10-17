@@ -50,6 +50,24 @@ describe('InlineMenu focus (UXR2-05)', () => {
   });
 });
 
+describe('InlineMenu Escape on the trigger', () => {
+  it('lets Escape reach a dialog around a closed menu, and keeps other keys from the row', () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    document.body.appendChild(root);
+    const seen: string[] = [];
+    root.addEventListener('keydown', (e) => seen.push(e.key));
+    const trigger = root.querySelector<HTMLButtonElement>('[data-inline-trigger]')!;
+    const press = (key: string) =>
+      trigger.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+    press('Escape');
+    press('ArrowRight');
+    expect(seen).toEqual(['Escape']);
+    root.remove();
+  });
+});
+
 describe('InlineMenu placement (DASH-11)', () => {
   const rect = (top: number, height: number): DOMRect =>
     ({

@@ -262,6 +262,16 @@ describe('DashSwimlaneTab', () => {
     await settle();
   };
   const url = () => TestBed.inject(Router).url;
+  /** The "..." menu: opens it, clicks one item and lets the board settle (the menu closes by itself). */
+  const pick = async (selector: string) => {
+    q<HTMLButtonElement>('[data-more]').click();
+    await settle();
+    q<HTMLButtonElement>(`[data-more-menu] ${selector}`).click();
+    await settle();
+  };
+  /** Lane name and count as a person reads them. */
+  const head = (l: Element) =>
+    `${text(l.querySelector('h3'))} ${text(l.querySelector('[data-lane-count]'))}`;
 
   beforeEach(() => {
     try {
@@ -329,7 +339,7 @@ describe('DashSwimlaneTab', () => {
       'ON_HOLD',
       'COMPLETED',
     ]);
-    expect(lanes.map((l) => text(l.querySelector('h3')))).toEqual([
+    expect(lanes.map((l) => head(l))).toEqual([
       'New 2',
       'In Progress 1',
       'On Hold 1',
@@ -354,8 +364,9 @@ describe('DashSwimlaneTab', () => {
     expect(card.querySelector('.bar')!.getAttribute('aria-hidden')).toBe('true');
     expect(card.querySelector('[data-card-ref]')!.getAttribute('href')).toBe('/tasks/3');
     expect(text(card.querySelector('.title'))).toBe('Out of office owner');
-    expect(text(card.querySelector('[data-client]'))).toBe('Acme Corp');
-    expect(card.querySelector('mf-matter-ref a')!.getAttribute('href')).toBe('/matters/100');
+    // Client and matter name on one line; the matter number is in the tooltip (and the drawer).
+    expect(text(card.querySelector('[data-where]'))).toMatch(/^Acme Corp \/ \S/);
+    expect(card.querySelector('[data-card-open]')!.getAttribute('title')).toContain('Acme Corp /');
     expect(text(card.querySelector('[data-due]'))).toContain('ASAP');
     expect(text(card.querySelector('[data-field="assignee"]'))).toContain('Tariq Malik');
     expect(text(card.querySelector('[data-ooo]'))).toBe('Out of office');
@@ -422,8 +433,9 @@ describe('DashSwimlaneTab', () => {
         'all',
       );
       expect(q<HTMLSelectElement>('[data-group-by]').value).toBe('assignee');
-      expect(q<HTMLSelectElement>('[data-days]').value).toBe('14');
-      expect(q('[data-mine]').getAttribute('aria-pressed')).toBe('true');
+      // The settings behind the "..." button that are not the defaults are visible as text.
+      expect(text(q('[data-active-settings]'))).toContain('Done in 14 days');
+      expect(text(q('[data-active-settings]'))).toContain('Only mine');
       // assignee, type, priority and overdue are the four data filters (the pod is the page-wide scope); "Only mine" has its own toggle.
       expect(text(q('[data-filter-count]'))).toBe('(4)');
       q<HTMLButtonElement>('[data-filters]').click();
@@ -449,13 +461,13 @@ describe('DashSwimlaneTab', () => {
         'all',
       );
       await choose('[data-sort]', 'due');
-      await choose('[data-days]', '30');
+      await pick('[data-days="30"]');
       expect(url()).toContain('group=clientMatter');
       expect(url()).toContain('sort=due');
       expect(url()).toContain('days=30');
       const stored = JSON.parse(localStorage.getItem('mf.dashboard.swimlane.v1.5')!);
       expect(stored).toMatchObject({ groupBy: 'clientMatter', sort: 'due', days: 30 });
-      await choose('[data-density]', 'compact');
+      await pick('[data-density="compact"]');
       expect(q('[data-board]').getAttribute('data-density')).toBe('compact');
       expect(JSON.parse(localStorage.getItem('mf.dashboard.swimlane.v1.5')!).density).toBe(
         'compact',
@@ -505,8 +517,7 @@ describe('DashSwimlaneTab', () => {
 
     it('toggles Only mine and Overdue only, counts them as filters and clears everything', async () => {
       await open();
-      q<HTMLButtonElement>('[data-mine]').click();
-      await settle();
+      await pick('[data-mine]');
       expect(getBoard).toHaveBeenLastCalledWith(
         7,
         'none',
@@ -606,7 +617,7 @@ describe('DashSwimlaneTab', () => {
       await settle();
       expect(lane('NEW').querySelectorAll('mf-swimlane-card').length).toBe(LANE_PAGE + 15);
       expect(lane('NEW').querySelector('[data-show-more]')).toBeNull();
-      expect(text(lane('NEW').querySelector('h3'))).toBe(`New ${LANE_PAGE + 15}`);
+      expect(head(lane('NEW'))).toBe(`New ${LANE_PAGE + 15}`);
     });
 
     it('says "Showing 200 of N" with a link to the Task Queue under the same filters when a lane is capped', async () => {
@@ -714,11 +725,9 @@ describe('DashSwimlaneTab', () => {
       expect(lane('NEW').querySelectorAll('[role="treeitem"]').length).toBe(1);
       // The node is collapsed in every lane (the keys are shared).
       expect(lane('IN_PROGRESS').querySelectorAll('[role="treeitem"]').length).toBe(1);
-      q<HTMLButtonElement>('[data-expand-all]').click();
-      await settle();
+      await pick('[data-expand-all]');
       expect(lane('NEW').querySelectorAll('[role="treeitem"]').length).toBe(5);
-      q<HTMLButtonElement>('[data-collapse-all]').click();
-      await settle();
+      await pick('[data-collapse-all]');
       expect(lane('NEW').querySelectorAll('[role="treeitem"]').length).toBe(1);
       expect(text(q('[data-swimlane-live]'))).toBe('All groups collapsed.');
     });
@@ -785,7 +794,7 @@ describe('DashSwimlaneTab', () => {
       expect(heads.map((h) => text(h.querySelector('.grp-title')))).toEqual(['High']);
       expect(heads[0].getAttribute('aria-expanded')).toBe('true');
       expect(heads[0].style.background).toContain('--mf-pr-high-bg');
-      expect(text(heads[0].querySelector('.count'))).toBe('2');
+      expect(text(heads[0].querySelector('.count'))).toBe('2 tasks');
       heads[0].click();
       await settle();
       expect(qa('[data-lane="NEW"] mf-swimlane-card').length).toBe(0);
@@ -922,8 +931,8 @@ describe('DashSwimlaneTab', () => {
           ),
         ).toEqual(['TSK-4', 'TSK-3']);
         expect(lane('ON_HOLD').querySelector('mf-swimlane-card')).toBeNull();
-        expect(text(lane('ON_HOLD').querySelector('h3'))).toBe('On Hold 0');
-        expect(text(lane('IN_PROGRESS').querySelector('h3'))).toBe('In Progress 2');
+        expect(head(lane('ON_HOLD'))).toBe('On Hold 0');
+        expect(head(lane('IN_PROGRESS'))).toBe('In Progress 2');
         await settle();
         expect(text(q('[data-swimlane-live]'))).toBe('TSK-4 moved to In Progress.');
         const reads = getBoard.mock.calls.length;
@@ -1066,5 +1075,190 @@ describe('DashSwimlaneTab', () => {
     TestBed.inject(UndoService).settled.update((n) => n + 1);
     await settle();
     expect(getBoard.mock.calls.length).toBe(reads + 1);
+  });
+
+  describe('one-line card, card content by grouping, lane count links and the "..." menu (WP9a)', () => {
+    const byAssignee = () =>
+      board({
+        groupBy: 'assignee',
+        groups: [
+          group({
+            key: 'assignee:unassigned',
+            kind: 'assignee',
+            label: 'Unassigned',
+            count: 2,
+            counts: counts(2),
+          }),
+          group({
+            key: 'assignee:9',
+            kind: 'assignee',
+            id: 9,
+            label: 'Tariq Malik',
+            count: 2,
+            counts: counts(0, 1, 1),
+          }),
+        ],
+      });
+    const remember = (density: string) =>
+      localStorage.setItem('mf.dashboard.swimlane.v1.5', JSON.stringify({ density }));
+
+    it('draws a remembered Compact setting as one line: level glyph, type, number, title, initials with the flag, due chip', async () => {
+      remember('compact');
+      await open();
+      const card = lane('IN_PROGRESS').querySelector('mf-swimlane-card')!;
+      expect(card.querySelector('.card--line')).not.toBeNull();
+      expect(card.querySelector('[data-level-glyph]')).not.toBeNull();
+      expect(card.querySelectorAll('.lvl-bar.on').length).toBe(4);
+      expect(card.querySelector('mf-task-type-icon')).not.toBeNull();
+      expect(card.querySelector('[data-card-ref]')!.getAttribute('href')).toBe('/tasks/3');
+      expect(text(card.querySelector('.title'))).toBe('Out of office owner');
+      expect(text(card.querySelector('[data-avatar]'))).toContain('TM');
+      expect(card.querySelector('[data-ooo]')!.getAttribute('title')).toBe('Out of office: Leave');
+      expect(text(card.querySelector('[data-due]'))).toContain('ASAP');
+      // Everything else is in the tooltip and the drawer.
+      for (const gone of ['[data-where]', '[data-progress]', 'mf-row-edit', 'mf-status-badge']) {
+        expect(card.querySelector(gone), gone).toBeNull();
+      }
+      const tip = card.querySelector('[data-card-open]')!.getAttribute('title')!;
+      expect(tip).toContain('Acme Corp /');
+      expect(tip).toContain('Critical priority');
+      expect(tip).toContain('Tariq Malik');
+      // `m` has no menu to open on this card: it opens the drawer.
+      key(card.querySelector('[data-card-open]')!, 'm');
+      await settle();
+      expect(document.querySelector('[data-peek]')).not.toBeNull();
+    });
+
+    it('shows client and matter name on one line when not grouped, and the matter number in the drawer', async () => {
+      await open();
+      const card = lane('NEW').querySelector('mf-swimlane-card')!;
+      expect(card.querySelectorAll('[data-where]').length).toBe(1);
+      expect(text(card.querySelector('[data-where]'))).toMatch(/^Acme Corp \/ \S/);
+      expect(card.querySelector('[data-field="assignee"]')).not.toBeNull();
+      card.querySelector<HTMLButtonElement>('[data-card-open]')!.click();
+      await settle();
+      expect(document.querySelector('[data-peek-matter]')!.getAttribute('href')).toBe(
+        '/matters/100',
+      );
+    });
+
+    it('hides client and matter on the cards of a client > matter tree (and keeps the Sensitive mark)', async () => {
+      const b = board({
+        groupBy: 'clientMatter',
+        groups: [
+          group({
+            key: 'client:10',
+            kind: 'client',
+            id: 10,
+            label: 'Acme Corp',
+            clientNumber: '00010',
+            count: 2,
+            counts: counts(2),
+            children: [
+              group({
+                key: 'matter:100',
+                kind: 'matter',
+                id: 100,
+                label: 'A very long matter name that has to wrap in a narrow lane',
+                clientNumber: '00010',
+                matterRef: '00010-00001',
+                count: 1,
+                counts: counts(1),
+              }),
+            ],
+          }),
+        ],
+      });
+      b.lanes[0].cards[0] = aCard({ taskId: 1, ref: 'TSK-1', matterIsSensitive: true });
+      await open(of(b), '/dashboard?tab=swimlane&group=clientMatter');
+      expect(lane('NEW').querySelector('mf-swimlane-card [data-where]')).toBeNull();
+      expect(lane('NEW').querySelector('mf-swimlane-card [data-sensitive]')).not.toBeNull();
+      // Tree structure is unchanged.
+      expect(lane('NEW').querySelectorAll('[role="treeitem"][aria-level="2"]').length).toBe(1);
+      // The long label is wrapped, not cut: no nowrap on it.
+      const label = lane('NEW').querySelector('.node-label') as HTMLElement;
+      expect(label.className).toContain('node-label');
+    });
+
+    it('does not repeat the assignee on the cards of an assignee group but keeps client and matter', async () => {
+      await open(of(byAssignee()), '/dashboard?tab=swimlane&group=assignee');
+      const card = lane('IN_PROGRESS').querySelector('mf-swimlane-card')!;
+      expect(card.querySelector('[data-field="assignee"]')).toBeNull();
+      expect(card.querySelector('[data-ooo]')).toBeNull();
+      expect(card.querySelector('[data-where]')).not.toBeNull();
+    });
+
+    it('links each lane count to the Task Queue with the lane status, the Done window start and the filters', async () => {
+      await open(of(board()), '/dashboard?tab=swimlane&type=7&overdue=true');
+      const link = (code: string) =>
+        lane(code).querySelector<HTMLAnchorElement>('a[data-lane-count]')!;
+      for (const [code, name, n] of [
+        ['NEW', 'New', 2],
+        ['IN_PROGRESS', 'In Progress', 1],
+        ['ON_HOLD', 'On Hold', 1],
+        ['COMPLETED', 'Completed', 0],
+      ] as const) {
+        expect(text(link(code))).toBe(String(n));
+        expect(link(code).getAttribute('aria-label')).toBe(`${n} ${name} tasks in the Task Queue`);
+        expect(link(code).getAttribute('href')).toMatch(/^\/tasks\?/);
+        expect(link(code).getAttribute('href')).toContain('type=7');
+        expect(link(code).getAttribute('href')).toContain('overdue=true');
+        expect(link(code).getAttribute('tabindex')).toBeNull();
+        // The lane name is its own heading; the link is not inside it.
+        expect(text(lane(code).querySelector('h3'))).toBe(name);
+        expect(lane(code).querySelector('h3 a')).toBeNull();
+      }
+      expect(link('NEW').getAttribute('href')).toContain('status=NEW');
+      const done = link('COMPLETED').getAttribute('href')!;
+      expect(done).toContain('status=COMPLETED');
+      expect(done).toContain('status=CANCELLED');
+      expect(done).toContain('completedFrom=2026-10-09');
+    });
+
+    it('leaves the search text out of the count link and says so', async () => {
+      await open(of(board()), '/dashboard?tab=swimlane&q=wage');
+      const a = lane('NEW').querySelector<HTMLAnchorElement>('a[data-lane-count]')!;
+      expect(a.getAttribute('href')).not.toContain('q=');
+      expect(a.getAttribute('title')).toBe('Search text is not included');
+      expect(a.getAttribute('aria-label')).toContain('Search text is not included');
+      expect(a.className).toContain('count--caveat');
+      // The note of a capped lane still opens the queue with the search.
+    });
+
+    it('opens the "..." menu with the keyboard: ArrowDown, items, Escape returns the focus', async () => {
+      await open();
+      const trigger = q<HTMLButtonElement>('[data-more]');
+      expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      trigger.focus();
+      key(trigger, 'ArrowDown');
+      await settle();
+      await new Promise((r) => setTimeout(r));
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      const items = qa('[data-more-menu] [role^="menuitem"]');
+      expect(document.activeElement).toBe(items[0]);
+      // Density x2, Done window x3, Only mine (no group: no Expand or Collapse all).
+      expect(items.length).toBe(6);
+      expect(items[0].getAttribute('role')).toBe('menuitemradio');
+      expect(items[0].getAttribute('aria-checked')).toBe('true');
+      key(items[0], 'ArrowDown');
+      expect(document.activeElement).toBe(items[1]);
+      key(items[1], 'End');
+      expect(document.activeElement).toBe(items[5]);
+      expect(items[5].getAttribute('role')).toBe('menuitemcheckbox');
+      key(items[5], 'Escape');
+      await settle();
+      expect(q('[data-more-menu]')).toBeNull();
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('offers Expand all and Collapse all in the menu only when grouped', async () => {
+      await open(of(byAssignee()), '/dashboard?tab=swimlane&group=assignee');
+      q<HTMLButtonElement>('[data-more]').click();
+      await settle();
+      expect(q('[data-more-menu] [data-expand-all]')).not.toBeNull();
+      expect(q('[data-more-menu] [data-collapse-all]')).not.toBeNull();
+    });
   });
 });

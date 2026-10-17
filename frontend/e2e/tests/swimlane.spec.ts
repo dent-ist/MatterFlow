@@ -26,6 +26,16 @@ async function openBoard(page: Page, query = ''): Promise<void> {
   await expect(cards(page, 'NEW').first()).toBeVisible();
 }
 
+/** Opens the "..." menu and picks one of its items (Density, Done in the last, Only mine, Expand all, Collapse all). */
+async function menuPick(
+  page: Page,
+  role: 'menuitemradio' | 'menuitemcheckbox' | 'menuitem',
+  name: string | RegExp,
+) {
+  await page.getByRole('button', { name: 'More options' }).click();
+  await page.getByRole(role, { name }).click();
+}
+
 async function api(page: Page, params: string): Promise<Json> {
   const response = await page.request.get(`/api/v1/dashboard/swimlane?q=${board.tag}${params}`);
   expect(response.ok()).toBeTruthy();
@@ -58,10 +68,9 @@ test.describe('Swimlane tab', () => {
     await openBoard(page);
     const data = await api(page, '');
     for (const l of data.lanes) {
-      const heading = lane(page, l.status).getByRole('heading', { level: 3 });
-      await expect(heading).toContainText(String(l.count));
+      await expect(lane(page, l.status).locator('[data-lane-count]')).toHaveText(String(l.count));
     }
-    await expect(lane(page, 'IN_PROGRESS').getByRole('heading', { level: 3 })).toContainText(
+    await expect(lane(page, 'IN_PROGRESS').getByRole('heading', { level: 3 })).toHaveText(
       'In Progress',
     );
     await expect(lane(page, 'COMPLETED').getByRole('heading', { level: 3 })).toContainText(
@@ -89,8 +98,12 @@ test.describe('Swimlane tab', () => {
     await expect(card.locator('[data-field="priority"]')).toContainText(/Critical|High|Normal|Low/);
     await expect(card.locator('mf-task-type-icon svg')).toHaveCount(1);
     await expect(card.locator('[data-card-ref]')).toHaveAttribute('href', /\/tasks\/\d+/);
-    await expect(card.locator('[data-client]')).toContainText('Board client');
-    await expect(card.locator('mf-matter-ref a')).toHaveAttribute('href', /\/matters\/\d+/);
+    // Client and matter name on ONE line (W3); the matter number is in the tooltip.
+    await expect(card.locator('[data-where]')).toContainText(/Board client .* \/ Board matter/);
+    await expect(card.locator('[data-card-open]')).toHaveAttribute(
+      'title',
+      /Board client .* \/ \d{5}-\d{5}/,
+    );
     await expect(card.locator('[data-due]')).not.toBeEmpty();
     await expect(card.locator('[data-progress]')).toContainText('/4');
     const clamp = await card
@@ -102,9 +115,12 @@ test.describe('Swimlane tab', () => {
   test('flags an assignee who is out of office on the card and in the assignee group', async ({
     page,
   }) => {
+    await openBoard(page);
+    const oooCard = page.locator('[data-ooo]').first();
+    await expect(oooCard).toContainText('Out of office');
+    // Grouped by assignee the group header carries the flag and the cards do not repeat it.
     await openBoard(page, '&group=assignee');
-    const oooLane = page.locator('[data-ooo]').first();
-    await expect(oooLane).toContainText('Out of office');
+    await expect(page.locator('mf-swimlane-card [data-ooo]')).toHaveCount(0);
     const group = page
       .locator('[data-lane="IN_PROGRESS"] .grp-btn')
       .filter({ hasText: board.outOfOfficeUser.displayName });
@@ -152,7 +168,7 @@ test.describe('Swimlane tab', () => {
     expect(shown.map((t) => t.trim())).toEqual(expected);
     await expect(headers.first()).toContainText(String(data.groups[0].counts.new));
 
-    await page.getByLabel('Group by').selectOption({ label: 'Assignee' });
+    await page.getByLabel('Group', { exact: true }).selectOption({ label: 'Assignee' });
     await expect(lane(page, 'NEW').locator('.grp-btn').first()).toContainText('Unassigned');
   });
 
@@ -186,9 +202,9 @@ test.describe('Swimlane tab', () => {
     await expect(clients.first()).toHaveAttribute('aria-expanded', 'false');
     expect(await matters.count()).toBeLessThan(matterCount);
 
-    await page.getByRole('button', { name: 'Expand all' }).click();
+    await menuPick(page, 'menuitem', 'Expand all');
     await expect(matters).toHaveCount(matterCount);
-    await page.getByRole('button', { name: 'Collapse all' }).click();
+    await menuPick(page, 'menuitem', 'Collapse all');
     await expect(matters).toHaveCount(0);
     await expect(clients.first()).toHaveAttribute('aria-expanded', 'false');
   });
@@ -249,7 +265,7 @@ test.describe('Swimlane tab', () => {
     await expect(page).toHaveURL(/priority=\d+/);
     const priority = new URL(page.url()).searchParams.get('priority');
     const data = await api(page, `&priorityId=${priority}`);
-    await expect(lane(page, 'NEW').getByRole('heading', { level: 3 })).toContainText(
+    await expect(lane(page, 'NEW').locator('[data-lane-count]')).toHaveText(
       String(data.lanes[0].count),
     );
     await page.getByRole('checkbox', { name: 'Overdue only' }).check();
@@ -275,12 +291,9 @@ test.describe('Swimlane tab', () => {
     page,
   }) => {
     await openBoard(page);
-    await page.getByRole('button', { name: 'Only mine' }).click();
+    await menuPick(page, 'menuitemcheckbox', 'Only mine');
     await expect(page).toHaveURL(/mine=true/);
-    await expect(page.getByRole('button', { name: 'Only mine' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    await expect(page.locator('[data-active-settings]')).toContainText('Only mine');
     // The seeded tasks belong to other people.
     await expect(lane(page, 'NEW').locator('[data-lane-empty]')).toContainText('match the filters');
     await expect(page.locator('mf-swimlane-card')).toHaveCount(0);
@@ -293,24 +306,27 @@ test.describe('Swimlane tab', () => {
     const response = page.waitForResponse(
       (r) => r.url().includes('/dashboard/swimlane') && r.url().includes('completedDays=30'),
     );
-    await page.getByLabel('Done in the last').selectOption('30');
+    await menuPick(page, 'menuitemradio', '30 days');
     expect((await response).ok()).toBe(true);
     await expect(page).toHaveURL(/days=30/);
-    await page.getByLabel('Group by').selectOption({ label: 'Priority' });
-    await page.getByLabel('Density').selectOption('compact');
+    await page.getByLabel('Group', { exact: true }).selectOption({ label: 'Priority' });
+    await menuPick(page, 'menuitemradio', 'Compact');
     await expect(page.locator('[data-board]')).toHaveAttribute('data-density', 'compact');
+    // Settings that are not the defaults stay visible as text next to the "..." button.
+    await expect(page.locator('[data-active-settings]')).toContainText('Compact');
+    await expect(page.locator('[data-active-settings]')).toContainText('Done in 30 days');
 
     // A plain Swimlane link (no board parameters) opens with the remembered choices, and writes them into the address.
     await page.goto(`/dashboard?tab=swimlane&q=${board.tag}`);
-    await expect(page.getByLabel('Done in the last')).toHaveValue('30');
-    await expect(page.getByLabel('Group by')).toHaveValue('priority');
-    await expect(page.getByLabel('Density')).toHaveValue('compact');
+    await expect(page.getByLabel('Group', { exact: true })).toHaveValue('priority');
+    await expect(page.locator('[data-board]')).toHaveAttribute('data-density', 'compact');
+    await expect(page.locator('[data-active-settings]')).toContainText('Done in 30 days');
     await expect(page).toHaveURL(/group=priority/);
     await expect(page).toHaveURL(/days=30/);
     // Put the defaults back for the tests that follow.
-    await page.getByLabel('Done in the last').selectOption('7');
-    await page.getByLabel('Group by').selectOption({ label: 'None' });
-    await page.getByLabel('Density').selectOption('comfortable');
+    await menuPick(page, 'menuitemradio', '7 days');
+    await page.getByLabel('Group', { exact: true }).selectOption({ label: 'None' });
+    await menuPick(page, 'menuitemradio', 'Comfortable');
   });
 
   test('opens a drawer peek with summary, steps and quick actions; Esc closes it and focus returns to the card', async ({
