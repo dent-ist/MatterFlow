@@ -11,6 +11,12 @@ export type AuthLoadState = 'idle' | 'loading' | 'ready' | 'error';
 /** Minimum gap between focus-triggered permission refreshes (architecture section 12). */
 export const FOCUS_REFRESH_THROTTLE_MS = 60_000;
 
+const LINK_PERMISSION = {
+  matter: 'Matter.View',
+  client: 'Client.View',
+  project: 'Project.View',
+} as const;
+
 /**
  * Signal store for the signed-in user, built on GET /me. Used for usability gating only; the
  * backend authorizes every call.
@@ -49,6 +55,14 @@ export class AuthStore {
   has(code: Permission | string): boolean {
     if (this.isRestricted()) return false;
     return this.isSystemAdmin() || this.permissions().has(code as Permission);
+  }
+
+  /**
+   * Whether a link to the entity's screen is offered: Matter, Client and Project links need the entity's View permission, otherwise the
+   * reference shows as plain text (navigation without permission is not offered; the 403 page stays for typed URLs).
+   */
+  canLink(entity: 'matter' | 'client' | 'project'): boolean {
+    return this.has(LINK_PERMISSION[entity]);
   }
 
   /** True when the user holds at least one of the codes (empty list = no requirement). */

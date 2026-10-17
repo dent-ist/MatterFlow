@@ -1,6 +1,6 @@
 import { convertToParamMap } from '@angular/router';
 import { parseQueueState } from '../work-queue/queue-filters';
-import { parseFilters, serializeFilters } from './filter-def';
+import { optionsOf, parseFilters, serializeFilters } from './filter-def';
 import { builtInFilters, emptyFilters } from '../work-queue/queue-filters';
 import {
   QUEUE_FILTER_PARAMS,
@@ -267,5 +267,54 @@ describe('work list definitions for the column filters', () => {
       status: ['COMPLETED'],
       completedFrom: '2026-09-14',
     });
+  });
+});
+
+describe('work list definitions: tabs, presets and fixed values', () => {
+  const by = (defs: ReturnType<typeof queueFilterDefs>, key: string) =>
+    defs.find((d) => d.key === key)!;
+
+  it('gives only the Due column the forward-looking presets, Overdue not among them', () => {
+    const defs = queueFilterDefs();
+    expect(by(defs, 'due').presets).toEqual([
+      'today',
+      'tomorrow',
+      'next7',
+      'thisWeek',
+      'nextWeek',
+      'thisMonth',
+    ]);
+    expect(by(defs, 'created').presets).toBeUndefined();
+    expect(by(defs, 'updated').presets).toBeUndefined();
+    expect(by(defs, 'completed').presets).toBeUndefined();
+  });
+
+  it('carries the fixed value of a tab-owned filter only when the tab owns it', () => {
+    const defs = queueFilterDefs(
+      {},
+      {
+        disabled: { assignee: () => 'This tab lists the tasks assigned to you.' },
+        fixed: { assignee: () => 'Me' },
+      },
+    );
+    expect(by(defs, 'assignee').fixedValue?.()).toBe('Me');
+    expect(by(defs, 'creator').fixedValue).toBeUndefined();
+    expect(
+      by(queueFilterDefs({}, { fixed: { assignee: () => 'Me' } }), 'assignee').fixedValue,
+    ).toBe(undefined);
+  });
+
+  it('labels a status the tab does not offer, so its chip reads "New"', () => {
+    const all = [
+      { value: 'NEW', label: 'New' },
+      { value: 'IN_PROGRESS', label: 'In Progress' },
+    ];
+    const status = by(
+      queueFilterDefs({ statuses: all }, { statuses: () => all.slice(1) }),
+      'status',
+    );
+    expect(optionsOf(status).map((o) => o.value)).toEqual(['IN_PROGRESS']);
+    expect(status.valueLabel?.('NEW')).toBe('New');
+    expect(status.valueLabel?.('ON_HOLD')).toBe('ON_HOLD');
   });
 });

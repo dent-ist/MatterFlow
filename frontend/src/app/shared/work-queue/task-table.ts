@@ -27,6 +27,7 @@ import { DueStatePipe } from '../pipes/due-label.pipe';
 import { MfDatePipe } from '../pipes/mf-date.pipe';
 import { MatterRef } from '../ui/matter-ref';
 import { PriorityBadge } from '../ui/priority-badge';
+import { CopyPart } from '../ui/copy-parts';
 import { StatusBadge } from '../ui/status-badge';
 import { WORK_COLUMNS, ColumnDef, Density } from './column-prefs';
 import { InlineField, canEditField } from './inline-edit';
@@ -119,6 +120,7 @@ const PROJECT_HIDES_BELOW = 800;
           [empty]="rows().length === 0"
           [filtered]="filtered()"
           [emptyText]="emptyText()"
+          [emptyParts]="emptyParts()"
           [columns]="columnCount()"
           (retry)="retry.emit()"
           (clear)="clearFilters.emit()"
@@ -179,7 +181,7 @@ const PROJECT_HIDES_BELOW = 800;
                     @case ('matter') {
                       <mf-matter-ref
                         [value]="row.matterRef"
-                        [link]="['/matters', row.matterId]"
+                        [link]="auth.canLink('matter') ? ['/matters', row.matterId] : null"
                         [copy]="false"
                         [hint]="row.matterName"
                       />
@@ -343,12 +345,17 @@ const PROJECT_HIDES_BELOW = 800;
           <span mfEmptyAction><ng-content select="[empty-action]" /></span>
         </tbody>
       </table>
+      @if (nearEmpty()) {
+        <div class="wt-near" role="note" aria-live="polite" data-near-empty>
+          <ng-content select="[near-empty]" />
+        </div>
+      }
     </div>
   `,
 })
 export class TaskTable {
   private readonly clock = inject(Clock);
-  private readonly auth = inject(AuthStore);
+  protected readonly auth = inject(AuthStore);
   private readonly zone = inject(USER_TIME_ZONE);
   private readonly wrap = viewChild<ElementRef<HTMLElement>>('wrap');
 
@@ -374,6 +381,10 @@ export class TaskTable {
   /** True while a filter is active: an empty list then says "No tasks match these filters". */
   readonly filtered = input(false);
   readonly emptyText = input('No tasks yet.');
+  /** The empty text with links in it (replaces `emptyText`). */
+  readonly emptyParts = input<readonly CopyPart[] | null>(null);
+  /** Show the projected `[near-empty]` note directly under the last row. */
+  readonly nearEmpty = input(false);
   readonly density = input<Density>('comfortable');
   /** Current API sort field; null shows no sort indicator (the default order applies). */
   readonly sort = input<string | null>(null);
@@ -420,9 +431,11 @@ export class TaskTable {
   }
 
   protected readonly loading = computed(() => this.state() === 'loading');
-  /** Rows kept while a refresh runs or fails are shown dimmed; the body states only replace an empty list. */
+  /** Rows kept while a refresh runs are shown dimmed; loading only replaces an empty list, an error always replaces the rows. */
   protected readonly gridState = computed<LoadState>(() => {
     const state = this.state();
+    // A failed load never leaves old rows under the message (G6): the error is the body.
+    if (state === 'error') return 'error';
     return this.rows().length > 0 ? 'ready' : state;
   });
   /**

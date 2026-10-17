@@ -293,7 +293,8 @@ describe('MyWorkPage', () => {
     );
     let el = await open('/my-work?assignee=9&creator=3');
     // Active: Assignee is "me" by definition.
-    expect(control(el, 'assignee').hasAttribute('disabled')).toBe(true);
+    expect(control(el, 'assignee').hasAttribute('data-filter-fixed')).toBe(true);
+    expect(control(el, 'assignee').textContent).toContain('Me');
     expect(
       control(el, 'assignee').closest('[data-filter-disabled]')!.getAttribute('title'),
     ).toContain('assigned to you');
@@ -310,9 +311,36 @@ describe('MyWorkPage', () => {
 
     TestBed.resetTestingModule();
     el = await open('/my-work?view=dueSoon&dueFrom=2026-10-01&asap=true');
-    expect(control(el, 'due').hasAttribute('disabled')).toBe(true);
+    // The cell says what the tab decides, not a stray "until" (BUG-10), and is no input.
+    expect(control(el, 'due').hasAttribute('data-filter-fixed')).toBe(true);
+    expect(control(el, 'due').textContent).toContain('Next 2 days and overdue');
+    expect(control(el, 'due').textContent).toContain(
+      'Due: Next 2 days and overdue, set by this tab',
+    );
+    expect(control(el, 'due').textContent).not.toContain('until');
+    expect(control(el, 'due').tagName).not.toBe('INPUT');
+    expect(chips(el)).toEqual([]);
     expect(lastArgs()[ARG.dueFrom]).toBeUndefined();
     expect(lastArgs()[ARG.asap]).toBeUndefined();
+  });
+
+  it('offers In Progress and On Hold only on Active and Due soon and overdue (an assigned task is never New)', async () => {
+    for (const view of ['active', 'dueSoon', 'createdByMe']) {
+      TestBed.resetTestingModule();
+      const el = await open(`/my-work?view=${view}`);
+      control(el, 'status').click();
+      harness.detectChanges();
+      await settle();
+      const options = Array.from(document.querySelectorAll('mf-filter-popover [data-option]')).map(
+        (o) => o.getAttribute('data-option'),
+      );
+      expect(options).toEqual(
+        view === 'createdByMe'
+          ? ['NEW', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'CANCELLED']
+          : ['IN_PROGRESS', 'ON_HOLD'],
+      );
+      document.querySelectorAll('mf-filter-popover').forEach((n) => n.remove());
+    }
   });
 
   it('limits the Status choices to what the tab can show', async () => {
@@ -329,22 +357,22 @@ describe('MyWorkPage', () => {
 
   it('changing tab drops the filters the new tab owns and the statuses it cannot show, and keeps the rest', async () => {
     const el = await open(
-      '/my-work?view=createdByMe&assignee=9&priority=1&status=NEW&status=COMPLETED',
+      '/my-work?view=createdByMe&assignee=9&priority=1&status=IN_PROGRESS&status=COMPLETED',
     );
     tab(el, 'Active').click();
     await settle();
     expect(query()['view']).toBeUndefined();
     expect(query()['assignee']).toBeUndefined();
     expect(query()['priority']).toBe('1');
-    expect(query()['status']).toBe('NEW');
+    expect(query()['status']).toBe('IN_PROGRESS');
 
     tab(el, 'Due soon and overdue').click();
     await settle();
-    expect(query()['status']).toBe('NEW');
+    expect(query()['status']).toBe('IN_PROGRESS');
 
     tab(el, 'Closed').click();
     await settle();
-    // NEW cannot be on the Completed tab; an explicit empty status is not written when none is left.
+    // IN_PROGRESS cannot be on the Closed tab; an explicit empty status is not written when none is left.
     expect(query()['status']).toBeUndefined();
     expect(query()['priority']).toBe('1');
   });
@@ -577,6 +605,10 @@ describe('MyWorkPage', () => {
     const el = await open('/my-work');
     const line = el.querySelector('[data-near-empty]')!;
     expect(line.textContent).toContain("That's everything on your plate.");
+    // Inside the grid area, not in the footer row with the pager, and not a table row.
+    expect(line.getAttribute('role')).toBe('note');
+    expect(line.closest('table')).toBeNull();
+    expect(line.closest('.wt-wrap')).not.toBeNull();
     const hrefs = Array.from(line.querySelectorAll('a')).map((a) => a.getAttribute('href'));
     expect(hrefs).toEqual(['/pods/work', '/tasks']);
   });
@@ -587,8 +619,8 @@ describe('MyWorkPage', () => {
       response: of(pageOf([], { counts: { active: 0, dueSoon: 0, completed: 0, createdByMe: 0 } })),
     });
     const empty = el.querySelector('tbody [data-empty]')!;
-    expect(empty.textContent).toContain(
-      'Nothing assigned to you right now. Check Pod Work for unassigned tasks.',
+    expect(empty.textContent?.replace(/\s+/g, ' ')).toContain(
+      'Nothing is assigned to you right now. Check Pod Work for unassigned tasks.',
     );
     expect(empty.querySelector('a')!.getAttribute('href')).toBe('/pods/work');
 
@@ -598,6 +630,37 @@ describe('MyWorkPage', () => {
       response: of(pageOf([], { counts: COUNTS })),
     });
     expect(el.querySelector('tbody [data-empty] a')).toBeNull();
+    expect(el.querySelector('tbody [data-empty]')!.textContent).not.toContain('Pod Work');
+  });
+
+  it('offers Create task on an empty Created by me only with Task.Create', async () => {
+    const empty = { response: of(pageOf([], { counts: COUNTS })) };
+    let el = await open('/my-work?view=createdByMe', {
+      ...empty,
+      permissions: ['Task.View', 'Task.Create'],
+    });
+    const link = el.querySelector<HTMLAnchorElement>('tbody [data-empty] a');
+    expect(el.querySelector('tbody [data-empty]')!.textContent).toContain(
+      'You have not created any tasks.',
+    );
+    expect(link?.textContent).toContain('Create task');
+    expect(link?.getAttribute('href')).toBe('/tasks/new');
+
+    TestBed.resetTestingModule();
+    el = await open('/my-work?view=createdByMe', { ...empty, permissions: ['Task.View'] });
+    expect(el.querySelector('tbody [data-empty] a')).toBeNull();
+  });
+
+  it('keeps a status the tab cannot show as a removable chip that reads "New"', async () => {
+    localStorage.setItem(
+      'mf.work-table.v3.my-work.1',
+      JSON.stringify({ columns: ['ref', 'title', 'priority', 'due'], density: 'comfortable' }),
+    );
+    const el = await open('/my-work?status=NEW', {
+      response: of(pageOf([], { counts: COUNTS })),
+    });
+    expect(chips(el)).toEqual(['Status: New (hidden column)']);
+    expect(lastArgs()[ARG.status]).toEqual(['NEW']);
   });
 
   it('shows the filtered empty state and an error with Retry', async () => {

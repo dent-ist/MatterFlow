@@ -41,15 +41,23 @@ let nextUid = 0;
     @let d = def();
     @if (reason(); as why) {
       <div class="fc-off" [attr.title]="why" data-filter-disabled>
-        <input
-          class="mf-control mf-control--compact fc-off__input"
-          type="text"
-          disabled
-          [value]="current()"
-          [attr.aria-label]="'Filter by ' + d.label"
-          [attr.aria-describedby]="uid + '-why'"
-          [attr.data-filter]="d.key"
-        />
+        @if (fixed(); as text) {
+          <!-- A value the tab decides: shown as muted text, readable by screen readers, not an input and not a filter. -->
+          <span class="fc-fixed" [attr.data-filter]="d.key" data-filter-fixed>
+            <span aria-hidden="true">{{ text }}</span>
+            <span class="fc-sr">{{ d.label }}: {{ text }}, set by this tab</span>
+          </span>
+        } @else {
+          <input
+            class="mf-control mf-control--compact fc-off__input"
+            type="text"
+            disabled
+            [value]="current()"
+            [attr.aria-label]="'Filter by ' + d.label"
+            [attr.aria-describedby]="uid + '-why'"
+            [attr.data-filter]="d.key"
+          />
+        }
         <span [id]="uid + '-why'" [class]="inline() ? 'fc-why' : 'fc-sr'">{{ why }}</span>
       </div>
     } @else {
@@ -89,6 +97,7 @@ let nextUid = 0;
               [label]="d.label"
               [key]="d.key"
               [options]="listOptions()"
+              [valueLabel]="d.valueLabel ?? identity"
               [value]="filters().list(d.key)"
               [emptyLabel]="d.emptyLabel ?? 'All'"
               [groups]="d.valueGroups ?? []"
@@ -161,6 +170,15 @@ let nextUid = 0;
       min-width: 0;
       font-weight: 400;
     }
+    .fc-fixed {
+      display: block;
+      padding: 0 var(--mf-s2);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .fc-sr {
       position: absolute;
       width: 1px;
@@ -184,11 +202,13 @@ export class FilterControl {
   readonly inline = input(false);
 
   protected readonly optionsOf = optionsOf;
+  protected readonly identity = (v: string): string => v;
   protected readonly defaultPresets = ['today', 'thisWeek', 'last7', 'last30', 'thisMonth'];
   protected readonly uid = `mf-fc-${nextUid++}`;
   private readonly auth = inject(AuthStore, { optional: true });
 
   protected readonly reason = computed(() => this.def().disabledReason?.() ?? null);
+  protected readonly fixed = computed(() => this.def().fixedValue?.() ?? null);
   protected readonly selectOpts = computed(() => selectOptions(this.def()));
   protected readonly triOptions = computed(() => optionsOf(this.def()));
   protected readonly range = computed<RangeValue>(() => {

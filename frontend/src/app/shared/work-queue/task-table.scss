@@ -365,3 +365,15 @@ th[aria-sort='descending'] .wt-sort {
   width: 0;
   min-width: 100%;
 }
+
+/* The "That's everything" note sits directly under the last row, inside the scrolling area (A9). */
+.wt-near {
+  position: sticky;
+  left: 0;
+  padding: var(--mf-s2) var(--mf-s3);
+  color: var(--mf-text-muted);
+}
+
+.wt-near > :first-child {
+  margin: 0;
+}

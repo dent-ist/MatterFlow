@@ -36,6 +36,21 @@ async function openMenu(
 describe('TaskDetailPage header', () => {
   afterEach(() => TestBed.resetTestingModule());
 
+  it('links the Matter in the header and the breadcrumb only with Matter.View (BUG-7)', async () => {
+    const { el } = await mountTaskPage(aTask(), [...PERMS, 'Matter.View']);
+    expect(el.querySelector('[data-matter] a[href*="/matters/"]')).not.toBeNull();
+    expect(el.querySelector('nav[aria-label="Breadcrumb"] a[href*="/matters/"]')).not.toBeNull();
+    TestBed.resetTestingModule();
+
+    const plain = await mountTaskPage(aTask(), PERMS);
+    expect(plain.el.querySelector('a[href*="/matters/"]')).toBeNull();
+    expect(plain.el.querySelector('[data-matter] .mf-ref')).not.toBeNull();
+    // The crumb stays, as text.
+    expect(plain.el.querySelector('nav[aria-label="Breadcrumb"]')!.textContent).toContain(
+      aTask().matter.matterRef,
+    );
+  });
+
   it('has one Edit button and inline Status, Priority and Assignee menus for a user who may change them', async () => {
     const { el } = await mountTaskPage(aTask(), [...PERMS, 'Task.SetPriority', 'Task.Assign']);
 

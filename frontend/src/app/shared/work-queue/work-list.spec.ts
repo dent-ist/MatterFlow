@@ -83,28 +83,53 @@ describe('WorkList', () => {
     expect(retried).toBe(1);
   });
 
-  it('shows an alert with Retry and keeps the previous rows on error', async () => {
+  it('shows the same message and controls on a failed reload as on a first load: no old rows under it', async () => {
     await create([aRow()], { state: 'error' });
-    const alert = el().querySelector('[role="alert"]')!;
-    expect(alert.textContent).toContain('Something went wrong. Try again.');
-    expect(el().querySelectorAll('tbody tr').length).toBe(1);
+    expect(el().querySelector('tbody [data-error]')!.textContent).toContain("Couldn't load tasks");
+    expect(el().querySelectorAll('tbody tr[data-task]').length).toBe(0);
+    expect(el().textContent).not.toContain('Something went wrong');
+    expect(el().querySelectorAll('[role="alert"]').length).toBe(1);
 
     let retried = 0;
     fixture.componentInstance.retry.subscribe(() => retried++);
-    alert.querySelector<HTMLButtonElement>('button')!.click();
+    el().querySelector<HTMLButtonElement>('tbody [data-error] button')!.click();
     expect(retried).toBe(1);
+  });
+
+  it('moves focus to the first row when a Retry succeeds', async () => {
+    await create([aRow()], { state: 'error' });
+    el().querySelector<HTMLButtonElement>('tbody [data-error] button')!.click();
+    fixture.componentRef.setInput('state', 'ready');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await Promise.resolve();
+    expect(document.activeElement).toBe(el().querySelector('tbody a.wt-title'));
   });
 
   it('adds a friendly line below a short list, only when nothing is filtered', async () => {
     await create([aRow()]);
-    expect(el().querySelector('[data-near-empty]')).not.toBeNull();
+    fixture.componentRef.setInput('nearEmpty', true);
+    fixture.detectChanges();
+    const note = el().querySelector('[data-near-empty]')!;
+    expect(note.getAttribute('role')).toBe('note');
+    expect(note.closest('table')).toBeNull();
     fixture.componentRef.setInput('filtered', true);
     fixture.detectChanges();
     expect(el().querySelector('[data-near-empty]')).toBeNull();
   });
 
-  it('leaves out the friendly line from five rows on', async () => {
-    await create([1, 2, 3, 4, 5].map((n) => aRow({ taskId: n, taskNumber: `TSK-${n}` })));
+  it('shows the friendly line up to ten tasks in total and not on another tab', async () => {
+    await create([1, 2, 3, 4, 5, 6].map((n) => aRow({ taskId: n, taskNumber: `TSK-${n}` })));
+    fixture.componentRef.setInput('nearEmpty', true);
+    fixture.componentRef.setInput('total', 10);
+    fixture.detectChanges();
+    expect(el().querySelector('[data-near-empty]')).not.toBeNull();
+    fixture.componentRef.setInput('total', 12);
+    fixture.detectChanges();
+    expect(el().querySelector('[data-near-empty]')).toBeNull();
+    fixture.componentRef.setInput('total', 3);
+    fixture.componentRef.setInput('nearEmpty', false);
+    fixture.detectChanges();
     expect(el().querySelector('[data-near-empty]')).toBeNull();
   });
 });

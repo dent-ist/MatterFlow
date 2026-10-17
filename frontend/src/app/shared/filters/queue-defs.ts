@@ -1,4 +1,5 @@
 import { ALL_STATUSES, OPEN_STATUSES, QueueFilters } from '../work-queue/queue-filters';
+import { DUE_PRESETS } from './date-presets';
 import { FilterDef, FilterOption, FilterValue, paramsOf } from './filter-def';
 
 /**
@@ -25,6 +26,8 @@ export interface QueueDefOptions {
   omit?: readonly string[];
   /** Why a filter is unavailable on the current tab (read on every render); the key of the definition. `due` covers ASAP and Overdue. */
   disabled?: Readonly<Record<string, () => string | null | undefined>>;
+  /** What a tab-owned filter reads in its disabled cell (`Me`, `Next 2 days and overdue`); the key of the definition. */
+  fixed?: Readonly<Record<string, () => string | null | undefined>>;
   /** The status choices (default: all five). My Work and Pod Work limit them per tab. */
   statuses?: () => readonly FilterOption[];
   /** The statuses a plain link starts on (Task Queue: the open ones). A link with other filters and no status asks for every status. */
@@ -57,9 +60,11 @@ export function queueFilterDefs(
 ): FilterDef[] {
   const list = (o?: readonly FilterOption[]) => () => o ?? [];
   const reason = (key: string) => options.disabled?.[key];
-  const off = (key: string): Pick<FilterDef, 'disabledReason'> => {
+  const off = (key: string): Pick<FilterDef, 'disabledReason' | 'fixedValue'> => {
     const r = reason(key);
-    return r ? { disabledReason: r } : {};
+    if (!r) return {};
+    const fixedValue = options.fixed?.[key];
+    return fixedValue ? { disabledReason: r, fixedValue } : { disabledReason: r };
   };
   const defs: FilterDef[] = [
     // Ref and Title share the control: it searches the title and the task number.
@@ -72,6 +77,8 @@ export function queueFilterDefs(
       options: options.statuses ?? list(lookups.statuses),
       normalize: asStatus,
       valueGroups: [OPEN_GROUP],
+      // A link or restored view may carry a status the tab does not offer (NEW on Active): its chip still reads "New".
+      valueLabel: (v) => lookups.statuses?.find((o) => o.value === v)?.label ?? v,
       emptyLabel: 'All',
       ...(options.defaultStatus ? { default: options.defaultStatus, defaultOnlyBare: true } : {}),
       ...off('status'),
@@ -140,6 +147,9 @@ export function queueFilterDefs(
       type: 'dateRange',
       fromParam: 'dueFrom',
       toParam: 'dueTo',
+      // Due dates look ahead: Today, Tomorrow, Next 7 days, This week, Next week, This month (G2). Overdue is not a preset: a date range
+      // cannot say "timed earlier today", so it would not match the Overdue filter and the strip.
+      presets: DUE_PRESETS,
       ...off('due'),
     },
     {

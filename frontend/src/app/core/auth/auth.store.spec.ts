@@ -178,3 +178,26 @@ describe('AuthStore', () => {
     });
   });
 });
+
+describe('AuthStore.canLink (BUG-7)', () => {
+  function storeWith(...permissions: string[]) {
+    TestBed.configureTestingModule({
+      providers: [provideFakeMe(new FakeMeApi(profileOf({ permissions: permissions as never })))],
+    });
+    return TestBed.inject(AuthStore);
+  }
+
+  it('offers a Matter, Client or Project link only with the View permission of that entity', async () => {
+    const taskOnly = storeWith('Task.View');
+    await taskOnly.ensureLoaded();
+    expect(taskOnly.canLink('matter')).toBe(false);
+    expect(taskOnly.canLink('client')).toBe(false);
+    expect(taskOnly.canLink('project')).toBe(false);
+
+    TestBed.resetTestingModule();
+    const mixed = storeWith('Task.View', 'Matter.View');
+    await mixed.ensureLoaded();
+    expect(mixed.canLink('matter')).toBe(true);
+    expect(mixed.canLink('client')).toBe(false);
+  });
+});

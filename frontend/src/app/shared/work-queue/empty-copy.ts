@@ -1,0 +1,72 @@
+import { CopyPart } from '../ui/copy-parts';
+import { EMPTY_TEXT } from './work-vocabulary';
+
+export type EmptyTab = 'active' | 'dueSoon' | 'completed' | 'createdByMe';
+
+export interface EmptyContext {
+  tab: EmptyTab;
+  /** My Work, Closed: the default 90-day window applies (not "all time" and no closed-date range). */
+  windowed?: boolean;
+  /**
+   * How many Pods the user belongs to; null while unknown. Only asked of a user with Pod.View (without it there is no Pod Work to point at).
+   */
+  podCount?: number | null;
+}
+
+export interface EmptyCopy {
+  parts: readonly CopyPart[];
+  /** Offer the "Create task" action under the text (Created by me, only with Task.Create). */
+  createTask?: boolean;
+}
+
+const NOTHING = 'Nothing is assigned to you right now.';
+
+/**
+ * The text of an empty list (BUG-8, B4, D4), worked out from what the user may open: a screen the user cannot open is never named. Pod Work
+ * appears (as a link) on the Active tab only with Pod.View and a Pod; Due soon and overdue and Closed never name another screen.
+ */
+export function emptyCopy(ctx: EmptyContext, has: (code: string) => boolean): EmptyCopy {
+  switch (ctx.tab) {
+    case 'active': {
+      if (!has('Pod.View')) return { parts: [NOTHING] };
+      if (ctx.podCount === 0) {
+        return { parts: [`${NOTHING} You are not in a Pod yet; ask an administrator.`] };
+      }
+      if (ctx.podCount == null) return { parts: [NOTHING] };
+      return {
+        parts: [
+          `${NOTHING} Check `,
+          { label: 'Pod Work', to: '/pods/work' },
+          ' for unassigned tasks.',
+        ],
+      };
+    }
+    case 'dueSoon':
+      return { parts: [EMPTY_TEXT.dueSoon] };
+    case 'completed':
+      return {
+        parts: [
+          ctx.windowed === false ? 'No tasks were closed in this period.' : EMPTY_TEXT.completed,
+        ],
+      };
+    default:
+      return {
+        parts: ['You have not created any tasks.'],
+        ...(has('Task.Create') ? { createTask: true } : {}),
+      };
+  }
+}
+
+/** The line under the last rows of a short Active list: "That's everything on your plate." with only the screens the user can open. */
+export function nearEmptyCopy(has: (code: string) => boolean): readonly CopyPart[] {
+  const queue = { label: 'Task Queue', to: '/tasks' };
+  return has('Pod.View')
+    ? [
+        "That's everything on your plate. Look for more in ",
+        { label: 'Pod Work', to: '/pods/work' },
+        ' or the ',
+        queue,
+        '.',
+      ]
+    : ["That's everything on your plate. Look for more in the ", queue, '.'];
+}

@@ -17,6 +17,18 @@ export const DATE_PRESETS: readonly DatePreset[] = [
   { key: 'last30', label: 'Last 30 days' },
   { key: 'thisMonth', label: 'This month' },
   { key: 'next7', label: 'Next 7 days' },
+  { key: 'tomorrow', label: 'Tomorrow' },
+  { key: 'nextWeek', label: 'Next week' },
+];
+
+/** The Due column looks ahead (G2): in this order. There is no Overdue preset (see `queueFilterDefs`). */
+export const DUE_PRESETS: readonly string[] = [
+  'today',
+  'tomorrow',
+  'next7',
+  'thisWeek',
+  'nextWeek',
+  'thisMonth',
 ];
 
 export const DEFAULT_DATE_PRESETS: readonly string[] = [
@@ -55,6 +67,14 @@ export function presetRange(key: string, today: CalendarDay): RangeValue | null 
       return { from: toIso(today), to: toIso(today) };
     case 'thisWeek': {
       const monday = addDays(today, -weekdayMonday(today));
+      return { from: toIso(monday), to: toIso(addDays(monday, 6)) };
+    }
+    case 'tomorrow': {
+      const t = toIso(addDays(today, 1));
+      return { from: t, to: t };
+    }
+    case 'nextWeek': {
+      const monday = addDays(today, 7 - weekdayMonday(today));
       return { from: toIso(monday), to: toIso(addDays(monday, 6)) };
     }
     case 'last7':

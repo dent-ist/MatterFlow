@@ -1,5 +1,6 @@
 import {
   DATE_PRESETS,
+  DUE_PRESETS,
   addDays,
   matchingPreset,
   presetRange,
@@ -70,5 +71,59 @@ describe('date presets', () => {
     expect(matchingPreset({ from: '2026-10-01', to: '2026-10-02' }, thursday, keys)).toBeNull();
     expect(rangeReversed({ from: '2026-10-05', to: '2026-10-01' })).toBe(true);
     expect(rangeReversed({ from: '2026-10-05', to: '' })).toBe(false);
+  });
+});
+
+describe('Due presets (G2)', () => {
+  const wednesday = { year: 2026, month: 10, day: 14 };
+
+  it('offers Today, Tomorrow, Next 7 days, This week, Next week, This month and no Overdue', () => {
+    expect([...DUE_PRESETS]).toEqual([
+      'today',
+      'tomorrow',
+      'next7',
+      'thisWeek',
+      'nextWeek',
+      'thisMonth',
+    ]);
+    expect(DUE_PRESETS).not.toContain('overdue');
+    for (const key of DUE_PRESETS) {
+      expect(DATE_PRESETS.some((p) => p.key === key)).toBe(true);
+    }
+  });
+
+  it('works out Tomorrow, Next 7 days (today included) and Next week (Monday to Sunday)', () => {
+    expect(presetRange('tomorrow', wednesday)).toEqual({ from: '2026-10-15', to: '2026-10-15' });
+    expect(presetRange('next7', wednesday)).toEqual({ from: '2026-10-14', to: '2026-10-20' });
+    expect(presetRange('nextWeek', wednesday)).toEqual({ from: '2026-10-19', to: '2026-10-25' });
+    // On a Monday and a Sunday the next week is still the one after this week.
+    expect(presetRange('nextWeek', { year: 2026, month: 10, day: 12 })).toEqual({
+      from: '2026-10-19',
+      to: '2026-10-25',
+    });
+    expect(presetRange('nextWeek', { year: 2026, month: 10, day: 18 })).toEqual({
+      from: '2026-10-19',
+      to: '2026-10-25',
+    });
+  });
+
+  it('crosses month, year and the DST change without drifting', () => {
+    expect(presetRange('tomorrow', { year: 2026, month: 12, day: 31 })).toEqual({
+      from: '2027-01-01',
+      to: '2027-01-01',
+    });
+    expect(presetRange('nextWeek', { year: 2026, month: 12, day: 30 })).toEqual({
+      from: '2027-01-04',
+      to: '2027-01-10',
+    });
+    // US clocks change on 2026-11-01 and EU clocks on 2026-10-25: calendar arithmetic is unaffected.
+    expect(presetRange('next7', { year: 2026, month: 10, day: 30 })).toEqual({
+      from: '2026-10-30',
+      to: '2026-11-05',
+    });
+    expect(presetRange('nextWeek', { year: 2026, month: 10, day: 21 })).toEqual({
+      from: '2026-10-26',
+      to: '2026-11-01',
+    });
   });
 });

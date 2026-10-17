@@ -292,8 +292,9 @@ test.describe('Column filters on the work lists', () => {
       await myWork.expectListed(`Mine ${token}`);
 
       // Active: Assignee is "me" by definition; Creator is a filter.
-      const assignee = mine.getByRole('textbox', { name: 'Filter by Assignee' });
-      await expect(assignee).toBeDisabled();
+      // (BUG-10: the cell reads "Me" as text, it is no input.)
+      await expect(rowControl(mine, 'assignee')).toHaveText(/Me/);
+      await expect(mine.getByRole('textbox', { name: 'Filter by Assignee' })).toHaveCount(0);
       await expect(mine.locator('[data-filter-disabled]').first()).toHaveAttribute(
         'title',
         /assigned to you/,
@@ -302,12 +303,12 @@ test.describe('Column filters on the work lists', () => {
 
       // Created by me: the other way round.
       await myWork.tab(/^Created by me/).click();
-      await expect(mine.getByRole('textbox', { name: 'Filter by Creator' })).toBeDisabled();
+      await expect(rowControl(mine, 'creator')).toHaveText(/Me/);
       await expect(rowControl(mine, 'assignee')).toBeEnabled();
 
       // Due soon owns the Due column.
       await myWork.tab(/^Due soon/).click();
-      await expect(mine.getByRole('textbox', { name: 'Filter by Due' })).toBeDisabled();
+      await expect(rowControl(mine, 'due')).toHaveText(/Next 2 days and overdue/);
 
       // Filters stay across tabs except where the new tab owns the column.
       await mine.goto(`/my-work?view=createdByMe&assignee=${me.userId}&priority=1`);

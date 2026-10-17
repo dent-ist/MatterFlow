@@ -40,7 +40,7 @@ describe('TaskTable', () => {
   const cell = (key: string) => el().querySelector(`tbody td[data-col="${key}"]`) as HTMLElement;
 
   it('shows the ref, a title link to the task and a compact matter link without a copy button', async () => {
-    await create([aRow()], ['ref', 'title', 'matter']);
+    await create([aRow()], ['ref', 'title', 'matter'], {}, ['Matter.View']);
 
     expect(cell('ref').textContent?.trim()).toBe('TSK-1042');
     const title = cell('title').querySelector('a')!;
@@ -52,6 +52,12 @@ describe('TaskTable', () => {
     expect(matter.getAttribute('title')).toBe('Merger Review');
     expect(cell('matter').querySelector('button')).toBeNull();
     expect(cell('matter').querySelector('[aria-label="Sensitive matter"]')).toBeNull();
+  });
+
+  it('shows the matter reference as plain text, not a link, without Matter.View (BUG-7)', async () => {
+    await create([aRow()], ['ref', 'title', 'matter'], {}, ['Task.View']);
+    expect(cell('matter').querySelector('a')).toBeNull();
+    expect(cell('matter').querySelector('span.mf-ref')!.textContent?.trim()).toBe('00343-00012');
   });
 
   it('marks a sensitive matter with an icon that has a text alternative', async () => {

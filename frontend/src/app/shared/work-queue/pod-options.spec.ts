@@ -8,7 +8,7 @@ describe('loadPodChoices', () => {
 
     const choices = await loadPodChoices(api as unknown as PodsClient, false);
 
-    expect(choices).toEqual({ options: [], primaryPodId: null });
+    expect(choices).toEqual({ options: [], primaryPodId: null, memberOf: null });
     expect(api.listMyPods).not.toHaveBeenCalled();
     expect(api.listPods).not.toHaveBeenCalled();
   });
@@ -23,5 +23,6 @@ describe('loadPodChoices', () => {
 
     expect(choices.options.map((o) => o.name)).toEqual(['Alpha', 'Zed']);
     expect(choices.primaryPodId).toBe(2);
+    expect(choices.memberOf).toBe(1);
   });
 });

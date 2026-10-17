@@ -26,6 +26,9 @@ export const DUE_SOON_WINDOW = `Today and the next ${DUE_SOON_DAYS} days`;
 export const DUE_SOON_CAPTION = `${DUE_SOON_WINDOW}, not overdue, not ASAP`;
 export const COMPLETED_HINT = 'Completed (cancelled not counted)';
 
+/** What the Due filter cell reads on Due soon and overdue, where the tab itself is the window (BUG-10). */
+export const DUE_SOON_FILTER_TEXT = `Next ${DUE_SOON_DAYS} days and overdue`;
+
 /** Tab tooltips (M5). */
 export const TAB_TOOLTIPS = {
   active: 'Open tasks assigned to you',

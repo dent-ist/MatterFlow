@@ -4,6 +4,7 @@ import {
   TaskResponse,
   TaskTransitionOption,
 } from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { DueLabelPipe } from '../../../shared/pipes/due-label.pipe';
@@ -132,7 +133,7 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
               ><span class="pg-label">Matter:</span>
               <mf-matter-ref
                 [value]="t.matter.matterRef"
-                [link]="['/matters', t.matter.matterId]"
+                [link]="auth.canLink('matter') ? ['/matters', t.matter.matterId] : null"
               />
               {{ t.matter.name }}
             </span>
@@ -194,6 +195,7 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
 })
 export class TaskHeader {
   protected readonly store = inject(TaskDetailStore);
+  protected readonly auth = inject(AuthStore);
 
   /** A change made from a chip, shown at once; it only counts while the Task it was made on is still the one on screen. */
   protected readonly override = signal<{ basis: TaskResponse; row: TaskQueueRow } | null>(null);
@@ -221,7 +223,10 @@ export class TaskHeader {
     if (!t) return [];
     return [
       { label: 'Tasks', link: '/tasks' },
-      { label: `${t.matter.matterRef} ${t.matter.name}`, link: ['/matters', t.matter.matterId] },
+      {
+        label: `${t.matter.matterRef} ${t.matter.name}`,
+        link: this.auth.canLink('matter') ? ['/matters', t.matter.matterId] : undefined,
+      },
       { label: t.taskNumber },
     ];
   });

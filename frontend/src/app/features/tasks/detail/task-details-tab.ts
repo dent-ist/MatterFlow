@@ -419,7 +419,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
                 <dd>
                   <mf-matter-ref
                     [value]="t.matter.matterRef"
-                    [link]="['/matters', t.matter.matterId]"
+                    [link]="auth.canLink('matter') ? ['/matters', t.matter.matterId] : null"
                   />
                   {{ t.matter.name }}
                 </dd>
@@ -547,7 +547,7 @@ export class TaskDetailsTab {
   private readonly projectsApi = inject(ProjectsClient);
   private readonly podsApi = inject(PodsClient);
   private readonly usersApi = inject(UsersLookupClient);
-  private readonly auth = inject(AuthStore);
+  protected readonly auth = inject(AuthStore);
   private readonly lookups = inject(LookupStore);
   private readonly notify = inject(NotificationService);
   private readonly zone = inject(USER_TIME_ZONE);

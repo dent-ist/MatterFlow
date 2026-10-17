@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { Button } from 'primeng/button';
+import { CopyParts, CopyPart } from './copy-parts';
 import { LoadState } from './data-table';
 import { ErrorReference } from './error-reference';
 
@@ -17,7 +18,7 @@ import { ErrorReference } from './error-reference';
   // An attribute selector on the native <tbody>, so the table keeps its semantics.
   // eslint-disable-next-line @angular-eslint/component-selector
   selector: 'tbody[mfGridBody]',
-  imports: [Button, ErrorReference],
+  imports: [Button, ErrorReference, CopyParts],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @switch (state()) {
@@ -47,7 +48,13 @@ import { ErrorReference } from './error-reference';
                 <p>No {{ noun() }} match these filters</p>
                 <p-button label="Clear filters" severity="secondary" (onClick)="clear.emit()" />
               } @else {
-                <p>{{ emptyText() || 'No ' + noun() + ' yet.' }}</p>
+                <p>
+                  @if (emptyParts(); as parts) {
+                    <mf-copy-parts [parts]="parts" />
+                  } @else {
+                    {{ emptyText() || 'No ' + noun() + ' yet.' }}
+                  }
+                </p>
                 <ng-content select="[mfEmptyAction]" />
               }
             </td>
@@ -84,6 +91,8 @@ export class GridBody {
   readonly noun = input.required<string>();
   /** First-run text; defaults to "No {noun} yet.". */
   readonly emptyText = input('');
+  /** First-run text with links in it; replaces `emptyText` when set. */
+  readonly emptyParts = input<readonly CopyPart[] | null>(null);
   /** Number of columns of the grid (the state row spans them). */
   readonly columns = input.required<number>();
 

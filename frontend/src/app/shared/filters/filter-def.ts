@@ -72,6 +72,11 @@ export interface FilterDef {
    * filter and no value for this filter means "no limit", exactly as such links always did; writes then keep the value in the address.
    */
   readonly defaultOnlyBare?: boolean;
+  /**
+   * With `disabledReason`: the fixed value the tab decides ("Me", "Next 2 days and overdue"). The disabled cell shows it as muted text
+   * instead of an empty box; it is not a filter value, so it makes no chip and is not counted.
+   */
+  readonly fixedValue?: () => string | null | undefined;
   /** Returns why the control is unavailable ("Set by the Due soon tab"), or null/undefined when it is usable. */
   readonly disabledReason?: () => string | null | undefined;
   /** Number of columns the cell spans ("Filter by Title or Ref"). */

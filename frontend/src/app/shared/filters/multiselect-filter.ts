@@ -158,6 +158,8 @@ let nextId = 0;
 })
 export class ColumnMultiselectFilter {
   readonly label = input.required<string>();
+  /** Names a selected value the list no longer offers (a status the tab cannot show). */
+  readonly valueLabel = input<(value: string) => string>((v) => v);
   readonly key = input('');
   readonly options = input.required<readonly FilterOption[]>();
   /** The committed values (from the URL). */
@@ -192,7 +194,7 @@ export class ColumnMultiselectFilter {
     );
     if (group) return group.label;
     if (d.length === 1) {
-      return this.options().find((o) => o.value === d[0])?.label ?? d[0];
+      return this.options().find((o) => o.value === d[0])?.label ?? this.valueLabel()(d[0]);
     }
     return `${d.length} selected`;
   });

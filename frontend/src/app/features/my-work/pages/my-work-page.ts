@@ -20,6 +20,8 @@ import { FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { queueFilterDefs, withoutFilters } from '../../../shared/filters/queue-defs';
+import { CopyParts } from '../../../shared/ui/copy-parts';
+import { emptyCopy, nearEmptyCopy } from '../../../shared/work-queue/empty-copy';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { touchVisit, trackVisitActivity } from '../../../shared/work-queue/last-visit';
@@ -37,7 +39,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
 import {
   CLOSED_LABEL,
   DUE_SOON_AND_OVERDUE_LABEL,
-  EMPTY_TEXT,
+  DUE_SOON_FILTER_TEXT,
   TAB_HELP,
   TAB_TOOLTIPS,
 } from '../../../shared/work-queue/work-vocabulary';
@@ -83,10 +85,21 @@ const OWNED_REASON: Readonly<Record<TabKey, string>> = {
   createdByMe: 'This tab lists the tasks you created.',
 };
 
+const ASSIGNED_STATUSES = OPEN_STATUSES.filter((code) => code !== 'NEW');
+
+/** What a disabled tab-owned filter reads in its cell (BUG-10): the fixed meaning instead of an empty box. */
+export const FIXED_VALUES: Readonly<Record<TabKey, Readonly<Record<string, string>>>> = {
+  active: { assignee: 'Me' },
+  dueSoon: { assignee: 'Me', due: DUE_SOON_FILTER_TEXT },
+  completed: { assignee: 'Me' },
+  createdByMe: { creator: 'Me' },
+};
+
 /** The statuses that mean something on a tab; the Status filter offers these and a tab change drops the others. */
 const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
-  active: OPEN_STATUSES,
-  dueSoon: OPEN_STATUSES,
+  // Assigning a task starts it, so an assigned task is never New (BUG-11).
+  active: ASSIGNED_STATUSES,
+  dueSoon: ASSIGNED_STATUSES,
   completed: CLOSED_STATUSES,
   createdByMe: [...OPEN_STATUSES, ...CLOSED_STATUSES],
 };
@@ -99,7 +112,16 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
  */
 @Component({
   selector: 'mf-my-work-page',
-  imports: [FixedPage, PageHeader, RouterLink, FiltersBar, WorkList, WorkTabs, WorkViewControls],
+  imports: [
+    FixedPage,
+    PageHeader,
+    RouterLink,
+    CopyParts,
+    FiltersBar,
+    WorkList,
+    WorkTabs,
+    WorkViewControls,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
@@ -156,7 +178,8 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
           [caption]="'My Work: ' + tabLabel()"
           [scope]="tabLabel()"
           [newSince]="tab() === 'active' || tab() === 'dueSoon' ? lastVisit : null"
-          [emptyText]="emptyText()"
+          [emptyParts]="emptyCopy().parts"
+          [nearEmpty]="tab() === 'active'"
           (sortChange)="sortBy($event)"
           (pageChange)="goToPage($event)"
           (pageSizeChange)="setPageSize($event)"
@@ -165,26 +188,17 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
           (rowChange)="replaceRow($event)"
           (columnsShown)="shownColumns.set($event)"
         >
-          @if (tab() === 'active' && auth.has('Pod.View')) {
-            <a empty-action class="wp-link" routerLink="/pods/work">Check Pod Work</a>
+          @if (emptyCopy().createTask) {
+            <a empty-action class="mf-btn mf-btn--primary" routerLink="/tasks/new">Create task</a>
           }
           @if (windowed()) {
             <button empty-action type="button" class="mf-btn mf-btn--text" (click)="showOlder()">
               Show older
             </button>
           }
-          @if (tab() === 'active') {
-            <p near-empty data-everything>
-              That's everything on your plate.
-              @if (auth.has('Pod.View')) {
-                Look for more in <a class="wp-link" routerLink="/pods/work">Pod Work</a>
-                or
-              } @else {
-                Look for more in
-              }
-              the <a class="wp-link" routerLink="/tasks">Task Queue</a>.
-            </p>
-          }
+          <p near-empty data-everything>
+            <mf-copy-parts [parts]="nearEmptyParts" />
+          </p>
         </mf-work-list>
       </div>
     </mf-fixed-page>
@@ -196,6 +210,8 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
   private readonly pageTitle = inject(PageTitle);
 
   protected readonly pods = signal<PodOption[]>([]);
+  /** The Pods the user belongs to (null until known). */
+  protected readonly podCount = signal<number | null>(null);
 
   protected readonly tab = computed<TabKey>(() => {
     const view = this.state().view;
@@ -219,6 +235,9 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     return queueFilterDefs(lookups, {
       closedWindow: true,
       disabled,
+      fixed: Object.fromEntries(
+        Object.entries(FIXED_VALUES[this.tab()]).map(([key, text]) => [key, () => text]),
+      ),
       statuses: () => (lookups.statuses ?? []).filter((o) => allowed.includes(o.value)),
       names: {
         client: (id) => this.recordName('client', id),
@@ -292,17 +311,13 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     );
   });
 
-  protected readonly emptyText = computed(() =>
-    this.tab() === 'active'
-      ? 'Nothing assigned to you right now. Check Pod Work for unassigned tasks.'
-      : this.tab() === 'dueSoon'
-        ? EMPTY_TEXT.dueSoon
-        : this.tab() === 'completed'
-          ? this.windowed()
-            ? EMPTY_TEXT.completed
-            : 'No tasks were closed in this period.'
-          : 'You have not created any tasks.',
+  /** The empty text: one function over the tab and what the user may open (BUG-8, B4). */
+  protected readonly emptyCopy = computed(() =>
+    emptyCopy({ tab: this.tab(), windowed: this.windowed(), podCount: this.podCount() }, (code) =>
+      this.auth.has(code),
+    ),
   );
+  protected readonly nearEmptyParts = nearEmptyCopy((code) => this.auth.has(code));
 
   /**
    * Where the current visit began (ms; a visit ends after more than 30 minutes without activity), read once on arrival: tasks assigned
@@ -330,9 +345,10 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
       this.pendingRestore = true;
       this.restore(remembered);
     }
-    void loadPodChoices(this.podsApi, this.auth.has('Pod.View')).then((c) =>
-      this.pods.set(c.options),
-    );
+    void loadPodChoices(this.podsApi, this.auth.has('Pod.View')).then((c) => {
+      this.pods.set(c.options);
+      this.podCount.set(c.memberOf);
+    });
     // The browser title names the tab ("My Work: Closed - MatterFlow") and follows tab changes without a reload (M8).
     effect(() => this.pageTitle.pin(`My Work: ${this.tabLabel()}`));
     inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
