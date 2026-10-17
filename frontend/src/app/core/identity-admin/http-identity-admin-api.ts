@@ -1,5 +1,5 @@
 import { Injectable, Injector, inject } from '@angular/core';
-import { Observable, defer, from, map, shareReplay, switchMap } from 'rxjs';
+import { EMPTY, Observable, defer, expand, from, reduce, shareReplay, switchMap } from 'rxjs';
 import type { PodsClient, RolesClient, UsersClient } from '../../api/generated/api-client';
 import {
   IdentityAdminApi,
@@ -109,10 +109,16 @@ export class HttpIdentityAdminApi extends IdentityAdminApi {
     return this.withRoles((c) => c.listPermissions());
   }
 
+  /** Every active pod, by name: the list endpoint pages at 100, so the next pages are read until the total is reached (the editor's search filters this list). */
   listActivePods(): Observable<PodChoice[]> {
-    // The list endpoint pages at 100; a checklist of more active pods would not be usable anyway.
-    return this.withPods((c) => c.listPods(undefined, undefined, true, 1, 100, 'name')).pipe(
-      map((r) => r.items), // PodSummary carries podId and name, so it is a PodChoice
+    const page = (n: number) =>
+      this.withPods((c) => c.listPods(undefined, undefined, true, n, 100, 'name'));
+    return page(1).pipe(
+      expand((r) =>
+        r.items.length > 0 && r.page * r.pageSize < r.total ? page(r.page + 1) : EMPTY,
+      ),
+      // PodSummary carries podId and name, so it is a PodChoice
+      reduce((all, r) => all.concat(r.items), [] as PodChoice[]),
     );
   }
 
