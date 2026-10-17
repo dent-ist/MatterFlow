@@ -23,7 +23,7 @@ export interface QueueLinkContext {
  * The Task Queue address that lists the same tasks as a My Work tab (M10). The tab's own filters are mapped, not copied: Assignee is me
  * (or Creator is me), Status is the tab's statuses, Due soon and overdue is "has a date, due by today + 2" (so overdue is in and ASAP is
  * out, as in the tab), Closed carries the closed-date window. The column filters the person set (Priority, Matter text, ...) are carried
- * over; the sort too, the page is not. Created by me lists every status, so the total equals the tab's. Empty values are left out.
+ * over; the sort too, the page is not. Created by me carries its status choice (the Open default, or every status for "All"), so the total equals the tab's. Empty values are left out.
  */
 export function openInQueueParams(
   tab: MyWorkTabKey,

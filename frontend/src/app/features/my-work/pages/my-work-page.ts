@@ -20,11 +20,16 @@ import { PageTitle } from '../../../core/title/page-title';
 import { FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
-import { queueFilterDefs, withoutFilters } from '../../../shared/filters/queue-defs';
+import {
+  QUEUE_FILTER_PARAMS,
+  queueFilterDefs,
+  withoutFilters,
+} from '../../../shared/filters/queue-defs';
 import { CopyParts } from '../../../shared/ui/copy-parts';
 import { emptyCopy, nearEmptyCopy } from '../../../shared/work-queue/empty-copy';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { isBareState } from '../../../shared/work-queue/last-view';
 import { touchVisit, trackVisitActivity } from '../../../shared/work-queue/last-visit';
 import { PodOption, loadPodChoices } from '../../../shared/work-queue/pod-options';
 import { QueuePageBase } from '../../../shared/work-queue/queue-page';
@@ -34,7 +39,9 @@ import {
   QueueFilters,
   QueueState,
   dateDaysAgo,
+  emptyState,
   queueArgs,
+  sameSet,
 } from '../../../shared/work-queue/queue-filters';
 import { openInQueueParams } from '../../../shared/work-queue/queue-link';
 import { WorkList } from '../../../shared/work-queue/work-list';
@@ -238,6 +245,17 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
           (rowChange)="replaceRow($event)"
           (columnsShown)="shownColumns.set($event)"
         >
+          @if (noOpenCreated()) {
+            <button
+              empty-action
+              type="button"
+              class="mf-btn mf-btn--text"
+              data-show-closed
+              (click)="showClosedTasks()"
+            >
+              Show closed tasks
+            </button>
+          }
           @if (emptyCopy().createTask) {
             <a empty-action class="mf-btn mf-btn--primary" routerLink="/tasks/new">Create task</a>
           }
@@ -263,8 +281,9 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
   /** The Pods the user belongs to (null until known). */
   protected readonly podCount = signal<number | null>(null);
 
+  /** The tab from the address alone (the page's default status depends on it, so it cannot read `state()`). */
   protected readonly tab = computed<TabKey>(() => {
-    const view = this.state().view;
+    const view = this.params().get('view');
     return view && view in TAB_LABELS ? (view as TabKey) : 'active';
   });
 
@@ -284,6 +303,7 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     const lookups = this.queueLookups();
     return queueFilterDefs(lookups, {
       closedWindow: true,
+      ...(this.tab() === 'createdByMe' ? { defaultStatus: OPEN_STATUSES } : {}),
       disabled,
       fixed: Object.fromEntries(
         Object.entries(FIXED_VALUES[this.tab()]).map(([key, text]) => [key, () => text]),
@@ -321,6 +341,32 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
 
   protected override columnTab(): string {
     return this.tab();
+  }
+
+  /** Created by me starts on its open tasks, as a plain Task Queue link does (B2); the other tabs have no status default. */
+  protected override defaultStatus(): readonly string[] {
+    return this.tab() === 'createdByMe' ? OPEN_STATUSES : [];
+  }
+
+  /**
+   * What the API gets. Created by me counts its open tasks for a request with no filter at all, and every status for one with any other
+   * filter, so a view that only names the open statuses is sent bare, and "All" (no status, but a plain filter-less address that wrote
+   * `status=`) is sent as every status written out. Everything else is sent as it is.
+   */
+  protected override apiState(state: QueueState): QueueState {
+    const sent = super.apiState(state);
+    const f = sent.filters;
+    const others = !isBareState({ ...emptyState(), filters: { ...f, status: [] } });
+    if (others) return sent;
+    if (f.status.length === 0) {
+      const explicit = QUEUE_FILTER_PARAMS.some((p) => this.params().has(p));
+      return explicit
+        ? { ...sent, filters: { ...f, status: [...OPEN_STATUSES, ...CLOSED_STATUSES] } }
+        : sent;
+    }
+    return this.tab() === 'createdByMe' && sameSet(f.status, OPEN_STATUSES)
+      ? { ...sent, filters: { ...f, status: [] } }
+      : sent;
   }
 
   /** The Closed tab is ordered by the closing date, newest first: its Closed header carries the arrow (C1). */
@@ -417,8 +463,14 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
 
   /** The empty text: one function over the tab and what the user may open (BUG-8, B4). */
   protected readonly emptyCopy = computed(() =>
-    emptyCopy({ tab: this.tab(), windowed: this.windowed(), podCount: this.podCount() }, (code) =>
-      this.auth.has(code),
+    emptyCopy(
+      {
+        tab: this.tab(),
+        windowed: this.windowed(),
+        podCount: this.podCount(),
+        openOnly: this.noOpenCreated(),
+      },
+      (code) => this.auth.has(code),
     ),
   );
   protected readonly nearEmptyParts = nearEmptyCopy((code) => this.auth.has(code));
@@ -491,10 +543,27 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
         return !OPEN_STATUSES.includes(row.status);
       case 'completed':
         return OPEN_STATUSES.includes(row.status);
-      default:
-        return false;
+      default: {
+        // Created by me on its Open default (or any status choice): a task whose new status is not chosen leaves.
+        const chosen = this.state().filters.status;
+        return chosen.length > 0 && !chosen.includes(row.status);
+      }
     }
   }
+
+  /** "Show closed tasks": every status, written out as an explicit "All" (B4, B2). */
+  protected showClosedTasks(): void {
+    const s = this.state();
+    this.navigate({ ...s, page: 1, filters: { ...s.filters, status: [] } });
+  }
+
+  protected readonly noOpenCreated = computed(
+    () =>
+      this.tab() === 'createdByMe' &&
+      !this.filtered() &&
+      this.state().filters.status.length > 0 &&
+      sameSet(this.state().filters.status, OPEN_STATUSES),
+  );
 
   protected override leftText(row: TaskQueueRow): string {
     return `${row.statusLabel.toLowerCase()}. Removed from ${this.tabLabel()}.`;
@@ -540,8 +609,18 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
   protected selectTab(key: string): void {
     if (key === this.tab()) return;
     this.navigate(
-      this.tabState((key in TAB_LABELS ? key : 'active') as TabKey, this.state().filters),
+      this.tabState(
+        (key in TAB_LABELS ? key : 'active') as TabKey,
+        this.carried(this.state().filters),
+      ),
     );
+  }
+
+  /** The filters a tab change carries over: the status a plain link starts on (Created by me: Open) is that tab's own default, not a choice. */
+  private carried(filters: QueueFilters): QueueFilters {
+    const plain =
+      this.defaultStatus().length > 0 && !QUEUE_FILTER_PARAMS.some((p) => this.params().has(p));
+    return plain ? { ...filters, status: [] } : filters;
   }
 
   /** The state of a tab: what it cannot use is dropped (columns it owns, statuses it does not offer), so the counts of all tabs agree. */
@@ -562,7 +641,7 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
 
   /** A strip item applies its filter on Active (switching to it), replacing any other strip item; the pressed one switches off. */
   protected pickStrip(key: string): void {
-    const f = this.state().filters;
+    const f = this.carried(this.state().filters);
     const base: QueueFilters = {
       ...f,
       overdue: null,

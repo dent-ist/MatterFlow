@@ -36,8 +36,19 @@ describe('work table preferences', () => {
 
   it('gives each scope its default and falls back to the page default for a tab without one', () => {
     expect(defaultColumns('taskQueue')).toEqual(normalizeColumns(DEFAULT_COLUMNS['taskQueue']!));
-    expect(defaultColumns('myWork.active')).toEqual(normalizeColumns(OLD_MY_WORK));
-    expect(defaultColumns('myWork.createdByMe')).toEqual(normalizeColumns(OLD_MY_WORK));
+    // A2: the matter reference lives in the subline, so Matter leaves the default set of Active and of Due soon and overdue.
+    const active = ['ref', 'title', 'progress', 'priority', 'due', 'status'];
+    expect(defaultColumns('myWork.active')).toEqual(normalizeColumns(active));
+    expect(defaultColumns('myWork.dueSoon')).toEqual(normalizeColumns(active));
+    // C2: finished work has no progress, priority or due date by default.
+    expect(defaultColumns('myWork.closed')).toEqual(
+      normalizeColumns(['ref', 'title', 'matter', 'closed', 'status']),
+    );
+    // B1, B3: where did the work I handed off go.
+    expect(defaultColumns('myWork.createdByMe')).toEqual(
+      normalizeColumns(['ref', 'title', 'assignee', 'priority', 'due', 'status', 'age']),
+    );
+    expect(defaultColumns('myWork.active')).not.toContain('matter');
     expect(defaultColumns('podWork.all')).toEqual(defaultColumns('podWork'));
     // The Closed tab shows the Closed column by default (C1); Active does not.
     expect(defaultColumns('myWork.closed')).toContain('closed');

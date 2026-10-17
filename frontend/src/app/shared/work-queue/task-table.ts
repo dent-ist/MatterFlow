@@ -12,6 +12,7 @@ import {
   viewChild,
   effect,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { NavigationEnd, Params, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
@@ -34,7 +35,7 @@ import { CopyPart } from '../ui/copy-parts';
 import { StatusBadge } from '../ui/status-badge';
 import { WORK_COLUMNS, ColumnDef, Density } from './column-prefs';
 import { InlineField, canEditField } from './inline-edit';
-import { SortDirection } from './queue-filters';
+import { CLOSED_STATUSES, SortDirection } from './queue-filters';
 import { hasStepLink, stepLinkLabel, stepQueryParams } from './step-link';
 import { RowEdit } from './row-edit';
 
@@ -62,6 +63,7 @@ const PROJECT_HIDES_BELOW = 800;
     StatusBadge,
     GridBody,
     ColumnFilterRow,
+    NgTemplateOutlet,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -169,11 +171,21 @@ const PROJECT_HIDES_BELOW = 800;
                                 >
                               }
                               @if (!hideContext()) {
-                                <span
-                                  class="wt-sub"
-                                  data-title-context
-                                  [attr.title]="row.clientName + ' / ' + row.matterName"
-                                  >{{ row.clientName }} · {{ row.matterName }}</span
+                                <span class="wt-sub" data-title-context [attr.title]="context(row)">
+                                  @if (refInSub()) {
+                                    @if (auth.canLink('matter')) {
+                                      <a
+                                        class="wt-mono wt-subref"
+                                        data-sub-ref
+                                        [routerLink]="['/matters', row.matterId]"
+                                        >{{ row.matterRef }}</a
+                                      >
+                                    } @else {
+                                      <span class="wt-mono" data-sub-ref>{{ row.matterRef }}</span>
+                                    }
+                                    ·
+                                  }
+                                  {{ row.clientName }} · {{ row.matterName }}</span
                                 >
                               }
                             </span>
@@ -183,23 +195,10 @@ const PROJECT_HIDES_BELOW = 800;
                               class="wt-sub wt-stepline"
                               data-title-progress
                               [attr.title]="progressTitle(row)"
-                              >{{ row.workflow.stepsResolved }} of {{ row.workflow.stepsTotal }}
-                              steps ·
-                              @if (stepLinked(row)) {
-                                <a
-                                  class="wt-steplink"
-                                  data-step-link
-                                  [routerLink]="['/tasks', row.taskId]"
-                                  [queryParams]="stepQuery(row)"
-                                  [state]="linkState()"
-                                  (click)="drillOut($event, row)"
-                                  [attr.aria-label]="stepLabel(row)"
-                                  >{{ row.workflow.currentStepName }}</a
-                                >
-                              } @else {
-                                {{ row.workflow.currentStepName ?? 'All steps resolved' }}
-                              }
-                            </span>
+                              ><ng-container
+                                [ngTemplateOutlet]="prog"
+                                [ngTemplateOutletContext]="{ $implicit: row }"
+                            /></span>
                           }
                         </div>
                       </div>
@@ -233,44 +232,11 @@ const PROJECT_HIDES_BELOW = 800;
                       {{ row.workflowName }}
                     }
                     @case ('progress') {
-                      @if (row.workflow.stepsTotal === 0) {
-                        -
-                      } @else {
-                        <div class="wt-progress" [attr.title]="progressTitle(row)">
-                          <span class="wt-progress-line">
-                            <progress
-                              [max]="row.workflow.stepsTotal"
-                              [value]="row.workflow.stepsResolved"
-                              [attr.aria-label]="
-                                row.workflow.stepsResolved +
-                                ' of ' +
-                                row.workflow.stepsTotal +
-                                ' steps resolved'
-                              "
-                            ></progress>
-                            <span class="wt-progress-count"
-                              >{{ row.workflow.stepsResolved }} of
-                              {{ row.workflow.stepsTotal }}</span
-                            >
-                          </span>
-                          @if (stepLinked(row)) {
-                            <a
-                              class="wt-progress-step wt-steplink"
-                              data-step-link
-                              [routerLink]="['/tasks', row.taskId]"
-                              [queryParams]="stepQuery(row)"
-                              [state]="linkState()"
-                              (click)="drillOut($event, row)"
-                              [attr.aria-label]="stepLabel(row)"
-                              >{{ row.workflow.currentStepName }}</a
-                            >
-                          } @else {
-                            <span class="wt-progress-step wt-muted">{{
-                              row.workflow.currentStepName ?? 'All steps resolved'
-                            }}</span>
-                          }
-                        </div>
-                      }
+                      <span class="wt-progress" [attr.title]="progressTitle(row)"
+                        ><ng-container
+                          [ngTemplateOutlet]="prog"
+                          [ngTemplateOutletContext]="{ $implicit: row }"
+                      /></span>
                     }
                     @case ('priority') {
                       @if (editable('priority', row)) {
@@ -284,6 +250,7 @@ const PROJECT_HIDES_BELOW = 800;
                           [priorityId]="row.priority.priorityId"
                           [label]="row.priority.label"
                           [color]="row.priority.color"
+                          [muted]="closed(row)"
                         />
                       }
                     }
@@ -320,7 +287,11 @@ const PROJECT_HIDES_BELOW = 800;
                     }
                     @case ('due') {
                       @let due = row | dueState: row.status;
-                      @if (due.kind === 'asap') {
+                      @if (closed(row)) {
+                        <span class="wt-due wt-due--closed">{{
+                          due.kind === 'asap' ? '-' : due.dateText
+                        }}</span>
+                      } @else if (due.kind === 'asap') {
                         <span class="wt-asap" [title]="due.tooltip">
                           <i class="pi pi-bolt" aria-hidden="true"></i>ASAP
                         </span>
@@ -363,7 +334,7 @@ const PROJECT_HIDES_BELOW = 800;
                       }
                     }
                     @case ('age') {
-                      {{ ageDays(row) }}d
+                      <span class="wt-age" [attr.title]="ageTitle(row)">{{ ageDays(row) }} d</span>
                     }
                     @case ('created') {
                       {{ dayOf(row.createdAtUtc) }}
@@ -393,6 +364,29 @@ const PROJECT_HIDES_BELOW = 800;
           <span mfEmptyAction><ng-content select="[empty-action]" /></span>
         </tbody>
       </table>
+      <ng-template #prog let-row>
+        @if (row.workflow.stepsTotal === 0) {
+          -
+        } @else if (!row.workflow.currentStepName) {
+          <span class="wt-muted">All steps resolved</span>
+        } @else {
+          {{ row.workflow.stepsResolved }} of {{ row.workflow.stepsTotal }} done ·
+          @if (stepLinked(row)) {
+            <a
+              class="wt-steplink"
+              data-step-link
+              [routerLink]="['/tasks', row.taskId]"
+              [queryParams]="stepQuery(row)"
+              [state]="linkState()"
+              (click)="drillOut($event, row)"
+              [attr.aria-label]="stepLabel(row)"
+              >{{ row.workflow.currentStepName }}</a
+            >
+          } @else {
+            {{ row.workflow.currentStepName }}
+          }
+        }
+      </ng-template>
       @if (nearEmpty()) {
         <div class="wt-near" role="note" aria-live="polite" data-near-empty>
           <ng-content select="[near-empty]" />
@@ -600,17 +594,36 @@ export class TaskTable {
 
   protected progressTitle(row: TaskQueueRow): string {
     const w = row.workflow;
-    const step = w.currentStepName
-      ? `Step ${w.currentStepNumber} of ${w.stepsTotal}: ${w.currentStepName}`
+    if (w.stepsTotal === 0) return 'No workflow steps';
+    return w.currentStepName
+      ? `${w.stepsResolved} of ${w.stepsTotal} steps done. Current step: ${w.currentStepName}`
       : 'All steps resolved';
-    return `${step} (${w.stepsResolved} of ${w.stepsTotal} resolved)`;
   }
 
+  protected closed(row: TaskQueueRow): boolean {
+    return CLOSED_STATUSES.includes(row.status);
+  }
+
+  /** The full line under the title: "46044-00001 · Client · Matter" (the reference only where there is no Matter column). */
+  protected context(row: TaskQueueRow): string {
+    const text = `${row.clientName} · ${row.matterName}`;
+    return this.refInSub() ? `${row.matterRef} · ${text}` : text;
+  }
+
+  /** The matter reference leads the line under the title unless the Matter column shows it (A2). */
+  protected readonly refInSub = computed(
+    () => !this.shownColumns().some((c) => c.key === 'matter'),
+  );
+
   protected ageDays(row: TaskQueueRow): number {
-    return Math.max(
-      0,
-      Math.floor((this.clock.now().getTime() - new Date(row.createdAtUtc).getTime()) / 86_400_000),
-    );
+    const end = row.closedAtUtc ? new Date(row.closedAtUtc).getTime() : this.clock.now().getTime();
+    return Math.max(0, Math.floor((end - new Date(row.createdAtUtc).getTime()) / 86_400_000));
+  }
+
+  /** Age tooltip: when it was created (local zone), and for a closed task how long it took. */
+  protected ageTitle(row: TaskQueueRow): string {
+    const created = `Created ${mfDate(row.createdAtUtc, this.zone, 'datetime')}`;
+    return row.closedAtUtc ? `Took ${this.ageDays(row)} d. ${created}` : created;
   }
 
   /** The tooltip of a closed date: the time and zone ("Oct 16, 2026, 3:00 PM EDT"). */

@@ -198,23 +198,13 @@ describe('MyWorkPage', () => {
     expect(lastArgs()[ARG.view]).toBe('dueSoon');
   });
 
-  it('lists my tasks with priority, matter, workflow progress, due and status', async () => {
+  it('lists my tasks with priority, workflow progress, due and status, and the matter reference in the subline (A2)', async () => {
     const el = await open('/my-work');
     const headers = Array.from(el.querySelectorAll('thead th')).map((h) => h.textContent?.trim());
-    expect(headers).toEqual(
-      expect.arrayContaining([
-        'Ref',
-        'Title',
-        'Matter',
-        'Priority',
-        'Workflow progress',
-        'Due',
-        'Status',
-      ]),
-    );
+    expect(headers).toEqual(['Ref', 'Title', 'Workflow progress', 'Priority', 'Due', 'Status']);
     const row = el.querySelector('tbody tr')!;
     expect(row.textContent).toContain('00343-00012');
-    expect(row.textContent).toContain('2 of 6');
+    expect(row.textContent).toContain('2 of 6 done');
     expect(row.textContent).toContain('Dedup');
     expect(row.textContent).toContain('ASAP');
     expect(row.textContent).toContain('In Progress');
@@ -344,9 +334,11 @@ describe('MyWorkPage', () => {
   it('shows the filter row open on the first visit with one control per shown column', async () => {
     const el = await open('/my-work');
     expect(el.querySelector('tr[data-filter-row]')).not.toBeNull();
-    for (const key of ['q', 'matterText', 'priority', 'due', 'status']) {
+    for (const key of ['q', 'priority', 'due', 'status']) {
       expect(control(el, key), key).not.toBeNull();
     }
+    // Matter is not a default column any more: its filter waits in More filters (A2).
+    expect(control(el, 'matterText')).toBeNull();
   });
 
   it('shows what each tab decides itself as disabled controls with the reason, and does not send them', async () => {
@@ -707,14 +699,58 @@ describe('MyWorkPage', () => {
     });
     const link = el.querySelector<HTMLAnchorElement>('tbody [data-empty] a');
     expect(el.querySelector('tbody [data-empty]')!.textContent).toContain(
-      'You have not created any tasks.',
+      'You have no open tasks you created.',
     );
     expect(link?.textContent).toContain('Create task');
     expect(link?.getAttribute('href')).toBe('/tasks/new');
 
     TestBed.resetTestingModule();
-    el = await open('/my-work?view=createdByMe', { ...empty, permissions: ['Task.View'] });
+    el = await open('/my-work?view=createdByMe', {
+      ...empty,
+      permissions: ['Task.View'],
+    });
     expect(el.querySelector('tbody [data-empty] a')).toBeNull();
+  });
+
+  describe('Created by me starts on Open (B2)', () => {
+    const empty = { response: of(pageOf([], { counts: COUNTS })) };
+
+    it('says Open without a chip, sends no status, and offers "Show closed tasks" when nothing is open', async () => {
+      const el = await open('/my-work?view=createdByMe', empty);
+      expect(lastArgs()[ARG.status]).toBeUndefined();
+      expect(el.querySelector('tbody [data-empty]')!.textContent).toContain(
+        'You have no open tasks you created.',
+      );
+      expect(el.querySelector('[data-chip]')).toBeNull();
+      el.querySelector<HTMLElement>('[data-show-closed]')!.click();
+      await settle();
+      expect(query()['status']).toBe('');
+      // "All" is written out for the API: every status, so the counts and rows include closed work.
+      expect(lastArgs()[ARG.status]).toEqual([
+        'NEW',
+        'IN_PROGRESS',
+        'ON_HOLD',
+        'COMPLETED',
+        'CANCELLED',
+      ]);
+      expect(el.querySelector('[data-show-closed]')).toBeNull();
+      // "All" is a chosen filter with a chip: the filtered empty state applies (B4).
+      expect(el.querySelector('tbody [data-empty]')!.textContent).toContain(
+        'No tasks match these filters',
+      );
+    });
+
+    it('sends the status of a link with other filters and none for it as every status', async () => {
+      await open('/my-work?view=createdByMe&q=nda', empty);
+      expect(lastArgs()[ARG.status]).toBeUndefined();
+      expect(lastArgs()[ARG.q]).toBe('nda');
+    });
+
+    it('keeps the default off the other tabs and sends a plain Active request bare', async () => {
+      const el = await open('/my-work', empty);
+      expect(lastArgs()[ARG.status]).toBeUndefined();
+      expect(el.querySelector('[data-show-closed]')).toBeNull();
+    });
   });
 
   it('keeps a status the tab cannot show as a removable chip that reads "New"', async () => {
@@ -812,7 +848,7 @@ describe('MyWorkPage', () => {
       expect(el.querySelector('tr[data-task="TSK-1"]')!.getAttribute('data-leaving')).toBeNull();
     });
 
-    it('on Closed a reopened task leaves; on Created by me nothing leaves', async () => {
+    it('on Closed a reopened task leaves; on Created by me it leaves only when its status is no longer chosen', async () => {
       let el = await open('/my-work?view=completed', {
         rows: [aRow({ taskId: 1, taskNumber: 'TSK-1', status: 'COMPLETED' })],
       });
@@ -824,12 +860,22 @@ describe('MyWorkPage', () => {
       vi.useRealTimers();
       TestBed.resetTestingModule();
 
-      el = await open('/my-work?view=createdByMe', { rows: rowsOf() });
+      // With every status chosen nothing leaves; on the Open default a closed task does.
+      el = await open('/my-work?view=createdByMe&status=', { rows: rowsOf() });
       vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
       emit(aRow({ taskId: 1, taskNumber: 'TSK-1', status: 'CANCELLED' }));
       await vi.advanceTimersByTimeAsync(6000);
       harness.detectChanges();
       expect(rowCount(el)).toBe(2);
+      vi.useRealTimers();
+      TestBed.resetTestingModule();
+
+      el = await open('/my-work?view=createdByMe', { rows: rowsOf() });
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      emit(aRow({ taskId: 1, taskNumber: 'TSK-1', status: 'CANCELLED' }));
+      await vi.advanceTimersByTimeAsync(6000);
+      harness.detectChanges();
+      expect(rowCount(el)).toBe(1);
     });
   });
 
@@ -867,10 +913,10 @@ describe('MyWorkPage', () => {
     await settle();
     expect(el.querySelector('th[data-col="progress"]')).toBeNull();
 
-    // Closed has its own set: Workflow progress is still there.
+    // Closed has its own set (Workflow progress is not in it).
     tab(el, 'Closed').click();
     await settle();
-    expect(el.querySelector('th[data-col="progress"]')).not.toBeNull();
+    expect(el.querySelector('th[data-col="progress"]')).toBeNull();
     expect(el.querySelector('th[data-col="closed"]')).not.toBeNull();
 
     // Back on Active the choice is kept; "Reset columns" brings the default back.

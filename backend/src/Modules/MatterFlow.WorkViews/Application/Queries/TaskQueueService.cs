@@ -92,7 +92,11 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         var active = filtered.Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Open);
         var dueSoon = filtered.Where(t => t.AssignedUserId == me).Where(TaskQueueRules.DueSoon(queueClock));
         var completed = closedRows.Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Closed);
+        // Created by me starts on its open tasks (B2): a plain request (no filter at all) means Open, as a plain Task Queue link does; a request
+        // with any other filter and no status means every status, and "All" is every status written out.
         var created = filtered.Where(t => t.CreatedByUserId == me);
+        if (filter.IsBare)
+            created = created.Where(TaskQueueRules.Open);
 
         var current = view switch
         {

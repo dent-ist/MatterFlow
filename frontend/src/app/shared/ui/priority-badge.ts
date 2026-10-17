@@ -33,8 +33,9 @@ export function priorityColors(tone: string | null | undefined): { bg: string; f
     @if (text(); as t) {
       <span
         class="badge"
-        [style.background]="background()"
-        [style.color]="foreground()"
+        [style.background]="muted() ? 'transparent' : background()"
+        [style.color]="muted() ? 'var(--mf-text-muted)' : foreground()"
+        [class.muted]="muted()"
         [attr.data-priority]="t"
       >
         <span class="bars" aria-hidden="true">
@@ -68,6 +69,9 @@ export function priorityColors(tone: string | null | undefined): { bg: string; f
       gap: 1px;
       height: 10px;
     }
+    .badge.muted {
+      border-color: var(--mf-border);
+    }
     .bar {
       width: 3px;
       border: 1px solid currentColor;
@@ -99,6 +103,8 @@ export class PriorityBadge {
   readonly label = input<string | null | undefined>(null);
   /** Overrides the looked-up color: a token (critical, high, normal, low, neutral) or `#RRGGBB`. */
   readonly color = input<string | null | undefined>(null);
+  /** Closed work: grey text, no fill, level glyph kept, so a closed Critical task does not draw the eye. */
+  readonly muted = input(false);
   /** Overrides the looked-up 1-based rank (1 = most urgent). */
   readonly rank = input<number | null | undefined>(null);
 

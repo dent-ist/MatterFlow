@@ -205,4 +205,34 @@ public sealed class MyWorkVocabularyApiTests(SqlServerFixture sql) : IAsyncLifet
         Titles(await MyWorkAsync("ann", "view=dueSoon&sort=priority")).First().ShouldBe("ann-d2-crit");
         Titles(await MyWorkAsync("ann", "view=dueSoon&sort=due&dir=desc")).First().ShouldBe("ann-d2-low");
     }
+    [Fact]
+    public async Task Created_by_me_starts_on_open_tasks_for_a_plain_request_and_means_every_status_with_any_other_filter()
+    {
+        // The admin created every seeded task: 14 open (New, In Progress, On Hold) and 5 closed; the tab count follows the Task Queue rule (B2).
+        var open = _seeds.Count(s => s.Status is "NEW" or "IN_PROGRESS" or "ON_HOLD");
+        var all = _seeds.Count;
+        open.ShouldBeLessThan(all);
+
+        async Task<(int Total, int Created)> CreatedAsync(string query)
+        {
+            var page = await GetAsync(_h.Admin, "/api/v1/my-work?pageSize=1" + (query.Length > 0 ? "&" + query : string.Empty));
+            return (page.GetProperty("total").GetInt32(), Count(page.GetProperty("counts"), "createdByMe"));
+        }
+
+        // Plain: Open, on the tab and as the count of every other tab.
+        (await CreatedAsync("view=createdByMe")).ShouldBe((open, open));
+        (await CreatedAsync("")).Created.ShouldBe(open);
+        (await CreatedAsync("view=completed&closedWindow=all")).Created.ShouldBe(open);
+        // A sort or page is not a filter.
+        (await CreatedAsync("view=createdByMe&sort=title")).ShouldBe((open, open));
+        // "All" is every status written out; any other filter without a status means every status (the Task Queue convention).
+        (await CreatedAsync("view=createdByMe&status=NEW&status=IN_PROGRESS&status=ON_HOLD&status=COMPLETED&status=CANCELLED")).ShouldBe((all, all));
+        (await CreatedAsync("view=createdByMe&priority=" + 1)).Created.ShouldBe(await QueueTotalAsync("creator=" + await _h.UserIdAsync(DatabaseApiFactory.AdminAccount) + "&priority=1"));
+        // An explicit status wins and every tab count follows it.
+        (await CreatedAsync("view=createdByMe&status=COMPLETED")).ShouldBe((_seeds.Count(s => s.Status == "COMPLETED"), _seeds.Count(s => s.Status == "COMPLETED")));
+        // The Task Queue agrees: creator=me with the open statuses is the tab; without status it is the old all-time total.
+        var admin = await _h.UserIdAsync(DatabaseApiFactory.AdminAccount);
+        (await QueueTotalAsync($"creator={admin}&status=NEW&status=IN_PROGRESS&status=ON_HOLD")).ShouldBe(open);
+        (await QueueTotalAsync($"creator={admin}")).ShouldBe(all);
+    }
 }

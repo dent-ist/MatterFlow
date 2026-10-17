@@ -70,6 +70,11 @@
   height: var(--mf-row-h);
 }
 
+/* Six pixels above and below a two-line title cell: nine rows fit under the filters at 1366x768 (A2). */
+.wt td {
+  padding-block: 6px;
+}
+
 .wt--compact th,
 .wt--compact td {
   padding-block: var(--mf-s1);
@@ -277,34 +282,12 @@ th[aria-sort='descending'] .wt-sort {
   color: var(--mf-text-muted);
 }
 
+/* One line: "2 of 5 done · Dedup and Review", cut at the end only (the full text is the tooltip). */
 .wt-progress {
-  display: grid;
-  gap: 2px;
-  width: 160px;
-  font-size: var(--mf-fs-sm);
-}
-
-.wt-progress-line {
-  display: flex;
-  align-items: center;
-  gap: var(--mf-s2);
-}
-
-.wt-progress progress {
-  flex: 1 1 0;
-  width: 0;
-  min-width: 40px;
-  height: 6px;
-  accent-color: var(--mf-primary);
-}
-
-.wt-progress-count {
-  flex: none;
-  white-space: nowrap;
-}
-
-.wt-progress-step {
+  display: block;
+  width: 150px;
   overflow: hidden;
+  font-size: var(--mf-fs-sm);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

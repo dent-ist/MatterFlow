@@ -168,16 +168,16 @@ test.describe('My Work sorts, Closed column and column sets', () => {
     if (axeAvailable()) expect(await axeViolations(page), 'chooser open at 1366').toEqual([]);
     await columns.click();
 
-    // Closed has its own default; the hidden Workflow progress is still shown there.
+    // Closed has its own default (no Workflow progress, C2).
     await myWork.tab(/^Closed/).click();
-    await expect(col('progress')).toBeVisible();
+    await expect(col('progress')).toHaveCount(0);
     await expect(col('closed')).toBeVisible();
 
     // The choice survives a reload, per tab.
     await myWork.open();
     await expect(col('progress')).toHaveCount(0);
     await myWork.open('?view=completed');
-    await expect(col('progress')).toBeVisible();
+    await expect(col('closed')).toBeVisible();
 
     // Reset columns on Active restores Active only.
     await myWork.tab(/^Active/).click();

@@ -56,7 +56,10 @@ export function columnScope(page: WorkPage, tab: string | null): ColumnScope {
 // Chosen to fit a 1280 px screen without sideways scrolling (UXR-09). Project is empty for most tasks and Task type repeats what the
 // title says, so both live in the column chooser; so do Age, Pod (Task Queue and My Work) and Workflow progress (Pod Work).
 const QUEUE_DEFAULT = ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status'];
-const MY_WORK_DEFAULT = ['ref', 'title', 'matter', 'priority', 'progress', 'due', 'status'];
+/** What My Work showed before X1 and WP6b: a stored set equal to it was never customised. */
+const MY_WORK_LEGACY = ['ref', 'title', 'matter', 'priority', 'progress', 'due', 'status'];
+/** Active and Due soon and overdue (A2): the matter reference lives in the subline under the title, so the Matter column is in the chooser. */
+const MY_WORK_DEFAULT = ['ref', 'title', 'progress', 'priority', 'due', 'status'];
 
 /**
  * The default columns per scope, most specific first (X1). To give a tab its own set (C2, B1, B3, A2, A3), add its key here
@@ -66,8 +69,10 @@ export const DEFAULT_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   taskQueue: QUEUE_DEFAULT,
   myWork: MY_WORK_DEFAULT,
   podWork: QUEUE_DEFAULT,
-  // The Closed tab is sorted by the closing date, so it shows it (C1); the rest of its set is C2's.
-  'myWork.closed': [...MY_WORK_DEFAULT, 'closed'],
+  // Closed (C2): finished work has no progress and no urgency; the date it closed (C1) and the outcome matter. Priority and Due are in the chooser.
+  'myWork.closed': ['ref', 'title', 'matter', 'closed', 'status'],
+  // Created by me (B1, B3): where did the work I handed off go: who has it, how urgent, when due, what state, how old.
+  'myWork.createdByMe': ['ref', 'title', 'assignee', 'priority', 'due', 'status', 'age'],
 };
 
 /** The default set of a scope, normalized (table order, Ref and Title included). */
@@ -93,7 +98,7 @@ export function normalizeColumns(keys: readonly string[]): string[] {
 /** The sets every screen showed before X1 (one for all tabs): a stored set equal to one of these was never customised. */
 const LEGACY_DEFAULTS: Readonly<Record<WorkPage, readonly string[]>> = {
   queue: QUEUE_DEFAULT,
-  'my-work': MY_WORK_DEFAULT,
+  'my-work': MY_WORK_LEGACY,
   'pod-work': QUEUE_DEFAULT,
 };
 

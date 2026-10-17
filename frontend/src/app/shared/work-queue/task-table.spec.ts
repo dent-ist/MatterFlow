@@ -143,7 +143,7 @@ describe('TaskTable', () => {
     fixture.detectChanges();
     expect(keys()).toEqual(['Ref', 'Title', 'Matter', 'Project', 'Due', 'Status']);
     expect(cell('title').querySelector('[data-title-progress]')!.textContent).toContain(
-      '2 of 6 steps',
+      '2 of 6 done · Dedup',
     );
     (fixture.componentInstance as unknown as { boxWidth: { set(n: number): void } }).boxWidth.set(
       780,
@@ -155,8 +155,75 @@ describe('TaskTable', () => {
   it('shows the client and matter name in a muted second line under the title', async () => {
     await create([aRow()], ['ref', 'title']);
     const sub = cell('title').querySelector('[data-title-context]')!;
-    expect(sub.textContent?.trim()).toBe('Acme Corp · Merger Review');
-    expect(sub.getAttribute('title')).toBe('Acme Corp / Merger Review');
+    // No Matter column: the reference leads the line, in monospace (A2), as the tooltip says in full.
+    const text = () => sub.textContent?.replace(/\s+/g, ' ').trim();
+    expect(text()).toBe('00343-00012 · Acme Corp · Merger Review');
+    expect(sub.getAttribute('title')).toBe('00343-00012 · Acme Corp · Merger Review');
+    expect(sub.querySelector('.wt-mono')?.textContent).toBe('00343-00012');
+    expect(sub.querySelector('a')).toBeNull();
+  });
+
+  it('links the reference in the line under the title only with Matter.View, and leaves it out when the Matter column shows it', async () => {
+    await create([aRow()], ['ref', 'title', 'matter']);
+    expect(cell('title').querySelector('[data-sub-ref]')).toBeNull();
+    expect(cell('title').querySelector('[data-title-context]')?.getAttribute('title')).toBe(
+      'Acme Corp · Merger Review',
+    );
+  });
+
+  it('links the reference under the title to the Matter with Matter.View (A2, BUG-7)', async () => {
+    await create([aRow()], ['ref', 'title'], {}, ['Matter.View']);
+    const link = cell('title').querySelector<HTMLAnchorElement>('a[data-sub-ref]')!;
+    expect(link.getAttribute('href')).toBe('/matters/7');
+    expect(link.classList).toContain('wt-mono');
+  });
+
+  it('shows closed work calmly: no ASAP bolt, a muted priority and a plain due date (C2)', async () => {
+    await create(
+      [
+        aRow({ taskId: 1, status: 'COMPLETED', statusLabel: 'Completed', isAsap: true }),
+        aRow({
+          taskId: 2,
+          status: 'CANCELLED',
+          statusLabel: 'Cancelled',
+          dueDate: '2026-10-01',
+          isOverdue: true,
+        }),
+        aRow({ taskId: 3 }),
+      ],
+      ['priority', 'due'],
+    );
+    const due = Array.from(el().querySelectorAll('tbody td[data-col="due"]'));
+    expect(due[0].querySelector('.pi-bolt')).toBeNull();
+    expect(due[0].textContent?.trim()).toBe('-');
+    expect(due[1].querySelector('.wt-due--overdue, .pi-exclamation-circle')).toBeNull();
+    expect(due[1].textContent).not.toContain('Overdue');
+    expect(due[2].querySelector('.pi-bolt')).not.toBeNull();
+    const badges = Array.from(el().querySelectorAll('tbody td[data-col="priority"] .badge'));
+    expect(badges[0].classList).toContain('muted');
+    expect(badges[1].classList).toContain('muted');
+    expect(badges[2].classList).not.toContain('muted');
+  });
+
+  it('shows Age as "12 d" with the created time, and how long a closed task took (B3)', async () => {
+    await create(
+      [
+        aRow({ taskId: 1, createdAtUtc: '2026-10-02T12:00:00Z' }),
+        aRow({
+          taskId: 2,
+          status: 'COMPLETED',
+          statusLabel: 'Completed',
+          createdAtUtc: '2026-09-01T12:00:00Z',
+          closedAtUtc: '2026-09-13T12:00:00Z',
+        }),
+      ],
+      ['age'],
+    );
+    const ages = Array.from(el().querySelectorAll<HTMLElement>('tbody td[data-col="age"] span'));
+    expect(ages[0].textContent?.trim()).toBe('12 d');
+    expect(ages[0].getAttribute('title')).toMatch(/^Created Oct 2, 2026/);
+    expect(ages[1].textContent?.trim()).toBe('12 d');
+    expect(ages[1].getAttribute('title')).toMatch(/^Took 12 d\. Created Sep 1, 2026/);
   });
 
   it('marks tasks assigned since the last visit with a "New" text badge, only when asked', async () => {
@@ -267,16 +334,13 @@ describe('TaskTable', () => {
     );
   });
 
-  it('shows the current step and the resolved count with an accessible progress bar', async () => {
+  it('shows the resolved count and the current step on one line, without a bar (A3)', async () => {
     await create([aRow()], ['progress']);
     const progress = cell('progress');
-    expect(progress.textContent).toContain('Dedup');
-    expect(progress.textContent).toContain('2 of 6');
+    expect(progress.textContent?.replace(/\s+/g, ' ').trim()).toBe('2 of 6 done · Dedup');
+    expect(progress.querySelector('progress')).toBeNull();
     expect(progress.querySelector('.wt-progress')?.getAttribute('title')).toBe(
-      'Step 3 of 6: Dedup (2 of 6 resolved)',
-    );
-    expect(progress.querySelector('progress')?.getAttribute('aria-label')).toBe(
-      '2 of 6 steps resolved',
+      '2 of 6 steps done. Current step: Dedup',
     );
   });
 
@@ -330,7 +394,7 @@ describe('TaskTable', () => {
       [aRow({ createdAtUtc: '2026-10-04T12:00:00Z' })],
       ['age', 'client', 'project', 'type', 'created'],
     );
-    expect(cell('age').textContent?.trim()).toBe('10d');
+    expect(cell('age').textContent?.trim()).toBe('10 d');
     expect(cell('client').textContent?.trim()).toBe('Acme Corp');
     expect(cell('project').textContent?.trim()).toBe('-');
     expect(cell('type').textContent?.trim()).toBe('Data Processing');

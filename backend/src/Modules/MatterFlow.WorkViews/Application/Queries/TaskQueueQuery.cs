@@ -27,7 +27,10 @@ public class TaskQueueQuery
     [FromQuery(Name = "q"), StringLength(200)]
     public string? Q { get; init; }
 
-    /// <summary>Status codes (<c>NEW</c>, <c>IN_PROGRESS</c>, <c>ON_HOLD</c>, <c>COMPLETED</c>, <c>CANCELLED</c>); repeatable.</summary>
+    /// <summary>
+    /// Status codes (<c>NEW</c>, <c>IN_PROGRESS</c>, <c>ON_HOLD</c>, <c>COMPLETED</c>, <c>CANCELLED</c>); repeatable. My Work: a request with no
+    /// filter at all counts the Created by me tab as its open tasks (New, In Progress, On Hold); any filter without a status means every status.
+    /// </summary>
     [FromQuery(Name = "status")]
     public string[]? Status { get; init; }
 
@@ -254,6 +257,14 @@ public sealed record TaskQueueFilter(
             query.UpdatedFrom,
             query.UpdatedTo);
     }
+
+    /// <summary>True when no filter is set at all (a plain link): My Work then counts and lists Created by me as open tasks only.</summary>
+    public bool IsBare =>
+        Text is null && Statuses.Count == 0 && Priorities.Count == 0 && Pods.Count == 0 && !NoPod && Assignees.Count == 0 && !Unassigned
+        && Creators.Count == 0 && ClientId is null && MatterId is null && ProjectId is null && TaskTypes.Count == 0 && Workflows.Count == 0
+        && CreatedFrom is null && CreatedTo is null && DueFrom is null && DueTo is null && Asap is null && Overdue is null && Requestor is null
+        && CompletedFrom is null && CompletedTo is null && MatterText is null && ClientText is null && ProjectText is null
+        && UpdatedFrom is null && UpdatedTo is null;
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 

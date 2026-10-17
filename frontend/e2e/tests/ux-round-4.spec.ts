@@ -510,7 +510,7 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     await expect(page.getByRole('list', { name: 'Active filters' })).toHaveCount(0);
   });
 
-  test('UXR4-19: My Work tabs stay on one row at 375 px and the near-empty line shares the pager row', async ({
+  test('UXR4-19: My Work tabs stay on one row at 375 px and the near-empty line sits under the last row', async ({
     page,
     seed,
     asUser,
@@ -532,9 +532,15 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     await mine.setViewportSize({ width: 1280, height: 900 });
     const near = mine.locator('[data-near-empty]');
     await expect(near).toBeVisible();
+    // A9 (#157): the line sits directly under the last row, inside the grid and above the pager row.
     const pager = mine.getByRole('navigation', { name: 'Pagination' });
-    const [n, p] = [(await near.boundingBox())!, (await pager.boundingBox())!];
-    expect(Math.abs(n.y + n.height / 2 - (p.y + p.height / 2))).toBeLessThan(20);
+    const [n, p, r] = [
+      (await near.boundingBox())!,
+      (await pager.boundingBox())!,
+      (await mine.locator('tbody tr[data-task]').last().boundingBox())!,
+    ];
+    expect(n.y - (r.y + r.height)).toBeLessThan(20);
+    expect(n.y + n.height).toBeLessThanOrEqual(p.y + 1);
     expect(page).toBeTruthy();
   });
 

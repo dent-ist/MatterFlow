@@ -11,6 +11,8 @@ export interface EmptyContext {
    * How many Pods the user belongs to; null while unknown. Only asked of a user with Pod.View (without it there is no Pod Work to point at).
    */
   podCount?: number | null;
+  /** Created by me on its Open default (no filter set): the user may still have closed tasks. */
+  openOnly?: boolean;
 }
 
 export interface EmptyCopy {
@@ -51,7 +53,9 @@ export function emptyCopy(ctx: EmptyContext, has: (code: string) => boolean): Em
       };
     default:
       return {
-        parts: ['You have not created any tasks.'],
+        parts: [
+          ctx.openOnly ? 'You have no open tasks you created.' : 'You have not created any tasks.',
+        ],
         ...(has('Task.Create') ? { createTask: true } : {}),
       };
   }

@@ -151,7 +151,7 @@ test.describe('My Work links, filters and copy', () => {
     myWork = new MyWorkPage(page);
     await myWork.open('?view=createdByMe');
     const none = page.locator('tbody [data-empty="none"]');
-    await expect(none).toContainText('You have not created any tasks.');
+    await expect(none).toContainText('You have no open tasks you created.');
     await shot(page, 'b4-created-by-me-create-task-1366x768');
     await none.getByRole('link', { name: 'Create task' }).click();
     await expect(page).toHaveURL(/\/tasks\/new/);
@@ -161,11 +161,9 @@ test.describe('My Work links, filters and copy', () => {
     myWork = new MyWorkPage(page);
     await myWork.open('?view=createdByMe');
     await expect(page.locator('tbody [data-empty="none"]')).toContainText(
-      'You have not created any tasks.',
+      'You have no open tasks you created.',
     );
-    await expect(
-      page.locator('tbody [data-empty="none"] a, tbody [data-empty="none"] button'),
-    ).toHaveCount(0);
+    await expect(page.locator('tbody [data-empty="none"] a')).toHaveCount(0);
     await page.close();
   });
 
