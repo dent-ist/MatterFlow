@@ -287,8 +287,13 @@ test.describe('Dashboard Scope', () => {
     sent = podScopeSent('/api/v1/dashboard/coverage');
     await page.getByRole('button', { name: 'Coverage' }).click();
     await sent;
-    await expect(page.locator('[data-coverage-table]')).toBeVisible();
+    // By task type is the default orientation; the matrix lists the people of the two pods.
+    await expect(page.locator('[data-coverage-types-table]')).toBeVisible();
     await expect(page.locator('[data-coverage-pod]')).toHaveCount(0);
+    sent = podScopeSent('/api/v1/dashboard/coverage');
+    await page.locator('[data-orientation="matrix"]').click();
+    await sent;
+    await expect(page.locator('[data-coverage-table]')).toBeVisible();
     await expect(page.locator('thead th[data-person]')).toHaveCount(3);
     await expect(page).toHaveURL(/view=coverage/);
     await expect(page).not.toHaveURL(/pod=/);

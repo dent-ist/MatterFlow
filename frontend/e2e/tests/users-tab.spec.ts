@@ -758,7 +758,8 @@ test.describe('Users tab: workload', () => {
 });
 
 test.describe('Users tab: coverage', () => {
-  const scoped = (extra = '') => `/dashboard?tab=users&view=coverage&uq=zcov${cov.tag}${extra}`;
+  const scoped = (extra = '') =>
+    `/dashboard?tab=users&view=coverage&cov=matrix&uq=zcov${cov.tag}${extra}`;
   const cell = (page: Page, p: Person, typeId: number) =>
     page.locator(`[data-cell="${p.userId}:${typeId}"]`);
 
@@ -794,37 +795,49 @@ test.describe('Users tab: coverage', () => {
     await expect(cell(page, a, cov.typeIds.review)).toHaveText('1');
     await expect(cell(page, b, cov.typeIds.production)).toHaveText('1');
     await expect(cell(page, c, cov.typeIds.production)).toHaveText('2');
-    await expect(cell(page, b, cov.typeIds.review)).toHaveText('0');
+    await expect(cell(page, b, cov.typeIds.review)).toHaveText('');
     const production = page.locator(`[data-type-name="${cov.typeNames.production}"]`);
     const review = page.locator(`[data-type-name="${cov.typeNames.review}"]`);
     await expect(production.locator('[data-row-total]')).toHaveText('6');
     await expect(production.locator('[data-people]')).toContainText('3 people');
-    await expect(review.locator('[data-people]')).toContainText('1 person');
-    await expect(review.locator('[data-people]')).toHaveClass(/thin/);
+    await expect(review.locator('[data-people]')).toContainText('One person');
+    await expect(review.locator('[data-people] [data-status="one"]')).toBeVisible();
     await expect(page.locator('[data-col-total]')).toHaveText(['4', '1', '2']);
     await expect(page.locator('[data-grand-total]')).toHaveText('7');
-    await expect(page.locator('[data-summary="thin"]')).toContainText(
-      'fewer than 2 people who handled them',
+    await expect(page.locator('[data-note="one"]')).toContainText(
+      'handled by only one person in this period',
     );
     // The cancelled task is not counted (A completed 3 Production, not 4).
     await expect(cell(page, a, cov.typeIds.production)).not.toHaveText('4');
   });
 
-  test('a zero is hatched with a visible 0 and a gap is marked; every cell has a sentence for a name', async ({
+  test('a zero is blank with no hatch, gaps are outlined only with the Training gaps toggle; every cell has a sentence for a name', async ({
     page,
   }) => {
     await page.goto(scoped());
     const { a, b } = cov.people;
     const zero = cell(page, b, cov.typeIds.review).locator('xpath=ancestor::td');
     await expect(zero).toHaveAttribute('data-step', '0');
+    await expect(cell(page, b, cov.typeIds.review)).toHaveText('');
+    expect(await zero.evaluate((el) => getComputedStyle(el).backgroundImage)).toBe('none');
+    expect(await zero.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe('none');
+    // Gaps stay invisible until asked for.
+    await expect(zero).not.toHaveAttribute('data-gap', 'true');
+    await expect(page.locator('[data-gap="true"]')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Training gaps' }).click();
     await expect(zero).toHaveAttribute('data-gap', 'true');
-    expect(await zero.evaluate((el) => getComputedStyle(el).backgroundImage)).toContain(
-      'repeating-linear-gradient',
-    );
+    await expect(zero.locator('.pi-exclamation-circle')).toBeVisible();
+    expect(await zero.evaluate((el) => getComputedStyle(el).boxShadow)).not.toBe('none');
+    await expect(page.locator('[data-summary="gaps"]')).toContainText('possible training gap');
+    await page.getByRole('button', { name: 'Training gaps' }).click();
+    await expect(page.locator('[data-gap="true"]')).toHaveCount(0);
+    // A zero only announces; it opens nothing.
+    await cell(page, b, cov.typeIds.review).click();
+    await expect(page.locator('[data-coverage-drawer]')).toHaveCount(0);
     await expect(cell(page, b, cov.typeIds.review)).toHaveAttribute(
       'aria-label',
       new RegExp(
-        `^${esc(b.displayName)}: 0 ${esc(cov.typeNames.review)} tasks completed from \\w{3} \\d+ to \\w{3} \\d+`,
+        `^${esc(b.displayName)}, ${esc(cov.typeNames.review)}: 0 completed from \\w{3} \\d+ to \\w{3} \\d+`,
       ),
     );
     await expect(cell(page, a, cov.typeIds.production)).toHaveAttribute(
@@ -843,14 +856,8 @@ test.describe('Users tab: coverage', () => {
     ).toHaveAttribute('data-step', '2');
   });
 
-  test('the Training gaps filter, the period and the orders work and are kept in the address', async ({
-    page,
-  }) => {
+  test('the period and the orders work and are kept in the address', async ({ page }) => {
     await page.goto(scoped());
-    await page.getByRole('button', { name: 'Training gaps' }).click();
-    await expect(page.locator(`[data-type-name="${cov.typeNames.review}"]`)).toBeVisible();
-    await expect(page.locator(`[data-type-name="${cov.typeNames.production}"]`)).toHaveCount(0);
-    await page.getByRole('button', { name: 'Training gaps' }).click();
     await page.getByLabel('Period', { exact: true }).selectOption('90d');
     await expect(page).toHaveURL(/period=90d/);
     await expect(cell(page, cov.people.a, cov.typeIds.production)).toHaveAttribute(

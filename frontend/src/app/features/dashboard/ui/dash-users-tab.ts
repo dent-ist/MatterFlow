@@ -605,6 +605,8 @@ export class DashUsersTab implements OnInit {
       relativeTo: this.route,
       queryParams: {
         [USERS_VIEW_PARAM]: view === 'coverage' ? 'coverage' : null,
+        // The orientation belongs to Coverage: leaving it drops `cov=matrix`.
+        ...(view === 'workload' ? { cov: null } : {}),
       },
       queryParamsHandling: 'merge',
     });

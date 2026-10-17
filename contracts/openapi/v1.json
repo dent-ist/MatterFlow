@@ -6237,6 +6237,15 @@
               "minLength": 0,
               "type": "string"
             }
+          },
+          {
+            "name": "groupBy",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -9363,6 +9372,24 @@
           },
           "summary": {
             "$ref": "#/components/schemas/CoverageSummary"
+          },
+          "byType": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CoverageTypeGroup"
+            }
+          },
+          "scopePeople": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CoveragePerson"
+            }
           }
         }
       },
@@ -9385,6 +9412,26 @@
           "completed": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "CoveragePerson": {
+        "required": [
+          "userId",
+          "displayName",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
           }
         }
       },
@@ -9444,6 +9491,50 @@
             "format": "int32"
           },
           "peopleWhoHandledIt": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CoverageTypeGroup": {
+        "required": [
+          "taskTypeId",
+          "people"
+        ],
+        "type": "object",
+        "properties": {
+          "taskTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoverageTypePerson"
+            }
+          }
+        }
+      },
+      "CoverageTypePerson": {
+        "required": [
+          "userId",
+          "displayName",
+          "isActive",
+          "completed"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "completed": {
             "type": "integer",
             "format": "int32"
           }

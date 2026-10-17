@@ -29,8 +29,8 @@ import { plural } from './coverage-model';
 
 /** The cell a person opened: who, which task type and the period (local days). */
 export interface CoverageTarget {
-  user: CoverageUser;
-  type: CoverageTaskType;
+  user: Pick<CoverageUser, 'userId' | 'displayName'>;
+  type: Pick<CoverageTaskType, 'taskTypeId' | 'name'>;
   from: string;
   to: string;
   count: number;

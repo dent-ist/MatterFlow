@@ -94,6 +94,21 @@ public sealed class CoveragePerformanceTests(SqlServerFixture sql, ITestOutputHe
         output.WriteLine($"{url} ms: {string.Join(", ", timings)}");
         timings.Order().ElementAt(2).ShouldBeLessThan(400, "the median coverage request must stay under 400 ms");
 
+        // The type orientation reads the same grouped counts without the people columns, cells and availability: it must be at least as fast.
+        const string typed = url + "&groupBy=type";
+        await OkAsync(await http.GetAsync(typed));
+        var typedTimings = new List<long>();
+        for (var i = 0; i < 5; i++)
+        {
+            var watch = Stopwatch.StartNew();
+            await OkAsync(await http.GetAsync(typed));
+            watch.Stop();
+            typedTimings.Add(watch.ElapsedMilliseconds);
+        }
+
+        output.WriteLine($"{typed} ms: {string.Join(", ", typedTimings)}");
+        typedTimings.Order().ElementAt(2).ShouldBeLessThan(400, "the median type-orientation request must stay under 400 ms");
+
         var board = await OkAsync(await http.GetAsync(url));
         board.GetProperty("users").GetArrayLength().ShouldBeGreaterThanOrEqualTo(UserCount);
         board.GetProperty("taskTypes").GetArrayLength().ShouldBeGreaterThanOrEqualTo(TypeCount);

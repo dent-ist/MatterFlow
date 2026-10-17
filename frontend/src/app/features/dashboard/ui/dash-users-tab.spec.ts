@@ -5,6 +5,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { MessageService } from 'primeng/api';
 import { NEVER, of, throwError } from 'rxjs';
 import {
+  CoverageBoard,
   DashboardBoardClient,
   DashboardClient,
   PodsClient,
@@ -27,6 +28,8 @@ import {
   OUT_UNTIL,
   aBoard,
   aCoverageBoard,
+  aCoverageTypeBoard,
+  aCoverageUser,
   aUser,
   outOfOffice,
 } from '../users/users-testing';
@@ -94,9 +97,11 @@ describe('DashUsersTab', () => {
     response: unknown = of(board()),
     url = '/dashboard?tab=users',
     permissions = PERMS,
+    coverageBoard: CoverageBoard = aCoverageBoard(),
+    typeBoard: CoverageBoard = aCoverageTypeBoard(),
   ) {
     getWorkload = vi.fn().mockReturnValue(response);
-    getCoverage = vi.fn().mockReturnValue(of(aCoverageBoard()));
+    getCoverage = vi.fn((...args: unknown[]) => of(args[7] === 'type' ? typeBoard : coverageBoard));
     getQueue = vi.fn((...args: unknown[]) => {
       // positional: status is argument 2, assignee 6, unassigned 7
       const assignee = args[5] as number[] | undefined;
@@ -1130,10 +1135,237 @@ describe('DashUsersTab', () => {
 
   describe('coverage view', () => {
     const COV: Permission[] = [...PERMS, 'Dashboard.ViewCoverage'];
-    const coverage = () => open(of(board()), '/dashboard?tab=users&view=coverage', COV);
+    const coverage = () => open(of(board()), '/dashboard?tab=users&view=coverage&cov=matrix', COV);
     const cell = (user: number, type: number) =>
       q<HTMLButtonElement>(`[data-cell="${user}:${type}"]`);
     const rowOf = (name: string) => q(`[data-type-name="${name}"]`);
+
+    describe('by task type (default)', () => {
+      const typeView = (board = aCoverageTypeBoard(), url = '/dashboard?tab=users&view=coverage') =>
+        open(of(board), url, COV, aCoverageBoard(), board);
+      const trow = (name: string) => q(`[data-type-row][data-type-name="${name}"]`);
+
+      it('is the default orientation: one row per type, fewest people first, ties by name, the matrix is the second option', async () => {
+        await typeView();
+        expect(qa('[data-orientation]').map((b) => text(b))).toEqual(['By task type', 'Matrix']);
+        expect(q('[data-orientation="type"]').getAttribute('aria-pressed')).toBe('true');
+        expect(q('[data-coverage-table]')).toBeNull();
+        expect(qa('[data-type-row]').map((r) => r.getAttribute('data-type-name'))).toEqual([
+          'Archive',
+          'Review',
+          'Production',
+        ]);
+        expect(getCoverage).toHaveBeenLastCalledWith(
+          '30d',
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          'all',
+          'type',
+        );
+        expect(text(q('[data-coverage-heading]'))).toBe(
+          'Task type coverage - use this to plan training and cross-coverage, not to rank people',
+        );
+      });
+
+      it('lists the names alphabetically with the people count, the completed total and the status', async () => {
+        await typeView();
+        expect(text(trow('Production').querySelector('[data-names]'))).toBe(
+          'Priya Shah, Sam Ortiz, Tess Wu',
+        );
+        expect(text(trow('Production').querySelector('[data-people]'))).toBe('3');
+        expect(text(trow('Production').querySelector('[data-completed]'))).toBe('20');
+        expect(trow('Production').querySelector('[data-status]')).toBeNull();
+        expect(trow('Review').querySelector('[data-status="one"]')!.textContent).toContain(
+          'One person',
+        );
+        expect(text(q('[data-summary="completed"]'))).toContain('24');
+      });
+
+      it('says "No one in this period" for a type nobody handled, with the neutral status', async () => {
+        const base = aCoverageTypeBoard();
+        await typeView({
+          ...base,
+          taskTypes: [
+            ...base.taskTypes,
+            {
+              taskTypeId: 13,
+              name: 'Hosting Setup',
+              iconKey: 'file-text',
+              isActive: true,
+              total: 0,
+              peopleWhoHandledIt: 0,
+            },
+          ],
+          byType: [...base.byType!, { taskTypeId: 13, people: [] }],
+        });
+        expect(text(trow('Hosting Setup').querySelector('[data-names]'))).toBe(
+          'No one in this period',
+        );
+        expect(trow('Hosting Setup').querySelector('[data-status="none"]')!.textContent).toContain(
+          'No one',
+        );
+        expect(qa('[data-type-row]')[0].getAttribute('data-type-name')).toBe('Hosting Setup');
+      });
+
+      it('shows the first five names then +N, and orders by type name or most completed with neutral labels', async () => {
+        const base = aCoverageTypeBoard();
+        const people = ['Ann', 'Bea', 'Cat', 'Dan', 'Eve', 'Fay', 'Gus'].map((n, i) => ({
+          userId: 50 + i,
+          displayName: n,
+          isActive: true,
+          completed: 7 - i,
+        }));
+        await typeView({
+          ...base,
+          byType: base.byType!.map((g) => (g.taskTypeId === 10 ? { ...g, people } : g)),
+        });
+        expect(text(trow('Production').querySelector('[data-names]'))).toBe(
+          'Ann, Bea, Cat, Dan, Eve, +2',
+        );
+        await choose('[data-coverage-row-order]', 'name');
+        expect(qa('[data-type-row]').map((r) => r.getAttribute('data-type-name'))).toEqual([
+          'Archive',
+          'Production',
+          'Review',
+        ]);
+        await choose('[data-coverage-row-order]', 'completed');
+        expect(qa('[data-type-row]').map((r) => r.getAttribute('data-type-name'))).toEqual([
+          'Production',
+          'Review',
+          'Archive',
+        ]);
+        expect(
+          Array.from(q<HTMLSelectElement>('[data-coverage-row-order]').options).map((o) => text(o)),
+        ).toEqual(['Fewest people first', 'Type name', 'Most completed']);
+        expect(text(q('[data-coverage-row-order]'))).not.toMatch(/best|worst|top|rank|score/i);
+        expect(JSON.parse(localStorage.getItem('mf.dashboard.coverage.v1.5')!).rowOrder).toBe(
+          'completed',
+        );
+      });
+
+      it('expands a row with everyone and their counts; a count opens the tasks behind it', async () => {
+        await typeView();
+        const toggle = trow('Production').querySelector<HTMLButtonElement>('[data-toggle]')!;
+        expect(toggle.getAttribute('aria-expanded')).toBe('false');
+        toggle.click();
+        await settle();
+        expect(toggle.getAttribute('aria-expanded')).toBe('true');
+        const detail = q('[data-type-detail]')!;
+        expect(toggle.getAttribute('aria-controls')).toBe(detail.id);
+        expect(qa('[data-type-detail] [data-person]').map((li) => text(li))).toEqual([
+          expect.stringContaining('Priya Shah'),
+          expect.stringContaining('Sam Ortiz'),
+          expect.stringContaining('Tess Wu'),
+        ]);
+        q<HTMLButtonElement>('[data-count-for="3:10"]').click();
+        await settle();
+        const args = getQueue.mock.calls.at(-1)!;
+        expect(args[5]).toEqual([3]);
+        expect(args[11]).toEqual([10]);
+        expect(document.querySelector('[data-coverage-drawer]')).not.toBeNull();
+      });
+
+      it('asks to pick a pod when the scope is all pods, and lists the pod members who have not handled the type otherwise', async () => {
+        await typeView();
+        trow('Production').querySelector<HTMLButtonElement>('[data-toggle]')!.click();
+        await settle();
+        expect(q('[data-pick-pod]')).not.toBeNull();
+        expect(q('[data-not-handled]')).toBeNull();
+
+        const base = aCoverageTypeBoard();
+        await reopen(of(base), '/dashboard?tab=users&view=coverage', COV, aCoverageBoard(), {
+          ...base,
+          scopePeople: [
+            { userId: 1, displayName: 'Priya Shah', isActive: true },
+            { userId: 5, displayName: 'Vic Idle', isActive: true },
+            { userId: 6, displayName: 'Zoe Ng', isActive: true },
+          ],
+        });
+        trow('Production').querySelector<HTMLButtonElement>('[data-toggle]')!.click();
+        await settle();
+        const control = q<HTMLButtonElement>('[data-not-handled]');
+        expect(text(control)).toMatch(/^Show people in .+ who have not handled this type$/);
+        expect(control.getAttribute('aria-expanded')).toBe('false');
+        control.click();
+        await settle();
+        expect(control.getAttribute('aria-expanded')).toBe('true');
+        expect(qa('[data-not-list] li').map((li) => text(li))).toEqual([
+          'Vic Idle0 completed',
+          'Zoe Ng0 completed',
+        ]);
+      });
+
+      it('switches to the matrix with cov=matrix and back, reading the matrix payload only for the matrix', async () => {
+        await typeView();
+        q<HTMLButtonElement>('[data-orientation="matrix"]').click();
+        await settle();
+        expect(url()).toContain('cov=matrix');
+        expect(q('[data-coverage-table]')).not.toBeNull();
+        expect(getCoverage).toHaveBeenLastCalledWith(
+          '30d',
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          'all',
+        );
+        q<HTMLButtonElement>('[data-orientation="type"]').click();
+        await settle();
+        expect(url()).not.toContain('cov=');
+        expect(q('[data-coverage-table]')).toBeNull();
+        expect(qa('[data-type-row]').length).toBe(3);
+      });
+
+      it('uses no ranking words anywhere in the coverage view', async () => {
+        await typeView();
+        trow('Production').querySelector<HTMLButtonElement>('[data-toggle]')!.click();
+        await settle();
+        // The heading says what the view is NOT for ("not to rank people"); that is the one allowed use of the word.
+        const all = text(q('mf-coverage-view')).replace(
+          'use this to plan training and cross-coverage, not to rank people',
+          '',
+        );
+        expect(all).not.toMatch(
+          /\b(best|worst|top|rank(?:ing|ed)?|score|leaderboard|bus factor)\b/i,
+        );
+        expect(all).not.toMatch(/\bgaps?\b/i);
+      });
+
+      it('has a status region for the one-person statement and a collapsed list for the no-one statement', async () => {
+        const base = aCoverageTypeBoard();
+        await typeView({
+          ...base,
+          taskTypes: [
+            ...base.taskTypes,
+            ...[13, 14].map((id) => ({
+              taskTypeId: id,
+              name: `Unused ${id}`,
+              iconKey: 'file-text',
+              isActive: true,
+              total: 0,
+              peopleWhoHandledIt: 0,
+            })),
+          ],
+          byType: [...base.byType!, ...[13, 14].map((id) => ({ taskTypeId: id, people: [] }))],
+        });
+        const none = q<HTMLDetailsElement>('[data-note="none"]');
+        expect(none.open).toBe(false);
+        expect(text(none.querySelector('summary'))).toBe(
+          '2 task types had no completed tasks in this period.',
+        );
+        expect(text(none)).toContain(
+          'Rarely used types can be empty in a short period. Try a longer period.',
+        );
+        expect(text(q('[data-note="one"]'))).toContain(
+          '2 task types were handled by only one person',
+        );
+        expect(q('[data-note="one"]')!.closest('[role="status"]')).not.toBeNull();
+      });
+    });
 
     it('offers the Coverage view only with its own permission', async () => {
       await open();
@@ -1160,7 +1392,9 @@ describe('DashUsersTab', () => {
         undefined,
         undefined,
         'all',
+        'type',
       );
+      expect(url()).not.toContain('cov=');
       expect(JSON.parse(localStorage.getItem('mf.dashboard.users.v1.5')!).view).toBe('coverage');
       q<HTMLButtonElement>('[data-view="workload"]').click();
       await settle();
@@ -1187,8 +1421,11 @@ describe('DashUsersTab', () => {
       ).toEqual(['7', '2', '11', '0', '0']);
       expect(text(rowOf('Production').querySelector('[data-row-total]'))).toBe('20');
       expect(text(rowOf('Production').querySelector('[data-people]'))).toBe('3 people');
-      expect(text(rowOf('Review').querySelector('[data-people]'))).toBe('1 person');
-      expect(rowOf('Review').querySelector('[data-people]')!.classList.contains('thin')).toBe(true);
+      expect(text(rowOf('Review').querySelector('[data-people]'))).toBe('One person');
+      expect(rowOf('Review').querySelector('[data-people] [data-status]')!.textContent).toContain(
+        'One person',
+      );
+      expect(rowOf('Production').querySelector('[data-people] [data-status]')).toBeNull();
       expect(qa('[data-col-total]').map((c) => text(c))).toEqual(['10', '2', '11', '1', '0']);
       expect(text(q('[data-grand-total]'))).toBe('24');
       expect(q('thead th[data-person="4"] [data-inactive]')).not.toBeNull();
@@ -1197,19 +1434,27 @@ describe('DashUsersTab', () => {
       expect(rowOf('Production').querySelector('th[scope="row"] mf-task-type-icon')).not.toBeNull();
     });
 
-    it('writes the number in every cell, hatches the zeros and names each cell as a sentence', async () => {
+    it('writes the number in every non-zero cell, leaves zeros blank and names each cell as a sentence', async () => {
       await coverage();
       expect(text(cell(1, 10))).toBe('7');
       const zero = cell(4, 10).closest('td')!;
-      expect(text(zero)).toBe('0');
+      expect(text(zero)).toBe('');
+      expect(getComputedStyle(zero).backgroundImage).not.toContain('gradient');
+      expect(cell(4, 10).getAttribute('aria-label')).toContain('Uma Vee, Production: 0 completed');
       expect(zero.classList.contains('cell--zero')).toBe(true);
       expect(zero.getAttribute('data-step')).toBe('0');
       expect(cell(1, 10).getAttribute('aria-label')).toContain(
         'Priya Shah: 7 Production tasks completed from Jul 18',
       );
       expect(cell(1, 11).getAttribute('title')).toBe(cell(1, 11).getAttribute('aria-label'));
+      // Gaps are outlined only while the Training gaps toggle is on (default off).
+      expect(cell(2, 11).closest('td')!.getAttribute('data-gap')).toBeNull();
+      expect(qa('[data-gap="true"]').length).toBe(0);
+      q<HTMLButtonElement>('[data-coverage-gaps]').click();
+      await settle();
       expect(cell(2, 11).closest('td')!.getAttribute('data-gap')).toBe('true'); // 0 Review for someone who completed other work
       expect(cell(5, 11).closest('td')!.getAttribute('data-gap')).toBeNull(); // Vic completed nothing at all
+      expect(cell(2, 11).closest('td')!.querySelector('.pi-exclamation-circle')).not.toBeNull();
     });
 
     it('colours by the scale: relative to the task type by default, or absolute', async () => {
@@ -1239,33 +1484,70 @@ describe('DashUsersTab', () => {
       expect(text(q('[data-coverage-type-order]'))).not.toMatch(/best|worst|top|rank/i);
     });
 
-    it('the Training gaps filter keeps the types and the people with a zero, and says when there is none', async () => {
+    it('the Training gaps toggle outlines the possible gaps with a count, and every row stays', async () => {
       await coverage();
+      expect(q('[data-coverage-gaps]').getAttribute('aria-pressed')).toBe('false');
+      expect(q('[data-summary="gaps"]')).toBeNull();
+      expect(q('[data-coverage-table]')!.getAttribute('data-gaps')).toBeNull();
       q<HTMLButtonElement>('[data-coverage-gaps]').click();
       await settle();
       expect(q('[data-coverage-gaps]').getAttribute('aria-pressed')).toBe('true');
-      expect(qa('thead th[data-person]').length).toBe(4); // Vic completed nothing and is not a training gap
+      expect(qa('thead th[data-person]').length).toBe(5);
       expect(qa('[data-gap="true"]').length).toBeGreaterThan(0);
-      getCoverage.mockReturnValue(
-        of(
-          aCoverageBoard({
-            users: aCoverageBoard().users.slice(0, 1),
-            cells: [10, 11, 12].map((taskTypeId) => ({ userId: 1, taskTypeId, completed: 2 })),
-          }),
-        ),
-      );
-      refreshTab();
+      expect(text(q('[data-summary="gaps"]'))).toContain('possible training gaps');
+      q<HTMLButtonElement>('[data-coverage-gaps]').click();
       await settle();
-      expect(text(q('[data-coverage-empty]'))).toContain('No training gaps');
+      expect(qa('[data-gap="true"]').length).toBe(0);
     });
 
-    it('shows the summary strip with the coverage insight', async () => {
+    it('a zero opens nothing; a count opens the drawer', async () => {
       await coverage();
-      expect(text(q('[data-summary="thin"]'))).toContain(
-        '2 task types have fewer than 2 people who handled them.',
+      cell(4, 10).click();
+      await settle();
+      expect(document.querySelector('[data-coverage-drawer]')).toBeNull();
+      cell(1, 10).click();
+      await settle();
+      expect(document.querySelector('[data-coverage-drawer]')).not.toBeNull();
+    });
+
+    it('caps the matrix columns and rows and adds more on request', async () => {
+      const users = Array.from({ length: 70 }, (_, i) =>
+        aCoverageUser(100 + i, `Person ${String(i).padStart(3, '0')}`, 1),
       );
+      await open(
+        of(board()),
+        '/dashboard?tab=users&view=coverage&cov=matrix',
+        COV,
+        aCoverageBoard({
+          users,
+          cells: users.map((u) => ({ userId: u.userId, taskTypeId: 10, completed: 1 })),
+        }),
+      );
+      expect(qa('thead th[data-person]').length).toBe(30);
+      expect(text(q('[data-matrix-more]'))).toContain('Show 30 more people');
+      expect(text(q('[data-matrix-more]'))).toContain('30 of 70 people');
+      expect(text(rowOf('Production').querySelector('[data-row-total]'))).toBe('70');
+      q<HTMLButtonElement>('[data-cols-more]').click();
+      await settle();
+      expect(qa('thead th[data-person]').length).toBe(60);
+      q<HTMLButtonElement>('[data-cols-more]').click();
+      await settle();
+      expect(qa('thead th[data-person]').length).toBe(70);
+      expect(q('[data-cols-more]')).toBeNull();
+    });
+
+    it('shows the summary strip and two statements: none (neutral, collapsed) and one person (amber)', async () => {
+      await coverage();
       expect(text(q('[data-summary="completed"]'))).toContain('24');
-      expect(q('[data-summary="thin"]')!.classList.contains('chip--warn')).toBe(true);
+      // The seed: Review and Archive have exactly one handler, none has zero.
+      expect(q('[data-note="none"]')).toBeNull();
+      const warn = q('[data-note="one"]')!;
+      expect(text(warn)).toBe(
+        '2 task types were handled by only one person in this period: Archive, Review. Consider cross-training.',
+      );
+      expect(warn.closest('[role="status"]')).not.toBeNull();
+      expect(warn.querySelector('.pi-exclamation-triangle')).not.toBeNull();
+      expect(text(q('[data-coverage-notes]'))).not.toMatch(/gap|bus factor/i);
     });
 
     it('offers the shared period list plus 6 and 12 months, and writes a choice to the address', async () => {
@@ -1323,6 +1605,7 @@ describe('DashUsersTab', () => {
         undefined,
         undefined,
         'all',
+        'type',
       );
     });
 
@@ -1343,7 +1626,7 @@ describe('DashUsersTab', () => {
         '2',
       );
       const calls = getCoverage.mock.calls.length;
-      await reopen(of(board()), '/dashboard?tab=users&view=coverage&uq=tess', COV);
+      await reopen(of(board()), '/dashboard?tab=users&view=coverage&cov=matrix&uq=tess', COV);
       expect(qa('thead th[data-person]').map((h) => text(h.querySelector('.pname')))).toEqual([
         'Tess Wu',
       ]);

@@ -6,16 +6,21 @@ import {
   cellLabel,
   relativeStep,
   stepOf,
-  thinText,
+  coverageNotes,
+  buildTypeRows,
+  handledStatus,
+  namesText,
+  noneNoteText,
+  notHandledBy,
+  oneNoteText,
 } from './coverage-model';
-import { aCoverageBoard } from './users-testing';
+import { aCoverageBoard, aCoverageTypeBoard } from './users-testing';
 
 const OPTS = {
   q: '',
   scale: 'absolute',
   typeOrder: 'name',
   userOrder: 'name',
-  gapsOnly: false,
 } as const;
 
 describe('coverage model', () => {
@@ -61,12 +66,11 @@ describe('coverage model', () => {
       expect(production.cells.map((c) => c.count)).toEqual([7, 2, 11, 0, 0]);
       expect(production.total).toBe(20);
       expect(production.people).toBe(3);
-      expect(production.thin).toBe(false);
+      expect(production.status).toBe('many');
       expect(m.rows[2].people).toBe(1);
-      expect(m.rows[2].thin).toBe(true);
+      expect(m.rows[2].status).toBe('one');
       expect(m.colTotals).toEqual([10, 2, 11, 1, 0]);
       expect(m.grand).toBe(24);
-      expect(m.thinTypes).toBe(2);
     });
 
     it('marks a zero as a gap only for people who completed something in the period', () => {
@@ -106,27 +110,6 @@ describe('coverage model', () => {
       expect(m.rows.find((r) => r.type.name === 'Production')!.total).toBe(2);
       expect(m.grand).toBe(2);
     });
-
-    it('the gaps filter keeps the types with a gap and the active people who have one', () => {
-      const m = buildMatrix(aCoverageBoard(), { ...OPTS, gapsOnly: true });
-      expect(m.cols.map((c) => c.displayName)).toEqual([
-        'Priya Shah',
-        'Sam Ortiz',
-        'Tess Wu',
-        'Uma Vee',
-      ]); // Vic completed nothing
-      expect(m.rows.map((r) => r.type.name)).toEqual(['Archive', 'Production', 'Review']);
-      const all = m.rows.flatMap((r) => r.cells);
-      expect(all.some((c) => c.gap)).toBe(true);
-      // Remove every gap: nothing is left.
-      const full = aCoverageBoard({
-        users: aCoverageBoard().users.slice(0, 1),
-        cells: [10, 11, 12].map((taskTypeId) => ({ userId: 1, taskTypeId, completed: 2 })),
-      });
-      const none = buildMatrix(full, { ...OPTS, gapsOnly: true });
-      expect(none.rows).toEqual([]);
-      expect(none.cols).toEqual([]);
-    });
   });
 
   describe('text', () => {
@@ -144,10 +127,100 @@ describe('coverage model', () => {
       ).toBe('Priya: 1 Review task completed in the last 30 days');
     });
 
-    it('says how many task types have fewer than two people', () => {
-      expect(thinText(3)).toBe('3 task types have fewer than 2 people who handled them.');
-      expect(thinText(1)).toBe('1 task type has fewer than 2 people who handled them.');
-      expect(thinText(0)).toBe('Every task type was handled by at least 2 people.');
+    it('names a zero cell for screen readers', () => {
+      expect(
+        cellLabel({ displayName: 'Ana B.' }, { name: 'Redaction' }, 0, 'in the last 30 days'),
+      ).toBe('Ana B., Redaction: 0 completed in the last 30 days');
+    });
+  });
+
+  describe('by task type', () => {
+    const rows = (order: 'fewest' | 'name' | 'completed') =>
+      buildTypeRows(aCoverageTypeBoard(), order).map((r) => r.type.name);
+
+    it('orders fewest people first (ties by name), by type name or by most completed', () => {
+      expect(rows('fewest')).toEqual(['Archive', 'Review', 'Production']);
+      expect(rows('name')).toEqual(['Archive', 'Production', 'Review']);
+      expect(rows('completed')).toEqual(['Production', 'Review', 'Archive']);
+    });
+
+    it('lists the people alphabetically, never by count, and truncates the names to five plus the rest', () => {
+      const board = aCoverageTypeBoard();
+      const people = ['Zed', 'Ann', 'Bea', 'Cat', 'Dan', 'Eve', 'Fay'].map((displayName, i) => ({
+        userId: i + 1,
+        displayName,
+        isActive: true,
+        completed: i === 0 ? 99 : 1,
+      }));
+      board.byType = [{ taskTypeId: 10, people }, ...board.byType!.slice(1)];
+      const row = buildTypeRows(board, 'name').find((r) => r.type.taskTypeId === 10)!;
+      expect(row.people.map((p) => p.displayName)).toEqual([
+        'Ann',
+        'Bea',
+        'Cat',
+        'Dan',
+        'Eve',
+        'Fay',
+        'Zed',
+      ]);
+      expect(row.names).toEqual(['Ann', 'Bea', 'Cat', 'Dan', 'Eve']);
+      expect(row.more).toBe(2);
+      expect(namesText(row)).toBe('Ann, Bea, Cat, Dan, Eve, +2');
+    });
+
+    it('counts per type equal the matrix counts', () => {
+      const typed = buildTypeRows(aCoverageTypeBoard(), 'name');
+      const matrix = buildMatrix(aCoverageBoard(), OPTS);
+      for (const r of matrix.rows) {
+        const t = typed.find((x) => x.type.taskTypeId === r.type.taskTypeId)!;
+        expect(t.people.reduce((n, p) => n + p.completed, 0)).toBe(r.total);
+        expect(t.people.length).toBe(r.people);
+        expect(t.status).toBe(r.status);
+      }
+    });
+
+    it('lists the scope people who have not handled the type, by name', () => {
+      const row = buildTypeRows(aCoverageTypeBoard(), 'name').find(
+        (r) => r.type.taskTypeId === 10,
+      )!;
+      const roster = [
+        { userId: 9, displayName: 'Zoe' },
+        { userId: 1, displayName: 'Priya Shah' },
+        { userId: 5, displayName: 'Vic Idle' },
+      ];
+      expect(notHandledBy(roster, row)).toEqual(['Vic Idle', 'Zoe']);
+    });
+  });
+
+  describe('the two statements', () => {
+    it('classifies none, one and many', () => {
+      expect([0, 1, 2, 9].map(handledStatus)).toEqual(['none', 'one', 'many', 'many']);
+    });
+
+    it('separates the types nobody handled from the types handled by one person', () => {
+      const types = aCoverageBoard().taskTypes.map((t) => ({ ...t }));
+      types[0].peopleWhoHandledIt = 0;
+      const notes = coverageNotes(types);
+      expect(notes.none.map((t) => t.name)).toEqual(['Production']);
+      expect(notes.one.map((t) => t.name)).toEqual(['Archive', 'Review']);
+      expect(coverageNotes([]).none).toEqual([]);
+    });
+
+    it('pins the strings: no gap, no bus factor, names of types only', () => {
+      expect(noneNoteText(17)).toBe('17 task types had no completed tasks in this period.');
+      expect(noneNoteText(1)).toBe('1 task type had no completed tasks in this period.');
+      expect(oneNoteText(['A', 'B'])).toBe(
+        '2 task types were handled by only one person in this period: A, B. Consider cross-training.',
+      );
+      expect(oneNoteText(['A'])).toBe(
+        '1 task type was handled by only one person in this period: A. Consider cross-training.',
+      );
+      expect(oneNoteText(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'])).toContain(
+        ': A, B, C, D, E, F and 2 more.',
+      );
+      for (const text of [noneNoteText(3), oneNoteText(['A', 'B'])]) {
+        expect(text).not.toMatch(/gap|bus factor/i);
+      }
     });
   });
 });

@@ -21,7 +21,11 @@ describe('dash URL defaults (one list per tab)', () => {
     expect(DASH_DEFAULTS.breakdowns).toEqual({});
     expect(DASH_DEFAULTS.trends).toEqual({ metric: DEFAULT_CHOICE.metric });
     expect(DASH_DEFAULTS.swimlane).toEqual({ group: 'none', sort: 'priority', days: '7' });
-    expect(DASH_DEFAULTS.users).toEqual({ view: 'workload', uavail: 'all' });
+    expect(DASH_DEFAULTS.users).toEqual({
+      view: 'workload',
+      uavail: 'all',
+      cov: 'type',
+    });
     expect(Object.keys(DASH_DEFAULTS).sort()).toEqual([...DASHBOARD_TABS].sort());
   });
 

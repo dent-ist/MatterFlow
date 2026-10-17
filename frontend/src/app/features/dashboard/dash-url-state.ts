@@ -62,7 +62,7 @@ export const DASH_DEFAULTS: Record<DashboardTab, Readonly<Record<string, string>
     sort: DEFAULT_VIEW.sort,
     days: String(DEFAULT_VIEW.days),
   },
-  users: { [USERS_VIEW_PARAM]: 'workload', [USERS_AVAILABILITY_PARAM]: 'all' },
+  users: { [USERS_VIEW_PARAM]: 'workload', [USERS_AVAILABILITY_PARAM]: 'all', cov: 'type' },
 };
 
 /** What `canonicalParams` needs to know about the scope: whether the person may use a value, and which one is their default (not written). */

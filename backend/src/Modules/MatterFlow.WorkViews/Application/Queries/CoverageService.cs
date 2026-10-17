@@ -25,6 +25,11 @@ public sealed class CoverageService(DbContext db, IClock clock, IUserTimeZone ti
             return resolvedScope.Error!;
         var podScope = resolvedScope.Value;
 
+        var groupBy = CoverageRules.GroupBys.FirstOrDefault(g => string.Equals(g, query.GroupBy ?? CoverageRules.GroupMatrix, StringComparison.OrdinalIgnoreCase));
+        if (groupBy is null)
+            return Error.Validation("groupBy", "UNKNOWN_GROUP_BY", $"Unknown groupBy '{query.GroupBy}'. Allowed: {string.Join(", ", CoverageRules.GroupBys)}.");
+        var byType = groupBy == CoverageRules.GroupType;
+
         var queueClock = QueueClock.Create(clock.UtcNow, timeZone);
 
         var resolved = DashboardPeriods.Resolve(query.Period, query.From, query.To, query.PeriodDays, queueClock.Today);
@@ -63,19 +68,50 @@ public sealed class CoverageService(DbContext db, IClock clock, IUserTimeZone ti
             .Select(t => new { t.Id, t.Name, t.IconKey, t.IsActive })
             .ToListAsync(ct);
 
+        var typeTotals = cells.GroupBy(c => c.TaskTypeId).ToDictionary(g => g.Key, g => g.Sum(c => c.Completed));
+        var typePeople = cells.GroupBy(c => c.TaskTypeId).ToDictionary(g => g.Key, g => g.Select(c => c.UserId).Distinct().Count());
+        var typeRows = types
+            .OrderBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(t => t.Id)
+            .Select(t => new CoverageTaskType(t.Id, t.Name, t.IconKey, t.IsActive, typeTotals.GetValueOrDefault(t.Id), typePeople.GetValueOrDefault(t.Id)))
+            .ToList();
+        var totalCompleted = cells.Sum(c => c.Completed);
+        var zone = queueClock.ZoneId;
+        var generatedAt = DateTime.SpecifyKind(queueClock.NowUtc, DateTimeKind.Utc);
+
+        if (byType)
+        {
+            // The type orientation: the same grouped counts, per type the people alphabetically (never by count), without the people columns and cells.
+            var byId = users.ToDictionary(u => u.Id);
+            var groups = cells.GroupBy(c => c.TaskTypeId).ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<CoverageTypePerson>)[.. g
+                    .Select(c => new CoverageTypePerson(c.UserId, byId[c.UserId].DisplayName, byId[c.UserId].IsActive, c.Completed))
+                    .OrderBy(p => p.DisplayName, StringComparer.CurrentCultureIgnoreCase).ThenBy(p => p.UserId)]);
+            var roster = podScope.IsAll
+                ? null
+                : (IReadOnlyList<CoveragePerson>)[.. users.Where(u => u.IsActive)
+                    .OrderBy(u => u.DisplayName, StringComparer.CurrentCultureIgnoreCase).ThenBy(u => u.Id)
+                    .Select(u => new CoveragePerson(u.Id, u.DisplayName, u.IsActive))];
+            return new CoverageBoard(
+                zone,
+                generatedAt,
+                DashboardRules.Date(from),
+                DashboardRules.Date(to),
+                to.DayNumber - from.DayNumber + 1,
+                typeRows,
+                [],
+                [],
+                new CoverageSummary(typeRows.Count, users.Count, typeRows.Count(t => t.PeopleWhoHandledIt < 2), totalCompleted),
+                [.. typeRows.Select(t => new CoverageTypeGroup(t.TaskTypeId, groups.GetValueOrDefault(t.TaskTypeId) ?? []))],
+                roster);
+        }
+
         var pods = (await db.Set<PodMember>().AsNoTracking().Where(m => m.Pod.IsActive && ids.Contains(m.UserId))
                 .Select(m => new { m.UserId, m.PodId, m.Pod.Name, m.IsPrimary }).ToListAsync(ct))
             .ToLookup(m => m.UserId);
 
         var states = await availability.EvaluateAsync([.. ids], queueClock.NowUtc, ct);
         var userTotals = cells.GroupBy(c => c.UserId).ToDictionary(g => g.Key, g => g.Sum(c => c.Completed));
-        var typeTotals = cells.GroupBy(c => c.TaskTypeId).ToDictionary(g => g.Key, g => g.Sum(c => c.Completed));
-        var typePeople = cells.GroupBy(c => c.TaskTypeId).ToDictionary(g => g.Key, g => g.Select(c => c.UserId).Distinct().Count());
-
-        var typeRows = types
-            .OrderBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(t => t.Id)
-            .Select(t => new CoverageTaskType(t.Id, t.Name, t.IconKey, t.IsActive, typeTotals.GetValueOrDefault(t.Id), typePeople.GetValueOrDefault(t.Id)))
-            .ToList();
         var userRows = users
             .OrderBy(u => u.DisplayName, StringComparer.CurrentCultureIgnoreCase).ThenBy(u => u.Id)
             .Select(u => new CoverageUser(
@@ -88,11 +124,11 @@ public sealed class CoverageService(DbContext db, IClock clock, IUserTimeZone ti
                 userTotals.GetValueOrDefault(u.Id)))
             .ToList();
 
-        var summary = new CoverageSummary(typeRows.Count, userRows.Count, typeRows.Count(t => t.PeopleWhoHandledIt < 2), cells.Sum(c => c.Completed));
+        var summary = new CoverageSummary(typeRows.Count, userRows.Count, typeRows.Count(t => t.PeopleWhoHandledIt < 2), totalCompleted);
         var cellRows = cells.OrderBy(c => c.TaskTypeId).ThenBy(c => c.UserId).Select(c => new CoverageCell(c.UserId, c.TaskTypeId, c.Completed)).ToList();
         return new CoverageBoard(
-            queueClock.ZoneId,
-            DateTime.SpecifyKind(queueClock.NowUtc, DateTimeKind.Utc),
+            zone,
+            generatedAt,
             DashboardRules.Date(from),
             DashboardRules.Date(to),
             to.DayNumber - from.DayNumber + 1,

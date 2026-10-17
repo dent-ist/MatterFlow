@@ -144,3 +144,28 @@ export function aCoverageBoard(overrides: Partial<CoverageBoard> = {}): Coverage
     ...overrides,
   };
 }
+
+/** The `groupBy=type` answer for `aCoverageBoard()`: the same counts per type, the people alphabetical, no users or cells. */
+export function aCoverageTypeBoard(overrides: Partial<CoverageBoard> = {}): CoverageBoard {
+  const board = aCoverageBoard();
+  const byId = new Map(board.users.map((u) => [u.userId, u]));
+  return {
+    ...board,
+    users: [],
+    cells: [],
+    byType: board.taskTypes.map((t) => ({
+      taskTypeId: t.taskTypeId,
+      people: board.cells
+        .filter((c) => c.taskTypeId === t.taskTypeId)
+        .map((c) => ({
+          userId: c.userId,
+          displayName: byId.get(c.userId)!.displayName,
+          isActive: byId.get(c.userId)!.isActive,
+          completed: c.completed,
+        }))
+        .sort((a, b) => a.displayName.localeCompare(b.displayName)),
+    })),
+    scopePeople: undefined,
+    ...overrides,
+  };
+}

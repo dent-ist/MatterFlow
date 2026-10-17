@@ -33,22 +33,36 @@ import { DashState, focusAfterRetry } from '../ui/dash-state';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { CoverageDrawer, CoverageTarget } from './coverage-drawer';
 import {
+  DEFAULT_ORIENTATION,
+  MATRIX_COLS,
+  MATRIX_ROWS,
   Matrix,
   MatrixCell,
+  ORIENTATION_PARAM,
+  Orientation,
   RELATIVE_LABELS,
+  STATUS_TEXT,
   STEP_COLORS,
   STEP_LABELS,
   Scale,
   Step,
+  TYPE_ROW_ORDERS,
+  TYPE_ROW_ORDER_LABELS,
   TypeOrder,
+  TypeRowOrder,
   UserOrder,
   buildMatrix,
+  buildTypeRows,
   cellLabel,
   isOrder,
+  isOrientation,
   isScale,
+  isTypeRowOrder,
   plural,
-  thinText,
 } from './coverage-model';
+import { CoverageNotes } from './coverage-notes';
+import { CoverageOrientation } from './coverage-orientation';
+import { CoverageTypes, TypePick } from './coverage-types';
 import { CoveragePrefs } from './coverage-prefs';
 import { UsersFilters } from './users-model';
 import { DashScope } from '../dash-scope';
@@ -56,16 +70,29 @@ import { DashScope } from '../dash-scope';
 type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
 
 /**
- * The Coverage view of the Users tab: a heat map of how many tasks each person completed per task type in a period, for planning training
- * and cross-coverage. It is a real table (task types in the rows with their icon, people in the columns, totals at the end, "People who
- * handled it" per type). The number is written in every cell and a zero is hatched, so colour is never the only cue; the five steps keep
- * 4.5:1 for their numbers. Scale is relative to the task type (default) or absolute. The person is the assignee of the completed task.
+ * The Coverage view of the Users tab, in two orientations (WP11): "By task type" (default; `CoverageTypes`: per task type who handled it, how many,
+ * a status) and "Matrix" (`cov=matrix`): a heat map of how many tasks each person completed per task type, for planning training and
+ * cross-coverage. The matrix is a real table (task types in the rows with their icon, people in the columns, totals at the end, "People who
+ * handled it" per type). The number is written in every non-zero cell; a zero is blank (named for screen readers) and the possible training
+ * gaps are outlined with an icon only while the "Training gaps" toggle is on. The five steps keep 4.5:1 for their numbers. Scale is relative to
+ * the task type (default) or absolute. The person is the assignee of the completed task. Two statements above both orientations: types nobody
+ * handled (neutral, collapsed) and types handled by only one person (amber, a status region).
  * Keyboard: the matrix is one tab stop; arrow keys, Home and End move between cells, Enter or Space opens the cell's tasks.
+ * Bounded rendering: at first 30 people and 60 task types are drawn, "Show more" adds the same again.
  * Not a ranking: ordering by total is labelled neutrally, there is no score, and the heading says what the view is for.
  */
 @Component({
   selector: 'mf-coverage-view',
-  imports: [PeriodControl, SearchBox, TaskTypeIcon, DashState, CoverageDrawer],
+  imports: [
+    PeriodControl,
+    SearchBox,
+    TaskTypeIcon,
+    DashState,
+    CoverageDrawer,
+    CoverageTypes,
+    CoverageNotes,
+    CoverageOrientation,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h3 class="head" id="cv-h" data-coverage-heading>
@@ -73,76 +100,102 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
     </h3>
     <p class="frame" data-coverage-frame>
       <i class="pi pi-info-circle" aria-hidden="true"></i>
-      <span>
-        Each cell is the number of tasks of that type the person completed {{ phrase() }}. A task
-        counts for the person it was assigned to when it was completed. Cancelled tasks are not
-        counted.
-      </span>
+      @if (orientation() === 'type') {
+        <span>
+          Each row lists the people who completed at least one task of that type
+          {{ phrase() }}, in alphabetical order. A task counts for the person it was assigned to
+          when it was completed. Cancelled tasks are not counted.
+        </span>
+      } @else {
+        <span>
+          Each cell is the number of tasks of that type the person completed {{ phrase() }}. A task
+          counts for the person it was assigned to when it was completed. Cancelled tasks are not
+          counted.
+        </span>
+      }
     </p>
 
     <div class="bar" role="toolbar" aria-label="Coverage controls">
+      <mf-coverage-orientation [value]="orientation()" (valueChange)="setOrientation($event)" />
       <mf-period-control [period]="period()" [longWindows]="true" />
       <mf-search-box
         class="search"
         role="search"
         inputId="cv-q"
-        label="Search people by name"
-        placeholder="Search people by name"
+        [label]="searchLabel()"
+        [placeholder]="searchLabel()"
         [hideLabel]="true"
         [hintOnFocus]="true"
         [value]="filters().q"
         (searchChange)="filtersChange.emit({ q: $event })"
       />
-      <div class="fld">
-        <label class="lbl" for="cv-scale">Colour scale</label>
-        <select
-          id="cv-scale"
-          class="mf-control mf-control--compact"
-          data-coverage-scale
-          [value]="scale()"
-          (change)="onScale($any($event.target).value)"
+      @if (orientation() === 'type') {
+        <div class="fld">
+          <label class="lbl" for="cv-order">Order</label>
+          <select
+            id="cv-order"
+            class="mf-control mf-control--compact"
+            data-coverage-row-order
+            [value]="rowOrder()"
+            (change)="onRowOrder($any($event.target).value)"
+          >
+            @for (o of rowOrders; track o) {
+              <option [value]="o" [selected]="rowOrder() === o">{{ rowOrderLabels[o] }}</option>
+            }
+          </select>
+        </div>
+      } @else {
+        <div class="fld">
+          <label class="lbl" for="cv-scale">Colour scale</label>
+          <select
+            id="cv-scale"
+            class="mf-control mf-control--compact"
+            data-coverage-scale
+            [value]="scale()"
+            (change)="onScale($any($event.target).value)"
+          >
+            <option value="relative" [selected]="scale() === 'relative'">
+              Relative to the task type
+            </option>
+            <option value="absolute" [selected]="scale() === 'absolute'">Absolute</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label class="lbl" for="cv-rows">Task types</label>
+          <select
+            id="cv-rows"
+            class="mf-control mf-control--compact"
+            data-coverage-type-order
+            [value]="typeOrder()"
+            (change)="onTypeOrder($any($event.target).value)"
+          >
+            <option value="name" [selected]="typeOrder() === 'name'">By name</option>
+            <option value="total" [selected]="typeOrder() === 'total'">By total completed</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label class="lbl" for="cv-cols">People</label>
+          <select
+            id="cv-cols"
+            class="mf-control mf-control--compact"
+            data-coverage-user-order
+            [value]="userOrder()"
+            (change)="onUserOrder($any($event.target).value)"
+          >
+            <option value="name" [selected]="userOrder() === 'name'">By name</option>
+            <option value="total" [selected]="userOrder() === 'total'">By total completed</option>
+          </select>
+        </div>
+        <button
+          type="button"
+          class="mf-btn toggle"
+          data-coverage-gaps
+          [attr.aria-pressed]="showGaps()"
+          (click)="showGaps.set(!showGaps())"
         >
-          <option value="relative" [selected]="scale() === 'relative'">
-            Relative to the task type
-          </option>
-          <option value="absolute" [selected]="scale() === 'absolute'">Absolute</option>
-        </select>
-      </div>
-      <div class="fld">
-        <label class="lbl" for="cv-rows">Task types</label>
-        <select
-          id="cv-rows"
-          class="mf-control mf-control--compact"
-          data-coverage-type-order
-          [value]="typeOrder()"
-          (change)="onTypeOrder($any($event.target).value)"
-        >
-          <option value="name" [selected]="typeOrder() === 'name'">By name</option>
-          <option value="total" [selected]="typeOrder() === 'total'">By total completed</option>
-        </select>
-      </div>
-      <div class="fld">
-        <label class="lbl" for="cv-cols">People</label>
-        <select
-          id="cv-cols"
-          class="mf-control mf-control--compact"
-          data-coverage-user-order
-          [value]="userOrder()"
-          (change)="onUserOrder($any($event.target).value)"
-        >
-          <option value="name" [selected]="userOrder() === 'name'">By name</option>
-          <option value="total" [selected]="userOrder() === 'total'">By total completed</option>
-        </select>
-      </div>
-      <button
-        type="button"
-        class="mf-btn toggle"
-        data-coverage-gaps
-        [attr.aria-pressed]="gapsOnly()"
-        (click)="gapsOnly.set(!gapsOnly())"
-      >
-        <i class="pi pi-filter" aria-hidden="true"></i>Training gaps
-      </button>
+          <i class="pi pi-filter" aria-hidden="true"></i>Training gaps
+        </button>
+      }
       <span class="grow"></span>
     </div>
 
@@ -180,35 +233,67 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
         </div>
       }
       @default {
-        @if (matrix(); as m) {
+        @if (board()) {
+          <mf-coverage-notes [types]="board()!.taskTypes" />
+        }
+        @if (orientation() === 'type') {
+          @if (board(); as b) {
+            <ul class="strip" aria-label="Coverage summary" data-coverage-summary>
+              <li class="chip" data-summary="types">
+                <strong>{{ typeRows().length }}</strong> task
+                {{ typeRows().length === 1 ? 'type' : 'types' }}
+              </li>
+              <li class="chip" data-summary="completed">
+                <strong>{{ typeCompleted() }}</strong> completed
+              </li>
+              <li class="chip" data-summary="people">
+                <strong>{{ typePeople() }}</strong>
+                {{ typePeople() === 1 ? 'person' : 'people' }} handled them
+              </li>
+            </ul>
+            @if (typeRows().length === 0) {
+              <div class="empty" data-coverage-empty>
+                <i class="pi pi-table" aria-hidden="true"></i>
+                @if (filtered()) {
+                  <span>No task types or people match these filters.</span>
+                } @else {
+                  <span>There is nothing to show for this period.</span>
+                }
+              </div>
+            } @else {
+              <mf-coverage-types
+                [rows]="typeRows()"
+                [roster]="b.scopePeople ?? null"
+                [scopeLabel]="scopeLabel()"
+                [phrase]="phrase()"
+                (openTasks)="openPick($event)"
+              />
+            }
+          }
+        } @else if (matrix(); as m) {
           <ul class="strip" aria-label="Coverage summary" data-coverage-summary>
             <li class="chip" data-summary="people">
               <strong>{{ m.cols.length }}</strong> {{ m.cols.length === 1 ? 'person' : 'people' }}
             </li>
             <li class="chip" data-summary="types">
               <strong>{{ m.rows.length }}</strong> task
-              {{ m.rows.length === 1 ? 'type' : 'types' }} shown
+              {{ m.rows.length === 1 ? 'type' : 'types' }}
             </li>
             <li class="chip" data-summary="completed">
               <strong>{{ m.grand }}</strong> completed
             </li>
-            <li class="chip" [class.chip--warn]="m.thinTypes > 0" data-summary="thin">
-              <i
-                class="pi"
-                [class]="m.thinTypes > 0 ? 'pi-exclamation-triangle' : 'pi-check-circle'"
-                aria-hidden="true"
-              ></i>
-              {{ thin(m.thinTypes) }}
-            </li>
-            <li class="chip" data-summary="gaps">
-              <strong>{{ m.gapCount }}</strong> training {{ m.gapCount === 1 ? 'gap' : 'gaps' }}
-              <span class="sub">(0 for someone active)</span>
-            </li>
+            @if (showGaps()) {
+              <li class="chip" data-summary="gaps">
+                <strong>{{ m.gapCount }}</strong> possible training
+                {{ m.gapCount === 1 ? 'gap' : 'gaps' }}
+                <span class="sub">(0 for someone active)</span>
+              </li>
+            }
           </ul>
 
           <ul class="legend" aria-label="Colour legend" data-coverage-legend>
             <li class="lg lg--zero">
-              <span class="sw sw--zero" aria-hidden="true">0</span>None (0)
+              <span class="sw sw--zero" aria-hidden="true"></span>Blank = 0 in this period
             </li>
             @for (s of steps; track s) {
               <li class="lg">
@@ -223,20 +308,16 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
               </li>
             }
             <li class="lg lg--gap">
-              <span class="sw sw--gap" aria-hidden="true">0</span>Training gap (0 for someone who
-              completed other types)
+              <span class="sw sw--gap" aria-hidden="true"
+                ><i class="pi pi-exclamation-circle"></i></span
+              >Outline = possible training gap (Training gaps toggle)
             </li>
           </ul>
 
           @if (m.rows.length === 0 || m.cols.length === 0) {
             <div class="empty" data-coverage-empty>
               <i class="pi pi-table" aria-hidden="true"></i>
-              @if (gapsOnly()) {
-                <span
-                  >No training gaps {{ phrase() }}. Everyone active completed every task type
-                  shown.</span
-                >
-              } @else if (filtered()) {
+              @if (filtered()) {
                 <span>No people match these filters.</span>
               } @else {
                 <span>There is nothing to show for this period.</span>
@@ -250,17 +331,33 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
               aria-labelledby="cv-h"
               data-coverage-region
             >
-              <table class="tbl" data-coverage-table>
+              <table class="tbl" data-coverage-table [attr.data-gaps]="showGaps() ? 'on' : null">
                 <caption class="sr-only">
                   Tasks completed per task type (rows) and person (columns)
                   {{
                     phrase()
+                  }}. Showing
+                  {{
+                    visCols().length
                   }}
+                  of
+                  {{
+                    m.cols.length
+                  }}
+                  people and
+                  {{
+                    visRows().length
+                  }}
+                  of
+                  {{
+                    m.rows.length
+                  }}
+                  task types.
                 </caption>
                 <thead>
                   <tr>
                     <th scope="col" class="corner">Task type</th>
-                    @for (u of m.cols; track u.userId) {
+                    @for (u of visCols(); track u.userId) {
                       <th scope="col" class="person" [attr.data-person]="u.userId">
                         <span class="avatar" aria-hidden="true">{{ u.initials }}</span>
                         <span class="pname">{{ u.displayName }}</span>
@@ -279,31 +376,36 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
                   </tr>
                 </thead>
                 <tbody>
-                  @for (r of m.rows; track r.type.taskTypeId; let ri = $index) {
+                  @for (r of visRows(); track r.type.taskTypeId; let ri = $index) {
                     <tr [attr.data-type]="r.type.taskTypeId" [attr.data-type-name]="r.type.name">
                       <th scope="row" class="ttype">
                         <span class="twrap">
                           <mf-task-type-icon [iconKey]="r.type.iconKey" size="sm" />
                           <span>{{ r.type.name }}</span>
                           @if (!r.type.isActive) {
-                            <span class="tag">Retired</span>
+                            <span class="tag">Inactive</span>
                           }
                         </span>
                       </th>
-                      @for (c of r.cells; track c.userId; let ci = $index) {
+                      @for (
+                        c of r.cells.slice(0, visCols().length);
+                        track c.userId;
+                        let ci = $index
+                      ) {
                         <td
                           class="cell"
                           [class.cell--zero]="c.count === 0"
-                          [class.cell--gap]="c.gap"
+                          [class.cell--gap]="c.gap && showGaps()"
                           [attr.data-step]="c.step"
                           [attr.data-count]="c.count"
-                          [attr.data-gap]="c.gap ? 'true' : null"
+                          [attr.data-gap]="c.gap && showGaps() ? 'true' : null"
                           [style.background]="c.step > 0 ? colors[nz(c.step)].bg : null"
                           [style.color]="c.step > 0 ? colors[nz(c.step)].fg : null"
                         >
                           <button
                             type="button"
                             class="hit"
+                            [class.hit--zero]="c.count === 0"
                             [attr.data-cell]="c.userId + ':' + c.taskTypeId"
                             [attr.data-r]="ri"
                             [attr.data-c]="ci"
@@ -314,19 +416,35 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
                             (focus)="setActive(ri, ci)"
                             (keydown)="onKey($event, m, ri, ci)"
                           >
-                            <span class="n">{{ c.count }}</span>
-                            @if (c.gap) {
+                            @if (c.count > 0) {
+                              <span class="n">{{ c.count }}</span>
+                            }
+                            @if (c.gap && showGaps()) {
                               <i class="pi pi-exclamation-circle mark" aria-hidden="true"></i>
                             }
                           </button>
                         </td>
                       }
                       <td class="num total" data-row-total>{{ r.total }}</td>
-                      <td class="num" [class.thin]="r.thin" data-people>
-                        @if (r.thin) {
-                          <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                      <td class="num" data-people>
+                        @if (r.status !== 'many') {
+                          <span
+                            class="handled"
+                            [class.handled--one]="r.status === 'one'"
+                            [attr.data-status]="r.status"
+                          >
+                            <i
+                              class="pi"
+                              [class]="
+                                r.status === 'one' ? 'pi-exclamation-triangle' : 'pi-minus-circle'
+                              "
+                              aria-hidden="true"
+                            ></i>
+                            {{ statusText[r.status] }}
+                          </span>
+                        } @else {
+                          {{ plural(r.people, 'person', 'people') }}
                         }
-                        {{ r.people === 0 ? 'No one' : plural(r.people, 'person', 'people') }}
                       </td>
                     </tr>
                   }
@@ -334,7 +452,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
                 <tfoot>
                   <tr>
                     <th scope="row" class="ttype">Total</th>
-                    @for (t of m.colTotals; track $index) {
+                    @for (t of visColTotals(); track $index) {
                       <td class="num total" data-col-total>{{ t }}</td>
                     }
                     <td class="num total" data-grand-total>{{ m.grand }}</td>
@@ -342,6 +460,26 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
                   </tr>
                 </tfoot>
               </table>
+              @if (moreCols() > 0 || moreRows() > 0) {
+                <div class="more" data-matrix-more>
+                  @if (moreCols() > 0) {
+                    <button type="button" class="mf-btn" data-cols-more (click)="showMoreCols()">
+                      Show {{ Math.min(moreCols(), colsPage) }} more
+                      {{ Math.min(moreCols(), colsPage) === 1 ? 'person' : 'people' }}
+                    </button>
+                  }
+                  @if (moreRows() > 0) {
+                    <button type="button" class="mf-btn" data-rows-more (click)="showMoreRows()">
+                      Show {{ Math.min(moreRows(), rowsPage) }} more task
+                      {{ Math.min(moreRows(), rowsPage) === 1 ? 'type' : 'types' }}
+                    </button>
+                  }
+                  <span class="sub"
+                    >{{ visCols().length }} of {{ m.cols.length }} people, {{ visRows().length }} of
+                    {{ m.rows.length }} task types shown</span
+                  >
+                </div>
+              }
             </div>
           }
         }
@@ -365,9 +503,11 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       :host > * {
         flex: none;
       }
-      :host > .region {
+      :host > .region,
+      :host > mf-coverage-types {
         flex: 1 1 0;
         max-height: none;
+        min-height: 0;
       }
     }
     .head {
@@ -443,11 +583,14 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       border-radius: 999px;
       font-size: var(--mf-fs-sm);
     }
-    .chip--warn {
-      color: var(--mf-warning);
-      background: var(--mf-warning-bg);
-      border-color: var(--mf-warning);
-      font-weight: 600;
+    .more {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s3);
+      padding: var(--mf-s3);
+      position: sticky;
+      left: 0;
     }
     .sub {
       color: var(--mf-text-muted);
@@ -468,30 +611,16 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       border-radius: var(--mf-radius);
       font-weight: 700;
     }
+    /* A zero is a blank cell on a light neutral background: no hatch, no dashed edge (C2, #135). */
     .sw--zero,
     .cell--zero {
-      color: var(--mf-text);
-      background: repeating-linear-gradient(
-        135deg,
-        var(--mf-surface) 0 5px,
-        var(--mf-border) 5px 7px
-      );
+      background: var(--mf-surface-alt);
     }
-    .sw--zero {
-      border-style: dashed;
-    }
-    /* A dashed inner edge marks a zero without changing the table's own borders. */
-    .cell--zero {
-      outline: 1px dashed var(--mf-border-strong);
-      outline-offset: -3px;
-    }
+    /* A possible training gap: an inset outline (3:1) and an icon, only while the "Training gaps" toggle is on. */
     .sw--gap {
-      color: var(--mf-text);
-      background: repeating-linear-gradient(
-        135deg,
-        var(--mf-warning-bg) 0 5px,
-        var(--mf-border) 5px 7px
-      );
+      display: inline-grid;
+      color: var(--mf-warning);
+      background: var(--mf-surface);
       border: 2px solid var(--mf-warning);
     }
     .region {
@@ -591,11 +720,6 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       text-align: center;
     }
     .cell--gap {
-      background: repeating-linear-gradient(
-        135deg,
-        var(--mf-warning-bg) 0 5px,
-        var(--mf-border) 5px 7px
-      );
       box-shadow: inset 0 0 0 2px var(--mf-warning);
     }
     .hit {
@@ -614,13 +738,6 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       font-weight: 700;
       font-variant-numeric: tabular-nums;
       cursor: pointer;
-    }
-    .cell--zero .n,
-    .cell--gap .n {
-      padding: 0 6px;
-      color: var(--mf-text);
-      background: var(--mf-surface);
-      border-radius: var(--mf-radius);
     }
     .mark {
       color: var(--mf-warning);
@@ -641,10 +758,19 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       font-weight: 700;
       background: var(--mf-surface-alt);
     }
-    .thin {
+    .handled {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      color: var(--mf-text-muted);
+      font-weight: 600;
+    }
+    .handled--one {
+      padding: 0 var(--mf-s2);
       color: var(--mf-warning);
       background: var(--mf-warning-bg);
-      font-weight: 600;
+      border: 1px solid var(--mf-warning);
+      border-radius: 999px;
     }
     tfoot td,
     tfoot th {
@@ -678,18 +804,6 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       50% {
         opacity: 0.55;
       }
-    }
-    .alert {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s3);
-      margin: 0 0 var(--mf-s3);
-      padding: var(--mf-s3) var(--mf-s4);
-      color: var(--mf-danger);
-      background: var(--mf-danger-bg);
-      border: 1px solid var(--mf-danger);
-      border-radius: var(--mf-radius);
     }
     @media (max-width: 560px) {
       .search {
@@ -735,6 +849,12 @@ export class CoverageView implements OnInit {
   protected readonly relativeLabels = RELATIVE_LABELS;
   protected readonly bones = [1, 2, 3, 4, 5];
   protected readonly plural = plural;
+  protected readonly Math = Math;
+  protected readonly statusText = STATUS_TEXT;
+  protected readonly colsPage = MATRIX_COLS;
+  protected readonly rowsPage = MATRIX_ROWS;
+  protected readonly rowOrders = TYPE_ROW_ORDERS;
+  protected readonly rowOrderLabels = TYPE_ROW_ORDER_LABELS;
 
   private readonly dashPrefs = inject(DashboardPrefs);
   private readonly scope = inject(DashScope);
@@ -743,7 +863,13 @@ export class CoverageView implements OnInit {
   protected readonly scale = this.prefs.scale;
   protected readonly typeOrder = this.prefs.typeOrder;
   protected readonly userOrder = this.prefs.userOrder;
-  protected readonly gapsOnly = signal(false);
+  protected readonly rowOrder = this.prefs.rowOrder;
+  /** By task type (default) or the matrix; the address carries `cov=matrix` only for the latter. */
+  protected readonly orientation = signal<Orientation>(DEFAULT_ORIENTATION);
+  /** The "Training gaps" toggle: outlines the possible gaps of the matrix (default off, C2). */
+  protected readonly showGaps = signal(false);
+  private readonly colLimit = signal(MATRIX_COLS);
+  private readonly rowLimit = signal(MATRIX_ROWS);
   protected readonly state = signal<LoadState>('loading');
   protected readonly board = signal<CoverageBoard | null>(null);
   /** True while a refresh is running (the Dashboard's tab row shows it on its refresh icon). */
@@ -770,16 +896,51 @@ export class CoverageView implements OnInit {
           scale: this.scale(),
           typeOrder: this.typeOrder(),
           userOrder: this.userOrder(),
-          gapsOnly: this.gapsOnly(),
         })
       : null;
   });
+  protected readonly typeRows = computed(() => {
+    const b = this.board();
+    if (!b || this.orientation() !== 'type') return [];
+    // The search finds a task type or a person by name (it keeps the types whose name or one of whose people match).
+    const term = this.filters().q.trim().toLowerCase();
+    const rows = buildTypeRows(b, this.rowOrder());
+    return term
+      ? rows.filter(
+          (r) =>
+            r.type.name.toLowerCase().includes(term) ||
+            r.people.some((p) => p.displayName.toLowerCase().includes(term)),
+        )
+      : rows;
+  });
+  protected readonly typeCompleted = computed(() =>
+    this.typeRows().reduce((n, r) => n + r.type.total, 0),
+  );
+  /** The people who handled at least one of the types shown. */
+  protected readonly typePeople = computed(
+    () => new Set(this.typeRows().flatMap((r) => r.people.map((p) => p.userId))).size,
+  );
+  protected readonly searchLabel = computed(() =>
+    this.orientation() === 'type' ? 'Search task types or people by name' : 'Search people by name',
+  );
+  /** The label of the page scope for "people in <pod> who have not handled this type". */
+  protected readonly scopeLabel = computed(
+    () => this.scope.options().find((o) => o.value === this.scope.scope())?.label ?? 'this pod',
+  );
+  // Bounded rendering: 500 people x 30 types is 15,000 cells, so the matrix draws the first people and task types and offers "Show more".
+  protected readonly visCols = computed(() => this.matrix()?.cols.slice(0, this.colLimit()) ?? []);
+  protected readonly visRows = computed(() => this.matrix()?.rows.slice(0, this.rowLimit()) ?? []);
+  protected readonly visColTotals = computed(
+    () => this.matrix()?.colTotals.slice(0, this.colLimit()) ?? [],
+  );
+  protected readonly moreCols = computed(
+    () => (this.matrix()?.cols.length ?? 0) - this.visCols().length,
+  );
+  protected readonly moreRows = computed(
+    () => (this.matrix()?.rows.length ?? 0) - this.visRows().length,
+  );
   protected nz(step: Step): Exclude<Step, 0> {
     return (step === 0 ? 1 : step) as Exclude<Step, 0>;
-  }
-
-  protected thin(n: number): string {
-    return thinText(n);
   }
 
   constructor() {
@@ -805,6 +966,8 @@ export class CoverageView implements OnInit {
 
   ngOnInit(): void {
     this.prefs.ensureLoaded();
+    const asked = this.route.snapshot.queryParamMap.get(ORIENTATION_PARAM);
+    if (isOrientation(asked)) this.orientation.set(asked);
     this.load();
   }
 
@@ -821,6 +984,35 @@ export class CoverageView implements OnInit {
 
   protected onTypeOrder(value: string): void {
     if (isOrder(value)) this.prefs.remember({ typeOrder: value as TypeOrder });
+  }
+
+  protected onRowOrder(value: string): void {
+    if (isTypeRowOrder(value)) this.prefs.remember({ rowOrder: value as TypeRowOrder });
+  }
+
+  /** By task type or Matrix: reads the other payload (`groupBy=type` is small; the matrix is the detail view) and writes `cov=matrix` only for the matrix. */
+  protected setOrientation(next: Orientation): void {
+    if (next === this.orientation()) return;
+    this.orientation.set(next);
+    this.board.set(null);
+    this.colLimit.set(MATRIX_COLS);
+    this.rowLimit.set(MATRIX_ROWS);
+    this.activeR.set(0);
+    this.activeC.set(0);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { [ORIENTATION_PARAM]: next === DEFAULT_ORIENTATION ? null : next },
+      queryParamsHandling: 'merge',
+    });
+    this.load();
+  }
+
+  protected showMoreCols(): void {
+    this.colLimit.update((n) => n + MATRIX_COLS);
+  }
+
+  protected showMoreRows(): void {
+    this.rowLimit.update((n) => n + MATRIX_ROWS);
   }
 
   protected onUserOrder(value: string): void {
@@ -845,17 +1037,20 @@ export class CoverageView implements OnInit {
       this.refreshFailed.set(false);
     }
     const args = periodArgs(this.period());
+    const base = [
+      args.period,
+      args.from,
+      args.to,
+      undefined,
+      undefined,
+      undefined,
+      this.scope.scope(),
+    ] as const;
     const start = () =>
-      this.api
-        .getDashboardCoverage(
-          args.period,
-          args.from,
-          args.to,
-          undefined,
-          undefined,
-          undefined,
-          this.scope.scope(),
-        )
+      (this.orientation() === 'type'
+        ? this.api.getDashboardCoverage(...base, 'type')
+        : this.api.getDashboardCoverage(...base)
+      )
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (board) => {
@@ -868,7 +1063,7 @@ export class CoverageView implements OnInit {
             this.finishRetry('ready');
             if (announce) {
               this.live.set(
-                `Coverage refreshed. ${plural(board.users.length, 'person', 'people')}, ${plural(board.taskTypes.length, 'task type')}.`,
+                `Coverage refreshed. ${plural(board.summary.users, 'person', 'people')}, ${plural(board.taskTypes.length, 'task type')}.`,
               );
             }
           },
@@ -916,8 +1111,16 @@ export class CoverageView implements OnInit {
     const b = this.board();
     if (!b) return;
     const cell: MatrixCell = m.rows[r].cells[c];
+    // A zero opens nothing (it only announces its name); a count opens the tasks behind it.
+    if (cell.count === 0) return;
     const user: CoverageUser = m.cols[c];
     this.target.set({ user, type: m.rows[r].type, from: b.from, to: b.to, count: cell.count });
+  }
+
+  /** A person's count in the By task type details. */
+  protected openPick(pick: TypePick): void {
+    const b = this.board();
+    if (b) this.target.set({ ...pick, from: b.from, to: b.to });
   }
 
   protected closeCell(): void {
@@ -929,7 +1132,9 @@ export class CoverageView implements OnInit {
         const active = document.activeElement;
         if (active && active !== document.body && !active.closest('.p-dialog-mask')) return;
         this.host.nativeElement
-          .querySelector<HTMLElement>(`[data-cell="${t.user.userId}:${t.type.taskTypeId}"]`)
+          .querySelector<HTMLElement>(
+            `[data-cell="${t.user.userId}:${t.type.taskTypeId}"], [data-count-for="${t.user.userId}:${t.type.taskTypeId}"]`,
+          )
           ?.focus({ preventScroll: true });
       },
       { injector: this.injector },
@@ -938,8 +1143,8 @@ export class CoverageView implements OnInit {
 
   /** Arrow keys move between cells, Home and End to the row's ends, Ctrl+Home and Ctrl+End to the first and last cell. */
   protected onKey(event: KeyboardEvent, m: Matrix, r: number, c: number): void {
-    const rows = m.rows.length;
-    const cols = m.cols.length;
+    const rows = this.visRows().length;
+    const cols = this.visCols().length;
     let nr = r;
     let nc = c;
     switch (event.key) {

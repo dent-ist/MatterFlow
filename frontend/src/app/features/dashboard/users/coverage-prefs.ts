@@ -1,6 +1,14 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { AuthStore } from '../../../core/auth/auth.store';
-import { Scale, TypeOrder, UserOrder, isOrder, isScale } from './coverage-model';
+import {
+  Scale,
+  TypeOrder,
+  TypeRowOrder,
+  UserOrder,
+  isOrder,
+  isScale,
+  isTypeRowOrder,
+} from './coverage-model';
 
 const PREFIX = 'mf.dashboard.coverage.v1.';
 
@@ -8,11 +16,17 @@ interface Stored {
   scale: Scale;
   typeOrder: TypeOrder;
   userOrder: UserOrder;
+  rowOrder: TypeRowOrder;
 }
 
-const FALLBACK: Stored = { scale: 'relative', typeOrder: 'name', userOrder: 'name' };
+const FALLBACK: Stored = {
+  scale: 'relative',
+  typeOrder: 'name',
+  userOrder: 'name',
+  rowOrder: 'fewest',
+};
 
-/** What the Coverage view remembers per user in this browser: the colour scale (the period is the page's shared one, see DashboardPrefs) and the two orders. Guarded storage. */
+/** What the Coverage view remembers per user in this browser: the colour scale (the period is the page's shared one, see DashboardPrefs), the two matrix orders and the row order of the type view. Guarded storage. */
 @Injectable({ providedIn: 'root' })
 export class CoveragePrefs {
   private readonly auth = inject(AuthStore);
@@ -22,6 +36,7 @@ export class CoveragePrefs {
   readonly scale = signal<Scale>(FALLBACK.scale);
   readonly typeOrder = signal<TypeOrder>(FALLBACK.typeOrder);
   readonly userOrder = signal<UserOrder>(FALLBACK.userOrder);
+  readonly rowOrder = signal<TypeRowOrder>(FALLBACK.rowOrder);
 
   ensureLoaded(): void {
     const userId = this.auth.profile()?.userId ?? 0;
@@ -31,6 +46,7 @@ export class CoveragePrefs {
     this.scale.set(this.stored.scale);
     this.typeOrder.set(this.stored.typeOrder);
     this.userOrder.set(this.stored.userOrder);
+    this.rowOrder.set(this.stored.rowOrder);
   }
 
   remember(choice: Partial<Stored>): void {
@@ -39,6 +55,7 @@ export class CoveragePrefs {
     if (choice.scale) this.scale.set(choice.scale);
     if (choice.typeOrder) this.typeOrder.set(choice.typeOrder);
     if (choice.userOrder) this.userOrder.set(choice.userOrder);
+    if (choice.rowOrder) this.rowOrder.set(choice.rowOrder);
     try {
       localStorage.setItem(PREFIX + (this.loadedFor ?? 0), JSON.stringify(this.stored));
     } catch {
@@ -55,6 +72,7 @@ export class CoveragePrefs {
         scale: isScale(p.scale) ? p.scale : FALLBACK.scale,
         typeOrder: isOrder(p.typeOrder) ? p.typeOrder : FALLBACK.typeOrder,
         userOrder: isOrder(p.userOrder) ? p.userOrder : FALLBACK.userOrder,
+        rowOrder: isTypeRowOrder(p.rowOrder) ? p.rowOrder : FALLBACK.rowOrder,
       };
     } catch {
       return FALLBACK;

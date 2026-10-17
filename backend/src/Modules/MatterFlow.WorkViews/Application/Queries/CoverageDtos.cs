@@ -7,7 +7,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// <summary>Query of the Dashboard task type coverage matrix (epic #68, issue #73 addendum Q).</summary>
 public class CoverageQuery
 {
-    public static readonly IReadOnlyList<string> Keys = ["period", "from", "to", "periodDays", "podId", "includeInactive", "podScope"];
+    public static readonly IReadOnlyList<string> Keys = ["period", "from", "to", "periodDays", "podId", "includeInactive", "podScope", "groupBy"];
 
     /// <summary>Period keyword: <c>7d</c>, <c>30d</c> (default), <c>90d</c>, <c>this-month</c>, <c>last-month</c>, <c>6m</c>, <c>12m</c> or <c>custom</c> (with <c>from</c> and <c>to</c>). Resolved in the viewer's time zone.</summary>
     [FromQuery(Name = "period")]
@@ -36,10 +36,18 @@ public class CoverageQuery
     /// <summary>The page-wide scope (P1, #89): <c>all</c> (default), <c>mine</c> (the caller's active Pods, resolved on the server) or a Pod id. A Pod that does not exist is 400 <c>UNKNOWN_POD</c>; one the caller may not see is 403.</summary>
     [FromQuery(Name = "podScope"), StringLength(20)]
     public string? PodScope { get; init; }
+
+    /// <summary><c>matrix</c> (default): the people, task types and cells of the heat map. <c>type</c>: per task type the people who completed at least one task of it (<c>byType</c>), without the people columns and cells, so the payload stays small however many people there are. Counts are the same in both.</summary>
+    [FromQuery(Name = "groupBy"), StringLength(10)]
+    public string? GroupBy { get; init; }
 }
 
 public static class CoverageRules
 {
+    public const string GroupMatrix = "matrix";
+    public const string GroupType = "type";
+    public static readonly IReadOnlyList<string> GroupBys = [GroupMatrix, GroupType];
+
     public const int DefaultDays = 30;
     public const int MaxDays = 366;
 }
@@ -56,9 +64,19 @@ public sealed record CoverageCell(int UserId, int TaskTypeId, int Completed);
 /// <summary>Strip figures: task types with fewer than two people who handled them (a coverage insight, not a ranking).</summary>
 public sealed record CoverageSummary(int TaskTypes, int Users, int TypesWithFewerThanTwoPeople, int TotalCompleted);
 
+/// <summary>A person who completed tasks of a type (or a member of the scope), by name; the order inside a type is alphabetical, never by count (no ranking).</summary>
+public sealed record CoveragePerson(int UserId, string DisplayName, bool IsActive);
+
+/// <summary>One person's completed tasks of one task type in the period (<c>groupBy=type</c>).</summary>
+public sealed record CoverageTypePerson(int UserId, string DisplayName, bool IsActive, int Completed);
+
+/// <summary>The people who completed at least one task of a task type in the period, alphabetically (<c>groupBy=type</c>).</summary>
+public sealed record CoverageTypeGroup(int TaskTypeId, IReadOnlyList<CoverageTypePerson> People);
+
 /// <summary>
 /// Completed Tasks per person per task type in a period, for training and cross-coverage planning (addendum Q). A Task counts for its assigned
-/// person when it completed (only COMPLETED, not cancelled).
+/// person when it completed (only COMPLETED, not cancelled). With <c>groupBy=type</c>, <c>users</c> and <c>cells</c> are empty and <c>byType</c> lists
+/// per task type the people who handled it; <c>scopePeople</c> is then the roster of the scope (null for all pods) for "who has not handled it".
 /// </summary>
 public sealed record CoverageBoard(
     string TimeZone,
@@ -69,4 +87,6 @@ public sealed record CoverageBoard(
     IReadOnlyList<CoverageTaskType> TaskTypes,
     IReadOnlyList<CoverageUser> Users,
     IReadOnlyList<CoverageCell> Cells,
-    CoverageSummary Summary);
+    CoverageSummary Summary,
+    IReadOnlyList<CoverageTypeGroup>? ByType = null,
+    IReadOnlyList<CoveragePerson>? ScopePeople = null);

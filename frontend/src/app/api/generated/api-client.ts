@@ -8850,9 +8850,10 @@ export interface IDashboardBoardClient {
      * @param podId (optional) 
      * @param includeInactive (optional) 
      * @param podScope (optional) 
+     * @param groupBy (optional) 
      * @return OK
      */
-    getDashboardCoverage(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, podId?: number | undefined, includeInactive?: boolean | undefined, podScope?: string | undefined): Observable<CoverageBoard>;
+    getDashboardCoverage(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, podId?: number | undefined, includeInactive?: boolean | undefined, podScope?: string | undefined, groupBy?: string | undefined): Observable<CoverageBoard>;
 }
 
 @Injectable({
@@ -9056,9 +9057,10 @@ export class DashboardBoardClient implements IDashboardBoardClient {
      * @param podId (optional) 
      * @param includeInactive (optional) 
      * @param podScope (optional) 
+     * @param groupBy (optional) 
      * @return OK
      */
-    getDashboardCoverage(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, podId?: number | undefined, includeInactive?: boolean | undefined, podScope?: string | undefined): Observable<CoverageBoard> {
+    getDashboardCoverage(period?: string | undefined, from?: string | undefined, to?: string | undefined, periodDays?: number | undefined, podId?: number | undefined, includeInactive?: boolean | undefined, podScope?: string | undefined, groupBy?: string | undefined): Observable<CoverageBoard> {
         let url_ = this.baseUrl + "/api/v1/dashboard/coverage?";
         if (period === null)
             throw new globalThis.Error("The parameter 'period' cannot be null.");
@@ -9088,6 +9090,10 @@ export class DashboardBoardClient implements IDashboardBoardClient {
             throw new globalThis.Error("The parameter 'podScope' cannot be null.");
         else if (podScope !== undefined)
             url_ += "podScope=" + encodeURIComponent("" + podScope) + "&";
+        if (groupBy === null)
+            throw new globalThis.Error("The parameter 'groupBy' cannot be null.");
+        else if (groupBy !== undefined)
+            url_ += "groupBy=" + encodeURIComponent("" + groupBy) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -11543,6 +11549,8 @@ export interface CoverageBoard {
     users: CoverageUser[];
     cells: CoverageCell[];
     summary: CoverageSummary;
+    byType?: CoverageTypeGroup[] | undefined;
+    scopePeople?: CoveragePerson[] | undefined;
 
     [key: string]: any;
 }
@@ -11551,6 +11559,14 @@ export interface CoverageCell {
     userId: number;
     taskTypeId: number;
     completed: number;
+
+    [key: string]: any;
+}
+
+export interface CoveragePerson {
+    userId: number;
+    displayName: string;
+    isActive: boolean;
 
     [key: string]: any;
 }
@@ -11571,6 +11587,22 @@ export interface CoverageTaskType {
     isActive: boolean;
     total: number;
     peopleWhoHandledIt: number;
+
+    [key: string]: any;
+}
+
+export interface CoverageTypeGroup {
+    taskTypeId: number;
+    people: CoverageTypePerson[];
+
+    [key: string]: any;
+}
+
+export interface CoverageTypePerson {
+    userId: number;
+    displayName: string;
+    isActive: boolean;
+    completed: number;
 
     [key: string]: any;
 }

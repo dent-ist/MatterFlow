@@ -97,7 +97,7 @@ public class DashboardBoardController(SwimlaneService swimlane, WorkloadService 
 
     /// <summary>
     /// How many Tasks each person completed per task type in a period (<c>from</c> and <c>to</c>, or <c>periodDays</c>, default 30), for training and
-    /// cross-coverage planning (addendum Q). Needs its own permission, <c>Dashboard.ViewCoverage</c> (with <c>Dashboard.View</c>). Cells list only non-zero counts; the matrix fills in zeros.
+    /// cross-coverage planning (addendum Q). Needs its own permission, <c>Dashboard.ViewCoverage</c> (with <c>Dashboard.View</c>). Cells list only non-zero counts; the matrix fills in zeros. <c>groupBy=type</c> answers per task type the people who handled it (alphabetical, no counts ranking) instead of the people and cells.
     /// </summary>
     [HttpGet("coverage", Name = "GetDashboardCoverage")]
     [Authorize(Policy = "Perm:" + Permissions.Dashboard.View)]
