@@ -34,7 +34,7 @@ export function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
  * into not overdue and overdue. The unit and the scope of the numbers are said once in the caption; the region has a visually hidden
  * H2 so the outline stays Breakdowns > Open tasks > Priority / Status / Task type / Age. The cards sit in a grid chosen by the width
  * of the tab (container query): from 1300 px three equal columns (Priority above Status on the left, the Task type card in the middle
- * at the full height of the tab, where its list scrolls inside the card under a pinned title because it grows with every new task type,
+ * as tall as its list but never taller than the visible tab, where its list scrolls inside the card under a pinned title because it grows with every new task type,
  * and Age on the right), two columns (masonry-like, no card is stretched) from 700 px, else one. The DOM and tab order never change
  * with the width: Priority, Status, Task type, Age (the reading order of the three columns). Each card can show a table, bars or a
  * pie; the choice is remembered per card and per user.
@@ -98,7 +98,7 @@ export function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     `
       :host {
         display: block;
-        container-type: inline-size;
+        container: bd / inline-size;
         margin-bottom: var(--mf-s5);
       }
       :host(.mf-fill) {
@@ -164,7 +164,7 @@ export function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
         align-items: start;
       }
       /* Two columns flow top to bottom (Priority and Status, then Task type and Age) without empty space inside or between the cards. */
-      @container (min-width: 700px) {
+      @container bd (min-width: 700px) {
         .grid {
           display: block;
           column-count: 2;
@@ -176,7 +176,7 @@ export function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
         }
       }
       /* Three equal columns from 1300 px of tab width (the tab keeps its 1360 px reading cap): Priority above Status, Task type, Age. */
-      @container (min-width: 1300px) {
+      @container bd (min-width: 1300px) {
         .grid {
           display: grid;
           column-count: auto;
@@ -206,24 +206,24 @@ export function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
           grid-row: 1 / span 2;
         }
       }
-      /* In a fixed page the grid fills the tab and the Task type card takes its full height: its list scrolls inside the card, the title
-         and the caption stay. Shorter than 30rem of room, the whole region scrolls instead. */
+      /* In a fixed page (three columns) the cards take their natural height; nothing is stretched. The Task type card is capped at the
+         visible height of the tab (100cqh of the scroll region, a size container only here): when its list is longer, only the list body
+         scrolls inside the card under the pinned title. Shorter than 12rem of room, the card keeps 12rem and the whole region scrolls.
+         The card spans both rows, which only grows the flexible second row (Status stays where it is). */
       @media (min-width: 768px) and (min-height: 561px) {
-        @container (min-width: 1300px) {
+        @container bd (min-width: 1300px) {
           .bd > .scroll {
             flex: 1 1 0;
             min-height: 0;
+            container: bdscroll / size;
           }
           .grid {
-            flex: 1 1 0;
-            min-height: 30rem;
+            flex: none;
           }
-          /* Its height comes from the grid (the whole tab), never from its own rows: size containment keeps the long list from
-             stretching the rows of Priority and Status. */
           .c-type {
-            align-self: stretch;
-            min-height: 0;
-            contain: size;
+            display: flex;
+            flex-direction: column;
+            max-height: max(100cqh, 12rem);
           }
         }
       }

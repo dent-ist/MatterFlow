@@ -213,14 +213,25 @@ let nextId = 0;
         stroke: var(--mf-danger);
         stroke-width: 1;
       }
+      /* A reserved caption area: always three lines tall (empty when nothing is hovered) and never wider than the donut's column
+         (width 0 with a minimum of 100%: its text does not take part in the width of the column), so nothing moves when it fills,
+         changes or empties. A longer text is cut after three lines; the legend row and the slice title carry it whole. */
       .tip {
+        box-sizing: content-box;
         margin: 0;
-        min-height: 1.25em;
-        max-width: 100%;
+        width: 0;
+        min-width: 100%;
+        height: 3.75em;
+        line-height: 1.25;
         text-align: center;
         color: var(--mf-text);
         font-size: var(--mf-fs-sm);
         overflow-wrap: anywhere;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
       }
       .legend {
         margin: 0;

@@ -220,12 +220,13 @@ let nextId = 0;
       :host {
         display: block;
       }
-      /* The card is a column: the title row stays where it is and only the body scrolls, when the card is given a height (the Task type
-         card on a wide Breakdowns tab, where the list can grow with every new task type). */
+      /* The card is a column: the title row stays where it is and only the body scrolls, when the card is given a maximum height (the Task
+         type card on a wide Breakdowns tab, where the list can grow with every new task type). */
       .card {
         display: flex;
         flex-direction: column;
         height: 100%;
+        min-height: 0;
         box-sizing: border-box;
         padding: var(--mf-s4);
         background: var(--mf-surface);

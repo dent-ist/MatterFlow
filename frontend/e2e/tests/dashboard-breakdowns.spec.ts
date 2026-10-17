@@ -28,6 +28,22 @@ interface Summary {
   aging: (Row & { key: string })[];
 }
 
+/** Pads or cuts the by-task-type rows of the summary the page reads to `count` rows (copies of the first row). */
+async function withTaskTypes(page: Page, count: number) {
+  await page.route(/\/api\/v1\/dashboard\?/, async (route) => {
+    const response = await route.fetch();
+    const json = await response.json();
+    const first = json.byTaskType[0];
+    if (first)
+      json.byTaskType = Array.from({ length: count }, (_, i) => ({
+        ...first,
+        label: `Height type ${i + 1} with a rather long descriptive name`,
+        id: 91000 + i,
+      }));
+    await route.fulfill({ response, json });
+  });
+}
+
 async function openBreakdowns(page: Page) {
   await page.goto('/dashboard?tab=breakdowns');
   // The summary is cached on the server for a few seconds: Refresh reads it now, so the tasks the test has just created are in it.
@@ -282,7 +298,7 @@ test.describe('Dashboard Breakdowns', () => {
         // The tab is narrower than 1300 px (a 1366 px window has a 1122 px tab): two columns, Task type and Age on the right.
         expect(Math.abs(age.x - type.x), `${width} two columns`).toBeLessThan(2);
       }
-      // The Task type card is as tall as the tab; its title stays and the list scrolls inside it when it is long.
+      // The Task type card is as tall as its list, at most as tall as the tab; its title stays and the list scrolls inside it when it is long.
       const body = section.locator('mf-bar-list').nth(2).locator('[data-bd-body]');
       const m = await body.evaluate((e) => ({ sh: e.scrollHeight, ch: e.clientHeight }));
       if (m.sh > m.ch + 1) {
@@ -340,6 +356,86 @@ test.describe('Dashboard Breakdowns', () => {
     // A mouse press inside the list shows no ring.
     await body.click({ position: { x: 2, y: 2 }, force: true });
     expect(await body.evaluate((e) => getComputedStyle(e).outlineStyle)).toBe('none');
+  });
+
+  test('Task type card is as tall as its list (short list) and capped at the tab (long list); Priority and Status do not move', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    const measure = async (count: number) => {
+      await page.unroute(/\/api\/v1\/dashboard\?/);
+      await withTaskTypes(page, count);
+      const section = await openBreakdowns(page);
+      const card = section.locator('mf-bar-list').nth(2);
+      await expect(card.locator('li')).toHaveCount(count);
+      const tab = (await page.locator('[data-bd-scroll]').boundingBox())!;
+      const box = (await card.boundingBox())!;
+      const status = (await section.locator('mf-bar-list').nth(1).boundingBox())!;
+      const priority = (await section.locator('mf-bar-list').nth(0).boundingBox())!;
+      const content = await card.locator('section').evaluate((el) => {
+        const cs = getComputedStyle(el);
+        const kids = Array.from(el.children) as HTMLElement[];
+        const used = kids.reduce(
+          (n, k) =>
+            n +
+            (k.matches('[data-bd-body]')
+              ? k.scrollHeight
+              : k.getBoundingClientRect().height + parseFloat(getComputedStyle(k).marginBottom)),
+          0,
+        );
+        return used + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + 2;
+      });
+      const overflowing = await card
+        .locator('[data-bd-body]')
+        .evaluate((e) => e.scrollHeight > e.clientHeight + 1);
+      return { tab, box, status, priority, content, overflowing };
+    };
+
+    const short = await measure(3);
+    expect(
+      Math.abs(short.box.height - short.content),
+      'short list: card fits content',
+    ).toBeLessThan(40);
+    expect(short.box.height, 'short list is clearly shorter than the tab').toBeLessThan(
+      short.tab.height * 0.6,
+    );
+    expect(short.overflowing).toBe(false);
+
+    const long = await measure(30);
+    expect(long.overflowing).toBe(true);
+    expect(long.box.y + long.box.height, 'long list stays inside the tab').toBeLessThanOrEqual(
+      long.tab.y + long.tab.height + 1,
+    );
+    expect(long.box.height, 'long list fills the visible tab').toBeGreaterThan(
+      long.tab.height - 80,
+    );
+    // The length of the Task type list does not move Priority or Status.
+    expect(long.priority).toEqual(short.priority);
+    expect(long.status).toEqual(short.status);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollHeight <= document.documentElement.clientHeight,
+      ),
+    ).toBe(true);
+  });
+
+  test('two columns (1366) and one column (375): the Task type card keeps its natural height with 30 types', async ({
+    page,
+  }) => {
+    await withTaskTypes(page, 30);
+    for (const [width, height] of [
+      [1366, 768],
+      [375, 812],
+    ]) {
+      await page.setViewportSize({ width, height });
+      const section = await openBreakdowns(page);
+      const card = section.locator('mf-bar-list').nth(2);
+      await expect(card.locator('li')).toHaveCount(30);
+      const m = await card
+        .locator('[data-bd-body]')
+        .evaluate((e) => ({ sh: e.scrollHeight, ch: e.clientHeight }));
+      expect(m.sh, `${width}px: list is not clipped`).toBeLessThanOrEqual(m.ch + 1);
+    }
   });
 
   test('Task type names wrap to at most two lines at 1366 and numbers never wrap', async ({
@@ -420,6 +516,74 @@ test.describe('Dashboard Breakdowns', () => {
     await expect(section.locator('mf-bar-list').first().locator('.bars')).toBeVisible();
   });
 
+  test('pie view: nothing moves on hover or focus of a legend row, and the caption shows the same text', async ({
+    page,
+  }) => {
+    for (const [width, height] of [
+      [1366, 768],
+      [1920, 1080],
+      [375, 812],
+    ]) {
+      await page.setViewportSize({ width, height });
+      const section = await openBreakdowns(page);
+      const priority = section.locator('mf-bar-list').first();
+      if ((await priority.locator('[data-pie]').count()) === 0)
+        await priority.locator('[data-view-toggle]').click();
+      await expect(priority.locator('[data-pie]')).toBeVisible();
+      const snap = () =>
+        priority.evaluate((host) => {
+          const r = (e: Element | null) => {
+            const b = e!.getBoundingClientRect();
+            return [b.x, b.y, b.width, b.height];
+          };
+          return {
+            svg: r(host.querySelector('svg')),
+            tip: r(host.querySelector('[data-pie-tip]')),
+            legend: r(host.querySelector('[data-pie-legend]')),
+            rows: Array.from(host.querySelectorAll('[data-pie-legend] li')).map((li) => r(li)),
+          };
+        });
+      const same = (a: number[], b: number[], what: string) => {
+        for (const [i, v] of a.entries()) expect(Math.abs(v - b[i]), what).toBeLessThanOrEqual(0.5);
+      };
+      const check = (
+        a: Awaited<ReturnType<typeof snap>>,
+        b: Awaited<ReturnType<typeof snap>>,
+        what: string,
+      ) => {
+        same(a.svg, b.svg, `${what} donut`);
+        same(a.tip, b.tip, `${what} caption`);
+        same(a.legend, b.legend, `${what} legend`);
+        expect(b.rows.length).toBe(a.rows.length);
+        for (const [i, row] of a.rows.entries()) same(row, b.rows[i], `${what} row ${i}`);
+      };
+      await page.mouse.move(0, 0);
+      const before = await snap();
+      const rows = priority.locator('[data-pie-legend] li');
+      const tip = priority.locator('[data-pie-tip]');
+      for (let i = 0; i < (await rows.count()); i++) {
+        await rows.nth(i).hover();
+        await expect(tip).not.toHaveText('');
+        check(before, await snap(), `${width}px hover row ${i}`);
+        const hovered = (await tip.innerText()).trim();
+        await page.mouse.move(0, 0);
+        await expect(tip).toHaveText('');
+        check(before, await snap(), `${width}px after row ${i}`);
+        const link = rows.nth(i).locator('a.rowlink');
+        if ((await link.count()) > 0) {
+          await link.focus();
+          await expect(tip).toHaveText(hovered);
+          check(before, await snap(), `${width}px focus row ${i}`);
+          await link.evaluate((e) => (e as HTMLElement).blur());
+          await expect(tip).toHaveText('');
+        }
+      }
+      // Back to bars for the next size.
+      while ((await priority.locator('.bars').count()) === 0)
+        await priority.locator('[data-view-toggle]').click();
+    }
+  });
+
   test('a mouse press on the cards area shows no focus ring; the keyboard still does', async ({
     page,
   }) => {
@@ -464,6 +628,13 @@ test.describe('Dashboard Breakdowns', () => {
       }
       for (const t of await section.locator('[data-view-toggle]').all()) await t.click();
     }
+    // A wide window with a long Task type list: the card is capped at the tab and its list scrolls inside.
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await withTaskTypes(page, 30);
+    await openBreakdowns(page);
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: path.join(SHOTS!, 'bars-1920-long-list.png') });
+    await page.unroute(/\/api\/v1\/dashboard\?/);
     await page.setViewportSize({ width: 1366, height: 900 });
     const section = await openBreakdowns(page);
     await page.addStyleTag({ content: 'html{filter:grayscale(1)}' });
