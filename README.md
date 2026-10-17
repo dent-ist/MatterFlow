@@ -119,6 +119,46 @@ The same flow is covered by an automated test: `backend/tests/MatterFlow.Integra
 
 `backend/src/MatterFlow.Api/appsettings.Development.json` seeds `KE\user1` to `KE\user10` (role Data Technician) at startup when the Dev auth provider is used. Add or change entries under `Dev:Users` (`Username`, `DisplayName`, `Email`, `Roles`); existing users are never changed. To act as one of them, set `Auth__Dev__DefaultUser='KE\user3'`, or send `X-Dev-User: KE\user3`.
 
+### Demo data
+
+`npm run seed:demo` fills a running local app with test data, so the Dashboard, Task Queue, My Work, Pod Work and the Users views have something to show. It talks to the real HTTP API (as the Dev default admin `KE\kekim`, and as the test users for their own work), so every record goes through the same validation and workflow rules as in the screens; nothing is written to the database directly. Needs Node 22 and no extra packages.
+
+```powershell
+# Windows PowerShell (or cmd): start the app in one terminal ...
+npm start
+# ... and seed it from a second terminal in the repository root, once the API answers on http://localhost:5080
+npm run seed:demo
+npm run seed:demo -- --tasks 50 --seed 7        # options go after the double dash
+$env:SEED_TASKS = 50; npm run seed:demo         # or as environment variables (PowerShell)
+```
+
+```bash
+# Linux / macOS
+npm run seed:demo -- --dry-run                  # only reads the system and prints the plan
+SEED_API=http://localhost:5080 npm run seed:demo
+```
+
+| Option (env) | Default | Meaning |
+|---|---|---|
+| `--api` (`SEED_API`) | `http://localhost:5080` | API origin (the Angular dev server `http://localhost:4200` works as well) |
+| `--admin` (`SEED_ADMIN`) | `KE\kekim` | Dev account that acts as System Admin |
+| `--users` (`SEED_USERS`) | 50 | Test users `Test User 01..NN` (`KE\testuser01..`, `testuser01@example.test`) |
+| `--tasks` (`SEED_TASKS`) | 200 | Tasks to create. Without the option nothing is added when demo tasks exist already |
+| `--seed` (`SEED_SEED`) | random, printed | Seed of the random sequence: the same seed plans the same data |
+| `--tag` (`SEED_TAG`) | generated | Run tag, e.g. `D4X9K` |
+| `--concurrency` | 3 | Tasks worked in parallel |
+| `--dry-run` | off | Plan and summary only, creates nothing |
+
+What it creates (about 3 minutes with the default numbers):
+
+- **Users**: 50 active users, roles spread as 31 Data Technician, 12 Data Scientist, 4 Pod Lead and 3 Project Manager; 1 or 2 pods each (every fourth user is in two pods, every eleventh in none) and four users out of office. If the system has no pods, four `Demo ... Pod` pods are created; existing pods are reused.
+- **Organization**: 5 clients (`Demo ...`, numbers 90001 to 90005), 12 matters (80001 to 80012, one task reference like `90003-80008`), 4 projects and 60 assets (workspaces, vaults, media, data sets, productions) that the request forms and steps refer to.
+- **Tasks** (default 200): a random number per task type (every type gets at least 3, counts vary widely), titles `<Task type> - <matter ref> - <n>`, priorities Critical to Low, request forms and workflow step inputs filled from each type's published form. About 20% New, 37% In Progress (some with finished steps), 10% On Hold, about 23% Completed (all steps done, a few reopened), 8% Cancelled; about 27% unassigned, the rest spread over the test users (some heavily loaded, some idle) and a few for the admin. Of the open tasks about 20% are overdue, 15% due within two days, 15% ASAP (no due date), the rest later. 30% of the tasks are created by a test user instead of the admin (My Work, "Created by me"), about a quarter get one to three comments. The requestor name of every task carries the run tag (`Avery Morgan [demo D4X9K]`): search the Task Queue for `demo D4X9K` to see one run.
+
+It is safe to run again: users, pods, clients, matters, projects and assets are only created when missing (found by account name, number or name), and tasks are only added when the Demo matters have none yet. `--tasks N` adds another tagged batch of N tasks whose titles continue the numbering. `--users 60` adds `Test User 51..60`. To start over, delete the database with `npm run db:reset` and start the app again.
+
+Limitations: completed tasks are completed when the seeder runs (the API stamps the completion time itself), so the "Completed" dashboard figures all fall on today; the requested dates and due dates are spread over the last 90 days instead. Tasks have no free labels in this version, so the priority is the only label. The API's per-user limits (120 task writes per minute) are respected by pacing the calls and by acting as the assignees; a 429 is retried after the advertised wait.
+
 ## Local SQL Server (docker compose)
 
 ```bash

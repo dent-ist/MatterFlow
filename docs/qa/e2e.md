@@ -48,6 +48,10 @@ npm run e2e:typecheck                             # tsc over frontend/e2e
 
 Typical full run: about 80 tests in under two minutes with two workers, plus roughly two minutes for the build and the SQL container the first time.
 
+## Demo data is separate
+
+The suite creates its own uniquely named records and does not need the demo data. `npm run seed:demo` (README, "Demo data") is a different tool for people who explore the running app; it uses the same Dev-auth API sequences as `e2e/support/seed.ts` (provision a user with `GET /me`, grant roles and pods, create tasks and drive them through valid status and step transitions) but never runs in the suite. Do not run both against one database if a spec counts all tasks: the Dashboard totals include the demo tasks.
+
 ## CI
 
 `.github/workflows/e2e.yml` runs the same script: manual dispatch, nightly at 03:43 UTC, and on pull requests carrying the label **`e2e`** (it re-runs on new commits while the label is on). It installs Chromium with `npx playwright install --with-deps chromium`, runs `npm run e2e` with `CI=true` (one worker, one retry), and always uploads `playwright-report/`, `test-results/` (traces, screenshots and videos of failed tests) and the API log as artifacts for 14 days. Open a trace with `npx playwright show-trace <trace.zip>`.

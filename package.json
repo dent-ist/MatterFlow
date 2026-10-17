@@ -10,7 +10,8 @@
     "db:reset": "docker compose -f docker-compose.dev.yml down -v && npm run db:up",
     "form-engine": "npm --prefix frontend exec -- ng build form-engine",
     "api": "cross-env ASPNETCORE_ENVIRONMENT=Development \"ConnectionStrings__Default=Server=127.0.0.1,1433;Database=MatterFlow;User Id=sa;Password=MatterFlow_Dev1!;TrustServerCertificate=True;Connect Timeout=60\" \"ConnectionStrings__MatterFlow=Server=127.0.0.1,1433;Database=MatterFlow;User Id=sa;Password=MatterFlow_Dev1!;TrustServerCertificate=True;Connect Timeout=60\" \"Bootstrap__SystemAdmins__0=KE\\kekim\" \"Auth__Dev__DefaultUser=KE\\kekim\" Seed__StarterConfiguration__Enabled=true dotnet run --project backend/src/MatterFlow.Api",
-    "web": "npm --prefix frontend run start:api"
+    "web": "npm --prefix frontend run start:api",
+    "seed:demo": "node tools/seed-demo/seed-demo.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
