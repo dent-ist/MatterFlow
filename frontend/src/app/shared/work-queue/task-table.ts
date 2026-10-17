@@ -48,7 +48,7 @@ import { TaskSkeleton } from './task-skeleton';
  */
 const PROGRESS_FOLDS_BELOW = 1060;
 const MATTER_HIDES_BELOW = 960;
-const PROJECT_HIDES_BELOW = 800;
+const PROJECT_HIDES_BELOW = 900;
 /** Tablets (viewport 640 to 1023 px): Pod, Age and the dates drop out, Ref moves under the title, and the due cell takes two lines. */
 const BAND_DROPS = ['pod', 'age', 'created', 'updated'];
 const TABLET = '(min-width: 640px) and (max-width: 1023.98px)';
@@ -584,7 +584,7 @@ export class TaskTable {
   /**
    * Columns in table order. Below the width thresholds the lowest-priority columns drop out so Status and Due never scroll out of view
    * (UXR4-02): Workflow progress moves under the title below 1100 px, the Matter column goes below 960 px (the line under the title
-   * still names the client and matter) and Project below 800 px. Unknown width (0, before the first measure or in tests) shows everything.
+   * still names the client and matter) and Project below 900 px. Unknown width (0, before the first measure or in tests) shows everything.
    */
   protected readonly shownColumns = computed<ColumnDef[]>(() => {
     const wanted = new Set(this.columns());
