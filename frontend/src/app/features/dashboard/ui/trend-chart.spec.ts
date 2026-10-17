@@ -101,7 +101,7 @@ describe('trend chart', () => {
       const plot = el.querySelector('[data-plot]')!;
       expect(plot.getAttribute('aria-roledescription')).toBe('chart');
       expect(plot.getAttribute('aria-label')).toContain('Created 7 created, Completed 5 completed');
-      expect(el.querySelector('h4')!.textContent).toBe('Created and completed');
+      expect(el.querySelector('h3')!.textContent).toBe('Created and completed');
       expect(plot.getAttribute('tabindex')).toBe('0');
       const svg = plot.querySelector('svg.chart')!;
       expect(svg.getAttribute('aria-hidden')).toBe('true');
@@ -416,7 +416,7 @@ describe('trend chart', () => {
     it('gives each panel its own title and axis: the flows keep their scale next to a stock of 152', () => {
       const panels = Array.from(el.querySelectorAll('[data-panel]'));
       expect(panels.map((p) => p.getAttribute('data-panel'))).toEqual(['flows', 'backlog']);
-      expect(panels.map((p) => text(p.querySelector('h4')))).toEqual([
+      expect(panels.map((p) => text(p.querySelector('h3')))).toEqual([
         'Created and completed',
         'Backlog at end of day',
       ]);
@@ -469,7 +469,7 @@ describe('trend chart', () => {
 
     it('does not take the arrow keys of the controls inside the chart', () => {
       const plot = el.querySelector<HTMLElement>('[data-plot]')!;
-      const heading = el.querySelector('h4')!;
+      const heading = el.querySelector('h3')!;
       heading.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
       fixture.detectChanges();
       expect(el.querySelector('[data-tip]')).toBeNull();

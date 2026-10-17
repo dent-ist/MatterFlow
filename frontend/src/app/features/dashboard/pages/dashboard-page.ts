@@ -396,7 +396,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                       [id]="panelId('trends')"
                       [attr.aria-labelledby]="labelledBy()"
                     >
-                      <mf-dash-section class="mf-fill" heading="Created and completed" name="trend">
+                      <mf-dash-section class="mf-fill" heading="Tasks over time" name="trend">
                         <span mfSectionActions class="head-period" data-trend-period>
                           <mf-period-control [period]="period()" />
                         </span>

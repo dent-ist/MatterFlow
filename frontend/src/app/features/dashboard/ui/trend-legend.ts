@@ -36,7 +36,7 @@ export const SEARCH_ABOVE = 8;
   template: `
     <div class="group" role="group" [attr.aria-labelledby]="id + '-types'" data-group="task-types">
       <div class="group-head">
-        <h4 [id]="id + '-types'">Compare task types</h4>
+        <h3 [id]="id + '-types'">Compare task types</h3>
         <span class="actions">
           <button type="button" class="link" data-select-all (click)="selectTop.emit()">
             Select all
@@ -191,7 +191,7 @@ export const SEARCH_ABOVE = 8;
     .group {
       min-width: 0;
     }
-    h4 {
+    h3 {
       margin: 0;
       font-size: var(--mf-fs-md);
     }
@@ -202,7 +202,7 @@ export const SEARCH_ABOVE = 8;
       gap: var(--mf-s2);
       margin-bottom: var(--mf-s2);
     }
-    .group > h4 {
+    .group > h3 {
       margin-bottom: var(--mf-s2);
     }
     .actions {

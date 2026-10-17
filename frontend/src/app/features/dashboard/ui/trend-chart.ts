@@ -151,12 +151,20 @@ let nextId = 0;
           </tbody>
         </table>
       </div>
-      @if (notes().length > 0) {
-        <p class="foot">
-          @for (n of notes(); track n) {
+      @if (notes().shown.length + notes().more.length > 0) {
+        <div class="foot">
+          @for (n of notes().shown; track n) {
             <span>{{ n }}</span>
           }
-        </p>
+          @if (notes().more.length > 0) {
+            <details class="more" data-more>
+              <summary>How these are counted</summary>
+              @for (n of notes().more; track n) {
+                <p>{{ n }}</p>
+              }
+            </details>
+          }
+        </div>
       }
     } @else {
       <div
@@ -174,7 +182,7 @@ let nextId = 0;
           <section class="panel" [class.panel--flows]="p.key === 'flows'" [attr.data-panel]="p.key">
             <div class="panel-head">
               <div class="ttl">
-                <h4 class="panel-title">{{ p.title }}</h4>
+                <h3 class="panel-title">{{ p.title }}</h3>
                 @if (weekly()) {
                   <span class="per" data-per-week>per week</span>
                 }
@@ -245,6 +253,7 @@ let nextId = 0;
                         [attr.text-anchor]="x.anchor"
                         class="tick"
                         data-xtick
+                        [attr.data-date]="x.date"
                       >
                         {{ x.text }}
                       </text>
@@ -353,7 +362,7 @@ let nextId = 0;
         }
         <p class="sr-only" role="status" aria-live="polite" data-readout>{{ readout() }}</p>
       </div>
-      <p class="foot">
+      <div class="foot">
         @if (partialToday()) {
           <span>{{ weekly() ? 'Dotted: this week so far.' : 'Dotted: today so far.' }}</span>
         }
@@ -365,10 +374,18 @@ let nextId = 0;
             ? 'Hover, tap or focus the chart to read a week.'
             : 'Hover, tap or focus the chart to read a day.'
         }}</span>
-        @for (n of notes(); track n) {
+        @for (n of notes().shown; track n) {
           <span>{{ n }}</span>
         }
-      </p>
+        @if (notes().more.length > 0) {
+          <details class="more" data-more>
+            <summary>How these are counted</summary>
+            @for (n of notes().more; track n) {
+              <p>{{ n }}</p>
+            }
+          </details>
+        }
+      </div>
     }
   `,
   styles: `
@@ -493,6 +510,17 @@ let nextId = 0;
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s2);
+    }
+    .foot p {
+      margin: var(--mf-s1) 0 0;
+    }
+    .more[open] {
+      flex-basis: 100%;
+    }
+    .more summary {
+      cursor: pointer;
+      color: var(--mf-link);
+      text-decoration: underline;
     }
     .foot {
       display: flex;
@@ -860,24 +888,27 @@ export class TrendChart {
 
   /** Short remarks for the foot: what a day link lists and how Overdue and Open are counted. */
   protected readonly notes = computed(() => {
-    const out: string[] = [];
+    const shown: string[] = [];
+    const more: string[] = [];
     const measures = new Set(this.allLines().map((l) => l.measure));
+    const overdueNote =
+      "Overdue is counted at the end of each day, using each task's current due date.";
     if (this.weekly()) {
-      out.push(
-        'Each point is a week, Monday to Sunday: counts are added up over the week, Open and Overdue are the value at the end of the week (this week: now).',
+      shown.push(
+        'Each point is a week, Monday to Sunday: counts are added up, Open and Overdue are the value at the end of the week.',
       );
     }
-    if (measures.has('overdue')) {
-      out.push("Overdue is counted at the end of each day, using each task's current due date.");
-    }
     if (measures.has('open')) {
-      out.push("Based on each task's creation and closing time; later changes are not replayed.");
+      shown.push("Based on each task's creation and closing time; later changes are not replayed.");
+      if (measures.has('overdue')) more.push(overdueNote);
+    } else if (measures.has('overdue')) {
+      shown.push(overdueNote);
     }
     for (const m of ['overdue', 'open', 'onTime'] as const) {
       const note = measures.has(m) || (m === 'onTime' && measures.has('late')) ? linkNote(m) : null;
-      if (note && !out.includes(note)) out.push(note);
+      if (note && !more.includes(note)) more.push(note);
     }
-    return out;
+    return { shown, more };
   });
 
   protected readonly hasWeekend = computed(() => !this.weekly() && this.dates().some(isWeekend));

@@ -85,7 +85,7 @@ test.describe('Trends by task type', () => {
     await openTrends(page);
     await expect(page.getByRole('group', { name: /tasks over time/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Backlog at end of day' })).toBeVisible();
-    await expect(lines(page)).toHaveCount(3); // Created and Completed + Overdue
+    await expect(lines(page)).toHaveCount(4); // Created and Completed + Open and Overdue
     await expect(page.getByRole('checkbox', { name: 'All task types' })).toBeChecked();
     await expect(page.locator('input:disabled, select:disabled')).toHaveCount(0);
     await expect(page.getByRole('radio', { name: 'Created and completed' })).toBeChecked();
@@ -96,7 +96,7 @@ test.describe('Trends by task type', () => {
     await expect(lines(page)).toHaveCount(2); // the type in each panel; All task types is hidden for scale
     await expect(page.getByRole('checkbox', { name: /All task types/ })).not.toBeChecked();
     await expect(page).toHaveURL(new RegExp(`types=${types[0].id}`));
-    await expect(page.getByRole('heading', { name: 'Tasks created per day' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Created and completed' })).toHaveCount(1);
     await expect(page.getByRole('radio', { name: 'Created', exact: true })).toBeChecked();
     await expect(page.locator('[data-trend-live]')).toHaveText(/Showing Created/);
 
@@ -117,7 +117,6 @@ test.describe('Trends by task type', () => {
     await expect(box(page, types[1].id)).toBeChecked();
     await expect(page.getByRole('radio', { name: 'Completed', exact: true })).toBeChecked();
     await expect(lines(page)).toHaveCount(4); // two types in each of the two panels
-    await expect(page.getByRole('heading', { name: 'Tasks completed per day' })).toBeVisible();
 
     // Leave and come back by the plain tab link: the selection is remembered for this user in this browser.
     await page.goto('/dashboard');
@@ -197,10 +196,14 @@ test.describe('Trends by task type', () => {
   }) => {
     await page.goto(`${TREND}&types=${types[0].id},${types[1].id}`);
     await expect(lines(page)).toHaveCount(4);
+    // Picking types turns the backlog panel's "Open and overdue" into Open; Overdue per task type is one click away.
+    await expect(page.locator('[data-measure="backlog"] input:checked')).toHaveAttribute(
+      'data-measure-option',
+      'open',
+    );
+    await page.locator('[data-measure="backlog"] [data-measure-option="overdue"]').check();
+    await expect(page).toHaveURL(/bmetric=overdue/);
     await page.getByRole('radio', { name: 'On time' }).check();
-    await expect(
-      page.getByRole('heading', { name: 'Tasks completed on time per day' }),
-    ).toBeVisible();
     await expect(page).toHaveURL(/metric=ontime/);
     // Overdue per task type is drawn in the backlog panel: today's value links to the queue's overdue filter for that type (the first task
     // of every type was due yesterday and is still open).
@@ -282,12 +285,13 @@ test.describe('Trends by task type', () => {
     b = (await flows.boundingBox())!;
     expect(b.height).toBeGreaterThanOrEqual(160);
     await page.setViewportSize({ width: 375, height: 812 });
-    // Below 768 px the page scrolls and the panels keep their own heights (320 and 200 px).
-    await expect.poll(async () => (await flows.boundingBox())!.height).toBeGreaterThanOrEqual(320);
+    // Below 768 px the page scrolls; on a phone (480 px and below) the panels are the full width of the card, 16:9 and at least 220 px (#121).
+    await expect.poll(async () => (await flows.boundingBox())!.height).toBeGreaterThanOrEqual(220);
+    expect((await flows.boundingBox())!.width).toBeGreaterThanOrEqual(250);
+    expect((await flows.boundingBox())!.width).toBeLessThan(375);
     expect(
       (await page.locator('[data-panel="backlog"] svg').boundingBox())!.height,
-    ).toBeGreaterThanOrEqual(200);
-    await expect.poll(async () => (await flows.boundingBox())!.width).toBeLessThan(375);
+    ).toBeGreaterThanOrEqual(160);
     await expect(page.locator('[data-measure-select="flows"]')).toBeVisible();
     await expect(page.locator('[data-measure="flows"]')).toBeHidden();
   });
@@ -328,7 +332,7 @@ test.describe('Trends by task type', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Trends' })).toBeVisible();
     await expect(page.getByRole('tab')).toHaveCount(0);
     await expect(page.getByRole('group', { name: /tasks over time/i })).toBeVisible();
-    await expect(lines(page)).toHaveCount(3);
+    await expect(lines(page)).toHaveCount(4);
     expect((await page.request.get('/api/v1/dashboard/trend?periodDays=7')).status()).toBe(200);
 
     const summaryOnly = await seed.user(
@@ -337,5 +341,255 @@ test.describe('Trends by task type', () => {
     );
     const other = await asUser(summaryOnly.username);
     expect((await other.request.get('/api/v1/dashboard/trend')).status()).toBe(403);
+  });
+});
+
+/** WP8b (#120, #117, #118, #121): the Open backlog, weekly points for long periods, end labels, Monday ticks and the phone layout. */
+test.describe('Trends backlog and labels', () => {
+  const isMonday = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay() === 1;
+  const mondayOf = (date: string) => {
+    const d = new Date(`${date}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+    return d.toISOString().slice(0, 10);
+  };
+
+  /** Boxes of the elements, and the pairs among them that touch. */
+  async function overlaps(page: Page, selector: string): Promise<string[]> {
+    return page.locator(selector).evaluateAll((els) => {
+      const boxes = els.map((e) => ({
+        t: e.textContent?.trim() ?? '',
+        r: e.getBoundingClientRect(),
+      }));
+      const found: string[] = [];
+      for (let i = 0; i < boxes.length; i++)
+        for (let j = i + 1; j < boxes.length; j++) {
+          const a = boxes[i].r;
+          const b = boxes[j].r;
+          if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom)
+            found.push(`${boxes[i].t} / ${boxes[j].t}`);
+        }
+      return found;
+    });
+  }
+
+  test('draws Open beside Overdue with a name and value at the end of every line, markers only at the ends, and a Monday on the axis', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await openTrends(page);
+    await expect(page.locator('[data-panel="backlog"] polyline.series:not(.partial)')).toHaveCount(
+      2,
+    );
+    await expect(page.locator('[data-measure="backlog"] input:checked')).toHaveAttribute(
+      'data-measure-option',
+      'both',
+    );
+    const labels = page.locator('[data-end-label]');
+    await expect(labels).toHaveCount(4);
+    const texts = (await labels.allTextContents()).map((t) => t.trim());
+    expect(texts.map((t) => t.replace(/[\d,]+$/, '').trim())).toEqual([
+      'Created',
+      'Completed',
+      'Open',
+      'Overdue',
+    ]);
+    expect(await overlaps(page, '[data-end-label] text')).toEqual([]);
+    // 30 daily points, 4 lines: a marker at each end of each line and nowhere else.
+    await expect(page.locator('[data-plot] path.marker')).toHaveCount(8);
+    // Labels sit in the right margin, inside the drawing.
+    const svg = (await page.locator('[data-panel="flows"] svg').boundingBox())!;
+    for (const box of await labels.evaluateAll((els) =>
+      els.map((e) => e.querySelector('text')!.getBoundingClientRect().toJSON()),
+    )) {
+      expect(box.right).toBeLessThanOrEqual(svg.x + svg.width + 1);
+    }
+    // The read-out says the same numbers; the labels are aria-hidden duplicates.
+    await expect(labels.first()).toHaveAttribute('aria-hidden', 'true');
+    await page.locator('[data-plot]').focus();
+    await expect(page.locator('[data-readout]')).toContainText('Backlog at end of day');
+    await expect(page.locator('[data-readout]')).toContainText(
+      new RegExp(`${texts[2].replace(/\D+/g, '')} open`),
+    );
+    // The caveat of the snapshot, once.
+    await expect(page.locator('.foot')).toContainText(
+      "Based on each task's creation and closing time; later changes are not replayed.",
+    );
+
+    // Axis: the first day, every Monday in between, and today at the end; month on every label.
+    const ticks = page.locator('text[data-xtick]');
+    const dates = await ticks.evaluateAll((els) => els.map((e) => e.getAttribute('data-date')!));
+    expect(dates.length).toBeGreaterThanOrEqual(4);
+    expect(dates[dates.length - 1]).toBe(dateInZone(FIRM_ZONE, 0));
+    for (const d of dates.slice(1, -1)) expect(isMonday(d)).toBe(true);
+    for (const t of await ticks.allTextContents())
+      expect(t.trim()).toMatch(/^[A-Z][a-z]{2} \d{1,2}$/);
+    expect(await overlaps(page, 'text[data-xtick]')).toEqual([]);
+  });
+
+  test('compares Open per task type: the link of today opens the queue with the open tasks of that type', async ({
+    page,
+  }) => {
+    await page.goto(`${TREND}&types=${types[0].id},${types[1].id},${types[2].id}&bmetric=open`);
+    await expect(page.locator('[data-panel="backlog"] polyline.series:not(.partial)')).toHaveCount(
+      3,
+    );
+    // No end labels with more than 4 lines in a panel; with 3 types they are there (3 lines).
+    await expect(page.locator('[data-panel="backlog"] [data-end-label]')).toHaveCount(3);
+    await page.getByRole('button', { name: /View as table/ }).click();
+    const col = await page
+      .locator('thead th[data-col]')
+      .evaluateAll(
+        (els, id) => els.findIndex((e) => e.getAttribute('data-col') === id),
+        `backlog-type-${types[0].id}`,
+      );
+    // The first type has 3 tasks and one completed today: 2 are open.
+    const cell = page.locator('tbody tr:last-child td').nth(col).locator('a');
+    await expect(cell).toHaveText('2');
+    await cell.click();
+    await expect(page).toHaveURL(new RegExp(`type=${types[0].id}`));
+    await expect(page.getByText(titles[0][0])).toBeVisible();
+    await expect(page.getByText(titles[0][1])).toBeVisible();
+    await expect(page.getByText(titles[0][2])).toHaveCount(0);
+  });
+
+  test('a long period is weekly for every series: per week, Week of in the tooltip and the table, Mondays on the axis, no weekend shading', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto(`${TREND}&period=90d`);
+    await page.getByRole('button', { name: 'Refresh' }).click();
+    await expect(page.locator('[data-per-week]')).toHaveCount(2);
+    await expect(page.locator('[data-plot] rect.weekend')).toHaveCount(0);
+    await expect(page.locator('.foot')).toContainText('Each point is a week, Monday to Sunday');
+    const dates = await page
+      .locator('text[data-xtick]')
+      .evaluateAll((els) => els.map((e) => e.getAttribute('data-date')!));
+    expect(dates.length).toBeLessThanOrEqual(8);
+    expect(dates.length).toBeGreaterThanOrEqual(3);
+    for (const d of dates) expect(isMonday(d)).toBe(true);
+    expect(dates[dates.length - 1]).toBe(mondayOf(dateInZone(FIRM_ZONE, 0)));
+    expect(await overlaps(page, 'text[data-xtick]')).toEqual([]);
+
+    // The keyboard reads weeks: the last one is the current week (so far).
+    await page.locator('[data-plot]').focus();
+    await expect(page.locator('[data-tip-heading]')).toHaveText(/^Week of [A-Z][a-z]{2} \d+$/);
+    await expect(page.locator('[data-tip]')).toContainText('This week so far');
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.locator('[data-readout]')).toContainText(/^Week of /);
+    await page.keyboard.press('Home');
+    await expect(page.locator('[data-readout]')).toContainText(/^Week of /);
+
+    await page.getByRole('button', { name: /View as table/ }).click();
+    await expect(page.locator('thead th').first()).toHaveText('Week');
+    await expect(page.locator('tbody tr').first().locator('th')).toHaveText(/^Week of /);
+    const rows = await page.locator('tbody tr').count();
+    expect(rows).toBeGreaterThanOrEqual(12);
+    expect(rows).toBeLessThanOrEqual(15);
+    // The same period at 30 days is daily again.
+    await page.goto(`${TREND}&period=30d`);
+    await expect(page.locator('[data-per-week]')).toHaveCount(0);
+    await expect(page.locator('[data-plot] rect.weekend').first()).toBeVisible();
+  });
+
+  test('a custom range of 366 days has at most 54 weekly points and 8 axis labels', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    const from = dateInZone(FIRM_ZONE, -365);
+    const to = dateInZone(FIRM_ZONE, 0);
+    await page.goto(`${TREND}&period=custom&from=${from}&to=${to}`);
+    await expect(page.locator('[data-per-week]')).toHaveCount(2);
+    expect(await page.locator('text[data-xtick]').count()).toBeLessThanOrEqual(8);
+    await page.getByRole('button', { name: /View as table/ }).click();
+    expect(await page.locator('tbody tr').count()).toBeLessThanOrEqual(54);
+  });
+
+  test('has no axe violations in the default view and the weekly view, at 1366, 1920 and 375', async ({
+    page,
+  }) => {
+    test.skip(!axeAvailable(), 'axe-core not installed (set E2E_AXE_PATH to axe.min.js)');
+    test.setTimeout(150_000);
+    for (const [width, height] of [
+      [1366, 768],
+      [1920, 1080],
+      [375, 812],
+    ]) {
+      await page.setViewportSize({ width, height });
+      for (const url of [TREND, `${TREND}&period=90d`]) {
+        await page.goto(url);
+        await expect(page.locator('[data-end-label]').first()).toBeVisible();
+        expect(await axeViolations(page), `${url} at ${width}`).toEqual([]);
+        await page.locator('[data-plot]').focus();
+        await expect(page.locator('[data-tip]')).toBeVisible();
+        expect(await axeViolations(page), `${url} with the tooltip at ${width}`).toEqual([]);
+      }
+    }
+  });
+});
+
+test.describe('Trends on a phone', () => {
+  test.use({ viewport: { width: 375, height: 812 }, hasTouch: true });
+
+  test('shows the chart at full width and 16:9, folds Compare task types behind a 44 px button, and a tap reads a day', async ({
+    page,
+  }) => {
+    await openTrends(page);
+    const flows = page.locator('[data-panel="flows"] svg');
+    const chart = (await flows.boundingBox())!;
+    // The full width the page leaves: the app shell keeps a 56 px navigation rail at 375 px, so that is 271 px, not 343 px.
+    const host = (await page.locator('mf-dash-trends-tab').boundingBox())!;
+    expect(chart.width).toBeGreaterThanOrEqual(host.width - 4);
+    expect(chart.width).toBeGreaterThanOrEqual(260);
+    expect(chart.height).toBeGreaterThanOrEqual(193);
+    expect(chart.height).toBeGreaterThanOrEqual(220);
+    // The default is the chart, not the table; the table is one tap away.
+    await expect(page.locator('[data-plot]')).toBeVisible();
+    await expect(page.getByRole('button', { name: /View as table/ })).toBeVisible();
+
+    // Compare task types: collapsed by default, a 44 px target.
+    const toggle = page.locator('[data-compare-toggle]');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect((await toggle.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await expect(page.locator('mf-trend-legend')).toHaveCount(0);
+    // The page is short: the chart, the backlog and the folded button are under 1.5 screens.
+    const total = await page.evaluate(() => document.scrollingElement!.scrollHeight);
+    expect(total).toBeLessThan(812 * 1.5);
+
+    // One title each; the old sentence is gone.
+    await expect(page.getByRole('heading', { name: 'Created and completed' })).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: 'Backlog at end of day' })).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: /per day/ })).toHaveCount(0);
+
+    // A tap on a day shows the tooltip with the values, and it stays after the finger lifts.
+    const plot = (await page.locator('[data-panel-plot="flows"]').boundingBox())!;
+    await page.touchscreen.tap(plot.x + plot.width * 0.4, plot.y + plot.height / 2);
+    await expect(page.locator('[data-tip]')).toBeVisible();
+    await expect(page.locator('[data-tip]')).toContainText('Created');
+    await page.waitForTimeout(300);
+    await expect(page.locator('[data-tip]')).toBeVisible();
+
+    // Opening the list and picking a task type changes the count on the button; the identity of the line is in the list and the tooltip.
+    await toggle.tap();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('mf-trend-legend')).toBeVisible();
+    await search(page, types[0].name);
+    await box(page, types[0].id).check();
+    await expect(toggle).toContainText('Compare task types (1)');
+  });
+
+  test('has no horizontal scroll at 375 and 320 px', async ({ page }) => {
+    for (const width of [375, 320]) {
+      await page.setViewportSize({ width, height: 700 });
+      await page.goto(`${TREND}&types=${types[0].id},${types[1].id}`);
+      await expect(page.locator('[data-plot]')).toBeVisible();
+      const scroll = await page.evaluate(() => ({
+        doc: document.documentElement.scrollWidth,
+        win: window.innerWidth,
+      }));
+      expect(scroll.doc, `at ${width}`).toBeLessThanOrEqual(scroll.win);
+      const svg = (await page.locator('[data-panel="flows"] svg').boundingBox())!;
+      expect(svg.width).toBeGreaterThanOrEqual(width - 56 - 60); // the navigation rail and the page gutters
+      expect(svg.x + svg.width).toBeLessThanOrEqual(width);
+    }
   });
 });

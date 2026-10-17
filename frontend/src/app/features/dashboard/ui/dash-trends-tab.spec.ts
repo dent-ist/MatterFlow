@@ -115,8 +115,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
       undefined,
       'all',
     );
-    expect(text(el.querySelector('h3'))).toBe('Tasks over time');
-    expect(Array.from(el.querySelectorAll('[data-panel] h4')).map((h) => text(h))).toEqual([
+    expect(Array.from(el.querySelectorAll('[data-panel] h3')).map((h) => text(h))).toEqual([
       'Created and completed',
       'Backlog at end of day',
     ]);
@@ -140,7 +139,12 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
       el.querySelector<HTMLInputElement>('[data-measure="backlog"] [data-measure-option="both"]')!
         .checked,
     ).toBe(true);
-    expect(el.querySelector('h3')!.textContent).toContain('Tasks over time');
+    // One title per panel; the card has no title of its own (the page's section heading names the tab).
+    expect(Array.from(el.querySelectorAll('h3')).map((h) => text(h))).toEqual([
+      'Created and completed',
+      'Backlog at end of day',
+      'Compare task types',
+    ]);
     // The old Due dates group and Show radios are gone.
     expect(el.querySelector('[data-group="due-dates"], [data-show], [data-due]')).toBeNull();
     // No search box for a short list.
@@ -183,7 +187,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     // All task types is hidden by default while types are compared (T2): one line per panel, the type's.
     expect(panelLines('flows').length).toBe(1);
     expect(panelLines('backlog').length).toBe(1);
-    expect(text(el.querySelector('[data-panel=flows] h4'))).toBe('Created and completed');
+    expect(text(el.querySelector('[data-panel=flows] h3'))).toBe('Created and completed');
     expect(url()).toBe('/trends?types=5&metric=created&bmetric=open');
     expect(stored()).toEqual({ types: [5], all: 'auto', metric: 'created', bmetric: 'open' });
     expect(live()).toBe('Showing Created and Open to compare task types.');
@@ -257,7 +261,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     await choose('flows', 'late');
     expect(getTrend).toHaveBeenCalledTimes(1);
     expect(panelLines('flows').length).toBe(1);
-    expect(text(el.querySelector('[data-panel=flows] h4'))).toBe('Created and completed');
+    expect(text(el.querySelector('[data-panel=flows] h3'))).toBe('Created and completed');
     expect(url()).toBe('/trends?metric=late');
     // Back to the two-line view: the default is not written.
     await choose('flows', 'both');
@@ -454,7 +458,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
         true,
       );
       expect(panelLines('flows').length).toBe(2);
-      expect(text(el.querySelector('[data-panel=flows] h4'))).toBe('Created and completed');
+      expect(text(el.querySelector('[data-panel=flows] h3'))).toBe('Created and completed');
     });
 
     it('without parameters the remembered view is restored and the address completed', async () => {

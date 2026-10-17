@@ -403,9 +403,7 @@ test.describe('Dashboard actions and click-through', () => {
     );
     // A link with ?tab= wins.
     await page.goto('/dashboard?tab=trends');
-    await expect(
-      page.getByRole('heading', { name: 'Tasks created and completed per day' }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Created and completed' })).toBeVisible();
     // An unknown tab falls back to a valid one.
     await page.goto('/dashboard?tab=nonsense');
     await expect(page).toHaveURL(/tab=summary$/);
@@ -483,10 +481,8 @@ test.describe('Dashboard actions and click-through', () => {
     const world = await seed.world();
     await seed.task(world, { title: `Trend ${uid()}` });
     await page.goto('/dashboard?tab=trends');
-    const trend = page.getByRole('region', { name: 'Created and completed', exact: true });
-    await expect(
-      trend.getByRole('group', { name: /created and completed per day/i }),
-    ).toBeVisible();
+    const trend = page.getByRole('region', { name: 'Tasks over time', exact: true });
+    await expect(trend.getByRole('group', { name: /created and completed/i })).toBeVisible();
     await trend.getByRole('button', { name: /View as table/ }).click();
     await expect(trend.getByRole('table')).toBeVisible();
     await expect(trend.getByRole('table').getByRole('link').first()).toBeVisible();

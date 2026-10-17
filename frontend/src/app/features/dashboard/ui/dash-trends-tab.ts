@@ -71,13 +71,11 @@ let nextId = 0;
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
-    <section
-      class="card mf-fill"
-      [attr.aria-labelledby]="id + '-h'"
-      [attr.aria-busy]="busy() ? 'true' : null"
-    >
+    <div class="card mf-fill" [attr.aria-busy]="busy() ? 'true' : null">
       <header>
-        <h3 [id]="id + '-h'">{{ heading }}</h3>
+        @if (caption(); as c) {
+          <p class="note">{{ c }}</p>
+        }
         <span class="tools">
           @if (data() && !noActivity()) {
             <button
@@ -103,9 +101,6 @@ let nextId = 0;
           }
         </span>
       </header>
-      @if (caption(); as c) {
-        <p class="note">{{ c }}</p>
-      }
 
       @if (state() === 'error') {
         <mf-dash-state variant="error" message="The trend could not be loaded." (retry)="retry()" />
@@ -192,7 +187,7 @@ let nextId = 0;
         }
       </ng-template>
       <p class="sr-only" role="status" aria-live="polite" data-trend-live>{{ live() }}</p>
-    </section>
+    </div>
   `,
   styles: `
     :host {
@@ -212,12 +207,12 @@ let nextId = 0;
       gap: var(--mf-s3);
       margin-bottom: var(--mf-s3);
     }
-    h3 {
+    header .note {
       margin: 0;
-      font-size: var(--mf-fs-lg);
     }
     .tools {
       display: inline-flex;
+      margin-left: auto;
       flex-wrap: wrap;
       justify-content: flex-end;
       gap: var(--mf-s1) var(--mf-s4);
@@ -254,6 +249,15 @@ let nextId = 0;
     .side {
       padding: var(--mf-s4) 0 0;
       border-top: 1px solid var(--mf-border);
+    }
+    /* A phone: the chart takes the whole width the page leaves (no card frame), #121. */
+    @media (max-width: 480px) {
+      .card {
+        padding: var(--mf-s2) 0;
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+      }
     }
     @media (min-width: 1000px) {
       .layout {
