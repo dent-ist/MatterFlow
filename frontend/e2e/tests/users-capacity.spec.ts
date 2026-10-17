@@ -76,6 +76,9 @@ test.describe('Users tab: capacity, population and toolbar', () => {
   test('the default view lists the people who can take work; the quiet line counts the others and Show them adds them (unopod=1)', async ({
     page,
   }) => {
+    // "Others hidden" counts every idle person without a pod in the shared database, and the other worker keeps creating users while this
+    // test runs: the page's number must lie between the API's number before and after the page read.
+    const before = await workload(page, '&includeNoPod=false');
     await openUsers(page);
     const shown = await workload(page, '&includeNoPod=false');
     const everyone = await workload(page, '&includeNoPod=true');
@@ -90,9 +93,11 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     await expect(cardOf(page, podless.idle.displayName)).toHaveCount(0);
     const line = page.locator('[data-users-population-text]');
     await expect(line).toContainText(/Showing \d+ people who can take work\./);
-    await expect(line).toContainText(
-      shown.hiddenCount === 1 ? '1 other is hidden.' : `${shown.hiddenCount} others are hidden.`,
+    const hidden = Number(
+      /(\d+) others? (?:is|are) hidden\./.exec((await line.textContent()) ?? '')?.[1],
     );
+    expect(hidden).toBeGreaterThanOrEqual(Math.min(before.hiddenCount, shown.hiddenCount));
+    expect(hidden).toBeLessThanOrEqual(Math.max(before.hiddenCount, shown.hiddenCount));
     await expect(line).toContainText(`Showing ${shown.summary.total} people`);
 
     await page.getByRole('button', { name: 'Show them' }).click();

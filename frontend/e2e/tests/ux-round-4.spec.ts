@@ -300,8 +300,10 @@ test.describe('Round 4: task type icons', () => {
       name: `De-duplication ${uid()}`,
       workflows: [await seed.workflow()],
     });
+    // Named to come first alphabetically: only the ranking (a name match before a description match) can put it after the other one. The
+    // shared database keeps the "De-duplication <token>" types of earlier runs, so the new one is not necessarily the first card.
     const other = await seed.taskType({
-      name: `Zebra ${uid()}`,
+      name: `Aardvark ${uid()}`,
       description: 'Includes dedup of mailboxes',
       workflows: [await seed.workflow()],
     });
@@ -309,8 +311,14 @@ test.describe('Round 4: task type icons', () => {
     await create.open();
     await create.typeSearch.fill('dedup');
     const cards = page.locator('[data-type-cards] [role=radio]');
-    await expect(cards.first()).toContainText(dedup.name);
-    await expect(page.locator('[data-type-cards]')).toContainText(other.name);
+    await expect(page.locator(`[data-type-card="${dedup.name}"]`)).toBeVisible();
+    await expect(page.locator(`[data-type-card="${other.name}"]`)).toBeVisible();
+    await expect(cards.first()).toContainText('De-duplication');
+    const order = await cards.evaluateAll((els) =>
+      els.map((e) => e.getAttribute('data-type-card')),
+    );
+    expect(order.indexOf(dedup.name)).toBeGreaterThanOrEqual(0);
+    expect(order.indexOf(dedup.name)).toBeLessThan(order.indexOf(other.name));
   });
 });
 
