@@ -28,11 +28,22 @@ export function axeAvailable(): boolean {
   return cached !== null;
 }
 
+interface AxeCheck {
+  message: string;
+}
+
+interface AxeRaw {
+  id: string;
+  impact?: string | null;
+  help: string;
+  nodes: { target: unknown[]; html: string; any: AxeCheck[]; all: AxeCheck[]; none: AxeCheck[] }[];
+}
+
 export interface AxeViolation {
   id: string;
   impact?: string | null;
   help: string;
-  nodes: { target: unknown[]; html: string }[];
+  nodes: { target: unknown[]; html: string; why?: string }[];
 }
 
 export async function axeViolations(page: Page, include?: string): Promise<AxeViolation[]> {
@@ -43,7 +54,7 @@ export async function axeViolations(page: Page, include?: string): Promise<AxeVi
     async ({ include }) => {
       const axe = (
         window as unknown as {
-          axe: { run: (ctx: unknown, opts: unknown) => Promise<{ violations: AxeViolation[] }> };
+          axe: { run: (ctx: unknown, opts: unknown) => Promise<{ violations: AxeRaw[] }> };
         }
       ).axe;
       const result = await axe.run(include ? { include: [[include]] } : document, {
@@ -53,7 +64,11 @@ export async function axeViolations(page: Page, include?: string): Promise<AxeVi
         id: v.id,
         impact: v.impact,
         help: v.help,
-        nodes: v.nodes.slice(0, 3).map((n) => ({ target: n.target, html: n.html.slice(0, 160) })),
+        nodes: v.nodes.slice(0, 3).map((n) => ({
+          target: n.target,
+          html: n.html.slice(0, 160),
+          why: [...n.any, ...n.all, ...n.none].map((c) => c.message).join(' | '),
+        })),
       }));
     },
     { include },
