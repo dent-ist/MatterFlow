@@ -122,6 +122,7 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
   { key: 'dueToday', label: 'Due today' },
   { key: 'asap', label: 'ASAP' },
   { key: 'onHold', label: 'On hold' },
+  { key: 'new', label: 'New', hint: 'Assigned to you since your last visit' },
 ];
 
 /**
@@ -295,6 +296,10 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     );
     // "Closed: all time" only means something on the Closed tab, and a closed-date range replaces it.
     const range = this.state().filters;
+    disabled['newSince'] = () =>
+      this.tab() === 'active' || this.tab() === 'dueSoon'
+        ? null
+        : 'Applies to Active and Due soon and overdue.';
     disabled['closedWindow'] = () =>
       this.tab() !== 'completed' || range.completedFrom || range.completedTo
         ? 'Applies to the Closed tab.'
@@ -304,6 +309,7 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     return queueFilterDefs(lookups, {
       closedWindow: true,
       ...(this.tab() === 'createdByMe' ? { defaultStatus: OPEN_STATUSES } : {}),
+      newSince: true,
       disabled,
       fixed: Object.fromEntries(
         Object.entries(FIXED_VALUES[this.tab()]).map(([key, text]) => [key, () => text]),
@@ -418,14 +424,14 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
   });
 
   /**
-   * The needs-attention strip (M1): counts over the whole open assigned set, never narrowed by the grid's filters. A new item (A5, "New")
-   * is one more entry here, in `STRIP` and in `stripPatch`.
+   * The needs-attention strip (M1): counts over the whole open assigned set, never narrowed by the grid's filters. "New" (A5) counts the
+   * tasks assigned since the start of this visit and is left out on the first visit, when nothing is marked.
    */
   protected readonly stripItems = computed<WorkStripItem[]>(() => {
     const a = this.data()?.attention;
-    return STRIP.map((item) => ({
+    return STRIP.filter((item) => item.key !== 'new' || this.lastVisit !== null).map((item) => ({
       ...item,
-      count: a ? a[item.key as keyof typeof a] : null,
+      count: a ? (a[item.key as keyof typeof a] ?? null) : null,
     }));
   });
 
@@ -434,6 +440,11 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     if (this.tab() !== 'active') return null;
     const f = this.state().filters;
     const dueless = !f.dueFrom && !f.dueTo;
+    if (this.state().newOnly) {
+      return f.overdue === null && f.asap === null && dueless && f.status.length === 0
+        ? 'new'
+        : null;
+    }
     if (
       f.status.length === 1 &&
       f.status[0] === 'ON_HOLD' &&
@@ -603,7 +614,17 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
   protected override fetch(state: QueueState): Observable<MyWorkData> {
     // The Closed tab's 90-day window is the API's default; "Show older" asks for all time. A closed-date range wins over both.
     const closedWindow = this.tab() === 'completed' && state.closedAll ? 'all' : undefined;
-    return this.api.getMyWork(this.tab(), closedWindow, ...queueArgs(state));
+    // The visit start travels as an instant; the address only says `new=1`. With no visit on record nothing is new, so a shared `new=1` link
+    // lists nothing instead of everything.
+    const since = this.lastVisit === null ? null : new Date(this.lastVisit).toISOString();
+    const assignedFrom = state.newOnly ? (since ?? this.clock.now().toISOString()) : undefined;
+    return this.api.getMyWork(
+      this.tab(),
+      closedWindow,
+      assignedFrom,
+      since ?? undefined,
+      ...queueArgs(state),
+    );
   }
 
   protected selectTab(key: string): void {
@@ -630,6 +651,7 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     const status = kept.status.filter((code) => STATUSES[next].includes(code));
     return {
       ...this.state(),
+      newOnly: this.state().newOnly && (next === 'active' || next === 'dueSoon'),
       view: next === 'active' ? null : next,
       page: 1,
       sort: null,
@@ -651,7 +673,9 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
       status: f.status.length === 1 && f.status[0] === 'ON_HOLD' ? [] : f.status,
     };
     const patch: Partial<QueueFilters> = key === this.activeStrip() ? {} : this.stripPatch(key);
-    this.navigate(this.tabState('active', { ...base, ...patch }));
+    const next = this.tabState('active', { ...base, ...patch });
+    // "New" is a flag of the address (`new=1`), not a column filter: only its own item sets it.
+    this.navigate({ ...next, newOnly: key === 'new' && key !== this.activeStrip() });
   }
 
   private stripPatch(key: string): Partial<QueueFilters> {

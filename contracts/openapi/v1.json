@@ -6585,6 +6585,22 @@
             }
           },
           {
+            "name": "assignedFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "newSince",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
             "name": "q",
             "in": "query",
             "schema": {
@@ -11352,6 +11368,13 @@
           },
           "onHold": {
             "type": "integer",
+            "format": "int32"
+          },
+          "new": {
+            "type": [
+              "null",
+              "integer"
+            ],
             "format": "int32"
           }
         }

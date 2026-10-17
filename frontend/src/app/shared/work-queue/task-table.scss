@@ -148,13 +148,7 @@ th[aria-sort='descending'] .wt-sort {
   min-width: 0;
 }
 
-/* The step line shown under the title when the Workflow progress column is folded away (narrow tables). */
-.wt-stepline {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
+/* Muted lines under the title: client / matter, and the step line when the Workflow progress column is folded away. */
 .wt-sub {
   min-width: 0;
   overflow: hidden;
@@ -176,7 +170,16 @@ th[aria-sort='descending'] .wt-sort {
   line-height: 1.4;
 }
 
-/* Pod and Assignee never wrap: long names are cut with an ellipsis (full name in the tooltip and accessible name). */
+.wt-newdot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: var(--mf-s2);
+  border-radius: 50%;
+  background: var(--mf-primary);
+}
+
+/* Pod and Assignee never wrap: long names are cut with an ellipsis (full name in the tooltip). */
 .wt td[data-col='pod'],
 .wt td[data-col='assignee'] {
   white-space: nowrap;
@@ -194,7 +197,7 @@ th[aria-sort='descending'] .wt-sort {
   text-overflow: ellipsis;
 }
 
-/* The Task Type icon sits before the title; neutral colour, it never replaces the name (also in the Task type column and the detail). */
+/* The Task Type icon sits before the title; neutral colour, it never replaces the name. */
 .wt-typeicon {
   flex: none;
   padding-top: 1px;

@@ -96,6 +96,69 @@ public sealed class MyWorkAndPodWorkApiTests(SqlServerFixture sql)
         a.GetProperty("onHold").GetInt32().ShouldBe(1);
     }
 
+    [Theory]
+    [InlineData("UTC")]
+    [InlineData("America/Los_Angeles")]
+    [InlineData("Pacific/Kiritimati")]
+    public async Task Assigned_from_lists_the_new_tasks_and_the_strip_count_equals_the_grid_total(string zone)
+    {
+        var d = await DataAsync();
+        foreach (var client in new[] { d.TechAClient, d.TechBClient })
+        {
+            string Url(string extra) => "/api/v1/my-work?pageSize=100" + extra;
+            var all = await d.GetAsync(Url(string.Empty), client, zone);
+            // Without assignedFrom nothing is counted: the item is hidden.
+            all.GetProperty("attention").GetProperty("new").ValueKind.ShouldBe(System.Text.Json.JsonValueKind.Null);
+
+            // newSince alone only counts: the rows are not narrowed.
+            var countOnly = await d.GetAsync(Url("&newSince=" + Uri.EscapeDataString(DateTime.UtcNow.AddDays(1).ToString("O"))), client, zone);
+            countOnly.GetProperty("total").GetInt32().ShouldBe(all.GetProperty("total").GetInt32());
+            countOnly.GetProperty("attention").GetProperty("new").GetInt32().ShouldBe(0);
+
+            var instant = "2000-01-01T00:00:00Z";
+            var longAgo = await d.GetAsync(Url($"&assignedFrom={instant}&newSince={instant}"), client, zone);
+            longAgo.GetProperty("total").GetInt32().ShouldBe(all.GetProperty("total").GetInt32());
+            longAgo.GetProperty("attention").GetProperty("new").GetInt32().ShouldBe(longAgo.GetProperty("total").GetInt32());
+
+            instant = Uri.EscapeDataString(DateTime.UtcNow.AddDays(1).ToString("O"));
+            var future = await d.GetAsync(Url($"&assignedFrom={instant}&newSince={instant}"), client, zone);
+            future.GetProperty("total").GetInt32().ShouldBe(0);
+            future.GetProperty("attention").GetProperty("new").GetInt32().ShouldBe(0);
+            // Every tab count follows the filter, and the strip never depends on the zone or other filters.
+            future.GetProperty("counts").GetProperty("active").GetInt32().ShouldBe(0);
+        }
+
+        // The boundary is exclusive: a task assigned exactly at the instant is not new, one millisecond earlier it is. An offset is converted.
+        var first = (await MyWorkAsync(d, d.TechAClient)).GetProperty("items").EnumerateArray()
+            .Select(r => r.GetProperty("assignedAtUtc").GetString() ?? r.GetProperty("createdAtUtc").GetString()!)
+            .Select(v => DateTime.Parse(v!, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AdjustToUniversal)).Max();
+        async Task<int> NewAsync(DateTime from)
+        {
+            var at = Uri.EscapeDataString(new DateTimeOffset(from, TimeSpan.Zero).ToString("O"));
+            var page = await d.GetAsync($"/api/v1/my-work?pageSize=1&assignedFrom={at}&newSince={at}", d.TechAClient);
+            // The strip item equals the filtered grid for the same instant.
+            page.GetProperty("attention").GetProperty("new").GetInt32().ShouldBe(page.GetProperty("total").GetInt32());
+            return page.GetProperty("total").GetInt32();
+        }
+
+        (await NewAsync(first)).ShouldBe(0);
+        (await NewAsync(first.AddMilliseconds(-1))).ShouldBeGreaterThan(0);
+        var offset = new DateTimeOffset(first.AddMilliseconds(-1)).ToOffset(TimeSpan.FromHours(-7)).ToString("O");
+        (await d.GetAsync("/api/v1/my-work?pageSize=1&assignedFrom=" + Uri.EscapeDataString(offset), d.TechAClient)).GetProperty("total").GetInt32().ShouldBeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task An_invalid_assigned_from_is_a_400()
+    {
+        var d = await DataAsync();
+        foreach (var (bad, name) in new[] { ("yesterday", "assignedFrom"), ("2026-13-45", "assignedFrom"), ("", "assignedFrom"), ("soon", "newSince") })
+        {
+            var response = await d.TechAClient.GetAsync($"/api/v1/my-work?{name}={bad}");
+            // An empty value is "not given"; anything else that is not an instant is rejected.
+            response.StatusCode.ShouldBe(bad.Length == 0 ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
+        }
+    }
+
     [Fact]
     public async Task My_work_filters_apply_to_the_rows_and_to_every_tab_count()
     {

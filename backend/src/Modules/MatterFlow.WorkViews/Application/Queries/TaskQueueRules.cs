@@ -160,6 +160,16 @@ public static class TaskQueueRules
     public static Expression<Func<WorkTask, bool>> Asap { get; } =
         t => (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold) && t.DueDate == null;
 
+    /// <summary>
+    /// Assigned (or, for a Task never assigned, created) strictly after <paramref name="since"/>: the "New" of My Work. The same test the client
+    /// applies to a row, so the strip count, the filtered grid total and the markers always agree.
+    /// </summary>
+    public static Expression<Func<WorkTask, bool>> AssignedAfter(DateTime since)
+    {
+        var from = DateTime.SpecifyKind(since, DateTimeKind.Utc);
+        return t => (t.AssignedAtUtc ?? t.CreatedAtUtc) > from;
+    }
+
     /// <summary>Combines predicates with OR.</summary>
     public static Expression<Func<WorkTask, bool>> Or(Expression<Func<WorkTask, bool>> left, Expression<Func<WorkTask, bool>> right)
     {

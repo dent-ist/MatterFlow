@@ -89,6 +89,13 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         var closedFrom = filter.CompletedFrom ?? (noRange && closedWindow == ClosedWindowDefault ? queueClock.Today.AddDays(-ClosedWindowDays) : null);
         var filtered = ApplyFilter(db.Set<WorkTask>().AsNoTracking(), filter with { CompletedFrom = null, CompletedTo = null }, queueClock);
         var closedRows = ApplyFilter(db.Set<WorkTask>().AsNoTracking(), filter with { CompletedFrom = closedFrom }, queueClock);
+        var assignedFrom = query.AssignedFrom?.UtcDateTime;
+        if (assignedFrom is { } since)
+        {
+            filtered = filtered.Where(TaskQueueRules.AssignedAfter(since));
+            closedRows = closedRows.Where(TaskQueueRules.AssignedAfter(since));
+        }
+
         var active = filtered.Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Open);
         var dueSoon = filtered.Where(t => t.AssignedUserId == me).Where(TaskQueueRules.DueSoon(queueClock));
         var completed = closedRows.Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Closed);
@@ -111,18 +118,19 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
             view == ViewDueSoon ? total : await dueSoon.CountAsync(ct),
             view == ViewCompleted ? total : await completed.CountAsync(ct),
             view == ViewCreatedByMe ? total : await created.CountAsync(ct));
-        return new MyWorkPage(items, total, page.Page, page.PageSize, queueClock.ZoneId, view, counts, await AttentionAsync(me, queueClock, ct));
+        return new MyWorkPage(items, total, page.Page, page.PageSize, queueClock.ZoneId, view, counts, await AttentionAsync(me, queueClock, query.NewSince?.UtcDateTime, ct));
     }
 
     /// <summary>The needs-attention strip: the whole open assigned set (no grid filters), each count from the same predicate the filter uses.</summary>
-    private async Task<MyWorkAttention> AttentionAsync(int me, QueueClock queueClock, CancellationToken ct)
+    private async Task<MyWorkAttention> AttentionAsync(int me, QueueClock queueClock, DateTime? newSince, CancellationToken ct)
     {
         var open = db.Set<WorkTask>().AsNoTracking().Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Open);
         return new MyWorkAttention(
             await open.Where(TaskQueueRules.Overdue(queueClock)).CountAsync(ct),
             await open.Where(TaskQueueRules.DueToday(queueClock)).CountAsync(ct),
             await open.Where(TaskQueueRules.Asap).CountAsync(ct),
-            await open.CountAsync(t => t.Status == TaskStatusCode.OnHold, ct));
+            await open.CountAsync(t => t.Status == TaskStatusCode.OnHold, ct),
+            newSince is { } since ? await open.Where(TaskQueueRules.AssignedAfter(since)).CountAsync(ct) : null);
     }
 
     // ---- Pod Work

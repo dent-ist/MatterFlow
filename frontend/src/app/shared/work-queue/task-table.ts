@@ -143,6 +143,15 @@ const PROJECT_HIDES_BELOW = 800;
                   @switch (col.key) {
                     @case ('ref') {
                       <span class="wt-mono">{{ row.taskNumber }}</span>
+                      @if (isNew(row)) {
+                        <span
+                          class="wt-newdot"
+                          role="img"
+                          aria-label="New"
+                          title="Assigned since your last visit"
+                          data-new-dot
+                        ></span>
+                      }
                     }
                     @case ('title') {
                       <div class="wt-titlecell">

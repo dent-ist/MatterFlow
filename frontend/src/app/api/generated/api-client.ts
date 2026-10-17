@@ -9401,6 +9401,8 @@ export interface IMyWorkClient {
     /**
      * @param view (optional) 
      * @param closedWindow (optional) 
+     * @param assignedFrom (optional) 
+     * @param newSince (optional) 
      * @param q (optional) 
      * @param status (optional) 
      * @param priority (optional) 
@@ -9434,7 +9436,7 @@ export interface IMyWorkClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    getMyWork(view?: string | undefined, closedWindow?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage>;
+    getMyWork(view?: string | undefined, closedWindow?: string | undefined, assignedFrom?: string | undefined, newSince?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage>;
 }
 
 @Injectable({
@@ -9453,6 +9455,8 @@ export class MyWorkClient implements IMyWorkClient {
     /**
      * @param view (optional) 
      * @param closedWindow (optional) 
+     * @param assignedFrom (optional) 
+     * @param newSince (optional) 
      * @param q (optional) 
      * @param status (optional) 
      * @param priority (optional) 
@@ -9486,7 +9490,7 @@ export class MyWorkClient implements IMyWorkClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    getMyWork(view?: string | undefined, closedWindow?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage> {
+    getMyWork(view?: string | undefined, closedWindow?: string | undefined, assignedFrom?: string | undefined, newSince?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage> {
         let url_ = this.baseUrl + "/api/v1/my-work?";
         if (view === null)
             throw new globalThis.Error("The parameter 'view' cannot be null.");
@@ -9496,6 +9500,14 @@ export class MyWorkClient implements IMyWorkClient {
             throw new globalThis.Error("The parameter 'closedWindow' cannot be null.");
         else if (closedWindow !== undefined)
             url_ += "closedWindow=" + encodeURIComponent("" + closedWindow) + "&";
+        if (assignedFrom === null)
+            throw new globalThis.Error("The parameter 'assignedFrom' cannot be null.");
+        else if (assignedFrom !== undefined)
+            url_ += "assignedFrom=" + encodeURIComponent("" + assignedFrom) + "&";
+        if (newSince === null)
+            throw new globalThis.Error("The parameter 'newSince' cannot be null.");
+        else if (newSince !== undefined)
+            url_ += "newSince=" + encodeURIComponent("" + newSince) + "&";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
         else if (q !== undefined)
@@ -12128,6 +12140,7 @@ export interface MyWorkAttention {
     dueToday: number;
     asap: number;
     onHold: number;
+    new?: number | undefined;
 
     [key: string]: any;
 }

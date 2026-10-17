@@ -34,6 +34,8 @@ export interface QueueDefOptions {
   defaultStatus?: readonly string[];
   /** My Work, Closed tab: adds the "Closed: all time" chip of `closed=all` ("Show older"; removing it returns to the 90-day window). */
   closedWindow?: boolean;
+  /** My Work: adds the "New since your last visit" chip of `new=1` (the strip's New item; removing the chip lists every task again). */
+  newSince?: boolean;
   /** Names for the link-only record chips (`?matter=12` shows "Matter: 00343-00012"). */
   names?: {
     client?: (id: string) => string;
@@ -187,6 +189,21 @@ export function queueFilterDefs(
             options: [{ value: 'all', label: 'all time' }],
             normalize: (v: string) => (v.toLowerCase() === 'all' ? 'all' : null),
             ...off('closedWindow'),
+          } satisfies FilterDef,
+        ]
+      : []),
+    ...(options.newSince
+      ? [
+          {
+            key: 'newSince',
+            label: 'New',
+            type: 'select',
+            param: 'new',
+            noControl: true,
+            bareChip: true,
+            options: [{ value: '1', label: 'New since your last visit' }],
+            normalize: (v: string) => (v === '1' ? '1' : null),
+            ...off('newSince'),
           } satisfies FilterDef,
         ]
       : []),

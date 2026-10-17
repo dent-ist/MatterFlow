@@ -84,12 +84,14 @@ public sealed record MyWorkCounts(
 /// <summary>
 /// The needs-attention strip of My Work (M1): counts over the person's whole open assigned set, never narrowed by the grid's filters. Overdue and
 /// DueToday do not overlap; Asap is never overdue or due today; OnHold is the status On Hold. Each equals the Active tab's total under the matching filter.
+/// <c>New</c> is null unless the request names <c>newSince</c>; then it counts the open Tasks assigned after it.
 /// </summary>
 public sealed record MyWorkAttention(
     [property: Required] int Overdue,
     [property: Required] int DueToday,
     [property: Required] int Asap,
-    [property: Required] int OnHold);
+    [property: Required] int OnHold,
+    int? New = null);
 
 /// <summary>A page of My Work for one tab with the counts of every tab.</summary>
 public sealed record MyWorkPage(

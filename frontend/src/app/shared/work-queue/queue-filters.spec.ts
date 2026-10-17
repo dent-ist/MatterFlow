@@ -131,6 +131,14 @@ describe('queue filter state', () => {
     expect(again).toEqual(original);
   });
 
+  it('reads new=1 as the New flag and writes the flag, never an instant (A5)', () => {
+    const state = parse({ new: '1' });
+    expect(state.newOnly).toBe(true);
+    expect(toQueryParams(state)['new']).toBe('1');
+    expect(toQueryParams({ ...state, newOnly: false })['new']).toBeNull();
+    expect(parse({ new: '2026-10-10T00:00:00Z' }).newOnly).toBe(false);
+  });
+
   it('reads closed=all as the explicit all-time Closed window and writes it back (C4)', () => {
     const state = parse({ view: 'completed', closed: 'all' });
     expect(state.closedAll).toBe(true);

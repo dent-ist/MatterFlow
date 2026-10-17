@@ -157,7 +157,7 @@ public class TaskQueueQuery
 /// <summary>My Work: the queue filters plus the tab.</summary>
 public class MyWorkQuery : TaskQueueQuery
 {
-    public static readonly IReadOnlyList<string> MyWorkKeys = [.. Keys, "view", "closedWindow"];
+    public static readonly IReadOnlyList<string> MyWorkKeys = [.. Keys, "view", "closedWindow", "assignedFrom", "newSince"];
 
     /// <summary><c>active</c> (default), <c>dueSoon</c>, <c>completed</c> or <c>createdByMe</c>.</summary>
     [FromQuery(Name = "view"), StringLength(20)]
@@ -169,6 +169,20 @@ public class MyWorkQuery : TaskQueueQuery
     /// </summary>
     [FromQuery(Name = "closedWindow"), StringLength(10)]
     public string? ClosedWindow { get; init; }
+
+    /// <summary>
+    /// The "New" filter: only Tasks assigned after this instant (UTC, ISO 8601, e.g. <c>2026-10-17T08:30:00Z</c>; a value with an offset is converted);
+    /// a Task never assigned counts from its creation. It narrows the rows and every tab count like any filter. An invalid value is a 400.
+    /// </summary>
+    [FromQuery(Name = "assignedFrom")]
+    public DateTimeOffset? AssignedFrom { get; init; }
+
+    /// <summary>
+    /// The start of the viewer's visit, same format as <c>assignedFrom</c>. It never narrows the rows: it only makes <c>attention.new</c> count the
+    /// open Tasks assigned after it, so with <c>assignedFrom</c> set to the same instant the filtered total equals the strip item. Omitted: no count.
+    /// </summary>
+    [FromQuery(Name = "newSince")]
+    public DateTimeOffset? NewSince { get; init; }
 }
 
 /// <summary>Pod Work: the queue filters (except <c>pod</c>) plus the Pod and the tab.</summary>

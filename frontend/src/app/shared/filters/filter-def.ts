@@ -83,6 +83,8 @@ export interface FilterDef {
   readonly span?: number;
   /** No control anywhere (a link-only filter such as `?matterId=`): it only shows as a removable chip. */
   readonly noControl?: boolean;
+  /** The chip reads the value alone ("New since your last visit"), without the "<label>: " prefix. */
+  readonly bareChip?: boolean;
   /** Replaces the value part of the chip / print text (a record name instead of its id). */
   readonly valueLabel?: (value: string) => string;
   /** dateRange: the preset keys to offer (default: today, this week, last 7 days, last 30 days, this month). */
@@ -434,7 +436,7 @@ export function buildChips(
     {
       ...base,
       id: def.key,
-      label: `${def.label}: ${valueText(def, value)}`,
+      label: def.bareChip ? valueText(def, value) : `${def.label}: ${valueText(def, value)}`,
       remaining: defaultValue(def),
     },
   ];

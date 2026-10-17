@@ -121,6 +121,9 @@ describe('TaskTable', () => {
     expect(marker.textContent?.trim()).toBe('New');
     expect(marker.closest('a')).toBeNull();
     expect(marker.parentElement!.classList).toContain('wt-subline');
+    // The same fact as a dot in the Ref cell (A5), so it shows when the title is long.
+    const dot = cell('ref').querySelector('[data-new-dot]')!;
+    expect(dot.getAttribute('aria-label')).toBe('New');
   });
 
   it('folds Workflow progress under the title and drops Matter and Project when the box is narrow (UXR4-02)', async () => {

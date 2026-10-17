@@ -118,6 +118,20 @@ public class TaskQueueRulesTests
     }
 
     [Fact]
+    public void New_means_assigned_strictly_after_the_visit_start_and_a_never_assigned_task_counts_from_its_creation()
+    {
+        var since = new DateTime(2026, 10, 14, 8, 30, 0, DateTimeKind.Utc);
+        var isNew = TaskQueueRules.AssignedAfter(since).Compile();
+        isNew(new WorkTask { AssignedAtUtc = since }).ShouldBeFalse("the boundary itself belongs to the previous visit");
+        isNew(new WorkTask { AssignedAtUtc = since.AddTicks(1) }).ShouldBeTrue();
+        isNew(new WorkTask { AssignedAtUtc = since.AddMinutes(-1), CreatedAtUtc = since.AddHours(1) }).ShouldBeFalse("assigned earlier than it was created is read as assigned");
+        isNew(new WorkTask { AssignedAtUtc = null, CreatedAtUtc = since.AddMinutes(5) }).ShouldBeTrue();
+        isNew(new WorkTask { AssignedAtUtc = null, CreatedAtUtc = since.AddMinutes(-5) }).ShouldBeFalse();
+        // An instant carries no zone: the same instant read from another kind is the same boundary.
+        TaskQueueRules.AssignedAfter(DateTime.SpecifyKind(since, DateTimeKind.Unspecified)).Compile()(new WorkTask { AssignedAtUtc = since }).ShouldBeFalse();
+    }
+
+    [Fact]
     public void Due_soon_and_overdue_default_order_is_overdue_first_then_due_moment_then_priority_then_oldest_then_id()
     {
         var now = new DateTime(2026, 10, 14, 16, 0, 0, DateTimeKind.Utc); // noon in New York

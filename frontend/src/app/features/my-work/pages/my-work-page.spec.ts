@@ -21,18 +21,20 @@ import { MyWorkPage, firstNonEmptyTab } from './my-work-page';
 const ARG = {
   view: 0,
   closedWindow: 1,
-  q: 2,
-  status: 3,
-  pod: 5,
-  assignee: 7,
-  unassigned: 8,
-  creator: 9,
-  dueFrom: 17,
-  asap: 19,
-  completedFrom: 22,
-  matterText: 24,
-  sort: 29,
-  page: 31,
+  assignedFrom: 2,
+  newSince: 3,
+  q: 4,
+  status: 5,
+  pod: 7,
+  assignee: 9,
+  unassigned: 10,
+  creator: 11,
+  dueFrom: 19,
+  asap: 21,
+  completedFrom: 24,
+  matterText: 26,
+  sort: 31,
+  page: 33,
 };
 
 const COUNTS = { active: 7, dueSoon: 2, completed: 5, createdByMe: 3 };
@@ -506,6 +508,84 @@ describe('MyWorkPage', () => {
     el = await open('/my-work', { rows, response: response() });
     expect(el.querySelectorAll('[data-new-marker]').length).toBe(0);
     expect(stored().visitSince).toBe(new Date('2026-10-14T14:00:00Z').getTime());
+  });
+
+  describe('New (A5)', () => {
+    const SINCE = new Date('2026-10-10T00:00:00Z').getTime();
+    const newRows = () => [
+      aRow({ taskId: 1, taskNumber: 'TSK-1', createdAtUtc: '2026-10-12T12:00:00Z' }),
+      aRow({ taskId: 2, taskNumber: 'TSK-2', createdAtUtc: '2026-10-01T12:00:00Z' }),
+    ];
+    const withVisit = (visitSince: number | null) =>
+      localStorage.setItem(
+        'mf.my-work.visit.v2.1',
+        JSON.stringify({ lastActiveAt: new Date('2026-10-14T14:50:00Z').getTime(), visitSince }),
+      );
+    const item = (el: HTMLElement) =>
+      el.querySelector<HTMLButtonElement>('[data-strip-item="new"]');
+
+    it('is hidden on the first visit and sends no instant', async () => {
+      const el = await open('/my-work');
+      expect(item(el)).toBeNull();
+      expect(lastArgs()[ARG.newSince]).toBeUndefined();
+      expect(lastArgs()[ARG.assignedFrom]).toBeUndefined();
+      expect(el.querySelectorAll('[data-new-dot]').length).toBe(0);
+    });
+
+    it('shows the count after On hold and sends the visit start with every request', async () => {
+      withVisit(SINCE);
+      const el = await open('/my-work', {
+        response: of(
+          pageOf(newRows(), {
+            counts: COUNTS,
+            attention: { ...ATTENTION, new: 1 },
+          }),
+        ),
+      });
+      expect(el.querySelector('[data-strip]')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+        'Overdue 9 Due today 3 ASAP 14 On hold 0 New 1',
+      );
+      expect(lastArgs()[ARG.newSince]).toBe(new Date(SINCE).toISOString());
+      expect(lastArgs()[ARG.assignedFrom]).toBeUndefined();
+      // The marker and the dot are on the same row.
+      expect(el.querySelectorAll('[data-new-marker]').length).toBe(1);
+      const dot = el.querySelector('[data-new-dot]')!;
+      expect(dot.getAttribute('aria-label')).toBe('New');
+      expect(dot.closest('tr')!.getAttribute('data-task')).toBe('TSK-1');
+      expect(dot.closest('td')!.getAttribute('data-col')).toBe('ref');
+    });
+
+    it('applies the filter as new=1 with the instant in assignedFrom, shows the chip and toggles off', async () => {
+      withVisit(SINCE);
+      const el = await open('/my-work?view=completed', {
+        response: of(pageOf(newRows(), { counts: COUNTS, attention: { ...ATTENTION, new: 1 } })),
+      });
+      item(el)!.click();
+      await settle();
+      expect(query()['new']).toBe('1');
+      expect(query()['view']).toBeUndefined();
+      expect(JSON.stringify(query())).not.toContain('2026-10-10');
+      expect(lastArgs()[ARG.assignedFrom]).toBe(new Date(SINCE).toISOString());
+      expect(item(el)!.getAttribute('aria-pressed')).toBe('true');
+      expect(el.querySelector('[data-chip]')?.textContent).toContain('New since your last visit');
+
+      // Another strip item replaces it; the same item again switches it off.
+      el.querySelector<HTMLButtonElement>('[data-strip-item="asap"]')!.click();
+      await settle();
+      expect(query()['new']).toBeUndefined();
+      item(el)!.click();
+      await settle();
+      item(el)!.click();
+      await settle();
+      expect(query()['new']).toBeUndefined();
+      expect(lastArgs()[ARG.assignedFrom]).toBeUndefined();
+    });
+
+    it('lists nothing for a shared new=1 link when the opener has no visit on record', async () => {
+      const el = await open('/my-work?new=1');
+      expect(item(el)).toBeNull();
+      expect(lastArgs()[ARG.assignedFrom]).toBe('2026-10-14T15:00:00.000Z');
+    });
   });
 
   it('restores Due soon and names the view and the filters in the notice', async () => {

@@ -50,6 +50,8 @@ export interface QueueState {
   view: string | null;
   /** My Work, Closed tab: "Show older" is an explicit all-time state (`closed=all`), not a date. A closed-date range wins over it. */
   closedAll: boolean;
+  /** My Work: only tasks assigned since the start of the viewer's visit (`new=1`). The address carries the flag, never the instant. */
+  newOnly: boolean;
   podId: number | null;
 }
 
@@ -114,6 +116,7 @@ export function emptyState(): QueueState {
     pageSize: DEFAULT_PAGE_SIZE,
     view: null,
     closedAll: false,
+    newOnly: false,
     podId: null,
   };
 }
@@ -198,6 +201,7 @@ export function parseQueueState(params: ParamMap): QueueState {
     pageSize: PAGE_SIZES.includes(size) ? size : DEFAULT_PAGE_SIZE,
     view: params.get('view'),
     closedAll: params.get('closed')?.toLowerCase() === 'all',
+    newOnly: params.get('new') === '1',
     podId: id(params, 'podId'),
   };
 }
@@ -250,6 +254,7 @@ export function toQueryParams(
     pageSize: state.pageSize === DEFAULT_PAGE_SIZE ? null : String(state.pageSize),
     view: state.view,
     closed: state.closedAll ? 'all' : null,
+    new: state.newOnly ? '1' : null,
     podId: state.podId === null ? null : String(state.podId),
   };
 }
