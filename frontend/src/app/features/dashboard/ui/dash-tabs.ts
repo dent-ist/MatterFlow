@@ -11,6 +11,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { iconForPath } from '../../../shared/layout/section-icons';
 
 /**
  * Scrolls the tab list (and only it) so that the tab is fully inside it. `scrollIntoView` would also scroll the document sideways whenever the
@@ -50,7 +51,13 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="row" data-dash-head>
-      <h1 class="h1" data-page-title id="mf-dash-h1">{{ heading() }}</h1>
+      <h1 class="h1" data-page-title id="mf-dash-h1">
+        <!-- The section icon of every page title (UXR-02), the same one the left navigation shows; decorative, so the heading's name is the text. -->
+        @if (icon) {
+          <i class="h1__icon" [class]="icon" aria-hidden="true" data-page-icon></i>
+        }
+        {{ heading() }}
+      </h1>
       @if (showTabs()) {
         <div
           class="strip"
@@ -117,6 +124,12 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
       font-size: 20px;
       line-height: 1.25;
       font-weight: 600;
+    }
+    .h1__icon {
+      margin-right: var(--mf-s2);
+      color: var(--mf-text-muted);
+      font-size: 0.75em;
+      vertical-align: 0.04em;
     }
     .spacer {
       flex: 1 1 0;
@@ -237,6 +250,7 @@ export class DashTabs {
   protected readonly edges = signal({ start: false, end: false });
   protected readonly tabId = tabId;
   protected readonly panelId = panelId;
+  protected readonly icon = iconForPath('/dashboard');
 
   readonly tabs = input.required<readonly DashTab[]>();
   readonly selected = input.required<string>();

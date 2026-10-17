@@ -103,6 +103,15 @@ describe('DashTabs (WP9b: the tab strip on a phone)', () => {
     ]);
   });
 
+  it('shows the Dashboard section icon before the title, hidden from assistive technology', () => {
+    const h1 = el.querySelector('h1[data-page-title]')!;
+    const glyph = h1.querySelector('i[data-page-icon]')!;
+    expect(glyph.classList.contains('pi-home')).toBe(true);
+    expect(glyph.getAttribute('aria-hidden')).toBe('true');
+    expect(h1.firstElementChild).toBe(glyph);
+    expect(h1.textContent!.trim()).toBe('Dashboard');
+  });
+
   it('moves with the arrow keys, wraps round and Home/End jump', () => {
     const key = (k: string) =>
       tabs()
