@@ -12,7 +12,7 @@ import {
   ElementRef,
   Type,
 } from '@angular/core';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { Button } from 'primeng/button';
@@ -22,6 +22,7 @@ import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { SEARCH_TYPES } from '../search/search-meta';
 import { GlobalSearch } from '../search/global-search';
 import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem } from './nav-items';
+import { DRILL_SOURCES, parseFrom } from '../work-queue/drill';
 import { ShortcutHelpState } from './shortcut-help-state';
 import { isShortcut } from './shortcut-registry';
 import { ShellLayout } from '../ui/fixed-page';
@@ -36,7 +37,6 @@ const PHONE_QUERY = '(max-width: 639px)';
   imports: [
     RouterOutlet,
     RouterLink,
-    RouterLinkActive,
     Button,
     GlobalSearch,
     HasPermissionDirective,
@@ -173,6 +173,17 @@ export class AppShell {
       return;
     }
     this.help.open.set(open);
+  }
+
+  /** A task opened from a list (`/tasks/12?from=my-work`) keeps that list's item current, not Task Queue (M7). */
+  protected isActive(item: NavItem): boolean {
+    const [path, query] = this.url().split('#')[0].split('?');
+    const from =
+      /^\/tasks\/[^/]+$/.test(path) && path !== '/tasks/new'
+        ? parseFrom(new URLSearchParams(query ?? '').get('from'))
+        : null;
+    if (from) return item.path === DRILL_SOURCES[from].path;
+    return path === item.path || path.startsWith(item.path + '/');
   }
 
   /** An Administration item is current on its own path and on the paths of its other tabs (and below them). */

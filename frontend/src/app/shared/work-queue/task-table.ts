@@ -12,7 +12,10 @@ import {
   viewChild,
   effect,
 } from '@angular/core';
-import { Params, RouterLink } from '@angular/router';
+import { NavigationEnd, Params, Router, RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map } from 'rxjs';
+import { DrillReturn, DrillSource } from './drill';
 import { LoadState } from '../ui/data-table';
 import { ScrollArea } from '../ui/fixed-page';
 import { ColumnFilterRow } from '../filters/column-filter-row';
@@ -148,7 +151,11 @@ const PROJECT_HIDES_BELOW = 800;
                           <a
                             class="wt-title"
                             [routerLink]="['/tasks', row.taskId]"
+                            [queryParams]="linkParams()"
+                            [state]="linkState()"
+                            [attr.data-task-id]="row.taskId"
                             [attr.title]="row.title"
+                            (click)="drillOut($event, row)"
                             >{{ row.title }}</a
                           >
                           @if (isNew(row) || !hideContext() || foldProgress()) {
@@ -184,6 +191,8 @@ const PROJECT_HIDES_BELOW = 800;
                                   data-step-link
                                   [routerLink]="['/tasks', row.taskId]"
                                   [queryParams]="stepQuery(row)"
+                                  [state]="linkState()"
+                                  (click)="drillOut($event, row)"
                                   [attr.aria-label]="stepLabel(row)"
                                   >{{ row.workflow.currentStepName }}</a
                                 >
@@ -250,6 +259,8 @@ const PROJECT_HIDES_BELOW = 800;
                               data-step-link
                               [routerLink]="['/tasks', row.taskId]"
                               [queryParams]="stepQuery(row)"
+                              [state]="linkState()"
+                              (click)="drillOut($event, row)"
                               [attr.aria-label]="stepLabel(row)"
                               >{{ row.workflow.currentStepName }}</a
                             >
@@ -394,6 +405,16 @@ export class TaskTable {
   private readonly clock = inject(Clock);
   protected readonly auth = inject(AuthStore);
   private readonly zone = inject(USER_TIME_ZONE);
+  private readonly router = inject(Router);
+  private readonly drill = inject(DrillReturn);
+  /** The address of the list as it is now: the exact view the task page offers to return to. */
+  private readonly here = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map(() => this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
   private readonly wrap = viewChild<ElementRef<HTMLElement>>('wrap');
 
   /** Width of the table's box in px (0 until measured); narrow boxes drop the lowest-priority columns instead of scrolling. */
@@ -430,6 +451,20 @@ export class TaskTable {
   readonly showAssign = input(false);
   /** Instant (ms) of the user's previous visit; tasks created after it get a "New" marker. Null shows no markers (My Work only). */
   readonly newSince = input<number | null>(null);
+  /** The list the table belongs to: its task links carry `?from=` and the view to return to (M7). Null on record pages. */
+  readonly from = input<DrillSource | null>(null);
+
+  protected readonly linkParams = computed(() => (this.from() ? { from: this.from() } : null));
+  protected readonly linkState = computed(() =>
+    this.from() ? { returnTo: this.here() } : undefined,
+  );
+
+  /** A plain click on a title remembers the row, so Back can focus it again. */
+  protected drillOut(event: MouseEvent, row: TaskQueueRow): void {
+    const from = this.from();
+    if (!from || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    this.drill.leave(from, row.taskId);
+  }
   /** Leave out the "Client · Matter" line under the title: on a Matter's or Project's own page the header already says it. */
   readonly hideContext = input(false);
 
@@ -553,7 +588,10 @@ export class TaskTable {
   }
 
   protected stepQuery(row: TaskQueueRow): Params {
-    return stepQueryParams(row.workflow.currentStepId as number);
+    const from = this.from();
+    return from
+      ? { ...stepQueryParams(row.workflow.currentStepId as number), from }
+      : stepQueryParams(row.workflow.currentStepId as number);
   }
 
   protected stepLabel(row: TaskQueueRow): string {

@@ -192,6 +192,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
             />
           </mf-filters-bar>
           <mf-work-list
+            from="pod-work"
             [rows]="rows()"
             [total]="total()"
             [page]="state().page"

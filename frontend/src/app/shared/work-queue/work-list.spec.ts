@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
+import { DrillReturn } from './drill';
 import { TaskQueueRow } from '../../api/generated/api-client';
 import { WorkTab, WorkTabs } from './work-tabs';
 import { WorkList } from './work-list';
@@ -202,5 +203,68 @@ describe('WorkTabs', () => {
     buttons()[2].dispatchEvent(new KeyboardEvent('keydown', { key: 'Home' }));
     buttons()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'x' }));
     expect(emitted).toEqual(['b', 'b', 'c', 'c', 'a']);
+  });
+});
+
+describe('WorkList drill-in (M7)', () => {
+  let fixture: ComponentFixture<WorkList>;
+  const el = () => fixture.nativeElement as HTMLElement;
+
+  async function create(from: 'my-work' | null, rows: TaskQueueRow[], returning: boolean) {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: 'list', children: [] }]),
+        provideFakeMe(new FakeMeApi(withPermissions())),
+        ...provideLookups(),
+        ...provideClock('2026-10-14T15:00:00Z'),
+      ],
+    });
+    const router = TestBed.inject(Router);
+    const drill = TestBed.inject(DrillReturn);
+    drill.leave('my-work', 1043);
+    await router.navigateByUrl('/list', returning ? { state: { restoreFocus: true } } : {});
+    fixture = TestBed.createComponent(WorkList);
+    fixture.componentRef.setInput('rows', rows);
+    fixture.componentRef.setInput('columns', ['ref', 'title', 'status']);
+    fixture.componentRef.setInput('state', 'ready');
+    fixture.componentRef.setInput('total', rows.length);
+    fixture.componentRef.setInput('from', from);
+    document.body.appendChild(el());
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await fixture.whenStable();
+  }
+
+  afterEach(() => {
+    el().remove();
+    TestBed.resetTestingModule();
+  });
+
+  it('carries ?from= on the title links and none without a source', async () => {
+    await create('my-work', [aRow({ taskId: 1043 })], false);
+    expect(el().querySelector('a.wt-title')!.getAttribute('href')).toBe('/tasks/1043?from=my-work');
+    el().remove();
+    TestBed.resetTestingModule();
+    await create(null, [aRow({ taskId: 1043 })], false);
+    expect(el().querySelector('a.wt-title')!.getAttribute('href')).toBe('/tasks/1043');
+  });
+
+  it('focuses the title link of the row that was left when the person returns', async () => {
+    await create('my-work', [aRow({ taskId: 1042 }), aRow({ taskId: 1043 })], true);
+    expect(document.activeElement).toBe(el().querySelector('a.wt-title[data-task-id="1043"]'));
+  });
+
+  it('does not move focus when the list is reached another way', async () => {
+    await create('my-work', [aRow({ taskId: 1042 }), aRow({ taskId: 1043 })], false);
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it('focuses the page heading when the row is no longer on the page', async () => {
+    const h1 = document.createElement('h1');
+    h1.setAttribute('data-page-title', '');
+    document.body.appendChild(h1);
+    await create('my-work', [aRow({ taskId: 1042 })], true);
+    expect(document.activeElement).toBe(h1);
+    h1.remove();
   });
 });

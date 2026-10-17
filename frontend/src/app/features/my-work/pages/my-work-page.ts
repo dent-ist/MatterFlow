@@ -34,6 +34,7 @@ import {
   QueueState,
   queueArgs,
 } from '../../../shared/work-queue/queue-filters';
+import { openInQueueParams } from '../../../shared/work-queue/queue-link';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
 import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
@@ -158,14 +159,39 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
             [defaultColumns]="columnDefaults()"
             (densityChange)="setDensity($event)"
           >
+            @if (!filters.sheetMode()) {
+              <a
+                tab-actions
+                class="mf-btn mw-queue"
+                data-open-in-queue
+                [routerLink]="['/tasks']"
+                [queryParams]="queueParams()"
+                title="Same tasks, in the shared queue with all columns"
+                aria-label="Open in Task Queue"
+                ><i class="pi pi-list-check" aria-hidden="true"></i>
+                <span class="mw-qtext">Open in Task Queue</span></a
+              >
+            }
             @if (windowed()) {
               <button tab-actions type="button" class="mf-btn mf-btn--text" (click)="showOlder()">
                 Show older
               </button>
             }
           </mf-work-view-controls>
+          <a
+            mfSheetFooter
+            class="mf-btn mw-queue mw-queue--sheet"
+            data-open-in-queue
+            [routerLink]="['/tasks']"
+            [queryParams]="queueParams()"
+            title="Same tasks, in the shared queue with all columns"
+            aria-label="Open in Task Queue"
+            ><i class="pi pi-list-check" aria-hidden="true"></i>
+            <span class="mw-qtext">Open in Task Queue</span></a
+          >
         </mf-filters-bar>
         <mf-work-list
+          from="my-work"
           [rows]="rows()"
           [total]="total()"
           [page]="state().page"
@@ -256,6 +282,18 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     openByDefault: true,
     defs: this.defs,
     visibleColumns: this.shownColumns,
+  });
+
+  /** "Open in Task Queue": the same tasks as this tab, with its filters mapped to the queue's (M10). */
+  protected readonly queueParams = computed(() => {
+    const userId = this.userId();
+    return userId === null
+      ? {}
+      : openInQueueParams(this.tab(), this.state(), {
+          userId,
+          now: this.clock.now(),
+          zone: this.zone,
+        });
   });
 
   protected readonly tabLabel = computed(() => TAB_LABELS[this.tab()]);

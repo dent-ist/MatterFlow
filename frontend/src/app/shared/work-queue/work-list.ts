@@ -2,6 +2,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  Injector,
+  afterNextRender,
+  untracked,
   computed,
   effect,
   inject,
@@ -15,6 +18,7 @@ import { Pager } from '../ui/pager';
 import { Density } from './column-prefs';
 import { PAGE_SIZES, SortDirection } from './queue-filters';
 import { TaskTable } from './task-table';
+import { DrillReturn, DrillSource } from './drill';
 import { CopyPart } from '../ui/copy-parts';
 
 /** A short list: this many rows or fewer get the "That's everything" line under the last one. */
@@ -53,6 +57,7 @@ export type WorkListState = 'loading' | 'ready' | 'error';
       [showAssign]="showAssign()"
       [newSince]="newSince()"
       [leaving]="leaving()"
+      [from]="from()"
       (sortChange)="sortChange.emit($event)"
       (retry)="onRetry()"
       (clearFilters)="clearFilters.emit()"
@@ -102,6 +107,8 @@ export class WorkList {
   /** The projected `[near-empty]` note may show under the last row (My Work, Active) when the list is short and unfiltered. */
   readonly nearEmpty = input(false);
   readonly showAssign = input(false);
+  /** The list the rows belong to: task links carry `?from=`, and Back from a task focuses the row that was left (M7). */
+  readonly from = input<DrillSource | null>(null);
   /** Instant (ms) of the previous visit; rows created after it show a "New" marker. */
   readonly newSince = input<number | null>(null);
   /** Tasks that just left the tab; their rows show muted until the page removes them. */
@@ -128,8 +135,33 @@ export class WorkList {
   );
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private focusAfterRetry = false;
+  private readonly drill = inject(DrillReturn);
+  private readonly injector = inject(Injector);
+  private returnHandled = false;
 
   constructor() {
+    // Coming back from a task (browser Back or "Back to ..."): focus the title link of the row that was left, else the page heading.
+    effect(() => {
+      const from = this.from();
+      if (this.state() !== 'ready' || !from || this.returnHandled) return;
+      this.returnHandled = true;
+      const taskId = untracked(() => this.drill.take(from));
+      if (taskId === null) return;
+      afterNextRender(
+        () => {
+          const root = this.host.nativeElement;
+          const link = root.querySelector<HTMLElement>(`a.wt-title[data-task-id="${taskId}"]`);
+          if (link) {
+            link.focus();
+            return;
+          }
+          const heading = document.querySelector<HTMLElement>('[data-page-title]');
+          heading?.setAttribute('tabindex', '-1');
+          heading?.focus();
+        },
+        { injector: this.injector },
+      );
+    });
     // Retry that succeeds moves focus to the first row (or the table), so the keyboard user is where the rows are.
     effect(() => {
       if (this.state() !== 'ready' || !this.focusAfterRetry) return;

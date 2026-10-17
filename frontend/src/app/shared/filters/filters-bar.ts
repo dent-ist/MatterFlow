@@ -140,6 +140,7 @@ export class MoreFilters {
  *   <mf-filters-bar [filters]="filters" controls="asset-filter-row" [clearAlso]="['q']">
  *     <span mfBarStart>...presets...</span>   <!-- optional, left -->
  *     ...Columns, Sorted by...                 <!-- optional, before More filters -->
+ *     <a mfSheetFooter>...</a>                 <!-- optional, in the footer of the Filters sheet (narrow windows) -->
  *   </mf-filters-bar>
  */
 @Component({
@@ -185,7 +186,9 @@ export class MoreFilters {
     @if (filters().printLine(); as line) {
       <p class="fbar__print" data-filter-print>{{ line }}</p>
     }
-    <mf-filter-sheet [filters]="filters()" [clearAlso]="clearAlso()" />
+    <mf-filter-sheet [filters]="filters()" [clearAlso]="clearAlso()">
+      <ng-content select="[mfSheetFooter]" ngProjectAs="[mfSheetFooter]" />
+    </mf-filter-sheet>
   `,
   styles: `
     :host {

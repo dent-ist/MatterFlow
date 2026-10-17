@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink, UrlTree } from '@angular/router';
 import { iconForPath } from '../layout/section-icons';
 import { FixedPage } from './fixed-page';
 
@@ -7,7 +7,7 @@ import { FixedPage } from './fixed-page';
 export interface Crumb {
   label: string;
   /** Router commands (or a URL string). Omit for the current page. */
-  link?: string | readonly unknown[];
+  link?: string | readonly unknown[] | UrlTree;
 }
 
 /**

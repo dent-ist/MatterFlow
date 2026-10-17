@@ -214,6 +214,8 @@ export async function mountTaskPage(
   permissions: Permission[] = ['Task.View', 'Task.Edit', 'Workflow.Execute'],
   extra: Partial<TaskFakes> = {},
   tab?: string,
+  /** Runs once the testing module is configured, before the page is created (e.g. to set the address the page was opened from). */
+  setup?: () => void,
 ): Promise<{ fixture: ComponentFixture<TaskDetailPage>; fakes: TaskFakes; el: HTMLElement }> {
   const ok = <T>(v: T): Observable<T> => of(v);
   const fakes: TaskFakes = {
@@ -296,6 +298,7 @@ export async function mountTaskPage(
     ],
   });
   vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+  setup?.();
   await TestBed.inject(AuthStore).ensureLoaded();
   const fixture = TestBed.createComponent(TaskDetailPage);
   fixture.componentRef.setInput('id', String(task.taskId));

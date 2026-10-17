@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 
 vi.setConfig({ testTimeout: 60000 });
-import { Observable, of } from 'rxjs';
+import { ActivatedRoute, Params } from '@angular/router';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { TaskResponse } from '../../../api/generated/api-client';
 import { Permission } from '../../../core/auth/permissions';
 import { UndoService } from '../../../core/notify/undo.service';
@@ -724,5 +725,50 @@ describe('TaskDetailPage layout and states', () => {
     expect(q(el, '[data-section=comments] [data-toggle]')!.getAttribute('aria-expanded')).toBe(
       'true',
     );
+  });
+});
+
+describe('TaskDetailPage drill-in context (M7, #160)', () => {
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    history.replaceState(null, '');
+  });
+
+  async function openFrom(from: string, returnTo?: string) {
+    return mountTaskPage(aTask(), PERMS, {}, undefined, () => {
+      const route = TestBed.inject(ActivatedRoute);
+      (route.queryParams as BehaviorSubject<Params>).next({ from });
+      route.snapshot.queryParams = { from };
+      history.replaceState(returnTo ? { returnTo } : null, '');
+    });
+  }
+
+  const crumb = (el: HTMLElement) =>
+    el.querySelector<HTMLAnchorElement>('nav[aria-label="Breadcrumb"] li a')!;
+
+  it('names the list in the first crumb and links to the exact view when the browser knows it', async () => {
+    const { el } = await openFrom('my-work', '/my-work?view=dueSoon&priority=1');
+    expect(crumb(el).textContent!.trim()).toBe('My Work');
+    expect(crumb(el).getAttribute('href')).toBe('/my-work?view=dueSoon&priority=1');
+    const back = q(el, '[data-back-to-list]') as HTMLAnchorElement;
+    expect(back.textContent).toContain('Back to My Work');
+    expect(back.getAttribute('href')).toBe('/my-work?view=dueSoon&priority=1');
+  });
+
+  it('falls back to the plain list path in a new tab (no history state) or for a foreign address', async () => {
+    const plain = await openFrom('task-queue');
+    expect(crumb(plain.el).textContent!.trim()).toBe('Task Queue');
+    expect(crumb(plain.el).getAttribute('href')).toBe('/tasks');
+    TestBed.resetTestingModule();
+    const foreign = await openFrom('pod-work', '/admin/users?x=1');
+    expect(crumb(foreign.el).textContent!.trim()).toBe('Pod Work');
+    expect(crumb(foreign.el).getAttribute('href')).toBe('/pods/work');
+  });
+
+  it('keeps the default crumb and no Back link for an unknown from value', async () => {
+    const { el } = await openFrom('somewhere-else');
+    expect(crumb(el).textContent!.trim()).toBe('Tasks');
+    expect(crumb(el).getAttribute('href')).toBe('/tasks');
+    expect(q(el, '[data-back-to-list]')).toBeNull();
   });
 });

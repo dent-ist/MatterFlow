@@ -237,7 +237,7 @@ describe('TaskQueuePage', () => {
     const el = await open('/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&priority=1');
 
     expect(el.querySelectorAll('tbody tr').length).toBe(2);
-    expect(el.querySelector('tbody a')!.getAttribute('href')).toBe('/tasks/1042');
+    expect(el.querySelector('tbody a')!.getAttribute('href')).toBe('/tasks/1042?from=task-queue');
     expect(el.textContent).toContain('Showing 1-2 of 2');
     // The row is open on this screen, so only filters on hidden columns would also show as chips; the default Open is never a chip.
     expect(el.querySelector('tr[data-filter-row]')).not.toBeNull();

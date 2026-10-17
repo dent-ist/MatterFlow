@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { NEVER } from 'rxjs';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { MyAvailabilityClient, SearchClient } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -31,6 +31,36 @@ describe('AppShell header search', () => {
 
   const navLabels = (fixture: { nativeElement: HTMLElement }): string[] =>
     Array.from(fixture.nativeElement.querySelectorAll('nav a')).map((a) => a.textContent!.trim());
+
+  it('highlights the list a task was opened from, else Task Queue (M7)', async () => {
+    const stub = { path: '**', children: [] };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([stub]),
+        MessageService,
+        { provide: MyAvailabilityClient, useValue: { getMyAvailability: () => NEVER } },
+        provideFakeMe(new FakeMeApi(withPermissions('Task.View', 'Pod.View'))),
+        { provide: SearchClient, useValue: { search: vi.fn() } },
+      ],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
+    const fixture = TestBed.createComponent(AppShell);
+    const router = TestBed.inject(Router);
+    const current = async (url: string): Promise<string[]> => {
+      await router.navigateByUrl(url);
+      await settle(fixture);
+      return Array.from(
+        (fixture.nativeElement as HTMLElement).querySelectorAll('nav a.mf-active'),
+      ).map((a) => a.textContent!.trim());
+    };
+    expect(await current('/tasks/12?from=my-work')).toEqual(['My Work']);
+    expect(await current('/tasks/12?from=pod-work')).toEqual(['Pod Work']);
+    expect(await current('/tasks/12?from=task-queue')).toEqual(['Task Queue']);
+    expect(await current('/tasks/12?from=nonsense')).toEqual(['Task Queue']);
+    expect(await current('/tasks/12')).toEqual(['Task Queue']);
+    expect(await current('/tasks?from=my-work')).toEqual(['Task Queue']);
+    expect(await current('/my-work')).toEqual(['My Work']);
+  });
 
   it('shows the Dashboard menu item only with Dashboard.View and a tab permission (R2; ViewCoverage alone does not count)', async () => {
     expect(navLabels(await create(['Task.View']))).not.toContain('Dashboard');

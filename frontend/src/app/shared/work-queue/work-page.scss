@@ -125,3 +125,14 @@
   margin-bottom: var(--mf-s2);
   border-bottom: 2px solid var(--mf-border);
 }
+
+/* "Open in Task Queue" (My Work): the label hides below 640 px, the accessible name stays. */
+.mw-queue {
+  text-decoration: none;
+}
+
+@media (width < 640px) {
+  .mw-queue:not(.mw-queue--sheet) .mw-qtext {
+    display: none;
+  }
+}

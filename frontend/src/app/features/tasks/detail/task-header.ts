@@ -1,4 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { map } from 'rxjs';
+import { DRILL_SOURCES, listUrl, parseFrom } from '../../../shared/work-queue/drill';
 import {
   TaskQueueRow,
   TaskResponse,
@@ -45,12 +49,30 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
  */
 @Component({
   selector: 'mf-task-header',
-  imports: [TaskTypeIcon, PageHeader, RowEdit, MatterRef, PriorityBadge, StatusBadge, DueLabelPipe],
+  imports: [
+    TaskTypeIcon,
+    PageHeader,
+    RouterLink,
+    RowEdit,
+    MatterRef,
+    PriorityBadge,
+    StatusBadge,
+    DueLabelPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     @if (store.task(); as t) {
       <div class="th" data-task-header>
+        @if (source(); as src) {
+          <a
+            class="th__back"
+            data-back-to-list
+            [routerLink]="backTree()"
+            [state]="{ restoreFocus: true }"
+            ><i class="pi pi-arrow-left" aria-hidden="true"></i> Back to {{ src.label }}</a
+          >
+        }
         <mf-page-header [crumbs]="crumbs()" icon="">
           <span mfTitle class="th__title">
             <mf-task-type-icon
@@ -162,6 +184,14 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
     .th {
       margin-bottom: var(--mf-s3);
     }
+    .th__back {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      margin-bottom: var(--mf-s1);
+      color: var(--mf-primary);
+      font-size: var(--mf-fs-sm);
+    }
     .th__title {
       display: inline-flex;
       flex-wrap: wrap;
@@ -196,6 +226,26 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
 export class TaskHeader {
   protected readonly store = inject(TaskDetailStore);
   protected readonly auth = inject(AuthStore);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
+  /** The list the task was opened from (`?from=`, whitelisted); null for any other value or none (M7). */
+  private readonly from = toSignal(
+    this.route.queryParamMap.pipe(map((q) => parseFrom(q.get('from')))),
+    { initialValue: parseFrom(this.route.snapshot.queryParamMap.get('from')) },
+  );
+  protected readonly source = computed(() => {
+    const from = this.from();
+    return from ? DRILL_SOURCES[from] : null;
+  });
+  /** The exact list view when the browser still knows it (history state `returnTo`), else the plain list path. */
+  protected readonly backTree = computed(() => {
+    const from = this.from();
+    if (!from) return this.router.parseUrl('/tasks');
+    const state: unknown = typeof history === 'undefined' ? null : history.state;
+    const returnTo = (state as { returnTo?: unknown } | null)?.returnTo;
+    return this.router.parseUrl(listUrl(from, returnTo));
+  });
 
   /** A change made from a chip, shown at once; it only counts while the Task it was made on is still the one on screen. */
   protected readonly override = signal<{ basis: TaskResponse; row: TaskQueueRow } | null>(null);
@@ -221,8 +271,9 @@ export class TaskHeader {
   protected readonly crumbs = computed<Crumb[]>(() => {
     const t = this.store.task();
     if (!t) return [];
+    const source = this.source();
     return [
-      { label: 'Tasks', link: '/tasks' },
+      source ? { label: source.label, link: this.backTree() } : { label: 'Tasks', link: '/tasks' },
       {
         label: `${t.matter.matterRef} ${t.matter.name}`,
         link: this.auth.canLink('matter') ? ['/matters', t.matter.matterId] : undefined,

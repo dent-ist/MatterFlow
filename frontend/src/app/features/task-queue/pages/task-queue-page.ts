@@ -77,6 +77,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
         />
       </mf-filters-bar>
       <mf-work-list
+        from="task-queue"
         [rows]="rows()"
         [total]="total()"
         [page]="state().page"

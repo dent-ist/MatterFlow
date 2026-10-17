@@ -74,6 +74,7 @@ const FOCUSABLE =
           }
         </div>
         <footer class="fs-foot">
+          <ng-content select="[mfSheetFooter]" />
           @if (filters().activeCount() > 0) {
             <button type="button" class="mf-btn" data-sheet-clear (click)="clearAll()">
               Clear filters
