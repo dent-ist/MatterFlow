@@ -41,7 +41,19 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
   styleUrl: './work-view-controls.scss',
   template: `
     <div class="vc-sort" data-sort-note>
-      @if (sort(); as s) {
+      @if (grouped()) {
+        <span class="vc-label" data-grouped-note
+          >Grouped by due <i class="pi pi-sort-amount-up-alt" aria-hidden="true"></i
+        ></span>
+        <button
+          type="button"
+          class="mf-btn mf-btn--text"
+          data-ungroup
+          (click)="groupChange.emit(null)"
+        >
+          Remove grouping
+        </button>
+      } @else if (sort(); as s) {
         <span class="vc-label"
           >Sorted by {{ sortLabel() }}
           <i class="pi" [class]="dirIcon()" aria-hidden="true"></i>
@@ -103,6 +115,9 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
       [columns]="columns()"
       [density]="density()"
       [defaults]="defaultColumns()"
+      [groupable]="groupable()"
+      [group]="grouped() ? 'due' : null"
+      (groupChange)="groupChange.emit($event)"
       (columnsChange)="columnsChange.emit($event)"
       (densityChange)="densityChange.emit($event)"
     />
@@ -122,7 +137,12 @@ export class WorkViewControls {
   /** The current tab's default column set: when given, the Columns panel offers "Reset columns" (needs the per-tab sets of #152). */
   readonly defaultColumns = input<readonly string[] | null>(null);
 
+  /** My Work, Active tab: the Group by choice is offered, and `grouped` says the list is grouped by due. */
+  readonly groupable = input(false);
+  readonly grouped = input(false);
+
   readonly resetSort = output<void>();
+  readonly groupChange = output<'due' | null>();
   readonly columnsChange = output<string[]>();
   readonly densityChange = output<Density>();
 

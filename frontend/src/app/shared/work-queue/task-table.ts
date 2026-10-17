@@ -22,7 +22,7 @@ import { ScrollArea } from '../ui/fixed-page';
 import { ColumnFilterRow } from '../filters/column-filter-row';
 import { ListFilters } from '../filters/list-filters';
 import { GridBody } from '../ui/grid-body';
-import { TaskQueueRow } from '../../api/generated/api-client';
+import { MyWorkBucketCounts, TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { mfDate } from '../../core/time/time';
@@ -33,6 +33,8 @@ import { MatterRef } from '../ui/matter-ref';
 import { PriorityBadge } from '../ui/priority-badge';
 import { CopyPart } from '../ui/copy-parts';
 import { StatusBadge } from '../ui/status-badge';
+import { RowGroup, groupRows } from './due-groups';
+import { GroupHeader } from './group-header';
 import { HoldNote, holdTitle } from './hold-note';
 import { WORK_COLUMNS, ColumnDef, Density } from './column-prefs';
 import { InlineField, canEditField } from './inline-edit';
@@ -72,6 +74,7 @@ const NARROW_BELOW = 760;
     ScrollArea,
     StatusBadge,
     HoldNote,
+    GroupHeader,
     GridBody,
     ColumnFilterRow,
     NgTemplateOutlet,
@@ -160,8 +163,18 @@ const NARROW_BELOW = 760;
               <tr mfTaskSkeleton [columns]="shownKeyList()" [showAssign]="showAssign()"></tr>
             }
           }
-          @for (row of rows(); track row.taskId) {
+          @for (row of rows(); track row.taskId; let i = $index) {
+            @if (groupAt().get(i); as group) {
+              <tr
+                mfGroupHeader
+                [group]="group"
+                [columns]="columnCount()"
+                [collapsed]="collapsedGroups().has(group.key)"
+                (toggled)="toggleGroup(group.key)"
+              ></tr>
+            }
             <tr
+              [hidden]="hiddenAt()[i]"
               [class.wt-row--overdue]="row.isOverdue"
               [class.wt-row--leaving]="leaving().has(row.taskId)"
               [attr.data-leaving]="leaving().has(row.taskId) ? 'true' : null"
@@ -550,6 +563,37 @@ export class TaskTable {
   }
   /** Leave out the "Client · Matter" line under the title: on a Matter's or Project's own page the header already says it. */
   readonly hideContext = input(false);
+  /**
+   * My Work grouped by due: the size of every bucket for the whole filtered set. The rows are in the server's bucket order, so each group's
+   * header goes where its bucket starts. Null: no grouping.
+   */
+  readonly groupBuckets = input<MyWorkBucketCounts | null>(null);
+  /** Index of the first row on the page within the whole result ((page - 1) x page size), to place the headers. */
+  readonly groupOffset = input(0);
+
+  protected readonly groups = computed<RowGroup[]>(() =>
+    groupRows(this.rows().length, this.groupOffset(), this.groupBuckets()),
+  );
+  protected readonly groupAt = computed(() => new Map(this.groups().map((g) => [g.start, g])));
+  /** Groups the person collapsed (not remembered: a fresh visit or a new grouping shows everything). */
+  protected readonly collapsedGroups = signal<ReadonlySet<string>>(new Set());
+  /** Per row index: true while its group is collapsed. */
+  protected readonly hiddenAt = computed(() => {
+    const hidden: boolean[] = new Array(this.rows().length).fill(false);
+    const collapsed = this.collapsedGroups();
+    for (const g of this.groups()) {
+      if (collapsed.has(g.key)) hidden.fill(true, g.start, g.start + g.length);
+    }
+    return hidden;
+  });
+
+  protected toggleGroup(key: string): void {
+    this.collapsedGroups.update((set) => {
+      const next = new Set(set);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  }
 
   readonly sortChange = output<string>();
   readonly retry = output<void>();
@@ -564,6 +608,10 @@ export class TaskTable {
 
   constructor() {
     const destroyRef = inject(DestroyRef);
+    // Collapsed groups are forgotten when the grouping goes away (not persisted).
+    effect(() => {
+      if (this.groupBuckets() === null) this.collapsedGroups.set(new Set());
+    });
     effect(() => {
       const keys = this.shownKeys();
       this.columnsShown.emit(keys === '' ? [] : keys.split(','));

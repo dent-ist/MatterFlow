@@ -469,4 +469,88 @@ public class TaskQueueRulesTests
     [InlineData("number", false)]
     public void Newest_first_is_the_default_direction_of_created_and_completed(string sort, bool descending) =>
         TaskQueueRules.DefaultsToDescending(sort).ShouldBe(descending);
+
+    [Theory]
+    [InlineData("UTC")]
+    [InlineData("America/New_York")]
+    [InlineData("America/Los_Angeles")]
+    [InlineData("Pacific/Kiritimati")]
+    public void The_due_buckets_partition_the_open_set_and_agree_with_the_strip_predicates(string zone)
+    {
+        // Every weekday as "today", at an instant that is a different local date in different zones.
+        foreach (var start in new[] { new DateTime(2026, 10, 12, 4, 30, 0, DateTimeKind.Utc), new DateTime(2026, 10, 16, 23, 30, 0, DateTimeKind.Utc), new DateTime(2026, 10, 18, 12, 0, 0, DateTimeKind.Utc) })
+        {
+            var clock = ClockIn(zone, start);
+            var tz = UserTimeZone.Resolve(zone).Zone;
+            var rows = new List<TaskSortRow> { new() { Id = 1 } };
+            for (var offset = -3; offset <= 10; offset++)
+                rows.Add(new TaskSortRow { Id = 10 + offset, DueDate = clock.Today.AddDays(offset) });
+            foreach (var hours in new[] { -30, -6, -1, 1, 6, 30, 80 })
+            {
+                var at = start.AddHours(hours);
+                rows.Add(new TaskSortRow { Id = 100 + hours, DueDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(at, tz)), DueAtUtc = at });
+            }
+
+            var bucket = TaskQueueRules.DueBucket(clock).Compile();
+            var overdue = TaskQueueRules.Overdue(clock).Compile();
+            var dueToday = TaskQueueRules.DueToday(clock).Compile();
+            var weekEnd = TaskQueueRules.EndOfWeek(clock.Today);
+            weekEnd.DayOfWeek.ShouldBe(DayOfWeek.Sunday);
+            (weekEnd.DayNumber - clock.Today.DayNumber).ShouldBeInRange(0, 6);
+            foreach (var r in rows)
+            {
+                var task = new WorkTask { Status = TaskStatusCode.New, DueDate = r.DueDate, DueAtUtc = r.DueAtUtc };
+                var b = bucket(r);
+                (b == TaskQueueRules.BucketAsap).ShouldBe(r.DueDate is null, $"{zone} {r.DueDate} {r.DueAtUtc}");
+                (b == TaskQueueRules.BucketOverdue).ShouldBe(overdue(task), $"{zone} {r.DueDate} {r.DueAtUtc}");
+                (b == TaskQueueRules.BucketToday).ShouldBe(dueToday(task), $"{zone} {r.DueDate} {r.DueAtUtc}");
+                if (b == TaskQueueRules.BucketTomorrow)
+                    r.DueDate.ShouldBe(clock.Today.AddDays(1));
+                if (b == TaskQueueRules.BucketThisWeek)
+                {
+                    r.DueDate!.Value.ShouldBeGreaterThan(clock.Today.AddDays(1));
+                    r.DueDate.Value.ShouldBeLessThanOrEqualTo(weekEnd);
+                }
+
+                if (b == TaskQueueRules.BucketLater)
+                    r.DueDate!.Value.ShouldBeGreaterThan(weekEnd);
+            }
+        }
+    }
+
+    [Fact]
+    public void Weeks_start_on_monday_so_this_week_is_empty_on_a_saturday_and_sunday()
+    {
+        TaskQueueRules.EndOfWeek(new DateOnly(2026, 10, 12)).ShouldBe(new DateOnly(2026, 10, 18)); // Monday
+        TaskQueueRules.EndOfWeek(new DateOnly(2026, 10, 17)).ShouldBe(new DateOnly(2026, 10, 18)); // Saturday
+        TaskQueueRules.EndOfWeek(new DateOnly(2026, 10, 18)).ShouldBe(new DateOnly(2026, 10, 18)); // Sunday
+        var saturday = ClockIn("UTC", new DateTime(2026, 10, 17, 12, 0, 0, DateTimeKind.Utc));
+        var bucket = TaskQueueRules.DueBucket(saturday).Compile();
+        bucket(new TaskSortRow { DueDate = new DateOnly(2026, 10, 18) }).ShouldBe(TaskQueueRules.BucketTomorrow);
+        bucket(new TaskSortRow { DueDate = new DateOnly(2026, 10, 19) }).ShouldBe(TaskQueueRules.BucketLater);
+        var wednesday = TaskQueueRules.DueBucket(ClockIn("UTC", new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc))).Compile();
+        wednesday(new TaskSortRow { DueDate = new DateOnly(2026, 10, 16) }).ShouldBe(TaskQueueRules.BucketThisWeek);
+        wednesday(new TaskSortRow { DueDate = new DateOnly(2026, 10, 18) }).ShouldBe(TaskQueueRules.BucketThisWeek);
+        wednesday(new TaskSortRow { DueDate = new DateOnly(2026, 10, 19) }).ShouldBe(TaskQueueRules.BucketLater);
+    }
+
+    [Fact]
+    public void Group_by_due_orders_by_bucket_then_priority_then_due_moment_then_oldest()
+    {
+        var clock = ClockIn("UTC", new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc));
+        var today = clock.Today;
+        var rows = new[]
+        {
+            Row(1, 1, today.AddDays(30)),
+            Row(2, 2, null, createdDays: 1),
+            Row(3, 1, null, createdDays: 5),
+            Row(4, 1, today.AddDays(-2)),
+            Row(5, 3, today),
+            Row(6, 1, today),
+            Row(7, 2, today.AddDays(1)),
+            Row(8, 1, today.AddDays(-5)),
+            Row(9, 1, today.AddDays(-5), createdDays: 2),
+        }.AsQueryable();
+        TaskQueueRules.OrderByDueBucket(rows, clock).Select(r => r.Id).ToList().ShouldBe([3, 2, 8, 9, 4, 6, 5, 7, 1]);
+    }
 }

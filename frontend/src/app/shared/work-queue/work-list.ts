@@ -11,7 +11,7 @@ import {
   input,
   output,
 } from '@angular/core';
-import { TaskQueueRow } from '../../api/generated/api-client';
+import { MyWorkBucketCounts, TaskQueueRow } from '../../api/generated/api-client';
 import { ListFilters } from '../filters/list-filters';
 import { PageFooter } from '../ui/page-footer';
 import { Pager } from '../ui/pager';
@@ -58,6 +58,8 @@ export type WorkListState = 'loading' | 'ready' | 'error';
       [newSince]="newSince()"
       [leaving]="leaving()"
       [from]="from()"
+      [groupBuckets]="groupBuckets()"
+      [groupOffset]="groupOffset()"
       (sortChange)="sortChange.emit($event)"
       (retry)="onRetry()"
       (clearFilters)="clearFilters.emit()"
@@ -113,6 +115,9 @@ export class WorkList {
   readonly newSince = input<number | null>(null);
   /** Tasks that just left the tab; their rows show muted until the page removes them. */
   readonly leaving = input<ReadonlySet<number>>(new Set());
+  /** My Work grouped by due: the size of each bucket over the whole filtered set (null: no grouping), and the index of the page's first row. */
+  readonly groupBuckets = input<MyWorkBucketCounts | null>(null);
+  readonly groupOffset = input(0);
 
   readonly sortChange = output<string>();
   readonly pageChange = output<number>();

@@ -96,6 +96,18 @@ public sealed record MyWorkAttention(
     [property: Required] int OnHold,
     int? New = null);
 
+/// <summary>
+/// The size of each due bucket of the whole filtered Active set (not just the page), so a group header can say "Overdue (9)" when the group spans pages.
+/// ASAP, Overdue and Today use the strip's predicates; the six buckets sum to the Active total.
+/// </summary>
+public sealed record MyWorkBucketCounts(
+    [property: Required] int Asap,
+    [property: Required] int Overdue,
+    [property: Required] int Today,
+    [property: Required] int Tomorrow,
+    [property: Required] int ThisWeek,
+    [property: Required] int Later);
+
 /// <summary>A page of My Work for one tab with the counts of every tab.</summary>
 public sealed record MyWorkPage(
     [property: Required] IReadOnlyList<TaskQueueRow> Items,
@@ -105,7 +117,8 @@ public sealed record MyWorkPage(
     [property: Required] string TimeZone,
     [property: Required] string View,
     [property: Required] MyWorkCounts Counts,
-    [property: Required] MyWorkAttention Attention);
+    [property: Required] MyWorkAttention Attention,
+    MyWorkBucketCounts? BucketCounts = null);
 
 /// <summary>A Pod in the Pod Work selector: the user's own Pods first (primary flagged), then the others.</summary>
 public sealed record PodChoice(

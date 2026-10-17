@@ -29,6 +29,7 @@ import { CopyParts } from '../../../shared/ui/copy-parts';
 import { emptyCopy, nearEmptyCopy } from '../../../shared/work-queue/empty-copy';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { loadGroup, saveGroup } from '../../../shared/work-queue/group-pref';
 import { isBareState } from '../../../shared/work-queue/last-view';
 import { touchVisit, trackVisitActivity } from '../../../shared/work-queue/last-visit';
 import { PodOption, loadPodChoices } from '../../../shared/work-queue/pod-options';
@@ -181,6 +182,9 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
             [defaultOrder]="defaultOrder()"
             [defaultLabel]="defaultLabel()"
             [tabHelp]="tabHelp()"
+            [groupable]="tab() === 'active'"
+            [grouped]="grouped()"
+            (groupChange)="setGroup($event)"
             [columns]="prefs().columns"
             [density]="prefs().density"
             (resetSort)="resetSort()"
@@ -238,6 +242,8 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
           [emptyParts]="emptyCopy().parts"
           [nearEmpty]="tab() === 'active'"
           [leaving]="leaving.ids()"
+          [groupBuckets]="grouped() ? (data()?.bucketCounts ?? null) : null"
+          [groupOffset]="groupOffset()"
           (sortChange)="sortBy($event)"
           (pageChange)="goToPage($event)"
           (pageSizeChange)="setPageSize($event)"
@@ -344,6 +350,48 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
   });
 
   protected readonly tabLabel = computed(() => TAB_LABELS[this.tab()]);
+
+  /** Group by: Due is on (Active tab; `group=due` in the address). */
+  protected readonly grouped = computed(() => this.state().group === 'due');
+  /** The group choice of this user (remembered); the Active tab starts grouped when it is set. */
+  private readonly groupPref = signal<'due' | null>(null);
+  /** Index of the response's first row in the whole result: where the group headers go. */
+  protected readonly groupOffset = computed(() => {
+    const d = this.data();
+    return d ? (d.page - 1) * d.pageSize : 0;
+  });
+
+  protected override allowsGroup(): boolean {
+    return this.tab() === 'active';
+  }
+
+  /** The Group by control: None or Due, remembered per user. Page 1, as any change of the order. */
+  protected setGroup(group: 'due' | null): void {
+    this.groupPref.set(group);
+    saveGroup(this.userId(), group);
+    const s = this.state();
+    this.navigate({ ...s, group, sort: null, dir: null, page: 1 });
+  }
+
+  /** A header sort turns grouping off for good: the choice is forgotten too (the chip is gone, the sort shows). */
+  protected override sortBy(field: string): void {
+    if (this.grouped()) {
+      this.groupPref.set(null);
+      saveGroup(this.userId(), null);
+    }
+    super.sortBy(field);
+  }
+
+  protected override resetView(): void {
+    this.groupPref.set(null);
+    saveGroup(this.userId(), null);
+    super.resetView();
+  }
+
+  /** A grouped list reads its counts again once a row has left, so the headers stay where the buckets are. */
+  protected override rowRemoved(): void {
+    if (this.grouped()) void this.load();
+  }
 
   protected override columnTab(): string {
     return this.tab();
@@ -505,12 +553,22 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     this.lastVisit = touchVisit(this.userId(), now());
     trackVisitActivity(this.userId(), now);
     const keys = this.route.snapshot?.queryParamMap?.keys ?? [];
-    const remembered = keys.length === 0 ? this.lastView() : null;
+    this.groupPref.set(loadGroup(this.userId()));
+    const pref = this.groupPref();
+    const last = keys.length === 0 ? this.lastView() : null;
+    // The remembered view brings the user's group choice, not the one it was stored with (the choice also survives a visit to Closed).
+    const remembered = last
+      ? { ...last, group: pref && (last.view === null || last.view === 'active') ? pref : null }
+      : null;
     this.landing = keys.length === 0 && !remembered;
     if (remembered) {
       // Open on the tab and filters the user last used, and say so.
       this.pendingRestore = true;
       this.restore(remembered);
+    } else if (keys.length === 0 && pref) {
+      // A plain visit of someone who groups by due starts grouped, without a notice (nothing was restored).
+      this.pendingRestore = true;
+      this.navigate({ ...emptyState(), group: pref }, true);
     }
     void loadPodChoices(this.podsApi, this.auth.has('Pod.View')).then((c) => {
       this.pods.set(c.options);
@@ -581,7 +639,12 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
   }
 
   protected override mergeCounts(current: MyWorkData, fresh: MyWorkData): MyWorkData {
-    return { ...current, counts: fresh.counts, attention: fresh.attention };
+    // A grouped list keeps its bucket sizes until the leaving row is taken off (then it reloads): the headers follow the rows on screen.
+    return {
+      ...current,
+      counts: fresh.counts,
+      attention: fresh.attention,
+    };
   }
 
   protected override loaded(data: MyWorkData): void {
@@ -592,7 +655,10 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     if (next === 'active') return;
     this.skipRemember = true;
     this.filters.showNotice(`Nothing is assigned to you, so this opens ${TAB_LABELS[next]}.`);
-    this.navigate({ ...this.state(), view: next, page: 1, sort: null, dir: null }, true);
+    this.navigate(
+      { ...this.state(), view: next, page: 1, sort: null, dir: null, group: null },
+      true,
+    );
   }
 
   protected override shouldLoad(params: ParamMap): boolean {
@@ -622,6 +688,7 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
       this.tab(),
       closedWindow,
       assignedFrom,
+      state.group ?? undefined,
       since ?? undefined,
       ...queueArgs(state),
     );
@@ -656,6 +723,7 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
       page: 1,
       sort: null,
       dir: null,
+      group: next === 'active' ? this.groupPref() : null,
       closedAll: false,
       filters: { ...kept, status },
     };

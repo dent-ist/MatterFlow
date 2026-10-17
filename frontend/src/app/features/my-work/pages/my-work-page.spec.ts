@@ -22,19 +22,20 @@ const ARG = {
   view: 0,
   closedWindow: 1,
   assignedFrom: 2,
-  newSince: 3,
-  q: 4,
-  status: 5,
-  pod: 7,
-  assignee: 9,
-  unassigned: 10,
-  creator: 11,
-  dueFrom: 19,
-  asap: 21,
-  completedFrom: 24,
-  matterText: 26,
-  sort: 31,
-  page: 33,
+  group: 3,
+  newSince: 4,
+  q: 5,
+  status: 6,
+  pod: 8,
+  assignee: 10,
+  unassigned: 11,
+  creator: 12,
+  dueFrom: 20,
+  asap: 22,
+  completedFrom: 25,
+  matterText: 27,
+  sort: 32,
+  page: 34,
 };
 
 const COUNTS = { active: 7, dueSoon: 2, completed: 5, createdByMe: 3 };
@@ -1011,5 +1012,111 @@ describe('MyWorkPage', () => {
     expect(el.querySelector('.cc [role="status"]')!.textContent).toContain(
       'Columns reset to the default set.',
     );
+  });
+
+  describe('Group by: Due (M12.1)', () => {
+    const BUCKETS = { asap: 2, overdue: 3, today: 1, tomorrow: 0, thisWeek: 0, later: 1 };
+    const grouped = (rows = 7, extra: Record<string, unknown> = {}) =>
+      of(
+        pageOf(
+          Array.from({ length: rows }, (_, n) =>
+            aRow({ taskId: 100 + n, taskNumber: `TSK-${100 + n}`, title: `Task ${n}` }),
+          ),
+          {
+            view: 'active',
+            counts: COUNTS,
+            attention: ATTENTION,
+            bucketCounts: BUCKETS,
+            total: 7,
+            ...extra,
+          },
+        ),
+      );
+    const headers = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll('tr.wt-group th')).map((h) =>
+        h.textContent?.replace(/\s+/g, ' ').trim(),
+      );
+
+    it('is off by default and offers the control on Active only', async () => {
+      const el = await open('/my-work');
+      expect(lastArgs()[ARG.group]).toBeUndefined();
+      expect(el.querySelector('tr.wt-group')).toBeNull();
+      el.querySelector<HTMLElement>('.cc-button')!.click();
+      await settle();
+      expect(el.querySelector('[data-group-set]')).not.toBeNull();
+
+      tab(el, 'Closed').click();
+      await settle();
+      expect(el.querySelector('[data-group-set]')).toBeNull();
+    });
+
+    it('sends group=due from the address and shows a header per bucket with the whole count', async () => {
+      const el = await open('/my-work?group=due', { response: grouped() });
+      expect(lastArgs()[ARG.group]).toBe('due');
+      expect(headers(el)).toEqual([
+        'ASAP (2 tasks)',
+        'Overdue (3 tasks)',
+        'Today (1 task)',
+        'Later (1 task)',
+      ]);
+      expect(el.querySelector('[data-grouped-note]')!.textContent).toContain('Grouped by due');
+      const th = el.querySelector('tr.wt-group th')!;
+      expect(th.getAttribute('scope')).toBe('colgroup');
+      expect(th.querySelector('button')!.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('continues a bucket at the top of the next page', async () => {
+      const el = await open('/my-work?group=due&page=3&pageSize=2', {
+        response: grouped(2, { page: 3, pageSize: 2, total: 7 }),
+      });
+      // Global rows 4 and 5: the last Overdue row (the bucket began at row 2), then the one Today row.
+      expect(headers(el)).toEqual(['Overdue (3 tasks), continued', 'Today (1 task)']);
+    });
+
+    it('collapses and expands a group with the button', async () => {
+      const el = await open('/my-work?group=due', { response: grouped() });
+      const rowsOf = () => Array.from(el.querySelectorAll<HTMLElement>('tbody tr[data-task]'));
+      expect(rowsOf().filter((r) => !r.hidden)).toHaveLength(7);
+      const asap = el.querySelector<HTMLButtonElement>('tr.wt-group[data-group="asap"] button')!;
+      asap.click();
+      await settle();
+      expect(asap.getAttribute('aria-expanded')).toBe('false');
+      expect(rowsOf().filter((r) => !r.hidden)).toHaveLength(5);
+      asap.click();
+      await settle();
+      expect(rowsOf().filter((r) => !r.hidden)).toHaveLength(7);
+    });
+
+    it('is chosen in the Columns panel, goes to the address, is remembered and starts the next plain visit', async () => {
+      let el = await open('/my-work');
+      el.querySelector<HTMLElement>('.cc-button')!.click();
+      await settle();
+      el.querySelector<HTMLInputElement>('[data-group-due]')!.click();
+      await settle();
+      expect(query()['group']).toBe('due');
+      expect(lastArgs()[ARG.group]).toBe('due');
+      expect(localStorage.getItem('mf.work-group.v1.my-work.1')).toBe('due');
+      TestBed.resetTestingModule();
+
+      el = await open('/my-work');
+      expect(query()['group']).toBe('due');
+      expect(lastArgs()[ARG.group]).toBe('due');
+    });
+
+    it('is turned off, and forgotten, by a header sort', async () => {
+      const el = await open('/my-work?group=due', { response: grouped() });
+      localStorage.setItem('mf.work-group.v1.my-work.1', 'due');
+      el.querySelector<HTMLButtonElement>('th[data-col="due"] button')!.click();
+      await settle();
+      expect(query()['group']).toBeUndefined();
+      expect(query()['sort']).toBe('due');
+      expect(localStorage.getItem('mf.work-group.v1.my-work.1')).toBeNull();
+      expect(lastArgs()[ARG.group]).toBeUndefined();
+    });
+
+    it('ignores group on the other tabs', async () => {
+      await open('/my-work?view=dueSoon&group=due');
+      expect(lastArgs()[ARG.group]).toBeUndefined();
+    });
   });
 });

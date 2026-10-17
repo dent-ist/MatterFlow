@@ -25,7 +25,7 @@ import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
           id="cc-panel"
           class="cc-panel"
           role="group"
-          aria-label="Table columns and density"
+          aria-label="Table columns, density and grouping"
           data-columns-panel
           [style.--cc-max.px]="maxHeight()"
           [mfDismissable]="btn"
@@ -70,6 +70,30 @@ import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
                 Compact
               </label>
             </fieldset>
+            @if (groupable()) {
+              <fieldset class="cc-set" data-group-set>
+                <legend>Group by</legend>
+                <label class="cc-check">
+                  <input
+                    type="radio"
+                    name="cc-group"
+                    [checked]="group() === null"
+                    (change)="groupChange.emit(null)"
+                  />
+                  None
+                </label>
+                <label class="cc-check">
+                  <input
+                    type="radio"
+                    name="cc-group"
+                    data-group-due
+                    [checked]="group() === 'due'"
+                    (change)="groupChange.emit('due')"
+                  />
+                  Due
+                </label>
+              </fieldset>
+            }
           </div>
           <div class="cc-foot">
             @if (defaults(); as def) {
@@ -189,8 +213,13 @@ export class ColumnChooser {
   readonly defaults = input<readonly string[] | null>(null);
   readonly density = input<Density>('comfortable');
 
+  /** The Group by choice (My Work, Active tab): None or Due. Hidden where the screen cannot group. */
+  readonly groupable = input(false);
+  readonly group = input<'due' | null>(null);
+
   readonly columnsChange = output<string[]>();
   readonly densityChange = output<Density>();
+  readonly groupChange = output<'due' | null>();
 
   protected readonly all = WORK_COLUMNS;
   protected readonly open = signal(false);

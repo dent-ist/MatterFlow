@@ -69,6 +69,75 @@ public sealed class MyWorkAndPodWorkApiTests(SqlServerFixture sql)
     [InlineData("UTC")]
     [InlineData("America/Los_Angeles")]
     [InlineData("Pacific/Kiritimati")]
+    public async Task Group_by_due_returns_bucket_counts_that_equal_the_grid_and_orders_rows_by_bucket(string zone)
+    {
+        var d = await DataAsync();
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById(zone)));
+        foreach (var client in new[] { d.TechAClient, d.TechBClient })
+        {
+            async Task<int> TotalAsync(string filter) =>
+                (await d.GetAsync("/api/v1/my-work?pageSize=1&" + filter, client, zone)).GetProperty("total").GetInt32();
+
+            foreach (var extra in new[] { string.Empty, "&status=IN_PROGRESS", $"&pod={d.PodB}" })
+            {
+                var grouped = await d.GetAsync("/api/v1/my-work?pageSize=100&group=due" + extra, client, zone);
+                var b = grouped.GetProperty("bucketCounts");
+                int Of(string name) => b.GetProperty(name).GetInt32();
+                var sum = Of("asap") + Of("overdue") + Of("today") + Of("tomorrow") + Of("thisWeek") + Of("later");
+                sum.ShouldBe(grouped.GetProperty("total").GetInt32());
+                grouped.GetProperty("total").GetInt32().ShouldBe(await TotalAsync(extra.TrimStart('&')));
+
+                Of("asap").ShouldBe(await TotalAsync("asap=true" + extra));
+                Of("overdue").ShouldBe(await TotalAsync("overdue=true" + extra));
+                Of("today").ShouldBe(await TotalAsync($"dueFrom={today:yyyy-MM-dd}&dueTo={today:yyyy-MM-dd}&overdue=false" + extra));
+                var tomorrow = today.AddDays(1).ToString("yyyy-MM-dd");
+                Of("tomorrow").ShouldBe(await TotalAsync($"dueFrom={tomorrow}&dueTo={tomorrow}&overdue=false" + extra));
+                var weekEnd = Application_EndOfWeek(today);
+                var afterTomorrow = today.AddDays(2);
+                Of("thisWeek").ShouldBe(afterTomorrow > weekEnd ? 0 : await TotalAsync($"dueFrom={afterTomorrow:yyyy-MM-dd}&dueTo={weekEnd:yyyy-MM-dd}" + extra));
+
+                var order = grouped.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("taskId").GetInt64()).ToList();
+                var plain = (await d.GetAsync("/api/v1/my-work?pageSize=100" + extra, client, zone)).GetProperty("items").EnumerateArray().Select(i => i.GetProperty("taskId").GetInt64()).ToList();
+                order.OrderBy(x => x).ShouldBe(plain.OrderBy(x => x), "grouping reorders, it never adds or drops rows");
+            }
+        }
+
+        // Paging is stable: pages of 2 concatenate to the one big page.
+        var all = (await d.GetAsync("/api/v1/my-work?pageSize=100&group=due", d.TechAClient, zone)).GetProperty("items").EnumerateArray().Select(i => i.GetProperty("taskId").GetInt64()).ToList();
+        var paged = new List<long>();
+        for (var page = 1; paged.Count < all.Count; page++)
+        {
+            var next = (await d.GetAsync($"/api/v1/my-work?pageSize=2&page={page}&group=due", d.TechAClient, zone)).GetProperty("items").EnumerateArray().Select(i => i.GetProperty("taskId").GetInt64()).ToList();
+            next.ShouldNotBeEmpty();
+            paged.AddRange(next);
+        }
+
+        paged.ShouldBe(all);
+    }
+
+    private static bool HasBuckets(System.Text.Json.JsonElement page) =>
+        page.TryGetProperty("bucketCounts", out var b) && b.ValueKind != System.Text.Json.JsonValueKind.Null;
+
+    private static DateOnly Application_EndOfWeek(DateOnly today) => MatterFlow.WorkViews.Application.Queries.TaskQueueRules.EndOfWeek(today);
+
+    [Fact]
+    public async Task Group_by_due_is_only_for_the_active_tab_and_unknown_groups_are_rejected()
+    {
+        var d = await DataAsync();
+        HasBuckets(await d.GetAsync("/api/v1/my-work", d.TechAClient, "UTC")).ShouldBeFalse();
+        HasBuckets(await d.GetAsync("/api/v1/my-work?group=none", d.TechAClient, "UTC")).ShouldBeFalse();
+        HasBuckets(await d.GetAsync("/api/v1/my-work?view=dueSoon&group=due", d.TechAClient, "UTC")).ShouldBeFalse();
+        var a = (await d.GetAsync("/api/v1/my-work?group=due", d.TechAClient, "UTC")).GetProperty("bucketCounts");
+        a.GetProperty("asap").GetInt32().ShouldBe(4);
+        a.GetProperty("overdue").GetInt32().ShouldBe(1);
+        var bad = await d.TechAClient.GetAsync("/api/v1/my-work?group=priority");
+        bad.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Theory]
+    [InlineData("UTC")]
+    [InlineData("America/Los_Angeles")]
+    [InlineData("Pacific/Kiritimati")]
     public async Task The_needs_attention_strip_counts_the_whole_open_set_and_equals_the_grid_for_the_same_filter(string zone)
     {
         var d = await DataAsync();

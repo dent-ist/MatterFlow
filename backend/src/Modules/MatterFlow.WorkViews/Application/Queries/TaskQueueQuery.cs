@@ -157,7 +157,7 @@ public class TaskQueueQuery
 /// <summary>My Work: the queue filters plus the tab.</summary>
 public class MyWorkQuery : TaskQueueQuery
 {
-    public static readonly IReadOnlyList<string> MyWorkKeys = [.. Keys, "view", "closedWindow", "assignedFrom", "newSince"];
+    public static readonly IReadOnlyList<string> MyWorkKeys = [.. Keys, "view", "closedWindow", "assignedFrom", "newSince", "group"];
 
     /// <summary><c>active</c> (default), <c>dueSoon</c>, <c>completed</c> or <c>createdByMe</c>.</summary>
     [FromQuery(Name = "view"), StringLength(20)]
@@ -176,6 +176,14 @@ public class MyWorkQuery : TaskQueueQuery
     /// </summary>
     [FromQuery(Name = "assignedFrom")]
     public DateTimeOffset? AssignedFrom { get; init; }
+
+    /// <summary>
+    /// <c>due</c>: on the Active tab, order by due bucket (ASAP, Overdue, Today, Tomorrow, This week, Later), then priority, due moment and age
+    /// (<c>sort</c> and <c>dir</c> are ignored) and return <c>bucketCounts</c> for the whole filtered set. Absent or <c>none</c>: no grouping.
+    /// Other tabs ignore it. Any other value is a 400.
+    /// </summary>
+    [FromQuery(Name = "group"), StringLength(10)]
+    public string? Group { get; init; }
 
     /// <summary>
     /// The start of the viewer's visit, same format as <c>assignedFrom</c>. It never narrows the rows: it only makes <c>attention.new</c> count the

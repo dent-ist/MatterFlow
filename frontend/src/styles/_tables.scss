@@ -58,3 +58,47 @@ td.mf-col-actions {
 .wt th[data-col='progress'] {
   min-width: 11.9rem;
 }
+
+/* Group header rows of "Group by: Due" (shared/work-queue/group-header): one th spanning the table, the button stays at the left edge while
+   the columns scroll sideways. Global because the table's own style budget is full. */
+.wt .wt-group th {
+  /* The th belongs to the group header component, so the table's own (encapsulated) cell rules do not reach it. */
+  text-align: left;
+  vertical-align: middle;
+  height: 36px;
+  padding: 0 var(--mf-s2);
+  border-bottom: 1px solid var(--mf-border-strong);
+  background: var(--mf-surface-alt);
+  color: var(--mf-text);
+  font-weight: 600;
+}
+
+.wt-group__btn {
+  position: sticky;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  min-height: 32px;
+  padding: 0 var(--mf-s2);
+  border: 0;
+  border-radius: var(--mf-radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.wt-group__btn:hover {
+  background: var(--mf-surface);
+}
+
+.wt-group__btn .pi {
+  font-size: var(--mf-fs-xs);
+}
+
+.wt-group__count,
+.wt-group__more {
+  color: var(--mf-text-muted);
+  font-weight: 400;
+}

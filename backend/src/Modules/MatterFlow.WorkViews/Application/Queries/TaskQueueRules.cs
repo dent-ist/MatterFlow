@@ -262,6 +262,50 @@ public static class TaskQueueRules
             .ThenBy(r => r.Id);
     }
 
+    /// <summary>The due buckets of "Group by: Due" (M12.1), in display order: 0 ASAP, 1 Overdue, 2 Today, 3 Tomorrow, 4 This week, 5 Later.</summary>
+    public const int BucketAsap = 0;
+    public const int BucketOverdue = 1;
+    public const int BucketToday = 2;
+    public const int BucketTomorrow = 3;
+    public const int BucketThisWeek = 4;
+    public const int BucketLater = 5;
+
+    /// <summary>The last day (Sunday) of the viewer's current week; weeks start on Monday.</summary>
+    public static DateOnly EndOfWeek(DateOnly today) => today.AddDays(6 - (((int)today.DayOfWeek + 6) % 7));
+
+    /// <summary>
+    /// The due bucket of an open Task for this viewer. ASAP has no due date; Overdue is the <see cref="Overdue"/> test; Today is the viewer's date
+    /// (a timed due already past is Overdue); Tomorrow is the next date; This week is the rest of the Monday-to-Sunday week after tomorrow (empty
+    /// on a Saturday or Sunday); Later is everything after. The buckets partition the open set, so Overdue, Today and ASAP equal the strip counts.
+    /// </summary>
+    public static Expression<Func<TaskSortRow, int>> DueBucket(QueueClock clock)
+    {
+        ArgumentNullException.ThrowIfNull(clock);
+        var now = clock.NowUtc;
+        var today = clock.Today;
+        var tomorrow = today.AddDays(1);
+        var weekEnd = EndOfWeek(today);
+        return r =>
+            r.DueDate == null ? BucketAsap
+            : (r.DueAtUtc != null && r.DueAtUtc < now) || (r.DueAtUtc == null && r.DueDate < today) ? BucketOverdue
+            : r.DueDate <= today ? BucketToday
+            : r.DueDate == tomorrow ? BucketTomorrow
+            : r.DueDate <= weekEnd ? BucketThisWeek
+            : BucketLater;
+    }
+
+    /// <summary>Group by due: bucket, then priority (most urgent first), then the due moment, then oldest created, then id.</summary>
+    public static IOrderedQueryable<TaskSortRow> OrderByDueBucket(IQueryable<TaskSortRow> rows, QueueClock clock)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        return rows
+            .OrderBy(DueBucket(clock))
+            .ThenBy(r => r.PrioritySortOrder)
+            .ThenBy(r => r.DueSortKey)
+            .ThenBy(r => r.CreatedAtUtc)
+            .ThenBy(r => r.Id);
+    }
+
     private static IOrderedQueryable<TaskSortRow> WithDefaultTail(IOrderedQueryable<TaskSortRow> ordered) =>
         ordered.ThenBy(r => r.DueSortKey == null ? 0 : 1).ThenBy(r => r.DueSortKey).ThenBy(r => r.CreatedAtUtc).ThenBy(r => r.Id);
 

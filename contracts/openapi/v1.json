@@ -6593,6 +6593,15 @@
             }
           },
           {
+            "name": "group",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
             "name": "newSince",
             "in": "query",
             "schema": {
@@ -11379,6 +11388,43 @@
           }
         }
       },
+      "MyWorkBucketCounts": {
+        "required": [
+          "asap",
+          "overdue",
+          "today",
+          "tomorrow",
+          "thisWeek",
+          "later"
+        ],
+        "type": "object",
+        "properties": {
+          "asap": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "today": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tomorrow": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "thisWeek": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "later": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "MyWorkCounts": {
         "required": [
           "active",
@@ -11448,6 +11494,16 @@
           },
           "attention": {
             "$ref": "#/components/schemas/MyWorkAttention"
+          },
+          "bucketCounts": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MyWorkBucketCounts"
+              }
+            ]
           }
         }
       },

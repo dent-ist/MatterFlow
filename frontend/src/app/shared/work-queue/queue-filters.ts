@@ -52,6 +52,8 @@ export interface QueueState {
   closedAll: boolean;
   /** My Work: only tasks assigned since the start of the viewer's visit (`new=1`). The address carries the flag, never the instant. */
   newOnly: boolean;
+  /** My Work, Active tab: `due` groups the rows by due bucket (`group=due`); null is the plain list. Only My Work reads it. */
+  group: 'due' | null;
   podId: number | null;
 }
 
@@ -117,6 +119,7 @@ export function emptyState(): QueueState {
     view: null,
     closedAll: false,
     newOnly: false,
+    group: null,
     podId: null,
   };
 }
@@ -202,6 +205,7 @@ export function parseQueueState(params: ParamMap): QueueState {
     view: params.get('view'),
     closedAll: params.get('closed')?.toLowerCase() === 'all',
     newOnly: params.get('new') === '1',
+    group: params.get('group') === 'due' ? 'due' : null,
     podId: id(params, 'podId'),
   };
 }
@@ -255,6 +259,7 @@ export function toQueryParams(
     view: state.view,
     closed: state.closedAll ? 'all' : null,
     new: state.newOnly ? '1' : null,
+    group: state.group,
     podId: state.podId === null ? null : String(state.podId),
   };
 }

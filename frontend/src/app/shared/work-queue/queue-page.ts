@@ -77,6 +77,12 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     const params = this.params();
     const state = parseQueueState(params);
     const wanted = this.defaultStatus();
+    // Grouping is My Work's alone (Active tab); elsewhere the parameter means nothing, and a grouped list has no sort of its own.
+    if (state.group && !this.allowsGroup()) state.group = null;
+    if (state.group) {
+      state.sort = null;
+      state.dir = null;
+    }
     // The same rule as `defaultOnlyBare` in the filter definition: a plain link starts on the default, any other link means what it says.
     if (wanted.length > 0 && !QUEUE_FILTER_PARAMS.some((p) => params.has(p))) {
       return { ...state, filters: { ...state.filters, status: [...wanted] } };
@@ -87,10 +93,12 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   /** What the table's headers show: the address's sort, else the tab's own default (the Closed tab: Closed, newest first). */
   protected readonly tableSort = computed(() => {
     const s = this.state();
+    if (s.group) return null;
     return s.sort ?? this.defaultSort()?.field ?? null;
   });
   protected readonly tableDir = computed(() => {
     const s = this.state();
+    if (s.group) return null;
     return s.sort ? s.dir : (this.defaultSort()?.dir ?? s.dir);
   });
 
@@ -224,6 +232,11 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   /** The sort a list shows while the address names none (the Closed tab: closed date, newest first), so its header carries the arrow. */
   protected defaultSort(): { field: string; dir: SortDirection } | null {
     return null;
+  }
+
+  /** True where `group=due` applies (My Work, Active tab). */
+  protected allowsGroup(): boolean {
+    return false;
   }
 
   /** The status a plain link starts on (Task Queue: the open ones); none elsewhere. */
@@ -429,6 +442,12 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
       });
     }
     if (items.length === 0 && this.state().page > 1) this.goToPage(this.state().page - 1);
+    else this.rowRemoved();
+  }
+
+  /** Called after a row left the list and was taken off it (a grouped list reads its headers again). */
+  protected rowRemoved(): void {
+    // Optional hook.
   }
 
   /** The announcement after a row left: "TSK-59 cancelled. Removed from Active." */
@@ -460,9 +479,15 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     if (current === field) {
       const currentDir =
         s.dir ?? (s.sort ? (defaultDesc ? 'desc' : 'asc') : (fallback?.dir ?? 'asc'));
-      this.navigate({ ...s, sort: field, dir: currentDir === 'asc' ? 'desc' : 'asc', page: 1 });
+      this.navigate({
+        ...s,
+        group: null,
+        sort: field,
+        dir: currentDir === 'asc' ? 'desc' : 'asc',
+        page: 1,
+      });
     } else {
-      this.navigate({ ...s, sort: field, dir: defaultDesc ? 'desc' : 'asc', page: 1 });
+      this.navigate({ ...s, group: null, sort: field, dir: defaultDesc ? 'desc' : 'asc', page: 1 });
     }
   }
 

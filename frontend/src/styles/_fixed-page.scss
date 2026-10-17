@@ -106,6 +106,17 @@
     z-index: 3;
   }
 
+  /* Group header rows (Group by: Due) stick under the column headers, and under the filter row while it is open (40 px). */
+  .mf-scroll-area .wt-group th {
+    position: sticky;
+    top: var(--mf-head-h);
+    z-index: 2;
+  }
+
+  .mf-scroll-area .wt:has(.mf-filter-row) .wt-group th {
+    top: calc(var(--mf-head-h) + 40px);
+  }
+
   /* The first column of a wide table also stays at the left: it is above the other headers where they cross. */
   .mf-scroll-area thead th:first-child {
     z-index: 4;

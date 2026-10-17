@@ -53,6 +53,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
     private const int ClosedWindowDays = 90;
 
     public const string ClosedWindowAll = "all";
+    public const string GroupDue = "due";
     public const string ClosedWindowDefault = "default";
 
     /// <summary>Case- and accent-insensitive collation of the Title sort (the database default is accent-sensitive).</summary>
@@ -70,6 +71,11 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         var closedWindow = string.IsNullOrWhiteSpace(query.ClosedWindow) ? ClosedWindowDefault : query.ClosedWindow.Trim().ToLowerInvariant();
         if (closedWindow is not (ClosedWindowAll or ClosedWindowDefault))
             return Error.Validation("closedWindow", "UNKNOWN_CLOSED_WINDOW", $"Unknown closedWindow '{query.ClosedWindow}'. Allowed: {ClosedWindowDefault}, {ClosedWindowAll}.");
+
+        var groupText = query.Group?.Trim();
+        if (!string.IsNullOrEmpty(groupText) && !string.Equals(groupText, GroupDue, StringComparison.OrdinalIgnoreCase) && !string.Equals(groupText, "none", StringComparison.OrdinalIgnoreCase))
+            return Error.Validation("group", "UNKNOWN_GROUP", $"Unknown group '{query.Group}'. Allowed: none, {GroupDue}.");
+        var groupByDue = view == ViewActive && string.Equals(groupText, GroupDue, StringComparison.OrdinalIgnoreCase);
 
         var defaultSort = view switch
         {
@@ -112,13 +118,28 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
             ViewCompleted => completed,
             _ => created,
         };
-        var (items, total) = await PageAsync(current, page, sort, descending, queueClock, ct);
+        var (items, total) = await PageAsync(current, page, sort, descending, queueClock, ct, groupByDue);
+        var bucketCounts = groupByDue ? await BucketCountsAsync(current, queueClock, ct) : null;
         var counts = new MyWorkCounts(
             view == ViewActive ? total : await active.CountAsync(ct),
             view == ViewDueSoon ? total : await dueSoon.CountAsync(ct),
             view == ViewCompleted ? total : await completed.CountAsync(ct),
             view == ViewCreatedByMe ? total : await created.CountAsync(ct));
-        return new MyWorkPage(items, total, page.Page, page.PageSize, queueClock.ZoneId, view, counts, await AttentionAsync(me, queueClock, query.NewSince?.UtcDateTime, ct));
+        return new MyWorkPage(items, total, page.Page, page.PageSize, queueClock.ZoneId, view, counts, await AttentionAsync(me, queueClock, query.NewSince?.UtcDateTime, ct), bucketCounts);
+    }
+
+    /// <summary>One grouped query over the whole filtered set: the size of each due bucket (absent buckets are zero).</summary>
+    private static async Task<MyWorkBucketCounts> BucketCountsAsync(IQueryable<WorkTask> rows, QueueClock queueClock, CancellationToken ct)
+    {
+        var grouped = await rows
+            .Select(t => new TaskSortRow { DueDate = t.DueDate, DueAtUtc = t.DueAtUtc })
+            .GroupBy(TaskQueueRules.DueBucket(queueClock))
+            .Select(g => new { Bucket = g.Key, Count = g.Count() })
+            .ToListAsync(ct);
+        int Of(int bucket) => grouped.Where(g => g.Bucket == bucket).Sum(g => g.Count);
+        return new MyWorkBucketCounts(
+            Of(TaskQueueRules.BucketAsap), Of(TaskQueueRules.BucketOverdue), Of(TaskQueueRules.BucketToday),
+            Of(TaskQueueRules.BucketTomorrow), Of(TaskQueueRules.BucketThisWeek), Of(TaskQueueRules.BucketLater));
     }
 
     /// <summary>The needs-attention strip: the whole open assigned set (no grid filters), each count from the same predicate the filter uses.</summary>
@@ -432,7 +453,8 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         string sort,
         bool descending,
         QueueClock queueClock,
-        CancellationToken ct)
+        CancellationToken ct,
+        bool groupByDue = false)
     {
         var total = await rows.CountAsync(ct);
         if (total == 0 || page.Skip >= total)
@@ -455,7 +477,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                            TitleKey = EF.Functions.Collate(t.Title, TitleCollation),
                            MatterRef = m.MatterRef,
                        };
-        var ordered = sort == TaskQueueRules.SortDueSoonDefault ? TaskQueueRules.OrderDueSoon(sortRows, queueClock) : TaskQueueRules.Order(sortRows, sort, descending);
+        var ordered = groupByDue ? TaskQueueRules.OrderByDueBucket(sortRows, queueClock) : sort == TaskQueueRules.SortDueSoonDefault ? TaskQueueRules.OrderDueSoon(sortRows, queueClock) : TaskQueueRules.Order(sortRows, sort, descending);
         var ids = await ordered.Select(r => r.Id).Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
         return (await LoadRowsAsync(ids, queueClock, ct), total);
     }
