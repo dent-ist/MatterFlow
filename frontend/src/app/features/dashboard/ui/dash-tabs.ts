@@ -10,6 +10,19 @@ import {
   output,
 } from '@angular/core';
 
+/**
+ * Scrolls the tab list (and only it) so that the tab is fully inside it. `scrollIntoView` would also scroll the document sideways whenever the
+ * list is wider than the window, which is how a tab row can push the page 9 px out at 320 px.
+ */
+export function revealInList(tab: HTMLElement | null | undefined): void {
+  const list = tab?.parentElement;
+  if (!tab || !list) return;
+  const t = tab.getBoundingClientRect();
+  const l = list.getBoundingClientRect();
+  if (t.left < l.left) list.scrollLeft -= l.left - t.left;
+  else if (t.right > l.right) list.scrollLeft += t.right - l.right;
+}
+
 export interface DashTab {
   key: string;
   label: string;
@@ -66,6 +79,8 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
     /* Sticky from 600 px while the page scrolls (the fallback below 768 x 561); in the fixed-height layout the row is never scrolled away. */
     :host {
       display: block;
+      min-width: 0;
+      max-width: 100%;
       margin-bottom: var(--mf-s2);
       background: var(--mf-bg, var(--mf-surface));
     }
@@ -79,6 +94,8 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
     .row {
       display: flex;
       flex-wrap: wrap;
+      min-width: 0;
+      max-width: 100%;
       align-items: center;
       column-gap: var(--mf-s4);
       box-shadow: inset 0 -1px 0 var(--mf-border);
@@ -108,9 +125,14 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
     .end:empty {
       display: none;
     }
+    /* The tab list is the only part of the row that may be wider than the window: it scrolls inside itself (contain: inline-size, so what is inside never
+       adds to the width of the row or the document, whatever the number or the width of the tabs). */
     .tabs {
       flex: 1 1 0;
       min-width: 0;
+      max-width: 100%;
+      contain: inline-size;
+      overscroll-behavior-x: contain;
       display: flex;
       gap: var(--mf-s1);
       overflow-x: auto;
@@ -181,14 +203,12 @@ export class DashTabs {
   readonly tabChange = output<string>();
 
   constructor() {
-    // On a phone the five tabs scroll sideways: a tab chosen by a link (or a reload) is brought into view.
+    // On a phone the five tabs scroll sideways: a tab chosen by a link (or a reload) is brought into view inside the tab list.
     effect(() => {
       const key = this.selected();
       afterNextRender(
         () =>
-          this.host.nativeElement
-            .querySelector<HTMLElement>(`[data-tab="${key}"]`)
-            ?.scrollIntoView?.({ inline: 'nearest', block: 'nearest' }),
+          revealInList(this.host.nativeElement.querySelector<HTMLElement>(`[data-tab="${key}"]`)),
         { injector: this.injector },
       );
     });
@@ -221,9 +241,9 @@ export class DashTabs {
     }
     event.preventDefault();
     const tab = this.host.nativeElement.querySelector<HTMLElement>(`[data-tab="${keys[to]}"]`);
-    tab?.focus();
-    // A focused tab that sits past the edge of a scrolling tab list is brought into view.
-    tab?.scrollIntoView?.({ inline: 'nearest', block: 'nearest' });
+    // Focus without letting the browser scroll anything: a focused tab that sits past the edge of the tab list is brought into view in the list only.
+    tab?.focus({ preventScroll: true });
+    revealInList(tab);
     this.choose(keys[to]);
   }
 }

@@ -36,7 +36,13 @@ async function noHorizontalScroll(page: Page) {
   );
 }
 
-async function axeAt(page: Page, sizes: [number, number][], url: string, ready: string) {
+async function axeAt(
+  page: Page,
+  sizes: [number, number][],
+  url: string,
+  ready: string,
+  shot: string,
+) {
   for (const [width, height] of sizes) {
     await page.setViewportSize({ width, height });
     await page.goto(url);
@@ -44,6 +50,7 @@ async function axeAt(page: Page, sizes: [number, number][], url: string, ready: 
     await page.waitForLoadState('networkidle');
     expect(await axeViolations(page), `axe at ${width}`).toEqual([]);
     await noHorizontalScroll(page);
+    await shoot(page, `${shot}-${width}`, width < 600);
   }
 }
 
@@ -204,6 +211,7 @@ test.describe('Summary deltas (S3)', () => {
       ],
       `/dashboard?pod=${busyPod.podId}`,
       '.summary-tiles [data-delta]',
+      'deltas-axe',
     );
     // 375 and 320: the line wraps inside its tile, nothing is cut.
     for (const width of [375, 320]) {
@@ -458,6 +466,7 @@ test.describe('Technician Summary (S9)', () => {
       ],
       `/dashboard?sprio=${s.critical}`,
       '[data-tech-bar] [data-field]',
+      'technician-axe',
     );
     for (const width of [375, 320]) {
       await page.setViewportSize({ width, height: 812 });
