@@ -115,7 +115,7 @@ public class DashboardTrendQuery
     [FromQuery(Name = "taskTypeIds")]
     public int[]? TaskTypeIds { get; init; }
 
-    /// <summary><c>created</c>, <c>completed</c>, <c>overdue</c>, <c>ontime</c> or <c>late</c>: compute only that count (the others are 0 in every point). Omitted: all.</summary>
+    /// <summary><c>created</c>, <c>completed</c>, <c>overdue</c>, <c>ontime</c>, <c>late</c> or <c>open</c>: compute only that count (the others are 0 in every point). Omitted: all.</summary>
     [FromQuery(Name = "metric")]
     public string? Metric { get; init; }
 
@@ -125,8 +125,8 @@ public class DashboardTrendQuery
 }
 
 /// <summary>
-/// One local day of the Trends tab. <c>Overdue</c> is a snapshot (Tasks overdue and not yet closed at the end of that day, or now for today); the other
-/// counts are events of that day. <c>OnTime</c> and <c>Late</c> are Tasks with a due date completed that day on or before / after it.
+/// One point of the Trends tab: a local day, or a week (Monday to Sunday) when the trend's <c>Granularity</c> is <c>week</c> (then <c>Date</c> is the Monday). <c>Overdue</c> and <c>Open</c> are snapshots
+/// (Tasks overdue / created and not yet closed at the end of that day or week, or now for today and the current week); the other counts are events of the day (summed over the week). <c>OnTime</c> and <c>Late</c> are Tasks with a due date completed that day on or before / after it.
 /// </summary>
 public sealed record DashboardTrendDay(
     [property: Required] DateOnly Date,
@@ -134,7 +134,8 @@ public sealed record DashboardTrendDay(
     [property: Required] int Completed,
     [property: Required] int Overdue,
     [property: Required] int OnTime,
-    [property: Required] int Late);
+    [property: Required] int Late,
+    [property: Required] int Open);
 
 /// <summary>The daily series of one Task Type (same days, same bucketing as <see cref="DashboardTrend.All"/>).</summary>
 public sealed record DashboardTypeSeries([property: Required] int TaskTypeId, [property: Required] IReadOnlyList<DashboardTrendDay> Points);
@@ -151,23 +152,28 @@ public sealed record DashboardTrendType(
     [property: Required] int Overdue,
     [property: Required] int OnTime,
     [property: Required] int Late,
+    [property: Required] int Open,
     [property: Required] string CreatedQuery,
     [property: Required] string CompletedQuery,
-    [property: Required] string OverdueQuery);
+    [property: Required] string OverdueQuery,
+    [property: Required] string OpenQuery);
 
 /// <summary>
-/// Created, completed, overdue, on-time and late per local day for the whole department (<c>all</c>; its created and completed totals equal the Created and Completed counts of the summary) and for each requested Task Type,
+/// Created, completed, overdue, open, on-time and late per local day (per week, Monday to Sunday, when the period is longer than 31 days: <c>Granularity</c>) for the whole department (<c>all</c>; its created and completed totals equal the Created and Completed counts of the summary) and for each requested Task Type,
 /// plus the legend: every Task Type that has Tasks in the period or is active, largest first. Counts only, never per person.
 /// </summary>
 /// <param name="Metric">The metric asked for or null for all; the other counts are 0 when set.</param>
+/// <param name="Granularity"><c>day</c> (periods up to 31 days) or <c>week</c>: every point of every series is then a week and its <c>Date</c> the Monday.</param>
 public sealed record DashboardTrend(
     [property: Required] DashboardPeriod Period,
     [property: Required] string TimeZone,
     [property: Required] DateTime GeneratedAtUtc,
     string? Metric,
+    [property: Required] string Granularity,
     [property: Required] IReadOnlyList<DashboardTrendDay> All,
     [property: Required] IReadOnlyList<DashboardTypeSeries> ByTaskType,
     [property: Required] IReadOnlyList<DashboardTrendType> Types,
     [property: Required] string CreatedQuery,
     [property: Required] string CompletedQuery,
-    [property: Required] string OverdueQuery);
+    [property: Required] string OverdueQuery,
+    [property: Required] string OpenQuery);

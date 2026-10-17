@@ -37,7 +37,7 @@ public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZ
         if (resolved.IsFailure)
             return resolved.Error!;
         var period = resolved.Value;
-        var cacheKey = $"trend|{me}|{period.Key}|{period.From:yyyy-MM-dd}|{period.To:yyyy-MM-dd}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{metric}|{string.Join(',', wanted.Order())}";
+        var cacheKey = $"trend|{me}|{period.Key}|{period.From:yyyy-MM-dd}|{period.To:yyyy-MM-dd}|{DashboardRules.TrendGranularity(period.Days)}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{metric}|{string.Join(',', wanted.Order())}";
         if (!query.Fresh && cache.TryGet<DashboardTrend>(cacheKey, out var cached))
             return cached;
 
@@ -56,6 +56,7 @@ public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZ
         var needCreated = metric is null or "created";
         var needCompleted = metric is null or "completed";
         var needDue = metric is null or "overdue" or "ontime" or "late";
+        var needOpen = metric is null or "open";
         var created = !needCreated
             ? []
             : (await tasks.Where(t => t.CreatedAtUtc >= fromUtc && t.CreatedAtUtc < toUtc).Select(t => new { t.TaskTypeId, At = t.CreatedAtUtc }).ToListAsync(ct)).Select(r => (r.TaskTypeId, r.At)).ToList();
@@ -75,17 +76,40 @@ public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZ
                 .Select(r => new DueTask(r.TaskTypeId, r.CreatedAtUtc, r.DueAtUtc, r.DueDate, r.Status, r.StatusChangedAtUtc))
                 .ToList();
 
-        var built = DashboardRules.TrendByTaskType(from, to, created, completed, dueTasks, queueClock.StartOfDayUtc, nowUtc, wanted);
+        // Open at the end of each day: the Tasks created by the first snapshot that are still open now are counted by Task Type in SQL (no row per Task);
+        // every other Task created by the last snapshot that is not closed by the first one (created later in the period, or closed during it) is read and replayed per day in memory.
+        var openAtStart = new Dictionary<int, int>();
+        var openTasks = new List<OpenTask>();
+        if (needOpen)
+        {
+            var firstSnap = Snapshot(queueClock, from, nowUtc);
+            var lastSnap = Snapshot(queueClock, to, nowUtc);
+            openAtStart = await tasks
+                .Where(t => t.CreatedAtUtc <= firstSnap && (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold))
+                .GroupBy(t => t.TaskTypeId)
+                .Select(g => new { TypeId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(r => r.TypeId, r => r.Count, ct);
+            openTasks = (await tasks
+                .Where(t => t.CreatedAtUtc <= lastSnap
+                    && (t.CreatedAtUtc > firstSnap || ((t.Status == TaskStatusCode.Completed || t.Status == TaskStatusCode.Cancelled) && t.StatusChangedAtUtc > firstSnap)))
+                .Select(t => new { t.TaskTypeId, t.CreatedAtUtc, t.Status, t.StatusChangedAtUtc })
+                .ToListAsync(ct))
+                .Select(r => new OpenTask(r.TaskTypeId, r.CreatedAtUtc, r.Status is TaskStatusCode.Completed or TaskStatusCode.Cancelled, r.StatusChangedAtUtc))
+                .ToList();
+        }
+
+        var built = DashboardRules.TrendByTaskType(from, to, created, completed, dueTasks, queueClock.StartOfDayUtc, nowUtc, wanted, openTasks, openAtStart);
 
         var types = catalogue
             .Select(t =>
             {
                 var n = built.Totals.GetValueOrDefault(t.Id) ?? new TrendTypeTotals(0, 0, 0, 0, 0);
                 return new DashboardTrendType(
-                    t.Id, t.Name, t.IconKey, t.IsActive, n.Created, n.Completed, n.Overdue, n.OnTime, n.Late,
+                    t.Id, t.Name, t.IconKey, t.IsActive, n.Created, n.Completed, n.Overdue, n.OnTime, n.Late, n.Open,
                     DashboardRules.Created(from, endsBeforeToday) + "&type=" + t.Id,
                     DashboardRules.Completed(from, endsBeforeToday) + "&type=" + t.Id,
-                    DashboardRules.Overdue + "&type=" + t.Id);
+                    DashboardRules.Overdue + "&type=" + t.Id,
+                    DashboardRules.OpenQuery + "&type=" + t.Id);
             })
             .Where(t => t.IsActive || t.Created > 0 || t.Completed > 0 || t.Overdue > 0)
             .OrderByDescending(t => t.Created).ThenByDescending(t => t.Completed).ThenBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(t => t.Id)
@@ -96,13 +120,23 @@ public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZ
             queueClock.ZoneId,
             DateTime.SpecifyKind(queueClock.NowUtc, DateTimeKind.Utc),
             metric,
+            built.Granularity,
             built.All,
             built.Series,
             types,
             DashboardRules.Created(from, endsBeforeToday),
             DashboardRules.Completed(from, endsBeforeToday),
-            DashboardRules.Overdue);
+            DashboardRules.Overdue,
+            DashboardRules.OpenQuery);
         cache.Set(cacheKey, trend);
         return trend;
+    }
+
+    /// <summary>The instant the snapshot of a local day is taken: the end of that day, or now for today.</summary>
+    private static DateTime Snapshot(QueueClock clock, DateOnly day, DateTime nowUtc)
+    {
+        var start = clock.StartOfDayUtc(day);
+        var end = clock.StartOfDayUtc(day.AddDays(1));
+        return DateTime.SpecifyKind(new DateTime(Math.Min(end.Ticks, Math.Max(start.Ticks, nowUtc.Ticks))), DateTimeKind.Utc);
     }
 }

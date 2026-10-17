@@ -34,7 +34,7 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
         _typeIds.Add(world.TaskTypeId);
         for (var i = 1; i < 8; i++)
             _typeIds.Add(await h.CreateTaskTypeAsync("Perf type " + i, [world.OrderedWorkflowId], withForm: false));
-        await h.ExecuteAsync(SeedSql(world, admin, pod, _typeIds));
+        await h.ExecuteAsync(SeedSql(world, admin, pod, _typeIds, TaskCount));
         (await h.ScalarAsync("SELECT COUNT(*) AS [Value] FROM dbo.Task")).ShouldBe(TaskCount);
 
 
@@ -52,9 +52,9 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
     }
 
     // Per ten Tasks: 8 NEW/IN_PROGRESS/ON_HOLD-ish open ones (rn % 10 in 0..7, 9) and one COMPLETED (rn % 10 = 8): 4,500 open, 500 completed.
-    private static string SeedSql(World w, int adminUserId, int podId, IReadOnlyList<int> typeIds) => $"""
+    internal static string SeedSql(World w, int adminUserId, int podId, IReadOnlyList<int> typeIds, int taskCount) => $"""
         SET NOCOUNT ON;
-        DECLARE @n INT = {TaskCount};
+        DECLARE @n INT = {taskCount};
         DECLARE @version INT = (SELECT TOP 1 WorkflowVersionId FROM dbo.WorkflowVersion WHERE WorkflowDefinitionId = {w.OrderedWorkflowId} AND Status = 'PUBLISHED');
         DECLARE @base BIGINT = ISNULL((SELECT MAX(WorkflowInstanceId) FROM dbo.WorkflowInstance), 0);
         DECLARE @today DATE = CAST(SYSUTCDATETIME() AS DATE);
@@ -145,7 +145,7 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
         var median = timings.Order().ElementAt(timings.Count / 2);
         output.WriteLine("trend by type ms: " + string.Join(", ", timings) + " statements: " + statements.Count);
         median.ShouldBeLessThan(300, "p50 of the trend by task type at 5,000 Tasks: " + string.Join(", ", timings));
-        statements.Count.ShouldBeLessThanOrEqualTo(4, string.Join("\n---\n", statements)); // catalogue + created + completed + tasks with a due date (no read per type or per day)
+        statements.Count.ShouldBeLessThanOrEqualTo(6, string.Join("\n---\n", statements)); // catalogue + created + completed + tasks with a due date + open baseline (grouped) + open rows (no read per type or per day)
 
         // A full year of overdue snapshots stays as fast.
         var yearWatch = Stopwatch.StartNew();
@@ -153,10 +153,11 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
         yearWatch.Stop();
         output.WriteLine("trend 365 days ms: " + yearWatch.ElapsedMilliseconds);
         yearWatch.ElapsedMilliseconds.ShouldBeLessThan(600);
-        year.GetProperty("all").GetArrayLength().ShouldBe(365);
+        year.GetProperty("granularity").GetString().ShouldBe("week");
+        year.GetProperty("all").GetArrayLength().ShouldBeInRange(52, 54);
         year.GetProperty("all").EnumerateArray().Max(p => p.GetProperty("overdue").GetInt32()).ShouldBeGreaterThan(0);
 
-        foreach (var metric in new[] { "created", "completed", "overdue", "onTime", "late" })
+        foreach (var metric in new[] { "created", "completed", "overdue", "onTime", "late", "open" })
         {
             var sum = trend.GetProperty("byTaskType").EnumerateArray()
                 .Sum(s => s.GetProperty("points").EnumerateArray().Sum(p => p.GetProperty(metric).GetInt32()));

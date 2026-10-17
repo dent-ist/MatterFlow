@@ -224,4 +224,110 @@ public class DashboardRulesTests
         single.Series.ShouldBeEmpty();
         DashboardRules.TrendByTaskType(day.AddDays(1), day, [], [], [], d => d.ToDateTime(TimeOnly.MinValue), Now, [4]).All.ShouldBeEmpty();
     }
+
+    [Fact]
+    public void TrendByTaskType_open_is_created_minus_closed_at_the_end_of_each_local_day()
+    {
+        // Viewer five hours behind UTC; period 12 to 14 Oct, now 14 Oct 15:00 local (20:00 UTC). Snapshots: 13 Oct 05:00, 14 Oct 05:00, now.
+        DateTime Start(DateOnly d) => d.ToDateTime(TimeOnly.MinValue).AddHours(5);
+        var from = new DateOnly(2026, 10, 12);
+        var today = new DateOnly(2026, 10, 14);
+        DateTime U(int day, int hour) => new(2026, 10, day, hour, 0, 0, DateTimeKind.Utc);
+
+        // Baseline: type 1 has 3 tasks created before the 12th and still open, type 2 has 1.
+        Dictionary<int, int> baseline = new() { [1] = 3, [2] = 1 };
+        OpenTask[] rows =
+        [
+            new(1, U(1, 9), true, U(14, 8)),    // cancelled on the 14th (after the 14th's start, before now): open on the 12th and 13th, not on the 14th
+            new(2, U(13, 8), false, U(13, 8)),  // created on the 13th, open now
+            new(2, U(13, 9), true, U(13, 11)),  // created and completed on the 13th: never open at an end of day
+            new(1, U(14, 12), false, U(14, 12)), // created on the 14th, open now
+            new(1, U(14, 4), false, U(14, 4)),  // 04:00 UTC is 23:00 on the 13th local: counts from the 13th
+        ];
+
+        var built = DashboardRules.TrendByTaskType(from, today, [], [], [], Start, Now, [1, 2], rows, baseline);
+
+        built.All.Select(p => p.Open).ShouldBe([5, 7, 7], "baseline 4; the cancelled task is open on the 12th and 13th; 13th creations; today's");
+        built.Series[0].Points.Select(p => p.Open).ShouldBe([4, 5, 5]);
+        built.Series[1].Points.Select(p => p.Open).ShouldBe([1, 2, 2]);
+        for (var i = 0; i < 3; i++)
+            built.Series.Sum(s => s.Points[i].Open).ShouldBe(built.All[i].Open);
+        built.Totals[1].Open.ShouldBe(5);
+        built.Totals[2].Open.ShouldBe(2);
+        built.Granularity.ShouldBe("day");
+    }
+
+    [Fact]
+    public void TrendByTaskType_a_task_created_Oct_1_and_completed_Oct_10_is_open_Oct_1_to_9_and_not_on_the_10th()
+    {
+        DateTime Start(DateOnly d) => d.ToDateTime(TimeOnly.MinValue).AddHours(4); // New York in October: UTC-4
+        var from = new DateOnly(2026, 10, 1);
+        var today = new DateOnly(2026, 10, 12);
+        var now = new DateTime(2026, 10, 12, 18, 0, 0, DateTimeKind.Utc);
+        var created = new DateTime(2026, 10, 1, 14, 0, 0, DateTimeKind.Utc);
+        var completed = new DateTime(2026, 10, 10, 14, 0, 0, DateTimeKind.Utc);
+
+        var built = DashboardRules.TrendByTaskType(from, today, [], [], [], Start, now, [], [new OpenTask(1, created, true, completed)], new Dictionary<int, int>());
+
+        built.All.Select(p => p.Open).ShouldBe([1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0]);
+    }
+
+    [Theory]
+    [InlineData(1, "day")]
+    [InlineData(31, "day")]
+    [InlineData(32, "week")]
+    [InlineData(366, "week")]
+    public void TrendGranularity_is_daily_up_to_31_days(int days, string expected) => DashboardRules.TrendGranularity(days).ShouldBe(expected);
+
+    [Theory]
+    [InlineData("2026-10-12", "2026-10-12")] // Monday
+    [InlineData("2026-10-18", "2026-10-12")] // Sunday
+    [InlineData("2026-10-19", "2026-10-19")]
+    [InlineData("2027-01-01", "2026-12-28")] // across the year
+    public void WeekStart_is_the_Monday(string date, string monday) =>
+        DashboardRules.WeekStart(DateOnly.Parse(date, System.Globalization.CultureInfo.InvariantCulture)).ShouldBe(DateOnly.Parse(monday, System.Globalization.CultureInfo.InvariantCulture));
+
+    [Fact]
+    public void TrendByTaskType_over_31_days_buckets_every_series_by_week_with_stocks_taken_at_the_end_of_the_week()
+    {
+        // 35 days ending Wednesday 14 Oct 2026 (from Wed 10 Sep): 6 weeks, the first and last partial. New York, so the DST change of 1 Nov is not in range but the zone offset logic is exercised.
+        var zone = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+        DateTime Start(DateOnly d) => TimeZoneInfo.ConvertTimeToUtc(d.ToDateTime(TimeOnly.MinValue), zone);
+        var today = new DateOnly(2026, 10, 14);
+        var from = today.AddDays(-34);
+        var now = new DateTime(2026, 10, 14, 16, 0, 0, DateTimeKind.Utc);
+        DateTime At(DateOnly d, int hour) => Start(d).AddHours(hour);
+
+        (int, DateTime)[] created = [(1, At(from, 3)), (1, At(from.AddDays(3), 3)), (1, At(from.AddDays(4), 3)), (2, At(today, 1))];
+        OpenTask[] rows = [new(1, At(from.AddDays(3), 3), false, At(from.AddDays(3), 3)), new(1, At(today, 1), false, At(today, 1))];
+        var built = DashboardRules.TrendByTaskType(from, today, created, [], [], Start, now, [1], rows, new Dictionary<int, int> { [1] = 2 });
+
+        built.Granularity.ShouldBe("week");
+        built.All.Count.ShouldBe(6);
+        built.All[0].Date.ShouldBe(new DateOnly(2026, 9, 7));
+        built.All[^1].Date.ShouldBe(new DateOnly(2026, 10, 12));
+        built.All.ShouldAllBe(p => p.Date.DayOfWeek == DayOfWeek.Monday);
+        built.All.Sum(p => p.Created).ShouldBe(4, "flows are summed, so the weeks add up to the period");
+        built.All[0].Created.ShouldBe(2); // Thu 10 Sep and Sun 13 Sep are in the week of 7 Sep
+        built.All[1].Created.ShouldBe(1); // Mon 14 Sep
+        built.All.Select(p => p.Open).ShouldBe([3, 3, 3, 3, 3, 4], "stock: end of week value, the current week is now");
+        built.All[^1].Open.ShouldBe(4);
+        built.Series[0].Points.Select(p => p.Open).ShouldBe([3, 3, 3, 3, 3, 4]);
+    }
+
+    [Fact]
+    public void TrendByTaskType_weekly_buckets_cross_a_daylight_saving_change_without_losing_a_day()
+    {
+        var zone = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+        DateTime Start(DateOnly d) => TimeZoneInfo.ConvertTimeToUtc(d.ToDateTime(TimeOnly.MinValue), zone);
+        var from = new DateOnly(2026, 10, 26); // Monday; DST ends Sunday 1 Nov 2026
+        var today = new DateOnly(2026, 12, 6); // 42 days
+        var now = Start(today).AddHours(12);
+        var created = Enumerable.Range(0, 42).Select(i => (1, Start(from.AddDays(i)).AddHours(23).AddMinutes(30))).ToArray(); // 23:30 local each day, 24:30 would slip a day if offsets were fixed
+        var built = DashboardRules.TrendByTaskType(from, today, created, [], [], Start, now, [], [], new Dictionary<int, int>());
+
+        built.All.Count.ShouldBe(6);
+        built.All.ShouldAllBe(p => p.Created == 7);
+        built.All[0].Date.ShouldBe(from);
+    }
 }

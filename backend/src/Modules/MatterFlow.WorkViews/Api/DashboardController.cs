@@ -30,7 +30,7 @@ public class DashboardController(DashboardService dashboard, DashboardTrendServi
     }
 
     /// <summary>
-    /// The Trends tab: created, completed, overdue (a snapshot at the end of each local day), on time and late per local day (the viewer's time zone) for all
+    /// The Trends tab: created, completed, overdue and open (snapshots at the end of each local day), on time and late per local day (per week, Monday to Sunday, for periods over 31 days) (the viewer's time zone) for all
     /// task types (<c>all</c>) and for each <c>taskTypeIds</c> (repeat the parameter, at most 8: 400 <c>TOO_MANY_TYPES</c>; an unknown id: 400 <c>UNKNOWN_TASK_TYPE</c>),
     /// plus <c>types</c>, the legend of every task type with Tasks in the period or still active with its totals and the Task Queue queries that list them.
     /// <c>metric</c> computes only that count. Needs <c>Dashboard.View</c> and <c>Dashboard.ViewTrends</c>.

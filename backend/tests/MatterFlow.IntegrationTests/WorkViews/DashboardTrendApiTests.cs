@@ -27,6 +27,13 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
     /// </summary>
     private readonly DateTime _now = DateTime.Parse(
         Environment.GetEnvironmentVariable("MF_TEST_NOW") ?? "2026-10-14T03:30:00Z", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
+    private MovableClock _clock = null!;
+    /// <summary>The host's clock: fixed at <c>_now</c> unless a test moves it (and puts it back).</summary>
+    private sealed class MovableClock(DateTime now) : MatterFlow.SharedKernel.Time.IClock
+    {
+        public DateTime UtcNow { get; set; } = now;
+    }
+
     private DatabaseApiFactory _factory = null!;
     private TaskHarness _h = null!;
     private int _alpha, _beta, _gamma, _delta, _epsilon;
@@ -40,7 +47,8 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
 
     public async Task InitializeAsync()
     {
-        _factory = new DatabaseApiFactory(await sql.CreateDatabaseAsync()) { Clock = new Audit.FixedClock(_now) };
+        _clock = new MovableClock(_now);
+        _factory = new DatabaseApiFactory(await sql.CreateDatabaseAsync()) { Clock = _clock };
         _h = new TaskHarness(_factory);
         var world = await _h.CreateWorldAsync();
         _alpha = world.TaskTypeId;
@@ -110,6 +118,8 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
         return await (client ?? _h.Admin).SendAsync(request);
     }
 
+    private static DateOnly WeekStart(DateOnly d) => d.AddDays(-(((int)d.DayOfWeek + 6) % 7));
+
     private static int[] Column(JsonElement points, string name) => [.. points.EnumerateArray().Select(p => p.GetProperty(name).GetInt32())];
 
     [Theory]
@@ -129,17 +139,24 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
             // All equals the summary's Created and Completed counts of the same period.
             Column(trend.GetProperty("all"), "created").Sum().ShouldBe(summary.GetProperty("created").GetProperty("count").GetInt32());
             Column(trend.GetProperty("all"), "completed").Sum().ShouldBe(summary.GetProperty("completed").GetProperty("count").GetInt32());
-            trend.GetProperty("all").GetArrayLength().ShouldBe(days);
-            trend.GetProperty("all")[days - 1].GetProperty("date").GetString().ShouldBe(LocalDate(zone, _now).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            var points = trend.GetProperty("all").GetArrayLength();
+            var weekly = days > 31;
+            trend.GetProperty("granularity").GetString().ShouldBe(weekly ? "week" : "day");
+            var lastDate = trend.GetProperty("all")[points - 1].GetProperty("date").GetString();
+            if (weekly)
+                points.ShouldBeInRange(days / 7, days / 7 + 2);
+            else
+                points.ShouldBe(days);
+            lastDate.ShouldBe((weekly ? WeekStart(LocalDate(zone, _now)) : LocalDate(zone, _now)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
 
             // Every task type has a series here (alpha, beta, gamma, delta) and all tasks belong to one of them: the series add up to all.
             var series = trend.GetProperty("byTaskType").EnumerateArray().ToList();
             series.Select(s => s.GetProperty("taskTypeId").GetInt32()).ShouldBe([_alpha, _beta, _gamma, _delta]);
             foreach (var metric in new[] { "created", "completed" })
             {
-                var sum = new int[days];
+                var sum = new int[points];
                 foreach (var s in series)
-                    for (var i = 0; i < days; i++)
+                    for (var i = 0; i < points; i++)
                         sum[i] += Column(s.GetProperty("points"), metric)[i];
                 sum.ShouldBe(Column(trend.GetProperty("all"), metric), metric);
             }
@@ -385,5 +402,162 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
         Column(overdue.GetProperty("all"), "overdue").Max().ShouldBeGreaterThan(0);
         foreach (var metric in new[] { "ontime", "late" })
             (await TrendAsync("metric=" + metric)).GetProperty("metric").GetString().ShouldBe(metric);
+    }
+
+    // ---- Open at end of day (T7)
+
+    private static bool OpenAt(Seed s, DateTime snap) => s.Created <= snap && !((s.Completed ?? s.Cancelled) is { } closed && closed <= snap);
+
+    private int[] ExpectedOpen(string zone, DateTime now, int days, Func<Seed, bool> where)
+    {
+        var today = LocalDate(zone, now);
+        var first = today.AddDays(1 - days);
+        return [.. Enumerable.Range(0, days).Select(i =>
+        {
+            var day = first.AddDays(i);
+            var snap = day == today ? now : StartOfDayUtc(zone, day.AddDays(1));
+            return _seeds.Where(where).Count(s => OpenAt(s, snap));
+        })];
+    }
+
+    private static async Task<JsonElement> GetAtAsync(TaskHarness h, string url, string zone)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Add("X-Time-Zone", zone);
+        return await OkAsync(await h.Admin.SendAsync(request));
+    }
+
+    [Theory]
+    [InlineData(NewYork)]
+    [InlineData(Kiritimati)]
+    [InlineData(PagoPago)]
+    public async Task Open_is_created_minus_closed_at_the_end_of_each_local_day_in_total_and_per_type_and_today_equals_the_Open_tile(string zone)
+    {
+        const int days = 30;
+        var trend = await TrendAsync($"periodDays={days}&taskTypeIds={_alpha}&taskTypeIds={_beta}&taskTypeIds={_gamma}&taskTypeIds={_delta}", zone);
+        trend.GetProperty("granularity").GetString().ShouldBe("day");
+
+        Column(trend.GetProperty("all"), "open").ShouldBe(ExpectedOpen(zone, _now, days, _ => true));
+        foreach (var series in trend.GetProperty("byTaskType").EnumerateArray())
+        {
+            var id = series.GetProperty("taskTypeId").GetInt32();
+            Column(series.GetProperty("points"), "open").ShouldBe(ExpectedOpen(zone, _now, days, s => s.Type == id), "open of type " + id);
+        }
+
+        // Today's point is the Open tile and the Task Queue's open count; per type it is the legend total.
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/dashboard?periodDays=30");
+        request.Headers.Add("X-Time-Zone", zone);
+        var summary = await OkAsync(await _h.Admin.SendAsync(request));
+        var open = Column(trend.GetProperty("all"), "open");
+        open[^1].ShouldBe(summary.GetProperty("open").GetProperty("count").GetInt32());
+        var queue = await OkAsync(await _h.Admin.GetAsync("/api/v1/task-queue?" + trend.GetProperty("openQuery").GetString() + "&pageSize=1"));
+        queue.GetProperty("total").GetInt32().ShouldBe(open[^1]);
+        foreach (var t in trend.GetProperty("types").EnumerateArray())
+        {
+            var id = t.GetProperty("id").GetInt32();
+            t.GetProperty("open").GetInt32().ShouldBe(_seeds.Count(s => s.Type == id && s.Status is not ("COMPLETED" or "CANCELLED")), "legend open of type " + id);
+            var page = await OkAsync(await _h.Admin.GetAsync("/api/v1/task-queue?" + t.GetProperty("openQuery").GetString() + "&pageSize=1"));
+            page.GetProperty("total").GetInt32().ShouldBe(t.GetProperty("open").GetInt32());
+        }
+
+        // A task created and closed within the window is open on the days in between only; the oldest tasks (created 200 days ago) are in the baseline.
+        open.Max().ShouldBeGreaterThan(open[0] - 1);
+    }
+
+    [Fact]
+    public async Task Open_at_several_clock_instants_follows_the_same_definition()
+    {
+        // The same data read at other moments (and in other zones): the series is always created minus closed at the end of each local day, today taken at the clock.
+        foreach (var (now, zone) in new[]
+        {
+            (_now.AddHours(-20), NewYork),
+            (_now.AddDays(-9).AddHours(7), Kiritimati),
+            (_now.AddDays(-2.6), PagoPago),
+            (_now.AddHours(30), NewYork),
+        })
+        {
+            _clock.UtcNow = now;
+            var h = _h;
+            var trend = await GetAtAsync(h, "/api/v1/dashboard/trend?periodDays=30", zone);
+            Column(trend.GetProperty("all"), "open").ShouldBe(ExpectedOpen(zone, now, 30, _ => true), $"{now:O} in {zone}");
+            var summary = await GetAtAsync(h, "/api/v1/dashboard?periodDays=30", zone);
+            Column(trend.GetProperty("all"), "open")[^1].ShouldBe(
+                _seeds.Count(s => OpenAt(s, now)),
+                $"today at {now:O}");
+            if (now >= _now)
+                summary.GetProperty("open").GetProperty("count").GetInt32().ShouldBe(Column(trend.GetProperty("all"), "open")[^1]);
+        }
+
+        _clock.UtcNow = _now;
+    }
+
+    [Theory]
+    [InlineData(NewYork)]
+    [InlineData(Kiritimati)]
+    [InlineData(PagoPago)]
+    public async Task Ranges_over_31_days_are_weekly_for_every_series_with_stocks_at_the_end_of_the_week_and_flows_summed(string zone)
+    {
+        var trend = await TrendAsync($"periodDays=90&taskTypeIds={_alpha}", zone);
+        var daily = await TrendAsync($"periodDays=30&taskTypeIds={_alpha}", zone);
+        trend.GetProperty("granularity").GetString().ShouldBe("week");
+        var today = LocalDate(zone, _now);
+        var all = trend.GetProperty("all");
+        var dates = all.EnumerateArray().Select(p => DateOnly.ParseExact(p.GetProperty("date").GetString()!, "yyyy-MM-dd", CultureInfo.InvariantCulture)).ToList();
+        dates.ShouldAllBe(d => d.DayOfWeek == DayOfWeek.Monday);
+        dates[^1].ShouldBe(WeekStart(today));
+        dates.Count.ShouldBeLessThanOrEqualTo(14);
+
+        // Stocks: the value at the end of each week (the last point: now) equals the daily reading of that day.
+        var expectedOpen = ExpectedOpenAtWeekEnds(zone, today, 90, dates);
+        Column(all, "open").ShouldBe(expectedOpen);
+        Column(all, "open")[^1].ShouldBe(Column(daily.GetProperty("all"), "open")[^1], "the last point is today's value");
+        Column(all, "overdue")[^1].ShouldBe(Column(daily.GetProperty("all"), "overdue")[^1]);
+        // Flows: the weeks add up to the period, and the per-type weekly series add up to All.
+        var wholePeriod = await TrendAsync("periodDays=90", zone);
+        wholePeriod.GetProperty("types").EnumerateArray().Sum(t => t.GetProperty("created").GetInt32()).ShouldBe(Column(all, "created").Sum());
+        Column(trend.GetProperty("byTaskType")[0].GetProperty("points"), "open").Length.ShouldBe(dates.Count);
+
+        // Created per week equals the seeded tasks in each Monday-to-Sunday bucket (the first bucket only holds days of the period).
+        var first = today.AddDays(-89);
+        Column(all, "created").ShouldBe(dates.Select(w => _seeds.Count(s =>
+        {
+            var d = LocalDate(zone, s.Created);
+            return d >= first && d <= today && WeekStart(d) == w;
+        })).ToArray());
+    }
+
+    private int[] ExpectedOpenAtWeekEnds(string zone, DateOnly today, int days, List<DateOnly> weeks) =>
+        [.. weeks.Select(w =>
+        {
+            var last = w.AddDays(6) < today ? w.AddDays(6) : today;
+            var snap = last == today ? _now : StartOfDayUtc(zone, last.AddDays(1));
+            return _seeds.Count(s => OpenAt(s, snap));
+        })];
+
+    [Fact]
+    public async Task A_custom_range_of_366_days_has_at_most_54_weekly_points_and_a_range_of_31_days_is_daily()
+    {
+        var wide = await TrendAsync("period=custom&from=2025-10-14&to=2026-10-13");
+        wide.GetProperty("granularity").GetString().ShouldBe("week");
+        wide.GetProperty("all").GetArrayLength().ShouldBeInRange(52, 54);
+
+        var month = await TrendAsync("period=custom&from=2026-09-13&to=2026-10-13");
+        month.GetProperty("granularity").GetString().ShouldBe("day");
+        month.GetProperty("all").GetArrayLength().ShouldBe(31);
+        var thirtyTwo = await TrendAsync("period=custom&from=2026-09-12&to=2026-10-13");
+        thirtyTwo.GetProperty("granularity").GetString().ShouldBe("week");
+    }
+
+    [Fact]
+    public async Task The_open_metric_computes_only_Open_and_the_cache_keeps_the_granularity_apart()
+    {
+        var open = await TrendAsync("metric=open&periodDays=30");
+        open.GetProperty("metric").GetString().ShouldBe("open");
+        Column(open.GetProperty("all"), "created").Sum().ShouldBe(0);
+        Column(open.GetProperty("all"), "overdue").Sum().ShouldBe(0);
+        Column(open.GetProperty("all"), "open").Max().ShouldBeGreaterThan(0);
+        var weekly = await TrendAsync("metric=open&period=custom&from=2026-09-12&to=2026-10-13");
+        weekly.GetProperty("granularity").GetString().ShouldBe("week");
+        (await TrendAsync("period=custom&from=2026-09-13&to=2026-10-13")).GetProperty("granularity").GetString().ShouldBe("day");
     }
 }

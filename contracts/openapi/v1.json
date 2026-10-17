@@ -10203,12 +10203,14 @@
           "timeZone",
           "generatedAtUtc",
           "metric",
+          "granularity",
           "all",
           "byTaskType",
           "types",
           "createdQuery",
           "completedQuery",
-          "overdueQuery"
+          "overdueQuery",
+          "openQuery"
         ],
         "type": "object",
         "properties": {
@@ -10227,6 +10229,9 @@
               "null",
               "string"
             ]
+          },
+          "granularity": {
+            "type": "string"
           },
           "all": {
             "type": "array",
@@ -10254,6 +10259,9 @@
           },
           "overdueQuery": {
             "type": "string"
+          },
+          "openQuery": {
+            "type": "string"
           }
         }
       },
@@ -10264,7 +10272,8 @@
           "completed",
           "overdue",
           "onTime",
-          "late"
+          "late",
+          "open"
         ],
         "type": "object",
         "properties": {
@@ -10291,6 +10300,10 @@
           "late": {
             "type": "integer",
             "format": "int32"
+          },
+          "open": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -10305,9 +10318,11 @@
           "overdue",
           "onTime",
           "late",
+          "open",
           "createdQuery",
           "completedQuery",
-          "overdueQuery"
+          "overdueQuery",
+          "openQuery"
         ],
         "type": "object",
         "properties": {
@@ -10344,6 +10359,10 @@
             "type": "integer",
             "format": "int32"
           },
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
           "createdQuery": {
             "type": "string"
           },
@@ -10351,6 +10370,9 @@
             "type": "string"
           },
           "overdueQuery": {
+            "type": "string"
+          },
+          "openQuery": {
             "type": "string"
           }
         }

@@ -18,7 +18,45 @@ public static class DashboardRules
     /// <summary>Most Task Types the Trends tab draws a line for at once.</summary>
     public const int MaxTrendTypes = 8;
 
-    public static readonly IReadOnlyList<string> TrendMetrics = ["created", "completed", "overdue", "ontime", "late"];
+    public static readonly IReadOnlyList<string> TrendMetrics = ["created", "completed", "overdue", "ontime", "late", "open"];
+
+    /// <summary>Longest period (in days) the Trends tab draws one point per day for; longer ones are bucketed by week (Monday to Sunday).</summary>
+    public const int MaxDailyTrendDays = 31;
+
+    public const string DayGranularity = "day";
+    public const string WeekGranularity = "week";
+
+    /// <summary>"day" up to <see cref="MaxDailyTrendDays"/> days, else "week".</summary>
+    public static string TrendGranularity(int days) => days > MaxDailyTrendDays ? WeekGranularity : DayGranularity;
+
+    /// <summary>The Monday of the week the date is in (weeks run Monday to Sunday whatever the locale).</summary>
+    public static DateOnly WeekStart(DateOnly date) => date.AddDays(-(((int)date.DayOfWeek + 6) % 7));
+
+    /// <summary>
+    /// Buckets daily points by week (Monday to Sunday): flows are summed, the stocks (Overdue, Open) take the value of the last day of the bucket (the
+    /// current week: now). A bucket is dated by its Monday, which can be before the first day of the period; the first and last buckets only hold the days
+    /// of the period.
+    /// </summary>
+    public static IReadOnlyList<DashboardTrendDay> ToWeeks(IReadOnlyList<DashboardTrendDay> days)
+    {
+        ArgumentNullException.ThrowIfNull(days);
+        var weeks = new List<DashboardTrendDay>();
+        foreach (var d in days)
+        {
+            var monday = WeekStart(d.Date);
+            if (weeks.Count > 0 && weeks[^1].Date == monday)
+            {
+                var w = weeks[^1];
+                weeks[^1] = new DashboardTrendDay(monday, w.Created + d.Created, w.Completed + d.Completed, d.Overdue, w.OnTime + d.OnTime, w.Late + d.Late, d.Open);
+            }
+            else
+            {
+                weeks.Add(d with { Date = monday });
+            }
+        }
+
+        return weeks;
+    }
 
     /// <summary>Task Types shown individually before the rest is folded into "Other task types".</summary>
     public const int TopTypes = 8;
@@ -109,7 +147,11 @@ public static class DashboardRules
     /// <b>Overdue</b> is a snapshot per day: the Tasks that, at the end of that local day, were created, had a due moment that had passed (a timed due: the
     /// instant; a date-only due: after 23:59:59 of that date in the viewer's zone, as the Task Queue does) and were not yet closed. For today the snapshot is taken
     /// at <paramref name="nowUtc"/>. A Task is closed from its last status change when it is Completed or Cancelled; a Task that is open now counts as open for its
-    /// whole life (the status history is not replayed), and the current due date is used for every day. <b>On time</b> / <b>Late</b> count, per local day,
+    /// whole life (the status history is not replayed), and the current due date is used for every day. <b>Open</b> is the same kind of snapshot: the Tasks
+    /// created by the snapshot instant and not yet Completed or Cancelled at it (New, In Progress and On hold count, ASAP too). <paramref name="openAtStart"/>
+    /// holds, per Task Type, the Tasks created by the first snapshot that are still open now; <paramref name="openTasks"/> every other Task created by the
+    /// last snapshot that is not closed by the first one (created later in the period, or closed during it). Periods longer than
+    /// <see cref="MaxDailyTrendDays"/> days come back bucketed by week (<see cref="ToWeeks"/>). <b>On time</b> / <b>Late</b> count, per local day,
     /// the Tasks with a due date completed that day on or before / after their due moment. Tasks without a due date (ASAP) are in neither.
     /// </para>
     /// </summary>
@@ -121,7 +163,9 @@ public static class DashboardRules
         IEnumerable<DueTask> dueTasks,
         Func<DateOnly, DateTime> startOfDayUtc,
         DateTime nowUtc,
-        IReadOnlyList<int> wanted)
+        IReadOnlyList<int> wanted,
+        IEnumerable<OpenTask>? openTasks = null,
+        IReadOnlyDictionary<int, int>? openAtStart = null)
     {
         ArgumentNullException.ThrowIfNull(created);
         ArgumentNullException.ThrowIfNull(completed);
@@ -130,7 +174,7 @@ public static class DashboardRules
         ArgumentNullException.ThrowIfNull(wanted);
         var days = today.DayNumber - from.DayNumber + 1;
         if (days <= 0)
-            return new TrendByType([], [.. wanted.Select(id => new DashboardTypeSeries(id, []))], new Dictionary<int, TrendTypeTotals>());
+            return new TrendByType([], [.. wanted.Select(id => new DashboardTypeSeries(id, []))], new Dictionary<int, TrendTypeTotals>(), DayGranularity);
 
         var edges = Enumerable.Range(0, days + 1).Select(i => startOfDayUtc(from.AddDays(i)).Ticks).ToArray();
         // The instant each day's snapshot is taken: its end, or now for today.
@@ -221,6 +265,35 @@ public static class DashboardRules
             overdueAll[end]--;
         }
 
+        // Open at the end of each day: baseline at the first snapshot, then +1 from the first snapshot at or after creation, -1 from the first one at or after closing.
+        var openDiff = new Dictionary<int, int[]>();
+        var openAll = new int[days + 1];
+        int[] OpenRow(int typeId)
+        {
+            if (!openDiff.TryGetValue(typeId, out var diff))
+                openDiff[typeId] = diff = new int[days + 1];
+            return diff;
+        }
+
+        foreach (var (typeId, count) in openAtStart ?? new Dictionary<int, int>())
+        {
+            OpenRow(typeId)[0] += count;
+            openAll[0] += count;
+        }
+
+        foreach (var t in openTasks ?? [])
+        {
+            var start = FirstSnapAtOrAfter(t.CreatedAtUtc.Ticks);
+            var end = t.Closed ? FirstSnapAtOrAfter(t.StatusChangedAtUtc.Ticks) : days;
+            if (start >= end)
+                continue;
+            var diff = OpenRow(t.TypeId);
+            diff[start]++;
+            diff[end]--;
+            openAll[start]++;
+            openAll[end]--;
+        }
+
         int[] Running(int[] diff)
         {
             var values = new int[days];
@@ -236,9 +309,16 @@ public static class DashboardRules
 
         var overdueByType = overdueDiff.ToDictionary(p => p.Key, p => Running(p.Value));
         all[2] = Running(overdueAll);
+        var openByType = openDiff.ToDictionary(p => p.Key, p => Running(p.Value));
+        var openTotal = Running(openAll);
+        var granularity = TrendGranularity(days);
 
-        IReadOnlyList<DashboardTrendDay> Points(int[] c, int[] d, int[] o, int[] ot, int[] l) =>
-            [.. Enumerable.Range(0, days).Select(i => new DashboardTrendDay(from.AddDays(i), c[i], d[i], o[i], ot[i], l[i]))];
+        IReadOnlyList<DashboardTrendDay> Points(int[] c, int[] d, int[] o, int[] ot, int[] l, int[] open)
+        {
+            IReadOnlyList<DashboardTrendDay> daily =
+                [.. Enumerable.Range(0, days).Select(i => new DashboardTrendDay(from.AddDays(i), c[i], d[i], o[i], ot[i], l[i], open[i]))];
+            return granularity == WeekGranularity ? ToWeeks(daily) : daily;
+        }
 
         int[] Zeros() => new int[days];
         var series = wanted.Select(id =>
@@ -246,10 +326,10 @@ public static class DashboardRules
             var row = perType.GetValueOrDefault(id);
             return new DashboardTypeSeries(
                 id,
-                Points(row?[0] ?? Zeros(), row?[1] ?? Zeros(), overdueByType.GetValueOrDefault(id) ?? Zeros(), row?[3] ?? Zeros(), row?[4] ?? Zeros()));
+                Points(row?[0] ?? Zeros(), row?[1] ?? Zeros(), overdueByType.GetValueOrDefault(id) ?? Zeros(), row?[3] ?? Zeros(), row?[4] ?? Zeros(), openByType.GetValueOrDefault(id) ?? Zeros()));
         }).ToList();
 
-        var ids = perType.Keys.Union(overdueByType.Keys).ToList();
+        var ids = perType.Keys.Union(overdueByType.Keys).Union(openByType.Keys).ToList();
         var totals = ids.ToDictionary(
             id => id,
             id =>
@@ -260,9 +340,10 @@ public static class DashboardRules
                     row?[1].Take(days).Sum() ?? 0,
                     overdueByType.TryGetValue(id, out var o) ? o[days - 1] : 0,
                     row?[3].Take(days).Sum() ?? 0,
-                    row?[4].Take(days).Sum() ?? 0);
+                    row?[4].Take(days).Sum() ?? 0,
+                    openByType.TryGetValue(id, out var open) ? open[days - 1] : 0);
             });
-        return new TrendByType(Points(all[0], all[1], all[2], all[3], all[4]), series, totals);
+        return new TrendByType(Points(all[0], all[1], all[2], all[3], all[4], openTotal), series, totals, granularity);
     }
 
     private static IEnumerable<string> StatusParams(params TaskStatusCode[] statuses) => statuses.Select(s => "status=" + s.ToCode());
@@ -271,11 +352,15 @@ public static class DashboardRules
 /// <summary>A Task with a due date as the trend sees it: when it was created, its due moment (<c>DueAtUtc</c> for a timed due, else the date-only <c>DueDate</c>) and its current status with the time of its last status change.</summary>
 public sealed record DueTask(int TypeId, DateTime CreatedAtUtc, DateTime? DueAtUtc, DateOnly? DueDate, TaskStatusCode Status, DateTime StatusChangedAtUtc);
 
-/// <summary>The totals of one Task Type in the period: created, completed, overdue at the end of the period (now), completed on time and completed late.</summary>
-public sealed record TrendTypeTotals(int Created, int Completed, int Overdue, int OnTime, int Late);
+/// <summary>The totals of one Task Type in the period: created, completed, overdue at the end of the period (now), completed on time, completed late and open at the end of the period (now).</summary>
+public sealed record TrendTypeTotals(int Created, int Completed, int Overdue, int OnTime, int Late, int Open = 0);
+
+/// <summary>A Task as the Open series sees it: when it was created and, if it is Completed or Cancelled now, that it is <c>Closed</c> and when it last changed status.</summary>
+public sealed record OpenTask(int TypeId, DateTime CreatedAtUtc, bool Closed, DateTime StatusChangedAtUtc);
 
 /// <summary>Result of <see cref="DashboardRules.TrendByTaskType"/>: the department series, the requested type series and every type's totals.</summary>
 public sealed record TrendByType(
     IReadOnlyList<DashboardTrendDay> All,
     IReadOnlyList<DashboardTypeSeries> Series,
-    IReadOnlyDictionary<int, TrendTypeTotals> Totals);
+    IReadOnlyDictionary<int, TrendTypeTotals> Totals,
+    string Granularity = DashboardRules.DayGranularity);
