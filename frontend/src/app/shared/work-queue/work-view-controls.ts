@@ -8,6 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { Dismissable } from '../ui/dismissable';
 import { ColumnChooser } from './column-chooser';
 import { Density } from './column-prefs';
 import { SortDirection } from './queue-filters';
@@ -23,11 +24,11 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
 
 /**
  * The right end of the work toolbar: a short "Sorted by Priority" note with the sort direction, an info button that opens the full
- * default rule (keyboard accessible, Escape closes), "Reset sort" while a header sort is active, and the Columns chooser.
+ * default rule (the shared popover rule: Esc, outside click), "Reset sort" while a header sort is active, and the Columns chooser.
  */
 @Component({
   selector: 'mf-work-view-controls',
-  imports: [ColumnChooser],
+  imports: [ColumnChooser, Dismissable],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './work-view-controls.scss',
   template: `
@@ -47,18 +48,25 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
           <i class="pi pi-sort-amount-up-alt" aria-hidden="true"></i>
         </span>
         <button
+          #infoBtn
           type="button"
           class="vc-info"
           aria-label="How the default order works"
           aria-controls="vc-rule"
           [attr.aria-expanded]="info()"
           (click)="info.set(!info())"
-          (keydown.escape)="info.set(false)"
         >
           <i class="pi pi-info-circle" aria-hidden="true"></i>
         </button>
         @if (info()) {
-          <p id="vc-rule" class="vc-rule" role="note" data-sort-rule>
+          <p
+            id="vc-rule"
+            class="vc-rule"
+            role="note"
+            data-sort-rule
+            [mfDismissable]="infoBtn"
+            (dismissed)="info.set(false)"
+          >
             {{ defaultOrder() }}. Choosing a column header sorts by it and replaces this order.
           </p>
         }
@@ -86,6 +94,7 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
     <mf-column-chooser
       [columns]="columns()"
       [density]="density()"
+      [defaults]="defaultColumns()"
       (columnsChange)="columnsChange.emit($event)"
       (densityChange)="densityChange.emit($event)"
     />
@@ -102,6 +111,8 @@ export class WorkViewControls {
   readonly tabHelp = input<string | null>(null);
   readonly columns = input.required<readonly string[]>();
   readonly density = input<Density>('comfortable');
+  /** The current tab's default column set: when given, the Columns panel offers "Reset columns" (needs the per-tab sets of #152). */
+  readonly defaultColumns = input<readonly string[] | null>(null);
 
   readonly resetSort = output<void>();
   readonly columnsChange = output<string[]>();

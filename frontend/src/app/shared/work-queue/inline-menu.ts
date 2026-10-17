@@ -12,6 +12,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { Dismissable } from '../ui/dismissable';
 
 export interface MenuOption {
   id: string;
@@ -31,11 +32,12 @@ let nextId = 0;
 /**
  * A value in a table cell that opens a small menu (inline edit). The projected content is the current value; a chevron
  * marks it as changeable. A button with `aria-haspopup`; Enter, Space or Arrow Down opens, arrows move, Enter or Space picks,
- * Esc closes and returns focus. The list is fixed-positioned from the trigger so the table's scroll container does not clip it.
+ * Esc (the shared popover rule) closes and returns focus. The list is fixed-positioned from the trigger so the table's scroll container does not clip it.
  * Clicks and keys inside never reach the row.
  */
 @Component({
   selector: 'mf-inline-menu',
+  imports: [Dismissable],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <button
@@ -70,6 +72,8 @@ let nextId = 0;
         #pop
         class="im-pop"
         role="group"
+        [mfDismissable]="trigger"
+        (dismissed)="close(false)"
         [id]="uid + '-pop'"
         [attr.aria-label]="menuLabel()"
         [style.top.px]="pos().top"

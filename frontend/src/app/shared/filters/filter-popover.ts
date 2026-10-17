@@ -9,12 +9,13 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { registerPopover } from '../ui/dismissable';
 
 let nextId = 0;
 
 /**
  * The panel of a multi-select, user, date or number filter (docs/ux/column-filters-review.md 4.8). It is `position: fixed` and placed
- * from the trigger (so the grid's scroll area never clips it), flips upward near the bottom edge, closes when the grid scrolls, on a
+ * from the trigger (so the grid's scroll area never clips it), flips upward near the bottom edge, closes when the grid scrolls, and by the shared rule (`PopoverStack`) on a
  * click outside and on Esc (the trigger gets focus back). Content is projected. Use it with `@if (open())` next to the trigger:
  *
  *   <button #btn (click)="open.set(true)">...</button>
@@ -30,7 +31,6 @@ let nextId = 0;
     '[style.top.px]': 'top()',
     '[style.left.px]': 'left()',
     '[style.max-height.px]': 'maxHeight()',
-    '(keydown.escape)': 'escape($event)',
     '(click)': '$event.stopPropagation()',
   },
   template: `<ng-content />`,
@@ -78,10 +78,12 @@ export class FilterPopover {
       );
       first?.focus({ preventScroll: true });
     });
-    const outside = (e: Event) => {
-      const t = e.target as Node | null;
-      if (t && !this.el.nativeElement.contains(t) && !this.anchor().contains(t)) this.closed.emit();
-    };
+    // Esc (focus goes back to the trigger), a press or focus outside, and another popover opening: the shared rule (mfDismissable).
+    registerPopover({
+      panel: this.el.nativeElement,
+      trigger: () => this.anchor(),
+      close: () => this.closed.emit(),
+    });
     // Scrolling the grid closes the panel (it would drift away from its cell); scrolling inside the panel does not.
     const scrolled = (e: Event) => {
       const t = e.target as Node | null;
@@ -89,11 +91,9 @@ export class FilterPopover {
       this.closed.emit();
     };
     const resized = () => this.closed.emit();
-    document.addEventListener('pointerdown', outside, true);
     window.addEventListener('scroll', scrolled, true);
     window.addEventListener('resize', resized);
     destroy.onDestroy(() => {
-      document.removeEventListener('pointerdown', outside, true);
       window.removeEventListener('scroll', scrolled, true);
       window.removeEventListener('resize', resized);
     });
@@ -114,12 +114,6 @@ export class FilterPopover {
     this.top.set(flip ? rect.top - gap - height : rect.bottom + gap);
     const width = panel.offsetWidth || 256;
     this.left.set(Math.max(margin, Math.min(rect.left, window.innerWidth - width - margin)));
-  }
-
-  protected escape(event: Event): void {
-    event.stopPropagation();
-    this.closed.emit();
-    this.anchor().focus();
   }
 }
 

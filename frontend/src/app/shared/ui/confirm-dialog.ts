@@ -11,6 +11,17 @@ import { DialogFocus } from './dialog-focus';
   selector: 'mf-confirm-dialog',
   imports: [Dialog, Button, DialogFocus],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `
+    /* The text wraps (the dialog may be opened from a table cell that does not: BUG-5) and long references break instead of widening it.
+       The body scrolls when taller than the window; the footer buttons stay visible. */
+    .mf-confirm__body {
+      max-height: calc(100dvh - 12rem);
+      overflow-x: hidden;
+      overflow-y: auto;
+      overflow-wrap: anywhere;
+      white-space: normal;
+    }
+  `,
   template: `
     <p-dialog
       [header]="title()"
@@ -22,7 +33,7 @@ import { DialogFocus } from './dialog-focus';
       [resizable]="false"
       [visible]="visible()"
       (visibleChange)="visible.set($event)"
-      [style]="{ width: '32rem', maxWidth: '95vw' }"
+      [style]="{ width: '32rem', maxWidth: '95vw', whiteSpace: 'normal' }"
     >
       <div class="mf-confirm__body" data-confirm-body>
         <ng-content />

@@ -23,6 +23,7 @@ import { SEARCH_TYPES } from '../search/search-meta';
 import { GlobalSearch } from '../search/global-search';
 import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem } from './nav-items';
 import { ShortcutHelpState } from './shortcut-help-state';
+import { isShortcut } from './shortcut-registry';
 import { ShellLayout } from '../ui/fixed-page';
 import { UserMenu } from './user-menu';
 
@@ -217,7 +218,7 @@ export class AppShell {
       this.searchButton()?.nativeElement.focus();
       return;
     }
-    if (event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    if (isShortcut('help', event)) {
       const target = event.target as HTMLElement | null;
       const typing =
         !!target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable);
@@ -229,7 +230,7 @@ export class AppShell {
       }
       return;
     }
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+    if (isShortcut('search', event)) {
       event.preventDefault();
       this.globalSearch()?.focus();
     }

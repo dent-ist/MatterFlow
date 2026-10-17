@@ -13,6 +13,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { Dismissable } from '../ui/dismissable';
 import { FilterControl } from './filter-control';
 import { ListFilters } from './list-filters';
 
@@ -30,7 +31,7 @@ const FOCUSABLE =
  */
 @Component({
   selector: 'mf-filter-sheet',
-  imports: [FilterControl],
+  imports: [FilterControl, Dismissable],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (filters().sheetOpen() && filters().sheetMode()) {
@@ -45,6 +46,9 @@ const FOCUSABLE =
         #dlg
         class="fs"
         role="dialog"
+        [mfDismissable]="null"
+        [mfDismissableModal]="true"
+        (dismissed)="close()"
         aria-modal="true"
         data-filter-sheet
         [attr.aria-labelledby]="uid + '-h'"
