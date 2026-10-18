@@ -14,7 +14,7 @@ async function column(page: Page, key: string): Promise<string[]> {
 }
 
 test.describe('Task Queue Assignee and Client sorts', () => {
-  test('TQ23: header clicks sort Assignee and Client, with aria-sort, URL and axe at 1366', async ({
+  test('TQ23: header clicks sort Assignee and Client, with aria-sort, URL and axe at four sizes', async ({
     seed,
     asUser,
   }) => {
@@ -80,6 +80,17 @@ test.describe('Task Queue Assignee and Client sorts', () => {
     await expect(header('assignee')).toHaveAttribute('aria-sort', 'none');
 
     await button('assignee').click();
-    if (axeAvailable()) expect(await axeViolations(page), 'axe at 1366').toEqual([]);
+    if (axeAvailable()) {
+      for (const [w, h] of [
+        [1366, 768],
+        [1920, 1080],
+        [768, 1024],
+        [375, 812],
+      ]) {
+        await page.setViewportSize({ width: w, height: h });
+        await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+        expect(await axeViolations(page), `axe at ${w}`).toEqual([]);
+      }
+    }
   });
 });
