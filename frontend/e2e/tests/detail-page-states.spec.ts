@@ -249,18 +249,17 @@ test.describe('Detail pages: loading skeleton (#247)', () => {
       await expect(skeleton).toHaveAttribute('aria-busy', 'true');
       await expect(skeleton.locator('[role=status]')).toHaveText(`Loading ${kind}`);
       await expect(page.locator('nav[aria-label=Breadcrumb] a:visible').first()).toBeVisible();
-      if (kind === 'project') {
-        await expect(skeleton.locator('.rk__row')).toHaveCount(5);
-      } else {
-        await expect(skeleton.locator('[role=tab]')).toHaveCount(kind === 'client' ? 2 : 4);
-        await expect(skeleton.locator('.rk__row')).toHaveCount(5);
-        const rowHeight = await skeleton
-          .locator('.rk__row')
-          .first()
-          .evaluate((e) => e.getBoundingClientRect().height);
-        expect(rowHeight).toBe(44);
-      }
+      await expect(skeleton.locator('[role=tab]')).toHaveCount(kind === 'matter' ? 4 : 2);
+      await expect(skeleton.locator('.rk__row')).toHaveCount(5);
+      const rowHeight = await skeleton
+        .locator('.rk__row')
+        .first()
+        .evaluate((e) => e.getBoundingClientRect().height);
+      expect(rowHeight).toBe(44);
       await expect(page.getByText(/^Loading the /)).toHaveCount(0); // one indicator, not a spinner and a skeleton
+      if (kind === 'project') {
+        await expect(skeleton.locator('[role=tab]')).toHaveText(['Tasks (--)', 'Details']);
+      }
       if (kind === 'matter') {
         await expect(skeleton.locator('[role=tab]')).toHaveText([
           'Details',
@@ -346,7 +345,7 @@ test.describe('Detail pages: document title (#248)', () => {
     await expect.poll(() => title(page)).toBe(`${short}: Projects - MatterFlow`);
   });
 
-  test('Project: Name: Details; the lists keep their plain names; the id gives the plain name while loading', async ({
+  test('Project: Name: Tasks, then Name: Details; the lists keep their plain names; the id gives the plain name while loading', async ({
     page,
     seed,
   }) => {
@@ -362,6 +361,8 @@ test.describe('Detail pages: document title (#248)', () => {
     await page.goto(`/projects/${project.projectId}`, { waitUntil: 'commit' });
     await expect.poll(() => title(page)).toBe('Project - MatterFlow');
     release();
+    await expect.poll(() => title(page)).toBe(`${project.name}: Tasks - MatterFlow`);
+    await page.getByRole('tab', { name: 'Details' }).click();
     await expect.poll(() => title(page)).toBe(`${project.name}: Details - MatterFlow`);
 
     await page.goto('/clients');

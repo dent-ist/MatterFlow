@@ -44,12 +44,18 @@ describe('mf-record-skeleton (#247)', () => {
     expect(el.querySelector('[role=tab][aria-selected=true]')?.textContent).toContain('Projects');
   });
 
-  it('draws a project without tabs: its Tasks area and Details panel', async () => {
-    const el = await render('project');
-    expect(el.querySelector('[role=tab]')).toBeNull();
-    expect(el.querySelector('mf-detail-layout')).not.toBeNull();
+  it('draws a project with Tasks first (count --) and Details', async () => {
+    const el = await render('project', 'details');
+    expect(labels(el)).toEqual(['Tasks (--)', 'Details']);
+    expect(el.querySelector('[role=tab][aria-selected=true]')?.textContent).toContain('Details');
+    expect(el.querySelector('mf-detail-layout')).toBeNull();
     expect(el.querySelectorAll('[data-crumb-skeleton]')).toHaveLength(2);
     expect(el.querySelector('[role=status]')?.textContent).toContain('Loading project');
+  });
+
+  it('selects the first tab of a project for a tab it does not have', async () => {
+    const el = await render('project', 'nonsense');
+    expect(el.querySelector('[role=tab][aria-selected=true]')?.textContent).toContain('Tasks');
   });
 
   it('hides the bars from assistive technology and from the keyboard', async () => {

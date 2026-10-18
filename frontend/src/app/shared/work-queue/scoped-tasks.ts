@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
 } from '@angular/core';
@@ -132,6 +133,8 @@ export class ScopedTasks {
   readonly canCreate = input(true);
   /** False where the page header already offers the one Create Task button (Matter detail, UXR-40). */
   readonly showCreate = input(true);
+  /** Each time a load succeeds: how many tasks match, and whether the person (not just the default open-status view) narrowed the list. */
+  readonly loaded = output<{ total: number; filtered: boolean }>();
 
   private static nextId = 0;
   protected readonly filterRowId = `scoped-task-filter-${ScopedTasks.nextId++}`;
@@ -346,6 +349,7 @@ export class ScopedTasks {
       this.total.set(page.total);
       this.state.set('ready');
       this.filters.reportResults(page.total);
+      this.loaded.emit({ total: page.total, filtered: this.filters.activeCount() > 0 });
       this.choices.ensure();
     } catch {
       if (id === this.requestId) this.state.set('error');

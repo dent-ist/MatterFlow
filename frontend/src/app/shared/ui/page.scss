@@ -239,6 +239,18 @@
   overflow-wrap: anywhere;
 }
 
+.pg-pre {
+  white-space: pre-line;
+}
+
+/* The Project's tab strip sits under a context line whose matter link is a 15 px target: on a phone it gets 8 px of air (WCAG 2.5.8). */
+@media (max-width: 639px) {
+  .pd-tabs {
+    display: block;
+    margin-top: var(--mf-s2);
+  }
+}
+
 @media (max-width: 599px) {
   .pg-details .pg-dl {
     grid-template-columns: minmax(0, 1fr);

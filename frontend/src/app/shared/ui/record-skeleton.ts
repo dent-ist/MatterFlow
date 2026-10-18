@@ -1,13 +1,12 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { DetailLayout } from './detail-layout';
 import { Crumb } from './page-header';
 import { RecordHeader } from './record-header';
 import { RecordKind } from './record-state';
 import { MfTab, Tabs } from './tabs';
 
 /**
- * The tabs of the Client and Matter pages: the keys, the visible labels (the document title uses the same labels) and which tabs show a
+ * The tabs of the Client, Matter and Project pages: the keys, the visible labels (the document title uses the same labels) and which tabs show a
  * count. The pages and the skeleton both build their tab strip from here, so the skeleton always has the real labels.
  */
 const RECORD_TABS = {
@@ -21,24 +20,28 @@ const RECORD_TABS = {
     { key: 'projects', label: 'Projects', counted: true },
     { key: 'assets', label: 'Assets' },
   ],
+  project: [
+    { key: 'tasks', label: 'Tasks', counted: true },
+    { key: 'details', label: 'Details' },
+  ],
 } as const;
 
 /**
- * The tab strip of a Client or Matter page. `counts` gives the number (or `--` while loading) of the tabs that show one.
+ * The tab strip of a Client or Matter page. `counts` gives the number (or `--` while loading, or null for none) of the tabs that show one.
  */
 export function recordTabs(
-  kind: 'client' | 'matter',
+  kind: 'client' | 'matter' | 'project',
   counts: Partial<Record<string, number | string | null>> = {},
 ): MfTab[] {
   return RECORD_TABS[kind].map((t) => {
     const tab: MfTab = { key: t.key, label: t.label };
-    if ('counted' in t) tab.count = counts[t.key] ?? 0;
+    if ('counted' in t) tab.count = counts[t.key] === undefined ? 0 : counts[t.key];
     return tab;
   });
 }
 
 /** The visible label of a tab (no count), for the document title. */
-export function recordTabLabel(kind: 'client' | 'matter', key: string): string {
+export function recordTabLabel(kind: 'client' | 'matter' | 'project', key: string): string {
   return RECORD_TABS[kind].find((t) => t.key === key)?.label ?? RECORD_TABS[kind][0].label;
 }
 
@@ -47,40 +50,20 @@ const ROWS = [0, 1, 2, 3, 4] as const;
 /**
  * What a Client, Matter or Project page shows while its record loads (#247): the page as it will look, without data. The breadcrumb comes
  * from the address (the last step is a grey bar), the title is a bar, the tab strip has the real labels with `--` for counts, and five
- * 44 px rows stand in for the active tab, so nothing moves when the record arrives. A Project has no tabs: its Tasks area and Details
- * panel are drawn instead. The bars are hidden from assistive technology; the region is `aria-busy` and says "Loading client" once.
+ * 44 px rows stand in for the active tab, so nothing moves when the record arrives. The bars are hidden from assistive technology; the region is `aria-busy` and says "Loading client" once.
  * The shimmer is a slow pulse that `prefers-reduced-motion` switches off.
  */
 @Component({
   selector: 'mf-record-skeleton',
-  imports: [RecordHeader, Tabs, DetailLayout, NgTemplateOutlet],
+  imports: [RecordHeader, Tabs, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="rk" aria-busy="true" data-record-skeleton [attr.data-kind]="kind()">
       <span class="mf-sr-only" role="status" data-loading>Loading {{ kind() }}</span>
       <div class="rk__vis" inert aria-hidden="true">
         <mf-record-header [kind]="kind()" [parents]="parents()" [skeleton]="true" />
-        @if (kind() === 'project') {
-          <mf-detail-layout [collapsible]="true">
-            <section mfMain>
-              <div class="rk__bar rk__h2"></div>
-              <ng-container *ngTemplateOutlet="rowsTpl" />
-            </section>
-            <div mfAside>
-              @for (i of [0, 1, 2]; track i) {
-                <div class="rk__bar rk__field"></div>
-              }
-            </div>
-          </mf-detail-layout>
-        } @else {
-          <mf-tabs
-            [label]="kind() + ' sections'"
-            idPrefix="rk"
-            [tabs]="tabs()"
-            [selected]="tab()"
-          />
-          <ng-container *ngTemplateOutlet="rowsTpl" />
-        }
+        <mf-tabs [label]="kind() + ' sections'" idPrefix="rk" [tabs]="tabs()" [selected]="tab()" />
+        <ng-container *ngTemplateOutlet="rowsTpl" />
       </div>
     </div>
     <ng-template #rowsTpl>
@@ -137,18 +120,6 @@ const ROWS = [0, 1, 2, 3, 4] as const;
       width: 55%;
       height: 12px;
     }
-    .rk__h2 {
-      display: block;
-      width: 6rem;
-      height: 1.2rem;
-      margin-bottom: var(--mf-s3);
-    }
-    .rk__field {
-      display: block;
-      width: 80%;
-      height: 12px;
-      margin: var(--mf-s3) var(--mf-s4);
-    }
     @media (prefers-reduced-motion: no-preference) {
       .rk__bar {
         animation: mf-record-pulse 1.4s ease-in-out infinite;
@@ -169,13 +140,18 @@ export class RecordSkeleton {
   protected readonly rows = ROWS;
   protected readonly tabs = computed(() => {
     const kind = this.kind();
-    return kind === 'project'
-      ? []
-      : recordTabs(kind, kind === 'matter' ? { tasks: '--', projects: '--' } : {});
+    return recordTabs(
+      kind,
+      kind === 'matter'
+        ? { tasks: '--', projects: '--' }
+        : kind === 'project'
+          ? { tasks: '--' }
+          : {},
+    );
   });
   protected readonly tab = computed(() => {
     const t = this.activeTab();
-    return this.tabs().some((x) => x.key === t) ? t : 'details';
+    return this.tabs().some((x) => x.key === t) ? t : this.tabs()[0].key;
   });
   /** The steps before the current page, from the address; the bars are the parts the record will fill in. */
   protected readonly parents = computed<Crumb[]>(() => {

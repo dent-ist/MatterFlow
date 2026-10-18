@@ -2,17 +2,9 @@ import { Page } from '@playwright/test';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 
-/** The Client, Matter and Project detail pages: Client and Matter have Details as their first tab, Project keeps its Details panel; the Activity drawer (docs/ux/detail-layout). */
+/** The Client, Matter and Project detail pages: Client and Matter have Details as their first tab, Project has Tasks (n) and Details tabs (WP4); the Activity drawer (docs/ux/detail-layout). */
 test.describe('Detail pages: main area, Details panel and Activity drawer', () => {
   const panel = (page: Page) => page.getByRole('complementary', { name: 'Details' });
-
-  /** Between 1100 and 1399 px a Matter's or Project's Details panel starts collapsed to a slim "Details" button (UXR4-02). */
-  async function showDetails(page: Page): Promise<void> {
-    const toggle = panel(page).getByRole('button', { name: 'Details' });
-    if ((await toggle.count()) > 0 && (await toggle.getAttribute('aria-expanded')) === 'false') {
-      await toggle.click();
-    }
-  }
 
   async function noHorizontalScroll(page: Page): Promise<void> {
     const overflow = await page.evaluate(
@@ -184,7 +176,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     expect(await grid.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
   });
 
-  test('Project: Tasks grid in the main area; Archive and Restore from the header overflow', async ({
+  test('Project: Tasks grid across the page, no side panel; Archive and Restore from the header overflow', async ({
     page,
     seed,
   }) => {
@@ -194,14 +186,15 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await page.goto(`/projects/${project.projectId}`);
 
     await expect(page.getByRole('heading', { level: 1 })).toContainText(project.name);
+    await expect(panel(page)).toHaveCount(0);
     await page.locator('[data-overflow]').click();
     await page.getByRole('menuitem', { name: 'Archive' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Archive' }).click();
     await page.locator('[data-overflow]').click();
     await expect(page.getByRole('menuitem', { name: 'Restore' })).toBeVisible();
     await page.keyboard.press('Escape');
-    await showDetails(page);
-    await expect(panel(page)).toContainText('Archived');
+    await page.getByRole('tab', { name: 'Details' }).click();
+    await expect(page.locator('[data-details-tab]')).toContainText('Archived');
   });
 
   test('Narrow screens: the Details tab is one column without page scroll', async ({

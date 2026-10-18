@@ -15,7 +15,6 @@ import { ProjectResponse, ProjectsClient } from '../../../api/generated/api-clie
 import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
-import { DetailLayout } from '../../../shared/ui/detail-layout';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -23,13 +22,16 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
 import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
 import { PageTitle, recordTitle } from '../../../core/title/page-title';
 import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
-import { RecordSkeleton } from '../../../shared/ui/record-skeleton';
+import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/record-skeleton';
 import { ActiveBadge } from '../../../shared/ui/badge';
-import { FixedPage } from '../../../shared/ui/fixed-page';
+import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 
 /**
- * Project detail (UX S07): the project's Tasks grid in the main area and a Details panel on the right (fields, custom fields). The header holds Edit, Activity, Create task and the overflow (Archive / Restore). Activity opens in a right-side drawer; an old `?tab=activity` link opens it too.
+ * Project detail (UX S07, #257): Tasks (n) / Details tabs across the full page width, as on Client and Matter. Tasks is the default and absent
+ * from the address; `?tab=details` shows Details (Matter, Description when set, Status, dates, custom fields). The header holds Edit, Activity,
+ * Create task and the overflow (Archive / Restore). Activity opens in a right-side drawer; an old `?tab=activity` link opens it too.
  */
 @Component({
   selector: 'mf-project-detail-page',
@@ -42,7 +44,8 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
     ConfirmDialog,
     MatterRef,
     ActivityDrawer,
-    DetailLayout,
+    Tabs,
+    ScrollArea,
     MfDatePipe,
     CustomFieldsView,
     ScopedTasks,
@@ -54,7 +57,7 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
       <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
       @switch (state()) {
         @case ('loading') {
-          <mf-record-skeleton kind="project" />
+          <mf-record-skeleton kind="project" [activeTab]="current()" />
         }
         @case ('ready') {
           @if (project(); as p) {
@@ -87,43 +90,65 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
               </div>
             }
 
-            <mf-detail-layout [collapsible]="true">
-              <section mfMain aria-labelledby="project-tasks-h">
-                <h2 id="project-tasks-h" class="pg-section-h">Tasks</h2>
+            <mf-tabs
+              class="pd-tabs"
+              label="Project sections"
+              idPrefix="project"
+              [tabs]="tabs()"
+              [selected]="current()"
+              (tabChange)="select($event)"
+            />
+            <div
+              class="mf-fill"
+              role="tabpanel"
+              id="project-panel"
+              [attr.aria-labelledby]="'project-tab-' + current()"
+            >
+              <!-- The grid stays mounted while Details is open, so its filters and page survive a visit and the tab always has its count. -->
+              <div class="mf-fill" [style.display]="current() === 'tasks' ? null : 'none'">
+                <h2 class="pg-sr">Tasks</h2>
                 <mf-scoped-tasks
                   [matterId]="p.matterId"
                   [projectId]="p.projectId"
                   [canCreate]="p.isActive"
                   [showCreate]="false"
-                />
-              </section>
-
-              <div mfAside>
-                <dl class="pg-dl pg-dl--stacked">
-                  <dt>Name</dt>
-                  <dd>{{ p.name }}</dd>
-                  <dt>Description</dt>
-                  <dd>{{ p.description || 'No description' }}</dd>
-                  <dt>Matter</dt>
-                  <dd>
-                    <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />
-                    {{ p.matterName }}
-                  </dd>
-                  <dt>Status</dt>
-                  <dd><mf-active-badge [active]="p.isActive" inactiveLabel="Archived" /></dd>
-                  <dt>Created</dt>
-                  <dd>{{ p.createdAtUtc | mfDate }}</dd>
-                  @if (p.modifiedAtUtc) {
-                    <dt>Last changed</dt>
-                    <dd>{{ p.modifiedAtUtc | mfDate }}</dd>
-                  }
-                </dl>
-                <mf-custom-fields-view
-                  [versionId]="p.formVersionId"
-                  [values]="p.formValues ?? {}"
+                  (loaded)="onTasksLoaded($event)"
                 />
               </div>
-            </mf-detail-layout>
+              @if (current() === 'details') {
+                <div class="mf-scroll-area" mfScrollArea="Project details" data-details-tab>
+                  <div class="pg-details">
+                    <h2 class="pg-sr">Details</h2>
+                    <dl class="pg-dl">
+                      <dt>Matter</dt>
+                      <dd data-matter-value>
+                        <mf-matter-ref
+                          [value]="p.matterRef"
+                          [link]="canLinkMatter() ? ['/matters', p.matterId] : null"
+                        />
+                        {{ p.matterName }}
+                      </dd>
+                      @if (p.description) {
+                        <dt>Description</dt>
+                        <dd data-description class="pg-pre">{{ p.description }}</dd>
+                      }
+                      <dt>Status</dt>
+                      <dd><mf-active-badge [active]="p.isActive" inactiveLabel="Archived" /></dd>
+                      <dt>Created</dt>
+                      <dd>{{ p.createdAtUtc | mfDate }}</dd>
+                      @if (p.modifiedAtUtc) {
+                        <dt>Last changed</dt>
+                        <dd>{{ p.modifiedAtUtc | mfDate }}</dd>
+                      }
+                    </dl>
+                    <mf-custom-fields-view
+                      [versionId]="p.formVersionId"
+                      [values]="p.formValues ?? {}"
+                    />
+                  </div>
+                </div>
+              }
+            </div>
 
             @if (canSeeActivity()) {
               <mf-activity-drawer
@@ -169,7 +194,7 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 })
 export class ProjectDetailPage {
   readonly projectId = input.required<string>();
-  /** Old deep links: `activity` opens the drawer; other values just show the page. */
+  /** `?tab=`: `details`, or Tasks (default, also when absent). An old `activity` link opens the drawer and shows Tasks. */
   readonly tab = input<string>();
 
   private readonly api = inject(ProjectsClient);
@@ -182,6 +207,21 @@ export class ProjectDetailPage {
   protected readonly state = this.flow.state;
   protected readonly project = signal<ProjectResponse | null>(null);
   protected readonly activityOpen = signal(false);
+  /** How many tasks the project has (the Tasks grid's total while the person has not narrowed it); null until the grid has answered. */
+  protected readonly taskCount = signal<number | null>(null);
+  private readonly tasksAnswered = signal(false);
+  protected readonly tabs = computed<MfTab[]>(() =>
+    recordTabs('project', {
+      // Without Task.View the grid does not load: no count rather than a permanent `--`.
+      // A grid first opened with the person's own filters (a link) cannot tell the whole count: no number then, not a permanent `--`.
+      tasks: this.auth.has('Task.View')
+        ? (this.taskCount() ?? (this.tasksAnswered() ? null : '--'))
+        : null,
+    }),
+  );
+  protected readonly current = computed<'tasks' | 'details'>(() =>
+    this.tab() === 'details' ? 'details' : 'tasks',
+  );
   protected readonly toggleOpen = signal(false);
   protected readonly busy = signal(false);
   protected readonly canSeeActivity = computed(() => this.auth.has('Audit.View'));
@@ -231,10 +271,12 @@ export class ProjectDetailPage {
   });
 
   constructor() {
-    // `Name: Details` once the record is known, `Project` until then (#248). A project has one view, named Details.
+    // `Name: Tasks` once the record is known, `Project` until then (#248); kept through tab changes.
     effect(() => {
       const p = this.state() === 'ready' ? this.project() : null;
-      this.pageTitle.pin(p ? recordTitle(p.name, 'Details') : 'Project');
+      this.pageTitle.pin(
+        p ? recordTitle(p.name, recordTabLabel('project', this.current())) : 'Project',
+      );
     });
     inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
     effect(() => {
@@ -246,6 +288,19 @@ export class ProjectDetailPage {
         untracked(() => this.activityOpen.set(true));
       }
     });
+  }
+
+  protected select(key: string): void {
+    // The Tasks grid keeps its filters in the address and stays mounted, so only `tab` changes.
+    void this.router.navigate([], {
+      queryParams: { tab: key === 'tasks' ? null : key },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  protected onTasksLoaded(e: { total: number; filtered: boolean }): void {
+    this.tasksAnswered.set(true);
+    if (!e.filtered) this.taskCount.set(e.total);
   }
 
   protected setActivityOpen(open: boolean): void {

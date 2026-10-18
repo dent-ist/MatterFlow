@@ -381,27 +381,100 @@ describe('Projects pages', () => {
       expect(buttonByLabel(el(), 'Edit')).toBeUndefined();
     });
 
-    it('shows the fields in a labelled Details panel; Edit is in the header and Archive in the overflow, gated by permission', async () => {
-      await create(['Project.View', 'Project.Edit', 'Project.Archive']);
+    it('has Tasks (n) and Details tabs, Tasks first and selected, and no side panel; Edit is in the header and Archive in the overflow', async () => {
+      await create(['Project.View', 'Project.Edit', 'Project.Archive', 'Task.View']);
 
-      const aside = el().querySelector('aside')!;
-      expect(
-        document.getElementById(aside.getAttribute('aria-labelledby')!)?.textContent,
-      ).toContain('Details');
-      expect(aside.textContent).toContain('Custodian Processing');
-      expect(aside.textContent).toContain('Active');
-      // nothing that changes the project stays in the panel
-      expect(buttonByLabel(aside, 'Edit')).toBeUndefined();
-      expect(buttonByLabel(aside, 'Archive')).toBeUndefined();
+      const tabs = Array.from(el().querySelectorAll('[role=tab]'));
+      expect(tabs.map((t) => t.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
+        'Tasks (1)',
+        'Details',
+      ]);
+      expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+      expect(el().querySelector('aside, mf-detail-layout')).toBeNull();
+      expect(el().querySelector('[data-details-tab]')).toBeNull();
       const edit = buttonByLabel(el(), 'Edit')!;
       expect(el().querySelector('[data-page-actions]')!.contains(edit)).toBe(true);
       const menu = await openOverflow(fixture);
       expect(menu!.querySelector('[data-action=toggle-active]')?.textContent?.trim()).toBe(
         'Archive',
       );
-      expect(el().querySelector('[role=tab]')).toBeNull(); // no Details / Activity tabs any more
       edit.click();
       expect(navigateByUrl).toHaveBeenCalledWith('/projects/3/edit');
+    });
+
+    it('shows no count without Task.View', async () => {
+      await create(['Project.View']);
+      expect(el().querySelector('[role=tab]')?.textContent?.trim()).toBe('Tasks');
+    });
+
+    it('keeps the count of the whole list when the person narrows the grid', async () => {
+      await create(['Project.View', 'Task.View']);
+      fixture.componentInstance['onTasksLoaded']({ total: 7, filtered: false });
+      await settle(fixture);
+      expect(el().querySelector('[role=tab]')?.textContent).toContain('(7)');
+      fixture.componentInstance['onTasksLoaded']({ total: 2, filtered: true });
+      await settle(fixture);
+      expect(el().querySelector('[role=tab]')?.textContent).toContain('(7)');
+    });
+
+    it('?tab=details shows Matter, the Description when set, Status and dates, without repeating the name', async () => {
+      await create(['Project.View', 'Task.View']);
+      fixture.componentRef.setInput('tab', 'details');
+      await settle(fixture);
+
+      expect(el().querySelector('[role=tab][aria-selected=true]')?.textContent).toContain(
+        'Details',
+      );
+      const body = el().querySelector<HTMLElement>('[data-details-tab]')!;
+      const labels = Array.from(body.querySelectorAll('dt')).map((d) => d.textContent!.trim());
+      expect(labels).toEqual(['Matter', 'Description', 'Status', 'Created']);
+      expect(body.textContent).toContain('00343-00012');
+      expect(body.textContent).not.toContain('Custodian Processing');
+      expect(body.textContent).toContain('Active');
+      // The grid stays mounted (hidden) so its count and filters survive a visit.
+      expect(queue.getTaskQueue).toHaveBeenCalledTimes(1);
+      expect(el().querySelector('mf-scoped-tasks')).not.toBeNull();
+    });
+
+    it('omits the Description when there is none, and shows Archived for an archived project', async () => {
+      await create(['Project.View'], aProject({ description: undefined, isActive: false }));
+      fixture.componentRef.setInput('tab', 'details');
+      await settle(fixture);
+
+      const body = el().querySelector<HTMLElement>('[data-details-tab]')!;
+      expect(body.textContent).not.toContain('Description');
+      expect(body.textContent).not.toContain('No description');
+      expect(body.textContent).toContain('Archived');
+    });
+
+    it('links the matter only with Matter.View', async () => {
+      await create(['Project.View', 'Matter.View']);
+      fixture.componentRef.setInput('tab', 'details');
+      await settle(fixture);
+      expect(el().querySelector('[data-matter-value] a')?.getAttribute('href')).toBe('/matters/7');
+
+      TestBed.resetTestingModule();
+      await create(['Project.View']);
+      fixture.componentRef.setInput('tab', 'details');
+      await settle(fixture);
+      expect(el().querySelector('[data-matter-value] a')).toBeNull();
+      expect(el().querySelector('[data-matter-value]')?.textContent).toContain('00343-00012');
+    });
+
+    it('choosing a tab only changes ?tab= (absent for Tasks)', async () => {
+      await create(['Project.View']);
+      el().querySelector<HTMLElement>('[data-tab=details]')!.click();
+      expect(navigate).toHaveBeenLastCalledWith([], {
+        queryParams: { tab: 'details' },
+        queryParamsHandling: 'merge',
+      });
+      fixture.componentRef.setInput('tab', 'details');
+      await settle(fixture);
+      el().querySelector<HTMLElement>('[data-tab=tasks]')!.click();
+      expect(navigate).toHaveBeenLastCalledWith([], {
+        queryParams: { tab: null },
+        queryParamsHandling: 'merge',
+      });
     });
 
     it('opens Activity in a drawer from the header (Audit.View), also for an old ?tab=activity link', async () => {
@@ -524,6 +597,9 @@ describe('Projects pages', () => {
 
     it('names the project and its view in the document title', async () => {
       await create(['Project.View']);
+      expect(document.title).toBe('Custodian Processing: Tasks - MatterFlow');
+      fixture.componentRef.setInput('tab', 'details');
+      await settle(fixture);
       expect(document.title).toBe('Custodian Processing: Details - MatterFlow');
     });
   });

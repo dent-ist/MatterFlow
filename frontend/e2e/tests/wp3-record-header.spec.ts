@@ -140,8 +140,8 @@ test.describe('WP3: record header geometry (#253, #254)', () => {
         { key: 'client-long', url: u.longClient, tabs: true, long: true },
         { key: 'matter', url: u.matter, tabs: true, long: false },
         { key: 'matter-long', url: u.longMatter, tabs: true, long: true },
-        { key: 'project', url: u.project, tabs: false, long: false },
-        { key: 'project-long', url: u.longProject, tabs: false, long: true },
+        { key: 'project', url: u.project, tabs: true, long: false },
+        { key: 'project-long', url: u.longProject, tabs: true, long: true },
       ];
       for (const c of cases) {
         await page.goto(c.url);
