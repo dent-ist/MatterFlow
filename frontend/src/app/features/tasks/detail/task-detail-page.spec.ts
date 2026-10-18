@@ -10,6 +10,7 @@ import { TaskDetailStore } from './task-detail.store';
 import { apiError, ok, settle } from '../../../shared/testing/org-testing';
 import {
   aCheck,
+  aStep,
   aTask,
   allowed,
   byText,
@@ -176,6 +177,67 @@ describe('TaskDetailPage header', () => {
     expect(menuActions(el)).toEqual(actions);
   });
 
+  it('status menu: one label per item, the target status only as tooltip, a divider and Cancel task last in danger style (#303)', async () => {
+    const { fixture, el } = await mountTaskPage(
+      aTask({
+        allowedActions: allowed({
+          transitions: ['CANCEL', 'HOLD', 'COMPLETE'].map((a) => transition(a)),
+        }),
+      }),
+    );
+    await openMenu(fixture, el);
+    expect(menuActions(el)).toEqual(['HOLD', 'COMPLETE', 'CANCEL']);
+    const items = Array.from(el.querySelectorAll<HTMLElement>('[role=menuitemradio]'));
+    expect(items.map((i) => i.querySelector('.im-text')!.textContent!.trim())).toEqual([
+      'Put on hold',
+      'Complete',
+      'Cancel task',
+    ]);
+    expect(el.querySelector('.im-hint')).toBeNull();
+    expect(items[0].getAttribute('title')).toBe('On Hold');
+    expect(items[2].classList.contains('im-sep')).toBe(true);
+    expect(items[2].classList.contains('im-danger')).toBe(true);
+    expect(items[1].classList.contains('im-sep')).toBe(false);
+  });
+
+  it('assignee menu: "Assign to me" is the first item, assigns in one click and returns focus to the Assignee control (#306)', async () => {
+    const { fixture, el, fakes } = await mountTaskPage(aTask({ assignedUser: undefined }), [
+      ...PERMS,
+      'Task.Assign',
+      'Pod.View',
+    ]);
+    const trigger = q(el, '[data-assignee] [data-inline-trigger]')!;
+    await click(fixture, trigger);
+    await settle(fixture);
+    const lead = q(el, '[data-assignee] [data-lead]')!;
+    expect(lead.textContent!.trim()).toBe('Assign to me');
+    expect(lead.getAttribute('aria-label')).toBe('Assign TSK-1042 to me');
+    expect(q(el, '[data-assignee] .im-pop')!.firstElementChild).toBe(lead);
+    // The Pod's open load sits next to each candidate.
+    expect(q(el, '[data-assignee] [data-option="9"] .im-hint')!.textContent!.trim()).toBe('4 open');
+
+    await click(fixture, lead);
+    expect(fakes.tasks['assignTask']).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('assignee menu: no "Assign to me" for the current assignee, and no menu without Task.Assign (#306)', async () => {
+    const me = { userId: 1, displayName: 'Test User', isActive: true };
+    const { fixture, el } = await mountTaskPage(aTask({ assignedUser: me }), [
+      ...PERMS,
+      'Task.Assign',
+    ]);
+    await click(fixture, q(el, '[data-assignee] [data-inline-trigger]'));
+    expect(q(el, '[data-lead]')).toBeNull();
+    TestBed.resetTestingModule();
+
+    const plain = await mountTaskPage(
+      aTask({ allowedActions: allowed({ canAssign: false }) }),
+      PERMS,
+    );
+    expect(q(plain.el, '[data-assignee] [data-inline-trigger]')).toBeNull();
+  });
+
   it('leaves out transitions the caller has no permission for and hides the menu without any', async () => {
     const denied = (a: string) =>
       transition(a, { permitted: false, blockedReason: 'PERMISSION_DENIED' });
@@ -253,7 +315,27 @@ describe('TaskDetailPage header', () => {
     });
   });
 
-  it('Cancel needs a comment and calls cancel', async () => {
+  it('dialog wording (#305): Hold dismisses with "Close", Cancel keeps "Keep task", both ask for a "Reason"', async () => {
+    const { fixture, el } = await mountTaskPage(aTask());
+    await openMenu(fixture, el);
+    await click(fixture, q(el, '[data-option=HOLD]'));
+    expect(dialogButton('Close')).toBeDefined();
+    expect(dialogButton('Cancel')).toBeUndefined();
+    expect(q(body(), '.reason label')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      'Reason (required)',
+    );
+    await click(fixture, dialogButton('Close')!);
+    expect(q(body(), '[data-reason-body]')).toBeNull();
+
+    await openMenu(fixture, el);
+    await click(fixture, q(el, '[data-option=CANCEL]'));
+    expect(dialogButton('Keep task')).toBeDefined();
+    expect(q(body(), '.reason label')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      'Reason (required)',
+    );
+  });
+
+  it('Cancel needs a reason and calls cancel', async () => {
     const { fixture, el, fakes } = await mountTaskPage(aTask());
     await openMenu(fixture, el);
     await click(fixture, q(el, '[data-option=CANCEL]'));
@@ -263,7 +345,7 @@ describe('TaskDetailPage header', () => {
 
     await click(fixture, dialogButton('Cancel task')!);
     expect(q(body(), '[data-reason-error]')!.textContent).toContain(
-      "Add a comment explaining why you're cancelling.",
+      "Add a reason explaining why you're cancelling.",
     );
     expect(fakes.tasks['cancelTask']).not.toHaveBeenCalled();
 
@@ -320,6 +402,51 @@ describe('TaskDetailPage header', () => {
 describe('TaskDetailPage complete', () => {
   afterEach(() => TestBed.resetTestingModule());
 
+  const needingInfo = () =>
+    aTask({
+      workflow: {
+        ...aTask().workflow,
+        steps: [
+          aStep({ stepInstanceId: 101, sequenceNo: 1, title: 'Intake QC', status: 'COMPLETED' }),
+          aStep({
+            stepInstanceId: 102,
+            sequenceNo: 2,
+            title: 'Deduplicate',
+            status: 'IN_PROGRESS',
+            isCurrent: true,
+            requiredInputsSatisfied: false,
+          }),
+          aStep({
+            stepInstanceId: 103,
+            sequenceNo: 3,
+            title: 'OCR',
+            requiredInputsSatisfied: false,
+          }),
+        ],
+      },
+    });
+
+  it('keeps Complete enabled while steps need information and says so (tooltip, aria-describedby, menu item) (#304)', async () => {
+    const { fixture, el } = await mountTaskPage(needingInfo(), PERMS);
+    const button = q(el, '[data-complete-task-button]') as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+    expect(button.getAttribute('title')).toBe('2 steps need information');
+    const note = el.querySelector(`#${button.getAttribute('aria-describedby')}`)!;
+    expect(note.textContent!.trim()).toBe('2 steps need information');
+
+    await openMenu(fixture, el);
+    const item = q(el, '[data-option=COMPLETE]') as HTMLButtonElement;
+    expect(item.getAttribute('aria-disabled')).toBeNull();
+    const described = el.querySelector(`#${item.getAttribute('aria-describedby')}`)!;
+    expect(described.textContent!.trim()).toBe('2 steps need information');
+  });
+
+  it('shows no hint when the steps are ready (zero steps, or all inputs there) (#304)', async () => {
+    const { el } = await mountTaskPage(aTask(), PERMS);
+    expect(q(el, '[data-complete-task-button]')!.getAttribute('title')).toBeNull();
+    expect(q(el, '[data-complete-hint]')).toBeNull();
+  });
+
   it('completes straight away when every step is resolved', async () => {
     const { fixture, el, fakes } = await mountTaskPage(aTask(), PERMS, {
       tasks: {
@@ -349,7 +476,7 @@ describe('TaskDetailPage complete', () => {
     expect(q(body(), '[data-bulk-steps]')!.textContent).toContain('OCR');
     expect(fakes.tasks['completeTask']).not.toHaveBeenCalled();
 
-    await click(fixture, dialogButton('Mark all completed and finish task')!);
+    await click(fixture, dialogButton('Complete all steps and finish')!);
     expect(fakes.tasks['completeTask']).toHaveBeenCalledWith(1042, {
       rowVersion: 'RV1',
       completeUnresolvedSteps: true,
@@ -381,13 +508,37 @@ describe('TaskDetailPage complete', () => {
     expect(q(body(), '[data-blocked-body]')!.textContent).toContain(
       'These steps need required information first',
     );
-    expect(dialogButton('Mark all completed and finish task')).toBeUndefined();
+    expect(dialogButton('Complete all steps and finish')).toBeUndefined();
     const link = byText(body(), '[data-blocked-steps] button', 'Step 3: OCR')!;
     await click(fixture, link);
 
     expect(fakes.tasks['completeTask']).not.toHaveBeenCalled();
     expect(q(el, '[data-step-id="103"] .step__toggle')!.getAttribute('aria-expanded')).toBe('true');
     expect(document.activeElement).toBe(q(el, '#step-btn-103'));
+  });
+
+  it('blocked case: the primary button is "Go to first step" and opens, scrolls to and focuses the earliest blocked step (#304)', async () => {
+    const check = aCheck({
+      canBulkComplete: false,
+      blocked: [
+        { stepInstanceId: 103, sequenceNo: 3, title: 'OCR' },
+        { stepInstanceId: 102, sequenceNo: 2, title: 'Deduplicate' },
+      ],
+    });
+    const { fixture, el, fakes } = await mountTaskPage(aTask(), PERMS, {
+      tasks: { getTaskCompletionCheck: vi.fn().mockReturnValue(ok(check)) },
+    });
+    await openMenu(fixture, el);
+    await click(fixture, q(el, '[data-option=COMPLETE]'));
+
+    expect(dialogButton('Complete all steps and finish')).toBeUndefined();
+    expect(dialogButton('Close')).toBeDefined();
+    await click(fixture, dialogButton('Go to first step')!);
+
+    expect(fakes.tasks['completeTask']).not.toHaveBeenCalled();
+    expect(q(body(), '[data-blocked-body]')).toBeNull();
+    expect(q(el, '[data-step-id="102"] .step__toggle')!.getAttribute('aria-expanded')).toBe('true');
+    expect(document.activeElement).toBe(q(el, '#step-btn-102'));
   });
 
   it('turns a COMPLETION_BLOCKED answer into the blocked dialog', async () => {
@@ -409,7 +560,7 @@ describe('TaskDetailPage complete', () => {
     });
     await openMenu(fixture, el);
     await click(fixture, q(el, '[data-option=COMPLETE]'));
-    await click(fixture, dialogButton('Mark all completed and finish task')!);
+    await click(fixture, dialogButton('Complete all steps and finish')!);
     expect(q(body(), '[data-blocked-body]')).not.toBeNull();
   });
 
@@ -428,7 +579,7 @@ describe('TaskDetailPage complete', () => {
     });
     await openMenu(fixture, el);
     await click(fixture, q(el, '[data-option=COMPLETE]'));
-    await click(fixture, dialogButton('Mark all completed and finish task')!);
+    await click(fixture, dialogButton('Complete all steps and finish')!);
 
     expect(fakes.tasks['completeTask']).toHaveBeenCalledTimes(1);
     expect(q(body(), '[data-bulk-steps]')!.textContent).not.toContain('Deduplicate');
@@ -443,7 +594,7 @@ describe('TaskDetailPage complete', () => {
     await openMenu(fixture, el);
     await click(fixture, q(el, '[data-option=COMPLETE]'));
     expect(q(body(), '[data-no-execute]')).not.toBeNull();
-    expect(dialogButton('Mark all completed and finish task')).toBeUndefined();
+    expect(dialogButton('Complete all steps and finish')).toBeUndefined();
   });
 });
 

@@ -17,7 +17,7 @@ import { TaskDetailStore } from './task-detail.store';
     <mf-confirm-dialog
       [title]="reasonTitle()"
       [confirmLabel]="reasonKind() === 'CANCEL' ? 'Cancel task' : 'Put on hold'"
-      [cancelLabel]="reasonKind() === 'CANCEL' ? 'Keep task' : 'Cancel'"
+      [cancelLabel]="reasonKind() === 'CANCEL' ? 'Keep task' : 'Close'"
       [danger]="reasonKind() === 'CANCEL'"
       [busy]="store.busy()"
       [visible]="d?.kind === 'reason'"
@@ -37,7 +37,7 @@ import { TaskDetailStore } from './task-detail.store';
       }
       <div class="reason">
         <label for="task-reason">
-          {{ reasonKind() === 'CANCEL' ? 'Comment' : 'Reason' }}
+          Reason
           <span class="req">(required)</span>
         </label>
         <textarea
@@ -69,13 +69,13 @@ import { TaskDetailStore } from './task-detail.store';
 
     <mf-confirm-dialog
       [title]="completeTitle()"
-      confirmLabel="Mark all completed and finish task"
-      [showConfirm]="canBulkConfirm()"
+      [confirmLabel]="blocked().length > 0 ? 'Go to first step' : 'Complete all steps and finish'"
+      [showConfirm]="blocked().length > 0 || canBulkConfirm()"
       [cancelLabel]="blocked().length || !canBulkConfirm() ? 'Close' : 'Cancel'"
       [busy]="store.busy()"
       [visible]="d?.kind === 'complete'"
       (visibleChange)="closed($event)"
-      (confirmed)="store.confirmBulkComplete()"
+      (confirmed)="completeConfirmed()"
     >
       @if (blocked().length > 0) {
         <p data-blocked-body>These steps need required information first:</p>
@@ -146,6 +146,10 @@ import { TaskDetailStore } from './task-detail.store';
       padding-left: var(--mf-s5);
     }
     .link {
+      /* A 24 px target (WCAG 2.5.8): the step names are links to tap on a phone. */
+      display: inline-flex;
+      align-items: center;
+      min-height: var(--mf-target-min, 1.5rem);
       padding: 0;
       border: 0;
       background: transparent;
@@ -181,9 +185,20 @@ export class TaskActionDialogs {
     () =>
       this.blocked().length === 0 && (this.store.task()?.allowedActions.canExecuteSteps ?? false),
   );
+  /** The earliest step that needs information: where the dialog's primary button goes (#304). */
+  protected readonly firstBlocked = computed(
+    () => [...this.blocked()].sort((a, b) => a.sequenceNo - b.sequenceNo)[0] ?? null,
+  );
   protected readonly completeTitle = computed(() =>
     this.blocked().length > 0 ? 'Steps need information first' : 'Complete task',
   );
+
+  /** Blocked: "Go to first step" closes the dialog and opens, scrolls to and focuses that step. Otherwise the bulk completion. */
+  protected completeConfirmed(): void {
+    const first = this.firstBlocked();
+    if (first) this.store.showStep(first.stepInstanceId);
+    else void this.store.confirmBulkComplete();
+  }
 
   protected onReason(event: Event): void {
     this.reason.set((event.target as HTMLTextAreaElement).value);
@@ -204,7 +219,7 @@ export class TaskActionDialogs {
     if (!text) {
       this.reasonError.set(
         d.action === 'CANCEL'
-          ? "Add a comment explaining why you're cancelling."
+          ? "Add a reason explaining why you're cancelling."
           : 'Add a reason for putting this task on hold.',
       );
       return;

@@ -250,7 +250,7 @@ test.describe('Completing a task with open steps (addendum K)', () => {
       'You have 2 steps not completed',
     );
     await expect(detail.dialog.locator('[data-bulk-steps] li')).toHaveCount(2);
-    await detail.dialog.getByRole('button', { name: 'Mark all completed and finish task' }).click();
+    await detail.dialog.getByRole('button', { name: 'Complete all steps and finish' }).click();
 
     await expect(detail.dialog).toBeHidden();
     await detail.expectStatus('Completed');
@@ -294,8 +294,10 @@ test.describe('Completing a task with open steps (addendum K)', () => {
     );
     await expect(detail.dialog.locator('[data-blocked-steps]')).toContainText(needs);
     await expect(
-      detail.dialog.getByRole('button', { name: 'Mark all completed and finish task' }),
+      detail.dialog.getByRole('button', { name: 'Complete all steps and finish' }),
     ).toHaveCount(0);
+    // M2 (#304): the dialog's primary button takes the person to the first blocked step.
+    await expect(detail.dialog.getByRole('button', { name: 'Go to first step' })).toBeVisible();
     await detail.expectStatus('New');
     expect(await api.stepStatuses()).toEqual(['PENDING', 'PENDING']);
 

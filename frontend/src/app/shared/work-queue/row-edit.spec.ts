@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { NEVER, of, throwError } from 'rxjs';
 import {
   PodsClient,
+  PodWorkClient,
   TaskQueueRow,
   TasksClient,
   UsersLookupClient,
@@ -54,6 +55,7 @@ describe('RowEdit', () => {
   let tasks: Record<string, ReturnType<typeof vi.fn>>;
   let pods: { getPod: ReturnType<typeof vi.fn> };
   let users: { lookupUsers: ReturnType<typeof vi.fn> };
+  let podWork: { getPodWork: ReturnType<typeof vi.fn> };
   let notify: {
     success: ReturnType<typeof vi.fn>;
     error: ReturnType<typeof vi.fn>;
@@ -115,6 +117,23 @@ describe('RowEdit', () => {
       ),
     };
     users = { lookupUsers: vi.fn(() => of([{ userId: 8, displayName: 'Any Person' }])) };
+    podWork = {
+      getPodWork: vi.fn(() =>
+        of({
+          memberLoads: [
+            {
+              userId: 4,
+              displayName: 'Sam Kim',
+              isActive: true,
+              isMember: true,
+              open: 3,
+              overdue: 1,
+              onHold: 0,
+            },
+          ],
+        }),
+      ),
+    };
     notify = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
     TestBed.configureTestingModule({
       providers: [
@@ -123,6 +142,7 @@ describe('RowEdit', () => {
         { provide: TasksClient, useValue: tasks },
         { provide: PodsClient, useValue: pods },
         { provide: UsersLookupClient, useValue: users },
+        { provide: PodWorkClient, useValue: podWork },
         { provide: NotificationService, useValue: notify },
       ],
     });
@@ -341,6 +361,39 @@ describe('RowEdit', () => {
     expect(emitted[0].assignedUser?.displayName).toBe('Sam Kim');
     expect(emitted[1].status).toBe('IN_PROGRESS');
     expect(undo.current()?.message).toContain('moved to In Progress');
+  });
+
+  it('assignee: shows the Pod load ("3 open") next to each candidate, read from the Pod Work answer (#306)', async () => {
+    await create('assignee', aRow({ status: 'NEW' }));
+    await open();
+    await new Promise((r) => setTimeout(r));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    // Pod 5, the members view, one row of tasks: only memberLoads is read.
+    const args = podWork.getPodWork.mock.calls[0];
+    expect(args[0]).toBe(5);
+    expect(args[1]).toBe('members');
+    expect(args.length).toBe(33);
+    expect(args[31]).toBe(1);
+    expect(args[32]).toBe(1);
+    expect(option('4')!.querySelector('.im-hint')!.textContent!.trim()).toBe('3 open');
+  });
+
+  it('assignee: a Pod whose load cannot be read still lists its people, without the hint', async () => {
+    await create('assignee', aRow({ status: 'NEW' }));
+    podWork.getPodWork.mockReturnValue(throwError(() => new Error('403')));
+    await open();
+    await new Promise((r) => setTimeout(r));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(option('4')).not.toBeNull();
+    expect(option('4')!.querySelector('.im-hint')).toBeNull();
+  });
+
+  it('assignee without a Pod does not read any Pod load', async () => {
+    await create('assignee', aRow({ assignedPod: undefined }));
+    await open();
+    expect(podWork.getPodWork).not.toHaveBeenCalled();
   });
 
   it('assignee: flags a Pod member who is out of office and still lets them be chosen', async () => {

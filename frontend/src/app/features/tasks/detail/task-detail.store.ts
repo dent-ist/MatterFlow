@@ -11,6 +11,7 @@ import {
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
+import { completeHint, completeStateOf } from './complete-state';
 
 export type DetailState = 'loading' | 'ready' | 'error' | 'notFound' | 'forbidden';
 /** The old `?tab=` values: the sections of the single page, plus `activity` (the drawer) and `details` (just the page). */
@@ -96,6 +97,11 @@ export class TaskDetailStore {
         'Workflow.StepReopen',
       ]),
   );
+
+  /** Whether Complete can go straight through or some steps need information first (#304). Read by every Complete control. */
+  readonly completeState = computed(() => completeStateOf(this.task()?.workflow.steps));
+  /** "3 steps need information" while Complete is blocked, else null: tooltip and `aria-describedby` of the Complete controls. */
+  readonly completeHint = computed(() => completeHint(this.completeState()));
 
   readonly closed = computed(() => {
     const s = this.task()?.status;

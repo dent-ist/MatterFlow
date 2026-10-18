@@ -45,6 +45,7 @@ import { TaskDetailStore } from './task-detail.store';
                 class="mf-btn mf-btn--primary"
                 data-complete-task-button
                 aria-describedby="wf-complete-note"
+                [attr.title]="c.permitted ? store.completeHint() : null"
                 [disabled]="!c.permitted || store.busy()"
                 (click)="store.requestAction('COMPLETE')"
               >
@@ -54,6 +55,8 @@ import { TaskDetailStore } from './task-detail.store';
               <p id="wf-complete-note" class="wf__complete-note">
                 @if (!c.permitted) {
                   {{ completeBlockedText(c.blockedReason) }}
+                } @else if (store.completeHint(); as hint) {
+                  <span data-complete-hint>{{ hint }}</span>
                 } @else if (unresolvedCount() > 0) {
                   {{ unresolvedCount() }}
                   {{ unresolvedCount() === 1 ? 'step is' : 'steps are' }} not completed. You will be

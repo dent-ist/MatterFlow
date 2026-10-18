@@ -106,6 +106,7 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
                   [row]="row()"
                   [transitions]="items()"
                   [statusDelegated]="true"
+                  [completeNote]="store.completeHint()"
                   (statusAction)="store.requestAction($event)"
                 />
               } @else {
@@ -146,6 +147,7 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
               @if (assigneeEditable()) {
                 <mf-row-edit
                   field="assignee"
+                  [selfAssign]="true"
                   [row]="row()"
                   (rowChange)="override.set({ basis: t, row: $event })"
                   (taskChange)="saved($event)"

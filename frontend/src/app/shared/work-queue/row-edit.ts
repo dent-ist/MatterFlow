@@ -13,6 +13,8 @@ import { Router } from '@angular/router';
 import { Observable, firstValueFrom } from 'rxjs';
 import {
   PodsClient,
+  PodWorkClient,
+  PodWorkPage,
   TaskQueueRow,
   TaskResponse,
   TaskTransitionOption,
@@ -21,6 +23,7 @@ import {
 } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { ApiError } from '../../core/http/api-error';
+import { QuietRequests } from '../../core/http/interceptors';
 import { LookupStore } from '../../core/lookups/lookup-store';
 import { NotificationService } from '../../core/notify/notification.service';
 import { UndoService } from '../../core/notify/undo.service';
@@ -58,6 +61,15 @@ interface UndoSpec {
   previous: number | undefined;
   previousLabel: string;
 }
+/** One label per status item, Cancel task last behind a divider in the danger style (M1, #303); the order of the others is kept. */
+function cancelLast(items: MenuOption[]): MenuOption[] {
+  const rest = items.filter((o) => o.id !== 'CANCEL');
+  const cancel = items
+    .filter((o) => o.id === 'CANCEL')
+    .map((o) => ({ ...o, danger: true, separated: rest.length > 0 }));
+  return [...rest, ...cancel];
+}
+
 /** Changes that need a dialog (reason, confirmation or the unresolved-steps check). */
 const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN'];
 
@@ -167,6 +179,8 @@ export class RowEdit {
   private readonly lookups = inject(LookupStore);
   private readonly tasks = inject(TasksClient);
   private readonly pods = inject(PodsClient);
+  private readonly podWork = inject(PodWorkClient);
+  private readonly quiet = inject(QuietRequests);
   private readonly users = inject(UsersLookupClient);
   private readonly zone = inject(USER_TIME_ZONE);
   private readonly notify = inject(NotificationService);
@@ -190,6 +204,8 @@ export class RowEdit {
   readonly transitions = input<TaskTransitionOption[] | null>(null);
   /** Assignee cell only: offers "Assign to me" as the first choice of the menu, above the search box, for a Task nobody is assigned to (the Dashboard's unassigned queue). */
   readonly assignMe = input(false);
+  /** Status menu only: the readiness hint of Complete ("3 steps need information"). Complete stays usable; the hint is read out with it (#304). */
+  readonly completeNote = input<string | null>(null);
   /** Assignee cell only: "Assign to me" is the first item of the menu for any Task that is not already the user's (work grids). */
   readonly selfAssign = input(false);
   /** Assignee cell only: an "Assign to me" link-button next to "Unassigned" (Pod Work); the same action as the menu's first item. */
@@ -221,6 +237,8 @@ export class RowEdit {
   private readonly people = signal<Person[]>([]);
   private readonly podMode = signal(false);
   private readonly podName = signal('');
+  /** Open tasks per Pod member (user id to count), where the Pod's workload could be read: the "3 open" hint next to each person (M4). */
+  private readonly loads = signal<ReadonlyMap<number, number>>(new Map());
   private readonly query = signal('');
   private searchSeq = 0;
   private readonly menu = viewChild(InlineMenu);
@@ -267,32 +285,38 @@ export class RowEdit {
       case 'status': {
         const server = this.transitions();
         if (server) {
-          return server
-            .filter((o) => o.permitted || o.blockedReason !== 'PERMISSION_DENIED')
-            .map((o) => ({
-              id: o.action,
-              label: ACTION_LABELS[o.action] ?? o.action,
-              hint: this.lookups.statusLabel(o.targetStatus),
-              disabled: !o.permitted,
-              reason: o.permitted
-                ? undefined
-                : o.blockedReason === 'MATTER_INACTIVE'
-                  ? MATTER_INACTIVE_TEXT
-                  : "This action isn't available right now.",
-            }));
+          return cancelLast(
+            server
+              .filter((o) => o.permitted || o.blockedReason !== 'PERMISSION_DENIED')
+              .map((o) => ({
+                id: o.action,
+                label: ACTION_LABELS[o.action] ?? o.action,
+                tip: this.lookups.statusLabel(o.targetStatus),
+                disabled: !o.permitted,
+                reason: o.permitted
+                  ? o.action === 'COMPLETE'
+                    ? (this.completeNote() ?? undefined)
+                    : undefined
+                  : o.blockedReason === 'MATTER_INACTIVE'
+                    ? MATTER_INACTIVE_TEXT
+                    : "This action isn't available right now.",
+              })),
+          );
         }
         const completion = this.completion();
-        return statusChoices(r, (p) => this.auth.has(p)).map((c) => ({
-          id: c.action,
-          label:
-            c.action === 'COMPLETE' && completion.state === 'blocked'
-              ? 'Complete... (needs step inputs)'
-              : (ACTION_LABELS[c.action] ?? c.action),
-          hint: this.lookups.statusLabel(c.target),
-          disabled: !!c.blockedReason,
-          reason: c.blockedReason,
-          pending: c.action === 'COMPLETE' && completion.state === 'checking',
-        }));
+        return cancelLast(
+          statusChoices(r, (p) => this.auth.has(p)).map((c) => ({
+            id: c.action,
+            label:
+              c.action === 'COMPLETE' && completion.state === 'blocked'
+                ? 'Complete... (needs step inputs)'
+                : (ACTION_LABELS[c.action] ?? c.action),
+            tip: this.lookups.statusLabel(c.target),
+            disabled: !!c.blockedReason,
+            reason: c.blockedReason,
+            pending: c.action === 'COMPLETE' && completion.state === 'checking',
+          })),
+        );
       }
       case 'priority': {
         const list = this.lookups
@@ -312,6 +336,10 @@ export class RowEdit {
           id: String(p.id),
           label: p.name,
           flag: p.flag,
+          hint:
+            this.podMode() && this.loads().size > 0
+              ? `${this.loads().get(p.id) ?? 0} open`
+              : undefined,
           selected: p.id === r.assignedUser?.userId,
         }));
         return r.assignedUser
@@ -361,6 +389,7 @@ export class RowEdit {
     const podId = this.row().assignedPod?.podId;
     this.query.set('');
     this.people.set([]);
+    this.loads.set(new Map());
     this.loading.set(true);
     try {
       if (podId !== undefined && this.auth.has('Pod.View')) {
@@ -374,6 +403,7 @@ export class RowEdit {
           this.podName.set(pod.pod.name);
           this.podMode.set(true);
           void this.flagPodMembers();
+          void this.loadPodWorkload(podId);
           return;
         } catch {
           /* fall through to the general lookup */
@@ -426,6 +456,27 @@ export class RowEdit {
       this.people.update((list) => list.map((p) => ({ ...p, flag: flags.get(p.id) })));
     } catch {
       /* the flag is a courtesy; the list works without it */
+    }
+  }
+
+  /**
+   * The Pod's open load per person, for the hint next to each candidate (the `mf-assignee-picker` spec): the Pod Work answer carries it, so no
+   * endpoint is added; one row of tasks is asked for because only `memberLoads` is read. Best effort: without it the list has no hint.
+   */
+  private async loadPodWorkload(podId: number): Promise<void> {
+    try {
+      // The generated method has 33 positional filters; Pod, view, page and page size are the only ones used.
+      const call = this.podWork.getPodWork as (...args: unknown[]) => Observable<PodWorkPage>;
+      // Quiet: a Pod the person may not read must not toast an error for a courtesy hint.
+      const page = await this.quiet.run(() =>
+        firstValueFrom(
+          call.call(this.podWork, podId, 'members', ...new Array<undefined>(29), 1, 1),
+        ),
+      );
+      if (this.destroyed || !this.podMode()) return;
+      this.loads.set(new Map(page.memberLoads.map((m) => [m.userId, m.open])));
+    } catch {
+      /* the hint is a courtesy; the list works without it */
     }
   }
 

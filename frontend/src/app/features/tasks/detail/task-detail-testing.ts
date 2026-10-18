@@ -7,6 +7,7 @@ import {
   AssetLinkRolesClient,
   FormsClient,
   PodsClient,
+  PodWorkClient,
   PrioritiesClient,
   ProjectsClient,
   StatusLabelsClient,
@@ -285,10 +286,34 @@ export async function mountTaskPage(
         provide: PodsClient,
         useValue: {
           listPods: () => ok({ items: [{ podId: 2, name: 'Pod A', isActive: true }] }),
-          getPod: () => ok({ members: [{ userId: 9, displayName: 'Tariq M.', isActive: true }] }),
+          getPod: () =>
+            ok({
+              pod: { podId: 2, name: 'Pod A' },
+              members: [{ userId: 9, displayName: 'Tariq M.', isActive: true }],
+            }),
         },
       },
       { provide: UsersClient, useValue: { listUsers: () => ok({ items: [] }) } },
+      {
+        provide: PodWorkClient,
+        useValue: {
+          getPodWork: vi.fn().mockReturnValue(
+            ok({
+              memberLoads: [
+                {
+                  userId: 9,
+                  displayName: 'Tariq M.',
+                  isActive: true,
+                  isMember: true,
+                  open: 4,
+                  overdue: 0,
+                  onHold: 0,
+                },
+              ],
+            }),
+          ),
+        },
+      },
       {
         provide: UsersLookupClient,
         useValue: {

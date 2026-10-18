@@ -78,7 +78,7 @@ test.describe('Status changes and closed tasks', () => {
     expect((await api.get()).status).toBe('IN_PROGRESS');
   });
 
-  test('Cancel needs a comment, is not blocked by unresolved steps and can be undone by reopening', async ({
+  test('Cancel needs a reason, is not blocked by unresolved steps and can be undone by reopening', async ({
     page,
     seed,
     admin,
@@ -91,7 +91,7 @@ test.describe('Status changes and closed tasks', () => {
     await detail.chooseAction('CANCEL');
     await detail.dialog.getByRole('button', { name: 'Cancel task' }).click();
     await expect(detail.dialog.locator('[data-reason-error]')).toHaveText(
-      "Add a comment explaining why you're cancelling.",
+      "Add a reason explaining why you're cancelling.",
     );
     await detail.expectStatus('New');
 

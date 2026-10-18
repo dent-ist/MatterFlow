@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { of, throwError } from 'rxjs';
 import { TaskWorkflowClient, TasksClient, TaskQueueRow } from '../../api/generated/api-client';
@@ -84,6 +85,18 @@ describe('InlineStatusFlow', () => {
     store.closeDialog();
     await fixture.whenStable();
     expect(rows).toEqual([]);
+    expect(finished).toBe(1);
+  });
+
+  it('"Go to first step" of the blocked Complete dialog opens the Task on that step and ends the flow (#304)', async () => {
+    const store = await create('CANCEL');
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    store.showStep(103);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(navigate).toHaveBeenCalledWith(['/tasks', 1042], {
+      queryParams: { tab: 'workflow', step: 103 },
+    });
     expect(finished).toBe(1);
   });
 

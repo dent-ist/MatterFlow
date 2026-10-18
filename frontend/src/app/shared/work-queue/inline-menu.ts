@@ -17,8 +17,14 @@ import { Dismissable } from '../ui/dismissable';
 export interface MenuOption {
   id: string;
   label: string;
-  /** Muted text after the label (for a status action: the status it leads to). */
+  /** Muted text after the label (for a person: how many tasks they have open). */
   hint?: string;
+  /** Tooltip of the item (for a status action: the status it leads to; statuses are tenant-renamable, so it is not repeated as visible text). */
+  tip?: string;
+  /** Dangerous choice (Cancel task): the danger colour. */
+  danger?: boolean;
+  /** Draws a divider above the item (the dangerous choice sits last, apart from the others). */
+  separated?: boolean;
   /** A warning shown under the label with an icon (for example "Out of office until Oct 20"); the option stays selectable. */
   flag?: string;
   selected?: boolean;
@@ -121,6 +127,9 @@ let nextId = 0;
                 type="button"
                 role="menuitemradio"
                 class="im-item"
+                [class.im-danger]="o.danger"
+                [class.im-sep]="o.separated"
+                [attr.title]="o.tip ?? null"
                 [attr.data-option]="o.id"
                 [attr.aria-checked]="o.selected ? 'true' : 'false'"
                 [attr.aria-disabled]="o.disabled ? 'true' : null"
@@ -266,6 +275,13 @@ let nextId = 0;
     .im-lead .pi {
       width: 1rem;
       color: var(--mf-text-muted);
+    }
+    .im-sep {
+      margin-top: var(--mf-s1);
+      border-top: 1px solid var(--mf-border);
+    }
+    .im-danger {
+      color: var(--mf-danger);
     }
     .im-item:hover:not([aria-disabled='true']),
     .im-item:focus-visible {

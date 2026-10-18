@@ -8,10 +8,12 @@ import {
   output,
   untracked,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { TaskQueueRow } from '../../api/generated/api-client';
 import { TaskActionDialogs } from '../../features/tasks/detail/task-action-dialogs';
 import { TaskDetailStore } from '../../features/tasks/detail/task-detail.store';
 import { StatusAction, rowFromTask } from './inline-edit';
+import { stepQueryParams } from './step-link';
 
 /**
  * The status changes that need a dialog (On hold and Cancel with a mandatory comment, Reopen confirmation, Complete with
@@ -28,6 +30,7 @@ import { StatusAction, rowFromTask } from './inline-edit';
 })
 export class InlineStatusFlow implements OnInit {
   private readonly store = inject(TaskDetailStore);
+  private readonly router = inject(Router);
 
   readonly row = input.required<TaskQueueRow>();
   readonly action = input.required<StatusAction>();
@@ -43,6 +46,18 @@ export class InlineStatusFlow implements OnInit {
   private startVersion = '';
 
   constructor() {
+    // "Go to first step" in the blocked-completion dialog: on a list there is no stepper on screen, so open the Task at that step.
+    effect(() => {
+      const step = this.store.focusStepId();
+      if (step == null) return;
+      untracked(() => {
+        if (this.done) return;
+        void this.router.navigate(['/tasks', this.store.taskId()], {
+          queryParams: stepQueryParams(step),
+        });
+        this.finish();
+      });
+    });
     effect(() => {
       this.store.task();
       this.store.dialog();

@@ -42,7 +42,7 @@ async function cancelInline(page: Page, row: Locator, expectClosed = true): Prom
   await statusTrigger(row).click();
   await page.locator('[data-option="CANCEL"]').click();
   const dialog = page.getByRole('dialog').filter({ has: page.locator('[data-reason-body]') });
-  await dialog.getByLabel(/Comment/).fill('No longer needed');
+  await dialog.getByLabel(/Reason/).fill('No longer needed');
   await dialog.getByRole('button', { name: 'Cancel task' }).click();
   if (expectClosed) await expect(dialog).toHaveCount(0);
 }
@@ -369,7 +369,7 @@ test.describe('WP7: inline row actions', () => {
     await statusTrigger(readyRow).click();
     await expect(page.locator('[data-option="COMPLETE"]')).not.toContainText('needs step inputs');
     await page.locator('[data-option="COMPLETE"]').click();
-    await expect(page.getByRole('dialog')).toContainText('Mark all completed and finish task');
+    await expect(page.getByRole('dialog')).toContainText('Complete all steps and finish');
   });
 });
 
