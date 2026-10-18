@@ -170,7 +170,7 @@ Issues closed, tests green twice, axe clean at four sizes, screenshots in `fixes
 - WP7 Closed row menu (2026-10-18, commit sha in the issue #235 comment): #235 done; server refuses Completed to Cancelled (`INVALID_STATUS_TRANSITION`, 409; `TaskLifecycle` matrix cell removed, so `allowedActions` and the Task detail menu follow), inline menu `inline-edit.ts` offers only Reopen on closed rows; unit + Tasks integration + e2e (axe, 4 sizes) green; no API shape change, bundle unchanged; screenshots `fixes/wp-actions/`; known limit: none.
 - WP8 Matter cell and defaults: not started.
 - WP9 Fixed layout: not started.
-- WP10 View counts: not started.
+- WP10 View counts (2026-10-18, commit c180e80): #218 backend and plumbing done; `GET /task-queue` returns `views` (open, unassigned, overdue, dueSoon, asap, onHold, myPod (null without a primary pod), recentlyCompleted (30 days), createdByMe) from one SQL statement, never narrowed by filters, viewer's zone; about 6 ms at 5,000 tasks so no script 28; OpenAPI and client regenerated; integration (counts = grid totals = Dashboard tiles and drill-through for 2 users x 3 zones, filter independence, perf) + WorkViews TaskQueue*/My Work, unit 1605, architecture, schema, format, lint, prettier, tsc (app, spec, e2e), ng build green; initial bundle 634.75 kB; known limit: the buttons do not show the counts yet (they carry `data-count`; display, accessible names and e2e/axe/screenshots are #219 / WP11).
 - WP11 View overlay: not started.
 - WP12 Vocabulary and window: not started.
 - WP13 Narrow rule and controls: not started.
