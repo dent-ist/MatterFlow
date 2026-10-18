@@ -923,7 +923,11 @@ describe('DashboardPage', () => {
       'Assign TSK-21',
     );
     expect(row.querySelector('mf-priority-badge')!.textContent).toContain('Critical');
-    expect(text(row.querySelector('[data-age]'))).toBe('10 days old');
+    // The creation age left the row (#213): it is the last line of the Due cell tooltip, and the cell is the grid's (inline layout).
+    const due = row.querySelector('mf-due-cell[data-due]')!;
+    expect(row.querySelector('[data-age]')).toBeNull();
+    expect(due.querySelector('.dc--inline')).not.toBeNull();
+    expect(due.querySelector('.dc')!.getAttribute('title')).toContain('Created 10 days ago');
     expect(row.querySelector('mf-row-edit [data-inline-trigger]')).not.toBeNull();
     // "Assign to me" is the first choice of that menu, not a link of its own; the menu sits before the client column (the other lists' order plus the menu).
     expect(row.querySelector('[data-assign-me]')).toBeNull();

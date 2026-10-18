@@ -25,7 +25,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { availabilityDisplay } from '../../../core/availability/availability';
 import { QuietRequests } from '../../../core/http/interceptors';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { describeDue } from '../../../core/time/time';
+import { describeDueCell } from '../../../core/time/time';
 import { DialogFocus } from '../../../shared/ui/dialog-focus';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
@@ -34,7 +34,7 @@ import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { StatusBadge } from '../../../shared/ui/status-badge';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { emptyState, queueArgs } from '../../../shared/work-queue/queue-filters';
-import { DueChip } from '../ui/due-chip';
+import { DueCell } from '../../../shared/work-queue/due-cell';
 import { backOnText } from './users-card';
 import {
   LOAD_ICONS,
@@ -57,7 +57,7 @@ export function drawerOrder(
   zone: string,
 ): TaskQueueRow[] {
   const key = (r: TaskQueueRow) => {
-    const d = describeDue(r, now, zone, r.status);
+    const d = describeDueCell(r, now, zone, r.status);
     return {
       overdue: d.overdue ? 0 : 1,
       prio: r.priority.sortOrder,
@@ -90,7 +90,7 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
     PriorityBadge,
     StatusBadge,
     TaskTypeIcon,
-    DueChip,
+    DueCell,
     ErrorReference,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -250,7 +250,7 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
                             }
                           </span>
                           @if (r.dueDate || r.dueAtUtc || r.isAsap) {
-                            <mf-due-chip data-due [due]="r" [status]="r.status" />
+                            <mf-due-cell data-due layout="inline" [due]="r" [status]="r.status" />
                           }
                         </div>
                         @if (editable('assignee', r)) {
@@ -560,15 +560,6 @@ export class UsersDrawer {
 
   protected editable(field: 'status' | 'priority' | 'assignee', row: TaskQueueRow): boolean {
     return canEditField(field, row, (p) => this.auth.has(p));
-  }
-
-  protected dueOf(r: TaskQueueRow) {
-    return describeDue(r, this.clock.now(), this.zone, r.status);
-  }
-
-  protected dueText(r: TaskQueueRow): string {
-    const due = this.dueOf(r);
-    return due.kind === 'asap' ? 'ASAP' : due.label;
   }
 
   /**

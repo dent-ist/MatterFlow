@@ -7,7 +7,7 @@ import {
 } from '../../../api/generated/api-client';
 import { availabilityDisplay } from '../../../core/availability/availability';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { describeDue } from '../../../core/time/time';
+import { dueCellText, describeDueCell } from '../../../core/time/time';
 import { levelBars, priorityColors } from '../../../shared/ui/priority-badge';
 import { backOnText, bandOf } from './users-card';
 import { UsersGlyph } from './users-glyph';
@@ -532,7 +532,6 @@ export class UsersTable {
   }
   protected nextDue(u: WorkloadUser): string {
     if (!u.nextDue) return '';
-    const due = describeDue(u.nextDue, this.clock.now(), this.zone);
-    return due.kind === 'asap' ? 'ASAP' : due.label;
+    return dueCellText(describeDueCell(u.nextDue, this.clock.now(), this.zone));
   }
 }

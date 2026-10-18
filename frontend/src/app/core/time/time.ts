@@ -202,102 +202,8 @@ export interface DueInput {
   dueAtUtc?: string | null;
 }
 
-export type DueKind = 'asap' | 'future' | 'soon' | 'overdue' | 'closed';
-
-export interface DueState {
-  kind: DueKind;
-  /** Display string, e.g. `ASAP`, `Oct 28, 2026, 3:00 PM CDT`, `Oct 28, 2026 · Overdue 4d`. */
-  label: string;
-  /** The date/time part only (empty for ASAP). */
-  dateText: string;
-  /** `Overdue 4d` / `Due today` / `Tomorrow` / `Due soon` suffix, when applicable. */
-  badge?: string;
-  tooltip?: string;
-  overdue: boolean;
-  hasTime: boolean;
-  /** Whole calendar days from today (viewer's zone) to the due day: 0 today, 1 tomorrow. Set for open, not overdue tasks with a due date. */
-  daysUntil?: number;
-}
-
 export const CLOSED_STATUSES: readonly string[] = ['COMPLETED', 'CANCELLED'];
 export const DUE_SOON_DAYS = 2;
-
-/**
- * Computes the due display state (UX 4.6 + addendum M).
- * - no due date: ASAP, never overdue;
- * - `dueAtUtc`: overdue once `now` is past that instant (same for every viewer);
- * - `dueDate` only: overdue once the viewer's local calendar day is after that date.
- */
-export function describeDue(
-  due: DueInput | null | undefined,
-  now: Date,
-  zone: string,
-  status?: string | null,
-): DueState {
-  const dueAt = due?.dueAtUtc ? new Date(due.dueAtUtc) : null;
-  const dueDay = due?.dueDate ? parseDateOnly(due.dueDate) : null;
-  const validAt = dueAt && !Number.isNaN(dueAt.getTime()) ? dueAt : null;
-
-  if (!validAt && !dueDay) {
-    return {
-      kind: 'asap',
-      label: 'ASAP',
-      dateText: '',
-      tooltip: 'No due date set. Handle promptly.',
-      overdue: false,
-      hasTime: false,
-    };
-  }
-
-  const hasTime = !!validAt;
-  const dateText = validAt
-    ? formatInstant(validAt, zone)
-    : formatCalendarDay(dueDay as CalendarDay);
-  const closed = !!status && CLOSED_STATUSES.includes(status);
-  const today = dayIndex(calendarDayInZone(now, zone));
-  const dueIdx = validAt
-    ? dayIndex(calendarDayInZone(validAt, zone))
-    : dayIndex(dueDay as CalendarDay);
-
-  if (closed) {
-    return { kind: 'closed', label: dateText, dateText, overdue: false, hasTime };
-  }
-
-  const overdue = validAt ? now.getTime() > validAt.getTime() : today > dueIdx;
-  if (overdue) {
-    const badge = `Overdue ${overdueDuration(validAt, today - dueIdx, now)}`;
-    return {
-      kind: 'overdue',
-      label: `${dateText} · ${badge}`,
-      dateText,
-      badge,
-      overdue: true,
-      hasTime,
-    };
-  }
-  if (dueIdx - today <= DUE_SOON_DAYS) {
-    // The same words as the queues' Due cell: "Due today", "Tomorrow", then "Due soon" (UXR4-18).
-    const badge =
-      dueIdx - today === 0 ? 'Due today' : dueIdx - today === 1 ? 'Tomorrow' : 'Due soon';
-    return {
-      kind: 'soon',
-      label: `${dateText} · ${badge}`,
-      dateText,
-      badge,
-      overdue: false,
-      hasTime,
-      daysUntil: dueIdx - today,
-    };
-  }
-  return {
-    kind: 'future',
-    label: dateText,
-    dateText,
-    overdue: false,
-    hasTime,
-    daysUntil: dueIdx - today,
-  };
-}
 
 function overdueDuration(instant: Date | null, calendarDays: number, now: Date): string {
   if (!instant) return `${calendarDays}d`;
@@ -361,7 +267,6 @@ function spokenDuration(short: string): string {
  * The year shows only when the due day is outside the current calendar year in the viewer's zone; the zone abbreviation is only in the
  * tooltip. Timed dues are instants (every viewer sees the same moment in their own zone), date-only dues are floating calendar days
  * judged in the viewer's zone (addendum M). A task the Dashboard Due soon tile counts (today, tomorrow, in 2 days) always has line 2.
- * `describeDue` stays as it was for older callers.
  */
 export function describeDueCell(
   due: DueInput | null | undefined,
@@ -475,4 +380,10 @@ export function describeDueCell(
     hasTime,
     daysUntil: delta,
   };
+}
+
+/** The one-line words of a Due cell where only text fits (a table cell, a tooltip): `ASAP`, `Oct 13`, `Oct 13 · Overdue 4d`. */
+export function dueCellText(cell: DueCell): string {
+  if (cell.tone === 'asap') return 'ASAP';
+  return cell.line2 && cell.tone !== 'closed' ? `${cell.dateText} · ${cell.line2}` : cell.dateText;
 }

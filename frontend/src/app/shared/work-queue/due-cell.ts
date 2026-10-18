@@ -19,7 +19,7 @@ import { CLOSED_STATUSES, DueInput, describeDueCell } from '../../core/time/time
       class="dc"
       [class]="'dc dc--' + tone() + (layout() === 'inline' ? ' dc--inline' : '')"
       [attr.data-due-tone]="tone()"
-      [attr.title]="c.tooltip"
+      [attr.title]="tip()"
     >
       <span class="dc-sr">{{ sentence() }}</span>
       @if (tone() === 'asap') {
@@ -121,6 +121,8 @@ export class DueCell {
   readonly due = input.required<DueInput>();
   readonly status = input<string | null>(null);
   readonly layout = input<'two-line' | 'inline'>('two-line');
+  /** Extra tooltip line after the full date (the Dashboard lists put "Created 3 days ago" here). */
+  readonly extraTip = input('');
 
   protected readonly closed = computed(() => CLOSED_STATUSES.includes(this.status() ?? ''));
   protected readonly cell = computed(() =>
@@ -134,5 +136,9 @@ export class DueCell {
   protected readonly sentence = computed(() =>
     this.tone() === 'none-closed' ? 'No due date' : this.cell().sentence,
   );
+  protected readonly tip = computed(() => {
+    const extra = this.extraTip();
+    return extra ? `${this.cell().tooltip}\n${extra}` : this.cell().tooltip;
+  });
   protected readonly iso = computed(() => this.due().dueAtUtc ?? this.due().dueDate ?? null);
 }

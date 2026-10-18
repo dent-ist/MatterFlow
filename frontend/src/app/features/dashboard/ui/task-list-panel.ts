@@ -14,13 +14,13 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone, dayIndex } from '../../../core/time/time';
 import { UndoService } from '../../../core/notify/undo.service';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
+import { DueCell } from '../../../shared/work-queue/due-cell';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { LIST_ORDER, ListKind, queueParamsSorted } from '../dashboard-links';
 import { DashState } from './dash-state';
-import { DueChip } from './due-chip';
 
 export type PanelKind = ListKind;
 export type PanelState = 'loading' | 'ready' | 'error';
@@ -48,14 +48,13 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
 
 /**
  * A short list of tasks to act on (Unassigned, Overdue, Due soon). One line per row where the list is wide enough (container query, not
- * the window): reference (link to the Task), task type icon, title, client, priority, the due chip (days overdue in the Overdue list;
- * age and, when there is one, the due chip in the Unassigned list), and for the Unassigned list the inline "Assign to..." menu and
+ * the window): reference (link to the Task), task type icon, title, client, priority, the inline Due cell (the Task Queue's words: "Oct 17 Overdue 24d"; the creation age is in its tooltip), and for the Unassigned list the inline "Assign to..." menu and
  * "Assign to me" for people who may assign. Narrower lists wrap to a title line and a meta line (with the matter number).
  * Rows are Task Queue rows, so every editor is the same one the queue uses. "View all" opens the full filtered, sorted Task Queue.
  */
 @Component({
   selector: 'mf-dash-task-list',
-  imports: [RouterLink, MatterRef, PriorityBadge, RowEdit, TaskTypeIcon, DueChip, DashState],
+  imports: [RouterLink, MatterRef, PriorityBadge, RowEdit, TaskTypeIcon, DueCell, DashState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.fill]': 'scroll()' },
   template: `
@@ -196,16 +195,14 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
                       [label]="row.priority.label"
                       [color]="row.priority.color"
                     />
-                    <span class="when">
-                      @if (kind() === 'unassigned') {
-                        @if (row.dueDate || row.dueAtUtc) {
-                          <mf-due-chip [due]="row" [status]="row.status" />
-                        }
-                        <span class="age" data-age>{{ ageText(row) }}</span>
-                      } @else {
-                        <mf-due-chip data-due [due]="row" [status]="row.status" />
-                      }
-                    </span>
+                    <mf-due-cell
+                      class="when"
+                      data-due
+                      layout="inline"
+                      [due]="row"
+                      [status]="row.status"
+                      [extraTip]="createdText(row)"
+                    />
                   </li>
                 }
               </ul>
@@ -332,14 +329,14 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
     li {
       box-sizing: border-box;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 11rem) 5.5rem 6.5rem;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 11rem) 5.5rem 10.5rem;
       align-items: center;
       column-gap: var(--mf-s3);
       min-height: 44px;
       font-size: var(--mf-fs-sm);
     }
     [data-panel='unassigned'] li {
-      grid-template-columns: minmax(0, 1fr) 6.5rem minmax(0, 11rem) 5.5rem 6.5rem;
+      grid-template-columns: minmax(0, 1fr) 6.5rem minmax(0, 11rem) 5.5rem 10.5rem;
     }
     .rows--scroll li {
       flex: 0 1 44px;
@@ -379,17 +376,10 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
       justify-self: start;
       min-width: 0;
     }
+    /* The Due column holds "Oct 17 Overdue 120d" whole (the date gives way first, see mf-due-cell). It was 6.5rem: an icon plus "Overdue 24d"
+       was wider than the column and the clip of .rows--scroll cut the last letter (#213). */
     .when {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: center;
       min-width: 0;
-      line-height: 1.15;
-    }
-    .age {
-      font-size: var(--mf-fs-xs);
-      color: var(--mf-text-muted);
     }
     .assign {
       display: flex;
@@ -430,10 +420,8 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
         margin-left: var(--mf-s1);
       }
       .when {
-        flex-direction: row;
-        align-items: center;
-        gap: var(--mf-s2);
-        width: auto;
+        flex: none;
+        max-width: 100%;
       }
     }
     .ref {
@@ -622,8 +610,13 @@ export class DashTaskList {
     return canEditField('assignee', row, (p) => this.auth.has(p));
   }
 
-  protected ageText(row: TaskQueueRow): string {
+  /** The creation information, now in the Due cell tooltip: "Created today", "Created 1 day ago", "Created 10 days ago". */
+  protected createdText(row: TaskQueueRow): string {
     const days = ageInDays(row.createdAtUtc, this.clock.now(), this.zone);
-    return days === 0 ? 'Created today' : days === 1 ? '1 day old' : `${days} days old`;
+    return days === 0
+      ? 'Created today'
+      : days === 1
+        ? 'Created 1 day ago'
+        : `Created ${days} days ago`;
   }
 }

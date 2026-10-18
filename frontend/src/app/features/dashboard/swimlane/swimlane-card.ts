@@ -5,11 +5,11 @@ import { SwimlaneCard, TaskQueueRow } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { LookupStore } from '../../../core/lookups/lookup-store';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
-import { DueStatePipe } from '../../../shared/pipes/due-label.pipe';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { PriorityBadge, levelBars, priorityColors } from '../../../shared/ui/priority-badge';
 import { StatusBadge } from '../../../shared/ui/status-badge';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
+import { DueCell } from '../../../shared/work-queue/due-cell';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { Density, applyRow, cardToRow } from './swimlane-model';
 
@@ -37,7 +37,7 @@ export function initials(name: string): string {
     StatusBadge,
     TaskTypeIcon,
     RowEdit,
-    DueStatePipe,
+    DueCell,
     MfDatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -57,28 +57,7 @@ export function initials(name: string): string {
           }}
         </span>
       } @else {
-        @let due = c | dueState: c.status;
-        @if (due.kind === 'asap') {
-          <span class="due-chip due-chip--asap" [title]="due.tooltip">
-            <i class="pi pi-bolt" aria-hidden="true"></i>ASAP
-          </span>
-        } @else if (c.isOverdue || due.kind === 'overdue') {
-          <span class="due-chip due-chip--overdue">
-            <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-            {{ due.badge ?? 'Overdue' }}
-            <span class="due-date">{{ due.dateText }}</span>
-          </span>
-        } @else if (due.daysUntil === 0) {
-          <span class="due-chip due-chip--soon">
-            <i class="pi pi-clock" aria-hidden="true"></i>Due today
-          </span>
-        } @else if (due.daysUntil === 1) {
-          <span class="due-chip"
-            >Tomorrow <span class="due-date">{{ due.dateText }}</span></span
-          >
-        } @else {
-          <span class="due-chip">{{ compact() ? short(due.dateText) : due.dateText }}</span>
-        }
+        <mf-due-cell layout="inline" [due]="c" [status]="c.status" />
       }
     </ng-template>
     @if (compact()) {
@@ -468,24 +447,8 @@ export function initials(name: string): string {
       color: var(--mf-text);
       white-space: nowrap;
     }
-    .due-chip--overdue {
-      color: var(--mf-due-overdue);
-      font-weight: 700;
-    }
-    .due-chip--soon {
-      color: var(--mf-due-soon);
-      font-weight: 700;
-    }
-    .due-chip--asap {
-      color: var(--mf-asap);
-      font-weight: 700;
-    }
     .due-chip--closed {
       color: var(--mf-text-muted);
-    }
-    .due-date {
-      color: var(--mf-text-muted);
-      font-weight: 400;
     }
     .progress {
       font-size: var(--mf-fs-xs);
@@ -601,8 +564,11 @@ export function initials(name: string): string {
     .line .due-chip {
       font-size: var(--mf-fs-xs);
     }
-    .line .due-date {
-      display: none;
+    /* The inline Due cell ("Oct 17 Overdue 24d"): the relative text stays whole, the date gives way to the title (ellipsis; tooltip has it). */
+    .line .due {
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: 9.5rem;
     }
     @container (max-width: 300px) {
       .line {

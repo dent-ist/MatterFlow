@@ -32,7 +32,7 @@ import { outOfOfficeText } from '../../../core/availability/availability';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
-import { DueLabelPipe } from '../../../shared/pipes/due-label.pipe';
+import { DueCell } from '../../../shared/work-queue/due-cell';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import {
@@ -97,7 +97,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
     Dialog,
     DialogFocus,
     MfDatePipe,
-    DueLabelPipe,
+    DueCell,
     EntityPicker,
     MatterRef,
     RichTextEditor,
@@ -153,7 +153,16 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
               <dd>{{ t.requestedAtUtc | mfDate }}</dd>
             }
             <dt>Due</dt>
-            <dd>{{ { dueDate: t.dueDate, dueAtUtc: t.dueAtUtc } | dueLabel: t.status }}</dd>
+            <dd>
+              <mf-due-cell
+                layout="two-line"
+                [due]="{ dueDate: t.dueDate, dueAtUtc: t.dueAtUtc }"
+                [status]="t.status"
+              />
+              @if (t.dueAtUtc) {
+                <span class="dt__due-full">{{ t.dueAtUtc | mfDate }}</span>
+              }
+            </dd>
             <dt>Project</dt>
             <dd>{{ t.project?.name ?? 'No project' }}</dd>
             <dt>Pod</dt>
@@ -472,6 +481,10 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
     .dt__facts {
       margin-left: var(--mf-s3);
       gap: var(--mf-s1) var(--mf-s4);
+      font-size: var(--mf-fs-sm);
+    }
+    .dt__due-full {
+      color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
     .dt__facts dt {

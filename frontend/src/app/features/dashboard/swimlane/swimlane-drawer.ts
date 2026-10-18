@@ -24,7 +24,7 @@ import {
 import { AuthStore } from '../../../core/auth/auth.store';
 import { QuietRequests } from '../../../core/http/interceptors';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
-import { DueStatePipe } from '../../../shared/pipes/due-label.pipe';
+import { DueCell } from '../../../shared/work-queue/due-cell';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { DialogFocus } from '../../../shared/ui/dialog-focus';
 import { ErrorReference } from '../../../shared/ui/error-reference';
@@ -55,7 +55,7 @@ export const PEEK_COMMENTS = 3;
     StatusBadge,
     PriorityBadge,
     MfDatePipe,
-    DueStatePipe,
+    DueCell,
     CopyButton,
     ErrorReference,
   ],
@@ -157,8 +157,7 @@ export const PEEK_COMMENTS = 3;
               <div class="fact">
                 <dt>Due</dt>
                 <dd>
-                  @let due = c | dueState: c.status;
-                  {{ due.kind === 'asap' ? 'ASAP' : due.label }}
+                  <mf-due-cell layout="inline" [due]="c" [status]="c.status" />
                 </dd>
               </div>
               <div class="fact">

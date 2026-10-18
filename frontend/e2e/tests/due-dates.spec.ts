@@ -102,11 +102,12 @@ test.describe('ASAP and overdue (SCN-015)', () => {
 
     const newYork = new TaskDetailPage(await asUser('ke\\kekim', { timezoneId: FIRM_ZONE }));
     await newYork.open(taskId);
-    await expect(newYork.due).toContainText('2:30 PM');
+    // The header shows the shared Due cell (#214): later dates are date only, the time in the viewer's zone is in its tooltip.
+    await expect(newYork.due.locator('.dc')).toHaveAttribute('title', /2:30 PM/);
 
     const tokyo = new TaskDetailPage(await asUser('ke\\kekim', { timezoneId: 'Asia/Tokyo' }));
     await tokyo.open(taskId);
-    await expect(tokyo.due).toContainText('3:30 AM');
+    await expect(tokyo.due.locator('.dc')).toHaveAttribute('title', /3:30 AM/);
     await expect(tokyo.due).not.toContainText('Overdue');
   });
 });

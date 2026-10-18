@@ -11,7 +11,7 @@ import {
 import { AuthStore } from '../../../core/auth/auth.store';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
-import { DueLabelPipe } from '../../../shared/pipes/due-label.pipe';
+import { DueCell } from '../../../shared/work-queue/due-cell';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { StatusBadge } from '../../../shared/ui/status-badge';
@@ -57,7 +57,7 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
     MatterRef,
     PriorityBadge,
     StatusBadge,
-    DueLabelPipe,
+    DueCell,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -133,8 +133,11 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
             >
             <span data-due
               ><span class="pg-label">Due:</span>
-              {{ { dueDate: t.dueDate, dueAtUtc: t.dueAtUtc } | dueLabel: t.status }}</span
-            >
+              <mf-due-cell
+                layout="two-line"
+                [due]="{ dueDate: t.dueDate, dueAtUtc: t.dueAtUtc }"
+                [status]="t.status"
+            /></span>
             <span data-pod
               ><span class="pg-label">Pod:</span> {{ t.assignedPod?.name ?? 'No pod' }}</span
             >
@@ -206,6 +209,11 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
       align-items: center;
       gap: var(--mf-s2) var(--mf-s4);
       margin-top: var(--mf-s2);
+    }
+    [data-due] {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
     }
     .th__icon {
       align-self: center;

@@ -35,7 +35,7 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { emptyState, queueArgs } from '../../../shared/work-queue/queue-filters';
-import { DueChip } from '../ui/due-chip';
+import { DueCell } from '../../../shared/work-queue/due-cell';
 import { ageInDays } from '../ui/task-list-panel';
 import { loadLevelOf, plural } from './users-model';
 
@@ -97,7 +97,7 @@ export function assignHint(
     ErrorReference,
     SearchBox,
     TaskTypeIcon,
-    DueChip,
+    DueCell,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -328,7 +328,7 @@ export function assignHint(
                           <span class="client" data-client>{{ r.clientName }}</span>
                           <mf-matter-ref [value]="r.matterRef" [copy]="false" />
                           @if (r.dueDate || r.dueAtUtc) {
-                            <mf-due-chip [due]="r" [status]="r.status" />
+                            <mf-due-cell layout="inline" [due]="r" [status]="r.status" />
                           }
                           <span class="age">{{ ageText(r) }}</span>
                         </div>
