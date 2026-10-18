@@ -1,0 +1,165 @@
+# Clients, Matters and Projects review: delivery plan
+
+Owner approval: "I like your recommendations. Go ahead" (2026-10-18), with product decisions delegated to the PM ("you can make decisions for me"). Decisions are recorded as "Decision (PM)" in each issue's "PM requirements review" comment and summarised below. Date of this plan: 2026-10-18, base `origin/dev` (after the Task Queue packages WP1 to WP28 and #244). Source review: `README.md` in this folder (about 110 screenshots in `screenshots/`, mock-ups in `mocks/`).
+
+Structure on GitHub: one epic **#245** (labels `epic` + `phase-7`), 42 sub-issues #246 to #287 (label `phase-7`). All 42 are built; none is decided "not now". Folded IDs (named in the host issue title or body, nothing dropped): BUG-4, BUG-5, P2, P3, P4 in #257; BUG-9, C5, P5, MD5 in #253; BUG-11 in #273; BUG-14 and L6 in #270; BUG-8 in #280; BUG-7 in #279; BUG-13 and K2 in #248; BUG-3, K1 and cross-cutting 7 in #281; BUG-6 and M4 in #252; BUG-10 in #249; BUG-12 and C6 in #250; L12 in #251 and #270; M5 and L9 in #269; C4 in #266; H3 in #263; P6 in #264; cross-cutting 1 in #253, 2 in #255, 3 in #262, 6 in #251, 8 in #250 (9 needs nothing: there is no theme). "Verified good" items (L9, the tab pattern and arrow keys, 0 axe violations on 60 scans, the reasoned Set inactive, the confirm dialogs, URL-driven filters) need no work except as regression tests.
+
+Issues blocked on an owner decision: **none**. The four product questions of the review (section 6) are decided by the PM: (a) the first tab of Client and Matter is **Overview** (key and URL unchanged), Project's second tab stays **Details**; (b) the Client Overview counts tasks across all of the client's matters (needs the summary endpoint); (c) an **inactive client blocks "New matter"** (the server already refuses; the UI disables the button with the reason); (d) **Project Details drops the side panel** (the Task page keeps `mf-detail-layout`).
+
+Effort is in **AI-agent hours** (wall-clock of one developer agent, including unit, integration, e2e, axe and screenshots). The review estimated 85 hours; the plan is **89** (documentation 2.5, permission variants 1.5 and final verification 5 were not in the review's eight packages; about 4 hours of overlap were removed).
+
+## 1. Issue list
+
+| # | ID | Title (short) | Agent-h | Depends on | Package |
+|---|---|---|---|---|---|
+| #246 | BUG-1 | Detail pages: 404 vs 403 vs failure wording | 2 | - | WP1 |
+| #247 | BUG-2 | Header and tab skeleton on detail pages | 1.5 | #246 (order) | WP1 |
+| #248 | BUG-13 (K2) | Document title names record and tab | 0.5 | - | WP1 |
+| #250 | BUG-12 (C6) | "New matter" label, inactive client rule | 1.5 | - | WP1 |
+| #249 | BUG-10 | Natural sort in the Matter Projects tab | 1 | - | WP1 |
+| #251 | L11, L12, X6 | List skeleton rows, errors, empty copy | 2.5 | - | WP2 |
+| #252 | BUG-6 (M4) | Matter reference never breaks | 0.5 | #251 (order) | WP2 |
+| #253 | H1 (BUG-9, C5, P5, MD5) | Record header: crumb and one-line title | 3.5 | #246, #247, #248 | WP3 |
+| #255 | C3 | Action rule: create in header, rest in overflow | 2.5 | #253 | WP3 |
+| #254 | H2 | Phone header | 2.5 | #253, #255 | WP3 |
+| #256 | H1b | Sensitive banner on one line | 1 | #253 | WP3 |
+| #257 | P1 (P2, P3, P4, BUG-4, BUG-5) | Project Details tabs Tasks (n) and Details | 6 | #253, #255 | WP4 |
+| #258 | B1 (L1, M1) | Task counts on list responses, sort keys (API) | 5 | - | WP5 |
+| #259 | B2 (C1, MD1, P6) | Summary endpoints (API) | 3 | #258 | WP5 |
+| #260 | strip | `mf-work-strip` link mode, Task Queue scope links | 1.5 | #259 (types) | WP6 |
+| #261 | C1 | Client Overview | 3.5 | #259, #260, #253, #255 | WP6 |
+| #262 | C2 | Tab counts | 0.5 | #261 (order) | WP6 |
+| #264 | MD1 (P6) | Summary strip above the scoped Tasks grid | 3.5 | #259, #260, #257 | WP7 |
+| #263 | H3 | Matter Overview | 2.5 | #259, #260, #261, #264 | WP7 |
+| #265 | MD2 | Matter Tasks grid Project column | 0.5 | #264 (order) | WP7 |
+| #269 | L3 (M5, L9) | 44 px rows, 2-line clamp | 1.5 | #251, #252 | WP8 |
+| #270 | L4 (L6, BUG-14) | Filter row open, one chip rule | 2.5 | #251 | WP8 |
+| #271 | L5 | Status filter and hidden count | 1.5 | #270 | WP8 |
+| #272 | M2 | Sensitive filter, no "Other filters" | 1.5 | #270 | WP8 |
+| #268 | L2 | Name is the link, number plain text | 1 | WP8 | WP9 |
+| #266 | L1 (M1, C4) | Open tasks and Overdue columns | 3.5 | #258, #268 | WP9 |
+| #267 | L10 | Projects list Matter cell, Client, Open tasks | 3.5 | #258, #266 | WP9 |
+| #273 | MD3 (BUG-11) | Matter Projects tab | 4 | #258, #249, #255 | WP10 |
+| #274 | MD4 | Assets tab, New asset in the overflow | 1 | #255 | WP10 |
+| #279 | T2 (BUG-7) | Tab strip scroll cue | 1.5 | - | WP11 |
+| #280 | L8 (BUG-8) | Pager at 768 | 1 | - | WP11 |
+| #275 | L7 (M6) | Record card component | 2.5 | #251, WP8 | WP12 |
+| #276 | L7a | Clients cards | 1.5 | #275, #266, #268 | WP12 |
+| #277 | M6 | Matters cards (and client Matters tab) | 2.5 | #275, #266, #268, #272 | WP12 |
+| #278 | L7c | Projects cards | 1.5 | #275, #267 | WP12 |
+| #281 | BUG-3 (K1) | Focus returns to the row on Back | 2 | WP9, WP12 | WP13 |
+| #282 | K3 (M3) | Copy button Tab stop | 1 | #268, #277 | WP13 |
+| #283 | skip | Skip to table link | 0.5 | #270, #276 to #278 | WP13 |
+| #284 | K-audit | Home/End, Esc, focus return | 1 | all UI packages | WP13 |
+| #285 | X1 | Permission variants, no dead links | 1.5 | WP6, WP7, WP9, WP12 | WP13 |
+| #286 | docs | Documentation | 2.5 | all code | WP14 |
+| #287 | verify | Final verification pass | 5 | all | WP15 |
+
+Total: about **89 agent-hours** (42 issues). Review ID to issue: BUG-1 #246, BUG-2 #247, BUG-3 #281, BUG-4 and BUG-5 #257, BUG-6 #252, BUG-7 #279, BUG-8 #280, BUG-9 #253, BUG-10 #249, BUG-11 #273, BUG-12 #250, BUG-13 #248, BUG-14 #270; L1 #266 (+#258), L2 #268, L3 #269, L4 #270, L5 #271, L6 #270, L7 #275 to #278, L8 #280, L10 #267, L11 #251; C1 #261, C2 #262, C3 #255, C4 #266, C5 #253, C6 #250; M1 #266, M2 #272, M3 #282, M4 #252, M6 #277; H1 #253, H2 #254, H3 #263; MD1 #264 and #263, MD2 #265, MD3 #273, MD4 #274, MD5 #253; P1 to P5 #257 and #253, P6 #264; K1 #281, K2 #248, K3 #282, skip link #283.
+
+## 2. Decisions (PM) in one place
+
+- **Names.** "Overview" for the first tab of Client and Matter (key `details` and the URL are unchanged, `?tab=details` still works); Project's tabs are Tasks (n) and Details. The document title uses the visible tab label (#248).
+- **One record header (#253).** Built on the existing `mf-record-title`/`mf-page-header`, not a parallel component. Crumb: last crumb is the current page, truncated at 40 characters with the full text in `title`; the review's alternative (drop the last crumb) is rejected. Title: `ref  name` on one line at the 22 px H2 token, name clamped to 2 lines with a tooltip; muted context line (`Client ...` on Matter, `Matter ...` on Project), links only with the matching View permission. Phones (below 640 px, the work-list breakpoint): one row, primary action and an overflow, the crumb becomes a "Back to ..." link (#254). The Sensitive banner is a single 32 px line (#256).
+- **Action rule (#255).** Header = Edit, Activity, the primary create action and an overflow. Client: New matter; overflow Set inactive/active. Matter: **Create task**; overflow New project, **New asset**, Set inactive/active. Project: Create task; overflow Archive/Unarchive. Nothing that changes a record stays in a tab body. Empty states of the Projects and Assets tabs keep their own creation action. This reverses the review's "New project in the header" (three create buttons would not fit at 768). Labels: "New X" for records, "Create task" for tasks, no leading "+" (#250).
+- **Counts API (#258, #259), additive.** `openTaskCount`, `overdueTaskCount` on `ClientResponse`, `MatterResponse`, `ProjectResponse` (null without `Task.View`, never a 403, never a fake 0), `clientNumber`/`clientName` on `ProjectResponse`; sort keys `openTasks` and `overdue`; three read endpoints `GET /clients|matters|projects/{id}/summary` (`openTasks`, `overdue`, `asap`, `onHold`, `dueSoon`, child counts, and for a client `topMatters`, up to 5, omitting matters the viewer cannot see). Policies are the existing `Perm:` endpoint policies plus a `Task.View` check for the numbers. Definitions equal the Dashboard and the Task Queue (open = not Completed/Cancelled; overdue in the viewer's zone, date-only dues floating; Due soon = not overdue, not ASAP, today to +2 days). A client's count covers all its matters, a matter's includes project tasks, inactive matters and archived projects count. OpenAPI and the TS client are regenerated after every rebase, never hand-merged. Equality with `GET /task-queue` and the Dashboard tiles is an integration test and part of #287.
+- **Overview content.** Client: strip (Open, Overdue, Due soon, ASAP, On hold) as links to the Task Queue scoped by `client=`, top 5 matters by open tasks, a muted `Created ... - Last changed ...` line, custom fields; the number, name and status rows are gone. Matter: the same strip linking to the matter's own Tasks tab, Client, Status, Sensitive, Created, Last changed, custom fields; Matter reference, number and name rows are gone. Due soon is added to the review's four counts for one vocabulary with the Task Queue views. The strip above the scoped Tasks grid (Matter, Project) is the toggle mode of the same `mf-work-strip`, URL `view=overdue|dueSoon|asap|onHold`, Open = default.
+- **Inactive client (c).** Server rule unchanged; UI disabled with the reason "This client is inactive. Set it active to add matters."
+- **Natural sort (#249).** Client side, Matter Projects tab only (`Intl.Collator` numeric); no computed column, no SQL; the global Projects list keeps the text sort.
+- **Lists.** Name is the only link; the number/reference is plain mono text (the review's second option). Rows are 44 px (decision U), names clamp to 2 lines. The filter row is open by default from 640 px, remembered per list; one chip rule; default filters are not counted. Status uses the shared filter control and a muted "3 inactive hidden" in the pager (one extra count call, no API change). Sensitive is a select in the filter row and "Other filters" goes away until a list has two extra filters. Default columns: Clients = number, Name, Matters, Open tasks, Overdue, Status; Matters = Reference, Name, Client, Open tasks, Overdue, Status (Projects count leaves the list); Projects = Name, Matter (`mf-matter-cell`), Client (from 1100 px), Open tasks, Overdue, Status. No column chooser or resizing for these lists.
+- **Matter tabs.** Projects tab: Name, Open tasks, Overdue, Status, description as a muted second line only when set, Active first, Archived in a collapsed group. Assets tab keeps its columns with an en dash for empty cells. Tabs inside a record, and the scoped Tasks grids, stay tables with the scroll hint on phones (cards only for the three lists and the client's Matters tab).
+- **Phone and tablet.** Cards below 640 px (639 cards, 640 table) through a new generic `mf-record-card-list`; `mf-tabs` gets one scroll cue for the whole app; the pager is one or two intentional rows between 640 and 900 px.
+- **Moved relative to the review.** BUG-3 (focus on Back) is in the keyboard package and BUG-8 in the tablet package (they depend on the final DOM or the shared pager); chrome (WP8) runs before columns (WP9) because the columns are built on the chrome's templates.
+- **Keyboard.** Tab-stop counts before the first row are recorded, not gated (the Task Queue lesson, #236); the skip link and one link per row are the levers.
+- **Out of scope.** Create/Edit forms, the Task page, Dashboard, dark theme, real screen reader testing, saved views, exports, bulk actions, server-side natural sort, a `hiddenCount` field, charts on the Overview.
+
+## 3. Work packages (ranked)
+
+Rules for developer agents: branch from `origin/dev`, rebase before each push, touch only the files of your package unless the issue says otherwise, regenerate OpenAPI and the client (nswag) when the API changes and never hand-merge them, run unit + integration + e2e + axe (0 violations at 1366, 1920, 768 and 375) and assert no page-level horizontal scroll, attach screenshots in `docs/ux/clients-review/fixes/<package>/`, keep the initial bundle at its current size (about 641 kB of 700 kB), do not add rules to `task-table.scss` (at its 5 kB budget; use `src/styles/_tables.scss`, `_tables`-style partials or new components), update the docs named in the issue (WP14). SQL scripts: next free number is **28** (latest `27-dashboard-unassigned.sql`); only WP5 may need it (an index on task matter/project/status/due, with profiling evidence). The first PR that needs a script takes 28; later ones renumber at merge time.
+
+Owner agent roles: **Detail agent** (client, matter and project detail pages: WP1, WP3, WP4, WP6, WP7, WP10), **List agent** (list pages and list chrome: WP2, WP8, WP9, WP12), **Backend agent** (WP5), **Shared UI agent** (WP11, then helps WP12 and WP13), **QA/docs agent** (WP13 to WP15). One agent can take several roles in sequence; the order inside a role must be kept.
+
+| Rank | WP | Issues | Main files / areas | Agent-h | Parallel with | Waits for | Backend / SQL |
+|---|---|---|---|---|---|---|---|
+| 1 | WP1 Detail-page bugs and states | #246, #247, #248, #250, #249 | `features/{clients,matters,projects}/pages/*-detail-page.ts`, `client-matters.ts`, new `shared/ui` record state and skeleton | 6.5 | WP2, WP5, WP11 | - | Frontend only |
+| 2 | WP2 List bugs and states | #251, #252 | `data-table.ts`, `grid-body.ts`, `matter-ref.ts`, the three list pages, `client-matters.ts` | 3 | WP1 (rebase `client-matters.ts` after WP1), WP5, WP11 | - | Frontend only |
+| 3 | WP3 Record header | #253, #255, #254, #256 | `shared/ui/page-header.ts` (`mf-record-title`), the three detail pages, new `mf-record-header` | 9.5 | WP2, WP5, WP8, WP11 | WP1 | Frontend only |
+| 4 | WP4 Project Details tabs | #257 | `project-detail-page.ts`, project tests | 6 | WP5, WP6, WP8, WP9, WP11 | WP3 | Frontend only |
+| 5 | WP5 Counts API | #258, #259 | `ClientService.cs`, `MatterService.cs`, `ProjectService.cs`, `OrganizationDtos.cs`, `OrganizationControllers.cs`, `contracts/openapi/v1.json`, generated client | 8 | everything frontend | - | Additive; script 28 only if profiling asks |
+| 6 | WP6 Strip and Client Overview | #260, #261, #262 | `shared/work-queue/work-strip.ts` (+ mapper), `client-detail-page.ts` | 5.5 | WP4, WP8, WP9, WP11 | WP3, WP5 | Frontend only |
+| 7 | WP7 Matter Overview and Tasks strips | #264, #263, #265 | `matter-detail-page.ts`, `project-detail-page.ts`, `shared/work-queue/scoped-tasks.ts` | 6.5 | WP9, WP11, WP12 | WP4, WP5, WP6 | Frontend only |
+| 8 | WP8 List chrome | #269, #270, #271, #272 | `data-table.ts` styles, `list-query.ts`, `column-filters.ts`, the three list pages | 7 | WP3, WP4, WP5, WP6, WP11 | WP2 | Frontend only |
+| 9 | WP9 List columns | #268, #266, #267 | the three list pages, `client-matters.ts`, `mf-matter-cell` (reuse) | 8 | WP4, WP6, WP7, WP10, WP11 | WP8, WP5 | Uses WP5 fields |
+| 10 | WP10 Matter tabs | #273, #274 | `matter-detail-page.ts` (Projects tab), `matter-assets.ts` | 5 | WP9, WP11, WP12 | WP7, WP5 | Uses WP5 fields |
+| 11 | WP11 Tab strip and pager | #279, #280 | `shared/ui/tabs.ts`, `shared/ui/pager.ts` | 2.5 | everything | - | Frontend only |
+| 12 | WP12 Phone cards | #275, #276, #277, #278 | new `shared/ui/record-card-list.ts`, the three list pages, `client-matters.ts`, filter sheet | 8 | WP7, WP10, WP11 | WP9 | Frontend only |
+| 13 | WP13 Keyboard, focus and permissions | #281, #282, #283, #284, #285 | list pages, detail pages, `clients-keyboard.spec.ts`, permission matrix spec | 6 | - | WP4, WP6, WP7, WP9, WP10, WP12 | Frontend/tests only |
+| 14 | WP14 Docs | #286 | `docs/ux/ux-spec.md`, `docs/requirements/decisions-addendum.md` (section V), `docs/ux/tokens.css`, `docs/qa/e2e.md`, review README | 2.5 | - | all code packages | none |
+| 15 | WP15 Final verification | #287 | `clients-final.spec.ts`, `docs/ux/clients-review/fixes/final/` | 5 | - | WP14 | none |
+
+Total: about **89 agent-hours**. With four agents (Detail, List, Backend plus Shared UI/QA) the wall-clock is about **47 hours** (the critical path); one agent alone needs 89 hours.
+
+### Parallelism at a glance (waves)
+
+- **Wave 1 (start together, different files):** WP1 (detail pages), WP2 (list templates), WP5 (backend), WP11 (`tabs.ts`, `pager.ts`). WP1 and WP2 both touch `client-matters.ts`: WP1 merges first, WP2 rebases.
+- **Wave 2:** WP3 after WP1 (Detail agent); WP8 after WP2 (List agent); WP5 continues.
+- **Wave 3:** WP4 after WP3 (`project-detail-page.ts`); WP6 after WP3 and WP5 (`client-detail-page.ts`, `work-strip.ts`); WP9 after WP8 and WP5 (list pages). The three touch disjoint files and run in parallel.
+- **Wave 4:** WP7 after WP4, WP5 and WP6 (the `matter-detail-page.ts` chain and `scoped-tasks.ts`); WP12 after WP9 (card component can start earlier, adoption waits).
+- **Wave 5:** WP10 after WP7 (`matter-detail-page.ts`, last in its chain).
+- **Wave 6:** WP13 after WP4, WP6, WP7, WP9, WP10 and WP12 (final DOM).
+- **Wave 7:** WP14 then WP15.
+
+### Critical path
+
+WP1 (6.5) then WP3 (9.5), WP4 (6), WP7 (6.5), WP10 (5), WP13 (6), WP14 (2.5), WP15 (5) = **47 hours**. The list chain WP2 (3), WP8 (7), WP9 (8), WP12 (8) reaches WP13 after 26 hours and has 21 hours of slack. WP5 (8) must finish before WP6, WP9 and WP10 start (it ends at hour 8, well before WP3 ends at 16).
+
+### Hot spots (merge-conflict watch)
+
+- `matter-detail-page.ts`: WP1, WP3, WP7, WP10 only, strictly in that order (Detail agent). It holds the Projects tab inline, so #249 (WP1) comes before #273 (WP10).
+- `client-detail-page.ts`: WP1, WP3, WP6 (and WP13 tests). `project-detail-page.ts`: WP1, WP3, WP4, WP7.
+- `client-matters.ts`: WP1 (#250), WP2 (#251, #252), WP8, WP9, WP12 (#277): merge in that order; it is the one file shared by the Detail and the List agent.
+- List templates (`clients-list-page.ts`, `matters-list-page.ts`, `projects-list-page.ts`) and `data-table.ts`/`grid-body.ts`/`list-query.ts`/`column-filters.ts`: WP2, WP8, WP9, WP12, WP13 in that order (List agent). These shared files also serve Assets and admin lists: their specs are regression tests.
+- Backend (`ClientService.cs`, `MatterService.cs`, `ProjectService.cs`, `OrganizationDtos.cs`, `OrganizationControllers.cs`, OpenAPI): WP5 only, #258 then #259; frontend packages consume the regenerated client after it merges.
+- `shared/work-queue/work-strip.ts`: WP6 (#260) adds the link mode; My Work and Pod Work specs must stay green. `scoped-tasks.ts`: WP7 only. `mf-matter-cell`: reused by WP9, not changed (extract inputs if it depends on the work grid).
+- `shared/ui/tabs.ts` and `shared/ui/pager.ts`: WP11 only, but every page inherits them; regress My Work, Pod Work, Task Queue, Assets.
+- Tests that select the old buttons or links (in-tab Edit/Set inactive, "Create matter", the reference link, Filters toggle, "Other filters") are updated by the package that changes the behaviour.
+
+### Extension points (for the packages that follow)
+
+- **Skeleton and states (WP1, WP2):** `mf-record-skeleton` (`kind: client | matter | project`), a shared record state component (404, 403, failure with reference), and the list states layer in `data-table.ts`/`grid-body.ts`. The header (WP3) changes only what is inside the skeleton.
+- **Record header (WP3):** `mf-record-header` composed from `mf-record-title`: crumb (last truncated), title, badges, context line, action slot and an overflow menu. The action set per page is data (permission-gated items); WP4, WP6, WP7 and WP10 add no header code.
+- **Summary (WP5, WP6, WP7):** `recordStripItems(summary, scope)` maps the summary endpoint to `mf-work-strip` items (link mode on the Overview, toggle mode above the scoped grids, URL `view=overdue|dueSoon|asap|onHold`).
+- **Cards (WP12):** `mf-record-card-list` is generic (no task knowledge); a page supplies the item mapping and the sort options for the Filters sheet.
+
+### Definition of done per package
+
+Issues closed, tests green twice, axe clean at four sizes, no page-level horizontal scroll, screenshots in `fixes/<package>/`, bundle and style budgets kept, docs named in the issue noted for WP14, counts equal the Task Queue and the Dashboard for the touched screens, the epic #245 tasklist ticked, and the line below added to the Status section.
+
+### Final verification package (WP15, #287)
+
+Contract e2e over six screens at four sizes (axe 0, no horizontal scroll, 44 px rows, header limits for the long-name records, no clipped grid column without the hint), the counts-equality check (20 combinations in three zones against `GET /task-queue` and the Dashboard tiles), the state matrix (loading, empty, filtered-empty, 404, 403, 500, offline, reduced motion), regression subsets for every shared file touched and the Task page, screenshots in `fixes/final/`, bundle report, and a comment on #245 with the open items. It uses its own e2e stack and ports and never stops processes or containers of another agent's verification run.
+
+### Docs package (WP14, #286)
+
+`ux-spec.md` S05/S06/S07 and the three Details sections with UAT rows, section V of the decisions addendum, `tokens.css` (target: no new token), `docs/qa/e2e.md`, and a banner in the review README. Where the code differs from the issues, the docs follow the code and say so.
+
+## 4. Status
+
+(One line per work package; keep other packages' lines when merging. Format: `WPn name (date, commit): issues done / open; tests; bundle size; screenshots folder; known limits.`)
+
+- Planning (2026-10-18): epic #245 and issues #246 to #287 created and linked as sub-issues; PM requirements review comments posted on every issue and on the epic; no issue is blocked on the owner; SQL script 28 is free and none is planned.
+- WP1 Detail-page bugs and states: not started.
+- WP2 List bugs and states: not started.
+- WP3 Record header: not started.
+- WP4 Project Details tabs: not started.
+- WP5 Counts API: not started.
+- WP6 Strip and Client Overview: not started.
+- WP7 Matter Overview and Tasks strips: not started.
+- WP8 List chrome: not started.
+- WP9 List columns: not started.
+- WP10 Matter tabs: not started.
+- WP11 Tab strip and pager: not started.
+- WP12 Phone cards: not started.
+- WP13 Keyboard, focus and permissions: not started.
+- WP14 Docs: not started.
+- WP15 Final verification: not started.
