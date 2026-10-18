@@ -57,9 +57,28 @@ export function aRow(overrides: Partial<TaskQueueRow> = {}): TaskQueueRow {
   };
 }
 
+const ZERO_VIEWS = {
+  open: 0,
+  unassigned: 0,
+  overdue: 0,
+  dueSoon: 0,
+  asap: 0,
+  onHold: 0,
+  recentlyCompleted: 0,
+  createdByMe: 0,
+};
+
 /** A page of rows in the shape every queue response shares. */
 export function pageOf(rows: TaskQueueRow[], extra: Record<string, unknown> = {}) {
-  return { items: rows, total: rows.length, page: 1, pageSize: 50, timeZone: 'UTC', ...extra };
+  return {
+    items: rows,
+    total: rows.length,
+    page: 1,
+    pageSize: 50,
+    timeZone: 'UTC',
+    views: ZERO_VIEWS,
+    ...extra,
+  };
 }
 
 /** Priority and status label lookups (the seeded defaults), so badges and chips show real labels. */

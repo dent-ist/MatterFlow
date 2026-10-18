@@ -14255,7 +14255,8 @@
           "total",
           "page",
           "pageSize",
-          "timeZone"
+          "timeZone",
+          "views"
         ],
         "type": "object",
         "properties": {
@@ -14279,6 +14280,9 @@
           },
           "timeZone": {
             "type": "string"
+          },
+          "views": {
+            "$ref": "#/components/schemas/TaskQueueViewCounts"
           }
         }
       },
@@ -14500,6 +14504,61 @@
           "holdReasonTruncated": {
             "type": "boolean",
             "default": false
+          }
+        }
+      },
+      "TaskQueueViewCounts": {
+        "required": [
+          "open",
+          "unassigned",
+          "overdue",
+          "dueSoon",
+          "asap",
+          "onHold",
+          "myPod",
+          "recentlyCompleted",
+          "createdByMe"
+        ],
+        "type": "object",
+        "properties": {
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unassigned": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dueSoon": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "asap": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onHold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "myPod": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "recentlyCompleted": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdByMe": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

@@ -69,13 +69,31 @@ public sealed record WorkflowProgress(
     string? CurrentStepName,
     int? CurrentStepId = null);
 
-/// <summary>A page of the Task Queue. <c>timeZone</c> is the zone used for the overdue evaluation.</summary>
+/// <summary>A page of the Task Queue. <c>timeZone</c> is the zone used for the overdue evaluation; <c>views</c> are the sizes of the quick views.</summary>
 public sealed record TaskQueuePage(
     [property: Required] IReadOnlyList<TaskQueueRow> Items,
     [property: Required] int Total,
     [property: Required] int Page,
     [property: Required] int PageSize,
-    [property: Required] string TimeZone);
+    [property: Required] string TimeZone,
+    [property: Required] TaskQueueViewCounts Views);
+
+/// <summary>
+/// The size of each Task Queue quick view, over the whole Task set the viewer may see and never narrowed by the filters of the request (like My Work's
+/// attention strip). Each equals the grid total of the same view's filters and the Dashboard tile for the same query. <c>OnHold</c> is the status On Hold
+/// (always open); <c>DueSoon</c> excludes the overdue Tasks (the Dashboard's tile); <c>MyPod</c> is open Tasks in the viewer's primary Pod and is null
+/// (absent) for a viewer without one; <c>RecentlyCompleted</c> is Completed in the last 30 days of the viewer's calendar; <c>CreatedByMe</c> is any status.
+/// </summary>
+public sealed record TaskQueueViewCounts(
+    [property: Required] int Open,
+    [property: Required] int Unassigned,
+    [property: Required] int Overdue,
+    [property: Required] int DueSoon,
+    [property: Required] int Asap,
+    [property: Required] int OnHold,
+    int? MyPod,
+    [property: Required] int RecentlyCompleted,
+    [property: Required] int CreatedByMe);
 
 /// <summary>Tab counts of My Work (filters applied).</summary>
 public sealed record MyWorkCounts(

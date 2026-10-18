@@ -44,7 +44,48 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         var (filter, page, sort, descending, queueClock) = request.Value;
         var rows = ApplyFilter(db.Set<WorkTask>().AsNoTracking(), filter, queueClock);
         var (items, total) = await PageAsync(rows, page, sort, descending, queueClock, ct);
-        return new TaskQueuePage(items, total, page.Page, page.PageSize, queueClock.ZoneId);
+        return new TaskQueuePage(items, total, page.Page, page.PageSize, queueClock.ZoneId, await ViewCountsAsync(queueClock, ct));
+    }
+
+    /// <summary>Days back that "Recently completed" reaches (the quick view's window; the client sends the same day as <c>completedFrom</c>).</summary>
+    public const int RecentlyCompletedDays = 30;
+
+    /// <summary>
+    /// The quick-view counts: one statement with a scalar subquery per number, over all Tasks (no request filters), each from the predicate the
+    /// Dashboard and the grid use. Nobody is narrowed by record: Task.View sees every Task (addendum E).
+    /// </summary>
+    private async Task<TaskQueueViewCounts> ViewCountsAsync(QueueClock queueClock, CancellationToken ct)
+    {
+        var me = currentUser.UserId;
+        int? primaryPod = null;
+        if (me is { } userId)
+            primaryPod = (await podDirectory.GetUserPodsAsync(userId, includeInactive: false, ct)).FirstOrDefault(p => p.IsPrimary)?.Pod.PodId;
+
+        var tasks = db.Set<WorkTask>().AsNoTracking();
+        var open = tasks.Where(TaskQueueRules.Open);
+        var overdue = TaskQueueRules.Overdue(queueClock);
+        var dueSoon = TaskQueueRules.DueSoonExcludingOverdue(queueClock);
+        var recentFrom = queueClock.StartOfDayUtc(queueClock.Today.AddDays(-RecentlyCompletedDays));
+        var podId = primaryPod ?? 0;
+        var creator = me ?? 0;
+
+        var counts = await tasks.Select(_ => new
+        {
+            Open = open.Count(),
+            Unassigned = open.Count(t => t.AssignedUserId == null),
+            Overdue = open.Count(overdue),
+            DueSoon = open.Count(dueSoon),
+            Asap = open.Count(TaskQueueRules.Asap),
+            OnHold = tasks.Count(t => t.Status == TaskStatusCode.OnHold),
+            MyPod = open.Count(t => t.AssignedPodId == podId),
+            RecentlyCompleted = tasks.Count(t => t.Status == TaskStatusCode.Completed && t.StatusChangedAtUtc >= recentFrom),
+            CreatedByMe = tasks.Count(t => t.CreatedByUserId == creator),
+        }).FirstOrDefaultAsync(ct);
+
+        return counts is null
+            ? new TaskQueueViewCounts(0, 0, 0, 0, 0, 0, primaryPod is null ? null : 0, 0, 0)
+            : new TaskQueueViewCounts(counts.Open, counts.Unassigned, counts.Overdue, counts.DueSoon, counts.Asap, counts.OnHold,
+                primaryPod is null ? null : counts.MyPod, counts.RecentlyCompleted, counts.CreatedByMe);
     }
 
     // ---- My Work

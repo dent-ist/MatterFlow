@@ -129,6 +129,34 @@ public sealed partial class TaskQueuePerformanceTests(SqlServerFixture sql, ITes
     }
 
     [Fact]
+    public async Task The_quick_view_counts_are_one_statement_that_stays_under_100_ms_at_5000_tasks()
+    {
+        var http = _logged.CreateClient();
+        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
+
+        const string query = "/api/v1/task-queue?pageSize=1";
+        var warm = await OkAsync(await http.GetAsync(query));
+        var views = warm.GetProperty("views");
+        views.GetProperty("open").GetInt32().ShouldBe(TaskCount * 9 / 10);
+        views.GetProperty("createdByMe").GetInt32().ShouldBe(TaskCount);
+
+        var elapsed = new List<int>();
+        for (var i = 0; i < 7; i++)
+        {
+            _commands.Clear();
+            await OkAsync(await http.GetAsync(query));
+            // The counts are the one statement with a scalar subquery per number.
+            var counting = _commands.SnapshotTimed().Where(c => Regex.Matches(c.Text, "SELECT COUNT\\(\\*\\)").Count >= 6).ToList();
+            counting.Count.ShouldBe(1, "one statement for all the counts");
+            elapsed.Add(counting[0].Millis);
+        }
+
+        output.WriteLine("quick view counts statement ms: " + string.Join(", ", elapsed));
+        elapsed.Order().ElementAt(3).ShouldBeLessThan(100, "the counts add at most 100 ms to the response (median of 7)");
+    }
+
+    [Fact]
     public async Task The_new_sort_keys_stay_fast_at_5000_tasks_and_add_no_statements()
     {
         var http = _logged.CreateClient();
@@ -288,13 +316,24 @@ public sealed partial class TaskQueuePerformanceTests(SqlServerFixture sql, ITes
     {
         private readonly object _gate = new();
         private readonly List<string> _statements = [];
+        private readonly List<int> _millis = [];
 
         public ILogger CreateLogger(string categoryName) => categoryName == "Microsoft.EntityFrameworkCore.Database.Command" ? new Capture(this) : new NullLogger();
 
         public void Clear()
         {
             lock (_gate)
+            {
                 _statements.Clear();
+                _millis.Clear();
+            }
+        }
+
+        /// <summary>The statements with the milliseconds the database reported for each, in execution order.</summary>
+        public List<(string Text, int Millis)> SnapshotTimed()
+        {
+            lock (_gate)
+                return [.. _statements.Zip(_millis, (text, ms) => (text, ms))];
         }
 
         public List<string> Snapshot()
@@ -307,10 +346,13 @@ public sealed partial class TaskQueuePerformanceTests(SqlServerFixture sql, ITes
         {
         }
 
-        private void Add(string message)
+        private void Add(string message, int millis)
         {
             lock (_gate)
+            {
                 _statements.Add(message);
+                _millis.Add(millis);
+            }
         }
 
         private sealed class Capture(CommandLog owner) : ILogger
@@ -327,7 +369,8 @@ public sealed partial class TaskQueuePerformanceTests(SqlServerFixture sql, ITes
                 {
                     // Drop the "(12ms) [Parameters=[...]]" header so equal statements compare equal.
                     var newline = message.IndexOf('\n', StringComparison.Ordinal);
-                    owner.Add(newline < 0 ? message : message[(newline + 1)..]);
+                    var header = Regex.Match(message, @"\((\d+)ms\)");
+                    owner.Add(newline < 0 ? message : message[(newline + 1)..], header.Success ? int.Parse(header.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) : 0);
                 }
             }
         }

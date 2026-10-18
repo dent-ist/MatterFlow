@@ -79,6 +79,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
           mfBarStart
           [filters]="state().filters"
           [context]="viewContext()"
+          [counts]="viewCounts()"
           (viewSelect)="applyView($event)"
         />
         <mf-work-view-controls
@@ -171,6 +172,9 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
     defs: this.defs,
     visibleColumns: this.shownColumns,
   });
+
+  /** The quick-view counts of the last response (not narrowed by the filters); null until the first one arrives. */
+  protected readonly viewCounts = computed(() => this.data()?.views ?? null);
 
   /** The pressed quick view's name ("Overdue"); null on All open (the baseline) and on a hand-made set of filters. */
   protected readonly viewLabel = computed(() => {

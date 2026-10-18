@@ -13005,6 +13005,7 @@ export interface TaskQueuePage {
     page: number;
     pageSize: number;
     timeZone: string;
+    views: TaskQueueViewCounts;
 
     [key: string]: any;
 }
@@ -13048,6 +13049,20 @@ export interface TaskQueueRow {
     rowVersion: string;
     holdReason?: string | undefined;
     holdReasonTruncated: boolean;
+
+    [key: string]: any;
+}
+
+export interface TaskQueueViewCounts {
+    open: number;
+    unassigned: number;
+    overdue: number;
+    dueSoon: number;
+    asap: number;
+    onHold: number;
+    myPod: number | undefined;
+    recentlyCompleted: number;
+    createdByMe: number;
 
     [key: string]: any;
 }

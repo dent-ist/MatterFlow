@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { OPEN_STATUSES, ViewContext, builtInFilters, emptyFilters } from './queue-filters';
-import { QuickViews } from './quick-views';
+import { QuickViews, viewCount } from './quick-views';
 
 describe('QuickViews', () => {
   const ctx: ViewContext = { userId: 9, primaryPodId: 5, recentFrom: '2026-09-14' };
@@ -52,5 +52,40 @@ describe('QuickViews', () => {
     expect(button(el, 'myPod').disabled).toBe(true);
     expect(button(el, 'myPod').getAttribute('title')).toBe('You have no primary Pod');
     expect(button(el, 'allOpen').hasAttribute('title')).toBe(false);
+  });
+
+  describe('counts (display is #219)', () => {
+    const counts = {
+      open: 442,
+      unassigned: 157,
+      overdue: 101,
+      dueSoon: 96,
+      asap: 51,
+      onHold: 64,
+      myPod: 12,
+      recentlyCompleted: 7,
+      createdByMe: 3,
+    };
+
+    it('maps each view to its count, and to null while loading or without a primary Pod', () => {
+      expect(viewCount('allOpen', counts)).toBe(442);
+      expect(viewCount('unassigned', counts)).toBe(157);
+      expect(viewCount('myPod', counts)).toBe(12);
+      expect(viewCount('createdByMe', counts)).toBe(3);
+      expect(viewCount('overdue', counts)).toBe(101);
+      expect(viewCount('recentlyCompleted', counts)).toBe(7);
+      expect(viewCount('overdue', null)).toBeNull();
+      expect(viewCount('myPod', { ...counts, myPod: undefined })).toBeNull();
+    });
+
+    it('carries the counts on the buttons without changing their names', () => {
+      const fixture = create();
+      fixture.componentRef.setInput('counts', counts);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(button(el, 'overdue').getAttribute('data-count')).toBe('101');
+      expect(button(el, 'overdue').textContent!.trim()).toBe('Overdue');
+      expect(button(el, 'allOpen').getAttribute('data-count')).toBe('442');
+    });
   });
 });

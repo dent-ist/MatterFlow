@@ -146,6 +146,27 @@ describe('TaskQueuePage', () => {
     expect(args[ARG.sort]).toBeUndefined();
   });
 
+  it('hands the response counts to the quick views (not narrowed by the filters in the address)', async () => {
+    const views = {
+      open: 442,
+      unassigned: 157,
+      overdue: 101,
+      dueSoon: 96,
+      asap: 51,
+      onHold: 64,
+      myPod: 12,
+      recentlyCompleted: 7,
+      createdByMe: 3,
+    };
+    const el = await open('/tasks?priority=2&status=NEW', {
+      response: of(pageOf([aRow()], { views })),
+    });
+    const button = (key: string) => el.querySelector(`mf-quick-views [data-view="${key}"]`)!;
+    expect(button('allOpen').getAttribute('data-count')).toBe('442');
+    expect(button('overdue').getAttribute('data-count')).toBe('101');
+    expect(button('myPod').getAttribute('data-count')).toBe('12');
+  });
+
   it('passes every filter parameter of a deep link through with the same meaning', async () => {
     await open(
       '/tasks?q=dedup&priority=1&priority=2&pod=5&assignee=9&unassigned=true&creator=3&matterText=343-12&clientText=Acme&projectText=Phase&updatedFrom=2026-10-01&updatedTo=2026-10-07&sort=due&dir=desc&page=2&pageSize=25',
