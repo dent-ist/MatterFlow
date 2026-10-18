@@ -247,11 +247,15 @@ export class ListFilters {
   }
 
   /** Replaces every filter with a preset (the listed ones) and the defaults (the rest): quick views. */
-  applyPreset(values: Readonly<Record<string, FilterValue>>): void {
+  applyPreset(
+    values: Readonly<Record<string, FilterValue>>,
+    extra: Readonly<Record<string, string | null>> = {},
+  ): void {
     const full: Record<string, FilterValue> = {};
     for (const def of this.defs()) full[def.key] = values[def.key] ?? defaultValue(def);
     this.restored.set(false);
-    this.write(serializeFilters(this.defs(), full));
+    // `extra` carries the preset's non-filter parameters (a quick view's sort and direction, #219).
+    this.write({ ...serializeFilters(this.defs(), full), ...extra });
   }
 
   /** Removes one chip: the filter keeps the other values (or returns to its default). */

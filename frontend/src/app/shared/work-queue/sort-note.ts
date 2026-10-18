@@ -12,6 +12,7 @@ export const DESC_FIRST: ReadonlySet<string> = new Set([
 
 export const SORT_LABELS: Readonly<Record<string, string>> = {
   priority: 'Priority',
+  priorityAge: 'Priority, then age',
   due: 'Due date',
   created: 'Created',
   number: 'Ref',

@@ -34,6 +34,9 @@ import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
           <div class="cc-body" data-columns-scroll>
             <fieldset class="cc-set">
               <legend>Columns</legend>
+              @if (note(); as n) {
+                <p class="cc-view-note" data-columns-view-note>Modified by this view. {{ n }}</p>
+              }
               @for (col of all; track col.key) {
                 <label class="cc-check">
                   <input
@@ -119,6 +122,11 @@ import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
     </div>
   `,
   styles: `
+    .cc-view-note {
+      margin: 0 0 var(--mf-s1);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+    }
     .cc {
       position: relative;
     }
@@ -212,6 +220,8 @@ export class ColumnChooser {
   /** The current tab's default column set. When given, the panel offers "Reset columns" (disabled while the set already is the default). */
   readonly defaults = input<readonly string[] | null>(null);
   readonly density = input<Density>('comfortable');
+  /** Set while a quick view's overlay changes the shown set ("Modified by this view"). */
+  readonly note = input<string | null>(null);
 
   /** The Group by choice (My Work, Active tab): None or Due. Hidden where the screen cannot group. */
   readonly groupable = input(false);

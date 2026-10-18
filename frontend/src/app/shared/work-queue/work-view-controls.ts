@@ -99,6 +99,7 @@ import { DESC_FIRST, SORT_LABELS } from './sort-note';
     <ng-content select="[tab-actions]" />
     <mf-column-chooser
       [columns]="columns()"
+      [note]="columnsNote()"
       [density]="density()"
       [defaults]="defaultColumns()"
       [groupable]="groupable()"
@@ -121,6 +122,8 @@ export class WorkViewControls {
   /** The help of the current tab, behind an "About this tab" button (M3: no always-visible paragraph). */
   readonly tabHelp = input<string | null>(null);
   readonly columns = input.required<readonly string[]>();
+  /** "Modified by this view": a quick view's column overlay, named in the Columns panel. */
+  readonly columnsNote = input<string | null>(null);
   readonly density = input<Density>('comfortable');
   /** The current tab's default column set: when given, the Columns panel offers "Reset columns" (needs the per-tab sets of #152). */
   readonly defaultColumns = input<readonly string[] | null>(null);

@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { MessageService } from 'primeng/api';
@@ -14,6 +15,7 @@ import {
   provideLookups,
   provideQueueChoices,
 } from '../../../shared/work-queue/work-queue-testing';
+import { WorkList } from '../../../shared/work-queue/work-list';
 import { TaskQueuePage } from './task-queue-page';
 
 /** Positions of the arguments of `getTaskQueue`. */
@@ -427,7 +429,7 @@ describe('TaskQueuePage', () => {
 
     view('overdue').click();
     await settle();
-    expect(query()).toEqual({ status: OPEN, overdue: 'true' });
+    expect(query()).toEqual({ status: OPEN, overdue: 'true', sort: 'priority', dir: 'asc' });
     expect(view('overdue').getAttribute('aria-pressed')).toBe('true');
     expect(chips(el)).toEqual(['Overdue only']);
 
@@ -435,6 +437,7 @@ describe('TaskQueuePage', () => {
     await settle();
     expect(query()['unassigned']).toBe('true');
     expect(query()['overdue']).toBeUndefined();
+    expect(query()['sort']).toBe('priorityAge');
 
     // All open is the plain link; a manual change un-presses a view.
     view('allOpen').click();
@@ -443,6 +446,42 @@ describe('TaskQueuePage', () => {
     expect(view('allOpen').getAttribute('aria-pressed')).toBe('true');
     await typeFilter(el, 'q', 'x');
     expect(view('allOpen').getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('Recently completed sorts by Closed and swaps Due for Closed without touching the saved columns', async () => {
+    const el = await open('/tasks?status=NEW');
+    const headers = () =>
+      Array.from(el.querySelectorAll('thead th[data-col]')).map((th) =>
+        th.getAttribute('data-col'),
+      );
+    expect(headers()).toContain('due');
+    expect(headers()).not.toContain('closed');
+
+    el.querySelector<HTMLButtonElement>('[data-view="recentlyCompleted"]')!.click();
+    await settle();
+    expect(query()['sort']).toBe('closed');
+    expect(query()['dir']).toBe('desc');
+    expect(headers()).toContain('closed');
+    expect(headers()).not.toContain('due');
+    expect(el.textContent).not.toContain('Showing 0 of');
+
+    // Back on a view without an overlay: the user's own set is shown again and the sort is the default order.
+    el.querySelector<HTMLButtonElement>('[data-view="allOpen"]')!.click();
+    await settle();
+    expect(query()['sort']).toBeUndefined();
+    expect(headers()).toContain('due');
+    expect(headers()).not.toContain('closed');
+  });
+
+  it('reads the counts again after an inline edit, without reloading the rows', async () => {
+    await open('/tasks?status=NEW');
+    const before = getTaskQueue.mock.calls.length;
+    const list = harness.fixture.debugElement.query(By.directive(WorkList))
+      .componentInstance as WorkList;
+    list.rowChange.emit(aRow({ title: 'Edited' }));
+    await settle();
+    expect(getTaskQueue.mock.calls.length).toBe(before + 1);
+    expect(harness.routeNativeElement!.querySelectorAll('tbody tr[data-task]').length).toBe(2);
   });
 
   it('"My Pod" filters on the primary Pod and is disabled without one', async () => {

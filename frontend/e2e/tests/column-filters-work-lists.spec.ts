@@ -19,8 +19,11 @@ const sheet = (page: Page) => page.getByRole('dialog', { name: 'Filters' });
 const chips = (page: Page) => page.getByRole('list', { name: 'Active filters' });
 const rowControl = (page: Page, key: string) =>
   page.locator(`tr[data-filter-row] [data-filter="${key}"]`);
+/** A quick view button: its name is the view's, then its count ("Overdue, 101 tasks", #218). */
 const view = (page: Page, name: string) =>
-  page.getByRole('group', { name: 'Quick views' }).getByRole('button', { name, exact: true });
+  page
+    .getByRole('group', { name: 'Quick views' })
+    .getByRole('button', { name: new RegExp(`^${name}(,|$)`) });
 
 /** The scopes of the column choice of a screen (one per tab, X1): `mf.work-columns.v2.<scope>.<userId>`. */
 const SCOPES: Record<string, string[]> = {

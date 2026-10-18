@@ -28,7 +28,12 @@ import { PodOption, loadPodChoices } from '../../../shared/work-queue/pod-option
 import { queueEmpty } from '../../../shared/work-queue/empty-copy';
 import { pageName } from '../../../shared/work-queue/list-announce';
 import { QueuePageBase } from '../../../shared/work-queue/queue-page';
-import { QuickViews } from '../../../shared/work-queue/quick-views';
+import {
+  QuickViews,
+  VIEW_ORDER,
+  VIEW_OVERLAY,
+  overlayColumns,
+} from '../../../shared/work-queue/quick-views';
 import {
   BUILT_IN_VIEWS,
   BuiltInViewKey,
@@ -97,6 +102,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
           [dir]="state().dir"
           [sortNote]="false"
           [columns]="prefs().columns"
+          [columnsNote]="overlayNote()"
           [density]="prefs().density"
           (resetSort)="resetSort()"
           (columnsChange)="setColumns($event)"
@@ -249,6 +255,14 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
     return this.api.getTaskQueue(...queueArgs(state));
   }
 
+  protected override countsFollowEdits(): boolean {
+    return true;
+  }
+
+  protected override mergeCounts(current: TaskQueueData, fresh: TaskQueueData): TaskQueueData {
+    return { ...current, views: fresh.views };
+  }
+
   protected override podFilterOptions(): FilterOption[] {
     return this.pods().map((p) => ({ value: String(p.id), label: p.name }));
   }
@@ -263,8 +277,24 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
 
   /** A quick view is a preset: it writes its column filters (and only those) to the address. */
   protected applyView(key: BuiltInViewKey): void {
-    this.filters.applyPreset(filtersToValues(builtInFilters(key, this.viewContext())));
+    const order = VIEW_ORDER[key];
+    // A view starts with its own order in the address (links and Back keep working); a view without one returns to the default order.
+    this.filters.applyPreset(filtersToValues(builtInFilters(key, this.viewContext())), {
+      sort: order?.sort ?? null,
+      dir: order?.dir ?? null,
+    });
   }
+
+  /** The pressed quick view's column overlay (Recently completed: Closed instead of Due); the saved set is never touched. */
+  protected override overlayColumns(own: string[]): string[] {
+    return overlayColumns(own, activeBuiltIn(this.state().filters, this.viewContext()));
+  }
+
+  /** The Columns panel's "modified by this view" note. */
+  protected readonly overlayNote = computed(() => {
+    const key = activeBuiltIn(this.state().filters, this.viewContext());
+    return (key && VIEW_OVERLAY[key]?.note) || null;
+  });
 
   protected go(path: string): void {
     void this.navigator.navigateByUrl(path);

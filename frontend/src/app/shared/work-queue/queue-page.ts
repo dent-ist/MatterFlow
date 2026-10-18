@@ -129,12 +129,13 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   protected readonly prefs = computed<TablePrefs>(() => {
     const scope = this.columnScope();
     const chosen = this.columnChoices()[scope];
+    const own = chosen
+      ? [...chosen]
+      : chosen === null
+        ? defaultColumns(scope)
+        : loadColumns(scope, this.userId());
     return {
-      columns: chosen
-        ? [...chosen]
-        : chosen === null
-          ? defaultColumns(scope)
-          : loadColumns(scope, this.userId()),
+      columns: this.overlayColumns(own),
       density: this.density(),
     };
   });
@@ -233,6 +234,11 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
         if (this.shouldLoad(params)) void this.load(state);
       });
     });
+  }
+
+  /** The columns shown for the user's own set: a view's overlay applies here, never to the stored set (Task Queue quick views, #219). */
+  protected overlayColumns(own: string[]): string[] {
+    return own;
   }
 
   /** The tab whose column set applies (My Work and Pod Work: the tab key; Task Queue: none). */
@@ -392,7 +398,15 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
       this.leaving.start(row.taskId, () => {
         void this.refreshCounts();
       });
-    } else this.leaving.cancel(row.taskId);
+    } else {
+      this.leaving.cancel(row.taskId);
+      if (this.countsFollowEdits()) void this.refreshCounts();
+    }
+  }
+
+  /** True where an inline edit can change the counts on screen (Task Queue quick views, #218): they are read again, rows stay. */
+  protected countsFollowEdits(): boolean {
+    return false;
   }
 
   /** True when the row, in its new state, no longer belongs in the tab on screen (My Work: Cancelled or Completed on Active). */
