@@ -10,6 +10,7 @@ import {
   input,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { TaskQueueViewCounts } from '../../api/generated/api-client';
@@ -26,6 +27,7 @@ import {
   availableViews,
   matchBuiltIn,
 } from './queue-filters';
+import { QUICK_VIEW_SHORTCUTS, ShortcutRegistry } from '../layout/shortcut-registry';
 import { VIEW_TIPS } from './work-vocabulary';
 
 /**
@@ -112,12 +114,24 @@ const STRIP_GAP = 4;
   imports: [FilterPopover],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="qv" role="group" aria-label="Quick views" #strip>
+    <!-- The toolbar's keys are handled here for the buttons inside it; the toolbar itself is not a Tab stop. -->
+    <!-- eslint-disable-next-line @angular-eslint/template/interactive-supports-focus -->
+    <div
+      class="qv"
+      role="toolbar"
+      aria-label="Quick views"
+      aria-orientation="horizontal"
+      data-quick-views
+      #strip
+      (keydown)="onKeydown($event)"
+      (focusin)="onFocusIn($event)"
+    >
       @for (view of shown(); track view.key) {
         <button
           type="button"
           class="qv-view"
           [attr.aria-pressed]="active() === view.key"
+          [attr.tabindex]="tabStop() === view.key ? 0 : -1"
           [attr.data-view]="view.key"
           [attr.data-count]="count(view.key)"
           [attr.aria-label]="name(view)"
@@ -141,6 +155,7 @@ const STRIP_GAP = 4;
         type="button"
         class="qv-view qv-more"
         data-more-views
+        [attr.tabindex]="tabStop() === MORE_STOP ? 0 : -1"
         aria-haspopup="dialog"
         [attr.aria-expanded]="menuOpen()"
         [attr.aria-pressed]="moreActive() ? true : null"
@@ -314,6 +329,19 @@ export class QuickViews {
     return [...this.main().slice(this.shown().length), ...more];
   });
 
+  /** The roving tabindex: the one button of the toolbar that is in the Tab order. */
+  protected readonly MORE_STOP = '__more';
+  private readonly focused = signal<string | null>(null);
+  protected readonly tabStop = computed<string>(() => {
+    const shown = this.shown();
+    const focused = this.focused();
+    if (focused === this.MORE_STOP || shown.some((v) => v.key === focused)) return focused!;
+    const key = this.active();
+    if (key && shown.some((v) => v.key === key)) return key;
+    if (this.moreActive()) return this.MORE_STOP;
+    return shown[0]?.key ?? this.MORE_STOP;
+  });
+
   /** The pressed view: the one whose filters the address carries (by shape, extra filters allowed, #221). */
   protected readonly active = computed(
     () => matchBuiltIn(this.filters(), this.context())?.key ?? null,
@@ -325,6 +353,15 @@ export class QuickViews {
   });
 
   constructor() {
+    // The arrow keys of the toolbar are listed in the `?` help while the toolbar is on screen.
+    const registry = inject(ShortcutRegistry);
+    const offs = QUICK_VIEW_SHORTCUTS.map((def) => registry.register(def));
+    inject(DestroyRef).onDestroy(() => offs.forEach((off) => off()));
+    // Choosing a view makes it the stop again.
+    effect(() => {
+      this.active();
+      untracked(() => this.focused.set(null));
+    });
     afterNextRender(() => this.watchRoom());
     // The text of a button changes its width (a count, the pressed view's name in More): measure again.
     effect(() => {
@@ -333,6 +370,49 @@ export class QuickViews {
       this.moreActive();
       queueMicrotask(() => this.measure());
     });
+  }
+
+  /** The buttons of the toolbar in order, the More button last. */
+  private buttons(): HTMLElement[] {
+    const strip = this.strip()?.nativeElement;
+    return strip ? Array.from(strip.querySelectorAll<HTMLElement>(':scope > button')) : [];
+  }
+
+  private stopOf(button: HTMLElement): string {
+    return button.getAttribute('data-view') ?? this.MORE_STOP;
+  }
+
+  protected onFocusIn(event: FocusEvent): void {
+    const button = this.buttons().find((b) => b === event.target);
+    if (button) this.focused.set(this.stopOf(button));
+  }
+
+  /** Left and Right move between the views (wrapping), Home and End go to the ends; Tab leaves the toolbar. */
+  protected onKeydown(event: KeyboardEvent): void {
+    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+    const buttons = this.buttons();
+    const at = buttons.findIndex((b) => b === event.target);
+    if (at < 0) return;
+    let to: number;
+    switch (event.key) {
+      case 'ArrowRight':
+        to = (at + 1) % buttons.length;
+        break;
+      case 'ArrowLeft':
+        to = (at - 1 + buttons.length) % buttons.length;
+        break;
+      case 'Home':
+        to = 0;
+        break;
+      case 'End':
+        to = buttons.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    this.focused.set(this.stopOf(buttons[to]));
+    buttons[to].focus();
   }
 
   protected toggleMenu(): void {

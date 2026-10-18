@@ -2,14 +2,23 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { Dismissable } from '../ui/dismissable';
 import { ColumnScope, ColumnDef, WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
 import { ColumnWidthsPanel } from './column-widths-panel';
+import {
+  canSuggestClosed,
+  loadSuggestionDismissed,
+  saveSuggestionDismissed,
+  swapClosedForDue,
+  swapDueForClosed,
+} from './closed-suggestion';
 import { WorkWidths } from './work-widths';
 
 /** The panel's groups (#230): what a column is for. The table keeps the canonical `WORK_COLUMNS` order. */
@@ -55,6 +64,40 @@ const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
             <div class="cc-cols" role="group" aria-label="Columns">
               @if (note(); as n) {
                 <p class="cc-view-note" data-columns-view-note>Modified by this view. {{ n }}</p>
+              }
+              @if (showRestore()) {
+                <p class="cc-suggest" data-columns-suggest="restore">
+                  <span>Closed is shown instead of Due.</span>
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text"
+                    data-columns-restore-due
+                    (click)="restoreDue()"
+                  >
+                    Restore Due
+                  </button>
+                </p>
+              } @else if (showSuggestion()) {
+                <p class="cc-suggest" data-columns-suggest="closed">
+                  <span>Showing finished tasks: show Closed instead of Due</span>
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text"
+                    data-columns-show-closed
+                    (click)="showClosed()"
+                  >
+                    Show Closed
+                  </button>
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text"
+                    data-columns-suggest-dismiss
+                    aria-label="Dismiss the Closed suggestion"
+                    (click)="dismissSuggestion()"
+                  >
+                    Dismiss
+                  </button>
+                </p>
               }
               @for (group of groups; track group.label) {
                 <fieldset class="cc-set" [attr.data-columns-group]="group.label">
@@ -171,6 +214,15 @@ const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
     .cc-view-note {
       margin: 0 0 var(--mf-s1);
       color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+    }
+    .cc-suggest {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s1) var(--mf-s2);
+      grid-column: 1 / -1;
+      margin: 0;
       font-size: var(--mf-fs-xs);
     }
     .cc {
@@ -309,6 +361,8 @@ export class ColumnChooser {
   readonly density = input<Density>('comfortable');
   /** Set while a quick view's overlay changes the shown set ("Modified by this view"). */
   readonly note = input<string | null>(null);
+  /** The Status filter holds only finished tasks and no view overlay already swaps the columns (#231): the panel may suggest Closed. */
+  readonly finishedOnly = input(false);
 
   /** The Group by choice (My Work, Active tab): None or Due. Hidden where the screen cannot group. */
   readonly groupable = input(false);
@@ -336,6 +390,21 @@ export class ColumnChooser {
     return !!scope && this.widthStore.has(scope, this.widthUser());
   });
   protected readonly open = signal(false);
+  private readonly swapped = signal(false);
+  private readonly dismissed = signal(loadSuggestionDismissed());
+  protected readonly showSuggestion = computed(
+    () => this.finishedOnly() && !this.dismissed() && canSuggestClosed(this.columns()),
+  );
+  protected readonly showRestore = computed(
+    () => this.finishedOnly() && this.swapped() && !this.columns().includes('due'),
+  );
+
+  constructor() {
+    // Leaving the finished-only filter forgets the swap; the user's set is not changed.
+    effect(() => {
+      if (!this.finishedOnly()) untracked(() => this.swapped.set(false));
+    });
+  }
   protected readonly announce = signal('');
   protected readonly isDefault = computed(() => {
     const def = this.defaults();
@@ -377,6 +446,24 @@ export class ColumnChooser {
   protected reset(def: readonly string[]): void {
     this.columnsChange.emit(normalizeColumns(def));
     this.announce.set('Columns reset to the default set.');
+  }
+
+  protected showClosed(): void {
+    this.swapped.set(true);
+    this.columnsChange.emit(swapDueForClosed(this.columns()));
+    this.say('Showing Closed instead of Due.');
+  }
+
+  protected restoreDue(): void {
+    this.swapped.set(false);
+    this.columnsChange.emit(swapClosedForDue(this.columns()));
+    this.say('Showing Due again.');
+  }
+
+  protected dismissSuggestion(): void {
+    this.dismissed.set(true);
+    saveSuggestionDismissed();
+    this.say('Suggestion dismissed.');
   }
 
   protected toggle(key: string): void {

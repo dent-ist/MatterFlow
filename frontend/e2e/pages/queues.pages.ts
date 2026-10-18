@@ -45,7 +45,7 @@ export class TaskQueuePage extends WorkListPage {
   }
 
   quickView(name: string): Locator {
-    return this.page.getByRole('group', { name: 'Quick views' }).getByRole('button', { name });
+    return this.page.getByRole('toolbar', { name: 'Quick views' }).getByRole('button', { name });
   }
 }
 

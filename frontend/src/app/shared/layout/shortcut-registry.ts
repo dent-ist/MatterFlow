@@ -125,6 +125,24 @@ export const ROW_SHORTCUTS: readonly ShortcutDef[] = [
   },
 ];
 
+/** The arrow keys of the Quick views toolbar (#236). Not single characters, so they stay on when "Keyboard shortcuts" is off (WCAG 2.1.4). */
+export const QUICK_VIEW_SHORTCUTS: readonly ShortcutDef[] = [
+  {
+    id: 'quick-views-move',
+    group: 'work-lists',
+    keys: ['←', '→'],
+    does: 'Move between the Quick views (the toolbar is one Tab stop)',
+    matches: (e) => plain(e) && !e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight'),
+  },
+  {
+    id: 'quick-views-ends',
+    group: 'work-lists',
+    keys: ['Home', 'End'],
+    does: 'Go to the first or last Quick view',
+    matches: (e) => plain(e) && !e.shiftKey && (e.key === 'Home' || e.key === 'End'),
+  },
+];
+
 /** `g` then a letter goes to a work page (#181); the second key must follow within `GO_SEQUENCE_MS`. */
 export const GO_SEQUENCE_MS = 1500;
 export const GO_START: Pick<ShortcutDef, 'id' | 'matches'> = {
@@ -159,7 +177,7 @@ export const goShortcut = (t: GoTarget): ShortcutDef => ({
 });
 
 const BY_ID = new Map<string, ShortcutDef>(
-  [...GLOBAL_SHORTCUTS, ...ROW_SHORTCUTS].map((s) => [s.id, s]),
+  [...GLOBAL_SHORTCUTS, ...ROW_SHORTCUTS, ...QUICK_VIEW_SHORTCUTS].map((s) => [s.id, s]),
 );
 
 /** Whether a keydown event is the shortcut with this id: the handlers call this, so a key and its help line cannot drift apart. */

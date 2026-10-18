@@ -1,3 +1,4 @@
+import { isFinishedOnly } from '../../../shared/work-queue/closed-suggestion';
 import { ColumnsNotice } from '../../../shared/work-queue/columns-notice';
 import {
   ChangeDetectionStrategy,
@@ -110,6 +111,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
           [sortNote]="false"
           [columns]="prefs().columns"
           [columnsNote]="overlayNote()"
+          [finishedOnly]="finishedOnly()"
           [density]="prefs().density"
           (resetSort)="resetSort()"
           (columnsChange)="setColumns($event)"
@@ -347,6 +349,11 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
     const key = this.matched()?.key;
     return (key && VIEW_OVERLAY[key]?.note) || null;
   });
+
+  /** Only finished tasks are listed and no view overlay already swaps Due for Closed: the Columns panel may suggest it (#231). */
+  protected readonly finishedOnly = computed(
+    () => !this.overlayNote() && isFinishedOnly(this.state().filters.status),
+  );
 
   protected go(path: string): void {
     void this.navigator.navigateByUrl(path);

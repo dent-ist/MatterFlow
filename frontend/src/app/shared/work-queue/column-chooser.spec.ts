@@ -108,4 +108,50 @@ describe('ColumnChooser', () => {
     expect(el().querySelector('[data-columns-live]')!.textContent).toContain('widths reset');
     localStorage.clear();
   });
+
+  describe('Closed instead of Due suggestion (#231)', () => {
+    const line = () => el().querySelector<HTMLElement>('[data-columns-suggest]');
+    const columns = ['ref', 'title', 'due', 'status'];
+
+    beforeEach(() => localStorage.removeItem('mf.work-closed-suggestion.v1.dismissed'));
+
+    it('shows only for a finished-only filter with Due shown, and never changes columns itself', async () => {
+      await create({ columns, finishedOnly: false });
+      expect(line()).toBeNull();
+      fixture.destroy();
+      await create({ columns: ['ref', 'title', 'closed', 'status'], finishedOnly: true });
+      expect(line()).toBeNull();
+      fixture.destroy();
+      const emitted: string[][] = [];
+      await create({ columns, finishedOnly: true });
+      fixture.componentInstance.columnsChange.subscribe((c) => emitted.push(c));
+      expect(line()!.textContent).toContain('Showing finished tasks: show Closed instead of Due');
+      expect(emitted).toEqual([]);
+    });
+
+    it('swaps Due for Closed on a click, then offers Restore Due', async () => {
+      await create({ columns, finishedOnly: true });
+      const emitted: string[][] = [];
+      fixture.componentInstance.columnsChange.subscribe((c) => emitted.push(c));
+      el().querySelector<HTMLButtonElement>('[data-columns-show-closed]')!.click();
+      expect(emitted[0]).toContain('closed');
+      expect(emitted[0]).not.toContain('due');
+      fixture.componentRef.setInput('columns', emitted[0]);
+      fixture.detectChanges();
+      expect(line()!.getAttribute('data-columns-suggest')).toBe('restore');
+      el().querySelector<HTMLButtonElement>('[data-columns-restore-due]')!.click();
+      expect(emitted[1]).toContain('due');
+      expect(emitted[1]).not.toContain('closed');
+    });
+
+    it('can be dismissed and stays dismissed', async () => {
+      await create({ columns, finishedOnly: true });
+      el().querySelector<HTMLButtonElement>('[data-columns-suggest-dismiss]')!.click();
+      fixture.detectChanges();
+      expect(line()).toBeNull();
+      fixture.destroy();
+      await create({ columns, finishedOnly: true });
+      expect(line()).toBeNull();
+    });
+  });
 });

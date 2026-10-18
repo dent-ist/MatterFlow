@@ -100,6 +100,7 @@ import { DESC_FIRST, SORT_LABELS } from './sort-note';
     <mf-column-chooser
       [columns]="columns()"
       [note]="columnsNote()"
+      [finishedOnly]="finishedOnly()"
       [density]="density()"
       [defaults]="defaultColumns()"
       [widthScope]="widthScope()"
@@ -129,6 +130,8 @@ export class WorkViewControls {
   readonly columns = input.required<readonly string[]>();
   /** "Modified by this view": a quick view's column overlay, named in the Columns panel. */
   readonly columnsNote = input<string | null>(null);
+  /** The Status filter holds only finished tasks and no view overlay swaps the columns: the Columns panel suggests Closed (#231). */
+  readonly finishedOnly = input(false);
   readonly density = input<Density>('comfortable');
   /** The current tab's default column set: when given, the Columns panel offers "Reset columns" (needs the per-tab sets of #152). */
   readonly defaultColumns = input<readonly string[] | null>(null);

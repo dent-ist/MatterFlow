@@ -57,7 +57,7 @@ async function row1(page: Page) {
   return {
     bar: await box(bar),
     // The pressed view is bold and a little wider: only where it starts and its row count.
-    views: await rowOf(page.getByRole('group', { name: 'Quick views' })),
+    views: await rowOf(page.getByRole('toolbar', { name: 'Quick views' })),
     filters: await edge(page.locator('[data-filters-toggle]')),
     // Only their rows: the buttons before "Filters (n)" shift with its width.
     more: await rowOf(page.locator('[data-more-filters]')),
@@ -78,7 +78,7 @@ test.describe('Task Queue toolbar (WP5)', () => {
     const base = await row1(page);
     expect(base.bar.height).toBeLessThanOrEqual(40);
     // The views, then the buttons, left to right on one line.
-    const views0 = await box(page.getByRole('group', { name: 'Quick views' }));
+    const views0 = await box(page.getByRole('toolbar', { name: 'Quick views' }));
     const columns = await box(page.getByRole('button', { name: /^Columns/ }));
     const more = await box(page.locator('[data-more-filters]'));
     expect(views0.x + views0.width).toBeLessThan(columns.x);
@@ -153,7 +153,7 @@ test.describe('Task Queue toolbar (WP5)', () => {
     const queue = new TaskQueuePage(page);
     await queue.open();
     // No overlap and the order of the DOM: views, Columns, Other filters, Filters.
-    const views = await box(page.getByRole('group', { name: 'Quick views' }));
+    const views = await box(page.getByRole('toolbar', { name: 'Quick views' }));
     const parts = [
       views,
       await box(page.getByRole('button', { name: /^Columns/ })),

@@ -1,3 +1,4 @@
+import { isFinishedOnly } from '../../../shared/work-queue/closed-suggestion';
 import { ColumnsNotice } from '../../../shared/work-queue/columns-notice';
 import {
   ChangeDetectionStrategy,
@@ -187,6 +188,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
               [sort]="state().sort"
               [dir]="state().dir"
               [columns]="prefs().columns"
+              [finishedOnly]="finishedOnly()"
               [density]="prefs().density"
               (resetSort)="resetSort()"
               (columnsChange)="setColumns($event)"
@@ -271,6 +273,9 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
   protected readonly yourPods = computed(() => this.pods().filter((p) => p.isMember));
   protected readonly otherPods = computed(() => this.pods().filter((p) => !p.isMember));
   protected readonly podOptions = signal<PodOption[]>([]);
+  /** Only finished tasks are listed: the Columns panel may suggest Closed instead of Due (#231). */
+  protected readonly finishedOnly = computed(() => isFinishedOnly(this.state().filters.status));
+
   protected readonly canAssign = computed(
     () => this.auth.has('Task.Assign') && this.tab() !== 'members',
   );

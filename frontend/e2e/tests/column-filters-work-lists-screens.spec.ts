@@ -92,7 +92,7 @@ test.describe('column filters work lists screenshots', () => {
     await page.goto('/tasks');
     await expect(first).toBeVisible();
     await page
-      .getByRole('group', { name: 'Quick views' })
+      .getByRole('toolbar', { name: 'Quick views' })
       .getByRole('button', { name: 'Overdue' })
       .click();
     await expect(page).toHaveURL(/overdue=true/);

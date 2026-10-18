@@ -22,7 +22,7 @@ const rowControl = (page: Page, key: string) =>
 /** A quick view button: its name is the view's, then its count ("Overdue, 101 tasks", #218). */
 const view = (page: Page, name: string) =>
   page
-    .getByRole('group', { name: 'Quick views' })
+    .getByRole('toolbar', { name: 'Quick views' })
     .getByRole('button', { name: new RegExp(`^${name}(,|$)`) });
 
 /** The scopes of the column choice of a screen (one per tab, X1): `mf.work-columns.v2.<scope>.<userId>`. */

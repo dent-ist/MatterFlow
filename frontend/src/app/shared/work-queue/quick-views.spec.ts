@@ -23,9 +23,9 @@ describe('QuickViews', () => {
   const button = (el: HTMLElement, key: string) =>
     el.querySelector<HTMLButtonElement>(`[data-view="${key}"]`)!;
 
-  it('offers the views of the row as a labelled group of toggle buttons, then More', () => {
+  it('offers the views of the row as one labelled toolbar of toggle buttons, then More', () => {
     const el = create().nativeElement as HTMLElement;
-    expect(el.querySelector('[role="group"]')!.getAttribute('aria-label')).toBe('Quick views');
+    expect(el.querySelector('[role="toolbar"]')!.getAttribute('aria-label')).toBe('Quick views');
     expect(
       Array.from(el.querySelectorAll('.qv > button')).map((b) => b.getAttribute('aria-label')),
     ).toEqual([
@@ -232,6 +232,54 @@ describe('QuickViews', () => {
       expect(own).toEqual(copy);
       expect(overlayColumns(own, 'overdue')).toEqual(own);
       expect(overlayColumns(own, null)).toEqual(own);
+    });
+  });
+
+  describe('roving tabindex (#236)', () => {
+    const stops = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLElement>('.qv > button'))
+        .filter((b) => b.tabIndex === 0)
+        .map((b) => b.getAttribute('data-view') ?? 'more');
+    const press = (target: Element, key: string) => {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      target.dispatchEvent(event);
+      return event;
+    };
+
+    it('has one Tab stop: the pressed view, else the first', () => {
+      const el = create({ ...emptyFilters(), status: [...OPEN_STATUSES], overdue: true })
+        .nativeElement as HTMLElement;
+      expect(stops(el)).toEqual(['overdue']);
+      const none = create({ ...emptyFilters(), priority: [1] }).nativeElement as HTMLElement;
+      expect(stops(none)).toEqual(['allOpen']);
+    });
+
+    it('moves with the arrow keys, wraps, and Home and End go to the ends', () => {
+      const fixture = create();
+      const el = fixture.nativeElement as HTMLElement;
+      document.body.appendChild(el);
+      button(el, 'allOpen').focus();
+      press(button(el, 'allOpen'), 'ArrowRight');
+      fixture.detectChanges();
+      expect(document.activeElement).toBe(button(el, 'unassigned'));
+      expect(stops(el)).toEqual(['unassigned']);
+      press(document.activeElement!, 'ArrowLeft');
+      press(document.activeElement!, 'ArrowLeft');
+      expect(document.activeElement).toBe(el.querySelector('[data-more-views]'));
+      press(document.activeElement!, 'Home');
+      expect(document.activeElement).toBe(button(el, 'allOpen'));
+      press(document.activeElement!, 'End');
+      expect(document.activeElement).toBe(el.querySelector('[data-more-views]'));
+      expect(press(document.activeElement!, 'a').defaultPrevented).toBe(false);
+      el.remove();
+    });
+
+    it('presses a view with Enter or Space (a button click) and keeps aria-pressed', () => {
+      const fixture = create();
+      const picked: string[] = [];
+      fixture.componentInstance.viewSelect.subscribe((k) => picked.push(k));
+      button(fixture.nativeElement, 'asap').click();
+      expect(picked).toEqual(['asap']);
     });
   });
 });
