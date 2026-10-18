@@ -287,7 +287,9 @@ test.describe('Assets screen: column filters and details below the grid', () => 
     await panel(page).getByRole('button', { name: 'Edit' }).click();
     await expect(page).toHaveURL(new RegExp(`/assets/${asset.assetId}/edit$`));
     await page.getByRole('button', { name: 'Cancel' }).click();
-    await expect(page).toHaveURL(new RegExp(`/assets\\?selected=${asset.assetId}$`));
+    // Back on the list with the asset selected. On a database with more assets than one page the asset is not on page 1 of the unfiltered
+    // list, and the screen then narrows the list to its matter (`&matter=...&status=all`, the deep-link reveal): the selection is what counts.
+    await expect(page).toHaveURL(new RegExp(`/assets\\?selected=${asset.assetId}(&|$)`));
     await expect(panel(page).getByRole('heading', { name: asset.displayName })).toBeVisible();
 
     await page.goto(`/assets?name=${token}&selected=${asset.assetId}`);

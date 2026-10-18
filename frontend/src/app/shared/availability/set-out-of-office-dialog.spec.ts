@@ -28,6 +28,9 @@ const dto = (overrides: Partial<UserAvailabilityDto> = {}): UserAvailabilityDto 
   ...overrides,
 });
 
+/** "Today" for the dialog and for the browser's clock: Oct 15, 2026, 10:00 in New York. */
+const NOW = new Date('2026-10-15T14:00:00Z');
+
 describe('SetOutOfOfficeDialog', () => {
   async function open() {
     const client = {
@@ -53,7 +56,7 @@ describe('SetOutOfOfficeDialog', () => {
         MessageService,
         { provide: MyAvailabilityClient, useValue: client },
         { provide: USER_TIME_ZONE, useValue: 'America/New_York' },
-        { provide: Clock, useValue: { now: () => new Date('2026-10-15T14:00:00Z') } },
+        { provide: Clock, useValue: { now: () => NOW } },
       ],
     });
     const fixture = TestBed.createComponent(SetOutOfOfficeDialog);
@@ -72,7 +75,17 @@ describe('SetOutOfOfficeDialog', () => {
     fixture.detectChanges();
   }
 
-  afterEach(() => TestBed.resetTestingModule());
+  // The dialog's "today" is the injected Clock; the browser's own clock is pinned to the same instant too, so nothing else it touches (the date
+  // input, the overlay) can depend on the real date (the spec's Until date, Oct 20, 2026, is in the past from Oct 21 on). Only Date is faked,
+  // so the timers the helpers await still run.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    TestBed.resetTestingModule();
+  });
 
   it('asks only for an until date and a note, with the summary sentence', async () => {
     const { fixture } = await open();
@@ -99,6 +112,9 @@ describe('SetOutOfOfficeDialog', () => {
     await type(fixture, '#ooo-until', 'Oct 20, 2026');
     await type(fixture, '#ooo-note', 'Covering: Dana');
     q<HTMLButtonElement>('[data-ooo-confirm] button, button[data-ooo-confirm]').click();
+    // The first save loads the API client module with a dynamic import (MyAvailability.client), which a fixed number of timer ticks does not
+    // always outlast on a busy machine: wait for the call instead of for a moment.
+    await vi.waitFor(() => expect(client.saveMyAvailability).toHaveBeenCalled());
     await settle(fixture);
 
     expect(client.saveMyAvailability).toHaveBeenCalledWith({
@@ -110,8 +126,8 @@ describe('SetOutOfOfficeDialog', () => {
       workHours: [{ dayOfWeek: 1, start: '08:00', end: '12:00' }],
       rowVersion: 'V1',
     });
+    await vi.waitFor(() => expect(fixture.componentInstance.visible()).toBe(false));
     expect(TestBed.inject(MyAvailability).isOut()).toBe(true);
-    expect(fixture.componentInstance.visible()).toBe(false);
   });
 
   it('opens again, with empty fields, after it closed itself (Esc, Cancel, the X): the header menu item must not go dead (UXR5-15)', async () => {

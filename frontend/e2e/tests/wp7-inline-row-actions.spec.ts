@@ -226,7 +226,9 @@ test.describe('WP7: inline row actions', () => {
       await pageAxe(page, `undo toast ${size.name}`);
       await page.locator('[data-undo-dismiss]').click();
 
-      // The plain toast (Hold).
+      // The plain toast (Hold). The row may still be moving after the Undo toast went (the table scrolls sideways at 375 px) and a scroll closes
+      // an open inline menu by design, so the trigger is brought into view first, as the priority trigger above.
+      await statusTrigger(row).scrollIntoViewIfNeeded();
       await statusTrigger(row).click();
       await page.locator('[data-option="HOLD"]').click();
       const dialog = page.getByRole('dialog').filter({ has: page.locator('[data-reason-body]') });

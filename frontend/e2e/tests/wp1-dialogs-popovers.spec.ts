@@ -85,7 +85,10 @@ test.describe('WP1: dialogs, popovers, shortcut list', () => {
       await myWork.open();
       const row = myWork.row(`Complete ${token}`);
       await expect(row).toHaveCount(1);
-      await row.getByRole('button', { name: /change status of/ }).click();
+      // Scrolled into view first: the table scrolls sideways at 375 px, and a scroll that lands just after the click closes the menu by design.
+      const status = row.getByRole('button', { name: /change status of/ });
+      await status.scrollIntoViewIfNeeded();
+      await status.click();
       await mine.locator('[data-option="COMPLETE"]').click();
       const body = mine.locator('[data-confirm-body]').last();
       await expect(body).toBeVisible();
@@ -147,15 +150,29 @@ test.describe('WP1: dialogs, popovers, shortcut list', () => {
       await expect(columnsPanel(mine)).toHaveCount(0);
 
       // Opening another popover (the sort info) closes Columns; the trigger click toggles.
+      const sortInfo = mine.getByRole('button', { name: 'How the default order works' });
       await columnsButton(mine).click();
       await expect(columnsPanel(mine)).toBeVisible();
-      await mine.getByRole('button', { name: 'How the default order works' }).click();
-      await expect(columnsPanel(mine)).toHaveCount(0);
-      await expect(mine.locator('[data-sort-rule]')).toBeVisible();
-      await mine.keyboard.press('Escape');
-      await expect(mine.locator('[data-sort-rule]')).toHaveCount(0);
-      await columnsButton(mine).click();
-      await expect(columnsPanel(mine)).toBeVisible();
+      if (size.width > 480) {
+        await sortInfo.click();
+        await expect(columnsPanel(mine)).toHaveCount(0);
+        await expect(mine.locator('[data-sort-rule]')).toBeVisible();
+        await mine.keyboard.press('Escape');
+        await expect(mine.locator('[data-sort-rule]')).toHaveCount(0);
+        await columnsButton(mine).click();
+        await expect(columnsPanel(mine)).toBeVisible();
+      } else {
+        // On a phone the Columns sheet covers the toolbar below the tabs (the needs-attention strip pushes it down), so the sort info cannot
+        // be reached while it is open. The replacement is checked the other way round: Done, open the sort info, and the Columns button
+        // (above the sheet) replaces it.
+        await mine.locator('[data-columns-close]').click();
+        await expect(columnsPanel(mine)).toHaveCount(0);
+        await sortInfo.click();
+        await expect(mine.locator('[data-sort-rule]')).toBeVisible();
+        await columnsButton(mine).click();
+        await expect(mine.locator('[data-sort-rule]')).toHaveCount(0);
+        await expect(columnsPanel(mine)).toBeVisible();
+      }
       // At 375 the panel is a bottom sheet over the button: Done closes it; wider, the button toggles.
       if (size.width > 480) await columnsButton(mine).click();
       else await mine.locator('[data-columns-close]').click();
