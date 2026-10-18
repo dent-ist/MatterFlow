@@ -56,6 +56,10 @@ test.describe('Task Queue copy', () => {
     await expect(page.locator('[data-filter-chips]')).not.toContainText('Overdue: Overdue only');
     await queue.open();
     await queue.quickView('Overdue').click();
+    // The view is remembered once its list has loaded.
+    await expect(page).toHaveURL(/overdue=true/);
+    await expect(page.locator('[data-view="overdue"]')).toHaveAttribute('aria-pressed', 'true');
+    await page.waitForLoadState('networkidle');
 
     // Leave and come back to the plain list: the last view comes back, named once.
     await page.goto('/my-work');
