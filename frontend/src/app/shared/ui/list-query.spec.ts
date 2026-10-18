@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { LocalListPage, PAGE_SIZES, parsePageSize } from './list-query';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ApiError } from '../../core/http/api-error';
+import { LocalListPage, PAGE_SIZES, ServerListPage, parsePageSize } from './list-query';
 
 interface Row {
   name: string;
@@ -32,6 +34,39 @@ class LocalHost extends LocalListPage<Row> {
   doSetPageSize = (n: number) => this.setPageSize(n);
   doClear = () => this.clear();
 }
+
+@Component({ changeDetection: ChangeDetectionStrategy.OnPush, template: '' })
+class ServerHost extends ServerListPage<Row> {
+  protected readonly defaultSort = 'name';
+  fail: unknown = null;
+  protected override fetch(): Promise<{ items: Row[]; total: number }> {
+    return this.fail ? Promise.reject(this.fail) : Promise.resolve({ items: [], total: 0 });
+  }
+  current = () => this.state();
+}
+
+function apiError(status: number): ApiError {
+  return ApiError.from(new HttpErrorResponse({ status, error: {} }));
+}
+
+describe('ServerListPage states', () => {
+  it('maps a 403 to forbidden, any other failure to error, and a retry back through loading', async () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(ServerHost);
+    const page = fixture.componentInstance;
+    page.fail = apiError(403);
+    await page.load();
+    expect(page.current()).toBe('forbidden');
+    page.fail = apiError(500);
+    await page.load();
+    expect(page.current()).toBe('error');
+    page.fail = null;
+    const reload = page.load();
+    expect(page.current()).toBe('loading');
+    await reload;
+    expect(page.current()).toBe('ready');
+  });
+});
 
 describe('list URL state', () => {
   it('only accepts the offered page sizes', () => {

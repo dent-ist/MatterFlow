@@ -110,6 +110,7 @@ const COLUMNS = ['clientNumber', 'name', 'matters', 'status'] as const;
                 [empty]="rows().length === 0"
                 [filtered]="filters.activeCount() > 0"
                 [columns]="4"
+                [skeleton]="['6rem', '16rem', '3rem', '5rem']"
                 (retry)="load()"
                 (clear)="clear()"
               >

@@ -4,7 +4,8 @@ import { ErrorReference } from './error-reference';
 import { FixedPage } from './fixed-page';
 import { StatusFilter as StatusFilterValue, ariaSort, nextSort } from './list-helpers';
 
-export type LoadState = 'loading' | 'ready' | 'error';
+/** `forbidden` is a 403 on the list's own request: the text names the missing access and offers no Retry. */
+export type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
 
 /**
  * Column header cell that sorts (UXR-12, spec 5.2): `<th mfSort="name" [sort]="sort()" defaultSort="name" (sorted)="setSort($event)">Name</th>`.
@@ -33,6 +34,8 @@ export type LoadState = 'loading' | 'ready' | 'error';
       color: inherit;
       font: inherit;
       font-weight: 600;
+      /* A header never changes height when the columns re-balance (skeleton rows to loaded rows: no layout shift). */
+      white-space: nowrap;
       cursor: pointer;
     }
     .mf-sort .pi {
@@ -156,6 +159,11 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
           Couldn't load {{ noun() }}.
           <mf-error-reference />
           <p-button label="Retry" severity="secondary" (onClick)="retry.emit()" />
+        </div>
+      }
+      @case ('forbidden') {
+        <div class="pg-alert" role="alert" data-forbidden>
+          You don't have access to {{ noun() }}.
         </div>
       }
       @case ('ready') {

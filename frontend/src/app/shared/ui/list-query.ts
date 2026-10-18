@@ -1,5 +1,6 @@
 import { Directive, computed, inject, input, signal, effect, untracked } from '@angular/core';
 import { Router } from '@angular/router';
+import { ApiError } from '../../core/http/api-error';
 import { LoadState } from './data-table';
 import { StatusFilter, parsePage, parseStatus } from './list-helpers';
 
@@ -150,7 +151,7 @@ export abstract class ServerListPage<T> extends ListQueryPage {
 
   async load(): Promise<void> {
     const id = ++this.requestId;
-    if (this.state() === 'error') this.state.set('loading');
+    if (this.state() === 'error' || this.state() === 'forbidden') this.state.set('loading');
     try {
       const result = await this.fetch();
       if (id !== this.requestId) return;
@@ -158,8 +159,9 @@ export abstract class ServerListPage<T> extends ListQueryPage {
       this.total.set(result.total);
       this.state.set('ready');
       this.listFilters()?.reportResults(result.total);
-    } catch {
-      if (id === this.requestId) this.state.set('error');
+    } catch (error) {
+      if (id === this.requestId)
+        this.state.set(error instanceof ApiError && error.status === 403 ? 'forbidden' : 'error');
     }
   }
 }

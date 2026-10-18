@@ -140,6 +140,29 @@ describe('Projects pages', () => {
       );
     });
 
+    async function createEmpty(permissions: Permission[]) {
+      localStorage.clear();
+      await configure(permissions);
+      projects.listProjects.mockReturnValue(ok(pageOf([])));
+      query.set({});
+      const fixture = TestBed.createComponent(ProjectsListPage);
+      await settle(fixture);
+      return fixture.nativeElement.querySelector('td[data-empty=none]') as HTMLElement;
+    }
+    const FIRST_RUN = 'No projects yet. Open a matter and choose New project.';
+
+    it('points an empty list at Matters with a link when the viewer can see matters (L11)', async () => {
+      const cell = await createEmpty(['Project.View', 'Matter.View']);
+      expect(cell.textContent).toContain(FIRST_RUN);
+      expect(cell.querySelector('a')?.getAttribute('href')).toBe('/matters');
+    });
+
+    it('says the same without the link when the viewer cannot see matters (L11)', async () => {
+      const cell = await createEmpty(['Project.View']);
+      expect(cell.textContent).toContain(FIRST_RUN);
+      expect(cell.querySelector('a')).toBeNull();
+    });
+
     it('has column filters instead of a search box: Name, Matter and Status (Active shown, Archived by name)', async () => {
       const fixture = await create(['Project.View']);
       const el: HTMLElement = fixture.nativeElement;

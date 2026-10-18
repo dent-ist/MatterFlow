@@ -32,6 +32,9 @@ import { CopyButton } from './copy-button';
     .mf-ref {
       font-family: var(--mf-font-mono);
       font-weight: 400;
+      /* The reference never breaks at its hyphen (BUG-6): a narrow table gives the Name column way, not this. The copy button is a
+         sibling and keeps its own wrapping rules. */
+      white-space: nowrap;
     }
     a.mf-ref {
       color: var(--mf-link);

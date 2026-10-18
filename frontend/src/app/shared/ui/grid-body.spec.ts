@@ -21,12 +21,13 @@ import { GridBody } from './grid-body';
         [empty]="empty()"
         [filtered]="filtered()"
         [columns]="2"
+        [skeleton]="skeleton()"
         (retry)="retried = retried + 1"
         (clear)="cleared = cleared + 1"
       >
         <button mfEmptyAction type="button">New client</button>
         <tr data-row>
-          <td>Acme</td>
+          <td><a href="/clients/1">Acme</a></td>
           <td>Active</td>
         </tr>
       </tbody>
@@ -37,6 +38,7 @@ class Host {
   readonly state = signal<LoadState>('ready');
   readonly empty = signal(false);
   readonly filtered = signal(false);
+  readonly skeleton = signal<readonly string[]>(['7rem', '14rem']);
   retried = 0;
   cleared = 0;
 }
@@ -44,6 +46,7 @@ class Host {
 describe('GridBody', () => {
   function create() {
     const fixture = TestBed.createComponent(Host);
+    document.body.appendChild(fixture.nativeElement);
     fixture.detectChanges();
     return fixture;
   }
@@ -55,16 +58,59 @@ describe('GridBody', () => {
     expect(el(f).querySelector('[data-loading], [data-error], [data-empty]')).toBeNull();
   });
 
-  it('keeps the header and shows one full-width row while loading', () => {
+  it('keeps the header, shows five skeleton rows and one polite message while loading', () => {
     const f = create();
     f.componentInstance.state.set('loading');
     f.detectChanges();
     const cell = el(f).querySelector('tbody td[data-loading]')!;
     expect(cell.getAttribute('colspan')).toBe('2');
     expect(cell.getAttribute('role')).toBe('status');
-    expect(cell.textContent).toContain('Loading clients...');
+    expect(cell.getAttribute('aria-busy')).toBe('true');
+    expect(cell.textContent?.trim()).toBe('Loading clients');
+    expect(el(f).querySelector('tbody')!.getAttribute('aria-busy')).toBe('true');
+    const rows = el(f).querySelectorAll('tbody tr[data-skeleton]');
+    expect(rows.length).toBe(5);
+    expect(rows[0].getAttribute('aria-hidden')).toBe('true');
+    expect(rows[0].querySelectorAll('td').length).toBe(2);
     expect(el(f).querySelector('thead th')).not.toBeNull();
     expect(el(f).querySelector('[data-row]')).toBeNull();
+  });
+
+  it('takes the bone width of each column from the page', () => {
+    const f = create();
+    f.componentInstance.skeleton.set(['4rem', '12rem']);
+    f.componentInstance.state.set('loading');
+    f.detectChanges();
+    const bones = el(f)
+      .querySelector('tr[data-skeleton]')!
+      .querySelectorAll<HTMLElement>('.gb-bone');
+    expect(Array.from(bones).map((b) => b.style.width)).toEqual(['4rem', '12rem']);
+  });
+
+  it('says the access is missing on a 403, without Retry', () => {
+    const f = create();
+    f.componentInstance.state.set('forbidden');
+    f.detectChanges();
+    const cell = el(f).querySelector('tbody td[data-forbidden]')!;
+    expect(cell.textContent).toContain("You don't have access to clients.");
+    expect(
+      Array.from(el(f).querySelectorAll('button')).some((b) => b.textContent?.includes('Retry')),
+    ).toBe(false);
+  });
+
+  it('moves focus to the first row link after a Retry that succeeds', async () => {
+    const f = create();
+    f.componentInstance.state.set('error');
+    f.detectChanges();
+    Array.from(el(f).querySelectorAll('button'))
+      .find((b) => b.textContent?.includes('Retry'))!
+      .click();
+    f.componentInstance.state.set('loading');
+    f.detectChanges();
+    f.componentInstance.state.set('ready');
+    f.detectChanges();
+    await f.whenStable();
+    expect(document.activeElement).toBe(el(f).querySelector('[data-row] a'));
   });
 
   it('shows an alert with Retry inside the grid on error', () => {

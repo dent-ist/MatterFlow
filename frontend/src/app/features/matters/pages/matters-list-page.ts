@@ -121,6 +121,7 @@ const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
                 [empty]="rows().length === 0"
                 [filtered]="filters.activeCount() > 0"
                 [columns]="5"
+                [skeleton]="['7rem', '16rem', '14rem', '3rem', '5rem']"
                 (retry)="load()"
                 (clear)="clear()"
               >

@@ -12,6 +12,7 @@ import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { ProjectResponse, ProjectsClient } from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { ARCHIVE_STATUS_OPTIONS, statusDef } from '../../../shared/filters/common-defs';
@@ -21,6 +22,7 @@ import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
+import { CopyPart } from '../../../shared/ui/copy-parts';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
@@ -111,6 +113,8 @@ const COLUMNS = ['name', 'matter', 'status'] as const;
                 [empty]="rows().length === 0"
                 [filtered]="filters.activeCount() > 0"
                 [columns]="3"
+                [emptyParts]="emptyParts()"
+                [skeleton]="['16rem', '9rem', '5rem']"
                 (retry)="load()"
                 (clear)="clear()"
               >
@@ -147,6 +151,7 @@ const COLUMNS = ['name', 'matter', 'status'] as const;
 })
 export class ProjectsListPage extends ServerListPage<ProjectResponse> {
   private readonly api = inject(ProjectsClient);
+  private readonly auth = inject(AuthStore);
   private readonly injector = inject(Injector);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
@@ -160,6 +165,17 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
       ? `${first.matterRef} ${first.matterName}`
       : `Matter ${id}`;
   });
+
+  /** First-run text (L11): a project is made inside a matter, so it points there; the link needs `Matter.View`. */
+  protected readonly emptyParts = computed((): readonly CopyPart[] =>
+    this.auth.has('Matter.View')
+      ? [
+          'No projects yet. ',
+          { label: 'Open a matter', to: '/matters' },
+          ' and choose New project.',
+        ]
+      : ['No projects yet. Open a matter and choose New project.'],
+  );
 
   /** Creating from a matter's list keeps the matter. */
   protected newProjectUrl(): string {
