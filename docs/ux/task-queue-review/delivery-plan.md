@@ -161,7 +161,7 @@ Issues closed, tests green twice, axe clean at four sizes, screenshots in `fixes
 (One line per work package; keep other packages' lines when merging. Format: `WPn name (date, commit): issues done / open; tests; bundle size; screenshots folder; known limits.`)
 
 - Planning (2026-10-18): epic #195 and issues #196 to #243 created; PM requirements review comments posted on every issue; #189 and #190 closed as superseded; #241, #242, #243 closed as not planned; comments with coordination points on #138, #155, #169, #173, #184, #192, #193; ux-spec Appendix B corrected (closed tasks only reopen).
-- WP1 Due logic: not started.
+- WP1 Due logic (2026-10-18, 3072f73): #208 done (describeDueCell in core/time/time.ts; old describeDue unchanged); unit specs, lint, prettier, tsc app+spec green; no UI change so no bundle or e2e impact; no screenshots (pure logic).
 - WP2 Title cell: not started.
 - WP3 Sort keys: not started.
 - WP4 Copy: not started.
