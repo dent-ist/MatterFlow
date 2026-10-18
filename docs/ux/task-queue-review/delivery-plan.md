@@ -164,7 +164,7 @@ Issues closed, tests green twice, axe clean at four sizes, screenshots in `fixes
 - WP1 Due logic (2026-10-18, 3072f73): #208 done (describeDueCell in core/time/time.ts; old describeDue unchanged); unit specs, lint, prettier, tsc app+spec green; no UI change so no bundle or e2e impact; no screenshots (pure logic).
 - WP2 Title cell (2026-10-18, 1273859): #196 done (Title cell = type icon + title; no subline, progress fold, tablet Ref fold or New pill; Comfortable two lines, Compact one; `hideContext` hides Matter and Client columns). Unit 285 pass (work-queue, my-work); e2e wp2-title-cell, wp9, my-work*, wp10, wp12b, column-filters-work-lists, ux-round-4, assignment-and-views pass with axe. Initial bundle 634.75 kB, no budget warnings; screenshots `fixes/wp-title/`. Known limits: My Work defaults have no Matter column until WP8 (#197/#198); at 640 and 700 px the table scrolls sideways with the hint until the narrow-box package (#201) because the Ref column no longer folds; a long title's row is up to 24 px taller than a one-word title (PM ruling).
 - WP3 Sort keys: not started.
-- WP4 Copy: not started.
+- WP4 Copy (2026-10-18, b8c2efd): #225 done, #226 done, #227 done; unit specs (task-queue, my-work, pod-work, filters, work-queue, dashboard-links), lint, prettier, tsc app+spec+e2e green; e2e task-queue-copy (4, axe at 1366/1920/768/375), my-work-vocabulary, column-filters-work-lists, dashboard-audit, assignment-and-views green; initial bundle 634.75 kB; screenshots `fixes/wp4/`; known limits: All open is not named in the title/caption; Due soon, ASAP and On hold empty texts are ready for #220 but untested in the UI until it lands.
 - WP5 Toolbar: not started.
 - WP6 Assign to me: not started.
 - WP7 Closed row menu: not started.
