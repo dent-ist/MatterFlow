@@ -84,6 +84,11 @@ export abstract class ListQueryPage {
     this.navigate({ sort, page: null });
   }
 
+  /** The phone's Sort by select (WP12): the new `sort` of the address, null for the list's default order. */
+  protected pickSort(sort: string | null): void {
+    this.navigate({ sort, page: null });
+  }
+
   protected goToPage(page: number): void {
     this.navigate({ page: page === 1 ? null : page });
   }

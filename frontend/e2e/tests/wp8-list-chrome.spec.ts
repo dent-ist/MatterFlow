@@ -170,15 +170,27 @@ test.describe('WP8 list chrome', () => {
         for (const [width, height] of SIZES) {
           await page.setViewportSize({ width, height });
           await page.goto(list.url(w));
-          const region = grid(page, list.region);
-          await expect(region.locator('tbody tr').first()).toBeVisible();
-          const heights = await rowHeights(page, list.region);
+          // Below 640 px the lists are cards (WP12): at least 64 px high, the name in `data-card-name` clamps the same two lines.
+          const phone = width < 640;
+          const region = phone ? page.locator('ul[data-record-cards]') : grid(page, list.region);
+          await expect(region.locator(phone ? 'li' : 'tbody tr').first()).toBeVisible();
+          const heights = phone
+            ? await region
+                .locator('li')
+                .evaluateAll((rows) => rows.map((r) => r.getBoundingClientRect().height))
+            : await rowHeights(page, list.region);
           expect(heights.length, `${list.name} ${width}`).toBeGreaterThan(0);
-          for (const h of heights) expect(h, `${list.name} ${width}`).toBeGreaterThanOrEqual(43);
-          for (const h of heights) expect(h, `${list.name} ${width}`).toBeLessThanOrEqual(45);
+          for (const h of heights)
+            expect(h, `${list.name} ${width}`).toBeGreaterThanOrEqual(phone ? 64 : 43);
+          if (!phone)
+            for (const h of heights) expect(h, `${list.name} ${width}`).toBeLessThanOrEqual(45);
 
           const longName = list.long(w);
-          const cell = region.locator(`.pg-name[title="${longName}"]`).first();
+          const cell = region
+            .locator(
+              phone ? `a[data-card-name][title="${longName}"]` : `.pg-name[title="${longName}"]`,
+            )
+            .first();
           await expect(cell, `${list.name} long name`).toBeVisible();
           const box = await cell.evaluate((el) => ({
             client: el.clientHeight,
@@ -240,7 +252,11 @@ test.describe('WP8 list chrome', () => {
         for (const [width, height] of SIZES) {
           await page.setViewportSize({ width, height });
           await page.goto(list.url(w));
-          await expect(grid(page, list.region).locator('tbody tr').first()).toBeVisible();
+          await expect(
+            width >= 640
+              ? grid(page, list.region).locator('tbody tr').first()
+              : page.locator('li[data-record-card]').first(),
+          ).toBeVisible();
           if (width >= 640) {
             await expect(page.locator('[data-filter-row]'), `${list.name} ${width}`).toBeVisible();
             await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true');
@@ -566,7 +582,11 @@ test.describe('WP8 list chrome', () => {
         for (const [width, height] of SIZES) {
           await page.setViewportSize({ width, height });
           await page.goto(list.url(w, '&status=all'));
-          await expect(grid(page, list.region).locator('tbody tr').first()).toBeVisible();
+          await expect(
+            width >= 640
+              ? grid(page, list.region).locator('tbody tr').first()
+              : page.locator('li[data-record-card]').first(),
+          ).toBeVisible();
           if (width >= 640)
             await toggle(page).click(); // closed: chips
           else await expect(page.locator('[data-chip]').first()).toBeVisible();

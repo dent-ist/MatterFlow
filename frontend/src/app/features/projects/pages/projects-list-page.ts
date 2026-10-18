@@ -2,10 +2,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
-  Injector,
-  afterNextRender,
   computed,
+  effect,
   inject,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -27,6 +27,14 @@ import { CopyPart } from '../../../shared/ui/copy-parts';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
+import {
+  RecordCard,
+  RecordCardDef,
+  RecordCardList,
+  phoneCards,
+} from '../../../shared/ui/record-card-list';
+import { RecordSort } from '../../../shared/ui/record-sort';
+import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
@@ -69,6 +77,10 @@ const BONES: Record<string, string> = {
     FiltersBar,
     ListFiltersButton,
     ColumnFilterRow,
+    RecordCardList,
+    RecordCardDef,
+    RecordCard,
+    RecordSort,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -90,130 +102,195 @@ const BONES: Record<string, string> = {
         />
       </mf-page-header>
 
-      <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']" />
+      <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">
+        <mf-record-sort
+          mfSheetSort
+          [options]="sortOptions()"
+          [sort]="sort()"
+          defaultSort="name"
+          (sorted)="pickSort($event)"
+        />
+      </mf-filters-bar>
 
       <div class="mf-fill">
-        <div class="mf-table-wrap" mfScrollArea="Projects list" #scroll>
-          <div class="mf-scroll">
-            <table class="pg-table">
-              <caption class="pg-sr">
-                Projects
-              </caption>
-              <thead>
-                <tr>
-                  <th
-                    mfSort="name"
-                    [sort]="sort()"
-                    [defaultSort]="defaultSort"
-                    (sorted)="setSort($event)"
-                  >
-                    Name
-                  </th>
-                  <th
-                    mfSort="matterRef"
-                    [sort]="sort()"
-                    [defaultSort]="defaultSort"
-                    (sorted)="setSort($event)"
-                  >
-                    Matter
-                  </th>
-                  @if (showClient()) {
-                    <th scope="col">Client</th>
-                  }
-                  @if (counts()) {
-                    <th
-                      class="pg-num"
-                      mfSort="openTasks"
-                      [firstDesc]="true"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      (sorted)="setSort($event)"
-                    >
-                      Open tasks
-                    </th>
-                    <th
-                      class="pg-num"
-                      mfSort="overdue"
-                      [firstDesc]="true"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      (sorted)="setSort($event)"
-                    >
-                      Overdue
-                    </th>
-                  }
-                  <th scope="col">Status</th>
-                </tr>
-                @if (filters.rowVisible()) {
-                  <tr
-                    mfColumnFilterRow
-                    id="project-filter-row"
-                    [filters]="filters"
-                    [columns]="columns()"
-                  ></tr>
+        @if (phone()) {
+          <mf-record-card-list
+            noun="projects"
+            label="Projects"
+            [state]="state()"
+            [empty]="rows().length === 0"
+            [filtered]="filters.activeCount() > 0"
+            [emptyParts]="emptyParts()"
+            (retry)="load()"
+            (clear)="clear()"
+          >
+            <ng-template [mfRecordCard]="rows()" let-p>
+              <mf-record-card [name]="p.name" [link]="['/projects', p.projectId]">
+                @if (!p.isActive) {
+                  <mf-active-badge mfCardBadges [active]="false" inactiveLabel="Archived" />
                 }
-              </thead>
-              <tbody
-                mfGridBody
-                noun="projects"
-                [state]="state()"
-                [empty]="rows().length === 0"
-                [filtered]="filters.activeCount() > 0"
-                [columns]="columns().length"
-                [emptyParts]="emptyParts()"
-                [skeleton]="skeleton()"
-                (retry)="load()"
-                (clear)="clear()"
-              >
-                @for (p of rows(); track p.projectId) {
+                <p mfCardMeta class="rc-line" data-card-matter>
+                  <span class="rc-ref">{{ p.matterRef }}</span>
+                  <span class="rc-sep" aria-hidden="true">-</span><span class="mf-sr-only">, </span>
+                  @if (auth.canLink('matter')) {
+                    <a class="rc-text" [routerLink]="['/matters', p.matterId]">{{
+                      p.matterName
+                    }}</a>
+                  } @else {
+                    <span class="rc-text">{{ p.matterName }}</span>
+                  }
+                </p>
+                <p mfCardMeta class="rc-line" data-card-client>
+                  <span class="rc-text">{{ p.clientName }}</span>
+                </p>
+                @if (counts()) {
+                  <mf-task-count
+                    mfCardCounts
+                    kind="open"
+                    scope="project"
+                    [word]="true"
+                    [recordId]="p.projectId"
+                    [name]="p.name"
+                    [count]="p.openTaskCount ?? 0"
+                  />
+                }
+                @if (counts() && (p.overdueTaskCount ?? 0) > 0) {
+                  <mf-task-count
+                    mfCardCounts
+                    kind="overdue"
+                    scope="project"
+                    [word]="true"
+                    [recordId]="p.projectId"
+                    [name]="p.name"
+                    [count]="p.overdueTaskCount ?? 0"
+                  />
+                }
+              </mf-record-card>
+            </ng-template>
+          </mf-record-card-list>
+        } @else {
+          <div class="mf-table-wrap" mfScrollArea="Projects list" #scroll>
+            <div class="mf-scroll">
+              <table class="pg-table">
+                <caption class="pg-sr">
+                  Projects
+                </caption>
+                <thead>
                   <tr>
-                    <td>
-                      <a
-                        class="pg-link pg-name"
-                        [routerLink]="['/projects', p.projectId]"
-                        [title]="p.name"
-                        >{{ p.name }}</a
-                      >
-                    </td>
-                    <td class="pg-fix">
-                      <mf-matter-cell [row]="p" [link]="auth.canLink('matter')" />
-                    </td>
+                    <th
+                      mfSort="name"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Name
+                    </th>
+                    <th
+                      mfSort="matterRef"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Matter
+                    </th>
                     @if (showClient()) {
-                      <td class="pg-fix pg-fix--client">
-                        <span class="pg-clip" [title]="p.clientNumber + ' ' + p.clientName">{{
-                          p.clientName
-                        }}</span>
-                      </td>
+                      <th scope="col">Client</th>
                     }
                     @if (counts()) {
-                      <td class="pg-num">
-                        <mf-task-count
-                          kind="open"
-                          scope="project"
-                          [recordId]="p.projectId"
-                          [name]="p.name"
-                          [count]="p.openTaskCount ?? 0"
-                        />
-                      </td>
-                      <td class="pg-num">
-                        <mf-task-count
-                          kind="overdue"
-                          scope="project"
-                          [recordId]="p.projectId"
-                          [name]="p.name"
-                          [count]="p.overdueTaskCount ?? 0"
-                        />
-                      </td>
+                      <th
+                        class="pg-num"
+                        mfSort="openTasks"
+                        [firstDesc]="true"
+                        [sort]="sort()"
+                        [defaultSort]="defaultSort"
+                        (sorted)="setSort($event)"
+                      >
+                        Open tasks
+                      </th>
+                      <th
+                        class="pg-num"
+                        mfSort="overdue"
+                        [firstDesc]="true"
+                        [sort]="sort()"
+                        [defaultSort]="defaultSort"
+                        (sorted)="setSort($event)"
+                      >
+                        Overdue
+                      </th>
                     }
-                    <td>
-                      <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
-                    </td>
+                    <th scope="col">Status</th>
                   </tr>
-                }
-              </tbody>
-            </table>
+                  @if (filters.rowVisible()) {
+                    <tr
+                      mfColumnFilterRow
+                      id="project-filter-row"
+                      [filters]="filters"
+                      [columns]="columns()"
+                    ></tr>
+                  }
+                </thead>
+                <tbody
+                  mfGridBody
+                  noun="projects"
+                  [state]="state()"
+                  [empty]="rows().length === 0"
+                  [filtered]="filters.activeCount() > 0"
+                  [columns]="columns().length"
+                  [emptyParts]="emptyParts()"
+                  [skeleton]="skeleton()"
+                  (retry)="load()"
+                  (clear)="clear()"
+                >
+                  @for (p of rows(); track p.projectId) {
+                    <tr>
+                      <td>
+                        <a
+                          class="pg-link pg-name"
+                          [routerLink]="['/projects', p.projectId]"
+                          [title]="p.name"
+                          >{{ p.name }}</a
+                        >
+                      </td>
+                      <td class="pg-fix">
+                        <mf-matter-cell [row]="p" [link]="auth.canLink('matter')" />
+                      </td>
+                      @if (showClient()) {
+                        <td class="pg-fix pg-fix--client">
+                          <span class="pg-clip" [title]="p.clientNumber + ' ' + p.clientName">{{
+                            p.clientName
+                          }}</span>
+                        </td>
+                      }
+                      @if (counts()) {
+                        <td class="pg-num">
+                          <mf-task-count
+                            kind="open"
+                            scope="project"
+                            [recordId]="p.projectId"
+                            [name]="p.name"
+                            [count]="p.openTaskCount ?? 0"
+                          />
+                        </td>
+                        <td class="pg-num">
+                          <mf-task-count
+                            kind="overdue"
+                            scope="project"
+                            [recordId]="p.projectId"
+                            [name]="p.name"
+                            [count]="p.overdueTaskCount ?? 0"
+                          />
+                        </td>
+                      }
+                      <td>
+                        <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        }
         @if (state() === 'ready' && total() > 0) {
           <mf-pager
             [page]="pageNumber()"
@@ -235,10 +312,23 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
   protected override readonly emptyOffersClear = true;
   private readonly api = inject(ProjectsClient);
   protected readonly auth = inject(AuthStore);
-  private readonly injector = inject(Injector);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
   private readonly wide = viewportAtLeast(CLIENT_COLUMN_MIN_PX);
+
+  /** Below 640 px the list is cards, not a table (WP12). */
+  protected readonly phone = phoneCards();
+  /** The phone's Sort by select: the sortable columns, counts only with Task.View (the headers' keys). */
+  protected readonly sortOptions = computed((): SortOption[] => [
+    { value: 'name', label: 'Name' },
+    { value: 'matterRef', label: 'Matter' },
+    ...(this.counts()
+      ? [
+          { value: 'openTasks', label: 'Open tasks', descFirst: true },
+          { value: 'overdue', label: 'Overdue', descFirst: true },
+        ]
+      : []),
+  ]);
 
   protected readonly defaultSort = 'name';
   /** Counts are null without Task.View: the two columns are not rendered then. */
@@ -304,9 +394,10 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
 
   constructor() {
     super();
-    // The controls move into the sheet while the grid scrolls sideways.
-    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
-      injector: this.injector,
+    // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
+    effect(() => {
+      const area = this.scroll()?.nativeElement;
+      if (area) untracked(() => this.filters.watchOverflow(area));
     });
   }
 

@@ -69,4 +69,23 @@ describe('PhoneSort', () => {
     fixture.detectChanges();
     expect(el.querySelector('[data-sort-rule]')!.textContent).toContain('Grouped by due date');
   });
+
+  it('takes the list\'s own options and default field: no "Default order", the direction always shows (record lists)', () => {
+    const { el, picks } = create({
+      options: [
+        { value: 'name', label: 'Name' },
+        { value: 'openTasks', label: 'Open tasks', descFirst: true },
+      ],
+      defaultField: 'name',
+    });
+    const select = el.querySelector<HTMLSelectElement>('[data-sort-select]')!;
+    expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual([
+      'Name',
+      'Open tasks',
+    ]);
+    expect(select.value).toBe('name');
+    expect(el.querySelector<HTMLSelectElement>('[data-dir-select]')!.value).toBe('asc');
+    change(select, 'openTasks');
+    expect(picks).toEqual([{ field: 'openTasks', dir: 'desc' }]);
+  });
 });

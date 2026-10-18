@@ -487,9 +487,23 @@ test.describe('WP9 list columns', () => {
         for (const [width, height] of SIZES) {
           await page.setViewportSize({ width, height });
           await page.goto(screen.url());
+          const what = `${screen.name} ${width}`;
+          if (width < 640) {
+            // Below 640 px the list is cards (WP12, wp12-phone-cards.spec.ts has their anatomy): status is on every card, 64 px and up.
+            const cardList = page.locator('li[data-record-card]');
+            await expect(cardList.first()).toBeVisible();
+            for (const h of await cardList.evaluateAll((rs) =>
+              rs.map((r) => r.getBoundingClientRect().height),
+            ))
+              expect(h, what).toBeGreaterThanOrEqual(64);
+            await expect(page.locator('table.pg-table')).toHaveCount(0);
+            await axeClean(page, what);
+            await noSideways(page, what);
+            await shot(page, screen.name);
+            continue;
+          }
           const region = grid(page, screen.region);
           await expect(region.locator('tbody tr:not([data-skeleton])').first()).toBeVisible();
-          const what = `${screen.name} ${width}`;
           for (const h of await region
             .locator('tbody tr:not([data-skeleton]):not(.gb-state)')
             .evaluateAll((rs) => rs.map((r) => r.getBoundingClientRect().height))) {

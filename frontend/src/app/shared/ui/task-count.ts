@@ -31,7 +31,7 @@ export function taskQueueQuery(
   selector: 'mf-task-count',
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[attr.data-count]': 'kind()' },
+  host: { '[attr.data-count]': 'kind()', '[class.tc-card]': 'word()' },
   template: `
     @if (count() > 0) {
       <a
@@ -45,14 +45,15 @@ export function taskQueueQuery(
         @if (kind() === 'overdue') {
           <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
         }
-        {{ count() }}
+        {{ count() }}{{ wordText() }}
       </a>
     } @else if (kind() === 'overdue') {
       <span class="tc tc-zero" [attr.title]="sentence()">
-        <span aria-hidden="true">–</span><span class="tc-sr">{{ sentence() }}</span>
+        <span aria-hidden="true">–{{ wordText() }}</span
+        ><span class="tc-sr">{{ sentence() }}</span>
       </span>
     } @else {
-      <span class="tc tc-zero" [attr.title]="sentence()">0</span>
+      <span class="tc tc-zero" [attr.title]="sentence()">0{{ wordText() }}</span>
     }
   `,
   styles: `
@@ -60,6 +61,11 @@ export function taskQueueQuery(
       display: block;
       text-align: right;
       font-variant-numeric: tabular-nums;
+    }
+    /* On a card (WP12) the count is read as words, "14 open", at the left of its line. */
+    :host(.tc-card) {
+      display: inline-block;
+      text-align: left;
     }
     .tc {
       display: inline-block;
@@ -103,10 +109,13 @@ export class TaskCount {
   readonly recordId = input.required<number>();
   /** The record's name, for the spoken name and the tooltip. */
   readonly name = input('');
+  /** Say what the number counts, "14 open" and "3 overdue" (the record cards have no column headers). */
+  readonly word = input(false);
 
   protected readonly query = computed(() =>
     taskQueueQuery(this.scope(), this.recordId(), this.kind()),
   );
+  protected readonly wordText = computed(() => (this.word() ? ` ${this.kind()}` : ''));
   protected readonly sentence = computed(() => {
     const n = this.count();
     const what =

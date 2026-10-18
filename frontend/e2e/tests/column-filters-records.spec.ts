@@ -111,7 +111,9 @@ test.describe('Column filters on the record lists', () => {
       const token = uid();
       await seed.client({ name: `Phone ${token}` });
       await page.goto('/clients');
-      await expect(grid(page, 'Clients list').locator('tbody tr').first()).toBeVisible();
+      // Below 640 px the Clients list is cards (WP12), not a table.
+      await expect(page.locator('li[data-record-card]').first()).toBeVisible();
+      await expect(page.locator('table.pg-table')).toHaveCount(0);
       await toggle(page).click();
       await expect(sheet(page)).toBeVisible();
       for (const column of ['Client number', 'Name', 'Status']) {

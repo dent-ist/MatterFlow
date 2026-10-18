@@ -26,10 +26,19 @@ export interface SortChoice {
   dir: SortDirection;
 }
 
+/** One entry of a list's own sort select (the record lists, WP12): the API sort key, its words, and whether the first pick is descending (counts). */
+export interface SortOption {
+  value: string;
+  label: string;
+  descFirst?: boolean;
+}
+
 /**
  * The sort of a work list on a phone (#192): the cards have no column headers, so the order is chosen here, in the Filters sheet, with the
  * same `sort` and `dir` parameters as the headers. "Default order" is the list's own rule (named under the select), a field plus a direction is a
  * header sort, and where the list can be grouped (My Work, Active) a Group by choice sits with it. 44 px controls.
+ * The record lists (Clients, Matters, Projects, WP12) pass their own `options` and the `defaultField` the list opens sorted by: there is no
+ * "Default order" entry then (the default is one of the options) and the direction always shows.
  */
 @Component({
   selector: 'mf-phone-sort',
@@ -43,16 +52,18 @@ export interface SortChoice {
           class="mf-control"
           [id]="uid + '-sort'"
           data-sort-select
-          [value]="sort() ?? ''"
+          [value]="current()"
           (change)="pickField($any($event.target).value)"
         >
-          <option value="" [selected]="!sort()">Default order ({{ defaultLabel() }})</option>
-          @for (f of fields; track f) {
-            <option [value]="f" [selected]="f === sort()">{{ label(f) }}</option>
+          @if (!defaultField()) {
+            <option value="" [selected]="!sort()">Default order ({{ defaultLabel() }})</option>
+          }
+          @for (f of fields(); track f.value) {
+            <option [value]="f.value" [selected]="f.value === current()">{{ f.label }}</option>
           }
         </select>
       </div>
-      @if (sort()) {
+      @if (current()) {
         <div class="ps-field">
           <label [for]="uid + '-dir'">Direction</label>
           <select
@@ -94,6 +105,10 @@ export class PhoneSort {
   readonly sort = input<string | null>(null);
   readonly dir = input<SortDirection | null>(null);
   readonly defaultLabel = input('Priority');
+  /** The list's own sorts (null: the sortable columns of the work grids). */
+  readonly options = input<readonly SortOption[] | null>(null);
+  /** The sort field the list opens with when the address has none; set, the "Default order" entry is not offered. */
+  readonly defaultField = input<string | null>(null);
   /** The full default rule, shown under the select while the default order is on. */
   readonly defaultOrder = input<string | null>(null);
   readonly groupable = input(false);
@@ -103,21 +118,27 @@ export class PhoneSort {
   readonly groupChange = output<'due' | null>();
 
   protected readonly uid = `mf-ps-${nextId++}`;
-  protected readonly fields = PHONE_SORTS;
+  protected readonly fields = computed<readonly SortOption[]>(
+    () =>
+      this.options() ?? PHONE_SORTS.map((value) => ({ value, label: SORT_LABELS[value] ?? value })),
+  );
+  /** The field the select shows: the address's, else the list's default one. */
+  protected readonly current = computed(() => this.sort() || this.defaultField() || '');
   protected readonly direction = computed<SortDirection>(
-    () => this.dir() ?? (DESC_FIRST.has(this.sort() ?? '') ? 'desc' : 'asc'),
+    () => this.dir() ?? (this.descFirst(this.current()) ? 'desc' : 'asc'),
   );
 
-  protected label(field: string): string {
-    return SORT_LABELS[field] ?? field;
+  private descFirst(field: string): boolean {
+    const own = this.options()?.find((o) => o.value === field);
+    return own ? !!own.descFirst : DESC_FIRST.has(field);
   }
 
   protected pickField(field: string): void {
-    this.sortPick.emit(field ? { field, dir: DESC_FIRST.has(field) ? 'desc' : 'asc' } : null);
+    this.sortPick.emit(field ? { field, dir: this.descFirst(field) ? 'desc' : 'asc' } : null);
   }
 
   protected pickDir(dir: string): void {
-    const field = this.sort();
+    const field = this.current();
     if (field) this.sortPick.emit({ field, dir: dir === 'desc' ? 'desc' : 'asc' });
   }
 }

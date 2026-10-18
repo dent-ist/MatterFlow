@@ -2,11 +2,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
-  Injector,
-  afterNextRender,
   computed,
+  effect,
   inject,
   input,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -25,7 +25,16 @@ import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
+import {
+  RecordCard,
+  RecordCardDef,
+  RecordCardList,
+  phoneCards,
+} from '../../../shared/ui/record-card-list';
+import { RecordSort } from '../../../shared/ui/record-sort';
+import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { MatterRef } from '../../../shared/ui/matter-ref';
+import { CopyButton } from '../../../shared/ui/copy-button';
 import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
 
@@ -62,6 +71,11 @@ const BONES: Record<string, string> = {
     GridBody,
     FiltersBar,
     ColumnFilterRow,
+    RecordCardList,
+    RecordCardDef,
+    RecordCard,
+    RecordSort,
+    CopyButton,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -78,134 +92,204 @@ const BONES: Record<string, string> = {
         You don't have permission to view matters.
       </div>
     } @else {
-      <mf-filters-bar [filters]="filters" controls="client-matter-filter-row" [clearAlso]="['q']" />
+      <mf-filters-bar [filters]="filters" controls="client-matter-filter-row" [clearAlso]="['q']">
+        <mf-record-sort
+          mfSheetSort
+          [options]="sortOptions()"
+          [sort]="sort()"
+          defaultSort="matterRef"
+          (sorted)="pickSort($event)"
+        />
+      </mf-filters-bar>
 
-      <div class="mf-table-wrap" mfScrollArea="Matters list" #scroll>
-        <div class="mf-scroll">
-          <table class="pg-table">
-            <caption class="pg-sr">
-              Matters of
-              {{
-                clientName()
-              }}
-            </caption>
-            <thead>
-              <tr>
-                <th
-                  mfSort="matterRef"
-                  [sort]="sort()"
-                  [defaultSort]="defaultSort"
-                  (sorted)="setSort($event)"
-                >
-                  Matter
-                </th>
-                <th
-                  mfSort="name"
-                  [sort]="sort()"
-                  [defaultSort]="defaultSort"
-                  (sorted)="setSort($event)"
-                >
-                  Name
-                </th>
-                @if (counts()) {
-                  <th
-                    class="pg-num"
-                    mfSort="openTasks"
-                    [firstDesc]="true"
-                    [sort]="sort()"
-                    [defaultSort]="defaultSort"
-                    (sorted)="setSort($event)"
-                  >
-                    Open tasks
-                  </th>
-                  <th
-                    class="pg-num"
-                    mfSort="overdue"
-                    [firstDesc]="true"
-                    [sort]="sort()"
-                    [defaultSort]="defaultSort"
-                    (sorted)="setSort($event)"
-                  >
-                    Overdue
-                  </th>
-                }
-                <th scope="col">Status</th>
-              </tr>
-              @if (filters.rowVisible()) {
-                <tr
-                  mfColumnFilterRow
-                  id="client-matter-filter-row"
-                  [filters]="filters"
-                  [columns]="columns()"
-                ></tr>
+      @if (phone()) {
+        <mf-record-card-list
+          noun="matters"
+          emptyText="No matters yet for this client."
+          [label]="'Matters of ' + clientName()"
+          [state]="state()"
+          [empty]="rows().length === 0"
+          [filtered]="filters.activeCount() > 0"
+          (retry)="load()"
+          (clear)="clear()"
+        >
+          <span mfEmptyAction *mfHasPermission="'Matter.Create'">
+            @if (clientActive()) {
+              <button type="button" class="mf-btn" data-empty-new-matter (click)="newMatter()">
+                New matter
+              </button>
+            } @else {
+              <span class="cm-reason">{{ INACTIVE_REASON }}</span>
+            }
+          </span>
+          <ng-template [mfRecordCard]="rows()" let-m>
+            <mf-record-card [name]="m.name" [link]="['/matters', m.matterId]">
+              <mf-active-badge mfCardBadges [active]="m.isActive" />
+              @if (m.isSensitive) {
+                <mf-sensitive-badge mfCardBadges />
               }
-            </thead>
-            <tbody
-              mfGridBody
-              noun="matters"
-              emptyText="No matters yet for this client."
-              [state]="state()"
-              [empty]="rows().length === 0"
-              [filtered]="filters.activeCount() > 0"
-              [columns]="columns().length"
-              [skeleton]="skeleton()"
-              (retry)="load()"
-              (clear)="clear()"
-            >
-              <span mfEmptyAction *mfHasPermission="'Matter.Create'">
-                @if (clientActive()) {
-                  <button type="button" class="mf-btn" data-empty-new-matter (click)="newMatter()">
-                    New matter
-                  </button>
-                } @else {
-                  <span class="cm-reason">{{ INACTIVE_REASON }}</span>
-                }
-              </span>
-              @for (m of rows(); track m.matterId) {
+              <mf-copy-button mfCardAside [text]="m.matterRef" label="matter number" />
+              <p mfCardMeta class="rc-line" data-card-meta>
+                <span class="rc-ref">{{ m.matterRef }}</span>
+              </p>
+              @if (counts()) {
+                <mf-task-count
+                  mfCardCounts
+                  kind="open"
+                  scope="matter"
+                  [word]="true"
+                  [recordId]="m.matterId"
+                  [name]="m.name"
+                  [count]="m.openTaskCount ?? 0"
+                />
+              }
+              @if (counts() && (m.overdueTaskCount ?? 0) > 0) {
+                <mf-task-count
+                  mfCardCounts
+                  kind="overdue"
+                  scope="matter"
+                  [word]="true"
+                  [recordId]="m.matterId"
+                  [name]="m.name"
+                  [count]="m.overdueTaskCount ?? 0"
+                />
+              }
+            </mf-record-card>
+          </ng-template>
+        </mf-record-card-list>
+      } @else {
+        <div class="mf-table-wrap" mfScrollArea="Matters list" #scroll>
+          <div class="mf-scroll">
+            <table class="pg-table">
+              <caption class="pg-sr">
+                Matters of
+                {{
+                  clientName()
+                }}
+              </caption>
+              <thead>
                 <tr>
-                  <td>
-                    <mf-matter-ref [value]="m.matterRef" />
-                  </td>
-                  <td>
-                    <div class="pg-namecell">
-                      <a
-                        class="pg-link pg-name"
-                        [routerLink]="['/matters', m.matterId]"
-                        [title]="m.name"
-                        >{{ m.name }}</a
-                      >
-                      @if (m.isSensitive) {
-                        <mf-sensitive-badge />
-                      }
-                    </div>
-                  </td>
+                  <th
+                    mfSort="matterRef"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Matter
+                  </th>
+                  <th
+                    mfSort="name"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Name
+                  </th>
                   @if (counts()) {
-                    <td class="pg-num">
-                      <mf-task-count
-                        kind="open"
-                        scope="matter"
-                        [recordId]="m.matterId"
-                        [name]="m.name"
-                        [count]="m.openTaskCount ?? 0"
-                      />
-                    </td>
-                    <td class="pg-num">
-                      <mf-task-count
-                        kind="overdue"
-                        scope="matter"
-                        [recordId]="m.matterId"
-                        [name]="m.name"
-                        [count]="m.overdueTaskCount ?? 0"
-                      />
-                    </td>
+                    <th
+                      class="pg-num"
+                      mfSort="openTasks"
+                      [firstDesc]="true"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Open tasks
+                    </th>
+                    <th
+                      class="pg-num"
+                      mfSort="overdue"
+                      [firstDesc]="true"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Overdue
+                    </th>
                   }
-                  <td><mf-active-badge [active]="m.isActive" /></td>
+                  <th scope="col">Status</th>
                 </tr>
-              }
-            </tbody>
-          </table>
+                @if (filters.rowVisible()) {
+                  <tr
+                    mfColumnFilterRow
+                    id="client-matter-filter-row"
+                    [filters]="filters"
+                    [columns]="columns()"
+                  ></tr>
+                }
+              </thead>
+              <tbody
+                mfGridBody
+                noun="matters"
+                emptyText="No matters yet for this client."
+                [state]="state()"
+                [empty]="rows().length === 0"
+                [filtered]="filters.activeCount() > 0"
+                [columns]="columns().length"
+                [skeleton]="skeleton()"
+                (retry)="load()"
+                (clear)="clear()"
+              >
+                <span mfEmptyAction *mfHasPermission="'Matter.Create'">
+                  @if (clientActive()) {
+                    <button
+                      type="button"
+                      class="mf-btn"
+                      data-empty-new-matter
+                      (click)="newMatter()"
+                    >
+                      New matter
+                    </button>
+                  } @else {
+                    <span class="cm-reason">{{ INACTIVE_REASON }}</span>
+                  }
+                </span>
+                @for (m of rows(); track m.matterId) {
+                  <tr>
+                    <td>
+                      <mf-matter-ref [value]="m.matterRef" />
+                    </td>
+                    <td>
+                      <div class="pg-namecell">
+                        <a
+                          class="pg-link pg-name"
+                          [routerLink]="['/matters', m.matterId]"
+                          [title]="m.name"
+                          >{{ m.name }}</a
+                        >
+                        @if (m.isSensitive) {
+                          <mf-sensitive-badge />
+                        }
+                      </div>
+                    </td>
+                    @if (counts()) {
+                      <td class="pg-num">
+                        <mf-task-count
+                          kind="open"
+                          scope="matter"
+                          [recordId]="m.matterId"
+                          [name]="m.name"
+                          [count]="m.openTaskCount ?? 0"
+                        />
+                      </td>
+                      <td class="pg-num">
+                        <mf-task-count
+                          kind="overdue"
+                          scope="matter"
+                          [recordId]="m.matterId"
+                          [name]="m.name"
+                          [count]="m.overdueTaskCount ?? 0"
+                        />
+                      </td>
+                    }
+                    <td><mf-active-badge [active]="m.isActive" /></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      }
       @if (state() === 'ready' && total() > 0) {
         <mf-pager
           [page]="pageNumber()"
@@ -232,10 +316,23 @@ export class ClientMatters extends ServerListPage<MatterResponse> {
   private readonly api = inject(MattersClient);
   private readonly auth = inject(AuthStore);
 
-  private readonly injector = inject(Injector);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
   protected readonly canView = computed(() => this.auth.has('Matter.View'));
+  /** Below 640 px the list is cards, not a table (WP12). */
+  protected readonly phone = phoneCards();
+  /** The phone's Sort by select: the sortable columns, counts only with Task.View (the headers' keys). */
+  protected readonly sortOptions = computed((): SortOption[] => [
+    { value: 'matterRef', label: 'Reference' },
+    { value: 'name', label: 'Name' },
+    ...(this.counts()
+      ? [
+          { value: 'openTasks', label: 'Open tasks', descFirst: true },
+          { value: 'overdue', label: 'Overdue', descFirst: true },
+        ]
+      : []),
+  ]);
+
   protected readonly defaultSort = 'matterRef';
   /** Counts are null without Task.View: the two columns are not rendered then. */
   protected readonly counts = computed(() => this.auth.has('Task.View'));
@@ -262,9 +359,10 @@ export class ClientMatters extends ServerListPage<MatterResponse> {
 
   constructor() {
     super();
-    // The controls move into the sheet while the grid scrolls sideways.
-    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
-      injector: this.injector,
+    // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
+    effect(() => {
+      const area = this.scroll()?.nativeElement;
+      if (area) untracked(() => this.filters.watchOverflow(area));
     });
   }
 

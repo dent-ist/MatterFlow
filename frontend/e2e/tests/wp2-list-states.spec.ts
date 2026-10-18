@@ -169,17 +169,23 @@ test.describe('WP2 list states (#251)', () => {
         for (const [w, h] of SIZES) {
           await page.setViewportSize({ width: w, height: h });
           await page.goto(list.url(clientId));
-          const body = page.locator('tbody[mfgridbody]');
-          await expect(body.locator('tr[data-skeleton]')).toHaveCount(5);
+          // Below 640 px the list is cards (WP12): the same five skeletons, one polite message and the busy state, on the card list.
+          const phone = w < 640;
+          const body = phone
+            ? page.locator('mf-record-card-list')
+            : page.locator('tbody[mfgridbody]');
+          await expect(body.locator('[data-skeleton]')).toHaveCount(5);
           await expect(body).toHaveAttribute('aria-busy', 'true');
           await expect(body.locator('[data-loading]')).toHaveText(`Loading ${list.noun}`);
           await expect(body.locator('[data-loading]')).toHaveAttribute('role', 'status');
-          await expect(page.locator('thead th').first()).toBeVisible();
+          if (phone) await expect(page.locator('table')).toHaveCount(0);
+          else await expect(page.locator('thead th').first()).toBeVisible();
           const heights = await body
-            .locator('tr[data-skeleton]')
+            .locator('[data-skeleton]')
             .evaluateAll((rows) => rows.map((r) => Math.round(r.getBoundingClientRect().height)));
-          for (const height of heights) expect(height).toBeGreaterThanOrEqual(44);
-          for (const height of heights) expect(height).toBeLessThanOrEqual(45);
+          // Table skeleton rows are 44 px; skeleton cards are at least the 64 px of a card.
+          for (const height of heights) expect(height).toBeGreaterThanOrEqual(phone ? 64 : 44);
+          if (!phone) for (const height of heights) expect(height).toBeLessThanOrEqual(45);
           await axeClean(page, `${list.name} loading ${w}`);
           await noSideways(page, `${list.name} loading ${w}`);
           await shot(page, `${list.name}-loading`);
@@ -196,7 +202,7 @@ test.describe('WP2 list states (#251)', () => {
           await stub(page, list.api, 'error', counter);
           await page.setViewportSize({ width: w, height: h });
           await page.goto(list.url(clientId));
-          const error = page.locator('tbody [data-error]');
+          const error = page.locator('[data-error]');
           await expect(error).toContainText(`Couldn't load ${list.noun}.`);
           await expect(error.locator('[data-error-reference]')).toContainText('wp2-trace-0001');
           await expect(error.getByRole('button', { name: 'Retry' })).toBeVisible();
@@ -205,13 +211,13 @@ test.describe('WP2 list states (#251)', () => {
           await shot(page, `${list.name}-error`);
 
           await error.getByRole('button', { name: 'Retry' }).click();
-          await expect(page.locator('tbody [data-error]')).toHaveCount(0);
+          await expect(page.locator('[data-error]')).toHaveCount(0);
           // The row region (a row link, or the scrollable region when the list has no row) holds focus.
           await expect
             .poll(() =>
               page.evaluate(
                 () =>
-                  !!document.activeElement?.closest('tbody') ||
+                  !!document.activeElement?.closest('tbody, mf-record-card-list li') ||
                   document.activeElement?.classList.contains('mf-scroll-area'),
               ),
             )
@@ -225,7 +231,7 @@ test.describe('WP2 list states (#251)', () => {
         for (const [w, h] of SIZES) {
           await page.setViewportSize({ width: w, height: h });
           await page.goto(list.url(clientId));
-          const cell = page.locator('tbody [data-forbidden]');
+          const cell = page.locator('[data-forbidden]');
           await expect(cell).toHaveText(`You don't have access to ${list.noun}.`);
           await expect(page.getByRole('button', { name: 'Retry' })).toHaveCount(0);
           await axeClean(page, `${list.name} forbidden ${w}`);
@@ -242,7 +248,7 @@ test.describe('WP2 list states (#251)', () => {
         for (const [w, h] of SIZES) {
           await page.setViewportSize({ width: w, height: h });
           await page.goto(list.url(clientId));
-          const none = page.locator('tbody td[data-empty=none]');
+          const none = page.locator('[data-empty=none]');
           await expect(none).toContainText(list.none);
           if (list.action) {
             await expect(none.getByRole('button', { name: list.action })).toBeVisible();
@@ -259,7 +265,7 @@ test.describe('WP2 list states (#251)', () => {
 
           const sep = list.url(clientId).includes('?') ? '&' : '?';
           await page.goto(`${list.url(clientId)}${sep}name=zzz-no-match`);
-          const filtered = page.locator('tbody td[data-empty=filtered]');
+          const filtered = page.locator('[data-empty=filtered]');
           await expect(filtered).toContainText(`No ${list.noun} match these filters`);
           await expect(filtered.getByRole('button', { name: 'Clear filters' })).toBeVisible();
           await axeClean(page, `${list.name} filtered-empty ${w}`);
@@ -302,8 +308,8 @@ test.describe('WP2 list states (#251)', () => {
         );
         await page.setViewportSize({ width, height });
         await page.goto(`${url}${url.includes('?') ? '&' : '?'}name=${w.tag}`);
-        await expect(page.locator('tbody tr[data-skeleton]')).toHaveCount(5);
-        await expect(page.locator('tbody tr[data-skeleton]')).toHaveCount(0);
+        await expect(page.locator('[data-skeleton]')).toHaveCount(5);
+        await expect(page.locator('[data-skeleton]')).toHaveCount(0);
         await page.waitForTimeout(300);
         const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);
         expect(cls, `${url} at ${width}`).toBeLessThan(0.02);
@@ -322,16 +328,19 @@ test.describe('WP2 matter reference on one line (#252)', () => {
         name: 'matters-list',
         url: `/matters?matterRef=${ref}`,
         cell: 'tbody mf-matter-ref .mf-ref',
+        phoneCell: '[data-card-meta] .rc-ref',
       },
       {
         name: 'client-matters',
         url: `/clients/${w.client.clientId}?tab=matters`,
         cell: 'tbody mf-matter-ref .mf-ref',
+        phoneCell: '[data-card-meta] .rc-ref',
       },
       {
         name: 'projects-list',
         url: `/projects?name=${w.tag}`,
         cell: 'tbody mf-matter-ref .mf-ref',
+        phoneCell: '[data-card-matter] .rc-ref',
       },
       { name: 'assets-list', url: `/assets?name=${w.tag}`, cell: 'tbody mf-matter-ref .mf-ref' },
     ];
@@ -339,14 +348,16 @@ test.describe('WP2 matter reference on one line (#252)', () => {
       await page.setViewportSize({ width, height });
       for (const t of tables) {
         await page.goto(t.url);
-        const cell = page.locator(t.cell).first();
+        // Below 640 px the three record lists are cards (WP12) with the reference in the mono `rc-ref`; Assets stays a table.
+        const selector = width < 640 && t.phoneCell ? t.phoneCell : t.cell;
+        const cell = page.locator(selector).first();
         await expect(cell, `${t.name} at ${width}`).toBeVisible();
         await expect(cell).toHaveText(ref);
-        expect(await lines(page, t.cell), `${t.name} at ${width}`).toEqual(
+        expect(await lines(page, selector), `${t.name} at ${width}`).toEqual(
           expect.arrayContaining([1]),
         );
         expect(
-          (await lines(page, t.cell)).every((n) => n === 1),
+          (await lines(page, selector)).every((n) => n === 1),
           `${t.name} at ${width}`,
         ).toBe(true);
         // The copy button stays beside the reference, on the same line.
