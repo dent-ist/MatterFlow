@@ -147,7 +147,9 @@ test.describe('Column filters on the work lists', () => {
       await view(page, 'Overdue').click();
       await expect(page).toHaveURL(/overdue=true/);
       await expect(view(page, 'Overdue')).toHaveAttribute('aria-pressed', 'true');
-      await expect(chips(page)).toContainText('Overdue only');
+      // The view owns its filter: no chip repeats it and "Filters (n)" does not count it (#221).
+      await expect(chips(page)).toHaveCount(0);
+      await expect(toggle(page)).not.toHaveText(/\(/);
 
       await view(page, 'Unassigned').click();
       await expect(page).toHaveURL(/unassigned=true/);
@@ -155,11 +157,20 @@ test.describe('Column filters on the work lists', () => {
       await expect(rowControl(page, 'assignee')).toContainText('Unassigned');
       await expect(view(page, 'Unassigned')).toHaveAttribute('aria-pressed', 'true');
 
-      // A change by hand un-presses the view, and the chips and the count follow the row.
+      // A filter on top of the view is an extra filter: the view stays pressed and the count is the extra ones (#221).
       await text(page, 'Matter').fill('zzz');
       await expect(page).toHaveURL(/matterText=zzz/);
+      await expect(view(page, 'Unassigned')).toHaveAttribute('aria-pressed', 'true');
+      await expect(toggle(page)).toHaveText(/\(1\)/);
+      // A change to what the view owns un-presses it, and the count follows the row.
+      await rowControl(page, 'status').click();
+      await page
+        .getByRole('dialog', { name: 'Filter by Status' })
+        .getByRole('button', { name: 'Clear' })
+        .click();
+      await page.keyboard.press('Escape');
       await expect(view(page, 'Unassigned')).toHaveAttribute('aria-pressed', 'false');
-      await expect(toggle(page)).toHaveText(/\(2\)/);
+      await expect(toggle(page)).toHaveText(/\(3\)/);
 
       // All open is the plain link.
       await view(page, 'All open').click();

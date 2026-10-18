@@ -4,6 +4,7 @@ import { Page } from '@playwright/test';
 import { TaskQueuePage } from '../pages/queues.pages';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { ViewKey, chooseView, viewAvailable } from '../support/views';
 
 /**
  * Task Queue copy (WP4: #225, #226, #227): chips and the restored notice never repeat themselves, an empty quick view says what is true
@@ -46,9 +47,15 @@ test.describe('Task Queue copy', () => {
     const queue = new TaskQueuePage(page);
     await queue.open();
     await queue.quickView('Overdue').click();
+    // The pressed view owns its filter: no chip repeats it (WP16, #221).
+    await expect(page.locator('[data-filter-chips] [data-chip]')).toHaveCount(0);
+    // The same filter without the view (one status only) reads "Overdue only", never "Overdue: Overdue only".
+    await page.goto('/tasks?overdue=true&status=NEW');
     const chips = page.locator('[data-filter-chips] [data-chip]');
     await expect(chips).toContainText(['Overdue only']);
     await expect(page.locator('[data-filter-chips]')).not.toContainText('Overdue: Overdue only');
+    await queue.open();
+    await queue.quickView('Overdue').click();
 
     // Leave and come back to the plain list: the last view comes back, named once.
     await page.goto('/my-work');
@@ -74,25 +81,27 @@ test.describe('Task Queue copy', () => {
     const queue = new TaskQueuePage(page);
     await queue.open();
     const empty = page.locator('tbody [data-empty]');
-    const cases: [string, string][] = [
-      ['Unassigned', 'Every open task has an owner.'],
-      ['Overdue', 'Nothing is overdue.'],
-      ['My pod', 'Your pod has no open tasks.'],
-      ['Created by me', 'You have no open tasks you created.'],
-      ['Recently completed', 'Nothing was completed in the last 30 days.'],
+    const cases: [ViewKey, string][] = [
+      ['unassigned', 'Every open task has an owner.'],
+      ['overdue', 'Nothing is overdue.'],
+      ['dueSoon', 'Nothing is due in the next 2 days.'],
+      ['asap', 'No ASAP tasks.'],
+      ['onHold', 'Nothing is on hold.'],
+      ['myPod', 'Your pod has no open tasks.'],
+      ['createdByMe', 'You have no open tasks you created.'],
+      ['recentlyCompleted', 'Nothing was completed in the last 30 days.'],
     ];
     for (const [view, text] of cases) {
-      const button = queue.quickView(view);
-      if (await button.isDisabled()) continue; // My pod needs a primary Pod
-      await button.click();
+      if (!(await viewAvailable(page, view))) continue; // My pod needs a primary Pod
+      await chooseView(page, view);
       await expect(empty, view).toContainText(text);
       await expect(empty, view).not.toContainText('Clear filters');
       await expect(page.locator('thead th').first()).toBeVisible();
-      if (view === 'Overdue') await shot(page, 'empty-overdue-1366x768');
+      if (view === 'overdue') await shot(page, 'empty-overdue-1366x768');
     }
 
     // Created by me offers Create task (Task.Create is held).
-    await queue.quickView('Created by me').click();
+    await chooseView(page, 'createdByMe');
     await expect(empty.getByRole('button', { name: 'Create task' })).toBeVisible();
 
     // A view plus another filter is a search that found nothing.

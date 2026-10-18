@@ -7,6 +7,7 @@ import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 import { TaskApi } from '../support/tasks';
 import { dateInZone, FIRM_ZONE } from '../support/time';
+import { chooseView, inStrip, isPressed, moreButton } from '../support/views';
 
 /**
  * Quick views with counts, order and column overlay (WP11: #218, #219). Nothing here depends on global counts or order: counts are
@@ -28,13 +29,25 @@ const SIZES = [
   [375, 812],
 ] as const;
 
-type Key = 'allOpen' | 'unassigned' | 'myPod' | 'createdByMe' | 'overdue' | 'recentlyCompleted';
+type Key =
+  | 'allOpen'
+  | 'unassigned'
+  | 'myPod'
+  | 'createdByMe'
+  | 'overdue'
+  | 'dueSoon'
+  | 'asap'
+  | 'onHold'
+  | 'recentlyCompleted';
 const FIELD: Record<Key, string> = {
   allOpen: 'open',
   unassigned: 'unassigned',
   myPod: 'myPod',
   createdByMe: 'createdByMe',
   overdue: 'overdue',
+  dueSoon: 'dueSoon',
+  asap: 'asap',
+  onHold: 'onHold',
   recentlyCompleted: 'recentlyCompleted',
 };
 const LABEL: Record<Key, string> = {
@@ -43,14 +56,17 @@ const LABEL: Record<Key, string> = {
   myPod: 'My pod',
   createdByMe: 'Created by me',
   overdue: 'Overdue',
+  dueSoon: 'Due soon',
+  asap: 'ASAP',
+  onHold: 'On hold',
   recentlyCompleted: 'Recently completed',
 };
 
 const view = (page: Page, key: Key) => page.locator(`[data-view="${key}"]`);
 
 /** The number a button shows, without the parentheses and commas. */
-async function shown(page: Page, key: Key): Promise<number> {
-  const text = (await view(page, key).locator('.qv-n').textContent()) ?? '';
+async function shown(page: Page, key: Key, button = view(page, key)): Promise<number> {
+  const text = (await button.locator('.qv-n').textContent()) ?? '';
   return Number(text.replace(/[(),]/g, ''));
 }
 
@@ -74,22 +90,30 @@ test.describe('Quick view counts and order (WP11)', () => {
       'unassigned',
       'createdByMe',
       'overdue',
+      'dueSoon',
+      'asap',
+      'onHold',
       'recentlyCompleted',
     ] as Key[]) {
-      await expect(view(page, key).locator('.qv-n:not([data-count-pending])')).toBeVisible();
+      // A view that does not fit row 1 sits in the More menu (always Recently completed): it shows its count once chosen.
+      const inRow = await inStrip(page, key);
+      if (inRow) {
+        await expect(view(page, key).locator('.qv-n:not([data-count-pending])')).toBeVisible();
+      }
       const [response] = await Promise.all([
         page.waitForResponse((r) => isQueue(r.url()) && r.status() === 200),
         key === 'allOpen' && (await view(page, key).getAttribute('aria-pressed')) === 'true'
           ? page.reload()
-          : view(page, key).click(),
+          : chooseView(page, key),
       ]);
       const body = (await response.json()) as { total: number; views: Record<string, number> };
       const count = body.views[FIELD[key]];
       // The button's number is the view's count and the grid's total of the same query, in one response.
       expect(count, `${key} total`).toBe(body.total);
-      await expect(view(page, key)).toHaveAttribute('data-count', String(count));
-      expect(await shown(page, key)).toBe(count);
-      await expect(view(page, key)).toHaveAccessibleName(
+      const pressedButton = (await inStrip(page, key)) ? view(page, key) : moreButton(page);
+      await expect(pressedButton).toHaveAttribute('data-count', String(count));
+      expect(await shown(page, key, pressedButton)).toBe(count);
+      await expect(pressedButton).toHaveAccessibleName(
         `${LABEL[key]}, ${count.toLocaleString('en-US')} ${count === 1 ? 'task' : 'tasks'}`,
       );
     }
@@ -132,7 +156,7 @@ test.describe('Quick view counts and order (WP11)', () => {
     await page.goto('/tasks');
     await expect(view(page, 'overdue').locator('[data-count-pending]')).toBeVisible();
     await expect(view(page, 'overdue')).toHaveAccessibleName('Overdue');
-    const keys: Key[] = ['allOpen', 'unassigned', 'createdByMe', 'overdue', 'recentlyCompleted'];
+    const keys: Key[] = ['allOpen', 'unassigned', 'overdue'];
     const boxes = async () =>
       Promise.all(keys.map(async (k) => (await view(page, k).boundingBox())!));
     const loading = await boxes();
@@ -168,7 +192,7 @@ test.describe('Quick view counts and order (WP11)', () => {
       Object.entries(localStorage).filter(([k]) => /column/i.test(k)),
     );
     await expect(page.locator('thead th[data-col="due"]')).toHaveCount(1);
-    await view(page, 'recentlyCompleted').click();
+    await chooseView(page, 'recentlyCompleted');
     await expect(page).toHaveURL(/sort=closed&dir=desc/);
     await expect(page.locator('thead th[data-col="closed"]')).toHaveAttribute(
       'aria-sort',
@@ -195,7 +219,7 @@ test.describe('Quick view counts and order (WP11)', () => {
 
     // Header click: still pressed (filters match), still no Due.
     await page.locator('thead th[data-col="priority"] button').click();
-    await expect(view(page, 'recentlyCompleted')).toHaveAttribute('aria-pressed', 'true');
+    expect(await isPressed(page, 'recentlyCompleted')).toBe(true);
     await expect(page.locator('thead th[data-col="closed"]')).toHaveCount(1);
 
     await view(page, 'allOpen').click();
@@ -244,16 +268,17 @@ test.describe('Quick view counts and order (WP11)', () => {
       await page.setViewportSize({ width: w, height: h });
       const queue = new TaskQueuePage(page);
       await queue.open();
-      await expect(view(page, 'overdue').locator('.qv-n:not([data-count-pending])')).toBeVisible();
+      // Narrow windows keep fewer views in the row (the rest are in More): wait for the first count.
+      await expect(page.locator('.qv .qv-n:not([data-count-pending])').first()).toBeVisible();
       if (w >= 1100) {
         const bar = (await page.locator('[data-grid-toolbar]').boundingBox())!;
         expect(bar.height, `row 1 at ${w}`).toBeLessThanOrEqual(40);
       }
       expect(await axeViolations(page), `default at ${w}`).toEqual([]);
       await shot(page, `quick-views-counts-${w}x${h}`);
-      await view(page, 'recentlyCompleted').click();
+      await chooseView(page, 'recentlyCompleted');
       await expect(page).toHaveURL(/sort=closed/);
-      await expect(view(page, 'recentlyCompleted')).toHaveAttribute('aria-pressed', 'true');
+      expect(await isPressed(page, 'recentlyCompleted')).toBe(true);
       if (w >= 1100) {
         const bar = (await page.locator('[data-grid-toolbar]').boundingBox())!;
         expect(bar.height, `row 1 pressed at ${w}`).toBeLessThanOrEqual(40);
