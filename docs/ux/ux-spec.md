@@ -1498,7 +1498,7 @@ Internal codes fixed: NEW, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED. Rules (ad
 - On Hold -> In Progress; -> Cancelled (comment).
 - Completed -> In Progress (reopen; blocked if Matter inactive); Cancelled -> In Progress (reopen; same block).
 - Completed -> Cancelled and Cancelled -> Completed are not offered (go via In Progress) [UX-PROPOSAL].
-- Cancel allowed at any non-cancelled state, comment mandatory, workflow state irrelevant.
+- Cancel allowed from every **open** state (New, In Progress, On Hold), comment mandatory, workflow state irrelevant. A Completed or Cancelled task offers only Reopen, in every menu (inline Status menu, Change status menu) and the header "Cancel task" button is hidden for it. Decision (PM), Task Queue review BUG-TQ4: this resolves the earlier contradiction with the line above.
 - Editing a Completed/Cancelled Task requires first moving to In Progress.
 - Reopening a step on a Completed Task auto-moves it to In Progress.
 - Assigning a user to New -> In Progress. Pod-only assignment: no change. Unassigning: no revert.
