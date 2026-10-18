@@ -1,4 +1,11 @@
-import { ariaSort, isActiveParam, nextSort, parsePage, parseStatus } from './list-helpers';
+import {
+  ariaSort,
+  isActiveParam,
+  naturalCompare,
+  nextSort,
+  parsePage,
+  parseStatus,
+} from './list-helpers';
 
 describe('list helpers', () => {
   it('toggles sort direction on repeated activation', () => {
@@ -22,6 +29,25 @@ describe('list helpers', () => {
     expect(parseStatus('inactive')).toBe('inactive');
     expect(parseStatus('bogus')).toBe('active');
     expect(parseStatus(undefined)).toBe('active');
+  });
+
+  it('compares names naturally: numbers as numbers, case and accents ignored, ties stable (#249)', () => {
+    const sorted = (names: string[]) => [...names].sort(naturalCompare);
+    expect(sorted(['Wave 15', 'Wave 39', 'Wave 7', 'Wave 23', 'Wave 31'])).toEqual([
+      'Wave 7',
+      'Wave 15',
+      'Wave 23',
+      'Wave 31',
+      'Wave 39',
+    ]);
+    expect(sorted(['Étude 10', 'etude 2'])).toEqual(['etude 2', 'Étude 10']);
+    expect(naturalCompare('Etude 1', 'étude 1')).toBe(0);
+    // Equal names keep their incoming order (the server's: name, then id).
+    const rows = [
+      { id: 2, name: 'Alpha' },
+      { id: 1, name: 'alpha' },
+    ];
+    expect(rows.sort((a, b) => naturalCompare(a.name, b.name)).map((r) => r.id)).toEqual([2, 1]);
   });
 
   it('parses page numbers defensively', () => {

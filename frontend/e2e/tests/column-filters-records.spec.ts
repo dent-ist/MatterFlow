@@ -259,7 +259,7 @@ test.describe('Column filters on the record lists', () => {
   });
 
   test.describe("Client's Matters", () => {
-    test('the grid has the column filters in the client page, Create matter beside the Filters button, and keeps the headers when empty', async ({
+    test('the grid has the column filters in the client page, New matter beside the Filters button, and keeps the headers when empty', async ({
       page,
       seed,
     }) => {
@@ -274,7 +274,7 @@ test.describe('Column filters on the record lists', () => {
       await expect(rows).toHaveCount(2);
       await expect(page.locator('#client-matter-search, #client-matter-status')).toHaveCount(0);
       await expect(text(page, 'Name')).toHaveCount(0);
-      await expect(page.getByRole('button', { name: 'Create matter' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'New matter' })).toBeVisible();
 
       await toggle(page).click();
       await expect(select(page, 'Status')).toHaveValue('active');

@@ -9,7 +9,6 @@ import {
   input,
   viewChild,
 } from '@angular/core';
-import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { MatterResponse, MattersClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -28,19 +27,21 @@ import { ServerListPage } from '../../../shared/ui/list-query';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { Pager } from '../../../shared/ui/pager';
 
+/** Why New matter is unavailable for an inactive client (the server refuses with ClientInactive); shown beside the button and as its tooltip. */
+const INACTIVE_REASON = 'This client is inactive. Set it active to add matters.';
+
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
 
 /**
  * The main area of the Client detail page: the client's Matters as a list in the shared pattern (inline column filters for Matter and
  * Name, Status defaulting to Active, Sensitive under "Other filters"; sortable columns, paging, loading / empty / error states) with a
- * "Create matter" button that prefills the client. The filters (`matterRef`, `name`, `status`, `isSensitive`) are read from the address
+ * "New matter" button that prefills the client. The filters (`matterRef`, `name`, `status`, `isSensitive`) are read from the address
  * by `ListFilters`; the page binds `status`, `page`, `size` and `sort` like every other list. Needs `Matter.View`.
  */
 @Component({
   selector: 'mf-client-matters',
   imports: [
-    Button,
     ScrollArea,
     HasPermissionDirective,
     ActiveBadge,
@@ -55,6 +56,19 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
+  styles: `
+    .cm-new {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s2) var(--mf-s3);
+      min-width: 0;
+    }
+    .cm-reason {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+  `,
   template: `
     @if (!canView()) {
       <div class="pg-state" data-no-access="matters">
@@ -62,23 +76,27 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
       </div>
     } @else {
       <mf-filters-bar [filters]="filters" controls="client-matter-filter-row" [clearAlso]="['q']">
-        <p-button
-          mfBarStart
-          *mfHasPermission="'Matter.Create'"
-          label="Create matter"
-          icon="pi pi-plus"
-          severity="secondary"
-          data-create-matter
-          [disabled]="!clientActive()"
-          [attr.aria-describedby]="clientActive() ? null : 'client-inactive-reason'"
-          (onClick)="go('/matters/new?clientId=' + clientId())"
-        />
+        <span mfBarStart *mfHasPermission="'Matter.Create'" class="cm-new">
+          <!-- aria-disabled, not disabled: the button stays in the tab order, so the reason is reachable and read out. -->
+          <button
+            type="button"
+            class="mf-btn"
+            data-create-matter
+            [attr.aria-disabled]="clientActive() ? null : 'true'"
+            [attr.aria-describedby]="clientActive() ? null : 'client-inactive-reason'"
+            [attr.title]="clientActive() ? null : INACTIVE_REASON"
+            (click)="newMatter()"
+          >
+            <i class="pi pi-plus" aria-hidden="true"></i>
+            New matter
+          </button>
+          @if (!clientActive()) {
+            <span class="cm-reason" id="client-inactive-reason" data-inactive-reason>{{
+              INACTIVE_REASON
+            }}</span>
+          }
+        </span>
       </mf-filters-bar>
-      @if (!clientActive()) {
-        <p class="pg-reason" id="client-inactive-reason" data-inactive-reason>
-          This client is inactive, so new matters can't be created for it.
-        </p>
-      }
 
       <div class="mf-table-wrap" mfScrollArea="Matters list" #scroll>
         <div class="mf-scroll">
@@ -130,6 +148,15 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
               (retry)="load()"
               (clear)="clear()"
             >
+              <span mfEmptyAction *mfHasPermission="'Matter.Create'">
+                @if (clientActive()) {
+                  <button type="button" class="mf-btn" data-empty-new-matter (click)="newMatter()">
+                    New matter
+                  </button>
+                } @else {
+                  <span class="cm-reason">{{ INACTIVE_REASON }}</span>
+                }
+              </span>
               @for (m of rows(); track m.matterId) {
                 <tr>
                   <td>
@@ -165,7 +192,7 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
 export class ClientMatters extends ServerListPage<MatterResponse> {
   readonly clientId = input.required<number>();
   readonly clientName = input('');
-  /** False for an inactive client: Create matter is disabled with a visible reason. */
+  /** False for an inactive client: New matter is disabled with a visible reason. */
   readonly clientActive = input(true);
 
   private readonly api = inject(MattersClient);
@@ -177,6 +204,7 @@ export class ClientMatters extends ServerListPage<MatterResponse> {
   protected readonly canView = computed(() => this.auth.has('Matter.View'));
   protected readonly defaultSort = 'matterRef';
   protected readonly columns = COLUMNS;
+  protected readonly INACTIVE_REASON = INACTIVE_REASON;
 
   /** One definition per filter (the Matters list's, without the Client column). */
   private readonly defs = computed((): FilterDef[] => matterColumnDefs('Matter'));
@@ -193,6 +221,11 @@ export class ClientMatters extends ServerListPage<MatterResponse> {
     afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
       injector: this.injector,
     });
+  }
+
+  /** Opens the New matter form for this client; does nothing for an inactive one (the button is `aria-disabled`, not disabled). */
+  protected newMatter(): void {
+    if (this.clientActive()) this.go('/matters/new?clientId=' + this.clientId());
   }
 
   protected override listFilters() {

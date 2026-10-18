@@ -437,12 +437,85 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('[data-inactive-banner]')).toBeNull(); // still active
   });
 
-  it('shows a not-found state', async () => {
+  it('shows the not-found text with a link back and no Retry for a 404', async () => {
     await create(['Matter.View']);
     matters.getMatter.mockReturnValue(apiError(404, { status: 404, code: 'NOT_FOUND' }));
     await fixture.componentInstance.load();
     await settle(fixture);
 
-    expect(el().querySelector('[role=alert]')?.textContent).toContain("couldn't find that matter");
+    expect(el().querySelector('h1')?.textContent).toContain("We couldn't find that matter.");
+    expect(el().querySelector('[data-back-link]')?.textContent).toContain('Go to matters');
+    expect(buttonByLabel(el(), 'Retry')).toBeUndefined();
+    expect(el().querySelector('[role=tablist]')).toBeNull();
+  });
+
+  it('shows the access text for a 403 and "Couldn\'t load" with Retry for a server fault', async () => {
+    await create(['Matter.View']);
+    matters.getMatter.mockReturnValue(apiError(403, { status: 403, code: 'PERMISSION_DENIED' }));
+    await fixture.componentInstance.load();
+    await settle(fixture);
+    expect(el().querySelector('h1')?.textContent).toContain(
+      "You don't have access to this matter.",
+    );
+    expect(buttonByLabel(el(), 'Retry')).toBeUndefined();
+
+    matters.getMatter.mockReturnValue(apiError(500, { status: 500 }));
+    await fixture.componentInstance.load();
+    await settle(fixture);
+    expect(el().querySelector('h1')?.textContent).toContain("Couldn't load this matter.");
+    matters.getMatter.mockReturnValue(ok(aMatter()));
+    buttonByLabel(el(), 'Retry')!.click();
+    await settle(fixture);
+    expect(el().querySelector('[data-record-live]')?.textContent).toBe('Loaded');
+    expect(buttonByLabel(el(), 'Retry')).toBeUndefined();
+  });
+
+  it('names the record and the tab in the document title', async () => {
+    await create(['Matter.View', 'Project.View']);
+    expect(document.title).toBe('00343-00012 Merger Review: Details - MatterFlow');
+    await openTab('projects');
+    expect(document.title).toBe('00343-00012 Merger Review: Projects - MatterFlow');
+    await openTab('assets');
+    expect(document.title).toBe('00343-00012 Merger Review: Assets - MatterFlow');
+  });
+
+  it('sorts the Projects tab in natural order (Wave 7 before Wave 15, accents and case ignored)', async () => {
+    await create(['Matter.View', 'Project.View']);
+    const names = ['Wave 15', 'Wave 7', 'Wave 23', 'Étude 10', 'etude 2'];
+    projects.listProjects.mockReturnValue(
+      ok(pageOfProjects(...names.map((name, i) => aProject({ projectId: i + 1, name })))),
+    );
+    await fixture.componentInstance.load();
+    await openTab('projects');
+
+    const rows = Array.from(el().querySelectorAll('tbody tr td:first-child')).map((c) =>
+      c.textContent!.trim(),
+    );
+    expect(rows).toEqual(['etude 2', 'Étude 10', 'Wave 7', 'Wave 15', 'Wave 23']);
+    expect(el().querySelector('[data-projects-truncated]')).toBeNull();
+  });
+
+  it('keeps the server order and says so when the matter has more projects than one page returns', async () => {
+    await create(['Matter.View', 'Project.View']);
+    projects.listProjects.mockReturnValue(
+      ok({
+        ...pageOfProjects(
+          aProject({ projectId: 1, name: 'Wave 15' }),
+          aProject({ projectId: 2, name: 'Wave 7' }),
+        ),
+        total: 250,
+      }),
+    );
+    await fixture.componentInstance.load();
+    await openTab('projects');
+
+    expect(
+      Array.from(el().querySelectorAll('tbody tr td:first-child')).map((c) =>
+        c.textContent!.trim(),
+      ),
+    ).toEqual(['Wave 15', 'Wave 7']);
+    expect(el().querySelector('[data-projects-truncated]')?.textContent).toContain(
+      'Showing the first 2 projects.',
+    );
   });
 });

@@ -48,3 +48,13 @@ export function debounced<A extends unknown[]>(
     timer = setTimeout(() => fn(...args), ms);
   };
 }
+
+const NATURAL = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
+/**
+ * Compares two names the way a person reads them: digits as numbers ("Wave 7" before "Wave 15") and case and accents ignored
+ * ("Étude 2" before "etude 10"). `Array.sort` is stable, so equal names keep the order they came in.
+ */
+export function naturalCompare(a: string, b: string): number {
+  return NATURAL.compare(a, b);
+}

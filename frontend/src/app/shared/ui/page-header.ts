@@ -8,6 +8,8 @@ export interface Crumb {
   label: string;
   /** Router commands (or a URL string). Omit for the current page. */
   link?: string | readonly unknown[] | UrlTree;
+  /** A grey bar instead of the label (`mf-record-skeleton`: the record is still loading); `label` is ignored. */
+  skeleton?: boolean;
 }
 
 /**
@@ -33,7 +35,9 @@ export interface Crumb {
           <ol>
             @for (c of crumbs(); track $index; let last = $last) {
               <li>
-                @if (c.link && !last) {
+                @if (c.skeleton) {
+                  <span class="ph__sk" aria-hidden="true" data-crumb-skeleton></span>
+                } @else if (c.link && !last) {
                   <a [routerLink]="c.link">{{ c.label }}</a>
                 } @else {
                   <span [attr.aria-current]="last ? 'page' : null">{{ c.label }}</span>
@@ -87,6 +91,16 @@ export interface Crumb {
     }
     .ph__crumbs a {
       color: var(--mf-link);
+    }
+    .ph__sk {
+      display: inline-block;
+      width: 9rem;
+      max-width: 100%;
+      height: 0.8em;
+      border-radius: 3px;
+      background: var(--mf-border);
+      opacity: 0.55;
+      vertical-align: baseline;
     }
     .ph__row {
       display: flex;

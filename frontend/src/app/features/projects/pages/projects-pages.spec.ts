@@ -452,15 +452,37 @@ describe('Projects pages', () => {
       expect(buttonByLabel(el(), 'Restore')).toBeDefined();
     });
 
-    it('shows a not-found state', async () => {
+    it('shows the not-found text with a link back and no Retry for a 404', async () => {
       await create(['Project.View']);
       projects.getProject.mockReturnValue(apiError(404, { status: 404, code: 'NOT_FOUND' }));
       await fixture.componentInstance.load();
       await settle(fixture);
 
-      expect(el().querySelector('[role=alert]')?.textContent).toContain(
-        "couldn't find that project",
+      expect(el().querySelector('h1')?.textContent).toContain("We couldn't find that project.");
+      expect(el().querySelector('[data-back-link]')?.textContent).toContain('Go to projects');
+      expect(buttonByLabel(el(), 'Retry')).toBeUndefined();
+    });
+
+    it('shows the access text for a 403 and Retry for a server fault', async () => {
+      await create(['Project.View']);
+      projects.getProject.mockReturnValue(apiError(403, { status: 403 }));
+      await fixture.componentInstance.load();
+      await settle(fixture);
+      expect(el().querySelector('h1')?.textContent).toContain(
+        "You don't have access to this project.",
       );
+      expect(buttonByLabel(el(), 'Retry')).toBeUndefined();
+
+      projects.getProject.mockReturnValue(apiError(503, { status: 503 }));
+      await fixture.componentInstance.load();
+      await settle(fixture);
+      expect(el().querySelector('h1')?.textContent).toContain("Couldn't load this project.");
+      expect(buttonByLabel(el(), 'Retry')).toBeDefined();
+    });
+
+    it('names the project and its view in the document title', async () => {
+      await create(['Project.View']);
+      expect(document.title).toBe('Custodian Processing: Details - MatterFlow');
     });
   });
 });

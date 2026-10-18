@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   effect,
   inject,
@@ -20,15 +21,15 @@ import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ClientMatters } from './client-matters';
-import { PageTitle } from '../../../core/title/page-title';
-import { ErrorReference } from '../../../shared/ui/error-reference';
+import { PageTitle, recordTitle } from '../../../core/title/page-title';
+import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
+import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/record-skeleton';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
 
 type Tab = 'details' | 'matters';
-type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * Client detail (UX S05): Details / Matters tabs across the full page width. Details is first and the default (number, name, status,
@@ -42,7 +43,8 @@ type LoadState = 'loading' | 'ready' | 'error';
     PageHeader,
     RecordTitle,
     ActiveBadge,
-    ErrorReference,
+    RecordState,
+    RecordSkeleton,
     Button,
     HasPermissionDirective,
     ConfirmDialog,
@@ -57,16 +59,10 @@ type LoadState = 'loading' | 'ready' | 'error';
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <mf-fixed-page>
+      <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
       @switch (state()) {
         @case ('loading') {
-          <div class="pg-state" role="status" aria-busy="true">Loading the client...</div>
-        }
-        @case ('error') {
-          <div class="pg-alert" role="alert">
-            We couldn't find that client.
-            <mf-error-reference />
-            <p-button label="Retry" severity="secondary" (onClick)="load()" />
-          </div>
+          <mf-record-skeleton kind="client" [activeTab]="current()" />
         }
         @case ('ready') {
           @if (client(); as c) {
@@ -190,6 +186,15 @@ type LoadState = 'loading' | 'ready' | 'error';
             </mf-confirm-dialog>
           }
         }
+        @default {
+          <mf-record-state
+            kind="client"
+            [recordId]="clientId()"
+            [state]="state()"
+            [busy]="flow.retrying()"
+            (retried)="load()"
+          />
+        }
       }
     </mf-fixed-page>
   `,
@@ -210,25 +215,29 @@ export class ClientDetailPage {
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
 
-  protected readonly state = signal<LoadState>('loading');
+  protected readonly flow = new RecordLoadFlow('client');
+  protected readonly state = this.flow.state;
   protected readonly client = signal<ClientResponse | null>(null);
   protected readonly activityOpen = signal(false);
   protected readonly toggleOpen = signal(false);
   protected readonly busy = signal(false);
-  protected readonly tabs = computed<MfTab[]>(() => [
-    { key: 'details', label: 'Details' },
-    { key: 'matters', label: 'Matters' },
-  ]);
+  protected readonly tabs = computed<MfTab[]>(() => recordTabs('client'));
   protected readonly current = computed<Tab>(() =>
     this.tab() === 'matters' ? 'matters' : 'details',
   );
   protected readonly canSeeActivity = computed(() => this.auth.has('Audit.View'));
 
   constructor() {
+    // `00107 Hartwell & Bryce LLP: Matters` once the record is known, `Client` until then (#248); kept through tab changes.
     effect(() => {
-      const c = this.client();
-      if (c) this.pageTitle.set(c.clientNumber + ' ' + c.name);
+      const c = this.state() === 'ready' ? this.client() : null;
+      this.pageTitle.pin(
+        c
+          ? recordTitle(c.clientNumber + ' ' + c.name, recordTabLabel('client', this.current()))
+          : 'Client',
+      );
     });
+    inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
     effect(() => {
       this.clientId();
       untracked(() => void this.load());
@@ -271,13 +280,10 @@ export class ClientDetailPage {
 
   async load(): Promise<void> {
     const id = Number(this.clientId());
-    this.state.set('loading');
-    try {
-      this.client.set(await firstValueFrom(this.api.getClient(id)));
-      this.state.set('ready');
-    } catch {
-      this.state.set('error');
-    }
+    await this.flow.run(
+      () => firstValueFrom(this.api.getClient(id)),
+      (client) => this.client.set(client),
+    );
   }
 
   protected async toggleActive(): Promise<void> {

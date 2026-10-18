@@ -1,0 +1,198 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  Injector,
+  afterNextRender,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
+import { Button } from 'primeng/button';
+import { RouterLink } from '@angular/router';
+import { ApiError } from '../../core/http/api-error';
+import { QuietRequests } from '../../core/http/interceptors';
+import { ErrorReference } from './error-reference';
+import { Crumb, PageHeader } from './page-header';
+
+/** The record pages that share these states. */
+export type RecordKind = 'client' | 'matter' | 'project';
+
+/** Why a record could not be shown: it does not exist (404), the person may not see it (403), or the load failed (5xx, offline, timeout). */
+export type RecordFailure = 'notFound' | 'forbidden' | 'error';
+export type RecordLoadState = 'loading' | 'ready' | RecordFailure;
+
+/** The list a record page goes back to, and the words the three states use for it. */
+const KINDS: Record<RecordKind, { noun: string; list: string; label: string; path: string }> = {
+  client: { noun: 'client', list: 'clients', label: 'Clients', path: '/clients' },
+  matter: { noun: 'matter', list: 'matters', label: 'Matters', path: '/matters' },
+  project: { noun: 'project', list: 'projects', label: 'Projects', path: '/projects' },
+};
+
+/** Maps a failed load to its state: 404 and 403 are answers, everything else (5xx, no connection, timeout) is a failure worth retrying. */
+export function recordFailureOf(error: unknown): RecordFailure {
+  if (error instanceof ApiError) {
+    if (error.status === 404) return 'notFound';
+    if (error.status === 403) return 'forbidden';
+  }
+  return 'error';
+}
+
+/** The one wording of the three states, so the three pages cannot drift apart. */
+export function recordStateText(kind: RecordKind, state: RecordFailure): string {
+  const noun = KINDS[kind].noun;
+  switch (state) {
+    case 'notFound':
+      return `We couldn't find that ${noun}.`;
+    case 'forbidden':
+      return `You don't have access to this ${noun}.`;
+    default:
+      return `Couldn't load this ${noun}.`;
+  }
+}
+
+/**
+ * The load state of a record page (Client, Matter, Project): `loading` shows the skeleton, `ready` the page, and a failure the shared
+ * `mf-record-state`. A Retry from a failure keeps that state on screen (so the Retry button keeps focus) until the answer arrives; when it
+ * succeeds, focus moves to the page heading and a polite message says "Loaded". Create it in the page's field initialisers.
+ */
+export class RecordLoadFlow {
+  private readonly injector = inject(Injector);
+  private readonly quiet = inject(QuietRequests);
+
+  readonly state = signal<RecordLoadState>('loading');
+  /** True while a Retry is waiting for its answer. */
+  readonly retrying = signal(false);
+  /** The page's polite live message ("Loading client" while retrying, "Loaded" after a successful retry). */
+  readonly live = signal('');
+
+  constructor(private readonly kind: RecordKind) {}
+
+  /** Starts a load. The request is quiet: the failure shows inline here, not as a toast as well (the error reference is kept). */
+  async run<T>(request: () => Promise<T>, apply: (value: T) => void): Promise<void> {
+    const retry =
+      this.state() === 'notFound' || this.state() === 'forbidden' || this.state() === 'error';
+    this.retrying.set(retry);
+    if (retry) this.live.set(`Loading ${KINDS[this.kind].noun}`);
+    else {
+      this.live.set('');
+      this.state.set('loading');
+    }
+    try {
+      const value = await this.quiet.runInline(request);
+      apply(value);
+      this.state.set('ready');
+      if (retry) {
+        this.live.set('Loaded');
+        afterNextRender(
+          () => {
+            const heading = document.querySelector<HTMLElement>('[data-page-title]');
+            heading?.setAttribute('tabindex', '-1');
+            heading?.focus();
+          },
+          { injector: this.injector },
+        );
+      }
+    } catch (error) {
+      this.state.set(recordFailureOf(error));
+    } finally {
+      this.retrying.set(false);
+    }
+  }
+}
+
+/**
+ * What a Client, Matter or Project page shows instead of the record when it cannot be loaded (UX 5.6, #246):
+ *
+ *   404  "We couldn't find that client." and a link back to the list; no Retry
+ *   403  "You don't have access to this client." and the link; no Retry
+ *   5xx, no connection, timeout  "Couldn't load this client." with the error reference and Retry
+ *
+ * The record header and tabs are not shown; the breadcrumb is (the id is known from the address). While `busy` (a Retry is running)
+ * the Retry button stays where it is and keeps focus.
+ */
+@Component({
+  selector: 'mf-record-state',
+  imports: [PageHeader, RouterLink, Button, ErrorReference],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <mf-page-header [crumbs]="crumbs()" [heading]="text()" icon="" />
+    <div class="rs" [attr.data-record-state]="failure()">
+      @if (failure() === 'error') {
+        <div class="rs__alert" role="alert" data-record-error>
+          Something went wrong. Try again.
+          <mf-error-reference />
+        </div>
+        <div class="rs__act">
+          <p-button
+            label="Retry"
+            severity="secondary"
+            data-retry
+            [attr.aria-busy]="busy() ? 'true' : null"
+            (onClick)="retry()"
+          />
+          @if (busy()) {
+            <span class="rs__busy" aria-hidden="true">Retrying...</span>
+          }
+        </div>
+      } @else {
+        <a class="rs__link" [routerLink]="info().path" data-back-link>Go to {{ info().list }}</a>
+      }
+    </div>
+  `,
+  styles: `
+    .rs {
+      max-width: 40rem;
+    }
+    .rs__alert {
+      margin-bottom: var(--mf-s3);
+      padding: var(--mf-s3) var(--mf-s4);
+      border: 1px solid var(--mf-danger);
+      border-radius: var(--mf-radius);
+      background: var(--mf-danger-bg);
+      color: var(--mf-danger);
+    }
+    .rs__act {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s3);
+    }
+    .rs__busy {
+      color: var(--mf-text-muted);
+    }
+    .rs__link {
+      color: var(--mf-link);
+    }
+  `,
+})
+export class RecordState {
+  readonly kind = input.required<RecordKind>();
+  /** The record id from the address, for the breadcrumb. */
+  readonly recordId = input('');
+  /** The failure to show; anything else counts as a failed load. */
+  readonly state = input.required<RecordLoadState>();
+  /** A Retry is waiting for its answer. */
+  readonly busy = input(false);
+  readonly retried = output<void>();
+
+  protected readonly info = computed(() => KINDS[this.kind()]);
+  protected readonly failure = computed<RecordFailure>(() => {
+    const s = this.state();
+    return s === 'notFound' || s === 'forbidden' ? s : 'error';
+  });
+  protected readonly text = computed(() => recordStateText(this.kind(), this.failure()));
+  protected readonly crumbs = computed<Crumb[]>(() => {
+    const info = this.info();
+    const id = this.recordId();
+    return [
+      { label: info.label, link: info.path },
+      { label: id ? `${info.noun[0].toUpperCase()}${info.noun.slice(1)} ${id}` : info.noun },
+    ];
+  });
+
+  protected retry(): void {
+    if (!this.busy()) this.retried.emit();
+  }
+}

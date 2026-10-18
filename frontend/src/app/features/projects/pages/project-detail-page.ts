@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   effect,
   inject,
@@ -22,13 +23,12 @@ import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
-import { PageTitle } from '../../../core/title/page-title';
-import { ErrorReference } from '../../../shared/ui/error-reference';
+import { PageTitle, recordTitle } from '../../../core/title/page-title';
+import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
+import { RecordSkeleton } from '../../../shared/ui/record-skeleton';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
-
-type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * Project detail (UX S07): the project's Tasks grid in the main area and a Details panel on the right (fields, custom fields, Edit and
@@ -41,7 +41,8 @@ type LoadState = 'loading' | 'ready' | 'error';
     PageHeader,
     RecordTitle,
     ActiveBadge,
-    ErrorReference,
+    RecordState,
+    RecordSkeleton,
     Button,
     HasPermissionDirective,
     ConfirmDialog,
@@ -56,16 +57,10 @@ type LoadState = 'loading' | 'ready' | 'error';
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <mf-fixed-page>
+      <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
       @switch (state()) {
         @case ('loading') {
-          <div class="pg-state" role="status" aria-busy="true">Loading the project...</div>
-        }
-        @case ('error') {
-          <div class="pg-alert" role="alert">
-            We couldn't find that project.
-            <mf-error-reference />
-            <p-button label="Retry" severity="secondary" (onClick)="load()" />
-          </div>
+          <mf-record-skeleton kind="project" />
         }
         @case ('ready') {
           @if (project(); as p) {
@@ -181,6 +176,15 @@ type LoadState = 'loading' | 'ready' | 'error';
             </mf-confirm-dialog>
           }
         }
+        @default {
+          <mf-record-state
+            kind="project"
+            [recordId]="projectId()"
+            [state]="state()"
+            [busy]="flow.retrying()"
+            (retried)="load()"
+          />
+        }
       }
     </mf-fixed-page>
   `,
@@ -196,7 +200,8 @@ export class ProjectDetailPage {
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
 
-  protected readonly state = signal<LoadState>('loading');
+  protected readonly flow = new RecordLoadFlow('project');
+  protected readonly state = this.flow.state;
   protected readonly project = signal<ProjectResponse | null>(null);
   protected readonly activityOpen = signal(false);
   protected readonly toggleOpen = signal(false);
@@ -204,10 +209,12 @@ export class ProjectDetailPage {
   protected readonly canSeeActivity = computed(() => this.auth.has('Audit.View'));
 
   constructor() {
+    // `Name: Details` once the record is known, `Project` until then (#248). A project has one view, named Details.
     effect(() => {
-      const p = this.project();
-      if (p) this.pageTitle.set(p.name);
+      const p = this.state() === 'ready' ? this.project() : null;
+      this.pageTitle.pin(p ? recordTitle(p.name, 'Details') : 'Project');
     });
+    inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
     effect(() => {
       this.projectId();
       untracked(() => void this.load());
@@ -231,13 +238,10 @@ export class ProjectDetailPage {
   }
 
   async load(): Promise<void> {
-    this.state.set('loading');
-    try {
-      this.project.set(await firstValueFrom(this.api.getProject(Number(this.projectId()))));
-      this.state.set('ready');
-    } catch {
-      this.state.set('error');
-    }
+    await this.flow.run(
+      () => firstValueFrom(this.api.getProject(Number(this.projectId()))),
+      (project) => this.project.set(project),
+    );
   }
 
   protected async toggleActive(): Promise<void> {

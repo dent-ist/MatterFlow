@@ -17,8 +17,8 @@ import { TabBox, pageLeft, revealLeft, scrollCues } from './tab-scroll';
 export interface MfTab {
   key: string;
   label: string;
-  /** Count shown in parentheses; omitted while unknown. */
-  count?: number | null;
+  /** Count shown in parentheses; omitted while unknown (a string such as `--` while it loads). */
+  count?: number | string | null;
 }
 
 /**

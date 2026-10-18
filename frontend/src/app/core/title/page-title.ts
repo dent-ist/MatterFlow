@@ -10,6 +10,20 @@ export function documentTitle(page: string | null | undefined): string {
   return name ? `${name} - ${APP_NAME}` : APP_NAME;
 }
 
+/** Longest record text in a detail page's document title; longer text is cut with an ellipsis (the page itself shows it whole). */
+export const RECORD_TITLE_MAX = 60;
+
+/**
+ * Document title of a record's detail page: `<Record text>: <Tab label>` (`00107 Hartwell & Bryce LLP: Matters`; the app name is added by
+ * `documentTitle`). The tab label is the visible label without its count; the record text is cut at 60 characters in the title only.
+ */
+export function recordTitle(record: string, tabLabel: string): string {
+  const text = record.replace(/\s+/g, ' ').trim();
+  const short =
+    text.length > RECORD_TITLE_MAX ? text.slice(0, RECORD_TITLE_MAX).trimEnd() + '…' : text;
+  return `${short}: ${tabLabel}`;
+}
+
 /** Sets the browser tab title from the route's `title` on every navigation (UXR-01). */
 @Injectable({ providedIn: 'root' })
 export class MfTitleStrategy extends TitleStrategy {

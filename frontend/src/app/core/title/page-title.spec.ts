@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Title } from '@angular/platform-browser';
 import { Router, TitleStrategy, provideRouter } from '@angular/router';
-import { MfTitleStrategy, PageTitle, documentTitle } from './page-title';
+import { MfTitleStrategy, PageTitle, documentTitle, recordTitle } from './page-title';
 
 @Component({ template: '', changeDetection: ChangeDetectionStrategy.OnPush })
 class Blank {}
@@ -12,6 +12,19 @@ describe('document title (UXR-01)', () => {
     expect(documentTitle('Clients')).toBe('Clients - MatterFlow');
     expect(documentTitle('  ')).toBe('MatterFlow');
     expect(documentTitle(undefined)).toBe('MatterFlow');
+  });
+
+  it('names the record and the tab, cutting a long record text at 60 characters (#248)', () => {
+    expect(recordTitle('00107 Hartwell & Bryce LLP', 'Matters')).toBe(
+      '00107 Hartwell & Bryce LLP: Matters',
+    );
+    expect(documentTitle(recordTitle('00107-00001 Merger', 'Tasks'))).toBe(
+      '00107-00001 Merger: Tasks - MatterFlow',
+    );
+    const long = 'M'.repeat(150);
+    const title = recordTitle(`00107-00001 ${long}`, 'Details');
+    expect(title).toBe(`${('00107-00001 ' + long).slice(0, 60)}…: Details`);
+    expect(recordTitle('x'.repeat(60), 'Details')).toBe(`${'x'.repeat(60)}: Details`); // exactly 60 is kept
   });
 
   it('sets the title from the route and lets a detail page refine it', async () => {

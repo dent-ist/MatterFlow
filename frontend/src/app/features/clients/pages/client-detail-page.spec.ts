@@ -234,7 +234,7 @@ describe('ClientDetailPage', () => {
     expect(buttonByLabel(el(), 'Set inactive')).toBeUndefined();
     expect(buttonByLabel(el(), 'Activity')).toBeUndefined();
     await openTab('matters');
-    expect(buttonByLabel(el(), 'Create matter')).toBeUndefined();
+    expect(buttonByLabel(el(), 'New matter')).toBeUndefined();
     expect(matters.listMatters).not.toHaveBeenCalled();
     expect(el().querySelector('[data-no-access=matters]')).not.toBeNull();
   });
@@ -251,20 +251,26 @@ describe('ClientDetailPage', () => {
   it('starts a matter for this client, prefilled', async () => {
     await create(['Client.View', 'Matter.View', 'Matter.Create'], 'matters');
 
-    buttonByLabel(el(), 'Create matter')!.click();
+    expect(buttonByLabel(el(), 'Create matter')).toBeUndefined();
+    buttonByLabel(el(), 'New matter')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/matters/new?clientId=1');
   });
 
-  it('disables Create matter with a visible reason for an inactive client', async () => {
+  it('disables New matter (aria-disabled, still focusable) with a visible reason for an inactive client', async () => {
     await create(['Client.View', 'Matter.View', 'Matter.Create'], 'matters');
     clients.getClient.mockReturnValue(ok(aClient({ isActive: false })));
     await fixture.componentInstance.load();
     await settle(fixture);
 
-    expect(buttonByLabel(el(), 'Create matter')!.disabled).toBe(true);
-    expect(el().querySelector('[data-inactive-reason]')?.textContent).toContain(
-      "new matters can't be created",
-    );
+    const button = buttonByLabel(el(), 'New matter')!;
+    expect(button.disabled).toBe(false); // focusable, so the reason is reachable
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    const reason = 'This client is inactive. Set it active to add matters.';
+    expect(el().querySelector('[data-inactive-reason]')?.textContent).toContain(reason);
+    expect(button.getAttribute('title')).toBe(reason);
+    expect(button.getAttribute('aria-describedby')).toBe('client-inactive-reason');
+    button.click();
+    expect(navigateByUrl).not.toHaveBeenCalled(); // activating it does nothing
   });
 
   it('confirms before setting a client inactive and states the consequence', async () => {
@@ -290,13 +296,55 @@ describe('ClientDetailPage', () => {
     );
   });
 
-  it('shows a not-found state with Retry', async () => {
+  it('shows the not-found text with a link back and no Retry for a 404', async () => {
     await create(['Client.View']);
     clients.getClient.mockReturnValue(apiError(404, { status: 404, code: 'NOT_FOUND' }));
     await fixture.componentInstance.load();
     await settle(fixture);
 
-    expect(el().querySelector('[role=alert]')?.textContent).toContain("couldn't find that client");
+    expect(el().querySelector('h1')?.textContent).toContain("We couldn't find that client.");
+    expect(el().querySelector('[data-back-link]')?.textContent).toContain('Go to clients');
+    expect(buttonByLabel(el(), 'Retry')).toBeUndefined();
+    expect(el().querySelector('[role=tablist]')).toBeNull(); // no header and tabs in an error state
+  });
+
+  it('shows the access text and no Retry for a 403', async () => {
+    await create(['Client.View']);
+    clients.getClient.mockReturnValue(apiError(403, { status: 403, code: 'PERMISSION_DENIED' }));
+    await fixture.componentInstance.load();
+    await settle(fixture);
+
+    expect(el().querySelector('h1')?.textContent).toContain(
+      "You don't have access to this client.",
+    );
+    expect(buttonByLabel(el(), 'Retry')).toBeUndefined();
+  });
+
+  it('shows "Couldn\'t load" with Retry for a server fault and recovers on Retry', async () => {
+    await create(['Client.View']);
+    clients.getClient.mockReturnValue(apiError(500, { status: 500, traceId: 'abc' }));
+    await fixture.componentInstance.load();
+    await settle(fixture);
+
+    expect(el().querySelector('h1')?.textContent).toContain("Couldn't load this client.");
+    const retry = buttonByLabel(el(), 'Retry')!;
+    retry.focus();
+    clients.getClient.mockReturnValue(ok(aClient()));
+    retry.click();
+    await settle(fixture);
+    expect(el().querySelector('[data-page-title]')?.textContent).toContain('Acme Corp');
+    expect(buttonByLabel(el(), 'Retry')).toBeUndefined();
+    expect(document.activeElement).toBe(el().querySelector('[data-page-title]'));
+    expect(el().querySelector('[data-record-live]')?.textContent).toBe('Loaded');
+  });
+
+  it('names the record and the tab in the document title, and the id while loading', async () => {
+    await create(['Client.View', 'Matter.View']);
+    expect(document.title).toBe('00343 Acme Corp: Details - MatterFlow');
+    await openTab('matters');
+    expect(document.title).toBe('00343 Acme Corp: Matters - MatterFlow');
+    await openTab(undefined);
+    expect(document.title).toBe('00343 Acme Corp: Details - MatterFlow');
   });
 
   it('offers Activity as a header button (Audit.View) that opens the drawer titled with the client', async () => {

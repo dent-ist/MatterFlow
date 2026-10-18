@@ -55,7 +55,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
       .boundingBox())!;
     expect(grid.width).toBeGreaterThan(1280 - 300); // the whole page width (less the menu), not beside a panel
 
-    await page.getByRole('button', { name: 'Create matter' }).click();
+    await page.getByRole('button', { name: 'New matter' }).click();
     await expect(page).toHaveURL(new RegExp(`/matters/new\\?clientId=${client.clientId}$`));
   });
 

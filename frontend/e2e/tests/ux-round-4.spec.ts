@@ -456,7 +456,7 @@ test.describe('Round 4: administration naming', () => {
 });
 
 test.describe('Round 4: queues, wording and accessibility', () => {
-  test('UXR4-16: Filters and Columns have one height; Create matter lines up with the Filters button', async ({
+  test('UXR4-16: Filters and Columns have one height; New matter lines up with the Filters button', async ({
     page,
     seed,
   }) => {
@@ -474,7 +474,7 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     const client = await seed.client();
     await page.goto(`/clients/${client.clientId}?tab=matters`);
     const [button, input] = [
-      (await page.getByRole('button', { name: 'Create matter' }).boundingBox())!,
+      (await page.getByRole('button', { name: 'New matter' }).boundingBox())!,
       (await page.getByRole('button', { name: /^Filters/ }).boundingBox())!,
     ];
     expect(

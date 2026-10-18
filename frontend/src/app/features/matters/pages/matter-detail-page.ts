@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   effect,
   inject,
@@ -29,14 +30,18 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { MatterAssets } from '../../../shared/ui/matter-assets';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { SCOPED_TASK_PARAMS, ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
-import { PageTitle } from '../../../core/title/page-title';
-import { ErrorReference } from '../../../shared/ui/error-reference';
+import { PageTitle, recordTitle } from '../../../core/title/page-title';
+import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
+import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/record-skeleton';
+import { naturalCompare } from '../../../shared/ui/list-helpers';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 
+/** The API's largest page (`PageRequest.MaxPageSize`). */
+const PROJECTS_PAGE_MAX = 100;
+
 type Tab = 'details' | 'tasks' | 'projects' | 'assets';
-type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * Matter detail (UX S06): reference with copy button, sensitivity and inactive banners, activation with the open-task rule,
@@ -52,7 +57,8 @@ type LoadState = 'loading' | 'ready' | 'error';
     PageHeader,
     RecordTitle,
     ActiveBadge,
-    ErrorReference,
+    RecordState,
+    RecordSkeleton,
     RouterLink,
     Button,
     HasPermissionDirective,
@@ -70,16 +76,10 @@ type LoadState = 'loading' | 'ready' | 'error';
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <mf-fixed-page>
+      <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
       @switch (state()) {
         @case ('loading') {
-          <div class="pg-state" role="status" aria-busy="true">Loading the matter...</div>
-        }
-        @case ('error') {
-          <div class="pg-alert" role="alert">
-            We couldn't find that matter.
-            <mf-error-reference />
-            <p-button label="Retry" severity="secondary" (onClick)="load()" />
-          </div>
+          <mf-record-skeleton kind="matter" [activeTab]="current()" />
         }
         @case ('ready') {
           @if (matter(); as m) {
@@ -249,7 +249,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                   />
                 }
                 @case ('projects') {
-                  @if (projects().length === 0) {
+                  @if (tabProjects().length === 0) {
                     <div class="pg-state" data-empty="projects">
                       No projects in this matter yet.
                     </div>
@@ -270,7 +270,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                           </tr>
                         </thead>
                         <tbody>
-                          @for (p of projects(); track p.projectId) {
+                          @for (p of tabProjects(); track p.projectId) {
                             <tr>
                               <td>
                                 <a class="pg-link" [routerLink]="['/projects', p.projectId]">{{
@@ -286,6 +286,11 @@ type LoadState = 'loading' | 'ready' | 'error';
                         </tbody>
                       </table>
                     </div>
+                    @if (projectsShown() < projectsTotal()) {
+                      <p class="pg-reason" data-projects-truncated>
+                        Showing the first {{ projectsShown() }} projects.
+                      </p>
+                    }
                   }
                 }
                 @case ('assets') {
@@ -355,6 +360,15 @@ type LoadState = 'loading' | 'ready' | 'error';
             </mf-confirm-dialog>
           }
         }
+        @default {
+          <mf-record-state
+            kind="matter"
+            [recordId]="matterId()"
+            [state]="state()"
+            [busy]="flow.retrying()"
+            (retried)="load()"
+          />
+        }
       }
     </mf-fixed-page>
   `,
@@ -376,18 +390,27 @@ export class MatterDetailPage {
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
 
-  protected readonly state = signal<LoadState>('loading');
+  protected readonly flow = new RecordLoadFlow('matter');
+  protected readonly state = this.flow.state;
   protected readonly matter = signal<MatterResponse | null>(null);
   protected readonly projects = signal<ProjectResponse[]>([]);
+  /** How many projects the matter has, so a list cut at the page maximum says so instead of looking complete. */
+  protected readonly projectsTotal = signal(0);
+  protected readonly projectsShown = computed(() => this.projects().length);
+  /**
+   * The Projects tab rows: natural order by name ("Wave 7" before "Wave 15", accents and case ignored; ties keep the server order, name
+   * then id). When the matter has more projects than one request returns, the server order is kept and the tab says so.
+   */
+  protected readonly tabProjects = computed(() => {
+    const rows = this.projects();
+    return this.projectsTotal() > rows.length
+      ? rows
+      : [...rows].sort((a, b) => naturalCompare(a.name, b.name));
+  });
   protected readonly activityOpen = signal(false);
   protected readonly tabs = computed<MfTab[]>(() => {
     const m = this.matter();
-    return [
-      { key: 'details', label: 'Details' },
-      { key: 'tasks', label: 'Tasks', count: m?.openTaskCount ?? 0 },
-      { key: 'projects', label: 'Projects', count: m?.projectCount ?? 0 },
-      { key: 'assets', label: 'Assets' },
-    ];
+    return recordTabs('matter', { tasks: m?.openTaskCount ?? 0, projects: m?.projectCount ?? 0 });
   });
   protected readonly current = computed<Tab>(() => {
     const t = this.tab();
@@ -413,10 +436,16 @@ export class MatterDetailPage {
   });
 
   constructor() {
+    // `00107-00001 Name: Tasks` once the record is known, `Matter` until then (#248); kept through tab changes.
     effect(() => {
-      const m = this.matter();
-      if (m) this.pageTitle.set(m.matterRef + ' ' + m.name);
+      const m = this.state() === 'ready' ? this.matter() : null;
+      this.pageTitle.pin(
+        m
+          ? recordTitle(m.matterRef + ' ' + m.name, recordTabLabel('matter', this.current()))
+          : 'Matter',
+      );
     });
+    inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
     effect(() => {
       this.matterId();
       untracked(() => void this.load());
@@ -458,31 +487,32 @@ export class MatterDetailPage {
 
   async load(): Promise<void> {
     const id = Number(this.matterId());
-    this.state.set('loading');
-    try {
-      const [matter, projects] = await Promise.all([
-        firstValueFrom(this.api.getMatter(id)),
-        this.auth.has('Project.View')
-          ? firstValueFrom(
-              this.projectsApi.listProjects(
-                undefined,
-                id,
-                undefined,
-                undefined,
-                undefined,
-                1,
-                100,
-                'name',
-              ),
-            )
-          : Promise.resolve(null),
-      ]);
-      this.matter.set(matter);
-      this.projects.set(projects?.items ?? []);
-      this.state.set('ready');
-    } catch {
-      this.state.set('error');
-    }
+    await this.flow.run(
+      () =>
+        Promise.all([
+          firstValueFrom(this.api.getMatter(id)),
+          this.auth.has('Project.View')
+            ? // One request at the API's page maximum; the Projects tab sorts them itself (natural order).
+              firstValueFrom(
+                this.projectsApi.listProjects(
+                  undefined,
+                  id,
+                  undefined,
+                  undefined,
+                  undefined,
+                  1,
+                  PROJECTS_PAGE_MAX,
+                  'name',
+                ),
+              )
+            : Promise.resolve(null),
+        ]),
+      ([matter, projects]) => {
+        this.matter.set(matter);
+        this.projects.set(projects?.items ?? []);
+        this.projectsTotal.set(projects?.total ?? 0);
+      },
+    );
   }
 
   protected async toggleActive(): Promise<void> {
