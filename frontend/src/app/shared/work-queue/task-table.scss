@@ -72,6 +72,16 @@
   -webkit-line-clamp: 1;
 }
 
+/* Compact: Client, Type, Workflow, Pod and the other text cells are one line with an ellipsis (the full text is the tooltip). */
+.wt--compact .wt-clip {
+  white-space: nowrap;
+}
+
+/* The current-step link is 16 px of text: padding gives it a 24 px target without changing the line (WCAG 2.2 2.5.8, #211). */
+.wt--compact .wt-steplink {
+  padding-block: 4px;
+}
+
 .wt th {
   background: var(--mf-surface-alt);
   font-weight: 600;

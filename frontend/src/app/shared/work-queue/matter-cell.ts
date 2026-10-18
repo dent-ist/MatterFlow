@@ -11,6 +11,7 @@ import { MatterRef } from '../ui/matter-ref';
   selector: 'mf-matter-cell',
   imports: [MatterRef],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.mc-compact]': 'compact()' },
   template: `
     <div class="mc" [attr.title]="tip()">
       <div class="mc-ref">
@@ -48,6 +49,10 @@ import { MatterRef } from '../ui/matter-ref';
       align-items: center;
       line-height: 18px;
       white-space: nowrap;
+    }
+    /* Compact: the 18 px reference link gets a 24 px target without growing the line (WCAG 2.2 2.5.8, #211). */
+    :host(.mc-compact) ::ng-deep a.mf-ref {
+      padding-block: 3px;
     }
     .mc-name {
       overflow: hidden;

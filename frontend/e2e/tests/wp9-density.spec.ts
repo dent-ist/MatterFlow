@@ -318,7 +318,8 @@ test.describe('Density and space', () => {
         (r) => r.getBoundingClientRect().height,
       ),
     );
-    for (const h of heights) expect(h, 'a Compact row is at most 40 px').toBeLessThanOrEqual(40);
+    for (const h of heights)
+      expect(Math.abs(h - 36), `a Compact row is 36 px (#211): ${heights}`).toBeLessThanOrEqual(1);
     expect(await rowsInView(page)).toBeGreaterThanOrEqual(11);
     expect(await rowsInView(page)).toBeGreaterThan(comfortable);
     for (const h of await titleLines(page)) expect(h, 'one-line titles').toBeLessThan(28);
