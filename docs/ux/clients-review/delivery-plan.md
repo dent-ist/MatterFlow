@@ -149,7 +149,7 @@ Contract e2e over six screens at four sizes (axe 0, no horizontal scroll, 44 px 
 
 - Planning (2026-10-18): epic #245 and issues #246 to #287 created and linked as sub-issues; PM requirements review comments posted on every issue and on the epic; no issue is blocked on the owner; SQL script 28 is free and none is planned.
 - WP1 Detail-page bugs and states (2026-10-18, 58d5e0c): #246, #247, #248, #249, #250 done; 2475 unit tests green, WP1 e2e 25/25 green, regression subset green except the Task Queue fixed-header filter-row test, which found no task rows in the serial run and was not re-run (unrelated to the detail pages); initial bundle 641.07 kB (172.71 kB transfer); screenshots in `fixes/wp1/`; known limits: e2e was run before the rebase onto WP11, not repeated after it.
-- WP2 List bugs and states: not started.
+- WP2 List bugs and states (2026-10-18, b553e97): #251 and #252 done; unit (shared/ui and projects specs, full run green but one load-sensitive dashboard timeout) and e2e `wp2-list-states.spec.ts` (18 tests: loading, 500, 403, empty, filtered-empty for the three lists and the client Matters tab, CLS under 0.02, reference on one line; axe 0 and no sideways scroll at 1366, 1920, 768, 375); initial bundle 641.07 kB; screenshots `fixes/wp2/`; known limits: the matter's Projects tab is inline in `matter-detail-page.ts` (WP1/WP10 own it) and keeps its own empty text, Assets list keeps its own state rows until it adopts `mfGridBody`.
 - WP3 Record header: not started.
 - WP4 Project Details tabs: not started.
 - WP5 Counts API: not started.
