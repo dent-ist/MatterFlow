@@ -2,6 +2,7 @@ import { Injectable, Injector, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AssetResponse, AssetsClient, UsersLookupClient } from '../../api/generated/api-client';
 import { AuthStore } from '../auth/auth.store';
+import { QuietRequests } from '../http/interceptors';
 
 /** How long a resolved asset is reused; short, so a rename shows up soon. */
 const CACHE_MS = 30_000;
@@ -35,10 +36,18 @@ export class ReferenceNames {
   private readonly assets = new Map<number, { at: number; found: Promise<AssetSummary | null> }>();
   private users: Promise<Map<number, string>> | null = null;
 
+  /**
+   * The asset behind an id, or null when it cannot be shown. A person without Asset.View never causes a request (the API would answer 403
+   * and the global handler would toast it on every task that has an Asset reference); a lookup that still fails (removed, no matter
+   * rights) is quiet, and the caller shows "Asset n (not available)".
+   */
   asset(id: number): Promise<AssetSummary | null> {
+    if (!this.injector.get(AuthStore).has('Asset.View')) return Promise.resolve(null);
     const cached = this.assets.get(id);
     if (cached && Date.now() - cached.at < CACHE_MS) return cached.found;
-    const found = firstValueFrom(this.assetsApi.getAsset(id))
+    const found = this.injector
+      .get(QuietRequests)
+      .run(() => firstValueFrom(this.assetsApi.getAsset(id)))
       .then(toSummary)
       .catch(() => {
         this.assets.delete(id);

@@ -742,12 +742,60 @@ describe('TaskDetailPage layout and states', () => {
     const missing = await mountTaskPage(aTask(), PERMS, {
       tasks: { getTask: vi.fn().mockReturnValue(apiError(404, { code: 'NOT_FOUND' })) },
     });
-    expect(q(missing.el, '[data-not-found]')!.textContent).toContain("We couldn't find that task.");
+    expect(q(missing.el, '[data-record-state]')!.getAttribute('data-record-state')).toBe(
+      'notFound',
+    );
+    expect(q(missing.el, 'h1')!.textContent).toContain("We couldn't find that task.");
+    expect(document.title).toBe('Task not found - MatterFlow');
     TestBed.resetTestingModule();
     const forbidden = await mountTaskPage(aTask(), PERMS, {
       tasks: { getTask: vi.fn().mockReturnValue(apiError(403, { code: 'PERMISSION_DENIED' })) },
     });
-    expect(q(forbidden.el, '[data-forbidden]')).not.toBeNull();
+    expect(q(forbidden.el, '[data-record-state]')!.getAttribute('data-record-state')).toBe(
+      'forbidden',
+    );
+    expect(q(forbidden.el, 'h1')!.textContent).toContain("You don't have access to this task.");
+    expect(document.title).toBe('No access to this task - MatterFlow');
+  });
+
+  it('treats an address that is not a task number as a task that does not exist, without asking the API', async () => {
+    const getTask = vi.fn().mockReturnValue(ok(aTask()));
+    const { fixture, el } = await mountTaskPage(aTask(), PERMS, { tasks: { getTask } });
+    fixture.componentRef.setInput('id', 'abc');
+    await settle(fixture);
+    expect(q(el, '[data-record-state]')!.getAttribute('data-record-state')).toBe('notFound');
+    expect(getTask).toHaveBeenCalledTimes(1); // only the first, valid mount
+    expect(document.title).toBe('Task not found - MatterFlow');
+  });
+
+  it('puts the task in the tab title, cut at 60 characters, and names the Activity drawer while it is open (#295)', async () => {
+    const long = 'A'.repeat(200);
+    const { fixture, el } = await mountTaskPage(aTask({ title: long }), PERMS);
+    const base = `TSK-1042 ${'A'.repeat(60)}…`;
+    expect(document.title).toBe(`${base} - MatterFlow`);
+    await click(fixture, q(el, '[data-activity-button]'));
+    expect(document.title).toBe(`Activity - ${base} - MatterFlow`);
+    fixture.debugElement.injector.get(TaskDetailStore).activityOpen.set(false);
+    await settle(fixture);
+    expect(document.title).toBe(`${base} - MatterFlow`);
+  });
+
+  it('shows the page skeleton while the task loads, then the page', async () => {
+    let release!: (t: TaskResponse) => void;
+    const pending = new Observable<TaskResponse>((o) => {
+      release = (t) => {
+        o.next(t);
+        o.complete();
+      };
+    });
+    const getTask = vi.fn().mockReturnValue(pending);
+    const { fixture, el } = await mountTaskPage(aTask(), PERMS, { tasks: { getTask } });
+    expect(q(el, '[data-record-skeleton][data-kind=task]')).not.toBeNull();
+    expect(q(el, '[data-loading]')!.textContent).toContain('Loading task');
+    release(aTask());
+    await settle(fixture);
+    expect(q(el, '[data-record-skeleton]')).toBeNull();
+    expect(q(el, '[data-task-number]')!.textContent).toBe('TSK-1042');
   });
 
   it('shows an error with Retry for other failures', async () => {
@@ -756,8 +804,9 @@ describe('TaskDetailPage layout and states', () => {
       .mockReturnValueOnce(apiError(500, { code: 'ERROR' }))
       .mockReturnValue(ok(aTask()));
     const { fixture, el } = await mountTaskPage(aTask(), PERMS, { tasks: { getTask } });
-    expect(q(el, '[data-error]')).not.toBeNull();
-    await click(fixture, byText(el, '[data-error] button', 'Retry')!);
+    expect(q(el, '[data-record-error]')).not.toBeNull();
+    expect(document.title).toBe('Task could not be loaded - MatterFlow');
+    await click(fixture, q(el, '[data-retry] button, button[data-retry]'));
     expect(q(el, '[data-task-number]')!.textContent).toBe('TSK-1042');
   });
 

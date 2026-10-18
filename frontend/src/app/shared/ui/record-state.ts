@@ -11,24 +11,66 @@ import {
 } from '@angular/core';
 import { Button } from 'primeng/button';
 import { RouterLink } from '@angular/router';
+import { AuthStore } from '../../core/auth/auth.store';
+import { LandingLink, landingLink } from '../../core/auth/guards';
+import { Permission } from '../../core/auth/permissions';
 import { ApiError } from '../../core/http/api-error';
 import { QuietRequests } from '../../core/http/interceptors';
 import { ErrorReference } from './error-reference';
 import { Crumb, PageHeader } from './page-header';
 
 /** The record pages that share these states. */
-export type RecordKind = 'client' | 'matter' | 'project';
+export type RecordKind = 'client' | 'matter' | 'project' | 'task';
 
 /** Why a record could not be shown: it does not exist (404), the person may not see it (403), or the load failed (5xx, offline, timeout). */
 export type RecordFailure = 'notFound' | 'forbidden' | 'error';
 export type RecordLoadState = 'loading' | 'ready' | RecordFailure;
 
 /** The list a record page goes back to, and the words the three states use for it. */
-const KINDS: Record<RecordKind, { noun: string; list: string; label: string; path: string }> = {
-  client: { noun: 'client', list: 'clients', label: 'Clients', path: '/clients' },
-  matter: { noun: 'matter', list: 'matters', label: 'Matters', path: '/matters' },
-  project: { noun: 'project', list: 'projects', label: 'Projects', path: '/projects' },
+const KINDS: Record<
+  RecordKind,
+  { noun: string; list: string; label: string; path: string; view: Permission }
+> = {
+  client: {
+    noun: 'client',
+    list: 'clients',
+    label: 'Clients',
+    path: '/clients',
+    view: 'Client.View',
+  },
+  matter: {
+    noun: 'matter',
+    list: 'matters',
+    label: 'Matters',
+    path: '/matters',
+    view: 'Matter.View',
+  },
+  project: {
+    noun: 'project',
+    list: 'projects',
+    label: 'Projects',
+    path: '/projects',
+    view: 'Project.View',
+  },
+  task: {
+    noun: 'task',
+    list: 'Task Queue',
+    label: 'Task Queue',
+    path: '/tasks',
+    view: 'Task.View',
+  },
 };
+
+/**
+ * Where the 404 and 403 states send the person. The record's list when they may open it; otherwise the page the landing rule picks (the
+ * first one they can open, the same rule as after sign-in), named as the navigation names it; `null` when they can open nothing, so no
+ * link is shown (a link to a page that answers 403 is worse than none).
+ */
+export function recordBackLink(kind: RecordKind, auth: AuthStore): LandingLink | null {
+  const info = KINDS[kind];
+  if (auth.has(info.view)) return { path: info.path, name: info.list };
+  return landingLink(auth);
+}
 
 /** Maps a failed load to its state: 404 and 403 are answers, everything else (5xx, no connection, timeout) is a failure worth retrying. */
 export function recordFailureOf(error: unknown): RecordFailure {
@@ -137,7 +179,9 @@ export class RecordLoadFlow {
           }
         </div>
       } @else {
-        <a class="rs__link" [routerLink]="info().path" data-back-link>Go to {{ info().list }}</a>
+        @if (back(); as b) {
+          <a class="rs__link" [routerLink]="b.path" data-back-link>Go to {{ b.name }}</a>
+        }
       }
     </div>
   `,
@@ -177,7 +221,10 @@ export class RecordState {
   readonly busy = input(false);
   readonly retried = output<void>();
 
+  private readonly auth = inject(AuthStore);
+
   protected readonly info = computed(() => KINDS[this.kind()]);
+  protected readonly back = computed(() => recordBackLink(this.kind(), this.auth));
   protected readonly failure = computed<RecordFailure>(() => {
     const s = this.state();
     return s === 'notFound' || s === 'forbidden' ? s : 'error';
@@ -187,7 +234,8 @@ export class RecordState {
     const info = this.info();
     const id = this.recordId();
     return [
-      { label: info.label, link: info.path },
+      // A step the person cannot open is text, not a link to a 403.
+      this.auth.has(info.view) ? { label: info.label, link: info.path } : { label: info.label },
       { label: id ? `${info.noun[0].toUpperCase()}${info.noun.slice(1)} ${id}` : info.noun },
     ];
   });

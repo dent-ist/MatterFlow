@@ -14,6 +14,8 @@ import {
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AssetLookupItem, AssetsClient } from '../../api/generated/api-client';
+import { AuthStore } from '../../core/auth/auth.store';
+import { QuietRequests } from '../../core/http/interceptors';
 import { ReferenceNames } from '../../core/lookups/reference-names';
 import { Badge } from './badge';
 
@@ -119,11 +121,18 @@ const toChoice = (a: AssetLookupItem): Choice => ({
           <span class="ap__sr" role="status">No assets match.</span>
         }
         @if (open()) {
-          <ul class="ap__list" role="listbox" [id]="inputId() + '-list'">
+          <!-- A listbox needs options: with none (searching, no match, nothing to ask) it is a plain list holding the note. -->
+          <ul
+            class="ap__list"
+            [attr.role]="options().length > 0 ? 'listbox' : null"
+            [id]="inputId() + '-list'"
+          >
             @if (loading()) {
-              <li class="ap__note" role="presentation">Searching...</li>
+              <li class="ap__note" [attr.role]="options().length > 0 ? 'presentation' : null">
+                Searching...
+              </li>
             } @else if (options().length === 0) {
-              <li class="ap__note" role="presentation">No assets match.</li>
+              <li class="ap__note">No assets match.</li>
             }
             @for (o of options(); track o.id; let i = $index) {
               <li
@@ -247,6 +256,8 @@ export class AssetPicker implements OnDestroy {
   private readonly context = inject(AssetPickerContext, { optional: true });
   private readonly names = inject(ReferenceNames);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthStore);
+  private readonly quiet = inject(QuietRequests);
 
   protected readonly effectiveMatter = computed(
     () => this.matterId() ?? this.context?.matterId() ?? null,
@@ -366,14 +377,15 @@ export class AssetPicker implements OnDestroy {
   private async run(query: string): Promise<void> {
     const matter = this.effectiveMatter();
     const id = ++this.requestId;
-    if (!matter) {
+    // Without Asset.View the search would only be answered with a 403 (and a toast): do not ask.
+    if (!matter || !this.auth.has('Asset.View')) {
       this.options.set([]);
       return;
     }
     this.loading.set(true);
     try {
-      const found = await firstValueFrom(
-        this.api.lookupAssets(matter, query.trim() || undefined, undefined, 20),
+      const found = await this.quiet.run(() =>
+        firstValueFrom(this.api.lookupAssets(matter, query.trim() || undefined, undefined, 20)),
       );
       if (id === this.requestId) this.options.set(found.map(toChoice));
     } catch {

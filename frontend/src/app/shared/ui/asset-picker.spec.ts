@@ -2,8 +2,12 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MF_ASSET_PICKER, ReferencePickerHost } from 'form-engine';
 import { AssetsClient } from '../../api/generated/api-client';
+import { AuthStore } from '../../core/auth/auth.store';
+import { ApiError } from '../../core/http/api-error';
+import { HttpErrorResponse } from '@angular/common/http';
+import { throwError } from 'rxjs';
 import { aLookupItem, anAsset } from '../testing/asset-testing';
-import { ok, settle } from '../testing/org-testing';
+import { FakeMeApi, ok, provideFakeMe, settle, withPermissions } from '../testing/org-testing';
 import { AssetPicker, AssetPickerContext } from './asset-picker';
 
 describe('AssetPicker', () => {
@@ -11,7 +15,7 @@ describe('AssetPicker', () => {
   let fixture: ComponentFixture<AssetPicker>;
   const el = (): HTMLElement => fixture.nativeElement;
 
-  function configure(extra: unknown[] = []): void {
+  function configure(extra: unknown[] = [], permissions: string[] = ['Asset.View']): void {
     api = {
       lookupAssets: vi
         .fn()
@@ -24,11 +28,16 @@ describe('AssetPicker', () => {
       getAsset: vi.fn().mockReturnValue(ok(anAsset())),
     };
     TestBed.configureTestingModule({
-      providers: [{ provide: AssetsClient, useValue: api }, ...(extra as never[])],
+      providers: [
+        { provide: AssetsClient, useValue: api },
+        provideFakeMe(new FakeMeApi(withPermissions(...(permissions as never[])))),
+        ...(extra as never[]),
+      ],
     });
   }
 
   async function create(inputs: Record<string, unknown> = {}): Promise<void> {
+    await TestBed.inject(AuthStore).ensureLoaded();
     fixture = TestBed.createComponent(AssetPicker);
     for (const [name, value] of Object.entries(inputs)) fixture.componentRef.setInput(name, value);
     fixture.componentRef.setInput('debounceMs', 0);
@@ -99,6 +108,33 @@ describe('AssetPicker', () => {
     expect(link.textContent).toContain('Contract bundle');
     expect(link.getAttribute('href')).toBe('/assets?selected=9');
     expect(el().querySelector('[data-readonly]')!.textContent).toContain('REL-77');
+  });
+
+  it('BUG-1: without Asset.View it never calls the Asset API and says the asset is not available', async () => {
+    configure([], ['Task.View']);
+    await create({ matterId: 7, value: 9, readOnly: true });
+    expect(api.getAsset).not.toHaveBeenCalled();
+    expect(el().querySelector('[data-readonly]')!.textContent).toContain('Asset 9 (not available)');
+  });
+
+  it('BUG-1: without Asset.View the search is not sent either', async () => {
+    configure([], ['Task.View', 'Task.Edit']);
+    await create({ matterId: 7 });
+    box().dispatchEvent(new Event('focus'));
+    await settle(fixture);
+    expect(api.lookupAssets).not.toHaveBeenCalled();
+    // An empty list is not a listbox (a listbox needs options; axe aria-required-children).
+    expect(el().querySelector('ul.ap__list')?.getAttribute('role')).toBeNull();
+    expect(el().querySelector('ul.ap__list')?.textContent).toContain('No assets match.');
+  });
+
+  it('BUG-1: a lookup that still fails (asset removed, no matter rights) is quiet and reads not available', async () => {
+    configure();
+    api.getAsset.mockReturnValue(
+      throwError(() => ApiError.from(new HttpErrorResponse({ status: 403, error: {} }))),
+    );
+    await create({ matterId: 7, value: 9, readOnly: true });
+    expect(el().querySelector('[data-readonly]')!.textContent).toContain('Asset 9 (not available)');
   });
 
   it('says so when no asset matches and shows the type and reference of each option', async () => {
@@ -173,10 +209,12 @@ describe('AssetPicker as the form engine picker', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: AssetsClient, useValue: api },
+        provideFakeMe(new FakeMeApi(withPermissions('Asset.View'))),
         { provide: AssetPickerContext, useValue: context },
         { provide: MF_ASSET_PICKER, useValue: AssetPicker },
       ],
     });
+    await TestBed.inject(AuthStore).ensureLoaded();
     const fixture = TestBed.createComponent(Host);
     await settle(fixture);
 

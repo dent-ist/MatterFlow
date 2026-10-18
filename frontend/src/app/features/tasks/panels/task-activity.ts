@@ -10,8 +10,9 @@ import {
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { TaskActivityClient, TaskActivityItem } from '../../../api/generated/api-client';
+import { QuietRequests } from '../../../core/http/interceptors';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
-import { friendlyText } from '../../../shared/ui/audit-format';
+import { ActivityText, activityText, friendlyText } from '../../../shared/ui/audit-format';
 
 interface Filter {
   readonly key: string;
@@ -93,7 +94,7 @@ const PAGE_SIZE = 25;
                   >
                   <div class="ta__what">
                     <span class="ta__actor" data-actor>{{ e.actor?.displayName ?? 'System' }}</span>
-                    <span class="ta__summary" data-summary>{{ friendly(e.summary) }}</span>
+                    <span class="ta__summary" data-summary>{{ text(e).summary }}</span>
                     @if (hasChanges(e)) {
                       <button
                         type="button"
@@ -107,16 +108,19 @@ const PAGE_SIZE = 25;
                     }
                     @if (isOpen(e)) {
                       <p class="ta__changes" data-changes>
-                        <span class="ta__old">{{ e.oldValue ?? 'none' }}</span>
+                        <span class="ta__old">{{ text(e).oldValue ?? 'none' }}</span>
                         <span aria-hidden="true"> &rarr; </span>
                         <span class="sr-only">changed to</span>
-                        <span class="ta__new">{{ e.newValue ?? 'none' }}</span>
+                        <span class="ta__new">{{ text(e).newValue ?? 'none' }}</span>
                       </p>
                     }
                   </div>
                 </li>
               }
             </ol>
+          }
+          @if (moreFailed()) {
+            <p class="ta__alert" role="alert" data-more-error>Something went wrong. Try again.</p>
           }
           @if (nextCursor() !== null) {
             <button
@@ -233,7 +237,6 @@ const PAGE_SIZE = 25;
   `,
 })
 export class TaskActivity {
-  protected readonly friendly = friendlyText;
   readonly taskId = input.required<number>();
   /** Change the value to reload the timeline. */
   readonly refresh = input(0);
@@ -242,12 +245,16 @@ export class TaskActivity {
 
   protected readonly filters = ACTIVITY_FILTERS;
   private readonly api = inject(TaskActivityClient);
+  private readonly quiet = inject(QuietRequests);
 
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly events = signal<TaskActivityItem[]>([]);
   protected readonly nextCursor = signal<string | null>(null);
   protected readonly loadingMore = signal(false);
+  /** Loading older rows failed: one inline message, and "Load more" tries again. */
+  protected readonly moreFailed = signal(false);
   protected readonly filter = signal('ALL');
+  private readonly texts = new WeakMap<TaskActivityItem, ActivityText>();
   private readonly canViewChanges = signal(false);
   private readonly open = signal<ReadonlySet<number>>(new Set());
 
@@ -277,6 +284,15 @@ export class TaskActivity {
     if (cursor !== null) void this.load(cursor);
   }
 
+  /** The row's sentence and values, dates in the app's format (the stored text stays as the server wrote it). */
+  protected text(e: TaskActivityItem): ActivityText {
+    const cached = this.texts.get(e);
+    if (cached) return cached;
+    const text = activityText({ ...e, summary: friendlyText(e.summary) });
+    this.texts.set(e, text);
+    return text;
+  }
+
   protected hasChanges(e: TaskActivityItem): boolean {
     return this.canViewChanges() && (e.oldValue != null || e.newValue != null);
   }
@@ -296,9 +312,11 @@ export class TaskActivity {
   private async load(cursor: string | null): Promise<void> {
     const taskId = this.taskId();
     if (cursor !== null) this.loadingMore.set(true);
+    this.moreFailed.set(false);
     try {
-      const page = await firstValueFrom(
-        this.api.getTaskActivity(taskId, cursor ?? undefined, PAGE_SIZE),
+      // The drawer shows its own failure (the message with Retry, or under the list for "Load more"): the request is quiet, so no toast says it twice.
+      const page = await this.quiet.run(() =>
+        firstValueFrom(this.api.getTaskActivity(taskId, cursor ?? undefined, PAGE_SIZE)),
       );
       if (taskId !== this.taskId()) return;
       this.events.update((list) => (cursor === null ? page.items : [...list, ...page.items]));
@@ -308,6 +326,7 @@ export class TaskActivity {
     } catch {
       if (taskId === this.taskId()) {
         if (cursor === null) this.state.set('error');
+        else this.moreFailed.set(true);
       }
     } finally {
       this.loadingMore.set(false);

@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { Router, UrlTree } from '@angular/router';
-import { ADMIN_NAV_ITEMS } from '../../shared/layout/nav-items';
+import { ADMIN_NAV_ITEMS, NAV_ITEMS } from '../../shared/layout/nav-items';
 import { AuthStore } from './auth.store';
 import { Permission } from './permissions';
 
@@ -39,6 +39,24 @@ export function defaultLandingPath(store: AuthStore): string {
       f.path === APP_PATHS.dashboard ? store.hasAnyDashboardTab() : store.hasAny(f.permissions),
     )?.path ?? APP_PATHS.forbidden
   );
+}
+
+/** A link to a page the person can open. */
+export interface LandingLink {
+  path: string;
+  /** The page's name as the navigation shows it ("Clients", "My Work"); the link reads "Go to <name>". */
+  name: string;
+}
+
+/**
+ * The link the 403 and 404 pages offer: the page the landing rule picks, named as the navigation names it. `null` when the person can
+ * open nothing (no link is better than one to a page that answers 403 again; BUG-4).
+ */
+export function landingLink(store: AuthStore): LandingLink | null {
+  const path = defaultLandingPath(store);
+  const name =
+    NAV_ITEMS.find((i) => i.path === path)?.label ?? (path === '/admin' ? 'Administration' : null);
+  return name ? { path, name } : null;
 }
 
 /**

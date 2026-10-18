@@ -11,9 +11,10 @@ import {
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
+import { RecordLoadFlow, RecordLoadState } from '../../../shared/ui/record-state';
 import { completeHint, completeStateOf } from './complete-state';
 
-export type DetailState = 'loading' | 'ready' | 'error' | 'notFound' | 'forbidden';
+export type DetailState = RecordLoadState;
 /** The old `?tab=` values: the sections of the single page, plus `activity` (the drawer) and `details` (just the page). */
 export type TaskTab = 'details' | 'workflow' | 'comments' | 'assets' | 'activity';
 export const TASK_TABS: readonly TaskTab[] = [
@@ -60,7 +61,9 @@ export class TaskDetailStore {
   private readonly auth = inject(AuthStore);
 
   readonly taskId = signal(0);
-  readonly state = signal<DetailState>('loading');
+  /** The shared load flow of the record pages (#290): skeleton while loading, `mf-record-state` for 404, 403 and failures, quiet request. */
+  readonly flow = new RecordLoadFlow('task');
+  readonly state = this.flow.state;
   readonly task = signal<TaskResponse | null>(null);
   /** True after a 409 CONCURRENCY_CONFLICT: show the reload banner. */
   readonly conflict = signal(false);
@@ -112,26 +115,21 @@ export class TaskDetailStore {
     if (id !== this.taskId()) {
       this.taskId.set(id);
       this.task.set(null);
+      this.flow.state.set('loading');
     }
-    this.state.set('loading');
+    // `/tasks/abc` and `/tasks/0` are an address that names no task: the same answer as an unknown number, without a request.
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      this.flow.state.set('notFound');
+      return;
+    }
     this.conflict.set(false);
     this.warnings.set([]);
     this.editing.set(false);
     this.dirty.set(false);
-    try {
-      this.task.set(await firstValueFrom(this.tasks.getTask(id)));
-      this.state.set('ready');
-    } catch (err) {
-      this.state.set(
-        err instanceof ApiError
-          ? err.status === 404
-            ? 'notFound'
-            : err.status === 403
-              ? 'forbidden'
-              : 'error'
-          : 'error',
-      );
-    }
+    await this.flow.run(
+      () => firstValueFrom(this.tasks.getTask(id)),
+      (task) => this.task.set(task),
+    );
   }
 
   /** Quiet refresh that keeps the current screen (used after a failed write). */

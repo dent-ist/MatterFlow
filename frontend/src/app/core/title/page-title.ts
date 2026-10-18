@@ -18,10 +18,13 @@ export const RECORD_TITLE_MAX = 60;
  * `documentTitle`). The tab label is the visible label without its count; the record text is cut at 60 characters in the title only.
  */
 export function recordTitle(record: string, tabLabel: string): string {
-  const text = record.replace(/\s+/g, ' ').trim();
-  const short =
-    text.length > RECORD_TITLE_MAX ? text.slice(0, RECORD_TITLE_MAX).trimEnd() + '…' : text;
-  return `${short}: ${tabLabel}`;
+  return `${shortTitleText(record)}: ${tabLabel}`;
+}
+
+/** Whitespace squeezed and the text cut at 60 characters with an ellipsis (document titles only; the page shows the text whole). */
+export function shortTitleText(text: string): string {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  return clean.length > RECORD_TITLE_MAX ? clean.slice(0, RECORD_TITLE_MAX).trimEnd() + '…' : clean;
 }
 
 /** Sets the browser tab title from the route's `title` on every navigation (UXR-01). */

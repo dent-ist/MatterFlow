@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TaskActivityClient } from '../../../api/generated/api-client';
+import { QuietRequests } from '../../../core/http/interceptors';
 import { apiError, ok, settle } from '../../../shared/testing/org-testing';
 import { anActivity } from './task-panels-testing';
 import { TaskActivity } from './task-activity';
@@ -147,5 +148,67 @@ describe('TaskActivity', () => {
   it('shows the empty state', async () => {
     await create({ items: [], nextCursor: undefined, canViewChanges: false });
     expect(q('[data-empty]').textContent).toContain('No activity recorded yet.');
+  });
+
+  it('shows dates as Oct 15, 2026 in the sentence and in View changes (BUG-5)', async () => {
+    await create({
+      items: [
+        anActivity({
+          eventId: 20,
+          category: 'FIELDS',
+          fieldKey: 'dueDate',
+          summary: 'Due date changed from 2026-10-15 to 2026-10-14',
+          oldValue: '2026-10-15',
+          newValue: '2026-10-14',
+        }),
+      ],
+      nextCursor: undefined,
+      canViewChanges: true,
+    });
+    expect(q('[data-summary]').textContent).toBe(
+      'Due date changed from Oct 15, 2026 to Oct 14, 2026',
+    );
+    q<HTMLButtonElement>('[data-changes-toggle]').click();
+    await settle(fixture);
+    expect(q('[data-changes]').textContent).toContain('Oct 15, 2026');
+    expect(q('[data-changes]').textContent).toContain('Oct 14, 2026');
+    expect(q('[data-changes]').textContent).not.toContain('2026-10');
+  });
+
+  it('loads quietly: the inline message is the only one (BUG-8)', async () => {
+    let quiet: boolean | null = null;
+    api = {
+      getTaskActivity: vi.fn().mockImplementation(() => {
+        quiet = TestBed.inject(QuietRequests).active;
+        return ok({ items: [first], nextCursor: '10', canViewChanges: true });
+      }),
+    };
+    TestBed.configureTestingModule({ providers: [{ provide: TaskActivityClient, useValue: api }] });
+    fixture = TestBed.createComponent(TaskActivity);
+    fixture.componentRef.setInput('taskId', 42);
+    await settle(fixture);
+    expect(quiet).toBe(true);
+    quiet = null;
+    q<HTMLButtonElement>('[data-more]').click();
+    await settle(fixture);
+    expect(quiet).toBe(true);
+  });
+
+  it('a failed Load more shows one message under the list and the button tries again', async () => {
+    await create({ items: [first], nextCursor: '10', canViewChanges: true });
+    api.getTaskActivity.mockReturnValue(apiError(500, { status: 500, title: 'x' }));
+    q<HTMLButtonElement>('[data-more]').click();
+    await settle(fixture);
+    expect(el().querySelectorAll('[data-more-error]')).toHaveLength(1);
+    expect(el().querySelectorAll('[data-event-id]')).toHaveLength(1); // the loaded rows stay
+    expect(q('[data-more]')).not.toBeNull();
+
+    api.getTaskActivity.mockReturnValue(
+      ok({ items: [second], nextCursor: undefined, canViewChanges: true }),
+    );
+    q<HTMLButtonElement>('[data-more]').click();
+    await settle(fixture);
+    expect(el().querySelector('[data-more-error]')).toBeNull();
+    expect(el().querySelectorAll('[data-event-id]')).toHaveLength(2);
   });
 });

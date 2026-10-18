@@ -2,6 +2,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { AuthStore } from '../../core/auth/auth.store';
+import { FakeMeApi, provideFakeMe, withPermissions } from '../testing/org-testing';
 import { ApiError } from '../../core/http/api-error';
 import {
   RecordKind,
@@ -26,7 +28,7 @@ describe('record load states (#246)', () => {
   });
 
   it('has one wording per state for all three records', () => {
-    const kinds: RecordKind[] = ['client', 'matter', 'project'];
+    const kinds: RecordKind[] = ['client', 'matter', 'project', 'task'];
     for (const kind of kinds) {
       expect(recordStateText(kind, 'notFound')).toBe(`We couldn't find that ${kind}.`);
       expect(recordStateText(kind, 'forbidden')).toBe(`You don't have access to this ${kind}.`);
@@ -54,8 +56,16 @@ class Host {
 }
 
 describe('mf-record-state', () => {
-  async function render() {
-    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+  async function render(
+    permissions: string[] = ['Client.View', 'Matter.View', 'Project.View', 'Task.View'],
+  ) {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideFakeMe(new FakeMeApi(withPermissions(...(permissions as never[])))),
+      ],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
     const fixture = TestBed.createComponent(Host);
     await fixture.whenStable();
     const el = fixture.nativeElement as HTMLElement;
@@ -105,5 +115,51 @@ describe('mf-record-state', () => {
     expect(button.disabled).toBe(false); // still focusable
     button.click();
     expect(host.retries).toBe(0);
+  });
+
+  it('task: names the task and goes back to the Task Queue', async () => {
+    const { el, host, settle } = await render();
+    host.kind.set('task');
+    await settle();
+    expect(el.querySelector('h1')?.textContent).toContain("We couldn't find that task.");
+    expect(el.querySelector('nav[aria-label=Breadcrumb]')?.textContent).toContain('Task 99999');
+    const link = el.querySelector('[data-back-link]')!;
+    expect(link.getAttribute('href')).toBe('/tasks');
+    expect(link.textContent).toContain('Go to Task Queue');
+  });
+
+  describe('the link of the 403 (BUG-4, #291)', () => {
+    async function forbidden(permissions: string[]) {
+      const r = await render(permissions);
+      r.host.kind.set('task');
+      r.host.state.set('forbidden');
+      await r.settle();
+      return r.el;
+    }
+
+    it("goes to the person's landing page, never to a page they cannot open (no Task.View)", async () => {
+      const el = await forbidden(['Client.View', 'Matter.View']);
+      const link = el.querySelector('[data-back-link]')!;
+      expect(link.getAttribute('href')).toBe('/clients');
+      expect(link.textContent).toContain('Go to Clients');
+      expect(el.textContent).not.toContain('Go to Task Queue');
+      expect(el.querySelector('nav[aria-label=Breadcrumb] a')).toBeNull();
+    });
+
+    it('takes the first page the landing rule finds: Matters when there is no Client.View', async () => {
+      const el = await forbidden(['Matter.View']);
+      expect(el.querySelector('[data-back-link]')?.getAttribute('href')).toBe('/matters');
+    });
+
+    it('shows no link when the person can open nothing', async () => {
+      const el = await forbidden([]);
+      expect(el.querySelector('[data-back-link]')).toBeNull();
+      expect(el.querySelector('h1')?.textContent).toContain("You don't have access to this task.");
+    });
+
+    it('keeps the Task Queue for a person who may open it', async () => {
+      const el = await forbidden(['Task.View']);
+      expect(el.querySelector('[data-back-link]')?.getAttribute('href')).toBe('/tasks');
+    });
   });
 });

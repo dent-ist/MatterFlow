@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   ElementRef,
   inject,
@@ -9,7 +10,7 @@ import {
   linkedSignal,
   untracked,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { TaskActivity } from '../panels/task-activity';
 import { TaskAssetLinks } from '../panels/task-asset-links';
@@ -20,14 +21,22 @@ import { TaskDetailStore, TaskSection } from './task-detail.store';
 import { TaskDetailsTab } from './task-details-tab';
 import { TaskHeader } from './task-header';
 import { TaskWorkflowTab } from './task-workflow-tab';
-import { PageTitle } from '../../../core/title/page-title';
-import { ErrorReference } from '../../../shared/ui/error-reference';
+import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { DetailLayout } from '../../../shared/ui/detail-layout';
+import { RecordSkeleton } from '../../../shared/ui/record-skeleton';
+import { RecordState } from '../../../shared/ui/record-state';
 import { AuthStore } from '../../../core/auth/auth.store';
 
 const WARNING_TEXT: Readonly<Record<string, string>> = {
   USER_NOT_IN_POD: "The assignee isn't a member of the assigned Pod. The change was saved.",
+};
+
+/** The tab title of a task that could not be shown. */
+const STATE_TITLE: Readonly<Record<string, string>> = {
+  notFound: 'Task not found',
+  forbidden: 'No access to this task',
+  error: 'Task could not be loaded',
 };
 
 const SECTIONS: readonly string[] = ['workflow', 'comments', 'assets'];
@@ -43,8 +52,8 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
 @Component({
   selector: 'mf-task-detail-page',
   imports: [
-    ErrorReference,
-    RouterLink,
+    RecordSkeleton,
+    RecordState,
     TaskHeader,
     DetailLayout,
     ActivityDrawer,
@@ -59,29 +68,10 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
+    <span class="pg-sr" role="status" data-record-live>{{ store.flow.live() }}</span>
     @switch (store.state()) {
       @case ('loading') {
-        <div class="pg-state" role="status" aria-busy="true" data-loading>Loading the task...</div>
-      }
-      @case ('notFound') {
-        <div class="pg-state" data-not-found>
-          <h1>We couldn't find that task.</h1>
-          <p>It may have been removed, or the link may be wrong.</p>
-          <a class="pg-link" routerLink="/tasks">Go to the task queue</a>
-        </div>
-      }
-      @case ('forbidden') {
-        <div class="pg-state" data-forbidden>
-          <h1>You don't have permission to view this task.</h1>
-          <a class="pg-link" routerLink="/tasks">Go to the task queue</a>
-        </div>
-      }
-      @case ('error') {
-        <div class="pg-alert" role="alert" data-error>
-          We couldn't load this task.
-          <mf-error-reference />
-          <button type="button" class="link-btn" (click)="store.load()">Retry</button>
-        </div>
+        <mf-record-skeleton kind="task" [splitKey]="splitKey()" />
       }
       @case ('ready') {
         @if (store.task(); as t) {
@@ -210,6 +200,15 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
           <mf-task-action-dialogs />
         }
       }
+      @default {
+        <mf-record-state
+          kind="task"
+          [recordId]="id()"
+          [state]="store.state()"
+          [busy]="store.flow.retrying()"
+          (retried)="store.load()"
+        />
+      }
     }
   `,
   styles: `
@@ -336,10 +335,21 @@ export class TaskDetailPage implements HasUnsavedChanges {
   );
 
   constructor() {
+    // `TSK-12 Title cut at 60 characters`, `Activity - TSK-12 ...` while the drawer is open; the error states name themselves (#290, #295).
+    // Pinned, so a navigation that only changes the address (closing the drawer removes `?tab=activity`) keeps it.
     effect(() => {
-      const t = this.store.task();
-      if (t) this.pageTitle.set(t.taskNumber + ' ' + t.title);
+      const t = this.store.state() === 'ready' ? this.store.task() : null;
+      const state = this.store.state();
+      const base = t ? `${t.taskNumber} ${shortTitleText(t.title)}` : null;
+      this.pageTitle.pin(
+        base
+          ? this.store.activityOpen()
+            ? `Activity - ${base}`
+            : base
+          : (STATE_TITLE[state] ?? 'Task'),
+      );
     });
+    inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
     effect(() => {
       const id = Number(this.id());
       untracked(() => {

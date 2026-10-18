@@ -58,6 +58,19 @@ describe('mf-record-skeleton (#247)', () => {
     expect(el.querySelector('[role=tab][aria-selected=true]')?.textContent).toContain('Tasks');
   });
 
+  it('draws a task: crumb with bars, title bar, facts strip, two columns, no tabs (#292)', async () => {
+    const el = await render('task');
+    expect(el.querySelector('[data-record-skeleton]')?.getAttribute('data-kind')).toBe('task');
+    expect(el.querySelectorAll('[role=status]')).toHaveLength(1);
+    expect(el.querySelector('[role=status]')?.textContent).toContain('Loading task');
+    expect(el.querySelector('nav a')?.textContent).toContain('Tasks');
+    expect(el.querySelectorAll('[data-crumb-skeleton]')).toHaveLength(2);
+    expect(el.querySelector('[data-title-skeleton]')).not.toBeNull();
+    expect(el.querySelectorAll('[data-facts-skeleton] .rk__fact').length).toBeGreaterThan(3);
+    expect(el.querySelector('mf-detail-layout')).not.toBeNull();
+    expect(el.querySelector('[role=tab]')).toBeNull();
+  });
+
   it('hides the bars from assistive technology and from the keyboard', async () => {
     const el = await render('matter');
     const visual = el.querySelector('.rk__vis')!;

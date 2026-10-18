@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { InputText } from 'primeng/inputtext';
+import { AuthStore } from '../../../core/auth/auth.store';
+import { landingLink } from '../../../core/auth/guards';
 import { TitleIcon } from '../../../shared/ui/page-header';
 
 @Component({
@@ -19,11 +21,17 @@ import { TitleIcon } from '../../../shared/ui/page-header';
         placeholder="Search clients, matters, tasks, assets"
       />
     </form>
-    <p><a routerLink="/">Go to my work</a></p>
+    @if (link(); as l) {
+      <p>
+        <a [routerLink]="l.path" data-back-link>Go to {{ l.name }}</a>
+      </p>
+    }
   `,
 })
 export class NotFoundPage {
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthStore);
+  protected readonly link = computed(() => landingLink(this.auth));
 
   protected search(event: Event, value: string): void {
     event.preventDefault();

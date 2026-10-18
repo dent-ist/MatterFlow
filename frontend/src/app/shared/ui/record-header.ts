@@ -49,6 +49,7 @@ const LIST: Record<RecordKind, { label: string; link: string }> = {
   client: { label: 'Clients', link: '/clients' },
   matter: { label: 'Matters', link: '/matters' },
   project: { label: 'Projects', link: '/projects' },
+  task: { label: 'Task Queue', link: '/tasks' },
 };
 
 let nextId = 0;

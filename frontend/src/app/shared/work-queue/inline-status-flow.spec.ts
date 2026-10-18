@@ -58,7 +58,10 @@ describe('InlineStatusFlow', () => {
     fixture.componentInstance.finished.subscribe(() => finished++);
     fixture.detectChanges();
     await fixture.whenStable();
+    // The store loads through the shared record load flow (a few promise hops more than a bare request): let them finish.
+    await new Promise((resolve) => setTimeout(resolve));
     fixture.detectChanges();
+    await fixture.whenStable();
     return fixture.debugElement.injector.get(TaskDetailStore);
   }
 

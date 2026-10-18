@@ -1,4 +1,5 @@
 import { AuditEventDto } from '../../api/generated/api-client';
+import { formatDateOnly, parseDateOnly } from '../../core/time/time';
 
 /** Fields recorded by the change tracker that mean nothing to a reader (keys, concurrency tokens, timestamps). */
 function isTechnicalField(key: string): boolean {
@@ -85,12 +86,50 @@ export function fieldLabel(key: string | undefined): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-/** Booleans read Yes/No; empty reads "(empty)". */
+/** Booleans read Yes/No; a calendar date reads "Oct 15, 2026"; empty reads "(empty)". */
 export function auditValue(value: string | undefined | null): string {
   if (value === undefined || value === null || value === '') return '(empty)';
   if (/^true$/i.test(value)) return 'Yes';
   if (/^false$/i.test(value)) return 'No';
-  return value;
+  return dateValue(value);
+}
+
+/** A value that is exactly a calendar date (`2026-10-15`) as "Oct 15, 2026" (a floating date: no zone shift); anything else as it is. */
+export function dateValue(value: string): string {
+  return parseDateOnly(value) ? formatDateOnly(value) : value;
+}
+
+/** What a Task Activity row shows: the sentence and the before / after values with calendar dates in the app's date format (#293). */
+export interface ActivityText {
+  summary: string;
+  oldValue: string | undefined;
+  newValue: string | undefined;
+}
+
+/**
+ * The server writes "Due date changed from 2026-10-15 to 2026-10-14". Only a date that IS one of the event's old or new values (the whole
+ * value is a calendar date) is rewritten, in the sentence and in the values; a date-looking piece of free text (a title, a comment
+ * excerpt) never is. The stored text is not changed. Without Audit.View there are no values and the sentence has no date to rewrite.
+ */
+export function activityText(e: {
+  summary: string;
+  oldValue?: string | null;
+  newValue?: string | null;
+}): ActivityText {
+  const values = [e.oldValue, e.newValue].filter(
+    (v): v is string => !!v && parseDateOnly(v) !== null,
+  );
+  let summary = e.summary;
+  for (const token of new Set(values)) {
+    summary = summary.replace(new RegExp(`(?<![\\w-])${token}(?![\\w-])`, 'g'), () =>
+      formatDateOnly(token),
+    );
+  }
+  return {
+    summary,
+    oldValue: e.oldValue ? dateValue(e.oldValue) : (e.oldValue ?? undefined),
+    newValue: e.newValue ? dateValue(e.newValue) : (e.newValue ?? undefined),
+  };
 }
 
 /** True for events a reader should not see (technical change-tracker noise). */
