@@ -40,10 +40,12 @@ import { WORK_COLUMNS, ColumnDef, Density } from './column-prefs';
 import {
   ASSIGNEE_WITH_LINK_PX,
   ColumnWidthMap,
+  ROOT_PX,
   pxToRem,
   tableMinRem,
   widthVars,
 } from './column-widths';
+import { narrowDrops } from './narrow-columns';
 import { InlineField, canEditField } from './inline-edit';
 import { CLOSED_STATUSES, SortDirection } from './queue-filters';
 import { hasStepLink, stepLinkLabel, stepQueryParams } from './step-link';
@@ -52,13 +54,6 @@ import { KeyboardShortcuts, isEditable } from '../layout/keyboard-shortcuts';
 import { isShortcut } from '../layout/shortcut-registry';
 import { TaskSkeleton } from './task-skeleton';
 
-/** Box widths (px) under which the lowest-priority columns drop out (Workflow progress, Matter, Project). */
-const PROGRESS_HIDES_BELOW = 1060;
-const MATTER_HIDES_BELOW = 960;
-const PROJECT_HIDES_BELOW = 900;
-/** Tablets (viewport 640 to 1023 px): Pod, Age and the dates drop out and the due cell takes two lines. */
-const BAND_DROPS = ['pod', 'age', 'created', 'updated'];
-const TABLET = '(min-width: 640px) and (max-width: 1023.98px)';
 const NARROW_BELOW = 760;
 
 /**
@@ -103,6 +98,7 @@ const NARROW_BELOW = 760;
         class="wt"
         [class.wt--compact]="density() === 'compact'"
         [class.wt--narrow]="narrow()"
+        [class.wt--scroll]="overflowing()"
         [style]="tableVars()"
         [attr.aria-busy]="loading() ? 'true' : null"
       >
@@ -456,8 +452,8 @@ export class TaskTable {
   /** Width of the table's box in px (0 until measured); narrow boxes drop the lowest-priority columns instead of scrolling. */
   protected readonly boxWidth = signal(0);
 
-  /** True on a tablet-sized window (640 to 1023 px): see `BAND_DROPS`. Phones keep the sideways-scrolling table until the cards of M11. */
-  private readonly tablet = signal(false);
+  /** The real root font size in px (text-only zoom grows it); the widths are rem. */
+  private readonly rootPx = signal(ROOT_PX);
 
   /** True while the table is wider than its box, so the "Scroll sideways" hint only appears when it is needed (UAT2-21). */
   protected readonly overflowing = signal(false);
@@ -629,7 +625,8 @@ export class TaskTable {
       if (!el) return;
       const measure = () => {
         this.boxWidth.set(el.clientWidth);
-        this.tablet.set(typeof matchMedia === 'function' && matchMedia(TABLET).matches);
+        const root = parseFloat(getComputedStyle(document.documentElement).fontSize);
+        this.rootPx.set(root > 0 ? root : ROOT_PX);
         this.overflowing.set(el.scrollWidth > el.clientWidth + 1);
       };
       measure();
@@ -661,19 +658,19 @@ export class TaskTable {
     return this.rows().length > 0 || state === 'loading' ? 'ready' : state;
   });
   /**
-   * Columns in table order. Below the width thresholds the lowest-priority columns drop out so Status and Due never scroll out of view
-   * (UXR4-02): Workflow progress goes below 1060 px, the Matter column below 960 px and Project below 900 px. Unknown width (0, before the first measure or in tests) shows everything.
+   * Columns in table order. The one narrow-box rule (#201, `narrow-columns.ts`): while the Title would be narrower than 200 px, the
+   * columns flagged `autoHide` drop out, least important first; the rest scrolls sideways with a sticky Ref. Unknown width (0, before the
+   * first measure or in tests) shows everything.
    */
   protected readonly shownColumns = computed<ColumnDef[]>(() => {
     const wanted = new Set(this.columns());
-    const width = this.boxWidth();
-    const dropped = new Set<string>();
-    if (width > 0 && width < PROGRESS_HIDES_BELOW) dropped.add('progress');
-    if (width > 0 && width < MATTER_HIDES_BELOW) dropped.add('matter');
-    if (this.hideContext()) ['matter', 'client'].forEach((k) => dropped.add(k));
-    if (width > 0 && width < PROJECT_HIDES_BELOW) dropped.add('project');
-    if (width > 0 && this.tablet()) BAND_DROPS.forEach((k) => dropped.add(k));
-    return WORK_COLUMNS.filter((c) => (c.locked || wanted.has(c.key)) && !dropped.has(c.key));
+    const hide = this.hideContext();
+    const wide = WORK_COLUMNS.filter(
+      (c) =>
+        (c.locked || wanted.has(c.key)) && !(hide && (c.key === 'matter' || c.key === 'client')),
+    );
+    const dropped = narrowDrops(wide, this.boxWidth(), this.rootPx(), this.effectiveWidths());
+    return wide.filter((c) => !dropped.has(c.key));
   });
 
   /**

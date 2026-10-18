@@ -40,7 +40,7 @@ test.describe('Round 4: layout and responsive', () => {
     }
   });
 
-  test('UXR4-02: My Work, Task Queue and the matter Tasks grid fit at 1280 px with Status and Due visible; the Task Queue fits at 1024 px', async ({
+  test('UXR4-02: My Work, Task Queue and the matter Tasks grid fit at 1280 px with Status and Due visible; the Task Queue fits at 1024 px or scrolls with a sticky Ref (#201)', async ({
     page,
     seed,
     admin,
@@ -49,16 +49,25 @@ test.describe('Round 4: layout and responsive', () => {
     const me = await admin.get('/api/v1/me');
     const title = `Fit ${uid()}`;
     await seed.task(world, { title, assignedUserId: me.userId, dueDate: '2030-01-15' });
-    const fits = async (path: string, width: number) => {
+    const fits = async (path: string, width: number, mayScroll = false) => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(path);
       const wrap = page.locator('.wt-wrap');
       await expect(wrap).toBeVisible();
       await expect(page.locator('tr[data-task]').first()).toBeVisible();
-      expect(
-        await wrap.evaluate((el) => el.scrollWidth - el.clientWidth),
-        `${path} at ${width}`,
-      ).toBeLessThanOrEqual(1);
+      const over = await wrap.evaluate((el) => el.scrollWidth - el.clientWidth);
+      if (mayScroll && over > 1) {
+        // #201: Matter is never dropped, so the default Task Queue set (796 px plus a 160 px Title) needs a 956 px box; a 1024 px
+        // window has 920. The grid scrolls (from 1024 px its box is the named scrollable list, so no hint) and Ref stays in view.
+        await expect(wrap).toHaveAttribute('aria-label', /scrollable/);
+        expect(
+          await page
+            .locator('thead th[data-col="ref"]')
+            .evaluate((t) => getComputedStyle(t).position),
+        ).toBe('sticky');
+        return;
+      }
+      expect(over, `${path} at ${width}`).toBeLessThanOrEqual(1);
       for (const column of ['due', 'status']) {
         const cell = page.locator(`tr[data-task] td[data-col="${column}"]`).first();
         const cellBox = (await cell.boundingBox())!;
@@ -72,7 +81,7 @@ test.describe('Round 4: layout and responsive', () => {
     await fits('/my-work', 1280);
     await fits('/tasks', 1280);
     await fits(`/matters/${world.matter.matterId}?tab=tasks`, 1280);
-    await fits('/tasks', 1024);
+    await fits('/tasks', 1024, true);
     await fits('/my-work', 1024);
   });
 

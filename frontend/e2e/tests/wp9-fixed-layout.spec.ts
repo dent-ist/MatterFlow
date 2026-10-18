@@ -199,8 +199,16 @@ test.describe('Fixed layout (#200)', () => {
       const one = await measure(page);
       for (const [key, w] of Object.entries(all.widths))
         expect(Math.abs(w - one.widths[key]), `${key} at ${width}`).toBeLessThanOrEqual(1);
-      if (width >= 768) {
-        expect(all.scroll, `no sideways scroll at ${width}`).toBeLessThanOrEqual(all.client);
+      if (width >= 768 && all.scroll > all.client) {
+        // #201: Matter is never dropped, so the My Work default set (Ref, Matter, Priority, Due, Status = 660 px plus a 160 px Title)
+        // needs an 820 px box; a 768 px window has 664: the grid scrolls with the hint and a sticky Ref.
+        await myWork.open();
+        await expect(page.locator('[data-scroll-hint]')).toBeVisible();
+        expect(
+          await page
+            .locator('thead th[data-col="ref"]')
+            .evaluate((t) => getComputedStyle(t).position),
+        ).toBe('sticky');
       }
       await shot(page, `layout-my-work-${width}x${height}`);
       await axeClean(page, `My Work ${width}`);

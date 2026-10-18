@@ -210,11 +210,9 @@ describe('TaskTable', () => {
     expect(cell('ref').querySelector('[data-new-dot]')!.getAttribute('aria-label')).toBe('New');
     const inner = fixture.componentInstance as unknown as {
       boxWidth: { set(n: number): void };
-      tablet: { set(v: boolean): void };
     };
     // Narrow box: progress drops out as a column and is not folded under the title.
     inner.boxWidth.set(900);
-    inner.tablet.set(true);
     fixture.detectChanges();
     noExtras();
     fixture.componentRef.setInput('density', 'compact');
@@ -524,21 +522,28 @@ describe('TaskTable', () => {
     expect(link().getAttribute('title')).toBe('Process Smith custodians');
   });
 
-  it('on a tablet keeps the Ref column and lets the due cell wrap (BUG-14, #196)', async () => {
+  it('on a narrow box drops the optional columns by the one rule and keeps Ref (BUG-14, #196, #201)', async () => {
     await create([aRow()], ['ref', 'title', 'priority', 'due', 'status', 'pod', 'age']);
     const keys = () => Array.from(el().querySelectorAll('th')).map((th) => th.textContent?.trim());
     const inner = fixture.componentInstance as unknown as {
       boxWidth: { set(n: number): void };
-      tablet: { set(v: boolean): void };
     };
+    expect(keys()).toEqual(['Ref', 'Title', 'Priority', 'Pod', 'Due', 'Status', 'Age']);
+    // 112 + 112 + 136 + 140 + 140 + 64 = 704 px of columns: 904 px leaves the Title 200 px; below it Age drops first, then Pod.
+    inner.boxWidth.set(904);
+    fixture.detectChanges();
+    expect(keys()).toEqual(['Ref', 'Title', 'Priority', 'Pod', 'Due', 'Status', 'Age']);
     inner.boxWidth.set(900);
-    inner.tablet.set(true);
+    fixture.detectChanges();
+    expect(keys()).toEqual(['Ref', 'Title', 'Priority', 'Pod', 'Due', 'Status']);
+    inner.boxWidth.set(760);
     fixture.detectChanges();
     expect(keys()).toEqual(['Ref', 'Title', 'Priority', 'Due', 'Status']);
     expect(el().querySelector('table')!.classList).not.toContain('wt--narrow');
 
     inner.boxWidth.set(664);
     fixture.detectChanges();
+    expect(keys()).toEqual(['Ref', 'Title', 'Priority', 'Due', 'Status']);
     expect(el().querySelector('table')!.classList).toContain('wt--narrow');
     expect(el().querySelector('[data-sub-task]')).toBeNull();
   });

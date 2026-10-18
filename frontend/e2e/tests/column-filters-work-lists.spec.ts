@@ -208,7 +208,8 @@ test.describe('Column filters on the work lists', () => {
       seed,
       admin,
     }) => {
-      await page.setViewportSize({ width: 1366, height: 768 });
+      // 1920: at 1366 the narrow-box rule (#201) would drop the Client column again at once (Matter and the default set leave the Title 304 px).
+      await page.setViewportSize({ width: 1920, height: 1080 });
       const token = uid();
       const world = await seed.world();
       const touched = await seed.task(world, { title: `Edited ${token}` });
@@ -303,7 +304,8 @@ test.describe('Column filters on the work lists', () => {
       const world = await seed.world();
       await seed.task(world, { title: `Mine ${token}`, assignedUserId: me.userId });
       const mine = await asUser(me.username);
-      await mine.setViewportSize({ width: 1366, height: 768 });
+      // 1920: Creator is a narrow-box (#201) droppable column and Matter is in the set, so 1366 would drop it.
+      await mine.setViewportSize({ width: 1920, height: 1080 });
       await showColumns(mine, 'my-work', me.userId, [
         'ref',
         'title',

@@ -19,6 +19,8 @@ export interface ColumnDef {
   fill?: boolean;
   /** False for a column the user cannot resize (the Title). */
   resizable?: boolean;
+  /** Drops out of a narrow box when the Title would get too narrow (the order is `NARROW_DROP_ORDER`, `narrow-columns.ts`). */
+  autoHide?: boolean;
 }
 
 export const WORK_COLUMNS: readonly ColumnDef[] = [
@@ -44,11 +46,26 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     resizable: false,
   },
   { key: 'matter', label: 'Matter', sortField: 'matter', width: 160, minWidth: 112, maxWidth: 320 },
-  { key: 'client', label: 'Client', sortField: 'client', width: 140, minWidth: 96, maxWidth: 280 },
-  { key: 'project', label: 'Project', width: 140, minWidth: 96, maxWidth: 280 },
-  { key: 'type', label: 'Task type', width: 140, minWidth: 96, maxWidth: 280 },
-  { key: 'workflow', label: 'Workflow', width: 150, minWidth: 96, maxWidth: 280 },
-  { key: 'progress', label: 'Workflow progress', width: 160, minWidth: 120, maxWidth: 320 },
+  {
+    key: 'client',
+    label: 'Client',
+    sortField: 'client',
+    width: 140,
+    minWidth: 96,
+    maxWidth: 280,
+    autoHide: true,
+  },
+  { key: 'project', label: 'Project', width: 140, minWidth: 96, maxWidth: 280, autoHide: true },
+  { key: 'type', label: 'Task type', width: 140, minWidth: 96, maxWidth: 280, autoHide: true },
+  { key: 'workflow', label: 'Workflow', width: 150, minWidth: 96, maxWidth: 280, autoHide: true },
+  {
+    key: 'progress',
+    label: 'Workflow progress',
+    width: 160,
+    minWidth: 120,
+    maxWidth: 320,
+    autoHide: true,
+  },
   // The Priority trigger (badge, label, chevron) is 106 px until #202 moves the chevron inside; it may spill 2 px into the cell padding (`_tables.scss`).
   {
     key: 'priority',
@@ -58,7 +75,7 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     minWidth: 96,
     maxWidth: 160,
   },
-  { key: 'pod', label: 'Pod', width: 140, minWidth: 96, maxWidth: 280 },
+  { key: 'pod', label: 'Pod', width: 140, minWidth: 96, maxWidth: 280, autoHide: true },
   {
     key: 'assignee',
     label: 'Assignee',
@@ -67,13 +84,21 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     minWidth: 112,
     maxWidth: 240,
   },
-  { key: 'creator', label: 'Creator', width: 140, minWidth: 96, maxWidth: 280 },
-  { key: 'requestor', label: 'Requestor', width: 140, minWidth: 96, maxWidth: 280 },
+  { key: 'creator', label: 'Creator', width: 140, minWidth: 96, maxWidth: 280, autoHide: true },
+  { key: 'requestor', label: 'Requestor', width: 140, minWidth: 96, maxWidth: 280, autoHide: true },
   // Due: 120 px is the least that holds "Overdue 120d" with its icon (PM ruling on #200).
   { key: 'due', label: 'Due', sortField: 'due', width: 136, minWidth: 120, maxWidth: 200 },
   { key: 'status', label: 'Status', sortField: 'status', width: 140, minWidth: 112, maxWidth: 200 },
   { key: 'closed', label: 'Closed', sortField: 'closed', width: 104, minWidth: 88, maxWidth: 160 },
-  { key: 'age', label: 'Age', sortField: 'age', width: 64, minWidth: 56, maxWidth: 100 },
+  {
+    key: 'age',
+    label: 'Age',
+    sortField: 'age',
+    width: 64,
+    minWidth: 56,
+    maxWidth: 100,
+    autoHide: true,
+  },
   {
     key: 'created',
     label: 'Created',
@@ -81,6 +106,7 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     width: 104,
     minWidth: 88,
     maxWidth: 160,
+    autoHide: true,
   },
   {
     key: 'updated',
@@ -89,6 +115,7 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     width: 120,
     minWidth: 96,
     maxWidth: 180,
+    autoHide: true,
   },
 ];
 

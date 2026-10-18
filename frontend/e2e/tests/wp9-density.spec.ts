@@ -189,7 +189,7 @@ test.describe('Density and space', () => {
     await shot(page, 'm3-task-queue-1366x768');
   });
 
-  test('BUG-14: from 640 to 1023 px Status is in view without sideways scrolling; a wide custom set gets the hint', async ({
+  test('BUG-14: from 640 to 1023 px the grid fits or, with only the never-dropped columns left, scrolls with the hint and a sticky Ref; a wide custom set gets the hint', async ({
     seed,
     asUser,
   }) => {
@@ -207,10 +207,22 @@ test.describe('Density and space', () => {
       await myWork.open();
       await expect(page.locator('tbody tr[data-task]')).toHaveCount(count);
       const o = await overflow(page);
-      if (width <= 700) {
-        // #196: the Ref column no longer folds under the title, so the narrowest tablets may scroll; the hint must then say so
-        // (the narrow-box package, R2-2 / #201, gives the box back its fit).
-        if (o.scroll > o.client) await expect(page.locator('[data-scroll-hint]')).toBeVisible();
+      if (o.scroll > o.client + 1) {
+        // #201: the one narrow-box rule dropped every column it may; the never-dropped ones (Ref, Title, Matter, Priority, Due, Status)
+        // need more than this box, so the grid scrolls: the hint says so and Ref stays in view.
+        await expect(page.locator('[data-scroll-hint]')).toBeVisible();
+        const keys = await page
+          .locator('thead tr')
+          .first()
+          .locator('th')
+          .evaluateAll((ths) => ths.map((t) => (t as HTMLElement).dataset['col']));
+        for (const k of keys)
+          expect(['ref', 'title', 'matter', 'priority', 'due', 'status']).toContain(k);
+        expect(
+          await page
+            .locator('thead th[data-col="ref"]')
+            .evaluate((t) => getComputedStyle(t).position),
+        ).toBe('sticky');
       } else {
         expect(o.scroll, `no sideways scroll at ${width}`).toBeLessThanOrEqual(o.client);
         const wrap = (await page.locator('.wt-wrap').boundingBox())!;

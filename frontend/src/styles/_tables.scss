@@ -63,13 +63,42 @@ td.mf-col-actions {
   text-overflow: clip;
 }
 
-/* The Priority and Status triggers (badge, label, chevron) are 106 and 126 px wide, a little more than the content of their default columns
-   until the chevron moves inside (#202): they spill into the cell padding instead of cutting their label. */
-.wt td[data-col='priority'] mf-inline-menu,
+/* The Priority and Status triggers (#202): badge, label and chevron are one control that fits inside the cell's content box (no spill into the
+   padding, no clipped badge). The trigger keeps its 26 px height and a hit area wider than 24 px; only the side padding, the gap and the
+   chevron size give way (Normal is a 79 px badge: 79 + 2 + 10.5 + 2 + 2 = 95.5 px in the 96 px of a 112 px column). */
 .wt td[data-col='priority'] .im-trigger,
-.wt td[data-col='status'] mf-inline-menu,
 .wt td[data-col='status'] .im-trigger {
-  max-width: none;
+  gap: 2px;
+  padding-inline: 1px;
+}
+
+.wt td[data-col='priority'] .im-trigger .pi,
+.wt td[data-col='status'] .im-trigger .pi {
+  font-size: 0.75rem;
+}
+
+/* Narrow-box rule (#201): while the grid scrolls sideways (measured in the component, `wt--scroll`) the Ref column stays in view at the
+   left whatever the window width; nothing folds under the title. Which columns drop out first is `narrow-columns.ts`. Global because the
+   table's own style budget is full. */
+.wt--scroll th[data-col='ref'],
+.wt--scroll td[data-col='ref'] {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--mf-surface);
+  box-shadow: 1px 0 0 var(--mf-border);
+}
+
+.wt--scroll th[data-col='ref'] {
+  background: var(--mf-surface-alt);
+  /* Above the other (sticky) column headers where they slide under it. */
+  z-index: 4;
+}
+
+.wt--scroll .wt-row--overdue td[data-col='ref'] {
+  box-shadow:
+    inset 4px 0 0 var(--mf-due-overdue),
+    1px 0 0 var(--mf-border);
 }
 
 @media print {
