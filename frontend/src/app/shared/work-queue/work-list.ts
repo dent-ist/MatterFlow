@@ -20,6 +20,7 @@ import { PageFooter } from '../ui/page-footer';
 import { Pager } from '../ui/pager';
 import { Density } from './column-prefs';
 import { PAGE_SIZES, SortDirection } from './queue-filters';
+import { resultsAnnouncement } from './list-announce';
 import { TaskTable } from './task-table';
 import { DrillReturn, DrillSource } from './drill';
 import { CopyPart } from '../ui/copy-parts';
@@ -99,7 +100,7 @@ export class WorkList {
   readonly sort = input<string | null>(null);
   readonly dir = input<SortDirection | null>(null);
   readonly caption = input('Tasks');
-  /** The tab the list shows ("Closed"), appended to the range announcement: "Showing 1-50 of 87 in Closed" (M8). */
+  /** The tab the list shows ("Closed"), leads the one announcement: "Closed: 87 tasks, showing 1 to 50" (M8, TQ36). */
   readonly scope = input<string | null>(null);
   /** The column filters (the row under the headers). */
   readonly filters = input<ListFilters | null>(null);
@@ -205,9 +206,6 @@ export class WorkList {
     if (this.state() === 'loading') return 'Loading tasks';
     const total = this.total();
     if (this.state() === 'error') return 'Could not load tasks';
-    if (total === 0) return 'No tasks';
-    const from = (this.page() - 1) * this.pageSize() + 1;
-    const where = this.scope() ? ` in ${this.scope()}` : '';
-    return `Showing ${from}-${Math.min(total, this.page() * this.pageSize())} of ${total}${where}`;
+    return resultsAnnouncement(this.scope(), total, this.page(), this.pageSize());
   });
 }

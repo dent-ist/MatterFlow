@@ -4,10 +4,16 @@ import { FilterChip } from './filter-def';
 export const RESTORE_SUMMARY_MAX = 120;
 
 /**
- * "Restored your last view: Due soon and overdue, Priority Critical or High." Names the tab (when the screen has tabs) and then the
+ * "Restored your last view: Due soon and overdue, Priority Critical or High." (or just "Overdue" when the filters are a quick view). Names the tab (when the screen has tabs) and then the
  * filters in words, one part per filter ("Priority Critical or High"); parts that do not fit become "and 2 more".
  */
-export function restoreSummary(tab: string | null, chips: readonly FilterChip[]): string {
+export function restoreSummary(
+  tab: string | null,
+  chips: readonly FilterChip[],
+  view: string | null = null,
+): string {
+  // The filters are a quick view: name the view, not its filters ("Restored your last view: Overdue.").
+  if (view) return `Restored your last view: ${view}.`;
   const groups = new Map<string, string[]>();
   for (const chip of chips) {
     const at = chip.label.indexOf(': ');

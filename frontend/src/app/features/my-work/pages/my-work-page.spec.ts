@@ -292,7 +292,7 @@ describe('MyWorkPage', () => {
     expect(tab(el, 'Closed').getAttribute('aria-selected')).toBe('true');
     expect(document.title).toBe('My Work: Closed - MatterFlow');
     expect(el.querySelector('caption')!.textContent!.trim()).toBe('My Work: Closed');
-    expect(el.querySelector('.wl-sr')!.textContent).toContain('in Closed');
+    expect(el.querySelector('.wl-sr')!.textContent).toContain('Closed: ');
   });
 
   it('words the tab tooltips and the empty states from the one vocabulary', async () => {

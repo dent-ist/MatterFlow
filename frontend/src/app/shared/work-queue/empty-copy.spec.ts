@@ -1,5 +1,5 @@
 import { partsText } from '../ui/copy-parts';
-import { emptyCopy, nearEmptyCopy } from './empty-copy';
+import { emptyCopy, nearEmptyCopy, queueEmpty } from './empty-copy';
 
 const has =
   (...codes: string[]) =>
@@ -59,5 +59,47 @@ describe('nearEmptyCopy', () => {
     expect(partsText(without)).toBe(
       "That's everything on your plate. Look for more in the Task Queue.",
     );
+  });
+});
+
+describe('queueEmpty', () => {
+  it('says the good news of an empty view, with no Clear filters', () => {
+    const texts: Record<string, string> = {
+      unassigned: 'Every open task has an owner.',
+      overdue: 'Nothing is overdue.',
+      dueSoon: 'Nothing is due in the next 2 days.',
+      asap: 'No ASAP tasks.',
+      onHold: 'Nothing is on hold.',
+      myPod: 'Your pod has no open tasks.',
+      recentlyCompleted: 'Nothing was completed in the last 30 days.',
+      createdByMe: 'You have no open tasks you created.',
+    };
+    for (const [view, text] of Object.entries(texts)) {
+      const e = queueEmpty(view, true, true);
+      expect(e.text).toBe(text);
+      expect(e.noMatch).toBe(false);
+      expect(e.createTask).toBe(view === 'createdByMe');
+    }
+  });
+
+  it('offers Create task on Created by me only with Task.Create', () => {
+    expect(queueEmpty('createdByMe', true, false).createTask).toBe(false);
+  });
+
+  it('uses the generic text with Clear filters for other filters', () => {
+    expect(queueEmpty(null, true, true)).toEqual({
+      text: 'No tasks match these filters.',
+      noMatch: true,
+      createTask: false,
+    });
+  });
+
+  it('says "No tasks yet." with Create task only for someone who may create', () => {
+    expect(queueEmpty(null, false, true)).toEqual({
+      text: 'No tasks yet.',
+      noMatch: false,
+      createTask: true,
+    });
+    expect(queueEmpty(null, false, false).createTask).toBe(false);
   });
 });

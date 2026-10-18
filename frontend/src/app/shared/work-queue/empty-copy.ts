@@ -1,5 +1,5 @@
 import { CopyPart } from '../ui/copy-parts';
-import { EMPTY_TEXT } from './work-vocabulary';
+import { DUE_SOON_DAYS, EMPTY_TEXT } from './work-vocabulary';
 
 export type EmptyTab = 'active' | 'dueSoon' | 'completed' | 'createdByMe';
 
@@ -73,4 +73,39 @@ export function nearEmptyCopy(has: (code: string) => boolean): readonly CopyPart
         '.',
       ]
     : ["That's everything on your plate. Look for more in the ", queue, '.'];
+}
+
+/**
+ * The empty text of a Task Queue quick view (TQ33): a view with nothing in it is news, not a failed search, so it says what is true
+ * ("Nothing is overdue.") and offers no Clear filters. Keyed by the view's key; views without a text (All open) use the generic ones.
+ */
+export const QUEUE_VIEW_EMPTY: Readonly<Record<string, string>> = {
+  unassigned: 'Every open task has an owner.',
+  overdue: 'Nothing is overdue.',
+  dueSoon: `Nothing is due in the next ${DUE_SOON_DAYS} days.`,
+  asap: 'No ASAP tasks.',
+  onHold: 'Nothing is on hold.',
+  myPod: 'Your pod has no open tasks.',
+  recentlyCompleted: 'Nothing was completed in the last 30 days.',
+  createdByMe: 'You have no open tasks you created.',
+};
+
+/** What an empty Task Queue shows: the text, whether it is the "no match" kind (Clear filters) and whether Create task is offered. */
+export interface QueueEmpty {
+  text: string;
+  /** Filters are applied that the list cannot do without: the generic text with Clear filters. */
+  noMatch: boolean;
+  createTask: boolean;
+}
+
+/**
+ * @param view the quick view the filters equal exactly (null: none, or All open), so extra filters on top of a view give `noMatch`.
+ * @param filtered any filter beyond the page defaults is set.
+ * @param canCreate the user holds Task.Create.
+ */
+export function queueEmpty(view: string | null, filtered: boolean, canCreate: boolean): QueueEmpty {
+  const text = view ? QUEUE_VIEW_EMPTY[view] : undefined;
+  if (text) return { text, noMatch: false, createTask: view === 'createdByMe' && canCreate };
+  if (filtered) return { text: 'No tasks match these filters.', noMatch: true, createTask: false };
+  return { text: 'No tasks yet.', noMatch: false, createTask: canCreate };
 }

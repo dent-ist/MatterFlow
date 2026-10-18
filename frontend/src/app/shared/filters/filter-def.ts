@@ -436,10 +436,21 @@ export function buildChips(
     {
       ...base,
       id: def.key,
-      label: def.bareChip ? valueText(def, value) : `${def.label}: ${valueText(def, value)}`,
+      label: chipLabel(def, valueText(def, value)),
       remaining: defaultValue(def),
     },
   ];
+}
+
+/**
+ * "Priority: Critical", but "Overdue only" and not "Overdue: Overdue only": one rule for every page, no label that repeats its value
+ * (BUG-TQ5). A `bareChip` filter always drops its label; a value that starts with the label (case aside) does too.
+ */
+export function chipLabel(def: FilterDef, text: string): string {
+  return def.bareChip ||
+    (def.type !== 'text' && text.toLowerCase().startsWith(def.label.toLowerCase()))
+    ? text
+    : `${def.label}: ${text}`;
 }
 
 /** "Status Active, Priority Critical or High": the line printed above a filtered grid. */
@@ -449,5 +460,6 @@ export function printText(def: FilterDef, value: FilterValue): string {
     if (group) return `${def.label} ${group.label}`;
     return `${def.label} ${value.map((v) => optionLabel(def, v)).join(' or ')}`;
   }
-  return `${def.label} ${valueText(def, value)}`;
+  const text = valueText(def, value);
+  return chipLabel(def, text) === text ? text : `${def.label} ${text}`;
 }

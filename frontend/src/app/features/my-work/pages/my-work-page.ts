@@ -332,6 +332,8 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
   protected readonly filters = new ListFilters({
     screen: 'my-work',
     noun: 'tasks',
+    // The work list announces the results (view, count and range) in one message.
+    announceResults: false,
     openByDefault: true,
     defs: this.defs,
     visibleColumns: this.shownColumns,

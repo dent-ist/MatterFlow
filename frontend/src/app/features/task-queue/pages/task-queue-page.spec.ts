@@ -207,6 +207,7 @@ describe('TaskQueuePage', () => {
       /^Restored your last view: .*Status/,
     );
 
+    // The filters are not a quick view here, so the notice lists them in the chip words.
     // Reset to default goes back to the plain link and the open statuses, and forgets the view.
     el.querySelector<HTMLButtonElement>('[data-restored-notice] button')!.click();
     await settle();
@@ -329,6 +330,56 @@ describe('TaskQueuePage', () => {
     expect(lastArgs()[ARG.sort]).toBe('due');
   });
 
+  it('names the restored quick view once, without repeating its filter ("Restored your last view: Overdue.")', async () => {
+    localStorage.setItem(
+      'mf.work-view.v1.queue.1',
+      JSON.stringify({ status: OPEN, overdue: 'true' }),
+    );
+    const el = await open('/tasks');
+    expect(el.querySelector('[data-restored-text]')!.textContent!.trim()).toBe(
+      'Restored your last view: Overdue.',
+    );
+  });
+
+  it('names the pressed view in the title, the caption and one live message (TQ36)', async () => {
+    const el = await open('/tasks', { total: 101 });
+    expect(document.title).toBe('Task Queue - MatterFlow');
+    expect(el.querySelector('caption')!.textContent!.trim()).toBe('Task Queue');
+
+    el.querySelector<HTMLButtonElement>('[data-view="overdue"]')!.click();
+    await settle();
+    expect(document.title).toBe('Task Queue: Overdue - MatterFlow');
+    expect(el.querySelector('caption')!.textContent!.trim()).toBe('Task Queue: Overdue');
+    // Exactly one results message: the bar's own live region stays silent for work lists.
+    expect(el.querySelector('[data-filter-live]')!.textContent!.trim()).toBe('');
+    expect(el.querySelector('mf-work-list [role="status"]')!.textContent!.trim()).toBe(
+      'Overdue: 101 tasks, showing 1 to 50',
+    );
+  });
+
+  it('says an empty view is good news, and offers Clear filters only for other filters (TQ33)', async () => {
+    let el = await open('/tasks?overdue=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD', {
+      rows: [],
+    });
+    let empty = el.querySelector('tbody [data-empty]')!;
+    expect(empty.textContent).toContain('Nothing is overdue.');
+    expect(empty.textContent).not.toContain('Clear filters');
+
+    TestBed.resetTestingModule();
+    el = await open('/tasks?overdue=true&priority=1&status=NEW&status=IN_PROGRESS&status=ON_HOLD', {
+      rows: [],
+    });
+    empty = el.querySelector('tbody [data-empty]')!;
+    expect(empty.textContent).toContain('No tasks match these filters');
+    expect(empty.textContent).toContain('Clear filters');
+
+    TestBed.resetTestingModule();
+    el = await open('/tasks?sort=due', { rows: [], permissions: ['Task.View'] });
+    empty = el.querySelector('tbody [data-empty]')!;
+    expect(empty.textContent).toContain('No tasks yet.');
+    expect(empty.textContent).not.toContain('Create task');
+  });
+
   it('applies a quick view as a preset that replaces the filters', async () => {
     const el = await open('/tasks?q=old&priority=2');
     const view = (key: string) => el.querySelector<HTMLButtonElement>(`[data-view="${key}"]`)!;
@@ -337,7 +388,7 @@ describe('TaskQueuePage', () => {
     await settle();
     expect(query()).toEqual({ status: OPEN, overdue: 'true' });
     expect(view('overdue').getAttribute('aria-pressed')).toBe('true');
-    expect(chips(el)).toEqual(['Overdue: Overdue only']);
+    expect(chips(el)).toEqual(['Overdue only']);
 
     view('unassigned').click();
     await settle();
@@ -430,7 +481,7 @@ describe('TaskQueuePage', () => {
     el = await open('/tasks?sort=due', { rows: [] });
     empty = el.querySelector('tbody [data-empty]')!;
     expect(empty.getAttribute('data-empty')).toBe('none');
-    expect(empty.textContent).toContain('No open tasks.');
+    expect(empty.textContent).toContain('No tasks yet.');
     expect(empty.textContent).toContain('Create task');
   });
 

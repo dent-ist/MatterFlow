@@ -135,7 +135,7 @@ describe('PodWorkPage', () => {
     expect(el.querySelector('caption')!.textContent!.trim()).toMatch(
       /^Pod Work: Overdue and on hold/,
     );
-    expect(el.querySelector('.wl-sr')!.textContent).toContain('in Overdue and on hold');
+    expect(el.querySelector('.wl-sr')!.textContent).toContain('Overdue and on hold: ');
   });
 
   it('asks for the default Pod (the server picks the primary one) and the Pod queue', async () => {

@@ -33,4 +33,16 @@ describe('restoreSummary', () => {
     expect(text.length).toBeLessThanOrEqual(125);
     expect(text).toMatch(/ and \d+ more\.$/);
   });
+
+  it('names a quick view instead of listing its filters', () => {
+    expect(restoreSummary(null, [chip('Overdue only')], 'Overdue')).toBe(
+      'Restored your last view: Overdue.',
+    );
+  });
+
+  it('keeps the chip words for filters that are not a view', () => {
+    expect(restoreSummary(null, [chip('Overdue only'), chip('Priority: Critical')])).toBe(
+      'Restored your last view: Overdue only, Priority Critical.',
+    );
+  });
 });

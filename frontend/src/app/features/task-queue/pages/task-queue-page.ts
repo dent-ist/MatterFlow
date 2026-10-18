@@ -1,7 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { ParamMap, Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Observable } from 'rxjs';
+import { PageTitle } from '../../../core/title/page-title';
 import {
   PodsClient,
   TaskQueueClient,
@@ -15,9 +24,12 @@ import { filtersToValues, queueFilterDefs } from '../../../shared/filters/queue-
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { PodOption, loadPodChoices } from '../../../shared/work-queue/pod-options';
+import { queueEmpty } from '../../../shared/work-queue/empty-copy';
+import { pageName } from '../../../shared/work-queue/list-announce';
 import { QueuePageBase } from '../../../shared/work-queue/queue-page';
 import { QuickViews } from '../../../shared/work-queue/quick-views';
 import {
+  BUILT_IN_VIEWS,
   BuiltInViewKey,
   activeBuiltIn,
   OPEN_STATUSES,
@@ -87,10 +99,11 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
         [density]="prefs().density"
         [sort]="tableSort()"
         [dir]="tableDir()"
-        [filtered]="filtered()"
+        [filtered]="empty().noMatch"
         [filters]="filters"
-        caption="Task Queue"
-        emptyText="No open tasks."
+        [caption]="pageLabel()"
+        [scope]="viewLabel()"
+        [emptyText]="empty().text"
         (sortChange)="sortBy($event)"
         (pageChange)="goToPage($event)"
         (pageSizeChange)="setPageSize($event)"
@@ -99,13 +112,15 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
         (rowChange)="replaceRow($event)"
         (columnsShown)="shownColumns.set($event)"
       >
-        <p-button
-          empty-action
-          *mfHasPermission="'Task.Create'"
-          label="Create task"
-          icon="pi pi-plus"
-          (onClick)="go('/tasks/new')"
-        />
+        @if (empty().createTask) {
+          <p-button
+            empty-action
+            *mfHasPermission="'Task.Create'"
+            label="Create task"
+            icon="pi pi-plus"
+            (onClick)="go('/tasks/new')"
+          />
+        }
       </mf-work-list>
     </mf-fixed-page>
   `,
@@ -132,10 +147,33 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
   protected readonly filters = new ListFilters({
     screen: 'task-queue',
     noun: 'tasks',
+    // The work list announces the results (view, count and range) in one message.
+    announceResults: false,
+    viewName: () => this.viewLabel(),
     openByDefault: true,
     defs: this.defs,
     visibleColumns: this.shownColumns,
   });
+
+  /** The pressed quick view's name ("Overdue"); null on All open (the baseline) and on a hand-made set of filters. */
+  protected readonly viewLabel = computed(() => {
+    const key = activeBuiltIn(this.state().filters, this.viewContext());
+    return key && key !== 'allOpen'
+      ? (BUILT_IN_VIEWS.find((v) => v.key === key)?.label ?? null)
+      : null;
+  });
+  /** "Task Queue: Overdue": the table caption and the browser title. */
+  protected readonly pageLabel = computed(() => pageName('Task Queue', this.viewLabel()));
+  /** The empty state: a view that is empty says so; other filters offer Clear filters; nothing at all offers Create task. */
+  protected readonly empty = computed(() => {
+    const key = activeBuiltIn(this.state().filters, this.viewContext());
+    return queueEmpty(
+      key === 'allOpen' ? null : key,
+      this.filtered(),
+      this.auth.has('Task.Create'),
+    );
+  });
+  private readonly pageTitle = inject(PageTitle);
 
   /** A bare `/tasks` is sent to the view the user last used before anything loads. */
   private pendingRestore = false;
@@ -151,6 +189,9 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
       }
     }
     void this.loadPods();
+    // The browser title names the view and follows view changes without a reload (TQ36).
+    effect(() => this.pageTitle.pin(this.pageLabel()));
+    inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
   }
 
   /** The quick view last chosen: rows clear when another one is chosen, and stay (dimmed) while filters are edited by hand. */

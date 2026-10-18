@@ -144,7 +144,7 @@ test.describe('Column filters on the work lists', () => {
       await view(page, 'Overdue').click();
       await expect(page).toHaveURL(/overdue=true/);
       await expect(view(page, 'Overdue')).toHaveAttribute('aria-pressed', 'true');
-      await expect(chips(page)).toContainText('Overdue: Overdue only');
+      await expect(chips(page)).toContainText('Overdue only');
 
       await view(page, 'Unassigned').click();
       await expect(page).toHaveURL(/unassigned=true/);

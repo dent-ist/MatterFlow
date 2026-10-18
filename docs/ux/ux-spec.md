@@ -1140,6 +1140,19 @@ Create task, Create and add another, Save changes, Save draft, Publish version <
 | Status labels | "You can rename how statuses appear. You can't add or remove them." |
 | Priority admin | "Order from most to least urgent. Users see labels, not numbers." |
 | Pod lead | "Pod leads are a role. Assign the Pod Lead role under Users & Roles." |
+| Chip text (all work lists) | One rule: no label that repeats its value. Tri-state chips read "Overdue only", "Not overdue", "ASAP only", "Has a due date"; other chips keep "Priority: Critical". |
+| Restored notice, Task Queue | "Restored your last view: Overdue." when the filters are a quick view; otherwise the filters in chip words ("Restored your last view: Status Open, Priority Critical."). |
+| Task Queue empty, Unassigned | "Every open task has an owner." |
+| Task Queue empty, Overdue | "Nothing is overdue." |
+| Task Queue empty, Due soon | "Nothing is due in the next 2 days." |
+| Task Queue empty, ASAP / On hold | "No ASAP tasks." / "Nothing is on hold." |
+| Task Queue empty, My pod | "Your pod has no open tasks." |
+| Task Queue empty, Recently completed | "Nothing was completed in the last 30 days." |
+| Task Queue empty, Created by me | "You have no open tasks you created." with Create task (Task.Create). |
+| Task Queue empty, other filters | "No tasks match these filters." with Clear filters (also a view plus extra filters). |
+| Task Queue empty, no tasks | "No tasks yet." with Create task (Task.Create only). |
+| Task Queue title, caption | "Task Queue: Overdue" (browser title "Task Queue: Overdue - MatterFlow"); "Task Queue" with no quick view or on All open. |
+| Work list live region | One message per change, view first: "Overdue: 101 tasks, showing 1 to 50"; "101 tasks, showing 1 to 50"; "Closed: 1 task"; "No tasks". My Work and Pod Work lead with the tab ("Active: 7 tasks, showing 1 to 7"). |
 
 **Work vocabulary (BUG-13, M5; one set of words on the Dashboard, My Work, the Task Queue links and the docs).**
 | Term | Meaning |

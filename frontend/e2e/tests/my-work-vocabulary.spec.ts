@@ -85,13 +85,15 @@ test.describe('My Work vocabulary and tab rules', () => {
     // Title, caption and live region on Active, then after a tab change without a reload.
     await expect(page).toHaveTitle('My Work: Active - MatterFlow');
     await expect(page.locator('table caption')).toHaveText('My Work: Active');
-    await expect(page.locator('.wl-sr')).toHaveText(/^Showing 1-7 of 7 in Active$/);
+    await expect(page.locator('.wl-sr')).toHaveText(/^Active: 7 tasks, showing 1 to 7$/);
 
     await myWork.tab(/^Due soon and overdue/).click();
     await expect(page).toHaveURL(/view=dueSoon/);
     await expect(page).toHaveTitle('My Work: Due soon and overdue - MatterFlow');
     await expect(page.locator('table caption')).toHaveText('My Work: Due soon and overdue');
-    await expect(page.locator('.wl-sr')).toHaveText(/^Showing 1-5 of 5 in Due soon and overdue$/);
+    await expect(page.locator('.wl-sr')).toHaveText(
+      /^Due soon and overdue: 5 tasks, showing 1 to 5$/,
+    );
 
     // D1: overdue first (oldest due first), then the due date; ASAP and the far one are not here.
     const titles = async () =>

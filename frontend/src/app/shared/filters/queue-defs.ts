@@ -212,6 +212,7 @@ export function queueFilterDefs(
       label: 'ASAP',
       type: 'triState',
       options: TRI('Any', 'ASAP only', 'Has a due date'),
+      bareChip: true,
       ...off('due'),
     },
     {
@@ -219,6 +220,7 @@ export function queueFilterDefs(
       label: 'Overdue',
       type: 'triState',
       options: TRI('Any', 'Overdue only', 'Not overdue'),
+      bareChip: true,
       ...off('due'),
     },
     // Link-only: dashboard and record pages link with ids; they show as removable chips.

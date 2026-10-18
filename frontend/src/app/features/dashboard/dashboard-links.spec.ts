@@ -109,7 +109,7 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
       'overdue',
       `${OPEN}&overdue=true`,
       (s) => expect(s.filters.overdue).toBe(true),
-      ['Status: Open', 'Overdue: Overdue only'],
+      ['Status: Open', 'Overdue only'],
     ],
     [
       'on hold',
@@ -121,7 +121,7 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
       'ASAP open',
       `${OPEN}&asap=true`,
       (s) => expect(s.filters.asap).toBe(true),
-      ['Status: Open', 'ASAP: ASAP only'],
+      ['Status: Open', 'ASAP only'],
     ],
     [
       'due soon',
@@ -132,7 +132,7 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
           false,
           '2026-10-16',
         ]),
-      ['Status: Open', 'Due: until Oct 16, 2026', 'ASAP: Has a due date', 'Overdue: Not overdue'],
+      ['Status: Open', 'Due: until Oct 16, 2026', 'Has a due date', 'Not overdue'],
     ],
     [
       'completed in the period',
@@ -217,7 +217,7 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
       'my overdue',
       `${OPEN}&assignee=9&overdue=true`,
       (s) => expect([s.filters.assignee, s.filters.overdue]).toEqual([[9], true]),
-      ['Status: Open', 'Assignee: User 9', 'Overdue: Overdue only'],
+      ['Status: Open', 'Assignee: User 9', 'Overdue only'],
     ],
     [
       'created by me',

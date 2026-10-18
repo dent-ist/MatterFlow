@@ -95,7 +95,7 @@ test.describe('Dashboard actions and click-through', () => {
     await expect(attention.getByRole('link')).toHaveCount(4);
     await attention.getByRole('link', { name: /^Overdue\s*\d+\b/ }).click();
     await expect(page).toHaveURL(/overdue=true/);
-    await expect(chips(page)).toContainText('Overdue: Overdue only');
+    await expect(chips(page)).toContainText('Overdue only');
 
     await page.goBack();
     await attention.getByRole('link', { name: /^Unassigned\s*\d+\b/ }).click();
@@ -103,7 +103,7 @@ test.describe('Dashboard actions and click-through', () => {
 
     await page.goBack();
     await attention.getByRole('link', { name: /^ASAP open\s*\d+\b/ }).click();
-    await expect(chips(page)).toContainText('ASAP: ASAP only');
+    await expect(chips(page)).toContainText('ASAP only');
 
     await page.goBack();
     await attention.getByRole('link', { name: /^On hold\s*\d+\b/ }).click();
@@ -239,7 +239,7 @@ test.describe('Dashboard actions and click-through', () => {
     await overdue.getByRole('link', { name: /View all overdue tasks/ }).click();
     await expect(page).toHaveURL(/overdue=true/);
     await expect(page).toHaveURL(/sort=priority&dir=asc/);
-    await expect(chips(page)).toContainText('Overdue: Overdue only');
+    await expect(chips(page)).toContainText('Overdue only');
   });
 
   test.describe('overdue list by priority (dashboard review 2, recommendation 1)', () => {
@@ -297,7 +297,7 @@ test.describe('Dashboard actions and click-through', () => {
       await tile.click();
       await expect(page).toHaveURL(/overdue=true/);
       await expect(page).toHaveURL(/sort=priority&dir=asc/);
-      await expect(chips(page)).toContainText('Overdue: Overdue only');
+      await expect(chips(page)).toContainText('Overdue only');
     });
 
     for (const size of [

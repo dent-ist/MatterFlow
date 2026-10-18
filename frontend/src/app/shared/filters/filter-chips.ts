@@ -205,6 +205,10 @@ export class FilterNotice {
   protected readonly text = computed(
     () =>
       this.filters().noticeMessage() ??
-      restoreSummary(this.filters().restoredTab(), this.filters().chips()),
+      restoreSummary(
+        this.filters().restoredTab(),
+        this.filters().chips(),
+        this.filters().viewName(),
+      ),
   );
 }

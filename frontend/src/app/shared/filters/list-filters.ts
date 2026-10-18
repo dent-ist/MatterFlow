@@ -34,6 +34,10 @@ export interface ListFiltersOptions {
   readonly visibleColumns?: Signal<readonly string[] | null>;
   /** Plural noun for the live region ("assets"); results are announced as "23 results" when omitted. */
   readonly noun?: string;
+  /** False when the page's list announces the results itself (work lists: one message per change), so the bar stays silent about them. */
+  readonly announceResults?: boolean;
+  /** The quick view the current filters stand for ("Overdue"), or null: the restored notice then names it instead of listing the filters. */
+  readonly viewName?: () => string | null;
 }
 
 /** Below this width (and when the grid overflows sideways) the filter row becomes a sheet. */
@@ -60,6 +64,9 @@ export class ListFilters {
   private readonly openByDefault: boolean;
   private readonly visible: Signal<readonly string[] | null>;
   private readonly noun: string;
+  private readonly announceResults: boolean;
+  /** The quick view the filters stand for right now, or null. */
+  readonly viewName: () => string | null;
 
   /** The query string (always current, also for the first render). */
   readonly params: Signal<ParamMap>;
@@ -111,6 +118,8 @@ export class ListFilters {
     this.screen = options.screen;
     this.openByDefault = options.openByDefault ?? false;
     this.noun = options.noun ?? 'results';
+    this.announceResults = options.announceResults ?? true;
+    this.viewName = options.viewName ?? (() => null);
     this.visible = options.visibleColumns ?? signal(null);
     const defs = options.defs;
     this.defs = typeof defs === 'function' ? defs : signal(defs);
@@ -390,6 +399,7 @@ export class ListFilters {
    */
   reportResults(total: number): void {
     this.resultTotal.set(total);
+    if (!this.announceResults) return;
     const signature = JSON.stringify(this.queryParams());
     if (this.announced === null) {
       this.announced = signature;
