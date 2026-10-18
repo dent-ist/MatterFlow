@@ -151,8 +151,8 @@ describe('TaskTable', () => {
 
   it('shows ASAP as a plain label with a small icon (not a pill) and never as overdue', async () => {
     await create([aRow({ isAsap: true, isOverdue: false })], ['due']);
-    const pill = cell('due').querySelector('.wt-asap')!;
-    expect(pill.textContent?.trim()).toBe('ASAP');
+    const pill = cell('due').querySelector('.dc--asap')!;
+    expect(pill.querySelector('.dc-l1')!.textContent?.trim()).toBe('ASAP');
     expect(pill.querySelector('.pi-bolt')).not.toBeNull();
     expect(pill.getAttribute('title')).toBe('No due date set. Handle promptly.');
     expect(cell('due').textContent).not.toContain('Overdue');
@@ -165,19 +165,20 @@ describe('TaskTable', () => {
       ['due'],
     );
     const due = cell('due');
-    expect(due.textContent).toContain('Oct 10, 2026');
-    expect(due.textContent).toContain('Overdue 4d');
+    expect(due.querySelector('.dc-l1')!.textContent).toBe('Oct 10');
+    expect(due.querySelector('.dc-l2')!.textContent).toContain('Overdue 4d');
     expect(due.querySelector('.pi-exclamation-circle')).not.toBeNull();
     expect(el().querySelector('tbody tr')!.classList).toContain('wt-row--overdue');
   });
 
-  it('keeps the due date on one line: date, a dot and the overdue text (UXR-09)', async () => {
+  it('puts the date on line 1 and the overdue text on line 2, one spoken sentence (#209)', async () => {
     await create(
       [aRow({ isAsap: false, isOverdue: true, dueDate: '2026-10-10', status: 'IN_PROGRESS' })],
       ['due'],
     );
-    expect(cell('due').textContent!.replace(/\s+/g, ' ').trim()).toBe('Oct 10, 2026 · Overdue 4d');
-    expect(cell('due').querySelector('.wt-due')).not.toBeNull();
+    expect(cell('due').querySelector('.dc-l1')!.textContent).toBe('Oct 10');
+    expect(cell('due').querySelector('.dc-sr')!.textContent).toBe('Due Oct 10, overdue 4 days');
+    expect(cell('due').querySelector('.dc--inline')).toBeNull();
   });
 
   it('gives the title its full text as a tooltip because the cell shows at most two lines', async () => {
@@ -252,8 +253,8 @@ describe('TaskTable', () => {
     );
     const due = Array.from(el().querySelectorAll('tbody td[data-col="due"]'));
     expect(due[0].querySelector('.pi-bolt')).toBeNull();
-    expect(due[0].textContent?.trim()).toBe('-');
-    expect(due[1].querySelector('.wt-due--overdue, .pi-exclamation-circle')).toBeNull();
+    expect(due[0].querySelector('.dc-l1')!.textContent?.trim()).toBe('-');
+    expect(due[1].querySelector('.dc--overdue, .pi-exclamation-circle')).toBeNull();
     expect(due[1].textContent).not.toContain('Overdue');
     expect(due[2].querySelector('.pi-bolt')).not.toBeNull();
     const badges = Array.from(el().querySelectorAll('tbody td[data-col="priority"] .badge'));
@@ -347,14 +348,20 @@ describe('TaskTable', () => {
       ['due'],
     );
     const dues = Array.from(el().querySelectorAll('tbody td[data-col="due"]'));
-    const text = (n: number) => dues[n].textContent!.replace(/\s+/g, ' ').trim();
-    expect(text(0)).toBe('Oct 14, 2026 · Due today');
+    const line = (n: number, l: 1 | 2) =>
+      dues[n].querySelector(`.dc-l${l}`)?.textContent?.replace(/\s+/g, ' ').trim();
+    expect(line(0, 1)).toBe('Oct 14');
+    expect(line(0, 2)).toBe('Due today');
     expect(dues[0].querySelector('.pi-clock')).not.toBeNull();
-    expect(dues[0].querySelector('.wt-due--soon')).not.toBeNull();
-    expect(text(1)).toBe('Oct 15, 2026 · Tomorrow');
+    expect(dues[0].querySelector('.dc--today')).not.toBeNull();
+    expect(line(1, 1)).toBe('Oct 15');
+    expect(line(1, 2)).toBe('Tomorrow');
     expect(dues[1].querySelector('.pi')).toBeNull();
-    expect(text(2)).toBe('Oct 16, 2026');
-    expect(text(3)).toBe('Oct 28, 2026, 3:00 PM CDT');
+    expect(line(2, 1)).toBe('Oct 16');
+    expect(line(2, 2)).toBe('In 2 days');
+    expect(line(3, 1)).toBe('Oct 28');
+    expect(dues[3].querySelector('.dc')!.getAttribute('title')).toBe('Oct 28, 2026, 3:00 PM CDT');
+    expect(line(3, 2)).toBeUndefined();
   });
 
   it('mutes the due date of a closed task and never calls it overdue', async () => {
@@ -362,9 +369,9 @@ describe('TaskTable', () => {
       [aRow({ isAsap: false, isOverdue: false, dueDate: '2026-01-01', status: 'COMPLETED' })],
       ['due'],
     );
-    expect(cell('due').textContent).toContain('Jan 1, 2026');
+    expect(cell('due').querySelector('.dc-l1')!.textContent).toBe('Jan 1');
     expect(cell('due').textContent).not.toContain('Overdue');
-    expect(cell('due').querySelector('.wt-due--closed')).not.toBeNull();
+    expect(cell('due').querySelector('.dc--closed')).not.toBeNull();
   });
 
   it('shows who the task is assigned to, "Unassigned" in muted italics, and inactive people', async () => {

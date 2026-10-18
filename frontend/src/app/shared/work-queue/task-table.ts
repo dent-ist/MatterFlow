@@ -27,7 +27,7 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { mfDate } from '../../core/time/time';
 import { TaskTypeIcon } from '../icons/task-type-icon';
-import { DueStatePipe } from '../pipes/due-label.pipe';
+import { DueCell } from './due-cell';
 import { MfDatePipe } from '../pipes/mf-date.pipe';
 import { MatterCell } from './matter-cell';
 import { PriorityBadge } from '../ui/priority-badge';
@@ -67,7 +67,7 @@ const NARROW_BELOW = 760;
     TaskTypeIcon,
     RouterLink,
     MatterCell,
-    DueStatePipe,
+    DueCell,
     MfDatePipe,
     PriorityBadge,
     RowEdit,
@@ -325,32 +325,11 @@ const NARROW_BELOW = 760;
                       }}</span>
                     }
                     @case ('due') {
-                      @let due = row | dueState: row.status;
-                      @if (closed(row)) {
-                        <span class="wt-due wt-due--closed">{{
-                          due.kind === 'asap' ? '-' : due.dateText
-                        }}</span>
-                      } @else if (due.kind === 'asap') {
-                        <span class="wt-asap" [title]="due.tooltip">
-                          <i class="pi pi-bolt" aria-hidden="true"></i>ASAP
-                        </span>
-                      } @else if (row.isOverdue || due.kind === 'overdue') {
-                        <span class="wt-due wt-due--overdue">
-                          <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-                          {{ due.dateText }} · <strong>{{ due.badge ?? 'Overdue' }}</strong>
-                        </span>
-                      } @else if (due.daysUntil === 0) {
-                        <span class="wt-due wt-due--soon">
-                          <i class="pi pi-clock" aria-hidden="true"></i>
-                          {{ due.dateText }} · <strong>Due today</strong>
-                        </span>
-                      } @else if (due.daysUntil === 1) {
-                        <span class="wt-due">{{ due.dateText }} · <strong>Tomorrow</strong></span>
-                      } @else {
-                        <span class="wt-due" [class.wt-due--closed]="due.kind === 'closed'">{{
-                          due.dateText
-                        }}</span>
-                      }
+                      <mf-due-cell
+                        [due]="row"
+                        [status]="row.status"
+                        [layout]="density() === 'compact' ? 'inline' : 'two-line'"
+                      />
                     }
                     @case ('status') {
                       <div [attr.title]="holdTitle(row)">
@@ -674,7 +653,7 @@ export class TaskTable {
   });
 
   /**
-   * Below 760 px (tablets and phones) the due cell breaks into the date and the "Overdue 4d" label, and the title link is 24 px high: a
+   * Below 760 px (tablets and phones) the title link is 24 px high: a
    * narrow title sits right above the line under it, and two stacked links need their centres 24 px apart (WCAG 2.2 2.5.8).
    */
   protected readonly narrow = computed(() => this.boxWidth() > 0 && this.boxWidth() < NARROW_BELOW);

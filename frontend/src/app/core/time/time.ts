@@ -321,6 +321,8 @@ export interface DueCell {
   line1: string;
   /** Relative text: `Overdue 6h`, `Due today`, `Tomorrow`, `In 2 days`; empty for later, closed and ASAP. */
   line2: string;
+  /** The date without time (`Oct 17`, `Jan 5, 2027`): the inline layout of Compact and cards. */
+  dateText: string;
   /** One spoken sentence, e.g. `Due Oct 17 at 10:00 AM, overdue 6 hours`. */
   sentence: string;
   /** Full date with the zone abbreviation for a timed due (`Oct 17, 2026, 10:00 AM EDT`). */
@@ -376,6 +378,7 @@ export function describeDueCell(
       tone: 'asap',
       line1: 'ASAP',
       line2: '',
+      dateText: 'ASAP',
       sentence: 'No due date, ASAP',
       tooltip: 'No due date set. Handle promptly.',
       overdue: false,
@@ -398,6 +401,7 @@ export function describeDueCell(
       tone: 'closed',
       line1: dayText,
       line2: '',
+      dateText: dayText,
       sentence: `Was due ${dayText}`,
       tooltip,
       overdue: false,
@@ -412,6 +416,7 @@ export function describeDueCell(
     return {
       tone: 'overdue',
       line1: withTime,
+      dateText: dayText,
       line2: `Overdue ${short}`,
       sentence: `Due ${dayText}${at}, overdue ${spokenDuration(short)}`,
       tooltip,
@@ -424,6 +429,7 @@ export function describeDueCell(
     return {
       tone: 'today',
       line1: withTime,
+      dateText: dayText,
       line2: 'Due today',
       sentence: `Due today, ${dayText}${at}`,
       tooltip,
@@ -436,6 +442,7 @@ export function describeDueCell(
     return {
       tone: 'soon',
       line1: withTime,
+      dateText: dayText,
       line2: 'Tomorrow',
       sentence: `Due tomorrow, ${dayText}${at}`,
       tooltip,
@@ -448,6 +455,7 @@ export function describeDueCell(
     return {
       tone: 'soon',
       line1: withTime,
+      dateText: dayText,
       line2: `In ${plural(delta, 'day')}`,
       sentence: `Due ${dayText}${at}, in ${plural(delta, 'day')}`,
       tooltip,
@@ -460,6 +468,7 @@ export function describeDueCell(
     tone: 'none',
     line1: dayText,
     line2: '',
+    dateText: dayText,
     sentence: `Due ${dayText}`,
     tooltip,
     overdue: false,

@@ -194,6 +194,7 @@ describe('describeDueCell (#208)', () => {
     expect(cell(timed('2026-10-17T10:00:00Z'))).toMatchObject({
       tone: 'overdue',
       line1: 'Oct 17, 6:00 AM',
+      dateText: 'Oct 17',
       line2: 'Overdue 6h',
       sentence: 'Due Oct 17 at 6:00 AM, overdue 6 hours',
       tooltip: 'Oct 17, 2026, 6:00 AM EDT',

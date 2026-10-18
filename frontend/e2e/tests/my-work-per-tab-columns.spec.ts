@@ -367,7 +367,7 @@ test.describe('My Work per-tab columns', () => {
       .evaluate((n) => getComputedStyle(n).backgroundColor);
     expect(bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent').toBe(true);
     await expect(row.locator('td[data-col="due"] .pi-bolt')).toHaveCount(0);
-    await expect(row.locator('td[data-col="due"]')).toHaveText('-');
+    await expect(row.locator('td[data-col="due"] .dc-l1')).toHaveText('-');
     await shot(page, 'c2-closed-with-priority-1366x768');
   });
 

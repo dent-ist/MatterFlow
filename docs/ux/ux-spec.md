@@ -142,16 +142,23 @@ Always show the (configurable) label text plus an icon; pill, 12 px semibold, 4 
 ### 4.5 Priority badges
 Admin-defined labels ordered by `SortOrder` (first = most urgent). Badge = label text + small level-bar glyph (1 to 4 bars by rank) so it is not colour-only. Defaults: **Critical** (white on #B42318), **High** (#5C2E00 on #FFD9A8), **Normal** (#1B1F27 on #E3E7EE), **Low** (#3B4350 on #F1F3F6). Admin colour overrides are validated for 4.5:1 text contrast on the Priorities screen; extra priorities use a neutral style plus glyph. Priority is never shown as a number.
 
-### 4.6 Due date display (`DueCell`)
-| Case | Display | Style |
-|---|---|---|
-| No due date | **ASAP** | Bold blue outlined pill with a bolt (blue means ASAP only, M9). Never red. Tooltip "No due date set. Handle promptly." Never overdue, never counted as overdue. |
-| Future date, more than 2 days away | `Oct 28, 2026` | Normal |
-| Due today or within 2 days | date + "Due soon" | Amber text + clock icon [UX-PROPOSAL: 2-day threshold] |
-| Date + time | `Oct 28, 2026 3:00 PM` | Same colour rules |
-| Overdue (date-only: after 23:59 firm time on that date; with time: after that time) and status not Completed/Cancelled | date + "Overdue 4d" | Red text + alert icon; the row (table) or card (Swimlane) gets the red left stripe (M9) |
-| Completed/Cancelled | Date, muted | No overdue styling |
-Dates render in the **single firm timezone** (tooltip shows the zone abbreviation). Storage is UTC (backend concern).
+### 4.6 Due date display (`mf-due-cell`, #208, #209)
+One component, `mf-due-cell` (`shared/work-queue/due-cell.ts`), renders `describeDueCell` (`core/time/time.ts`) in the work grids (My Work, Task Queue, Pod Work, Matter and Project grids). The Dashboard lists and the Swimlane keep `mf-due-chip` until #213 and #214.
+
+| State | Line 1 (date) | Line 2 (bold) | Style |
+|---|---|---|---|
+| No due date | `ASAP` with a bolt (one line) | none | Blue ASAP token (`--mf-asap`), bold, never red, never overdue. Tooltip "No due date set. Handle promptly." |
+| Overdue (date-only: after the due day in the viewer's zone; with time: after that instant), open task | `Oct 17, 6:00 AM` or `Oct 13` | `Overdue 6h`, `Overdue 4d`, `Overdue 120d` | Red (`--mf-due-overdue`) on both lines, alert icon before line 2; the row keeps the red left bar |
+| Due today | `Oct 17, 11:59 PM` or `Oct 17` | `Due today` | Amber (`--mf-due-soon`) line 2 with a clock icon |
+| Tomorrow, in 2 days | the date | `Tomorrow`, `In 2 days` | Bold, neutral colour |
+| Later | the date, `Jan 5, 2027` with the year only outside the current year | none | Normal |
+| Completed / Cancelled | the date | none | Muted, plain: no bolt, no red, no icon; no date shows `-` |
+
+- Two lines at Comfortable (18 px each, no gap, cell centred in the 44 px row); at Compact (and cards) the **inline** layout puts the date and the relative text on one line (`Oct 17 · Overdue 6h`, time and year only in the tooltip).
+- Colour is never the only cue (icon and words); every tone is at least 4.5:1 against the row.
+- **One accessible name:** a visually hidden sentence (`Due Oct 17 at 6:00 AM, overdue 6 hours`, `Due tomorrow, Oct 18`, `No due date, ASAP`, `Was due Oct 1`); the visible lines are `aria-hidden`; line 1 is a `<time datetime>`; the cell `title` is the full date with the zone abbreviation (`Oct 17, 2026, 6:00 AM EDT`).
+- Due column: 136 px (WP9 fixed layout). Sorting (`aria-sort`), the Due filter cell and the Group by Due headers are unchanged; the Recently completed view shows Closed instead of Due.
+- Timed dues are instants and show in the viewer's zone; date-only dues are floating calendar days judged in the viewer's zone (addendum M).
 
 ### 4.7 Accessibility (WCAG 2.1 AA)
 - **Perceivable:** 4.5:1 text, 3:1 UI components and focus indicators; no colour-only meaning (badges have text+icon, errors icon+text, required fields say "(required)"); meaningful icons have text alternatives, decorative `aria-hidden`; reflow and text-spacing tolerant.

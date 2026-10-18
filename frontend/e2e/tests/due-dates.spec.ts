@@ -20,7 +20,7 @@ test.describe('ASAP and overdue (SCN-015)', () => {
     const queue = new TaskQueuePage(page);
     await queue.open(`?matter=${world.matter.matterId}`);
     await queue.expectListed(asap.taskNumber, late.taskNumber);
-    await expect(dueCell(queue, asap.taskNumber)).toHaveText('ASAP');
+    await expect(dueCell(queue, asap.taskNumber).locator('.dc-l1')).toHaveText('ASAP');
     await expect(dueCell(queue, asap.taskNumber)).not.toContainText('Overdue');
     await expect(dueCell(queue, late.taskNumber)).toContainText('Overdue');
 

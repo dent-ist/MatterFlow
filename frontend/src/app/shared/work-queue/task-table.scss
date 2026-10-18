@@ -185,42 +185,6 @@ th[aria-sort='descending'] .wt-sort {
   font-style: italic;
 }
 
-.wt-asap {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--mf-s1);
-  color: var(--mf-asap);
-  font-weight: 700;
-}
-
-/* "Oct 12, 2026 · Overdue 2d": the label drops under the date when the fixed Due column is too narrow for one line (until the two-line due cell, #209). */
-.wt-due {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 var(--mf-s1);
-  /* Two lines of 19 px plus 2 px of padding above and below stay inside the 44 px row (with the half-pixel border of the collapsed table). */
-  line-height: 19px;
-  white-space: nowrap;
-}
-
-/* Compact: two 16 px lines fit the 36 px row. */
-.wt--compact .wt-due {
-  line-height: 16px;
-}
-
-.wt-due--overdue {
-  color: var(--mf-due-overdue);
-}
-
-.wt-due--soon {
-  color: var(--mf-due-soon);
-}
-
-.wt-due--closed {
-  color: var(--mf-text-muted);
-}
-
 /* One line: "2 of 5 done · Dedup and Review", cut at the end only (the full text is the tooltip). */
 .wt-progress {
   display: block;
