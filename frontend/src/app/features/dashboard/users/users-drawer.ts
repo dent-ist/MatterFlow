@@ -33,7 +33,7 @@ import { canEditField } from '../../../shared/work-queue/inline-edit';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { StatusBadge } from '../../../shared/ui/status-badge';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
-import { emptyState, queueArgs } from '../../../shared/work-queue/queue-filters';
+import { emptyState, taskQueueArgs } from '../../../shared/work-queue/queue-filters';
 import { DueCell } from '../../../shared/work-queue/due-cell';
 import { backOnText } from './users-card';
 import {
@@ -545,7 +545,7 @@ export class UsersDrawer {
     state.pageSize = DRAWER_PAGE;
     void (async () => {
       try {
-        const run = () => firstValueFrom(this.queue.getTaskQueue(...queueArgs(state)));
+        const run = () => firstValueFrom(this.queue.getTaskQueue(...taskQueueArgs(state)));
         const page = await (quiet ? this.quiet.run(run) : run());
         if (this.destroyed || seq !== this.seq) return;
         this.rows.set(drawerOrder(page.items, this.clock.now(), this.zone));

@@ -191,4 +191,103 @@ public sealed class TaskQueueViewCountsApiTests(SqlServerFixture sql) : IAsyncLi
         var nobody = await _h.UserWithAsync(@"KE\nobody", "Dashboard.View");
         (await nobody.GetAsync("/api/v1/task-queue")).StatusCode.ShouldBe(System.Net.HttpStatusCode.Forbidden);
     }
+
+    private static string[] BucketNames { get; } = ["asap", "overdue", "today", "tomorrow", "thisWeek", "later", "closed"];
+
+    /// <summary>The bucket of a row as the viewer sees it, from the row's own fields (not the server's grouping rule).</summary>
+    private static int BucketOf(JsonElement row, DateOnly today)
+    {
+        if (row.GetProperty("status").GetString() is "COMPLETED" or "CANCELLED")
+            return 6;
+        if (row.GetProperty("isAsap").GetBoolean())
+            return 0;
+        if (row.GetProperty("isOverdue").GetBoolean())
+            return 1;
+        var due = DateOnly.Parse(row.GetProperty("dueDate").GetString()!, CultureInfo.InvariantCulture);
+        var weekEnd = MatterFlow.WorkViews.Application.Queries.TaskQueueRules.EndOfWeek(today);
+        return due <= today ? 2 : due == today.AddDays(1) ? 3 : due <= weekEnd ? 4 : 5;
+    }
+
+    [Theory]
+    [InlineData("America/New_York")]
+    [InlineData("Pacific/Auckland")]
+    [InlineData("America/Los_Angeles")]
+    public async Task Group_by_due_counts_equal_the_grid_totals_and_the_view_counts_and_order_the_rows_by_bucket(string zone)
+    {
+        var client = _clients["ann"];
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(Now, TimeZoneInfo.FindSystemTimeZoneById(zone)));
+        var day = (DateOnly d) => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        foreach (var extra in new[] { string.Empty, "&status=NEW&status=IN_PROGRESS&status=ON_HOLD", $"&pod={_pod}" })
+        {
+            var asc = await GetAsync(client, "/api/v1/task-queue?pageSize=100&sort=due&dir=asc&group=due" + extra, zone);
+            var b = asc.GetProperty("bucketCounts");
+            int Of(string name) => b.GetProperty(name).GetInt32();
+            BucketNames.Sum(Of).ShouldBe(asc.GetProperty("total").GetInt32(), $"{zone}{extra}: the buckets add up to the grid total");
+            asc.GetProperty("total").GetInt32().ShouldBe(await GridTotalAsync(client, zone, extra.TrimStart('&')));
+
+            Of("asap").ShouldBe(await GridTotalAsync(client, zone, "asap=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD" + extra), $"{zone}{extra} asap");
+            Of("overdue").ShouldBe(await GridTotalAsync(client, zone, "overdue=true" + extra), $"{zone}{extra} overdue");
+            // Today is every open, not overdue Task whose date is today or earlier (a timed due later today may carry the date before, in a zone ahead of its own).
+            Of("today").ShouldBe(await GridTotalAsync(client, zone, $"dueTo={day(today)}&overdue=false&status=NEW&status=IN_PROGRESS&status=ON_HOLD" + extra), $"{zone}{extra} today");
+            Of("closed").ShouldBe(extra.Contains("status=", StringComparison.Ordinal) ? 0 : await GridTotalAsync(client, zone, "status=COMPLETED&status=CANCELLED" + extra), $"{zone}{extra} closed");
+
+            var rows = asc.GetProperty("items").EnumerateArray().ToList();
+            var buckets = rows.Select(r => BucketOf(r, today)).ToList();
+            buckets.ShouldBe([.. buckets.Order()], $"{zone}{extra}: ascending lists ASAP, Overdue, Today ... Later, Closed");
+            for (var i = 0; i < BucketNames.Length; i++)
+                buckets.Count(x => x == i).ShouldBe(Of(BucketNames[i]), $"{zone}{extra}: {BucketNames[i]} rows on the page");
+
+            var desc = await GetAsync(client, "/api/v1/task-queue?pageSize=100&sort=due&dir=desc&group=due" + extra, zone);
+            var open = desc.GetProperty("items").EnumerateArray().Select(r => BucketOf(r, today)).ToList();
+            open.Where(x => x < 6).ShouldBe([.. open.Where(x => x < 6).OrderDescending()], "descending mirrors the open buckets");
+            open.Where(x => x == 6).Count().ShouldBe(Of("closed"));
+            open.SkipWhile(x => x < 6).ShouldAllBe(x => x == 6, "Closed stays last when descending");
+            IdsOf(desc).Order().ShouldBe(IdsOf(asc).Order(), "the direction reorders, it never adds or drops rows");
+        }
+
+        // The overall counts match the quick views (which ignore the request) for the open set.
+        var all = await GetAsync(client, "/api/v1/task-queue?pageSize=1&sort=due&group=due&status=NEW&status=IN_PROGRESS&status=ON_HOLD", zone);
+        var views = all.GetProperty("views");
+        all.GetProperty("bucketCounts").GetProperty("asap").GetInt32().ShouldBe(views.GetProperty("asap").GetInt32());
+        all.GetProperty("bucketCounts").GetProperty("overdue").GetInt32().ShouldBe(views.GetProperty("overdue").GetInt32());
+        all.GetProperty("total").GetInt32().ShouldBe(views.GetProperty("open").GetInt32());
+    }
+
+    private static List<long> IdsOf(JsonElement page) => [.. page.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("taskId").GetInt64())];
+
+    [Fact]
+    public async Task Group_by_due_pages_concatenate_to_the_one_big_page_in_both_directions()
+    {
+        var client = _clients["ann"];
+        foreach (var dir in new[] { "asc", "desc" })
+        {
+            var all = IdsOf(await GetAsync(client, $"/api/v1/task-queue?pageSize=100&sort=due&dir={dir}&group=due", "America/New_York"));
+            var seen = new List<long>();
+            for (var page = 1; seen.Count < all.Count; page++)
+            {
+                var next = IdsOf(await GetAsync(client, $"/api/v1/task-queue?pageSize=4&page={page}&sort=due&dir={dir}&group=due", "America/New_York"));
+                next.ShouldNotBeEmpty();
+                seen.AddRange(next);
+            }
+
+            seen.ShouldBe(all, dir);
+        }
+    }
+
+    [Fact]
+    public async Task Group_by_due_needs_sort_due_and_an_unknown_group_is_rejected()
+    {
+        var client = _clients["ann"];
+        bool Has(JsonElement page) => page.TryGetProperty("bucketCounts", out var b) && b.ValueKind != JsonValueKind.Null;
+        Has(await GetAsync(client, "/api/v1/task-queue", "UTC")).ShouldBeFalse("no group, no counts");
+        Has(await GetAsync(client, "/api/v1/task-queue?sort=due", "UTC")).ShouldBeFalse("the sort alone does not add counts or change the API");
+        Has(await GetAsync(client, "/api/v1/task-queue?group=none&sort=due", "UTC")).ShouldBeFalse();
+        Has(await GetAsync(client, "/api/v1/task-queue?group=due&sort=priority", "UTC")).ShouldBeFalse("other sorts have no dividers");
+        Has(await GetAsync(client, "/api/v1/task-queue?group=due&sort=due", "UTC")).ShouldBeTrue();
+        (await client.GetAsync("/api/v1/task-queue?group=assignee&sort=due")).StatusCode.ShouldBe(System.Net.HttpStatusCode.BadRequest);
+        // The plain Due sort is unchanged: same rows in the same order as before grouping existed (Closed rows sit by their due key).
+        var plain = IdsOf(await GetAsync(client, "/api/v1/task-queue?pageSize=100&sort=due", "UTC"));
+        var grouped = IdsOf(await GetAsync(client, "/api/v1/task-queue?pageSize=100&sort=due&group=due", "UTC"));
+        grouped.Order().ShouldBe(plain.Order());
+    }
 }

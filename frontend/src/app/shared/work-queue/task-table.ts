@@ -25,7 +25,7 @@ import { ScrollArea } from '../ui/fixed-page';
 import { ColumnFilterRow } from '../filters/column-filter-row';
 import { ListFilters } from '../filters/list-filters';
 import { GridBody } from '../ui/grid-body';
-import { MyWorkBucketCounts, TaskQueueRow } from '../../api/generated/api-client';
+import { TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { mfDate } from '../../core/time/time';
@@ -36,7 +36,7 @@ import { MatterCell } from './matter-cell';
 import { PriorityBadge } from '../ui/priority-badge';
 import { CopyPart } from '../ui/copy-parts';
 import { StatusBadge } from '../ui/status-badge';
-import { RowGroup, groupRows } from './due-groups';
+import { BucketCounts, RowGroup, groupRows } from './due-groups';
 import { GroupHeader } from './group-header';
 import { HoldNote, holdTitle } from './hold-note';
 import { WORK_COLUMNS, ColumnDef, Density } from './column-prefs';
@@ -153,6 +153,7 @@ const LONG_PRESS_MS = 500;
                     type="button"
                     class="wt-sort"
                     data-col-focus
+                    [attr.title]="sortTip(col)"
                     (click)="sortChange.emit(col.sortField)"
                   >
                     {{ col.label }}
@@ -595,12 +596,14 @@ export class TaskTable {
    * My Work grouped by due: the size of every bucket for the whole filtered set. The rows are in the server's bucket order, so each group's
    * header goes where its bucket starts. Null: no grouping.
    */
-  readonly groupBuckets = input<MyWorkBucketCounts | null>(null);
+  readonly groupBuckets = input<BucketCounts | null>(null);
+  /** The direction the buckets are listed in: the Task Queue's Due sort descending mirrors them (My Work always ascending). */
+  readonly groupDir = input<'asc' | 'desc'>('asc');
   /** Index of the first row on the page within the whole result ((page - 1) x page size), to place the headers. */
   readonly groupOffset = input(0);
 
   protected readonly groups = computed<RowGroup[]>(() =>
-    groupRows(this.rows().length, this.groupOffset(), this.groupBuckets()),
+    groupRows(this.rows().length, this.groupOffset(), this.groupBuckets(), this.groupDir()),
   );
   protected readonly groupAt = computed(() => new Map(this.groups().map((g) => [g.start, g])));
   /** Groups the person collapsed (not remembered: a fresh visit or a new grouping shows everything). */
@@ -963,6 +966,12 @@ export class TaskTable {
     if (!col.sortField) return null;
     if (this.sort() !== col.sortField) return 'none';
     return this.effectiveDir(col.sortField) === 'desc' ? 'descending' : 'ascending';
+  }
+
+  /** The Due header says where ASAP goes while the list is sorted by it (ASAP counts as the earliest: first ascending, last descending). */
+  protected sortTip(col: ColumnDef): string | null {
+    if (col.sortField !== 'due' || this.sort() !== 'due') return null;
+    return this.effectiveDir('due') === 'desc' ? 'Due (ASAP last)' : 'Due (ASAP first)';
   }
 
   protected sortIcon(col: ColumnDef): string {

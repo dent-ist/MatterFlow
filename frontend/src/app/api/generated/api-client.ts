@@ -9142,6 +9142,7 @@ export class DashboardBoardClient implements IDashboardBoardClient {
 
 export interface ITaskQueueClient {
     /**
+     * @param group (optional) 
      * @param q (optional) 
      * @param status (optional) 
      * @param priority (optional) 
@@ -9175,7 +9176,7 @@ export interface ITaskQueueClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    getTaskQueue(q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage>;
+    getTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage>;
 }
 
 @Injectable({
@@ -9192,6 +9193,7 @@ export class TaskQueueClient implements ITaskQueueClient {
     }
 
     /**
+     * @param group (optional) 
      * @param q (optional) 
      * @param status (optional) 
      * @param priority (optional) 
@@ -9225,8 +9227,12 @@ export class TaskQueueClient implements ITaskQueueClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    getTaskQueue(q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage> {
+    getTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage> {
         let url_ = this.baseUrl + "/api/v1/task-queue?";
+        if (group === null)
+            throw new globalThis.Error("The parameter 'group' cannot be null.");
+        else if (group !== undefined)
+            url_ += "group=" + encodeURIComponent("" + group) + "&";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
         else if (q !== undefined)
@@ -12999,6 +13005,18 @@ export interface TaskProjectRef {
     [key: string]: any;
 }
 
+export interface TaskQueueBucketCounts {
+    asap: number;
+    overdue: number;
+    today: number;
+    tomorrow: number;
+    thisWeek: number;
+    later: number;
+    closed: number;
+
+    [key: string]: any;
+}
+
 export interface TaskQueuePage {
     items: TaskQueueRow[];
     total: number;
@@ -13006,6 +13024,7 @@ export interface TaskQueuePage {
     pageSize: number;
     timeZone: string;
     views: TaskQueueViewCounts;
+    bucketCounts?: TaskQueueBucketCounts | undefined;
 
     [key: string]: any;
 }

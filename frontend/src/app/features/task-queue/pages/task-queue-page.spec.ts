@@ -18,27 +18,28 @@ import {
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { TaskQueuePage } from './task-queue-page';
 
-/** Positions of the arguments of `getTaskQueue`. */
+/** Positions of the arguments of `getTaskQueue` (`group` first, then the shared filters, sort and paging). */
 const ARG = {
-  q: 0,
-  status: 1,
-  priority: 2,
-  pod: 3,
-  noPod: 4,
-  assignee: 5,
-  unassigned: 6,
-  creator: 7,
-  asap: 17,
-  overdue: 18,
-  matterText: 22,
-  clientText: 23,
-  projectText: 24,
-  updatedFrom: 25,
-  updatedTo: 26,
-  sort: 27,
-  dir: 28,
-  page: 29,
-  pageSize: 30,
+  group: 0,
+  q: 1,
+  status: 2,
+  priority: 3,
+  pod: 4,
+  noPod: 5,
+  assignee: 6,
+  unassigned: 7,
+  creator: 8,
+  asap: 18,
+  overdue: 19,
+  matterText: 23,
+  clientText: 24,
+  projectText: 25,
+  updatedFrom: 26,
+  updatedTo: 27,
+  sort: 28,
+  dir: 29,
+  page: 30,
+  pageSize: 31,
 };
 
 const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
@@ -147,6 +148,7 @@ describe('TaskQueuePage', () => {
     expect(args[ARG.page]).toBe(1);
     expect(args[ARG.pageSize]).toBe(50);
     expect(args[ARG.sort]).toBeUndefined();
+    expect(args[ARG.group]).toBeUndefined(); // only a Due sort asks for dividers (#232)
   });
 
   it('hands the response counts to the quick views (not narrowed by the filters in the address)', async () => {
@@ -272,6 +274,8 @@ describe('TaskQueuePage', () => {
     expect(getTaskQueue).toHaveBeenCalledTimes(1);
     expect(lastArgs()[ARG.status]).toEqual(['NEW']);
     expect(lastArgs()[ARG.sort]).toBe('due');
+    // Sorted by Due: the page asks for the due buckets (#232).
+    expect(lastArgs()[ARG.group]).toBe('due');
     expect(el.querySelector('[data-restored-text]')!.textContent).toMatch(
       /^Restored your last view: .*Status/,
     );

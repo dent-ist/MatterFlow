@@ -48,7 +48,7 @@ import {
   OPEN_STATUSES,
   QueueState,
   builtInFilters,
-  queueArgs,
+  taskQueueArgs,
 } from '../../../shared/work-queue/queue-filters';
 import { SortNote } from '../../../shared/work-queue/sort-note';
 import { WorkList } from '../../../shared/work-queue/work-list';
@@ -140,6 +140,9 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
         [colWidths]="colWidths()"
         [sort]="tableSort()"
         [dir]="tableDir()"
+        [groupBuckets]="dueSorted() ? (data()?.bucketCounts ?? null) : null"
+        [groupOffset]="groupOffset()"
+        [groupDir]="tableDir() === 'desc' ? 'desc' : 'asc'"
         [filtered]="empty().noMatch"
         [filters]="filters"
         [caption]="pageLabel()"
@@ -203,6 +206,13 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
   });
 
   /** The quick-view counts of the last response (not narrowed by the filters); null until the first one arrives. */
+  /** Sorted by Due: the rows come in due-bucket order and get a divider per bucket (no setting: the sort is the switch). */
+  protected readonly dueSorted = computed(() => this.state().sort === 'due');
+  /** Index of the response's first row in the whole result: where the dividers go. */
+  protected readonly groupOffset = computed(() => {
+    const d = this.data();
+    return d ? (d.page - 1) * d.pageSize : 0;
+  });
   protected readonly viewCounts = computed(() => this.data()?.views ?? null);
 
   /** The quick view the address shows by shape (extra filters allowed, #221), or null. */
@@ -292,7 +302,7 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
   }
 
   protected override fetch(state: QueueState): Observable<TaskQueueData> {
-    return this.api.getTaskQueue(...queueArgs(state));
+    return this.api.getTaskQueue(...taskQueueArgs(state, state.sort === 'due' ? 'due' : undefined));
   }
 
   protected override countsFollowEdits(): boolean {

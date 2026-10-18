@@ -260,10 +260,11 @@ describe('MatterDetailPage', () => {
     await openTab('tasks');
 
     expect(tab('Tasks').textContent?.trim()).toBe('Tasks (3)');
+    // `group` is argument 0 (#232), then the shared filters.
     let args = queue.getTaskQueue.mock.calls[0];
-    expect(args[9]).toBe(7);
-    expect(args[10]).toBeUndefined();
-    expect(args[1]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
+    expect(args[10]).toBe(7);
+    expect(args[11]).toBeUndefined();
+    expect(args[2]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
     expect(el().querySelector('tbody tr[data-task=TSK-1042] a')?.getAttribute('href')).toBe(
       '/tasks/1042',
     );
@@ -275,7 +276,7 @@ describe('MatterDetailPage', () => {
     query.set({ status: '' });
     await settle(fixture);
     args = queue.getTaskQueue.mock.calls.at(-1)!;
-    expect(args[1]).toBeUndefined();
+    expect(args[2]).toBeUndefined();
     expect(grid.querySelector('[data-filters-toggle]')!.textContent).toContain('(1)');
 
     expect(el().querySelector('mf-scoped-tasks [data-create-task]')).toBeNull();
@@ -312,12 +313,12 @@ describe('MatterDetailPage', () => {
     query.set({ q: 'dedup', priority: '2', project: '3', dueTo: '2026-10-31' });
     await settle(fixture);
     const args = queue.getTaskQueue.mock.calls.at(-1)!;
-    expect(args[0]).toBe('dedup');
-    expect(args[2]).toEqual([2]);
-    expect(args[9]).toBe(7); // the matter
-    expect(args[10]).toBe(3); // the project filter
-    expect(args[16]).toBe('2026-10-31');
-    expect(args[1]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']); // Open by default
+    expect(args[1]).toBe('dedup');
+    expect(args[3]).toEqual([2]);
+    expect(args[10]).toBe(7); // the matter
+    expect(args[11]).toBe(3); // the project filter
+    expect(args[17]).toBe('2026-10-31');
+    expect(args[2]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']); // Open by default
   });
 
   it('lists the matter assets in the Assets tab with column filters, server-side, and links to the asset', async () => {

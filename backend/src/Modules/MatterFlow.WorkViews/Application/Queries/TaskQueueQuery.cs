@@ -154,6 +154,21 @@ public class TaskQueueQuery
     public int PageSize { get; init; } = PageRequest.DefaultPageSize;
 }
 
+/// <summary>The Task Queue: the queue filters plus the optional grouping.</summary>
+public class TaskQueueListQuery : TaskQueueQuery
+{
+    /// <summary>All parameters of the Task Queue endpoint.</summary>
+    public static readonly IReadOnlyList<string> ListKeys = [.. Keys, "group"];
+
+    /// <summary>
+    /// <c>due</c>: together with <c>sort=due</c>, return <c>bucketCounts</c> (ASAP, Overdue, Today, Tomorrow, This week, Later, Closed) for the whole
+    /// filtered set and keep the rows in bucket order (mirrored for <c>dir=desc</c>, Closed last), so the grid can show a divider per bucket. Absent
+    /// or <c>none</c>: no grouping and no counts. With any other sort it has no effect. Any other value is a 400.
+    /// </summary>
+    [FromQuery(Name = "group"), StringLength(10)]
+    public string? Group { get; init; }
+}
+
 /// <summary>My Work: the queue filters plus the tab.</summary>
 public class MyWorkQuery : TaskQueueQuery
 {

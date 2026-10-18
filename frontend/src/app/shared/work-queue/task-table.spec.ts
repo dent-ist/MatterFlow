@@ -631,6 +631,64 @@ describe('TaskTable', () => {
     expect(el().querySelectorAll('th[scope="col"]').length).toBe(2);
   });
 
+  describe('Due-sorted dividers (#232)', () => {
+    const rows = [
+      aRow({ taskId: 1, taskNumber: 'TSK-1' }),
+      aRow({ taskId: 2, taskNumber: 'TSK-2' }),
+      aRow({ taskId: 3, taskNumber: 'TSK-3' }),
+    ];
+    const counts = {
+      asap: 51,
+      overdue: 101,
+      today: 0,
+      tomorrow: 0,
+      thisWeek: 0,
+      later: 0,
+      closed: 0,
+    };
+
+    it('puts a divider before each bucket with the whole count and "continued", spanning every shown column', async () => {
+      await create(rows, ['ref', 'title', 'due', 'status'], {
+        sort: 'due',
+        dir: 'asc',
+        groupBuckets: counts,
+        groupOffset: 50,
+      });
+      const headers = Array.from(el().querySelectorAll('tr[mfGroupHeader]'));
+      expect(headers.map((h) => h.getAttribute('data-group'))).toEqual(['asap', 'overdue']);
+      expect(headers[0].textContent).toContain('ASAP (51 tasks), continued');
+      expect(headers[1].textContent).toContain('Overdue (101 tasks)');
+      expect(headers[0].querySelector('th')!.getAttribute('colspan')).toBe('4');
+      // The divider rows are not task rows: the key model and the row count only see tr[data-task].
+      expect(el().querySelectorAll('tbody tr[data-task]')).toHaveLength(3);
+    });
+
+    it('mirrors the dividers when descending', async () => {
+      await create(rows, ['title', 'due'], {
+        sort: 'due',
+        dir: 'desc',
+        groupDir: 'desc',
+        groupBuckets: { ...counts, asap: 1, overdue: 1, later: 1 },
+      });
+      const keys = Array.from(el().querySelectorAll('tr[mfGroupHeader]')).map((h) =>
+        h.getAttribute('data-group'),
+      );
+      expect(keys).toEqual(['later', 'overdue', 'asap']);
+    });
+
+    it('names where ASAP goes in the Due header tooltip, only while sorted by Due', async () => {
+      await create(rows, ['title', 'due'], { sort: 'due', dir: 'asc' });
+      const btn = () => el().querySelector<HTMLElement>('th[data-col="due"] button.wt-sort')!;
+      expect(btn().getAttribute('title')).toBe('Due (ASAP first)');
+      fixture.componentRef.setInput('dir', 'desc');
+      fixture.detectChanges();
+      expect(btn().getAttribute('title')).toBe('Due (ASAP last)');
+      fixture.componentRef.setInput('sort', 'priority');
+      fixture.detectChanges();
+      expect(btn().getAttribute('title')).toBeNull();
+    });
+  });
+
   describe('inline editing', () => {
     it('shows plain values when the user has no permission to change them', async () => {
       await create([aRow()], ['priority', 'assignee', 'status']);

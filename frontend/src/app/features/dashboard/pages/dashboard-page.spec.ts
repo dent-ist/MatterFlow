@@ -220,9 +220,9 @@ describe('DashboardPage', () => {
     );
     getTaskQueue = vi.fn((...args: unknown[]) =>
       of(
-        args[6] === true
+        args[7] === true
           ? pageOf(unassignedRows, { total: 17 })
-          : args[18] === true
+          : args[19] === true
             ? pageOf([overdueRow], { total: 9 })
             : pageOf([soonRow], { total: 6 }),
       ),
@@ -945,8 +945,8 @@ describe('DashboardPage', () => {
       '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true&sort=priorityAge&dir=asc',
     );
     // The list asks the Task Queue for priority then age, 5 rows.
-    const call = getTaskQueue.mock.calls.find((c) => c[6] === true)!;
-    expect(call.slice(27)).toEqual(['priorityAge', 'asc', 1, 5]);
+    const call = getTaskQueue.mock.calls.find((c) => c[7] === true)!;
+    expect(call.slice(28)).toEqual(['priorityAge', 'asc', 1, 5]);
   });
 
   it('keeps the tab stops down: a row has one link and its actions, the matter reference is plain text, and a list can be skipped', async () => {
@@ -1032,7 +1032,7 @@ describe('DashboardPage', () => {
       true,
       'all',
     );
-    expect(getTaskQueue.mock.calls.filter((c) => c[6] === true).length).toBe(2);
+    expect(getTaskQueue.mock.calls.filter((c) => c[7] === true).length).toBe(2);
     expect(text(panel().querySelector('[data-total]'))).toBe('17');
     el.remove();
   });
@@ -1071,8 +1071,8 @@ describe('DashboardPage', () => {
       'Oct 10, 2026',
     );
     // The list asks the Task Queue for priority then the most overdue (due ascending), 5 rows, filtered to overdue.
-    const call = getTaskQueue.mock.calls.find((c) => c[18] === true)!;
-    expect(call.slice(27)).toEqual(['priority', 'asc', 1, 5]);
+    const call = getTaskQueue.mock.calls.find((c) => c[19] === true)!;
+    expect(call.slice(28)).toEqual(['priority', 'asc', 1, 5]);
     expect(text(overdue.querySelector('[data-order]'))).toBe(
       'Critical first, then longest overdue.',
     );

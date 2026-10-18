@@ -69,6 +69,43 @@ test.describe('Dashboard actions and click-through', () => {
   type Page = import('@playwright/test').Page;
   /** Chips of the filters that have no column in the grid (the filter row shows the others). */
   const chips = (page: Page) => page.getByRole('list', { name: 'Active filters' });
+  /**
+   * Since #221 a link that matches a quick view presses it, and a pressed view hides the chips of the filters it owns (so there is no "Overdue only"
+   * chip). The view is a button in the strip, or the More button when the strip is narrow; its name carries the count ("Overdue, 12 tasks").
+   * The list below it has the same total (the pager says "... of N"), and the address carries the filter of the Dashboard link.
+   */
+  async function expectPressedView(
+    page: Page,
+    key: string,
+    label: string,
+    href: string | null,
+  ): Promise<void> {
+    const pressed = page
+      .locator(
+        `.qv [data-view="${key}"][aria-pressed="true"], .qv [data-view-in-more="${key}"][aria-pressed="true"]`,
+      )
+      .first();
+    await expect(pressed).toBeVisible();
+    await expect(pressed).toHaveAttribute('aria-label', new RegExp(`^${label}, [\\d,]+ tasks?$`));
+    // The list is the view: its total is the view's count.
+    const count = Number(
+      ((await pressed.getAttribute('aria-label')) ?? '')
+        .match(/, ([\d,]+) task/)![1]
+        .replace(/,/g, ''),
+    );
+    const pager = page.getByRole('navigation', { name: 'Pagination' });
+    await expect(pager).toContainText(new RegExp(`of ${count}(?!\\d)`));
+    // Same filter as the Dashboard link: every parameter of the link is in the address.
+    if (href) {
+      const wanted = new URL(href, 'http://x').searchParams;
+      const got = new URL(page.url()).searchParams;
+      for (const [k, v] of wanted) expect(got.getAll(k), `parameter ${k}`).toContain(v);
+    }
+    await expect(
+      chips(page).getByText(label === 'ASAP' ? 'ASAP only' : 'Overdue only'),
+    ).toHaveCount(0);
+  }
+
   /** The control of a filter in the Task Queue's filter row, which is open when a link brings filters. */
   const control = (page: Page, key: string) =>
     page.locator(`tr[data-filter-row] [data-filter="${key}"]`);
@@ -93,17 +130,22 @@ test.describe('Dashboard actions and click-through', () => {
 
     const attention = page.getByRole('group', { name: 'Needs attention' });
     await expect(attention.getByRole('link')).toHaveCount(4);
-    await attention.getByRole('link', { name: /^Overdue\s*\d+\b/ }).click();
+    const overdueLink = attention.getByRole('link', { name: /^Overdue\s*\d+\b/ });
+    const overdueHref = await overdueLink.getAttribute('href');
+    await overdueLink.click();
     await expect(page).toHaveURL(/overdue=true/);
-    await expect(chips(page)).toContainText('Overdue only');
+    await expectPressedView(page, 'overdue', 'Overdue', overdueHref);
 
     await page.goBack();
     await attention.getByRole('link', { name: /^Unassigned\s*\d+\b/ }).click();
     await expect(control(page, 'assignee')).toContainText('Unassigned');
 
     await page.goBack();
-    await attention.getByRole('link', { name: /^ASAP open\s*\d+\b/ }).click();
-    await expect(chips(page)).toContainText('ASAP only');
+    const asapLink = attention.getByRole('link', { name: /^ASAP open\s*\d+\b/ });
+    const asapHref = await asapLink.getAttribute('href');
+    await asapLink.click();
+    await expect(page).toHaveURL(/asap=true/);
+    await expectPressedView(page, 'asap', 'ASAP', asapHref);
 
     await page.goBack();
     await attention.getByRole('link', { name: /^On hold\s*\d+\b/ }).click();
@@ -236,10 +278,12 @@ test.describe('Dashboard actions and click-through', () => {
 
     const overdue = page.locator('[data-panel="overdue"]');
     await expect(overdue.locator('li').first()).toContainText('Overdue');
-    await overdue.getByRole('link', { name: /View all overdue tasks/ }).click();
+    const viewAll = overdue.getByRole('link', { name: /View all overdue tasks/ });
+    const href = await viewAll.getAttribute('href');
+    await viewAll.click();
     await expect(page).toHaveURL(/overdue=true/);
     await expect(page).toHaveURL(/sort=priority&dir=asc/);
-    await expect(chips(page)).toContainText('Overdue only');
+    await expectPressedView(page, 'overdue', 'Overdue', href);
   });
 
   test.describe('overdue list by priority (dashboard review 2, recommendation 1)', () => {
@@ -294,10 +338,11 @@ test.describe('Dashboard actions and click-through', () => {
       const detail = tile.locator('[data-detail]');
       await expect(detail).toContainText(/\d+ Critical/);
       await expect(detail.locator('.pi')).toHaveCount(1);
+      const tileHref = await tile.getAttribute('href');
       await tile.click();
       await expect(page).toHaveURL(/overdue=true/);
       await expect(page).toHaveURL(/sort=priority&dir=asc/);
-      await expect(chips(page)).toContainText('Overdue only');
+      await expectPressedView(page, 'overdue', 'Overdue', tileHref);
     });
 
     for (const size of [

@@ -561,6 +561,17 @@ export function queueArgs(
 }
 
 /**
+ * The arguments of `getTaskQueue`: the endpoint's own `group` comes first in the generated client, then the shared filters, sort and paging
+ * (`queueArgs`). `group: 'due'` asks for the due buckets of a Due-sorted list; omit it for a plain page.
+ */
+export function taskQueueArgs(
+  state: QueueState,
+  group?: 'due',
+): [group: string | undefined, ...rest: ReturnType<typeof queueArgs>] {
+  return [group, ...queueArgs(state)];
+}
+
+/**
  * `yyyy-MM-dd` of the viewer's today minus `days` (a negative number looks ahead), in the given zone. The calendar day of `now` in the zone
  * is found first and the days are counted on the calendar, so a daylight saving change inside the span never moves the result.
  */

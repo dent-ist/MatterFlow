@@ -76,7 +76,22 @@ public sealed record TaskQueuePage(
     [property: Required] int Page,
     [property: Required] int PageSize,
     [property: Required] string TimeZone,
-    [property: Required] TaskQueueViewCounts Views);
+    [property: Required] TaskQueueViewCounts Views,
+    TaskQueueBucketCounts? BucketCounts = null);
+
+/// <summary>
+/// The size of each due bucket of the whole filtered Task Queue set (not just the page), returned with <c>group=due</c> and <c>sort=due</c>. The
+/// open buckets are My Work's (ASAP, Overdue and Today use the strip's and the Dashboard's predicates); <c>Closed</c> is every Completed or Cancelled
+/// Task, which is never overdue. The seven buckets sum to the total.
+/// </summary>
+public sealed record TaskQueueBucketCounts(
+    [property: Required] int Asap,
+    [property: Required] int Overdue,
+    [property: Required] int Today,
+    [property: Required] int Tomorrow,
+    [property: Required] int ThisWeek,
+    [property: Required] int Later,
+    [property: Required] int Closed);
 
 /// <summary>
 /// The size of each Task Queue quick view, over the whole Task set the viewer may see and never narrowed by the filters of the request (like My Work's

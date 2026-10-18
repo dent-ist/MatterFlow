@@ -21,9 +21,9 @@ public class TaskQueueController(TaskQueueService queue) : ControllerBase
     [HttpGet(Name = "GetTaskQueue")]
     [Authorize(Policy = "Perm:" + Permissions.Task.View)]
     [ProducesResponseType<TaskQueuePage>(StatusCodes.Status200OK, "application/json")]
-    public async Task<ActionResult<TaskQueuePage>> Get([FromQuery] TaskQueueQuery query, CancellationToken cancellationToken)
+    public async Task<ActionResult<TaskQueuePage>> Get([FromQuery] TaskQueueListQuery query, CancellationToken cancellationToken)
     {
-        FilterParsing.EnsureKnown(Request.Query.Keys, TaskQueueQuery.Keys).OrThrow();
+        FilterParsing.EnsureKnown(Request.Query.Keys, TaskQueueListQuery.ListKeys).OrThrow();
         return (await queue.QueueAsync(query, cancellationToken)).OrThrow();
     }
 }

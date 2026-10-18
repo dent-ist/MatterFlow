@@ -34,7 +34,7 @@ import { ErrorReference } from '../../../shared/ui/error-reference';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { SearchBox } from '../../../shared/ui/search-box';
-import { emptyState, queueArgs } from '../../../shared/work-queue/queue-filters';
+import { emptyState, taskQueueArgs } from '../../../shared/work-queue/queue-filters';
 import { DueCell } from '../../../shared/work-queue/due-cell';
 import { ageInDays } from '../ui/task-list-panel';
 import { loadLevelOf, plural } from './users-model';
@@ -630,7 +630,7 @@ export class UsersAssign {
     state.pageSize = ASSIGN_PAGE;
     void (async () => {
       try {
-        const page = await firstValueFrom(this.queue.getTaskQueue(...queueArgs(state)));
+        const page = await firstValueFrom(this.queue.getTaskQueue(...taskQueueArgs(state)));
         if (this.destroyed || seq !== this.seq) return;
         this.rows.set(page.items);
         this.total.set(page.total);

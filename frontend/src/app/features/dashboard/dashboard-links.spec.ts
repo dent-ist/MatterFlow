@@ -49,21 +49,22 @@ describe('queueArgsFor', () => {
       'asc',
       8,
     );
-    expect(args[1]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']); // status
-    expect(args[6]).toBe(true); // unassigned
-    expect(args.slice(27)).toEqual(['priorityAge', 'asc', 1, 8]);
+    expect(args[0]).toBeUndefined(); // group (only the Task Queue page asks for due buckets)
+    expect(args[2]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']); // status
+    expect(args[7]).toBe(true); // unassigned
+    expect(args.slice(28)).toEqual(['priorityAge', 'asc', 1, 8]);
   });
 
   it('carries overdue and the due-soon window', () => {
     const overdue = queueArgsFor('status=NEW&overdue=true', 'due', 'asc', 6);
-    expect(overdue[18]).toBe(true);
+    expect(overdue[19]).toBe(true);
     const soon = queueArgsFor(
       'status=NEW&asap=false&overdue=false&dueTo=2026-10-16',
       'due',
       'asc',
       6,
     );
-    expect([soon[16], soon[17], soon[18]]).toEqual(['2026-10-16', false, false]);
+    expect([soon[17], soon[18], soon[19]]).toEqual(['2026-10-16', false, false]);
   });
 });
 

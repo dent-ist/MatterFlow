@@ -6270,6 +6270,15 @@
         "operationId": "GetTaskQueue",
         "parameters": [
           {
+            "name": "group",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
             "name": "q",
             "in": "query",
             "schema": {
@@ -14249,6 +14258,48 @@
           }
         }
       },
+      "TaskQueueBucketCounts": {
+        "required": [
+          "asap",
+          "overdue",
+          "today",
+          "tomorrow",
+          "thisWeek",
+          "later",
+          "closed"
+        ],
+        "type": "object",
+        "properties": {
+          "asap": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "today": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tomorrow": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "thisWeek": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "later": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "closed": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "TaskQueuePage": {
         "required": [
           "items",
@@ -14283,6 +14334,16 @@
           },
           "views": {
             "$ref": "#/components/schemas/TaskQueueViewCounts"
+          },
+          "bucketCounts": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskQueueBucketCounts"
+              }
+            ]
           }
         }
       },

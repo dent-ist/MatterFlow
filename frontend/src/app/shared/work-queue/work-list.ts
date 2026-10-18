@@ -13,7 +13,8 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { MyWorkBucketCounts, TaskQueueRow } from '../../api/generated/api-client';
+import { TaskQueueRow } from '../../api/generated/api-client';
+import { BucketCounts } from './due-groups';
 import { ListFilters } from '../filters/list-filters';
 import { SkipTarget } from '../layout/skip-target';
 import { ROW_SHORTCUTS, ShortcutRegistry } from '../layout/shortcut-registry';
@@ -70,6 +71,7 @@ export type WorkListState = 'loading' | 'ready' | 'error';
       [from]="from()"
       [groupBuckets]="groupBuckets()"
       [groupOffset]="groupOffset()"
+      [groupDir]="groupDir()"
       (sortChange)="sortChange.emit($event)"
       (columnResized)="columnResized.emit($event)"
       (columnAction)="columnAction.emit($event)"
@@ -133,7 +135,8 @@ export class WorkList {
   /** Tasks that just left the tab; their rows show muted until the page removes them. */
   readonly leaving = input<ReadonlySet<number>>(new Set());
   /** My Work grouped by due: the size of each bucket over the whole filtered set (null: no grouping), and the index of the page's first row. */
-  readonly groupBuckets = input<MyWorkBucketCounts | null>(null);
+  readonly groupBuckets = input<BucketCounts | null>(null);
+  readonly groupDir = input<'asc' | 'desc'>('asc');
   readonly groupOffset = input(0);
 
   readonly sortChange = output<string>();

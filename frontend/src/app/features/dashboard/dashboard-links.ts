@@ -1,5 +1,5 @@
 import { Params, convertToParamMap } from '@angular/router';
-import { parseQueueState, queueArgs } from '../../shared/work-queue/queue-filters';
+import { parseQueueState, taskQueueArgs } from '../../shared/work-queue/queue-filters';
 import { DUE_SOON_CAPTION, DUE_SOON_WINDOW } from '../../shared/work-queue/work-vocabulary';
 
 /**
@@ -32,7 +32,7 @@ export function queueParamsSorted(query: string, sort: string, dir: 'asc' | 'des
  */
 export function queueArgsFor(query: string, sort: string, dir: 'asc' | 'desc', pageSize: number) {
   const state = parseQueueState(convertToParamMap(queueParams(query)));
-  return queueArgs({ ...state, sort, dir, page: 1, pageSize });
+  return taskQueueArgs({ ...state, sort, dir, page: 1, pageSize });
 }
 
 export type ListKind = 'unassigned' | 'overdue' | 'dueSoon';

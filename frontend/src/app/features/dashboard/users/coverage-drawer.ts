@@ -24,7 +24,7 @@ import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { DialogFocus } from '../../../shared/ui/dialog-focus';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { MatterRef } from '../../../shared/ui/matter-ref';
-import { emptyState, queueArgs } from '../../../shared/work-queue/queue-filters';
+import { emptyState, taskQueueArgs } from '../../../shared/work-queue/queue-filters';
 import { plural } from './coverage-model';
 
 /** The cell a person opened: who, which task type and the period (local days). */
@@ -298,7 +298,7 @@ export class CoverageDrawer {
     state.pageSize = COVERAGE_PAGE;
     void (async () => {
       try {
-        const page = await firstValueFrom(this.queue.getTaskQueue(...queueArgs(state)));
+        const page = await firstValueFrom(this.queue.getTaskQueue(...taskQueueArgs(state)));
         if (this.destroyed || seq !== this.seq) return;
         this.rows.set(page.items);
         this.total.set(page.total);

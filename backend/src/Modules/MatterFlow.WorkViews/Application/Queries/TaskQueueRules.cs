@@ -323,6 +323,44 @@ public static class TaskQueueRules
             .ThenBy(r => r.Id);
     }
 
+    /// <summary>The Task Queue's bucket for Completed and Cancelled Tasks (never overdue, never ASAP); they come last in either direction.</summary>
+    public const int BucketClosed = 6;
+
+    /// <summary>
+    /// <see cref="DueBucket"/> for the Task Queue, where closed Tasks exist: they get <see cref="BucketClosed"/> (or -1 when <paramref name="descending"/>, so
+    /// a descending sort of this key puts them last as well). Open Tasks keep My Work's buckets, so ASAP, Overdue and Today equal the Dashboard tiles.
+    /// </summary>
+    public static Expression<Func<TaskSortRow, int>> QueueDueBucket(QueueClock clock, bool descending = false)
+    {
+        ArgumentNullException.ThrowIfNull(clock);
+        var now = clock.NowUtc;
+        var today = clock.Today;
+        var tomorrow = today.AddDays(1);
+        var weekEnd = EndOfWeek(today);
+        var closed = descending ? -1 : BucketClosed;
+        return r =>
+            r.Status == TaskStatusCode.Completed || r.Status == TaskStatusCode.Cancelled ? closed
+            : r.DueDate == null ? BucketAsap
+            : (r.DueAtUtc != null && r.DueAtUtc < now) || (r.DueAtUtc == null && r.DueDate < today) ? BucketOverdue
+            : r.DueDate <= today ? BucketToday
+            : r.DueDate == tomorrow ? BucketTomorrow
+            : r.DueDate <= weekEnd ? BucketThisWeek
+            : BucketLater;
+    }
+
+    /// <summary>
+    /// Sort by Due with the bucket first: ascending is ASAP, Overdue, Today, Tomorrow, This week, Later, Closed; descending mirrors the open buckets
+    /// (Later first, ASAP last) and still ends with Closed. Inside a bucket the due moment follows the direction, then oldest created, then id
+    /// (so ASAP is oldest first either way, like the plain Due sort).
+    /// </summary>
+    public static IOrderedQueryable<TaskSortRow> OrderByDueGroups(IQueryable<TaskSortRow> rows, QueueClock clock, bool descending)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        return descending
+            ? rows.OrderByDescending(QueueDueBucket(clock, descending: true)).ThenByDescending(r => r.DueSortKey).ThenBy(r => r.CreatedAtUtc).ThenBy(r => r.Id)
+            : rows.OrderBy(QueueDueBucket(clock)).ThenBy(r => r.DueSortKey).ThenBy(r => r.CreatedAtUtc).ThenBy(r => r.Id);
+    }
+
     private static IOrderedQueryable<TaskSortRow> WithDefaultTail(IOrderedQueryable<TaskSortRow> ordered) =>
         ordered.ThenBy(r => r.DueSortKey == null ? 0 : 1).ThenBy(r => r.DueSortKey).ThenBy(r => r.CreatedAtUtc).ThenBy(r => r.Id);
 

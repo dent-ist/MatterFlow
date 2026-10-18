@@ -103,8 +103,8 @@ describe('DashUsersTab', () => {
     getWorkload = vi.fn().mockReturnValue(response);
     getCoverage = vi.fn((...args: unknown[]) => of(args[7] === 'type' ? typeBoard : coverageBoard));
     getQueue = vi.fn((...args: unknown[]) => {
-      // positional: status is argument 2, assignee 6, unassigned 7
-      const assignee = args[5] as number[] | undefined;
+      // positional: group is argument 1 (#232), status 2, assignee 6, unassigned 7
+      const assignee = args[6] as number[] | undefined;
       return of(
         assignee
           ? pageOf([
@@ -759,9 +759,9 @@ describe('DashUsersTab', () => {
       const drawer = document.querySelector('[data-users-drawer]')!;
       expect(drawer).not.toBeNull();
       const args = getQueue.mock.calls.at(-1)!;
-      expect(args[1]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
-      expect(args[5]).toEqual([1]);
-      expect(args[27]).toBe('priority');
+      expect(args[2]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
+      expect(args[6]).toEqual([1]);
+      expect(args[28]).toBe('priority');
       expect(drawer.querySelectorAll('[data-drawer-tasks] li').length).toBe(2);
       expect(
         drawer.querySelector('[data-drawer-tasks] [data-field="priority"] [data-inline-trigger]'),
@@ -829,10 +829,10 @@ describe('DashUsersTab', () => {
       await open();
       await openPicker('Cy Tan');
       const args = getQueue.mock.calls.at(-1)!;
-      expect(args[1]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
-      expect(args[6]).toBe(true);
-      expect(args[3]).toEqual([1]);
-      expect(args[27]).toBe('priorityAge');
+      expect(args[2]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
+      expect(args[7]).toBe(true);
+      expect(args[4]).toEqual([1]);
+      expect(args[28]).toBe('priorityAge');
       expect(dialog().querySelectorAll('[data-assign-row]').length).toBe(2);
       expect(dialog().querySelector('[data-assign-hint]')).toBeNull();
 
@@ -931,7 +931,7 @@ describe('DashUsersTab', () => {
       expect(toggle.checked).toBe(false);
       toggle.click();
       await settle();
-      expect(getQueue.mock.calls.at(-1)![3]).toBeUndefined();
+      expect(getQueue.mock.calls.at(-1)![4]).toBeUndefined();
       expect(text(dialog().querySelector('[data-assign-order]'))).not.toContain('in Pod A');
       document.querySelector<HTMLButtonElement>('button[aria-label="Close assign work"]')!.click();
       await settle();
@@ -944,7 +944,7 @@ describe('DashUsersTab', () => {
     it('lists every pod with a note when the person is in no pod', async () => {
       await open(of(aBoard([aUser(9, 'Ben Grant', [0, 0, 0, 0], { pods: [] })])));
       await openPicker('Ben Grant');
-      expect(getQueue.mock.calls.at(-1)![3]).toBeUndefined();
+      expect(getQueue.mock.calls.at(-1)![4]).toBeUndefined();
       expect(text(dialog().querySelector('[data-assign-nopod]'))).toBe(
         'Ben Grant is not in a pod.',
       );
@@ -1263,8 +1263,8 @@ describe('DashUsersTab', () => {
         q<HTMLButtonElement>('[data-count-for="3:10"]').click();
         await settle();
         const args = getQueue.mock.calls.at(-1)!;
-        expect(args[5]).toEqual([3]);
-        expect(args[11]).toEqual([10]);
+        expect(args[6]).toEqual([3]);
+        expect(args[12]).toEqual([10]);
         expect(document.querySelector('[data-coverage-drawer]')).not.toBeNull();
       });
 
@@ -1684,12 +1684,12 @@ describe('DashUsersTab', () => {
       await settle();
       const drawer = document.querySelector('[data-coverage-drawer]')!;
       const args = getQueue.mock.calls.at(-1)!;
-      expect(args[1]).toEqual(['COMPLETED']);
-      expect(args[5]).toEqual([1]);
-      expect(args[11]).toEqual([10]);
-      expect(args[20]).toBe('2026-07-18');
-      expect(args[21]).toBe('2026-10-15');
-      expect(args[27]).toBe('completed');
+      expect(args[2]).toEqual(['COMPLETED']);
+      expect(args[6]).toEqual([1]);
+      expect(args[12]).toEqual([10]);
+      expect(args[21]).toBe('2026-07-18');
+      expect(args[22]).toBe('2026-10-15');
+      expect(args[28]).toBe('completed');
       expect(drawer.querySelectorAll('[data-coverage-tasks] li').length).toBe(1);
       const link = drawer.querySelector('[data-open-queue]')!.getAttribute('href')!;
       expect(link).toContain('status=COMPLETED');

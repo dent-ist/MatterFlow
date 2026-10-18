@@ -571,4 +571,30 @@ public class TaskQueueRulesTests
         }.AsQueryable();
         TaskQueueRules.OrderByDueBucket(rows, clock).Select(r => r.Id).ToList().ShouldBe([3, 2, 8, 9, 4, 6, 5, 7, 1]);
     }
+
+    [Fact]
+    public void Task_queue_due_groups_put_closed_tasks_apart_and_mirror_the_open_buckets_when_descending()
+    {
+        var clock = ClockIn("UTC", new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc));
+        var today = clock.Today;
+        var rows = new[]
+        {
+            Row(1, 1, today.AddDays(30)),                                         // Later
+            Row(2, 2, null, createdDays: 1),                                      // ASAP, newer
+            Row(3, 1, null, createdDays: 5),                                      // ASAP, oldest created (ties by created, so 2 first)
+            Row(4, 1, today.AddDays(-2)),                                         // Overdue
+            Row(5, 3, today),                                                     // Today
+            Row(6, 1, today.AddDays(-5), status: TaskStatusCode.Completed),       // Closed, even though its date has passed
+            Row(7, 2, today.AddDays(1)),                                          // Tomorrow
+            Row(8, 1, today.AddDays(-5)),                                         // Overdue, older due
+            Row(9, 1, null, status: TaskStatusCode.Cancelled),                    // Closed without a date is not ASAP
+        }.AsQueryable();
+        var bucket = TaskQueueRules.QueueDueBucket(clock).Compile();
+        rows.Select(r => bucket(r)).ToList().ShouldBe([5, 0, 0, 1, 2, 6, 3, 1, 6]);
+
+        // Ascending: ASAP (oldest created first), Overdue (oldest due first), Today, Tomorrow, Later, Closed (by due key, none first).
+        TaskQueueRules.OrderByDueGroups(rows, clock, descending: false).Select(r => r.Id).ToList().ShouldBe([2, 3, 8, 4, 5, 7, 1, 9, 6]);
+        // Descending: Later, Tomorrow, Today, Overdue (latest due first), ASAP, then Closed last (latest due key first).
+        TaskQueueRules.OrderByDueGroups(rows, clock, descending: true).Select(r => r.Id).ToList().ShouldBe([1, 7, 5, 4, 8, 2, 3, 6, 9]);
+    }
 }

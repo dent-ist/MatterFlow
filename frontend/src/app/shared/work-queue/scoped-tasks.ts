@@ -304,7 +304,7 @@ export class ScopedTasks {
         page: this.page(),
         pageSize: PAGE_SIZE,
       });
-      const page = await firstValueFrom(this.api.getTaskQueue(...request));
+      const page = await firstValueFrom(this.api.getTaskQueue(undefined, ...request));
       if (id !== this.requestId) return;
       this.rows.set(page.items);
       this.total.set(page.total);
