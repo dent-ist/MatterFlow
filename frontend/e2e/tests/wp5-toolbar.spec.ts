@@ -4,6 +4,7 @@ import { Locator, Page } from '@playwright/test';
 import { MyWorkPage, TaskQueuePage } from '../pages/queues.pages';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { uid } from '../support/seed';
 
 /**
  * Task Queue toolbar (WP5: #216, #217): row 1 is one line (views, Columns, More filters, Filters) that never moves; row 2 exists only
@@ -49,12 +50,18 @@ async function row1(page: Page) {
     const b = await box(l);
     return { right: Math.round(b.x + b.width), y: b.y, height: b.height };
   };
+  const rowOf = async (l: Locator) => {
+    const b = await box(l);
+    return { y: b.y, height: b.height };
+  };
   return {
     bar: await box(bar),
-    views: await box(page.getByRole('group', { name: 'Quick views' })),
+    // The pressed view is bold and a little wider: only where it starts and its row count.
+    views: await rowOf(page.getByRole('group', { name: 'Quick views' })),
     filters: await edge(page.locator('[data-filters-toggle]')),
-    more: await edge(page.locator('[data-more-filters]')),
-    columns: await edge(page.getByRole('button', { name: /^Columns/ })),
+    // Only their rows: the buttons before "Filters (n)" shift with its width.
+    more: await rowOf(page.locator('[data-more-filters]')),
+    columns: await rowOf(page.getByRole('button', { name: /^Columns/ })),
   };
 }
 
@@ -71,9 +78,12 @@ test.describe('Task Queue toolbar (WP5)', () => {
     const base = await row1(page);
     expect(base.bar.height).toBeLessThanOrEqual(40);
     // The views, then the buttons, left to right on one line.
-    expect(base.views.x + base.views.width).toBeLessThan(base.columns.right);
-    expect(base.columns.right).toBeLessThan(base.more.right);
-    expect(base.more.right).toBeLessThan(base.filters.right);
+    const views0 = await box(page.getByRole('group', { name: 'Quick views' }));
+    const columns = await box(page.getByRole('button', { name: /^Columns/ }));
+    const more = await box(page.locator('[data-more-filters]'));
+    expect(views0.x + views0.width).toBeLessThan(columns.x);
+    expect(columns.x + columns.width).toBeLessThan(more.x);
+    expect(more.x + more.width).toBeLessThan(base.filters.right);
     for (const part of [base.views, base.columns, base.more, base.filters]) {
       expect(Math.abs(part.y + part.height / 2 - (base.bar.y + base.bar.height / 2))).toBeLessThan(
         base.bar.height / 2,
@@ -142,17 +152,21 @@ test.describe('Task Queue toolbar (WP5)', () => {
     await page.setViewportSize({ width: 1000, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open();
-    const p = await row1(page);
     // No overlap and the order of the DOM: views, Columns, More filters, Filters.
-    const order = [
-      { y: p.views.y, left: p.views.x, right: p.views.x + p.views.width },
-      ...[p.columns, p.more, p.filters].map((e) => ({ y: e.y, left: 0, right: e.right })),
+    const views = await box(page.getByRole('group', { name: 'Quick views' }));
+    const parts = [
+      views,
+      await box(page.getByRole('button', { name: /^Columns/ })),
+      await box(page.locator('[data-more-filters]')),
+      await box(page.locator('[data-filters-toggle]')),
     ];
-    for (let i = 1; i < order.length; i++) {
-      const a = order[i - 1];
-      const b = order[i];
+    for (let i = 1; i < parts.length; i++) {
+      const a = parts[i - 1];
+      const b = parts[i];
       const sameLine = Math.abs(a.y - b.y) < 8;
-      expect(sameLine ? a.right <= b.right : a.y < b.y, `part ${i} out of order`).toBe(true);
+      expect(sameLine ? a.x + a.width <= b.x + 1 : a.y < b.y + 1, `part ${i} out of order`).toBe(
+        true,
+      );
     }
     await shot(page, 'default-1000x768');
   });
@@ -198,7 +212,8 @@ test.describe('Task Queue toolbar (WP5)', () => {
     await expect(page.locator('[data-restored-notice]')).toBeVisible();
     await page.getByRole('button', { name: 'Dismiss', exact: true }).click();
     await expect(page.locator('[data-restored-notice]')).toHaveCount(0);
-    await expect(page.locator('[data-toolbar-row2]')).toHaveCount(0);
+    // The Overdue chip row stays (Clear filters), the notice is gone.
+    await expect(page.locator('[data-toolbar-row2] [data-restored-notice]')).toHaveCount(0);
   });
 
   test('#217: My Work shares the notice and its behavior', async ({ seed, asUser }) => {
@@ -224,8 +239,10 @@ test.describe('Task Queue toolbar (WP5)', () => {
     await expect(page.locator('[data-grid-toolbar] [data-sort-note]')).toBeVisible();
   });
 
-  test('axe: the toolbar in its states has no violations at four sizes', async ({ page }) => {
+  test('axe: the toolbar in its states has no violations at four sizes', async ({ page, seed }) => {
     test.skip(!axeAvailable(), 'axe-core not available');
+    // A task of its own, so the list (and its footer with the sort note) is never empty on a fresh database.
+    await seed.task(await seed.world(), { title: `Toolbar ${uid()}` });
     for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });
       const queue = new TaskQueuePage(page);
@@ -237,7 +254,8 @@ test.describe('Task Queue toolbar (WP5)', () => {
       expect(await axeViolations(page), `chip and sort at ${w}`).toEqual([]);
       await shot(page, `chip-sort-${w}x${h}`);
       // The info popover opens above the footer (the footer shows while the list has rows: the plain open list does).
-      await queue.open();
+      await page.goto('/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD');
+      await expect(page.locator('tr[data-task]').first()).toBeVisible();
       await page.getByRole('button', { name: 'How the default order works' }).click();
       await expect(page.locator('[data-sort-rule]')).toBeVisible();
       expect(await axeViolations(page), `info at ${w}`).toEqual([]);

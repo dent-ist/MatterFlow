@@ -235,12 +235,11 @@ test.describe('Open in Task Queue', () => {
   }
 
   async function queueTotal(page: Page): Promise<number> {
-    const text =
-      (await page
-        .getByRole('status')
-        .filter({ hasText: /Showing|No tasks/ })
-        .first()
-        .textContent()) ?? '';
+    // The pager's range ("Showing 1-4 of 4"); the polite live region now reads "4 tasks, showing 1 to 4" (#227) and has no "of".
+    // An empty list has no pager: the empty row says so.
+    const range = page.locator('[data-range]');
+    if ((await range.count()) === 0) return 0;
+    const text = (await range.first().textContent()) ?? '';
     const m = /of (\d+)/.exec(text);
     return m ? Number(m[1]) : 0;
   }
@@ -257,7 +256,7 @@ test.describe('Open in Task Queue', () => {
       for (const [name, tab, view] of TABS) {
         await myWork.open(`?view=${view}${filtered ? `&priority=${priorityId}` : ''}`);
         await expect(myWork.tab(tab)).toHaveAttribute('aria-selected', 'true');
-        await expect(myWork.tab(tab)).toContainText('(');
+        await expect(myWork.tab(tab)).toContainText(/\(\d+\)/);
         const count = await tabCount(page, tab);
         const open = page.getByRole('link', { name: 'Open in Task Queue' });
         await expect(open).toHaveAttribute(

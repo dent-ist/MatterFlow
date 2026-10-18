@@ -157,7 +157,7 @@ test.describe('My Work page state', () => {
     if (axeAvailable()) expect(await axeViolations(page), 'notice').toEqual([]);
 
     // Dismiss only hides the notice; the next plain visit restores again.
-    await notice.getByRole('button', { name: 'Dismiss notice' }).click();
+    await notice.getByRole('button', { name: 'Dismiss', exact: true }).click();
     await expect(notice).toHaveCount(0);
     await expect(page).toHaveURL(/view=dueSoon/);
     await myWork.open();
