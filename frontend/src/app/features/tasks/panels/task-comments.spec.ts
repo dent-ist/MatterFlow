@@ -35,11 +35,9 @@ describe('TaskComments', () => {
     select.dispatchEvent(new Event('change'));
   };
 
-  /** Picks an option of the "Show latest" select. */
-  const setLimit = (limit: '3' | '5' | '10' | 'all'): void => {
-    const select = q<HTMLSelectElement>('[data-limit-select]');
-    select.value = limit;
-    select.dispatchEvent(new Event('change'));
+  /** Uses the "Show all" / "Show latest 3" link under the thread head. */
+  const setLimit = (limit: '3' | 'all'): void => {
+    q<HTMLButtonElement>(limit === 'all' ? '[data-show-all]' : '[data-show-latest]').click();
   };
   /** The ids on screen, in screen order. */
   const shownIds = (): number[] =>
@@ -457,40 +455,32 @@ describe('TaskComments', () => {
         }),
       );
 
-    it('shows only the 3 most recent comments by default, with a count line and a Show all link', async () => {
+    it('shows only the 3 most recent comments by default, with "Showing latest 3 of 12. Show all"', async () => {
       await create(twelve());
 
       expect(q('h2').textContent).toContain('Comments (12)');
       expect(shownIds()).toEqual([10, 11, 12]);
-      expect(q<HTMLSelectElement>('[data-limit-select]').value).toBe('3');
-      expect(q('[data-limit-note]').textContent).toContain('Showing the latest 3 of 12 comments.');
+      expect(q('[data-limit-note]').textContent!.replace(/\s+/g, ' ').trim()).toBe(
+        'Showing latest 3 of 12. Show all',
+      );
       expect(q('[data-show-all]').textContent).toContain('Show all');
-      expect(el().querySelector('.tc__show')?.textContent).toContain('Show latest');
+      expect(el().querySelector('[data-limit-select]')).toBeNull();
     });
 
-    it('offers 3, 5, 10 and All, and shows the most recent N for each', async () => {
+    it('switches between the latest 3 and the whole thread with two links, no select', async () => {
       await create(twelve());
-      const select = q<HTMLSelectElement>('[data-limit-select]');
-      expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
-        '3',
-        '5',
-        '10',
-        'All',
-      ]);
-
-      setLimit('5');
-      await settle(fixture);
-      expect(shownIds()).toEqual([8, 9, 10, 11, 12]);
-      expect(q('[data-limit-note]').textContent).toContain('Showing the latest 5 of 12');
-
-      setLimit('10');
-      await settle(fixture);
-      expect(shownIds()).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
 
       setLimit('all');
       await settle(fixture);
       expect(shownIds().length).toBe(12);
-      expect(el().querySelector('[data-limit-note]')).toBeNull();
+      expect(q('[data-limit-note]').textContent!.replace(/\s+/g, ' ').trim()).toBe(
+        'Showing all 12. Show latest 3',
+      );
+
+      setLimit('3');
+      await settle(fixture);
+      expect(shownIds()).toEqual([10, 11, 12]);
+      expect(el().querySelector('[data-show-all]')).not.toBeNull();
     });
 
     it('takes the most recent N by date, then lets the sort order order them inside that window', async () => {
@@ -508,17 +498,9 @@ describe('TaskComments', () => {
       setOrder('newest');
       await settle(fixture);
       expect(shownIds()).toEqual([1, 2, 3]);
-      setLimit('5');
+      setLimit('all');
       await settle(fixture);
       expect(shownIds()).toEqual([1, 2, 3, 4, 5]);
-    });
-
-    it('lets Show all (the link) show every comment and updates the select', async () => {
-      await create(twelve());
-      q<HTMLButtonElement>('[data-show-all]').click();
-      await settle(fixture);
-      expect(shownIds().length).toBe(12);
-      expect(q<HTMLSelectElement>('[data-limit-select]').value).toBe('all');
     });
 
     it('does not show the count line when the whole thread fits the window', async () => {
@@ -577,23 +559,22 @@ describe('TaskComments', () => {
       await settle(fixture);
 
       expect(shownIds()).toEqual([11, 12, 13]);
-      expect(q('[data-limit-note]').textContent).toContain('Showing the latest 3 of 13');
+      expect(q('[data-limit-note]').textContent).toContain('Showing latest 3 of 13');
     });
 
     it('remembers the choice per user and restores it', async () => {
       await create(twelve());
       const key = commentLimitKey(TestBed.inject(AuthStore).profile()?.userId);
-      setLimit('10');
+      setLimit('all');
       await settle(fixture);
-      expect(localStorage.getItem(key)).toBe('10');
+      expect(localStorage.getItem(key)).toBe('all');
 
       fixture.destroy();
       fixture = TestBed.createComponent(TaskComments);
       fixture.componentRef.setInput('taskId', 42);
       fixture.componentRef.setInput('open', true);
       await settle(fixture);
-      expect(q<HTMLSelectElement>('[data-limit-select]').value).toBe('10');
-      expect(shownIds().length).toBe(10);
+      expect(shownIds().length).toBe(12);
     });
 
     it('falls back to 3 when storage holds rubbish or cannot be read', async () => {
@@ -605,7 +586,7 @@ describe('TaskComments', () => {
       fixture.componentRef.setInput('taskId', 42);
       fixture.componentRef.setInput('open', true);
       await settle(fixture);
-      expect(q<HTMLSelectElement>('[data-limit-select]').value).toBe(String(COMMENT_LIMIT_DEFAULT));
+      expect(shownIds().length).toBe(COMMENT_LIMIT_DEFAULT);
 
       fixture.destroy();
       const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
@@ -619,9 +600,9 @@ describe('TaskComments', () => {
       fixture.componentRef.setInput('open', true);
       await settle(fixture);
       expect(shownIds().length).toBe(3);
-      setLimit('5'); // still works for this view
+      setLimit('all'); // still works for this view
       await settle(fixture);
-      expect(shownIds().length).toBe(5);
+      expect(shownIds().length).toBe(12);
       spy.mockRestore();
       setSpy.mockRestore();
     });
@@ -664,8 +645,9 @@ describe('TaskComments', () => {
     it('shows how many of the comments are on screen and loads the next page on request', async () => {
       await create([]);
       serve(50);
-      setLimit('all');
       await reloadFromServer();
+      setLimit('all');
+      await settle(fixture);
 
       expect(q('h2').textContent).toContain('Comments (50)');
       expect(shown()).toBe(20);
@@ -697,8 +679,9 @@ describe('TaskComments', () => {
     it('reports the total to the host and keeps the loaded part after posting a comment', async () => {
       await create([]);
       serve(50);
-      setLimit('all');
       await reloadFromServer();
+      setLimit('all');
+      await settle(fixture);
       q<HTMLButtonElement>('[data-load-more]').click();
       await settle(fixture);
       expect(shown()).toBe(40);
@@ -719,8 +702,9 @@ describe('TaskComments', () => {
     it('reorders what is loaded without asking the server again when the order changes', async () => {
       await create([]);
       serve(50);
-      setLimit('all');
       await reloadFromServer();
+      setLimit('all');
+      await settle(fixture);
       q<HTMLButtonElement>('[data-load-more]').click();
       await settle(fixture);
       expect(shown()).toBe(40);
@@ -737,15 +721,16 @@ describe('TaskComments', () => {
       serve(50);
       await reloadFromServer();
       expect(shown()).toBe(3);
-      expect(q('[data-limit-note]').textContent).toContain('Showing the latest 3 of 50 comments.');
+      expect(q('[data-limit-note]').textContent).toContain('Showing latest 3 of 50');
       expect(el().querySelector('[data-more]')).toBeNull();
     });
 
     it('keeps what is shown and offers to try again when the next page fails', async () => {
       await create([]);
       serve(50);
-      setLimit('all');
       await reloadFromServer();
+      setLimit('all');
+      await settle(fixture);
 
       api.listTaskComments.mockReturnValue(apiError(500, { status: 500, title: 'x' }));
       q<HTMLButtonElement>('[data-load-more]').click();
@@ -997,6 +982,104 @@ describe('TaskComments', () => {
         await settle(fixture);
         expect(q('[data-composer] .rte__area')).not.toBeNull();
       });
+    });
+  });
+
+  describe('composer position (C1)', () => {
+    const many = (n: number) =>
+      Array.from({ length: n }, (_, i) =>
+        aComment({
+          commentId: i + 1,
+          createdAtUtc: `2026-10-13T${String(i + 1).padStart(2, '0')}:00:00Z`,
+        }),
+      );
+    /** True when the composer comes before the thread in document order. */
+    const composerFirst = (): boolean => {
+      const composer = q('[data-composer]');
+      const list = q('.tc__list');
+      return !!(composer.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING);
+    };
+
+    it('puts the composer above the thread when it holds more than 5 comments', async () => {
+      await create(many(6));
+      expect(composerFirst()).toBe(true);
+    });
+
+    it('keeps the composer below the thread for 5 comments or fewer', async () => {
+      await create(many(5));
+      expect(composerFirst()).toBe(false);
+      fixture.destroy();
+      TestBed.resetTestingModule();
+      await create(many(3));
+      expect(composerFirst()).toBe(false);
+    });
+
+    it('shows the read-only note in the same place when the person cannot comment', async () => {
+      await create(many(8), ['Task.View']);
+      expect(el().querySelector('[data-composer]')).toBeNull();
+      expect(el().querySelectorAll('[data-internal-note]').length).toBe(1);
+    });
+  });
+
+  describe('showing one comment (from the Activity)', () => {
+    const PAGE = 20;
+    function serve(total: number): void {
+      api.listTaskComments.mockImplementation((_id: number, _newest?: boolean, skip = 0) =>
+        ok({
+          items: Array.from({ length: Math.max(0, Math.min(PAGE, total - skip)) }, (_, i) =>
+            aComment({ commentId: skip + i + 1, createdAtUtc: '2026-10-13T10:00:00Z' }),
+          ),
+          total,
+        }),
+      );
+    }
+    const settleLong = async (): Promise<void> => {
+      await new Promise((r) => setTimeout(r, 250));
+      await settle(fixture);
+    };
+
+    it('opens a collapsed section, shows the whole thread, highlights the comment and focuses it', async () => {
+      await create([], undefined, { open: false });
+      serve(30);
+      fixture.componentRef.setInput('refresh', 'x');
+      await settle(fixture);
+      fixture.componentRef.setInput('focusRequest', { commentId: 28, seq: 1 });
+      await settle(fixture);
+      await settleLong();
+
+      expect(fixture.componentInstance.open()).toBe(true);
+      const row = q('[data-comment-id="28"]');
+      expect(row.classList).toContain('tc__item--hit');
+      expect(document.activeElement).toBe(row);
+      // Not remembered as a choice of the person.
+      expect(
+        localStorage.getItem(commentLimitKey(TestBed.inject(AuthStore).profile()?.userId)),
+      ).toBeNull();
+    });
+
+    it('loads older pages when the comment is not among the first ones', async () => {
+      await create([]);
+      serve(50);
+      fixture.componentRef.setInput('refresh', 'x');
+      await settle(fixture);
+      // The fake pages hold ids 1-20, 21-40 and 41-50: id 45 is on the third page.
+      fixture.componentRef.setInput('focusRequest', { commentId: 45, seq: 1 });
+      await settle(fixture);
+      await settleLong();
+
+      expect(q('[data-comment-id="45"]').classList).toContain('tc__item--hit');
+      expect(api.listTaskComments).toHaveBeenCalledWith(42, true, 20, 200);
+      expect(api.listTaskComments).toHaveBeenCalledWith(42, true, 40, 200);
+    });
+
+    it('says so quietly when the comment is gone, without an alert', async () => {
+      await create([aComment({ commentId: 1 })]);
+      fixture.componentRef.setInput('focusRequest', { commentId: 99, seq: 1 });
+      await settle(fixture);
+      await settleLong();
+
+      expect(q('[data-comment-missing]').textContent).toContain('no longer in the thread');
+      expect(el().querySelector('[role="alert"]')).toBeNull();
     });
   });
 });

@@ -22,6 +22,9 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
     /// <summary>A clock the host uses instead of the system clock, for tests whose result depends on the time of day or the zone.</summary>
     public MatterFlow.SharedKernel.Time.IClock? Clock { get; init; }
 
+    /// <summary>Extra options for the shared database context (for example a command-counting interceptor in a query-count test).</summary>
+    public Action<DbContextOptionsBuilder>? ConfigureDb { get; init; }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         if (environment is not null)
@@ -57,6 +60,8 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
         builder.ConfigureServices(services =>
         {
             services.AddControllers().AddApplicationPart(typeof(DatabaseApiFactory).Assembly);
+            if (ConfigureDb is { } configureDb)
+                services.ConfigureDbContext<MatterFlow.Data.MatterFlowDbContext>(configureDb);
             if (Clock is { } clock)
             {
                 services.RemoveAll<MatterFlow.SharedKernel.Time.IClock>();

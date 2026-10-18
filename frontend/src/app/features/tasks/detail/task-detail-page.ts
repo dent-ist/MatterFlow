@@ -161,6 +161,7 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
                   <mf-task-comments
                     [taskId]="t.taskId"
                     [refresh]="t.rowVersion"
+                    [focusRequest]="store.commentFocus()"
                     [(open)]="commentsOpen"
                   />
                 </div>
@@ -193,7 +194,11 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
             (visibleChange)="setActivityOpen($event)"
           >
             @if (store.activityOpen()) {
-              <mf-task-activity [taskId]="t.taskId" [compact]="true" />
+              <mf-task-activity
+                [taskId]="t.taskId"
+                [compact]="true"
+                (showComment)="showComment($event)"
+              />
             }
           </mf-activity-drawer>
 
@@ -405,6 +410,15 @@ export class TaskDetailPage implements HasUnsavedChanges {
         replaceUrl: true,
       });
     }
+  }
+
+  /** A comment chosen in the Activity: close the drawer and let the Comments section show it. */
+  protected showComment(commentId: number): void {
+    this.setActivityOpen(false);
+    this.store.commentFocus.set({
+      commentId,
+      seq: (this.store.commentFocus()?.seq ?? 0) + 1,
+    });
   }
 
   private focusSection(section: TaskSection): void {

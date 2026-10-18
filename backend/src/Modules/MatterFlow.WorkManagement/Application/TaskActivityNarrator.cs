@@ -31,6 +31,9 @@ internal static partial class TaskActivityNarrator
 
     private const int ValueClip = 80;
 
+    /// <summary>Longest excerpt of a comment shown in the timeline (characters, the closing "..." included).</summary>
+    public const int ExcerptLength = 80;
+
     private static readonly Dictionary<string, string> FieldLabels = new(StringComparer.Ordinal)
     {
         ["title"] = "Title",
@@ -83,6 +86,33 @@ internal static partial class TaskActivityNarrator
             default:
                 return new(Task, e.Summary is { Length: > 0 } other ? Sentence(other) : Humanize(e.EventType), null, null);
         }
+    }
+
+    /// <summary>The id of the comment a comment event (added, edited, deleted) is about; null for every other event.</summary>
+    public static long? CommentId(AuditRecord e) =>
+        e.EventType is TaskSupport.CommentAddedEvent or TaskSupport.CommentEditedEvent or TaskSupport.CommentDeletedEvent
+        && e.ObjectType == "TaskComment"
+        && long.TryParse(e.ObjectId, NumberStyles.None, CultureInfo.InvariantCulture, out var id)
+            ? id
+            : null;
+
+    /// <summary>
+    /// A one-line excerpt of a comment body: the visible text with whitespace collapsed, at most <see cref="ExcerptLength"/> characters. A longer text
+    /// is cut at the last word that fits and ends with "..."; null when no text is left.
+    /// </summary>
+    public static string? Excerpt(string? html)
+    {
+        var text = WhitespacePattern().Replace(Domain.CommentHtml.ToPlainText(html), " ").Trim();
+        if (text.Length == 0)
+            return null;
+        if (text.Length <= ExcerptLength)
+            return text;
+
+        const string mark = "...";
+        var room = ExcerptLength - mark.Length;
+        var cut = text.LastIndexOf(' ', room);
+        var head = (cut > 0 ? text[..cut] : text[..room]).TrimEnd(' ', ',', ';', ':', '-', '.');
+        return head + mark;
     }
 
     /// <summary>"Step 'Intake review' completed (bulk=true)" becomes "Step Intake review completed (bulk)".</summary>
@@ -231,6 +261,9 @@ internal static partial class TaskActivityNarrator
         var words = eventType.Replace('_', ' ').ToLowerInvariant();
         return char.ToUpper(words[0], CultureInfo.InvariantCulture) + words[1..];
     }
+
+    [GeneratedRegex(@"\s+", RegexOptions.CultureInvariant)]
+    private static partial Regex WhitespacePattern();
 
     [GeneratedRegex(@"^Step '(?<title>.*)' (?<rest>(started|completed|skipped|reopened|values edited).*)$", RegexOptions.CultureInvariant | RegexOptions.Singleline)]
     private static partial Regex StepPattern();

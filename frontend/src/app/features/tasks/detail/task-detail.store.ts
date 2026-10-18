@@ -74,6 +74,8 @@ export class TaskDetailStore {
   readonly sectionRequest = signal<{ section: TaskSection; seq: number } | null>(null);
   /** Whether the Activity drawer is open. */
   readonly activityOpen = signal(false);
+  /** The comment the Activity asked to show; the Comments section scrolls to it and highlights it. `seq` makes a repeated request count. */
+  readonly commentFocus = signal<{ commentId: number; seq: number } | null>(null);
   /** Where the Edit form was opened from, so focus goes back there when it closes. */
   readonly editOrigin = signal<'header' | 'panel'>('header');
   readonly editing = signal(false);
@@ -115,6 +117,7 @@ export class TaskDetailStore {
     if (id !== this.taskId()) {
       this.taskId.set(id);
       this.task.set(null);
+      this.commentFocus.set(null);
       this.flow.state.set('loading');
     }
     // `/tasks/abc` and `/tasks/0` are an address that names no task: the same answer as an unknown number, without a request.

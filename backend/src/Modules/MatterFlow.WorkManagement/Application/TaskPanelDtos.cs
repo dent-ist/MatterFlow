@@ -135,6 +135,9 @@ public sealed class ChangeTaskAssetRoleRequest
 /// <param name="FieldKey">The field it concerns, if any.</param>
 /// <param name="OldValue">Readable old value; only for callers holding Audit.View.</param>
 /// <param name="NewValue">Readable new value; only for callers holding Audit.View.</param>
+/// <param name="CommentId">For comment events (added, edited, deleted): the id of the comment; null for every other event.</param>
+/// <param name="Excerpt">For comment events: the first 80 characters of the comment's plain text, cut at a word and ended with "..." when cut; read from the
+/// comment when the page is built (not stored in the audit row); null when the comment is deleted or empty, for other events, and for callers without Task.View.</param>
 public sealed record TaskActivityItem(
     [property: Required] long EventId,
     [property: Required] DateTime OccurredAtUtc,
@@ -144,7 +147,9 @@ public sealed record TaskActivityItem(
     [property: Required] string Summary,
     string? FieldKey,
     string? OldValue,
-    string? NewValue);
+    string? NewValue,
+    long? CommentId = null,
+    string? Excerpt = null);
 
 /// <summary>A page of the activity timeline, newest first.</summary>
 /// <param name="Items">The entries.</param>

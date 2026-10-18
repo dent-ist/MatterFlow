@@ -112,9 +112,14 @@ export class TaskDetailPage {
     return this.page.getByRole('separator', { name: 'Resize Details panel' });
   }
 
-  /** The "Show latest" select of the Comments panel. */
-  get commentLimit(): Locator {
-    return this.page.getByLabel('Show latest');
+  /** The "Show all" link of a long Comments thread ("Showing latest 3 of 48. Show all"). */
+  get showAllComments(): Locator {
+    return this.section('Comments').locator('[data-show-all]');
+  }
+
+  /** The "Show latest 3" link that goes back to the short view. */
+  get showLatestComments(): Locator {
+    return this.section('Comments').locator('[data-show-latest]');
   }
 
   /** Comments on screen (after the "Show latest" limit). */

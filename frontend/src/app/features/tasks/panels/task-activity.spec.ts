@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TaskActivityClient } from '../../../api/generated/api-client';
+import { TaskActivityClient, TaskActivityItem } from '../../../api/generated/api-client';
 import { QuietRequests } from '../../../core/http/interceptors';
 import { apiError, ok, settle } from '../../../shared/testing/org-testing';
 import { anActivity } from './task-panels-testing';
@@ -210,5 +210,92 @@ describe('TaskActivity', () => {
     await settle(fixture);
     expect(el().querySelector('[data-more-error]')).toBeNull();
     expect(el().querySelectorAll('[data-event-id]')).toHaveLength(2);
+  });
+
+  describe('comment excerpts and folding', () => {
+    const comment = (id: number, minutes: number, overrides: Partial<TaskActivityItem> = {}) =>
+      anActivity({
+        eventId: id,
+        eventType: 'COMMENT_ADDED',
+        category: 'COMMENTS',
+        summary: 'Comment added',
+        oldValue: undefined,
+        newValue: undefined,
+        occurredAtUtc: new Date(Date.UTC(2026, 9, 13, 16, minutes)).toISOString(),
+        commentId: id * 10,
+        excerpt: `Excerpt of ${id}`,
+        ...overrides,
+      });
+    const page = (items: TaskActivityItem[]) => ({
+      items,
+      nextCursor: undefined as string | undefined,
+      canViewChanges: true,
+    });
+
+    it('shows the excerpt as a link that reports the comment id', async () => {
+      await create(page([comment(5, 0)]));
+      const link = q<HTMLButtonElement>('[data-comment-link]');
+      expect(link.textContent).toContain('Excerpt of 5');
+      const ids: number[] = [];
+      fixture.componentInstance.showComment.subscribe((id) => ids.push(id));
+      link.click();
+      expect(ids).toEqual([50]);
+    });
+
+    it('shows no link without an excerpt (deleted comment) or for other events', async () => {
+      await create(page([comment(5, 0, { excerpt: undefined }), anActivity({ eventId: 4 })]));
+      expect(el().querySelector('[data-comment-link]')).toBeNull();
+      expect(el().querySelectorAll('[data-event-id]').length).toBe(2);
+    });
+
+    it('folds a run of 3 or more into one row with an expand control, and unfolds it on request', async () => {
+      const run = [comment(4, 5), comment(3, 3), comment(2, 1)];
+      await create(page([anActivity({ eventId: 9 }), ...run, anActivity({ eventId: 1 })]));
+
+      const rows = Array.from(el().querySelectorAll('.ta__list > li'));
+      expect(rows.length).toBe(3);
+      const group = q('[data-group-key]');
+      expect(group.querySelector('[data-actor]')?.textContent).toBe('Dana P.');
+      expect(group.querySelector('[data-group-summary]')?.textContent).toMatch(
+        /^added 3 comments \(.+\)$/,
+      );
+      expect(el().querySelector('[data-event-id="3"]')).toBeNull();
+      const toggle = group.querySelector<HTMLButtonElement>('[data-group-toggle]')!;
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+
+      toggle.click();
+      await settle(fixture);
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      expect(toggle.textContent).toContain('Hide comments');
+      expect(
+        Array.from(group.querySelectorAll('[data-event-id]')).map((e) =>
+          e.getAttribute('data-event-id'),
+        ),
+      ).toEqual(['4', '3', '2']);
+      expect(group.querySelectorAll('[data-comment-link]').length).toBe(3);
+
+      toggle.click();
+      await settle(fixture);
+      expect(group.querySelector('[data-group-items]')).toBeNull();
+    });
+
+    it('keeps two comments as separate rows', async () => {
+      await create(page([comment(3, 3), comment(2, 1)]));
+      expect(el().querySelector('[data-group-key]')).toBeNull();
+      expect(el().querySelectorAll('[data-comment-link]').length).toBe(2);
+    });
+
+    it('keeps the group closed or open across Load more', async () => {
+      await create({ ...page([comment(8, 8), comment(7, 6), comment(6, 4)]), nextCursor: 'c1' });
+      q<HTMLButtonElement>('[data-group-toggle]').click();
+      await settle(fixture);
+      api.getTaskActivity.mockReturnValue(
+        ok(page([comment(5, 2), comment(4, 0), anActivity({ eventId: 1 })])),
+      );
+      q<HTMLButtonElement>('[data-more]').click();
+      await settle(fixture);
+      expect(q('[data-group-toggle]').textContent).toContain('Hide comments');
+      expect(q('[data-group-summary]').textContent).toContain('added 5 comments');
+    });
   });
 });

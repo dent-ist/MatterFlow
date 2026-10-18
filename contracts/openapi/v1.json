@@ -14027,6 +14027,19 @@
               "null",
               "string"
             ]
+          },
+          "commentId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "excerpt": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
 import { Dialog } from 'primeng/dialog';
 import { DialogFocus } from './dialog-focus';
 import { EntityActivity } from './entity-activity';
@@ -15,9 +15,23 @@ import { EntityActivity } from './entity-activity';
   selector: 'mf-activity-drawer',
   imports: [Dialog, DialogFocus, EntityActivity],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `
+    /* A long record name (a 200-character task title) takes at most 2 lines; the whole text is in the tooltip and is the dialog's name. */
+    .mf-drawer__title {
+      display: -webkit-box;
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      font-size: 1.25rem;
+      font-weight: 600;
+      line-clamp: 2;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+  `,
   template: `
     <p-dialog
-      [header]="'Activity: ' + name()"
       position="right"
       styleClass="mf-drawer"
       [modal]="true"
@@ -40,6 +54,11 @@ import { EntityActivity } from './entity-activity';
         borderRadius: '0',
       }"
     >
+      <ng-template #header let-labelId="ariaLabelledBy">
+        <span class="mf-drawer__title" data-drawer-title [id]="labelId" [title]="title()">{{
+          title()
+        }}</span>
+      </ng-template>
       @if (visible()) {
         @if (objectType() !== null && objectId() !== null) {
           <mf-entity-activity
@@ -65,5 +84,6 @@ export class ActivityDrawer {
   readonly objectId = input<number | string | null>(null);
   /** The record's name, for the title. */
   readonly name = input.required<string>();
+  protected readonly title = computed(() => 'Activity: ' + this.name());
   readonly visible = model(false);
 }

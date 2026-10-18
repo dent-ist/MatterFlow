@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -5,14 +6,17 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { TaskActivityClient, TaskActivityItem } from '../../../api/generated/api-client';
 import { QuietRequests } from '../../../core/http/interceptors';
+import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { ActivityText, activityText, friendlyText } from '../../../shared/ui/audit-format';
+import { ActivityGroupRow, ActivityRow, formatRange, groupActivity } from './activity-groups';
 
 interface Filter {
   readonly key: string;
@@ -41,7 +45,7 @@ const PAGE_SIZE = 25;
  */
 @Component({
   selector: 'mf-task-activity',
-  imports: [MfDatePipe],
+  imports: [MfDatePipe, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="ta" [class.ta--compact]="compact()" aria-label="Activity">
@@ -80,42 +84,99 @@ const PAGE_SIZE = 25;
             </p>
           } @else {
             <ol class="ta__list">
-              @for (e of visible(); track e.eventId) {
-                <li
-                  class="ta__item"
-                  [attr.data-event-id]="e.eventId"
-                  [attr.data-category]="e.category"
-                >
-                  <time
-                    class="ta__time"
-                    [attr.datetime]="e.occurredAtUtc"
-                    [title]="e.occurredAtUtc + ' (UTC)'"
-                    >{{ e.occurredAtUtc | mfDate }}</time
-                  >
-                  <div class="ta__what">
-                    <span class="ta__actor" data-actor>{{ e.actor?.displayName ?? 'System' }}</span>
-                    <span class="ta__summary" data-summary>{{ text(e).summary }}</span>
-                    @if (hasChanges(e)) {
+              @for (row of rows(); track trackKey(row)) {
+                @if (row.kind === 'group') {
+                  <li class="ta__item ta__item--group" [attr.data-group-key]="row.key">
+                    <time
+                      class="ta__time"
+                      [attr.datetime]="row.latest.occurredAtUtc"
+                      [title]="row.latest.occurredAtUtc + ' (UTC)'"
+                      >{{ row.latest.occurredAtUtc | mfDate }}</time
+                    >
+                    <div class="ta__what">
+                      <span class="ta__actor" data-actor>{{ row.actorName }}</span>
+                      <span class="ta__summary" data-summary data-group-summary
+                        >added {{ row.events.length }} comments ({{ range(row) }})</span
+                      >
                       <button
                         type="button"
                         class="ta__link"
-                        data-changes-toggle
-                        [attr.aria-expanded]="isOpen(e)"
-                        (click)="toggle(e)"
+                        data-group-toggle
+                        [attr.aria-expanded]="isGroupOpen(row)"
+                        [attr.aria-controls]="'ta-group-' + row.key"
+                        (click)="toggleGroup(row)"
                       >
-                        {{ isOpen(e) ? 'Hide changes' : 'View changes' }}
+                        {{ isGroupOpen(row) ? 'Hide comments' : 'Show comments' }}
                       </button>
-                    }
-                    @if (isOpen(e)) {
-                      <p class="ta__changes" data-changes>
-                        <span class="ta__old">{{ text(e).oldValue ?? 'none' }}</span>
-                        <span aria-hidden="true"> &rarr; </span>
-                        <span class="sr-only">changed to</span>
-                        <span class="ta__new">{{ text(e).newValue ?? 'none' }}</span>
-                      </p>
-                    }
-                  </div>
-                </li>
+                      @if (isGroupOpen(row)) {
+                        <ol class="ta__sub" [id]="'ta-group-' + row.key" data-group-items>
+                          @for (e of row.events; track e.eventId) {
+                            <li
+                              class="ta__sub-item"
+                              [attr.data-event-id]="e.eventId"
+                              [attr.data-category]="e.category"
+                            >
+                              <time
+                                class="ta__time"
+                                [attr.datetime]="e.occurredAtUtc"
+                                [title]="e.occurredAtUtc + ' (UTC)'"
+                                >{{ e.occurredAtUtc | mfDate }}</time
+                              >
+                              <span class="ta__summary" data-summary>{{ text(e).summary }}</span>
+                              <ng-container
+                                [ngTemplateOutlet]="excerptTpl"
+                                [ngTemplateOutletContext]="{ $implicit: e }"
+                              />
+                            </li>
+                          }
+                        </ol>
+                      }
+                    </div>
+                  </li>
+                } @else {
+                  @let e = row.event;
+                  <li
+                    class="ta__item"
+                    [attr.data-event-id]="e.eventId"
+                    [attr.data-category]="e.category"
+                  >
+                    <time
+                      class="ta__time"
+                      [attr.datetime]="e.occurredAtUtc"
+                      [title]="e.occurredAtUtc + ' (UTC)'"
+                      >{{ e.occurredAtUtc | mfDate }}</time
+                    >
+                    <div class="ta__what">
+                      <span class="ta__actor" data-actor>{{
+                        e.actor?.displayName ?? 'System'
+                      }}</span>
+                      <span class="ta__summary" data-summary>{{ text(e).summary }}</span>
+                      @if (hasChanges(e)) {
+                        <button
+                          type="button"
+                          class="ta__link"
+                          data-changes-toggle
+                          [attr.aria-expanded]="isOpen(e)"
+                          (click)="toggle(e)"
+                        >
+                          {{ isOpen(e) ? 'Hide changes' : 'View changes' }}
+                        </button>
+                      }
+                      @if (isOpen(e)) {
+                        <p class="ta__changes" data-changes>
+                          <span class="ta__old">{{ text(e).oldValue ?? 'none' }}</span>
+                          <span aria-hidden="true"> &rarr; </span>
+                          <span class="sr-only">changed to</span>
+                          <span class="ta__new">{{ text(e).newValue ?? 'none' }}</span>
+                        </p>
+                      }
+                      <ng-container
+                        [ngTemplateOutlet]="excerptTpl"
+                        [ngTemplateOutletContext]="{ $implicit: e }"
+                      />
+                    </div>
+                  </li>
+                }
               }
             </ol>
           }
@@ -136,6 +197,20 @@ const PAGE_SIZE = 25;
         }
       }
     </section>
+
+    <ng-template #excerptTpl let-e>
+      @if (e.commentId && e.excerpt) {
+        <button
+          type="button"
+          class="ta__excerpt"
+          data-comment-link
+          [attr.data-comment-id]="e.commentId"
+          (click)="showComment.emit(e.commentId)"
+        >
+          <span class="sr-only">Go to comment: </span>{{ e.excerpt }}
+        </button>
+      }
+    </ng-template>
   `,
   styles: `
     :host {
@@ -199,6 +274,33 @@ const PAGE_SIZE = 25;
       margin-right: var(--mf-s2);
       font-weight: 600;
     }
+    .ta__excerpt {
+      display: block;
+      max-width: 100%;
+      margin-top: var(--mf-s1);
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--mf-link);
+      font: inherit;
+      text-align: left;
+      overflow-wrap: anywhere;
+      cursor: pointer;
+    }
+    .ta__excerpt:hover {
+      text-decoration: underline;
+    }
+    .ta__sub {
+      display: grid;
+      gap: var(--mf-s1);
+      margin: var(--mf-s2) 0 0;
+      padding: 0 0 0 var(--mf-s3);
+      border-left: 2px solid var(--mf-border);
+      list-style: none;
+    }
+    .ta__sub-item .ta__time {
+      margin-right: var(--mf-s2);
+    }
     .ta__changes {
       margin: var(--mf-s1) 0 0;
       padding: var(--mf-s1) var(--mf-s2);
@@ -242,10 +344,13 @@ export class TaskActivity {
   readonly refresh = input(0);
   /** One column (time above the text), for the narrow Activity drawer. */
   readonly compact = input(false);
+  /** The person chose the excerpt of a comment event: the id of that comment (the host shows it in the Comments section). */
+  readonly showComment = output<number>();
 
   protected readonly filters = ACTIVITY_FILTERS;
   private readonly api = inject(TaskActivityClient);
   private readonly quiet = inject(QuietRequests);
+  private readonly zone = inject(USER_TIME_ZONE);
 
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly events = signal<TaskActivityItem[]>([]);
@@ -262,6 +367,10 @@ export class TaskActivity {
     const key = this.filter();
     return key === 'ALL' ? this.events() : this.events().filter((e) => e.category === key);
   });
+
+  /** The visible events with runs of 3 or more "Comment added" by one person folded into one row each. */
+  protected readonly rows = computed(() => groupActivity(this.visible()));
+  private readonly openGroups = signal<ReadonlySet<number>>(new Set());
 
   constructor() {
     effect(() => {
@@ -299,6 +408,27 @@ export class TaskActivity {
 
   protected isOpen(e: TaskActivityItem): boolean {
     return this.open().has(e.eventId);
+  }
+
+  protected trackKey(row: ActivityRow): string {
+    return row.kind === 'group' ? `g${row.key}` : `e${row.event.eventId}`;
+  }
+
+  protected range(group: ActivityGroupRow): string {
+    const oldest = group.events[group.events.length - 1];
+    return formatRange(oldest.occurredAtUtc, group.latest.occurredAtUtc, this.zone);
+  }
+
+  protected isGroupOpen(group: ActivityGroupRow): boolean {
+    return this.openGroups().has(group.key);
+  }
+
+  protected toggleGroup(group: ActivityGroupRow): void {
+    this.openGroups.update((set) => {
+      const next = new Set(set);
+      if (!next.delete(group.key)) next.add(group.key);
+      return next;
+    });
   }
 
   protected toggle(e: TaskActivityItem): void {

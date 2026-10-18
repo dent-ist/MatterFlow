@@ -1,9 +1,12 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
+  ElementRef,
   Injector,
   linkedSignal,
   inject,
@@ -49,6 +52,10 @@ export const COMMENT_DELETE_BODY =
 export const COMMENTS_PAGE_SIZE = 200;
 
 const RENDER_CACHE_LIMIT = 1000;
+/** A thread longer than this puts the composer above the comments. */
+export const COMPOSER_FIRST_ABOVE = 5;
+/** How long a linked comment stays highlighted. */
+const HIGHLIGHT_MS = 4000;
 
 /** How many of the most recent comments the thread shows ("Show latest"); `all` shows every loaded comment. */
 export type CommentLimit = 3 | 5 | 10 | 'all';
@@ -95,7 +102,15 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
  */
 @Component({
   selector: 'mf-task-comments',
-  imports: [MfDatePipe, RichTextEditor, ConfirmDialog, SearchBox, PanelScroll, DisclosureBar],
+  imports: [
+    MfDatePipe,
+    NgTemplateOutlet,
+    RichTextEditor,
+    ConfirmDialog,
+    SearchBox,
+    PanelScroll,
+    DisclosureBar,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="tc" aria-label="Comments">
@@ -146,22 +161,16 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                 <option value="oldest" [selected]="!newestFirst()">Oldest first</option>
                 <option value="newest" [selected]="newestFirst()">Newest first</option>
               </select>
-              <label class="tc__show">
-                <span>Show latest</span>
-                <select
-                  class="mf-control tc__limit"
-                  data-limit-select
-                  (change)="setLimit($any($event.target).value)"
-                >
-                  @for (l of limits; track l) {
-                    <option [value]="l" [selected]="l === limit()">
-                      {{ l === 'all' ? 'All' : l }}
-                    </option>
-                  }
-                </select>
-              </label>
             </div>
           </div>
+
+          @if (composerFirst()) {
+            <ng-container [ngTemplateOutlet]="composerTpl" />
+          }
+
+          @if (missingNote()) {
+            <p class="tc__muted" role="status" data-comment-missing>{{ missingNote() }}</p>
+          }
 
           @switch (state()) {
             @case ('loading') {
@@ -189,10 +198,35 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                     {{ visibleItems().length }} of {{ items().length }} comments match.
                   </p>
                 }
+                @if (!query() && limited()) {
+                  <p class="tc__muted" data-limit-note role="status">
+                    Showing latest {{ visibleItems().length }} of {{ total() }}.
+                    <button type="button" class="tc__link" data-show-all (click)="setLimit('all')">
+                      Show all
+                    </button>
+                  </p>
+                } @else if (!query() && shownAll() && total() > latestCount) {
+                  <p class="tc__muted" data-limit-note role="status">
+                    Showing all {{ total() }}.
+                    <button
+                      type="button"
+                      class="tc__link"
+                      data-show-latest
+                      (click)="setLimit(latestCount)"
+                    >
+                      Show latest {{ latestCount }}
+                    </button>
+                  </p>
+                }
                 <div mfPanelScroll="Comment thread" class="tc__scroll" data-comments-scroll>
                   <ol class="tc__list">
                     @for (c of visibleItems(); track c.commentId) {
-                      <li class="tc__item" [attr.data-comment-id]="c.commentId">
+                      <li
+                        class="tc__item"
+                        tabindex="-1"
+                        [class.tc__item--hit]="highlightId() === c.commentId"
+                        [attr.data-comment-id]="c.commentId"
+                      >
                         <div class="tc__meta">
                           <strong class="tc__author">{{ c.author.displayName }}</strong>
                           <time
@@ -317,15 +351,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                     }
                   </ol>
                 </div>
-                @if (!query() && limited()) {
-                  <p class="tc__muted" data-limit-note role="status">
-                    Showing the latest {{ visibleItems().length }} of {{ total() }} comments.
-                    <button type="button" class="tc__link" data-show-all (click)="setLimit('all')">
-                      Show all
-                    </button>
-                  </p>
-                }
-                @if (items().length < total() && (limit() === 'all' || query())) {
+                @if (items().length < total() && (shownAll() || query())) {
                   <div class="tc__more" data-more>
                     <p class="tc__muted" data-more-note>
                       Showing {{ items().length }} of {{ total() }} comments.
@@ -348,51 +374,8 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
             }
           }
 
-          @if (canPost()) {
-            <form
-              class="tc__composer"
-              data-composer
-              (submit)="post($event)"
-              (focusout)="composerFocusOut($event)"
-            >
-              @if (composerOpen()) {
-                <mf-rich-text-editor
-                  label="Add a comment"
-                  placeholder="Add a comment... (Ctrl+Enter to post)"
-                  [(value)]="draft"
-                  [disabled]="posting()"
-                  (submitted)="post()"
-                />
-                <p class="tc__note" data-internal-note>{{ internalNote }}</p>
-                <p class="tc__note tc__note--privilege" data-privilege-note>
-                  <i class="pi pi-lock" aria-hidden="true"></i> {{ privilegeNote }}
-                </p>
-                @if (postError()) {
-                  <p class="tc__alert" role="alert" data-post-error>{{ postError() }}</p>
-                }
-                <button
-                  type="submit"
-                  class="mf-btn mf-btn--primary"
-                  data-post
-                  [disabled]="posting() || isBlank(draft())"
-                >
-                  Post comment
-                </button>
-              } @else {
-                <input
-                  type="text"
-                  class="mf-control tc__quick"
-                  data-composer-quick
-                  placeholder="Write a comment..."
-                  aria-label="Add a comment"
-                  autocomplete="off"
-                  (focus)="expandComposer()"
-                  (click)="expandComposer()"
-                />
-              }
-            </form>
-          } @else {
-            <p class="tc__note" data-internal-note>{{ internalNote }}</p>
+          @if (!composerFirst()) {
+            <ng-container [ngTemplateOutlet]="composerTpl" />
           }
         }
       </div>
@@ -409,6 +392,55 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
         <p data-delete-body>{{ deleteBody }}</p>
       </mf-confirm-dialog>
     </section>
+
+    <ng-template #composerTpl>
+      @if (canPost()) {
+        <form
+          class="tc__composer"
+          data-composer
+          (submit)="post($event)"
+          (focusout)="composerFocusOut($event)"
+        >
+          @if (composerOpen()) {
+            <mf-rich-text-editor
+              label="Add a comment"
+              placeholder="Add a comment... (Ctrl+Enter to post)"
+              [(value)]="draft"
+              [disabled]="posting()"
+              (submitted)="post()"
+            />
+            <p class="tc__note" data-internal-note>{{ internalNote }}</p>
+            <p class="tc__note tc__note--privilege" data-privilege-note>
+              <i class="pi pi-lock" aria-hidden="true"></i> {{ privilegeNote }}
+            </p>
+            @if (postError()) {
+              <p class="tc__alert" role="alert" data-post-error>{{ postError() }}</p>
+            }
+            <button
+              type="submit"
+              class="mf-btn mf-btn--primary"
+              data-post
+              [disabled]="posting() || isBlank(draft())"
+            >
+              Post comment
+            </button>
+          } @else {
+            <input
+              type="text"
+              class="mf-control tc__quick"
+              data-composer-quick
+              placeholder="Write a comment..."
+              aria-label="Add a comment"
+              autocomplete="off"
+              (focus)="expandComposer()"
+              (click)="expandComposer()"
+            />
+          }
+        </form>
+      } @else {
+        <p class="tc__note" data-internal-note>{{ internalNote }}</p>
+      }
+    </ng-template>
   `,
   styles: `
     :host {
@@ -446,17 +478,6 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
       width: auto;
       min-width: 8.5rem;
     }
-    .tc__show {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-    }
-    .tc__limit {
-      width: auto;
-      min-width: 4.5rem;
-    }
     /* The thread scrolls by itself when it is taller than the panel allows (--mf-panel-max); the composer stays below it. */
     .tc__scroll {
       margin: 0 calc(var(--mf-s1) * -1);
@@ -468,6 +489,14 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
       margin: 0;
       padding: 0;
       list-style: none;
+    }
+    .tc__item:focus-visible {
+      outline: 2px solid var(--mf-focus, currentColor);
+      outline-offset: 2px;
+    }
+    .tc__item--hit {
+      border-color: var(--mf-border-strong);
+      background: var(--mf-selected-bg);
     }
     .tc__item {
       padding: var(--mf-s3);
@@ -597,6 +626,13 @@ export class TaskComments {
   readonly refresh = input<string | number | null>(null);
 
   /**
+   * A request to show one comment (the host sets it when someone chooses a comment in the Activity): the section opens, the thread shows the
+   * comment (loading older pages when needed), scrolls to it, highlights it for a few seconds and puts focus on it. `seq` makes a repeated
+   * request for the same comment count.
+   */
+  readonly focusRequest = input<{ commentId: number; seq: number } | null>(null);
+
+  /**
    * Whether the section is expanded (two-way). The page sets the start value (remembered choice) and may open it for a link; a person's own
    * toggle is remembered per user. The comments load on page load either way; the thread and the composer render only when open.
    */
@@ -616,6 +652,8 @@ export class TaskComments {
   private readonly auth = inject(AuthStore);
   private readonly notify = inject(NotificationService);
   private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly rendered = new Map<string, string>();
 
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
@@ -625,7 +663,8 @@ export class TaskComments {
   protected readonly loadingMore = signal(false);
   protected readonly moreError = signal('');
   protected readonly newestFirst = signal(false);
-  protected readonly limits = COMMENT_LIMITS;
+  /** The size of the short view of a long thread (the default of `limit`). */
+  protected readonly latestCount = 3;
   private readonly limitKey = computed(() => commentLimitKey(this.auth.profile()?.userId));
   /** How many of the latest comments are shown; remembered per user. */
   protected readonly limit = linkedSignal<string, CommentLimit>({
@@ -638,9 +677,16 @@ export class TaskComments {
   private readonly newestFirstItems = computed(() =>
     [...this.items()].sort((a, b) => timeOf(b) - timeOf(a) || b.commentId - a.commentId),
   );
-  /** True when the Show latest limit hides some comments (and no search is active). */
+  /** A link to a comment shows the whole thread for now (not remembered), so the comment is on screen. */
+  private readonly revealAll = signal(false);
+  private readonly effectiveLimit = computed<CommentLimit>(() =>
+    this.revealAll() ? 'all' : this.limit(),
+  );
+  /** True when the whole loaded thread is shown (Show all, or a link to a comment). */
+  protected readonly shownAll = computed(() => this.effectiveLimit() === 'all');
+  /** True when the "latest N" limit hides some comments (and no search is active). */
   protected readonly limited = computed(() => {
-    const l = this.limit();
+    const l = this.effectiveLimit();
     return l !== 'all' && this.total() > l;
   });
   /**
@@ -650,7 +696,7 @@ export class TaskComments {
   protected readonly visibleItems = computed(() => {
     const q = this.query().trim().toLowerCase();
     const newest = this.newestFirstItems();
-    const l = this.limit();
+    const l = this.effectiveLimit();
     const picked = q
       ? newest.filter((c) =>
           (c.author.displayName + ' ' + htmlToText(c.bodyHtml)).toLowerCase().includes(q),
@@ -660,6 +706,13 @@ export class TaskComments {
         : newest.slice(0, l);
     return this.newestFirst() ? picked : [...picked].reverse();
   });
+
+  /** Above 5 comments the composer comes first, so a reply does not mean scrolling past the whole thread. */
+  protected readonly composerFirst = computed(() => this.total() > COMPOSER_FIRST_ABOVE);
+  /** The comment just linked to, for a few seconds. */
+  protected readonly highlightId = signal<number | null>(null);
+  protected readonly missingNote = signal('');
+  private highlightTimer: ReturnType<typeof setTimeout> | undefined;
 
   protected readonly panelId = 'tc-panel';
   private readonly userId = computed(() => this.auth.profile()?.userId);
@@ -710,6 +763,7 @@ export class TaskComments {
   private deleting: TaskCommentResponse | null = null;
 
   constructor() {
+    this.destroyRef.onDestroy(() => clearTimeout(this.highlightTimer));
     effect(() => {
       this.taskId();
       untracked(() => {
@@ -740,6 +794,52 @@ export class TaskComments {
   }
 
   private refreshed = false;
+  private handledSeq = 0;
+
+  /** Runs a focus request once the thread has loaded. */
+  private readonly focusEffect = effect(() => {
+    const request = this.focusRequest();
+    const ready = this.state() === 'ready';
+    if (!request || !ready || request.seq === this.handledSeq) return;
+    this.handledSeq = request.seq;
+    untracked(() => void this.showComment(request.commentId));
+  });
+
+  private async showComment(commentId: number): Promise<void> {
+    this.missingNote.set('');
+    this.open.set(true);
+    this.query.set('');
+    // Older comments than the first page: fetch pages until the comment is among them or the thread is exhausted.
+    while (
+      !this.items().some((c) => c.commentId === commentId) &&
+      this.items().length < this.total()
+    ) {
+      const before = this.items().length;
+      await this.loadMore();
+      if (this.items().length === before) break;
+    }
+    if (!this.items().some((c) => c.commentId === commentId)) {
+      this.missingNote.set('That comment is no longer in the thread.');
+      return;
+    }
+    this.revealAll.set(true);
+    this.highlightId.set(commentId);
+    clearTimeout(this.highlightTimer);
+    this.highlightTimer = setTimeout(() => this.highlightId.set(null), HIGHLIGHT_MS);
+    // After the host has closed the drawer (which gives focus back to its button) and the list has rendered.
+    afterNextRender(
+      () =>
+        setTimeout(() => {
+          const row = this.host.nativeElement.querySelector<HTMLElement>(
+            `[data-comment-id="${commentId}"]`,
+          );
+          if (!row) return;
+          row.scrollIntoView?.({ block: 'center' });
+          row.focus({ preventScroll: true });
+        }, 120),
+      { injector: this.injector },
+    );
+  }
 
   protected toggle(): void {
     const next = !this.open();
@@ -805,6 +905,7 @@ export class TaskComments {
   protected setLimit(value: string | CommentLimit): void {
     const next = COMMENT_LIMITS.find((l) => String(l) === String(value));
     if (next === undefined) return;
+    this.revealAll.set(false);
     this.limit.set(next);
     saveLimit(this.limitKey(), next);
   }

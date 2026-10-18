@@ -94,4 +94,39 @@ public sealed class TaskActivityNarratorTests
         TaskActivityNarrator.Narrate(Event("SOMETHING_ELSE", summary: "did a thing"), Names).Summary.ShouldBe("Did a thing");
         TaskActivityNarrator.Narrate(Event("SOMETHING_ELSE"), Names).Summary.ShouldBe("Something else");
     }
+
+    [Theory]
+    [InlineData("COMMENT_ADDED", "TaskComment", "42", 42L)]
+    [InlineData("COMMENT_EDITED", "TaskComment", "7", 7L)]
+    [InlineData("COMMENT_DELETED", "TaskComment", "9", 9L)]
+    [InlineData("COMMENT_ADDED", "TaskComment", "x", null)]
+    [InlineData("COMMENT_ADDED", "Task", "42", null)]
+    [InlineData("TASK_STATUS_CHANGED", "TaskComment", "42", null)]
+    public void Only_comment_events_carry_a_comment_id(string type, string objectType, string objectId, long? expected)
+    {
+        var e = new AuditRecord(1, DateTime.UtcNow, 7, type, objectType, objectId, 1, 1, null, null, null, null);
+        TaskActivityNarrator.CommentId(e).ShouldBe(expected);
+    }
+
+    [Fact]
+    public void Excerpts_are_one_line_of_plain_text_cut_at_a_word()
+    {
+        TaskActivityNarrator.Excerpt("<p>Hello <strong>there</strong></p><p>second&nbsp;line</p>").ShouldBe("Hello there second line");
+        TaskActivityNarrator.Excerpt("<ul><li>One</li><li>Two</li></ul>").ShouldBe("One Two");
+        TaskActivityNarrator.Excerpt(new string('a', 80)).ShouldBe(new string('a', 80));
+        TaskActivityNarrator.Excerpt("   ").ShouldBeNull();
+        TaskActivityNarrator.Excerpt("<p></p>").ShouldBeNull();
+        TaskActivityNarrator.Excerpt(null).ShouldBeNull();
+
+        var words = string.Join(' ', Enumerable.Repeat("word", 40));
+        var cut = TaskActivityNarrator.Excerpt("<p>" + words + "</p>")!;
+        cut.Length.ShouldBeLessThanOrEqualTo(TaskActivityNarrator.ExcerptLength);
+        cut.ShouldEndWith("word...");
+        words.ShouldStartWith(cut[..^3]);
+
+        // One long word has no break to cut at.
+        var solid = TaskActivityNarrator.Excerpt(new string('x', 300))!;
+        solid.Length.ShouldBe(TaskActivityNarrator.ExcerptLength);
+        solid.ShouldEndWith("...");
+    }
 }

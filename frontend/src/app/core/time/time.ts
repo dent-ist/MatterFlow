@@ -162,6 +162,11 @@ export function formatInstantTime(instant: Date | string | number, zone: string)
   );
 }
 
+/** "3:00 PM" for an instant in the viewer's zone: the clock time alone, for ranges that share one zone note. */
+export function formatInstantClock(instant: Date | string | number, zone: string): string {
+  return clean(formatter(zone, { hour: 'numeric', minute: '2-digit' }).format(toDate(instant)));
+}
+
 /** "Oct 28, 2026, 3:00 PM CDT": the standard timestamp rendering (comments, activity, audit, due). */
 export function formatInstant(instant: Date | string | number, zone: string): string {
   return `${formatInstantDate(instant, zone)}, ${formatInstantTime(instant, zone)}`;

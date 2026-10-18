@@ -13059,6 +13059,8 @@ export interface TaskActivityItem {
     fieldKey: string | undefined;
     oldValue: string | undefined;
     newValue: string | undefined;
+    commentId?: number | undefined;
+    excerpt?: string | undefined;
 
     [key: string]: any;
 }

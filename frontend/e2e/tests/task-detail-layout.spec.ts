@@ -207,7 +207,7 @@ test.describe('Task detail: single page layout', () => {
     await noHorizontalScroll(page);
   });
 
-  test('Comments: only the latest 3 by default, Show latest 3 / 5 / 10 / All is remembered, the sort orders inside the window, search covers all, a new comment stays visible', async ({
+  test('Comments: only the latest 3 by default, Show all / Show latest 3 is remembered, the sort orders inside the window, search covers all, a new comment stays visible', async ({
     page,
     seed,
     admin,
@@ -221,7 +221,7 @@ test.describe('Task detail: single page layout', () => {
     await expect(detail.section('Comments').getByRole('heading', { level: 2 })).toHaveText(
       'Comments (12)',
     );
-    await expect(page.getByText('Showing the latest 3 of 12 comments')).toBeVisible();
+    await expect(page.getByText('Showing latest 3 of 12.')).toBeVisible();
     await expect(detail.commentItems.last()).toContainText('load template agreed');
     await expect(detail.commentItems.first()).toContainText('Vendor re-sent B-003');
 
@@ -231,26 +231,20 @@ test.describe('Task detail: single page layout', () => {
     await expect(detail.commentItems.first()).toContainText('load template agreed');
     await page.getByLabel('Sort comments').selectOption('oldest');
 
-    for (const [value, count] of [
-      ['5', 5],
-      ['10', 10],
-      ['all', 12],
-    ] as const) {
-      await detail.commentLimit.selectOption(value);
-      await expect(detail.commentItems).toHaveCount(count);
-    }
-    await expect(page.getByText(/Showing the latest/)).toHaveCount(0);
+    await detail.showAllComments.click();
+    await expect(detail.commentItems).toHaveCount(12);
+    await expect(page.getByText('Showing all 12.')).toBeVisible();
+    await expect(page.getByText(/Showing latest/)).toHaveCount(0);
 
-    // Remembered: after a reload the choice is back ("All"), and picking 3 again shows the line and Show all.
+    // Remembered: after a reload the whole thread is back, and "Show latest 3" returns to the short view.
     await page.reload();
     await detail.showSection('Comments');
-    await expect(detail.commentLimit).toHaveValue('all');
     await expect(detail.commentItems).toHaveCount(12);
-    await detail.commentLimit.selectOption('3');
+    await detail.showLatestComments.click();
     await expect(detail.commentItems).toHaveCount(3);
-    await page.getByRole('button', { name: 'Show all' }).click();
+    await detail.showAllComments.click();
     await expect(detail.commentItems).toHaveCount(12);
-    await detail.commentLimit.selectOption('3');
+    await detail.showLatestComments.click();
 
     // Search ignores the limit and shows the match count.
     await page.getByRole('searchbox', { name: 'Search comments' }).fill('Kicked off');
@@ -265,7 +259,7 @@ test.describe('Task detail: single page layout', () => {
     await detail.section('Comments').locator('[data-post]').click();
     await expect(detail.commentItems.last()).toContainText('Brand new comment');
     await expect(detail.commentItems).toHaveCount(3);
-    await expect(page.getByText('Showing the latest 3 of 13 comments')).toBeVisible();
+    await expect(page.getByText('Showing latest 3 of 13.')).toBeVisible();
   });
 
   test('Assets and Comments are labelled scroll regions with their own maximum height (about 60vh)', async ({

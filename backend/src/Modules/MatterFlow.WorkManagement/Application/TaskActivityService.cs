@@ -60,10 +60,12 @@ public sealed class TaskActivityService(
         var names = new ActivityNames(userMap.ToDictionary(u => u.Key, u => u.Value.DisplayName), podNames, statusLabels);
 
         var canView = permissions.Has(Permissions.Audit.View);
+        var excerpts = await ExcerptsAsync(taskId, page.Items, ct);
         var items = page.Items.Select(e =>
         {
             var story = TaskActivityNarrator.Narrate(e, names, canView);
             var actor = e.ActorUserId is { } id && userMap.TryGetValue(id, out var u) ? new TaskUserRef(u.UserId, u.DisplayName, u.IsActive) : null;
+            var commentId = TaskActivityNarrator.CommentId(e);
             return new TaskActivityItem(
                 e.AuditEventId,
                 e.OccurredAtUtc,
@@ -73,8 +75,37 @@ public sealed class TaskActivityService(
                 story.Summary,
                 e.FieldKey,
                 canView ? story.OldValue : null,
-                canView ? story.NewValue : null);
+                canView ? story.NewValue : null,
+                commentId,
+                commentId is { } cid && excerpts.TryGetValue(cid, out var excerpt) ? excerpt : null);
         }).ToList();
         return new TaskActivityPage(items, page.NextBeforeId?.ToString(CultureInfo.InvariantCulture), canView);
+    }
+
+    /// <summary>
+    /// The excerpts of the comments named by the page's comment events, from one query for the whole page (never one per row). Read at this moment from
+    /// the comment, so an edit shows and a deleted comment disappears; callers without Task.View get none.
+    /// </summary>
+    private async Task<Dictionary<long, string>> ExcerptsAsync(long taskId, IReadOnlyList<AuditRecord> events, CancellationToken ct)
+    {
+        var result = new Dictionary<long, string>();
+        if (!permissions.Has(Permissions.Task.View))
+            return result;
+
+        var ids = events.Select(TaskActivityNarrator.CommentId).OfType<long>().Distinct().ToList();
+        if (ids.Count == 0)
+            return result;
+
+        var rows = await db.Set<TaskComment>().AsNoTracking()
+            .Where(c => c.TaskId == taskId && !c.IsDeleted && ids.Contains(c.Id))
+            .Select(c => new { c.Id, c.BodyHtml })
+            .ToListAsync(ct);
+        foreach (var row in rows)
+        {
+            if (TaskActivityNarrator.Excerpt(row.BodyHtml) is { } excerpt)
+                result[row.Id] = excerpt;
+        }
+
+        return result;
     }
 }
