@@ -50,7 +50,13 @@ describe('TaskTable', () => {
     const matter = cell('matter').querySelector('a')!;
     expect(matter.textContent?.trim()).toBe('00343-00012');
     expect(matter.getAttribute('href')).toBe('/matters/7');
-    expect(matter.getAttribute('title')).toBe('Merger Review');
+    // #197: the tooltip is on the cell (client and matter name); the name is line 2.
+    expect(cell('matter').querySelector('[title]')!.getAttribute('title')).toBe(
+      'Acme Corp · Merger Review',
+    );
+    expect(cell('matter').querySelector('[data-matter-name]')!.textContent).toContain(
+      'Merger Review',
+    );
     expect(cell('matter').querySelector('button')).toBeNull();
     expect(cell('matter').querySelector('[aria-label="Sensitive matter"]')).toBeNull();
   });
@@ -59,6 +65,22 @@ describe('TaskTable', () => {
     await create([aRow()], ['ref', 'title', 'matter'], {}, ['Task.View']);
     expect(cell('matter').querySelector('a')).toBeNull();
     expect(cell('matter').querySelector('span.mf-ref')!.textContent?.trim()).toBe('00343-00012');
+  });
+
+  it('shows the matter name even without Matter.View, appends (inactive), and only the reference in Compact (#197)', async () => {
+    await create([aRow({ matterIsActive: false })], ['ref', 'title', 'matter'], {}, ['Task.View']);
+    expect(cell('matter').querySelector('a')).toBeNull();
+    expect(cell('matter').querySelector('[data-matter-name]')!.textContent).toContain(
+      'Merger Review (inactive)',
+    );
+    const f = TestBed.createComponent(TaskTable);
+    f.componentRef.setInput('rows', [aRow()]);
+    f.componentRef.setInput('columns', ['ref', 'title', 'matter']);
+    f.componentRef.setInput('density', 'compact');
+    f.detectChanges();
+    await f.whenStable();
+    expect(f.nativeElement.querySelector('td[data-col="matter"] [data-matter-name]')).toBeNull();
+    expect(f.nativeElement.querySelector('td[data-col="matter"] .mf-ref')).not.toBeNull();
   });
 
   it('marks a sensitive matter with an icon that has a text alternative', async () => {

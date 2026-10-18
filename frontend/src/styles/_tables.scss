@@ -107,3 +107,8 @@ td.mf-col-actions {
 .wt tbody tr[data-task]:focus-within > td {
   background: var(--mf-surface-alt);
 }
+
+/* Client column of the work grids (#197): one line, ellipsis, never wraps; the full name is the tooltip. */
+.wt td[data-col='client'] .wt-clip {
+  white-space: nowrap;
+}

@@ -29,7 +29,7 @@ import { mfDate } from '../../core/time/time';
 import { TaskTypeIcon } from '../icons/task-type-icon';
 import { DueStatePipe } from '../pipes/due-label.pipe';
 import { MfDatePipe } from '../pipes/mf-date.pipe';
-import { MatterRef } from '../ui/matter-ref';
+import { MatterCell } from './matter-cell';
 import { PriorityBadge } from '../ui/priority-badge';
 import { CopyPart } from '../ui/copy-parts';
 import { StatusBadge } from '../ui/status-badge';
@@ -64,7 +64,7 @@ const NARROW_BELOW = 760;
   imports: [
     TaskTypeIcon,
     RouterLink,
-    MatterRef,
+    MatterCell,
     DueStatePipe,
     MfDatePipe,
     PriorityBadge,
@@ -227,23 +227,16 @@ const NARROW_BELOW = 760;
                       </div>
                     }
                     @case ('matter') {
-                      <mf-matter-ref
-                        [value]="row.matterRef"
-                        [link]="auth.canLink('matter') ? ['/matters', row.matterId] : null"
-                        [copy]="false"
-                        [hint]="row.matterName"
+                      <mf-matter-cell
+                        [row]="row"
+                        [link]="auth.canLink('matter')"
+                        [compact]="density() === 'compact'"
                       />
-                      @if (row.matterIsSensitive) {
-                        <i
-                          class="pi pi-exclamation-triangle wt-sensitive"
-                          role="img"
-                          aria-label="Sensitive matter"
-                          title="Sensitive matter"
-                        ></i>
-                      }
                     }
                     @case ('client') {
-                      {{ row.clientName }}
+                      <span class="wt-clip" [attr.title]="row.clientName">{{
+                        row.clientName
+                      }}</span>
                     }
                     @case ('project') {
                       {{ row.projectName ?? '-' }}

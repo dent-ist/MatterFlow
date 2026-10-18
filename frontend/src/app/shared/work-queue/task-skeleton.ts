@@ -62,6 +62,9 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, input } from '@a
     tr[mfTaskSkeleton] .sk--ref {
       width: 3.5rem;
     }
+    tr[mfTaskSkeleton] .sk--matter {
+      width: 10rem;
+    }
     tr[mfTaskSkeleton] .sk--progress,
     tr[mfTaskSkeleton] .sk--due {
       width: 8rem;
