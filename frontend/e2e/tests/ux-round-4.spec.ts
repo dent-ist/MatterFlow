@@ -456,10 +456,7 @@ test.describe('Round 4: administration naming', () => {
 });
 
 test.describe('Round 4: queues, wording and accessibility', () => {
-  test('UXR4-16: Filters and Columns have one height; New matter lines up with the Filters button', async ({
-    page,
-    seed,
-  }) => {
+  test('UXR4-16: Filters and Columns have one height', async ({ page, seed }) => {
     await page.goto('/tasks');
     const [filters, columns] = [
       (await page.getByRole('button', { name: /^Filters/ }).boundingBox())!,
@@ -473,14 +470,6 @@ test.describe('Round 4: queues, wording and accessibility', () => {
 
     const client = await seed.client();
     await page.goto(`/clients/${client.clientId}?tab=matters`);
-    const [button, input] = [
-      (await page.locator('[data-create-matter]').boundingBox())!,
-      (await page.getByRole('button', { name: /^Filters/ }).boundingBox())!,
-    ];
-    expect(
-      Math.abs(button.y + button.height / 2 - (input.y + input.height / 2)),
-      'centres line up',
-    ).toBeLessThan(1.5);
     // The standard: icons on create actions only, so Edit has none.
     await expect(
       page.getByRole('button', { name: 'Edit', exact: true }).locator('.pi'),

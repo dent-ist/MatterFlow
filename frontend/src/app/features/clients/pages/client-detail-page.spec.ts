@@ -90,7 +90,10 @@ describe('ClientDetailPage', () => {
     );
     const ref = el().querySelector('mf-client-matters tbody .mf-ref');
     expect(ref?.textContent).toBe('00343-00012');
-    expect(ref?.getAttribute('href')).toBe('/matters/7');
+    expect(ref?.getAttribute('href')).toBeNull(); // the reference is plain text; the name is the one link (WP9, #268)
+    expect(el().querySelector('mf-client-matters tbody a.pg-name')?.getAttribute('href')).toBe(
+      '/matters/7',
+    );
     expect(tab('Matters').getAttribute('aria-selected')).toBe('true');
   });
 
@@ -263,7 +266,7 @@ describe('ClientDetailPage', () => {
     await fixture.componentInstance.load();
     await settle(fixture);
 
-    // The header's primary action and, in the Matters tab, its own button: both stay focusable and say why.
+    // The header's primary action stays focusable and says why; the Matters tab has no second New matter button any more (WP9).
     const reason = 'This client is inactive. Set it active to add matters.';
     const header = el().querySelector<HTMLButtonElement>(
       '[data-page-actions] [data-action=new-matter]',
@@ -275,11 +278,8 @@ describe('ClientDetailPage', () => {
       reason,
     );
     header.click();
-    const button = el().querySelector<HTMLButtonElement>('[data-create-matter]')!;
-    expect(el().querySelector('[data-inactive-reason]')?.textContent).toContain(reason);
-    expect(button.getAttribute('aria-describedby')).toBe('client-inactive-reason');
-    button.click();
-    expect(navigateByUrl).not.toHaveBeenCalled(); // activating either does nothing
+    expect(el().querySelector('[data-create-matter]')).toBeNull();
+    expect(navigateByUrl).not.toHaveBeenCalled(); // activating it does nothing
   });
 
   it('puts New matter in the header as the primary action and Set inactive in the overflow', async () => {

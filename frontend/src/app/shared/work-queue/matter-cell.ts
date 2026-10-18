@@ -1,6 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { TaskQueueRow } from '../../api/generated/api-client';
 import { MatterRef } from '../ui/matter-ref';
+
+/** What the Matter cell needs of a row: a Task Queue row has it, and so does a project (Projects list, WP9). */
+export interface MatterCellRow {
+  matterId: number;
+  matterRef: string;
+  matterName: string;
+  matterIsActive: boolean;
+  clientName: string;
+  matterIsSensitive?: boolean | null;
+}
 
 /**
  * The Matter cell of the work grids (#197): line 1 the matter reference (a link only when `link` is set, which the table derives from
@@ -77,7 +86,7 @@ import { MatterRef } from '../ui/matter-ref';
   `,
 })
 export class MatterCell {
-  readonly row = input.required<TaskQueueRow>();
+  readonly row = input.required<MatterCellRow>();
   /** True for a user with Matter.View: the reference is then a link. */
   readonly link = input(false);
   readonly compact = input(false);

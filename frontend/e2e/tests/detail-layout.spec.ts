@@ -44,10 +44,12 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await page.getByRole('tab', { name: 'Matters' }).click();
     await expect(page).toHaveURL(/tab=matters/);
     const row = page.getByRole('row').filter({ hasText: matter.name });
-    await expect(row.getByRole('link', { name: matter.matterRef })).toHaveAttribute(
+    // The name is the one link; the reference is plain text (WP9, #268).
+    await expect(row.getByRole('link', { name: matter.name })).toHaveAttribute(
       'href',
       `/matters/${matter.matterId}`,
     );
+    await expect(row.getByRole('link', { name: matter.matterRef })).toHaveCount(0);
     const grid = (await page
       .getByRole('region', { name: 'Matters list, scrollable' })
       .boundingBox())!;

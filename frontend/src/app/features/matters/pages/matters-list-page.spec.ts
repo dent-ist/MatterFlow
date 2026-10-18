@@ -72,7 +72,9 @@ describe('MattersListPage', () => {
 
     expect(rows).toHaveLength(2);
     expect(rows[0].querySelector('.mf-ref')?.textContent).toBe('00343-00012');
-    expect(rows[0].querySelector('.mf-ref')?.getAttribute('href')).toBe('/matters/7');
+    // The name is the one link to the matter; the reference is plain mono text (WP9, #268).
+    expect(rows[0].querySelector('.mf-ref')?.getAttribute('href')).toBeNull();
+    expect(rows[0].querySelector('a.pg-name')?.getAttribute('href')).toBe('/matters/7');
     expect(rows[1].querySelector('.mf-ref')?.textContent).toBe('00001-00012');
     expect(rows[0].textContent).toContain('00343 Acme Corp');
     expect(rows[1].textContent).toContain('Inactive');
@@ -245,5 +247,59 @@ describe('MattersListPage', () => {
     const fixture = await create(['Matter.View']);
 
     expect(buttonByLabel(fixture.nativeElement, 'New matter')).toBeUndefined();
+  });
+
+  describe('Open tasks and Overdue (WP9, #266, #268)', () => {
+    const heads = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll('thead tr:first-child th')).map((h) => h.textContent!.trim());
+
+    it('has Reference, Name, Client, Open tasks, Overdue and Status; the counts link to the Task Queue scoped to the matter', async () => {
+      const fixture = await create(['Matter.View', 'Task.View']);
+      api.listMatters.mockReturnValue(
+        ok(pageOfMatters(aMatter({ matterId: 7, openTaskCount: 5, overdueTaskCount: 2 }))),
+      );
+      fixture.componentRef.setInput('sort', 'name');
+      await settle(fixture);
+      const el: HTMLElement = fixture.nativeElement;
+
+      expect(heads(el)).toEqual([
+        'Matter reference',
+        'Name',
+        'Client',
+        'Open tasks',
+        'Overdue',
+        'Status',
+      ]);
+      const row = el.querySelector('tbody tr')!;
+      expect(row.querySelector('[data-count=open] a')?.getAttribute('href')).toBe(
+        '/tasks?matter=7&status=NEW&status=IN_PROGRESS&status=ON_HOLD',
+      );
+      expect(row.querySelector('[data-count=overdue] a')?.getAttribute('href')).toBe(
+        '/tasks?matter=7&status=NEW&status=IN_PROGRESS&status=ON_HOLD&overdue=true',
+      );
+      // Name is the one link to the matter, the Client column stays a link to the client.
+      const links = Array.from(row.querySelectorAll('a')).filter((a) => !a.closest('[data-count]'));
+      expect(links.map((a) => a.getAttribute('href'))).toEqual(['/matters/7', '/clients/1']);
+    });
+
+    it('leaves the count columns out without Task.View and no longer shows the Projects count', async () => {
+      const fixture = await create(['Matter.View']);
+      const el: HTMLElement = fixture.nativeElement;
+      expect(heads(el)).toEqual(['Matter reference', 'Name', 'Client', 'Status']);
+      expect(el.querySelector('[data-count]')).toBeNull();
+    });
+
+    it('sorts by Overdue descending first', async () => {
+      const fixture = await create(['Matter.View', 'Task.View']);
+      const el: HTMLElement = fixture.nativeElement;
+      const overdue = Array.from(el.querySelectorAll('thead th')).find((h) =>
+        h.textContent!.includes('Overdue'),
+      )!;
+      overdue.querySelector('button')!.click();
+      expect(navigate).toHaveBeenLastCalledWith([], {
+        queryParams: { sort: '-overdue', page: null },
+        queryParamsHandling: 'merge',
+      });
+    });
   });
 });

@@ -27,15 +27,28 @@ import { CopyPart } from '../../../shared/ui/copy-parts';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
-import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
+import { TaskCount } from '../../../shared/ui/task-count';
+import { viewportAtLeast } from '../../../shared/ui/viewport';
+import { MatterCell } from '../../../shared/work-queue/matter-cell';
 
-/** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['name', 'matter', 'status'] as const;
+/** Below this width the Client column (the least informative one) leaves the table (#267). */
+const CLIENT_COLUMN_MIN_PX = 1100;
+
+/** Bone widths of a skeleton row, per column key. */
+const BONES: Record<string, string> = {
+  name: '16rem',
+  matter: '9rem',
+  client: '12rem',
+  openTasks: '3rem',
+  overdue: '3rem',
+  status: '5rem',
+};
 
 /**
- * Global Projects list (UX S07): inline column filters (Name, Matter reference or name, Status with Active by default); a link from a
+ * Global Projects list (UX S07): Name (the one link), Matter (the shared two-line Matter cell of the Task Queue), Client (from 1100 px), Open tasks
+ * and Overdue (counts that open the Task Queue; left out without Task.View), Status. Inline column filters (Name, Matter reference or name, Status with Active by default); a link from a
  * Matter keeps `?matterId=` as a removable chip. State lives in the URL.
  */
 @Component({
@@ -49,7 +62,8 @@ const COLUMNS = ['name', 'matter', 'status'] as const;
     Button,
     HasPermissionDirective,
     Pager,
-    MatterRef,
+    MatterCell,
+    TaskCount,
     SortHeader,
     GridBody,
     FiltersBar,
@@ -103,6 +117,31 @@ const COLUMNS = ['name', 'matter', 'status'] as const;
                   >
                     Matter
                   </th>
+                  @if (showClient()) {
+                    <th scope="col">Client</th>
+                  }
+                  @if (counts()) {
+                    <th
+                      class="pg-num"
+                      mfSort="openTasks"
+                      [firstDesc]="true"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Open tasks
+                    </th>
+                    <th
+                      class="pg-num"
+                      mfSort="overdue"
+                      [firstDesc]="true"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Overdue
+                    </th>
+                  }
                   <th scope="col">Status</th>
                 </tr>
                 @if (filters.rowVisible()) {
@@ -110,7 +149,7 @@ const COLUMNS = ['name', 'matter', 'status'] as const;
                     mfColumnFilterRow
                     id="project-filter-row"
                     [filters]="filters"
-                    [columns]="columns"
+                    [columns]="columns()"
                   ></tr>
                 }
               </thead>
@@ -120,9 +159,9 @@ const COLUMNS = ['name', 'matter', 'status'] as const;
                 [state]="state()"
                 [empty]="rows().length === 0"
                 [filtered]="filters.activeCount() > 0"
-                [columns]="3"
+                [columns]="columns().length"
                 [emptyParts]="emptyParts()"
-                [skeleton]="['16rem', '9rem', '5rem']"
+                [skeleton]="skeleton()"
                 (retry)="load()"
                 (clear)="clear()"
               >
@@ -136,9 +175,36 @@ const COLUMNS = ['name', 'matter', 'status'] as const;
                         >{{ p.name }}</a
                       >
                     </td>
-                    <td>
-                      <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />
+                    <td class="pg-fix">
+                      <mf-matter-cell [row]="p" [link]="auth.canLink('matter')" />
                     </td>
+                    @if (showClient()) {
+                      <td class="pg-fix pg-fix--client">
+                        <span class="pg-clip" [title]="p.clientNumber + ' ' + p.clientName">{{
+                          p.clientName
+                        }}</span>
+                      </td>
+                    }
+                    @if (counts()) {
+                      <td class="pg-num">
+                        <mf-task-count
+                          kind="open"
+                          scope="project"
+                          [recordId]="p.projectId"
+                          [name]="p.name"
+                          [count]="p.openTaskCount ?? 0"
+                        />
+                      </td>
+                      <td class="pg-num">
+                        <mf-task-count
+                          kind="overdue"
+                          scope="project"
+                          [recordId]="p.projectId"
+                          [name]="p.name"
+                          [count]="p.overdueTaskCount ?? 0"
+                        />
+                      </td>
+                    }
                     <td>
                       <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
                     </td>
@@ -168,12 +234,25 @@ const COLUMNS = ['name', 'matter', 'status'] as const;
 export class ProjectsListPage extends ServerListPage<ProjectResponse> {
   protected override readonly emptyOffersClear = true;
   private readonly api = inject(ProjectsClient);
-  private readonly auth = inject(AuthStore);
+  protected readonly auth = inject(AuthStore);
   private readonly injector = inject(Injector);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
+  private readonly wide = viewportAtLeast(CLIENT_COLUMN_MIN_PX);
+
   protected readonly defaultSort = 'name';
-  protected readonly columns = COLUMNS;
+  /** Counts are null without Task.View: the two columns are not rendered then. */
+  protected readonly counts = computed(() => this.auth.has('Task.View'));
+  protected readonly showClient = computed(() => this.wide());
+  /** The columns of the grid, in order; the keys the filter definitions point at. */
+  protected readonly columns = computed(() => [
+    'name',
+    'matter',
+    ...(this.showClient() ? ['client'] : []),
+    ...(this.counts() ? ['openTasks', 'overdue'] : []),
+    'status',
+  ]);
+  protected readonly skeleton = computed(() => this.columns().map((key) => BONES[key]));
 
   protected readonly matterChip = computed(() => {
     const first = this.rows()[0];

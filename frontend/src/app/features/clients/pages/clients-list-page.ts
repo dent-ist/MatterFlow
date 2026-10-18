@@ -12,6 +12,7 @@ import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { ClientResponse, ClientsClient } from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { statusDef } from '../../../shared/filters/common-defs';
@@ -27,12 +28,21 @@ import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
+import { TaskCount } from '../../../shared/ui/task-count';
 
-/** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['clientNumber', 'name', 'matters', 'status'] as const;
+/** Bone widths of a skeleton row, per column key. */
+const BONES: Record<string, string> = {
+  clientNumber: '6rem',
+  name: '16rem',
+  matters: '3rem',
+  openTasks: '3rem',
+  overdue: '3rem',
+  status: '5rem',
+};
 
 /**
- * Clients list (UX S05): inline column filters (Client number, Name, Status with Active by default), sortable, server paged. State lives
+ * Clients list (UX S05): Client number, Name (the one link), Matters, Open tasks and Overdue (counts that open the Task Queue; left out
+ * without Task.View), Status. Inline column filters (Client number, Name, Status with Active by default), sortable, server paged. State lives
  * in the URL (`clientNumber`, `name`, `status`, `page`, `size`, `sort`).
  */
 @Component({
@@ -51,6 +61,7 @@ const COLUMNS = ['clientNumber', 'name', 'matters', 'status'] as const;
     FiltersBar,
     ListFiltersButton,
     ColumnFilterRow,
+    TaskCount,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -99,7 +110,29 @@ const COLUMNS = ['clientNumber', 'name', 'matters', 'status'] as const;
                   >
                     Name
                   </th>
-                  <th scope="col">Matters</th>
+                  <th scope="col" class="pg-num">Matters</th>
+                  @if (counts()) {
+                    <th
+                      class="pg-num"
+                      mfSort="openTasks"
+                      [firstDesc]="true"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Open tasks
+                    </th>
+                    <th
+                      class="pg-num"
+                      mfSort="overdue"
+                      [firstDesc]="true"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Overdue
+                    </th>
+                  }
                   <th scope="col">Status</th>
                 </tr>
                 @if (filters.rowVisible()) {
@@ -107,7 +140,7 @@ const COLUMNS = ['clientNumber', 'name', 'matters', 'status'] as const;
                     mfColumnFilterRow
                     id="client-filter-row"
                     [filters]="filters"
-                    [columns]="columns"
+                    [columns]="columns()"
                   ></tr>
                 }
               </thead>
@@ -117,8 +150,8 @@ const COLUMNS = ['clientNumber', 'name', 'matters', 'status'] as const;
                 [state]="state()"
                 [empty]="rows().length === 0"
                 [filtered]="filters.activeCount() > 0"
-                [columns]="4"
-                [skeleton]="['6rem', '16rem', '3rem', '5rem']"
+                [columns]="columns().length"
+                [skeleton]="skeleton()"
                 (retry)="load()"
                 (clear)="clear()"
               >
@@ -130,15 +163,36 @@ const COLUMNS = ['clientNumber', 'name', 'matters', 'status'] as const;
                 />
                 @for (c of rows(); track c.clientId) {
                   <tr>
-                    <td class="pg-mono pg-nowrap">
-                      <a class="pg-link" [routerLink]="['/clients', c.clientId]">{{
-                        c.clientNumber
-                      }}</a>
-                    </td>
+                    <td class="pg-mono pg-nowrap">{{ c.clientNumber }}</td>
                     <td>
-                      <span class="pg-name" [title]="c.name">{{ c.name }}</span>
+                      <a
+                        class="pg-link pg-name"
+                        [routerLink]="['/clients', c.clientId]"
+                        [title]="c.name"
+                        >{{ c.name }}</a
+                      >
                     </td>
-                    <td>{{ c.matterCount }}</td>
+                    <td class="pg-num">{{ c.matterCount }}</td>
+                    @if (counts()) {
+                      <td class="pg-num">
+                        <mf-task-count
+                          kind="open"
+                          scope="client"
+                          [recordId]="c.clientId"
+                          [name]="c.name"
+                          [count]="c.openTaskCount ?? 0"
+                        />
+                      </td>
+                      <td class="pg-num">
+                        <mf-task-count
+                          kind="overdue"
+                          scope="client"
+                          [recordId]="c.clientId"
+                          [name]="c.name"
+                          [count]="c.overdueTaskCount ?? 0"
+                        />
+                      </td>
+                    }
                     <td>
                       <mf-active-badge [active]="c.isActive" />
                     </td>
@@ -171,8 +225,20 @@ export class ClientsListPage extends ServerListPage<ClientResponse> {
   private readonly injector = inject(Injector);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
+  private readonly auth = inject(AuthStore);
+
   protected readonly defaultSort = 'clientNumber';
-  protected readonly columns = COLUMNS;
+  /** Counts are null without Task.View: the two columns are not rendered then. */
+  protected readonly counts = computed(() => this.auth.has('Task.View'));
+  /** The columns of the grid, in order; the keys the filter definitions point at. */
+  protected readonly columns = computed(() => [
+    'clientNumber',
+    'name',
+    'matters',
+    ...(this.counts() ? ['openTasks', 'overdue'] : []),
+    'status',
+  ]);
+  protected readonly skeleton = computed(() => this.columns().map((key) => BONES[key]));
 
   /** One definition per filter: the row, the sheet, the chips, the count, the URL and the API arguments all come from it. */
   private readonly defs = computed((): FilterDef[] => [

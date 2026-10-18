@@ -390,28 +390,32 @@ test.describe('Client Matters tab: New matter and the inactive-client rule (#250
     return client;
   }
 
-  test('an active client: the button reads New matter in the tab and in the empty state', async ({
+  test('an active client: the header button and the empty state read New matter; the tab has no second button', async ({
     page,
     seed,
   }) => {
     const empty = await seed.client();
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/clients/${empty.clientId}?tab=matters`);
-    await expect(page.getByRole('button', { name: 'New matter' })).toHaveCount(3); // the header (WP3), the toolbar and the empty state
+    await expect(page.getByRole('button', { name: 'New matter' })).toHaveCount(2); // the header (WP3) and the empty state; no toolbar button (WP9)
     await expect(page.getByRole('button', { name: 'Create matter' })).toHaveCount(0);
-    await expect(page.locator('[data-create-matter]')).not.toHaveAttribute('aria-disabled', 'true');
+    await expect(page.locator('[data-create-matter]')).toHaveCount(0);
+    await expect(page.locator('[data-empty-new-matter]')).not.toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     await shot(page, 'client-matters-empty-active');
     await atEverySize(page, 'client-matters-empty-active');
 
     const withMatter = await seed.client();
     await seed.matter({ client: withMatter });
     await page.goto(`/clients/${withMatter.clientId}?tab=matters`);
-    await expect(page.getByRole('button', { name: 'New matter' })).toHaveCount(2); // the header and the toolbar
-    await page.locator('[data-create-matter]').click();
+    await expect(page.getByRole('button', { name: 'New matter' })).toHaveCount(1); // the header only
+    await page.locator('[data-page-actions] [data-action="new-matter"]').click();
     await expect(page).toHaveURL(new RegExp(`/matters/new\\?clientId=${withMatter.clientId}$`));
   });
 
-  test('an inactive client: New matter is aria-disabled and focusable with the reason beside it; activating it does nothing', async ({
+  test('an inactive client: the header New matter is aria-disabled and focusable with its reason; activating it does nothing', async ({
     page,
     seed,
     admin,
@@ -421,12 +425,12 @@ test.describe('Client Matters tab: New matter and the inactive-client rule (#250
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/clients/${client.clientId}?tab=matters`);
 
-    const button = page.locator('[data-create-matter]');
+    const button = page.locator('[data-page-actions] [data-action="new-matter"]');
+    await expect(page.locator('[data-create-matter]')).toHaveCount(0); // no second button in the tab (WP9)
     await expect(button).toHaveText('New matter');
     await expect(button).toHaveAttribute('aria-disabled', 'true');
     await expect(button).toHaveJSProperty('disabled', false); // not natively disabled: reachable by keyboard
     await expect(button).toHaveAttribute('title', REASON);
-    await expect(page.locator('[data-inactive-reason]')).toHaveText(REASON);
     await expect(button).toHaveAccessibleDescription(REASON);
     await button.focus();
     await expect(button).toBeFocused();
@@ -439,10 +443,13 @@ test.describe('Client Matters tab: New matter and the inactive-client rule (#250
     await shot(page, 'client-matters-inactive');
 
     await atEverySize(page, 'client-matters-inactive');
-    // At 375 the reason wraps inside the screen.
+    // At 375 the page still does not scroll sideways (the grid scrolls inside its own box).
     await page.setViewportSize({ width: 375, height: 812 });
-    const box = (await page.locator('[data-inactive-reason]').boundingBox())!;
-    expect(box.x + box.width).toBeLessThanOrEqual(375);
+    const widths = await page.evaluate(() => [
+      document.documentElement.scrollWidth,
+      window.innerWidth,
+    ]);
+    expect(widths[0]).toBeLessThanOrEqual(widths[1]);
   });
 });
 

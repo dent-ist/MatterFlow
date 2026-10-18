@@ -141,6 +141,44 @@ describe('Projects pages', () => {
       );
     });
 
+    it('shows the matter cell, the client, Open tasks and Overdue (WP9, #267)', async () => {
+      const fixture = await create(['Project.View', 'Task.View', 'Matter.View']);
+      projects.listProjects.mockReturnValue(
+        ok(pageOfProjects(aProject({ projectId: 3, openTaskCount: 4, overdueTaskCount: 1 }))),
+      );
+      fixture.componentRef.setInput('sort', 'name');
+      await settle(fixture);
+      const el: HTMLElement = fixture.nativeElement;
+
+      const heads = Array.from(el.querySelectorAll('thead tr:first-child th')).map((h) =>
+        h.textContent!.trim(),
+      );
+      expect(heads.slice(0, 2)).toEqual(['Name', 'Matter']);
+      expect(heads.slice(-3)).toEqual(['Open tasks', 'Overdue', 'Status']);
+      const row = el.querySelector('tbody tr')!;
+      // The shared two-line Matter cell: reference over name, tooltip Client . Matter, a link with Matter.View.
+      const cell = row.querySelector('mf-matter-cell')!;
+      expect(cell.querySelector('a.mf-ref')?.getAttribute('href')).toBe('/matters/7');
+      expect(cell.querySelector('[data-matter-name]')?.textContent).toContain('Merger Review');
+      expect(cell.querySelector('.mc')?.getAttribute('title')).toBe('Acme Corp · Merger Review');
+      expect(row.querySelector('[data-count=open] a')?.getAttribute('href')).toBe(
+        '/tasks?project=3&status=NEW&status=IN_PROGRESS&status=ON_HOLD',
+      );
+      expect(row.querySelector('[data-count=overdue] a')?.getAttribute('aria-label')).toBe(
+        '1 overdue task in Custodian Processing',
+      );
+    });
+
+    it('shows the matter as text without Matter.View and leaves the counts out without Task.View', async () => {
+      const fixture = await create(['Project.View']);
+      const el: HTMLElement = fixture.nativeElement;
+      const row = el.querySelector('tbody tr')!;
+      expect(row.querySelector('mf-matter-cell a')).toBeNull();
+      expect(row.querySelector('mf-matter-cell .mf-ref')?.textContent).toBe('00343-00012');
+      expect(el.querySelector('[data-count]')).toBeNull();
+      expect(el.querySelectorAll('thead tr:first-child th')).not.toHaveLength(0);
+    });
+
     async function createEmpty(permissions: Permission[]) {
       localStorage.clear();
       await configure(permissions);

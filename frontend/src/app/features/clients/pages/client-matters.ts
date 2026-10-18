@@ -12,6 +12,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { MatterResponse, MattersClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { RouterLink } from '@angular/router';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { matterColumnDefs } from '../../../shared/filters/common-defs';
@@ -26,17 +27,24 @@ import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { Pager } from '../../../shared/ui/pager';
+import { TaskCount } from '../../../shared/ui/task-count';
 
 /** Why New matter is unavailable for an inactive client (the server refuses with ClientInactive); shown beside the button and as its tooltip. */
 const INACTIVE_REASON = 'This client is inactive. Set it active to add matters.';
 
-/** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
+/** Bone widths of a skeleton row, per column key. */
+const BONES: Record<string, string> = {
+  matterRef: '7rem',
+  name: '16rem',
+  openTasks: '3rem',
+  overdue: '3rem',
+  status: '5rem',
+};
 
 /**
  * The main area of the Client detail page: the client's Matters as a list in the shared pattern (inline column filters for Matter and
- * Name, Status defaulting to Active, Sensitive beside Status; the row is open by default; sortable columns, paging, loading / empty / error states) with a
- * "New matter" button that prefills the client. The filters (`matterRef`, `name`, `status`, `isSensitive`) are read from the address
+ * Name, Status defaulting to Active, Sensitive beside Status; the row is open by default; sortable columns (Reference, Name, Open tasks and Overdue; the two counts are left out without Task.View), paging, loading / empty / error states).
+ * New matter lives in the page header (the empty state keeps its own button) and prefills the client. The filters (`matterRef`, `name`, `status`, `isSensitive`) are read from the address
  * by `ListFilters`; the page binds `status`, `page`, `size` and `sort` like every other list. Needs `Matter.View`.
  */
 @Component({
@@ -47,6 +55,8 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
     ActiveBadge,
     SensitiveBadge,
     MatterRef,
+    RouterLink,
+    TaskCount,
     Pager,
     SortHeader,
     GridBody,
@@ -57,13 +67,6 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
   host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
   styles: `
-    .cm-new {
-      display: inline-flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s2) var(--mf-s3);
-      min-width: 0;
-    }
     .cm-reason {
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
@@ -75,28 +78,7 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
         You don't have permission to view matters.
       </div>
     } @else {
-      <mf-filters-bar [filters]="filters" controls="client-matter-filter-row" [clearAlso]="['q']">
-        <span mfBarStart *mfHasPermission="'Matter.Create'" class="cm-new">
-          <!-- aria-disabled, not disabled: the button stays in the tab order, so the reason is reachable and read out. -->
-          <button
-            type="button"
-            class="mf-btn"
-            data-create-matter
-            [attr.aria-disabled]="clientActive() ? null : 'true'"
-            [attr.aria-describedby]="clientActive() ? null : 'client-inactive-reason'"
-            [attr.title]="clientActive() ? null : INACTIVE_REASON"
-            (click)="newMatter()"
-          >
-            <i class="pi pi-plus" aria-hidden="true"></i>
-            New matter
-          </button>
-          @if (!clientActive()) {
-            <span class="cm-reason" id="client-inactive-reason" data-inactive-reason>{{
-              INACTIVE_REASON
-            }}</span>
-          }
-        </span>
-      </mf-filters-bar>
+      <mf-filters-bar [filters]="filters" controls="client-matter-filter-row" [clearAlso]="['q']" />
 
       <div class="mf-table-wrap" mfScrollArea="Matters list" #scroll>
         <div class="mf-scroll">
@@ -125,7 +107,28 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
                 >
                   Name
                 </th>
-                <th scope="col">Projects</th>
+                @if (counts()) {
+                  <th
+                    class="pg-num"
+                    mfSort="openTasks"
+                    [firstDesc]="true"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Open tasks
+                  </th>
+                  <th
+                    class="pg-num"
+                    mfSort="overdue"
+                    [firstDesc]="true"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Overdue
+                  </th>
+                }
                 <th scope="col">Status</th>
               </tr>
               @if (filters.rowVisible()) {
@@ -133,7 +136,7 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
                   mfColumnFilterRow
                   id="client-matter-filter-row"
                   [filters]="filters"
-                  [columns]="columns"
+                  [columns]="columns()"
                 ></tr>
               }
             </thead>
@@ -144,7 +147,8 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
               [state]="state()"
               [empty]="rows().length === 0"
               [filtered]="filters.activeCount() > 0"
-              [columns]="4"
+              [columns]="columns().length"
+              [skeleton]="skeleton()"
               (retry)="load()"
               (clear)="clear()"
             >
@@ -160,17 +164,41 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
               @for (m of rows(); track m.matterId) {
                 <tr>
                   <td>
-                    <mf-matter-ref [value]="m.matterRef" [link]="['/matters', m.matterId]" />
+                    <mf-matter-ref [value]="m.matterRef" />
                   </td>
                   <td>
                     <div class="pg-namecell">
-                      <span class="pg-name" [title]="m.name">{{ m.name }}</span>
+                      <a
+                        class="pg-link pg-name"
+                        [routerLink]="['/matters', m.matterId]"
+                        [title]="m.name"
+                        >{{ m.name }}</a
+                      >
                       @if (m.isSensitive) {
                         <mf-sensitive-badge />
                       }
                     </div>
                   </td>
-                  <td>{{ m.projectCount }}</td>
+                  @if (counts()) {
+                    <td class="pg-num">
+                      <mf-task-count
+                        kind="open"
+                        scope="matter"
+                        [recordId]="m.matterId"
+                        [name]="m.name"
+                        [count]="m.openTaskCount ?? 0"
+                      />
+                    </td>
+                    <td class="pg-num">
+                      <mf-task-count
+                        kind="overdue"
+                        scope="matter"
+                        [recordId]="m.matterId"
+                        [name]="m.name"
+                        [count]="m.overdueTaskCount ?? 0"
+                      />
+                    </td>
+                  }
                   <td><mf-active-badge [active]="m.isActive" /></td>
                 </tr>
               }
@@ -209,7 +237,16 @@ export class ClientMatters extends ServerListPage<MatterResponse> {
 
   protected readonly canView = computed(() => this.auth.has('Matter.View'));
   protected readonly defaultSort = 'matterRef';
-  protected readonly columns = COLUMNS;
+  /** Counts are null without Task.View: the two columns are not rendered then. */
+  protected readonly counts = computed(() => this.auth.has('Task.View'));
+  /** The columns of the grid, in order; the keys the filter definitions point at (the Matters list's, without Client). */
+  protected readonly columns = computed(() => [
+    'matterRef',
+    'name',
+    ...(this.counts() ? ['openTasks', 'overdue'] : []),
+    'status',
+  ]);
+  protected readonly skeleton = computed(() => this.columns().map((key) => BONES[key]));
   protected readonly INACTIVE_REASON = INACTIVE_REASON;
 
   /** One definition per filter (the Matters list's, without the Client column). */

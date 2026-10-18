@@ -12,6 +12,7 @@ import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { MatterResponse, MattersClient } from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { matterColumnDefs } from '../../../shared/filters/common-defs';
@@ -28,12 +29,25 @@ import { ServerListPage } from '../../../shared/ui/list-query';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
+import { TaskCount } from '../../../shared/ui/task-count';
+import { viewportAtLeast } from '../../../shared/ui/viewport';
 
-/** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
+/** Below this width the Client column (the least informative one) leaves the table (#266). */
+const CLIENT_COLUMN_MIN_PX = 900;
+
+/** Bone widths of a skeleton row, per column key. */
+const BONES: Record<string, string> = {
+  matterRef: '7rem',
+  name: '16rem',
+  client: '14rem',
+  openTasks: '3rem',
+  overdue: '3rem',
+  status: '5rem',
+};
 
 /**
- * Matters list (UX S06): inline column filters (Matter reference, Name, Client, Status with Active by default, and Sensitive beside it),
+ * Matters list (UX S06): Reference (plain text with a copy button), Name (the one link), Client (a link; from 900 px), Open tasks and Overdue
+ * (counts that open the Task Queue; left out without Task.View), Status. Inline column filters (Matter reference, Name, Client, Status with Active by default, and Sensitive beside it),
  * open by default from 640 px; a link from a Client keeps `?clientId=` as a removable chip. State lives in the URL.
  */
 @Component({
@@ -54,6 +68,7 @@ const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
     FiltersBar,
     ListFiltersButton,
     ColumnFilterRow,
+    TaskCount,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -102,15 +117,38 @@ const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
                   >
                     Name
                   </th>
-                  <th
-                    mfSort="clientNumber"
-                    [sort]="sort()"
-                    [defaultSort]="defaultSort"
-                    (sorted)="setSort($event)"
-                  >
-                    Client
-                  </th>
-                  <th scope="col">Projects</th>
+                  @if (showClient()) {
+                    <th
+                      mfSort="clientNumber"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Client
+                    </th>
+                  }
+                  @if (counts()) {
+                    <th
+                      class="pg-num"
+                      mfSort="openTasks"
+                      [firstDesc]="true"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Open tasks
+                    </th>
+                    <th
+                      class="pg-num"
+                      mfSort="overdue"
+                      [firstDesc]="true"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Overdue
+                    </th>
+                  }
                   <th scope="col">Status</th>
                 </tr>
                 @if (filters.rowVisible()) {
@@ -118,7 +156,7 @@ const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
                     mfColumnFilterRow
                     id="matter-filter-row"
                     [filters]="filters"
-                    [columns]="columns"
+                    [columns]="columns()"
                   ></tr>
                 }
               </thead>
@@ -128,8 +166,8 @@ const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
                 [state]="state()"
                 [empty]="rows().length === 0"
                 [filtered]="filters.activeCount() > 0"
-                [columns]="5"
-                [skeleton]="['7rem', '16rem', '14rem', '3rem', '5rem']"
+                [columns]="columns().length"
+                [skeleton]="skeleton()"
                 (retry)="load()"
                 (clear)="clear()"
               >
@@ -142,25 +180,51 @@ const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
                 @for (m of rows(); track m.matterId) {
                   <tr>
                     <td>
-                      <mf-matter-ref [value]="m.matterRef" [link]="['/matters', m.matterId]" />
+                      <mf-matter-ref [value]="m.matterRef" />
                     </td>
                     <td>
                       <div class="pg-namecell">
-                        <span class="pg-name" [title]="m.name">{{ m.name }}</span>
+                        <a
+                          class="pg-link pg-name"
+                          [routerLink]="['/matters', m.matterId]"
+                          [title]="m.name"
+                          >{{ m.name }}</a
+                        >
                         @if (m.isSensitive) {
                           <mf-sensitive-badge />
                         }
                       </div>
                     </td>
-                    <td>
-                      <a
-                        class="pg-link pg-name"
-                        [routerLink]="['/clients', m.clientId]"
-                        [title]="m.clientNumber + ' ' + m.clientName"
-                        ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
-                      >
-                    </td>
-                    <td>{{ m.projectCount }}</td>
+                    @if (showClient()) {
+                      <td>
+                        <a
+                          class="pg-link pg-name"
+                          [routerLink]="['/clients', m.clientId]"
+                          [title]="m.clientNumber + ' ' + m.clientName"
+                          ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
+                        >
+                      </td>
+                    }
+                    @if (counts()) {
+                      <td class="pg-num">
+                        <mf-task-count
+                          kind="open"
+                          scope="matter"
+                          [recordId]="m.matterId"
+                          [name]="m.name"
+                          [count]="m.openTaskCount ?? 0"
+                        />
+                      </td>
+                      <td class="pg-num">
+                        <mf-task-count
+                          kind="overdue"
+                          scope="matter"
+                          [recordId]="m.matterId"
+                          [name]="m.name"
+                          [count]="m.overdueTaskCount ?? 0"
+                        />
+                      </td>
+                    }
                     <td>
                       <mf-active-badge [active]="m.isActive" />
                     </td>
@@ -193,8 +257,22 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   private readonly injector = inject(Injector);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
+  private readonly auth = inject(AuthStore);
+  private readonly wide = viewportAtLeast(CLIENT_COLUMN_MIN_PX);
+
   protected readonly defaultSort = 'matterRef';
-  protected readonly columns = COLUMNS;
+  /** Counts are null without Task.View: the two columns are not rendered then. */
+  protected readonly counts = computed(() => this.auth.has('Task.View'));
+  protected readonly showClient = computed(() => this.wide());
+  /** The columns of the grid, in order; the keys the filter definitions point at. */
+  protected readonly columns = computed(() => [
+    'matterRef',
+    'name',
+    ...(this.showClient() ? ['client'] : []),
+    ...(this.counts() ? ['openTasks', 'overdue'] : []),
+    'status',
+  ]);
+  protected readonly skeleton = computed(() => this.columns().map((key) => BONES[key]));
 
   protected readonly clientChip = computed(() => {
     const first = this.rows()[0];

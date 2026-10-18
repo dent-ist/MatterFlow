@@ -89,6 +89,25 @@
   overflow-wrap: anywhere;
 }
 
+/* A cell that holds one clipped line (the Matter cell, a client name): a fixed width, so a long text is cut with an ellipsis instead of
+   widening the column; the Name column stays the spring. */
+.pg-table td.pg-fix {
+  width: 15rem;
+  max-width: 15rem;
+}
+
+.pg-table td.pg-fix--client {
+  width: 12rem;
+  max-width: 12rem;
+}
+
+.pg-clip {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .pg-namecell {
   display: flex;
   align-items: center;
@@ -102,6 +121,18 @@
 
 .pg-nowrap {
   white-space: nowrap;
+}
+
+/* Count columns (Open tasks, Overdue; WP9): the number and its header sit on the right edge, the column is only as wide as its words. */
+.pg-table th.pg-num {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pg-table td.pg-num {
+  width: 1%;
+  text-align: right;
 }
 
 .pg-table th button {

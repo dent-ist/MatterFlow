@@ -55,6 +55,8 @@ export class SortHeader {
   readonly sort = input<string | null | undefined>(undefined);
   /** The field the list is sorted by when `sort` is empty. */
   readonly defaultSort = input.required<string>();
+  /** Counts: the first click sends the descending form (the busiest record first); the next click reverses. */
+  readonly firstDesc = input(false);
   readonly sorted = output<string>();
 
   protected readonly ariaValue = computed(() =>
@@ -69,7 +71,9 @@ export class SortHeader {
         : 'pi-sort-alt';
   });
   protected next(): string {
-    return nextSort(this.sort() || this.defaultSort(), this.mfSort());
+    const current = this.sort() || this.defaultSort();
+    if (this.firstDesc() && current !== `-${this.mfSort()}`) return `-${this.mfSort()}`;
+    return nextSort(current, this.mfSort());
   }
 }
 

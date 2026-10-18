@@ -255,7 +255,7 @@ test.describe('Column filters on the record lists', () => {
   });
 
   test.describe("Client's Matters", () => {
-    test('the grid has the column filters in the client page, New matter beside the Filters button, and keeps the headers when empty', async ({
+    test('the grid has the column filters in the client page, no second New matter in the tab (the header has it), and keeps the headers when empty', async ({
       page,
       seed,
     }) => {
@@ -270,7 +270,8 @@ test.describe('Column filters on the record lists', () => {
       await expect(rows).toHaveCount(2);
       await expect(page.locator('#client-matter-search, #client-matter-status')).toHaveCount(0);
       await expect(text(page, 'Name')).toBeVisible();
-      await expect(page.locator('[data-create-matter]')).toBeVisible(); // the tab's own button (the header has the primary one too, WP3)
+      await expect(page.locator('[data-create-matter]')).toHaveCount(0); // the header owns New matter (WP9)
+      await expect(page.locator('[data-page-actions] [data-action="new-matter"]')).toBeVisible();
 
       await expect(select(page, 'Status')).toHaveValue('active'); // open by default (WP8 #270)
       await text(page, 'Name').fill(`beta ${token}`);

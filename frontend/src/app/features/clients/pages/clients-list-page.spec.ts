@@ -303,4 +303,90 @@ describe('ClientsListPage', () => {
 
     expect(buttonByLabel(fixture.nativeElement, 'New client')).toBeUndefined();
   });
+
+  describe('Open tasks and Overdue (WP9, #266, #268)', () => {
+    const rowsOf = (el: HTMLElement) => Array.from(el.querySelectorAll('tbody tr'));
+
+    it('shows Open tasks and Overdue with Task.View: a link to the Task Queue above 0, plain 0 and an en dash at 0', async () => {
+      const fixture = await create(['Client.View', 'Task.View']);
+      api.listClients.mockReturnValue(
+        ok(
+          pageOfClients(
+            aClient({ clientId: 1, openTaskCount: 12, overdueTaskCount: 3 }),
+            aClient({ clientId: 2, name: 'Quiet LLC', openTaskCount: 0, overdueTaskCount: 0 }),
+          ),
+        ),
+      );
+      fixture.componentRef.setInput('sort', 'name');
+      await settle(fixture);
+      const el: HTMLElement = fixture.nativeElement;
+
+      const heads = Array.from(el.querySelectorAll('thead tr:first-child th')).map((h) =>
+        h.textContent!.trim(),
+      );
+      expect(heads).toEqual([
+        'Client number',
+        'Name',
+        'Matters',
+        'Open tasks',
+        'Overdue',
+        'Status',
+      ]);
+      const [busy, quiet] = rowsOf(el);
+      const open = busy.querySelector<HTMLAnchorElement>('[data-count=open] a')!;
+      expect(open.textContent!.trim()).toBe('12');
+      expect(open.getAttribute('aria-label')).toBe('12 open tasks in Acme Corp');
+      expect(open.getAttribute('href')).toBe(
+        '/tasks?client=1&status=NEW&status=IN_PROGRESS&status=ON_HOLD',
+      );
+      const overdue = busy.querySelector<HTMLAnchorElement>('[data-count=overdue] a')!;
+      expect(overdue.getAttribute('aria-label')).toBe('3 overdue tasks in Acme Corp');
+      expect(overdue.getAttribute('href')).toBe(
+        '/tasks?client=1&status=NEW&status=IN_PROGRESS&status=ON_HOLD&overdue=true',
+      );
+      expect(overdue.querySelector('.pi-exclamation-circle')).not.toBeNull();
+      // Zero work is not an error: 0 and an en dash, no link.
+      expect(quiet.querySelector('[data-count=open]')!.textContent!.trim()).toBe('0');
+      expect(quiet.querySelector('[data-count=overdue] [aria-hidden=true]')!.textContent).toBe('–');
+      expect(quiet.querySelectorAll('[data-count] a')).toHaveLength(0);
+    });
+
+    it('leaves both columns out without Task.View', async () => {
+      const fixture = await create(['Client.View']);
+      const el: HTMLElement = fixture.nativeElement;
+      const heads = Array.from(el.querySelectorAll('thead tr:first-child th')).map((h) =>
+        h.textContent!.trim(),
+      );
+      expect(heads).toEqual(['Client number', 'Name', 'Matters', 'Status']);
+      expect(el.querySelector('[data-count]')).toBeNull();
+    });
+
+    it('sorts by the counts, the first click descending, and shows aria-sort', async () => {
+      const fixture = await create(['Client.View', 'Task.View']);
+      fixture.componentRef.setInput('sort', '-openTasks');
+      await settle(fixture);
+      const el: HTMLElement = fixture.nativeElement;
+      const th = Array.from(el.querySelectorAll('thead th')).find((h) =>
+        h.textContent!.includes('Open tasks'),
+      )!;
+      expect(th.getAttribute('aria-sort')).toBe('descending');
+      const overdue = Array.from(el.querySelectorAll('thead th')).find((h) =>
+        h.textContent!.includes('Overdue'),
+      )!;
+      overdue.querySelector('button')!.click();
+      expect(navigate).toHaveBeenLastCalledWith([], {
+        queryParams: { sort: '-overdue', page: null },
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('has the name as the one link and the number as plain text', async () => {
+      const fixture = await create(['Client.View', 'Task.View']);
+      const row = fixture.nativeElement.querySelector('tbody tr') as HTMLElement;
+      const links = Array.from(row.querySelectorAll('a')).filter((a) => !a.closest('[data-count]'));
+      expect(links).toHaveLength(1);
+      expect(links[0].textContent!.trim()).toBe('Acme Corp');
+      expect(row.querySelector('td.pg-mono a')).toBeNull();
+    });
+  });
 });
