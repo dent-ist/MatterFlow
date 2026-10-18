@@ -243,6 +243,7 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
           [state]="loadState()"
           [columns]="prefs().columns"
           [density]="prefs().density"
+          [colWidths]="colWidths()"
           [sort]="tableSort()"
           [dir]="tableDir()"
           [filtered]="filtered()"

@@ -137,6 +137,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
         [state]="loadState()"
         [columns]="prefs().columns"
         [density]="prefs().density"
+        [colWidths]="colWidths()"
         [sort]="tableSort()"
         [dir]="tableDir()"
         [filtered]="empty().noMatch"

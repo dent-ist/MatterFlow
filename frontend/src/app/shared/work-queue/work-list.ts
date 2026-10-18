@@ -19,6 +19,7 @@ import { ROW_SHORTCUTS, ShortcutRegistry } from '../layout/shortcut-registry';
 import { PageFooter } from '../ui/page-footer';
 import { Pager } from '../ui/pager';
 import { Density } from './column-prefs';
+import { ColumnWidthMap } from './column-widths';
 import { PAGE_SIZES, SortDirection } from './queue-filters';
 import { resultsAnnouncement } from './list-announce';
 import { TaskTable } from './task-table';
@@ -56,6 +57,7 @@ export type WorkListState = 'loading' | 'ready' | 'error';
       [emptyParts]="emptyParts()"
       [nearEmpty]="nearEmptyShown()"
       [density]="density()"
+      [colWidths]="colWidths()"
       [sort]="sort()"
       [dir]="dir()"
       [assignLink]="assignLink()"
@@ -98,6 +100,8 @@ export class WorkList {
   readonly state = input<WorkListState>('loading');
   readonly columns = input.required<readonly string[]>();
   readonly density = input<Density>('comfortable');
+  /** The widths the user chose for this scope (sparse, rem): see `work-widths.ts`. */
+  readonly colWidths = input<ColumnWidthMap>({});
   readonly sort = input<string | null>(null);
   readonly dir = input<SortDirection | null>(null);
   readonly caption = input('Tasks');

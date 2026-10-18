@@ -29,6 +29,8 @@ import {
   saveDensity,
   savePageSize,
 } from './column-prefs';
+import { ColumnWidthMap } from './column-widths';
+import { WorkWidths } from './work-widths';
 import { forgetLastView, loadLastView, saveLastView } from './last-view';
 import {
   DEFAULT_PAGE_SIZE,
@@ -135,6 +137,11 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   /** Column choices made or reset in this visit, by scope: they win over storage, so a change shows at once and a reset forgets it. */
   private readonly columnChoices = signal<Readonly<Record<string, readonly string[] | null>>>({});
   private readonly density = signal<Density>('comfortable');
+  private readonly widthStore = inject(WorkWidths);
+  /** The widths the user chose for the current scope (#203): sparse, rem, clamped; a tab change is another scope. */
+  protected readonly colWidths = computed<ColumnWidthMap>(() =>
+    this.widthStore.widths(this.columnScope(), this.userId()),
+  );
   /** The current tab's default set, for "Reset columns". */
   protected readonly columnDefaults = computed(() => defaultColumns(this.columnScope()));
   /** The current tab's columns and the page's density. */
