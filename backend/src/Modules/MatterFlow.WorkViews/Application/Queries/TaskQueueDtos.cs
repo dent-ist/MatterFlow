@@ -82,7 +82,7 @@ public sealed record TaskQueuePage(
 /// The size of each Task Queue quick view, over the whole Task set the viewer may see and never narrowed by the filters of the request (like My Work's
 /// attention strip). Each equals the grid total of the same view's filters and the Dashboard tile for the same query. <c>OnHold</c> is the status On Hold
 /// (always open); <c>DueSoon</c> excludes the overdue Tasks (the Dashboard's tile); <c>MyPod</c> is open Tasks in the viewer's primary Pod and is null
-/// (absent) for a viewer without one; <c>RecentlyCompleted</c> is Completed in the last 30 days of the viewer's calendar; <c>CreatedByMe</c> is any status.
+/// (absent) for a viewer without one; <c>RecentlyCompleted</c> is Completed in the last 30 days of the viewer's calendar, today included (the Dashboard tile's window); <c>CreatedByMe</c> is open Tasks only, like My Work's Created by me.
 /// </summary>
 public sealed record TaskQueueViewCounts(
     [property: Required] int Open,

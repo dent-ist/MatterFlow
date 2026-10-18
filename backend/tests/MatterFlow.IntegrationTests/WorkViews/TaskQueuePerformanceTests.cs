@@ -139,7 +139,7 @@ public sealed partial class TaskQueuePerformanceTests(SqlServerFixture sql, ITes
         var warm = await OkAsync(await http.GetAsync(query));
         var views = warm.GetProperty("views");
         views.GetProperty("open").GetInt32().ShouldBe(TaskCount * 9 / 10);
-        views.GetProperty("createdByMe").GetInt32().ShouldBe(TaskCount);
+        views.GetProperty("createdByMe").GetInt32().ShouldBe(TaskCount * 9 / 10); // open tasks only (#222)
 
         var elapsed = new List<int>();
         for (var i = 0; i < 7; i++)

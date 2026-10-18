@@ -64,6 +64,9 @@ public sealed class TaskQueueViewCountsApiTests(SqlServerFixture sql) : IAsyncLi
             new("timed-later", "NEW", "bob", normal, D(10, 14), At(10, 1), At(10, 14, 20)),
             new("mine-done-new", "COMPLETED", "ann", normal, null, At(10, 10)),
             new("mine-done-edge", "COMPLETED", "ann", normal, null, At(9, 14)),
+            // The window is 30 days including today (BUG-TQ7): the 29th day back is in, the 30th is out, in every zone below.
+            new("mine-done-d29", "COMPLETED", "ann", normal, null, At(9, 16, 12)),
+            new("mine-done-d30", "COMPLETED", "ann", normal, null, At(9, 14, 23)),
             new("mine-done-edge2", "COMPLETED", "bob", normal, null, At(9, 15, 1)),
             new("mine-done-old", "COMPLETED", "bob", normal, null, At(8, 1)),
             new("mine-cancelled", "CANCELLED", "ann", normal, D(10, 1), At(10, 12)),
@@ -108,7 +111,7 @@ public sealed class TaskQueueViewCountsApiTests(SqlServerFixture sql) : IAsyncLi
     private static string RecentFrom(string zone)
     {
         var local = TimeZoneInfo.ConvertTimeFromUtc(Now, TimeZoneInfo.FindSystemTimeZoneById(zone));
-        return DateOnly.FromDateTime(local).AddDays(-30).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        return DateOnly.FromDateTime(local).AddDays(-29).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     }
 
     [Theory]
@@ -126,7 +129,7 @@ public sealed class TaskQueueViewCountsApiTests(SqlServerFixture sql) : IAsyncLi
         var open = string.Join("&", OpenQuery);
 
         // The Dashboard tiles: the count, and the total of the tile's own drill-through query, are the view's count.
-        foreach (var (view, tile) in new[] { ("open", "open"), ("unassigned", "unassigned"), ("overdue", "overdue"), ("dueSoon", "dueSoon"), ("asap", "asapOpen"), ("onHold", "onHold") })
+        foreach (var (view, tile) in new[] { ("open", "open"), ("unassigned", "unassigned"), ("overdue", "overdue"), ("dueSoon", "dueSoon"), ("asap", "asapOpen"), ("onHold", "onHold"), ("recentlyCompleted", "completed") })
         {
             var t = dashboard.GetProperty(tile);
             views.GetProperty(view).GetInt32().ShouldBe(t.GetProperty("count").GetInt32(), $"{user} {zone} {view} = Dashboard {tile}");
@@ -139,7 +142,8 @@ public sealed class TaskQueueViewCountsApiTests(SqlServerFixture sql) : IAsyncLi
         (await GridTotalAsync(client, zone, open + "&overdue=true")).ShouldBe(views.GetProperty("overdue").GetInt32());
         (await GridTotalAsync(client, zone, "status=ON_HOLD")).ShouldBe(views.GetProperty("onHold").GetInt32());
         (await GridTotalAsync(client, zone, $"status=COMPLETED&completedFrom={RecentFrom(zone)}")).ShouldBe(views.GetProperty("recentlyCompleted").GetInt32());
-        (await GridTotalAsync(client, zone, $"creator={_ids[user]}")).ShouldBe(views.GetProperty("createdByMe").GetInt32());
+        // Created by me is open tasks only, like My Work's (#222).
+        (await GridTotalAsync(client, zone, $"{open}&creator={_ids[user]}")).ShouldBe(views.GetProperty("createdByMe").GetInt32());
         if (user == "ann")
             (await GridTotalAsync(client, zone, $"{open}&pod={_pod}")).ShouldBe(views.GetProperty("myPod").GetInt32());
         else
@@ -148,6 +152,23 @@ public sealed class TaskQueueViewCountsApiTests(SqlServerFixture sql) : IAsyncLi
         // Something to count: the seed has overdue, due soon, ASAP and held tasks in every zone.
         foreach (var view in new[] { "open", "unassigned", "overdue", "dueSoon", "asap", "onHold", "recentlyCompleted" })
             views.GetProperty(view).GetInt32().ShouldBeGreaterThan(0, $"{user} {zone} {view}");
+    }
+
+    [Theory]
+    [InlineData("America/New_York")]
+    [InlineData("Pacific/Auckland")]
+    [InlineData("America/Los_Angeles")]
+    public async Task Recently_completed_starts_29_days_back_like_the_dashboard_tile(string zone)
+    {
+        var from = RecentFrom(zone);
+        var dashboard = await GetAsync(_clients["ann"], "/api/v1/dashboard?fresh=true", zone);
+        dashboard.GetProperty("completed").GetProperty("query").GetString()!.ShouldContain($"completedFrom={from}");
+
+        var page = await GetAsync(_clients["ann"], $"/api/v1/task-queue?pageSize=50&status=COMPLETED&completedFrom={from}&q=mine-done-", zone);
+        var titles = page.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("title").GetString()).ToList();
+        titles.ShouldContain("mine-done-d29", $"{zone}: completed 29 days ago is in");
+        titles.ShouldNotContain("mine-done-d30", $"{zone}: completed 30 days ago is out");
+        page.GetProperty("views").GetProperty("recentlyCompleted").GetInt32().ShouldBe(dashboard.GetProperty("completed").GetProperty("count").GetInt32());
     }
 
     [Fact]

@@ -47,7 +47,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         return new TaskQueuePage(items, total, page.Page, page.PageSize, queueClock.ZoneId, await ViewCountsAsync(queueClock, ct));
     }
 
-    /// <summary>Days back that "Recently completed" reaches (the quick view's window; the client sends the same day as <c>completedFrom</c>).</summary>
+    /// <summary>Days of the "Recently completed" window, today included (the Dashboard Completed tile's 30 days; the client sends the same first day as <c>completedFrom</c>).</summary>
     public const int RecentlyCompletedDays = 30;
 
     /// <summary>
@@ -65,7 +65,8 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         var open = tasks.Where(TaskQueueRules.Open);
         var overdue = TaskQueueRules.Overdue(queueClock);
         var dueSoon = TaskQueueRules.DueSoonExcludingOverdue(queueClock);
-        var recentFrom = queueClock.StartOfDayUtc(queueClock.Today.AddDays(-RecentlyCompletedDays));
+        // 30 days including today, like the Dashboard's Completed tile (BUG-TQ7).
+        var recentFrom = queueClock.StartOfDayUtc(DashboardRules.PeriodStart(queueClock.Today, RecentlyCompletedDays));
         var podId = primaryPod ?? 0;
         var creator = me ?? 0;
 
@@ -79,7 +80,8 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
             OnHold = tasks.Count(t => t.Status == TaskStatusCode.OnHold),
             MyPod = open.Count(t => t.AssignedPodId == podId),
             RecentlyCompleted = tasks.Count(t => t.Status == TaskStatusCode.Completed && t.StatusChangedAtUtc >= recentFrom),
-            CreatedByMe = tasks.Count(t => t.CreatedByUserId == creator),
+            // Open tasks only, like My Work's Created by me (#222).
+            CreatedByMe = open.Count(t => t.CreatedByUserId == creator),
         }).FirstOrDefaultAsync(ct);
 
         return counts is null
