@@ -270,7 +270,7 @@ test.describe('Column filters on the record lists', () => {
       await expect(rows).toHaveCount(2);
       await expect(page.locator('#client-matter-search, #client-matter-status')).toHaveCount(0);
       await expect(text(page, 'Name')).toBeVisible();
-      await expect(page.getByRole('button', { name: 'New matter' })).toBeVisible();
+      await expect(page.locator('[data-create-matter]')).toBeVisible(); // the tab's own button (the header has the primary one too, WP3)
 
       await expect(select(page, 'Status')).toHaveValue('active'); // open by default (WP8 #270)
       await text(page, 'Name').fill(`beta ${token}`);

@@ -1,0 +1,80 @@
+:host {
+  position: relative;
+  display: inline-flex;
+}
+
+.am__trigger {
+  min-width: 32px;
+  padding: 0 var(--mf-s2);
+}
+
+.am__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 1100;
+  display: grid;
+  min-width: 14rem;
+  max-width: min(22rem, calc(100vw - 2 * var(--mf-s4)));
+  padding: var(--mf-s1);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-2);
+}
+
+.am__item {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s3);
+  min-height: var(--mf-row-h);
+  padding: var(--mf-s1) var(--mf-s3);
+  border: 0;
+  border-radius: var(--mf-radius);
+  background: transparent;
+  color: var(--mf-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--mf-surface-alt);
+  }
+
+  &[aria-disabled='true'] {
+    cursor: not-allowed;
+
+    .am__text > :first-child {
+      opacity: 0.7;
+    }
+  }
+
+  .pi {
+    flex: none;
+    width: 1rem;
+    color: var(--mf-text-muted);
+  }
+}
+
+.am__text {
+  display: grid;
+  min-width: 0;
+}
+
+.am__reason {
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+/* Phones: 44 px targets (H2, #254). */
+@media (max-width: 639.98px) {
+  .am__trigger {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .am__item {
+    min-height: 44px;
+  }
+}

@@ -235,9 +235,10 @@ export class PageHeader {
         <span class="rt__ref" data-ref>{{ ref() }}</span>
       }
     </ng-content>
-    <span class="rt__name" data-name>{{ name() }}</span>
+    <span class="rt__name" data-name [attr.title]="clamp() ? name() : null">{{ name() }}</span>
     <span class="rt__extra"><ng-content /></span>
   `,
+  host: { '[class.rt--clamp]': 'clamp()', '[class.rt--stack]': 'stack()' },
   styles: `
     :host {
       display: inline-flex;
@@ -259,11 +260,55 @@ export class PageHeader {
       gap: var(--mf-s2);
       font-size: var(--mf-fs-md);
     }
+    /* One-line header (H1, #253): the reference and the badges keep their size, the name takes what is left and stops at two lines. */
+    :host(.rt--clamp) {
+      display: flex;
+      flex-wrap: nowrap;
+      min-width: 0;
+      max-width: 100%;
+    }
+    :host(.rt--clamp) .rt__name {
+      display: -webkit-box;
+      flex: 0 1 auto;
+      min-width: 4rem;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+    }
+    :host(.rt--clamp) > :not(.rt__name) {
+      flex: none;
+    }
+    /* Phones: the reference and the badges come first; the name follows on the same line when it fits, else it takes the line under them. */
+    @media (max-width: 639.98px) {
+      :host(.rt--clamp.rt--stack) {
+        flex-wrap: wrap;
+        column-gap: var(--mf-s2);
+      }
+      :host(.rt--clamp.rt--stack) .rt__ref {
+        font-size: var(--mf-fs-lg);
+      }
+      :host(.rt--clamp.rt--stack) .rt__name {
+        max-width: 100%;
+        order: 3;
+      }
+      :host(.rt--clamp.rt--stack) .rt__extra {
+        display: contents;
+      }
+      :host(.rt--clamp.rt--stack) .rt__extra > * {
+        order: 2;
+      }
+    }
   `,
 })
 export class RecordTitle {
   readonly ref = input('');
   readonly name = input('');
+  /** The name stops at two lines (its full text is the tooltip and stays in the document); the reference and badges keep their size. */
+  readonly clamp = input(false);
+  /** With `clamp`, on phones the name goes under the reference and the badges (a record that has a reference). */
+  readonly stack = input(false);
 }
 
 /** The same decorative section icon for the few screens that have their own H1 instead of `mf-page-header` (403, 404, error, access pending). */

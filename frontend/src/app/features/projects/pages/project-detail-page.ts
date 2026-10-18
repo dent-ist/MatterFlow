@@ -10,12 +10,10 @@ import {
   untracked,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { ProjectResponse, ProjectsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
-import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { DetailLayout } from '../../../shared/ui/detail-layout';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
@@ -28,23 +26,19 @@ import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
 import { RecordSkeleton } from '../../../shared/ui/record-skeleton';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { FixedPage } from '../../../shared/ui/fixed-page';
-import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
+import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 
 /**
- * Project detail (UX S07): the project's Tasks grid in the main area and a Details panel on the right (fields, custom fields, Edit and
- * Archive / Restore). Activity opens in a right-side drawer from the header button; an old `?tab=activity` link opens it too.
+ * Project detail (UX S07): the project's Tasks grid in the main area and a Details panel on the right (fields, custom fields). The header holds Edit, Activity, Create task and the overflow (Archive / Restore). Activity opens in a right-side drawer; an old `?tab=activity` link opens it too.
  */
 @Component({
   selector: 'mf-project-detail-page',
   imports: [
     FixedPage,
-    PageHeader,
-    RecordTitle,
+    RecordHeader,
     ActiveBadge,
     RecordState,
     RecordSkeleton,
-    Button,
-    HasPermissionDirective,
     ConfirmDialog,
     MatterRef,
     ActivityDrawer,
@@ -64,31 +58,28 @@ import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
         }
         @case ('ready') {
           @if (project(); as p) {
-            <mf-page-header
-              [crumbs]="[
+            <mf-record-header
+              kind="project"
+              [parents]="[
                 { label: 'Matters', link: '/matters' },
                 { label: p.matterRef, link: ['/matters', p.matterId] },
-                { label: p.name },
               ]"
+              [current]="p.name"
+              [name]="p.name"
+              [active]="p.isActive"
+              inactiveLabel="Archived"
+              [actions]="headerActions()"
             >
-              <mf-record-title mfTitle [name]="p.name">
-                <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
-              </mf-record-title>
-              @if (canSeeActivity()) {
-                <p-button
-                  mfActions
-                  label="Activity"
-                  icon="pi pi-history"
-                  severity="secondary"
-                  data-activity-button
-                  (onClick)="setActivityOpen(true)"
+              <span mfContext data-matter
+                >Matter
+                <mf-matter-ref
+                  [value]="p.matterRef"
+                  [link]="canLinkMatter() ? ['/matters', p.matterId] : null"
+                  [copy]="false"
                 />
-              }
-              <p class="pg-muted" data-matter>
-                Matter: <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />
                 {{ p.matterName }}
-              </p>
-            </mf-page-header>
+              </span>
+            </mf-record-header>
 
             @if (!p.isActive) {
               <div class="pg-banner" role="note" data-archived-banner>
@@ -103,24 +94,11 @@ import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
                   [matterId]="p.matterId"
                   [projectId]="p.projectId"
                   [canCreate]="p.isActive"
+                  [showCreate]="false"
                 />
               </section>
 
               <div mfAside>
-                <div class="pg-panel-actions">
-                  <p-button
-                    *mfHasPermission="'Project.Edit'"
-                    label="Edit"
-                    severity="secondary"
-                    (onClick)="go('/projects/' + p.projectId + '/edit')"
-                  />
-                  <p-button
-                    *mfHasPermission="'Project.Archive'"
-                    [label]="p.isActive ? 'Archive' : 'Restore'"
-                    severity="secondary"
-                    (onClick)="toggleOpen.set(true)"
-                  />
-                </div>
                 <dl class="pg-dl pg-dl--stacked">
                   <dt>Name</dt>
                   <dd>{{ p.name }}</dd>
@@ -207,6 +185,50 @@ export class ProjectDetailPage {
   protected readonly toggleOpen = signal(false);
   protected readonly busy = signal(false);
   protected readonly canSeeActivity = computed(() => this.auth.has('Audit.View'));
+  protected readonly canLinkMatter = computed(() => this.auth.canLink('matter'));
+  /** The header's actions (C3, #255): Edit, Activity, the primary Create task and, in the overflow, Archive / Restore. */
+  protected readonly headerActions = computed<RecordAction[]>(() => {
+    const p = this.project();
+    if (!p) return [];
+    const list: RecordAction[] = [];
+    if (this.auth.has('Project.Edit')) {
+      list.push({
+        id: 'edit',
+        role: 'edit',
+        label: 'Edit',
+        run: () => this.go('/projects/' + p.projectId + '/edit'),
+      });
+    }
+    if (this.canSeeActivity()) {
+      list.push({
+        id: 'activity',
+        role: 'activity',
+        label: 'Activity',
+        icon: 'pi-history',
+        run: () => this.setActivityOpen(true),
+      });
+    }
+    if (this.auth.has('Task.Create')) {
+      list.push({
+        id: 'create-task',
+        role: 'primary',
+        label: 'Create task',
+        icon: 'pi-plus',
+        disabled: !p.isActive,
+        reason: "This project is archived. New tasks can't select it.",
+        run: () => this.go('/tasks/new?matterId=' + p.matterId + '&projectId=' + p.projectId),
+      });
+    }
+    if (this.auth.has('Project.Archive')) {
+      list.push({
+        id: 'toggle-active',
+        role: 'state',
+        label: p.isActive ? 'Archive' : 'Restore',
+        run: () => this.toggleOpen.set(true),
+      });
+    }
+    return list;
+  });
 
   constructor() {
     // `Name: Details` once the record is known, `Project` until then (#248). A project has one view, named Details.

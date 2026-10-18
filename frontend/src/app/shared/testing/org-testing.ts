@@ -128,6 +128,19 @@ export function buttonByLabel(root: ParentNode, label: string): HTMLButtonElemen
   );
 }
 
+/** Opens the "..." overflow menu of a record header (`data-overflow`) and returns the menu, or null when the header has no overflow. */
+export async function openOverflow(
+  fixture: ComponentFixture<unknown>,
+): Promise<HTMLElement | null> {
+  const trigger = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+    '[data-overflow]',
+  );
+  if (!trigger) return null;
+  trigger.click();
+  await settle(fixture);
+  return (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[role=menu]');
+}
+
 /**
  * The query string a page's `ListFilters` reads (it reads the route; the specs mock the router itself). Provide `provider` and call
  * `set` before or after creating the page: `const query = fakeQuery(); ... providers: [query.provider]; query.set({ name: 'acme' })`.

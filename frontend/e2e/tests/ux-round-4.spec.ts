@@ -474,7 +474,7 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     const client = await seed.client();
     await page.goto(`/clients/${client.clientId}?tab=matters`);
     const [button, input] = [
-      (await page.getByRole('button', { name: 'New matter' }).boundingBox())!,
+      (await page.locator('[data-create-matter]').boundingBox())!,
       (await page.getByRole('button', { name: /^Filters/ }).boundingBox())!,
     ];
     expect(

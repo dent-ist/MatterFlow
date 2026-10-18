@@ -40,8 +40,14 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     const details = page.getByRole('tabpanel');
     await expect(details).toContainText(client.clientNumber);
     await expect(details).toContainText(client.name);
-    await expect(details.getByRole('button', { name: 'Edit' })).toBeVisible();
-    await expect(details.getByRole('button', { name: 'Set inactive' })).toBeVisible();
+    // Edit is in the header and Set inactive in its overflow (WP3); the tab holds no action.
+    await expect(
+      page.locator('[data-page-actions]').getByRole('button', { name: 'Edit' }),
+    ).toBeVisible();
+    await expect(details.getByRole('button', { name: 'Edit' })).toHaveCount(0);
+    await page.locator('[data-overflow]').click();
+    await expect(page.getByRole('menuitem', { name: 'Set inactive' })).toBeVisible();
+    await page.keyboard.press('Escape');
 
     await page.getByRole('tab', { name: 'Matters' }).click();
     await expect(page).toHaveURL(/tab=matters/);
@@ -55,7 +61,8 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
       .boundingBox())!;
     expect(grid.width).toBeGreaterThan(1280 - 300); // the whole page width (less the menu), not beside a panel
 
-    await page.getByRole('button', { name: 'New matter' }).click();
+    // The primary action of the header (the Matters tab has its own button too until the list package drops it).
+    await page.locator('[data-page-actions]').getByRole('button', { name: 'New matter' }).click();
     await expect(page).toHaveURL(new RegExp(`/matters/new\\?clientId=${client.clientId}$`));
   });
 
@@ -68,8 +75,10 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await seed.matter({ client, number: '00002', name: `Beta ${uid()}` });
     await page.goto(`/clients/${client.clientId}?tab=matters`);
 
-    await page.getByRole('button', { name: /^Filters/ }).click();
-    await page.getByRole('textbox', { name: 'Filter by Name' }).fill(active.name);
+    // The filter row is open by default from 640 px (WP8 #270).
+    const nameFilter = page.getByRole('textbox', { name: 'Filter by Name' });
+    await expect(nameFilter).toBeVisible();
+    await nameFilter.fill(active.name);
     await expect(page).toHaveURL(/name=/);
     await expect(page.getByRole('row').filter({ hasText: 'Beta' })).toHaveCount(0);
     await expect(page.getByRole('row').filter({ hasText: active.name })).toHaveCount(1);
@@ -119,7 +128,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(page).not.toHaveURL(/tab=activity/);
   });
 
-  test('Matter: Details, Tasks, Projects and Assets tabs; Details has the facts, Edit and Set inactive', async ({
+  test('Matter: Details, Tasks, Projects and Assets tabs; Details has the facts, the header has Edit and the overflow Set inactive', async ({
     page,
     seed,
   }) => {
@@ -134,10 +143,15 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     const details = page.getByRole('tabpanel');
     await expect(details).toContainText('Sensitive');
     await expect(details).toContainText(world.matter.matterRef);
-    await expect(details.getByRole('button', { name: 'Edit' })).toBeVisible();
-    // One task is open, so deactivation is disabled and says why.
-    await expect(details.getByRole('button', { name: 'Set inactive' })).toBeDisabled();
-    await expect(details).toContainText("aren't Completed or Cancelled");
+    await expect(
+      page.locator('[data-page-actions]').getByRole('button', { name: 'Edit' }),
+    ).toBeVisible();
+    // One task is open, so deactivation is disabled in the overflow and says why.
+    await page.locator('[data-overflow]').click();
+    const toggle = page.getByRole('menuitem', { name: /Set inactive/ });
+    await expect(toggle).toHaveAttribute('aria-disabled', 'true');
+    await expect(toggle).toContainText("aren't Completed or Cancelled");
+    await page.keyboard.press('Escape');
 
     await page.getByRole('tab', { name: /Tasks/ }).click();
     await expect(page).toHaveURL(/tab=tasks/);
@@ -170,7 +184,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     expect(await grid.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
   });
 
-  test('Project: Tasks grid in the main area; Archive and Restore from the Details panel', async ({
+  test('Project: Tasks grid in the main area; Archive and Restore from the header overflow', async ({
     page,
     seed,
   }) => {
@@ -180,10 +194,13 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await page.goto(`/projects/${project.projectId}`);
 
     await expect(page.getByRole('heading', { level: 1 })).toContainText(project.name);
-    await showDetails(page);
-    await panel(page).getByRole('button', { name: 'Archive' }).click();
+    await page.locator('[data-overflow]').click();
+    await page.getByRole('menuitem', { name: 'Archive' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Archive' }).click();
-    await expect(panel(page).getByRole('button', { name: 'Restore' })).toBeVisible();
+    await page.locator('[data-overflow]').click();
+    await expect(page.getByRole('menuitem', { name: 'Restore' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await showDetails(page);
     await expect(panel(page)).toContainText('Archived');
   });
 
@@ -203,7 +220,10 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
 
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(url);
-    await expect(page.getByRole('tabpanel').getByRole('button', { name: 'Edit' })).toBeVisible();
+    // On a phone the header keeps the primary action and the overflow; Edit is in the menu.
+    await page.locator('[data-overflow]').click();
+    await expect(page.getByRole('menuitem', { name: 'Edit' })).toBeVisible();
+    await page.keyboard.press('Escape');
     await noHorizontalScroll(page);
     const dt = (await page.locator('[data-details-tab] dt').first().boundingBox())!;
     const dd = (await page.locator('[data-details-tab] dd').first().boundingBox())!;

@@ -16,6 +16,7 @@ import {
   aProject,
   apiError,
   buttonByLabel,
+  openOverflow,
   fakeQuery,
   ok,
   pageOfProjects,
@@ -106,12 +107,15 @@ describe('MatterDetailPage', () => {
     expect(writeText).toHaveBeenCalledWith('00343-00012');
   });
 
-  it('shows the sensitivity warning banner only for sensitive matters (display only)', async () => {
+  it('shows the sensitivity note in the header only for sensitive matters (display only), with a badge that points to it', async () => {
     await create(['Matter.View'], aMatter({ isSensitive: true }));
-    const banner = el().querySelector('[data-sensitive-banner]');
+    const banner = el().querySelector('[data-record-header] [data-sensitive-banner]');
     expect(banner?.textContent).toContain('Sensitive matter');
     expect(banner?.textContent).toContain('does not restrict');
     expect(banner?.getAttribute('role')).toBe('note');
+    expect(el().querySelector('h1 mf-sensitive-badge span')?.getAttribute('aria-describedby')).toBe(
+      banner?.id,
+    );
 
     TestBed.resetTestingModule();
     await create(['Matter.View'], aMatter({ isSensitive: false }));
@@ -124,7 +128,20 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('[data-inactive-banner]')?.textContent).toContain(
       "New tasks can't be created and completed or cancelled tasks can't be reopened.",
     );
+    await openOverflow(fixture);
     expect(buttonByLabel(el(), 'Set active')).toBeDefined();
+  });
+
+  it('keeps Create task focusable with its reason while the matter is inactive', async () => {
+    await create(['Matter.View', 'Task.Create'], aMatter({ isActive: false }));
+    const button = el().querySelector<HTMLButtonElement>('[data-action=create-task]')!;
+    expect(button.disabled).toBe(false);
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    expect(document.getElementById(button.getAttribute('aria-describedby')!)?.textContent).toBe(
+      "This matter is inactive. New tasks can't be created.",
+    );
+    button.click();
+    expect(navigateByUrl).not.toHaveBeenCalled();
   });
 
   it('has Details, Tasks, Projects and Assets tabs, Details first and the default; Tasks needs Task.View, Projects lists the matter projects', async () => {
@@ -280,7 +297,7 @@ describe('MatterDetailPage', () => {
     expect(grid.querySelector('[data-filters-toggle]')!.textContent).toContain('(1)');
 
     expect(el().querySelector('mf-scoped-tasks [data-create-task]')).toBeNull();
-    buttonByLabel(el(), 'Create task in this matter')!.click();
+    buttonByLabel(el(), 'Create task')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/tasks/new?matterId=7');
   });
 
@@ -379,18 +396,56 @@ describe('MatterDetailPage', () => {
     expect(buttonByLabel(el(), 'Edit')).toBeUndefined();
     expect(buttonByLabel(el(), 'New project')).toBeUndefined();
     expect(buttonByLabel(el(), 'Set inactive')).toBeUndefined();
+    expect(el().querySelector('[data-overflow]')).toBeNull(); // nothing to put in it: no empty "..."
 
     TestBed.resetTestingModule();
     await create(['Matter.View', 'Matter.Edit', 'Project.Create']);
+    // Edit is in the header; New project is a secondary create, so it is in the overflow.
+    expect(buttonByLabel(el(), 'New project')).toBeUndefined();
+    await openOverflow(fixture);
     buttonByLabel(el(), 'New project')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/projects/new?matterId=7');
     buttonByLabel(el(), 'Edit')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/matters/7/edit');
   });
 
+  it('puts exactly Edit, Activity, Create task and the overflow (New project, New asset, Set inactive) in the header; no action is left in the Details tab', async () => {
+    await create([
+      'Matter.View',
+      'Matter.Edit',
+      'Matter.SetActive',
+      'Project.Create',
+      'Asset.Create',
+      'Task.Create',
+      'Audit.View',
+    ]);
+    expect(
+      Array.from(el().querySelectorAll('[data-page-actions] > button')).map((b) =>
+        b.getAttribute('data-action'),
+      ),
+    ).toEqual(['edit', 'activity', 'create-task']);
+    expect(el().querySelector('[data-details-tab] button:not(mf-copy-button button)')).toBeNull();
+    const menu = await openOverflow(fixture);
+    expect(
+      Array.from(menu!.querySelectorAll('[role=menuitem]')).map((b) =>
+        b.getAttribute('data-action'),
+      ),
+    ).toEqual(['new-project', 'new-asset', 'toggle-active']);
+  });
+
+  it('shows the Projects tab action in its empty state', async () => {
+    await create(['Matter.View', 'Project.View', 'Project.Create'], aMatter({ projectCount: 0 }));
+    projects.listProjects.mockReturnValue(ok(pageOfProjects()));
+    await fixture.componentInstance.load();
+    await openTab('projects');
+    el().querySelector<HTMLButtonElement>('[data-empty-new-project] button')!.click();
+    expect(navigateByUrl).toHaveBeenCalledWith('/projects/new?matterId=7');
+  });
+
   it('confirms before deactivating and saves with the row version', async () => {
     await create(['Matter.View', 'Matter.SetActive']);
 
+    await openOverflow(fixture);
     buttonByLabel(el(), 'Set inactive')!.click();
     await settle(fixture);
     const dialog = document.body.querySelector('p-dialog') as HTMLElement;
@@ -411,10 +466,15 @@ describe('MatterDetailPage', () => {
   it('disables deactivation with a visible reason while tasks are open', async () => {
     await create(['Matter.View', 'Matter.SetActive'], aMatter({ openTaskCount: 3 }));
 
-    expect(buttonByLabel(el(), 'Set inactive')!.disabled).toBe(true);
-    expect(el().querySelector('[data-toggle-reason]')?.textContent).toContain(
+    await openOverflow(fixture);
+    const item = el().querySelector<HTMLButtonElement>('[data-action=toggle-active]')!;
+    expect(item.getAttribute('aria-disabled')).toBe('true'); // focusable, says why
+    expect(document.getElementById(item.getAttribute('aria-describedby')!)?.textContent).toContain(
       "This matter has 3 tasks that aren't Completed or Cancelled. Finish or cancel them first.",
     );
+    item.click();
+    await settle(fixture);
+    expect(document.body.querySelector('p-dialog [data-toggle-body]')).toBeNull();
   });
 
   it('explains a server refusal (open tasks) in a dialog with a way to the open tasks', async () => {
@@ -423,6 +483,7 @@ describe('MatterDetailPage', () => {
       apiError(409, { status: 409, code: 'MATTER_HAS_OPEN_TASKS', meta: { openTaskCount: 2 } }),
     );
 
+    await openOverflow(fixture);
     buttonByLabel(el(), 'Set inactive')!.click();
     await settle(fixture);
     buttonByLabel(document.body.querySelector('p-dialog') as HTMLElement, 'Set inactive')!.click();

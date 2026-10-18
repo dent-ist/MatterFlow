@@ -1,7 +1,8 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { DetailLayout } from './detail-layout';
-import { Crumb, PageHeader } from './page-header';
+import { Crumb } from './page-header';
+import { RecordHeader } from './record-header';
 import { RecordKind } from './record-state';
 import { MfTab, Tabs } from './tabs';
 
@@ -52,18 +53,13 @@ const ROWS = [0, 1, 2, 3, 4] as const;
  */
 @Component({
   selector: 'mf-record-skeleton',
-  imports: [PageHeader, Tabs, DetailLayout, NgTemplateOutlet],
+  imports: [RecordHeader, Tabs, DetailLayout, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="rk" aria-busy="true" data-record-skeleton [attr.data-kind]="kind()">
       <span class="mf-sr-only" role="status" data-loading>Loading {{ kind() }}</span>
       <div class="rk__vis" inert aria-hidden="true">
-        <mf-page-header [crumbs]="crumbs()">
-          <span mfTitle class="rk__bar rk__title"></span>
-          @if (kind() !== 'client') {
-            <p class="rk__sub"><span class="rk__bar rk__subbar"></span></p>
-          }
-        </mf-page-header>
+        <mf-record-header [kind]="kind()" [parents]="parents()" [skeleton]="true" />
         @if (kind() === 'project') {
           <mf-detail-layout [collapsible]="true">
             <section mfMain>
@@ -125,20 +121,6 @@ const ROWS = [0, 1, 2, 3, 4] as const;
       background: var(--mf-border);
       opacity: 0.55;
     }
-    .rk__title {
-      width: 14rem;
-      max-width: 100%;
-      height: 1em;
-      vertical-align: middle;
-    }
-    .rk__sub {
-      margin: 0;
-    }
-    .rk__subbar {
-      width: min(14rem, 60%);
-      height: 0.8em;
-      vertical-align: middle;
-    }
     .rk__rows {
       border-top: 1px solid var(--mf-border);
     }
@@ -195,24 +177,15 @@ export class RecordSkeleton {
     const t = this.activeTab();
     return this.tabs().some((x) => x.key === t) ? t : 'details';
   });
-  protected readonly crumbs = computed<Crumb[]>(() => {
+  /** The steps before the current page, from the address; the bars are the parts the record will fill in. */
+  protected readonly parents = computed<Crumb[]>(() => {
     switch (this.kind()) {
       case 'client':
-        return [
-          { label: 'Clients', link: '/clients' },
-          { label: '', skeleton: true },
-        ];
+        return [{ label: 'Clients', link: '/clients' }];
       case 'matter':
-        return [
-          { label: 'Matters', link: '/matters' },
-          { label: '', skeleton: true },
-        ];
+        return [{ label: 'Matters', link: '/matters' }];
       default:
-        return [
-          { label: 'Matters', link: '/matters' },
-          { label: '', skeleton: true },
-          { label: '', skeleton: true },
-        ];
+        return [{ label: 'Matters', link: '/matters' }, { label: '' }];
     }
   });
 }

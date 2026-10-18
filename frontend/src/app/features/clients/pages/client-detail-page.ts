@@ -10,12 +10,10 @@ import {
   untracked,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { ClientResponse, ClientsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
-import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
@@ -27,26 +25,26 @@ import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/r
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
-import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
+import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 
 type Tab = 'details' | 'matters';
 
+/** Why New matter is unavailable for an inactive client (the same words as the Matters tab's button). */
+const INACTIVE_REASON = 'This client is inactive. Set it active to add matters.';
+
 /**
  * Client detail (UX S05): Details / Matters tabs across the full page width. Details is first and the default (number, name, status,
- * custom fields, Edit and Set inactive / Set active); Matters is the client's Matters grid. The tab is kept in `?tab=` (absent for
- * Details). Activity opens in a right-side drawer from the header button; `?tab=activity` opens the drawer and shows Details.
+ * custom fields); Matters is the client's Matters grid. The tab is kept in `?tab=` (absent for
+ * Details). The header holds Edit, Activity, New matter and the overflow (Set inactive / Set active). Activity opens in a right-side drawer; `?tab=activity` opens the drawer and shows Details.
  */
 @Component({
   selector: 'mf-client-detail-page',
   imports: [
     FixedPage,
-    PageHeader,
-    RecordTitle,
+    RecordHeader,
     ActiveBadge,
     RecordState,
     RecordSkeleton,
-    Button,
-    HasPermissionDirective,
     ConfirmDialog,
     ActivityDrawer,
     Tabs,
@@ -66,26 +64,15 @@ type Tab = 'details' | 'matters';
         }
         @case ('ready') {
           @if (client(); as c) {
-            <mf-page-header
-              [crumbs]="[
-                { label: 'Clients', link: '/clients' },
-                { label: c.clientNumber + ' ' + c.name },
-              ]"
-            >
-              <mf-record-title mfTitle [ref]="c.clientNumber" [name]="c.name">
-                <mf-active-badge [active]="c.isActive" />
-              </mf-record-title>
-              @if (canSeeActivity()) {
-                <p-button
-                  mfActions
-                  label="Activity"
-                  icon="pi pi-history"
-                  severity="secondary"
-                  data-activity-button
-                  (onClick)="setActivityOpen(true)"
-                />
-              }
-            </mf-page-header>
+            <mf-record-header
+              kind="client"
+              [parents]="[{ label: 'Clients', link: '/clients' }]"
+              [current]="c.clientNumber + ' ' + c.name"
+              [ref]="c.clientNumber"
+              [name]="c.name"
+              [active]="c.isActive"
+              [actions]="headerActions()"
+            />
 
             <mf-tabs
               label="Client sections"
@@ -105,20 +92,6 @@ type Tab = 'details' | 'matters';
                   <div class="mf-scroll-area" mfScrollArea="Client details" data-details-tab>
                     <div class="pg-details">
                       <h2 class="pg-sr">Details</h2>
-                      <div class="pg-panel-actions">
-                        <p-button
-                          *mfHasPermission="'Client.Edit'"
-                          label="Edit"
-                          severity="secondary"
-                          (onClick)="go('/clients/' + c.clientId + '/edit')"
-                        />
-                        <p-button
-                          *mfHasPermission="'Client.Edit'"
-                          [label]="c.isActive ? 'Set inactive' : 'Set active'"
-                          severity="secondary"
-                          (onClick)="toggleOpen.set(true)"
-                        />
-                      </div>
                       <dl class="pg-dl">
                         <dt>Client number</dt>
                         <dd class="pg-mono">{{ c.clientNumber }}</dd>
@@ -226,6 +199,49 @@ export class ClientDetailPage {
     this.tab() === 'matters' ? 'matters' : 'details',
   );
   protected readonly canSeeActivity = computed(() => this.auth.has('Audit.View'));
+  /** The header's actions (C3, #255): Edit, Activity, the primary New matter and, in the overflow, Set inactive / Set active. */
+  protected readonly headerActions = computed<RecordAction[]>(() => {
+    const c = this.client();
+    if (!c) return [];
+    const list: RecordAction[] = [];
+    if (this.auth.has('Client.Edit')) {
+      list.push({
+        id: 'edit',
+        role: 'edit',
+        label: 'Edit',
+        run: () => this.go('/clients/' + c.clientId + '/edit'),
+      });
+    }
+    if (this.canSeeActivity()) {
+      list.push({
+        id: 'activity',
+        role: 'activity',
+        label: 'Activity',
+        icon: 'pi-history',
+        run: () => this.setActivityOpen(true),
+      });
+    }
+    if (this.auth.has('Matter.Create')) {
+      list.push({
+        id: 'new-matter',
+        role: 'primary',
+        label: 'New matter',
+        icon: 'pi-plus',
+        disabled: !c.isActive,
+        reason: INACTIVE_REASON,
+        run: () => this.go('/matters/new?clientId=' + c.clientId),
+      });
+    }
+    if (this.auth.has('Client.Edit')) {
+      list.push({
+        id: 'toggle-active',
+        role: 'state',
+        label: c.isActive ? 'Set inactive' : 'Set active',
+        run: () => this.toggleOpen.set(true),
+      });
+    }
+    return list;
+  });
 
   constructor() {
     // `00107 Hartwell & Bryce LLP: Matters` once the record is known, `Client` until then (#248); kept through tab changes.

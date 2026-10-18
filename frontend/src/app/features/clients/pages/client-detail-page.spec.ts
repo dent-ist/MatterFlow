@@ -12,6 +12,7 @@ import {
   buttonByLabel,
   fakeQuery,
   ok,
+  openOverflow,
   pageOfMatters,
   provideFakeMe,
   settle,
@@ -229,19 +230,21 @@ describe('ClientDetailPage', () => {
     await create(['Client.View']);
 
     expect(buttonByLabel(el(), 'Edit')).toBeUndefined();
-    expect(buttonByLabel(el(), 'Set inactive')).toBeUndefined();
     expect(buttonByLabel(el(), 'Activity')).toBeUndefined();
+    expect(el().querySelector('[data-page-actions] button')).toBeNull(); // no empty "..." either
+    expect(el().querySelector('[data-overflow]')).toBeNull();
     await openTab('matters');
     expect(buttonByLabel(el(), 'New matter')).toBeUndefined();
     expect(matters.listMatters).not.toHaveBeenCalled();
     expect(el().querySelector('[data-no-access=matters]')).not.toBeNull();
   });
 
-  it('opens Edit from the Details tab', async () => {
+  it('opens Edit from the header; the Details tab holds no action', async () => {
     await create(['Client.View', 'Client.Edit']);
 
     const edit = buttonByLabel(el(), 'Edit')!;
-    expect(el().querySelector('[data-details-tab]')!.contains(edit)).toBe(true);
+    expect(el().querySelector('[data-page-actions]')!.contains(edit)).toBe(true);
+    expect(el().querySelector('[data-details-tab] button')).toBeNull();
     edit.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/clients/1/edit');
   });
@@ -260,20 +263,44 @@ describe('ClientDetailPage', () => {
     await fixture.componentInstance.load();
     await settle(fixture);
 
-    const button = buttonByLabel(el(), 'New matter')!;
-    expect(button.disabled).toBe(false); // focusable, so the reason is reachable
-    expect(button.getAttribute('aria-disabled')).toBe('true');
+    // The header's primary action and, in the Matters tab, its own button: both stay focusable and say why.
     const reason = 'This client is inactive. Set it active to add matters.';
+    const header = el().querySelector<HTMLButtonElement>(
+      '[data-page-actions] [data-action=new-matter]',
+    )!;
+    expect(header.disabled).toBe(false); // focusable, so the reason is reachable
+    expect(header.getAttribute('aria-disabled')).toBe('true');
+    expect(header.getAttribute('title')).toBe(reason);
+    expect(document.getElementById(header.getAttribute('aria-describedby')!)?.textContent).toBe(
+      reason,
+    );
+    header.click();
+    const button = el().querySelector<HTMLButtonElement>('[data-create-matter]')!;
     expect(el().querySelector('[data-inactive-reason]')?.textContent).toContain(reason);
-    expect(button.getAttribute('title')).toBe(reason);
     expect(button.getAttribute('aria-describedby')).toBe('client-inactive-reason');
     button.click();
-    expect(navigateByUrl).not.toHaveBeenCalled(); // activating it does nothing
+    expect(navigateByUrl).not.toHaveBeenCalled(); // activating either does nothing
+  });
+
+  it('puts New matter in the header as the primary action and Set inactive in the overflow', async () => {
+    await create(['Client.View', 'Client.Edit', 'Matter.Create']);
+
+    const header = Array.from(el().querySelectorAll('[data-page-actions] > button')).map((b) =>
+      b.getAttribute('data-action'),
+    );
+    expect(header).toEqual(['edit', 'new-matter']);
+    const menu = await openOverflow(fixture);
+    expect(
+      Array.from(menu!.querySelectorAll('[role=menuitem]')).map((b) => b.textContent!.trim()),
+    ).toEqual(['Set inactive']);
+    el().querySelector<HTMLButtonElement>('[data-page-actions] [data-action=new-matter]')!.click();
+    expect(navigateByUrl).toHaveBeenCalledWith('/matters/new?clientId=1');
   });
 
   it('confirms before setting a client inactive and states the consequence', async () => {
     await create(['Client.View', 'Client.Edit']);
 
+    await openOverflow(fixture);
     buttonByLabel(el(), 'Set inactive')!.click();
     await settle(fixture);
     const dialog = document.body.querySelector('p-dialog') as HTMLElement;
@@ -289,7 +316,7 @@ describe('ClientDetailPage', () => {
       isActive: false,
       rowVersion: 'AAAA',
     });
-    expect(el().querySelector('[data-details-tab] mf-active-badge')?.textContent).toContain(
+    expect(el().querySelector('[data-record-header] mf-active-badge')?.textContent).toContain(
       'Inactive',
     );
   });

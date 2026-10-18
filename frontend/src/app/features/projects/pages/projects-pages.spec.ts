@@ -15,6 +15,7 @@ import {
   aProject,
   apiError,
   buttonByLabel,
+  openOverflow,
   fakeQuery,
   ok,
   pageOfMatters,
@@ -380,7 +381,7 @@ describe('Projects pages', () => {
       expect(buttonByLabel(el(), 'Edit')).toBeUndefined();
     });
 
-    it('shows the fields in a labelled Details panel with Edit and Archive, gated by permission', async () => {
+    it('shows the fields in a labelled Details panel; Edit is in the header and Archive in the overflow, gated by permission', async () => {
       await create(['Project.View', 'Project.Edit', 'Project.Archive']);
 
       const aside = el().querySelector('aside')!;
@@ -389,10 +390,17 @@ describe('Projects pages', () => {
       ).toContain('Details');
       expect(aside.textContent).toContain('Custodian Processing');
       expect(aside.textContent).toContain('Active');
-      expect(aside.contains(buttonByLabel(el(), 'Edit')!)).toBe(true);
-      expect(aside.contains(buttonByLabel(el(), 'Archive')!)).toBe(true);
+      // nothing that changes the project stays in the panel
+      expect(buttonByLabel(aside, 'Edit')).toBeUndefined();
+      expect(buttonByLabel(aside, 'Archive')).toBeUndefined();
+      const edit = buttonByLabel(el(), 'Edit')!;
+      expect(el().querySelector('[data-page-actions]')!.contains(edit)).toBe(true);
+      const menu = await openOverflow(fixture);
+      expect(menu!.querySelector('[data-action=toggle-active]')?.textContent?.trim()).toBe(
+        'Archive',
+      );
       expect(el().querySelector('[role=tab]')).toBeNull(); // no Details / Activity tabs any more
-      buttonByLabel(el(), 'Edit')!.click();
+      edit.click();
       expect(navigateByUrl).toHaveBeenCalledWith('/projects/3/edit');
     });
 
@@ -430,12 +438,23 @@ describe('Projects pages', () => {
       expect(el().querySelector('mf-scoped-tasks [aria-label="Filter by Project"]')).toBeNull();
     });
 
-    it('offers Create task prefilled with the matter and the project', async () => {
+    it('offers Create task in the header (once), prefilled with the matter and the project', async () => {
       await create(['Project.View', 'Task.View', 'Task.Create']);
 
-      el().querySelector<HTMLButtonElement>('mf-scoped-tasks [data-create-task] button')!.click();
+      expect(el().querySelector('mf-scoped-tasks [data-create-task]')).toBeNull();
+      buttonByLabel(el(), 'Create task')!.click();
 
       expect(navigateByUrl).toHaveBeenCalledWith('/tasks/new?matterId=7&projectId=3');
+    });
+
+    it('keeps Create task focusable with its reason for an archived project', async () => {
+      await create(['Project.View', 'Task.View', 'Task.Create'], aProject({ isActive: false }));
+
+      const button = el().querySelector<HTMLButtonElement>('[data-action=create-task]')!;
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+      expect(button.disabled).toBe(false);
+      button.click();
+      expect(navigateByUrl).not.toHaveBeenCalled();
     });
 
     it('says so, and loads nothing, without Task.View', async () => {
@@ -448,6 +467,7 @@ describe('Projects pages', () => {
     it('archives after confirmation, explaining that existing tasks keep the project', async () => {
       await create(['Project.View', 'Project.Archive']);
 
+      await openOverflow(fixture);
       buttonByLabel(el(), 'Archive')!.click();
       await settle(fixture);
       const dialog = document.body.querySelector('p-dialog') as HTMLElement;
@@ -470,6 +490,7 @@ describe('Projects pages', () => {
       expect(el().querySelector('[data-archived-banner]')?.textContent).toContain(
         "new tasks can't select it",
       );
+      await openOverflow(fixture);
       expect(buttonByLabel(el(), 'Restore')).toBeDefined();
     });
 

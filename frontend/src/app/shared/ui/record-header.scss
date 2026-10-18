@@ -1,0 +1,270 @@
+/* The header of a Client, Matter or Project page (record-header.ts). Tokens only. */
+:host {
+  display: block;
+  /* Above the toolbar and the grid under it, so the overflow menu is not painted under them. */
+  position: relative;
+  z-index: 8;
+  margin-bottom: var(--mf-s2);
+}
+
+/* The title is the H2 size (22 px, spec 4.2); on a phone the H3 size, so a reference and a name fit in two lines. */
+.rh {
+  --rh-fs: var(--mf-fs-h2);
+}
+
+.rh__crumbs {
+  margin: 0 0 var(--mf-s1);
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+/* The trail never wraps: the earlier steps keep their size and the current page takes what is left and ends in an ellipsis. */
+.rh__trail {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0 var(--mf-s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rh__trail li {
+  flex: none;
+  white-space: nowrap;
+}
+
+.rh__trail li + li::before {
+  content: '>';
+  margin-right: var(--mf-s2);
+}
+
+.rh__trail li.rh__cur {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rh__crumbs a {
+  color: var(--mf-link);
+}
+
+.rh__back {
+  display: none;
+}
+
+.rh__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mf-s3);
+  min-height: 32px;
+}
+
+.rh__title {
+  display: flex;
+  flex: 1 1 0;
+  align-items: flex-start;
+  gap: var(--mf-s2);
+  min-width: 0;
+  margin: 0;
+  font-size: var(--rh-fs);
+  line-height: 1.3;
+}
+
+.rh__title > mf-record-title {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* The section icon (the one in the left navigation): neutral, a little smaller than the text, centred on the first line. */
+.rh__icon {
+  flex: none;
+  color: var(--mf-text-muted);
+  font-size: calc(var(--rh-fs) * 0.75);
+  line-height: calc(var(--rh-fs) * 1.3);
+}
+
+.rh__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--mf-s2);
+}
+
+.rh__ctx {
+  margin: var(--mf-s1) 0 0;
+  overflow: hidden;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rh__ctx:empty {
+  display: none;
+}
+
+.rh__note {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  box-sizing: border-box;
+  height: 32px;
+  margin: var(--mf-s1) 0 0;
+  padding: 0 var(--mf-s3);
+  border: 1px solid var(--mf-warning);
+  border-radius: var(--mf-radius);
+  background: var(--mf-warning-bg);
+  color: var(--mf-warning);
+  font-size: var(--mf-fs-sm);
+  line-height: 1.3;
+}
+
+.rh__note .pi {
+  flex: none;
+}
+
+.rh__note-text {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+/* The loading state: the same boxes with grey bars. */
+.rh__sk {
+  display: inline-block;
+  border-radius: 3px;
+  background: var(--mf-border);
+  opacity: 0.55;
+  vertical-align: middle;
+}
+
+.rh__crumbs .rh__sk {
+  width: 9rem;
+  max-width: 100%;
+  height: 0.8em;
+}
+
+.rh__sk--title {
+  width: 14rem;
+  max-width: 100%;
+  height: 1em;
+}
+
+.rh__sk--ctx {
+  width: min(14rem, 60%);
+  height: 0.8em;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rh__sk {
+    animation: mf-record-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes mf-record-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/*
+ * Phones (below 640 px, as the work-list cards): "Back to ..." replaces the trail and shares its row with the primary action and the
+ * overflow (44 px targets), so the title, with the type icon, the reference, the badges and the name, has the full width (H2, #254).
+ */
+@media (max-width: 639.98px) {
+  :host {
+    margin-bottom: var(--mf-s1);
+  }
+
+  .rh {
+    --rh-fs: var(--mf-fs-h3);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--mf-s3);
+    align-items: center;
+  }
+
+  .rh__row {
+    display: contents;
+  }
+
+  .rh__crumbs {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .rh__actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .rh__title {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .rh__ctx,
+  .rh__note {
+    grid-column: 1 / -1;
+  }
+
+  .rh__ctx {
+    margin-top: 0;
+  }
+
+  .rh__trail {
+    display: none;
+  }
+
+  .rh__back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--mf-s2);
+    min-height: 44px;
+  }
+
+  .rh__btn {
+    min-height: 44px;
+  }
+
+  /* The reference is body size here, so the reference, its copy button and both badges (Active, Sensitive) fit one line at 375 px. */
+  .rh__title mf-matter-ref {
+    font-size: var(--mf-fs-lg);
+  }
+
+  /* The skeleton is as tall as the loaded title on a phone: the reference and badge line (24 px; 32 px with a Matter's copy button) and one line of name. */
+  /* A Project's title is one line of name with the Archived/Active badge aligned on its baseline: 26.2 px at the H3 size. */
+  .rh--sk[data-kind='project'] .rh__title {
+    min-height: 26.2px;
+  }
+
+  .rh--sk[data-kind='client'] .rh__title {
+    min-height: calc(var(--rh-fs) * 1.3 + var(--mf-s1) + 24px);
+  }
+
+  .rh--sk[data-kind='matter'] .rh__title {
+    min-height: calc(var(--rh-fs) * 1.3 + var(--mf-s1) + 32px);
+  }
+}
+
+/* A note on a very narrow screen may use a second line. */
+@media (max-width: 399.98px) {
+  .rh__note {
+    height: auto;
+    min-height: 32px;
+    padding-block: 0;
+    line-height: 1.2;
+  }
+
+  .rh__note-text {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+}

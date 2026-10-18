@@ -35,7 +35,7 @@ import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
 import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/record-skeleton';
 import { naturalCompare } from '../../../shared/ui/list-helpers';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
-import { PageHeader, RecordTitle } from '../../../shared/ui/page-header';
+import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 
 /** The API's largest page (`PageRequest.MaxPageSize`). */
@@ -44,8 +44,8 @@ const PROJECTS_PAGE_MAX = 100;
 type Tab = 'details' | 'tasks' | 'projects' | 'assets';
 
 /**
- * Matter detail (UX S06): reference with copy button, sensitivity and inactive banners, activation with the open-task rule,
- * and Details / Tasks / Projects / Assets tabs across the full page width (Details first and the default: fields, Edit, Set inactive;
+ * Matter detail (UX S06): reference with copy button, the inactive banners, activation with the open-task rule,
+ * and Details / Tasks / Projects / Assets tabs across the full page width (Details first and the default: the fields;
  * Tasks is the shared work-queue table filtered to the Matter). Activity opens in a right-side drawer. The tab is kept in `?tab=`
  * (absent for Details); `?tab=activity` opens the drawer.
  */
@@ -54,8 +54,7 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
   imports: [
     FixedPage,
     ScrollArea,
-    PageHeader,
-    RecordTitle,
+    RecordHeader,
     ActiveBadge,
     RecordState,
     RecordSkeleton,
@@ -83,44 +82,18 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
         }
         @case ('ready') {
           @if (matter(); as m) {
-            <mf-page-header
-              [crumbs]="[
-                { label: 'Matters', link: '/matters' },
-                { label: m.matterRef + ' ' + m.name },
-              ]"
+            <mf-record-header
+              kind="matter"
+              [parents]="[{ label: 'Matters', link: '/matters' }]"
+              [current]="m.matterRef + ' ' + m.name"
+              [ref]="m.matterRef"
+              [name]="m.name"
+              [active]="m.isActive"
+              [sensitive]="m.isSensitive"
+              [actions]="headerActions()"
             >
-              <mf-record-title mfTitle [name]="m.name">
-                <mf-matter-ref mfRef [value]="m.matterRef" />
-                <mf-active-badge [active]="m.isActive" />
-              </mf-record-title>
-              @if (canSeeActivity()) {
-                <p-button
-                  mfActions
-                  label="Activity"
-                  icon="pi pi-history"
-                  severity="secondary"
-                  data-activity-button
-                  (onClick)="setActivityOpen(true)"
-                />
-              }
-              <p-button
-                mfActions
-                *mfHasPermission="'Project.Create'"
-                label="New project"
-                icon="pi pi-plus"
-                severity="secondary"
-                (onClick)="go('/projects/new?matterId=' + m.matterId)"
-              />
-              <p-button
-                mfActions
-                *mfHasPermission="'Task.Create'"
-                label="Create task in this matter"
-                icon="pi pi-plus"
-                [disabled]="!m.isActive"
-                (onClick)="go('/tasks/new?matterId=' + m.matterId)"
-              />
-              <p class="pg-muted" data-client>
-                Client:
+              <span mfContext data-client
+                >Client
                 @if (canLinkClient()) {
                   <a class="pg-link" [routerLink]="['/clients', m.clientId]"
                     ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
@@ -128,16 +101,9 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                 } @else {
                   <span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}
                 }
-              </p>
-            </mf-page-header>
+              </span>
+            </mf-record-header>
 
-            @if (m.isSensitive) {
-              <div class="pg-banner" role="note" data-sensitive-banner>
-                <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-                <strong> Sensitive matter.</strong> Handle its tasks and assets with extra care.
-                This flag is a warning only and does not restrict who can see them.
-              </div>
-            }
             @if (!m.isActive) {
               <div class="pg-banner" role="note" data-inactive-banner>
                 This matter is inactive. New tasks can't be created and completed or cancelled tasks
@@ -168,36 +134,6 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                   <div class="mf-scroll-area" mfScrollArea="Matter details" data-details-tab>
                     <div class="pg-details">
                       <h2 class="pg-sr">Details</h2>
-                      <div class="pg-panel-actions">
-                        <p-button
-                          *mfHasPermission="'Matter.Edit'"
-                          label="Edit"
-                          severity="secondary"
-                          (onClick)="go('/matters/' + m.matterId + '/edit')"
-                        />
-                        <p-button
-                          *mfHasPermission="'Matter.SetActive'"
-                          [label]="m.isActive ? 'Set inactive' : 'Set active'"
-                          severity="secondary"
-                          [disabled]="deactivateBlocked()"
-                          [attr.aria-describedby]="
-                            deactivateBlocked() ? 'matter-toggle-reason' : null
-                          "
-                          (onClick)="toggleOpen.set(true)"
-                        />
-                      </div>
-                      @if (deactivateBlocked()) {
-                        <p
-                          *mfHasPermission="'Matter.SetActive'"
-                          class="pg-reason"
-                          id="matter-toggle-reason"
-                          data-toggle-reason
-                        >
-                          <i class="pi pi-info-circle" aria-hidden="true"></i>
-                          This matter has {{ m.openTaskCount }} tasks that aren't Completed or
-                          Cancelled. Finish or cancel them first.
-                        </p>
-                      }
                       <dl class="pg-dl">
                         <dt>Matter reference</dt>
                         <dd><mf-matter-ref [value]="m.matterRef" /></dd>
@@ -252,6 +188,14 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                   @if (tabProjects().length === 0) {
                     <div class="pg-state" data-empty="projects">
                       No projects in this matter yet.
+                      <p-button
+                        *mfHasPermission="'Project.Create'"
+                        label="New project"
+                        icon="pi pi-plus"
+                        severity="secondary"
+                        data-empty-new-project
+                        (onClick)="go('/projects/new?matterId=' + m.matterId)"
+                      />
                     </div>
                   } @else {
                     <div class="mf-scroll" mfScrollArea="Projects list">
@@ -433,6 +377,72 @@ export class MatterDetailPage {
   protected readonly deactivateBlocked = computed(() => {
     const m = this.matter();
     return !!m && m.isActive && (m.openTaskCount ?? 0) > 0;
+  });
+  /**
+   * The header's actions (C3, #255): Edit, Activity, the primary Create task and, in the overflow, New project, New asset and
+   * Set inactive / Set active (disabled with its reason while tasks are open).
+   */
+  protected readonly headerActions = computed<RecordAction[]>(() => {
+    const m = this.matter();
+    if (!m) return [];
+    const list: RecordAction[] = [];
+    if (this.auth.has('Matter.Edit')) {
+      list.push({
+        id: 'edit',
+        role: 'edit',
+        label: 'Edit',
+        run: () => this.go('/matters/' + m.matterId + '/edit'),
+      });
+    }
+    if (this.canSeeActivity()) {
+      list.push({
+        id: 'activity',
+        role: 'activity',
+        label: 'Activity',
+        icon: 'pi-history',
+        run: () => this.setActivityOpen(true),
+      });
+    }
+    if (this.auth.has('Task.Create')) {
+      list.push({
+        id: 'create-task',
+        role: 'primary',
+        label: 'Create task',
+        icon: 'pi-plus',
+        disabled: !m.isActive,
+        reason: "This matter is inactive. New tasks can't be created.",
+        run: () => this.go('/tasks/new?matterId=' + m.matterId),
+      });
+    }
+    if (this.auth.has('Project.Create')) {
+      list.push({
+        id: 'new-project',
+        role: 'secondary',
+        label: 'New project',
+        icon: 'pi-plus',
+        run: () => this.go('/projects/new?matterId=' + m.matterId),
+      });
+    }
+    if (this.auth.has('Asset.Create')) {
+      list.push({
+        id: 'new-asset',
+        role: 'secondary',
+        label: 'New asset',
+        icon: 'pi-plus',
+        run: () => this.go('/assets/new?matterId=' + m.matterId),
+      });
+    }
+    if (this.auth.has('Matter.SetActive')) {
+      list.push({
+        id: 'toggle-active',
+        role: 'state',
+        label: m.isActive ? 'Set inactive' : 'Set active',
+        disabled: this.deactivateBlocked(),
+        reason: `This matter has ${m.openTaskCount} tasks that aren't Completed or Cancelled. Finish or cancel them first.`,
+        run: () => this.toggleOpen.set(true),
+      });
+    }
+    return list;
   });
 
   constructor() {

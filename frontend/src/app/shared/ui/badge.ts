@@ -25,7 +25,7 @@ export function workflowStatusTone(status: string | null | undefined): BadgeTone
   selector: 'mf-badge',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <span class="badge" [attr.data-tone]="tone()">
+    <span class="badge" [attr.data-tone]="tone()" [attr.aria-describedby]="describedBy()">
       @if (icon()) {
         <i class="pi" [class]="icon()" aria-hidden="true"></i>
       }
@@ -78,6 +78,8 @@ export class Badge {
   readonly tone = input<BadgeTone>('neutral');
   /** PrimeIcons class, for example `pi-check-circle`. */
   readonly icon = input<string | null>(null);
+  /** The id of an element that describes this badge (read out once with it). */
+  readonly describedBy = input<string | null>(null);
 }
 
 /** Active / Inactive state of a record (clients, matters, assets, steps...): green with a check, or grey. */
@@ -105,6 +107,15 @@ export class ActiveBadge {
   selector: 'mf-sensitive-badge',
   imports: [Badge],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<mf-badge tone="warning" icon="pi-lock" title="Sensitive matter">Sensitive</mf-badge>`,
+  template: `<mf-badge
+    tone="warning"
+    icon="pi-lock"
+    title="Sensitive matter"
+    [describedBy]="describedBy()"
+    >Sensitive</mf-badge
+  >`,
 })
-export class SensitiveBadge {}
+export class SensitiveBadge {
+  /** The id of the sentence that explains the flag (the header's note), so a screen reader hears it with the badge. */
+  readonly describedBy = input<string | null>(null);
+}

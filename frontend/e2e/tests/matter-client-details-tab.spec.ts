@@ -64,9 +64,16 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
       'href',
       `/clients/${world.client.clientId}`,
     );
-    await expect(panel.getByRole('button', { name: 'Edit' })).toBeVisible();
-    await expect(panel.getByRole('button', { name: 'Set inactive' })).toBeDisabled();
-    await expect(panel).toContainText("aren't Completed or Cancelled");
+    // The actions are in the header (WP3): Edit, and Set inactive in the overflow, disabled with its reason.
+    await expect(panel.getByRole('button', { name: 'Edit' })).toHaveCount(0);
+    await expect(
+      page.locator('[data-page-actions]').getByRole('button', { name: 'Edit' }),
+    ).toBeVisible();
+    await page.locator('[data-overflow]').click();
+    const blocked = page.getByRole('menuitem', { name: /Set inactive/ });
+    await expect(blocked).toHaveAttribute('aria-disabled', 'true');
+    await expect(blocked).toContainText("aren't Completed or Cancelled");
+    await page.keyboard.press('Escape');
     // Readable form-like list: left aligned, no wider than about 70 characters.
     const list = (await panel.locator('dl.pg-dl').boundingBox())!;
     const area = (await page
@@ -160,8 +167,10 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await expect(panel).toContainText(client.clientNumber);
     await expect(panel).toContainText(client.name);
     await expect(panel).toContainText('Active');
-    await expect(panel.getByRole('button', { name: 'Edit' })).toBeVisible();
-    await expect(panel.getByRole('button', { name: 'Set inactive' })).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Edit' })).toHaveCount(0); // the header has it (WP3)
+    await expect(
+      page.locator('[data-page-actions]').getByRole('button', { name: 'Edit' }),
+    ).toBeVisible();
     await expect(page.getByRole('row').filter({ hasText: matter.name })).toHaveCount(0);
 
     // Deep link and keyboard.
@@ -178,30 +187,31 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await expect(page.getByRole('row').filter({ hasText: matter.name })).toHaveCount(1);
   });
 
-  test('Edit from the Details tab opens the form and Cancel comes back to Details; Set inactive returns focus to its button', async ({
+  test('Edit from the header opens the form and Cancel comes back to Details; Set inactive from the overflow returns focus to the overflow button', async ({
     page,
     seed,
   }) => {
     const client = await seed.client({ name: `Edit Client ${uid()}` });
     await page.goto(`/clients/${client.clientId}`);
-    await page.getByRole('tabpanel').getByRole('button', { name: 'Edit' }).click();
+    await page.locator('[data-page-actions]').getByRole('button', { name: 'Edit' }).click();
     await expect(page).toHaveURL(new RegExp(`/clients/${client.clientId}/edit$`));
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page).toHaveURL(new RegExp(`/clients/${client.clientId}$`));
     await expect(tab(page, 'Details')).toHaveAttribute('aria-selected', 'true');
 
-    const toggle = page.getByRole('tabpanel').getByRole('button', { name: 'Set inactive' });
-    await toggle.click();
+    const overflow = page.locator('[data-overflow]');
+    await overflow.click();
+    await page.getByRole('menuitem', { name: 'Set inactive' }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
-    await expect(toggle).toBeFocused();
-    await toggle.click();
+    await expect(overflow).toBeFocused();
+    await overflow.click();
+    await page.getByRole('menuitem', { name: 'Set inactive' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Set inactive' }).click();
-    await expect(
-      page.getByRole('tabpanel').getByRole('button', { name: 'Set active' }),
-    ).toBeVisible();
+    await overflow.click();
+    await expect(page.getByRole('menuitem', { name: 'Set active' })).toBeVisible();
     await expect(page.getByRole('tabpanel')).toContainText('Inactive');
   });
 

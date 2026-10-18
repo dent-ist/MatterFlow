@@ -248,7 +248,7 @@ test.describe('Detail pages: loading skeleton (#247)', () => {
       await expect(skeleton).toBeVisible();
       await expect(skeleton).toHaveAttribute('aria-busy', 'true');
       await expect(skeleton.locator('[role=status]')).toHaveText(`Loading ${kind}`);
-      await expect(page.locator('nav[aria-label=Breadcrumb] a').first()).toBeVisible();
+      await expect(page.locator('nav[aria-label=Breadcrumb] a:visible').first()).toBeVisible();
       if (kind === 'project') {
         await expect(skeleton.locator('.rk__row')).toHaveCount(5);
       } else {
@@ -396,7 +396,7 @@ test.describe('Client Matters tab: New matter and the inactive-client rule (#250
     const empty = await seed.client();
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/clients/${empty.clientId}?tab=matters`);
-    await expect(page.getByRole('button', { name: 'New matter' })).toHaveCount(2); // toolbar and empty state
+    await expect(page.getByRole('button', { name: 'New matter' })).toHaveCount(3); // the header (WP3), the toolbar and the empty state
     await expect(page.getByRole('button', { name: 'Create matter' })).toHaveCount(0);
     await expect(page.locator('[data-create-matter]')).not.toHaveAttribute('aria-disabled', 'true');
     await shot(page, 'client-matters-empty-active');
@@ -405,8 +405,8 @@ test.describe('Client Matters tab: New matter and the inactive-client rule (#250
     const withMatter = await seed.client();
     await seed.matter({ client: withMatter });
     await page.goto(`/clients/${withMatter.clientId}?tab=matters`);
-    await expect(page.getByRole('button', { name: 'New matter' })).toHaveCount(1);
-    await page.getByRole('button', { name: 'New matter' }).click();
+    await expect(page.getByRole('button', { name: 'New matter' })).toHaveCount(2); // the header and the toolbar
+    await page.locator('[data-create-matter]').click();
     await expect(page).toHaveURL(new RegExp(`/matters/new\\?clientId=${withMatter.clientId}$`));
   });
 
