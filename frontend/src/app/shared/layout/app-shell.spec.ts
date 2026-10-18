@@ -134,12 +134,10 @@ describe('AppShell header search', () => {
     );
   });
 
-  it('has a Keyboard shortcuts button for people who do not know the key', async () => {
+  it('keeps the help out of the header: Keyboard shortcuts lives in the account menu', async () => {
     const fixture = await create(['Matter.View']);
-    const button = fixture.nativeElement.querySelector(
-      '[data-shortcut-help-button]',
-    ) as HTMLButtonElement;
-    expect(button.getAttribute('aria-label')).toBe('Keyboard shortcuts');
+    expect(fixture.nativeElement.querySelector('[data-shortcut-help-button]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('mf-user-menu')).not.toBeNull();
   });
 
   describe('phone menu (#164)', () => {

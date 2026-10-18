@@ -168,8 +168,7 @@
   border-radius: 999px;
 }
 
-/* Phones: the header must never be wider than the screen (UXR2-02). The keyboard-shortcut help is for keyboards, so it goes;
-   the name stays for screen readers only. */
+/* Phones: the header must never be wider than the screen (UXR2-02); the name stays for screen readers only. */
 @media (max-width: 480px) {
   .mf-header {
     gap: var(--mf-s2);
@@ -178,10 +177,6 @@
 
   .mf-logo {
     font-size: var(--mf-fs-md);
-  }
-
-  .mf-help-btn {
-    display: none;
   }
 }
 
