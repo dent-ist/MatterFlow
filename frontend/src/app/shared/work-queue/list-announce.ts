@@ -9,7 +9,8 @@ export function pageName(base: string, view: string | null | undefined): string 
 }
 
 /**
- * "Overdue: 101 tasks, showing 1 to 50", "101 tasks, showing 1 to 50", "1 task", "No tasks" (the view first when there is one).
+ * "Overdue: 101 tasks, showing 1 to 50", "Overdue: 101 tasks, page 3 of 3, showing 101 to 101", "1 task", "No tasks" (the view first when
+ * there is one). With more than one page the page is named; the message changes once per page change, so the live region says it once (#237).
  * @param scope the view or tab the list shows, or null.
  */
 export function resultsAnnouncement(
@@ -22,5 +23,7 @@ export function resultsAnnouncement(
   if (total === 0) return `${lead}No tasks`;
   if (total === 1) return `${lead}1 task`;
   const from = (page - 1) * pageSize + 1;
-  return `${lead}${total} tasks, showing ${from} to ${Math.min(total, page * pageSize)}`;
+  const pages = Math.ceil(total / pageSize);
+  const where = pages > 1 ? `page ${page} of ${pages}, ` : '';
+  return `${lead}${total} tasks, ${where}showing ${from} to ${Math.min(total, page * pageSize)}`;
 }

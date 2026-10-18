@@ -33,7 +33,7 @@ const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
 
 /**
  * Matters list (UX S06): inline column filters (Matter reference, Name, Client, Status with Active by default, and Sensitive under
- * "More filters"); a link from a Client keeps `?clientId=` as a removable chip. State lives in the URL.
+ * "Other filters"); a link from a Client keeps `?clientId=` as a removable chip. State lives in the URL.
  */
 @Component({
   selector: 'mf-matters-list-page',

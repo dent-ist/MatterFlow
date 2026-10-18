@@ -13,7 +13,7 @@ interface Cell {
  * The second header row of a filtered grid (docs/ux/column-filters-review.md 4.1): one `<td>` per visible column with that column's
  * 32 px control, generated from the screen's `FilterDef[]`. A filter with `span` > 1 takes the cells of the columns it searches
  * ("Filter by Title or Ref"); several filters of one column stack; a column without a filter gets an empty cell. Filters whose column
- * is not shown get no cell (they show as chips and in "More filters"). Put it in the table head under the header row, only while
+ * is not shown get no cell (they show as chips and in "Other filters"). Put it in the table head under the header row, only while
  * `filters.rowVisible()`:
  *
  *   <thead>

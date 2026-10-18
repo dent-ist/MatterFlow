@@ -10,7 +10,7 @@ import { FilterDef, FilterOption, FilterValue, PlainLink, paramsOf } from './fil
  *
  * Column of each filter (`ref` and `title` share one control that spans both): Title or Ref, Matter, Client, Project, Task type, Workflow,
  * Priority, Pod, Assignee, Creator, Requestor, Due, Status, Created, Updated. ASAP, Overdue and Closed (completed) have no column of
- * their own: they live in "More filters". `client`, `matter` and `project` (ids) are the link-only parameters of dashboard links.
+ * their own: they live in "Other filters". `client`, `matter` and `project` (ids) are the link-only parameters of dashboard links.
  */
 export interface QueueLookups {
   statuses?: readonly FilterOption[];
@@ -70,7 +70,14 @@ export function queueFilterDefs(
   };
   const defs: FilterDef[] = [
     // Ref and Title share the control: it searches the title and the task number.
-    { key: 'q', label: 'Title or Ref', column: 'ref', type: 'text', span: 2 },
+    {
+      key: 'q',
+      label: 'Title or Ref',
+      placeholder: 'Title or ref',
+      column: 'ref',
+      type: 'text',
+      span: 2,
+    },
     {
       key: 'status',
       label: 'Status',
@@ -170,7 +177,7 @@ export function queueFilterDefs(
       fromParam: 'updatedFrom',
       toParam: 'updatedTo',
     },
-    // No column of their own: More filters.
+    // No column of their own: Other filters.
     {
       key: 'completed',
       label: 'Closed',

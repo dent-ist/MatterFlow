@@ -130,7 +130,7 @@ import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
     .cc {
       position: relative;
     }
-    /* Same height as the Filters and More filters buttons beside it in the bar (UXR4-16): the compact 32 px. */
+    /* Same height as the Filters and Other filters buttons beside it in the bar (UXR4-16): the compact 32 px. */
     .cc-button {
       min-height: var(--mf-row-h-compact);
     }

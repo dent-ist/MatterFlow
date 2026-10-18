@@ -106,6 +106,7 @@ describe('work list definitions for the column filters', () => {
     const column = (key: string) => defs.find((d) => d.key === key)?.column;
     expect(column('q')).toBe('ref');
     expect(defs.find((d) => d.key === 'q')?.span).toBe(2);
+    expect(defs.find((d) => d.key === 'q')?.placeholder).toBe('Title or ref');
     expect(
       Object.fromEntries(
         [
@@ -141,7 +142,7 @@ describe('work list definitions for the column filters', () => {
       created: 'created',
       updated: 'updated',
     });
-    // ASAP, Overdue and Closed have no column: they are in More filters. The id parameters of links have no control at all.
+    // ASAP, Overdue and Closed have no column: they are in Other filters. The id parameters of links have no control at all.
     for (const key of ['asap', 'overdue', 'completed']) expect(column(key)).toBeUndefined();
     for (const key of ['client', 'matter', 'project'])
       expect(defs.find((d) => d.key === key)?.noControl).toBe(true);

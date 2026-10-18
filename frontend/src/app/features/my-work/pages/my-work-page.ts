@@ -446,7 +446,7 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
       ? 'Default order: Newest closed first'
       : this.tab() === 'dueSoon'
         ? 'Default order: Overdue first, then due date, then priority'
-        : 'Default order: Priority, ASAP first, Due date, Oldest',
+        : 'Default order: Priority, then ASAP first, then due date, then oldest',
   );
 
   protected readonly defaultLabel = computed(() =>

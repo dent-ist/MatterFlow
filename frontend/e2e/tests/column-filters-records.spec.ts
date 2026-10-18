@@ -145,7 +145,7 @@ test.describe('Column filters on the record lists', () => {
       return { alpha, beta, merger, audit, review };
     }
 
-    test('Matter reference, Name and Client are column filters; Sensitive lives under More filters', async ({
+    test('Matter reference, Name and Client are column filters; Sensitive lives under Other filters', async ({
       page,
       seed,
     }) => {
@@ -172,9 +172,9 @@ test.describe('Column filters on the record lists', () => {
       await expect(rows.filter({ hasText: audit.matterRef })).toHaveCount(0);
       await text(page, 'Matter reference').fill('');
 
-      // Sensitive has no column: More filters, then a chip when the row is closed.
+      // Sensitive has no column: Other filters, then a chip when the row is closed.
       await expect(select(page, 'Sensitive')).toHaveCount(0);
-      await page.getByRole('button', { name: 'More filters' }).click();
+      await page.getByRole('button', { name: 'Other filters' }).click();
       await page.locator('[data-more-filter="isSensitive"]').click();
       await page.getByRole('combobox', { name: 'Filter by Sensitive' }).selectOption('true');
       await expect(page).toHaveURL(/isSensitive=true/);

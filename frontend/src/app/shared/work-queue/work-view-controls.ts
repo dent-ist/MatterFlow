@@ -116,7 +116,9 @@ export class WorkViewControls {
   readonly sortNote = input(true);
   readonly dir = input<SortDirection | null>(null);
   /** The full default rule, for the info popover. */
-  readonly defaultOrder = input('Default order: Priority, ASAP first, Due date, Oldest');
+  readonly defaultOrder = input(
+    'Default order: Priority, then ASAP first, then due date, then oldest',
+  );
   /** The short name of the default sort column ("Priority"). */
   readonly defaultLabel = input('Priority');
   /** The help of the current tab, behind an "About this tab" button (M3: no always-visible paragraph). */

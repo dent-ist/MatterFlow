@@ -7,7 +7,7 @@ import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 
 /**
- * Task Queue toolbar (WP5: #216, #217): row 1 is one line (views, Columns, More filters, Filters) that never moves; row 2 exists only
+ * Task Queue toolbar (WP5: #216, #217): row 1 is one line (views, Columns, Other filters, Filters) that never moves; row 2 exists only
  * when it has something to say (the restored-view notice, or chips with Clear filters, and Reset sort); "Sorted by" lives in the footer.
  * Nothing here depends on global counts or order: positions and heights only. Screenshots go to E2E_SCREENSHOTS when it is set
  * (docs/ux/task-queue-review/fixes/wp-toolbar).
@@ -152,7 +152,7 @@ test.describe('Task Queue toolbar (WP5)', () => {
     await page.setViewportSize({ width: 1000, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open();
-    // No overlap and the order of the DOM: views, Columns, More filters, Filters.
+    // No overlap and the order of the DOM: views, Columns, Other filters, Filters.
     const views = await box(page.getByRole('group', { name: 'Quick views' }));
     const parts = [
       views,

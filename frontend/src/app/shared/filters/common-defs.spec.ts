@@ -15,7 +15,7 @@ describe('shared record-list filter definitions', () => {
     );
   });
 
-  it('matter filters: reference, name and status have columns; Sensitive has none (More filters)', () => {
+  it('matter filters: reference, name and status have columns; Sensitive has none (Other filters)', () => {
     const defs = matterColumnDefs();
     expect(defs.map((d) => [d.key, d.column])).toEqual([
       ['matterRef', 'matterRef'],

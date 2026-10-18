@@ -73,7 +73,7 @@ test.describe('column filters work lists screenshots', () => {
     await page.getByRole('button', { name: /^Filter by Due/ }).click();
     await shot(page, 'work-queue-due-daterange');
     await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: 'More filters' }).click();
+    await page.getByRole('button', { name: 'Other filters' }).click();
     await shot(page, 'work-queue-more-filters');
     await page.keyboard.press('Escape');
 

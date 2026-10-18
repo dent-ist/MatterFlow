@@ -32,7 +32,7 @@ export function matterColumnDefs(refLabel = 'Matter reference'): FilterDef[] {
     { key: 'matterRef', label: refLabel, column: 'matterRef', type: 'text' },
     { key: 'name', label: 'Name', column: 'name', type: 'text' },
     statusDef(),
-    // No column: it lives in "More filters". isSensitive exists on the API; the flag is shown as a badge after the name.
+    // No column: it lives in "Other filters". isSensitive exists on the API; the flag is shown as a badge after the name.
     {
       key: 'isSensitive',
       label: 'Sensitive',

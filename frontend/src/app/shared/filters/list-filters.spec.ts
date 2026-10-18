@@ -189,7 +189,7 @@ describe('ListFilters', { timeout: 20_000 }, () => {
     });
   });
 
-  describe('chips, hidden columns and More filters', () => {
+  describe('chips, hidden columns and Other filters', () => {
     it('shows one chip per value with the filter name, including a filter without a column', async () => {
       const f = await open('/list?priority=1&priority=2&matterId=7&created' + 'From=2026-10-01');
       expect(f.chips().map((c) => c.label)).toEqual([
@@ -211,7 +211,7 @@ describe('ListFilters', { timeout: 20_000 }, () => {
       expect(f.moreDefs().map((d) => d.key)).toEqual(['priority', 'created']);
     });
 
-    it('lists a filter with no column in More filters, but not a link-only filter', async () => {
+    it('lists a filter with no column in Other filters, but not a link-only filter', async () => {
       const f = await open('/list');
       expect(f.moreDefs().map((d) => d.key)).toEqual(['created']);
     });

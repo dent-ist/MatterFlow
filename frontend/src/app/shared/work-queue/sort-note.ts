@@ -77,7 +77,9 @@ export const SORT_LABELS: Readonly<Record<string, string>> = {
 export class SortNote {
   readonly sort = input<string | null>(null);
   readonly dir = input<SortDirection | null>(null);
-  readonly defaultOrder = input('Default order: Priority, ASAP first, Due date, Oldest');
+  readonly defaultOrder = input(
+    'Default order: Priority, then ASAP first, then due date, then oldest',
+  );
   readonly defaultLabel = input('Priority');
 
   protected readonly info = signal(false);

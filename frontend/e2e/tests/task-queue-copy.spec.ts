@@ -131,7 +131,9 @@ test.describe('Task Queue copy', () => {
     await expect(page).toHaveTitle('Task Queue: Overdue - MatterFlow');
     await expect(page.locator('table caption')).toHaveText('Task Queue: Overdue');
     const live = page.locator('.wl-sr');
-    await expect(live).toHaveText(/^Overdue: (No tasks|1 task|\d+ tasks, showing 1 to \d+)$/);
+    await expect(live).toHaveText(
+      /^Overdue: (No tasks|1 task|\d+ tasks, (page 1 of \d+, )?showing 1 to \d+)$/,
+    );
     // The filter bar's own region says nothing about the results: one message per change.
     await expect(page.locator('[data-filter-live]')).toHaveText('');
     const nonEmpty = await page
@@ -142,7 +144,9 @@ test.describe('Task Queue copy', () => {
     // A hand-made filter: no view in the name.
     await page.goto('/tasks?q=zzz');
     await expect(page).toHaveTitle('Task Queue - MatterFlow');
-    await expect(live).toHaveText(/^(No tasks|1 task|\d+ tasks, showing 1 to \d+)$/);
+    await expect(live).toHaveText(
+      /^(No tasks|1 task|\d+ tasks, (page 1 of \d+, )?showing 1 to \d+)$/,
+    );
   });
 
   test('axe: the empty states and the named view have no violations at four sizes', async ({

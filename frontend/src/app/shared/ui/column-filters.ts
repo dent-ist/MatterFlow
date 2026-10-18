@@ -32,7 +32,7 @@ import { SEARCH_DEBOUNCE_MS } from './search-box';
         type="text"
         autocomplete="off"
         spellcheck="false"
-        placeholder="Filter"
+        [attr.placeholder]="placeholder() || label()"
         [attr.maxlength]="maxlength()"
         [attr.aria-label]="'Filter by ' + label()"
         [attr.data-filter]="key() || label()"
@@ -67,6 +67,10 @@ import { SEARCH_DEBOUNCE_MS } from './search-box';
       min-width: 0;
       padding-right: 28px;
       font-weight: 400;
+      /* A narrow column cuts the placeholder with an ellipsis; it never wraps or overflows the cell (#228). */
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .cf__input::placeholder {
       color: var(--mf-text-muted);
@@ -101,6 +105,8 @@ export class ColumnTextFilter {
   readonly label = input.required<string>();
   /** Stable key for tests (`data-filter`); defaults to the label. */
   readonly key = input('');
+  /** What the empty box says ("Title or ref"); defaults to the column name. The accessible name stays "Filter by <label>". */
+  readonly placeholder = input('');
   /** The committed text (from the URL); the control keeps its own draft while typing. */
   readonly value = input('');
   readonly maxlength = input(200);

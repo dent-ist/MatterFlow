@@ -13,7 +13,7 @@ Screenshots are in `screenshots/` (`<name>-<width>x<height>.png`):
 ## Anatomy
 
 ```
-[ presets ]  [ chips (row closed) ........ ]  Clear filters   Sorted by ...   More filters  [Filters (3)]    <- mf-filters-bar
+[ presets ]  [ chips (row closed) ........ ]  Clear filters   Sorted by ...   Other filters  [Filters (3)]    <- mf-filters-bar
 + Name ⇅ ----+ Type ⇅ ---+ Matter ---+ External reference ---+ Status ---+                                  <- header row (sort), sticky, 40 px
 | [Filter  x]| [All ▾]   | [Filter ] | [Filter ]             | [Active ▾]|                                  <- mf-column-filter-row, sticky, 32 px controls
 + rows ...
@@ -23,11 +23,11 @@ Screenshots are in `screenshots/` (`<name>-<width>x<height>.png`):
 | --- | --- | --- |
 | `FilterDef` | (type) | One declaration per filter: key, label, column, control type, URL parameter names, options, default, whether the default counts, disabled reason, span, hidden-column behaviour. Everything below is generated from `FilterDef[]`. |
 | `ListFilters` | (class) | The URL/state helper. URL is the single source of truth. Defaults are shown but neither written to the URL nor counted. A plain link is never silently filtered. Owns the open state, sheet mode, the restored-view notice, the live-region text and the print line. |
-| `mf-filters-bar` | `shared/filters/filters-bar.ts` | Above the grid, right aligned: chips, Clear filters, your own toolbar items, More filters, the Filters toggle (filter icon, name, `(n)`, `aria-pressed`, `aria-expanded`, `aria-controls`). Also holds the polite live region, the print line, the restored-view notice and the sheet. Handles the `/` key. |
+| `mf-filters-bar` | `shared/filters/filters-bar.ts` | Above the grid, right aligned: chips, Clear filters, your own toolbar items, Other filters, the Filters toggle (filter icon, name, `(n)`, `aria-pressed`, `aria-expanded`, `aria-controls`). Also holds the polite live region, the print line, the restored-view notice and the sheet. Handles the `/` key. |
 | `mf-column-filter-row` | `tr[mfColumnFilterRow]` | The second sticky head row: one cell per visible column, `colspan` for a filter that spans columns, stacked controls when a column has several. |
 | `mf-filter-chips` | `shared/filters/filter-chips.ts` | One removable chip per active value ("Priority: Critical", remove button "Remove filter Priority: Critical"), one line with "+N more". Shown when the row is closed or the sheet is in use, and for a filter on a hidden column ("(hidden column)", "Show column") or without a column. |
 | `mf-filter-sheet` | `shared/filters/filter-sheet.ts` | The same definitions as a bottom-sheet dialog below 768 px or when the grid overflows sideways: modal, focus kept inside and returned to the Filters button, live apply, footer "Show N results" and "Clear filters". |
-| `mf-filter-control` | `shared/filters/filter-control.ts` | Picks the control for a definition and wires it to `ListFilters`. The row, the sheet and the "More filters" menu all use it. |
+| `mf-filter-control` | `shared/filters/filter-control.ts` | Picks the control for a definition and wires it to `ListFilters`. The row, the sheet and the "Other filters" menu all use it. |
 
 Controls (all named "Filter by <column>"):
 
@@ -50,7 +50,7 @@ The multi-select, user, date and number controls are lazy (`@defer`), so a scree
 - **Clear filters** returns to the defaults (not to nothing) and is shown only while something differs.
 - **A plain link never filters silently**: `ListFilters.isDeepLink()` tells a link that carries filters from a plain one; a page that applies a remembered view calls `markRestored()` and the bar shows "Restored your last view" with Reset to default and Dismiss.
 - **Open state** is remembered per screen and per user (`mf.<screen>.filters.open.<userId>`, guarded `localStorage`), `openByDefault` for Task Queue, My Work and Pod Work, and the row opens by itself when the address carries active filters.
-- **Hidden columns**: `visibleColumns` tells `ListFilters` which columns are on screen. A filter on another column stays active and shows as a chip; `moreDefs()` feeds the "More filters" menu (hidden-column filters and filters without a column, such as Matter "Sensitive").
+- **Hidden columns**: `visibleColumns` tells `ListFilters` which columns are on screen. A filter on another column stays active and shows as a chip; `moreDefs()` feeds the "Other filters" menu (hidden-column filters and filters without a column, such as Matter "Sensitive").
 - **Disabled with a reason** (`disabledReason`, for a column a tab owns): a disabled stand-in with the reason as tooltip and description; not counted, no chip.
 - **Live region**: after a filter change has loaded, one polite message ("23 results", "1 asset", "No assets", "Filters cleared. 40 assets"). Not per keystroke, not while loading, not for paging or sorting. The page reports totals with `filters.reportResults(total)` (`ServerListPage` does it).
 - **Print**: `@media print` hides the bar, row, chips and sheet and shows "Filters: Name acme, Status Active" above the grid.
@@ -104,7 +104,7 @@ constructor() { super(); afterNextRender(() => this.filters.watchOverflow(this.s
 
 4. Empty state: when `filters.activeCount() > 0` say "No clients match these filters" with a Clear filters button that calls `filters.clear()`.
 
-Useful options: `openByDefault`, `visibleColumns` (a signal of the shown column keys), `noun`. Filters without a column (`column` omitted) appear in More filters; `noControl: true` keeps a link-only parameter (`?matterId=`) as a removable chip. `queue-defs.ts` holds the `QueueFilters` parameters as `FilterDef[]` for the work lists, with a link-contract spec.
+Useful options: `openByDefault`, `visibleColumns` (a signal of the shown column keys), `noun`. Filters without a column (`column` omitted) appear in Other filters; `noControl: true` keeps a link-only parameter (`?matterId=`) as a removable chip. `queue-defs.ts` holds the `QueueFilters` parameters as `FilterDef[]` for the work lists, with a link-contract spec.
 
 ## Assets retrofit
 
@@ -112,7 +112,7 @@ Useful options: `openByDefault`, `visibleColumns` (a signal of the shown column 
 
 ## Tests
 
-- Unit (Vitest): `shared/filters/*.spec.ts` for the definitions (parse/serialise round trips, defaults, explicit empty), date presets (Monday weeks, month and year ends, time zones), `ListFilters` (URL, replace vs push, clear, presets, chips, hidden columns, print line, open state incl. blocked storage, sheet mode, restored notice, announcements), `queue-defs` (link contract against `QueueFilters` for 12 dashboard and search link shapes), every control, the popover, the control dispatcher, the row (span, stacked, empty cells), the bar (toggle, Clear, chips, More filters, live region, print line, `/`), the sheet (modal, focus trap and return, Esc order, live apply). `assets-pages.spec.ts` was adapted: the page reads its filters from the route, so the spec feeds a fake route; expectations changed only for `replaceUrl` on text filters and the chip button name.
+- Unit (Vitest): `shared/filters/*.spec.ts` for the definitions (parse/serialise round trips, defaults, explicit empty), date presets (Monday weeks, month and year ends, time zones), `ListFilters` (URL, replace vs push, clear, presets, chips, hidden columns, print line, open state incl. blocked storage, sheet mode, restored notice, announcements), `queue-defs` (link contract against `QueueFilters` for 12 dashboard and search link shapes), every control, the popover, the control dispatcher, the row (span, stacked, empty cells), the bar (toggle, Clear, chips, Other filters, live region, print line, `/`), the sheet (modal, focus trap and return, Esc order, live apply). `assets-pages.spec.ts` was adapted: the page reads its filters from the route, so the spec feeds a fake route; expectations changed only for `replaceUrl` on text filters and the chip button name.
 - E2E: `e2e/tests/column-filters.spec.ts` on Assets (chips, live region, keyboard order, Enter and Esc, `/`, sheet at 375 px, sheet on an overflowing grid, print line with `emulateMedia`, axe closed/open/filtered/chips/sheet). The existing `assets-screen.spec.ts` and `assets.spec.ts` pass unchanged.
 - Screenshots of Assets: `E2E_SCREENSHOTS=docs/ux/column-filters/screenshots frontend/e2e/run-local.sh -g "column filters screenshots"` (`e2e/tests/column-filters-screens.spec.ts`).
 
@@ -130,9 +130,9 @@ Issue #77 (Batch 2 of epic #75). Clients, Matters, Projects, the Client page's M
 | Screen | Filters (URL parameter) | Notes |
 | --- | --- | --- |
 | Clients `/clients` | Client number (`clientNumber`, text), Name (`name`, text), Status (`status`, Active default) | The old `q` is no longer read; Clear filters still drops it from an old link. |
-| Matters `/matters` | Matter reference (`matterRef`), Name (`name`), Client (`client`, name or number digits), Status (`status`), Sensitive (`isSensitive`, in More filters, Yes / No), `?clientId=` as a removable chip | The typed pair `343-12` finds the padded reference (and `343-120` while typing); a full padded reference is exact. |
+| Matters `/matters` | Matter reference (`matterRef`), Name (`name`), Client (`client`, name or number digits), Status (`status`), Sensitive (`isSensitive`, in Other filters, Yes / No), `?clientId=` as a removable chip | The typed pair `343-12` finds the padded reference (and `343-120` while typing); a full padded reference is exact. |
 | Projects `/projects` | Name (`name`), Matter (`matter`, reference, typed pair or name), Status (`status`; inactive is called Archived), `?matterId=` chip | |
-| Client page, Matters | Matter (`matterRef`), Name (`name`), Status (`status`), Sensitive (`isSensitive`, More filters) | Create matter sits at the left of the bar. `page`, `size`, `sort` stay router inputs of the page. |
+| Client page, Matters | Matter (`matterRef`), Name (`name`), Status (`status`), Sensitive (`isSensitive`, Other filters) | Create matter sits at the left of the bar. `page`, `size`, `sort` stay router inputs of the page. |
 | Matter page, Assets tab (`?tab=assets`) | Name (`name`), Type (`typeId`, multi-select), External reference (`extref`), Status (`status`) | Same parameter names as the Assets screen. Switching tab removes the tab's filters, paging and sort from the address. New asset sits at the left of the bar. |
 | Assets `/assets` | Type is now a multi-select (`typeId=4&typeId=5`; `assetTypeId[]` on the API) | Other filters unchanged. |
 
@@ -192,7 +192,7 @@ Tests: unit specs for each page (URL to API arguments, row closed by default, de
 
 ## Batch 3: the work lists
 
-Issue #78 (Batch 3 of epic #75). The Task Queue, My Work, Pod Work and the Tasks grids of a Matter and of a Project lost the "Filters" panel (`mf-work-filter-bar`, ten controls), the "Search title or ref" box and the standalone "Show: Open tasks / All tasks" select. Their filters are inline column filters under the headers of the shared task table (`mf-task-table`), driven by one `FilterDef[]` per screen (`queueFilterDefs()` in `shared/filters/queue-defs.ts`), with the same chips, "More filters", Filters sheet, live region, print line and `/` shortcut as the other batches. The shared `QueuePageBase` keeps reading the address into a `QueueState` for the API (so dashboard links, the remembered view, sort, paging and tabs behave as before) and owns a `ListFilters` for the screen.
+Issue #78 (Batch 3 of epic #75). The Task Queue, My Work, Pod Work and the Tasks grids of a Matter and of a Project lost the "Filters" panel (`mf-work-filter-bar`, ten controls), the "Search title or ref" box and the standalone "Show: Open tasks / All tasks" select. Their filters are inline column filters under the headers of the shared task table (`mf-task-table`), driven by one `FilterDef[]` per screen (`queueFilterDefs()` in `shared/filters/queue-defs.ts`), with the same chips, "Other filters", Filters sheet, live region, print line and `/` shortcut as the other batches. The shared `QueuePageBase` keeps reading the address into a `QueueState` for the API (so dashboard links, the remembered view, sort, paging and tabs behave as before) and owns a `ListFilters` for the screen.
 
 | Column | Control | URL parameter(s) | On screen |
 | --- | --- | --- | --- |
@@ -210,8 +210,8 @@ Issue #78 (Batch 3 of epic #75). The Task Queue, My Work, Pod Work and the Tasks
 | Status | multi-select; the three open statuses read "Open" | `status` | default |
 | Created | date range | `createdFrom`, `createdTo` | chooser |
 | Updated | date range | `updatedFrom`, `updatedTo` (new) | chooser |
-| (no column) ASAP, Overdue | tri-states in More filters | `asap`, `overdue` | More filters |
-| (no column) Closed | date range in More filters | `completedFrom`, `completedTo` | More filters |
+| (no column) ASAP, Overdue | tri-states in Other filters | `asap`, `overdue` | Other filters |
+| (no column) Closed | date range in Other filters | `completedFrom`, `completedTo` | Other filters |
 | (link only) | removable chips with the record name | `client`, `matter`, `project` (ids) | chips |
 
 Every parameter that existed keeps its name and meaning, so the 12 dashboard and Advanced-search link shapes still land on the same list (`queue-defs.spec.ts` and `dashboard-links.spec.ts` prove it). The people, task types and workflows offered come from `QueueChoices` (read once per session after the list has loaded, only with the permission each needs: Task.View for task types, User.View for people, Workflow.Manage for workflows) plus what is on screen, so nobody gets a 403 and a value in the address still filters.
@@ -225,9 +225,9 @@ Every parameter that existed keeps its name and meaning, so the 12 dashboard and
 - **Restored view.** A bare `/tasks` or `/my-work` still opens on the view the user last used and now says so ("Restored your last view", with Reset to default and Dismiss). The default view is never called restored; "every status" is a view of its own.
 - **Tabs stay tabs and own columns.** My Work: Assignee is disabled ("This tab lists the tasks assigned to you") on Active, Due soon and Completed; Creator is disabled on Created by me; Due, ASAP and Overdue are disabled on Due soon (the tab is the window); the Status choices follow the tab (open ones, closed ones, all). Pod Work: Pod is the scope (the picker), not a filter; Assignee is disabled on the Unassigned tab; "Show tasks" on By member sets the Assignee filter. A disabled filter is shown with the reason as tooltip and description, is not counted, has no chip and is not sent to the API. **Changing tab drops the filters the new tab owns** (and statuses it cannot show) and keeps the rest.
 - **Tab counts.** The existing design is unchanged: every count is worked out under the same filters (`TaskQueueService.MyWorkAsync` / `PodWorkAsync`), the Completed tab's closed-date window (90 days or the user's range) belongs to the Completed tab only, and a count never depends on which tab is open. Because the tab-owned filters are dropped when the tab changes, no count mixes filters that are only valid on one tab. Covered by `MyWorkAndPodWorkApiTests` (the closed-date regression) and `TaskQueueColumnFilterTests` (the new parameters, on every tab).
-- **Hidden columns.** A filter on a column the user hid (or the table folded away on a narrow window) stays active and shows as a chip with "(hidden column)" and "Show column"; More filters lists the filters without a column or on hidden columns. The table reports the columns it really shows (`columnsShown`).
+- **Hidden columns.** A filter on a column the user hid (or the table folded away on a narrow window) stays active and shows as a chip with "(hidden column)" and "Show column"; Other filters lists the filters without a column or on hidden columns. The table reports the columns it really shows (`columnsShown`).
 - **States.** Loading, error and empty are rows of `tbody[mfGridBody]` (the skeleton rows are gone), so the headers and the filter row never disappear. With rows already on screen a reload dims them and an error keeps them under an alert with Retry.
-- **Toolbar.** The quick views (Task Queue), the chips, Clear filters, "Sorted by", Columns, More filters and Filters are one bar (`mf-filters-bar`) above the grid. My Work and Pod Work keep their tabs on their own row above it; the bar is inside the tab panel.
+- **Toolbar.** The quick views (Task Queue), the chips, Clear filters, "Sorted by", Columns, Other filters and Filters are one bar (`mf-filters-bar`) above the grid. My Work and Pod Work keep their tabs on their own row above it; the bar is inside the tab panel.
 - **Matter and Project grids.** `mf-scoped-tasks` has Title or Ref, Project (a choice of the Matter's projects; not on a Project's own page), Priority, Assignee, Due and Status (Open by default, so the old "Show: Open / All tasks" select is the Status filter now). The filters live in the address (`q`, `status`, `project`, `priority`, `assignee`, `unassigned`, `dueFrom`, `dueTo`); the Matter page drops them when another tab is chosen. Paging and sorting stay in the page.
 
 ### API
@@ -247,7 +247,7 @@ They are conditions inside the existing reads (subqueries on the small Matter, C
 
 - Unit: `queue-defs.spec`, `list-filters-bare-default.spec` (the default that only a plain link gets, value groups), `queue-filters.spec`, `last-view.spec`, `quick-views.spec`, `queue-choices.spec`, `task-table.spec`, `work-list.spec`, and the three page specs (`task-queue-page`, `my-work-page`, `pod-work-page`) and the Matter / Project page specs. The page specs wait for the page itself (`vi.waitFor` on the table) instead of a fixed number of timer ticks: the old spec "puts the search box and Filters on the tab row..." was flaky under load because it asserted right after `whenStable()`, and on a busy machine the first render of a routed page can still be pending then. Every page spec now waits for a structural element that exists in every state.
 - Integration: `TaskQueueColumnFilterTests` (every new parameter, literal wildcards, combinations, bad input, the counts on every tab for each new filter, the closed-date window with a column filter, Pod Work summary unchanged) and a performance case in `TaskQueuePerformanceTests`.
-- E2E: `column-filters-work-lists.spec.ts` (Task Queue filters on the server, default status and deep links, presets, restored view, hidden-column chips, More filters, loading / error / empty rows, `/`, My Work tab ownership and counts, Pod Work scope, Matter and Project grids, the 375 px sheet, axe closed / open / filtered / empty at 1366 and the sheet at 375 on all four grids). The older specs that used the removed controls were updated (`queues.pages.ts` `search()` is the Title or Ref filter now; `assignment-and-views`, `fixed-header`, `dashboard-audit`, `ux-round-4`).
+- E2E: `column-filters-work-lists.spec.ts` (Task Queue filters on the server, default status and deep links, presets, restored view, hidden-column chips, Other filters, loading / error / empty rows, `/`, My Work tab ownership and counts, Pod Work scope, Matter and Project grids, the 375 px sheet, axe closed / open / filtered / empty at 1366 and the sheet at 375 on all four grids). The older specs that used the removed controls were updated (`queues.pages.ts` `search()` is the Title or Ref filter now; `assignment-and-views`, `fixed-header`, `dashboard-audit`, `ux-round-4`).
 
 Screenshots (`<name>-<width>x<height>.png`): `work-queue-filters-open`, `work-queue-priority-multiselect`, `work-queue-due-daterange`, `work-queue-more-filters`, `work-queue-filters-active`, `work-queue-hidden-column-chips`, `work-queue-chips-row-closed`, `work-queue-quick-view-overdue`, `work-queue-empty-filtered`, `work-queue-restored-notice`, `my-work-active`, `my-work-created-by-me`, `my-work-due-soon`, `pod-work-unassigned`, `pod-work-by-member`, `matter-tasks-filters-open`, `matter-tasks-filtered`, `admin-users-availability-select` (1366x768) and `work-queue-closed`, `work-queue-sheet`, `work-queue-sheet-filtered`, `work-queue-chips`, `my-work-closed`, `my-work-sheet` (375x812). Regenerate with `E2E_SCREENSHOTS=$PWD/docs/ux/column-filters/screenshots frontend/e2e/run-local.sh -g "column filters work lists screenshots"`.
 
@@ -255,13 +255,13 @@ Screenshots (`<name>-<width>x<height>.png`): `work-queue-filters-open`, `work-qu
 
 - The Availability select in the Users filter row (Batch 4) clipped "Out of office": the select in a filter row now has tight side padding (`.cf__select`), so the widest choice and the arrow fit the column it already had. (Widening the column was tried first: it makes the Users grid overflow into the sheet more often, which is the wrong trade.) `admin-users-availability-select-1366x768.png` shows it.
 - Quick view buttons no longer render `title="null"` when they have no tooltip.
-- The work table's header row is exactly 40 px when the filter row is shown (the filter row sticks under it at 40 px), and Columns is the same 32 px as Filters and More filters.
+- The work table's header row is exactly 40 px when the filter row is shown (the filter row sticks under it at 40 px), and Columns is the same 32 px as Filters and Other filters.
 - A text filter in the work table fills its cell and no longer asks for room: an input's own preferred width (20 characters) had widened the Matter column and squeezed the Title into two lines (6 rows instead of 8 on screen at 1366x768); the table sizes its columns by their content, unlike the record lists, which use a fixed layout.
 - Tests that were flaky or tied to a layout accident: the Users e2e tests ran on a grid that is borderline at 1366 px (they asserted "closed by default" through the sheet fallback); they use 1600 px and a plain link now. The Audit smoke test opened an event row while the live Object id filter was still about to reload the list; it waits for that load.
 
 ### Deferred
 
-- ASAP and Overdue are in More filters, not stacked under Due: a second and third control in the 40 px row would cost the grid the height this batch spends on the row. The date presets of the Due filter are the shared ones; "Overdue" and "Next 7 days" are quick access through the preset and the ASAP / Overdue filters.
+- ASAP and Overdue are in Other filters, not stacked under Due: a second and third control in the 40 px row would cost the grid the height this batch spends on the row. The date presets of the Due filter are the shared ones; "Overdue" and "Next 7 days" are quick access through the preset and the ASAP / Overdue filters.
 - The funnel icon in the header of a filtered column, filter by value from a cell, saved views and facet counts are Batch 5.
 
 ## Matter and Client columns of the work lists (TQ-WP8, #197, #198)

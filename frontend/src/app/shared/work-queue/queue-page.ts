@@ -20,15 +20,18 @@ import {
   defaultColumns,
   loadColumns,
   loadDensity,
+  loadPageSize,
   normalizeColumns,
   columnsNoticePending,
   dismissColumnsNotice,
   resetColumns,
   saveColumns,
   saveDensity,
+  savePageSize,
 } from './column-prefs';
 import { forgetLastView, loadLastView, saveLastView } from './last-view';
 import {
+  DEFAULT_PAGE_SIZE,
   QueueState,
   ViewContext,
   dateDaysAgo,
@@ -79,7 +82,7 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   /** The address as the page reads it, with the page's default status for a plain link. Depends on the address only, never on data. */
   protected readonly state: Signal<QueueState> = computed(() => {
     const params = this.params();
-    const state = parseQueueState(params);
+    const state = parseQueueState(params, this.rememberedSize());
     const wanted = this.defaultStatus();
     // Grouping is My Work's alone (Active tab); elsewhere the parameter means nothing, and a grouped list has no sort of its own.
     if (state.group && !this.allowsGroup()) state.group = null;
@@ -119,6 +122,12 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   protected readonly total = computed(() => (this.staleRows() ? 0 : (this.data()?.total ?? 0)));
 
   protected readonly userId = computed(() => this.auth.profile()?.userId ?? null);
+  private readonly sizeChosen = signal(0);
+  /** The page size this person chose before (footer select), used when the address names none; 50 when never chosen. */
+  protected readonly rememberedSize = computed(() => {
+    this.sizeChosen();
+    return loadPageSize(this.pageKey, this.userId()) ?? DEFAULT_PAGE_SIZE;
+  });
   /** Where the column choice lives: this page and the current tab (X1). */
   protected readonly columnScope = computed<ColumnScope>(() =>
     columnScope(this.pageKey, this.columnTab()),
@@ -508,7 +517,10 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     if (byUser) this.userActed();
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: toQueryParams(next, { explicitStatus: this.defaultStatus().length > 0 }),
+      queryParams: toQueryParams(next, {
+        explicitStatus: this.defaultStatus().length > 0,
+        defaultSize: this.rememberedSize(),
+      }),
       queryParamsHandling: 'merge',
       replaceUrl,
     });
@@ -548,6 +560,9 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   }
 
   protected setPageSize(size: number): void {
+    // A choice in the footer is the preference; an explicit size in a link is not (#237).
+    savePageSize(this.pageKey, this.userId(), size);
+    this.sizeChosen.update((n) => n + 1);
     this.navigate({ ...this.state(), pageSize: size, page: 1 });
   }
 

@@ -457,7 +457,7 @@ test.describe('Round 4: queues, wording and accessibility', () => {
       (await page.getByRole('button', { name: 'Columns' }).boundingBox())!,
     ];
     expect(columns.height).toBe(filters.height);
-    // "Sorted by", Columns, More filters and Filters are one bar directly above the grid (one line at this width).
+    // "Sorted by", Columns, Other filters and Filters are one bar directly above the grid (one line at this width).
     const header = (await page.locator('table thead').first().boundingBox())!;
     expect(Math.abs(columns.y - filters.y)).toBeLessThan(2);
     expect(columns.y + columns.height).toBeLessThanOrEqual(header.y + 1);

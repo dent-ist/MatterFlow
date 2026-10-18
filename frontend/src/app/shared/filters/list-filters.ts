@@ -86,7 +86,7 @@ export class ListFilters {
   readonly chips: Signal<readonly FilterChip[]>;
   /** The chips of filters on hidden columns (or without a column): they stay visible whatever the row does. */
   readonly hiddenChips: Signal<readonly FilterChip[]>;
-  /** Filters without a control in the row (hidden column, no column), for the "More filters" menu. */
+  /** Filters without a control in the row (hidden column, no column), for the "Other filters" menu. */
   readonly moreDefs: Signal<readonly FilterDef[]>;
   /** The line printed above a filtered grid, or '' when nothing limits it. */
   readonly printLine: Signal<string>;

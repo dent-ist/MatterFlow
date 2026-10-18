@@ -200,6 +200,51 @@ describe('TaskQueuePage', () => {
     expect(lastArgs()[ARG.status]).toBeUndefined();
   });
 
+  describe('pager and remembered page size (#237)', () => {
+    const footer = (el: HTMLElement) =>
+      el.querySelector('mf-pager')!.textContent!.replace(/\s+/g, ' ');
+
+    it('reads "Showing 101-150 of 442", "Page 3 of 9" and First and Last go to pages 1 and 9', async () => {
+      const el = await open('/tasks?page=3', { total: 442 });
+      expect(footer(el)).toContain('Showing 101-150 of 442');
+      expect(footer(el)).toContain('Page 3 of 9');
+      const button = (name: string) =>
+        Array.from(el.querySelectorAll<HTMLButtonElement>('mf-pager button')).find(
+          (b) => b.textContent!.trim() === name,
+        )!;
+      button('Last').click();
+      await settle();
+      expect(query()['page']).toBe('9');
+      expect(lastArgs()[ARG.page]).toBe(9);
+      button('First').click();
+      await settle();
+      expect(query()['page']).toBeUndefined();
+      expect(lastArgs()[ARG.page]).toBe(1);
+    });
+
+    it('remembers the size chosen in the footer; an explicit size in a link wins and does not overwrite it', async () => {
+      let el = await open('/tasks', { total: 442 });
+      const select = el.querySelector<HTMLSelectElement>('mf-pager select')!;
+      select.value = '100';
+      select.dispatchEvent(new Event('change'));
+      await settle();
+      expect(query()['pageSize']).toBe('100');
+      expect(localStorage.getItem('mf.work-table.v3.queue.1.page-size')).toBe('100');
+
+      // A link with no size (the Dashboard) gets 100; one with pageSize=25 gets 25 and the preference stays 100.
+      TestBed.resetTestingModule();
+      localStorage.setItem('mf.work-table.v3.queue.1.page-size', '100');
+      el = await open('/tasks', { total: 442 });
+      expect(lastArgs()[ARG.pageSize]).toBe(100);
+      expect(footer(el)).toContain('Page 1 of 5');
+      TestBed.resetTestingModule();
+      el = await open('/tasks?pageSize=25', { total: 442 });
+      expect(lastArgs()[ARG.pageSize]).toBe(25);
+      expect(footer(el)).toContain('Page 1 of 18');
+      expect(localStorage.getItem('mf.work-table.v3.queue.1.page-size')).toBe('100');
+    });
+  });
+
   it('starts a bare /tasks on the open statuses without touching the address, with one request', async () => {
     const el = await open('/tasks');
 
@@ -397,7 +442,7 @@ describe('TaskQueuePage', () => {
     // Exactly one results message: the bar's own live region stays silent for work lists.
     expect(el.querySelector('[data-filter-live]')!.textContent!.trim()).toBe('');
     expect(el.querySelector('mf-work-list [role="status"]')!.textContent!.trim()).toBe(
-      'Overdue: 101 tasks, showing 1 to 50',
+      'Overdue: 101 tasks, page 1 of 3, showing 1 to 50',
     );
   });
 

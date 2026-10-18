@@ -93,7 +93,7 @@ describe('MattersListPage', () => {
   const control = <T extends HTMLElement>(el: HTMLElement, name: string): T =>
     el.querySelector<T>(`[aria-label="Filter by ${name}"]`)!;
 
-  it('has column filters instead of a search box; Sensitive is under More filters; Active is shown, not counted', async () => {
+  it('has column filters instead of a search box; Sensitive is under Other filters; Active is shown, not counted', async () => {
     const fixture = await create();
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('#matter-search, #matter-status, mf-search-box')).toBeNull();
@@ -105,7 +105,7 @@ describe('MattersListPage', () => {
     expect(control<HTMLInputElement>(el, 'Name')).not.toBeNull();
     expect(control<HTMLInputElement>(el, 'Client')).not.toBeNull();
     expect(control<HTMLSelectElement>(el, 'Status').value).toBe('active');
-    expect(control(el, 'Sensitive')).toBeNull(); // no column: More filters
+    expect(control(el, 'Sensitive')).toBeNull(); // no column: Other filters
     expect(el.querySelector('[data-filter-count]')).toBeNull();
 
     el.querySelector<HTMLButtonElement>('[data-more-filters]')!.click();

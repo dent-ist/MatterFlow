@@ -57,7 +57,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
 /**
  * Task Queue (UX S03, ticket 49): every Task for anyone with Task.View. Inline column filters under the headers (Title or Ref, Matter,
  * Client, Project, Task type, Workflow, Priority, Pod, Assignee, Creator, Requestor, Due, Status, Created, Updated; ASAP, Overdue and Closed
- * in More filters), quick views as presets, chips, sortable and configurable columns and server paging. All state lives in the URL, so a
+ * in Other filters), quick views as presets, chips, sortable and configurable columns and server paging. All state lives in the URL, so a
  * dashboard link such as `/tasks?overdue=true&status=NEW` opens the same list. A plain `/tasks` starts on the open statuses (shown in the
  * Status cell, not counted) or on the view the user last used, with a "Restored your last view" notice. Rows are editable inline; the
  * title opens the Task.

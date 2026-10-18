@@ -60,7 +60,7 @@ export const VIEW_TIPS = {
   dueSoon: `Open tasks due today, tomorrow or in ${DUE_SOON_DAYS} days; not overdue, not ASAP`,
   asap: 'Open tasks marked ASAP',
   onHold: 'Tasks that are on hold',
-  myPod: 'Open tasks assigned to your pod',
+  myPod: 'Tasks assigned to your pod',
   createdByMe: 'Open tasks you created',
   recentlyCompleted: `Completed in the last ${RECENT_WINDOW_DAYS} days (cancelled tasks are not included)`,
 } as const;

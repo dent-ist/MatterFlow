@@ -26,7 +26,7 @@ import { ListFilters } from './list-filters';
 let nextId = 0;
 
 /**
- * "More filters" menu: filters whose column is hidden or that have no column (Matter "Sensitive", Created on a task list). Choosing one
+ * "Other filters" menu: filters whose column is hidden or that have no column (Matter "Sensitive", Created on a task list). Choosing one
  * opens its control in the same panel (a "Back" button returns to the list); the filter then shows as a chip.
  */
 @Component({
@@ -45,10 +45,10 @@ let nextId = 0;
       (click)="toggle()"
     >
       <i class="pi pi-plus" aria-hidden="true"></i>
-      More filters
+      Other filters
     </button>
     @if (open()) {
-      <mf-filter-popover [anchor]="btn" label="More filters" (closed)="close()">
+      <mf-filter-popover [anchor]="btn" label="Other filters" (closed)="close()">
         <div [id]="uid" class="mfm">
           @if (picked(); as d) {
             <button type="button" class="mf-btn mf-btn--text" (click)="picked.set(null)">
@@ -134,13 +134,13 @@ export class MoreFilters {
 
 /**
  * The bar above a filtered grid (docs/ux/column-filters-review.md 4.1), right aligned like Sorted by / Columns on the work lists:
- * `[start slot] [chips ...] Clear filters [content slot] More filters  Filters (n)`. It also holds what belongs with the filters but has
+ * `[start slot] [chips ...] Clear filters [content slot] Other filters  Filters (n)`. It also holds what belongs with the filters but has
  * no place of its own: the "Restored your last view" notice, the polite live region that announces the result count after a filter
  * change, the print line ("Filters: Status Active, Type Laptop") and the sheet used below 768 px or when the grid overflows.
  *
  *   <mf-filters-bar [filters]="filters" controls="asset-filter-row" [clearAlso]="['q']">
  *     <span mfBarStart>...presets...</span>   <!-- optional, left -->
- *     ...Columns, Sorted by...                 <!-- optional, before More filters -->
+ *     ...Columns, Sorted by...                 <!-- optional, before Other filters -->
  *     <a mfSheetFooter>...</a>                 <!-- optional, in the footer of the Filters sheet (narrow windows) -->
  *   </mf-filters-bar>
  */
@@ -284,7 +284,7 @@ export class FiltersBar {
   /** Legacy parameters that Clear filters drops too. */
   readonly clearAlso = input<readonly string[]>([]);
   /**
-   * Two fixed rows (the Task Queue, My Work and Pod Work toolbars): row 1 holds the views, Columns, More filters and Filters; row 2
+   * Two fixed rows (the Task Queue, My Work and Pod Work toolbars): row 1 holds the views, Columns, Other filters and Filters; row 2
    * (the restored notice, or the chips with Clear filters, and the `[mfBarEnd]` slot such as Reset sort) shows only when it has something.
    */
   readonly stacked = input(false);

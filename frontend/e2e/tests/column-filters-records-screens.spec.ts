@@ -57,11 +57,11 @@ test.describe('column filters records screenshots', () => {
     await expect(page.locator('td[data-empty="filtered"]')).toBeVisible();
     await shot(page, 'clients-empty-filtered');
 
-    // Matters: Sensitive under More filters, then chips with the row closed
+    // Matters: Sensitive under Other filters, then chips with the row closed
     await page.goto('/matters');
     await expect(first('Matters list')).toBeVisible();
     await toggle.click();
-    await page.getByRole('button', { name: 'More filters' }).click();
+    await page.getByRole('button', { name: 'Other filters' }).click();
     await page.locator('[data-more-filter="isSensitive"]').click();
     await shot(page, 'matters-more-filters');
     await page.keyboard.press('Escape');

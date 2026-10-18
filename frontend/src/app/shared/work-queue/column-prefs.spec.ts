@@ -5,6 +5,8 @@ import {
   loadColumns,
   loadDensity,
   loadLastPod,
+  loadPageSize,
+  savePageSize,
   loadPrefs,
   normalizeColumns,
   resetColumns,
@@ -21,6 +23,16 @@ describe('work table preferences', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     localStorage.clear();
+  });
+
+  it('remembers the page size per page and user, ignores sizes the pager does not offer', () => {
+    expect(loadPageSize('queue', 7)).toBeNull();
+    savePageSize('queue', 7, 100);
+    expect(loadPageSize('queue', 7)).toBe(100);
+    expect(loadPageSize('queue', 8)).toBeNull();
+    expect(loadPageSize('my-work', 7)).toBeNull();
+    localStorage.setItem('mf.work-table.v3.queue.7.page-size', '33');
+    expect(loadPageSize('queue', 7)).toBeNull();
   });
 
   it('always keeps Ref and Title and drops unknown columns', () => {

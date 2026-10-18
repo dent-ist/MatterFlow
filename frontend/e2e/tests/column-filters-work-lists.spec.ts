@@ -83,8 +83,8 @@ test.describe('Column filters on the work lists', () => {
       await expect(page).not.toHaveURL(/matterText=/);
       await queue.expectListed(other.title);
 
-      // Project has no column by default: More filters offers it.
-      await page.getByRole('button', { name: 'More filters' }).click();
+      // Project has no column by default: Other filters offers it.
+      await page.getByRole('button', { name: 'Other filters' }).click();
       await page.getByRole('button', { name: 'Project', exact: true }).click();
       await text(page, 'Project').fill(`phase ${token}`);
       await expect(page).toHaveURL(/projectText=/);
@@ -203,7 +203,7 @@ test.describe('Column filters on the work lists', () => {
       await expect(toggle(page)).toHaveText(/^\s*Filters\s*$/);
     });
 
-    test('a filter on a hidden column is a chip with Show column; Updated and Closed are in More filters', async ({
+    test('a filter on a hidden column is a chip with Show column; Updated and Closed are in Other filters', async ({
       page,
       seed,
       admin,
@@ -230,7 +230,7 @@ test.describe('Column filters on the work lists', () => {
       await queue.expectListed(touched.title);
       await queue.expectNotListed(untouched.title);
       await expect(chips(page)).toContainText('Updated: from');
-      await page.getByRole('button', { name: 'More filters' }).click();
+      await page.getByRole('button', { name: 'Other filters' }).click();
       for (const key of ['completed', 'asap', 'overdue', 'created', 'updated'])
         await expect(page.locator(`[data-more-filter="${key}"]`), key).toBeVisible();
     });
@@ -404,7 +404,7 @@ test.describe('Column filters on the work lists', () => {
       await podWork.expectListed(`Pooled ${token}`);
 
       await expect(page.getByRole('textbox', { name: 'Filter by Pod' })).toHaveCount(0);
-      await page.getByRole('button', { name: 'More filters' }).click();
+      await page.getByRole('button', { name: 'Other filters' }).click();
       await expect(page.getByRole('button', { name: 'Pod', exact: true })).toHaveCount(0);
       await page.keyboard.press('Escape');
       await expect(page.getByRole('textbox', { name: 'Filter by Assignee' })).toBeDisabled();

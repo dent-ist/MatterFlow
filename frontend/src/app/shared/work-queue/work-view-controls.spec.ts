@@ -28,7 +28,7 @@ describe('WorkViewControls', () => {
     fixture.detectChanges();
     expect(info.getAttribute('aria-expanded')).toBe('true');
     expect(el().querySelector('[data-sort-rule]')!.textContent).toContain(
-      'Default order: Priority, ASAP first, Due date, Oldest',
+      'Default order: Priority, then ASAP first, then due date, then oldest',
     );
 
     info.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));

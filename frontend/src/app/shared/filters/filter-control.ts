@@ -66,6 +66,7 @@ let nextUid = 0;
           <mf-column-text-filter
             [label]="d.label"
             [key]="d.key"
+            [placeholder]="d.placeholder ?? ''"
             [maxlength]="d.maxLength ?? 200"
             [value]="filters().text(d.key)"
             (valueChange)="filters().set(d.key, $event, { replace: true })"

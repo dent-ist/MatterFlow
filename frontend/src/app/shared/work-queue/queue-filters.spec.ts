@@ -24,6 +24,16 @@ const parse = (params: Record<string, string | string[]>) =>
   parseQueueState(convertToParamMap(params));
 
 describe('queue filter state', () => {
+  it('uses the remembered size only when the address names none, and writes a size that differs from it (#237)', () => {
+    expect(parseQueueState(convertToParamMap({}), 100).pageSize).toBe(100);
+    expect(parseQueueState(convertToParamMap({ pageSize: '25' }), 100).pageSize).toBe(25);
+    expect(parseQueueState(convertToParamMap({ pageSize: '50' }), 100).pageSize).toBe(50);
+    const s = { ...emptyState(), pageSize: 50 };
+    expect(toQueryParams(s)['pageSize']).toBeNull();
+    expect(toQueryParams(s, { defaultSize: 100 })['pageSize']).toBe('50');
+    expect(toQueryParams({ ...s, pageSize: 100 }, { defaultSize: 100 })['pageSize']).toBe('100');
+  });
+
   it('reads a dashboard deep link: repeated status values and overdue', () => {
     const s = parse({ overdue: 'true', status: ['NEW', 'IN_PROGRESS'] });
     expect(s.filters.overdue).toBe(true);

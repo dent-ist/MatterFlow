@@ -9,9 +9,16 @@ describe('pageName', () => {
 
 describe('resultsAnnouncement', () => {
   it('puts the view, the count and the range in one message', () => {
-    expect(resultsAnnouncement('Overdue', 101, 1, 50)).toBe('Overdue: 101 tasks, showing 1 to 50');
-    expect(resultsAnnouncement(null, 101, 3, 50)).toBe('101 tasks, showing 101 to 101');
-    expect(resultsAnnouncement(null, 101, 1, 50)).toBe('101 tasks, showing 1 to 50');
+    expect(resultsAnnouncement('Overdue', 101, 1, 50)).toBe(
+      'Overdue: 101 tasks, page 1 of 3, showing 1 to 50',
+    );
+    expect(resultsAnnouncement(null, 101, 3, 50)).toBe(
+      '101 tasks, page 3 of 3, showing 101 to 101',
+    );
+    expect(resultsAnnouncement(null, 442, 3, 50)).toBe(
+      '442 tasks, page 3 of 9, showing 101 to 150',
+    );
+    expect(resultsAnnouncement(null, 40, 1, 50)).toBe('40 tasks, showing 1 to 40');
   });
 
   it('words one and none', () => {

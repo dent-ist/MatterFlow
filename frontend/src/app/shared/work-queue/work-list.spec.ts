@@ -36,7 +36,7 @@ describe('WorkList', () => {
     await create([aRow()], { total: 312, page: 1, pageSize: 50 });
     expect(el().textContent).toContain('Showing 1-50 of 312');
     expect(el().querySelector('[role="status"]')!.textContent).toContain(
-      '312 tasks, showing 1 to 50',
+      '312 tasks, page 1 of 7, showing 1 to 50',
     );
 
     const sizes = Array.from(el().querySelectorAll('.mf-pager__size option')).map((o) =>

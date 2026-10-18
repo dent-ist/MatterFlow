@@ -190,7 +190,7 @@ test.describe('WP1: dialogs, popovers, shortcut list', () => {
     await expect(myWork.titleFilter).toHaveValue('');
   });
 
-  test('More filters, the date range panel and an inline menu follow the same rule on Task Queue (#140)', async ({
+  test('Other filters, the date range panel and an inline menu follow the same rule on Task Queue (#140)', async ({
     page,
     seed,
   }) => {
@@ -202,16 +202,16 @@ test.describe('WP1: dialogs, popovers, shortcut list', () => {
     await queue.open();
     await queue.search(`Rule ${token}`);
 
-    const more = page.getByRole('button', { name: 'More filters' });
+    const more = page.getByRole('button', { name: 'Other filters' });
     await more.click();
-    await expect(page.getByRole('dialog', { name: 'More filters' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Other filters' })).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('dialog', { name: 'More filters' })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Other filters' })).toHaveCount(0);
     await expect(more).toBeFocused();
 
     await more.click();
     await columnsButton(page).click();
-    await expect(page.getByRole('dialog', { name: 'More filters' })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Other filters' })).toHaveCount(0);
     await expect(columnsPanel(page)).toBeVisible();
     await page.keyboard.press('Escape');
 

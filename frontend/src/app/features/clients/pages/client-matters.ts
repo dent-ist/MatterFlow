@@ -33,7 +33,7 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
 
 /**
  * The main area of the Client detail page: the client's Matters as a list in the shared pattern (inline column filters for Matter and
- * Name, Status defaulting to Active, Sensitive under "More filters"; sortable columns, paging, loading / empty / error states) with a
+ * Name, Status defaulting to Active, Sensitive under "Other filters"; sortable columns, paging, loading / empty / error states) with a
  * "Create matter" button that prefills the client. The filters (`matterRef`, `name`, `status`, `isSensitive`) are read from the address
  * by `ListFilters`; the page binds `status`, `page`, `size` and `sort` like every other list. Needs `Matter.View`.
  */

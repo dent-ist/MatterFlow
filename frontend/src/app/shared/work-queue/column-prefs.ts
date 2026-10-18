@@ -92,6 +92,8 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
   },
 ];
 
+const PAGE_SIZE_CHOICES: readonly number[] = [25, 50, 100];
+
 export type WorkPage = 'queue' | 'my-work' | 'pod-work';
 
 /**
@@ -343,6 +345,28 @@ export function loadPrefs(
     columns: loadColumns(columnScope(page, tab), userId),
     density: loadDensity(page, userId),
   };
+}
+
+/** The remembered page size ("Rows per page") is its own preference per page and user, apart from the table preferences (#237). */
+const sizeKey = (page: WorkPage, userId: number | null) =>
+  `mf.work-table.v3.${page}.${who(userId)}.page-size`;
+
+/** The page size the person chose on this page, or null (never chosen, corrupt or blocked storage). Only 25, 50 and 100 count. */
+export function loadPageSize(page: WorkPage, userId: number | null): number | null {
+  try {
+    const n = Number(storage()?.getItem(sizeKey(page, userId)));
+    return PAGE_SIZE_CHOICES.includes(n) ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+export function savePageSize(page: WorkPage, userId: number | null, size: number): void {
+  try {
+    storage()?.setItem(sizeKey(page, userId), String(size));
+  } catch {
+    // Not persisted.
+  }
 }
 
 /** Remembers the last Pod chosen on Pod Work. */

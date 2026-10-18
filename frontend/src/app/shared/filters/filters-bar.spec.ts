@@ -155,7 +155,7 @@ describe('filters bar', { timeout: 20_000 }, () => {
     });
   });
 
-  describe('More filters', () => {
+  describe('Other filters', () => {
     it('lists the filters that have no cell and opens the chosen control', async () => {
       await mount('/list', { columns: ['name', 'status'] });
       const more = m.el.querySelector<HTMLButtonElement>('[data-more-filters]')!;
@@ -281,7 +281,7 @@ describe('filters bar', { timeout: 20_000 }, () => {
     const row1 = () => sm.el.querySelector('.fbar--row1')!;
     const row2 = () => sm.el.querySelector('[data-toolbar-row2]');
 
-    it('keeps the views, Columns, More filters and Filters in row 1 and has no row 2 with nothing to say', async () => {
+    it('keeps the views, Columns, Other filters and Filters in row 1 and has no row 2 with nothing to say', async () => {
       sm = await mountFilters(StackedHost, { url: '/list' });
       expect(row2()).toBeNull();
       const order = Array.from(row1().children).map((c) =>

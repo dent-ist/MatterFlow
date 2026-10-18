@@ -40,6 +40,14 @@ describe('column filters', () => {
       expect(box().classList).toContain('mf-control--compact');
     });
 
+    it('says what it filters: the column name, or the given placeholder; the accessible name stays (#228)', () => {
+      expect(box().placeholder).toBe('Name');
+      fixture.componentRef.setInput('placeholder', 'Title or ref');
+      fixture.detectChanges();
+      expect(box().placeholder).toBe('Title or ref');
+      expect(box().getAttribute('aria-label')).toBe('Filter by Name');
+    });
+
     it('filters 300 ms after the last key press, once, with the trimmed text, even for one letter', () => {
       type('a');
       vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS - 50);

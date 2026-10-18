@@ -165,7 +165,11 @@ function statuses(params: ParamMap): string[] {
 }
 
 /** Reads the query string into a state; unknown or malformed values are ignored. */
-export function parseQueueState(params: ParamMap): QueueState {
+export function parseQueueState(
+  params: ParamMap,
+  /** The size when the address names none: the person's remembered one (#237). An explicit `pageSize` always wins. */
+  defaultSize: number = DEFAULT_PAGE_SIZE,
+): QueueState {
   const sort = params.get('sort');
   const dir = params.get('dir');
   const page = Number(params.get('page'));
@@ -203,7 +207,7 @@ export function parseQueueState(params: ParamMap): QueueState {
     sort: sort && SORT_FIELDS.includes(sort) ? sort : null,
     dir: dir === 'asc' || dir === 'desc' ? dir : null,
     page: Number.isInteger(page) && page >= 1 ? page : 1,
-    pageSize: PAGE_SIZES.includes(size) ? size : DEFAULT_PAGE_SIZE,
+    pageSize: PAGE_SIZES.includes(size) ? size : defaultSize,
     view: params.get('view'),
     closedAll: params.get('closed')?.toLowerCase() === 'all',
     newOnly: params.get('new') === '1',
@@ -221,7 +225,7 @@ export type QueryParamValue = string | string[] | null;
  */
 export function toQueryParams(
   state: QueueState,
-  options: { explicitStatus?: boolean } = {},
+  options: { explicitStatus?: boolean; defaultSize?: number } = {},
 ): Record<string, QueryParamValue> {
   const f = state.filters;
   const list = (values: readonly (string | number)[]): QueryParamValue =>
@@ -257,7 +261,12 @@ export function toQueryParams(
     sort: state.sort,
     dir: state.sort && state.dir ? state.dir : null,
     page: state.page > 1 ? String(state.page) : null,
-    pageSize: state.pageSize === DEFAULT_PAGE_SIZE ? null : String(state.pageSize),
+    // Left out only when it is the standard 50 and nothing else is remembered, so a link never depends on someone's preference.
+    pageSize:
+      state.pageSize === DEFAULT_PAGE_SIZE &&
+      (options.defaultSize ?? DEFAULT_PAGE_SIZE) === DEFAULT_PAGE_SIZE
+        ? null
+        : String(state.pageSize),
     view: state.view,
     closed: state.closedAll ? 'all' : null,
     new: state.newOnly ? '1' : null,

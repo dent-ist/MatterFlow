@@ -49,7 +49,7 @@ export interface FilterDef {
   readonly key: string;
   /** Column name in words: "Filter by <label>", the chip prefix ("Priority: Critical"). */
   readonly label: string;
-  /** Key of the grid column whose filter-row cell holds the control. Absent: a filter without a column (shown in "More filters"). */
+  /** Key of the grid column whose filter-row cell holds the control. Absent: a filter without a column (shown in "Other filters"). */
   readonly column?: string;
   readonly type: FilterType;
   /** URL parameter (all types except the ranges); defaults to `key`. */
@@ -79,6 +79,8 @@ export interface FilterDef {
   readonly fixedValue?: () => string | null | undefined;
   /** Returns why the control is unavailable ("Set by the Due soon tab"), or null/undefined when it is usable. */
   readonly disabledReason?: () => string | null | undefined;
+  /** text: what the empty box says when the column name does not ("Title or ref" for "Title or Ref"). Defaults to the label. */
+  readonly placeholder?: string;
   /** Number of columns the cell spans ("Filter by Title or Ref"). */
   readonly span?: number;
   /** No control anywhere (a link-only filter such as `?matterId=`): it only shows as a removable chip. */
