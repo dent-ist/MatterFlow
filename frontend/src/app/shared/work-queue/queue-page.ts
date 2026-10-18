@@ -142,6 +142,10 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   protected readonly colWidths = computed<ColumnWidthMap>(() =>
     this.widthStore.widths(this.columnScope(), this.userId()),
   );
+  /** A drag on a header edge ended (#204): the width is remembered for this scope and user, and shows at once. */
+  protected onColumnResized(e: { key: string; rem: number; defaultRem?: number }): void {
+    this.widthStore.set(this.columnScope(), this.userId(), e.key, e.rem, e.defaultRem);
+  }
   /** The current tab's default set, for "Reset columns". */
   protected readonly columnDefaults = computed(() => defaultColumns(this.columnScope()));
   /** The current tab's columns and the page's density. */

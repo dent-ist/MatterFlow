@@ -101,6 +101,111 @@ td.mf-col-actions {
     1px 0 0 var(--mf-border);
 }
 
+/* Drag handle on a header edge (#204; logic in shared/work-queue/column-resize.ts). 24 px wide hit area (WCAG 2.5.8) straddling the border,
+   a 1 px divider at rest, 2 px on hover, 3 px accent while dragging. Decorative: aria-hidden, no tab stop, in the header only (the
+   keyboard alternative is the Columns panel, #206). Global because the table's own style budget is full. */
+.wt thead th:has(> .wt-resize) {
+  /* The handle sticks out of the cell. */
+  overflow: visible;
+}
+
+.wt-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+  z-index: 1;
+}
+
+.wt-resize[data-side='end'] {
+  right: -12px;
+}
+
+.wt-resize[data-side='start'] {
+  left: -12px;
+}
+
+.wt-resize::after {
+  content: '';
+  position: absolute;
+  top: 20%;
+  bottom: 20%;
+  left: 50%;
+  width: 1px;
+  margin-left: -0.5px;
+  background: var(--mf-border-strong, var(--mf-border));
+}
+
+.wt-resize:hover::after {
+  top: 15%;
+  bottom: 15%;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--mf-primary);
+}
+
+.wt-resize--active::after {
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  margin-left: -1.5px;
+  background: var(--mf-primary);
+}
+
+/* No selection while dragging. On the body only (not on every element): the pointer is captured by the handle, which shows col-resize. */
+body.wt-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* Above 100 rows, or after a slow frame, the width follows the pointer as a guide line and applies on release. */
+.wt-resize-guide {
+  position: fixed;
+  z-index: 1000;
+  width: 0;
+  border-left: 2px dashed var(--mf-primary);
+  pointer-events: none;
+}
+
+.wt-resize-tip {
+  position: fixed;
+  z-index: 1001;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--mf-text, #111);
+  color: var(--mf-surface, #fff);
+  font-size: var(--mf-fs-sm);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+@media (width < 640px) {
+  .wt-resize {
+    display: none;
+  }
+}
+
+/* Where the header is not sticky the cells need a containing block for the handle; the first stays above its neighbour. */
+@media (max-width: 767px), (max-height: 560px) {
+  .wt thead th:has(> .wt-resize):not([data-col='ref']),
+  .wt:not(.wt--scroll) thead th[data-col='ref'] {
+    position: relative;
+  }
+}
+
+.wt thead th[data-col='ref'] {
+  z-index: 4;
+}
+
+@media print {
+  .wt-resize {
+    display: none;
+  }
+}
+
 @media print {
   .wt {
     width: 100%;

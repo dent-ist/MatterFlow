@@ -46,6 +46,7 @@ import {
   widthVars,
 } from './column-widths';
 import { narrowDrops } from './narrow-columns';
+import { ResizeSide, resizeSide, startColumnResize } from './column-resize';
 import { InlineField, canEditField } from './inline-edit';
 import { CLOSED_STATUSES, SortDirection } from './queue-filters';
 import { hasStepLink, stepLinkLabel, stepQueryParams } from './step-link';
@@ -128,6 +129,17 @@ const NARROW_BELOW = 760;
                   </button>
                 } @else {
                   {{ col.label }}
+                }
+                @if (resizeSideOf(col); as side) {
+                  <!-- Drag handle (#204): decorative, outside the tab order; the keyboard alternative is the Columns panel (#206). -->
+                  <span
+                    class="wt-resize"
+                    aria-hidden="true"
+                    [attr.data-resize]="col.key"
+                    [attr.data-side]="side"
+                    (pointerdown)="resizeStart($event, col, side)"
+                    (dblclick)="columnFit.emit(col.key)"
+                  ></span>
                 }
               </th>
             }
@@ -580,6 +592,10 @@ export class TaskTable {
   }
 
   readonly sortChange = output<string>();
+  /** A drag on a header edge ended with a new width (#204): the page stores it (`WorkWidths`). `defaultRem` is the default in force. */
+  readonly columnResized = output<{ key: string; rem: number; defaultRem?: number }>();
+  /** Double-click on a handle: the hook of "fit to content" (#205); nothing listens yet. */
+  readonly columnFit = output<string>();
   readonly retry = output<void>();
   readonly clearFilters = output<void>();
   /** The keys of the columns that are on screen now (the table folds some away on a narrow window). */
@@ -688,6 +704,33 @@ export class TaskTable {
       .map((c) => c.key)
       .join(','),
   );
+
+  protected resizeSideOf(col: ColumnDef): ResizeSide | null {
+    return resizeSide(col, this.shownColumns());
+  }
+
+  protected resizeStart(event: PointerEvent, col: ColumnDef, side: ResizeSide): void {
+    const handle = event.currentTarget as HTMLElement;
+    const table = handle.closest('table');
+    if (!table) return;
+    startColumnResize({
+      handle,
+      event,
+      table,
+      def: col,
+      side,
+      rootPx: this.rootPx(),
+      commit: (rem) =>
+        this.columnResized.emit({
+          key: col.key,
+          rem,
+          defaultRem:
+            this.assignLink() && col.key === 'assignee'
+              ? pxToRem(ASSIGNEE_WITH_LINK_PX)
+              : undefined,
+        }),
+    });
+  }
 
   protected ariaSort(col: ColumnDef): 'ascending' | 'descending' | 'none' | null {
     if (!col.sortField) return null;

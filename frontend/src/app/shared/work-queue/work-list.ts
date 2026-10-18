@@ -67,6 +67,7 @@ export type WorkListState = 'loading' | 'ready' | 'error';
       [groupBuckets]="groupBuckets()"
       [groupOffset]="groupOffset()"
       (sortChange)="sortChange.emit($event)"
+      (columnResized)="columnResized.emit($event)"
       (retry)="onRetry()"
       (clearFilters)="clearFilters.emit()"
       (columnsShown)="columnsShown.emit($event)"
@@ -135,6 +136,8 @@ export class WorkList {
   readonly retry = output<void>();
   readonly clearFilters = output<void>();
   readonly columnsShown = output<string[]>();
+  /** A column was resized by dragging its header edge (#204). */
+  readonly columnResized = output<{ key: string; rem: number; defaultRem?: number }>();
   readonly rowChange = output<TaskQueueRow>();
 
   protected readonly sizes = PAGE_SIZES;

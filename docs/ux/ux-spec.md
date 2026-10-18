@@ -1301,6 +1301,7 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S02-9 Closed: "Show older" gives the chip "Closed: all time" and the count of all time; removing the chip returns to 90 days.
 - [ ] UAT-S02-6 Columns show priority, Matter ref, workflow progress (step n/m), due/ASAP, status.
 - [ ] UAT-S02-6b (#196) The Title cell holds the task type icon and the title only, on every grid: no client / matter line, no progress under the title, no "New" pill (the New dot stays in the Ref cell). Comfortable titles take at most two lines with an ellipsis, Compact one; the full title is the tooltip. A 170-character title and a 90-character unbroken word change neither the column width nor the row height.
+- [ ] UAT-S02-6c (#204) On Task Queue, My Work and Pod Work a column can be resized by dragging its header border (from 640 px up; none on a phone): the Title gives way first, then the grid scrolls sideways; the width stays within the column's minimum and maximum (Due 120 to 200 px), applies to every row and to the filter row, survives a reload per page and tab, and Esc during the drag puts it back. A click on a header still sorts; the handles are not in the Tab order. Above 100 rows a dashed guide line shows the width and it applies on release. The keyboard and single-pointer way to set a width is the Columns panel (#206).
 - [ ] UAT-S02-7 Inline priority/assign only appears with permission.
 - [ ] UAT-S02-8 Empty/loading/error states.
 

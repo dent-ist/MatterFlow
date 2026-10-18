@@ -219,6 +219,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
             (clearFilters)="clearFilters()"
             (rowChange)="replaceRow($event)"
             (columnsShown)="shownColumns.set($event)"
+            (columnResized)="onColumnResized($event)"
           />
         </div>
       }
