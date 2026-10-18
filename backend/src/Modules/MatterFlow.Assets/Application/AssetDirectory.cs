@@ -1,5 +1,6 @@
 using MatterFlow.Assets.Contracts;
 using MatterFlow.Assets.Domain;
+using MatterFlow.Organization.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Assets.Application;
@@ -41,4 +42,11 @@ internal sealed class AssetDirectory(DbContext db) : IAssetDirectory
 
     private static AssetSummary ToSummary(AssetService.AssetRow r) =>
         new(r.Asset.Id, r.Asset.MatterId, r.Asset.AssetTypeId, r.AssetTypeName, r.Asset.DisplayName, r.Asset.ExternalReference, r.Asset.IsActive);
+}
+
+/// <summary>Counts a Matter's Assets for the Matter summary (<see cref="IMatterAssetCounts"/>); retired Assets are counted too.</summary>
+internal sealed class MatterAssetCounts(DbContext db) : IMatterAssetCounts
+{
+    public Task<int> CountAsync(int matterId, CancellationToken cancellationToken = default) =>
+        db.Set<Asset>().AsNoTracking().CountAsync(a => a.MatterId == matterId, cancellationToken);
 }

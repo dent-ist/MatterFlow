@@ -1,7 +1,9 @@
 using System.Globalization;
 using MatterFlow.Audit.Contracts;
+using MatterFlow.Identity.Contracts;
 using MatterFlow.Organization.Contracts;
 using MatterFlow.Organization.Domain;
+using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.ValueObjects;
@@ -9,9 +11,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Organization.Application;
 
-public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskGuard taskGuard, CustomFieldValues custom)
+public sealed class MatterService(
+    DbContext db,
+    IAuditWriter audit,
+    IMatterTaskGuard taskGuard,
+    CustomFieldValues custom,
+    IOrganizationTaskCounts taskCounts,
+    IMatterAssetCounts assetCounts,
+    IPermissionChecker permissions)
 {
-    public static readonly string[] SortFields = ["matterRef", "name", "clientNumber", "createdAt"];
+    public static readonly string[] SortFields = ["matterRef", "name", "clientNumber", "createdAt", OrganizationSupport.SortOpenTasks, OrganizationSupport.SortOverdue];
+
+    private bool CanCountTasks => permissions.Has(Permissions.Task.View);
 
     private static readonly Dictionary<string, Func<IQueryable<MatterRow>, bool, bool, IOrderedQueryable<MatterRow>>> Orderings = new()
     {
@@ -19,6 +30,8 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
         ["name"] = OrganizationSupport.By<MatterRow, string>(r => r.Matter.Name),
         ["clientNumber"] = OrganizationSupport.By<MatterRow, BusinessNumber>(r => r.Matter.ClientNumber),
         ["createdAt"] = OrganizationSupport.By<MatterRow, DateTime>(r => r.Matter.CreatedAtUtc),
+        [OrganizationSupport.SortOpenTasks] = OrganizationSupport.By<MatterRow, int>(r => r.Open),
+        [OrganizationSupport.SortOverdue] = OrganizationSupport.By<MatterRow, int>(r => r.Overdue),
     };
 
     public async Task<Result<PagedResult<MatterResponse>>> ListAsync(MatterListQuery query, CancellationToken ct)
@@ -68,12 +81,65 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
         }
 
         var total = await rows.CountAsync(ct);
-        var items = await OrganizationSupport.ApplySort(rows, sort.Count == 0 ? [new SortField("matterRef", false)] : sort, Orderings, r => r.Matter.Id)
+
+        // The count sorts need the counts inside the statement (one grouped left join); without Task.View they are constants, so the order falls back to the default.
+        var canCount = CanCountTasks;
+        var joinCounts = canCount && sort.Any(f => OrganizationSupport.IsCountSort(f.Field));
+        if (joinCounts)
+        {
+            rows = from r in rows
+                   join g in taskCounts.Grouped(TaskCountScope.Matter) on r.Matter.Id equals g.Key into joined
+                   from g in joined.DefaultIfEmpty()
+                   select new MatterRow
+                   {
+                       Matter = r.Matter,
+                       ClientName = r.ClientName,
+                       ClientIsActive = r.ClientIsActive,
+                       ProjectCount = r.ProjectCount,
+                       Open = (int?)g.Open ?? 0,
+                       Overdue = (int?)g.Overdue ?? 0,
+                   };
+        }
+
+        var items = await OrganizationSupport.ApplySort(rows, OrganizationSupport.WithDefaultTail(sort, new SortField("matterRef", false)), Orderings, r => r.Matter.Id)
             .Skip(page.Skip)
             .Take(page.PageSize)
             .ToListAsync(ct);
 
-        return OrganizationSupport.Page(items.Select(r => ToResponse(r, null)).ToList(), total, page);
+        IReadOnlyDictionary<int, TaskCountRow> byMatter = canCount && !joinCounts
+            ? await taskCounts.ForKeysAsync(TaskCountScope.Matter, [.. items.Select(r => r.Matter.Id)], ct)
+            : new Dictionary<int, TaskCountRow>();
+        return OrganizationSupport.Page(
+            items.Select(r => ToResponse(
+                r,
+                !canCount ? null : joinCounts ? r.Open : byMatter.GetValueOrDefault(r.Matter.Id)?.Open ?? 0,
+                !canCount ? null : joinCounts ? r.Overdue : byMatter.GetValueOrDefault(r.Matter.Id)?.Overdue ?? 0)).ToList(),
+            total,
+            page);
+    }
+
+    /// <summary>Counts for the Matter overview strip (#259): the five Task numbers over the Matter's Tasks (project Tasks included), the Project count and the Asset count.</summary>
+    public async Task<Result<MatterSummaryResponse>> SummaryAsync(int id, CancellationToken ct)
+    {
+        if (!await db.Set<Matter>().AsNoTracking().AnyAsync(m => m.Id == id, ct))
+            return OrganizationSupport.NotFound("Matter");
+
+        var projects = await db.Set<Project>().AsNoTracking().CountAsync(p => p.MatterId == id, ct);
+        var assets = await assetCounts.CountAsync(id, ct);
+        if (!CanCountTasks)
+            return new MatterSummaryResponse(id, null, null, null, null, null, projects, assets);
+
+        var strip = await taskCounts.StripAsync(TaskCountScope.Matter, id, ct);
+        return new MatterSummaryResponse(id, strip.Open, strip.Overdue, strip.Asap, strip.OnHold, strip.DueSoon, projects, assets);
+    }
+
+    private async Task<(int? Open, int? Overdue)> CountsOfAsync(int matterId, CancellationToken ct)
+    {
+        if (!CanCountTasks)
+            return (null, null);
+
+        var counts = await taskCounts.ForKeysAsync(TaskCountScope.Matter, [matterId], ct);
+        return (counts.GetValueOrDefault(matterId)?.Open ?? 0, counts.GetValueOrDefault(matterId)?.Overdue ?? 0);
     }
 
     public async Task<Result<MatterResponse>> GetAsync(int id, CancellationToken ct) => await GetAsync(id, [], ct);
@@ -84,7 +150,8 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
         if (row is null)
             return OrganizationSupport.NotFound("Matter");
 
-        return ToResponse(row, await taskGuard.CountOpenTasksAsync(id, ct), await custom.ReadAsync(CustomFieldTarget.Matter, id, ct), dropped);
+        var (open, overdue) = await CountsOfAsync(id, ct);
+        return ToResponse(row, open, overdue, await custom.ReadAsync(CustomFieldTarget.Matter, id, ct), dropped);
     }
 
     /// <summary>
@@ -120,9 +187,11 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
             return Error.Validation("ref", "INVALID_REFERENCE", "Use a matter reference like 343-12 or 00343-00012.", ErrorCodes.InvalidNumberFormat);
 
         var row = await Rows().Where(r => r.Matter.ClientNumber == clientNumber && r.Matter.MatterNumber == matterNumber).SingleOrDefaultAsync(ct);
-        return row is null
-            ? OrganizationSupport.NotFound("Matter")
-            : ToResponse(row, await taskGuard.CountOpenTasksAsync(row.Matter.Id, ct), await custom.ReadAsync(CustomFieldTarget.Matter, row.Matter.Id, ct), []);
+        if (row is null)
+            return OrganizationSupport.NotFound("Matter");
+
+        var (open, overdue) = await CountsOfAsync(row.Matter.Id, ct);
+        return ToResponse(row, open, overdue, await custom.ReadAsync(CustomFieldTarget.Matter, row.Matter.Id, ct), []);
     }
 
     public async Task<Result<MatterResponse>> CreateAsync(CreateMatterRequest request, CancellationToken ct)
@@ -349,7 +418,7 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
     private IQueryable<MatterRow> Rows() =>
         from m in db.Set<Matter>().AsNoTracking()
         join c in db.Set<Client>().AsNoTracking() on m.ClientId equals c.Id
-        select new MatterRow { Matter = m, ClientName = c.Name, ClientIsActive = c.IsActive, ProjectCount = db.Set<Project>().Count(p => p.MatterId == m.Id) };
+        select new MatterRow { Matter = m, ClientName = c.Name, ClientIsActive = c.IsActive, ProjectCount = db.Set<Project>().Count(p => p.MatterId == m.Id), Open = 0, Overdue = 0 };
 
     private async Task<int?> FindIdAsync(int clientId, BusinessNumber number, int? exceptId, CancellationToken ct) =>
         await db.Set<Matter>().AsNoTracking()
@@ -371,7 +440,7 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
             && BusinessNumber.TryParse(parts[1], out matterNumber);
     }
 
-    private static MatterResponse ToResponse(MatterRow r, int? openTaskCount, CustomFieldView? view = null, IReadOnlyList<string>? dropped = null) => new(
+    private static MatterResponse ToResponse(MatterRow r, int? openTaskCount, int? overdueTaskCount, CustomFieldView? view = null, IReadOnlyList<string>? dropped = null) => new(
         r.Matter.Id,
         r.Matter.ClientId,
         r.Matter.ClientNumber.Value,
@@ -384,6 +453,7 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
         r.Matter.IsSensitive,
         r.ProjectCount,
         openTaskCount,
+        overdueTaskCount,
         view?.FormVersionId,
         view?.PublishedFormVersionId,
         view?.Values,
@@ -401,5 +471,9 @@ public sealed class MatterService(DbContext db, IAuditWriter audit, IMatterTaskG
         public bool ClientIsActive { get; init; }
 
         public int ProjectCount { get; init; }
+
+        public int Open { get; init; }
+
+        public int Overdue { get; init; }
     }
 }

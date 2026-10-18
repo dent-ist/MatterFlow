@@ -1,6 +1,9 @@
 using System.Data;
 using MatterFlow.Audit.Contracts;
+using MatterFlow.Identity.Contracts;
+using MatterFlow.Organization.Contracts;
 using MatterFlow.Organization.Domain;
+using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.ValueObjects;
@@ -9,16 +12,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Organization.Application;
 
-public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldValues custom)
+public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldValues custom, IOrganizationTaskCounts taskCounts, IPermissionChecker permissions)
 {
-    public static readonly string[] SortFields = ["clientNumber", "name", "createdAt"];
+    public static readonly string[] SortFields = ["clientNumber", "name", "createdAt", OrganizationSupport.SortOpenTasks, OrganizationSupport.SortOverdue];
 
-    private static readonly Dictionary<string, Func<IQueryable<Client>, bool, bool, IOrderedQueryable<Client>>> Orderings = new()
+    private static readonly Dictionary<string, Func<IQueryable<ClientRow>, bool, bool, IOrderedQueryable<ClientRow>>> Orderings = new()
     {
-        ["clientNumber"] = OrganizationSupport.By<Client, BusinessNumber>(c => c.ClientNumber),
-        ["name"] = OrganizationSupport.By<Client, string>(c => c.Name),
-        ["createdAt"] = OrganizationSupport.By<Client, DateTime>(c => c.CreatedAtUtc),
+        ["clientNumber"] = OrganizationSupport.By<ClientRow, BusinessNumber>(r => r.Client.ClientNumber),
+        ["name"] = OrganizationSupport.By<ClientRow, string>(r => r.Client.Name),
+        ["createdAt"] = OrganizationSupport.By<ClientRow, DateTime>(r => r.Client.CreatedAtUtc),
+        [OrganizationSupport.SortOpenTasks] = OrganizationSupport.By<ClientRow, int>(r => r.Open),
+        [OrganizationSupport.SortOverdue] = OrganizationSupport.By<ClientRow, int>(r => r.Overdue),
     };
+
+    private bool CanCountTasks => permissions.Has(Permissions.Task.View);
 
     public async Task<Result<PagedResult<ClientResponse>>> ListAsync(ClientListQuery query, CancellationToken ct)
     {
@@ -61,13 +68,58 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
         }
 
         var total = await clients.CountAsync(ct);
-        var rows = await OrganizationSupport.ApplySort(clients, sort.Count == 0 ? [new SortField("clientNumber", false)] : sort, Orderings, c => c.Id)
+
+        // The count sorts need the counts inside the statement (one grouped left join); without Task.View they are constants, so the order falls back to the default.
+        var canCount = CanCountTasks;
+        var joinCounts = canCount && sort.Any(f => OrganizationSupport.IsCountSort(f.Field));
+        var counted = joinCounts
+            ? from c in clients
+              join g in taskCounts.Grouped(TaskCountScope.Client) on c.Id equals g.Key into joined
+              from g in joined.DefaultIfEmpty()
+              select new ClientRow { Client = c, Open = (int?)g.Open ?? 0, Overdue = (int?)g.Overdue ?? 0 }
+            : clients.Select(c => new ClientRow { Client = c, Open = 0, Overdue = 0 });
+        var rows = await OrganizationSupport.ApplySort(counted, OrganizationSupport.WithDefaultTail(sort, new SortField("clientNumber", false)), Orderings, r => r.Client.Id)
             .Skip(page.Skip)
             .Take(page.PageSize)
-            .Select(c => new { Client = c, MatterCount = db.Set<Matter>().Count(m => m.ClientId == c.Id) })
+            .Select(r => new { r.Client, MatterCount = db.Set<Matter>().Count(m => m.ClientId == r.Client.Id), r.Open, r.Overdue })
             .ToListAsync(ct);
 
-        return OrganizationSupport.Page(rows.Select(r => ToResponse(r.Client, r.MatterCount)).ToList(), total, page);
+        IReadOnlyDictionary<int, TaskCountRow> byClient = canCount && !joinCounts
+            ? await taskCounts.ForKeysAsync(TaskCountScope.Client, [.. rows.Select(r => r.Client.Id)], ct)
+            : new Dictionary<int, TaskCountRow>();
+        return OrganizationSupport.Page(
+            rows.Select(r => ToResponse(
+                r.Client,
+                r.MatterCount,
+                !canCount ? null : joinCounts ? r.Open : byClient.GetValueOrDefault(r.Client.Id)?.Open ?? 0,
+                !canCount ? null : joinCounts ? r.Overdue : byClient.GetValueOrDefault(r.Client.Id)?.Overdue ?? 0)).ToList(),
+            total,
+            page);
+    }
+
+    /// <summary>Counts for the Client overview strip (#259): the five Task numbers over all the Client's Matters, the Matter counts and the Matters with the most open Tasks.</summary>
+    public async Task<Result<ClientSummaryResponse>> SummaryAsync(int id, CancellationToken ct)
+    {
+        var matters = await db.Set<Matter>().AsNoTracking().Where(m => m.ClientId == id)
+            .GroupBy(_ => 1).Select(g => new { Total = g.Count(), Active = g.Count(m => m.IsActive) }).FirstOrDefaultAsync(ct);
+        if (matters is null && !await db.Set<Client>().AsNoTracking().AnyAsync(c => c.Id == id, ct))
+            return OrganizationSupport.NotFound("Client");
+
+        if (!CanCountTasks)
+            return new ClientSummaryResponse(id, null, null, null, null, null, matters?.Total ?? 0, matters?.Active ?? 0, null);
+
+        var strip = await taskCounts.StripAsync(TaskCountScope.Client, id, ct);
+        IReadOnlyList<TopMatterResponse>? top = null;
+        if (permissions.Has(Permissions.Matter.View))
+        {
+            var counts = await taskCounts.TopMattersAsync(id, 5, ct);
+            var ids = counts.Select(c => c.MatterId).ToList();
+            var named = await db.Set<Matter>().AsNoTracking().Where(m => ids.Contains(m.Id))
+                .Select(m => new { m.Id, m.MatterRef, m.Name, m.IsActive }).ToDictionaryAsync(m => m.Id, ct);
+            top = [.. counts.Select(c => new TopMatterResponse(c.MatterId, named[c.MatterId].MatterRef, named[c.MatterId].Name, named[c.MatterId].IsActive, c.Open, c.Overdue))];
+        }
+
+        return new ClientSummaryResponse(id, strip.Open, strip.Overdue, strip.Asap, strip.OnHold, strip.DueSoon, matters?.Total ?? 0, matters?.Active ?? 0, top);
     }
 
     public async Task<Result<ClientResponse>> GetAsync(int id, CancellationToken ct) => await GetAsync(id, [], ct);
@@ -78,9 +130,18 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
             .Where(c => c.Id == id)
             .Select(c => new { Client = c, MatterCount = db.Set<Matter>().Count(m => m.ClientId == c.Id) })
             .SingleOrDefaultAsync(ct);
-        return row is null
-            ? OrganizationSupport.NotFound("Client")
-            : ToResponse(row.Client, row.MatterCount, await custom.ReadAsync(CustomFieldTarget.Client, id, ct), dropped);
+        if (row is null)
+            return OrganizationSupport.NotFound("Client");
+
+        int? open = null, overdue = null;
+        if (CanCountTasks)
+        {
+            var counts = await taskCounts.ForKeysAsync(TaskCountScope.Client, [id], ct);
+            open = counts.GetValueOrDefault(id)?.Open ?? 0;
+            overdue = counts.GetValueOrDefault(id)?.Overdue ?? 0;
+        }
+
+        return ToResponse(row.Client, row.MatterCount, open, overdue, await custom.ReadAsync(CustomFieldTarget.Client, id, ct), dropped);
     }
 
     public async Task<Result<ClientResponse>> CreateAsync(CreateClientRequest request, CancellationToken ct)
@@ -246,12 +307,14 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
     private static Error DuplicateNumber(BusinessNumber number, int? existingId, string field = "clientNumber") =>
         OrganizationSupport.Duplicate(ErrorCodes.DuplicateNumber, field, $"Client {number} already exists.", existingId);
 
-    private static ClientResponse ToResponse(Client c, int matterCount, CustomFieldView? view = null, IReadOnlyList<string>? dropped = null) => new(
+    private static ClientResponse ToResponse(Client c, int matterCount, int? openTaskCount, int? overdueTaskCount, CustomFieldView? view = null, IReadOnlyList<string>? dropped = null) => new(
         c.Id,
         c.ClientNumber.Value,
         c.Name,
         c.IsActive,
         matterCount,
+        openTaskCount,
+        overdueTaskCount,
         view?.FormVersionId,
         view?.PublishedFormVersionId,
         view?.Values,
@@ -259,4 +322,13 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
         OrganizationSupport.Encode(c.RowVersion),
         OrganizationSupport.Utc(c.CreatedAtUtc),
         OrganizationSupport.Utc(c.ModifiedAtUtc));
+
+    private sealed class ClientRow
+    {
+        public Client Client { get; init; } = null!;
+
+        public int Open { get; init; }
+
+        public int Overdue { get; init; }
+    }
 }

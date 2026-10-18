@@ -63,3 +63,96 @@ public sealed class NoTasksMatterTaskGuard : IMatterTaskGuard
 {
     public Task<int> CountOpenTasksAsync(int matterId, CancellationToken cancellationToken = default) => Task.FromResult(0);
 }
+
+/// <summary>Which record the Task counts are grouped by.</summary>
+public enum TaskCountScope
+{
+    /// <summary>All Tasks of all the Client's Matters (project Tasks included).</summary>
+    Client,
+
+    /// <summary>All Tasks of the Matter (project Tasks included).</summary>
+    Matter,
+
+    /// <summary>The Tasks of the Project.</summary>
+    Project,
+}
+
+/// <summary>Open and overdue Task counts of one Client, Matter or Project (a record with no open Task has no row).</summary>
+public sealed class TaskCountRow
+{
+    /// <summary>The Client, Matter or Project id, depending on the <see cref="TaskCountScope"/>.</summary>
+    public int Key { get; init; }
+
+    /// <summary>Tasks that are New, In Progress or On Hold.</summary>
+    public int Open { get; init; }
+
+    /// <summary>Open Tasks whose due moment has passed for the viewer.</summary>
+    public int Overdue { get; init; }
+}
+
+/// <summary>The five numbers of a summary strip, in the Dashboard and Task Queue vocabulary and in the viewer's time zone.</summary>
+/// <param name="Open">Tasks that are New, In Progress or On Hold.</param>
+/// <param name="Overdue">Open Tasks past their due moment.</param>
+/// <param name="Asap">Open Tasks with no due date.</param>
+/// <param name="OnHold">Tasks On Hold.</param>
+/// <param name="DueSoon">Open, not overdue, with a due date today to two days ahead.</param>
+public sealed record TaskStripCounts(int Open, int Overdue, int Asap, int OnHold, int DueSoon);
+
+/// <summary>One Matter of a Client with its open and overdue Task counts.</summary>
+public sealed record MatterTaskCount(int MatterId, int Open, int Overdue);
+
+/// <summary>
+/// The one definition of the Task counts shown on the Client, Matter and Project lists and summaries. The Organization module cannot see the Task table,
+/// so the WorkViews module implements this with the same predicates as the Dashboard and the Task Queue (<c>TaskQueueRules</c>). Counts are for the
+/// viewer's time zone and never apply a permission: the caller checks <c>Task.View</c> first.
+/// </summary>
+public interface IOrganizationTaskCounts
+{
+    /// <summary>
+    /// Open and overdue counts grouped by key, as a query so a list can join it and sort by it. One row per key that has at least one open Task;
+    /// a missing row means 0.
+    /// </summary>
+    IQueryable<TaskCountRow> Grouped(TaskCountScope scope);
+
+    /// <summary>The counts of the given keys (a page of ids) in one grouped statement; keys with no open Task are absent.</summary>
+    Task<IReadOnlyDictionary<int, TaskCountRow>> ForKeysAsync(TaskCountScope scope, IReadOnlyCollection<int> keys, CancellationToken cancellationToken = default);
+
+    /// <summary>The five strip numbers of one record, computed in one statement.</summary>
+    Task<TaskStripCounts> StripAsync(TaskCountScope scope, int key, CancellationToken cancellationToken = default);
+
+    /// <summary>The Client's Matters with open Tasks, most open first, then most overdue, then by reference; at most <paramref name="take"/>.</summary>
+    Task<IReadOnlyList<MatterTaskCount>> TopMattersAsync(int clientId, int take, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Counts a Matter's Assets for the Matter summary without the Organization module knowing the Asset table. The Assets module replaces the default
+/// registration (<see cref="NoAssetsMatterAssetCounts"/>).
+/// </summary>
+public interface IMatterAssetCounts
+{
+    /// <summary>All Assets of the Matter, active and retired (the Assets tab lists both).</summary>
+    Task<int> CountAsync(int matterId, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Default <see cref="IMatterAssetCounts"/> until the Assets module registers the real one: no Assets.</summary>
+public sealed class NoAssetsMatterAssetCounts : IMatterAssetCounts
+{
+    public Task<int> CountAsync(int matterId, CancellationToken cancellationToken = default) => Task.FromResult(0);
+}
+
+/// <summary>
+/// Default <see cref="IOrganizationTaskCounts"/> until the WorkViews module registers the real one: no Task is counted.
+/// </summary>
+public sealed class NoTasksOrganizationTaskCounts : IOrganizationTaskCounts
+{
+    public IQueryable<TaskCountRow> Grouped(TaskCountScope scope) => Enumerable.Empty<TaskCountRow>().AsQueryable();
+
+    public Task<IReadOnlyDictionary<int, TaskCountRow>> ForKeysAsync(TaskCountScope scope, IReadOnlyCollection<int> keys, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyDictionary<int, TaskCountRow>>(new Dictionary<int, TaskCountRow>());
+
+    public Task<TaskStripCounts> StripAsync(TaskCountScope scope, int key, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new TaskStripCounts(0, 0, 0, 0, 0));
+
+    public Task<IReadOnlyList<MatterTaskCount>> TopMattersAsync(int clientId, int take, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<MatterTaskCount>>([]);
+}

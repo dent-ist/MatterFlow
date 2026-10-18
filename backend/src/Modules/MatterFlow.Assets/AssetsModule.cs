@@ -1,7 +1,9 @@
 using MatterFlow.Assets.Application;
 using MatterFlow.Assets.Contracts;
 using MatterFlow.Configuration.Contracts.Forms;
+using MatterFlow.Organization.Contracts;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MatterFlow.Assets;
 
@@ -16,6 +18,8 @@ public static class AssetsModule
         services.AddScoped<AssetTypeService>();
         services.AddScoped<AssetService>();
         services.AddScoped<IAssetDirectory, AssetDirectory>();
+        services.RemoveAll<IMatterAssetCounts>();
+        services.AddScoped<IMatterAssetCounts, MatterAssetCounts>();
         services.AddScoped<IFormReferenceValidator, AssetReferenceValidator>();
         return services;
     }

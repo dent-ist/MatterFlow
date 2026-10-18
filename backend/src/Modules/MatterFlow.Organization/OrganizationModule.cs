@@ -23,6 +23,8 @@ public static class OrganizationModule
         services.AddScoped<IMatterDirectory, MatterDirectory>();
         services.AddScoped<IProjectDirectory, ProjectDirectory>();
         services.TryAddScoped<IMatterTaskGuard, NoTasksMatterTaskGuard>();
+        services.TryAddScoped<IOrganizationTaskCounts, NoTasksOrganizationTaskCounts>();
+        services.TryAddScoped<IMatterAssetCounts, NoAssetsMatterAssetCounts>();
         return services;
     }
 }

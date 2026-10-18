@@ -43,7 +43,7 @@ internal static class ListFilters
 [Route("api/v1/clients")]
 public class ClientsController(ClientService clients, CustomFieldValues customFields) : ControllerBase
 {
-    /// <summary>Lists Clients. <c>q</c> accepts a number (<c>343</c> or <c>00343</c>) or a name fragment. Sort: clientNumber (default), name, createdAt.</summary>
+    /// <summary>Lists Clients. <c>q</c> accepts a number (<c>343</c> or <c>00343</c>) or a name fragment. Sort: clientNumber (default), name, createdAt, openTasks, overdue (Task counts; -openTasks is most first; ties by the default order).</summary>
     [HttpGet(Name = "ListClients")]
     [Authorize(Policy = OrganizationPolicies.ClientView)]
     [ProducesResponseType<PagedResult<ClientResponse>>(StatusCodes.Status200OK, "application/json")]
@@ -68,6 +68,16 @@ public class ClientsController(ClientService clients, CustomFieldValues customFi
     [ProducesResponseType<ClientResponse>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> Get(int clientId, CancellationToken cancellationToken) =>
         this.ToActionResult(await clients.GetAsync(clientId, cancellationToken));
+
+    /// <summary>
+    /// Counts for the Client overview strip: open, overdue, ASAP, on hold and due soon Tasks over all the Client's Matters (the Dashboard and Task Queue
+    /// definitions, in the viewer's time zone), the Matter counts and the Matters with the most open Tasks. The Task numbers are null without <c>Task.View</c>.
+    /// </summary>
+    [HttpGet("{clientId:int}/summary", Name = "GetClientSummary")]
+    [Authorize(Policy = OrganizationPolicies.ClientView)]
+    [ProducesResponseType<ClientSummaryResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Summary(int clientId, CancellationToken cancellationToken) =>
+        this.ToActionResult(await clients.SummaryAsync(clientId, cancellationToken));
 
     /// <summary>Creates a Client. The number is normalized (<c>343</c> becomes <c>00343</c>) and must be unique.</summary>
     [HttpPost(Name = "CreateClient")]
@@ -98,7 +108,7 @@ public class ClientsController(ClientService clients, CustomFieldValues customFi
 [Route("api/v1/matters")]
 public class MattersController(MatterService matters, CustomFieldValues customFields) : ControllerBase
 {
-    /// <summary>Lists Matters. <c>q</c> accepts <c>343-12</c>, <c>00343-00012</c>, a client or matter number, or a name fragment. Sort: matterRef (default), name, clientNumber, createdAt.</summary>
+    /// <summary>Lists Matters. <c>q</c> accepts <c>343-12</c>, <c>00343-00012</c>, a client or matter number, or a name fragment. Sort: matterRef (default), name, clientNumber, createdAt, openTasks, overdue (Task counts; ties by the default order).</summary>
     [HttpGet(Name = "ListMatters")]
     [Authorize(Policy = OrganizationPolicies.MatterView)]
     [ProducesResponseType<PagedResult<MatterResponse>>(StatusCodes.Status200OK, "application/json")]
@@ -124,12 +134,22 @@ public class MattersController(MatterService matters, CustomFieldValues customFi
     public async Task<IActionResult> CustomFieldForm(CancellationToken cancellationToken) =>
         Ok(new CustomFieldFormResponse(await customFields.PublishedVersionAsync(CustomFieldTarget.Matter, cancellationToken)));
 
-    /// <summary>Gets one Matter, including its open Task count.</summary>
+    /// <summary>Gets one Matter, including its open and overdue Task counts.</summary>
     [HttpGet("{matterId:int}", Name = "GetMatter")]
     [Authorize(Policy = OrganizationPolicies.MatterView)]
     [ProducesResponseType<MatterResponse>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> Get(int matterId, CancellationToken cancellationToken) =>
         this.ToActionResult(await matters.GetAsync(matterId, cancellationToken));
+
+    /// <summary>
+    /// Counts for the Matter overview strip: open, overdue, ASAP, on hold and due soon Tasks (project Tasks included), the Project count and the Asset
+    /// count. The Task numbers are null without <c>Task.View</c>.
+    /// </summary>
+    [HttpGet("{matterId:int}/summary", Name = "GetMatterSummary")]
+    [Authorize(Policy = OrganizationPolicies.MatterView)]
+    [ProducesResponseType<MatterSummaryResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Summary(int matterId, CancellationToken cancellationToken) =>
+        this.ToActionResult(await matters.SummaryAsync(matterId, cancellationToken));
 
     /// <summary>Creates a Matter under an active Client. The number is unique within the Client.</summary>
     [HttpPost(Name = "CreateMatter")]
@@ -167,7 +187,7 @@ public class MattersController(MatterService matters, CustomFieldValues customFi
 [Route("api/v1/projects")]
 public class ProjectsController(ProjectService projects, CustomFieldValues customFields) : ControllerBase
 {
-    /// <summary>Lists Projects (use <c>matterId</c> for one Matter's Projects). Sort: name (default), matterRef, createdAt.</summary>
+    /// <summary>Lists Projects (use <c>matterId</c> for one Matter's Projects). Sort: name (default), matterRef, createdAt, openTasks, overdue (Task counts; ties by the default order).</summary>
     [HttpGet(Name = "ListProjects")]
     [Authorize(Policy = OrganizationPolicies.ProjectView)]
     [ProducesResponseType<PagedResult<ProjectResponse>>(StatusCodes.Status200OK, "application/json")]
@@ -192,6 +212,13 @@ public class ProjectsController(ProjectService projects, CustomFieldValues custo
     [ProducesResponseType<ProjectResponse>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> Get(int projectId, CancellationToken cancellationToken) =>
         this.ToActionResult(await projects.GetAsync(projectId, cancellationToken));
+
+    /// <summary>Counts for the Project overview strip: open, overdue, ASAP, on hold and due soon Tasks of the Project. The numbers are null without <c>Task.View</c>.</summary>
+    [HttpGet("{projectId:int}/summary", Name = "GetProjectSummary")]
+    [Authorize(Policy = OrganizationPolicies.ProjectView)]
+    [ProducesResponseType<ProjectSummaryResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Summary(int projectId, CancellationToken cancellationToken) =>
+        this.ToActionResult(await projects.SummaryAsync(projectId, cancellationToken));
 
     /// <summary>Creates a Project in a Matter. The name is unique within the Matter.</summary>
     [HttpPost(Name = "CreateProject")]

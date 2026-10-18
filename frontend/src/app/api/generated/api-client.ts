@@ -5149,6 +5149,10 @@ export interface IClientsClient {
     /**
      * @return OK
      */
+    getClientSummary(clientId: number): Observable<ClientSummaryResponse>;
+    /**
+     * @return OK
+     */
     changeClientNumber(clientId: number, body: ChangeNumberRequest): Observable<ClientResponse>;
 }
 
@@ -5467,6 +5471,59 @@ export class ClientsClient implements IClientsClient {
     /**
      * @return OK
      */
+    getClientSummary(clientId: number): Observable<ClientSummaryResponse> {
+        let url_ = this.baseUrl + "/api/v1/clients/{clientId}/summary";
+        if (clientId === undefined || clientId === null)
+            throw new globalThis.Error("The parameter 'clientId' must be defined.");
+        url_ = url_.replace("{clientId}", encodeURIComponent("" + clientId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetClientSummary(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetClientSummary(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ClientSummaryResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ClientSummaryResponse>;
+        }));
+    }
+
+    protected processGetClientSummary(response: HttpResponseBase): Observable<ClientSummaryResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ClientSummaryResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
     changeClientNumber(clientId: number, body: ChangeNumberRequest): Observable<ClientResponse> {
         let url_ = this.baseUrl + "/api/v1/clients/{clientId}/number";
         if (clientId === undefined || clientId === null)
@@ -5558,6 +5615,10 @@ export interface IMattersClient {
      * @return OK
      */
     updateMatter(matterId: number, body: UpdateMatterRequest): Observable<MatterResponse>;
+    /**
+     * @return OK
+     */
+    getMatterSummary(matterId: number): Observable<MatterSummaryResponse>;
     /**
      * @return OK
      */
@@ -5953,6 +6014,59 @@ export class MattersClient implements IMattersClient {
     /**
      * @return OK
      */
+    getMatterSummary(matterId: number): Observable<MatterSummaryResponse> {
+        let url_ = this.baseUrl + "/api/v1/matters/{matterId}/summary";
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMatterSummary(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMatterSummary(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterSummaryResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterSummaryResponse>;
+        }));
+    }
+
+    protected processGetMatterSummary(response: HttpResponseBase): Observable<MatterSummaryResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterSummaryResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
     changeMatterNumber(matterId: number, body: ChangeNumberRequest): Observable<MatterResponse> {
         let url_ = this.baseUrl + "/api/v1/matters/{matterId}/number";
         if (matterId === undefined || matterId === null)
@@ -6094,6 +6208,10 @@ export interface IProjectsClient {
      * @return OK
      */
     updateProject(projectId: number, body: UpdateProjectRequest): Observable<ProjectResponse>;
+    /**
+     * @return OK
+     */
+    getProjectSummary(projectId: number): Observable<ProjectSummaryResponse>;
     /**
      * @return OK
      */
@@ -6407,6 +6525,59 @@ export class ProjectsClient implements IProjectsClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProjectResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getProjectSummary(projectId: number): Observable<ProjectSummaryResponse> {
+        let url_ = this.baseUrl + "/api/v1/projects/{projectId}/summary";
+        if (projectId === undefined || projectId === null)
+            throw new globalThis.Error("The parameter 'projectId' must be defined.");
+        url_ = url_.replace("{projectId}", encodeURIComponent("" + projectId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetProjectSummary(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetProjectSummary(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProjectSummaryResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProjectSummaryResponse>;
+        }));
+    }
+
+    protected processGetProjectSummary(response: HttpResponseBase): Observable<ProjectSummaryResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProjectSummaryResponse;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -11543,6 +11714,8 @@ export interface ClientResponse {
     name: string;
     isActive: boolean;
     matterCount: number;
+    openTaskCount: number | undefined;
+    overdueTaskCount: number | undefined;
     formVersionId: number | undefined;
     publishedFormVersionId: number | undefined;
     formValues: any | undefined;
@@ -11550,6 +11723,20 @@ export interface ClientResponse {
     rowVersion: string;
     createdAtUtc: string;
     modifiedAtUtc: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface ClientSummaryResponse {
+    clientId: number;
+    openTasks: number | undefined;
+    overdue: number | undefined;
+    asap: number | undefined;
+    onHold: number | undefined;
+    dueSoon: number | undefined;
+    matterCount: number;
+    activeMatterCount: number;
+    topMatters: TopMatterResponse[] | undefined;
 
     [key: string]: any;
 }
@@ -12120,6 +12307,7 @@ export interface MatterResponse {
     isSensitive: boolean;
     projectCount: number;
     openTaskCount: number | undefined;
+    overdueTaskCount: number | undefined;
     formVersionId: number | undefined;
     publishedFormVersionId: number | undefined;
     formValues: any | undefined;
@@ -12127,6 +12315,19 @@ export interface MatterResponse {
     rowVersion: string;
     createdAtUtc: string;
     modifiedAtUtc: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface MatterSummaryResponse {
+    matterId: number;
+    openTasks: number | undefined;
+    overdue: number | undefined;
+    asap: number | undefined;
+    onHold: number | undefined;
+    dueSoon: number | undefined;
+    projectCount: number;
+    assetCount: number;
 
     [key: string]: any;
 }
@@ -12434,12 +12635,16 @@ export interface PriorityView {
 export interface ProjectResponse {
     projectId: number;
     matterId: number;
+    clientNumber: string;
+    clientName: string;
     matterRef: string;
     matterName: string;
     matterIsActive: boolean;
     name: string;
     description: string | undefined;
     isActive: boolean;
+    openTaskCount: number | undefined;
+    overdueTaskCount: number | undefined;
     formVersionId: number | undefined;
     publishedFormVersionId: number | undefined;
     formValues: any | undefined;
@@ -12447,6 +12652,17 @@ export interface ProjectResponse {
     rowVersion: string;
     createdAtUtc: string;
     modifiedAtUtc: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface ProjectSummaryResponse {
+    projectId: number;
+    openTasks: number | undefined;
+    overdue: number | undefined;
+    asap: number | undefined;
+    onHold: number | undefined;
+    dueSoon: number | undefined;
 
     [key: string]: any;
 }
@@ -13242,6 +13458,17 @@ export interface TaskWorkflowResponse {
     rowVersion: string;
     progress: TaskWorkflowProgress;
     steps: TaskStepInstance[];
+
+    [key: string]: any;
+}
+
+export interface TopMatterResponse {
+    matterId: number;
+    reference: string;
+    name: string;
+    isActive: boolean;
+    openTasks: number;
+    overdue: number;
 
     [key: string]: any;
 }

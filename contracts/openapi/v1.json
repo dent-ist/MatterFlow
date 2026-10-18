@@ -3536,6 +3536,37 @@
         }
       }
     },
+    "/api/v1/clients/{clientId}/summary": {
+      "get": {
+        "tags": [
+          "Clients"
+        ],
+        "operationId": "GetClientSummary",
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/clients/{clientId}/number": {
       "put": {
         "tags": [
@@ -3856,6 +3887,37 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MatterResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matters/{matterId}/summary": {
+      "get": {
+        "tags": [
+          "Matters"
+        ],
+        "operationId": "GetMatterSummary",
+        "parameters": [
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterSummaryResponse"
                 }
               }
             }
@@ -4189,6 +4251,37 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProjectResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/summary": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "GetProjectSummary",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectSummaryResponse"
                 }
               }
             }
@@ -9258,6 +9351,8 @@
           "name",
           "isActive",
           "matterCount",
+          "openTaskCount",
+          "overdueTaskCount",
           "formVersionId",
           "publishedFormVersionId",
           "formValues",
@@ -9283,6 +9378,20 @@
           },
           "matterCount": {
             "type": "integer",
+            "format": "int32"
+          },
+          "openTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "overdueTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
             "format": "int32"
           },
           "formVersionId": {
@@ -9324,6 +9433,78 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "ClientSummaryResponse": {
+        "required": [
+          "clientId",
+          "openTasks",
+          "overdue",
+          "asap",
+          "onHold",
+          "dueSoon",
+          "matterCount",
+          "activeMatterCount",
+          "topMatters"
+        ],
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "openTasks": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "overdue": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "asap": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "onHold": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "dueSoon": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "matterCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "activeMatterCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "topMatters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/TopMatterResponse"
+            }
           }
         }
       },
@@ -11203,6 +11384,7 @@
           "isSensitive",
           "projectCount",
           "openTaskCount",
+          "overdueTaskCount",
           "formVersionId",
           "publishedFormVersionId",
           "formValues",
@@ -11256,6 +11438,13 @@
             ],
             "format": "int32"
           },
+          "overdueTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
           "formVersionId": {
             "type": [
               "null",
@@ -11295,6 +11484,68 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "MatterSummaryResponse": {
+        "required": [
+          "matterId",
+          "openTasks",
+          "overdue",
+          "asap",
+          "onHold",
+          "dueSoon",
+          "projectCount",
+          "assetCount"
+        ],
+        "type": "object",
+        "properties": {
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "openTasks": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "overdue": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "asap": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "onHold": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "dueSoon": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "projectCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "assetCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -12290,12 +12541,16 @@
         "required": [
           "projectId",
           "matterId",
+          "clientNumber",
+          "clientName",
           "matterRef",
           "matterName",
           "matterIsActive",
           "name",
           "description",
           "isActive",
+          "openTaskCount",
+          "overdueTaskCount",
           "formVersionId",
           "publishedFormVersionId",
           "formValues",
@@ -12313,6 +12568,12 @@
           "matterId": {
             "type": "integer",
             "format": "int32"
+          },
+          "clientNumber": {
+            "type": "string"
+          },
+          "clientName": {
+            "type": "string"
           },
           "matterRef": {
             "type": "string"
@@ -12334,6 +12595,20 @@
           },
           "isActive": {
             "type": "boolean"
+          },
+          "openTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "overdueTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "formVersionId": {
             "type": [
@@ -12374,6 +12649,58 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "ProjectSummaryResponse": {
+        "required": [
+          "projectId",
+          "openTasks",
+          "overdue",
+          "asap",
+          "onHold",
+          "dueSoon"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "openTasks": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "overdue": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "asap": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "onHold": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "dueSoon": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -15314,6 +15641,40 @@
             "items": {
               "$ref": "#/components/schemas/TaskStepInstance"
             }
+          }
+        }
+      },
+      "TopMatterResponse": {
+        "required": [
+          "matterId",
+          "reference",
+          "name",
+          "isActive",
+          "openTasks",
+          "overdue"
+        ],
+        "type": "object",
+        "properties": {
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "openTasks": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

@@ -9,6 +9,8 @@ namespace MatterFlow.Organization.Application;
 /// <param name="Name">Client name.</param>
 /// <param name="IsActive">An inactive Client cannot receive new Matters; existing records keep working.</param>
 /// <param name="MatterCount">Number of Matters under the Client.</param>
+/// <param name="OpenTaskCount">Open Tasks (New, In Progress, On Hold) of all the Client's Matters, project Tasks included; null when the viewer lacks <c>Task.View</c>.</param>
+/// <param name="OverdueTaskCount">Open Tasks past their due moment in the viewer's time zone (same rule as the Dashboard and the Task Queue); null when the viewer lacks <c>Task.View</c>.</param>
 /// <param name="FormVersionId">The custom-field form version the stored values were captured under; null when none were saved.</param>
 /// <param name="PublishedFormVersionId">The currently published custom-field form version (the schema to edit with); null when there is none.</param>
 /// <param name="FormValues">Custom-field values keyed by field key; only filled on the detail response (null in lists).</param>
@@ -22,6 +24,8 @@ public sealed record ClientResponse(
     [property: Required] string Name,
     [property: Required] bool IsActive,
     [property: Required] int MatterCount,
+    int? OpenTaskCount,
+    int? OverdueTaskCount,
     int? FormVersionId,
     int? PublishedFormVersionId,
     Dictionary<string, JsonElement>? FormValues,
@@ -88,7 +92,8 @@ public sealed class ChangeNumberRequest
 /// <param name="IsActive">Tasks can be created only on an active Matter.</param>
 /// <param name="IsSensitive">Display-only warning flag; does not restrict access.</param>
 /// <param name="ProjectCount">Number of Projects in the Matter.</param>
-/// <param name="OpenTaskCount">Tasks that are not Completed or Cancelled; only filled on the detail response.</param>
+/// <param name="OpenTaskCount">Open Tasks (New, In Progress, On Hold) of the Matter, project Tasks included; null when the viewer lacks <c>Task.View</c>.</param>
+/// <param name="OverdueTaskCount">Open Tasks past their due moment in the viewer's time zone; null when the viewer lacks <c>Task.View</c>.</param>
 /// <param name="FormVersionId">The custom-field form version the stored values were captured under; null when none were saved.</param>
 /// <param name="PublishedFormVersionId">The currently published custom-field form version (the schema to edit with); null when there is none.</param>
 /// <param name="FormValues">Custom-field values keyed by field key; only filled on the detail response (null in lists).</param>
@@ -109,6 +114,7 @@ public sealed record MatterResponse(
     [property: Required] bool IsSensitive,
     [property: Required] int ProjectCount,
     int? OpenTaskCount,
+    int? OverdueTaskCount,
     int? FormVersionId,
     int? PublishedFormVersionId,
     Dictionary<string, JsonElement>? FormValues,
@@ -171,12 +177,16 @@ public sealed class SetActiveRequest
 /// <summary>A Project with its Matter.</summary>
 /// <param name="ProjectId">Internal id.</param>
 /// <param name="MatterId">Owning Matter id (cannot change).</param>
+/// <param name="ClientNumber">Number of the Matter's Client, zero-padded.</param>
+/// <param name="ClientName">Name of the Matter's Client.</param>
 /// <param name="MatterRef">Matter reference <c>00343-00012</c>.</param>
 /// <param name="MatterName">Matter name.</param>
 /// <param name="MatterIsActive">False when the Matter is inactive.</param>
 /// <param name="Name">Project name, unique within the Matter.</param>
 /// <param name="Description">Optional description.</param>
 /// <param name="IsActive">False means archived: new Tasks cannot select it.</param>
+/// <param name="OpenTaskCount">Open Tasks (New, In Progress, On Hold) of the Project; null when the viewer lacks <c>Task.View</c>.</param>
+/// <param name="OverdueTaskCount">Open Tasks past their due moment in the viewer's time zone; null when the viewer lacks <c>Task.View</c>.</param>
 /// <param name="FormVersionId">The custom-field form version the stored values were captured under; null when none were saved.</param>
 /// <param name="PublishedFormVersionId">The currently published custom-field form version (the schema to edit with); null when there is none.</param>
 /// <param name="FormValues">Custom-field values keyed by field key; only filled on the detail response (null in lists).</param>
@@ -187,12 +197,16 @@ public sealed class SetActiveRequest
 public sealed record ProjectResponse(
     [property: Required] int ProjectId,
     [property: Required] int MatterId,
+    [property: Required] string ClientNumber,
+    [property: Required] string ClientName,
     [property: Required] string MatterRef,
     [property: Required] string MatterName,
     [property: Required] bool MatterIsActive,
     [property: Required] string Name,
     string? Description,
     [property: Required] bool IsActive,
+    int? OpenTaskCount,
+    int? OverdueTaskCount,
     int? FormVersionId,
     int? PublishedFormVersionId,
     Dictionary<string, JsonElement>? FormValues,
@@ -240,3 +254,76 @@ public sealed class UpdateProjectRequest
 /// <summary>The published custom-field form of a Client, Matter or Project.</summary>
 /// <param name="PublishedFormVersionId">The published form version to render (fetch its schema from the forms API); null when no custom fields are published.</param>
 public sealed record CustomFieldFormResponse(int? PublishedFormVersionId);
+
+/// <summary>A Matter in a Client's "most open tasks" list.</summary>
+/// <param name="MatterId">Matter id (the link target).</param>
+/// <param name="Reference">Matter reference <c>00343-00012</c>.</param>
+/// <param name="Name">Matter name.</param>
+/// <param name="IsActive">False when the Matter is inactive.</param>
+/// <param name="OpenTasks">Open Tasks of the Matter, project Tasks included.</param>
+/// <param name="Overdue">Overdue Tasks of the Matter.</param>
+public sealed record TopMatterResponse(
+    [property: Required] int MatterId,
+    [property: Required] string Reference,
+    [property: Required] string Name,
+    [property: Required] bool IsActive,
+    [property: Required] int OpenTasks,
+    [property: Required] int Overdue);
+
+/// <summary>
+/// Counts for the Client overview strip, in the Dashboard and Task Queue vocabulary and the viewer's time zone. The five Task numbers are null when
+/// the viewer lacks <c>Task.View</c> (the response is still 200).
+/// </summary>
+/// <param name="ClientId">The Client.</param>
+/// <param name="OpenTasks">Tasks that are New, In Progress or On Hold, over all the Client's Matters (project Tasks included).</param>
+/// <param name="Overdue">Open Tasks past their due moment.</param>
+/// <param name="Asap">Open Tasks with no due date.</param>
+/// <param name="OnHold">Tasks On Hold.</param>
+/// <param name="DueSoon">Open Tasks that are not overdue and not ASAP, due today to two days ahead (the Dashboard's Due soon).</param>
+/// <param name="MatterCount">Number of Matters under the Client.</param>
+/// <param name="ActiveMatterCount">Number of active Matters under the Client.</param>
+/// <param name="TopMatters">Up to 5 Matters with open Tasks, most open first, then most overdue, then by reference. Null when the viewer lacks <c>Task.View</c> or <c>Matter.View</c> (a Matter is never listed without a link target).</param>
+public sealed record ClientSummaryResponse(
+    [property: Required] int ClientId,
+    int? OpenTasks,
+    int? Overdue,
+    int? Asap,
+    int? OnHold,
+    int? DueSoon,
+    [property: Required] int MatterCount,
+    [property: Required] int ActiveMatterCount,
+    IReadOnlyList<TopMatterResponse>? TopMatters);
+
+/// <summary>Counts for the Matter overview strip; the five Task numbers are null when the viewer lacks <c>Task.View</c>. Same meaning as <see cref="ClientSummaryResponse"/>, over the Matter's Tasks (project Tasks included).</summary>
+/// <param name="MatterId">The Matter.</param>
+/// <param name="OpenTasks">Tasks that are New, In Progress or On Hold.</param>
+/// <param name="Overdue">Open Tasks past their due moment.</param>
+/// <param name="Asap">Open Tasks with no due date.</param>
+/// <param name="OnHold">Tasks On Hold.</param>
+/// <param name="DueSoon">Open Tasks that are not overdue and not ASAP, due today to two days ahead.</param>
+/// <param name="ProjectCount">Number of Projects in the Matter (archived included).</param>
+/// <param name="AssetCount">Number of Assets of the Matter (retired included).</param>
+public sealed record MatterSummaryResponse(
+    [property: Required] int MatterId,
+    int? OpenTasks,
+    int? Overdue,
+    int? Asap,
+    int? OnHold,
+    int? DueSoon,
+    [property: Required] int ProjectCount,
+    [property: Required] int AssetCount);
+
+/// <summary>Counts for the Project overview strip; the five Task numbers are null when the viewer lacks <c>Task.View</c>. Same meaning as <see cref="ClientSummaryResponse"/>, over the Project's Tasks.</summary>
+/// <param name="ProjectId">The Project.</param>
+/// <param name="OpenTasks">Tasks that are New, In Progress or On Hold.</param>
+/// <param name="Overdue">Open Tasks past their due moment.</param>
+/// <param name="Asap">Open Tasks with no due date.</param>
+/// <param name="OnHold">Tasks On Hold.</param>
+/// <param name="DueSoon">Open Tasks that are not overdue and not ASAP, due today to two days ahead.</param>
+public sealed record ProjectSummaryResponse(
+    [property: Required] int ProjectId,
+    int? OpenTasks,
+    int? Overdue,
+    int? Asap,
+    int? OnHold,
+    int? DueSoon);

@@ -1,21 +1,29 @@
 using System.Globalization;
 using MatterFlow.Audit.Contracts;
+using MatterFlow.Identity.Contracts;
+using MatterFlow.Organization.Contracts;
 using MatterFlow.Organization.Domain;
+using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
+using MatterFlow.SharedKernel.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Organization.Application;
 
-public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomFieldValues custom)
+public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomFieldValues custom, IOrganizationTaskCounts taskCounts, IPermissionChecker permissions)
 {
-    public static readonly string[] SortFields = ["name", "matterRef", "createdAt"];
+    public static readonly string[] SortFields = ["name", "matterRef", "createdAt", OrganizationSupport.SortOpenTasks, OrganizationSupport.SortOverdue];
+
+    private bool CanCountTasks => permissions.Has(Permissions.Task.View);
 
     private static readonly Dictionary<string, Func<IQueryable<ProjectRow>, bool, bool, IOrderedQueryable<ProjectRow>>> Orderings = new()
     {
         ["name"] = OrganizationSupport.By<ProjectRow, string>(r => r.Project.Name),
         ["matterRef"] = OrganizationSupport.By<ProjectRow, string>(r => r.MatterRef),
         ["createdAt"] = OrganizationSupport.By<ProjectRow, DateTime>(r => r.Project.CreatedAtUtc),
+        [OrganizationSupport.SortOpenTasks] = OrganizationSupport.By<ProjectRow, int>(r => r.Open),
+        [OrganizationSupport.SortOverdue] = OrganizationSupport.By<ProjectRow, int>(r => r.Overdue),
     };
 
     public async Task<Result<PagedResult<ProjectResponse>>> ListAsync(ProjectListQuery query, CancellationToken ct)
@@ -56,12 +64,56 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
         }
 
         var total = await rows.CountAsync(ct);
-        var items = await OrganizationSupport.ApplySort(rows, sort.Count == 0 ? [new SortField("name", false)] : sort, Orderings, r => r.Project.Id)
+
+        // The count sorts need the counts inside the statement (one grouped left join); without Task.View they are constants, so the order falls back to the default.
+        var canCount = CanCountTasks;
+        var joinCounts = canCount && sort.Any(f => OrganizationSupport.IsCountSort(f.Field));
+        if (joinCounts)
+        {
+            rows = from r in rows
+                   join g in taskCounts.Grouped(TaskCountScope.Project) on r.Project.Id equals g.Key into joined
+                   from g in joined.DefaultIfEmpty()
+                   select new ProjectRow
+                   {
+                       Project = r.Project,
+                       ClientNumber = r.ClientNumber,
+                       ClientName = r.ClientName,
+                       MatterRef = r.MatterRef,
+                       MatterName = r.MatterName,
+                       MatterIsActive = r.MatterIsActive,
+                       Open = (int?)g.Open ?? 0,
+                       Overdue = (int?)g.Overdue ?? 0,
+                   };
+        }
+
+        var items = await OrganizationSupport.ApplySort(rows, OrganizationSupport.WithDefaultTail(sort, new SortField("name", false)), Orderings, r => r.Project.Id)
             .Skip(page.Skip)
             .Take(page.PageSize)
             .ToListAsync(ct);
 
-        return OrganizationSupport.Page(items.Select(r => ToResponse(r)).ToList(), total, page);
+        IReadOnlyDictionary<int, TaskCountRow> byProject = canCount && !joinCounts
+            ? await taskCounts.ForKeysAsync(TaskCountScope.Project, [.. items.Select(r => r.Project.Id)], ct)
+            : new Dictionary<int, TaskCountRow>();
+        return OrganizationSupport.Page(
+            items.Select(r => ToResponse(
+                r,
+                !canCount ? null : joinCounts ? r.Open : byProject.GetValueOrDefault(r.Project.Id)?.Open ?? 0,
+                !canCount ? null : joinCounts ? r.Overdue : byProject.GetValueOrDefault(r.Project.Id)?.Overdue ?? 0)).ToList(),
+            total,
+            page);
+    }
+
+    /// <summary>Counts for the Project overview strip (#259): the five Task numbers over the Project's Tasks.</summary>
+    public async Task<Result<ProjectSummaryResponse>> SummaryAsync(int id, CancellationToken ct)
+    {
+        if (!await db.Set<Project>().AsNoTracking().AnyAsync(p => p.Id == id, ct))
+            return OrganizationSupport.NotFound("Project");
+
+        if (!CanCountTasks)
+            return new ProjectSummaryResponse(id, null, null, null, null, null);
+
+        var strip = await taskCounts.StripAsync(TaskCountScope.Project, id, ct);
+        return new ProjectSummaryResponse(id, strip.Open, strip.Overdue, strip.Asap, strip.OnHold, strip.DueSoon);
     }
 
     public async Task<Result<ProjectResponse>> GetAsync(int id, CancellationToken ct) => await GetAsync(id, [], ct);
@@ -69,9 +121,18 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
     private async Task<Result<ProjectResponse>> GetAsync(int id, IReadOnlyList<string> dropped, CancellationToken ct)
     {
         var row = await Rows().Where(r => r.Project.Id == id).SingleOrDefaultAsync(ct);
-        return row is null
-            ? OrganizationSupport.NotFound("Project")
-            : ToResponse(row, await custom.ReadAsync(CustomFieldTarget.Project, id, ct), dropped);
+        if (row is null)
+            return OrganizationSupport.NotFound("Project");
+
+        int? open = null, overdue = null;
+        if (CanCountTasks)
+        {
+            var counts = await taskCounts.ForKeysAsync(TaskCountScope.Project, [id], ct);
+            open = counts.GetValueOrDefault(id)?.Open ?? 0;
+            overdue = counts.GetValueOrDefault(id)?.Overdue ?? 0;
+        }
+
+        return ToResponse(row, open, overdue, await custom.ReadAsync(CustomFieldTarget.Project, id, ct), dropped);
     }
 
     public async Task<Result<ProjectResponse>> CreateAsync(CreateProjectRequest request, CancellationToken ct)
@@ -220,7 +281,8 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
     private IQueryable<ProjectRow> Rows() =>
         from p in db.Set<Project>().AsNoTracking()
         join m in db.Set<Matter>().AsNoTracking() on p.MatterId equals m.Id
-        select new ProjectRow { Project = p, MatterRef = m.MatterRef, MatterName = m.Name, MatterIsActive = m.IsActive };
+        join c in db.Set<Client>().AsNoTracking() on m.ClientId equals c.Id
+        select new ProjectRow { Project = p, ClientNumber = m.ClientNumber, ClientName = c.Name, MatterRef = m.MatterRef, MatterName = m.Name, MatterIsActive = m.IsActive, Open = 0, Overdue = 0 };
 
     private async Task<int?> FindIdByNameAsync(int matterId, string name, int? exceptId, CancellationToken ct) =>
         await db.Set<Project>().AsNoTracking()
@@ -233,15 +295,19 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
-    private static ProjectResponse ToResponse(ProjectRow r, CustomFieldView? view = null, IReadOnlyList<string>? dropped = null) => new(
+    private static ProjectResponse ToResponse(ProjectRow r, int? openTaskCount, int? overdueTaskCount, CustomFieldView? view = null, IReadOnlyList<string>? dropped = null) => new(
         r.Project.Id,
         r.Project.MatterId,
+        r.ClientNumber.Value,
+        r.ClientName,
         r.MatterRef,
         r.MatterName,
         r.MatterIsActive,
         r.Project.Name,
         r.Project.Description,
         r.Project.IsActive,
+        openTaskCount,
+        overdueTaskCount,
         view?.FormVersionId,
         view?.PublishedFormVersionId,
         view?.Values,
@@ -259,5 +325,13 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
         public string MatterName { get; init; } = string.Empty;
 
         public bool MatterIsActive { get; init; }
+
+        public BusinessNumber ClientNumber { get; init; }
+
+        public string ClientName { get; init; } = string.Empty;
+
+        public int Open { get; init; }
+
+        public int Overdue { get; init; }
     }
 }

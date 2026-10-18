@@ -207,6 +207,24 @@ internal static class OrganizationSupport
             ? (descending ? ((IOrderedQueryable<T>)query).ThenByDescending(key) : ((IOrderedQueryable<T>)query).ThenBy(key))
             : (descending ? query.OrderByDescending(key) : query.OrderBy(key));
 
+    /// <summary>Sort keys of the Task counts, shared by the Client, Matter and Project lists.</summary>
+    public const string SortOpenTasks = "openTasks";
+    public const string SortOverdue = "overdue";
+
+    public static bool IsCountSort(string field) => field is SortOpenTasks or SortOverdue;
+
+    /// <summary>
+    /// The sort to apply: the request's keys, or the default when none, followed by the default key when a count sort was asked for (so ties and
+    /// viewers who may not count Tasks fall back to the existing default order). The unique id tie-break is added by <see cref="ApplySort{T}"/>.
+    /// </summary>
+    public static IReadOnlyList<SortField> WithDefaultTail(IReadOnlyList<SortField> sort, SortField defaultField)
+    {
+        if (sort.Count == 0)
+            return [defaultField];
+
+        return sort.Any(f => IsCountSort(f.Field)) && sort.All(f => f.Field != defaultField.Field) ? [.. sort, defaultField] : sort;
+    }
+
     public static Result<(PageRequest Page, IReadOnlyList<SortField> Sort)> PagingOf(OrgListQuery query, IReadOnlyCollection<string> allowedSort)
     {
         var page = PageRequest.Create(query.Page, query.PageSize);

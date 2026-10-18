@@ -285,6 +285,8 @@ public sealed class OrganizationApiTests(SqlServerFixture sql) : IAsyncLifetime
         {
             s.RemoveAll<IMatterTaskGuard>();
             s.AddScoped<IMatterTaskGuard, FixedGuard>();
+            s.RemoveAll<IOrganizationTaskCounts>();
+            s.AddScoped<IOrganizationTaskCounts, FixedCounts>();
         }));
         var blocked = await As(DatabaseApiFactory.AdminAccount, withTasks)
             .PostAsJsonAsync($"/api/v1/matters/{id}/active", new { isActive = false, rowVersion = active.GetProperty("rowVersion").GetString() });
@@ -294,12 +296,26 @@ public sealed class OrganizationApiTests(SqlServerFixture sql) : IAsyncLifetime
 
         var detail = await OkAsync(await As(DatabaseApiFactory.AdminAccount, withTasks).GetAsync($"/api/v1/matters/{id}"));
         detail.GetProperty("isActive").GetBoolean().ShouldBeTrue();
-        detail.GetProperty("openTaskCount").GetInt32().ShouldBe(3);
+        detail.GetProperty("openTaskCount").GetInt32().ShouldBe(3, "the detail's count comes from the shared Task counts (#258); the guard only blocks the deactivation");
+        detail.GetProperty("overdueTaskCount").GetInt32().ShouldBe(1);
     }
 
     private sealed class FixedGuard : IMatterTaskGuard
     {
         public Task<int> CountOpenTasksAsync(int matterId, CancellationToken cancellationToken = default) => Task.FromResult(3);
+    }
+
+    private sealed class FixedCounts : IOrganizationTaskCounts
+    {
+        public IQueryable<TaskCountRow> Grouped(TaskCountScope scope) => Enumerable.Empty<TaskCountRow>().AsQueryable();
+
+        public Task<IReadOnlyDictionary<int, TaskCountRow>> ForKeysAsync(TaskCountScope scope, IReadOnlyCollection<int> keys, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<int, TaskCountRow>>(keys.ToDictionary(k => k, k => new TaskCountRow { Key = k, Open = 3, Overdue = 1 }));
+
+        public Task<TaskStripCounts> StripAsync(TaskCountScope scope, int key, CancellationToken cancellationToken = default) => Task.FromResult(new TaskStripCounts(3, 1, 0, 0, 0));
+
+        public Task<IReadOnlyList<MatterTaskCount>> TopMattersAsync(int clientId, int take, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<MatterTaskCount>>([]);
     }
 
     // ---- Edits, concurrency, sensitivity

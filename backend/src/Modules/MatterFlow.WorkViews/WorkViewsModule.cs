@@ -1,3 +1,4 @@
+using MatterFlow.Organization.Contracts;
 using MatterFlow.WorkViews.Application.Queries;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +20,8 @@ public static class WorkViewsModule
         services.AddScoped<SwimlaneService>();
         services.AddScoped<WorkloadService>();
         services.AddScoped<CoverageService>();
+        services.RemoveAll<IOrganizationTaskCounts>();
+        services.AddScoped<IOrganizationTaskCounts, OrganizationTaskCounts>();
         services.Configure<DashboardOptions>(configuration.GetSection(DashboardOptions.SectionName));
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<DashboardCache>();
