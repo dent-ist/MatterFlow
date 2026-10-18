@@ -46,10 +46,12 @@ test.describe('column filters records screenshots', () => {
     // Clients
     await page.goto('/clients');
     await expect(first('Clients list')).toBeVisible();
-    await shot(page, 'clients-filters-closed');
-    await toggle.click();
+    // Since WP8 (#270) the row is open by default on the four record lists; the Matter's Assets tab keeps it closed.
     await expect(page.getByRole('textbox', { name: 'Filter by Name' })).toBeVisible();
     await shot(page, 'clients-filters-open');
+    await toggle.click();
+    await shot(page, 'clients-filters-closed');
+    await toggle.click();
     await page.goto('/clients?name=Bulk&status=all');
     await expect(first('Clients list')).toBeVisible();
     await shot(page, 'clients-filters-active');
@@ -57,14 +59,10 @@ test.describe('column filters records screenshots', () => {
     await expect(page.locator('td[data-empty="filtered"]')).toBeVisible();
     await shot(page, 'clients-empty-filtered');
 
-    // Matters: Sensitive under Other filters, then chips with the row closed
+    // Matters: Sensitive is a select after Status (WP8 #272), then chips with the row closed
     await page.goto('/matters');
     await expect(first('Matters list')).toBeVisible();
-    await toggle.click();
-    await page.getByRole('button', { name: 'Other filters' }).click();
-    await page.locator('[data-more-filter="isSensitive"]').click();
-    await shot(page, 'matters-more-filters');
-    await page.keyboard.press('Escape');
+    await shot(page, 'matters-sensitive-filter');
     await page.goto(`/matters?clientId=${clientId}&name=Bulk&isSensitive=false`);
     await expect(first('Matters list')).toBeVisible();
     await shot(page, 'matters-filters-active');
@@ -75,14 +73,12 @@ test.describe('column filters records screenshots', () => {
     // Projects
     await page.goto('/projects');
     await expect(first('Projects list')).toBeVisible();
-    await toggle.click();
     await shot(page, 'projects-filters-open');
 
     // Client page, Matters grid
     await page.goto(`/clients/${clientId}?tab=matters`);
     await expect(first('Matters list')).toBeVisible();
-    await shot(page, 'client-matters-closed');
-    await toggle.click();
+    await shot(page, 'client-matters-open');
     await page.getByRole('textbox', { name: 'Filter by Name' }).fill(`Bulk matter ${bulk.tag}-1`);
     await page.waitForTimeout(600);
     await shot(page, 'client-matters-filtered');

@@ -153,39 +153,43 @@ export class MoreFilters {
     @if (!stacked()) {
       <mf-filter-notice [filters]="filters()" />
     }
-    <div class="fbar" [class.fbar--row1]="stacked()" data-grid-toolbar>
-      <ng-content select="[mfBarStart]" />
-      @if (!stacked()) {
-        <div class="fbar__chips">
-          <mf-filter-chips
-            [filters]="filters()"
-            [mode]="filters().rowVisible() ? 'hidden' : 'all'"
-            (showColumn)="showColumn.emit($event)"
-          />
-        </div>
-        @if (filters().activeCount() > 0) {
-          <button
-            type="button"
-            class="mf-btn mf-btn--text"
-            data-clear-filters
-            (click)="filters().clear(clearAlso())"
-          >
-            Clear filters
-          </button>
+    @if (!bare() || barRow()) {
+      <div class="fbar" [class.fbar--row1]="stacked()" data-grid-toolbar>
+        <ng-content select="[mfBarStart]" />
+        @if (!stacked()) {
+          <div class="fbar__chips">
+            <mf-filter-chips
+              [filters]="filters()"
+              [mode]="filters().rowVisible() ? 'hidden' : 'all'"
+              (showColumn)="showColumn.emit($event)"
+            />
+          </div>
+          @if (clearHere()) {
+            <button
+              type="button"
+              class="mf-btn mf-btn--text"
+              data-clear-filters
+              (click)="filters().clear(clearAlso())"
+            >
+              Clear filters
+            </button>
+          }
         }
-      }
-      <ng-content />
-      @if (filters().moreDefs().length > 0) {
-        <mf-more-filters [filters]="filters()" />
-      }
-      <mf-filters-toggle
-        [controls]="filters().sheetMode() ? '' : controls()"
-        [open]="filters().toggleOpen()"
-        [count]="filters().activeCount()"
-        [sheet]="filters().sheetMode()"
-        (toggled)="filters().toggle()"
-      />
-    </div>
+        <ng-content />
+        @if (filters().moreDefs().length > 0) {
+          <mf-more-filters [filters]="filters()" />
+        }
+        @if (!bare()) {
+          <mf-filters-toggle
+            [controls]="filters().sheetMode() ? '' : controls()"
+            [open]="filters().toggleOpen()"
+            [count]="filters().activeCount()"
+            [sheet]="filters().sheetMode()"
+            (toggled)="filters().toggle()"
+          />
+        }
+      </div>
+    }
     @if (stacked() && rowTwo()) {
       <!-- Row 2 (#216, #217): the restored notice or the chips with Clear filters, and Reset sort at the right; it exists only when it has something to say. -->
       <div class="fbar fbar--row2" data-toolbar-row2>
@@ -300,6 +304,25 @@ export class FiltersBar {
   readonly endActive = input(false);
   /** A chip on a hidden column asks for the column back (the page owns the column chooser). */
   readonly showColumn = output<string>();
+
+  /**
+   * Record lists (WP8 #270): the Filters button and, while the row is open, Clear filters live in the page header (`mf-list-filters-button`),
+   * so this bar is only there when it has something to say: the chips and Clear filters of a closed row, or a link-only chip.
+   */
+  readonly bare = input(false);
+
+  /** The bar has chips to show, or (row closed) the one Clear filters link. */
+  protected readonly barRow = computed(() => {
+    const f = this.filters();
+    const chips = f.rowVisible() ? f.hiddenChips() : f.chips();
+    return chips.length > 0 || this.clearHere() || f.moreDefs().length > 0;
+  });
+
+  /** The bar shows Clear filters: filters are active, the grid's empty state has none of its own, and (bare) the row is closed. */
+  protected readonly clearHere = computed(() => {
+    const f = this.filters();
+    return f.activeCount() > 0 && !f.emptyClear() && !(this.bare() && f.rowVisible());
+  });
 
   /** Row 2 exists while there is a notice, a chip to show, an active filter (Clear filters) or something at its end. */
   protected readonly rowTwo = computed(() => {

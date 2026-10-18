@@ -88,6 +88,7 @@ let nextUid = 0;
             [anyLabel]="triOptions()[0]?.label ?? 'Any'"
             [yesLabel]="triOptions()[1]?.label ?? 'Yes'"
             [noLabel]="triOptions()[2]?.label ?? 'No'"
+            [prefix]="d.labelInRow && !inline() ? d.label + ': ' : ''"
             [value]="filters().text(d.key)"
             (valueChange)="filters().set(d.key, $event)"
           />

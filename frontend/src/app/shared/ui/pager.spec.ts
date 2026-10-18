@@ -78,6 +78,31 @@ describe('Pager', () => {
     expect(el.querySelector('[data-page]')!.textContent).toBe('Page 1 of 1');
     expect(el.querySelectorAll('button')).toHaveLength(2);
   });
+
+  describe('hidden records hint (#271)', () => {
+    it('adds "active" to the range and a muted "- 3 inactive hidden" with Show all', () => {
+      const fixture = create({ hidden: 3 });
+      const el: HTMLElement = fixture.nativeElement;
+      expect(el.querySelector('[data-range]')!.textContent).toBe('Showing 1-25 of 60 active');
+      expect(el.querySelector('[data-hidden-hint]')!.textContent).toMatch(/- 3 inactive hidden/);
+      let shown = 0;
+      fixture.componentInstance.showAll.subscribe(() => shown++);
+      el.querySelector<HTMLButtonElement>('[data-show-all]')!.click();
+      expect(shown).toBe(1);
+    });
+
+    it('says archived for projects and shows nothing when none are hidden', () => {
+      const archived = create({ hidden: 2, hiddenLabel: 'archived' });
+      expect(archived.nativeElement.querySelector('[data-hidden-hint]')!.textContent).toContain(
+        '2 archived hidden',
+      );
+      const none = create({ hidden: 0 });
+      expect(none.nativeElement.querySelector('[data-hidden-hint]')).toBeNull();
+      expect(none.nativeElement.querySelector('[data-range]')!.textContent).toBe(
+        'Showing 1-25 of 60',
+      );
+    });
+  });
 });
 
 describe('Pager layout groups (#280)', () => {

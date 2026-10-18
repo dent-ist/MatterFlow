@@ -32,6 +32,8 @@ export interface ListFiltersOptions {
   readonly screen: string;
   /** Start with the filter row open when nothing is remembered (Task Queue, My Work, Pod Work). */
   readonly openByDefault?: boolean;
+  /** Width in px below which the controls live in the sheet (default 768; the record lists use 640, WP8 #270). */
+  readonly sheetBelow?: number;
   /** Keys of the columns on screen; a filter on any other column keeps working and shows as a chip. Omit when all columns show. */
   readonly visibleColumns?: Signal<readonly string[] | null>;
   /** Plural noun for the live region ("assets"); results are announced as "23 results" when omitted. */
@@ -68,6 +70,7 @@ export class ListFilters {
   readonly defs: Signal<readonly FilterDef[]>;
   readonly screen: string;
   private readonly openByDefault: boolean;
+  private readonly sheetBelow: number;
   private readonly visible: Signal<readonly string[] | null>;
   private readonly noun: string;
   private readonly announceResults: boolean;
@@ -116,6 +119,8 @@ export class ListFilters {
   /** Text for the polite live region; empty until a filter change has loaded. */
   readonly announcement = signal('');
   readonly resultTotal = signal<number | null>(null);
+  /** True while the grid's empty state offers its own "Clear filters": the bar then shows none, so there is never a second one (#270). */
+  readonly emptyClear = signal(false);
 
   private storageKey: string;
   private announced: string | null = null;
@@ -125,6 +130,7 @@ export class ListFilters {
   constructor(options: ListFiltersOptions) {
     this.screen = options.screen;
     this.openByDefault = options.openByDefault ?? false;
+    this.sheetBelow = options.sheetBelow ?? 768;
     this.noun = options.noun ?? 'results';
     this.announceResults = options.announceResults ?? true;
     this.viewName = options.viewName ?? (() => null);
@@ -362,6 +368,8 @@ export class ListFilters {
     // hold the grid would then fit, the row would come back, overflow again, and so on. An overflow holds until the area changes width.
     let heldAt: number | null = null;
     const check = () => {
+      // The skeleton rows (fixed bone widths) are wider than a small window while a list loads: that is no reason to move the controls.
+      if (area.querySelector('tbody[aria-busy="true"]')) return;
       const width = area.clientWidth;
       if (area.scrollWidth > width + 1) {
         heldAt = width;
@@ -374,13 +382,24 @@ export class ListFilters {
     const observer = new ResizeObserver(check);
     observer.observe(area);
     if (table) observer.observe(table);
-    this.destroyRef.onDestroy(() => observer.disconnect());
+    // The end of a load (rows instead of skeleton) is measured even if the table keeps its size.
+    const loading =
+      typeof MutationObserver === 'function' && area instanceof Node
+        ? new MutationObserver(check)
+        : null;
+    loading?.observe(area, { subtree: true, attributes: true, attributeFilter: ['aria-busy'] });
+    this.destroyRef.onDestroy(() => {
+      observer.disconnect();
+      loading?.disconnect();
+    });
     check();
   }
 
   private watchViewport(): void {
     if (typeof matchMedia !== 'function') return;
-    const query = matchMedia(SHEET_QUERY);
+    const query = matchMedia(
+      this.sheetBelow === 768 ? SHEET_QUERY : `(max-width: ${this.sheetBelow - 1}px)`,
+    );
     const update = () => this.narrow.set(query.matches);
     update();
     query.addEventListener?.('change', update);

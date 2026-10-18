@@ -154,6 +154,7 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status'] as const;
   `,
 })
 export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
+  protected override readonly emptyOffersClear = true;
   private readonly api = inject(StepDefinitionsClient);
   private readonly injector = inject(Injector);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');

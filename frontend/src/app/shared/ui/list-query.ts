@@ -16,6 +16,10 @@ export interface ListFiltersLike {
   queryParams(): unknown;
   clear(also?: readonly string[]): void;
   reportResults(total: number): void;
+  /** Set by the list while its empty state offers its own Clear filters (the bar then shows none). Optional for simple fakes. */
+  readonly emptyClear?: { set(value: boolean): void };
+  /** Sets one filter in the URL (used by "Show all"). */
+  set?(key: string, value: string): void;
 }
 
 export const PAGE_SIZES = [25, 50, 100] as const;
@@ -116,6 +120,11 @@ export abstract class ServerListPage<T> extends ListQueryPage {
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<T[]>([]);
   protected readonly total = signal(0);
+  /** Records the default Status hides ("3 inactive hidden"); 0 when none, when the default is not applied or when the count failed. */
+  protected readonly hiddenCount = signal(0);
+
+  /** True for a list whose body is `mfGridBody`: its filtered-empty state has a Clear filters button, so the filters bar shows none then. */
+  protected readonly emptyOffersClear: boolean = false;
 
   private requestId = 0;
 
@@ -130,6 +139,19 @@ export abstract class ServerListPage<T> extends ListQueryPage {
     const filters = this.listFilters();
     return filters ? JSON.stringify(filters.queryParams()) : '';
   });
+
+  /**
+   * The same list on the other side of the default Status, one row (`isActive=false`, `pageSize=1`; no API change, #271). A list that has
+   * the default returns null unless it is applied now. A failure is ignored: the list just shows no hint.
+   */
+  protected fetchHidden(): Promise<{ total: number }> | null {
+    return null;
+  }
+
+  /** "Show all" in the pager hint: Status = All, in the address. */
+  protected showAll(): void {
+    this.listFilters()?.set?.('status', 'all');
+  }
 
   /** Read any extra signals the request depends on, so a change reloads the list. */
   protected watch(): void {
@@ -147,21 +169,35 @@ export abstract class ServerListPage<T> extends ListQueryPage {
       this.watch();
       untracked(() => void this.load());
     });
+    // The empty state of a filtered list has its own Clear filters; the bar then shows none.
+    effect(() => {
+      const empty = this.emptyOffersClear && this.state() === 'ready' && this.rows().length === 0;
+      this.listFilters()?.emptyClear?.set(empty && (this.listFilters()?.activeCount() ?? 0) > 0);
+    });
   }
 
   async load(): Promise<void> {
     const id = ++this.requestId;
     if (this.state() === 'error' || this.state() === 'forbidden') this.state.set('loading');
     try {
-      const result = await this.fetch();
+      const [result, hidden] = await Promise.all([this.fetch(), this.hiddenTotal()]);
       if (id !== this.requestId) return;
       this.rows.set(result.items);
       this.total.set(result.total);
+      this.hiddenCount.set(hidden);
       this.state.set('ready');
       this.listFilters()?.reportResults(result.total);
     } catch (error) {
       if (id === this.requestId)
         this.state.set(error instanceof ApiError && error.status === 403 ? 'forbidden' : 'error');
+    }
+  }
+
+  private async hiddenTotal(): Promise<number> {
+    try {
+      return (await this.fetchHidden())?.total ?? 0;
+    } catch {
+      return 0;
     }
   }
 }

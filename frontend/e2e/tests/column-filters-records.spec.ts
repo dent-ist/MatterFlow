@@ -5,7 +5,7 @@ import { Seeder, uid } from '../support/seed';
 
 /**
  * Column filters on the record lists (epic #75, Batch 2, issue #77): Clients, Matters, Projects, the Client's Matters grid and the
- * Matter's Assets tab. The standalone search boxes and status selects are gone; the filter row is closed by default, URLs keep their
+ * Matter's Assets tab. The standalone search boxes and status selects are gone; the filter row is open by default on the four record lists (WP8, #270; the Matter's Assets tab keeps it closed), URLs keep their
  * parameter names, and the headers and the row stay in every empty state.
  */
 const toggle = (page: Page) => page.getByRole('button', { name: /^Filters/ });
@@ -19,7 +19,7 @@ const sheet = (page: Page) => page.getByRole('dialog', { name: 'Filters' });
 
 test.describe('Column filters on the record lists', () => {
   test.describe('Clients', () => {
-    test('the row is closed by default; Name and Client number filter the server list; Active is shown, not counted', async ({
+    test('the row is open by default; Name and Client number filter the server list; Active is shown, not counted', async ({
       page,
       seed,
     }) => {
@@ -30,13 +30,11 @@ test.describe('Column filters on the record lists', () => {
       await page.goto('/clients');
       const rows = grid(page, 'Clients list').locator('tbody tr');
       await expect(rows.first()).toBeVisible();
-      // No standalone search box or status select, the row is closed, nothing is counted.
+      // No standalone search box or status select, the row is open (WP8 #270), nothing is counted.
       await expect(page.getByRole('searchbox')).toHaveCount(0);
       await expect(page.locator('#client-search, #client-status')).toHaveCount(0);
-      await expect(text(page, 'Name')).toHaveCount(0);
-      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'false');
-
-      await toggle(page).click();
+      await expect(text(page, 'Name')).toBeVisible();
+      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true');
       await expect(select(page, 'Status')).toHaveValue('active');
       await expect(toggle(page)).toHaveText(/^\s*Filters\s*$/); // Active is a default: no count
 
@@ -145,7 +143,7 @@ test.describe('Column filters on the record lists', () => {
       return { alpha, beta, merger, audit, review };
     }
 
-    test('Matter reference, Name and Client are column filters; Sensitive lives under Other filters', async ({
+    test('Matter reference, Name and Client are column filters; Sensitive is a select after Status (no Other filters)', async ({
       page,
       seed,
     }) => {
@@ -172,15 +170,13 @@ test.describe('Column filters on the record lists', () => {
       await expect(rows.filter({ hasText: audit.matterRef })).toHaveCount(0);
       await text(page, 'Matter reference').fill('');
 
-      // Sensitive has no column: Other filters, then a chip when the row is closed.
-      await expect(select(page, 'Sensitive')).toHaveCount(0);
-      await page.getByRole('button', { name: 'Other filters' }).click();
-      await page.locator('[data-more-filter="isSensitive"]').click();
-      await page.getByRole('combobox', { name: 'Filter by Sensitive' }).selectOption('true');
+      // Sensitive is a select in the row (WP8 #272), then a chip when the row is closed.
+      await expect(page.getByRole('button', { name: 'Other filters' })).toHaveCount(0);
+      await select(page, 'Sensitive').selectOption('true');
       await expect(page).toHaveURL(/isSensitive=true/);
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(`Audit ${token}`);
-      await page.keyboard.press('Escape');
+      await toggle(page).click();
       await expect(page.getByRole('list', { name: 'Active filters' })).toContainText(
         'Sensitive: Yes',
       );
@@ -273,11 +269,10 @@ test.describe('Column filters on the record lists', () => {
       const rows = region.locator('tbody tr');
       await expect(rows).toHaveCount(2);
       await expect(page.locator('#client-matter-search, #client-matter-status')).toHaveCount(0);
-      await expect(text(page, 'Name')).toHaveCount(0);
+      await expect(text(page, 'Name')).toBeVisible();
       await expect(page.getByRole('button', { name: 'New matter' })).toBeVisible();
 
-      await toggle(page).click();
-      await expect(select(page, 'Status')).toHaveValue('active');
+      await expect(select(page, 'Status')).toHaveValue('active'); // open by default (WP8 #270)
       await text(page, 'Name').fill(`beta ${token}`);
       await expect(page).toHaveURL(/name=beta/);
       await expect(rows).toHaveCount(1);
@@ -398,17 +393,25 @@ test.describe('Column filters on the record lists', () => {
     await seed.asset(matter, `Axe Asset ${token}`);
     await page.setViewportSize({ width: 1366, height: 768 });
 
-    for (const [url, region] of [
-      ['/clients', 'Clients list'],
-      ['/matters', 'Matters list'],
-      ['/projects', 'Projects list'],
-      [`/clients/${client.clientId}?tab=matters`, 'Matters list'],
-      [`/matters/${matter.matterId}?tab=assets`, 'Assets list'],
+    for (const [url, region, openByDefault] of [
+      ['/clients', 'Clients list', true],
+      ['/matters', 'Matters list', true],
+      ['/projects', 'Projects list', true],
+      [`/clients/${client.clientId}?tab=matters`, 'Matters list', true],
+      [`/matters/${matter.matterId}?tab=assets`, 'Assets list', false],
     ] as const) {
       await page.goto(url);
       await expect(grid(page, region).locator('tbody tr').first()).toBeVisible();
-      expect(await axeViolations(page), `${url} closed`).toEqual([]);
-      await toggle(page).click();
+      if (openByDefault) {
+        expect(await axeViolations(page), `${url} open`).toEqual([]);
+        await toggle(page).click(); // closed
+        await expect(text(page, 'Name')).toHaveCount(0);
+        expect(await axeViolations(page), `${url} closed`).toEqual([]);
+        await toggle(page).click();
+      } else {
+        expect(await axeViolations(page), `${url} closed`).toEqual([]);
+        await toggle(page).click();
+      }
       await expect(text(page, 'Name')).toBeVisible();
       expect(await axeViolations(page), `${url} open`).toEqual([]);
       await text(page, 'Name').fill(token);

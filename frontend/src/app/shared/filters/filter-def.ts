@@ -83,6 +83,10 @@ export interface FilterDef {
   readonly placeholder?: string;
   /** Number of columns the cell spans ("Filter by Title or Ref"). */
   readonly span?: number;
+  /** A second filter of a column sits beside the first one in the cell (one 32 px line) instead of below it (Sensitive beside Status). */
+  readonly beside?: boolean;
+  /** triState: the row's control names itself ("Sensitive: Any"), because it has no column header of its own. The sheet has labels. */
+  readonly labelInRow?: boolean;
   /** No control anywhere (a link-only filter such as `?matterId=`): it only shows as a removable chip. */
   readonly noControl?: boolean;
   /** The chip reads the value alone ("New since your last visit"), without the "<label>: " prefix. */

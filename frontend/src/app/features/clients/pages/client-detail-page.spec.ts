@@ -155,23 +155,21 @@ describe('ClientDetailPage', () => {
   it('has column filters for Matter and Name and a Status that shows Active; no search box', async () => {
     await create(['Client.View', 'Matter.View'], 'matters');
     expect(el().querySelector('#client-matter-search, #client-matter-status')).toBeNull();
-    expect(el().querySelector('[data-filter-row]')).toBeNull(); // closed by default
-    el().querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
-    await settle(fixture);
+    expect(el().querySelector('[data-filter-row]')).not.toBeNull(); // open by default (WP8 #270)
 
     const control = <T extends HTMLElement>(name: string): T =>
       el().querySelector<T>(`[aria-label="Filter by ${name}"]`)!;
     expect(control('Matter')).not.toBeNull();
     expect(control('Name')).not.toBeNull();
     expect(control<HTMLSelectElement>('Status').value).toBe('active');
+    expect(control<HTMLSelectElement>('Sensitive').value).toBe('');
+    expect(el().querySelector('[data-more-filters]')).toBeNull();
     expect(el().querySelector('[data-filter-count]')).toBeNull();
   });
 
   it('filters, sorts and pages the matters through the address', async () => {
     await create(['Client.View', 'Matter.View'], 'matters');
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-    el().querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
-    await settle(fixture);
 
     const box = el().querySelector<HTMLInputElement>('[aria-label="Filter by Name"]')!;
     box.value = 'merger';

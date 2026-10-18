@@ -426,5 +426,23 @@ describe('ListFilters', { timeout: 20_000 }, () => {
       FakeObserver.last!.callback();
       expect(f.sheetMode()).toBe(false);
     });
+
+    it('ignores the loading skeleton (its fixed bone widths overflow a small window) and measures when the rows are there', async () => {
+      vi.stubGlobal('ResizeObserver', FakeObserver);
+      const f = await open('/list');
+      let busy = true;
+      const area = {
+        scrollWidth: 760,
+        clientWidth: 664,
+        querySelector: (sel: string) => (busy && sel.includes('aria-busy') ? {} : null),
+      };
+      f.watchOverflow(area as unknown as HTMLElement);
+      expect(f.sheetMode()).toBe(false); // wider only because of the skeleton
+
+      busy = false;
+      area.scrollWidth = 664;
+      FakeObserver.last!.callback();
+      expect(f.sheetMode()).toBe(false);
+    });
   });
 });

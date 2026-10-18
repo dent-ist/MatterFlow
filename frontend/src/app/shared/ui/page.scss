@@ -61,12 +61,47 @@
   padding: var(--mf-s2) var(--mf-s3);
   border-bottom: 1px solid var(--mf-border);
   text-align: left;
+  vertical-align: middle;
   height: var(--mf-row-h);
+}
+
+/* Record lists use the Comfortable row of the work grids (decision U "Rows and lines", WP8 #269): exactly 44 px whatever the cells hold,
+   18 px lines, 2 px above and below, the 1 px line under the row; so at most 39 px of content (two name lines, a 26 px badge). */
+.pg-table td {
+  padding-block: 2px;
+  height: var(--mf-grid-row-h, 44px);
+  line-height: 18px;
 }
 
 .pg-table th {
   background: var(--mf-surface-alt);
   font-weight: 600;
+}
+
+/* A name cell: at most two lines, the rest is cut with an ellipsis (the full text is the tooltip and stays in the DOM for assistive
+   technology). A record number or reference never wraps (`pg-nowrap`, BUG-6). No other cell wraps. */
+.pg-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.pg-namecell {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  min-width: 0;
+}
+
+.pg-namecell > .pg-name {
+  min-width: 0;
+}
+
+.pg-nowrap {
+  white-space: nowrap;
 }
 
 .pg-table th button {

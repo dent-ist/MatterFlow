@@ -323,8 +323,8 @@ test.describe('Fixed-header screens at 1366x768', () => {
     const region = page.getByRole('region', { name: 'Clients list, scrollable' });
     await expect(region.locator('tbody tr').first()).toBeVisible();
     await scrollRegion(region, 300);
-    // Tab from the (sticky) column header to the first row, which is scrolled out of view above it.
-    await region.locator('thead button').last().focus();
+    // Tab from the last control of the (sticky) head (the filter row is open by default since WP8) to the first row, which is scrolled out of view above it.
+    await region.locator('thead button, thead input, thead select').last().focus();
     await page.keyboard.press('Tab');
     const head = await box(region.locator('thead th').first());
     const focused = await box(page.locator(':focus'));

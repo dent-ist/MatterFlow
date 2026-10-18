@@ -167,9 +167,7 @@ describe('Projects pages', () => {
       const fixture = await create(['Project.View']);
       const el: HTMLElement = fixture.nativeElement;
       expect(el.querySelector('#project-search, #project-status, mf-search-box')).toBeNull();
-      expect(el.querySelector('[data-filter-row]')).toBeNull(); // closed by default
-      el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
-      await settle(fixture);
+      expect(el.querySelector('[data-filter-row]')).not.toBeNull(); // open by default (WP8 #270)
 
       expect(control<HTMLInputElement>(el, 'Name')).not.toBeNull();
       expect(control<HTMLInputElement>(el, 'Matter')).not.toBeNull();

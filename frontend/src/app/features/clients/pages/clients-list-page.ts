@@ -17,6 +17,7 @@ import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { statusDef } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { ListFiltersButton } from '../../../shared/filters/list-filters-button';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { SortHeader } from '../../../shared/ui/data-table';
@@ -48,6 +49,7 @@ const COLUMNS = ['clientNumber', 'name', 'matters', 'status'] as const;
     SortHeader,
     GridBody,
     FiltersBar,
+    ListFiltersButton,
     ColumnFilterRow,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -55,6 +57,12 @@ const COLUMNS = ['clientNumber', 'name', 'matters', 'status'] as const;
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Clients">
+        <mf-list-filters-button
+          mfActions
+          [filters]="filters"
+          controls="client-filter-row"
+          [clearAlso]="['q']"
+        />
         <p-button
           mfActions
           *mfHasPermission="'Client.Create'"
@@ -64,7 +72,7 @@ const COLUMNS = ['clientNumber', 'name', 'matters', 'status'] as const;
         />
       </mf-page-header>
 
-      <mf-filters-bar [filters]="filters" controls="client-filter-row" [clearAlso]="['q']" />
+      <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']" />
 
       <div class="mf-fill">
         <div class="mf-table-wrap" mfScrollArea="Clients list" #scroll>
@@ -122,12 +130,14 @@ const COLUMNS = ['clientNumber', 'name', 'matters', 'status'] as const;
                 />
                 @for (c of rows(); track c.clientId) {
                   <tr>
-                    <td class="pg-mono">
+                    <td class="pg-mono pg-nowrap">
                       <a class="pg-link" [routerLink]="['/clients', c.clientId]">{{
                         c.clientNumber
                       }}</a>
                     </td>
-                    <td>{{ c.name }}</td>
+                    <td>
+                      <span class="pg-name" [title]="c.name">{{ c.name }}</span>
+                    </td>
                     <td>{{ c.matterCount }}</td>
                     <td>
                       <mf-active-badge [active]="c.isActive" />
@@ -144,6 +154,9 @@ const COLUMNS = ['clientNumber', 'name', 'matters', 'status'] as const;
             [pageSize]="pageSize()"
             [pageSizes]="pageSizes"
             [total]="total()"
+            [hidden]="hiddenCount()"
+            hiddenLabel="inactive"
+            (showAll)="showAll()"
             (pageChange)="goToPage($event)"
             (pageSizeChange)="setPageSize($event)"
           />
@@ -153,6 +166,7 @@ const COLUMNS = ['clientNumber', 'name', 'matters', 'status'] as const;
   `,
 })
 export class ClientsListPage extends ServerListPage<ClientResponse> {
+  protected override readonly emptyOffersClear = true;
   private readonly api = inject(ClientsClient);
   private readonly injector = inject(Injector);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
@@ -171,6 +185,8 @@ export class ClientsListPage extends ServerListPage<ClientResponse> {
     screen: 'clients',
     noun: 'clients',
     defs: this.defs,
+    openByDefault: true,
+    sheetBelow: 640,
   });
 
   constructor() {
@@ -186,14 +202,27 @@ export class ClientsListPage extends ServerListPage<ClientResponse> {
   }
 
   protected override fetch() {
+    return this.list(
+      isActiveParam(parseStatus(this.filters.text('status'))),
+      this.pageNumber(),
+      this.pageSize(),
+    );
+  }
+
+  /** The inactive clients the default Active hides, under the same name and number filters (#271). */
+  protected override fetchHidden() {
+    return parseStatus(this.filters.text('status')) === 'active' ? this.list(false, 1, 1) : null;
+  }
+
+  private list(isActive: boolean | undefined, page: number, size: number) {
     return firstValueFrom(
       this.api.listClients(
         undefined,
-        isActiveParam(parseStatus(this.filters.text('status'))),
+        isActive,
         this.filters.text('clientNumber') || undefined,
         this.filters.text('name') || undefined,
-        this.pageNumber(),
-        this.pageSize(),
+        page,
+        size,
         this.sort() || undefined,
       ),
     );

@@ -182,6 +182,7 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status'] as const;
   `,
 })
 export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
+  protected override readonly emptyOffersClear = true;
   private readonly api = inject(WorkflowsClient);
   private readonly injector = inject(Injector);
   private readonly auth = inject(AuthStore);

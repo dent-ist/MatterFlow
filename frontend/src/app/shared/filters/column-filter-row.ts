@@ -6,6 +6,8 @@ import { ListFilters } from './list-filters';
 interface Cell {
   readonly column: string;
   readonly span: number;
+  /** One of the filters sits beside the first one: they share one line in the cell. */
+  readonly beside: boolean;
   readonly defs: readonly FilterDef[];
 }
 
@@ -35,8 +37,16 @@ interface Cell {
   template: `
     @for (cell of cells(); track cell.column) {
       <td [attr.colspan]="cell.span > 1 ? cell.span : null">
-        @for (d of cell.defs; track d.key) {
-          <mf-filter-control [def]="d" [filters]="filters()" />
+        @if (cell.beside) {
+          <div class="cfr-pair">
+            @for (d of cell.defs; track d.key) {
+              <mf-filter-control [def]="d" [filters]="filters()" />
+            }
+          </div>
+        } @else {
+          @for (d of cell.defs; track d.key) {
+            <mf-filter-control [def]="d" [filters]="filters()" />
+          }
         }
       </td>
     }
@@ -47,8 +57,25 @@ interface Cell {
         display: none;
       }
     }
-    td mf-filter-control + mf-filter-control {
+    td > mf-filter-control + mf-filter-control {
       margin-top: var(--mf-s1);
+    }
+    /* Two filters of one column (Sensitive beside Status): stacked on a narrow window, side by side with a floor of their own on a wide
+       one, so the cell never depends on what the rows hold. */
+    .cfr-pair {
+      display: grid;
+      gap: var(--mf-s1);
+      /* The widest choice ("Sensitive: Any") stays whole even when the column is as narrow as it gets. */
+      min-width: 9.75rem;
+    }
+    .cfr-pair > mf-filter-control {
+      min-width: 0;
+    }
+    @media (min-width: 1100px) {
+      .cfr-pair {
+        grid-template-columns: 6rem minmax(9.5rem, 1fr);
+        min-width: 16rem;
+      }
     }
   `,
 })
@@ -64,7 +91,7 @@ export class ColumnFilterRow {
     for (let i = 0; i < cols.length; i++) {
       const own = defs.filter((d) => d.column === cols[i] && !d.noControl);
       const span = Math.max(1, ...own.map((d) => Math.min(d.span ?? 1, cols.length - i)));
-      out.push({ column: cols[i], span, defs: own });
+      out.push({ column: cols[i], span, beside: own.some((d) => d.beside), defs: own });
       i += span - 1;
     }
     return out;

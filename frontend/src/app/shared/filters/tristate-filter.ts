@@ -15,9 +15,9 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       [disabled]="disabled()"
       (change)="valueChange.emit($any($event.target).value)"
     >
-      <option value="" [selected]="value() === ''">{{ anyLabel() }}</option>
-      <option value="true" [selected]="value() === 'true'">{{ yesLabel() }}</option>
-      <option value="false" [selected]="value() === 'false'">{{ noLabel() }}</option>
+      <option value="" [selected]="value() === ''">{{ prefix() }}{{ anyLabel() }}</option>
+      <option value="true" [selected]="value() === 'true'">{{ prefix() }}{{ yesLabel() }}</option>
+      <option value="false" [selected]="value() === 'false'">{{ prefix() }}{{ noLabel() }}</option>
     </select>
   `,
   styles: `
@@ -40,5 +40,7 @@ export class ColumnTristateFilter {
   readonly yesLabel = input('Yes');
   readonly noLabel = input('No');
   readonly disabled = input(false);
+  /** Text before every choice ("Sensitive: "): for a control in the filter row that has no column header to name it. */
+  readonly prefix = input('');
   readonly valueChange = output<string>();
 }

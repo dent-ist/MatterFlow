@@ -35,7 +35,7 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
 
 /**
  * The main area of the Client detail page: the client's Matters as a list in the shared pattern (inline column filters for Matter and
- * Name, Status defaulting to Active, Sensitive under "Other filters"; sortable columns, paging, loading / empty / error states) with a
+ * Name, Status defaulting to Active, Sensitive beside Status; the row is open by default; sortable columns, paging, loading / empty / error states) with a
  * "New matter" button that prefills the client. The filters (`matterRef`, `name`, `status`, `isSensitive`) are read from the address
  * by `ListFilters`; the page binds `status`, `page`, `size` and `sort` like every other list. Needs `Matter.View`.
  */
@@ -163,10 +163,12 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
                     <mf-matter-ref [value]="m.matterRef" [link]="['/matters', m.matterId]" />
                   </td>
                   <td>
-                    {{ m.name }}
-                    @if (m.isSensitive) {
-                      <mf-sensitive-badge />
-                    }
+                    <div class="pg-namecell">
+                      <span class="pg-name" [title]="m.name">{{ m.name }}</span>
+                      @if (m.isSensitive) {
+                        <mf-sensitive-badge />
+                      }
+                    </div>
                   </td>
                   <td>{{ m.projectCount }}</td>
                   <td><mf-active-badge [active]="m.isActive" /></td>
@@ -182,6 +184,9 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
           [pageSize]="pageSize()"
           [pageSizes]="pageSizes"
           [total]="total()"
+          [hidden]="hiddenCount()"
+          hiddenLabel="inactive"
+          (showAll)="showAll()"
           (pageChange)="goToPage($event)"
           (pageSizeChange)="setPageSize($event)"
         />
@@ -190,6 +195,7 @@ const COLUMNS = ['matterRef', 'name', 'projects', 'status'] as const;
   `,
 })
 export class ClientMatters extends ServerListPage<MatterResponse> {
+  protected override readonly emptyOffersClear = true;
   readonly clientId = input.required<number>();
   readonly clientName = input('');
   /** False for an inactive client: New matter is disabled with a visible reason. */
@@ -213,6 +219,8 @@ export class ClientMatters extends ServerListPage<MatterResponse> {
     screen: 'client-matters',
     noun: 'matters',
     defs: this.defs,
+    openByDefault: true,
+    sheetBelow: 640,
   });
 
   constructor() {
@@ -240,18 +248,32 @@ export class ClientMatters extends ServerListPage<MatterResponse> {
 
   protected override fetch() {
     if (!this.canView()) return Promise.resolve({ items: [], total: 0 });
+    return this.list(
+      isActiveParam(parseStatus(this.filters.text('status'))),
+      this.pageNumber(),
+      this.pageSize(),
+    );
+  }
+
+  /** The inactive matters the default Active hides, under the same other filters (#271). */
+  protected override fetchHidden() {
+    if (!this.canView() || parseStatus(this.filters.text('status')) !== 'active') return null;
+    return this.list(false, 1, 1);
+  }
+
+  private list(isActive: boolean | undefined, page: number, size: number) {
     const sensitive = this.filters.text('isSensitive');
     return firstValueFrom(
       this.api.listMatters(
         undefined,
         this.clientId(),
-        isActiveParam(parseStatus(this.filters.text('status'))),
+        isActive,
         sensitive === '' ? undefined : sensitive === 'true',
         this.filters.text('matterRef') || undefined,
         this.filters.text('name') || undefined,
         undefined,
-        this.pageNumber(),
-        this.pageSize(),
+        page,
+        size,
         this.sort() || undefined,
       ),
     );

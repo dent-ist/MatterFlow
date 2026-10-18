@@ -29,6 +29,15 @@ let nextId = 0;
         </label>
       }
       <span data-range>{{ range() }}</span>
+      @if (hidden() > 0) {
+        <span class="mf-pager__hint" data-hidden-hint>
+          <span class="mf-pager__dash" aria-hidden="true">-</span>
+          {{ hidden() }} {{ hiddenLabel() }} hidden
+          <button type="button" class="mf-btn mf-btn--text" data-show-all (click)="showAll.emit()">
+            Show all
+          </button>
+        </span>
+      }
       <div class="mf-pager__note"><ng-content select="[pager-note]" /></div>
       <div class="mf-pager__nav">
         <span class="mf-pager__page" data-page>Page {{ shownPage() }} of {{ pages() }}</span>
@@ -107,10 +116,24 @@ let nextId = 0;
     .mf-pager__page {
       white-space: nowrap;
     }
+    /* The hidden-records hint (#271) is the muted second part of the range; below 640 px, where the range is gone, it takes a row of its own. */
+    .mf-pager__hint {
+      min-width: 0;
+    }
     @media (max-width: 639.98px) {
       .mf-pager {
         flex-wrap: nowrap;
         justify-content: space-between;
+      }
+      .mf-pager:has(.mf-pager__hint) {
+        flex-wrap: wrap;
+      }
+      .mf-pager__hint {
+        flex: 0 0 100%;
+        order: -1;
+      }
+      .mf-pager__dash {
+        display: none;
       }
       .mf-pager__nav,
       .mf-pager__note {
@@ -137,6 +160,11 @@ export class Pager {
   readonly pageSizes = input<readonly number[]>([]);
   /** First and Last buttons; false keeps the older Previous/Next only pager. */
   readonly edges = input(true);
+  /** Records the default Status hides ("3"): the range then reads "of 37 active" and the hint "- 3 inactive hidden  Show all". 0 shows none. */
+  readonly hidden = input(0);
+  /** Word for the hidden records: "inactive", or "archived" for projects. */
+  readonly hiddenLabel = input('inactive');
+  readonly showAll = output<void>();
   readonly pageChange = output<number>();
   readonly pageSizeChange = output<number>();
 
@@ -150,6 +178,6 @@ export class Pager {
     if (total === 0) return 'Showing 0 of 0';
     const from = (this.page() - 1) * this.pageSize() + 1;
     const to = Math.min(total, this.page() * this.pageSize());
-    return `Showing ${from}-${to} of ${total}`;
+    return `Showing ${from}-${to} of ${total}${this.hidden() > 0 ? ' active' : ''}`;
   });
 }

@@ -18,6 +18,7 @@ import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { ARCHIVE_STATUS_OPTIONS, statusDef } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { ListFiltersButton } from '../../../shared/filters/list-filters-button';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { SortHeader } from '../../../shared/ui/data-table';
@@ -52,6 +53,7 @@ const COLUMNS = ['name', 'matter', 'status'] as const;
     SortHeader,
     GridBody,
     FiltersBar,
+    ListFiltersButton,
     ColumnFilterRow,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -59,6 +61,12 @@ const COLUMNS = ['name', 'matter', 'status'] as const;
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Projects">
+        <mf-list-filters-button
+          mfActions
+          [filters]="filters"
+          controls="project-filter-row"
+          [clearAlso]="['q']"
+        />
         <p-button
           mfActions
           *mfHasPermission="'Project.Create'"
@@ -68,7 +76,7 @@ const COLUMNS = ['name', 'matter', 'status'] as const;
         />
       </mf-page-header>
 
-      <mf-filters-bar [filters]="filters" controls="project-filter-row" [clearAlso]="['q']" />
+      <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']" />
 
       <div class="mf-fill">
         <div class="mf-table-wrap" mfScrollArea="Projects list" #scroll>
@@ -121,7 +129,12 @@ const COLUMNS = ['name', 'matter', 'status'] as const;
                 @for (p of rows(); track p.projectId) {
                   <tr>
                     <td>
-                      <a class="pg-link" [routerLink]="['/projects', p.projectId]">{{ p.name }}</a>
+                      <a
+                        class="pg-link pg-name"
+                        [routerLink]="['/projects', p.projectId]"
+                        [title]="p.name"
+                        >{{ p.name }}</a
+                      >
                     </td>
                     <td>
                       <mf-matter-ref [value]="p.matterRef" [link]="['/matters', p.matterId]" />
@@ -141,6 +154,9 @@ const COLUMNS = ['name', 'matter', 'status'] as const;
             [pageSize]="pageSize()"
             [pageSizes]="pageSizes"
             [total]="total()"
+            [hidden]="hiddenCount()"
+            hiddenLabel="archived"
+            (showAll)="showAll()"
             (pageChange)="goToPage($event)"
             (pageSizeChange)="setPageSize($event)"
           />
@@ -150,6 +166,7 @@ const COLUMNS = ['name', 'matter', 'status'] as const;
   `,
 })
 export class ProjectsListPage extends ServerListPage<ProjectResponse> {
+  protected override readonly emptyOffersClear = true;
   private readonly api = inject(ProjectsClient);
   private readonly auth = inject(AuthStore);
   private readonly injector = inject(Injector);
@@ -202,6 +219,8 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
     screen: 'projects',
     noun: 'projects',
     defs: this.defs,
+    openByDefault: true,
+    sheetBelow: 640,
   });
 
   constructor() {
@@ -217,16 +236,29 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
   }
 
   protected override fetch() {
+    return this.list(
+      isActiveParam(parseStatus(this.filters.text('status'))),
+      this.pageNumber(),
+      this.pageSize(),
+    );
+  }
+
+  /** The archived projects the default Active hides, under the same other filters (#271). */
+  protected override fetchHidden() {
+    return parseStatus(this.filters.text('status')) === 'active' ? this.list(false, 1, 1) : null;
+  }
+
+  private list(isActive: boolean | undefined, page: number, size: number) {
     const matterId = Number(this.filters.text('matterId'));
     return firstValueFrom(
       this.api.listProjects(
         undefined,
         Number.isInteger(matterId) && matterId > 0 ? matterId : undefined,
-        isActiveParam(parseStatus(this.filters.text('status'))),
+        isActive,
         this.filters.text('name') || undefined,
         this.filters.text('matter') || undefined,
-        this.pageNumber(),
-        this.pageSize(),
+        page,
+        size,
         this.sort() || undefined,
       ),
     );

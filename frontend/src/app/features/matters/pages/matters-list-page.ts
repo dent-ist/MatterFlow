@@ -17,6 +17,7 @@ import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { matterColumnDefs } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { ListFiltersButton } from '../../../shared/filters/list-filters-button';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActiveBadge, SensitiveBadge } from '../../../shared/ui/badge';
 import { SortHeader } from '../../../shared/ui/data-table';
@@ -32,8 +33,8 @@ import { Pager } from '../../../shared/ui/pager';
 const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
 
 /**
- * Matters list (UX S06): inline column filters (Matter reference, Name, Client, Status with Active by default, and Sensitive under
- * "Other filters"); a link from a Client keeps `?clientId=` as a removable chip. State lives in the URL.
+ * Matters list (UX S06): inline column filters (Matter reference, Name, Client, Status with Active by default, and Sensitive beside it),
+ * open by default from 640 px; a link from a Client keeps `?clientId=` as a removable chip. State lives in the URL.
  */
 @Component({
   selector: 'mf-matters-list-page',
@@ -51,6 +52,7 @@ const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
     SortHeader,
     GridBody,
     FiltersBar,
+    ListFiltersButton,
     ColumnFilterRow,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,6 +60,12 @@ const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Matters">
+        <mf-list-filters-button
+          mfActions
+          [filters]="filters"
+          controls="matter-filter-row"
+          [clearAlso]="['q']"
+        />
         <p-button
           mfActions
           *mfHasPermission="'Matter.Create'"
@@ -67,7 +75,7 @@ const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
         />
       </mf-page-header>
 
-      <mf-filters-bar [filters]="filters" controls="matter-filter-row" [clearAlso]="['q']" />
+      <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']" />
 
       <div class="mf-fill">
         <div class="mf-table-wrap" mfScrollArea="Matters list" #scroll>
@@ -137,13 +145,18 @@ const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
                       <mf-matter-ref [value]="m.matterRef" [link]="['/matters', m.matterId]" />
                     </td>
                     <td>
-                      {{ m.name }}
-                      @if (m.isSensitive) {
-                        <mf-sensitive-badge />
-                      }
+                      <div class="pg-namecell">
+                        <span class="pg-name" [title]="m.name">{{ m.name }}</span>
+                        @if (m.isSensitive) {
+                          <mf-sensitive-badge />
+                        }
+                      </div>
                     </td>
                     <td>
-                      <a class="pg-link" [routerLink]="['/clients', m.clientId]"
+                      <a
+                        class="pg-link pg-name"
+                        [routerLink]="['/clients', m.clientId]"
+                        [title]="m.clientNumber + ' ' + m.clientName"
                         ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
                       >
                     </td>
@@ -163,6 +176,9 @@ const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
             [pageSize]="pageSize()"
             [pageSizes]="pageSizes"
             [total]="total()"
+            [hidden]="hiddenCount()"
+            hiddenLabel="inactive"
+            (showAll)="showAll()"
             (pageChange)="goToPage($event)"
             (pageSizeChange)="setPageSize($event)"
           />
@@ -172,6 +188,7 @@ const COLUMNS = ['matterRef', 'name', 'client', 'projects', 'status'] as const;
   `,
 })
 export class MattersListPage extends ServerListPage<MatterResponse> {
+  protected override readonly emptyOffersClear = true;
   private readonly api = inject(MattersClient);
   private readonly injector = inject(Injector);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
@@ -211,6 +228,8 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     screen: 'matters',
     noun: 'matters',
     defs: this.defs,
+    openByDefault: true,
+    sheetBelow: 640,
   });
 
   constructor() {
@@ -226,19 +245,32 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   }
 
   protected override fetch() {
+    return this.list(
+      isActiveParam(parseStatus(this.filters.text('status'))),
+      this.pageNumber(),
+      this.pageSize(),
+    );
+  }
+
+  /** The inactive matters the default Active hides, under the same other filters (#271). */
+  protected override fetchHidden() {
+    return parseStatus(this.filters.text('status')) === 'active' ? this.list(false, 1, 1) : null;
+  }
+
+  private list(isActive: boolean | undefined, page: number, size: number) {
     const clientId = Number(this.filters.text('clientId'));
     const sensitive = this.filters.text('isSensitive');
     return firstValueFrom(
       this.api.listMatters(
         undefined,
         Number.isInteger(clientId) && clientId > 0 ? clientId : undefined,
-        isActiveParam(parseStatus(this.filters.text('status'))),
+        isActive,
         sensitive === '' ? undefined : sensitive === 'true',
         this.filters.text('matterRef') || undefined,
         this.filters.text('name') || undefined,
         this.filters.text('client') || undefined,
-        this.pageNumber(),
-        this.pageSize(),
+        page,
+        size,
         this.sort() || undefined,
       ),
     );

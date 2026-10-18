@@ -81,6 +81,7 @@ export class PodsPage
   extends ServerListPage<PodSummary>
   implements OnInit, OnDestroy, HasUnsavedChanges
 {
+  protected override readonly emptyOffersClear = true;
   private readonly api = inject(PodsClient);
   private readonly notify = inject(NotificationService);
 

@@ -32,10 +32,13 @@ export function matterColumnDefs(refLabel = 'Matter reference'): FilterDef[] {
     { key: 'matterRef', label: refLabel, column: 'matterRef', type: 'text' },
     { key: 'name', label: 'Name', column: 'name', type: 'text' },
     statusDef(),
-    // No column: it lives in "Other filters". isSensitive exists on the API; the flag is shown as a badge after the name.
+    // Beside Status in the filter row (WP8 #272): no "Other filters" menu for one yes/no. The flag is shown as a badge after the name.
     {
       key: 'isSensitive',
       label: 'Sensitive',
+      column: 'status',
+      beside: true,
+      labelInRow: true,
       type: 'triState',
       options: [
         { value: '', label: 'Any' },
