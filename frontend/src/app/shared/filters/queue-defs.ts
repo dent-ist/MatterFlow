@@ -1,6 +1,6 @@
 import { ALL_STATUSES, OPEN_STATUSES, QueueFilters } from '../work-queue/queue-filters';
 import { DUE_PRESETS } from './date-presets';
-import { FilterDef, FilterOption, FilterValue, paramsOf } from './filter-def';
+import { FilterDef, FilterOption, FilterValue, PlainLink, paramsOf } from './filter-def';
 
 /**
  * The filters of the work lists (Task Queue, My Work, Pod Work) as `FilterDef[]`, with exactly the URL parameter names of
@@ -257,6 +257,24 @@ export function queueFilterDefs(
 export const QUEUE_FILTER_PARAMS: readonly string[] = [
   ...new Set(queueFilterDefs().flatMap((d) => paramsOf(d))),
 ];
+
+/**
+ * `?creator=<viewer>` alone is the Created by me view: for the status default it counts as a plain link, so the view starts on Open like
+ * My Work's and the address needs no `status=` (#222). Any other filter, or another creator, means what it says; `status=` widens it.
+ */
+export function createdByMeLink(userId: number | null): PlainLink {
+  return (link) => {
+    if (userId === null) return false;
+    const present = QUEUE_FILTER_PARAMS.filter((p) => link.has(p));
+    if (present.length !== 1 || present[0] !== 'creator') return false;
+    const wanted = link
+      .getAll('creator')
+      .flatMap((v) => v.split(','))
+      .map((v) => v.trim())
+      .filter(Boolean);
+    return wanted.length === 1 && wanted[0] === String(userId);
+  };
+}
 
 /** `QueueFilters` with the fields of the named filters cleared (what a tab that owns those columns does not send to the API). */
 export function withoutFilters(f: QueueFilters, keys: readonly string[]): QueueFilters {

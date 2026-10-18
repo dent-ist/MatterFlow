@@ -28,6 +28,7 @@ const ARG = {
   assignee: 5,
   unassigned: 6,
   creator: 7,
+  asap: 17,
   overdue: 18,
   matterText: 22,
   clientText: 23,
@@ -431,7 +432,9 @@ describe('TaskQueuePage', () => {
     await settle();
     expect(query()).toEqual({ status: OPEN, overdue: 'true', sort: 'priority', dir: 'asc' });
     expect(view('overdue').getAttribute('aria-pressed')).toBe('true');
-    expect(chips(el)).toEqual(['Overdue only']);
+    // The pressed view owns its filters: no chip and no "Filters (n)" for them.
+    expect(chips(el)).toEqual([]);
+    expect(el.querySelector('[data-filters-toggle]')?.textContent).not.toContain('(1)');
 
     view('unassigned').click();
     await settle();
@@ -457,8 +460,14 @@ describe('TaskQueuePage', () => {
     expect(headers()).toContain('due');
     expect(headers()).not.toContain('closed');
 
-    el.querySelector<HTMLButtonElement>('[data-view="recentlyCompleted"]')!.click();
+    el.querySelector<HTMLButtonElement>('[data-more-views]')!.click();
     await settle();
+    el.querySelector<HTMLButtonElement>(
+      'mf-filter-popover [data-view="recentlyCompleted"]',
+    )!.click();
+    await settle();
+    // The window is the Dashboard tile's: 30 days with today, so Oct 14 starts on Sep 15 (#224).
+    expect(query()['completedFrom']).toBe('2026-09-15');
     expect(query()['sort']).toBe('closed');
     expect(query()['dir']).toBe('desc');
     expect(headers()).toContain('closed');
@@ -484,7 +493,7 @@ describe('TaskQueuePage', () => {
     expect(harness.routeNativeElement!.querySelectorAll('tbody tr[data-task]').length).toBe(2);
   });
 
-  it('"My Pod" filters on the primary Pod and is disabled without one', async () => {
+  it('"My pod" filters on the primary Pod and is hidden, not disabled, without one (#223)', async () => {
     let el = await open('/tasks?status=NEW', { primaryPod: 5 });
     const myPod = () => el.querySelector<HTMLButtonElement>('[data-view="myPod"]')!;
     expect(myPod().disabled).toBe(false);
@@ -495,7 +504,117 @@ describe('TaskQueuePage', () => {
 
     TestBed.resetTestingModule();
     el = await open('/tasks?status=NEW', { primaryPod: null });
-    expect(myPod().disabled).toBe(true);
+    expect(el.querySelector('[data-view="myPod"]')).toBeNull();
+    expect(
+      Array.from(el.querySelectorAll('mf-quick-views button')).some((b) =>
+        b.hasAttribute('disabled'),
+      ),
+    ).toBe(false);
+    // A bookmarked link to a pod still works as a filter.
+    TestBed.resetTestingModule();
+    el = await open('/tasks?status=NEW&pod=5', { primaryPod: null });
+    expect(lastArgs()[ARG.pod]).toEqual([5]);
+  });
+
+  it('hides "Created by me" without Task.Create, and the link still filters (#223)', async () => {
+    let el = await open('/tasks', { permissions: ['Task.View'] });
+    expect(el.querySelector('[data-view="createdByMe"]')).toBeNull();
+    TestBed.resetTestingModule();
+    el = await open('/tasks?creator=1&status=NEW', { permissions: ['Task.View'] });
+    expect(lastArgs()[ARG.creator]).toEqual([1]);
+    expect(el.querySelector('mf-quick-views [aria-pressed="true"]')).toBeNull();
+  });
+
+  it('Created by me starts on Open: the address has creator only, the Status cell reads Open (#222)', async () => {
+    let el = await open('/tasks');
+    el.querySelector<HTMLButtonElement>('[data-view="createdByMe"]')!.click();
+    await settle();
+    expect(query()).toEqual({ creator: '1' });
+    expect(lastArgs()[ARG.status]).toEqual(OPEN);
+    expect(lastArgs()[ARG.creator]).toEqual([1]);
+    expect(el.querySelector('[data-view="createdByMe"]')!.getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect(chips(el)).toEqual([]);
+
+    // A link with creator alone reads the same way after a reload; another creator means what it says.
+    TestBed.resetTestingModule();
+    el = await open('/tasks?creator=1');
+    expect(lastArgs()[ARG.status]).toEqual(OPEN);
+    expect(el.querySelector('[data-view="createdByMe"]')!.getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    TestBed.resetTestingModule();
+    await open('/tasks?creator=2');
+    expect(lastArgs()[ARG.status]).toBeUndefined();
+  });
+
+  it('the Status chip widens Created by me to every status, and only that writes an empty status= (#222)', async () => {
+    const el = await open('/tasks?creator=1');
+    // Status taken off Open: "Status: All" and `status=`.
+    await router().navigateByUrl('/tasks?creator=1&status=');
+    await settle();
+    expect(lastArgs()[ARG.status]).toBeUndefined();
+    // The Status cell says so (its chip shows when the column is hidden); the creator is a filter now, not a view.
+    expect(el.querySelector('tr[data-filter-row] [data-filter="status"]')!.textContent).toContain(
+      'All',
+    );
+    expect(chips(el)).toEqual(['Creator: 1 (hidden column)']);
+    expect(el.querySelector('[data-view="createdByMe"]')!.getAttribute('aria-pressed')).toBe(
+      'false',
+    );
+  });
+
+  it('presses Due soon for the Dashboard link by shape and keeps extra filters as chips (#221)', async () => {
+    const dueSoon = '?status=NEW&status=IN_PROGRESS&status=ON_HOLD&asap=false&overdue=false';
+    let el = await open(`/tasks${dueSoon}&dueTo=2026-10-16`);
+    const view = () => el.querySelector('[data-view="dueSoon"]')!;
+    expect(view().getAttribute('aria-pressed')).toBe('true');
+    expect(chips(el)).toEqual([]);
+    expect(el.querySelector('mf-filters-toggle')!.textContent).not.toMatch(/\(\d\)/);
+    expect(document.title).toBe('Task Queue: Due soon - MatterFlow');
+
+    TestBed.resetTestingModule();
+    el = await open(`/tasks${dueSoon}&dueTo=2026-10-16&priority=1`);
+    expect(view().getAttribute('aria-pressed')).toBe('true');
+    expect(el.querySelector('mf-filters-toggle')!.textContent).toContain('(1)');
+
+    // Three days out is not Due soon: a plain filter, no view pressed.
+    TestBed.resetTestingModule();
+    el = await open(`/tasks${dueSoon}&dueTo=2026-10-17`);
+    expect(el.querySelector('mf-quick-views [aria-pressed="true"]')).toBeNull();
+    expect(el.querySelector('mf-filters-toggle')!.textContent).toContain('(');
+  });
+
+  it('Due soon and ASAP and On hold are one click: filters, order and tooltip (#220)', async () => {
+    const el = await open('/tasks');
+    el.querySelector<HTMLButtonElement>('[data-view="dueSoon"]')!.click();
+    await settle();
+    expect(query()).toMatchObject({
+      status: OPEN,
+      asap: 'false',
+      overdue: 'false',
+      dueTo: '2026-10-16',
+      sort: 'due',
+      dir: 'asc',
+    });
+    expect(lastArgs()[ARG.asap]).toBe(false);
+    el.querySelector<HTMLButtonElement>('[data-view="asap"]')!.click();
+    await settle();
+    expect(query()).toMatchObject({ status: OPEN, asap: 'true' });
+    expect(query()['dueTo']).toBeUndefined();
+    expect(query()['sort']).toBeUndefined();
+    el.querySelector<HTMLButtonElement>('[data-view="onHold"]')!.click();
+    await settle();
+    expect(query()).toEqual({ status: 'ON_HOLD' });
+    expect(el.querySelector('[data-view="onHold"]')!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('opens All open instead of a restored Created by me the viewer can no longer use (#223)', async () => {
+    localStorage.setItem('mf.work-view.v1.queue.1', JSON.stringify({ status: OPEN, creator: '1' }));
+    const el = await open('/tasks', { permissions: ['Task.View'] });
+    expect(el.querySelector('[data-restored-notice]')).toBeNull();
+    expect(lastArgs()[ARG.creator]).toBeUndefined();
   });
 
   it('pages with Previous and Next and changes the page size', async () => {

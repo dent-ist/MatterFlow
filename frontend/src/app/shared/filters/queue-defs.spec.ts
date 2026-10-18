@@ -253,7 +253,13 @@ describe('work list definitions for the column filters', () => {
 
   it('turns the quick views into filter values and back into the same parameters', () => {
     const defs = queueFilterDefs({}, { defaultStatus: ['NEW', 'IN_PROGRESS', 'ON_HOLD'] });
-    const ctx = { userId: 9, primaryPodId: 5, recentFrom: '2026-09-14' };
+    const ctx = {
+      userId: 9,
+      primaryPodId: 5,
+      recentFrom: '2026-09-14',
+      dueSoonTo: '2026-10-19',
+      canCreate: true,
+    };
     const view = (key: Parameters<typeof builtInFilters>[0]) =>
       serializeFilters(defs, filtersToValues(builtInFilters(key, ctx)));
     const set = (o: Record<string, unknown>) => Object.entries(o).filter(([, v]) => v !== null);
@@ -262,7 +268,7 @@ describe('work list definitions for the column filters', () => {
     expect(Object.fromEntries(set(view('unassigned')))).toEqual({ unassigned: 'true' });
     expect(Object.fromEntries(set(view('overdue')))).toEqual({ overdue: 'true' });
     expect(Object.fromEntries(set(view('myPod')))).toEqual({ pod: ['5'] });
-    expect(Object.fromEntries(set(view('createdByMe')))).toEqual({ creator: ['9'], status: '' });
+    expect(Object.fromEntries(set(view('createdByMe')))).toEqual({ creator: ['9'] });
     expect(Object.fromEntries(set(view('recentlyCompleted')))).toEqual({
       status: ['COMPLETED'],
       completedFrom: '2026-09-14',

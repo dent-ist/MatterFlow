@@ -8,6 +8,8 @@ import {
   FilterDef,
   FilterValue,
   FilterValues,
+  LinkReader,
+  PlainLink,
   QueryParams,
   buildChips,
   defaultValue,
@@ -38,6 +40,10 @@ export interface ListFiltersOptions {
   readonly announceResults?: boolean;
   /** The quick view the current filters stand for ("Overdue"), or null: the restored notice then names it instead of listing the filters. */
   readonly viewName?: () => string | null;
+  /** The filters (by key) the pressed quick view owns: they are the view, so they are not counted in "Filters (n)" and show no chips. */
+  readonly ownedKeys?: () => readonly string[];
+  /** An address with filters that still counts as a plain link for the defaults that apply to a plain link only (Task Queue: Created by me). */
+  readonly plainLink?: PlainLink;
 }
 
 /** Below this width (and when the grid overflows sideways) the filter row becomes a sheet. */
@@ -67,6 +73,8 @@ export class ListFilters {
   private readonly announceResults: boolean;
   /** The quick view the filters stand for right now, or null. */
   readonly viewName: () => string | null;
+  private readonly ownedKeys: () => readonly string[];
+  private readonly plainLink: PlainLink | null;
 
   /** The query string (always current, also for the first render). */
   readonly params: Signal<ParamMap>;
@@ -120,6 +128,8 @@ export class ListFilters {
     this.noun = options.noun ?? 'results';
     this.announceResults = options.announceResults ?? true;
     this.viewName = options.viewName ?? (() => null);
+    this.ownedKeys = options.ownedKeys ?? (() => []);
+    this.plainLink = options.plainLink ?? null;
     this.visible = options.visibleColumns ?? signal(null);
     const defs = options.defs;
     this.defs = typeof defs === 'function' ? defs : signal(defs);
@@ -128,19 +138,21 @@ export class ListFilters {
     this.params = toSignal(this.route.queryParamMap, {
       initialValue: this.route.snapshot.queryParamMap,
     });
-    this.values = computed(() => parseFilters(this.defs(), this.params()));
+    this.values = computed(() => parseFilters(this.defs(), this.params(), this.plainLink));
 
     const enabled = (def: FilterDef) => !def.disabledReason?.();
+    // A pressed quick view owns its filters: they are the view, not extra filters (#221).
+    const counted = (def: FilterDef) => enabled(def) && !this.ownedKeys().includes(def.key);
     this.activeCount = computed(() => {
       const v = this.values();
-      return this.defs().filter((d) => enabled(d) && isActive(d, v[d.key] ?? defaultValue(d)))
+      return this.defs().filter((d) => counted(d) && isActive(d, v[d.key] ?? defaultValue(d)))
         .length;
     });
     this.chips = computed(() => {
       const v = this.values();
       const cols = this.visible();
       return this.defs()
-        .filter(enabled)
+        .filter(counted)
         .flatMap((d) =>
           buildChips(
             d,
@@ -292,9 +304,19 @@ export class ListFilters {
     const current = this.params();
     const isSet = (p: string) => (p in params ? params[p] !== null : current.has(p));
     const result: QueryParams = { ...params };
+    // The address after this change, for a screen whose plain link may carry a filter (Created by me): then nothing else makes it a deep link.
+    const after: LinkReader = {
+      has: isSet,
+      getAll: (p) => {
+        const v = p in params ? params[p] : current.getAll(p);
+        return v === null || v === undefined ? [] : Array.isArray(v) ? v : [v];
+      },
+    };
+    const staysPlain = this.plainLink?.(after) ?? false;
     for (const def of bareDefs) {
       if (paramsOf(def).some(isSet)) continue;
-      const others = this.defs().some((d) => d.key !== def.key && paramsOf(d).some(isSet));
+      const others =
+        !staysPlain && this.defs().some((d) => d.key !== def.key && paramsOf(d).some(isSet));
       if (paramsOf(def).some((p) => p in params)) {
         // Being reset to the default: keep it written only while another filter makes the link a deep link.
         if (others) Object.assign(result, serializeExplicit(def, defaultValue(def)));

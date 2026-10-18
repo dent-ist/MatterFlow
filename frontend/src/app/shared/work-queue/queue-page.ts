@@ -10,6 +10,7 @@ import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { FilterOption } from '../filters/filter-def';
 import { ListFilters } from '../filters/list-filters';
 import { QUEUE_FILTER_PARAMS, QueueLookups, withoutFilters } from '../filters/queue-defs';
+import { PlainLink } from '../filters/filter-def';
 import {
   ColumnScope,
   Density,
@@ -38,6 +39,7 @@ import {
 import { QueueChoices, mergeOptions } from './queue-choices';
 import { RowLeaving } from './row-leaving';
 import { WorkListState } from './work-list';
+import { DUE_SOON_DAYS, RECENT_WINDOW_DAYS } from './work-vocabulary';
 
 /** Sorts whose first click goes newest first. */
 const DESC_FIRST: ReadonlySet<string> = new Set(['created', 'completed', 'closed', 'updated']);
@@ -86,7 +88,8 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
       state.dir = null;
     }
     // The same rule as `defaultOnlyBare` in the filter definition: a plain link starts on the default, any other link means what it says.
-    if (wanted.length > 0 && !QUEUE_FILTER_PARAMS.some((p) => params.has(p))) {
+    const plain = this.plainLink();
+    if (wanted.length > 0 && (!QUEUE_FILTER_PARAMS.some((p) => params.has(p)) || plain?.(params))) {
       return { ...state, filters: { ...state.filters, status: [...wanted] } };
     }
     return state;
@@ -209,7 +212,10 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   protected readonly viewContext = computed<ViewContext>(() => ({
     userId: this.userId(),
     primaryPodId: this.primaryPodId(),
-    recentFrom: dateDaysAgo(this.clock.now(), 30, this.zone),
+    // "Recently completed" is 30 days including today: the Dashboard's Completed tile (`completedFrom` = today minus 29), #224.
+    recentFrom: dateDaysAgo(this.clock.now(), RECENT_WINDOW_DAYS - 1, this.zone),
+    dueSoonTo: dateDaysAgo(this.clock.now(), -DUE_SOON_DAYS, this.zone),
+    canCreate: this.auth.has('Task.Create'),
   }));
 
   private requestId = 0;
@@ -254,6 +260,14 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   /** True where `group=due` applies (My Work, Active tab). */
   protected allowsGroup(): boolean {
     return false;
+  }
+
+  /**
+   * A link that carries filters and still counts as plain for the status default (Task Queue: `?creator=<me>` is "Created by me", which
+   * starts on Open like My Work's, #222); null where every filter means what it says.
+   */
+  protected plainLink(): PlainLink | null {
+    return null;
   }
 
   /** The status a plain link starts on (Task Queue: the open ones); none elsewhere. */

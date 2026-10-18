@@ -305,27 +305,56 @@ export function sameSet(a: readonly string[], b: readonly string[]): boolean {
 // ---- built-in views (baseline 12.6)
 
 export type BuiltInViewKey =
-  'allOpen' | 'unassigned' | 'myPod' | 'createdByMe' | 'overdue' | 'recentlyCompleted';
+  | 'allOpen'
+  | 'unassigned'
+  | 'overdue'
+  | 'dueSoon'
+  | 'asap'
+  | 'onHold'
+  | 'myPod'
+  | 'createdByMe'
+  | 'recentlyCompleted';
 
 export interface BuiltInView {
   key: BuiltInViewKey;
   label: string;
 }
 
+/**
+ * The quick views in the order of the row (#220): the first six mirror the Dashboard tiles (All open, Unassigned, Overdue, Due soon, ASAP,
+ * On hold), then My pod and Created by me; Recently completed is last and lives in the "More" menu.
+ */
 export const BUILT_IN_VIEWS: readonly BuiltInView[] = [
   { key: 'allOpen', label: 'All open' },
   { key: 'unassigned', label: 'Unassigned' },
+  { key: 'overdue', label: 'Overdue' },
+  { key: 'dueSoon', label: 'Due soon' },
+  { key: 'asap', label: 'ASAP' },
+  { key: 'onHold', label: 'On hold' },
   { key: 'myPod', label: 'My pod' },
   { key: 'createdByMe', label: 'Created by me' },
-  { key: 'overdue', label: 'Overdue' },
   { key: 'recentlyCompleted', label: 'Recently completed' },
 ];
+
+/** The view that is always kept behind the "More" menu, whatever the width. */
+export const MORE_VIEW: BuiltInViewKey = 'recentlyCompleted';
 
 export interface ViewContext {
   userId: number | null;
   primaryPodId: number | null;
-  /** `yyyy-MM-dd` of the day 30 days ago in the viewer's zone, for "Recently completed". */
+  /** `yyyy-MM-dd` of the first day of the 30-day window of "Recently completed" (today minus 29: the Dashboard's Completed tile), in the viewer's zone. */
   recentFrom: string;
+  /** `yyyy-MM-dd` of the last day of the Due soon window (today plus 2), in the viewer's zone. */
+  dueSoonTo: string;
+  /** The viewer holds Task.Create: without it "Created by me" is not offered (a viewer who cannot create tasks has created none). */
+  canCreate: boolean;
+}
+
+/** The views offered to this viewer: My pod needs a primary Pod, Created by me needs Task.Create (hidden, not disabled: #223). */
+export function availableViews(ctx: ViewContext): readonly BuiltInView[] {
+  return BUILT_IN_VIEWS.filter(
+    (v) => (v.key !== 'myPod' || !!ctx.primaryPodId) && (v.key !== 'createdByMe' || ctx.canCreate),
+  );
 }
 
 /** The filters a built-in view stands for; sort and paging are reset by the caller. */
@@ -339,22 +368,94 @@ export function builtInFilters(key: BuiltInViewKey, ctx: ViewContext): QueueFilt
     case 'myPod':
       return { ...f, status: [...OPEN_STATUSES], pod: ctx.primaryPodId ? [ctx.primaryPodId] : [] };
     case 'createdByMe':
-      return { ...f, creator: ctx.userId ? [ctx.userId] : [] };
+      // Open like My Work's Created by me (#222); the Status chip widens it.
+      return { ...f, status: [...OPEN_STATUSES], creator: ctx.userId ? [ctx.userId] : [] };
     case 'overdue':
       return { ...f, status: [...OPEN_STATUSES], overdue: true };
+    case 'dueSoon':
+      // The Dashboard's Due soon link: open, explicit due date (not ASAP), not overdue, due by today plus 2.
+      return {
+        ...f,
+        status: [...OPEN_STATUSES],
+        asap: false,
+        overdue: false,
+        dueTo: ctx.dueSoonTo,
+      };
+    case 'asap':
+      return { ...f, status: [...OPEN_STATUSES], asap: true };
+    case 'onHold':
+      return { ...f, status: ['ON_HOLD'] };
     case 'recentlyCompleted':
       return { ...f, status: ['COMPLETED'], completedFrom: ctx.recentFrom };
   }
 }
 
-/** The built-in view whose filters equal the current ones, if any (to mark it pressed). */
+/**
+ * The filter groups (keys of the column filters) each view owns: they ARE the view, so a pressed view hides their chips and does not count
+ * them in "Filters (n)" (#221). Groups are whole: Due is `dueFrom` and `dueTo`, Assignee holds `unassigned`, Closed is both dates.
+ */
+export const VIEW_OWNED: Readonly<Record<BuiltInViewKey, readonly string[]>> = {
+  allOpen: ['status'],
+  unassigned: ['status', 'assignee'],
+  overdue: ['status', 'overdue'],
+  dueSoon: ['status', 'asap', 'overdue', 'due'],
+  asap: ['status', 'asap'],
+  onHold: ['status'],
+  myPod: ['status', 'pod'],
+  createdByMe: ['status', 'creator'],
+  recentlyCompleted: ['status', 'completed'],
+};
+
+/** The `QueueFilters` fields of each owned filter group, to compare a link with a view by shape. */
+const GROUP_FIELDS: Readonly<Record<string, readonly (keyof QueueFilters)[]>> = {
+  status: ['status'],
+  assignee: ['assignee', 'unassigned'],
+  pod: ['pod', 'noPod'],
+  creator: ['creator'],
+  overdue: ['overdue'],
+  asap: ['asap'],
+  due: ['dueFrom', 'dueTo'],
+  completed: ['completedFrom', 'completedTo'],
+};
+
+/** The built-in view whose filters equal the current ones exactly, if any. */
 export function activeBuiltIn(f: QueueFilters, ctx: ViewContext): BuiltInViewKey | null {
   const target = JSON.stringify(normalize(f));
-  for (const view of BUILT_IN_VIEWS) {
-    if (view.key === 'myPod' && !ctx.primaryPodId) continue;
+  for (const view of availableViews(ctx)) {
     if (JSON.stringify(normalize(builtInFilters(view.key, ctx))) === target) return view.key;
   }
   return null;
+}
+
+/**
+ * The view a set of filters shows, by shape (#221): its owned filters equal the view's and anything else is an extra filter on top of it
+ * (`extra`). A Dashboard "Due soon" link with `priority=1` added is still Due soon, with one extra filter. All open is matched exactly only
+ * (every link with the open statuses would otherwise be "All open").
+ */
+export function matchBuiltIn(
+  f: QueueFilters,
+  ctx: ViewContext,
+): { key: BuiltInViewKey; extra: boolean } | null {
+  const exact = activeBuiltIn(f, ctx);
+  if (exact) return { key: exact, extra: false };
+  const mine = normalize(f);
+  let best: BuiltInViewKey | null = null;
+  let bestSize = 0;
+  for (const view of availableViews(ctx)) {
+    if (view.key === 'allOpen') continue;
+    const wanted = normalize(builtInFilters(view.key, ctx));
+    const owned = VIEW_OWNED[view.key];
+    const same = owned.every((group) =>
+      (GROUP_FIELDS[group] ?? []).every(
+        (field) => JSON.stringify(mine[field]) === JSON.stringify(wanted[field]),
+      ),
+    );
+    if (same && owned.length > bestSize) {
+      best = view.key;
+      bestSize = owned.length;
+    }
+  }
+  return best ? { key: best, extra: true } : null;
 }
 
 function normalize(f: QueueFilters): QueueFilters {
@@ -450,13 +551,17 @@ export function queueArgs(
   ];
 }
 
-/** `yyyy-MM-dd` of today minus `days`, in the given zone. */
+/**
+ * `yyyy-MM-dd` of the viewer's today minus `days` (a negative number looks ahead), in the given zone. The calendar day of `now` in the zone
+ * is found first and the days are counted on the calendar, so a daylight saving change inside the span never moves the result.
+ */
 export function dateDaysAgo(now: Date, days: number, zone: string): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
+  const today = new Intl.DateTimeFormat('en-CA', {
     timeZone: zone,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).format(new Date(now.getTime() - days * 86_400_000));
-  return parts;
+  }).format(now);
+  const [y, m, d] = today.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d - days)).toISOString().slice(0, 10);
 }

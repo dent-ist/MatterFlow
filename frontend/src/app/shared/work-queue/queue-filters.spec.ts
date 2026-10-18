@@ -1,9 +1,15 @@
 import { convertToParamMap } from '@angular/router';
+import { queueParams } from '../../features/dashboard/dashboard-links';
+import { RECENT_WINDOW_DAYS } from './work-vocabulary';
 import {
   BUILT_IN_VIEWS,
   OPEN_STATUSES,
+  VIEW_OWNED,
+  ViewContext,
   activeBuiltIn,
+  availableViews,
   builtInFilters,
+  matchBuiltIn,
   dateDaysAgo,
   emptyFilters,
   emptyState,
@@ -243,15 +249,24 @@ describe('explicit status', () => {
 });
 
 describe('built-in views', () => {
-  const ctx = { userId: 9, primaryPodId: 5, recentFrom: '2026-09-14' };
+  const ctx: ViewContext = {
+    userId: 9,
+    primaryPodId: 5,
+    recentFrom: '2026-09-18',
+    dueSoonTo: '2026-10-19',
+    canCreate: true,
+  };
 
-  it('defines the six views of the baseline', () => {
+  it('defines the views in the order of the row, the Dashboard tiles first', () => {
     expect(BUILT_IN_VIEWS.map((v) => v.label)).toEqual([
       'All open',
       'Unassigned',
+      'Overdue',
+      'Due soon',
+      'ASAP',
+      'On hold',
       'My pod',
       'Created by me',
-      'Overdue',
       'Recently completed',
     ]);
   });
@@ -263,11 +278,24 @@ describe('built-in views', () => {
       status: OPEN_STATUSES,
     });
     expect(builtInFilters('myPod', ctx).pod).toEqual([5]);
-    expect(builtInFilters('createdByMe', ctx).creator).toEqual([9]);
+    // Created by me starts on Open like My Work's (#222).
+    expect(builtInFilters('createdByMe', ctx)).toMatchObject({
+      creator: [9],
+      status: OPEN_STATUSES,
+    });
     expect(builtInFilters('overdue', ctx)).toMatchObject({ overdue: true, status: OPEN_STATUSES });
+    expect(builtInFilters('dueSoon', ctx)).toMatchObject({
+      status: OPEN_STATUSES,
+      asap: false,
+      overdue: false,
+      dueTo: '2026-10-19',
+      dueFrom: null,
+    });
+    expect(builtInFilters('asap', ctx)).toMatchObject({ asap: true, status: OPEN_STATUSES });
+    expect(builtInFilters('onHold', ctx)).toMatchObject({ status: ['ON_HOLD'] });
     expect(builtInFilters('recentlyCompleted', ctx)).toMatchObject({
       status: ['COMPLETED'],
-      completedFrom: '2026-09-14',
+      completedFrom: '2026-09-18',
     });
   });
 
@@ -278,6 +306,97 @@ describe('built-in views', () => {
     expect(activeBuiltIn(builtInFilters('overdue', ctx), ctx)).toBe('overdue');
     expect(activeBuiltIn({ ...builtInFilters('overdue', ctx), q: 'x' }, ctx)).toBeNull();
     expect(activeBuiltIn(emptyFilters(), ctx)).toBeNull();
+  });
+
+  it('offers My pod only with a primary Pod and Created by me only with Task.Create (#223)', () => {
+    const keys = (c: ViewContext) => availableViews(c).map((v) => v.key);
+    expect(keys(ctx)).toContain('myPod');
+    expect(keys(ctx)).toContain('createdByMe');
+    expect(keys({ ...ctx, primaryPodId: null })).not.toContain('myPod');
+    expect(keys({ ...ctx, canCreate: false })).not.toContain('createdByMe');
+    expect(keys({ ...ctx, primaryPodId: null, canCreate: false })).toEqual([
+      'allOpen',
+      'unassigned',
+      'overdue',
+      'dueSoon',
+      'asap',
+      'onHold',
+      'recentlyCompleted',
+    ]);
+    // A hidden view is never pressed: its link stays a plain filter.
+    const mine = builtInFilters('createdByMe', ctx);
+    expect(activeBuiltIn(mine, { ...ctx, canCreate: false })).toBeNull();
+    expect(matchBuiltIn(mine, { ...ctx, canCreate: false })).toBeNull();
+  });
+});
+
+describe('matching a link to a view by shape (#221)', () => {
+  const ctx: ViewContext = {
+    userId: 9,
+    primaryPodId: 5,
+    recentFrom: '2026-09-18',
+    dueSoonTo: '2026-10-19',
+    canCreate: true,
+  };
+  const link = (query: string) => parseQueueState(convertToParamMap(queueParams(query))).filters;
+
+  it('matches the Dashboard links of the tiles', () => {
+    const open = 'status=NEW&status=IN_PROGRESS&status=ON_HOLD';
+    const cases: [string, string][] = [
+      [open, 'allOpen'],
+      [`${open}&unassigned=true`, 'unassigned'],
+      [`${open}&overdue=true`, 'overdue'],
+      [`${open}&asap=false&overdue=false&dueTo=2026-10-19`, 'dueSoon'],
+      [`${open}&asap=true`, 'asap'],
+      ['status=ON_HOLD', 'onHold'],
+    ];
+    for (const [query, key] of cases) {
+      expect(matchBuiltIn(link(query), ctx), query).toEqual({ key, extra: false });
+    }
+  });
+
+  it('matches on shape, not on the date: only dueTo of today plus 2 is Due soon', () => {
+    const open = 'status=NEW&status=IN_PROGRESS&status=ON_HOLD&asap=false&overdue=false';
+    expect(matchBuiltIn(link(`${open}&dueTo=2026-10-19`), ctx)?.key).toBe('dueSoon');
+    // Three days out, or yesterday's window: a plain filter.
+    expect(matchBuiltIn(link(`${open}&dueTo=2026-10-20`), ctx)).toBeNull();
+    expect(matchBuiltIn(link(`${open}&dueTo=2026-10-18`), ctx)).toBeNull();
+    // Tomorrow the same link is no longer Due soon; with tomorrow's context it is.
+    expect(
+      matchBuiltIn(link(`${open}&dueTo=2026-10-19`), { ...ctx, dueSoonTo: '2026-10-20' }),
+    ).toBe(null);
+  });
+
+  it('keeps an extra filter on top of the view as an extra', () => {
+    const query =
+      'status=NEW&status=IN_PROGRESS&status=ON_HOLD&asap=false&overdue=false&dueTo=2026-10-19&priority=1';
+    expect(matchBuiltIn(link(query), ctx)).toEqual({ key: 'dueSoon', extra: true });
+    // A second bound of the Due range is not the view's: a plain filter.
+    expect(matchBuiltIn(link(`${query}&dueFrom=2026-10-18`), ctx)).toBeNull();
+  });
+
+  it('leaves everything else alone, All open included', () => {
+    expect(matchBuiltIn(link('priority=1'), ctx)).toBeNull();
+    expect(matchBuiltIn(link('status=NEW&priority=1'), ctx)).toBeNull();
+    // Open statuses with a priority are not "All open": it matches exactly only.
+    expect(
+      matchBuiltIn(link('status=NEW&status=IN_PROGRESS&status=ON_HOLD&priority=1'), ctx),
+    ).toBeNull();
+    expect(matchBuiltIn(link('status=COMPLETED&completedFrom=2026-09-17'), ctx)).toBeNull();
+    expect(matchBuiltIn(link('status=COMPLETED&completedFrom=2026-09-18'), ctx)?.key).toBe(
+      'recentlyCompleted',
+    );
+  });
+
+  it('prefers the more specific view when a link fits two', () => {
+    const open = 'status=NEW&status=IN_PROGRESS&status=ON_HOLD';
+    expect(matchBuiltIn(link(`${open}&unassigned=true&overdue=true`), ctx)?.key).toBe('unassigned');
+    expect(matchBuiltIn(link(`${open}&overdue=true&asap=true`), ctx)?.key).toBe('overdue');
+  });
+
+  it('names the owned filters of every view', () => {
+    expect(VIEW_OWNED.dueSoon).toEqual(['status', 'asap', 'overdue', 'due']);
+    expect(VIEW_OWNED.createdByMe).toEqual(['status', 'creator']);
   });
 });
 
@@ -313,5 +432,42 @@ describe('dateDaysAgo', () => {
     const now = new Date('2026-10-14T03:00:00Z'); // still Oct 13 in Chicago
     expect(dateDaysAgo(now, 30, 'America/Chicago')).toBe('2026-09-13');
     expect(dateDaysAgo(now, 30, 'UTC')).toBe('2026-09-14');
+  });
+
+  it('starts the 30 day window 29 days back, like the Dashboard Completed tile (BUG-TQ7)', () => {
+    // Oct 17 minus 29 days is Sep 18 (30 days with today); Sep 17 is out.
+    const now = new Date('2026-10-17T18:00:00Z');
+    expect(dateDaysAgo(now, RECENT_WINDOW_DAYS - 1, 'America/New_York')).toBe('2026-09-18');
+    expect(dateDaysAgo(now, RECENT_WINDOW_DAYS - 1, 'UTC')).toBe('2026-09-18');
+    // Auckland is already on Oct 18 (07:00): its own 30 days start on Sep 19.
+    expect(dateDaysAgo(now, RECENT_WINDOW_DAYS - 1, 'Pacific/Auckland')).toBe('2026-09-19');
+  });
+
+  it('follows the zone: the same instant is another day in Auckland', () => {
+    const now = new Date('2026-10-17T18:00:00Z'); // Oct 18, 07:00 in Auckland
+    expect(dateDaysAgo(now, 0, 'America/New_York')).toBe('2026-10-17');
+    expect(dateDaysAgo(now, 0, 'Pacific/Auckland')).toBe('2026-10-18');
+    expect(dateDaysAgo(now, 29, 'Pacific/Auckland')).toBe('2026-09-19');
+    expect(dateDaysAgo(now, -2, 'Pacific/Auckland')).toBe('2026-10-20');
+  });
+
+  it('counts calendar days across a daylight saving change', () => {
+    // New York leaves daylight saving on Nov 1 2026, 02:00: Nov 3 minus 29 days spans the 25 hour day.
+    expect(dateDaysAgo(new Date('2026-11-03T05:30:00Z'), 29, 'America/New_York')).toBe(
+      '2026-10-05',
+    );
+    // Just after midnight local: 23:30 the evening before, never a day off.
+    expect(dateDaysAgo(new Date('2026-11-02T05:10:00Z'), 29, 'America/New_York')).toBe(
+      '2026-10-04',
+    );
+    // Auckland starts daylight saving on Sep 27 2026 (a 23 hour day).
+    expect(dateDaysAgo(new Date('2026-10-20T11:30:00Z'), 29, 'Pacific/Auckland')).toBe(
+      '2026-09-22',
+    );
+    expect(dateDaysAgo(new Date('2026-09-27T12:30:00Z'), 1, 'Pacific/Auckland')).toBe('2026-09-27');
+    // Looking ahead over the change: today plus 2 in New York on Oct 30.
+    expect(dateDaysAgo(new Date('2026-10-30T12:00:00Z'), -2, 'America/New_York')).toBe(
+      '2026-11-01',
+    );
   });
 });

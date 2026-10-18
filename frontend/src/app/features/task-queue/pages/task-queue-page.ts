@@ -21,7 +21,12 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 import { FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
-import { filtersToValues, queueFilterDefs } from '../../../shared/filters/queue-defs';
+import {
+  createdByMeLink,
+  filtersToValues,
+  queueFilterDefs,
+} from '../../../shared/filters/queue-defs';
+import { PlainLink } from '../../../shared/filters/filter-def';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { PodOption, loadPodChoices } from '../../../shared/work-queue/pod-options';
@@ -37,7 +42,9 @@ import {
 import {
   BUILT_IN_VIEWS,
   BuiltInViewKey,
+  VIEW_OWNED,
   activeBuiltIn,
+  matchBuiltIn,
   OPEN_STATUSES,
   QueueState,
   builtInFilters,
@@ -183,7 +190,10 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
     noun: 'tasks',
     // The work list announces the results (view, count and range) in one message.
     announceResults: false,
-    viewName: () => this.viewLabel(),
+    // The restored notice names a view only when the filters ARE the view (extra filters are listed instead).
+    viewName: () => this.exactLabel(),
+    ownedKeys: () => this.ownedKeys(),
+    plainLink: (link) => createdByMeLink(this.userId())(link),
     openByDefault: true,
     defs: this.defs,
     visibleColumns: this.shownColumns,
@@ -192,13 +202,24 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
   /** The quick-view counts of the last response (not narrowed by the filters); null until the first one arrives. */
   protected readonly viewCounts = computed(() => this.data()?.views ?? null);
 
-  /** The pressed quick view's name ("Overdue"); null on All open (the baseline) and on a hand-made set of filters. */
-  protected readonly viewLabel = computed(() => {
-    const key = activeBuiltIn(this.state().filters, this.viewContext());
+  /** The quick view the address shows by shape (extra filters allowed, #221), or null. */
+  private readonly matched = computed(() => matchBuiltIn(this.state().filters, this.viewContext()));
+  /** The filters the pressed view owns: they are the view, so they show no chips and are not counted in "Filters (n)". */
+  private readonly ownedKeys = computed(() => {
+    const key = this.matched()?.key;
+    return key ? VIEW_OWNED[key] : [];
+  });
+  private static labelOf(key: BuiltInViewKey | null): string | null {
     return key && key !== 'allOpen'
       ? (BUILT_IN_VIEWS.find((v) => v.key === key)?.label ?? null)
       : null;
-  });
+  }
+  /** The pressed quick view's name ("Overdue"); null on All open (the baseline) and on a hand-made set of filters. */
+  protected readonly viewLabel = computed(() => TaskQueuePage.labelOf(this.matched()?.key ?? null));
+  /** The name of the view the filters equal exactly (no extra filter), for the restored-view notice. */
+  private readonly exactLabel = computed(() =>
+    TaskQueuePage.labelOf(activeBuiltIn(this.state().filters, this.viewContext())),
+  );
   /** "Task Queue: Overdue": the table caption and the browser title. */
   protected readonly pageLabel = computed(() => pageName('Task Queue', this.viewLabel()));
   /** The empty state: a view that is empty says so; other filters offer Clear filters; nothing at all offers Create task. */
@@ -220,7 +241,8 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
     const keys = this.route.snapshot?.queryParamMap?.keys ?? [];
     if (keys.length === 0) {
       const last = this.lastView();
-      if (last) {
+      // A remembered view that names a view this viewer no longer has (Created by me without Task.Create) opens All open, without a notice.
+      if (last && !this.namesHiddenView(last)) {
         this.pendingRestore = true;
         this.restore(last);
       }
@@ -235,12 +257,27 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
   private quickView = 'custom';
 
   protected override contentKey(state: QueueState): string {
-    this.quickView = activeBuiltIn(state.filters, this.viewContext()) ?? this.quickView;
+    this.quickView = matchBuiltIn(state.filters, this.viewContext())?.key ?? this.quickView;
     return this.quickView;
   }
 
   protected override defaultStatus(): readonly string[] {
     return OPEN_STATUSES;
+  }
+
+  /** `?creator=<me>` alone is the Created by me view: it starts on Open (#222). */
+  protected override plainLink(): PlainLink | null {
+    return createdByMeLink(this.userId());
+  }
+
+  /** True when the remembered view is exactly one this viewer is not offered (the Pod case is unknowable until the Pods load). */
+  private namesHiddenView(last: QueueState): boolean {
+    const ctx = this.viewContext();
+    return (
+      !ctx.canCreate &&
+      JSON.stringify(last.filters.creator) === JSON.stringify([ctx.userId]) &&
+      last.filters.status.length === OPEN_STATUSES.length
+    );
   }
 
   protected override shouldLoad(params: ParamMap): boolean {
@@ -287,12 +324,12 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
 
   /** The pressed quick view's column overlay (Recently completed: Closed instead of Due); the saved set is never touched. */
   protected override overlayColumns(own: string[]): string[] {
-    return overlayColumns(own, activeBuiltIn(this.state().filters, this.viewContext()));
+    return overlayColumns(own, this.matched()?.key ?? null);
   }
 
   /** The Columns panel's "modified by this view" note. */
   protected readonly overlayNote = computed(() => {
-    const key = activeBuiltIn(this.state().filters, this.viewContext());
+    const key = this.matched()?.key;
     return (key && VIEW_OVERLAY[key]?.note) || null;
   });
 

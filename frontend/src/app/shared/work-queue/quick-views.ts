@@ -1,15 +1,32 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { TaskQueueViewCounts } from '../../api/generated/api-client';
 import { LIST_ORDER } from '../../features/dashboard/dashboard-links';
+import { FilterPopover } from '../filters/filter-popover';
 import { normalizeColumns } from './column-prefs';
 import {
-  BUILT_IN_VIEWS,
+  BuiltInView,
   BuiltInViewKey,
+  MORE_VIEW,
   QueueFilters,
   SortDirection,
   ViewContext,
-  activeBuiltIn,
+  availableViews,
+  matchBuiltIn,
 } from './queue-filters';
+import { VIEW_TIPS } from './work-vocabulary';
 
 /**
  * The order a quick view starts with (#219): the view is its filters, this sort and its column overlay. `null` keeps the page's default
@@ -24,6 +41,11 @@ export const VIEW_ORDER: Readonly<
   myPod: null,
   createdByMe: null,
   overdue: { sort: LIST_ORDER.overdue.sort, dir: LIST_ORDER.overdue.dir },
+  // The Dashboard's Due soon list: soonest first.
+  dueSoon: { sort: LIST_ORDER.dueSoon.sort, dir: LIST_ORDER.dueSoon.dir },
+  // ASAP and On hold keep the default order (priority, then oldest): every row has the same Due text or none.
+  asap: null,
+  onHold: null,
   recentlyCompleted: { sort: 'closed', dir: 'desc' },
 };
 
@@ -64,21 +86,34 @@ export function viewCount(key: BuiltInViewKey, counts: TaskQueueViewCounts | nul
       return counts.createdByMe;
     case 'overdue':
       return counts.overdue;
+    case 'dueSoon':
+      return counts.dueSoon;
+    case 'asap':
+      return counts.asap;
+    case 'onHold':
+      return counts.onHold;
     case 'recentlyCompleted':
       return counts.recentlyCompleted;
   }
 }
 
+/** The width the strip reserves for a button that has not been measured yet. */
+const GUESS_WIDTH = 110;
+/** The gap between two buttons of the strip. */
+const STRIP_GAP = 4;
+
 /**
- * The Task Queue's quick views (All open, Unassigned, My pod, Created by me, Overdue, Recently completed) as presets: choosing one writes
- * its column filters (they show in the filter row and as chips, and can be removed one by one); changing any filter by hand un-presses it.
+ * The Task Queue's quick views as presets: choosing one writes its column filters (they can still be changed one by one); a view that
+ * does not fit the toolbar's first line moves, last first, into the "More" menu, which always holds Recently completed (#220). Row 1 never
+ * wraps because of the views: the strip measures the room the other buttons leave and shows as many views as fit.
  */
 @Component({
   selector: 'mf-quick-views',
+  imports: [FilterPopover],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="qv" role="group" aria-label="Quick views">
-      @for (view of views; track view.key) {
+    <div class="qv" role="group" aria-label="Quick views" #strip>
+      @for (view of shown(); track view.key) {
         <button
           type="button"
           class="qv-view"
@@ -86,10 +121,7 @@ export function viewCount(key: BuiltInViewKey, counts: TaskQueueViewCounts | nul
           [attr.data-view]="view.key"
           [attr.data-count]="count(view.key)"
           [attr.aria-label]="name(view)"
-          [disabled]="view.key === 'myPod' && !context().primaryPodId"
-          [attr.title]="
-            view.key === 'myPod' && !context().primaryPodId ? 'You have no primary Pod' : null
-          "
+          [attr.title]="tip(view.key)"
           (click)="viewSelect.emit(view.key)"
         >
           {{ view.label }}
@@ -104,17 +136,73 @@ export function viewCount(key: BuiltInViewKey, counts: TaskQueueViewCounts | nul
           }
         </button>
       }
+      <button
+        #moreButton
+        type="button"
+        class="qv-view qv-more"
+        data-more-views
+        aria-haspopup="dialog"
+        [attr.aria-expanded]="menuOpen()"
+        [attr.aria-pressed]="moreActive() ? true : null"
+        [attr.data-view-in-more]="moreActive()?.key ?? null"
+        [attr.data-count]="moreActive() ? count(moreActive()!.key) : null"
+        [attr.aria-label]="moreActive() ? name(moreActive()!) : 'More views'"
+        [attr.title]="moreActive() ? tip(moreActive()!.key) : 'More views'"
+        (click)="toggleMenu()"
+      >
+        {{ moreActive()?.label ?? 'More' }}
+        @if (moreActive(); as pressed) {
+          @if (count(pressed.key) !== null) {
+            <span class="qv-n" [class.qv-n--zero]="count(pressed.key) === 0" aria-hidden="true">{{
+              format(count(pressed.key))
+            }}</span>
+          }
+        }
+        <i class="pi pi-chevron-down qv-chevron" aria-hidden="true"></i>
+      </button>
     </div>
+    @if (menuOpen()) {
+      <mf-filter-popover [anchor]="moreButton" label="More views" (closed)="menuOpen.set(false)">
+        <ul class="qv-menu" data-more-menu>
+          @for (view of menu(); track view.key) {
+            <li>
+              <button
+                type="button"
+                class="qv-item"
+                [attr.aria-pressed]="active() === view.key"
+                [attr.data-view]="view.key"
+                [attr.data-count]="count(view.key)"
+                [attr.aria-label]="name(view)"
+                [attr.title]="tip(view.key)"
+                (click)="choose(view.key)"
+              >
+                <span>{{ view.label }}</span>
+                @if (hasCount(view.key) && count(view.key) !== null) {
+                  <span
+                    class="qv-n"
+                    [class.qv-n--zero]="count(view.key) === 0"
+                    aria-hidden="true"
+                    >{{ format(count(view.key)) }}</span
+                  >
+                }
+              </button>
+            </li>
+          }
+        </ul>
+      </mf-filter-popover>
+    }
   `,
   styles: `
     :host {
       display: block;
+      min-width: 0;
       /* Left in the bar whatever wraps: the rest of the bar is right aligned. */
       margin-right: auto;
     }
+    /* Never wraps: what does not fit goes into the More menu (the strip measures the room, see measure()). */
     .qv {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 4px;
     }
     .qv-view {
@@ -125,12 +213,13 @@ export function viewCount(key: BuiltInViewKey, counts: TaskQueueViewCounts | nul
       background: var(--mf-surface);
       color: var(--mf-text);
       font: inherit;
+      white-space: nowrap;
       cursor: pointer;
     }
-    /* The strip's number: tabular digits and room for three of them, so the count replaces "--" without moving the next button (and row 1 stays one line at 1366). */
+    /* The strip's number: tabular digits and room for three bold digits (2em, measured: "139" is 1.94em), so the count replaces "--" without moving the next button (and row 1 stays one line at 1366). */
     .qv-n {
       display: inline-block;
-      min-width: 1.8em;
+      min-width: 2em;
       margin-left: 2px;
       color: var(--mf-text);
       font-size: 0.9em;
@@ -142,7 +231,8 @@ export function viewCount(key: BuiltInViewKey, counts: TaskQueueViewCounts | nul
       color: var(--mf-text-muted);
       font-weight: 400;
     }
-    .qv-view[aria-pressed='true'] .qv-n:not(.qv-n--zero) {
+    .qv-view[aria-pressed='true'] .qv-n:not(.qv-n--zero),
+    .qv-item[aria-pressed='true'] .qv-n:not(.qv-n--zero) {
       color: inherit;
     }
     .qv-view[aria-pressed='true'] {
@@ -150,9 +240,37 @@ export function viewCount(key: BuiltInViewKey, counts: TaskQueueViewCounts | nul
       border-color: var(--mf-primary);
       color: var(--mf-primary);
     }
-    .qv-view:disabled {
-      color: var(--mf-text-disabled);
-      cursor: default;
+    .qv-chevron {
+      margin-left: 4px;
+      font-size: 0.7em;
+    }
+    .qv-menu {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .qv-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--mf-s2);
+      width: 100%;
+      min-height: 32px;
+      padding: 0 var(--mf-s2);
+      border: 0;
+      border-radius: var(--mf-radius);
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .qv-item:hover {
+      background: var(--mf-surface-alt);
+    }
+    .qv-item[aria-pressed='true'] {
+      background: var(--mf-selected-bg);
+      color: var(--mf-primary);
     }
     @media print {
       :host {
@@ -165,17 +283,76 @@ export class QuickViews {
   readonly filters = input.required<QueueFilters>();
   readonly context = input.required<ViewContext>();
   /**
-   * The counts of the response (`views`), null while loading: shown in each button (`(--)` while null), also as `data-count`. They are
+   * The counts of the response (`views`), null while loading: shown in each button (`--` while null), also as `data-count`. They are
    * not narrowed by the filters, so they stay the same while a filter is edited.
    */
   readonly counts = input<TaskQueueViewCounts | null>(null);
   readonly viewSelect = output<BuiltInViewKey>();
 
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly strip = viewChild<ElementRef<HTMLElement>>('strip');
+  protected readonly menuOpen = signal(false);
+
+  /** The views of the row that this viewer is offered, without the one that always sits in More. */
+  private readonly main = computed(() =>
+    availableViews(this.context()).filter((v) => v.key !== MORE_VIEW),
+  );
+  /** How many of them fit the first line; null until measured (all of them). */
+  private readonly fit = signal<number | null>(null);
+  private readonly widths = new Map<string, number>();
+  private moreWidth = 0;
+
+  /** The buttons of the strip. */
+  protected readonly shown = computed<readonly BuiltInView[]>(() => {
+    const main = this.main();
+    const fit = this.fit();
+    return fit === null ? main : main.slice(0, Math.max(1, Math.min(fit, main.length)));
+  });
+  /** The views in the More menu: the ones that did not fit, then Recently completed. */
+  protected readonly menu = computed<readonly BuiltInView[]>(() => {
+    const more = availableViews(this.context()).filter((v) => v.key === MORE_VIEW);
+    return [...this.main().slice(this.shown().length), ...more];
+  });
+
+  /** The pressed view: the one whose filters the address carries (by shape, extra filters allowed, #221). */
+  protected readonly active = computed(
+    () => matchBuiltIn(this.filters(), this.context())?.key ?? null,
+  );
+  /** The pressed view when it sits in the More menu: the button then shows its name and counts as pressed. */
+  protected readonly moreActive = computed(() => {
+    const key = this.active();
+    return this.menu().find((v) => v.key === key) ?? null;
+  });
+
+  constructor() {
+    afterNextRender(() => this.watchRoom());
+    // The text of a button changes its width (a count, the pressed view's name in More): measure again.
+    effect(() => {
+      this.counts();
+      this.main();
+      this.moreActive();
+      queueMicrotask(() => this.measure());
+    });
+  }
+
+  protected toggleMenu(): void {
+    this.menuOpen.update((v) => !v);
+  }
+
+  protected choose(key: BuiltInViewKey): void {
+    this.menuOpen.set(false);
+    this.viewSelect.emit(key);
+  }
+
+  protected tip(key: BuiltInViewKey): string {
+    return VIEW_TIPS[key];
+  }
+
   protected count(key: BuiltInViewKey): number | null {
     return viewCount(key, this.counts());
   }
 
-  /** My pod has no count without a primary Pod (and is disabled then). */
+  /** My pod has no count while the viewer has no primary Pod (and then it is not offered). */
   protected hasCount(key: BuiltInViewKey): boolean {
     return !(key === 'myPod' && !this.context().primaryPodId);
   }
@@ -192,6 +369,54 @@ export class QuickViews {
       : `${view.label}, ${this.format(n)} ${n === 1 ? 'task' : 'tasks'}`;
   }
 
-  protected readonly views = BUILT_IN_VIEWS;
-  protected readonly active = computed(() => activeBuiltIn(this.filters(), this.context()));
+  /** Measures again whenever the toolbar or the strip changes size. */
+  private watchRoom(): void {
+    if (typeof ResizeObserver !== 'function') return;
+    const parent = this.host.nativeElement.parentElement;
+    const strip = this.strip()?.nativeElement;
+    if (!parent || !strip) return;
+    const observer = new ResizeObserver(() => this.measure());
+    observer.observe(parent);
+    observer.observe(strip);
+    inject(DestroyRef).onDestroy(() => observer.disconnect());
+    this.measure();
+  }
+
+  /**
+   * Row 1 of the toolbar is one line: the room for the views is the toolbar's width less the other buttons. The widths of the buttons seen so
+   * far are remembered (a view in the menu has none yet and is guessed), and as many views as fit, with the More button, stay in the strip.
+   */
+  private measure(): void {
+    const host = this.host.nativeElement;
+    const parent = host.parentElement;
+    const strip = this.strip()?.nativeElement;
+    if (!parent || !strip || parent.clientWidth === 0) return;
+    for (const button of Array.from(strip.querySelectorAll<HTMLElement>('button[data-view]'))) {
+      const key = button.getAttribute('data-view');
+      if (key && button.offsetWidth > 0) this.widths.set(key, button.offsetWidth);
+    }
+    const more = strip.querySelector<HTMLElement>('[data-more-views]');
+    if (more && more.offsetWidth > 0) this.moreWidth = Math.max(this.moreWidth, more.offsetWidth);
+    const gap = parseFloat(getComputedStyle(parent).columnGap) || 0;
+    let others = 0;
+    let count = 0;
+    for (const child of Array.from(parent.children) as HTMLElement[]) {
+      if (child === host || child.offsetWidth === 0) continue;
+      others += child.offsetWidth;
+      count++;
+    }
+    let room = parent.clientWidth - others - count * gap;
+    // Too little room beside the other buttons: the strip has the first line to itself and the rest wraps below it.
+    if (room < 240) room = parent.clientWidth;
+    let used = this.moreWidth || 72;
+    let fit = 0;
+    const main = this.main();
+    for (const view of main) {
+      const width = (this.widths.get(view.key) ?? GUESS_WIDTH) + STRIP_GAP;
+      if (used + width > room) break;
+      used += width;
+      fit++;
+    }
+    this.fit.set(fit >= main.length ? null : Math.max(1, fit));
+  }
 }

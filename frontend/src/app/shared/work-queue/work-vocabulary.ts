@@ -12,6 +12,8 @@
  * The backend counterpart is `TaskQueueRules.DueSoonDays`; an integration test asserts the equalities.
  */
 export const DUE_SOON_DAYS = 2;
+/** The days of the Task Queue's "Recently completed" window, today included: the Dashboard's Completed tile (30 days). */
+export const RECENT_WINDOW_DAYS = 30;
 /** The days of the closed window the My Work Closed tab shows until "Show older". */
 export const CLOSED_WINDOW_DAYS = 90;
 
@@ -48,4 +50,17 @@ export const TAB_HELP = {
 export const EMPTY_TEXT = {
   dueSoon: `Nothing is overdue and nothing is due in the next ${DUE_SOON_DAYS} days.`,
   completed: `No tasks were closed in the last ${CLOSED_WINDOW_DAYS} days.`,
+} as const;
+
+/** The tooltip of each Task Queue quick view (#222, #220): one sentence that says which tasks the view holds. */
+export const VIEW_TIPS = {
+  allOpen: 'Tasks that are New, In Progress or On Hold',
+  unassigned: 'Open tasks nobody is assigned to',
+  overdue: 'Open tasks whose due date or time has passed',
+  dueSoon: `Open tasks due today, tomorrow or in ${DUE_SOON_DAYS} days; not overdue, not ASAP`,
+  asap: 'Open tasks marked ASAP',
+  onHold: 'Tasks that are on hold',
+  myPod: 'Open tasks assigned to your pod',
+  createdByMe: 'Open tasks you created',
+  recentlyCompleted: `Completed in the last ${RECENT_WINDOW_DAYS} days (cancelled tasks are not included)`,
 } as const;

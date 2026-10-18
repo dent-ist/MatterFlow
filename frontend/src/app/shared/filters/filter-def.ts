@@ -289,9 +289,22 @@ export function serializeValue(def: FilterDef, value: FilterValue): QueryParams 
   }
 }
 
-export function parseFilters(defs: readonly FilterDef[], params: ParamMap): FilterValues {
+/** What a plain-link test may read of an address (a `ParamMap` fits). */
+export type LinkReader = Pick<ParamMap, 'has' | 'getAll'>;
+
+/**
+ * A screen's exception to "a link with any filter is not plain": an address that still counts as plain for the defaults that apply to a
+ * plain link only (Task Queue: `?creator=<me>` is the Created by me view and starts on Open).
+ */
+export type PlainLink = (link: LinkReader) => boolean;
+
+export function parseFilters(
+  defs: readonly FilterDef[],
+  params: ParamMap,
+  plain?: PlainLink | null,
+): FilterValues {
   const out: Record<string, FilterValue> = {};
-  const bare = !hasFilterParams(defs, params);
+  const bare = !hasFilterParams(defs, params) || !!plain?.(params);
   for (const def of defs) {
     const value = parseValue(def, params);
     // A default that only a plain link gets: a link with other filters and none for this one asks for no limit.
