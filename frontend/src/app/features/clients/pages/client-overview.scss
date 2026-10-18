@@ -1,0 +1,185 @@
+/* The Overview tab of a client (#261): strip, top matters, created line, custom fields. Tokens only. */
+.ov {
+  max-width: 70ch;
+  padding-bottom: var(--mf-s4);
+}
+
+.ov-h {
+  margin: var(--mf-s4) 0 var(--mf-s2);
+  font-size: var(--mf-fs-h3);
+}
+
+.ov-muted {
+  color: var(--mf-text-muted);
+}
+
+.ov-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mf-s2) var(--mf-s3);
+  margin: 0;
+  color: var(--mf-text-muted);
+}
+
+.ov-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mf-s2) var(--mf-s3);
+  margin-bottom: var(--mf-s2);
+  padding: var(--mf-s2) var(--mf-s3);
+  border: 1px solid var(--mf-danger);
+  border-radius: var(--mf-radius);
+}
+
+.ov-skel {
+  display: grid;
+  gap: 1px;
+}
+
+.ov-skel--strip {
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--mf-s3);
+  margin-bottom: var(--mf-s2);
+}
+
+.ov-bar {
+  display: block;
+  height: 28px;
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface-alt);
+}
+
+.ov-bar--row {
+  height: 44px;
+  border-radius: 0;
+}
+
+.ov-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-1);
+}
+
+.ov-table th,
+.ov-table td {
+  padding: 2px var(--mf-s3);
+  border-bottom: 1px solid var(--mf-border);
+  text-align: left;
+  vertical-align: middle;
+  height: var(--mf-grid-row-h, 44px);
+  line-height: 18px;
+}
+
+.ov-table th {
+  background: var(--mf-surface-alt);
+  font-weight: 600;
+}
+
+.ov-table .ov-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ov-ref {
+  white-space: nowrap;
+}
+
+.ov-link {
+  color: var(--mf-link);
+}
+
+.ov-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+/* The shared overdue style: red text, an icon and the word (never colour alone). */
+.ov-overdue {
+  color: var(--mf-danger);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ov-all {
+  display: inline-block;
+  margin-top: var(--mf-s2);
+  padding-block: var(--mf-s1);
+  color: var(--mf-link);
+}
+
+.ov-when {
+  margin: var(--mf-s4) 0;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+/* A phone: the table becomes a two-line list (reference and name, then the numbers and status), no sideways scroll. */
+@media (width < 640px) {
+  .ov-table,
+  .ov-table tbody {
+    display: block;
+  }
+
+  .ov-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .ov-table tr {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    grid-template-areas:
+      'ref name name name'
+      'open overdue . status';
+    align-items: center;
+    column-gap: var(--mf-s3);
+    padding: var(--mf-s2) var(--mf-s3);
+    border-bottom: 1px solid var(--mf-border);
+  }
+
+  .ov-table td {
+    display: block;
+    height: auto;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    text-align: left;
+  }
+
+  .ov-ref {
+    grid-area: ref;
+  }
+
+  .ov-name {
+    grid-area: name;
+  }
+
+  .ov-table td.ov-num:nth-of-type(3) {
+    grid-area: open;
+  }
+
+  .ov-table td.ov-num:nth-of-type(4) {
+    grid-area: overdue;
+  }
+
+  .ov-status {
+    grid-area: status;
+  }
+
+  .ov-table td[data-label]::before {
+    content: attr(data-label) ' ';
+    color: var(--mf-text-muted);
+  }
+}

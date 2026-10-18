@@ -15,14 +15,12 @@ import { ClientResponse, ClientsClient } from '../../../api/generated/api-client
 import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
-import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ClientMatters } from './client-matters';
+import { ClientOverview } from './client-overview';
 import { PageTitle, recordTitle } from '../../../core/title/page-title';
 import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
 import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/record-skeleton';
-import { ActiveBadge } from '../../../shared/ui/badge';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
@@ -33,16 +31,15 @@ type Tab = 'details' | 'matters';
 const INACTIVE_REASON = 'This client is inactive. Set it active to add matters.';
 
 /**
- * Client detail (UX S05): Details / Matters tabs across the full page width. Details is first and the default (number, name, status,
- * custom fields); Matters is the client's Matters grid. The tab is kept in `?tab=` (absent for
- * Details). The header holds Edit, Activity, New matter and the overflow (Set inactive / Set active). Activity opens in a right-side drawer; `?tab=activity` opens the drawer and shows Details.
+ * Client detail (UX S05): Overview / Matters tabs across the full page width. Overview (key `details`) is first and the default (task
+ * strip, matters with the most open tasks, dates, custom fields; #261); Matters is the client's Matters grid and shows its count (#262).
+ * Without `Matter.View` there is no Matters tab. The tab is kept in `?tab=` (absent for Overview, `?tab=details` still works). The header holds Edit, Activity, New matter and the overflow (Set inactive / Set active). Activity opens in a right-side drawer; `?tab=activity` opens the drawer and shows Details.
  */
 @Component({
   selector: 'mf-client-detail-page',
   imports: [
     FixedPage,
     RecordHeader,
-    ActiveBadge,
     RecordState,
     RecordSkeleton,
     ConfirmDialog,
@@ -50,8 +47,7 @@ const INACTIVE_REASON = 'This client is inactive. Set it active to add matters.'
     Tabs,
     ScrollArea,
     ClientMatters,
-    MfDatePipe,
-    CustomFieldsView,
+    ClientOverview,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -89,28 +85,8 @@ const INACTIVE_REASON = 'This client is inactive. Set it active to add matters.'
             >
               @switch (current()) {
                 @case ('details') {
-                  <div class="mf-scroll-area" mfScrollArea="Client details" data-details-tab>
-                    <div class="pg-details">
-                      <h2 class="pg-sr">Details</h2>
-                      <dl class="pg-dl">
-                        <dt>Client number</dt>
-                        <dd class="pg-mono">{{ c.clientNumber }}</dd>
-                        <dt>Name</dt>
-                        <dd>{{ c.name }}</dd>
-                        <dt>Status</dt>
-                        <dd><mf-active-badge [active]="c.isActive" /></dd>
-                        <dt>Created</dt>
-                        <dd>{{ c.createdAtUtc | mfDate }}</dd>
-                        @if (c.modifiedAtUtc) {
-                          <dt>Last changed</dt>
-                          <dd>{{ c.modifiedAtUtc | mfDate }}</dd>
-                        }
-                      </dl>
-                      <mf-custom-fields-view
-                        [versionId]="c.formVersionId"
-                        [values]="c.formValues ?? {}"
-                      />
-                    </div>
+                  <div class="mf-scroll-area" mfScrollArea="Client overview" data-details-tab>
+                    <mf-client-overview [client]="c" />
                   </div>
                 }
                 @case ('matters') {
@@ -194,9 +170,12 @@ export class ClientDetailPage {
   protected readonly activityOpen = signal(false);
   protected readonly toggleOpen = signal(false);
   protected readonly busy = signal(false);
-  protected readonly tabs = computed<MfTab[]>(() => recordTabs('client'));
+  protected readonly tabs = computed<MfTab[]>(() => {
+    const all = recordTabs('client', { matters: this.client()?.matterCount ?? 0 });
+    return this.auth.has('Matter.View') ? all : all.filter((t) => t.key !== 'matters');
+  });
   protected readonly current = computed<Tab>(() =>
-    this.tab() === 'matters' ? 'matters' : 'details',
+    this.tab() === 'matters' && this.auth.has('Matter.View') ? 'matters' : 'details',
   );
   protected readonly canSeeActivity = computed(() => this.auth.has('Audit.View'));
   /** The header's actions (C3, #255): Edit, Activity, the primary New matter and, in the overflow, Set inactive / Set active. */

@@ -52,6 +52,7 @@ export interface MfTab {
             class="tab"
             [id]="idPrefix() + '-tab-' + t.key"
             [attr.data-tab]="t.key"
+            [attr.aria-label]="nameOf(t)"
             [attr.aria-selected]="t.key === selected()"
             [attr.aria-controls]="t.key === selected() ? idPrefix() + '-panel' : null"
             [attr.tabindex]="t.key === selected() ? 0 : -1"
@@ -213,6 +214,13 @@ export class Tabs {
   readonly idPrefix = input('mf');
   /** The tab the person chose (click or keyboard). */
   readonly tabChange = output<string>();
+
+  /** The accessible name of a counted tab: `Matters, 63` (the count spoken once, not "Matters, left parenthesis 63"); null while the count is unknown. */
+  protected nameOf(t: MfTab): string | null {
+    return typeof t.count === 'number' || (typeof t.count === 'string' && /^\d+$/.test(t.count))
+      ? `${t.label}, ${t.count}`
+      : null;
+  }
 
   constructor() {
     afterNextRender(() => this.measure());

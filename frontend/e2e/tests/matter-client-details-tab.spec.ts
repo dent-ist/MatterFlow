@@ -148,7 +148,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await expect(tab(page, 'Details')).toBeFocused();
   });
 
-  test('Client: Details is first and selected by default, shows the facts, and there is no side panel', async ({
+  test('Client: Overview is first and selected by default, shows the strip and the dates, and there is no side panel', async ({
     page,
     seed,
   }) => {
@@ -157,16 +157,16 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/clients/${client.clientId}`);
 
-    await expect(page.getByRole('tab')).toHaveText([/^\s*Details\s*$/, /^\s*Matters\s*$/]);
-    await expect(tab(page, 'Details')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('tab')).toHaveText([/^\s*Overview\s*$/, /^\s*Matters \(1\)\s*$/]);
+    await expect(tab(page, 'Overview')).toHaveAttribute('aria-selected', 'true');
     await expect(page).not.toHaveURL(/tab=/);
     await noAside(page);
     const panel = page.getByRole('tabpanel');
     await expect(panel).toHaveAttribute('id', 'client-panel');
     await expect(panel).toHaveAttribute('aria-labelledby', 'client-tab-details');
-    await expect(panel).toContainText(client.clientNumber);
-    await expect(panel).toContainText(client.name);
-    await expect(panel).toContainText('Active');
+    await expect(panel).toContainText('Created'); // the number, name and status are in the header only (WP6)
+    await expect(panel).not.toContainText(client.name);
+    await expect(panel.locator('[data-strip]')).toBeVisible();
     await expect(panel.getByRole('button', { name: 'Edit' })).toHaveCount(0); // the header has it (WP3)
     await expect(
       page.locator('[data-page-actions]').getByRole('button', { name: 'Edit' }),
@@ -174,20 +174,20 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await expect(page.getByRole('row').filter({ hasText: matter.name })).toHaveCount(0);
 
     // Deep link and keyboard.
-    await tab(page, 'Details').focus();
+    await tab(page, 'Overview').focus();
     await page.keyboard.press('ArrowRight');
     await expect(tab(page, 'Matters')).toBeFocused();
     await expect(page).toHaveURL(/tab=matters/);
     await expect(page.getByRole('row').filter({ hasText: matter.name })).toHaveCount(1);
     await page.keyboard.press('ArrowLeft');
-    await expect(tab(page, 'Details')).toHaveAttribute('aria-selected', 'true');
+    await expect(tab(page, 'Overview')).toHaveAttribute('aria-selected', 'true');
     await expect(page).not.toHaveURL(/tab=/);
     await page.goto(`/clients/${client.clientId}?tab=matters`);
     await expect(tab(page, 'Matters')).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByRole('row').filter({ hasText: matter.name })).toHaveCount(1);
   });
 
-  test('Edit from the header opens the form and Cancel comes back to Details; Set inactive from the overflow returns focus to the overflow button', async ({
+  test('Edit from the header opens the form and Cancel comes back to the Overview; Set inactive from the overflow returns focus to the overflow button', async ({
     page,
     seed,
   }) => {
@@ -197,7 +197,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await expect(page).toHaveURL(new RegExp(`/clients/${client.clientId}/edit$`));
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page).toHaveURL(new RegExp(`/clients/${client.clientId}$`));
-    await expect(tab(page, 'Details')).toHaveAttribute('aria-selected', 'true');
+    await expect(tab(page, 'Overview')).toHaveAttribute('aria-selected', 'true');
 
     const overflow = page.locator('[data-overflow]');
     await overflow.click();
@@ -212,10 +212,10 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await page.getByRole('dialog').getByRole('button', { name: 'Set inactive' }).click();
     await overflow.click();
     await expect(page.getByRole('menuitem', { name: 'Set active' })).toBeVisible();
-    await expect(page.getByRole('tabpanel')).toContainText('Inactive');
+    await expect(page.locator('[data-record-header]')).toContainText('Inactive'); // the status is in the header only (WP6)
   });
 
-  test('a read-only user sees the Details without Edit or Set inactive, and a plain client name without Client.View', async ({
+  test('a read-only user sees the Details and Overview without Edit or Set inactive, and a plain client name without Client.View', async ({
     seed,
     asUser,
   }) => {
@@ -234,7 +234,8 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await expect(page.getByRole('button', { name: 'Activity' })).toHaveCount(0);
 
     await page.goto(`/clients/${world.client.clientId}`);
-    await expect(page.getByRole('tabpanel')).toContainText(world.client.name);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(world.client.name);
+    await expect(page.getByRole('tabpanel')).toContainText('Created');
     await expect(page.getByRole('button', { name: 'Edit' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /^Set (in)?active$/ })).toHaveCount(0);
 
@@ -253,10 +254,10 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     const client = await seed.client({ name: `Scroll Client ${uid()}` });
     await page.setViewportSize({ width: 1366, height: 600 });
     await page.goto(`/clients/${client.clientId}`);
-    const area = page.getByRole('region', { name: 'Client details, scrollable' });
+    const area = page.getByRole('region', { name: 'Client overview, scrollable' });
     await expect(area).toBeVisible();
     await page.evaluate(() => {
-      const el = document.querySelector('[data-details-tab] .pg-details')!;
+      const el = document.querySelector('[data-details-tab] .ov')!;
       const filler = document.createElement('div');
       filler.style.height = '1500px';
       el.appendChild(filler);
@@ -266,7 +267,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await area.evaluate((el) => (el.scrollTop = 400));
     expect(await area.evaluate((el) => el.scrollTop)).toBeGreaterThan(100);
     expect(await title.boundingBox()).toEqual(before);
-    await expect(tab(page, 'Details')).toBeInViewport();
+    await expect(tab(page, 'Overview')).toBeInViewport();
     expect(
       await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight),
     ).toBeLessThanOrEqual(0);

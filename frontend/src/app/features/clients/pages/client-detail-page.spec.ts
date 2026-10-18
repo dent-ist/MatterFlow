@@ -19,9 +19,14 @@ import {
   withPermissions,
 } from '../../../shared/testing/org-testing';
 import { ClientDetailPage } from './client-detail-page';
+import { aClientSummary } from './client-overview-testing';
 
 describe('ClientDetailPage', () => {
-  let clients: { getClient: ReturnType<typeof vi.fn>; updateClient: ReturnType<typeof vi.fn> };
+  let clients: {
+    getClient: ReturnType<typeof vi.fn>;
+    updateClient: ReturnType<typeof vi.fn>;
+    getClientSummary: ReturnType<typeof vi.fn>;
+  };
   let matters: { listMatters: ReturnType<typeof vi.fn> };
   let fixture: ComponentFixture<ClientDetailPage>;
   let navigateByUrl: ReturnType<typeof vi.fn>;
@@ -45,6 +50,7 @@ describe('ClientDetailPage', () => {
     clients = {
       getClient: vi.fn().mockReturnValue(ok(aClient())),
       updateClient: vi.fn().mockReturnValue(ok(aClient({ isActive: false }))),
+      getClientSummary: vi.fn().mockReturnValue(ok(aClientSummary())),
     };
     matters = { listMatters: vi.fn().mockReturnValue(ok(pageOfMatters(aMatter()))) };
     TestBed.configureTestingModule({
@@ -97,29 +103,29 @@ describe('ClientDetailPage', () => {
     expect(tab('Matters').getAttribute('aria-selected')).toBe('true');
   });
 
-  it('has Details and Matters tabs, Details first and the default; ?tab= selects the others', async () => {
+  it('has Overview and Matters tabs, Overview first and the default; ?tab= selects the others', async () => {
     await create(['Client.View', 'Matter.View']);
 
     expect(
       Array.from(el().querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
-    ).toEqual(['Details', 'Matters']);
-    expect(tab('Details').getAttribute('aria-selected')).toBe('true');
+    ).toEqual(['Overview', 'Matters (2)']);
+    expect(tab('Overview').getAttribute('aria-selected')).toBe('true');
     expect(el().querySelector('[role=tabpanel]')!.getAttribute('aria-labelledby')).toBe(
       'client-tab-details',
     );
-    expect(matters.listMatters).not.toHaveBeenCalled(); // the grid loads when its tab opens
+    expect(matters.listMatters.mock.calls.map((c) => c[8])).toEqual([5]); // only the Overview's short list (no Task.View); the grid loads when its tab opens
     expect(el().querySelector('aside')).toBeNull();
 
     await openTab('matters');
     expect(tab('Matters').getAttribute('aria-selected')).toBe('true');
-    expect(matters.listMatters).toHaveBeenCalled();
+    expect(matters.listMatters.mock.calls.some((c) => c[8] === 25)).toBe(true); // the grid loads when its tab opens
     for (const key of [undefined, 'details', 'nonsense']) {
       await openTab(key);
-      expect(tab('Details').getAttribute('aria-selected')).toBe('true');
+      expect(tab('Overview').getAttribute('aria-selected')).toBe('true');
     }
   });
 
-  it('keeps the tab in the address (absent for Details)', async () => {
+  it('keeps the tab in the address (absent for Overview)', async () => {
     await create(['Client.View', 'Matter.View']);
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
@@ -139,21 +145,49 @@ describe('ClientDetailPage', () => {
       queryParamsHandling: 'merge',
     });
     await openTab('matters'); // the page input follows the address
-    tab('Details').click();
+    tab('Overview').click();
     expect(
       (navigate.mock.lastCall![1] as { queryParams: { tab: unknown } }).queryParams.tab,
     ).toBeNull();
   });
 
-  it('shows the fields in the Details tab, with no side panel', async () => {
-    await create(['Client.View', 'Matter.View']);
+  it('shows the Overview, not the number, name and status again, with no side panel', async () => {
+    await create(['Client.View', 'Matter.View', 'Task.View']);
 
     expect(el().querySelector('aside')).toBeNull();
     const details = el().querySelector('[role=tabpanel] [data-details-tab]')!;
-    expect(details.textContent).toContain('00343');
-    expect(details.textContent).toContain('Acme Corp');
-    expect(details.querySelector('mf-active-badge')?.textContent).toContain('Active');
-    expect(details.textContent).toContain('Created');
+    expect(details.querySelector('[data-client-overview]')).not.toBeNull();
+    expect(details.querySelector('dl')).toBeNull(); // the duplicated rows are gone
+    expect(details.textContent).not.toContain('Client number');
+    expect(details.textContent).toContain('Created Oct 1, 2026');
+    expect(details.querySelector('[data-top-matters]')).not.toBeNull();
+    expect(clients.getClientSummary).toHaveBeenCalledWith(1);
+  });
+
+  it('counts the matters in the tab label, muted at zero, and speaks the count once', async () => {
+    await create(['Client.View', 'Matter.View']);
+    expect(tab('Matters').textContent!.replace(/\s+/g, ' ').trim()).toBe('Matters (2)');
+    expect(tab('Matters').getAttribute('aria-label')).toBe('Matters, 2');
+    expect(tab('Overview').querySelector('.count')).toBeNull(); // never a count on Overview
+    expect(tab('Overview').getAttribute('aria-label')).toBeNull();
+
+    clients.getClient.mockReturnValue(ok(aClient({ matterCount: 0 })));
+    await fixture.componentInstance.load();
+    await settle(fixture);
+    expect(tab('Matters').textContent!.replace(/\s+/g, ' ').trim()).toBe('Matters (0)');
+    expect(tab('Matters').querySelector('.count')).not.toBeNull();
+    expect(tab('Matters').getAttribute('aria-label')).toBe('Matters, 0');
+  });
+
+  it('has no Matters tab without Matter.View, and a Matters link falls back to the Overview', async () => {
+    await create(['Client.View', 'Task.View'], 'matters');
+    expect(
+      Array.from(el().querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
+    ).toEqual(['Overview']);
+    expect(el().querySelector('[data-top-matters]')).toBeNull();
+    expect(el().querySelector('[data-overview-matters]')).toBeNull();
+    expect(el().querySelector('[data-strip]')).not.toBeNull();
+    expect(matters.listMatters).not.toHaveBeenCalled();
   });
 
   it('has column filters for Matter and Name and a Status that shows Active; no search box', async () => {
@@ -236,13 +270,12 @@ describe('ClientDetailPage', () => {
     expect(buttonByLabel(el(), 'Activity')).toBeUndefined();
     expect(el().querySelector('[data-page-actions] button')).toBeNull(); // no empty "..." either
     expect(el().querySelector('[data-overflow]')).toBeNull();
-    await openTab('matters');
     expect(buttonByLabel(el(), 'New matter')).toBeUndefined();
     expect(matters.listMatters).not.toHaveBeenCalled();
-    expect(el().querySelector('[data-no-access=matters]')).not.toBeNull();
+    expect(clients.getClientSummary).not.toHaveBeenCalled(); // no Task.View: no numbers asked for
   });
 
-  it('opens Edit from the header; the Details tab holds no action', async () => {
+  it('opens Edit from the header; the Overview tab holds no action', async () => {
     await create(['Client.View', 'Client.Edit']);
 
     const edit = buttonByLabel(el(), 'Edit')!;
@@ -365,11 +398,11 @@ describe('ClientDetailPage', () => {
 
   it('names the record and the tab in the document title, and the id while loading', async () => {
     await create(['Client.View', 'Matter.View']);
-    expect(document.title).toBe('00343 Acme Corp: Details - MatterFlow');
+    expect(document.title).toBe('00343 Acme Corp: Overview - MatterFlow');
     await openTab('matters');
     expect(document.title).toBe('00343 Acme Corp: Matters - MatterFlow');
     await openTab(undefined);
-    expect(document.title).toBe('00343 Acme Corp: Details - MatterFlow');
+    expect(document.title).toBe('00343 Acme Corp: Overview - MatterFlow');
   });
 
   it('offers Activity as a header button (Audit.View) that opens the drawer titled with the client', async () => {
@@ -383,16 +416,16 @@ describe('ClientDetailPage', () => {
     expect(drawer.querySelector('mf-entity-activity')).not.toBeNull();
   });
 
-  it('opens the drawer for an old ?tab=activity link (showing Details) and ?tab=details just shows Details', async () => {
+  it('opens the drawer for an old ?tab=activity link (showing the Overview) and ?tab=details just shows the Overview', async () => {
     await create(['Client.View', 'Audit.View']);
     fixture.componentRef.setInput('tab', 'details');
     await settle(fixture);
     expect(document.body.querySelector('.mf-drawer')).toBeNull();
-    expect(tab('Details').getAttribute('aria-selected')).toBe('true');
+    expect(tab('Overview').getAttribute('aria-selected')).toBe('true');
 
     fixture.componentRef.setInput('tab', 'activity');
     await settle(fixture);
     expect(document.body.querySelector('.mf-drawer')).not.toBeNull();
-    expect(tab('Details').getAttribute('aria-selected')).toBe('true');
+    expect(tab('Overview').getAttribute('aria-selected')).toBe('true');
   });
 });

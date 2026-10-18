@@ -33,7 +33,7 @@ describe('mf-record-skeleton (#247)', () => {
     expect(el.querySelector('[role=status]')?.textContent).toContain('Loading client');
     expect(el.querySelector('nav a')?.textContent).toContain('Clients');
     expect(el.querySelectorAll('[data-crumb-skeleton]')).toHaveLength(1);
-    expect(labels(el)).toEqual(['Details', 'Matters']);
+    expect(labels(el)).toEqual(['Overview', 'Matters (--)']);
     expect(el.querySelectorAll('.rk__row')).toHaveLength(5);
   });
 
@@ -66,7 +66,10 @@ describe('mf-record-skeleton (#247)', () => {
   });
 
   it('builds the tab strips the pages use, so the labels cannot drift', () => {
-    expect(recordTabs('client').map((t) => t.label)).toEqual(['Details', 'Matters']);
+    expect(recordTabs('client', { matters: 63 })).toEqual([
+      { key: 'details', label: 'Overview' },
+      { key: 'matters', label: 'Matters', count: 63 },
+    ]);
     expect(recordTabs('matter', { tasks: 3, projects: 40 })).toEqual([
       { key: 'details', label: 'Details' },
       { key: 'tasks', label: 'Tasks', count: 3 },
@@ -74,6 +77,6 @@ describe('mf-record-skeleton (#247)', () => {
       { key: 'assets', label: 'Assets' },
     ]);
     expect(recordTabLabel('matter', 'tasks')).toBe('Tasks');
-    expect(recordTabLabel('client', 'nonsense')).toBe('Details');
+    expect(recordTabLabel('client', 'nonsense')).toBe('Overview');
   });
 });

@@ -155,7 +155,7 @@ test.describe('Tab strip scroll cue (#279)', () => {
     ] as const) {
       await page.setViewportSize({ width: w, height: h });
       await page.goto(`/matters/${matterId}`);
-      await expect(page.getByRole('tab', { name: /^Tasks \(/ })).toBeVisible();
+      await expect(page.getByRole('tab', { name: /^Tasks/ })).toBeVisible();
       await expect(page.locator('mf-tabs [data-tab-cue]')).toHaveCount(0);
       await shot(page, `matter-tabs-no-cue-${w}x${h}`);
     }

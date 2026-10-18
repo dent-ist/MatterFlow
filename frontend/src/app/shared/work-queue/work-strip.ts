@@ -1,5 +1,12 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { Params, RouterLink } from '@angular/router';
+
+/** Where a link-mode item goes: a router path and its query parameters (repeated keys are arrays). */
+export interface WorkStripLink {
+  path: string;
+  queryParams?: Params;
+}
 
 export interface WorkStripItem {
   key: string;
@@ -10,48 +17,65 @@ export interface WorkStripItem {
   hint?: string;
   /** Overdue style: red text and an icon while the count is above zero (never colour alone: the label is always there). */
   alert?: boolean;
+  /** Link mode: the item is an `<a>` to this address (no `aria-pressed`). Ignored while the strip is `interactive`. */
+  link?: WorkStripLink;
 }
 
 /**
  * The one-line summary strip of My Work ("Needs attention") and Pod Work (X2): a label and a count per item. With `interactive`, an item is a
- * toggle button (`pick` carries its key; `active` is the pressed one); otherwise it is plain text. Zero counts are muted but stay in place.
+ * toggle button (`pick` carries its key; `active` is the pressed one); an item with a `link` is an anchor (link mode, the record Overview
+ * strip, #260); otherwise it is plain text. A strip without items renders nothing. Zero counts are muted but stay in place.
  * A single line from 640 px, wrapping below, a 2x2 group of 44 px targets on a phone. More items (A5's "New") are just more entries.
  */
 @Component({
   selector: 'mf-work-strip',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ul class="strip" [attr.aria-label]="label()" [attr.title]="hint() ?? null" data-strip>
-      @for (item of items(); track item.key) {
-        <li>
-          @if (interactive()) {
-            <button
-              type="button"
-              class="item"
-              [class.zero]="item.count === 0"
-              [class.alert]="item.alert && !!item.count"
-              [class.on]="item.key === active()"
-              [attr.aria-pressed]="item.key === active()"
-              [attr.title]="item.hint ?? null"
-              [attr.data-strip-item]="item.key"
-              (click)="pick.emit(item.key)"
-            >
-              <ng-container *ngTemplateOutlet="body; context: { $implicit: item }" />
-            </button>
-          } @else {
-            <span
-              class="item"
-              [class.zero]="item.count === 0"
-              [class.alert]="item.alert && !!item.count"
-              [attr.title]="item.hint ?? null"
-              [attr.data-strip-item]="item.key"
-            >
-              <ng-container *ngTemplateOutlet="body; context: { $implicit: item }" />
-            </span>
-          }
-        </li>
-      }
-    </ul>
+    @if (items().length > 0) {
+      <ul class="strip" [attr.aria-label]="label()" [attr.title]="hint() ?? null" data-strip>
+        @for (item of items(); track item.key) {
+          <li>
+            @if (!interactive() && item.link) {
+              <a
+                class="item"
+                [class.zero]="item.count === 0"
+                [class.alert]="item.alert && !!item.count"
+                [routerLink]="item.link.path"
+                [queryParams]="item.link.queryParams"
+                [attr.title]="item.hint ?? null"
+                [attr.data-strip-item]="item.key"
+              >
+                <ng-container *ngTemplateOutlet="body; context: { $implicit: item }" />
+              </a>
+            } @else if (interactive()) {
+              <button
+                type="button"
+                class="item"
+                [class.zero]="item.count === 0"
+                [class.alert]="item.alert && !!item.count"
+                [class.on]="item.key === active()"
+                [attr.aria-pressed]="item.key === active()"
+                [attr.title]="item.hint ?? null"
+                [attr.data-strip-item]="item.key"
+                (click)="pick.emit(item.key)"
+              >
+                <ng-container *ngTemplateOutlet="body; context: { $implicit: item }" />
+              </button>
+            } @else {
+              <span
+                class="item"
+                [class.zero]="item.count === 0"
+                [class.alert]="item.alert && !!item.count"
+                [attr.title]="item.hint ?? null"
+                [attr.data-strip-item]="item.key"
+              >
+                <ng-container *ngTemplateOutlet="body; context: { $implicit: item }" />
+              </span>
+            }
+          </li>
+        }
+      </ul>
+    }
     <ng-template #body let-item>
       @if (item.alert && item.count) {
         <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
@@ -86,10 +110,19 @@ export interface WorkStripItem {
       color: inherit;
       font: inherit;
     }
-    button.item {
+    button.item,
+    a.item {
       cursor: pointer;
     }
-    button.item:hover {
+    a.item {
+      text-decoration: none;
+    }
+    a.item:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: -2px;
+    }
+    button.item:hover,
+    a.item:hover {
       background: var(--mf-surface-2, var(--mf-border));
     }
     button.item.on {
@@ -125,7 +158,7 @@ export interface WorkStripItem {
       }
     }
   `,
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, RouterLink],
 })
 export class WorkStrip {
   readonly items = input.required<readonly WorkStripItem[]>();

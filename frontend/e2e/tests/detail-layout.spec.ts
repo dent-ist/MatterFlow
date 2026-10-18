@@ -13,7 +13,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     expect(overflow).toBeLessThanOrEqual(0);
   }
 
-  test('Client: Details is the first tab and the default; the Matters tab has the grid across the full width; no side panel', async ({
+  test('Client: Overview is the first tab and the default; the Matters tab has the grid across the full width; no side panel', async ({
     page,
     seed,
   }) => {
@@ -23,15 +23,17 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await page.goto(`/clients/${client.clientId}`);
 
     await expect(page.getByRole('heading', { level: 1 })).toContainText(client.name);
-    await expect(page.getByRole('tab')).toHaveText(['Details', 'Matters']);
-    await expect(page.getByRole('tab', { name: 'Details' })).toHaveAttribute(
+    await expect(page.getByRole('tab')).toHaveText(['Overview', 'Matters (1)']);
+    await expect(page.getByRole('tab', { name: 'Overview' })).toHaveAttribute(
       'aria-selected',
       'true',
     );
     await expect(panel(page)).toHaveCount(0);
     const details = page.getByRole('tabpanel');
-    await expect(details).toContainText(client.clientNumber);
-    await expect(details).toContainText(client.name);
+    // The number and name are in the header only (WP6 #261); the tab shows the strip, the matters and the dates.
+    await expect(details).toContainText('Created');
+    await expect(details).not.toContainText(client.name);
+    await expect(details.locator('[data-strip]')).toBeVisible();
     // Edit is in the header and Set inactive in its overflow (WP3); the tab holds no action.
     await expect(
       page.locator('[data-page-actions]').getByRole('button', { name: 'Edit' }),
@@ -210,7 +212,8 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
 
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto(url);
-    await expect(page.getByRole('tabpanel')).toContainText(longName);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(longName);
+    await expect(page.getByRole('tabpanel')).toContainText('Created');
     await noHorizontalScroll(page);
 
     await page.setViewportSize({ width: 375, height: 800 });
@@ -220,8 +223,6 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(page.getByRole('menuitem', { name: 'Edit' })).toBeVisible();
     await page.keyboard.press('Escape');
     await noHorizontalScroll(page);
-    const dt = (await page.locator('[data-details-tab] dt').first().boundingBox())!;
-    const dd = (await page.locator('[data-details-tab] dd').first().boundingBox())!;
-    expect(dd.y).toBeGreaterThan(dt.y); // label above value: single column
+    await expect(page.getByRole('tabpanel')).toContainText('Created');
   });
 });

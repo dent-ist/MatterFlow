@@ -312,12 +312,12 @@ test.describe('Detail pages: document title (#248)', () => {
     const record = `${client.clientNumber} ${client.name}`;
     await page.goto(`/clients/${client.clientId}?tab=matters`);
     await expect.poll(() => title(page)).toBe(`${record}: Matters - MatterFlow`);
-    await page.getByRole('tab', { name: 'Details' }).click();
-    await expect.poll(() => title(page)).toBe(`${record}: Details - MatterFlow`);
-    await page.getByRole('tab', { name: 'Details' }).press('ArrowRight');
+    await page.getByRole('tab', { name: 'Overview' }).click();
+    await expect.poll(() => title(page)).toBe(`${record}: Overview - MatterFlow`);
+    await page.getByRole('tab', { name: 'Overview' }).press('ArrowRight');
     await expect.poll(() => title(page)).toBe(`${record}: Matters - MatterFlow`);
     await page.goto(`/clients/${client.clientId}`);
-    await expect.poll(() => title(page)).toBe(`${record}: Details - MatterFlow`);
+    await expect.poll(() => title(page)).toBe(`${record}: Overview - MatterFlow`);
   });
 
   test('Matter: every tab is named; a 150 character name is cut at 60 characters in the title only', async ({

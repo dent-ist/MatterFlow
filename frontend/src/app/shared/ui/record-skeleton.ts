@@ -11,8 +11,8 @@ import { MfTab, Tabs } from './tabs';
  */
 const RECORD_TABS = {
   client: [
-    { key: 'details', label: 'Details' },
-    { key: 'matters', label: 'Matters' },
+    { key: 'details', label: 'Overview' },
+    { key: 'matters', label: 'Matters', counted: true },
   ],
   matter: [
     { key: 'details', label: 'Details' },
@@ -146,7 +146,7 @@ export class RecordSkeleton {
         ? { tasks: '--', projects: '--' }
         : kind === 'project'
           ? { tasks: '--' }
-          : {},
+          : { matters: '--' },
     );
   });
   protected readonly tab = computed(() => {

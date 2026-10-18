@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { WorkStrip, WorkStripItem } from './work-strip';
 
 @Component({
@@ -54,5 +55,90 @@ describe('WorkStrip', () => {
     f.detectChanges();
     expect(el.querySelectorAll('button').length).toBe(0);
     expect(el.querySelectorAll('[data-strip-item]').length).toBe(3);
+  });
+
+  describe('link mode', () => {
+    @Component({
+      imports: [WorkStrip],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<mf-work-strip label="Client tasks" [items]="items()" />`,
+    })
+    class LinkHost {
+      readonly items = signal<WorkStripItem[]>([
+        {
+          key: 'open',
+          label: 'Open',
+          count: 12,
+          hint: 'Tasks that are open',
+          link: { path: '/tasks', queryParams: { client: '107', status: ['NEW', 'ON_HOLD'] } },
+        },
+        {
+          key: 'overdue',
+          label: 'Overdue',
+          count: 3,
+          alert: true,
+          link: { path: '/tasks', queryParams: { client: '107', overdue: 'true' } },
+        },
+        {
+          key: 'asap',
+          label: 'ASAP',
+          count: 0,
+          link: { path: '/tasks', queryParams: { asap: 'true' } },
+        },
+        { key: 'hold', label: 'On hold', count: null, link: { path: '/tasks' } },
+      ]);
+    }
+
+    function link() {
+      TestBed.configureTestingModule({ providers: [provideRouter([])] });
+      const f = TestBed.createComponent(LinkHost);
+      f.detectChanges();
+      return { f, el: f.nativeElement as HTMLElement };
+    }
+
+    it('renders anchors with the router address, no buttons and no aria-pressed', () => {
+      const { el } = link();
+      const anchors = Array.from(el.querySelectorAll<HTMLAnchorElement>('a[data-strip-item]'));
+      expect(anchors.map((a) => a.getAttribute('href'))).toEqual([
+        '/tasks?client=107&status=NEW&status=ON_HOLD',
+        '/tasks?client=107&overdue=true',
+        '/tasks?asap=true',
+        '/tasks',
+      ]);
+      expect(el.querySelectorAll('button').length).toBe(0);
+      expect(el.querySelector('[aria-pressed]')).toBeNull();
+      expect(anchors[0].getAttribute('title')).toBe('Tasks that are open');
+    });
+
+    it('keeps the zero muted in place, the overdue alert with icon and word, and -- for unknown', () => {
+      const { el } = link();
+      expect(el.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+        'Open 12 Overdue 3 ASAP 0 On hold --',
+      );
+      expect(el.querySelector('[data-strip-item="asap"]')!.classList).toContain('zero');
+      const overdue = el.querySelector('[data-strip-item="overdue"]')!;
+      expect(overdue.classList).toContain('alert');
+      expect(overdue.querySelector('.pi')).not.toBeNull();
+    });
+
+    it('renders nothing for a strip without items', () => {
+      const { f, el } = link();
+      f.componentInstance.items.set([]);
+      f.detectChanges();
+      expect(el.querySelector('ul')).toBeNull();
+      expect(el.querySelector('[data-strip]')).toBeNull();
+    });
+
+    it('is a toggle strip again when interactive, even if items carry a link', () => {
+      TestBed.configureTestingModule({ providers: [provideRouter([])] });
+      const f = TestBed.createComponent(WorkStrip);
+      f.componentRef.setInput('items', [
+        { key: 'a', label: 'Open', count: 1, link: { path: '/tasks' } },
+      ]);
+      f.componentRef.setInput('interactive', true);
+      f.detectChanges();
+      expect((f.nativeElement as HTMLElement).querySelector('a')).toBeNull();
+      expect((f.nativeElement as HTMLElement).querySelector('button')).not.toBeNull();
+    });
   });
 });

@@ -179,7 +179,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     const region = page.getByRole('region', { name: 'Matters list, scrollable' });
     await expect(region.locator('tbody tr').first()).toBeVisible();
-    const details = page.getByRole('tab', { name: 'Details' });
+    const details = page.getByRole('tab', { name: 'Overview' });
     const title = page.getByRole('heading', { level: 1 });
     const before = { details: await box(details), title: await box(title) };
     expect(await documentOverflow(page)).toBeLessThanOrEqual(0);
