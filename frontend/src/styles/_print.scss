@@ -1,0 +1,103 @@
+/* Printing the work grids (Task Queue, My Work, Pod Work: BUG-TQ6, TQ39, #215). Global because task-table.scss is at its style budget.
+   The page prints what the screen shows: the title, the filters line, one line about the page (print-line.ts) and the grid, with the
+   columns at the widths of the colgroup (scaled down together when the paper is narrower than the grid), the header row on every
+   sheet, rows and group dividers kept whole. The shell and every control stay off the paper. The rule that lets a long list run over
+   several sheets lives in _fixed-page.scss (the fixed-height page becomes a normal one). */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  /* The shell and the controls. */
+  .mf-header,
+  .mf-nav,
+  .mf-nav-backdrop,
+  .mf-skip,
+  p-toast,
+  .mf-toast,
+  mf-columns-notice,
+  .wp-tabrow,
+  mf-work-strip,
+  [data-page-actions],
+  [data-assign-link],
+  .wl-footrow,
+  .wt-resize,
+  .wt .mf-filter-row,
+  .wt [data-inline-trigger] .pi-chevron-down,
+  .wt-group__btn .pi {
+    display: none !important;
+  }
+
+  .mf-body {
+    display: block !important;
+  }
+
+  .mf-main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000;
+  }
+
+  /* Colour that carries meaning (the red bar, the pills, the Due colours) stays; the words next to it say the same in grey. */
+  .wt,
+  .wt * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* The columns keep their widths from the colgroup; the table never grows past the sheet and the Title takes the rest. */
+  .wt-wrap {
+    overflow: visible !important;
+    width: 100%;
+  }
+
+  .wt {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+    font-size: 0.8125rem;
+  }
+
+  .wt thead {
+    display: table-header-group;
+  }
+
+  /* The sort buttons print as plain header text: Chromium does not paint a button again in the header it repeats on the next sheet. */
+  .wt-sort {
+    display: contents !important;
+  }
+
+  .wt tfoot {
+    display: table-footer-group;
+  }
+
+  .wt tr,
+  .wt tbody tr[data-task],
+  .wt .wt-group {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* A divider never ends a sheet with its rows on the next one. */
+  .wt .wt-group {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .wt td,
+  .wt th {
+    position: static !important;
+  }
+
+  /* Tighter rows: more of the list on a sheet (the two-line cells still fit). */
+  .wt tbody td {
+    height: auto !important;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+  }
+}

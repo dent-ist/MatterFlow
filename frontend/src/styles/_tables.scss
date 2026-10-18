@@ -200,24 +200,6 @@ body.wt-resizing {
   z-index: 4;
 }
 
-@media print {
-  .wt-resize {
-    display: none;
-  }
-}
-
-@media print {
-  .wt {
-    width: 100%;
-    min-width: 0;
-    table-layout: auto;
-  }
-
-  .wt col {
-    width: auto !important;
-  }
-}
-
 /* Group header rows of "Group by: Due" (shared/work-queue/group-header): one th spanning the table, the button stays at the left edge while
    the columns scroll sideways. Global because the table's own style budget is full. */
 .wt .wt-group th {

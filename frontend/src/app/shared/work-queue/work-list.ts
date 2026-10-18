@@ -25,6 +25,7 @@ import { ColumnWidthMap } from './column-widths';
 import { ColumnAction } from './column-menu-items';
 import { PAGE_SIZES, SortDirection } from './queue-filters';
 import { resultsAnnouncement } from './list-announce';
+import { PrintLine } from './print-line';
 import { TaskTable } from './task-table';
 import { DrillReturn, DrillSource } from './drill';
 import { CopyPart } from '../ui/copy-parts';
@@ -40,7 +41,7 @@ export type WorkListState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-work-list',
-  imports: [PageFooter, TaskTable, Pager],
+  imports: [PageFooter, TaskTable, Pager, PrintLine],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styleUrl: './work-list.scss',
@@ -48,6 +49,15 @@ export type WorkListState = 'loading' | 'ready' | 'error';
     <div class="wl-sr" role="status" aria-live="polite">{{ announcement() }}</div>
     <!-- A column's new width ("Due column 144 pixels"), apart from the results message so the count is not read again. -->
     <div class="wl-note" role="status" aria-live="polite" data-width-note>{{ widthNote() }}</div>
+
+    <mf-print-line
+      [name]="caption()"
+      [sort]="sort()"
+      [dir]="dir()"
+      [total]="total()"
+      [page]="page()"
+      [pageSize]="pageSize()"
+    />
 
     <!-- The column headers and the filter row always show; loading, error and empty are rows of the table body. -->
     <mf-task-table
