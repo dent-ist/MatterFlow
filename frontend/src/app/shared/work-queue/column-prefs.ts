@@ -58,8 +58,8 @@ export function columnScope(page: WorkPage, tab: string | null): ColumnScope {
 const QUEUE_DEFAULT = ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status'];
 /** What My Work showed before X1 and WP6b: a stored set equal to it was never customised. */
 const MY_WORK_LEGACY = ['ref', 'title', 'matter', 'priority', 'progress', 'due', 'status'];
-/** Active and Due soon and overdue (A2): the matter reference lives in the subline under the title, so the Matter column is in the chooser. */
-const MY_WORK_DEFAULT = ['ref', 'title', 'progress', 'priority', 'due', 'status'];
+/** Active and Due soon and overdue: Matter is back (WP6b #174 had dropped it, so stored sets without it are migrated) (#198), now a two-line cell (reference over name, #197). */
+const MY_WORK_DEFAULT = MY_WORK_LEGACY;
 
 /**
  * The default columns per scope, most specific first (X1). To give a tab its own set (C2, B1, B3, A2, A3), add its key here
@@ -72,7 +72,7 @@ export const DEFAULT_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   // Closed (C2): finished work has no progress and no urgency; the date it closed (C1) and the outcome matter. Priority and Due are in the chooser.
   'myWork.closed': ['ref', 'title', 'matter', 'closed', 'status'],
   // Created by me (B1, B3): where did the work I handed off go: who has it, how urgent, when due, what state, how old.
-  'myWork.createdByMe': ['ref', 'title', 'assignee', 'priority', 'due', 'status', 'age'],
+  'myWork.createdByMe': ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status', 'age'],
 };
 
 /** The default set of a scope, normalized (table order, Ref and Title included). */
@@ -124,6 +124,9 @@ const columnsKey = (scope: ColumnScope, userId: number | null) =>
   `mf.work-columns.v2.${scope}.${who(userId)}`;
 const migratedKey = (page: WorkPage, userId: number | null) =>
   `mf.work-columns.v2.migrated.${page}.${who(userId)}`;
+/** The Matter default migration (#198): per page and user, 'notice' while the one-time notice waits, 'done' once dismissed. */
+const v3Key = (page: WorkPage, userId: number | null) =>
+  `mf.work-columns.v3.migrated.${page}.${who(userId)}`;
 
 function storage(): Storage | null {
   try {
@@ -172,10 +175,62 @@ function migrateLegacy(page: WorkPage, userId: number | null): void {
   }
 }
 
+/**
+ * One-time Matter migration (#198), after the v2 move, per user and page. A stored set that lacks `matter` gets it after `title` on My Work
+ * (except Closed, whose old default had it): the old default lacked it, the user relied on the subline. On Task Queue and Pod Work the old
+ * default had Matter, so a user who removed it did so on purpose and keeps the choice. A user with a stored set gets a one-time notice
+ * (`columnsNotice`); one without stores nothing and sees none. Idempotent; corrupt values go through `normalizeColumns`.
+ */
+function migrateMatter(page: WorkPage, userId: number | null): void {
+  try {
+    const store = storage();
+    if (!store || store.getItem(v3Key(page, userId))) return;
+    const prefix = 'mf.work-columns.v2.';
+    const suffix = `.${who(userId)}`;
+    const stored: string[] = [];
+    for (let i = 0; i < store.length; i++) {
+      const k = store.key(i);
+      if (!k || !k.startsWith(prefix + PAGE_SCOPE[page]) || !k.endsWith(suffix)) continue;
+      const scope = k.slice(prefix.length, k.length - suffix.length);
+      if (scope === PAGE_SCOPE[page] || scope.startsWith(`${PAGE_SCOPE[page]}.`)) stored.push(k);
+    }
+    for (const k of stored) {
+      if (page !== 'my-work' || k.includes('.myWork.closed.')) continue;
+      const cols = strings(readJson(k));
+      if (!cols || cols.includes('matter')) continue;
+      store.setItem(k, JSON.stringify(normalizeColumns([...cols, 'matter'])));
+    }
+    store.setItem(v3Key(page, userId), stored.length > 0 ? 'notice' : 'done');
+  } catch {
+    // Blocked storage: defaults apply, no notice.
+  }
+}
+
+/** The one-time notice about the removed client and matter line: true until the user dismisses it. Never throws. */
+export function columnsNoticePending(page: WorkPage, userId: number | null): boolean {
+  migrateMatter(page, userId);
+  try {
+    return storage()?.getItem(v3Key(page, userId)) === 'notice';
+  } catch {
+    return false;
+  }
+}
+
+export function dismissColumnsNotice(page: WorkPage, userId: number | null): void {
+  try {
+    storage()?.setItem(v3Key(page, userId), 'done');
+  } catch {
+    // Not persisted.
+  }
+}
+
 /** The user's column choice for a scope, or that scope's default. Never throws; a corrupt value falls back silently. */
 export function loadColumns(scope: ColumnScope, userId: number | null): string[] {
   const page = PAGE_OF[scope.split('.')[0]];
-  if (page) migrateLegacy(page, userId);
+  if (page) {
+    migrateLegacy(page, userId);
+    migrateMatter(page, userId);
+  }
   const stored = strings(readJson(columnsKey(scope, userId)));
   return stored ? normalizeColumns(stored) : defaultColumns(scope);
 }

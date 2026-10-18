@@ -263,3 +263,10 @@ Screenshots (`<name>-<width>x<height>.png`): `work-queue-filters-open`, `work-qu
 
 - ASAP and Overdue are in More filters, not stacked under Due: a second and third control in the 40 px row would cost the grid the height this batch spends on the row. The date presets of the Due filter are the shared ones; "Overdue" and "Next 7 days" are quick access through the preset and the ASAP / Overdue filters.
 - The funnel icon in the header of a filtered column, filter by value from a cell, saved views and facet counts are Batch 5.
+
+## Matter and Client columns of the work lists (TQ-WP8, #197, #198)
+
+- The Matter column of the Task Queue, My Work and Pod Work is the shared `mf-matter-cell`: line 1 the reference (a link only with `Matter.View`) and the sensitive marker, line 2 the matter name (muted, one line, ellipsis, "(inactive)" appended). Compact shows line 1 only; the tooltip is `Client . Matter name`. The Matter filter in the filter row is unchanged (`matterText`).
+- The Client column is a plain one-line cell with a tooltip and is not in any default set (one click in Columns). The Matter and Project task grids (`hideContext`) have neither column.
+- Default sets: Task Queue and Pod Work: Ref, Title, Matter, Priority, Assignee, Due, Status; My Work Active and Due soon and overdue: Ref, Title, Matter, Progress, Priority, Due, Status; Created by me adds Matter; Closed is unchanged. A filter on a hidden Matter column still shows as a chip.
+- Stored sets: the one-time migration (`mf.work-columns.v3.migrated.<page>.<userId>`) inserts Matter into My Work sets that lack it; Task Queue and Pod Work sets are kept and the notice offers "Add Matter column".

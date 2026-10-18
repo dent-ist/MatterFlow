@@ -1,3 +1,4 @@
+import { ColumnsNotice } from '../../../shared/work-queue/columns-notice';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -52,6 +53,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
 @Component({
   selector: 'mf-task-queue-page',
   imports: [
+    ColumnsNotice,
     FixedPage,
     PageHeader,
     Button,
@@ -67,6 +69,14 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Task Queue"> </mf-page-header>
+
+      @if (columnsNotice()) {
+        <mf-columns-notice
+          [offerMatter]="offerMatter()"
+          (addMatter)="addMatterColumn()"
+          (dismiss)="dismissNotice()"
+        />
+      }
 
       <mf-filters-bar
         [filters]="filters"

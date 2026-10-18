@@ -20,6 +20,8 @@ import {
   loadColumns,
   loadDensity,
   normalizeColumns,
+  columnsNoticePending,
+  dismissColumnsNotice,
   resetColumns,
   saveColumns,
   saveDensity,
@@ -136,6 +138,15 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
       density: this.density(),
     };
   });
+  private readonly noticeDismissed = signal(false);
+  /** The one-time notice about the removed client and matter line (#198); it waits until dismissed. */
+  protected readonly columnsNotice = computed(
+    () => !this.noticeDismissed() && columnsNoticePending(this.pageKey, this.userId()),
+  );
+  /** Task Queue and Pod Work: a user who took Matter out keeps that choice and is offered the column back. */
+  protected readonly offerMatter = computed(
+    () => this.pageKey !== 'my-work' && !this.prefs().columns.includes('matter'),
+  );
   /** The columns the table really shows (it folds some away on a narrow window); null until it has measured. */
   protected readonly shownColumns = signal<readonly string[] | null>(null);
   /** True while a filter beyond the page's defaults is set: drives "No tasks match these filters". */
@@ -527,6 +538,16 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     }
     this.columnChoices.update((c) => ({ ...c, [scope]: next }));
     saveColumns(scope, this.userId(), next);
+  }
+
+  protected dismissNotice(): void {
+    dismissColumnsNotice(this.pageKey, this.userId());
+    this.noticeDismissed.set(true);
+  }
+
+  protected addMatterColumn(): void {
+    this.showColumn('matter');
+    this.dismissNotice();
   }
 
   protected setDensity(density: Density): void {

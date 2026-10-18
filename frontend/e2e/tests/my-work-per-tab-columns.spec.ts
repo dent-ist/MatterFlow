@@ -55,7 +55,7 @@ async function rowsInView(page: Page): Promise<number> {
 }
 
 test.describe('My Work per-tab columns', () => {
-  test('A2, A3: Active has no Matter column, the reference leads the subline and progress is one text line', async ({
+  test('A2, A3, #198: Active has the Matter column (reference over name) and progress is one text line', async ({
     seed,
     asUser,
   }) => {
@@ -77,6 +77,7 @@ test.describe('My Work per-tab columns', () => {
     expect(await headers(page)).toEqual([
       'Ref',
       'Title',
+      'Matter',
       'Workflow progress',
       'Priority',
       'Due',
@@ -87,6 +88,7 @@ test.describe('My Work per-tab columns', () => {
     expect(await headers(page)).toEqual([
       'Ref',
       'Title',
+      'Matter',
       'Workflow progress',
       'Priority',
       'Due',
@@ -99,6 +101,11 @@ test.describe('My Work per-tab columns', () => {
     await expect(
       row.locator('.wt-subline, .wt-sub, [data-title-context], [data-sub-ref]'),
     ).toHaveCount(0);
+
+    // #197: Matter is a two-line cell, reference over name, tooltip client and matter.
+    const matterCell = row.locator('td[data-col="matter"]');
+    await expect(matterCell.locator('.mf-ref')).toHaveText(String(world.matter.matterRef));
+    await expect(matterCell.locator('[data-matter-name]')).toContainText(String(world.matter.name));
 
     // A3: "0 of 3 done · Step", no bar.
     const progress = row.locator('td[data-col="progress"]');
@@ -114,7 +121,8 @@ test.describe('My Work per-tab columns', () => {
       .locator('a.wt-title')
       .evaluate((n) => n.getBoundingClientRect().height);
     expect(titleHeight, 'the title is at most two lines').toBeLessThan(44);
-    expect(await rowsInView(page)).toBeGreaterThanOrEqual(9);
+    // #198: Matter is a default column again, so a long title wraps to two lines at 1366 and eight full rows fit; the fixed layout (#200) returns the ninth.
+    expect(await rowsInView(page)).toBeGreaterThanOrEqual(8);
     await shot(page, 'a2-active-1366x768');
 
     // The Matter filter is still reachable: a matter text in the address filters the rows.
@@ -131,7 +139,7 @@ test.describe('My Work per-tab columns', () => {
     await shot(page, 'a2-active-1920x1080');
   });
 
-  test('A2: a customised column set is kept; the Matter column can be added back', async ({
+  test('A2, #198: a stored set without Matter gets it after Title once, with a notice; Created by me has its default', async ({
     seed,
     asUser,
   }) => {
@@ -151,11 +159,13 @@ test.describe('My Work per-tab columns', () => {
     );
     const myWork = new MyWorkPage(page);
     await myWork.open();
-    expect(await headers(page)).toEqual(['Ref', 'Title', 'Client', 'Status']);
+    expect(await headers(page)).toEqual(['Ref', 'Title', 'Matter', 'Client', 'Status']);
+    await expect(page.locator('[data-columns-notice]')).toBeVisible();
     await myWork.tab(/^Created by me/).click();
     expect(await headers(page)).toEqual([
       'Ref',
       'Title',
+      'Matter',
       'Priority',
       'Assignee',
       'Due',
@@ -163,10 +173,11 @@ test.describe('My Work per-tab columns', () => {
       'Age',
     ]);
     await myWork.tab(/^Active/).click();
-    await page.getByRole('button', { name: 'Columns', exact: true }).click();
-    await page.getByLabel('Matter', { exact: true }).check();
-    await page.getByRole('button', { name: 'Columns', exact: true }).click();
-    await expect(page.locator('th[data-col="matter"]')).toBeVisible();
+    await page.locator('[data-dismiss-notice]').click();
+    await expect(page.locator('[data-columns-notice]')).toHaveCount(0);
+    await page.reload();
+    await expect(page.locator('[data-columns-notice]')).toHaveCount(0);
+    expect(await headers(page)).toEqual(['Ref', 'Title', 'Matter', 'Client', 'Status']);
     await expect(page.locator('tbody tr[data-task]').first().locator('[data-sub-ref]')).toHaveCount(
       0,
     );
@@ -209,6 +220,7 @@ test.describe('My Work per-tab columns', () => {
     expect(await headers(page)).toEqual([
       'Ref',
       'Title',
+      'Matter',
       'Priority',
       'Assignee',
       'Due',

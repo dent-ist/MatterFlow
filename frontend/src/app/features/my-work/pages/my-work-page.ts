@@ -1,3 +1,4 @@
+import { ColumnsNotice } from '../../../shared/work-queue/columns-notice';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -135,6 +136,7 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
 @Component({
   selector: 'mf-my-work-page',
   imports: [
+    ColumnsNotice,
     FixedPage,
     PageHeader,
     RouterLink,
@@ -150,6 +152,14 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
   template: `
     <mf-fixed-page>
       <mf-page-header heading="My Work"> </mf-page-header>
+
+      @if (columnsNotice()) {
+        <mf-columns-notice
+          [offerMatter]="offerMatter()"
+          (addMatter)="addMatterColumn()"
+          (dismiss)="dismissNotice()"
+        />
+      }
 
       <mf-work-strip
         label="Needs attention"

@@ -201,12 +201,21 @@ describe('MyWorkPage', () => {
     expect(lastArgs()[ARG.view]).toBe('dueSoon');
   });
 
-  it('lists my tasks with priority, workflow progress, due and status (the matter reference is in the Matter column only, #196)', async () => {
+  it('lists my tasks with priority, workflow progress, due and status (the matter reference is in the Matter column only, #196, #198)', async () => {
     const el = await open('/my-work');
     const headers = Array.from(el.querySelectorAll('thead th')).map((h) => h.textContent?.trim());
-    expect(headers).toEqual(['Ref', 'Title', 'Workflow progress', 'Priority', 'Due', 'Status']);
+    expect(headers).toEqual([
+      'Ref',
+      'Title',
+      'Matter',
+      'Workflow progress',
+      'Priority',
+      'Due',
+      'Status',
+    ]);
     const row = el.querySelector('tbody tr')!;
-    expect(row.textContent).not.toContain('00343-00012');
+    // #197: the Matter cell shows the reference over the matter name.
+    expect(row.querySelector('td[data-col="matter"]')!.textContent).toContain('00343-00012');
     expect(row.textContent).toContain('2 of 6 done');
     expect(row.textContent).toContain('Dedup');
     expect(row.textContent).toContain('ASAP');
@@ -340,8 +349,8 @@ describe('MyWorkPage', () => {
     for (const key of ['q', 'priority', 'due', 'status']) {
       expect(control(el, key), key).not.toBeNull();
     }
-    // Matter is not a default column any more: its filter waits in More filters (A2).
-    expect(control(el, 'matterText')).toBeNull();
+    // Matter is a default column again (#198): its filter is in the row.
+    expect(control(el, 'matterText')).not.toBeNull();
   });
 
   it('shows what each tab decides itself as disabled controls with the reason, and does not send them', async () => {

@@ -1,3 +1,4 @@
+import { ColumnsNotice } from '../../../shared/work-queue/columns-notice';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -43,6 +44,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
 @Component({
   selector: 'mf-pod-work-page',
   imports: [
+    ColumnsNotice,
     FixedPage,
     PageHeader,
     ScrollArea,
@@ -91,6 +93,14 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
           </div>
         }
       </mf-page-header>
+
+      @if (columnsNotice()) {
+        <mf-columns-notice
+          [offerMatter]="offerMatter()"
+          (addMatter)="addMatterColumn()"
+          (dismiss)="dismissNotice()"
+        />
+      }
 
       @if (loadState() === 'ready' && pods().length === 0) {
         <div class="wl-empty-note" data-empty="no-pod" role="status">

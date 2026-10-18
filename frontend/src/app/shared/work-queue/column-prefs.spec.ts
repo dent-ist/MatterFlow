@@ -11,6 +11,8 @@ import {
   saveColumns,
   saveDensity,
   saveLastPod,
+  columnsNoticePending,
+  dismissColumnsNotice,
 } from './column-prefs';
 
 const OLD_MY_WORK = ['ref', 'title', 'matter', 'priority', 'progress', 'due', 'status'];
@@ -36,8 +38,8 @@ describe('work table preferences', () => {
 
   it('gives each scope its default and falls back to the page default for a tab without one', () => {
     expect(defaultColumns('taskQueue')).toEqual(normalizeColumns(DEFAULT_COLUMNS['taskQueue']!));
-    // A2: the matter reference lives in the subline, so Matter leaves the default set of Active and of Due soon and overdue.
-    const active = ['ref', 'title', 'progress', 'priority', 'due', 'status'];
+    // #198: Matter is in every default set again (two-line cell, #197).
+    const active = ['ref', 'title', 'matter', 'progress', 'priority', 'due', 'status'];
     expect(defaultColumns('myWork.active')).toEqual(normalizeColumns(active));
     expect(defaultColumns('myWork.dueSoon')).toEqual(normalizeColumns(active));
     // C2: finished work has no progress, priority or due date by default.
@@ -46,9 +48,19 @@ describe('work table preferences', () => {
     );
     // B1, B3: where did the work I handed off go.
     expect(defaultColumns('myWork.createdByMe')).toEqual(
-      normalizeColumns(['ref', 'title', 'assignee', 'priority', 'due', 'status', 'age']),
+      normalizeColumns(['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status', 'age']),
     );
-    expect(defaultColumns('myWork.active')).not.toContain('matter');
+    for (const sc of [
+      'taskQueue',
+      'podWork.all',
+      'myWork.active',
+      'myWork.dueSoon',
+      'myWork.closed',
+      'myWork.createdByMe',
+    ]) {
+      expect(defaultColumns(sc)).toContain('matter');
+      expect(defaultColumns(sc)).not.toContain('client');
+    }
     expect(defaultColumns('podWork.all')).toEqual(defaultColumns('podWork'));
     // The Closed tab shows the Closed column by default (C1); Active does not.
     expect(defaultColumns('myWork.closed')).toContain('closed');
@@ -57,8 +69,8 @@ describe('work table preferences', () => {
   });
 
   it('remembers columns per user, page and tab, and density per page', () => {
-    saveColumns('myWork.active', 1, ['ref', 'title', 'client']);
-    expect(loadColumns('myWork.active', 1)).toEqual(['ref', 'title', 'client']);
+    saveColumns('myWork.active', 1, ['ref', 'title', 'matter', 'client']);
+    expect(loadColumns('myWork.active', 1)).toEqual(['ref', 'title', 'matter', 'client']);
     // Another tab keeps its default; another user and another page are untouched.
     expect(loadColumns('myWork.closed', 1)).toEqual(defaultColumns('myWork.closed'));
     expect(loadColumns('myWork.active', 2)).toEqual(defaultColumns('myWork.active'));
@@ -69,16 +81,16 @@ describe('work table preferences', () => {
       columns: defaultColumns('myWork.closed'),
       density: 'compact',
     });
-    expect(loadPrefs('my-work', 1, 'active').columns).toEqual(['ref', 'title', 'client']);
+    expect(loadPrefs('my-work', 1, 'active').columns).toEqual(['ref', 'title', 'matter', 'client']);
     expect(loadDensity('queue', 1)).toBe('comfortable');
   });
 
   it('resets only the scope it is asked for', () => {
-    saveColumns('myWork.active', 1, ['ref', 'title', 'client']);
+    saveColumns('myWork.active', 1, ['ref', 'title', 'matter', 'client']);
     saveColumns('myWork.closed', 1, ['ref', 'title', 'pod']);
     resetColumns('myWork.closed', 1);
     expect(loadColumns('myWork.closed', 1)).toEqual(defaultColumns('myWork.closed'));
-    expect(loadColumns('myWork.active', 1)).toEqual(['ref', 'title', 'client']);
+    expect(loadColumns('myWork.active', 1)).toEqual(['ref', 'title', 'matter', 'client']);
   });
 
   describe('migration from the one-set-for-all-tabs preference', () => {
@@ -97,8 +109,8 @@ describe('work table preferences', () => {
     });
 
     it('keeps a customised set for the main tab only', () => {
-      legacy('my-work', ['ref', 'title', 'due']);
-      expect(loadColumns('myWork.active', 1)).toEqual(['ref', 'title', 'due']);
+      legacy('my-work', ['ref', 'title', 'matter', 'due']);
+      expect(loadColumns('myWork.active', 1)).toEqual(['ref', 'title', 'matter', 'due']);
       expect(loadColumns('myWork.dueSoon', 1)).toEqual(defaultColumns('myWork.dueSoon'));
       expect(loadColumns('myWork.closed', 1)).toEqual(defaultColumns('myWork.closed'));
     });
@@ -112,10 +124,76 @@ describe('work table preferences', () => {
     });
 
     it('does not bring the old set back after a reset', () => {
-      legacy('my-work', ['ref', 'title', 'due']);
-      expect(loadColumns('myWork.active', 1)).toEqual(['ref', 'title', 'due']);
+      legacy('my-work', ['ref', 'title', 'matter', 'due']);
+      expect(loadColumns('myWork.active', 1)).toEqual(['ref', 'title', 'matter', 'due']);
       resetColumns('myWork.active', 1);
       expect(loadColumns('myWork.active', 1)).toEqual(defaultColumns('myWork.active'));
+    });
+  });
+
+  describe('Matter migration (#198)', () => {
+    const flag = (page: string, id: number) => `mf.work-columns.v3.migrated.${page}.${id}`;
+    const stored = (scope: string, id: number) =>
+      JSON.parse(localStorage.getItem(`mf.work-columns.v2.${scope}.${id}`) ?? 'null');
+
+    it('inserts Matter after Title in a My Work set without it, once', () => {
+      saveColumns('myWork.active', 1, ['ref', 'title', 'progress', 'priority', 'due', 'status']);
+      saveColumns('myWork.createdByMe', 1, ['ref', 'title', 'assignee']);
+      expect(loadColumns('myWork.active', 1)).toEqual([
+        'ref',
+        'title',
+        'matter',
+        'progress',
+        'priority',
+        'due',
+        'status',
+      ]);
+      expect(stored('myWork.createdByMe', 1)).toEqual(['ref', 'title', 'matter', 'assignee']);
+      expect(columnsNoticePending('my-work', 1)).toBe(true);
+      // Idempotent: the user takes Matter out again and it stays out.
+      saveColumns('myWork.active', 1, ['ref', 'title', 'due']);
+      expect(loadColumns('myWork.active', 1)).toEqual(['ref', 'title', 'due']);
+    });
+
+    it('keeps a set that has Matter, and the Closed set', () => {
+      saveColumns('myWork.active', 1, ['ref', 'title', 'matter', 'due']);
+      saveColumns('myWork.closed', 1, ['ref', 'title', 'closed']);
+      expect(loadColumns('myWork.active', 1)).toEqual(['ref', 'title', 'matter', 'due']);
+      expect(loadColumns('myWork.closed', 1)).toEqual(['ref', 'title', 'closed']);
+    });
+
+    it('keeps a Task Queue and Pod Work choice without Matter and shows the notice', () => {
+      saveColumns('taskQueue', 1, ['ref', 'title', 'status']);
+      saveColumns('podWork.all', 1, ['ref', 'title', 'status']);
+      expect(loadColumns('taskQueue', 1)).toEqual(['ref', 'title', 'status']);
+      expect(loadColumns('podWork.all', 1)).toEqual(['ref', 'title', 'status']);
+      expect(columnsNoticePending('queue', 1)).toBe(true);
+      expect(columnsNoticePending('pod-work', 1)).toBe(true);
+    });
+
+    it('shows no notice and stores nothing extra for a user without a stored set', () => {
+      expect(loadColumns('myWork.active', 2)).toEqual(defaultColumns('myWork.active'));
+      expect(columnsNoticePending('my-work', 2)).toBe(false);
+      expect(localStorage.getItem(flag('my-work', 2))).toBe('done');
+    });
+
+    it('remembers the dismissal, per page and user', () => {
+      saveColumns('taskQueue', 1, ['ref', 'title']);
+      saveColumns('myWork.active', 1, ['ref', 'title']);
+      expect(columnsNoticePending('queue', 1)).toBe(true);
+      dismissColumnsNotice('queue', 1);
+      expect(columnsNoticePending('queue', 1)).toBe(false);
+      expect(columnsNoticePending('my-work', 1)).toBe(true);
+    });
+
+    it('handles a corrupt value and blocked storage without throwing', () => {
+      localStorage.setItem('mf.work-columns.v2.myWork.active.1', '{oops');
+      expect(loadColumns('myWork.active', 1)).toEqual(defaultColumns('myWork.active'));
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new Error('blocked');
+      });
+      expect(columnsNoticePending('my-work', 3)).toBe(false);
+      expect(loadColumns('myWork.active', 3)).toEqual(defaultColumns('myWork.active'));
     });
   });
 
