@@ -199,8 +199,8 @@ test.describe('T4: Complete readiness (M2, #304)', () => {
     const button = detail.completeTaskButton;
     await expect(button).toBeEnabled();
     await expect(button).toHaveAttribute('title', '2 steps need information');
-    await expect(page.locator('#wf-complete-note')).toHaveText('2 steps need information');
-    await expect(button).toHaveAttribute('aria-describedby', 'wf-complete-note');
+    const note = await button.getAttribute('aria-describedby');
+    await expect(page.locator(`[id="${note}"]`)).toHaveText('2 steps need information');
 
     // The status menu's Complete is not disabled either, and carries the same hint for assistive technology.
     await detail.statusMenu.click();
@@ -270,7 +270,7 @@ test.describe('T4: Complete readiness (M2, #304)', () => {
     await detail.open(task.taskId);
     await detail.showSection('Workflow');
     await expect(detail.completeTaskButton).not.toHaveAttribute('title', /.+/);
-    await expect(page.locator('#wf-complete-note')).not.toContainText('need information');
+    await expect(page.getByText('need information')).toHaveCount(0);
 
     await detail.chooseAction('COMPLETE');
     await expect(detail.dialog.locator('[data-bulk-body]')).toBeVisible();

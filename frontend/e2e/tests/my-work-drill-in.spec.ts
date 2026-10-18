@@ -70,8 +70,9 @@ test.describe('Drill-in keeps its place', () => {
     const crumb = crumbs(page).getByRole('link').first();
     await expect(crumb).toHaveText('My Work');
     await expect(crumb).toHaveAttribute('href', `/my-work${exact}`);
-    const back = page.getByRole('link', { name: 'Back to My Work' });
-    await expect(back).toBeVisible();
+    // The record header's "Back to My Work" link is the phone form of the crumb (hidden from 640 px); it goes to the same view.
+    const back = page.getByRole('link', { name: 'Back to My Work', includeHidden: true });
+    await expect(back).toBeHidden();
     await expect(back).toHaveAttribute('href', `/my-work${exact}`);
     await shot(page, 'm7-task-from-my-work-1366x768');
     if (axeAvailable()) expect(await axeViolations(page), 'task page').toEqual([]);
@@ -84,11 +85,11 @@ test.describe('Drill-in keeps its place', () => {
     await expect(myWork.tab(/^Due soon and overdue/)).toHaveAttribute('aria-selected', 'true');
     await shot(page, 'm7-back-focus-row-1366x768');
 
-    // The "Back to My Work" link does the same, and leaves a row that is gone to the heading.
+    // The first crumb does the same, and leaves a row that is gone to the heading.
     await link.focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-task-header]')).toBeVisible();
-    await page.getByRole('link', { name: 'Back to My Work' }).click();
+    await crumbs(page).getByRole('link').first().click();
     await expect(page).toHaveURL(new RegExp('/my-work\\?'));
     await expect(link).toBeFocused();
     expect(new URL(page.url()).search).toBe(exact);
@@ -119,7 +120,7 @@ test.describe('Drill-in keeps its place', () => {
       'href',
       `/tasks${queueSearch}`,
     );
-    await page.getByRole('link', { name: 'Back to Task Queue' }).click();
+    await crumbs(page).getByRole('link').first().click();
     await expect(page.locator(`a.wt-title[data-task-id="${task.taskId}"]`)).toBeFocused();
 
     const podWork = new PodWorkPage(page);
@@ -177,7 +178,9 @@ test.describe('Drill-in keeps its place', () => {
     for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });
       await page.goto(`/tasks/${task.taskId}?from=my-work`);
-      await expect(page.getByRole('link', { name: 'Back to My Work' })).toBeVisible();
+      // A phone has "Back to My Work"; from 640 px the crumb names the list.
+      if (w < 640) await expect(page.getByRole('link', { name: 'Back to My Work' })).toBeVisible();
+      else await expect(crumbs(page).getByRole('link').first()).toHaveText('My Work');
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
       );

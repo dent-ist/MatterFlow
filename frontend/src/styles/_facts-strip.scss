@@ -1,0 +1,59 @@
+/*
+ * The facts strip of the Task page (task-facts.ts) and its loading skeleton (record-skeleton.ts): one rounded box of six tiles, label above,
+ * value below, in the tile look of the work strip (`mf-work-strip`, #260) but its own rules. Six across from 1100 px, two rows of three
+ * on tablets, a 2x3 grid on phones. Tokens only. The 1px gaps over the border colour draw the dividers whatever the row count.
+ */
+.mf-facts {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius-lg);
+  background: var(--mf-border);
+  list-style: none;
+}
+
+.mf-facts__tile {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 54px;
+  padding: 6px var(--mf-s3);
+  background: var(--mf-surface);
+}
+
+.mf-facts__label {
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-xs);
+}
+
+.mf-facts__value {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--mf-fs-md);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The Due cell centres its row in a flex line: here it starts at the tile's left edge like the other values. */
+.mf-facts .mf-facts__value .dc {
+  justify-content: flex-start;
+}
+
+@media (max-width: 1099.98px) {
+  .mf-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 639.98px) {
+  .mf-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

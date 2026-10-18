@@ -109,7 +109,7 @@ test.describe('Status changes and closed tasks', () => {
     await detail.showSection('Comments');
     await expect(page.getByRole('region', { name: 'Comments' })).toContainText('Wrong task type');
 
-    await page.locator('[data-reopen-task]').click();
+    await page.locator('[data-action="reopen"]').click();
     await detail.dialog.getByRole('button', { name: 'Reopen' }).click();
     await detail.expectStatus('In Progress');
     await expect(page.locator('[data-closed-banner]')).toHaveCount(0);
@@ -128,7 +128,7 @@ test.describe('Status changes and closed tasks', () => {
     await detail.expectStatus('Completed');
     await expect(page.locator('[data-closed-banner]')).toContainText('Reopen it to edit');
     await expect(page.locator('[data-readonly-note]')).toHaveCount(0);
-    await expect(page.locator('[data-task-header] [data-edit]')).toHaveCount(0);
+    await expect(page.locator('[data-task-header] [data-action="edit"]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
 
     const refused = await admin.raw('PUT', `/api/v1/tasks/${task.taskId}`, {
@@ -139,10 +139,10 @@ test.describe('Status changes and closed tasks', () => {
     expect(refused.status).toBeGreaterThanOrEqual(400);
     expect((await api.get()).title).toBe(task.title);
 
-    await page.locator('[data-reopen-task]').click();
+    await page.locator('[data-action="reopen"]').click();
     await detail.dialog.getByRole('button', { name: 'Reopen' }).click();
     await detail.expectStatus('In Progress');
-    await page.locator('[data-task-header] [data-edit]').click();
+    await page.locator('[data-task-header] [data-action="edit"]').click();
     await page.getByLabel('Title (required)').fill('Edited after reopening');
     await page.getByRole('button', { name: 'Save changes' }).click();
     await expect(detail.titleText).toHaveText('Edited after reopening');
@@ -157,7 +157,7 @@ test.describe('Status changes and closed tasks', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
 
-    await page.locator('[data-task-header] [data-edit]').click();
+    await page.locator('[data-task-header] [data-action="edit"]').click();
     await expect(page.locator('[data-locked-fields]')).toContainText(
       "Can't be changed after creation",
     );
@@ -191,7 +191,7 @@ test.describe('Sensitive matter banner', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await expect(page.locator('[data-sensitive-banner]')).toContainText(
-      'does not restrict who can see it',
+      'does not restrict who can see them',
     );
 
     await page.goto(`/matters/${world.matter.matterId}`);

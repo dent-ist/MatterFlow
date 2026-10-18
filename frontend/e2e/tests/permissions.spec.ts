@@ -215,7 +215,7 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await page.locator('[data-task-header] [data-edit]').click();
+    await page.locator('[data-task-header] [data-action="edit"]').click();
     await expect(page.getByLabel('Assignee', { exact: true })).toHaveCount(0);
 
     const asUserApi = await Api.as(user.username);

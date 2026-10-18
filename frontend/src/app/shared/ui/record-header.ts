@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, UrlTree } from '@angular/router';
 import { iconForPath } from '../layout/section-icons';
 import { ActionMenu, MenuAction } from './action-menu';
 import { ActiveBadge, SensitiveBadge } from './badge';
@@ -43,6 +43,8 @@ const DESKTOP_QUERY = '(min-width: 1024px)';
  */
 export interface RecordAction extends MenuAction {
   role: 'edit' | 'activity' | 'primary' | 'secondary' | 'state';
+  /** Extra sentence for an enabled button (tooltip and `aria-describedby`), for example "2 steps need information". */
+  hint?: string | null;
 }
 
 const LIST: Record<RecordKind, { label: string; link: string }> = {
@@ -81,17 +83,22 @@ let nextId = 0;
   template: `
     <header class="rh" data-record-header [attr.data-kind]="kind()" [class.rh--sk]="skeleton()">
       <nav class="rh__crumbs" aria-label="Breadcrumb">
-        <a class="rh__back" [routerLink]="list().link" data-back-link>
+        <a class="rh__back" [routerLink]="back().link" [state]="back().state" data-back-link>
           <i class="pi pi-arrow-left" aria-hidden="true"></i>
-          Back to {{ list().label }}
+          Back to {{ back().label }}
         </a>
         <ol class="rh__trail">
           @for (c of parents(); track $index) {
             <li>
               @if (skeleton() && !c.link) {
                 <span class="rh__sk" aria-hidden="true" data-crumb-skeleton></span>
+              } @else if (c.label.length > crumbMax) {
+                <a [routerLink]="c.link" [state]="c.state" [attr.title]="c.label">
+                  <span aria-hidden="true">{{ cut(c.label) }}</span>
+                  <span class="mf-sr-only">{{ c.label }}</span>
+                </a>
               } @else {
-                <a [routerLink]="c.link">{{ c.label }}</a>
+                <a [routerLink]="c.link" [state]="c.state">{{ c.label }}</a>
               }
             </li>
           }
@@ -113,7 +120,10 @@ let nextId = 0;
       </nav>
       <div class="rh__row">
         <h1 class="rh__title" data-page-title>
-          <i class="rh__icon" [class]="icon()" aria-hidden="true" data-page-icon></i>
+          <!-- The Task page puts its task type icon here (mfIcon); the other records show the icon of their section. -->
+          <ng-content select="[mfIcon]">
+            <i class="rh__icon" [class]="icon()" aria-hidden="true" data-page-icon></i>
+          </ng-content>
           @if (skeleton()) {
             <span class="rh__sk rh__sk--title" data-title-skeleton></span>
           } @else {
@@ -137,8 +147,8 @@ let nextId = 0;
               [class.mf-btn--primary]="a.role === 'primary'"
               [attr.data-action]="a.id"
               [attr.aria-disabled]="a.disabled ? 'true' : null"
-              [attr.aria-describedby]="a.disabled && a.reason ? uid + '-r-' + a.id : null"
-              [attr.title]="a.disabled && a.reason ? a.reason : null"
+              [attr.aria-describedby]="buttonNote(a) ? uid + '-r-' + a.id : null"
+              [attr.title]="buttonNote(a)"
               (click)="a.disabled ? null : a.run()"
             >
               @if (a.icon) {
@@ -146,8 +156,8 @@ let nextId = 0;
               }
               {{ a.label }}
             </button>
-            @if (a.disabled && a.reason) {
-              <span class="mf-sr-only" [id]="uid + '-r-' + a.id">{{ a.reason }}</span>
+            @if (buttonNote(a); as text) {
+              <span class="mf-sr-only" [id]="uid + '-r-' + a.id">{{ text }}</span>
             }
           }
           <mf-action-menu [items]="menu()" />
@@ -158,7 +168,9 @@ let nextId = 0;
         <p class="rh__ctx rh__ctx--sk"><span class="rh__sk rh__sk--ctx"></span></p>
       }
       <ng-template #badges>
-        <mf-active-badge [active]="active()" [inactiveLabel]="inactiveLabel()" />
+        @if (kind() !== 'task') {
+          <mf-active-badge [active]="active()" [inactiveLabel]="inactiveLabel()" />
+        }
         @if (sensitive()) {
           <mf-sensitive-badge [describedBy]="noteId" />
         }
@@ -187,6 +199,12 @@ export class RecordHeader {
   /** `Archived` for a project. */
   readonly inactiveLabel = input('Inactive');
   readonly sensitive = input(false);
+  /** Where "Back to ..." goes (a phone) when it is not the record's own list, for example the list a Task was opened from (`?from=`). */
+  readonly backTo = input<{
+    label: string;
+    link: string | UrlTree;
+    state?: Record<string, unknown>;
+  } | null>(null);
   readonly actions = input<readonly RecordAction[]>([]);
   /** Grey bars instead of the record while it loads. */
   readonly skeleton = input(false);
@@ -198,6 +216,17 @@ export class RecordHeader {
   protected readonly note = `${SENSITIVE_LEAD} ${SENSITIVE_TEXT}`;
 
   protected readonly list = computed(() => LIST[this.kind()]);
+  protected readonly back = computed<{
+    label: string;
+    link: string | UrlTree;
+    state?: Record<string, unknown>;
+  }>(() => this.backTo() ?? this.list());
+  protected readonly crumbMax = CRUMB_MAX;
+  /** The sentence that goes with a header button: why it is disabled, else its hint. */
+  protected buttonNote(a: RecordAction): string | null {
+    return (a.disabled && a.reason ? a.reason : a.hint) || null;
+  }
+  protected readonly cut = truncateCrumb;
   protected readonly icon = computed(() => iconForPath(this.list().link) ?? '');
   protected readonly shortCrumb = computed(() => truncateCrumb(this.current()));
 

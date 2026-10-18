@@ -277,7 +277,7 @@ test.describe('Task detail T1: load states (S2 #290, BUG-4 #291)', () => {
 
     failing = false;
     await retry.click();
-    await expect(page.locator('[data-task-number]')).toHaveText(task.taskNumber);
+    await expect(page.locator('[data-task-header] [data-ref]')).toHaveText(task.taskNumber);
     await expect(page.getByRole('button', { name: 'Retry' })).toHaveCount(0);
     await expect(page.locator('[data-page-title]')).toBeFocused();
     await expect(page.locator('[data-record-live]')).toHaveText('Loaded');
@@ -363,7 +363,7 @@ test.describe('Task detail T1: page skeleton (S1, #292)', () => {
     await page.goto(`/tasks/${task.taskId}?from=task-queue`, { waitUntil: 'commit' });
     await expect(page.locator('[data-record-skeleton]')).toBeVisible();
     release();
-    await expect(page.locator('[data-task-number]')).toHaveText(task.taskNumber);
+    await expect(page.locator('[data-task-header] [data-ref]')).toHaveText(task.taskNumber);
     await expect(page.locator('[data-record-skeleton]')).toHaveCount(0);
     await page.waitForTimeout(500);
     const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);
@@ -385,7 +385,7 @@ test.describe('Task detail T1: page skeleton (S1, #292)', () => {
     await expect(bar).toBeVisible();
     expect(await bar.evaluate((el) => getComputedStyle(el).animationName)).toBe('none');
     release();
-    await expect(page.locator('[data-task-number]')).toBeVisible();
+    await expect(page.locator('[data-task-header] [data-ref]')).toBeVisible();
   });
 });
 

@@ -1,187 +1,102 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { DRILL_SOURCES, listUrl, parseFrom } from '../../../shared/work-queue/drill';
-import {
-  TaskQueueRow,
-  TaskResponse,
-  TaskTransitionOption,
-} from '../../../api/generated/api-client';
+import { TaskTransitionOption } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { NotificationService } from '../../../core/notify/notification.service';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
-import { RowEdit } from '../../../shared/work-queue/row-edit';
-import { DueCell } from '../../../shared/work-queue/due-cell';
+import { MATTER_INACTIVE_TEXT } from '../../../shared/work-queue/inline-edit';
 import { MatterRef } from '../../../shared/ui/matter-ref';
-import { PriorityBadge } from '../../../shared/ui/priority-badge';
-import { StatusBadge } from '../../../shared/ui/status-badge';
+import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
+import { Crumb } from '../../../shared/ui/page-header';
 import { TaskDetailStore } from './task-detail.store';
-import { Crumb, PageHeader } from '../../../shared/ui/page-header';
+import { TaskFacts } from './task-facts';
 
-/** The fields of a queue row that the inline editors read, taken from the Task. */
-function rowOfTask(t: TaskResponse): TaskQueueRow {
-  return {
-    taskId: t.taskId,
-    taskNumber: t.taskNumber,
-    title: t.title,
-    matterId: t.matter.matterId,
-    matterIsActive: t.matter.isActive,
-    priority: t.priority,
-    status: t.status,
-    statusLabel: t.statusLabel,
-    assignedPod: t.assignedPod,
-    assignedUser: t.assignedUser,
-    isAsap: t.isAsap,
-    isOverdue: t.isOverdue,
-    updatedAtUtc: t.modifiedAtUtc,
-    completedAtUtc: t.completedAtUtc,
-    statusChangedAtUtc: t.statusChangedAtUtc,
-    rowVersion: t.rowVersion,
-  } as TaskQueueRow;
+/** Why a status action is shown but cannot be used (the server's `blockedReason`). */
+function blockedText(action: string, reason: string | undefined): string {
+  if (reason !== 'MATTER_INACTIVE')
+    return "You can view this task but you don't have permission to do that.";
+  return action === 'REOPEN'
+    ? MATTER_INACTIVE_TEXT
+    : action === 'COMPLETE'
+      ? "The matter is inactive, so this task can't be completed."
+      : "The matter is inactive, so this task can't be changed.";
 }
 
 /**
- * Task header (UX S10): number, title, the task type icon slot, status, priority, due or ASAP, Pod and assignee, Matter reference with copy button
- * and workflow. Status, Priority and Assignee are the same inline menus as in the work tables (`mf-row-edit`) for users who
- * may change them; the status menu lists only the transitions in `allowedActions` (ones the caller lacks permission for are
- * left out, ones blocked by the Matter are disabled with the reason). One Edit button opens the Details form (a dialog) for the other
- * fields; the Activity button opens the Activity drawer. A user who can change nothing sees a "View only" line.
+ * Task header (H1 to H3 and H6, #296 to #299): the shared record header (`mf-record-header`, as the Client, Matter and Project pages) with
+ * the crumb `Tasks > matter > TSK-n` (the list the task was opened from, `?from=`, replaces `Tasks`; the matter only for people who may open
+ * it), `TSK-n  title` as the page's `h1` at the H2 size (one line, two at most, the full title as tooltip), one muted context line (Matter,
+ * Client, Task type, Workflow) and the Sensitive note; then the facts strip (`mf-task-facts`). Actions are data (`RecordAction`): Edit, Activity,
+ * the primary Complete task (Reopen task on a closed task) and the overflow with Put on hold or Resume, Copy link and Cancel task (set
+ * apart, last). Status, Priority and Assignee stay the inline menus of the facts strip. A user who can change nothing sees a "View only" line.
  */
 @Component({
   selector: 'mf-task-header',
-  imports: [
-    TaskTypeIcon,
-    PageHeader,
-    RouterLink,
-    RowEdit,
-    MatterRef,
-    PriorityBadge,
-    StatusBadge,
-    DueCell,
-  ],
+  imports: [RecordHeader, RouterLink, MatterRef, TaskTypeIcon, TaskFacts],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     @if (store.task(); as t) {
       <div class="th" data-task-header>
-        @if (source(); as src) {
-          <a
-            class="th__back"
-            data-back-to-list
-            [routerLink]="backTree()"
-            [state]="{ restoreFocus: true }"
-            ><i class="pi pi-arrow-left" aria-hidden="true"></i> Back to {{ src.label }}</a
-          >
-        }
-        <mf-page-header [crumbs]="crumbs()" icon="">
-          <span mfTitle class="th__title">
-            <mf-task-type-icon
-              class="th__icon"
-              size="lg"
-              [iconKey]="t.taskType.iconKey"
-              [attr.title]="t.taskType.name"
-              data-title-icon
-            />
-            <span class="pg-mono" data-task-number>{{ t.taskNumber }}</span>
-            <span data-task-title>{{ t.title }}</span>
-          </span>
-          @if (t.allowedActions.canEdit) {
-            <button mfActions type="button" class="mf-btn" data-edit (click)="edit()">Edit</button>
-          }
-          <button
-            mfActions
-            type="button"
-            class="mf-btn th__activity"
-            data-activity-button
-            (click)="store.activityOpen.set(true)"
-          >
-            <i class="pi pi-history" aria-hidden="true"></i> Activity
-          </button>
-
-          <div class="th__meta">
-            <span data-status>
-              @if (statusEditable()) {
-                <mf-row-edit
-                  field="status"
-                  [row]="row()"
-                  [transitions]="items()"
-                  [statusDelegated]="true"
-                  [completeNote]="store.completeHint()"
-                  (statusAction)="store.requestAction($event)"
-                />
-              } @else {
-                <mf-status-badge [code]="t.status" [label]="t.statusLabel" />
-              }
-            </span>
-            <span data-priority>
-              @if (priorityEditable()) {
-                <mf-row-edit
-                  field="priority"
-                  [row]="row()"
-                  (rowChange)="override.set({ basis: t, row: $event })"
-                  (taskChange)="saved($event)"
-                />
-              } @else {
-                <mf-priority-badge
-                  [priorityId]="t.priority.priorityId"
-                  [label]="t.priority.label"
-                  [color]="t.priority.color"
-                />
-              }
-            </span>
-            <span class="th__type" data-task-type
-              ><span class="pg-label">Type:</span> {{ t.taskType.name }}</span
-            >
-            <span data-due
-              ><span class="pg-label">Due:</span>
-              <mf-due-cell
-                layout="two-line"
-                [due]="{ dueDate: t.dueDate, dueAtUtc: t.dueAtUtc }"
-                [status]="t.status"
-            /></span>
-            <span data-pod
-              ><span class="pg-label">Pod:</span> {{ t.assignedPod?.name ?? 'No pod' }}</span
-            >
-            <span data-assignee
-              ><span class="pg-label">Assignee:</span>
-              @if (assigneeEditable()) {
-                <mf-row-edit
-                  field="assignee"
-                  [selfAssign]="true"
-                  [row]="row()"
-                  (rowChange)="override.set({ basis: t, row: $event })"
-                  (taskChange)="saved($event)"
-                />
-              } @else {
-                {{ t.assignedUser?.displayName ?? 'Unassigned' }}
-              }
-            </span>
-            <span class="th__matter" data-matter
-              ><span class="pg-label">Matter:</span>
+        <mf-record-header
+          kind="task"
+          [parents]="parents()"
+          [current]="t.taskNumber"
+          [ref]="t.taskNumber"
+          [name]="t.title"
+          [sensitive]="t.matter.isSensitive"
+          [backTo]="backTo()"
+          [actions]="actions()"
+        >
+          <mf-task-type-icon
+            mfIcon
+            class="th__icon"
+            size="md"
+            [iconKey]="t.taskType.iconKey"
+            [attr.title]="t.taskType.name"
+            data-title-icon
+          />
+          <span mfContext class="th__ctx" data-context [attr.title]="contextText()">
+            <span data-matter
+              >Matter
               <mf-matter-ref
                 [value]="t.matter.matterRef"
                 [link]="auth.canLink('matter') ? ['/matters', t.matter.matterId] : null"
+                [copy]="false"
               />
-              {{ t.matter.name }}
-            </span>
-            <span data-workflow
-              ><span class="pg-label">Workflow:</span> {{ t.workflow.workflowName }} v{{
-                t.workflow.versionNo
-              }}
-              ({{ t.workflow.isOrdered ? 'ordered' : 'unordered' }}) &middot;
-              <span data-progress
-                >{{ t.workflow.progress.resolved }} of
-                {{ t.workflow.progress.total }} resolved</span
-              ></span
+              {{ t.matter.name }}</span
             >
-          </div>
-          @if (store.viewOnly()) {
-            <p class="th__view-only" data-view-only>
-              <i class="pi pi-eye" aria-hidden="true"></i>
-              View only: you don't have permission to edit tasks.
-            </p>
-          }
-        </mf-page-header>
+            <span class="th__sep" aria-hidden="true">&middot;</span>
+            <span data-client
+              >Client
+              @if (auth.canLink('client')) {
+                <a class="pg-link pg-mono" [routerLink]="['/clients', t.matter.clientId]">{{
+                  t.matter.clientNumber
+                }}</a>
+              } @else {
+                <span class="pg-mono">{{ t.matter.clientNumber }}</span>
+              }
+            </span>
+            <span class="th__sep" aria-hidden="true">&middot;</span>
+            <span data-task-type>{{ t.taskType.name }}</span>
+            <span class="th__sep" aria-hidden="true">&middot;</span>
+            <span data-workflow
+              >{{ t.workflow.workflowName }} v{{ t.workflow.versionNo }} ({{
+                t.workflow.isOrdered ? 'ordered' : 'unordered'
+              }})</span
+            >
+          </span>
+        </mf-record-header>
+        <mf-task-facts />
+        @if (store.viewOnly()) {
+          <p class="th__view-only" data-view-only>
+            <i class="pi pi-eye" aria-hidden="true"></i>
+            View only: you don't have permission to edit tasks.
+          </p>
+        }
       </div>
     }
   `,
@@ -189,42 +104,13 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
     .th {
       margin-bottom: var(--mf-s3);
     }
-    .th__back {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      margin-bottom: var(--mf-s1);
-      color: var(--mf-primary);
-      font-size: var(--mf-fs-sm);
-    }
-    .th__title {
-      display: inline-flex;
-      flex-wrap: wrap;
-      gap: var(--mf-s2);
-    }
-    mf-page-header {
-      margin-bottom: 0;
-    }
-    .th__meta {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s2) var(--mf-s4);
-      margin-top: var(--mf-s2);
-    }
-    [data-due] {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-    }
+    /* The type icon is centred on the first line of the title (the title is 1.3 times its font size tall). */
     .th__icon {
-      align-self: center;
+      margin-top: calc((var(--rh-fs, 22px) * 1.3 - 1.25rem) / 2);
       color: var(--mf-text-muted);
     }
-    .th__matter {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
+    .th__sep {
+      margin: 0 var(--mf-s2);
     }
     .th__view-only {
       margin: var(--mf-s2) 0 0;
@@ -238,18 +124,19 @@ export class TaskHeader {
   protected readonly auth = inject(AuthStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly notify = inject(NotificationService);
 
   /** The list the task was opened from (`?from=`, whitelisted); null for any other value or none (M7). */
   private readonly from = toSignal(
     this.route.queryParamMap.pipe(map((q) => parseFrom(q.get('from')))),
     { initialValue: parseFrom(this.route.snapshot.queryParamMap.get('from')) },
   );
-  protected readonly source = computed(() => {
+  private readonly source = computed(() => {
     const from = this.from();
     return from ? DRILL_SOURCES[from] : null;
   });
   /** The exact list view when the browser still knows it (history state `returnTo`), else the plain list path. */
-  protected readonly backTree = computed(() => {
+  private readonly listTree = computed(() => {
     const from = this.from();
     if (!from) return this.router.parseUrl('/tasks');
     const state: unknown = typeof history === 'undefined' ? null : history.state;
@@ -257,57 +144,153 @@ export class TaskHeader {
     return this.router.parseUrl(listUrl(from, returnTo));
   });
 
-  /** A change made from a chip, shown at once; it only counts while the Task it was made on is still the one on screen. */
-  protected readonly override = signal<{ basis: TaskResponse; row: TaskQueueRow } | null>(null);
-
-  protected readonly row = computed<TaskQueueRow>(() => {
-    const t = this.store.task()!;
-    const o = this.override();
-    return o && o.basis === t ? o.row : rowOfTask(t);
+  /** "Back to My Work" on a phone: the list the task was opened from, with focus returning to the row (`restoreFocus`). */
+  protected readonly backTo = computed(() => {
+    const src = this.source();
+    return src
+      ? { label: src.label, link: this.listTree(), state: { restoreFocus: true } }
+      : { label: 'Tasks', link: '/tasks' };
   });
 
-  // While the Details form is open the chips are plain: a change from here would make the form's version stale.
-  protected readonly statusEditable = computed(
-    () => !this.store.editing() && this.items().length > 0,
-  );
-  protected readonly priorityEditable = computed(
-    () => !this.store.editing() && !!this.store.task()?.allowedActions.canSetPriority,
-  );
-  protected readonly assigneeEditable = computed(
-    () => !this.store.editing() && !!this.store.task()?.allowedActions.canAssign,
-  );
-
-  /** `Tasks > 00343-00012 Merger Review > TSK-1`: every segment before the current task is a link. */
-  protected readonly crumbs = computed<Crumb[]>(() => {
+  /** `Tasks > 00343-00012 Merger Review > TSK-1`: the list the person came from, then the matter for people who may open it. */
+  protected readonly parents = computed<Crumb[]>(() => {
     const t = this.store.task();
     if (!t) return [];
     const source = this.source();
-    return [
-      source ? { label: source.label, link: this.backTree() } : { label: 'Tasks', link: '/tasks' },
-      {
-        label: `${t.matter.matterRef} ${t.matter.name}`,
-        link: this.auth.canLink('matter') ? ['/matters', t.matter.matterId] : undefined,
-      },
-      { label: t.taskNumber },
-    ];
+    const list: Crumb = {
+      label: source?.label ?? 'Tasks',
+      link: this.listTree(),
+      // From a list the crumb brings the person back to the row they left, as "Back to ..." does.
+      state: source ? { restoreFocus: true } : undefined,
+    };
+    return this.auth.canLink('matter')
+      ? [
+          list,
+          {
+            label: `${t.matter.matterRef} ${t.matter.name}`,
+            link: ['/matters', t.matter.matterId],
+          },
+        ]
+      : [list];
   });
 
-  /** Transitions shown in the menu: not the ones the caller lacks permission for. */
-  protected readonly items = computed<TaskTransitionOption[]>(() =>
-    (this.store.task()?.allowedActions.transitions ?? []).filter(
-      (o) => o.permitted || o.blockedReason !== 'PERMISSION_DENIED',
-    ),
-  );
+  /** The whole context line as one sentence: its tooltip, because the line is cut at the window's edge. */
+  protected readonly contextText = computed(() => {
+    const t = this.store.task();
+    if (!t) return null;
+    const w = t.workflow;
+    return [
+      `Matter ${t.matter.matterRef} ${t.matter.name}`,
+      `Client ${t.matter.clientNumber}`,
+      t.taskType.name,
+      `${w.workflowName} v${w.versionNo} (${w.isOrdered ? 'ordered' : 'unordered'})`,
+    ].join(' \u00b7 ');
+  });
 
-  /** The server's answer to a Priority or Assignee change (or the refreshed Task after a conflict). */
-  protected saved(task: TaskResponse): void {
-    this.store.task.set(task);
-    this.store.warnings.set(task.warnings ?? []);
-    this.store.conflict.set(false);
+  private option(action: string): TaskTransitionOption | null {
+    const o = this.store.task()?.allowedActions.transitions.find((x) => x.action === action);
+    // A transition the person lacks the permission for is left out; one the Matter blocks is shown disabled with the reason.
+    return o && (o.permitted || o.blockedReason !== 'PERMISSION_DENIED') ? o : null;
   }
+
+  /** One status action as a header or overflow entry. */
+  private statusAction(
+    action: 'COMPLETE' | 'REOPEN' | 'HOLD' | 'RESUME' | 'CANCEL',
+    entry: Pick<RecordAction, 'id' | 'role' | 'label' | 'icon' | 'danger' | 'separated' | 'hint'>,
+  ): RecordAction[] {
+    const o = this.option(action);
+    if (!o) return [];
+    return [
+      {
+        ...entry,
+        disabled: !o.permitted,
+        reason: o.permitted ? undefined : blockedText(action, o.blockedReason),
+        run: () => {
+          if (!this.store.busy()) void this.store.requestAction(action);
+        },
+      },
+    ];
+  }
+
+  /** The header's action set (C3, #255): Edit, Activity, the primary action, and the overflow. Permission-gated; the page adds nothing else. */
+  protected readonly actions = computed<RecordAction[]>(() => {
+    const t = this.store.task();
+    if (!t) return [];
+    const list: RecordAction[] = [];
+    if (t.allowedActions.canEdit) {
+      list.push({ id: 'edit', role: 'edit', label: 'Edit', run: () => this.edit() });
+    }
+    list.push({
+      id: 'activity',
+      role: 'activity',
+      label: 'Activity',
+      icon: 'pi-history',
+      run: () => this.store.activityOpen.set(true),
+    });
+    if (this.store.closed()) {
+      list.push(
+        ...this.statusAction('REOPEN', {
+          id: 'reopen',
+          role: 'primary',
+          label: 'Reopen task',
+          icon: 'pi-replay',
+        }),
+      );
+    } else {
+      list.push(
+        ...this.statusAction('COMPLETE', {
+          id: 'complete',
+          role: 'primary',
+          label: 'Complete task',
+          icon: 'pi-check-circle',
+          hint: this.store.completeHint(),
+        }),
+      );
+    }
+    list.push(
+      ...this.statusAction('HOLD', {
+        id: 'hold',
+        role: 'secondary',
+        label: 'Put on hold',
+        icon: 'pi-pause',
+      }),
+      ...this.statusAction('RESUME', {
+        id: 'resume',
+        role: 'secondary',
+        label: 'Resume',
+        icon: 'pi-play',
+      }),
+      {
+        id: 'copy-link',
+        role: 'secondary',
+        label: 'Copy link',
+        icon: 'pi-link',
+        run: () => void this.copyLink(t.taskId),
+      },
+      ...this.statusAction('CANCEL', {
+        id: 'cancel',
+        role: 'state',
+        label: 'Cancel task',
+        icon: 'pi-times-circle',
+        danger: true,
+        separated: true,
+      }),
+    );
+    return list;
+  });
 
   protected edit(): void {
     this.store.editOrigin.set('header');
     this.store.editing.set(true);
+  }
+
+  private async copyLink(taskId: number): Promise<void> {
+    const url = new URL(`/tasks/${taskId}`, location.origin).toString();
+    try {
+      await navigator.clipboard.writeText(url);
+      this.notify.success('Link copied.');
+    } catch {
+      this.notify.error('The link could not be copied.', url);
+    }
   }
 }

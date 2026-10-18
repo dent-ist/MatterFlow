@@ -46,7 +46,9 @@ describe('Details tab', () => {
     expect(q(el, '[data-edit-details]')!.getAttribute('aria-label')).toBe('Edit details');
     expect(q(el, '[data-edit-details]')!.textContent!.trim()).toBe('');
     expect(view).toContain('Jane Roe');
-    expect(view).toContain('Data Processing');
+    // Task type, Pod and Due are in the header (the context line and the facts strip), not in the panel again (#297).
+    expect(view).not.toContain('Data Processing');
+    expect(view).not.toContain('Task type');
     expect(q(el, '[data-view] a[href="mailto:jane.roe@client.com"]')).not.toBeNull();
     expect(q(el, '[data-request-form]')!.textContent).toContain('form version 3');
     expect(q(el, '[data-request-form]')!.textContent).toContain('English');
@@ -131,7 +133,7 @@ describe('Details tab', () => {
         ['Task.View', 'Task.Edit'],
         { tasks: { updateTask: vi.fn().mockReturnValue(of(saved)) } },
       );
-      await click(fixture, q(el, '[data-edit]'));
+      await click(fixture, q(el, '[data-action="edit"]'));
       const area = q(document.body, '[data-description-editor] [role=textbox]')!;
       expect(area.querySelectorAll('table').length).toBe(1);
       expect(area.getAttribute('aria-label')).toBe('Description');
@@ -151,7 +153,7 @@ describe('Details tab', () => {
         ['Task.View', 'Task.Edit'],
         { tasks: { updateTask: vi.fn().mockReturnValue(of(aTask({ rowVersion: 'RV2' }))) } },
       );
-      await click(fixture, q(el, '[data-edit]'));
+      await click(fixture, q(el, '[data-action="edit"]'));
       const area = q(document.body, '[data-description-editor] [role=textbox]')!;
       expect(area.innerHTML).toBe('<p>Old text<br>second line</p>');
       await type(fixture, document.body, '#td-title', 'Only the title changed');
@@ -165,7 +167,7 @@ describe('Details tab', () => {
         ['Task.View', 'Task.Edit'],
         { tasks: { updateTask: vi.fn().mockReturnValue(of(aTask({ rowVersion: 'RV2' }))) } },
       );
-      await click(fixture, q(el, '[data-edit]'));
+      await click(fixture, q(el, '[data-action="edit"]'));
       const area = q(document.body, '[data-description-editor] [role=textbox]')!;
       area.innerHTML = '<p>New text</p>';
       area.dispatchEvent(new Event('input'));
@@ -173,7 +175,7 @@ describe('Details tab', () => {
       await click(fixture, q(document.body, '[data-save]'));
       expect(fakes.tasks['updateTask'].mock.calls[0][1].description).toBe('<p>New text</p>');
 
-      await click(fixture, q(el, '[data-edit]'));
+      await click(fixture, q(el, '[data-action="edit"]'));
       const again = q(document.body, '[data-description-editor] [role=textbox]')!;
       again.innerHTML = '<p><br></p>';
       again.dispatchEvent(new Event('input'));
@@ -184,7 +186,7 @@ describe('Details tab', () => {
 
     it('rejects a description over 20000 characters before it is sent', async () => {
       const { fixture, el, fakes } = await mountTaskPage(aTask(), ['Task.View', 'Task.Edit']);
-      await click(fixture, q(el, '[data-edit]'));
+      await click(fixture, q(el, '[data-action="edit"]'));
       const area = q(document.body, '[data-description-editor] [role=textbox]')!;
       area.innerHTML = `<p>${'x'.repeat(20001)}</p>`;
       area.dispatchEvent(new Event('input'));
@@ -215,7 +217,7 @@ describe('Details tab', () => {
   it('puts the cursor in the Title when Edit opens, but never takes focus back from a field the person moved to (the Assignee list stayed shut)', async () => {
     const { fixture, el } = await mountTaskPage(aTask());
     document.body.appendChild(el);
-    await click(fixture, q(el, '[data-edit]'));
+    await click(fixture, q(el, '[data-action="edit"]'));
     const waitFor = async (cond: () => boolean): Promise<void> => {
       for (let i = 0; i < 100 && !cond(); i++) await new Promise((r) => setTimeout(r, 20));
     };
@@ -244,14 +246,14 @@ describe('Details tab', () => {
         allowedActions: allowed({ canEdit: false, transitions: [transition('REOPEN')] }),
       }),
     );
-    expect(q(el, '[data-edit]')).toBeNull();
+    expect(q(el, '[data-action="edit"]')).toBeNull();
     expect(q(el, '[data-closed-banner]')!.textContent).toContain('Reopen it to edit');
     expect(q(el, '[data-readonly-note]')).toBeNull();
   });
 
   it('edit mode shows inputs for the editable fields only, with the due time labelled with the zone', async () => {
     const { fixture, el } = await mountTaskPage(aTask({ dueDate: '2026-10-30', dueTime: '15:00' }));
-    await click(fixture, q(el, '[data-edit]'));
+    await click(fixture, q(el, '[data-action="edit"]'));
 
     expect((q(document.body, '#td-title') as HTMLInputElement).value).toBe(
       'Process Smith custodians',
@@ -269,7 +271,7 @@ describe('Details tab', () => {
 
   it('validates required fields before calling the server', async () => {
     const { fixture, el, fakes } = await mountTaskPage(aTask());
-    await click(fixture, q(el, '[data-edit]'));
+    await click(fixture, q(el, '[data-action="edit"]'));
     await type(fixture, document.body, '#td-title', '');
     await type(fixture, document.body, '#td-due-time', '10:00');
     await click(fixture, q(document.body, '[data-save]'));
@@ -285,7 +287,7 @@ describe('Details tab', () => {
     const { fixture, el, fakes } = await mountTaskPage(aTask(), ['Task.View', 'Task.Edit'], {
       tasks: { updateTask: vi.fn().mockReturnValue(of(saved)) },
     });
-    await click(fixture, q(el, '[data-edit]'));
+    await click(fixture, q(el, '[data-action="edit"]'));
     await type(fixture, document.body, '#td-title', 'New title');
     await type(fixture, document.body, '#td-due-date', '2026-11-02');
     await type(fixture, document.body, '#td-due-time', '09:30');
@@ -303,7 +305,7 @@ describe('Details tab', () => {
       }),
     );
     expect(q(document.body, '[data-edit-form]')).toBeNull();
-    expect(q(el, '[data-task-title]')!.textContent).toBe('New title');
+    expect(q(el, '[data-task-header] [data-name]')!.textContent).toBe('New title');
   });
 
   it('maps server field errors onto the fields and keeps the user in edit mode', async () => {
@@ -320,7 +322,7 @@ describe('Details tab', () => {
         ),
       },
     });
-    await click(fixture, q(el, '[data-edit]'));
+    await click(fixture, q(el, '[data-action="edit"]'));
     await click(fixture, q(document.body, '[data-save]'));
 
     expect(q(document.body, '#td-req-email-error')!.textContent).toContain(
@@ -340,7 +342,7 @@ describe('Details tab', () => {
         updateTask: vi.fn().mockReturnValue(apiError(409, { code: 'CONCURRENCY_CONFLICT' })),
       },
     });
-    await click(fixture, q(el, '[data-edit]'));
+    await click(fixture, q(el, '[data-action="edit"]'));
     await type(fixture, document.body, '#td-title', 'Mine');
     await click(fixture, q(document.body, '[data-save]'));
 
@@ -357,7 +359,7 @@ describe('Details tab', () => {
         tasks: { updateTask: vi.fn().mockReturnValue(of(aTask())) },
       },
     );
-    await click(fixture, q(el, '[data-edit]'));
+    await click(fixture, q(el, '[data-action="edit"]'));
     expect(fakes.forms.getFormVersionSchema).toHaveBeenCalledWith(3);
     const language = Array.from(
       document.body.querySelectorAll<HTMLInputElement>(
@@ -385,7 +387,7 @@ describe('Details tab', () => {
         },
       },
     );
-    await click(fixture, q(el, '[data-edit]'));
+    await click(fixture, q(el, '[data-action="edit"]'));
     const pod = q(document.body, '#td-pod') as HTMLSelectElement;
     pod.value = '';
     pod.dispatchEvent(new Event('change'));
@@ -408,7 +410,7 @@ describe('Details tab', () => {
         tasks: { updateTask: vi.fn().mockReturnValue(of(aTask({ rowVersion: 'RV2' }))) },
       },
     );
-    await click(fixture, q(el, '[data-edit]'));
+    await click(fixture, q(el, '[data-action="edit"]'));
     await click(fixture, q(document.body, '[data-chosen] button'));
     await type(fixture, document.body, '#td-assignee', 'Coll');
     await new Promise((r) => setTimeout(r, 300));
@@ -429,7 +431,7 @@ describe('Details tab', () => {
 
   it('warns, without blocking, when the due date is in the past (UAT2-16)', async () => {
     const { fixture, el } = await mountTaskPage(aTask({ dueDate: '2099-10-30' }));
-    await click(fixture, q(el, '[data-edit]'));
+    await click(fixture, q(el, '[data-action="edit"]'));
     expect(q(document.body, '[data-past-due]')).toBeNull();
 
     await type(fixture, document.body, '#td-due-date', '2020-01-02');

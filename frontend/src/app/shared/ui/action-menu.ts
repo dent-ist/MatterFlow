@@ -15,6 +15,10 @@ export interface MenuAction {
   /** PrimeIcons class, for example `pi-plus`. */
   icon?: string;
   disabled?: boolean;
+  /** Dangerous action (Cancel task): red text. */
+  danger?: boolean;
+  /** A divider above the entry (the last, dangerous entry of a menu is set apart). */
+  separated?: boolean;
   /** Why the entry cannot be used; shown under the label and read out with it. */
   reason?: string;
   run: () => void;
@@ -67,6 +71,8 @@ let nextId = 0;
               type="button"
               role="menuitem"
               class="am__item"
+              [class.am__item--danger]="item.danger"
+              [class.am__item--sep]="item.separated"
               tabindex="-1"
               [attr.data-action]="item.id"
               [attr.aria-disabled]="item.disabled ? 'true' : null"

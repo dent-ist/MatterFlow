@@ -88,9 +88,11 @@ test.describe('My Work links, filters and copy', () => {
         );
       else {
         await expect(page.locator('a[href*="/matters/"]')).toHaveCount(0);
-        await expect(page.locator('nav[aria-label="Breadcrumb"]')).toContainText(
+        // The crumb leaves the matter out without Matter.View (#296); the context line still names it, as text.
+        await expect(page.locator('nav[aria-label="Breadcrumb"]')).not.toContainText(
           world.matter.matterRef,
         );
+        await expect(page.locator('[data-record-context]')).toContainText(world.matter.matterRef);
         await shot(page, 'bug7-task-breadcrumb-text-1920x1080');
       }
       await page.close();

@@ -49,7 +49,7 @@ test.describe('Assignment by a technician (SCN-006)', () => {
     await detail.open(task.taskId);
     await detail.expectStatus('In Progress');
 
-    await page.locator('[data-task-header] [data-edit]').click();
+    await page.locator('[data-task-header] [data-action="edit"]').click();
     await page.getByRole('button', { name: 'Change', exact: true }).click();
     await page.getByRole('combobox', { name: 'Assignee' }).fill(colleague.username);
     await page.getByRole('option', { name: colleague.username }).click();
@@ -75,7 +75,7 @@ test.describe('Known application defects (docs/qa/e2e-findings.md)', () => {
     const page = await asUser(tech.username);
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await page.locator('[data-task-header] [data-edit]').click();
+    await page.locator('[data-task-header] [data-action="edit"]').click();
     // Any active user can be chosen (the same lookup as Create Task), not only members of the task's Pod.
     await page.getByRole('button', { name: 'Change', exact: true }).click();
     await page.getByRole('combobox', { name: 'Assignee' }).fill(colleague.username);

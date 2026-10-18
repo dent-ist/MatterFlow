@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { ActivatedRoute } from '@angular/router';
 import { DRILL_SOURCES, parseFrom } from '../work-queue/drill';
 import { DetailLayout } from './detail-layout';
-import { Crumb, PageHeader } from './page-header';
+import { Crumb } from './page-header';
 import { RecordHeader } from './record-header';
 import { RecordKind } from './record-state';
 import { MfTab, Tabs } from './tabs';
@@ -58,7 +58,7 @@ const ROWS = [0, 1, 2, 3, 4] as const;
  */
 @Component({
   selector: 'mf-record-skeleton',
-  imports: [RecordHeader, PageHeader, Tabs, DetailLayout, NgTemplateOutlet],
+  imports: [RecordHeader, Tabs, DetailLayout, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.rk-task]': "kind() === 'task'" },
   template: `
@@ -80,19 +80,20 @@ const ROWS = [0, 1, 2, 3, 4] as const;
       </div>
     </div>
     <ng-template #taskTpl>
-      @if (source(); as src) {
-        <p class="rk__back" data-task-back>
-          <i class="pi pi-arrow-left" aria-hidden="true"></i> Back to {{ src.label }}
-        </p>
-      }
-      <mf-page-header class="rk__ph" [crumbs]="taskCrumbs()" icon="">
-        <span mfTitle class="rk__bar rk__title" data-title-skeleton></span>
-        <div class="rk__facts" data-facts-skeleton>
-          @for (w of facts; track $index) {
+      <mf-record-header
+        kind="task"
+        [parents]="taskParents()"
+        [backTo]="taskBack()"
+        [skeleton]="true"
+      />
+      <ul class="mf-facts rk__facts" data-facts-skeleton>
+        @for (w of facts; track $index) {
+          <li class="mf-facts__tile">
+            <span class="rk__bar rk__label"></span>
             <span class="rk__bar rk__fact" [style.width.rem]="w"></span>
-          }
-        </div>
-      </mf-page-header>
+          </li>
+        }
+      </ul>
       <mf-detail-layout [split]="true" [splitKey]="splitKey()">
         <div mfMain>
           <div class="rk__bar rk__h2"></div>
@@ -178,27 +179,13 @@ const ROWS = [0, 1, 2, 3, 4] as const;
       height: 12px;
       margin: var(--mf-s3) var(--mf-s4);
     }
-    .rk__back {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      margin: 0 0 var(--mf-s1);
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-    }
-    .rk__title {
-      display: block;
-      /* Not a percentage: the title slot shrinks to its content, a percentage would collapse the bar. */
-      width: min(24rem, 60vw);
-      height: 1.6rem;
-    }
     .rk__facts {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s2) var(--mf-s4);
       margin-top: var(--mf-s2);
-      min-height: 2rem;
+      margin-bottom: var(--mf-s3);
+    }
+    .rk__label {
+      width: 3rem;
+      height: 0.75rem;
     }
     .rk__fact {
       height: 1rem;
@@ -224,18 +211,21 @@ export class RecordSkeleton {
   readonly splitKey = input('');
 
   protected readonly rows = ROWS;
-  protected readonly facts = [5, 4, 7, 6, 9, 12] as const;
+  protected readonly facts = [5, 4, 6, 7, 6, 7] as const;
   private readonly route = inject(ActivatedRoute);
   /** The list the Task was opened from (`?from=`), as the real header names it. */
-  protected readonly source = computed(() => {
+  private readonly source = computed(() => {
     const from = parseFrom(this.route.snapshot.queryParamMap.get('from'));
     return from ? DRILL_SOURCES[from] : null;
   });
-  protected readonly taskCrumbs = computed<Crumb[]>(() => [
+  protected readonly taskParents = computed<Crumb[]>(() => [
     { label: this.source()?.label ?? 'Tasks', link: this.source()?.path ?? '/tasks' },
-    { label: '', skeleton: true },
-    { label: '', skeleton: true },
+    { label: '' },
   ]);
+  protected readonly taskBack = computed(() => {
+    const src = this.source();
+    return src ? { label: src.label, link: src.path } : { label: 'Tasks', link: '/tasks' };
+  });
   protected readonly tabs = computed(() => {
     const kind = this.kind();
     if (kind === 'task') return [];

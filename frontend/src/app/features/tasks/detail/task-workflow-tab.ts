@@ -4,7 +4,7 @@ import { TaskDetailStore } from './task-detail.store';
 
 /**
  * Workflow section (UX S10): the stepper for ordered and unordered workflows, the progress summary, an explanation when step
- * actions are blocked (On Hold, closed), and the Complete task action at the end.
+ * actions are blocked (On Hold, closed). The Complete task action is in the page header (#298).
  */
 @Component({
   selector: 'mf-task-workflow-tab',
@@ -19,7 +19,6 @@ import { TaskDetailStore } from './task-detail.store';
             <h2 id="wf-h" class="wf__title" tabindex="-1" data-section-heading>
               Workflow
               <span class="wf__mode" data-mode>
-                {{ w.workflowName }} v{{ w.versionNo }}.
                 {{
                   w.isOrdered
                     ? 'Ordered: complete or skip each step in order'
@@ -38,35 +37,6 @@ import { TaskDetailStore } from './task-detail.store';
               ></progress>
             </p>
           </div>
-          @if (completeOption(); as c) {
-            <div class="wf__complete" data-complete-task>
-              <button
-                type="button"
-                class="mf-btn mf-btn--primary"
-                data-complete-task-button
-                aria-describedby="wf-complete-note"
-                [attr.title]="c.permitted ? store.completeHint() : null"
-                [disabled]="!c.permitted || store.busy()"
-                (click)="store.requestAction('COMPLETE')"
-              >
-                <i class="pi pi-check-circle" aria-hidden="true"></i>
-                Complete task
-              </button>
-              <p id="wf-complete-note" class="wf__complete-note">
-                @if (!c.permitted) {
-                  {{ completeBlockedText(c.blockedReason) }}
-                } @else if (store.completeHint(); as hint) {
-                  <span data-complete-hint>{{ hint }}</span>
-                } @else if (unresolvedCount() > 0) {
-                  {{ unresolvedCount() }}
-                  {{ unresolvedCount() === 1 ? 'step is' : 'steps are' }} not completed. You will be
-                  asked whether to mark them all completed.
-                } @else {
-                  All steps are resolved.
-                }
-              </p>
-            </div>
-          }
         </div>
 
         @if (notice(); as n) {
@@ -164,7 +134,6 @@ import { TaskDetailStore } from './task-detail.store';
       padding: 0;
       list-style: none;
     }
-    /* The Complete task action sits at the top right of the Workflow section, level with its title and progress. */
     .wf__top {
       display: flex;
       flex-wrap: wrap;
@@ -179,18 +148,6 @@ import { TaskDetailStore } from './task-detail.store';
     }
     .wf__summary .wf__progress {
       margin-bottom: 0;
-    }
-    .wf__complete {
-      display: grid;
-      justify-items: end;
-      gap: var(--mf-s1);
-      max-width: 22rem;
-    }
-    .wf__complete-note {
-      margin: 0;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-      text-align: right;
     }
   `,
 })
@@ -208,31 +165,10 @@ export class TaskWorkflowTab {
       : w.steps;
   });
 
-  protected readonly unresolvedCount = computed(
-    () =>
-      this.wf()?.steps.filter((s) => s.status !== 'COMPLETED' && s.status !== 'SKIPPED').length ??
-      0,
-  );
-
   /** Sequence number of the first unresolved step, which the locked ones wait for. */
   protected readonly currentSequenceNo = computed(
     () => this.wf()?.steps.find((s) => s.isCurrent)?.sequenceNo ?? null,
   );
-
-  /** The Complete task block; a view-only user gets no button and no instructions for it (UAT2-18). */
-  protected readonly completeOption = computed(() =>
-    this.store.viewOnly()
-      ? null
-      : (this.store.task()?.allowedActions.transitions.find((o) => o.action === 'COMPLETE') ??
-        null),
-  );
-
-  /** Why Complete task is disabled, for people who cannot use it (UAT2-18). */
-  protected completeBlockedText(reason: string | undefined): string {
-    return reason === 'MATTER_INACTIVE'
-      ? "The matter is inactive, so this task can't be completed."
-      : "You can view this task but you don't have permission to complete it.";
-  }
 
   /** Why step actions are unavailable at the task level. */
   protected readonly notice = computed(() => {

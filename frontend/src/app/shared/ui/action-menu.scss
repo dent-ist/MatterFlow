@@ -57,6 +57,20 @@
   }
 }
 
+/* A set-apart entry (the dangerous one, last): a divider above it. */
+.am__item--sep {
+  margin-top: var(--mf-s1);
+  border-top: 1px solid var(--mf-border);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  padding-top: calc(var(--mf-s1) + 2px);
+}
+
+.am__item--danger,
+.am__item--danger .pi {
+  color: var(--mf-danger);
+}
+
 .am__text {
   display: grid;
   min-width: 0;

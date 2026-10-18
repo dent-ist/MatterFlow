@@ -106,13 +106,11 @@ describe('Workflow tab: ordered stepper', () => {
     expect(q(el, '[data-step-id="102"]')!.getAttribute('data-step-status')).toBe('SKIPPED');
   });
 
-  it('puts Complete task at the top of the Workflow section, before the steps (not below them, next to Comments)', async () => {
+  it('has no Complete task block: the action is the header primary button (#298)', async () => {
     const { el } = await mountWorkflow(aTask({ workflow: { steps: orderedSteps() } as never }));
-    const complete = q(el, '[data-complete-task]')!;
-    const steps = q(el, 'ol.wf__steps')!;
-    expect(complete.compareDocumentPosition(steps) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(complete.closest('.wf__top')).not.toBeNull();
-    expect(complete.querySelector('.pi-check-circle')).not.toBeNull();
+    expect(q(el, '[data-complete-task]')).toBeNull();
+    expect(q(el, '[data-complete-task-button]')).toBeNull();
+    expect(q(el, '.wf__top')!.textContent).not.toContain('Complete task');
   });
 
   it('expands only the current step; the others are one-line summaries the user can open', async () => {
@@ -212,15 +210,6 @@ describe('Workflow tab: ordered stepper', () => {
     expect(step.querySelector('[data-blocked-reason]')!.textContent).toContain('Resume it');
     expect(q(el, '[data-step-id="101"] [data-reopen]')).toBeNull();
   });
-
-  it('shows the Complete task block at the end', async () => {
-    const { fixture, el, fakes } = await mountWorkflow(
-      aTask({ workflow: { steps: orderedSteps() } as never }),
-    );
-    expect(q(el, '[data-complete-task]')!.textContent).toContain('3 steps are not completed');
-    await click(fixture, q(el, '[data-complete-task-button]'));
-    expect(fakes.tasks['getTaskCompletionCheck']).toHaveBeenCalled();
-  });
 });
 
 describe('Workflow tab: read-only viewers (UAT2-18)', () => {
@@ -249,26 +238,6 @@ describe('Workflow tab: read-only viewers (UAT2-18)', () => {
     expect(el.textContent).not.toContain('You will be asked');
     expect(el.textContent).not.toContain('Resume it');
     expect(q(el, '[data-view-only]')!.textContent).toContain('View only');
-  });
-
-  it('keeps the explained disabled Complete button for a user who works steps but cannot complete tasks', async () => {
-    const { el } = await mountTaskPage(
-      aTask({
-        workflow: { steps: orderedSteps() } as never,
-        allowedActions: allowed({
-          transitions: [
-            transition('COMPLETE', { permitted: false, blockedReason: 'PERMISSION_DENIED' }),
-          ],
-        }),
-      }),
-      ['Task.View', 'Workflow.Execute'],
-      {},
-      'workflow',
-    );
-
-    const block = q(el, '[data-complete-task]')!;
-    expect(block.textContent).toContain("you don't have permission to complete it");
-    expect((q(el, '[data-complete-task-button]') as HTMLButtonElement).disabled).toBe(true);
   });
 });
 

@@ -49,6 +49,14 @@
   color: var(--mf-link);
 }
 
+/* A Task's crumb links keep a 24 px target (axe target-size, BUG-2) without making the crumb row taller than its 18 px line. */
+.rh[data-kind='task'] .rh__trail a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  margin-block: -3px;
+}
+
 .rh__back {
   display: none;
 }
@@ -232,6 +240,11 @@
 
   .rh__btn {
     min-height: 44px;
+  }
+
+  /* A Task's Sensitive note is the one line under the title; its badge would push the name onto a second line, so a phone shows the note only. */
+  .rh[data-kind='task'] mf-sensitive-badge {
+    display: none;
   }
 
   /* The reference is body size here, so the reference, its copy button and both badges (Active, Sensitive) fit one line at 375 px. */

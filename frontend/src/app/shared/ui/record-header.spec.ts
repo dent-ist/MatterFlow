@@ -153,6 +153,87 @@ describe('mf-record-header', () => {
   });
 });
 
+@Component({
+  imports: [RecordHeader],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <mf-record-header
+      kind="task"
+      [parents]="[
+        { label: 'My Work', link: '/my-work' },
+        { label: longParent, link: ['/matters', 7] },
+      ]"
+      current="TSK-1"
+      ref="TSK-1"
+      name="A task"
+      [backTo]="{ label: 'My Work', link: '/my-work', state: { restoreFocus: true } }"
+      [actions]="actions"
+    >
+      <i mfIcon data-type-icon></i>
+    </mf-record-header>
+  `,
+})
+class TaskHost {
+  readonly longParent = '00107-00001 ' + LONG;
+  readonly actions: RecordAction[] = [
+    action('complete', 'primary', { hint: '2 steps need information' }),
+    action('hold', 'secondary'),
+    action('cancel', 'state', { danger: true, separated: true }),
+  ];
+}
+
+describe('mf-record-header for a Task (#296, #298)', () => {
+  async function create() {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const f = TestBed.createComponent(TaskHost);
+    await settle(f);
+    return f.nativeElement as HTMLElement;
+  }
+
+  it('cuts a long middle crumb at 40 characters, with the full text as tooltip and for screen readers', async () => {
+    const el = await create();
+    const link = el.querySelector<HTMLAnchorElement>('.rh__trail a[href*="/matters/"]')!;
+    expect(link.getAttribute('title')).toBe('00107-00001 ' + LONG);
+    expect(link.querySelector('[aria-hidden=true]')!.textContent!.length).toBe(40);
+    expect(link.querySelector('.mf-sr-only')!.textContent).toBe('00107-00001 ' + LONG);
+    // A short crumb stays a plain link without a tooltip.
+    expect(el.querySelector('.rh__trail a[href="/my-work"]')!.getAttribute('title')).toBeNull();
+  });
+
+  it('Back to names the list the task was opened from and keeps its router state', async () => {
+    const el = await create();
+    const back = el.querySelector<HTMLAnchorElement>('[data-back-link]')!;
+    expect(back.textContent).toContain('Back to My Work');
+    expect(back.getAttribute('href')).toBe('/my-work');
+  });
+
+  it('replaces the section icon with the projected type icon and shows no Active badge', async () => {
+    const el = await create();
+    expect(el.querySelector('h1 [data-type-icon]')).not.toBeNull();
+    expect(el.querySelector('h1 [data-page-icon]')).toBeNull();
+    expect(el.querySelector('h1 mf-active-badge')).toBeNull();
+  });
+
+  it('gives an enabled button its hint as tooltip and description', async () => {
+    const el = await create();
+    const b = el.querySelector<HTMLButtonElement>('[data-action=complete]')!;
+    expect(b.getAttribute('title')).toBe('2 steps need information');
+    expect(document.getElementById(b.getAttribute('aria-describedby')!)?.textContent).toBe(
+      '2 steps need information',
+    );
+  });
+
+  it('puts the secondary entries before the set-apart danger entry in the overflow', async () => {
+    const el = await create();
+    el.querySelector<HTMLButtonElement>('[data-overflow]')!.click();
+    await new Promise((r) => setTimeout(r));
+    const items = Array.from(el.querySelectorAll('[role=menuitem]'));
+    expect(items.map((i) => i.getAttribute('data-action'))).toEqual(['hold', 'cancel']);
+    expect(items[1].classList).toContain('am__item--danger');
+    expect(items[1].classList).toContain('am__item--sep');
+  });
+});
+
 describe('mf-record-header on a phone and a tablet', () => {
   let original: typeof matchMedia;
   const queries = (phone: boolean, desktop: boolean) => (query: string) =>

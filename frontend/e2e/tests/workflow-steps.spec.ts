@@ -243,7 +243,7 @@ test.describe('Completing a task with open steps (addendum K)', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await detail.showSection('Workflow');
-    await expect(page.locator('#wf-complete-note')).toContainText('2 steps are not completed');
+    // Complete task is the header's primary action; the "n steps are not completed" sentence is the first line of its dialog (below).
     await detail.completeTaskButton.click();
 
     await expect(detail.dialog.locator('[data-bulk-body]')).toContainText(

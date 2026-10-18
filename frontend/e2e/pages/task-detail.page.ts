@@ -83,8 +83,8 @@ export class TaskDetailPage {
 
   constructor(readonly page: Page) {
     this.header = page.locator('[data-task-header]');
-    this.number = page.locator('[data-task-number]');
-    this.titleText = page.locator('[data-task-title]');
+    this.number = page.locator('[data-task-header] [data-ref]');
+    this.titleText = page.locator('[data-task-header] [data-name]');
     this.due = page.locator('[data-due]');
     this.assignee = page.locator('[data-assignee]');
     this.pod = page.locator('[data-pod]');
@@ -169,7 +169,7 @@ export class TaskDetailPage {
 
   /** Opens the Activity drawer from the header and returns it. */
   async openActivity(): Promise<Locator> {
-    await this.header.locator('[data-activity-button]').click();
+    await this.header.locator('[data-action="activity"]').click();
     const drawer = this.page.getByRole('dialog', { name: /^Activity:/ });
     await expect(drawer).toBeVisible();
     return drawer;
@@ -200,7 +200,7 @@ export class TaskDetailPage {
   }
 
   get completeTaskButton(): Locator {
-    return this.page.locator('[data-complete-task-button]');
+    return this.page.locator('[data-action="complete"]');
   }
 
   /** Reason / comment dialog used by Put on hold and Cancel task. */

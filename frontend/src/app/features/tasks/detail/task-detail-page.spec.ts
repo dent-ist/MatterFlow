@@ -47,19 +47,22 @@ describe('TaskDetailPage header', () => {
     const plain = await mountTaskPage(aTask(), PERMS);
     expect(plain.el.querySelector('a[href*="/matters/"]')).toBeNull();
     expect(plain.el.querySelector('[data-matter] .mf-ref')).not.toBeNull();
-    // The crumb stays, as text.
-    expect(plain.el.querySelector('nav[aria-label="Breadcrumb"]')!.textContent).toContain(
+    // Without Matter.View the breadcrumb leaves the matter out (#296): the list, then the task.
+    expect(plain.el.querySelector('nav[aria-label="Breadcrumb"]')!.textContent).not.toContain(
       aTask().matter.matterRef,
     );
+    expect(
+      plain.el.querySelector('nav[aria-label="Breadcrumb"] [aria-current=page]'),
+    ).not.toBeNull();
   });
 
   it('has one Edit button and inline Status, Priority and Assignee menus for a user who may change them', async () => {
     const { el } = await mountTaskPage(aTask(), [...PERMS, 'Task.SetPriority', 'Task.Assign']);
 
-    expect(el.querySelectorAll('[data-edit]').length).toBe(1);
-    expect(q(el, '[data-edit]')!.textContent!.trim()).toBe('Edit');
+    expect(el.querySelectorAll('[data-action="edit"]').length).toBe(1);
+    expect(q(el, '[data-action="edit"]')!.textContent!.trim()).toBe('Edit');
     expect(q(el, '[data-edit-details]')).not.toBeNull();
-    expect(q(el, '[data-activity-button]')!.textContent).toContain('Activity');
+    expect(q(el, '[data-action="activity"]')!.textContent).toContain('Activity');
     expect(q(el, '[data-status] [data-inline-trigger]')).not.toBeNull();
     expect(q(el, '[data-priority] [data-inline-trigger]')).not.toBeNull();
     expect(q(el, '[data-assignee] [data-inline-trigger]')).not.toBeNull();
@@ -85,7 +88,7 @@ describe('TaskDetailPage header', () => {
       "View only: you don't have permission to edit tasks.",
     );
     expect(q(el, '[data-inline-trigger]')).toBeNull();
-    expect(q(el, '[data-edit]')).toBeNull();
+    expect(q(el, '[data-action="edit"]')).toBeNull();
     expect(q(el, 'mf-status-badge')).not.toBeNull();
   });
 
@@ -120,7 +123,7 @@ describe('TaskDetailPage header', () => {
   it('opens the Details form from Edit and returns focus to Edit when it closes', async () => {
     const { fixture, el } = await mountTaskPage(aTask());
     document.body.appendChild(el);
-    const edit = q(el, '[data-edit]') as HTMLElement;
+    const edit = q(el, '[data-action="edit"]') as HTMLElement;
     edit.focus();
     await click(fixture, edit);
     expect(q(document.body, '[data-edit-form]')).not.toBeNull();
@@ -135,8 +138,8 @@ describe('TaskDetailPage header', () => {
   it('shows number, title, status, priority, ASAP, Pod, assignee, matter and workflow', async () => {
     const { el } = await mountTaskPage(aTask());
 
-    expect(q(el, '[data-task-number]')!.textContent).toBe('TSK-1042');
-    expect(q(el, '[data-task-title]')!.textContent).toBe('Process Smith custodians');
+    expect(q(el, '[data-task-header] [data-ref]')!.textContent).toBe('TSK-1042');
+    expect(q(el, '[data-task-header] [data-name]')!.textContent).toBe('Process Smith custodians');
     expect(q(el, 'mf-status-badge')!.textContent).toContain('In Progress');
     expect(q(el, 'mf-priority-badge')!.textContent).toContain('Critical');
     expect(q(el, '[data-task-type]')!.textContent).toContain('Data Processing');
@@ -146,7 +149,8 @@ describe('TaskDetailPage header', () => {
     expect(q(el, '[data-pod]')!.textContent).toContain('Pod A');
     expect(q(el, '[data-assignee]')!.textContent).toContain('Tariq M.');
     expect(q(el, '[data-matter] .mf-ref')!.textContent).toBe('00343-00012');
-    expect(q(el, '[data-matter] mf-copy-button button')).not.toBeNull();
+    // The context line stays one text line: no copy button there (Copy link is in the overflow).
+    expect(q(el, '[data-matter] mf-copy-button button')).toBeNull();
     expect(q(el, '[data-workflow]')!.textContent).toContain('Standard Processing v2 (ordered)');
     expect(q(el, '[data-progress]')!.textContent).toContain('1 of 3 resolved');
   });
@@ -256,7 +260,7 @@ describe('TaskDetailPage header', () => {
       aTask({ allowedActions: allowed({ transitions: [denied('COMPLETE')], canEdit: false }) }),
     );
     expect(q(none.el, '[data-status] [data-inline-trigger]')).toBeNull();
-    expect(q(none.el, '[data-edit]')).toBeNull();
+    expect(q(none.el, '[data-action="edit"]')).toBeNull();
   });
 
   it('disables Reopen with the reason when the matter is inactive', async () => {
@@ -278,6 +282,10 @@ describe('TaskDetailPage header', () => {
       "Matter is inactive. This task can't be reopened.",
     );
     expect(q(el, '[data-matter-inactive]')!.textContent).toContain("can't be reopened");
+    // The header's primary action is Reopen task, disabled with the reason (#298).
+    const header = q(el, '[data-action="reopen"]') as HTMLButtonElement;
+    expect(header.getAttribute('aria-disabled')).toBe('true');
+    expect(header.getAttribute('title')).toBe("Matter is inactive. This task can't be reopened.");
     expect(q(el, '[data-reopen-task]')).toBeNull();
   });
 
@@ -372,9 +380,13 @@ describe('TaskDetailPage header', () => {
     expect(q(el, '[data-closed-banner]')!.textContent).toMatch(
       /This task is Completed\.\s+Reopen it to edit\./,
     );
-    expect(q(el, '[data-edit]')).toBeNull();
+    expect(q(el, '[data-action="edit"]')).toBeNull();
+    // No Reopen button in the banner or the Workflow: it is the header's primary action, and Complete task is gone.
+    expect(q(el, '[data-closed-banner] button')).toBeNull();
+    expect(q(el, '[data-action="complete"]')).toBeNull();
+    expect(q(el, '[data-workflow-tab] button[data-reopen-task]')).toBeNull();
 
-    await click(fixture, q(el, '[data-reopen-task]'));
+    await click(fixture, q(el, '[data-action="reopen"]'));
     expect(body().querySelector('[data-reopen-body]')).not.toBeNull();
     await click(fixture, dialogButton('Reopen')!);
     expect(fakes.tasks['reopenTask']).toHaveBeenCalledWith(1042, { rowVersion: 'RV1' });
@@ -428,8 +440,8 @@ describe('TaskDetailPage complete', () => {
 
   it('keeps Complete enabled while steps need information and says so (tooltip, aria-describedby, menu item) (#304)', async () => {
     const { fixture, el } = await mountTaskPage(needingInfo(), PERMS);
-    const button = q(el, '[data-complete-task-button]') as HTMLButtonElement;
-    expect(button.disabled).toBe(false);
+    const button = q(el, '[data-action="complete"]') as HTMLButtonElement;
+    expect(button.getAttribute('aria-disabled')).toBeNull();
     expect(button.getAttribute('title')).toBe('2 steps need information');
     const note = el.querySelector(`#${button.getAttribute('aria-describedby')}`)!;
     expect(note.textContent!.trim()).toBe('2 steps need information');
@@ -443,8 +455,8 @@ describe('TaskDetailPage complete', () => {
 
   it('shows no hint when the steps are ready (zero steps, or all inputs there) (#304)', async () => {
     const { el } = await mountTaskPage(aTask(), PERMS);
-    expect(q(el, '[data-complete-task-button]')!.getAttribute('title')).toBeNull();
-    expect(q(el, '[data-complete-hint]')).toBeNull();
+    expect(q(el, '[data-action="complete"]')!.getAttribute('title')).toBeNull();
+    expect(q(el, '[data-complete-task-button]')).toBeNull();
   });
 
   it('completes straight away when every step is resolved', async () => {
@@ -685,7 +697,7 @@ describe('TaskDetailPage layout and states', () => {
   it('the Activity button opens the drawer titled with the task, and closing it returns focus to the button', async () => {
     const { fixture, el } = await mountTaskPage(aTask());
     document.body.appendChild(el);
-    const button = q(el, '[data-activity-button]') as HTMLElement;
+    const button = q(el, '[data-action="activity"]') as HTMLElement;
     button.focus();
     await click(fixture, button);
     await new Promise((r) => setTimeout(r, 20));
@@ -773,7 +785,7 @@ describe('TaskDetailPage layout and states', () => {
     const { fixture, el } = await mountTaskPage(aTask({ title: long }), PERMS);
     const base = `TSK-1042 ${'A'.repeat(60)}…`;
     expect(document.title).toBe(`${base} - MatterFlow`);
-    await click(fixture, q(el, '[data-activity-button]'));
+    await click(fixture, q(el, '[data-action="activity"]'));
     expect(document.title).toBe(`Activity - ${base} - MatterFlow`);
     fixture.debugElement.injector.get(TaskDetailStore).activityOpen.set(false);
     await settle(fixture);
@@ -795,7 +807,7 @@ describe('TaskDetailPage layout and states', () => {
     release(aTask());
     await settle(fixture);
     expect(q(el, '[data-record-skeleton]')).toBeNull();
-    expect(q(el, '[data-task-number]')!.textContent).toBe('TSK-1042');
+    expect(q(el, '[data-task-header] [data-ref]')!.textContent).toBe('TSK-1042');
   });
 
   it('shows an error with Retry for other failures', async () => {
@@ -807,7 +819,7 @@ describe('TaskDetailPage layout and states', () => {
     expect(q(el, '[data-record-error]')).not.toBeNull();
     expect(document.title).toBe('Task could not be loaded - MatterFlow');
     await click(fixture, q(el, '[data-retry] button, button[data-retry]'));
-    expect(q(el, '[data-task-number]')!.textContent).toBe('TSK-1042');
+    expect(q(el, '[data-task-header] [data-ref]')!.textContent).toBe('TSK-1042');
   });
 
   it('shows the reload banner on a concurrency conflict and reloads on request', async () => {
@@ -834,7 +846,7 @@ describe('TaskDetailPage layout and states', () => {
     expect(q(el, '[data-conflict-banner]')!.textContent).toContain('changed by someone else');
     await click(fixture, q(el, '[data-reload]'));
     expect(q(el, '[data-conflict-banner]')).toBeNull();
-    expect(q(el, '[data-task-title]')!.textContent).toBe('Changed elsewhere');
+    expect(q(el, '[data-task-header] [data-name]')!.textContent).toBe('Changed elsewhere');
   });
 
   it('refreshes the task after a failed action', async () => {
@@ -862,7 +874,7 @@ describe('TaskDetailPage layout and states', () => {
   it('reports unsaved edits to the leave guard', async () => {
     const { fixture, el } = await mountTaskPage(aTask());
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
-    await click(fixture, q(el, '[data-edit]'));
+    await click(fixture, q(el, '[data-action="edit"]'));
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
     const title = q(document.body, '#td-title') as HTMLInputElement;
     title.value = 'New title';
@@ -950,7 +962,7 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
     const { el } = await openFrom('my-work', '/my-work?view=dueSoon&priority=1');
     expect(crumb(el).textContent!.trim()).toBe('My Work');
     expect(crumb(el).getAttribute('href')).toBe('/my-work?view=dueSoon&priority=1');
-    const back = q(el, '[data-back-to-list]') as HTMLAnchorElement;
+    const back = q(el, '[data-back-link]') as HTMLAnchorElement;
     expect(back.textContent).toContain('Back to My Work');
     expect(back.getAttribute('href')).toBe('/my-work?view=dueSoon&priority=1');
   });
@@ -965,10 +977,10 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
     expect(crumb(foreign.el).getAttribute('href')).toBe('/pods/work');
   });
 
-  it('keeps the default crumb and no Back link for an unknown from value', async () => {
+  it('keeps the default crumb and a Back link to the Task list for an unknown from value', async () => {
     const { el } = await openFrom('somewhere-else');
     expect(crumb(el).textContent!.trim()).toBe('Tasks');
     expect(crumb(el).getAttribute('href')).toBe('/tasks');
-    expect(q(el, '[data-back-to-list]')).toBeNull();
+    expect((q(el, '[data-back-link]') as HTMLAnchorElement).getAttribute('href')).toBe('/tasks');
   });
 });

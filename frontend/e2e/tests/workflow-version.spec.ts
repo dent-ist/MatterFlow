@@ -29,7 +29,6 @@ test.describe('Workflow version snapshot (SCN-014)', () => {
       `${world.workflow.name} v1`,
     );
     await detail.showSection('Workflow');
-    await expect(page.locator('#wf-h')).toContainText(`${world.workflow.name} v1`);
     await expect(page.locator('[data-step-id]')).toHaveCount(3);
     await expect(page.locator('[data-step-id] h3')).toContainText([alpha, beta, gamma]);
     await expect(detail.progress).toContainText('0 of 3');
@@ -64,8 +63,10 @@ test.describe('Workflow version snapshot (SCN-014)', () => {
     await create.create();
 
     const detail = new TaskDetailPage(page);
+    await expect(detail.header.locator('[data-workflow]')).toContainText(
+      `${world.workflow.name} v2`,
+    );
     await detail.showSection('Workflow');
-    await expect(page.locator('#wf-h')).toContainText(`${world.workflow.name} v2`);
     await expect(page.locator('[data-step-id] h3')).toContainText([gamma, alpha]);
     await expect(page.locator('[data-step-id]')).toHaveCount(4);
 

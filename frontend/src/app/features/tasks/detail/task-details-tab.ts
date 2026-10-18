@@ -32,7 +32,6 @@ import { outOfOfficeText } from '../../../core/availability/availability';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
-import { DueCell } from '../../../shared/work-queue/due-cell';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import {
@@ -84,7 +83,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
 
 /**
  * Details panel (UX S10) of the Task page, in the side panel of `mf-detail-layout` (the layout adds the "Details" heading): the
- * read view (requestor, dates, due, project, Pod, request-form values) and, behind "Edit details" (or the header's Edit), the
+ * read view (requestor, dates, project, request-form values; Due, Pod and the type are in the header) and, behind "Edit details" (or the header's Edit), the
  * edit form in a dialog: title, description, requestor, project, priority, due date and time (local time zone), Pod and assignee,
  * and the request form under the version the Task was created with. Matter, Task Type and Workflow are shown read-only. Server
  * field errors are mapped back onto the fields. Closing the dialog returns to the same page.
@@ -97,7 +96,6 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
     Dialog,
     DialogFocus,
     MfDatePipe,
-    DueCell,
     EntityPicker,
     MatterRef,
     RichTextEditor,
@@ -152,23 +150,8 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
               <dt>Request sent</dt>
               <dd>{{ t.requestedAtUtc | mfDate }}</dd>
             }
-            <dt>Due</dt>
-            <dd>
-              <mf-due-cell
-                layout="two-line"
-                [due]="{ dueDate: t.dueDate, dueAtUtc: t.dueAtUtc }"
-                [status]="t.status"
-              />
-              @if (t.dueAtUtc) {
-                <span class="dt__due-full">{{ t.dueAtUtc | mfDate }}</span>
-              }
-            </dd>
             <dt>Project</dt>
             <dd>{{ t.project?.name ?? 'No project' }}</dd>
-            <dt>Pod</dt>
-            <dd>{{ t.assignedPod?.name ?? 'No pod' }}</dd>
-            <dt>Task type</dt>
-            <dd>{{ t.taskType.name }}</dd>
             <!-- One wrapper div around the dt/dd pairs is valid in a dl: Created and Last updated share one row. -->
             <div class="dt__pair">
               <dt>Created</dt>
@@ -184,7 +167,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
         @if (!editing() && schema(); as definition) {
           <section class="dt__request" aria-labelledby="td-request-h" data-request-form>
             <h3 id="td-request-h" class="dt__sub">
-              Request details ({{ t.taskType.name }}, form version {{ t.formVersionNo }})
+              Request details (form version {{ t.formVersionNo }})
             </h3>
             <mf-dynamic-form [definition]="definition" [values]="formValues()" [readOnly]="true" />
           </section>
@@ -408,7 +391,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
             @if (schema(); as definition) {
               <fieldset class="dt__request">
                 <legend class="mf-field__label">
-                  Request details ({{ t.taskType.name }}, form version {{ t.formVersionNo }})
+                  Request details (form version {{ t.formVersionNo }})
                 </legend>
                 <mf-dynamic-form
                   [definition]="definition"
@@ -481,10 +464,6 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
     .dt__facts {
       margin-left: var(--mf-s3);
       gap: var(--mf-s1) var(--mf-s4);
-      font-size: var(--mf-fs-sm);
-    }
-    .dt__due-full {
-      color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
     .dt__facts dt {

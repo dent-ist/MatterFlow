@@ -43,8 +43,8 @@ const SECTIONS: readonly string[] = ['workflow', 'comments', 'assets'];
 const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as string);
 
 /**
- * Task detail (UX S10, `/tasks/:id`): one page in the layout of the Client, Matter and Project pages. The header carries the status
- * actions, Edit and Activity (a right-side drawer); then the banners (conflict, closed, sensitive, hold or cancel reason); then the
+ * Task detail (UX S10, `/tasks/:id`): one page in the layout of the Client, Matter and Project pages. The header (the shared record header
+ * and the facts strip) carries Edit, Activity, Complete task or Reopen task and the overflow; then the banners (conflict, closed, hold or cancel reason); then the
  * Workflow and Comments sections in the main column and the Details and Assets sections in the side panel. Below 1100 px the order is
  * Details (collapsible), Workflow, Comments, Assets, with a "Jump to" row. The old `?tab=` links scroll to the section
  * (`workflow`, `comments`, `assets`), open the drawer (`activity`) or just show the page (`details`); `?step=<id>` opens that step.
@@ -87,28 +87,12 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
 
           <mf-task-header />
 
-          @if (t.matter.isSensitive) {
-            <div class="pg-banner" role="note" data-sensitive-banner>
-              <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-              <strong> Sensitive matter.</strong> Handle this task with extra care. The flag is a
-              warning only and does not restrict who can see it.
-            </div>
-          }
-
           @if (store.closed()) {
             <div class="pg-banner" role="note" data-closed-banner>
               This task is {{ t.statusLabel }}.
               @if (reopen(); as r) {
                 @if (r.permitted) {
                   Reopen it to edit.
-                  <button
-                    type="button"
-                    class="link-btn"
-                    data-reopen-task
-                    (click)="store.requestAction('REOPEN')"
-                  >
-                    Reopen task
-                  </button>
                 } @else if (r.blockedReason === 'MATTER_INACTIVE') {
                   <span data-matter-inactive>Matter is inactive. This task can't be reopened.</span>
                 }

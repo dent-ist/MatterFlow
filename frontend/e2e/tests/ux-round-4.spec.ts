@@ -145,7 +145,7 @@ test.describe('Round 4: layout and responsive', () => {
     await page.setViewportSize({ width: 375, height: 800 });
     const [icon, number] = [
       (await h1.locator('[data-title-icon]').boundingBox())!,
-      (await h1.locator('[data-task-number]').boundingBox())!,
+      (await h1.locator('[data-ref]').boundingBox())!,
     ];
     expect(Math.abs(icon.y - number.y)).toBeLessThan(30); // on the same line as the number
   });

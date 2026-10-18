@@ -8,6 +8,8 @@ export interface Crumb {
   label: string;
   /** Router commands (or a URL string). Omit for the current page. */
   link?: string | readonly unknown[] | UrlTree;
+  /** Router state sent with the link (the Task page's list crumb asks the list to put focus back on the row, `restoreFocus`). */
+  state?: Record<string, unknown>;
   /** A grey bar instead of the label (`mf-record-skeleton`: the record is still loading); `label` is ignored. */
   skeleton?: boolean;
 }
