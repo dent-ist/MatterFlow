@@ -543,6 +543,34 @@ describe('TaskTable', () => {
     expect(el().querySelector('[data-sub-task]')).toBeNull();
   });
 
+  it('has a colgroup with one col per shown column; the Title has no width and colWidths sets the others (#200)', async () => {
+    await create([aRow()], ['ref', 'title', 'due', 'status']);
+    const table = el().querySelector('table')!;
+    const cols = () => Array.from(table.querySelectorAll('colgroup > col')) as HTMLElement[];
+    expect(cols().map((c) => c.getAttribute('data-col'))).toEqual([
+      'ref',
+      'title',
+      'due',
+      'status',
+    ]);
+    expect(cols()[1].style.width).toBe('');
+    expect(cols()[2].style.width).toBe('var(--w-due)');
+    // The header, the body and the colgroup have the same number of columns.
+    expect(table.querySelectorAll('thead th').length).toBe(cols().length);
+    expect(table.querySelectorAll('tbody tr[data-task] td').length).toBe(cols().length);
+    const px = (name: string) => table.style.getPropertyValue(name);
+    expect(px('--w-due')).toBe(`${136 / 14}rem`);
+    expect(px('--w-title')).toBe('');
+
+    fixture.componentRef.setInput('colWidths', { due: 9, title: 40, status: 2 });
+    fixture.detectChanges();
+    expect(px('--w-due')).toBe('9rem');
+    // Clamped to the column's minimum (112 px) and never set for the Title.
+    expect(px('--w-status')).toBe(`${112 / 14}rem`);
+    expect(px('--w-title')).toBe('');
+    expect(parseFloat(table.style.getPropertyValue('--wt-min'))).toBeGreaterThan(20);
+  });
+
   it('shows the error and the empty list as a row of the body, with the headers staying', async () => {
     await create([], ['ref', 'title'], { state: 'error' });
     expect(el().querySelector('thead th')).not.toBeNull();

@@ -117,8 +117,8 @@ test.describe('Density and space', () => {
     );
     const bar = await page.locator('mf-filters-bar').boundingBox();
     expect(bar!.height, 'the toolbar is one line').toBeLessThanOrEqual(40);
-    // #198: Matter is a default column again, so a long title wraps to two lines at 1366 and eight full rows fit; the fixed layout (#200) returns the ninth.
-    expect(await rowsInView(page)).toBeGreaterThanOrEqual(8);
+    // #198: Matter is a default column again, and with the fixed layout (#200: 44 px rows, Due 136 px) the ninth row is back at 1366.
+    expect(await rowsInView(page)).toBeGreaterThanOrEqual(9);
     // #196: a Comfortable title takes at most two lines; the long one is cut with an ellipsis and keeps the whole text as its tooltip.
     for (const h of await titleLines(page))
       expect(h, 'a title is at most two lines').toBeLessThanOrEqual(40);

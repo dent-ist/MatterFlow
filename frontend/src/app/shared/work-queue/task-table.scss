@@ -52,6 +52,9 @@
 
 .wt {
   width: 100%;
+  /* Fixed layout (#200): widths come from the <colgroup>, never from the rows on the page. Below --wt-min the grid scrolls sideways. */
+  min-width: var(--wt-min, 0);
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: var(--mf-fs-md);
 }
@@ -69,6 +72,8 @@
 /* Two pixels above and below the cell: a two-line title (Comfortable) fits 44 px and keeps the links 24 px apart (WCAG 2.2 2.5.8). */
 .wt td {
   padding-block: 2px;
+  /* 44 px whatever the cells hold, so rows do not flip between 40 and 44 with the data on the page (BUG-TQ1); #210 fixes it for every cell. */
+  height: 44px;
 }
 
 /* Compact: one 36 px line (title only, Status and Due beside it, one-line title). */
@@ -132,16 +137,9 @@ th[aria-sort='descending'] .wt-sort {
 }
 
 /* Title takes the spare width: at most two lines with an ellipsis (the whole title is the tooltip and the accessible description). The other columns keep fixed widths, so nothing moves when the rows arrive (G4). */
-.wt th[data-col='title'] {
-  width: 99%;
-  min-width: 140px;
-}
-
 .wt-titlecell {
   display: flex;
   gap: var(--mf-s2);
-  width: 0;
-  min-width: 100%;
 }
 
 .wt-titlebody {
@@ -154,7 +152,7 @@ th[aria-sort='descending'] .wt-sort {
   display: inline-block;
   width: 6px;
   height: 6px;
-  margin-left: var(--mf-s2);
+  margin-left: var(--mf-s1);
   border-radius: 50%;
   background: var(--mf-primary);
 }
@@ -165,14 +163,8 @@ th[aria-sort='descending'] .wt-sort {
   white-space: nowrap;
 }
 
-.wt td[data-col='assignee'] mf-row-edit {
-  display: block;
-  max-width: 8rem;
-}
-
 .wt-clip {
   display: block;
-  max-width: 8rem;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -225,20 +217,20 @@ th[aria-sort='descending'] .wt-sort {
   font-weight: 700;
 }
 
-/* One line: "Oct 12, 2026 · Overdue 2d" (UXR-09). */
+/* "Oct 12, 2026 · Overdue 2d": the label drops under the date when the fixed Due column is too narrow for one line (until the two-line due cell, #209). */
 .wt-due {
   display: inline-flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--mf-s1);
+  gap: 0 var(--mf-s1);
+  /* Two lines of 19 px plus 2 px of padding above and below stay inside the 44 px row (with the half-pixel border of the collapsed table). */
+  line-height: 19px;
   white-space: nowrap;
 }
 
-/* Below 760 px the label drops under the date. */
-.wt--narrow .wt-due {
-  flex-wrap: wrap;
-  width: 7.5rem;
-  white-space: normal;
+/* Compact: two 16 px lines fit the 36 px row. */
+.wt--compact .wt-due {
+  line-height: 16px;
 }
 
 .wt-due--overdue {
@@ -256,7 +248,6 @@ th[aria-sort='descending'] .wt-sort {
 /* One line: "2 of 5 done · Dedup and Review", cut at the end only (the full text is the tooltip). */
 .wt-progress {
   display: block;
-  width: 150px;
   overflow: hidden;
   font-size: var(--mf-fs-sm);
   text-overflow: ellipsis;

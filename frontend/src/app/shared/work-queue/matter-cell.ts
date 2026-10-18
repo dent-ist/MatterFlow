@@ -39,8 +39,6 @@ import { MatterRef } from '../ui/matter-ref';
     :host {
       display: block;
       min-width: 0;
-      width: 10rem;
-      max-width: 10rem;
     }
     .mc {
       min-width: 0;

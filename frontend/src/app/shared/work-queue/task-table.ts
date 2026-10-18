@@ -37,6 +37,13 @@ import { RowGroup, groupRows } from './due-groups';
 import { GroupHeader } from './group-header';
 import { HoldNote, holdTitle } from './hold-note';
 import { WORK_COLUMNS, ColumnDef, Density } from './column-prefs';
+import {
+  ASSIGNEE_WITH_LINK_PX,
+  ColumnWidthMap,
+  pxToRem,
+  tableMinRem,
+  widthVars,
+} from './column-widths';
 import { InlineField, canEditField } from './inline-edit';
 import { CLOSED_STATUSES, SortDirection } from './queue-filters';
 import { hasStepLink, stepLinkLabel, stepQueryParams } from './step-link';
@@ -96,8 +103,19 @@ const NARROW_BELOW = 760;
         class="wt"
         [class.wt--compact]="density() === 'compact'"
         [class.wt--narrow]="narrow()"
+        [style]="tableVars()"
         [attr.aria-busy]="loading() ? 'true' : null"
       >
+        <!-- Fixed layout (#200): one <col> per shown column, shared by the header, the filter row, the group rows and the skeleton. The
+             Title has no width and takes the rest; the widths are the --w-<key> variables of the table (colWidths). -->
+        <colgroup>
+          @for (col of shownColumns(); track col.key) {
+            <col
+              [attr.data-col]="col.key"
+              [style.width]="col.fill ? null : 'var(--w-' + col.key + ')'"
+            />
+          }
+        </colgroup>
         <caption class="mf-sr-only">
           {{
             caption()
@@ -236,13 +254,19 @@ const NARROW_BELOW = 760;
                       }}</span>
                     }
                     @case ('project') {
-                      {{ row.projectName ?? '-' }}
+                      <span class="wt-clip" [attr.title]="row.projectName">{{
+                        row.projectName ?? '-'
+                      }}</span>
                     }
                     @case ('type') {
-                      {{ row.taskTypeName }}
+                      <span class="wt-clip" [attr.title]="row.taskTypeName">{{
+                        row.taskTypeName
+                      }}</span>
                     }
                     @case ('workflow') {
-                      {{ row.workflowName }}
+                      <span class="wt-clip" [attr.title]="row.workflowName">{{
+                        row.workflowName
+                      }}</span>
                     }
                     @case ('progress') {
                       <span class="wt-progress" [attr.title]="progressTitle(row)"
@@ -295,10 +319,14 @@ const NARROW_BELOW = 760;
                       }
                     }
                     @case ('creator') {
-                      {{ row.createdBy?.displayName ?? '-' }}
+                      <span class="wt-clip" [attr.title]="row.createdBy?.displayName">{{
+                        row.createdBy?.displayName ?? '-'
+                      }}</span>
                     }
                     @case ('requestor') {
-                      {{ row.requestorName }}
+                      <span class="wt-clip" [attr.title]="row.requestorName">{{
+                        row.requestorName
+                      }}</span>
                     }
                     @case ('due') {
                       @let due = row | dueState: row.status;
@@ -437,6 +465,11 @@ export class TaskTable {
   readonly rows = input.required<readonly TaskQueueRow[]>();
   /** Keys of the columns to show, in table order. */
   readonly columns = input.required<readonly string[]>();
+  /**
+   * Column widths set by the user (the resize package, #203 to #207): a sparse map of column key to width in rem. A column without an
+   * entry has its `ColumnDef.width`; entries are clamped to the column's min and max; the Title takes the rest (see `column-widths.ts`).
+   */
+  readonly colWidths = input<ColumnWidthMap>({});
   readonly caption = input('Tasks');
   /** Anything that changes the rows without a navigation (a local page, sort or filter): the grid goes back to the top. */
   readonly resetKey = input<unknown>(undefined);
@@ -655,6 +688,21 @@ export class TaskTable {
   );
   protected readonly skeletonRows = [1, 2, 3, 4, 5, 6, 7, 8];
   protected readonly shownKeyList = computed(() => this.shownColumns().map((c) => c.key));
+
+  /** The `--w-<key>` custom properties read by the `<col>` elements, and the narrowest the table may get before the grid scrolls. */
+  protected readonly tableVars = computed(() => {
+    const widths = this.effectiveWidths();
+    return {
+      ...widthVars(this.shownColumns(), widths),
+      '--wt-min': `${tableMinRem(this.shownColumns(), widths)}rem`,
+    };
+  });
+  /** The widths in force: the user's, over the default of a grid whose Assignee cell holds "Unassigned" and the "Assign to me" button (Pod Work). */
+  private readonly effectiveWidths = computed<ColumnWidthMap>(() =>
+    this.assignLink()
+      ? { assignee: pxToRem(ASSIGNEE_WITH_LINK_PX), ...this.colWidths() }
+      : this.colWidths(),
+  );
 
   protected readonly columnCount = computed(() => this.shownColumns().length);
   /** The filter row's cells: the shown columns. */

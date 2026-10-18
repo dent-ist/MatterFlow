@@ -1,32 +1,95 @@
-/** A column of the work tables (Task Queue, My Work, Pod Work). Ref and Title are locked: they cannot be hidden (UX 5.2). */
+/**
+ * A column of the work tables (Task Queue, My Work, Pod Work). Ref and Title are locked: they cannot be hidden (UX 5.2).
+ *
+ * Column contract (#200): every column declares its width model in px (converted to `rem` at the app's 14 px root when applied, so text-only
+ * zoom scales the columns, WCAG 1.4.4): the default `width`, the `minWidth` and `maxWidth` a user may resize it to (#204 to #207), and
+ * `fill` for the one column (Title) that takes the space the others leave. A new column without these does not ship.
+ */
 export interface ColumnDef {
   key: string;
   label: string;
   locked?: boolean;
   /** The API `sort` value of a sortable column. */
   sortField?: string;
+  /** Default width in px at the default zoom. For the `fill` column it is the minimum. */
+  width: number;
+  minWidth: number;
+  maxWidth: number;
+  /** The spring: no stored width, takes what the other columns leave (never narrower than `minWidth`). */
+  fill?: boolean;
+  /** False for a column the user cannot resize (the Title). */
+  resizable?: boolean;
 }
 
 export const WORK_COLUMNS: readonly ColumnDef[] = [
-  { key: 'ref', label: 'Ref', locked: true, sortField: 'number' },
-  { key: 'title', label: 'Title', locked: true, sortField: 'title' },
-  { key: 'matter', label: 'Matter', sortField: 'matter' },
-  { key: 'client', label: 'Client', sortField: 'client' },
-  { key: 'project', label: 'Project' },
-  { key: 'type', label: 'Task type' },
-  { key: 'workflow', label: 'Workflow' },
-  { key: 'progress', label: 'Workflow progress' },
-  { key: 'priority', label: 'Priority', sortField: 'priority' },
-  { key: 'pod', label: 'Pod' },
-  { key: 'assignee', label: 'Assignee', sortField: 'assignee' },
-  { key: 'creator', label: 'Creator' },
-  { key: 'requestor', label: 'Requestor' },
-  { key: 'due', label: 'Due', sortField: 'due' },
-  { key: 'status', label: 'Status', sortField: 'status' },
-  { key: 'closed', label: 'Closed', sortField: 'closed' },
-  { key: 'age', label: 'Age', sortField: 'age' },
-  { key: 'created', label: 'Created', sortField: 'created' },
-  { key: 'updated', label: 'Updated', sortField: 'updated' },
+  // 112 and not the review's 96 (measured, PM ruling): the pause marker, a four-digit number (TSK-1008) and the New dot need 109 px.
+  {
+    key: 'ref',
+    label: 'Ref',
+    locked: true,
+    sortField: 'number',
+    width: 112,
+    minWidth: 80,
+    maxWidth: 120,
+  },
+  {
+    key: 'title',
+    label: 'Title',
+    locked: true,
+    sortField: 'title',
+    width: 160,
+    minWidth: 160,
+    maxWidth: 160,
+    fill: true,
+    resizable: false,
+  },
+  { key: 'matter', label: 'Matter', sortField: 'matter', width: 160, minWidth: 112, maxWidth: 320 },
+  { key: 'client', label: 'Client', sortField: 'client', width: 140, minWidth: 96, maxWidth: 280 },
+  { key: 'project', label: 'Project', width: 140, minWidth: 96, maxWidth: 280 },
+  { key: 'type', label: 'Task type', width: 140, minWidth: 96, maxWidth: 280 },
+  { key: 'workflow', label: 'Workflow', width: 150, minWidth: 96, maxWidth: 280 },
+  { key: 'progress', label: 'Workflow progress', width: 160, minWidth: 120, maxWidth: 320 },
+  // The Priority trigger (badge, label, chevron) is 106 px until #202 moves the chevron inside; it may spill 2 px into the cell padding (`_tables.scss`).
+  {
+    key: 'priority',
+    label: 'Priority',
+    sortField: 'priority',
+    width: 112,
+    minWidth: 96,
+    maxWidth: 160,
+  },
+  { key: 'pod', label: 'Pod', width: 140, minWidth: 96, maxWidth: 280 },
+  {
+    key: 'assignee',
+    label: 'Assignee',
+    sortField: 'assignee',
+    width: 136,
+    minWidth: 112,
+    maxWidth: 240,
+  },
+  { key: 'creator', label: 'Creator', width: 140, minWidth: 96, maxWidth: 280 },
+  { key: 'requestor', label: 'Requestor', width: 140, minWidth: 96, maxWidth: 280 },
+  // Due: 120 px is the least that holds "Overdue 120d" with its icon (PM ruling on #200).
+  { key: 'due', label: 'Due', sortField: 'due', width: 136, minWidth: 120, maxWidth: 200 },
+  { key: 'status', label: 'Status', sortField: 'status', width: 140, minWidth: 112, maxWidth: 200 },
+  { key: 'closed', label: 'Closed', sortField: 'closed', width: 104, minWidth: 88, maxWidth: 160 },
+  { key: 'age', label: 'Age', sortField: 'age', width: 64, minWidth: 56, maxWidth: 100 },
+  {
+    key: 'created',
+    label: 'Created',
+    sortField: 'created',
+    width: 104,
+    minWidth: 88,
+    maxWidth: 160,
+  },
+  {
+    key: 'updated',
+    label: 'Updated',
+    sortField: 'updated',
+    width: 120,
+    minWidth: 96,
+    maxWidth: 180,
+  },
 ];
 
 export type WorkPage = 'queue' | 'my-work' | 'pod-work';

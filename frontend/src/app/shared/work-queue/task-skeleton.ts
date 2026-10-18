@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, input } from '@a
 
 /**
  * One placeholder row of the work table while the first page (or another tab) loads (G4). The cells carry the `data-col` of the real
- * columns, so the fixed widths of `task-table.scss` apply and the Title column does not change width when the rows arrive. The shimmer
+ * columns, so the widths of the table's `<colgroup>` apply (#200) and the Title column does not change width when the rows arrive. The shimmer
  * is switched off for people who prefer reduced motion. The `Loading tasks` status row is the table's own.
  */
 @Component({
@@ -27,7 +27,7 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, input } from '@a
   `,
   styles: `
     tr[mfTaskSkeleton] td {
-      height: var(--mf-row-h);
+      height: 44px;
       padding: 2px var(--mf-s2);
       border-bottom: 1px solid var(--mf-border);
       vertical-align: middle;
@@ -42,6 +42,7 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, input } from '@a
     tr[mfTaskSkeleton] .sk {
       display: block;
       width: 6rem;
+      max-width: 100%;
       height: 12px;
       border-radius: 3px;
       background: var(--mf-border);

@@ -36,27 +36,52 @@ td.mf-col-actions {
   white-space: nowrap;
 }
 
-/* Work tables (shared/work-queue/task-table): fixed widths of the narrow columns, so the Title column does not move when rows arrive
-   (G4) and the skeleton rows line up. Global because the table's own style budget is full. */
-.wt th[data-col='ref'],
-.wt th[data-col='age'] {
-  min-width: 5.5rem;
+/* Work tables (shared/work-queue/task-table), fixed layout (#200): the widths are the <col> elements of the table's <colgroup>
+   (--w-<key> custom properties, defaults in column-prefs.ts, extension point in column-widths.ts); nothing here depends on the rows.
+   Cells never grow their column: text is cut with an ellipsis (the full text is the tooltip). Global because the table's own style
+   budget is full. */
+.wt col {
+  min-width: 0;
 }
 
-.wt th[data-col='priority'] {
-  min-width: 8.7rem;
+.wt th {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.wt:not(.wt--narrow) th[data-col='due'] {
-  min-width: 14.9rem;
+.wt td[data-col='ref'],
+.wt td[data-col='matter'],
+.wt td[data-col='progress'],
+.wt td[data-col='age'],
+.wt td[data-col='created'],
+.wt td[data-col='updated'],
+.wt td[data-col='closed'] {
+  overflow: hidden;
 }
 
-.wt th[data-col='status'] {
-  min-width: 10.2rem;
+.wt td[data-col='ref'] {
+  text-overflow: clip;
 }
 
-.wt th[data-col='progress'] {
-  min-width: 11.9rem;
+/* The Priority and Status triggers (badge, label, chevron) are 106 and 126 px wide, a little more than the content of their default columns
+   until the chevron moves inside (#202): they spill into the cell padding instead of cutting their label. */
+.wt td[data-col='priority'] mf-inline-menu,
+.wt td[data-col='priority'] .im-trigger,
+.wt td[data-col='status'] mf-inline-menu,
+.wt td[data-col='status'] .im-trigger {
+  max-width: none;
+}
+
+@media print {
+  .wt {
+    width: 100%;
+    min-width: 0;
+    table-layout: auto;
+  }
+
+  .wt col {
+    width: auto !important;
+  }
 }
 
 /* Group header rows of "Group by: Due" (shared/work-queue/group-header): one th spanning the table, the button stays at the left edge while

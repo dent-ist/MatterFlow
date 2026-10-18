@@ -121,8 +121,8 @@ test.describe('My Work per-tab columns', () => {
       .locator('a.wt-title')
       .evaluate((n) => n.getBoundingClientRect().height);
     expect(titleHeight, 'the title is at most two lines').toBeLessThan(44);
-    // #198: Matter is a default column again, so a long title wraps to two lines at 1366 and eight full rows fit; the fixed layout (#200) returns the ninth.
-    expect(await rowsInView(page)).toBeGreaterThanOrEqual(8);
+    // #198: Matter is a default column again, and with the fixed layout (#200: 44 px rows, Due 136 px) the ninth row is back at 1366.
+    expect(await rowsInView(page)).toBeGreaterThanOrEqual(9);
     await shot(page, 'a2-active-1366x768');
 
     // The Matter filter is still reachable: a matter text in the address filters the rows.
