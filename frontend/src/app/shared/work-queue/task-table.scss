@@ -66,23 +66,16 @@
   height: var(--mf-row-h);
 }
 
-/* Two pixels above and below a two-line title cell, and 6 px between its lines so the links keep 24 px of clear space (WCAG 2.2 2.5.8):
-   nine rows fit under the filters and the strip at 1366x768 (A2). */
+/* Two pixels above and below the cell: a two-line title (Comfortable) fits 44 px and keeps the links 24 px apart (WCAG 2.2 2.5.8). */
 .wt td {
   padding-block: 2px;
 }
 
-/* Compact: one 36 px line (title only, Status and Due beside it), 11 rows at 1366x768. The line under the title and the folded progress go
-   to the tooltip; the "New" marker stays beside the title. */
+/* Compact: one 36 px line (title only, Status and Due beside it, one-line title). */
 .wt--compact th,
 .wt--compact td {
   padding-block: 2px;
   height: 36px;
-}
-
-.wt--compact .wt-titlebody {
-  display: flex;
-  gap: var(--mf-s2);
 }
 
 .wt--narrow .wt-title,
@@ -90,12 +83,13 @@
   line-height: 24px;
 }
 
-.wt--compact .wt-subline {
-  display: contents;
+.wt--compact .wt-titlebody {
+  display: flex;
+  gap: var(--mf-s2);
 }
 
-.wt--compact .wt-sub {
-  display: none;
+.wt--compact .wt-title {
+  -webkit-line-clamp: 1;
 }
 
 .wt th {
@@ -137,8 +131,7 @@ th[aria-sort='descending'] .wt-sort {
   white-space: nowrap;
 }
 
-/* Title takes the spare width: one line with an ellipsis (the whole title is the tooltip and the accessible description), and a muted
-   client / matter line under it. The other columns keep fixed widths, so nothing moves when the rows arrive (G4). */
+/* Title takes the spare width: at most two lines with an ellipsis (the whole title is the tooltip and the accessible description). The other columns keep fixed widths, so nothing moves when the rows arrive (G4). */
 .wt th[data-col='title'] {
   width: 99%;
   min-width: 140px;
@@ -154,37 +147,7 @@ th[aria-sort='descending'] .wt-sort {
 .wt-titlebody {
   display: grid;
   flex: 1;
-  gap: 6px;
   min-width: 0;
-}
-
-.wt-subline {
-  display: flex;
-  align-items: baseline;
-  gap: var(--mf-s2);
-  min-width: 0;
-}
-
-/* Muted lines under the title: client / matter, and the step line when the Workflow progress column is folded away. */
-.wt-sub {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--mf-text-muted);
-  font-size: var(--mf-fs-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Text badge, not colour alone. */
-.wt-new {
-  flex: none;
-  padding: 0 var(--mf-s2);
-  border-radius: 999px;
-  background: var(--mf-selected-bg);
-  color: var(--mf-primary);
-  font-size: var(--mf-fs-xs);
-  font-weight: 700;
-  line-height: 1.4;
 }
 
 .wt-newdot {
@@ -222,12 +185,14 @@ th[aria-sort='descending'] .wt-sort {
 }
 
 .wt-title {
-  display: block;
+  display: -webkit-box;
   overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   color: var(--mf-link);
   font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 20px;
+  overflow-wrap: anywhere;
 }
 
 /* Short, fixed-content columns never wrap: the Status badge, Priority, Due, Ref and dates stay whole. */

@@ -138,7 +138,7 @@ test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
     await expect(page.locator('[data-near-empty]')).toContainText(
       "That's everything on your plate.",
     );
-    await expect(page.locator('[data-new-marker]')).toHaveCount(0);
+    await expect(page.locator('[data-new-dot]')).toHaveCount(0);
 
     // A task assigned after the visit began is marked New, and stays marked for the whole visit (the first use itself marks nothing:
     // here the visit is set to begin between the two tasks; the 30 minute rule is covered by the unit tests).
@@ -154,10 +154,16 @@ test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
       ],
     );
     await myWork.open();
-    await expect(myWork.row(second.title).locator('[data-new-marker]')).toHaveText('New');
-    await expect(myWork.row(first.title).locator('[data-new-marker]')).toHaveCount(0);
+    await expect(myWork.row(second.title).locator('[data-new-dot]')).toHaveAttribute(
+      'aria-label',
+      'New',
+    );
+    await expect(myWork.row(first.title).locator('[data-new-dot]')).toHaveCount(0);
     await myWork.open();
-    await expect(myWork.row(second.title).locator('[data-new-marker]')).toHaveText('New');
+    await expect(myWork.row(second.title).locator('[data-new-dot]')).toHaveAttribute(
+      'aria-label',
+      'New',
+    );
   });
 
   test('SCN-007: Pod Work shows only the chosen Pod and includes colleagues work', async ({

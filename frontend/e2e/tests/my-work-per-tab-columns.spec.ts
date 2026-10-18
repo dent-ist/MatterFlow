@@ -95,16 +95,10 @@ test.describe('My Work per-tab columns', () => {
     await myWork.open('?view=active');
 
     const row = page.locator('tbody tr[data-task]').first();
-    const sub = row.locator('[data-title-context]');
-    // Reference (monospace, a link with Matter.View), client, matter; one line; the full text in the tooltip.
-    const subRef = sub.locator('[data-sub-ref]');
-    await expect(subRef).toHaveClass(/wt-mono/);
-    await expect(subRef).toHaveAttribute('href', /\/matters\/\d+/);
-    const full = (await sub.getAttribute('title')) ?? '';
-    expect(full).toMatch(/^\S+ · .+ · .+/);
-    expect(full.startsWith((await subRef.textContent())!.trim())).toBe(true);
-    const lineHeight = await sub.evaluate((n) => n.getBoundingClientRect().height);
-    expect(lineHeight, 'the subline is one line').toBeLessThan(24);
+    // #196: the Title cell holds the type icon and the title only; the matter reference lives in the Matter column.
+    await expect(
+      row.locator('.wt-subline, .wt-sub, [data-title-context], [data-sub-ref]'),
+    ).toHaveCount(0);
 
     // A3: "0 of 3 done · Step", no bar.
     const progress = row.locator('td[data-col="progress"]');
@@ -119,12 +113,12 @@ test.describe('My Work per-tab columns', () => {
     const titleHeight = await row
       .locator('a.wt-title')
       .evaluate((n) => n.getBoundingClientRect().height);
-    expect(titleHeight, 'the title is one line').toBeLessThan(24);
+    expect(titleHeight, 'the title is at most two lines').toBeLessThan(44);
     expect(await rowsInView(page)).toBeGreaterThanOrEqual(9);
     await shot(page, 'a2-active-1366x768');
 
     // The Matter filter is still reachable: a matter text in the address filters the rows.
-    const ref = (await subRef.textContent())!.trim();
+    const ref = String(world.matter.matterRef);
     await myWork.open(`?matterText=${encodeURIComponent(ref)}`);
     await expect(page.locator('tbody tr[data-task]')).toHaveCount(14);
     await myWork.open('?matterText=no-such-matter-9999');
@@ -173,7 +167,6 @@ test.describe('My Work per-tab columns', () => {
     await page.getByLabel('Matter', { exact: true }).check();
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
     await expect(page.locator('th[data-col="matter"]')).toBeVisible();
-    // The Matter column shows the reference, so the subline leaves it out.
     await expect(page.locator('tbody tr[data-task]').first().locator('[data-sub-ref]')).toHaveCount(
       0,
     );

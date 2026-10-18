@@ -201,12 +201,12 @@ describe('MyWorkPage', () => {
     expect(lastArgs()[ARG.view]).toBe('dueSoon');
   });
 
-  it('lists my tasks with priority, workflow progress, due and status, and the matter reference in the subline (A2)', async () => {
+  it('lists my tasks with priority, workflow progress, due and status (the matter reference is in the Matter column only, #196)', async () => {
     const el = await open('/my-work');
     const headers = Array.from(el.querySelectorAll('thead th')).map((h) => h.textContent?.trim());
     expect(headers).toEqual(['Ref', 'Title', 'Workflow progress', 'Priority', 'Due', 'Status']);
     const row = el.querySelector('tbody tr')!;
-    expect(row.textContent).toContain('00343-00012');
+    expect(row.textContent).not.toContain('00343-00012');
     expect(row.textContent).toContain('2 of 6 done');
     expect(row.textContent).toContain('Dedup');
     expect(row.textContent).toContain('ASAP');
@@ -467,7 +467,7 @@ describe('MyWorkPage', () => {
     const response = () => of(pageOf(rows, { counts: COUNTS }));
     // First ever use: nothing is marked.
     let el = await open('/my-work', { rows, response: response() });
-    expect(el.querySelectorAll('[data-new-marker]').length).toBe(0);
+    expect(el.querySelectorAll('[data-new-dot]').length).toBe(0);
     const key = Object.keys(localStorage).find((k) => k.startsWith('mf.my-work.visit.v2'))!;
     const stored = () => JSON.parse(localStorage.getItem(key)!);
     expect(stored()).toEqual({
@@ -486,15 +486,15 @@ describe('MyWorkPage', () => {
       }),
     );
     el = await open('/my-work', { rows, response: response() });
-    expect(el.querySelectorAll('[data-new-marker]').length).toBe(1);
-    expect(el.querySelector('[data-new-marker]')!.closest('tr')!.getAttribute('data-task')).toBe(
+    expect(el.querySelectorAll('[data-new-dot]').length).toBe(1);
+    expect(el.querySelector('[data-new-dot]')!.closest('tr')!.getAttribute('data-task')).toBe(
       'TSK-1',
     );
 
     // Opening a task and pressing Back (a new page instance in the same visit): the same marker, the visit did not move.
     TestBed.resetTestingModule();
     el = await open('/my-work', { rows, response: response() });
-    expect(el.querySelectorAll('[data-new-marker]').length).toBe(1);
+    expect(el.querySelectorAll('[data-new-dot]').length).toBe(1);
     expect(stored().visitSince).toBe(since);
 
     // More than 30 minutes later a new visit begins at the last activity: the markers are gone.
@@ -507,7 +507,7 @@ describe('MyWorkPage', () => {
       }),
     );
     el = await open('/my-work', { rows, response: response() });
-    expect(el.querySelectorAll('[data-new-marker]').length).toBe(0);
+    expect(el.querySelectorAll('[data-new-dot]').length).toBe(0);
     expect(stored().visitSince).toBe(new Date('2026-10-14T14:00:00Z').getTime());
   });
 
@@ -548,8 +548,8 @@ describe('MyWorkPage', () => {
       );
       expect(lastArgs()[ARG.newSince]).toBe(new Date(SINCE).toISOString());
       expect(lastArgs()[ARG.assignedFrom]).toBeUndefined();
-      // The marker and the dot are on the same row.
-      expect(el.querySelectorAll('[data-new-marker]').length).toBe(1);
+      // The dot sits in the Ref cell of the row.
+      expect(el.querySelectorAll('[data-new-dot]').length).toBe(1);
       const dot = el.querySelector('[data-new-dot]')!;
       expect(dot.getAttribute('aria-label')).toBe('New');
       expect(dot.closest('tr')!.getAttribute('data-task')).toBe('TSK-1');

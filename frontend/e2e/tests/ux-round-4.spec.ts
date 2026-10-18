@@ -76,7 +76,7 @@ test.describe('Round 4: layout and responsive', () => {
     await fits('/my-work', 1024);
   });
 
-  test('UXR4-02: the matter Tasks grid leaves out the repeated "Client / Matter" line; queues keep it', async ({
+  test('UXR4-02, #196: no grid has a "Client / Matter" line under the title; the Matter and Client columns carry it', async ({
     page,
     seed,
   }) => {
@@ -84,14 +84,17 @@ test.describe('Round 4: layout and responsive', () => {
     const task = await seed.task(world, { title: `Context ${uid()}` });
     await page.goto(`/matters/${world.matter.matterId}`);
     await expect(page.locator(`tr[data-task="${task.taskNumber}"]`)).toBeVisible();
-    await expect(page.locator('[data-title-context]')).toHaveCount(0);
+    await expect(page.locator('[data-title-context], .wt-subline')).toHaveCount(0);
     await page.goto(`/tasks?q=${encodeURIComponent(task.title)}`);
-    await expect(
-      page.locator(`tr[data-task="${task.taskNumber}"] [data-title-context]`),
-    ).toBeVisible();
+    await expect(page.locator(`tr[data-task="${task.taskNumber}"]`)).toBeVisible();
+    await expect(page.locator('[data-title-context], .wt-subline')).toHaveCount(0);
   });
 
-  test('UXR4-02: the "New" marker never cuts the title', async ({ page, seed, admin }) => {
+  test('UXR4-02, #196: the New dot (no pill) never cuts the title', async ({
+    page,
+    seed,
+    admin,
+  }) => {
     const world = await seed.world();
     const me = await admin.get('/api/v1/me');
     const title = `Intake: new custodian ${uid()}`;
@@ -112,11 +115,12 @@ test.describe('Round 4: layout and responsive', () => {
     // Fully visible: nothing is clipped by an ellipsis or a line clamp.
     const clipped = await link.evaluate((el) => el.scrollHeight > el.clientHeight + 1);
     expect(clipped).toBe(false);
-    const marker = row.locator('[data-new-marker]');
-    if ((await marker.count()) > 0) {
-      const [a, b] = [(await link.boundingBox())!, (await marker.boundingBox())!];
-      expect(b.y).toBeGreaterThanOrEqual(a.y + a.height - 1); // under the title, not squeezing it
-    }
+    // #196: the New pill is gone; the dot sits in the Ref cell.
+    await expect(row.locator('[data-new-marker]')).toHaveCount(0);
+    await expect(row.locator('td[data-col="ref"] [data-new-dot]')).toHaveAttribute(
+      'aria-label',
+      'New',
+    );
   });
 
   test('UXR4-03: the task page H1 shows the task type icon only, not the section icon too', async ({

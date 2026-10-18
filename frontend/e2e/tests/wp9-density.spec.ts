@@ -118,10 +118,13 @@ test.describe('Density and space', () => {
     const bar = await page.locator('mf-filters-bar').boundingBox();
     expect(bar!.height, 'the toolbar is one line').toBeLessThanOrEqual(40);
     expect(await rowsInView(page)).toBeGreaterThanOrEqual(9);
-    // Every title is one line; the long one is cut with an ellipsis and keeps the whole text as its tooltip.
-    for (const h of await titleLines(page)) expect(h, 'a title is one line').toBeLessThan(24);
+    // #196: a Comfortable title takes at most two lines; the long one is cut with an ellipsis and keeps the whole text as its tooltip.
+    for (const h of await titleLines(page))
+      expect(h, 'a title is at most two lines').toBeLessThanOrEqual(40);
     const long = page.locator('a.wt-title', { hasText: LONG.slice(0, 30) });
-    expect(await long.evaluate((a) => a.scrollWidth > a.clientWidth)).toBe(true);
+    expect(
+      await long.evaluate((a) => a.scrollHeight > a.clientHeight || a.scrollWidth > a.clientWidth),
+    ).toBe(true);
     await expect(long).toHaveAttribute('title', `${LONG} ${tag}`);
     expect((await overflow(page)).scroll).toBeLessThanOrEqual((await overflow(page)).client);
     await shot(page, 'm3-active-1366x768');
@@ -131,7 +134,7 @@ test.describe('Density and space', () => {
     await myWork.open();
     await expect(page.locator('tbody tr[data-task]')).toHaveCount(count);
     expect(await rowsInView(page)).toBeGreaterThanOrEqual(14);
-    for (const h of await titleLines(page)) expect(h).toBeLessThan(24);
+    for (const h of await titleLines(page)) expect(h).toBeLessThanOrEqual(40);
     await shot(page, 'm3-active-1920x1080');
     await axeClean(page, 'My Work 1920x1080');
 
@@ -173,7 +176,7 @@ test.describe('Density and space', () => {
     await queue.open();
     await queue.search(tag);
     await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
-    for (const h of await titleLines(page)) expect(h).toBeLessThan(24);
+    for (const h of await titleLines(page)) expect(h).toBeLessThanOrEqual(40);
     const o = await overflow(page);
     expect(o.scroll).toBeLessThanOrEqual(o.client);
     await shot(page, 'm3-task-queue-1920x1080');
@@ -181,7 +184,7 @@ test.describe('Density and space', () => {
     await queue.open();
     await queue.search(tag);
     await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
-    for (const h of await titleLines(page)) expect(h).toBeLessThan(24);
+    for (const h of await titleLines(page)) expect(h).toBeLessThanOrEqual(40);
     await shot(page, 'm3-task-queue-1366x768');
   });
 
@@ -203,30 +206,34 @@ test.describe('Density and space', () => {
       await myWork.open();
       await expect(page.locator('tbody tr[data-task]')).toHaveCount(count);
       const o = await overflow(page);
-      expect(o.scroll, `no sideways scroll at ${width}`).toBeLessThanOrEqual(o.client);
-      const wrap = (await page.locator('.wt-wrap').boundingBox())!;
-      for (const col of ['priority', 'due', 'status']) {
-        const cell = (await page
-          .locator('tbody tr[data-task]')
-          .first()
-          .locator(`td[data-col="${col}"]`)
-          .boundingBox())!;
-        expect(cell.x + cell.width, `${col} is inside the box at ${width}`).toBeLessThanOrEqual(
-          wrap.x + wrap.width + 1,
-        );
+      if (width <= 700) {
+        // #196: the Ref column no longer folds under the title, so the narrowest tablets may scroll; the hint must then say so
+        // (the narrow-box package, R2-2 / #201, gives the box back its fit).
+        if (o.scroll > o.client) await expect(page.locator('[data-scroll-hint]')).toBeVisible();
+      } else {
+        expect(o.scroll, `no sideways scroll at ${width}`).toBeLessThanOrEqual(o.client);
+        const wrap = (await page.locator('.wt-wrap').boundingBox())!;
+        for (const col of ['priority', 'due', 'status']) {
+          const cell = (await page
+            .locator('tbody tr[data-task]')
+            .first()
+            .locator(`td[data-col="${col}"]`)
+            .boundingBox())!;
+          expect(cell.x + cell.width, `${col} is inside the box at ${width}`).toBeLessThanOrEqual(
+            wrap.x + wrap.width + 1,
+          );
+        }
+        await expect(page.locator('[data-scroll-hint]')).toBeHidden();
       }
-      await expect(page.locator('[data-scroll-hint]')).toBeHidden();
-      // Title is the first column; the task number moved under it.
+      // #196: the Ref column stays on a tablet (it is the first, sticky column); nothing sits under the title.
       const first = await page
         .locator('thead tr')
         .first()
         .locator('th')
         .first()
         .getAttribute('data-col');
-      expect(first).toBe('title');
-      await expect(
-        page.locator('tbody tr[data-task]').first().locator('[data-sub-task]'),
-      ).toHaveText(/^TSK-\d+$/);
+      expect(first).toBe('ref');
+      await expect(page.locator('[data-sub-task], .wt-subline')).toHaveCount(0);
       // The whole status badge is readable (not clipped to a letter).
       const status = page.locator('tbody tr[data-task]').first().locator('td[data-col="status"]');
       expect(await status.evaluate((n) => n.scrollWidth <= n.clientWidth + 1)).toBe(true);
@@ -236,7 +243,7 @@ test.describe('Density and space', () => {
       }
     }
 
-    // A custom set that is too wide: the hint and the edge shadow show, and the sticky first column is Title.
+    // A custom set that is too wide: the hint and the edge shadow show, and the sticky first column is Ref.
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.addInitScript(
       ([k, v]) => localStorage.setItem(k, v),
@@ -269,7 +276,7 @@ test.describe('Density and space', () => {
         col: th.getAttribute('data-col'),
         position: getComputedStyle(th).position,
       }));
-    expect(sticky).toEqual({ col: 'title', position: 'sticky' });
+    expect(sticky).toEqual({ col: 'ref', position: 'sticky' });
     await shot(page, 'bug14-wide-set-hint-768x1024');
     await axeClean(page, 'My Work 768 wide set');
 
@@ -302,11 +309,11 @@ test.describe('Density and space', () => {
     expect(await rowsInView(page)).toBeGreaterThanOrEqual(11);
     expect(await rowsInView(page)).toBeGreaterThan(comfortable);
     for (const h of await titleLines(page)) expect(h, 'one-line titles').toBeLessThan(28);
-    // No line under the title; the tooltip of the link carries the reference, client and matter, and the progress.
+    // #196: no line under the title in either density; the tooltip of the link is the whole title.
     const first = page.locator('tbody tr[data-task]').first();
-    await expect(first.locator('[data-title-context]')).toBeHidden();
+    await expect(page.locator('.wt-subline, [data-title-context]')).toHaveCount(0);
     const tip = (await first.locator('a.wt-title').getAttribute('title')) ?? '';
-    expect(tip).toMatch(/^.+\n.*TSK-\d+ · .+ · .+/);
+    expect(tip).not.toContain('\n');
     // Targets stay at least 24 px high, and the focus ring is not clipped.
     for (const sel of [
       'a.wt-title',
@@ -334,7 +341,7 @@ test.describe('Density and space', () => {
     expect(await rowsInView(page)).toBeGreaterThanOrEqual(count);
     await shot(page, 'compact-1920x1080');
 
-    // Task Queue keeps its own density, and Comfortable brings the second line back.
+    // Task Queue keeps its own density, and Comfortable allows two-line titles again.
     const queue = new TaskQueuePage(page);
     await queue.open();
     await queue.search(tag);
@@ -342,7 +349,7 @@ test.describe('Density and space', () => {
     await expect(page.locator('table.wt')).not.toHaveClass(/wt--compact/);
     await myWork.open();
     await setDensity(page, 'Comfortable');
-    await expect(first.locator('[data-title-context]')).toBeVisible();
+    await expect(first.locator('a.wt-title')).toBeVisible();
   });
 
   test('G4: skeleton rows with the final widths on first load and tab change, reserved tab counts, no jump', async ({

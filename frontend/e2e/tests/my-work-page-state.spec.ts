@@ -113,19 +113,19 @@ test.describe('My Work page state', () => {
     );
     const myWork = new MyWorkPage(page);
     await myWork.open();
-    await expect(page.locator('[data-new-marker]')).toHaveCount(3);
-    await expect(myWork.row(old.title).locator('[data-new-marker]')).toHaveCount(0);
+    await expect(page.locator('[data-new-dot]')).toHaveCount(3);
+    await expect(myWork.row(old.title).locator('[data-new-dot]')).toHaveCount(0);
     await shot(page, 'bug3-new-markers-1366x768');
 
     await myWork.row(fresh[0]).getByRole('link').first().click();
     await expect(page).toHaveURL(/\/tasks\/\d+/);
     await page.goBack();
-    await expect(page.locator('[data-new-marker]')).toHaveCount(3);
+    await expect(page.locator('[data-new-dot]')).toHaveCount(3);
     await page.reload();
-    await expect(page.locator('[data-new-marker]')).toHaveCount(3);
+    await expect(page.locator('[data-new-dot]')).toHaveCount(3);
     await page.goto('/tasks');
     await page.goto('/my-work');
-    await expect(page.locator('[data-new-marker]')).toHaveCount(3);
+    await expect(page.locator('[data-new-dot]')).toHaveCount(3);
     await shot(page, 'bug3-after-back-1366x768');
   });
 

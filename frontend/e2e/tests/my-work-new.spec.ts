@@ -77,7 +77,7 @@ test.describe('My Work: New', () => {
     // After ASAP and On hold.
     expect((await strip.innerText()).replace(/\s+/g, ' ')).toMatch(/ASAP \d+ On hold \d+ New 3/);
     // The pill under the title and the dot in Ref, on the same three rows.
-    await expect(page.locator('[data-new-marker]')).toHaveCount(3);
+    await expect(page.locator('[data-new-dot]')).toHaveCount(3);
     await expect(page.locator('td[data-col="ref"] [data-new-dot]')).toHaveCount(3);
     await shot(page, 'new-all-1366x768');
 

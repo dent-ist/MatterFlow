@@ -164,77 +164,55 @@ describe('TaskTable', () => {
     expect(link.getAttribute('title')).toBe('A very long title '.repeat(10));
   });
 
-  it('leaves out the client and matter line when the page already says it (hideContext, UXR4-02)', async () => {
-    await create([aRow()], ['ref', 'title'], { hideContext: true });
-    expect(cell('title').querySelector('[data-title-context]')).toBeNull();
-  });
-
-  it('puts the New marker on the line under the title, so it never cuts the title (UXR4-02)', async () => {
-    await create([aRow({ assignedAtUtc: '2026-10-14T10:00:00Z' })], ['ref', 'title'], {
+  it('holds only the type icon and the title in the Title cell: no subline, no New pill, no progress fold, whatever the inputs (#196)', async () => {
+    await create([aRow({ assignedAtUtc: '2026-10-14T10:00:00Z' })], ['ref', 'title', 'progress'], {
       newSince: Date.parse('2026-10-13T00:00:00Z'),
     });
-    const marker = cell('title').querySelector('[data-new-marker]')!;
-    expect(marker.textContent?.trim()).toBe('New');
-    expect(marker.closest('a')).toBeNull();
-    expect(marker.parentElement!.classList).toContain('wt-subline');
-    // The same fact as a dot in the Ref cell (A5), so it shows when the title is long.
-    const dot = cell('ref').querySelector('[data-new-dot]')!;
-    expect(dot.getAttribute('aria-label')).toBe('New');
-  });
-
-  it('folds Workflow progress under the title and drops Matter and Project when the box is narrow (UXR4-02)', async () => {
-    await create([aRow()], ['ref', 'title', 'matter', 'project', 'progress', 'due', 'status']);
-    const keys = () => Array.from(el().querySelectorAll('th')).map((th) => th.textContent?.trim());
-    expect(keys()).toEqual([
-      'Ref',
-      'Title',
-      'Matter',
-      'Project',
-      'Workflow progress',
-      'Due',
-      'Status',
-    ]);
-    expect(cell('title').querySelector('[data-title-progress]')).toBeNull();
-
-    (fixture.componentInstance as unknown as { boxWidth: { set(n: number): void } }).boxWidth.set(
-      1000,
-    );
+    const noExtras = () => {
+      const t = cell('title');
+      for (const sel of [
+        '.wt-subline',
+        '.wt-sub',
+        '[data-title-context]',
+        '[data-title-progress]',
+        '[data-new-marker]',
+        '[data-sub-task]',
+        '[data-sub-ref]',
+        '.wt-new',
+      ])
+        expect(t.querySelector(sel), sel).toBeNull();
+      expect(t.textContent?.replace(/\s+/g, ' ').trim()).toBe('Process Smith custodians');
+    };
+    noExtras();
+    // The dot stays in the Ref cell (A5).
+    expect(cell('ref').querySelector('[data-new-dot]')!.getAttribute('aria-label')).toBe('New');
+    const inner = fixture.componentInstance as unknown as {
+      boxWidth: { set(n: number): void };
+      tablet: { set(v: boolean): void };
+    };
+    // Narrow box: progress drops out as a column and is not folded under the title.
+    inner.boxWidth.set(900);
+    inner.tablet.set(true);
     fixture.detectChanges();
-    expect(keys()).toEqual(['Ref', 'Title', 'Matter', 'Project', 'Due', 'Status']);
-    expect(cell('title').querySelector('[data-title-progress]')!.textContent).toContain(
-      '2 of 6 done · Dedup',
-    );
-    (fixture.componentInstance as unknown as { boxWidth: { set(n: number): void } }).boxWidth.set(
-      780,
-    );
+    noExtras();
+    fixture.componentRef.setInput('density', 'compact');
     fixture.detectChanges();
-    expect(keys()).toEqual(['Ref', 'Title', 'Due', 'Status']);
+    noExtras();
+    fixture.componentRef.setInput('hideContext', true);
+    fixture.detectChanges();
+    noExtras();
   });
 
-  it('shows the client and matter name in a muted second line under the title', async () => {
-    await create([aRow()], ['ref', 'title']);
-    const sub = cell('title').querySelector('[data-title-context]')!;
-    // No Matter column: the reference leads the line, in monospace (A2), as the tooltip says in full.
-    const text = () => sub.textContent?.replace(/\s+/g, ' ').trim();
-    expect(text()).toBe('00343-00012 · Acme Corp · Merger Review');
-    expect(sub.getAttribute('title')).toBe('00343-00012 · Acme Corp · Merger Review');
-    expect(sub.querySelector('.wt-mono')?.textContent).toBe('00343-00012');
-    expect(sub.querySelector('a')).toBeNull();
+  it('hideContext hides the Matter and Client columns (#196)', async () => {
+    await create([aRow()], ['ref', 'title', 'matter', 'client'], { hideContext: true });
+    const keys = Array.from(el().querySelectorAll('th')).map((th) => th.textContent?.trim());
+    expect(keys).toEqual(['Ref', 'Title']);
   });
 
-  it('links the reference in the line under the title only with Matter.View, and leaves it out when the Matter column shows it', async () => {
-    await create([aRow()], ['ref', 'title', 'matter']);
-    expect(cell('title').querySelector('[data-sub-ref]')).toBeNull();
-    expect(cell('title').querySelector('[data-title-context]')?.getAttribute('title')).toBe(
-      'Acme Corp · Merger Review',
-    );
-  });
-
-  it('links the reference under the title to the Matter with Matter.View (A2, BUG-7)', async () => {
-    await create([aRow()], ['ref', 'title'], {}, ['Matter.View']);
-    const link = cell('title').querySelector<HTMLAnchorElement>('a[data-sub-ref]')!;
-    expect(link.getAttribute('href')).toBe('/matters/7');
-    expect(link.classList).toContain('wt-mono');
+  it('links the Matter reference only with Matter.View, and shows the client in its own column', async () => {
+    await create([aRow()], ['ref', 'title', 'matter', 'client'], {}, ['Matter.View']);
+    expect(cell('matter').querySelector('a')!.getAttribute('href')).toBe('/matters/7');
+    expect(cell('client').textContent?.trim()).toBe('Acme Corp');
   });
 
   it('shows closed work calmly: no ASAP bolt, a muted priority and a plain due date (C2)', async () => {
@@ -303,12 +281,12 @@ describe('TaskTable', () => {
       }),
     ];
     await create(rows, ['ref', 'title']);
-    expect(el().querySelector('[data-new-marker]')).toBeNull();
+    expect(el().querySelector('[data-new-dot]')).toBeNull();
     fixture.componentRef.setInput('newSince', new Date('2026-10-10T00:00:00Z').getTime());
     fixture.detectChanges();
-    const markers = el().querySelectorAll('[data-new-marker]');
+    const markers = el().querySelectorAll('[data-new-dot]');
     expect(markers.length).toBe(2);
-    expect(markers[0].textContent?.trim()).toBe('New');
+    expect(markers[0].getAttribute('aria-label')).toBe('New');
     expect(markers[0].closest('tr')!.querySelector('.wt-title')).not.toBeNull();
   });
 
@@ -498,7 +476,7 @@ describe('TaskTable', () => {
     expect(el().querySelector('table')!.getAttribute('aria-busy')).toBe('true');
   });
 
-  it('puts the whole title in the tooltip, and in Compact the line under it, the task number and the progress as well (M3, M3-Compact)', async () => {
+  it('puts the whole title in the tooltip in both densities (#196)', async () => {
     await create([aRow()], ['ref', 'title']);
     const link = () => cell('title').querySelector<HTMLAnchorElement>('a.wt-title')!;
     expect(link().getAttribute('title')).toBe('Process Smith custodians');
@@ -507,12 +485,10 @@ describe('TaskTable', () => {
     fixture.componentRef.setInput('density', 'compact');
     fixture.detectChanges();
     expect(el().querySelector('table')!.classList).toContain('wt--compact');
-    expect(link().getAttribute('title')).toBe(
-      'Process Smith custodians\nTSK-1042 · 00343-00012 · Acme Corp · Merger Review',
-    );
+    expect(link().getAttribute('title')).toBe('Process Smith custodians');
   });
 
-  it('on a tablet moves the task number under the title and lets the due cell wrap (BUG-14)', async () => {
+  it('on a tablet keeps the Ref column and lets the due cell wrap (BUG-14, #196)', async () => {
     await create([aRow()], ['ref', 'title', 'priority', 'due', 'status', 'pod', 'age']);
     const keys = () => Array.from(el().querySelectorAll('th')).map((th) => th.textContent?.trim());
     const inner = fixture.componentInstance as unknown as {
@@ -522,22 +498,12 @@ describe('TaskTable', () => {
     inner.boxWidth.set(900);
     inner.tablet.set(true);
     fixture.detectChanges();
-    expect(keys()).toEqual(['Title', 'Priority', 'Due', 'Status']);
-    expect(cell('title').querySelector('[data-sub-task]')!.textContent).toBe('TSK-1042');
+    expect(keys()).toEqual(['Ref', 'Title', 'Priority', 'Due', 'Status']);
     expect(el().querySelector('table')!.classList).not.toContain('wt--narrow');
 
     inner.boxWidth.set(664);
     fixture.detectChanges();
     expect(el().querySelector('table')!.classList).toContain('wt--narrow');
-    expect(cell('title').querySelector('[data-title-context]')!.getAttribute('title')).toBe(
-      'TSK-1042 · 00343-00012 · Acme Corp · Merger Review',
-    );
-
-    // A phone keeps the sideways-scrolling table until the cards of M11: the number stays in its own column.
-    inner.tablet.set(false);
-    inner.boxWidth.set(343);
-    fixture.detectChanges();
-    expect(keys()[0]).toBe('Ref');
     expect(el().querySelector('[data-sub-task]')).toBeNull();
   });
 

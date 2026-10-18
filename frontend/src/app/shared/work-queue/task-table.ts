@@ -45,15 +45,11 @@ import { KeyboardShortcuts, isEditable } from '../layout/keyboard-shortcuts';
 import { isShortcut } from '../layout/shortcut-registry';
 import { TaskSkeleton } from './task-skeleton';
 
-/**
- * Box widths (px) under which the lowest-priority columns drop out. Workflow progress folds under the title below 1060 px, not the 1180
- * px the review proposed: A2 and A3 (WP6b) took Matter out of the default set, so the title keeps 370 px at the 1098 px box of a 1366
- * laptop, and folding there would add a third line to every row (nine rows would become seven).
- */
-const PROGRESS_FOLDS_BELOW = 1060;
+/** Box widths (px) under which the lowest-priority columns drop out (Workflow progress, Matter, Project). */
+const PROGRESS_HIDES_BELOW = 1060;
 const MATTER_HIDES_BELOW = 960;
 const PROJECT_HIDES_BELOW = 900;
-/** Tablets (viewport 640 to 1023 px): Pod, Age and the dates drop out, Ref moves under the title, and the due cell takes two lines. */
+/** Tablets (viewport 640 to 1023 px): Pod, Age and the dates drop out and the due cell takes two lines. */
 const BAND_DROPS = ['pod', 'age', 'created', 'updated'];
 const TABLET = '(min-width: 640px) and (max-width: 1023.98px)';
 const NARROW_BELOW = 760;
@@ -226,70 +222,6 @@ const NARROW_BELOW = 760;
                               [holdReason]="row.holdReason"
                               [truncated]="row.holdReasonTruncated"
                             />
-                          }
-                          @if (isNew(row) || !hideContext() || foldProgress() || foldRef()) {
-                            <span class="wt-subline">
-                              @if (isNew(row)) {
-                                <span
-                                  class="wt-new"
-                                  data-new-marker
-                                  title="Assigned since your last visit"
-                                  >New</span
-                                >
-                              }
-                              @if (!hideContext() || foldRef()) {
-                                <span class="wt-sub" data-title-context [attr.title]="context(row)">
-                                  @if (foldRef()) {
-                                    @if (row.status === 'ON_HOLD') {
-                                      <mf-hold-note
-                                        kind="mark"
-                                        [holdReason]="row.holdReason"
-                                        [truncated]="row.holdReasonTruncated"
-                                      />
-                                    }
-                                    <span class="wt-mono" data-sub-task>{{ row.taskNumber }}</span>
-                                    @if (isNew(row)) {
-                                      <span
-                                        class="wt-newdot"
-                                        role="img"
-                                        aria-label="New"
-                                        title="Assigned since your last visit"
-                                        data-new-dot
-                                      ></span>
-                                    }
-                                    @if (!hideContext()) {
-                                      ·
-                                    }
-                                  }
-                                  @if (refInSub() && !hideContext()) {
-                                    @if (auth.canLink('matter')) {
-                                      <a
-                                        class="wt-mono wt-subref"
-                                        data-sub-ref
-                                        [routerLink]="['/matters', row.matterId]"
-                                        >{{ row.matterRef }}</a
-                                      >
-                                    } @else {
-                                      <span class="wt-mono" data-sub-ref>{{ row.matterRef }}</span>
-                                    }
-                                    ·
-                                  }
-                                  @if (!hideContext()) {
-                                    {{ row.clientName }} · {{ row.matterName }}
-                                  }
-                                </span>
-                              }
-                            </span>
-                          }
-                          @if (foldProgress() && row.workflow.stepsTotal > 0) {
-                            <span
-                              class="wt-sub wt-stepline"
-                              data-title-progress
-                              [attr.title]="progressTitle(row)"
-                              ><ng-container
-                                [ngTemplateOutlet]="prog"
-                                [ngTemplateOutletContext]="{ $implicit: row }"
-                            /></span>
                           }
                         </div>
                       </div>
@@ -627,7 +559,7 @@ export class TaskTable {
     if (!from || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     this.drill.leave(from, row.taskId);
   }
-  /** Leave out the "Client · Matter" line under the title: on a Matter's or Project's own page the header already says it. */
+  /** Hide the Matter and Client columns: on a Matter's or Project's own page the header already says it. */
   readonly hideContext = input(false);
   /**
    * My Work grouped by due: the size of every bucket for the whole filtered set. The rows are in the server's bucket order, so each group's
@@ -720,23 +652,19 @@ export class TaskTable {
   });
   /**
    * Columns in table order. Below the width thresholds the lowest-priority columns drop out so Status and Due never scroll out of view
-   * (UXR4-02): Workflow progress moves under the title below 1100 px, the Matter column goes below 960 px (the line under the title
-   * still names the client and matter) and Project below 900 px. Unknown width (0, before the first measure or in tests) shows everything.
+   * (UXR4-02): Workflow progress goes below 1060 px, the Matter column below 960 px and Project below 900 px. Unknown width (0, before the first measure or in tests) shows everything.
    */
   protected readonly shownColumns = computed<ColumnDef[]>(() => {
     const wanted = new Set(this.columns());
     const width = this.boxWidth();
     const dropped = new Set<string>();
-    if (width > 0 && width < PROGRESS_FOLDS_BELOW) dropped.add('progress');
-    if (width > 0 && width < MATTER_HIDES_BELOW && !this.hideContext()) dropped.add('matter');
+    if (width > 0 && width < PROGRESS_HIDES_BELOW) dropped.add('progress');
+    if (width > 0 && width < MATTER_HIDES_BELOW) dropped.add('matter');
+    if (this.hideContext()) ['matter', 'client'].forEach((k) => dropped.add(k));
     if (width > 0 && width < PROJECT_HIDES_BELOW) dropped.add('project');
     if (width > 0 && this.tablet()) BAND_DROPS.forEach((k) => dropped.add(k));
-    if (this.foldRef()) dropped.add('ref');
     return WORK_COLUMNS.filter((c) => (c.locked || wanted.has(c.key)) && !dropped.has(c.key));
   });
-
-  /** On a tablet the task number moves under the title, so the title is the first (sticky) column and Status, Priority and Due fit (BUG-14). */
-  protected readonly foldRef = computed(() => this.boxWidth() > 0 && this.tablet());
 
   /**
    * Below 760 px (tablets and phones) the due cell breaks into the date and the "Overdue 4d" label, and the title link is 24 px high: a
@@ -763,12 +691,6 @@ export class TaskTable {
     this.shownColumns()
       .map((c) => c.key)
       .join(','),
-  );
-
-  /** True when the Workflow progress column was asked for but is folded under the title because the table is narrow. */
-  protected readonly foldProgress = computed(
-    () =>
-      this.columns().includes('progress') && !this.shownColumns().some((c) => c.key === 'progress'),
   );
 
   protected ariaSort(col: ColumnDef): 'ascending' | 'descending' | 'none' | null {
@@ -822,16 +744,9 @@ export class TaskTable {
     return stepLinkLabel(row);
   }
 
-  /**
-   * The tooltip of a title (also its accessible description): the whole title, which the one-line cell may cut with an ellipsis; in the
-   * Compact density the line under it is hidden, so it carries that line and the progress as well.
-   */
+  /** The tooltip of a title (also its accessible description): the whole title, which the cell may cut with an ellipsis. */
   protected titleTip(row: TaskQueueRow): string {
-    if (this.density() !== 'compact') return row.title;
-    const line = this.context(row);
-    const parts = [row.title, this.foldRef() ? line : `${row.taskNumber} · ${line}`];
-    if (this.foldProgress() && row.workflow.stepsTotal > 0) parts.push(this.progressTitle(row));
-    return parts.join('\n');
+    return row.title;
   }
 
   protected progressTitle(row: TaskQueueRow): string {
@@ -845,18 +760,6 @@ export class TaskTable {
   protected closed(row: TaskQueueRow): boolean {
     return CLOSED_STATUSES.includes(row.status);
   }
-
-  /** The full line under the title: "46044-00001 · Client · Matter" (the reference only where there is no Matter column). */
-  protected context(row: TaskQueueRow): string {
-    const text = `${row.clientName} · ${row.matterName}`;
-    const line = this.refInSub() ? `${row.matterRef} · ${text}` : text;
-    return this.foldRef() ? `${row.taskNumber} · ${line}` : line;
-  }
-
-  /** The matter reference leads the line under the title unless the Matter column shows it (A2). */
-  protected readonly refInSub = computed(
-    () => !this.shownColumns().some((c) => c.key === 'matter'),
-  );
 
   protected ageDays(row: TaskQueueRow): number {
     const end = row.closedAtUtc ? new Date(row.closedAtUtc).getTime() : this.clock.now().getTime();
