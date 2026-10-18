@@ -79,3 +79,20 @@ describe('Pager', () => {
     expect(el.querySelectorAll('button')).toHaveLength(2);
   });
 });
+
+describe('Pager layout groups (#280)', () => {
+  it('keeps the controls in one group so they wrap together', () => {
+    const fixture = TestBed.createComponent(Pager);
+    fixture.componentRef.setInput('page', 1);
+    fixture.componentRef.setInput('pageSize', 25);
+    fixture.componentRef.setInput('total', 60);
+    fixture.componentRef.setInput('pageSizes', [25, 50]);
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+    const nav = el.querySelector('.mf-pager__nav')!;
+    expect(nav.querySelector('select')).toBeNull();
+    expect(nav.querySelector('[data-range]')).toBeNull();
+    expect(nav.querySelector('[data-page]')).not.toBeNull();
+    expect(nav.querySelectorAll('button').length).toBe(4);
+  });
+});

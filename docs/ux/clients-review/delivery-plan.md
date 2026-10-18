@@ -158,7 +158,7 @@ Contract e2e over six screens at four sizes (axe 0, no horizontal scroll, 44 px 
 - WP8 List chrome: not started.
 - WP9 List columns: not started.
 - WP10 Matter tabs: not started.
-- WP11 Tab strip and pager: not started.
+- WP11 Tab strip and pager (2026-10-18, commit see git log "WP11 tab strip and pager"): #279 and #280 done and closed; `mf-tabs` shows an edge fade plus a chevron on the side with more tabs, scrolls the selected tab into view (load, link, click, key), snaps (`scroll-snap-type: x proximity`), instant under reduced motion; `mf-pager` keeps the controls together so 640 to 900 px is one row or two (facts, then controls), never a lone button; unit 252 in `shared/ui` plus new e2e `wp11-tabs-pager.spec.ts` (15 tests, axe 0 at 1366/1920/768/375) and regressions (wp18-pager, matter-client-details-tab, task-types-tabs, users-tab, users-pods, detail-layout, fixed-header, assets-screen, my-work-*, wp13c, column-filters-records) green; initial bundle 641.28 kB; screenshots `fixes/wp11/`; known limits: `mf-work-tabs` (My Work, Pod Work, Task Queue) and `mf-dash-tabs` keep their own local fade/chevron code (different markup and counts), at the very end of a strip the leading tab can still sit under the left cue because the last tab must stay whole; at 640 to 700 px the Task Queue sort note may wrap to two lines inside row 1.
 - WP12 Phone cards: not started.
 - WP13 Keyboard, focus and permissions: not started.
 - WP14 Docs: not started.

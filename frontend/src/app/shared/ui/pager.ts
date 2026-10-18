@@ -5,6 +5,8 @@ let nextId = 0;
 /**
  * "Showing 101-150 of 442", "Page 3 of 9" and First, Previous, Next, Last (UX 5.2, #237). Page numbers are 1-based like the API. Disabled
  * buttons keep their place. Below 640 px it is one row (Previous, "Page 3 of 9", Next): the size select, the range and the edge buttons go.
+ * From 640 px the facts (rows per page, range, note) and the controls ("Page 3 of 9" and the buttons): when both do not
+ * fit on one line the controls wrap as a whole, so there are at most two rows and never a lone button (#280).
  */
 @Component({
   selector: 'mf-pager',
@@ -27,44 +29,46 @@ let nextId = 0;
         </label>
       }
       <span data-range>{{ range() }}</span>
-      <ng-content select="[pager-note]" />
-      <span class="mf-pager__page" data-page>Page {{ shownPage() }} of {{ pages() }}</span>
-      @if (edges()) {
+      <div class="mf-pager__note"><ng-content select="[pager-note]" /></div>
+      <div class="mf-pager__nav">
+        <span class="mf-pager__page" data-page>Page {{ shownPage() }} of {{ pages() }}</span>
+        @if (edges()) {
+          <button
+            type="button"
+            class="mf-btn mf-pager__edge"
+            [disabled]="page() <= 1"
+            (click)="pageChange.emit(1)"
+          >
+            First
+          </button>
+        }
         <button
           type="button"
-          class="mf-btn mf-pager__edge"
+          class="mf-btn"
           [disabled]="page() <= 1"
-          (click)="pageChange.emit(1)"
+          (click)="pageChange.emit(page() - 1)"
         >
-          First
+          Previous
         </button>
-      }
-      <button
-        type="button"
-        class="mf-btn"
-        [disabled]="page() <= 1"
-        (click)="pageChange.emit(page() - 1)"
-      >
-        Previous
-      </button>
-      <button
-        type="button"
-        class="mf-btn"
-        [disabled]="page() >= pages()"
-        (click)="pageChange.emit(page() + 1)"
-      >
-        Next
-      </button>
-      @if (edges()) {
         <button
           type="button"
-          class="mf-btn mf-pager__edge"
+          class="mf-btn"
           [disabled]="page() >= pages()"
-          (click)="pageChange.emit(pages())"
+          (click)="pageChange.emit(page() + 1)"
         >
-          Last
+          Next
         </button>
-      }
+        @if (edges()) {
+          <button
+            type="button"
+            class="mf-btn mf-pager__edge"
+            [disabled]="page() >= pages()"
+            (click)="pageChange.emit(pages())"
+          >
+            Last
+          </button>
+        }
+      </div>
     </nav>
   `,
   styles: `
@@ -76,6 +80,23 @@ let nextId = 0;
       gap: var(--mf-s2);
       padding: var(--mf-s2) 0;
       color: var(--mf-text-muted);
+    }
+    /* The facts (size, range, note) take the left, the controls the right; when they do not fit side by side the controls drop, as a whole,
+       to a row of their own. The note may give up width (its text wraps) rather than make a third row. */
+    .mf-pager__note {
+      flex: 1 1 9rem;
+      min-width: 0;
+      max-width: max-content;
+    }
+    .mf-pager__note:empty {
+      display: none;
+    }
+    .mf-pager__nav {
+      display: flex;
+      flex: none;
+      align-items: center;
+      gap: var(--mf-s2);
+      margin-left: auto;
     }
     .mf-pager__size {
       display: inline-flex;
@@ -90,6 +111,10 @@ let nextId = 0;
       .mf-pager {
         flex-wrap: nowrap;
         justify-content: space-between;
+      }
+      .mf-pager__nav,
+      .mf-pager__note {
+        display: contents;
       }
       .mf-pager__size,
       [data-range],
