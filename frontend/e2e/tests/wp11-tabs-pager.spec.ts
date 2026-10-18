@@ -55,8 +55,10 @@ const lastTab = (page: Page) => page.locator('mf-tabs [role="tab"]').last();
 
 /** The tab is whole inside the strip (the cue patches take the outer 28 px of a side that has one). */
 async function wholeInStrip(page: Page, tab: Locator): Promise<boolean> {
-  const t = (await tab.boundingBox())!;
-  const s = (await strip(page).boundingBox())!;
+  const t = await tab.boundingBox();
+  const s = await strip(page).boundingBox();
+  // While the page swaps its skeleton for the loaded tab strip the element is gone for a moment: not yet whole, the poll asks again.
+  if (!t || !s) return false;
   const start = await cue(page, 'start').count();
   const end = await cue(page, 'end').count();
   return t.x >= s.x + (start ? 27 : -1) && t.x + t.width <= s.x + s.width - (end ? 27 : -1);

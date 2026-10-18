@@ -103,17 +103,17 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(button).toBeFocused();
   });
 
-  test('Old ?tab= links: activity opens the drawer, details shows the Details tab', async ({
+  test('Old ?tab= links: activity opens the drawer, details shows the Overview tab', async ({
     page,
     seed,
   }) => {
     const world = await seed.world();
     await page.goto(`/matters/${world.matter.matterId}?tab=details`);
-    await expect(page.getByRole('tab', { name: 'Details' })).toHaveAttribute(
+    await expect(page.getByRole('tab', { name: 'Overview' })).toHaveAttribute(
       'aria-selected',
       'true',
     );
-    await expect(page.getByRole('tabpanel')).toContainText(world.matter.matterRef);
+    await expect(page.getByRole('tabpanel')).toContainText(world.client.name);
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
     await page.goto(`/matters/${world.matter.matterId}?tab=activity`);
@@ -124,7 +124,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(page).not.toHaveURL(/tab=activity/);
   });
 
-  test('Matter: Details, Tasks, Projects and Assets tabs; Details has the facts, the header has Edit and the overflow Set inactive', async ({
+  test('Matter: Overview, Tasks, Projects and Assets tabs; Overview has the facts, the header has Edit and the overflow Set inactive', async ({
     page,
     seed,
   }) => {
@@ -134,11 +134,11 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(`/matters/${world.matter.matterId}`);
 
-    await expect(page.getByRole('tab')).toHaveText([/Details/, /Tasks/, /Projects/, /Assets/]);
+    await expect(page.getByRole('tab')).toHaveText([/Overview/, /Tasks/, /Projects/, /Assets/]);
     await expect(panel(page)).toHaveCount(0);
     const details = page.getByRole('tabpanel');
     await expect(details).toContainText('Sensitive');
-    await expect(details).toContainText(world.matter.matterRef);
+    await expect(details).toContainText(world.client.name);
     await expect(
       page.locator('[data-page-actions]').getByRole('button', { name: 'Edit' }),
     ).toBeVisible();
@@ -159,7 +159,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(page).toHaveURL(/tab=projects/);
     await expect(page.getByRole('link', { name: project.name })).toBeVisible();
 
-    await page.getByRole('tab', { name: 'Details' }).click();
+    await page.getByRole('tab', { name: 'Overview' }).click();
     await expect(page).not.toHaveURL(/tab=/);
   });
 

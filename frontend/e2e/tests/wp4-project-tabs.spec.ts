@@ -133,7 +133,8 @@ test.describe('WP4: project tabs at four sizes', () => {
       expect(wrap.width, 'grid width vs page').toBeGreaterThan(main.width - 80);
 
       const firstRow = (await rows.first().boundingBox())!;
-      if (w === 1366) expect(firstRow.y, 'first task row y at 1366').toBeLessThan(330);
+      // The summary strip (WP7, one 28 px line plus its margin) sits above the grid now.
+      if (w === 1366) expect(firstRow.y, 'first task row y at 1366').toBeLessThan(370);
       if (w === 768) expect(firstRow.y, 'first task row y at 768').toBeLessThan(h);
       console.log(`${w}x${h}: first task row at y ${Math.round(firstRow.y)}`);
 
@@ -252,17 +253,18 @@ test.describe('WP4: behaviour', () => {
     );
   });
 
-  test('a link that opens the grid already filtered shows no count (not a permanent --); the filter survives a visit to Details', async ({
+  test('a link that opens the grid already filtered shows the open count from the summary; the filter survives a visit to Details', async ({
     page,
   }) => {
     await page.goto(`${url(data.project)}?q=Privilege`);
     await ready(page);
     await expect(page.locator('.wt-wrap tbody tr')).toHaveCount(2);
-    await expect(page.getByRole('tab').first()).toHaveText('Tasks');
+    // The count is the summary's open count (WP7), so a filtered link no longer leaves the tab without a number.
+    await expect(page.getByRole('tab').first()).toHaveText(`Tasks (${data.taskCount})`);
     await page.getByRole('tab', { name: 'Details' }).click();
     await page.getByRole('tab', { name: /^Tasks/ }).click();
     await expect(page.locator('.wt-wrap tbody tr')).toHaveCount(2);
-    await expect(page.getByRole('tab').first()).toHaveText('Tasks');
+    await expect(page.getByRole('tab').first()).toHaveText(`Tasks (${data.taskCount})`);
   });
 
   test('an archived project keeps its banner, disables Create task with the reason and shows Archived in Details', async ({

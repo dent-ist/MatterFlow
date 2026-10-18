@@ -34,6 +34,7 @@ import { TaskTypeIcon } from '../icons/task-type-icon';
 import { DueCell } from './due-cell';
 import { MfDatePipe } from '../pipes/mf-date.pipe';
 import { MatterCell } from './matter-cell';
+import { ProjectCell } from './project-cell';
 import { PriorityBadge } from '../ui/priority-badge';
 import { CopyPart } from '../ui/copy-parts';
 import { StatusBadge } from '../ui/status-badge';
@@ -85,6 +86,7 @@ const LONG_PRESS_MS = 500;
     TaskTypeIcon,
     RouterLink,
     MatterCell,
+    ProjectCell,
     DueCell,
     MfDatePipe,
     PriorityBadge,
@@ -318,9 +320,17 @@ const LONG_PRESS_MS = 500;
                         }}</span>
                       }
                       @case ('project') {
-                        <span class="wt-clip" [attr.title]="row.projectName">{{
-                          row.projectName ?? '-'
-                        }}</span>
+                        @if (hideContext()) {
+                          <mf-project-cell
+                            [name]="row.projectName"
+                            [projectId]="row.projectId"
+                            [link]="auth.canLink('project')"
+                          />
+                        } @else {
+                          <span class="wt-clip" [attr.title]="row.projectName">{{
+                            row.projectName ?? '-'
+                          }}</span>
+                        }
                       }
                       @case ('type') {
                         <span class="wt-clip" [attr.title]="row.taskTypeName">{{

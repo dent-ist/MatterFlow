@@ -35,7 +35,11 @@ import {
 import { MatterDetailPage } from './matter-detail-page';
 
 describe('MatterDetailPage', () => {
-  let matters: { getMatter: ReturnType<typeof vi.fn>; setMatterActive: ReturnType<typeof vi.fn> };
+  let matters: {
+    getMatter: ReturnType<typeof vi.fn>;
+    setMatterActive: ReturnType<typeof vi.fn>;
+    getMatterSummary: ReturnType<typeof vi.fn>;
+  };
   let projects: { listProjects: ReturnType<typeof vi.fn> };
   let assets: { listAssets: ReturnType<typeof vi.fn> };
   let queue: { getTaskQueue: ReturnType<typeof vi.fn> };
@@ -51,6 +55,18 @@ describe('MatterDetailPage', () => {
     matters = {
       getMatter: vi.fn().mockReturnValue(ok(matter)),
       setMatterActive: vi.fn().mockReturnValue(ok(aMatter({ isActive: false }))),
+      getMatterSummary: vi.fn().mockReturnValue(
+        ok({
+          matterId: 7,
+          openTasks: 9,
+          overdue: 3,
+          dueSoon: 1,
+          asap: 1,
+          onHold: 1,
+          projectCount: 1,
+          assetCount: 0,
+        }),
+      ),
     };
     projects = { listProjects: vi.fn().mockReturnValue(ok(pageOfProjects(aProject()))) };
     assets = { listAssets: vi.fn().mockReturnValue(ok(pageOfAssets(anAssetListItem()))) };
@@ -144,15 +160,15 @@ describe('MatterDetailPage', () => {
     expect(navigateByUrl).not.toHaveBeenCalled();
   });
 
-  it('has Details, Tasks, Projects and Assets tabs, Details first and the default; Tasks needs Task.View, Projects lists the matter projects', async () => {
+  it('has Overview, Tasks, Projects and Assets tabs, Overview first and the default; Tasks needs Task.View, Projects lists the matter projects', async () => {
     await create(['Matter.View', 'Project.View']);
 
     expect(
       Array.from(el().querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
-    ).toEqual(['Details', 'Tasks (0)', 'Projects (1)', 'Assets']);
-    // The first tab (Details) is selected on open and loads no task list.
-    expect(tab('Details').getAttribute('aria-selected')).toBe('true');
-    expect(el().querySelector('[data-details-tab] dl')?.textContent).toContain('Merger Review');
+    ).toEqual(['Overview', 'Tasks', 'Projects (1)', 'Assets']);
+    // The first tab (Overview) is selected on open and loads no task list.
+    expect(tab('Overview').getAttribute('aria-selected')).toBe('true');
+    expect(el().querySelector('[data-details-tab] dl')?.textContent).toContain('Acme Corp');
     expect(queue.getTaskQueue).not.toHaveBeenCalled();
     // Without Task.View the Tasks tab says so and loads nothing.
     await openTab('tasks');
@@ -174,10 +190,10 @@ describe('MatterDetailPage', () => {
     await openTab('assets');
     expect(el().querySelector('[data-no-access=assets]')).not.toBeNull();
     expect(assets.listAssets).not.toHaveBeenCalled();
-    // No parameter, ?tab=details and an unknown value all show Details.
+    // No parameter, ?tab=details and an unknown value all show the Overview.
     for (const key of [undefined, 'details', 'nonsense']) {
       await openTab(key);
-      expect(tab('Details').getAttribute('aria-selected')).toBe('true');
+      expect(tab('Overview').getAttribute('aria-selected')).toBe('true');
     }
     expect(el().querySelector('aside')).toBeNull();
   });
@@ -202,40 +218,80 @@ describe('MatterDetailPage', () => {
         unassigned: null,
         dueFrom: null,
         dueTo: null,
+        view: null,
         page: null,
         size: null,
         sort: null,
       },
       queryParamsHandling: 'merge',
     });
-    expect(tab('Details').getAttribute('aria-selected')).toBe('true'); // the page input follows the address
+    expect(tab('Overview').getAttribute('aria-selected')).toBe('true'); // the page input follows the address
 
-    // Details is the default tab, so it leaves no `tab` in the address; Tasks does.
+    // Overview is the default tab, so it leaves no `tab` in the address; Tasks does.
     const lastTab = (): unknown =>
       (navigate.mock.lastCall![1] as { queryParams: { tab: unknown } }).queryParams.tab;
     await openTab('projects');
-    tab('Details').click();
+    tab('Overview').click();
     expect(lastTab()).toBeNull();
     tab('Tasks').click();
     expect(lastTab()).toBe('tasks');
   });
 
-  it('shows the Details as the first tab, in the full-width tab panel, with no side panel and no Activity tab', async () => {
-    await create(['Matter.View', 'Audit.View', 'Client.View'], aMatter({ isSensitive: true }));
+  it('shows the Overview as the first tab, in the full-width tab panel, with no side panel and no Activity tab; the title facts are not repeated', async () => {
+    await create(
+      ['Matter.View', 'Audit.View', 'Client.View', 'Task.View'],
+      aMatter({ isSensitive: true, modifiedAtUtc: '2026-10-05T12:00:00Z' }),
+    );
 
     expect(el().querySelector('aside')).toBeNull();
     const panel = el().querySelector('[role=tabpanel]')!;
     expect(panel.getAttribute('aria-labelledby')).toBe('matter-tab-details');
-    const details = panel.querySelector('[data-details-tab]')!;
-    const text = details.textContent!;
-    for (const part of ['00343-00012', 'Merger Review', 'Active', 'Sensitive', 'Created']) {
-      expect(text).toContain(part);
-    }
-    expect(details.querySelector('mf-sensitive-badge')).not.toBeNull();
-    expect(details.querySelector('[data-client-value] a')?.getAttribute('href')).toBe('/clients/1');
+    const overview = panel.querySelector('[data-details-tab]')!;
+    const rows = Array.from(overview.querySelectorAll('dt')).map((t) => t.textContent!.trim());
+    // The reference, the matter number and the name are in the header: not a row again.
+    expect(rows).toEqual(['Client', 'Status', 'Sensitive', 'Created', 'Last changed']);
+    expect(overview.querySelector('dl')!.textContent).not.toContain('00343-00012');
+    expect(overview.querySelector('dl')!.textContent).not.toContain('Merger Review');
+    expect(overview.querySelector('mf-sensitive-badge')).not.toBeNull();
+    expect(overview.querySelector('[data-client-value] a')?.getAttribute('href')).toBe(
+      '/clients/1',
+    );
     expect(el().querySelector('mf-tabs')!.textContent).not.toMatch(/Activity/);
     // Activity is a header button that opens the drawer.
     expect(el().querySelector('[data-page-actions]')!.textContent).toContain('Activity');
+  });
+
+  it('shows the task strip first on the Overview: five links to the matter own Tasks tab, from the matter summary', async () => {
+    await create(['Matter.View', 'Task.View']);
+    expect(matters.getMatterSummary).toHaveBeenCalledWith(7);
+    const links = Array.from(
+      el().querySelectorAll<HTMLAnchorElement>('[data-matter-overview] [data-strip-item]'),
+    );
+    expect(links.map((a) => a.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
+      'Open 9',
+      'Overdue 3',
+      'Due soon 1',
+      'ASAP 1',
+      'On hold 1',
+    ]);
+    expect(links.map((a) => a.getAttribute('href'))).toEqual([
+      '/matters/7?tab=tasks',
+      '/matters/7?tab=tasks&view=overdue',
+      '/matters/7?tab=tasks&view=dueSoon',
+      '/matters/7?tab=tasks&view=asap',
+      '/matters/7?tab=tasks&view=onHold',
+    ]);
+    // The strip comes before the rows.
+    const overview = el().querySelector('[data-matter-overview]')!;
+    expect(overview.firstElementChild!.nextElementSibling!.tagName).toBe('MF-SUMMARY-STRIP');
+  });
+
+  it('has no strip and asks for no numbers without Task.View, and the tab is still complete', async () => {
+    await create(['Matter.View']);
+    expect(matters.getMatterSummary).not.toHaveBeenCalled();
+    expect(el().querySelector('[data-strip]')).toBeNull();
+    expect(el().querySelector('[role=alert]')).toBeNull();
+    expect(el().querySelector('[data-details-tab] dl')).not.toBeNull();
   });
 
   it('shows the client as plain text without Client.View', async () => {
@@ -269,7 +325,7 @@ describe('MatterDetailPage', () => {
     fixture.componentRef.setInput('tab', 'activity');
     await settle(fixture);
     expect(document.body.querySelector('.mf-drawer')?.textContent).toContain('Activity: ');
-    expect(tab('Details').getAttribute('aria-selected')).toBe('true');
+    expect(tab('Overview').getAttribute('aria-selected')).toBe('true');
   });
 
   it('lists the matter tasks in the Tasks tab (open by default, All on request); Create task is offered once, in the header', async () => {
@@ -409,7 +465,7 @@ describe('MatterDetailPage', () => {
     expect(navigateByUrl).toHaveBeenCalledWith('/matters/7/edit');
   });
 
-  it('puts exactly Edit, Activity, Create task and the overflow (New project, New asset, Set inactive) in the header; no action is left in the Details tab', async () => {
+  it('puts exactly Edit, Activity, Create task and the overflow (New project, New asset, Set inactive) in the header; no action is left in the Overview tab', async () => {
     await create([
       'Matter.View',
       'Matter.Edit',
@@ -533,7 +589,7 @@ describe('MatterDetailPage', () => {
 
   it('names the record and the tab in the document title', async () => {
     await create(['Matter.View', 'Project.View']);
-    expect(document.title).toBe('00343-00012 Merger Review: Details - MatterFlow');
+    expect(document.title).toBe('00343-00012 Merger Review: Overview - MatterFlow');
     await openTab('projects');
     expect(document.title).toBe('00343-00012 Merger Review: Projects - MatterFlow');
     await openTab('assets');

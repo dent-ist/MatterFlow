@@ -113,6 +113,7 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
                   [canCreate]="p.isActive"
                   [showCreate]="false"
                   (loaded)="onTasksLoaded($event)"
+                  (opened)="taskCount.set($event)"
                 />
               </div>
               @if (current() === 'details') {

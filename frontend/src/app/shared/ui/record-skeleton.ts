@@ -18,7 +18,7 @@ const RECORD_TABS = {
     { key: 'matters', label: 'Matters', counted: true },
   ],
   matter: [
-    { key: 'details', label: 'Details' },
+    { key: 'details', label: 'Overview' },
     { key: 'tasks', label: 'Tasks', counted: true },
     { key: 'projects', label: 'Projects', counted: true },
     { key: 'assets', label: 'Assets' },

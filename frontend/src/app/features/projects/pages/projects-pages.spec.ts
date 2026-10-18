@@ -39,7 +39,12 @@ type Mock = ReturnType<typeof vi.fn>;
 
 describe('Projects pages', () => {
   let projects: Record<
-    'listProjects' | 'getProject' | 'createProject' | 'updateProject' | 'setProjectActive',
+    | 'listProjects'
+    | 'getProject'
+    | 'createProject'
+    | 'updateProject'
+    | 'setProjectActive'
+    | 'getProjectSummary',
     Mock
   >;
   let matters: Record<'getMatter' | 'listMatters', Mock>;
@@ -58,6 +63,11 @@ describe('Projects pages', () => {
           ),
         ),
       getProject: vi.fn().mockReturnValue(ok(aProject())),
+      getProjectSummary: vi
+        .fn()
+        .mockReturnValue(
+          ok({ projectId: 3, openTasks: 1, overdue: 2, dueSoon: 1, asap: 0, onHold: 1 }),
+        ),
       createProject: vi.fn().mockReturnValue(ok(aProject({ projectId: 11 }))),
       updateProject: vi.fn().mockReturnValue(ok(aProject({ name: 'Renamed' }))),
       setProjectActive: vi.fn().mockReturnValue(ok(aProject({ isActive: false }))),

@@ -14,6 +14,7 @@ import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { TaskQueueClient, TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
+import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { LookupStore } from '../../core/lookups/lookup-store';
 import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { FilterDef, FilterOption } from '../filters/filter-def';
@@ -23,11 +24,20 @@ import { LoadState } from '../ui/data-table';
 import { PageFooter } from '../ui/page-footer';
 import { Pager } from '../ui/pager';
 import { QueueChoices, mergeOptions } from './queue-choices';
-import { OPEN_STATUSES, parseQueueState, queueArgs } from './queue-filters';
+import { OPEN_STATUSES, dateDaysAgo, parseQueueState, queueArgs } from './queue-filters';
+import {
+  VIEW_EMPTY,
+  VIEW_FIXED,
+  parseScopedView,
+  scopedViewFilters,
+  scopedViewOwns,
+} from './scoped-view';
+import { SummaryStrip } from './summary-strip';
 import { ColumnAction } from './column-menu-items';
 import { ColumnWidthMap } from './column-widths';
 import { TaskTable } from './task-table';
 import { WorkWidths } from './work-widths';
+import { DUE_SOON_DAYS } from './work-vocabulary';
 
 const PAGE_SIZE = 25;
 const MATTER_COLUMNS = ['ref', 'title', 'project', 'priority', 'assignee', 'due', 'status'];
@@ -43,7 +53,15 @@ export const SCOPED_TASK_PARAMS: readonly string[] = [
   'unassigned',
   'dueFrom',
   'dueTo',
+  'view',
 ];
+
+const SCOPED_VIEW_NAMES = {
+  overdue: 'Overdue',
+  dueSoon: 'Due soon',
+  asap: 'ASAP',
+  onHold: 'On hold',
+} as const;
 
 const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
 
@@ -57,7 +75,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
  */
 @Component({
   selector: 'mf-scoped-tasks',
-  imports: [Button, HasPermissionDirective, PageFooter, Pager, TaskTable, FiltersBar],
+  imports: [Button, HasPermissionDirective, PageFooter, Pager, SummaryStrip, TaskTable, FiltersBar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styles: `
@@ -74,6 +92,15 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
     @if (!canView()) {
       <div class="st-state" data-no-access="tasks">You don't have permission to view tasks.</div>
     } @else {
+      <mf-summary-strip
+        [kind]="projectId() === null ? 'matter' : 'project'"
+        [id]="projectId() ?? matterId()"
+        [interactive]="true"
+        [active]="view() ?? 'open'"
+        [reload]="stripReload()"
+        (pick)="pickView($event)"
+        (opened)="opened.emit($event)"
+      />
       <mf-filters-bar [filters]="filters" [controls]="filterRowId">
         @if (showCreate()) {
           <p-button
@@ -109,6 +136,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
         (sortChange)="sortBy($event)"
         (retry)="load()"
         (clearFilters)="filters.clear()"
+        (rowChange)="replaceRow($event)"
       />
       @if (rows().length > 0) {
         <div mfPageFooter>
@@ -133,6 +161,10 @@ export class ScopedTasks {
   readonly canCreate = input(true);
   /** False where the page header already offers the one Create Task button (Matter detail, UXR-40). */
   readonly showCreate = input(true);
+  /** How many projects the matter has: the Project column and filter are offered only when it is above zero (unknown shows them). */
+  readonly projectCount = input<number | null>(null);
+  /** The record's open-task count, each time the summary strip has it (Open, whatever the grid shows). */
+  readonly opened = output<number>();
   /** Each time a load succeeds: how many tasks match, and whether the person (not just the default open-status view) narrowed the list. */
   readonly loaded = output<{ total: number; filtered: boolean }>();
 
@@ -145,6 +177,8 @@ export class ScopedTasks {
   private readonly lookups = inject(LookupStore);
   private readonly choices = inject(QueueChoices);
   private readonly widthStore = inject(WorkWidths);
+  private readonly clock = inject(Clock);
+  private readonly zone = inject(USER_TIME_ZONE);
 
   protected readonly pageSize = PAGE_SIZE;
   protected readonly canView = computed(() => this.auth.has('Task.View'));
@@ -154,8 +188,20 @@ export class ScopedTasks {
   protected readonly dir = signal<'asc' | 'desc' | null>(null);
   protected readonly rows = signal<TaskQueueRow[]>([]);
   protected readonly total = signal(0);
+  /** The pressed summary view (`?view=`), or null for the open list; an unknown value is ignored. */
+  protected readonly view = computed(() => parseScopedView(this.filters.params().get('view')));
+  /** Changes after an inline edit, so the strip asks for its numbers again. */
+  protected readonly stripReload = signal(0);
+  /** The Project column is for a Matter that has projects; a Project's own grid never has it. */
+  private readonly withProject = computed(
+    () => this.projectId() === null && (this.projectCount() ?? 1) > 0,
+  );
   protected readonly columns = computed(() =>
-    this.projectId() === null ? MATTER_COLUMNS : PROJECT_COLUMNS,
+    this.projectId() !== null
+      ? PROJECT_COLUMNS
+      : this.withProject()
+        ? MATTER_COLUMNS
+        : PROJECT_COLUMNS,
   );
   /** Where the widths of this grid are remembered (#203): one scope for every Matter's Tasks tab, one for every Project's list. */
   private readonly widthScope = computed(() =>
@@ -183,11 +229,29 @@ export class ScopedTasks {
     return [...seen.values()];
   });
 
+  /** A pressed summary view decides Status (and Due for Due soon) itself: the control shows what it set and is not sent (like a tab-owned filter). */
+  private ownedBy(key: 'status' | 'due'): Pick<FilterDef, 'disabledReason' | 'fixedValue'> {
+    const owns = (): ReturnType<typeof parseScopedView> => {
+      const v = this.view();
+      return scopedViewOwns(v).includes(key) ? v : null;
+    };
+    return {
+      disabledReason: () => {
+        const v = owns();
+        return v === null ? null : `Set by the ${SCOPED_VIEW_NAMES[v]} view above.`;
+      },
+      fixedValue: () => {
+        const v = owns();
+        return v === null ? null : (VIEW_FIXED[v][key] ?? null);
+      },
+    };
+  }
+
   private readonly defs = computed((): FilterDef[] => {
     const lookups = this.lookups;
     const defs: FilterDef[] = [
       { key: 'q', label: 'Title or Ref', column: 'ref', type: 'text', span: 2 },
-      ...(this.projectId() === null
+      ...(this.withProject()
         ? ([
             {
               key: 'project',
@@ -224,6 +288,7 @@ export class ScopedTasks {
         type: 'dateRange',
         fromParam: 'dueFrom',
         toParam: 'dueTo',
+        ...this.ownedBy('due'),
       },
       {
         key: 'status',
@@ -231,6 +296,7 @@ export class ScopedTasks {
         column: 'status',
         type: 'multiSelect',
         default: OPEN_STATUSES,
+        ...this.ownedBy('status'),
         valueGroups: [{ label: 'Open', values: OPEN_STATUSES }],
         options: ['NEW', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'CANCELLED'].map((code) => ({
           value: code,
@@ -253,9 +319,13 @@ export class ScopedTasks {
   });
 
   /** The filters as text: a change reloads (options arriving later never do). */
-  protected readonly filterKey = computed(() => JSON.stringify(this.filters.queryParams()));
+  protected readonly filterKey = computed(
+    () => JSON.stringify(this.filters.queryParams()) + '|' + (this.view() ?? ''),
+  );
 
   protected readonly emptyText = computed(() => {
+    const view = this.view();
+    if (view) return VIEW_EMPTY[view];
     const status = this.filters.list('status');
     return status.length === OPEN_STATUSES.length && status.every((s) => OPEN_STATUSES.includes(s))
       ? 'No open tasks.'
@@ -265,7 +335,8 @@ export class ScopedTasks {
   private requestId = 0;
 
   constructor() {
-    void this.lookups.ensureLoaded();
+    // The priority and status lookups need Task.View; without it the grid is a notice and asks for nothing (no 403 toast).
+    if (this.canView()) void this.lookups.ensureLoaded();
     effect(() => {
       this.matterId();
       this.projectId();
@@ -276,6 +347,21 @@ export class ScopedTasks {
         if (this.canView()) void this.load();
       });
     });
+  }
+
+  /** A strip item: it applies its view to the grid (replacing another), the pressed one and Open switch it off; sort and filters stay. */
+  protected pickView(key: string): void {
+    const next = key === 'open' || key === this.view() ? null : parseScopedView(key);
+    void this.router.navigate([], {
+      queryParams: { view: next },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  /** An inline edit in the grid: the row stays as it is now and the strip asks for its numbers again. */
+  protected replaceRow(row: TaskQueueRow): void {
+    this.rows.update((rows) => rows.map((r) => (r.taskId === row.taskId ? row : r)));
+    this.stripReload.update((n) => n + 1);
   }
 
   protected goTo(page: number): void {
@@ -330,11 +416,16 @@ export class ScopedTasks {
       // The address holds this grid's filters; the Matter (and the fixed Project) come from the page, paging and sorting from here.
       const parsed = parseQueueState(this.filters.params());
       const status = this.filters.list('status');
+      const view = this.view();
       const request = queueArgs({
         ...parsed,
         filters: {
           ...parsed.filters,
           status: [...status],
+          // A pressed summary view is the Task Queue's quick view of the same name, so its total is the strip number.
+          ...(view
+            ? scopedViewFilters(view, dateDaysAgo(this.clock.now(), -DUE_SOON_DAYS, this.zone))
+            : {}),
           matter: this.matterId(),
           project: this.projectId() ?? parsed.filters.project,
         },
@@ -349,7 +440,10 @@ export class ScopedTasks {
       this.total.set(page.total);
       this.state.set('ready');
       this.filters.reportResults(page.total);
-      this.loaded.emit({ total: page.total, filtered: this.filters.activeCount() > 0 });
+      this.loaded.emit({
+        total: page.total,
+        filtered: this.filters.activeCount() > 0 || view !== null,
+      });
       this.choices.ensure();
     } catch {
       if (id === this.requestId) this.state.set('error');

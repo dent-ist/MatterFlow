@@ -30,7 +30,7 @@ const noAside = (page: Page) =>
   expect(page.locator('aside, [data-detail-panel]'), 'no right-hand Details panel').toHaveCount(0);
 
 test.describe('Matter and Client detail pages: Details is the first tab', () => {
-  test('Matter: Details is first and selected by default, shows the facts, and there is no side panel', async ({
+  test('Matter: Overview is first and selected by default, shows the facts, and there is no side panel', async ({
     page,
     seed,
   }) => {
@@ -41,13 +41,13 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await page.goto(`/matters/${world.matter.matterId}`);
 
     await expect(page.getByRole('tab')).toHaveText([
-      /^\s*Details\s*$/,
+      /^\s*Overview\s*$/,
       /^\s*Tasks/,
       /^\s*Projects/,
       /^\s*Assets\s*$/,
     ]);
-    await expect(tab(page, 'Details')).toHaveAttribute('aria-selected', 'true');
-    await expect(tab(page, 'Details')).toHaveAttribute('tabindex', '0');
+    await expect(tab(page, 'Overview')).toHaveAttribute('aria-selected', 'true');
+    await expect(tab(page, 'Overview')).toHaveAttribute('tabindex', '0');
     await expect(tab(page, /^Tasks/)).toHaveAttribute('tabindex', '-1');
     await expect(page).not.toHaveURL(/tab=/);
     await noAside(page);
@@ -55,9 +55,9 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     const panel = page.getByRole('tabpanel');
     await expect(panel).toHaveAttribute('id', 'matter-panel');
     await expect(panel).toHaveAttribute('aria-labelledby', 'matter-tab-details');
-    await expect(panel.getByText('Matter reference')).toBeVisible();
-    await expect(panel).toContainText(world.matter.matterRef);
-    await expect(panel).toContainText(world.matter.name);
+    // The reference, the number and the name are in the header, not rows again (WP7).
+    await expect(panel.getByText('Matter reference')).toHaveCount(0);
+    await expect(panel.locator('dl')).not.toContainText(world.matter.name);
     await expect(panel).toContainText('Sensitive');
     await expect(panel).toContainText('Warning only');
     await expect(panel.getByRole('link', { name: new RegExp(world.client.name) })).toHaveAttribute(
@@ -77,7 +77,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     // Readable form-like list: left aligned, no wider than about 70 characters.
     const list = (await panel.locator('dl.pg-dl').boundingBox())!;
     const area = (await page
-      .getByRole('region', { name: 'Matter details, scrollable' })
+      .getByRole('region', { name: 'Matter overview, scrollable' })
       .boundingBox())!;
     expect(list.x - area.x).toBeLessThan(40);
     expect(list.width).toBeLessThan(760);
@@ -116,9 +116,9 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await page.goto(base);
     await tab(page, /^Projects/).click();
     await expect(page).toHaveURL(/tab=projects/);
-    await tab(page, 'Details').click();
+    await tab(page, 'Overview').click();
     await expect(page).not.toHaveURL(/tab=/);
-    await expect(tab(page, 'Details')).toHaveAttribute('aria-selected', 'true');
+    await expect(tab(page, 'Overview')).toHaveAttribute('aria-selected', 'true');
     await page.goBack();
     await expect(tab(page, /^Projects/)).toHaveAttribute('aria-selected', 'true');
   });
@@ -129,7 +129,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
   }) => {
     const world = await seed.world();
     await page.goto(`/matters/${world.matter.matterId}`);
-    await tab(page, 'Details').focus();
+    await tab(page, 'Overview').focus();
     await page.keyboard.press('ArrowRight');
     await expect(tab(page, /^Tasks/)).toBeFocused();
     await expect(tab(page, /^Tasks/)).toHaveAttribute('aria-selected', 'true');
@@ -139,13 +139,13 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await page.keyboard.press('End');
     await expect(tab(page, 'Assets')).toBeFocused();
     await page.keyboard.press('ArrowRight'); // wraps round to the first tab
-    await expect(tab(page, 'Details')).toBeFocused();
-    await expect(tab(page, 'Details')).toHaveAttribute('aria-selected', 'true');
+    await expect(tab(page, 'Overview')).toBeFocused();
+    await expect(tab(page, 'Overview')).toHaveAttribute('aria-selected', 'true');
     await expect(page).not.toHaveURL(/tab=/);
     await page.keyboard.press('ArrowLeft');
     await expect(tab(page, 'Assets')).toBeFocused();
     await page.keyboard.press('Home');
-    await expect(tab(page, 'Details')).toBeFocused();
+    await expect(tab(page, 'Overview')).toBeFocused();
   });
 
   test('Client: Overview is first and selected by default, shows the strip and the dates, and there is no side panel', async ({
@@ -226,8 +226,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
 
     await page.goto(`/matters/${world.matter.matterId}`);
     const panel = page.getByRole('tabpanel');
-    await expect(tab(page, 'Details')).toHaveAttribute('aria-selected', 'true');
-    await expect(panel).toContainText(world.matter.matterRef);
+    await expect(tab(page, 'Overview')).toHaveAttribute('aria-selected', 'true');
     await expect(panel.getByRole('link', { name: new RegExp(world.client.name) })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Edit' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /^Set (in)?active$/ })).toHaveCount(0);

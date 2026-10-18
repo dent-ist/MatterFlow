@@ -28,8 +28,8 @@ import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { MatterAssets } from '../../../shared/ui/matter-assets';
-import { MatterRef } from '../../../shared/ui/matter-ref';
 import { SCOPED_TASK_PARAMS, ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
+import { SummaryStrip } from '../../../shared/work-queue/summary-strip';
 import { PageTitle, recordTitle } from '../../../core/title/page-title';
 import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
 import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/record-skeleton';
@@ -45,8 +45,9 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
 
 /**
  * Matter detail (UX S06): reference with copy button, the inactive banners, activation with the open-task rule,
- * and Details / Tasks / Projects / Assets tabs across the full page width (Details first and the default: the fields;
- * Tasks is the shared work-queue table filtered to the Matter). Activity opens in a right-side drawer. The tab is kept in `?tab=`
+ * and Overview / Tasks / Projects / Assets tabs across the full page width (Overview first and the default, key `details`: the task summary
+ * strip, whose items open the Tasks tab on the matching view, then Client, Status, Sensitive, dates and custom fields; Tasks is the shared
+ * work-queue table filtered to the Matter). Activity opens in a right-side drawer. The tab is kept in `?tab=`
  * (absent for Details); `?tab=activity` opens the drawer.
  */
 @Component({
@@ -62,7 +63,6 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
     Button,
     HasPermissionDirective,
     ConfirmDialog,
-    MatterRef,
     MatterAssets,
     ActivityDrawer,
     SensitiveBadge,
@@ -70,6 +70,7 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
     MfDatePipe,
     CustomFieldsView,
     ScopedTasks,
+    SummaryStrip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -131,12 +132,15 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
             >
               @switch (current()) {
                 @case ('details') {
-                  <div class="mf-scroll-area" mfScrollArea="Matter details" data-details-tab>
-                    <div class="pg-details">
-                      <h2 class="pg-sr">Details</h2>
+                  <div class="mf-scroll-area" mfScrollArea="Matter overview" data-details-tab>
+                    <div class="pg-details" data-matter-overview>
+                      <h2 class="pg-sr">Overview</h2>
+                      <mf-summary-strip
+                        kind="matter"
+                        [id]="m.matterId"
+                        [path]="'/matters/' + m.matterId"
+                      />
                       <dl class="pg-dl">
-                        <dt>Matter reference</dt>
-                        <dd><mf-matter-ref [value]="m.matterRef" /></dd>
                         <dt>Client</dt>
                         <dd data-client-value>
                           @if (canLinkClient()) {
@@ -148,10 +152,6 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                             <span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}
                           }
                         </dd>
-                        <dt>Matter number</dt>
-                        <dd class="pg-mono">{{ m.matterNumber }}</dd>
-                        <dt>Name</dt>
-                        <dd>{{ m.name }}</dd>
                         <dt>Status</dt>
                         <dd><mf-active-badge [active]="m.isActive" /></dd>
                         <dt>Sensitive</dt>
@@ -182,6 +182,7 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                     [canCreate]="m.isActive"
                     [showCreate]="false"
                     [projectOptions]="projectOptions()"
+                    [projectCount]="m.projectCount"
                   />
                 }
                 @case ('projects') {
@@ -354,7 +355,11 @@ export class MatterDetailPage {
   protected readonly activityOpen = signal(false);
   protected readonly tabs = computed<MfTab[]>(() => {
     const m = this.matter();
-    return recordTabs('matter', { tasks: m?.openTaskCount ?? 0, projects: m?.projectCount ?? 0 });
+    return recordTabs('matter', {
+      // Without Task.View the API sends no count: no number rather than a fake zero.
+      tasks: this.auth.has('Task.View') ? (m?.openTaskCount ?? 0) : null,
+      projects: m?.projectCount ?? 0,
+    });
   });
   protected readonly current = computed<Tab>(() => {
     const t = this.tab();
