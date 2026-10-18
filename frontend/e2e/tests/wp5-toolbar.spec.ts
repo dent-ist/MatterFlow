@@ -241,6 +241,8 @@ test.describe('Task Queue toolbar (WP5)', () => {
 
   test('axe: the toolbar in its states has no violations at four sizes', async ({ page, seed }) => {
     test.skip(!axeAvailable(), 'axe-core not available');
+    // Four sizes, about ten axe scans: over the default 60 s on a loaded machine (3 of 3 runs), so the same 3 minutes as the other axe sweeps.
+    test.setTimeout(180_000);
     // A task of its own, so the list (and its footer with the sort note) is never empty on a fresh database.
     await seed.task(await seed.world(), { title: `Toolbar ${uid()}` });
     for (const [w, h] of SIZES) {

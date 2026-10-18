@@ -299,7 +299,7 @@ test.describe('WP7: inline row actions', () => {
     await expect(toggle).toBeFocused();
   });
 
-  test('M12.3: at 375 the step is a link in the title line; a task with every step resolved shows text (#166)', async ({
+  test('M12.3: the step link is on the Workflow progress column; a task with every step resolved shows text, and a phone shows neither (#166, #196)', async ({
     seed,
     asUser,
     admin,
@@ -313,12 +313,21 @@ test.describe('WP7: inline row actions', () => {
     await api.doStep(1, 'start');
     await api.doStep(1, 'complete');
     const page = await asUser(me.username);
-    await page.setViewportSize({ width: 375, height: 812 });
     const myWork = new MyWorkPage(page);
+
+    await page.setViewportSize({ width: 1366, height: 768 });
     await myWork.open();
     await expect(myWork.row(`Open ${token}`).locator('[data-step-link]')).toBeVisible();
     await expect(myWork.row(`Done ${token}`).locator('[data-step-link]')).toHaveCount(0);
     await expect(myWork.row(`Done ${token}`)).toContainText('All steps resolved');
+
+    // WP2 (#196) took the progress text out of the Title cell, and the Workflow progress column drops out below 1060 px: a phone row has no
+    // step link and no progress text at all (it used to fold under the title).
+    await page.setViewportSize({ width: 375, height: 812 });
+    await myWork.open();
+    await expect(myWork.row(`Open ${token}`)).toHaveCount(1);
+    await expect(myWork.row(`Open ${token}`).locator('[data-step-link]')).toHaveCount(0);
+    await expect(myWork.row(`Done ${token}`)).not.toContainText('All steps resolved');
     await shot(page, 'step-link-375x812');
     await pageAxe(page, 'step link 375');
   });
