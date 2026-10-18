@@ -126,20 +126,13 @@ test.describe('Fixed layout (#200)', () => {
         await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
         const m = await measure(page);
         reference ??= m;
-        // An On Hold row carries its reason under the Status pill (WP10) and is 47 px until #210 fixes the row height for every cell.
-        const tall = m.rows.filter((r) => !r.held && r.link <= 24 && Math.round(r.height) !== 44);
-        expect(tall, `one-line rows are 44 px at ${width} for ${url}`).toEqual([]);
+        // #210: every row is 44 px: a one-line title, a two-line title, the 170-character title, the token and the On Hold row with its reason.
+        for (const r of m.rows) expect(Math.round(r.height), `row at ${width} for ${url}`).toBe(44);
         for (const [key, w] of Object.entries(m.widths)) {
           expect(
             Math.abs(w - reference.widths[key]),
             `${key} at ${width} for ${url}: ${w} vs ${reference.widths[key]}`,
           ).toBeLessThanOrEqual(1);
-        }
-        // A one-line title is a 44 px row; a two-line title may be taller (PM ruling, #196); nothing is shorter.
-        for (const r of m.rows) {
-          if (r.link <= 24 && !r.held)
-            expect(Math.round(r.height), `one-line row at ${width} for ${url}`).toBe(44);
-          else expect(r.height).toBeLessThanOrEqual(64);
         }
         expect(m.clipped, `nothing is cut off at ${width} for ${url}`).toEqual([]);
         expect(m.scroll, `no sideways scroll at ${width} for ${url}`).toBeLessThanOrEqual(m.client);

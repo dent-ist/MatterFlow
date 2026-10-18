@@ -59,6 +59,8 @@ export function holdTitle(row: {
       overflow: hidden;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
+      /* 26 px pill + 13 px line + padding keep the On Hold row at 44 px (#210). */
+      line-height: 13px;
       text-overflow: ellipsis;
       white-space: nowrap;
     }

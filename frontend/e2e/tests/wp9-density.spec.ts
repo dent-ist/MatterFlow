@@ -121,7 +121,7 @@ test.describe('Density and space', () => {
     expect(await rowsInView(page)).toBeGreaterThanOrEqual(9);
     // #196: a Comfortable title takes at most two lines; the long one is cut with an ellipsis and keeps the whole text as its tooltip.
     for (const h of await titleLines(page))
-      expect(h, 'a title is at most two lines').toBeLessThanOrEqual(40);
+      expect(h, 'a title is at most two 18 px lines (#210)').toBeLessThanOrEqual(36);
     const long = page.locator('a.wt-title', { hasText: LONG.slice(0, 30) });
     expect(
       await long.evaluate((a) => a.scrollHeight > a.clientHeight || a.scrollWidth > a.clientWidth),
@@ -402,7 +402,7 @@ test.describe('Density and space', () => {
     const titleBefore = (await page.locator('thead th[data-col="title"]').boundingBox())!.width;
     const tabBefore = (await myWork.tab(/^Due soon/).boundingBox())!;
     const rowH = (await body.locator('tr[data-skeleton]').first().boundingBox())!.height;
-    expect(rowH).toBeGreaterThanOrEqual(40);
+    expect(Math.abs(rowH - 44), 'a skeleton row is as high as a row (#210)').toBeLessThanOrEqual(1);
     await shot(page, 'g4-loading-first-1366x768');
     await axeClean(page, 'skeleton');
 
@@ -414,7 +414,7 @@ test.describe('Density and space', () => {
     expect(
       Math.abs(titleAfter - titleBefore),
       'Title width before and after the rows',
-    ).toBeLessThanOrEqual(8);
+    ).toBeLessThanOrEqual(2);
     const tabAfter = (await myWork.tab(/^Due soon/).boundingBox())!;
     expect(Math.abs(tabAfter.x - tabBefore.x), 'the next tab does not move').toBeLessThanOrEqual(1);
     const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);

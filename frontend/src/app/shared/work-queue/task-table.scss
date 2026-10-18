@@ -45,10 +45,10 @@
   height: var(--mf-row-h);
 }
 
-/* Two pixels above and below the cell: a two-line title (Comfortable) fits 44 px and keeps the links 24 px apart (WCAG 2.2 2.5.8). */
+/* Comfortable rows are 44 px whatever the cells hold (#210): 2 px above and below, the 1 px line under the row, and at most 39 px of content
+   (two 18 px title lines, the 34 px Matter cell, the 36 px Due cell, a 26 px Status pill with a 13 px hold line). */
 .wt td {
   padding-block: 2px;
-  /* 44 px whatever the cells hold, so rows do not flip between 40 and 44 with the data on the page (BUG-TQ1); #210 fixes it for every cell. */
   height: 44px;
 }
 
@@ -59,7 +59,6 @@
   height: 36px;
 }
 
-.wt--narrow .wt-title,
 .wt--compact .wt-title {
   line-height: 24px;
 }
@@ -159,7 +158,10 @@ th[aria-sort='descending'] .wt-sort {
   -webkit-line-clamp: 2;
   color: var(--mf-link);
   font-weight: 600;
-  line-height: 20px;
+  /* Two lines are 36 px; a one-line title still has a 24 px target (WCAG 2.2 2.5.8), centred in it. */
+  min-height: 24px;
+  -webkit-box-pack: center;
+  line-height: 18px;
   overflow-wrap: anywhere;
 }
 

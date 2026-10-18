@@ -173,3 +173,11 @@ td.mf-col-actions {
   display: inline-flex !important;
   max-width: none !important;
 }
+
+/* A phone shows the hold reason under the title (the Status column is scrolled away): that title then takes one line, so the row stays 44 px
+   (24 px link + 13 px reason, #210). */
+@media (max-width: 480px) {
+  .wt .wt-titlebody:has([data-hold-hint]) .wt-title {
+    -webkit-line-clamp: 1;
+  }
+}

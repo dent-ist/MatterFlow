@@ -87,6 +87,13 @@ test.describe('WP10 hold reason and colours', () => {
         'y'.repeat(200) + '...',
       );
 
+      // #210: the reason (and the 200-character one) never makes the row taller than 44 px, on a phone with the hint under the title too.
+      for (const r of [heldRow, longRow])
+        expect(
+          Math.abs((await r.boundingBox())!.height - 44),
+          `hold row at ${w}`,
+        ).toBeLessThanOrEqual(1);
+
       // Resumed and never held: no line, no marker.
       for (const n of ['Resumed', 'Fresh']) {
         await expect(

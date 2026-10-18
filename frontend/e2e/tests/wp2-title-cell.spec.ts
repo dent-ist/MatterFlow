@@ -56,12 +56,14 @@ test.describe('Title cell (#196)', () => {
       await expect(rowOf(token)).toBeVisible();
       await expect(page.locator(SUB)).toHaveCount(0);
       const h = async (t: { taskNumber: string }) => (await rowOf(t).boundingBox())!.height;
-      expect(await h(long), `long row at ${width}`).toBeLessThanOrEqual((await h(short)) + 24);
-      expect(await h(token), `token row at ${width}`).toBeLessThanOrEqual((await h(short)) + 24);
+      // #210: the clamped title never grows a row: every row is 44 px.
+      expect(Math.abs((await h(long)) - 44), `long row at ${width}`).toBeLessThanOrEqual(1);
+      expect(Math.abs((await h(token)) - 44), `token row at ${width}`).toBeLessThanOrEqual(1);
+      expect(Math.abs((await h(short)) - 44), `short row at ${width}`).toBeLessThanOrEqual(1);
       for (const t of [long, token]) {
         const link = rowOf(t).locator('a.wt-title');
         const box = (await link.boundingBox())!;
-        expect(box.height, 'at most two 20 px lines').toBeLessThanOrEqual(40);
+        expect(box.height, 'at most two 18 px lines').toBeLessThanOrEqual(36);
         expect(await link.getAttribute('title')).toBeTruthy();
       }
       const widths = await page.evaluate(() =>

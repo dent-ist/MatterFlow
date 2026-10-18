@@ -16,8 +16,9 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, input } from '@a
   template: `
     @for (key of columns(); track key) {
       <td [attr.data-col]="key">
-        @if (key === 'title') {
-          <span class="sk sk--title"></span>
+        @if (key === 'title' || key === 'matter' || key === 'due') {
+          <!-- The two-line cells (Title, Matter, Due) keep two lines so the row looks like the final one. -->
+          <span class="sk" [class]="'sk sk--' + key"></span>
           <span class="sk sk--sub"></span>
         } @else {
           <span class="sk" [class]="'sk sk--' + key"></span>
@@ -31,6 +32,7 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, input } from '@a
       padding: 2px var(--mf-s2);
       border-bottom: 1px solid var(--mf-border);
       vertical-align: middle;
+      overflow: hidden;
     }
     .wt--compact tr[mfTaskSkeleton] td {
       height: 36px;
@@ -38,6 +40,10 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, input } from '@a
     }
     .wt--compact tr[mfTaskSkeleton] .sk--sub {
       display: none;
+    }
+    .wt--compact tr[mfTaskSkeleton] .sk--matter,
+    .wt--compact tr[mfTaskSkeleton] .sk--due {
+      margin-bottom: 0;
     }
     tr[mfTaskSkeleton] .sk {
       display: block;
@@ -61,11 +67,21 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, input } from '@a
       width: 3.5rem;
     }
     tr[mfTaskSkeleton] .sk--matter {
-      width: 10rem;
+      width: 70%;
+      height: 12px;
+      margin-bottom: 3px;
     }
-    tr[mfTaskSkeleton] .sk--progress,
     tr[mfTaskSkeleton] .sk--due {
+      width: 80%;
+      height: 12px;
+      margin-bottom: 3px;
+    }
+    tr[mfTaskSkeleton] .sk--progress {
       width: 8rem;
+    }
+    tr[mfTaskSkeleton] td[data-col='matter'] .sk--sub,
+    tr[mfTaskSkeleton] td[data-col='due'] .sk--sub {
+      width: 50%;
     }
     tr[mfTaskSkeleton] .sk--priority,
     tr[mfTaskSkeleton] .sk--status {
