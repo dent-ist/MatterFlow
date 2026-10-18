@@ -35,16 +35,6 @@ const pageSideScroll = (page: Page) =>
 const cards = (page: Page) => page.locator('li[data-task]');
 const cardTitles = (page: Page) => page.locator('li[data-task] a.wt-title').allTextContents();
 
-const PERMS = [
-  'Task.View',
-  'Task.Create',
-  'Task.ChangeStatus',
-  'Task.SetPriority',
-  'Task.Assign',
-  'Matter.View',
-  'Pod.View',
-];
-
 interface Persona {
   username: string;
   userId: number;
