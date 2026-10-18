@@ -30,8 +30,11 @@ const SIZES = [
 
 const REASON = 'Waiting for the custodian';
 
+/** The row of the table, or (below 640 px, #192) the card of the task. */
 const row = (page: Page, title: string): Locator =>
-  page.locator('tbody tr', { has: page.getByRole('link', { name: title, exact: true }) });
+  page.locator('tbody tr, li[data-task]', {
+    has: page.getByRole('link', { name: title, exact: true }),
+  });
 
 const css = (loc: Locator, prop: string) =>
   loc.evaluate((el, p) => getComputedStyle(el).getPropertyValue(p), prop);
@@ -71,43 +74,54 @@ test.describe('WP10 hold reason and colours', () => {
       await expect(row(page, title('Held'))).toBeVisible();
 
       const heldRow = row(page, title('Held'));
-      const mark = heldRow.locator('[data-hold-mark]');
-      await expect(mark).toHaveAttribute('aria-label', 'On hold');
-      await expect(heldRow.locator('[data-hold-reason]')).toHaveText(REASON);
-      await expect(heldRow.locator('[data-col="status"] > div')).toHaveAttribute('title', REASON);
-      // The pill is the grey one and the title is not dimmed.
-      const pill = heldRow.locator('[data-status="ON_HOLD"]');
-      expect(await css(pill, 'background-color')).toBe('rgb(169, 176, 187)');
-      expect(await css(heldRow.locator('.wt-title'), 'opacity')).toBe('1');
-      await expect(pill.locator('.pi-pause-circle')).toHaveCount(1);
-
       const longRow = row(page, title('Long'));
-      await expect(longRow.locator('[data-col="status"] > div')).toHaveAttribute(
-        'title',
-        'y'.repeat(200) + '...',
-      );
-
-      // #210: the reason (and the 200-character one) never makes the row taller than 44 px, on a phone with the hint under the title too.
-      for (const r of [heldRow, longRow])
-        expect(
-          Math.abs((await r.boundingBox())!.height - 44),
-          `hold row at ${w}`,
-        ).toBeLessThanOrEqual(1);
-
-      // Resumed and never held: no line, no marker.
-      for (const n of ['Resumed', 'Fresh']) {
-        await expect(
-          row(page, title(n)).locator('[data-hold-reason], [data-hold-mark]'),
-        ).toHaveCount(0);
-      }
-      // Phones: the reason moves under the title ("Waiting: ...").
-      const hint = heldRow.locator('[data-hold-hint]');
-      if (w <= 480) {
-        await expect(hint).toBeVisible();
-        await expect(hint).toContainText(`Waiting: ${REASON}`);
+      if (w < 640) {
+        // Phone cards (#192): the reason is its own chip line, with its tooltip; the old "Waiting: ..." line under the title is gone.
+        const chip = heldRow.locator('[data-hold-chip]');
+        await expect(chip).toBeVisible();
+        await expect(chip).toContainText(REASON);
+        await expect(chip).toHaveAttribute('title', REASON);
+        await expect(longRow.locator('[data-hold-chip]')).toHaveAttribute(
+          'title',
+          'y'.repeat(200) + '...',
+        );
+        await expect(page.locator('[data-hold-hint]')).toHaveCount(0);
+        await expect(page.getByText('Waiting: ')).toHaveCount(0);
+        await expect(heldRow.locator('[data-status="ON_HOLD"]')).toBeVisible();
+        for (const n of ['Resumed', 'Fresh']) {
+          await expect(row(page, title(n)).locator('[data-hold-chip]')).toHaveCount(0);
+        }
       } else {
-        await expect(hint).toBeHidden();
-        await expect(heldRow.locator('[data-hold-reason]')).toBeVisible();
+        const mark = heldRow.locator('[data-hold-mark]');
+        await expect(mark).toHaveAttribute('aria-label', 'On hold');
+        await expect(heldRow.locator('[data-hold-reason]')).toHaveText(REASON);
+        await expect(heldRow.locator('[data-col="status"] > div')).toHaveAttribute('title', REASON);
+        // The pill is the grey one and the title is not dimmed.
+        const pill = heldRow.locator('[data-status="ON_HOLD"]');
+        expect(await css(pill, 'background-color')).toBe('rgb(169, 176, 187)');
+        expect(await css(heldRow.locator('.wt-title'), 'opacity')).toBe('1');
+        await expect(pill.locator('.pi-pause-circle')).toHaveCount(1);
+
+        await expect(longRow.locator('[data-col="status"] > div')).toHaveAttribute(
+          'title',
+          'y'.repeat(200) + '...',
+        );
+
+        // #210: the reason (and the 200-character one) never makes the row taller than 44 px.
+        for (const r of [heldRow, longRow])
+          expect(
+            Math.abs((await r.boundingBox())!.height - 44),
+            `hold row at ${w}`,
+          ).toBeLessThanOrEqual(1);
+
+        // Resumed and never held: no line, no marker.
+        for (const n of ['Resumed', 'Fresh']) {
+          await expect(
+            row(page, title(n)).locator('[data-hold-reason], [data-hold-mark]'),
+          ).toHaveCount(0);
+        }
+        // No "Waiting: ..." line under the title any more (the phone has cards).
+        await expect(page.locator('[data-hold-hint]')).toHaveCount(0);
       }
       await shot(page, `hold-my-work-${w}x${h}`);
       if (axeAvailable()) {

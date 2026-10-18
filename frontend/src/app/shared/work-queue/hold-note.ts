@@ -14,8 +14,8 @@ export function holdTitle(row: {
 /**
  * What an On Hold row says about the hold (#165, #182), one component for the three places it shows:
  * `mark` is the pause icon at the start of the Ref cell ("On hold" for assistive technology); `reason` is the muted one-line reason under
- * the Status pill (hidden visually in Compact density and on phones, but still read out: the tooltip carries it); `hint` is the
- * "Waiting: reason" line under the title that stands in for it on a phone, where the Status column is scrolled away.
+ * the Status pill (hidden visually in Compact density, but still read out: the tooltip carries it); `chip` is the reason's own line on a
+ * phone card (pause icon and the reason; the "Waiting: ..." line under the title is gone since the cards, #192).
  */
 @Component({
   selector: 'mf-hold-note',
@@ -32,8 +32,11 @@ export function holdTitle(row: {
           data-hold-mark
         ></i>
       }
-      @case ('hint') {
-        <span class="line" data-hold-hint [attr.title]="title()">Waiting: {{ reason() }}</span>
+      @case ('chip') {
+        <span class="line" data-hold-chip [attr.title]="title()"
+          ><i class="pi pi-pause" aria-hidden="true"></i><span class="mf-sr-only">On hold: </span
+          >{{ reason() }}</span
+        >
       }
       @default {
         <span class="line" data-hold-reason [attr.title]="title()">{{ reason() }}</span>
@@ -64,11 +67,12 @@ export function holdTitle(row: {
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    :host([data-kind='hint']) .line {
+    :host([data-kind='chip']) .line {
       max-width: none;
+      line-height: 18px;
     }
-    :host([data-kind='hint']) {
-      display: none;
+    :host([data-kind='chip']) .pi {
+      margin-right: var(--mf-s1);
     }
     :host(.quiet) .line {
       position: absolute;
@@ -76,18 +80,6 @@ export function holdTitle(row: {
       height: 1px;
       overflow: hidden;
       clip-path: inset(50%);
-    }
-    @media (max-width: 480px) {
-      :host([data-kind='hint']) {
-        display: block;
-      }
-      :host([data-kind='reason']) .line {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip-path: inset(50%);
-      }
     }
     @media (forced-colors: active) {
       .line,
@@ -98,7 +90,7 @@ export function holdTitle(row: {
   `,
 })
 export class HoldNote {
-  readonly kind = input<'mark' | 'reason' | 'hint'>('reason');
+  readonly kind = input<'mark' | 'reason' | 'chip'>('reason');
   readonly holdReason = input<string | null | undefined>(null);
   readonly truncated = input(false);
   /** Compact density: the line is not drawn, only the tooltip and the accessible text stay. */

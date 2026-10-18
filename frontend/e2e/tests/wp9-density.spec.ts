@@ -61,7 +61,7 @@ async function worker(seed: Seeder, label: string) {
 function rowsInView(page: Page): Promise<number> {
   return page.evaluate(() => {
     const box = (document.querySelector('.wt-wrap') as HTMLElement).getBoundingClientRect();
-    return Array.from(document.querySelectorAll('tbody tr[data-task]')).filter(
+    return Array.from(document.querySelectorAll('[data-task]')).filter(
       (r) => r.getBoundingClientRect().bottom <= box.bottom + 1,
     ).length;
   });
@@ -84,7 +84,7 @@ function overflow(page: Page): Promise<{ scroll: number; client: number }> {
 /** True for every title link that fits on one line. */
 function titleLines(page: Page): Promise<number[]> {
   return page.evaluate(() =>
-    Array.from(document.querySelectorAll('tbody tr[data-task] a.wt-title')).map(
+    Array.from(document.querySelectorAll('[data-task] a.wt-title')).map(
       (a) => a.getBoundingClientRect().height,
     ),
   );
@@ -111,7 +111,7 @@ test.describe('Density and space', () => {
 
     await page.setViewportSize({ width: 1366, height: 768 });
     await myWork.open();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(count);
+    await expect(page.locator('[data-task]')).toHaveCount(count);
     expect(await chromeHeight(page), 'chrome above the grid, strip included').toBeLessThanOrEqual(
       230,
     );
@@ -133,7 +133,7 @@ test.describe('Density and space', () => {
 
     await page.setViewportSize({ width: 1920, height: 1080 });
     await myWork.open();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(count);
+    await expect(page.locator('[data-task]')).toHaveCount(count);
     expect(await rowsInView(page)).toBeGreaterThanOrEqual(14);
     for (const h of await titleLines(page)) expect(h).toBeLessThanOrEqual(40);
     await shot(page, 'm3-active-1920x1080');
@@ -143,7 +143,7 @@ test.describe('Density and space', () => {
     for (const width of [1024, 1180, 1280]) {
       await page.setViewportSize({ width, height: 768 });
       await myWork.open();
-      await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+      await expect(page.locator('[data-task]').first()).toBeVisible();
       const o = await overflow(page);
       expect(o.scroll, `no sideways scroll at ${width}`).toBeLessThanOrEqual(o.client);
     }
@@ -152,7 +152,7 @@ test.describe('Density and space', () => {
     // The Due column keeps its width when its filter popover opens and when a range is chosen.
     await page.setViewportSize({ width: 1366, height: 768 });
     await myWork.open('?view=active');
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(count);
+    await expect(page.locator('[data-task]')).toHaveCount(count);
     const due = page.locator('thead tr').first().locator('th[data-col="due"]');
     const before = (await due.boundingBox())!.width;
     expect(before, 'Due is about 210 px').toBeLessThan(230);
@@ -176,7 +176,7 @@ test.describe('Density and space', () => {
     const queue = new TaskQueuePage(page);
     await queue.open();
     await queue.search(tag);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     for (const h of await titleLines(page)) expect(h).toBeLessThanOrEqual(40);
     const o = await overflow(page);
     expect(o.scroll).toBeLessThanOrEqual(o.client);
@@ -184,7 +184,7 @@ test.describe('Density and space', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await queue.open();
     await queue.search(tag);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     for (const h of await titleLines(page)) expect(h).toBeLessThanOrEqual(40);
     await shot(page, 'm3-task-queue-1366x768');
   });
@@ -205,7 +205,7 @@ test.describe('Density and space', () => {
     ]) {
       await page.setViewportSize({ width, height });
       await myWork.open();
-      await expect(page.locator('tbody tr[data-task]')).toHaveCount(count);
+      await expect(page.locator('[data-task]')).toHaveCount(count);
       const o = await overflow(page);
       if (o.scroll > o.client + 1) {
         // #201: the one narrow-box rule dropped every column it may; the never-dropped ones (Ref, Title, Matter, Priority, Due, Status)
@@ -228,7 +228,7 @@ test.describe('Density and space', () => {
         const wrap = (await page.locator('.wt-wrap').boundingBox())!;
         for (const col of ['priority', 'due', 'status']) {
           const cell = (await page
-            .locator('tbody tr[data-task]')
+            .locator('[data-task]')
             .first()
             .locator(`td[data-col="${col}"]`)
             .boundingBox())!;
@@ -248,7 +248,7 @@ test.describe('Density and space', () => {
       expect(first).toBe('ref');
       await expect(page.locator('[data-sub-task], .wt-subline')).toHaveCount(0);
       // The whole status badge is readable (not clipped to a letter).
-      const status = page.locator('tbody tr[data-task]').first().locator('td[data-col="status"]');
+      const status = page.locator('[data-task]').first().locator('td[data-col="status"]');
       expect(await status.evaluate((n) => n.scrollWidth <= n.clientWidth + 1)).toBe(true);
       if (width === 768) {
         await shot(page, 'bug14-active-768x1024');
@@ -276,7 +276,7 @@ test.describe('Density and space', () => {
       ],
     );
     await myWork.open();
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     const wide = await overflow(page);
     expect(wide.scroll).toBeGreaterThan(wide.client);
     await expect(page.locator('[data-scroll-hint]')).toBeVisible();
@@ -293,10 +293,11 @@ test.describe('Density and space', () => {
     await shot(page, 'bug14-wide-set-hint-768x1024');
     await axeClean(page, 'My Work 768 wide set');
 
-    // Below 640 px the table stays as it was (cards come later): sideways scroll with the hint.
+    // Below 640 px the list is cards (#192): nothing scrolls sideways, so there is no hint.
     await page.setViewportSize({ width: 375, height: 812 });
     await myWork.open();
-    await expect(page.locator('[data-scroll-hint]')).toBeVisible();
+    await expect(page.locator('li[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-scroll-hint]')).toBeHidden();
     await shot(page, 'bug14-active-375x812');
     await axeClean(page, 'My Work 375');
   });
@@ -310,11 +311,11 @@ test.describe('Density and space', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const myWork = new MyWorkPage(page);
     await myWork.open();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(count);
+    await expect(page.locator('[data-task]')).toHaveCount(count);
     const comfortable = await rowsInView(page);
     await setDensity(page, 'Compact');
     const heights = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('tbody tr[data-task]')).map(
+      Array.from(document.querySelectorAll('[data-task]')).map(
         (r) => r.getBoundingClientRect().height,
       ),
     );
@@ -324,7 +325,7 @@ test.describe('Density and space', () => {
     expect(await rowsInView(page)).toBeGreaterThan(comfortable);
     for (const h of await titleLines(page)) expect(h, 'one-line titles').toBeLessThan(28);
     // #196: no line under the title in either density; the tooltip of the link is the whole title.
-    const first = page.locator('tbody tr[data-task]').first();
+    const first = page.locator('[data-task]').first();
     await expect(page.locator('.wt-subline, [data-title-context]')).toHaveCount(0);
     const tip = (await first.locator('a.wt-title').getAttribute('title')) ?? '';
     expect(tip).not.toContain('\n');
@@ -351,7 +352,7 @@ test.describe('Density and space', () => {
     // 1920x1080 and the density is remembered across a reload.
     await page.setViewportSize({ width: 1920, height: 1080 });
     await myWork.open();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(count);
+    await expect(page.locator('[data-task]')).toHaveCount(count);
     expect(await rowsInView(page)).toBeGreaterThanOrEqual(count);
     await shot(page, 'compact-1920x1080');
 
@@ -359,7 +360,7 @@ test.describe('Density and space', () => {
     const queue = new TaskQueuePage(page);
     await queue.open();
     await queue.search(tag);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     await expect(page.locator('table.wt')).not.toHaveClass(/wt--compact/);
     await myWork.open();
     await setDensity(page, 'Comfortable');
@@ -409,7 +410,7 @@ test.describe('Density and space', () => {
 
     hold = false;
     release();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(count);
+    await expect(page.locator('[data-task]')).toHaveCount(count);
     await expect(body.locator('tr[data-skeleton]')).toHaveCount(0);
     const titleAfter = (await page.locator('thead th[data-col="title"]').boundingBox())!.width;
     expect(
@@ -431,13 +432,13 @@ test.describe('Density and space', () => {
     });
     await myWork.tab(/^Created by me/).click();
     await expect(body.locator('tr[data-skeleton]')).toHaveCount(8);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(0);
+    await expect(page.locator('[data-task]')).toHaveCount(0);
     await shot(page, 'g4-loading-tab-switch-1366x768');
     hold = false;
     release();
     await expect(body.locator('tr[data-skeleton]')).toHaveCount(0);
     await myWork.tab(/^Active/).click();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(count);
+    await expect(page.locator('[data-task]')).toHaveCount(count);
   });
 
   test('G4: reduced motion switches the shimmer off', async ({ seed, asUser }) => {

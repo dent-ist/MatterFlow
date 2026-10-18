@@ -29,7 +29,7 @@ const SIZES = [
 
 /** The tagged titles of the rows on screen, in order. */
 async function order(page: Page, tag: string): Promise<string[]> {
-  const rows = await page.locator('tbody tr[data-task]').allTextContents();
+  const rows = await page.locator('[data-task]').allTextContents();
   return rows
     .map((t) => new RegExp(`(\\p{L}+) ${tag}`, 'u').exec(t)?.[1])
     .filter((t): t is string => !!t);
@@ -53,7 +53,7 @@ test.describe('My Work sorts, Closed column and column sets', () => {
     const myWork = new MyWorkPage(page);
     await myWork.open();
     await myWork.search(tag);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(5);
+    await expect(page.locator('[data-task]')).toHaveCount(5);
 
     const sortButton = (name: string) => page.locator(`th[data-col="${name}"] button`);
     const header = (name: string) => page.locator(`th[data-col="${name}"]`);
@@ -115,7 +115,7 @@ test.describe('My Work sorts, Closed column and column sets', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const myWork = new MyWorkPage(page);
     await myWork.open('?view=completed');
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(3);
+    await expect(page.locator('[data-task]')).toHaveCount(3);
 
     const closed = page.locator('th[data-col="closed"]');
     await expect(closed).toBeVisible();
@@ -207,7 +207,7 @@ test.describe('My Work sorts, Closed column and column sets', () => {
     for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });
       await myWork.open('?view=completed');
-      await expect(page.locator('tbody tr[data-task]')).toHaveCount(2);
+      await expect(page.locator('[data-task]')).toHaveCount(2);
       expect(await axeViolations(page), `closed at ${w}`).toEqual([]);
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

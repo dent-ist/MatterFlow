@@ -110,7 +110,7 @@ test.describe('Narrow rule (#201)', () => {
       ]) {
         await c.page.setViewportSize({ width, height });
         await c.open(c.page);
-        await expect(c.page.locator('tbody tr[data-task]').first()).toBeVisible();
+        await expect(c.page.locator('[data-task]').first()).toBeVisible();
         const g = await grid(c.page);
         const what = `${c.name} at ${width}`;
         // Ref is the first column and Title is never folded under anything.
@@ -138,7 +138,7 @@ test.describe('Narrow rule (#201)', () => {
           expect(g.hint, `${what}: no hint`).toBe(false);
           expect(g.title, `${what}: Title`).toBeGreaterThanOrEqual(160);
           const status = (await c.page
-            .locator('tbody tr[data-task]')
+            .locator('[data-task]')
             .first()
             .locator('td[data-col="status"]')
             .boundingBox())!;
@@ -166,12 +166,12 @@ test.describe('Narrow rule (#201)', () => {
     const q = `?q=${encodeURIComponent(tag)}`;
     await page.setViewportSize({ width: 1366, height: 768 });
     await queue.open(q);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     const g1366 = await grid(page);
     const gutter = 1366 - g1366.client;
     await page.setViewportSize({ width: 1098 + gutter, height: 768 });
     await queue.open(q);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     const g = await grid(page);
     expect(g.client).toBe(1098);
     expect(g.scroll).toBeLessThanOrEqual(g.client);
@@ -185,7 +185,7 @@ test.describe('Narrow rule (#201)', () => {
     ] as const) {
       await page.setViewportSize({ width, height });
       await queue.open(q);
-      await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+      await expect(page.locator('[data-task]').first()).toBeVisible();
       const w = await grid(page);
       expect(w.scroll, name).toBeLessThanOrEqual(w.client);
       await shot(page, `task-queue-${name}`);
@@ -193,7 +193,7 @@ test.describe('Narrow rule (#201)', () => {
     }
     await page.setViewportSize({ width: 375, height: 812 });
     await queue.open(q);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     await shot(page, 'task-queue-375x812');
   });
 
@@ -223,7 +223,7 @@ test.describe('Narrow rule (#201)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open(`?q=${encodeURIComponent(tag)}`);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     // Ref 112 + Matter 160 + Client 140 + Type 140 + Priority 112 + Assignee 136 + Due 136 + Status 140 = 1076 px of columns.
     const g = await grid(page);
     const full = 1076 + 200;
@@ -244,7 +244,8 @@ test.describe('Priority and Status triggers (#202)', () => {
     ['1366x768', 1366, 768],
     ['1920x1080', 1920, 1080],
     ['768x1024', 768, 1024],
-    ['375x812', 375, 812],
+    // The narrowest table: below 640 px the list is cards (#192).
+    ['640x900', 640, 900],
   ] as const) {
     test(`the chevron is inside the cell at ${name}: one control, at least 24 px, inside the cell padding, axe clean`, async ({
       seed,
@@ -262,7 +263,7 @@ test.describe('Priority and Status triggers (#202)', () => {
       await page.setViewportSize({ width, height });
       const queue = new TaskQueuePage(page);
       await queue.open(`?q=${encodeURIComponent(tag)}`);
-      await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+      await expect(page.locator('[data-task]').first()).toBeVisible();
       for (const density of ['comfortable', 'compact'] as const) {
         if (density === 'compact') {
           await page.getByRole('button', { name: 'Columns', exact: true }).click();
@@ -273,7 +274,7 @@ test.describe('Priority and Status triggers (#202)', () => {
           const out: string[] = [];
           for (const col of ['priority', 'status']) {
             document
-              .querySelectorAll<HTMLElement>(`tbody tr[data-task] td[data-col="${col}"]`)
+              .querySelectorAll<HTMLElement>(`[data-task] td[data-col="${col}"]`)
               .forEach((td) => {
                 const cs = getComputedStyle(td);
                 const left = td.getBoundingClientRect().left + parseFloat(cs.paddingLeft);
@@ -312,7 +313,7 @@ test.describe('Priority and Status triggers (#202)', () => {
         expect(widths['status']).toBeLessThanOrEqual(140.5);
       }
       // Keyboard: the P and S keys still open the menus (WP12b selectors).
-      await page.locator('tbody tr[data-task] a.wt-title').first().focus();
+      await page.locator('[data-task] a.wt-title').first().focus();
       await page.keyboard.press('p');
       await expect(page.locator('.im-pop')).toBeVisible();
       await page.keyboard.press('Escape');
@@ -355,7 +356,7 @@ test.describe('Stored widths (#203)', () => {
     );
     const queue = new TaskQueuePage(page);
     await queue.open(`?q=${encodeURIComponent(tag)}`);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(Math.abs((await widthOf(page, 'due')) - 182)).toBeLessThanOrEqual(1);
     // Over the maximum: clamped to 320 px; a string and the Title are ignored.
     expect(Math.abs((await widthOf(page, 'matter')) - 320)).toBeLessThanOrEqual(1);
@@ -365,11 +366,11 @@ test.describe('Stored widths (#203)', () => {
 
     // My Work keeps its own width, and Task Queue still has its own after coming back.
     await new MyWorkPage(page).open();
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(Math.abs((await widthOf(page, 'due')) - 126)).toBeLessThanOrEqual(1);
     await page.getByRole('link', { name: 'Task Queue' }).first().click();
     await expect(page.getByRole('heading', { name: 'Task Queue', level: 1 })).toBeVisible();
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(Math.abs((await widthOf(page, 'due')) - 182)).toBeLessThanOrEqual(1);
 
     // The storage is independent of the column set and of the density: the Compact density keeps the widths.
@@ -381,7 +382,7 @@ test.describe('Stored widths (#203)', () => {
     // Reset (the store's resetWidths removes the key of the scope): defaults return, other scopes keep theirs.
     await page.evaluate((k) => localStorage.removeItem(k), key('taskQueue'));
     await page.reload();
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(Math.abs((await widthOf(page, 'due')) - 136)).toBeLessThanOrEqual(1);
     expect(
       await page.evaluate((k) => localStorage.getItem(k), key('myWork.active')),
@@ -403,7 +404,7 @@ test.describe('Stored widths (#203)', () => {
     );
     const queue = new TaskQueuePage(page);
     await queue.open(`?q=${encodeURIComponent(tag)}`);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(Math.abs((await widthOf(page, 'due')) - 136)).toBeLessThanOrEqual(1);
 
     // Storage that throws for the width keys only.
@@ -415,7 +416,7 @@ test.describe('Stored widths (#203)', () => {
       };
     });
     await queue.open(`?q=${encodeURIComponent(tag)}`);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(Math.abs((await widthOf(page, 'due')) - 136)).toBeLessThanOrEqual(1);
     expect(errors).toEqual([]);
   });

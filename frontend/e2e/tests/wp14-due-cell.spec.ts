@@ -98,7 +98,7 @@ test.describe('Due cell (#209)', () => {
       await page.setViewportSize({ width, height });
       await queue.open(`?q=${tag}&status=NEW&status=COMPLETED`);
       await expect(
-        page.locator('tbody tr[data-task]', { hasText: title('asap') }).locator('.dc'),
+        page.locator('[data-task]', { hasText: title('asap') }).locator('.dc'),
       ).toBeVisible();
       // One round trip for the whole page: the machine running the suite is loaded.
       const facts = await page.evaluate(
@@ -113,10 +113,10 @@ test.describe('Due cell (#209)', () => {
           };
           const out: Record<string, unknown> = {};
           for (const [key, needle] of Object.entries(needles)) {
-            const row = Array.from(document.querySelectorAll('tbody tr[data-task]')).find((r) =>
+            const row = Array.from(document.querySelectorAll('[data-task]')).find((r) =>
               r.textContent?.includes(needle),
             );
-            const root = row?.querySelector('td[data-col="due"] .dc');
+            const root = row?.querySelector('[data-col="due"] .dc');
             if (!root) {
               out[key] = null;
               continue;
@@ -178,6 +178,8 @@ test.describe('Due cell (#209)', () => {
           icons: string[];
           ratio: number;
         } | null;
+        // A closed task has no Due on a phone card (it shows its closed date, #192).
+        if (!f && width < 640 && s.key === 'closed') continue;
         expect(f, `${s.key} is listed at ${width}`).not.toBeNull();
         if (!f) continue;
         expect(f.tone, `${s.key} tone`).toBe(s.tone);
@@ -231,7 +233,7 @@ test.describe('Due cell (#209)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open(`?q=${tag}`);
-    const row = page.locator(`tr[data-task="${late.taskNumber}"]`);
+    const row = page.locator(`[data-task="${late.taskNumber}"]`);
     const cell = row.locator('td[data-col="due"]');
     await expect(cell.locator('.dc-l2')).toContainText('Overdue 4d');
     await expect(page.getByRole('cell', { name: /overdue 4 days/ })).toHaveCount(1);
@@ -252,11 +254,11 @@ test.describe('Due cell (#209)', () => {
     expect(b2.x + b2.width - b1.x, 'fits the 136 px column').toBeLessThanOrEqual(136);
     expect((await row.boundingBox())!.height).toBeLessThanOrEqual(40);
     // The longest relative text is never clipped at 136 px; only the date may give way.
-    const longRoot = page.locator(`tr[data-task="${longest.taskNumber}"] td[data-col="due"] .dc`);
+    const longRoot = page.locator(`[data-task="${longest.taskNumber}"] td[data-col="due"] .dc`);
     await expect(longRoot.locator('.dc-l2')).toHaveText('Overdue 120d');
     const l2 = (await longRoot.locator('.dc-l2').boundingBox())!;
     const td = (await page
-      .locator(`tr[data-task="${longest.taskNumber}"] td[data-col="due"]`)
+      .locator(`[data-task="${longest.taskNumber}"] td[data-col="due"]`)
       .boundingBox())!;
     expect(l2.x + l2.width, 'Overdue 120d inside the cell').toBeLessThanOrEqual(td.x + td.width);
     await shot(page, 'due-cell-compact-1366x768');

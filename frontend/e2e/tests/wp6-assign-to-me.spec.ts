@@ -125,7 +125,7 @@ test.describe('WP6: Assign to me', () => {
       await trigger.scrollIntoViewIfNeeded();
       // The rows with the menu closed, then the open menu itself (a floating menu partly covers header buttons on a phone, and the
       // sideways-scrolled header of the Task Queue at 375 px already has a target-size finding of its own, outside this package).
-      await axeClean(page, `Task Queue rows ${size.name}`, 'tbody');
+      await axeClean(page, `Task Queue rows ${size.name}`, 'tbody, ul.tc-list');
       await trigger.click();
       await expect(
         page.getByRole('button', { name: `Assign ${task.taskNumber} to me`, exact: true }),

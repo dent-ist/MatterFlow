@@ -114,9 +114,8 @@ describe('TaskTable', () => {
       const mark = cell('ref').querySelector('[data-hold-mark]')!;
       expect(mark.getAttribute('aria-label')).toBe('On hold');
       expect(mark.getAttribute('role')).toBe('img');
-      expect(cell('title').querySelector('[data-hold-hint]')!.textContent).toContain(
-        'Waiting: Waiting for the custodian',
-      );
+      // The "Waiting: ..." line under the title is gone (phone cards carry the reason, #192).
+      expect(cell('title').querySelector('[data-hold-hint]')).toBeNull();
       expect(cell('title').querySelector('.wt-title')!.classList.contains('wt-dim')).toBe(false);
     });
 

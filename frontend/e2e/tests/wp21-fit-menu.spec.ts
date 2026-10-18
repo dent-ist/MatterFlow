@@ -54,22 +54,18 @@ const storedWidth = async (page: Page, key: string): Promise<number | undefined>
 async function clippedCells(page: Page, key: string): Promise<string[]> {
   return page.evaluate((k) => {
     const out: string[] = [];
-    document
-      .querySelectorAll<HTMLElement>(`tbody tr[data-task] td[data-col="${k}"]`)
-      .forEach((td) => {
-        const cut = (e: HTMLElement) => e.scrollWidth > e.clientWidth + 1;
-        if (cut(td))
-          out.push(`${td.textContent?.trim()} (cell ${td.scrollWidth} > ${td.clientWidth})`);
-        td.querySelectorAll<HTMLElement>('*').forEach((e) => {
-          const box = e.getBoundingClientRect();
-          if (box.width <= 2 && box.height <= 2) return; // screen-reader-only text
-          const style = getComputedStyle(e);
-          if ((style.overflow !== 'visible' || style.textOverflow === 'ellipsis') && cut(e))
-            out.push(
-              `${e.textContent?.trim()} (${e.className} ${e.scrollWidth} > ${e.clientWidth})`,
-            );
-        });
+    document.querySelectorAll<HTMLElement>(`[data-task] td[data-col="${k}"]`).forEach((td) => {
+      const cut = (e: HTMLElement) => e.scrollWidth > e.clientWidth + 1;
+      if (cut(td))
+        out.push(`${td.textContent?.trim()} (cell ${td.scrollWidth} > ${td.clientWidth})`);
+      td.querySelectorAll<HTMLElement>('*').forEach((e) => {
+        const box = e.getBoundingClientRect();
+        if (box.width <= 2 && box.height <= 2) return; // screen-reader-only text
+        const style = getComputedStyle(e);
+        if ((style.overflow !== 'visible' || style.textOverflow === 'ellipsis') && cut(e))
+          out.push(`${e.textContent?.trim()} (${e.className} ${e.scrollWidth} > ${e.clientWidth})`);
       });
+    });
     return out;
   }, key);
 }
@@ -103,7 +99,7 @@ async function seedLong(
 
 async function openQueue(page: Page, tag: string, rows: number): Promise<void> {
   await new TaskQueuePage(page).open(`?q=${encodeURIComponent(tag)}`);
-  await expect(page.locator('tbody tr[data-task]')).toHaveCount(rows);
+  await expect(page.locator('[data-task]')).toHaveCount(rows);
 }
 
 test.describe('Fit to content (#205)', () => {
@@ -154,7 +150,7 @@ test.describe('Fit to content (#205)', () => {
     await shot(page, 'fit-all-1366x768');
 
     await page.reload();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(4);
+    await expect(page.locator('[data-task]')).toHaveCount(4);
     for (const key of ['matter', 'assignee', 'due', 'status']) {
       expect(Math.round(await width(page, key))).toBe(fitted[key]);
       expect(await clippedCells(page, key), `${key} after reload`).toEqual([]);
@@ -195,9 +191,8 @@ test.describe('Fit to content (#205)', () => {
     await openQueue(page, tag, 2);
     await page.evaluate(() => {
       const body = document.querySelector('tbody')!;
-      const first = body.querySelector('tr[data-task]')!;
-      while (body.querySelectorAll('tr[data-task]').length < 200)
-        body.append(first.cloneNode(true));
+      const first = body.querySelector('[data-task]')!;
+      while (body.querySelectorAll('[data-task]').length < 200) body.append(first.cloneNode(true));
     });
     await handle(page, 'matter').dblclick();
     await expect
@@ -259,7 +254,7 @@ test.describe('Column header menu (#207)', () => {
 
     // Reload keeps it.
     await page.reload();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(4);
+    await expect(page.locator('[data-task]')).toHaveCount(4);
     expect(Math.round(await width(page, 'due'))).toBe(128);
 
     // Reset width returns the default and empties the store.
@@ -465,7 +460,7 @@ test.describe('Column header menu (#207)', () => {
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
     await page.reload();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(4);
+    await expect(page.locator('[data-task]')).toHaveCount(4);
 
     const box = (await sortButton(page, 'matter').boundingBox())!;
     const x = box.x + box.width / 2;
@@ -512,22 +507,10 @@ test.describe('Column header menu (#207)', () => {
     }
     await page.setViewportSize({ width: 375, height: 812 });
     await openQueue(page, tag, 4);
-    const header = th(page, 'due');
-    const event = await header.evaluate((el) => {
-      const e = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
-      el.dispatchEvent(e);
-      return e.defaultPrevented;
-    });
-    expect(event, 'the browser menu is left alone on a phone').toBe(false);
-    await sortButton(page, 'due').focus();
-    await page.keyboard.press('Shift+F10');
-    await expect(menu(page)).toHaveCount(0);
-    expect(
-      await page
-        .locator('thead .wt-resize')
-        .evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).length),
-    ).toBe(0);
-    expect(await page.locator('thead th[tabindex]').count()).toBe(0);
+    // Below 640 px the list is cards (#192): no headers, so no menu, no handle and no extra tab stop.
+    await expect(page.locator('thead')).toHaveCount(0);
+    await expect(page.locator('.wt-resize')).toHaveCount(0);
+    await expect(page.locator('[data-task] [tabindex]:not(a):not(button)')).toHaveCount(0);
     await axeClean(page, 'phone');
     await shot(page, 'no-menu-375x812');
   });

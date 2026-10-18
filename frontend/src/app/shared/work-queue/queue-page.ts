@@ -45,6 +45,7 @@ import {
 import { QueueChoices, mergeOptions } from './queue-choices';
 import { RowLeaving } from './row-leaving';
 import { WorkListState } from './work-list';
+import { SortChoice } from './phone-sort';
 import { DUE_SOON_DAYS, RECENT_WINDOW_DAYS } from './work-vocabulary';
 
 /** Sorts whose first click goes newest first. */
@@ -482,7 +483,7 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   private rowInUse(taskId: number): boolean {
     const row = this.rows().find((r) => r.taskId === taskId);
     if (!row) return false;
-    const tr = this.document.querySelector(`tr[data-task="${row.taskNumber}"]`);
+    const tr = this.document.querySelector(`[data-task="${row.taskNumber}"]`);
     return !!tr?.querySelector('[data-inline-trigger][aria-expanded="true"]');
   }
 
@@ -491,10 +492,10 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     const data = this.data();
     const row = data?.items.find((r) => r.taskId === taskId);
     if (!data || !row) return;
-    const tr = this.document.querySelector<HTMLElement>(`tr[data-task="${row.taskNumber}"]`);
+    const tr = this.document.querySelector<HTMLElement>(`[data-task="${row.taskNumber}"]`);
     const active = this.document.activeElement;
     const hadFocus = !!tr && !!active && tr.contains(active);
-    const column = active?.closest('td')?.getAttribute('data-col') ?? null;
+    const column = active?.closest('[data-col]')?.getAttribute('data-col') ?? null;
     const next = tr?.nextElementSibling as HTMLElement | null;
     const wrap = tr?.closest<HTMLElement>('[role="region"]') ?? null;
     const items = data.items.filter((r) => r.taskId !== taskId);
@@ -505,7 +506,7 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
         const target =
           (next?.isConnected
             ? (next.querySelector<HTMLElement>(
-                `td[data-col="${column}"] a, td[data-col="${column}"] button`,
+                `[data-col="${column}"] a, [data-col="${column}"] button`,
               ) ?? next.querySelector<HTMLElement>('a, button'))
             : null) ?? wrap;
         target?.focus();
@@ -575,6 +576,15 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
 
   protected resetSort(): void {
     this.navigate({ ...this.state(), sort: null, dir: null, page: 1 });
+  }
+
+  /** The phone's Sort by select (#192): a field and a direction like a header sort, or null for the default order. */
+  protected pickSort(choice: SortChoice | null): void {
+    if (!choice) {
+      this.resetSort();
+      return;
+    }
+    this.navigate({ ...this.state(), group: null, sort: choice.field, dir: choice.dir, page: 1 });
   }
 
   protected goToPage(page: number): void {

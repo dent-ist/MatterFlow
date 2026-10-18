@@ -96,6 +96,11 @@ let nextId = 0;
       .mf-pager__edge {
         display: none;
       }
+      /* Touch targets on a phone (#192, #238). */
+      .mf-btn {
+        min-width: 44px;
+        min-height: 44px;
+      }
     }
   `,
 })

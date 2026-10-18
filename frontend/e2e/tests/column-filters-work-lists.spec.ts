@@ -191,7 +191,7 @@ test.describe('Column filters on the work lists', () => {
       );
       // The view is remembered once the list has loaded (it can be empty: the priority is just a filter to remember).
       await expect(page.locator('tbody [data-loading]')).toHaveCount(0);
-      await expect(page.locator('tr[data-task], tbody [data-empty]').first()).toBeVisible();
+      await expect(page.locator('[data-task], tbody [data-empty]').first()).toBeVisible();
 
       // Same browser, plain link: the view comes back (the search text is not remembered) and says so.
       await page.goto('/tasks');
@@ -254,7 +254,7 @@ test.describe('Column filters on the work lists', () => {
       await expect(page.locator('tbody [data-loading]')).toBeVisible();
       await expect(page.locator('thead th').first()).toBeVisible();
       await expect(text(page, 'Title or Ref')).toBeVisible();
-      await expect(page.locator('tr[data-task]')).toHaveCount(1);
+      await expect(page.locator('[data-task]')).toHaveCount(1);
       await page.unroute('**/api/v1/task-queue**');
 
       // Empty because of the filters: the message and Clear filters sit in the body.
@@ -284,7 +284,7 @@ test.describe('Column filters on the work lists', () => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await seed.task(await seed.world(), { title: `Slash ${uid()}` });
       await page.goto('/tasks');
-      await expect(page.locator('tr[data-task]').first()).toBeVisible();
+      await expect(page.locator('[data-task]').first()).toBeVisible();
       await page.locator('h1').click();
       await page.keyboard.press('/');
       await expect(text(page, 'Title or Ref')).toBeFocused();
@@ -440,8 +440,8 @@ test.describe('Column filters on the work lists', () => {
 
       await page.goto(`/matters/${world.matter.matterId}?tab=tasks`);
       const tasks = page.locator('mf-scoped-tasks');
-      await expect(tasks.locator(`tr[data-task="${open.taskNumber}"]`)).toBeVisible();
-      await expect(tasks.locator(`tr[data-task="${closed.taskNumber}"]`)).toHaveCount(0);
+      await expect(tasks.locator(`[data-task="${open.taskNumber}"]`)).toBeVisible();
+      await expect(tasks.locator(`[data-task="${closed.taskNumber}"]`)).toHaveCount(0);
       await expect(page.locator('[data-status-filter]')).toHaveCount(0);
       await expect(tasks.locator('tr[data-filter-row]')).toHaveCount(0); // closed by default
 
@@ -449,13 +449,13 @@ test.describe('Column filters on the work lists', () => {
       await expect(tasks.locator('tr[data-filter-row]')).toBeVisible();
       await expect(multi(page, 'Status')).toContainText('Open');
       await page.goto(`/matters/${world.matter.matterId}?tab=tasks&status=`);
-      await expect(tasks.locator(`tr[data-task="${closed.taskNumber}"]`)).toBeVisible();
+      await expect(tasks.locator(`[data-task="${closed.taskNumber}"]`)).toBeVisible();
       await expect(multi(page, 'Status')).toContainText('All');
 
       // Project on a Matter: a choice of its projects.
       await page.goto(`/matters/${world.matter.matterId}?tab=tasks&project=${project.projectId}`);
-      await expect(tasks.locator(`tr[data-task="${open.taskNumber}"]`)).toBeVisible();
-      await expect(tasks.locator(`tr[data-task="${closed.taskNumber}"]`)).toHaveCount(0);
+      await expect(tasks.locator(`[data-task="${open.taskNumber}"]`)).toBeVisible();
+      await expect(tasks.locator(`[data-task="${closed.taskNumber}"]`)).toHaveCount(0);
       await expect(page.getByRole('combobox', { name: 'Filter by Project' })).toBeVisible();
       await text(page, 'Title or Ref').fill(`nothing-${token}`);
       await expect(tasks.locator('td[data-empty="filtered"]')).toContainText(
@@ -470,9 +470,7 @@ test.describe('Column filters on the work lists', () => {
 
       // A Project's own tasks have no Project filter.
       await page.goto(`/projects/${project.projectId}`);
-      await expect(
-        page.locator(`mf-scoped-tasks tr[data-task="${open.taskNumber}"]`),
-      ).toBeVisible();
+      await expect(page.locator(`mf-scoped-tasks [data-task="${open.taskNumber}"]`)).toBeVisible();
       // The open state is remembered per screen, and this browser opened the row on the Matter's grid above.
       await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true');
       await expect(text(page, 'Title or Ref')).toBeVisible();
@@ -506,7 +504,7 @@ test.describe('Column filters on the work lists', () => {
       await expect(sheet(page)).toHaveCount(0);
       await expect(chips(page)).toContainText(`Title or Ref: ${token}`);
       await expect(toggle(page)).toHaveText(/\(1\)/);
-      await expect(page.locator('tr[data-task]')).toHaveCount(1);
+      await expect(page.locator('[data-task]')).toHaveCount(1);
     });
   });
 

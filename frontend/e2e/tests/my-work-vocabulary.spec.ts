@@ -97,7 +97,7 @@ test.describe('My Work vocabulary and tab rules', () => {
 
     // D1: overdue first (oldest due first), then the due date; ASAP and the far one are not here.
     const titles = async () =>
-      (await page.locator('tbody tr[data-task]').allTextContents()).map(
+      (await page.locator('[data-task]').allTextContents()).map(
         (t) => /(Over13|Over5|Over1|Today|Tomorrow|Asap|Far)/.exec(t)?.[1],
       );
     expect(await titles()).toEqual(['Over13', 'Over5', 'Over1', 'Today', 'Tomorrow']);
@@ -236,7 +236,7 @@ test.describe('My Work vocabulary and tab rules', () => {
       await page.setViewportSize({ width: w, height: h });
       for (const view of ['dueSoon', 'completed'] as const) {
         await myWork.open(`?view=${view}`);
-        await expect(page.locator('tbody')).not.toContainText('Loading');
+        await expect(page.locator('[data-loading]')).toHaveCount(0);
         expect(await axeViolations(page), `${view} at ${w}`).toEqual([]);
         const overflow = await page.evaluate(
           () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

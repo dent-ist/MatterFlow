@@ -54,7 +54,7 @@ test.describe('Round 4: layout and responsive', () => {
       await page.goto(path);
       const wrap = page.locator('.wt-wrap');
       await expect(wrap).toBeVisible();
-      await expect(page.locator('tr[data-task]').first()).toBeVisible();
+      await expect(page.locator('[data-task]').first()).toBeVisible();
       const over = await wrap.evaluate((el) => el.scrollWidth - el.clientWidth);
       if (mayScroll && over > 1) {
         // #201: Matter is never dropped, so the default Task Queue set (796 px plus a 160 px Title) needs a 956 px box; a 1024 px
@@ -69,7 +69,7 @@ test.describe('Round 4: layout and responsive', () => {
       }
       expect(over, `${path} at ${width}`).toBeLessThanOrEqual(1);
       for (const column of ['due', 'status']) {
-        const cell = page.locator(`tr[data-task] td[data-col="${column}"]`).first();
+        const cell = page.locator(`[data-task] td[data-col="${column}"]`).first();
         const cellBox = (await cell.boundingBox())!;
         const wrapBox = (await wrap.boundingBox())!;
         expect(
@@ -92,10 +92,10 @@ test.describe('Round 4: layout and responsive', () => {
     const world = await seed.world();
     const task = await seed.task(world, { title: `Context ${uid()}` });
     await page.goto(`/matters/${world.matter.matterId}?tab=tasks`);
-    await expect(page.locator(`tr[data-task="${task.taskNumber}"]`)).toBeVisible();
+    await expect(page.locator(`[data-task="${task.taskNumber}"]`)).toBeVisible();
     await expect(page.locator('[data-title-context], .wt-subline')).toHaveCount(0);
     await page.goto(`/tasks?q=${encodeURIComponent(task.title)}`);
-    await expect(page.locator(`tr[data-task="${task.taskNumber}"]`)).toBeVisible();
+    await expect(page.locator(`[data-task="${task.taskNumber}"]`)).toBeVisible();
     await expect(page.locator('[data-title-context], .wt-subline')).toHaveCount(0);
   });
 
@@ -117,7 +117,7 @@ test.describe('Round 4: layout and responsive', () => {
       );
     }, me.userId);
     await page.goto('/my-work');
-    const row = page.locator(`tr[data-task="${task.taskNumber}"]`);
+    const row = page.locator(`[data-task="${task.taskNumber}"]`);
     await expect(row).toBeVisible();
     const link = row.locator('a.wt-title');
     await expect(link).toHaveText(title);
@@ -550,7 +550,7 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     const [n, p, r] = [
       (await near.boundingBox())!,
       (await pager.boundingBox())!,
-      (await mine.locator('tbody tr[data-task]').last().boundingBox())!,
+      (await mine.locator('[data-task]').last().boundingBox())!,
     ];
     expect(n.y - (r.y + r.height)).toBeLessThan(20);
     expect(n.y + n.height).toBeLessThanOrEqual(p.y + 1);

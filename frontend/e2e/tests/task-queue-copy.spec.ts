@@ -84,7 +84,7 @@ test.describe('Task Queue copy', () => {
     await stubEmpty(page);
     const queue = new TaskQueuePage(page);
     await queue.open();
-    const empty = page.locator('tbody [data-empty]');
+    const empty = page.locator('td[data-empty], div[data-empty]');
     const cases: [ViewKey, string][] = [
       ['unassigned', 'Every open task has an owner.'],
       ['overdue', 'Nothing is overdue.'],
@@ -158,10 +158,12 @@ test.describe('Task Queue copy', () => {
     for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });
       await queue.open('?overdue=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD');
-      await expect(page.locator('tbody [data-empty]')).toContainText('Nothing is overdue.');
+      await expect(page.locator('td[data-empty], div[data-empty]')).toContainText(
+        'Nothing is overdue.',
+      );
       expect(await axeViolations(page), `overdue empty at ${w}`).toEqual([]);
       await queue.open('?overdue=true&q=zzz');
-      await expect(page.locator('tbody [data-empty]')).toContainText('No tasks match');
+      await expect(page.locator('td[data-empty], div[data-empty]')).toContainText('No tasks match');
       expect(await axeViolations(page), `no match at ${w}`).toEqual([]);
       if (w === 375) await shot(page, 'empty-overdue-375x812');
     }

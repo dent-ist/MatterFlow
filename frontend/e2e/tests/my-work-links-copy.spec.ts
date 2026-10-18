@@ -63,7 +63,7 @@ test.describe('My Work links, filters and copy', () => {
       const myWork = new MyWorkPage(page);
       await myWork.open('?view=active');
       await myWork.expectListed(task.title);
-      const row = page.locator('tbody tr[data-task]').filter({ hasText: task.title });
+      const row = page.locator('[data-task]').filter({ hasText: task.title });
       await expect(row.locator('td[data-col="matter"] .mf-ref')).toBeVisible();
       await expect(row.locator('a[href*="/matters/"]')).toHaveCount(allowed ? 1 : 0);
       if (!allowed) {
@@ -75,9 +75,7 @@ test.describe('My Work links, filters and copy', () => {
       }
 
       await new TaskQueuePage(page).open(`?q=${encodeURIComponent(task.title)}`);
-      await expect(page.locator(`tbody tr[data-task]`).filter({ hasText: task.title })).toHaveCount(
-        1,
-      );
+      await expect(page.locator(`[data-task]`).filter({ hasText: task.title })).toHaveCount(1);
       await expect(page.locator('tbody a[href*="/matters/"]')).toHaveCount(allowed ? 1 : 0);
 
       await page.goto(`/tasks/${task.taskId}`);
@@ -189,12 +187,12 @@ test.describe('My Work links, filters and copy', () => {
       await page.setViewportSize({ width: w, height: h });
       const myWork = new MyWorkPage(page);
       await myWork.open('?view=active');
-      await expect(page.locator('tbody tr[data-task]')).toHaveCount(3);
+      await expect(page.locator('[data-task]')).toHaveCount(3);
       const note = page.locator('[data-near-empty]');
       await expect(note).toBeVisible();
       await expect(note).toHaveAttribute('role', 'note');
       await expect(note).toContainText("That's everything on your plate.");
-      const lastRow = (await page.locator('tbody tr[data-task]').last().boundingBox())!;
+      const lastRow = (await page.locator('[data-task]').last().boundingBox())!;
       const box = (await note.boundingBox())!;
       expect(box.y - (lastRow.y + lastRow.height), `${w}: gap under the last row`).toBeLessThan(16);
       expect(box.y).toBeGreaterThanOrEqual(lastRow.y + lastRow.height - 1);
@@ -203,14 +201,14 @@ test.describe('My Work links, filters and copy', () => {
 
       // A filter hides the line (the filtered state applies).
       await myWork.open(`?view=active&q=${encodeURIComponent(`Few 0 ${tag}`)}`);
-      await expect(page.locator('tbody tr[data-task]')).toHaveCount(1);
+      await expect(page.locator('[data-task]')).toHaveCount(1);
       await expect(note).toHaveCount(0);
       await page.close();
     }
 
     const page = await asUser(many.username);
     await new MyWorkPage(page).open('?view=active');
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     await expect(page.locator('[data-near-empty]')).toHaveCount(0);
     await page.close();
   });
@@ -302,18 +300,14 @@ test.describe('My Work links, filters and copy', () => {
     await presets.filter({ hasText: 'Next 7 days' }).click();
     await expect(page).toHaveURL(new RegExp(`dueFrom=${dateInZone(FIRM_ZONE, 0)}`));
     await expect(page).toHaveURL(new RegExp(`dueTo=${dateInZone(FIRM_ZONE, 6)}`));
-    await expect(
-      page.locator(`tbody tr[data-task]`).filter({ hasText: `Soon ${tag}` }),
-    ).toHaveCount(1);
+    await expect(page.locator(`[data-task]`).filter({ hasText: `Soon ${tag}` })).toHaveCount(1);
     await shot(page, 'g2-due-presets-1920x1080');
     await page.keyboard.press('Escape');
     const typed = page.url();
     await myWork.open(
       `?view=active&dueFrom=${dateInZone(FIRM_ZONE, 0)}&dueTo=${dateInZone(FIRM_ZONE, 6)}`,
     );
-    await expect(
-      page.locator(`tbody tr[data-task]`).filter({ hasText: `Soon ${tag}` }),
-    ).toHaveCount(1);
+    await expect(page.locator(`[data-task]`).filter({ hasText: `Soon ${tag}` })).toHaveCount(1);
     expect(typed).toContain('dueFrom=');
 
     // The tab-owned cells and the Status choices at every width (at 375 the filters are in the sheet).
@@ -373,8 +367,8 @@ test.describe('My Work links, filters and copy', () => {
 
     fail = false;
     await page.locator('tbody').getByRole('button', { name: 'Retry' }).click();
-    await expect(page.locator('tbody tr[data-task]').filter({ hasText: title })).toHaveCount(1);
-    await expect(page.locator('tbody tr[data-task] a.wt-title').first()).toBeFocused();
+    await expect(page.locator('[data-task]').filter({ hasText: title })).toHaveCount(1);
+    await expect(page.locator('[data-task] a.wt-title').first()).toBeFocused();
 
     // A reload that fails: the rows go, the same message and controls come.
     fail = true;
@@ -386,7 +380,7 @@ test.describe('My Work links, filters and copy', () => {
     await expect(error).toBeVisible();
     expect(await normalized()).toBe(first);
     await expect(page.getByText('Something went wrong')).toHaveCount(0);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(0);
+    await expect(page.locator('[data-task]')).toHaveCount(0);
     await expect(error.getByRole('button', { name: 'Retry' })).toBeVisible();
     await shot(page, 'g6-reload-error-1366x768');
 

@@ -43,13 +43,13 @@ async function worker(seed: Seeder, count: number, permissions = PERMS, extraPod
   return { me, tag, pod };
 }
 
-const titles = (page: Page) => page.locator('tbody tr[data-task] a.wt-title');
+const titles = (page: Page) => page.locator('[data-task] a.wt-title');
 const focusedTitle = (page: Page) =>
   page.evaluate(() => (document.activeElement as HTMLElement | null)?.textContent?.trim() ?? '');
 const focusedRowIndex = (page: Page) =>
   page.evaluate(() => {
-    const rows = Array.from(document.querySelectorAll('tbody tr[data-task]'));
-    return rows.indexOf(document.activeElement?.closest('tr[data-task]') as Element);
+    const rows = Array.from(document.querySelectorAll('[data-task]'));
+    return rows.indexOf(document.activeElement?.closest('[data-task]') as Element);
   });
 
 /** How many Tab presses from the top of the page until a row title has focus (the skip link not used). */
@@ -163,7 +163,7 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
     await titles(page).nth(1).focus();
 
     await page.keyboard.press('s');
-    const rowOne = page.locator('tbody tr[data-task]').nth(1);
+    const rowOne = page.locator('[data-task]').nth(1);
     await expect(rowOne.getByRole('menu')).toBeVisible();
     await shot(page, 'status-menu-via-s-1366');
     await page.keyboard.press('Escape');
@@ -174,13 +174,13 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
     await expect(titles(page).nth(2)).toBeFocused();
 
     await page.keyboard.press('p');
-    await expect(page.locator('tbody tr[data-task]').nth(2).getByRole('menu')).toBeVisible();
+    await expect(page.locator('[data-task]').nth(2).getByRole('menu')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(titles(page).nth(2)).toBeFocused();
 
     // Keys inside an open menu belong to the menu: J does not move the row.
     await page.keyboard.press('s');
-    await expect(page.locator('tbody tr[data-task]').nth(2).getByRole('menu')).toBeVisible();
+    await expect(page.locator('[data-task]').nth(2).getByRole('menu')).toBeVisible();
     await page.keyboard.press('j');
     await page.keyboard.press('Escape');
     await expect(titles(page).nth(2)).toBeFocused();

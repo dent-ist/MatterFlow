@@ -1,6 +1,9 @@
 import { expect, Locator, Page } from '@playwright/test';
 
-/** Shared behaviour of the three work lists (Task Queue, My Work, Pod Work): a table of rows keyed by task number. */
+/**
+ * Shared behaviour of the three work lists (Task Queue, My Work, Pod Work): a table of rows keyed by task number from 640 px, a list of cards
+ * (`li[data-task]`, same `data-task` and `a.wt-title` hooks) below it.
+ */
 export class WorkListPage {
   readonly table: Locator;
   readonly status: Locator;
@@ -13,8 +16,8 @@ export class WorkListPage {
   /** The row of a task, by task number (`TSK-12`) or by exact title. */
   row(taskNumberOrTitle: string): Locator {
     return /^TSK-\d+$/.test(taskNumberOrTitle)
-      ? this.page.locator(`tr[data-task="${taskNumberOrTitle}"]`)
-      : this.page.locator('tr[data-task]').filter({ hasText: taskNumberOrTitle });
+      ? this.page.locator(`[data-task="${taskNumberOrTitle}"]`)
+      : this.page.locator('[data-task]').filter({ hasText: taskNumberOrTitle });
   }
 
   async expectListed(...titles: string[]): Promise<void> {
@@ -44,7 +47,7 @@ export class TaskQueuePage extends WorkListPage {
     await expect(this.page.getByRole('heading', { name: 'Task Queue', level: 1 })).toBeVisible();
   }
 
-  quickView(name: string): Locator {
+  quickView(name: string | RegExp): Locator {
     return this.page.getByRole('toolbar', { name: 'Quick views' }).getByRole('button', { name });
   }
 }

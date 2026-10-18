@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ComponentRef,
+  TemplateRef,
   DestroyRef,
   ElementRef,
   Injector,
@@ -67,6 +68,7 @@ import { RowEdit } from './row-edit';
 import { KeyboardShortcuts, isEditable } from '../layout/keyboard-shortcuts';
 import { isShortcut } from '../layout/shortcut-registry';
 import { TaskSkeleton } from './task-skeleton';
+import { PHONE_CARDS_QUERY, TaskCardList } from './task-card-list';
 
 const NARROW_BELOW = 760;
 /** A touch held this long on a header opens its column menu (PM ruling on #207). */
@@ -95,6 +97,7 @@ const LONG_PRESS_MS = 500;
     ColumnFilterRow,
     NgTemplateOutlet,
     TaskSkeleton,
+    TaskCardList,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -110,318 +113,342 @@ const LONG_PRESS_MS = 500;
       [resetKey]="resetKey()"
       [class.wt-dim]="loading() && rows().length > 0"
     >
-      <table
-        class="wt"
-        [class.wt--compact]="density() === 'compact'"
-        [class.wt--narrow]="narrow()"
-        [class.wt--scroll]="overflowing()"
-        [style]="tableVars()"
-        [attr.aria-busy]="loading() ? 'true' : null"
-      >
-        <!-- Fixed layout (#200): one <col> per shown column, shared by the header, the filter row, the group rows and the skeleton. The
-             Title has no width and takes the rest; the widths are the --w-<key> variables of the table (colWidths). -->
-        <colgroup>
-          @for (col of shownColumns(); track col.key) {
-            <col
-              [attr.data-col]="col.key"
-              [style.width]="col.fill ? null : 'var(--w-' + col.key + ')'"
-            />
-          }
-        </colgroup>
-        <caption class="mf-sr-only">
-          {{
-            caption()
-          }}
-        </caption>
-        <thead>
-          <tr>
-            @for (col of shownColumns(); track col.key) {
-              <!-- Column menu (#207): the Menu key or Shift+F10 on the sort button (or on the header of a column that cannot sort), a right
-                   click, or a long press. A sortable header adds no tab stop; one that cannot sort becomes one only while the menu is on. -->
-              <th
-                scope="col"
-                [attr.aria-sort]="ariaSort(col)"
-                [attr.data-col]="col.key"
-                [attr.tabindex]="!col.sortField && menuOn() ? 0 : null"
-                [attr.data-col-focus]="!col.sortField && menuOn() ? '' : null"
-                (keydown)="headerKey($event, col)"
-                (contextmenu)="headerContext($event, col)"
-                (pointerdown)="headerPress($event, col)"
-              >
-                @if (col.sortField) {
-                  <button
-                    type="button"
-                    class="wt-sort"
-                    data-col-focus
-                    [attr.title]="sortTip(col)"
-                    (click)="sortChange.emit(col.sortField)"
-                  >
-                    {{ col.label }}
-                    <i class="pi" [class]="sortIcon(col)" aria-hidden="true"></i>
-                  </button>
-                } @else {
-                  {{ col.label }}
-                }
-                @if (resizeSideOf(col); as side) {
-                  <!-- Drag handle (#204): decorative, outside the tab order; the keyboard alternative is the Columns panel (#206). -->
-                  <span
-                    class="wt-resize"
-                    aria-hidden="true"
-                    [attr.data-resize]="col.key"
-                    [attr.data-side]="side"
-                    title="Double-click to fit the rows on this page"
-                    (pointerdown)="resizeStart($event, col, side)"
-                    (dblclick)="fitNow(col)"
-                  ></span>
-                }
-              </th>
-            }
-          </tr>
-          @if (filters(); as f) {
-            @if (f.rowVisible()) {
-              <tr
-                mfColumnFilterRow
-                [id]="filterRowId()"
-                [filters]="f"
-                [columns]="filterColumns()"
-              ></tr>
-            }
-          }
-        </thead>
-        <!-- The headers and the filter row stay in every state: loading, error and empty are rows of the body. -->
-        <tbody
-          mfGridBody
-          noun="tasks"
+      @if (cardMode()) {
+        <mf-task-card-list
+          [rows]="rows()"
+          [columns]="columns()"
           [state]="gridState()"
+          [skeleton]="skeleton()"
+          [loading]="loading()"
           [empty]="rows().length === 0 && !skeleton()"
           [filtered]="filtered()"
           [emptyText]="emptyText()"
           [emptyParts]="emptyParts()"
-          [columns]="columnCount()"
+          [emptyAction]="emptyActionTpl()"
+          [assignLink]="assignLink()"
+          [newSince]="newSince()"
+          [leaving]="leaving()"
+          [linkParams]="linkParams()"
+          [linkState]="linkState()"
+          [groups]="groups()"
+          [hiddenAt]="hiddenAt()"
+          [collapsed]="collapsedGroups()"
+          (rowChange)="rowChange.emit($event)"
+          (toggled)="toggleGroup($event)"
+          (drilled)="drillOut($event.event, $event.row)"
           (retry)="retry.emit()"
           (clear)="clearFilters.emit()"
+        />
+      } @else {
+        <table
+          class="wt"
+          [class.wt--compact]="density() === 'compact'"
+          [class.wt--narrow]="narrow()"
+          [class.wt--scroll]="overflowing()"
+          [style]="tableVars()"
+          [attr.aria-busy]="loading() ? 'true' : null"
         >
-          @if (skeleton()) {
+          <!-- Fixed layout (#200): one <col> per shown column, shared by the header, the filter row, the group rows and the skeleton. The
+             Title has no width and takes the rest; the widths are the --w-<key> variables of the table (colWidths). -->
+          <colgroup>
+            @for (col of shownColumns(); track col.key) {
+              <col
+                [attr.data-col]="col.key"
+                [style.width]="col.fill ? null : 'var(--w-' + col.key + ')'"
+              />
+            }
+          </colgroup>
+          <caption class="mf-sr-only">
+            {{
+              caption()
+            }}
+          </caption>
+          <thead>
             <tr>
-              <td
-                class="mf-sr-only"
-                [attr.colspan]="columnCount()"
-                role="status"
-                aria-busy="true"
-                data-loading
-              >
-                Loading tasks...
-              </td>
-            </tr>
-            @for (n of skeletonRows; track n) {
-              <tr mfTaskSkeleton [columns]="shownKeyList()"></tr>
-            }
-          }
-          @for (row of rows(); track row.taskId; let i = $index) {
-            @if (groupAt().get(i); as group) {
-              <tr
-                mfGroupHeader
-                [group]="group"
-                [columns]="columnCount()"
-                [collapsed]="collapsedGroups().has(group.key)"
-                (toggled)="toggleGroup(group.key)"
-              ></tr>
-            }
-            <tr
-              [hidden]="hiddenAt()[i]"
-              [class.wt-row--overdue]="row.isOverdue"
-              [class.wt-row--leaving]="leaving().has(row.taskId)"
-              [attr.data-leaving]="leaving().has(row.taskId) ? 'true' : null"
-              [attr.data-task]="row.taskNumber"
-            >
               @for (col of shownColumns(); track col.key) {
-                <td [attr.data-col]="col.key">
-                  @switch (col.key) {
-                    @case ('ref') {
-                      @if (row.status === 'ON_HOLD') {
-                        <mf-hold-note
-                          kind="mark"
-                          [holdReason]="row.holdReason"
-                          [truncated]="row.holdReasonTruncated"
-                        />
+                <!-- Column menu (#207): the Menu key or Shift+F10 on the sort button (or on the header of a column that cannot sort), a right
+                   click, or a long press. A sortable header adds no tab stop; one that cannot sort becomes one only while the menu is on. -->
+                <th
+                  scope="col"
+                  [attr.aria-sort]="ariaSort(col)"
+                  [attr.data-col]="col.key"
+                  [attr.tabindex]="!col.sortField && menuOn() ? 0 : null"
+                  [attr.data-col-focus]="!col.sortField && menuOn() ? '' : null"
+                  (keydown)="headerKey($event, col)"
+                  (contextmenu)="headerContext($event, col)"
+                  (pointerdown)="headerPress($event, col)"
+                >
+                  @if (col.sortField) {
+                    <button
+                      type="button"
+                      class="wt-sort"
+                      data-col-focus
+                      [attr.title]="sortTip(col)"
+                      (click)="sortChange.emit(col.sortField)"
+                    >
+                      {{ col.label }}
+                      <i class="pi" [class]="sortIcon(col)" aria-hidden="true"></i>
+                    </button>
+                  } @else {
+                    {{ col.label }}
+                  }
+                  @if (resizeSideOf(col); as side) {
+                    <!-- Drag handle (#204): decorative, outside the tab order; the keyboard alternative is the Columns panel (#206). -->
+                    <span
+                      class="wt-resize"
+                      aria-hidden="true"
+                      [attr.data-resize]="col.key"
+                      [attr.data-side]="side"
+                      title="Double-click to fit the rows on this page"
+                      (pointerdown)="resizeStart($event, col, side)"
+                      (dblclick)="fitNow(col)"
+                    ></span>
+                  }
+                </th>
+              }
+            </tr>
+            @if (filters(); as f) {
+              @if (f.rowVisible()) {
+                <tr
+                  mfColumnFilterRow
+                  [id]="filterRowId()"
+                  [filters]="f"
+                  [columns]="filterColumns()"
+                ></tr>
+              }
+            }
+          </thead>
+          <!-- The headers and the filter row stay in every state: loading, error and empty are rows of the body. -->
+          <tbody
+            mfGridBody
+            noun="tasks"
+            [state]="gridState()"
+            [empty]="rows().length === 0 && !skeleton()"
+            [filtered]="filtered()"
+            [emptyText]="emptyText()"
+            [emptyParts]="emptyParts()"
+            [columns]="columnCount()"
+            (retry)="retry.emit()"
+            (clear)="clearFilters.emit()"
+          >
+            @if (skeleton()) {
+              <tr>
+                <td
+                  class="mf-sr-only"
+                  [attr.colspan]="columnCount()"
+                  role="status"
+                  aria-busy="true"
+                  data-loading
+                >
+                  Loading tasks...
+                </td>
+              </tr>
+              @for (n of skeletonRows; track n) {
+                <tr mfTaskSkeleton [columns]="shownKeyList()"></tr>
+              }
+            }
+            @for (row of rows(); track row.taskId; let i = $index) {
+              @if (groupAt().get(i); as group) {
+                <tr
+                  mfGroupHeader
+                  [group]="group"
+                  [columns]="columnCount()"
+                  [collapsed]="collapsedGroups().has(group.key)"
+                  (toggled)="toggleGroup(group.key)"
+                ></tr>
+              }
+              <tr
+                [hidden]="hiddenAt()[i]"
+                [class.wt-row--overdue]="row.isOverdue"
+                [class.wt-row--leaving]="leaving().has(row.taskId)"
+                [attr.data-leaving]="leaving().has(row.taskId) ? 'true' : null"
+                [attr.data-task]="row.taskNumber"
+              >
+                @for (col of shownColumns(); track col.key) {
+                  <td [attr.data-col]="col.key">
+                    @switch (col.key) {
+                      @case ('ref') {
+                        @if (row.status === 'ON_HOLD') {
+                          <mf-hold-note
+                            kind="mark"
+                            [holdReason]="row.holdReason"
+                            [truncated]="row.holdReasonTruncated"
+                          />
+                        }
+                        <span class="wt-mono">{{ row.taskNumber }}</span>
+                        @if (isNew(row)) {
+                          <span
+                            class="wt-newdot"
+                            role="img"
+                            aria-label="New"
+                            title="Assigned since your last visit"
+                            data-new-dot
+                          ></span>
+                        }
                       }
-                      <span class="wt-mono">{{ row.taskNumber }}</span>
-                      @if (isNew(row)) {
-                        <span
-                          class="wt-newdot"
-                          role="img"
-                          aria-label="New"
-                          title="Assigned since your last visit"
-                          data-new-dot
-                        ></span>
-                      }
-                    }
-                    @case ('title') {
-                      <div class="wt-titlecell">
-                        <span class="wt-typeicon" [attr.title]="row.taskTypeName" data-type-icon>
-                          <mf-task-type-icon [iconKey]="row.taskTypeIconKey" size="sm" />
-                        </span>
-                        <div class="wt-titlebody">
-                          <a
-                            class="wt-title"
-                            [routerLink]="['/tasks', row.taskId]"
-                            [queryParams]="linkParams()"
-                            [state]="linkState()"
-                            [attr.data-task-id]="row.taskId"
-                            [attr.title]="titleTip(row)"
-                            (click)="drillOut($event, row)"
-                            >{{ row.title }}</a
-                          >
-                          @if (row.status === 'ON_HOLD' && row.holdReason) {
-                            <mf-hold-note
-                              kind="hint"
-                              [holdReason]="row.holdReason"
-                              [truncated]="row.holdReasonTruncated"
-                            />
-                          }
+                      @case ('title') {
+                        <div class="wt-titlecell">
+                          <span class="wt-typeicon" [attr.title]="row.taskTypeName" data-type-icon>
+                            <mf-task-type-icon [iconKey]="row.taskTypeIconKey" size="sm" />
+                          </span>
+                          <div class="wt-titlebody">
+                            <a
+                              class="wt-title"
+                              [routerLink]="['/tasks', row.taskId]"
+                              [queryParams]="linkParams()"
+                              [state]="linkState()"
+                              [attr.data-task-id]="row.taskId"
+                              [attr.title]="titleTip(row)"
+                              (click)="drillOut($event, row)"
+                              >{{ row.title }}</a
+                            >
+                          </div>
                         </div>
-                      </div>
-                    }
-                    @case ('matter') {
-                      <mf-matter-cell
-                        [row]="row"
-                        [link]="auth.canLink('matter')"
-                        [compact]="density() === 'compact'"
-                      />
-                    }
-                    @case ('client') {
-                      <span class="wt-clip" [attr.title]="row.clientName">{{
-                        row.clientName
-                      }}</span>
-                    }
-                    @case ('project') {
-                      <span class="wt-clip" [attr.title]="row.projectName">{{
-                        row.projectName ?? '-'
-                      }}</span>
-                    }
-                    @case ('type') {
-                      <span class="wt-clip" [attr.title]="row.taskTypeName">{{
-                        row.taskTypeName
-                      }}</span>
-                    }
-                    @case ('workflow') {
-                      <span class="wt-clip" [attr.title]="row.workflowName">{{
-                        row.workflowName
-                      }}</span>
-                    }
-                    @case ('progress') {
-                      <span class="wt-progress" [attr.title]="progressTitle(row)"
-                        ><ng-container
-                          [ngTemplateOutlet]="prog"
-                          [ngTemplateOutletContext]="{ $implicit: row }"
-                      /></span>
-                    }
-                    @case ('priority') {
-                      @if (editable('priority', row)) {
-                        <mf-row-edit
-                          field="priority"
+                      }
+                      @case ('matter') {
+                        <mf-matter-cell
                           [row]="row"
-                          (rowChange)="rowChange.emit($event)"
-                        />
-                      } @else {
-                        <mf-priority-badge
-                          [priorityId]="row.priority.priorityId"
-                          [label]="row.priority.label"
-                          [color]="row.priority.color"
-                          [muted]="closed(row)"
+                          [link]="auth.canLink('matter')"
+                          [compact]="density() === 'compact'"
                         />
                       }
-                    }
-                    @case ('pod') {
-                      @if (row.assignedPod; as pod) {
-                        <span class="wt-clip" [attr.title]="pod.name">{{ pod.name }}</span>
-                      } @else {
-                        <span class="wt-muted">No pod</span>
+                      @case ('client') {
+                        <span class="wt-clip" [attr.title]="row.clientName">{{
+                          row.clientName
+                        }}</span>
                       }
-                    }
-                    @case ('assignee') {
-                      @if (editable('assignee', row)) {
-                        <mf-row-edit
-                          field="assignee"
-                          [row]="row"
-                          [selfAssign]="true"
-                          [assignLink]="assignLink()"
-                          (rowChange)="rowChange.emit($event)"
-                        />
-                      } @else if (row.assignedUser; as user) {
-                        <span class="wt-clip" [attr.title]="user.displayName">
-                          {{ user.displayName }}
-                          @if (!user.isActive) {
-                            <span class="wt-muted">(inactive)</span>
-                          }
-                        </span>
-                      } @else {
-                        <span class="wt-unassigned">Unassigned</span>
+                      @case ('project') {
+                        <span class="wt-clip" [attr.title]="row.projectName">{{
+                          row.projectName ?? '-'
+                        }}</span>
                       }
-                    }
-                    @case ('creator') {
-                      <span class="wt-clip" [attr.title]="row.createdBy?.displayName">{{
-                        row.createdBy?.displayName ?? '-'
-                      }}</span>
-                    }
-                    @case ('requestor') {
-                      <span class="wt-clip" [attr.title]="row.requestorName">{{
-                        row.requestorName
-                      }}</span>
-                    }
-                    @case ('due') {
-                      <mf-due-cell
-                        [due]="row"
-                        [status]="row.status"
-                        [layout]="density() === 'compact' ? 'inline' : 'two-line'"
-                      />
-                    }
-                    @case ('status') {
-                      <div [attr.title]="holdTitle(row)">
-                        @if (editable('status', row)) {
+                      @case ('type') {
+                        <span class="wt-clip" [attr.title]="row.taskTypeName">{{
+                          row.taskTypeName
+                        }}</span>
+                      }
+                      @case ('workflow') {
+                        <span class="wt-clip" [attr.title]="row.workflowName">{{
+                          row.workflowName
+                        }}</span>
+                      }
+                      @case ('progress') {
+                        <span class="wt-progress" [attr.title]="progressTitle(row)"
+                          ><ng-container
+                            [ngTemplateOutlet]="prog"
+                            [ngTemplateOutletContext]="{ $implicit: row }"
+                        /></span>
+                      }
+                      @case ('priority') {
+                        @if (editable('priority', row)) {
                           <mf-row-edit
-                            field="status"
+                            field="priority"
                             [row]="row"
                             (rowChange)="rowChange.emit($event)"
                           />
                         } @else {
-                          <mf-status-badge [code]="row.status" [label]="row.statusLabel" />
-                        }
-                        @if (row.status === 'ON_HOLD' && row.holdReason) {
-                          <mf-hold-note
-                            [holdReason]="row.holdReason"
-                            [truncated]="row.holdReasonTruncated"
-                            [quiet]="density() === 'compact'"
+                          <mf-priority-badge
+                            [priorityId]="row.priority.priorityId"
+                            [label]="row.priority.label"
+                            [color]="row.priority.color"
+                            [muted]="closed(row)"
                           />
                         }
-                      </div>
-                    }
-                    @case ('closed') {
-                      @if (row.closedAtUtc) {
-                        <span class="wt-closed" [attr.title]="closedTitle(row.closedAtUtc)">{{
-                          dayOf(row.closedAtUtc)
+                      }
+                      @case ('pod') {
+                        @if (row.assignedPod; as pod) {
+                          <span class="wt-clip" [attr.title]="pod.name">{{ pod.name }}</span>
+                        } @else {
+                          <span class="wt-muted">No pod</span>
+                        }
+                      }
+                      @case ('assignee') {
+                        @if (editable('assignee', row)) {
+                          <mf-row-edit
+                            field="assignee"
+                            [row]="row"
+                            [selfAssign]="true"
+                            [assignLink]="assignLink()"
+                            (rowChange)="rowChange.emit($event)"
+                          />
+                        } @else if (row.assignedUser; as user) {
+                          <span class="wt-clip" [attr.title]="user.displayName">
+                            {{ user.displayName }}
+                            @if (!user.isActive) {
+                              <span class="wt-muted">(inactive)</span>
+                            }
+                          </span>
+                        } @else {
+                          <span class="wt-unassigned">Unassigned</span>
+                        }
+                      }
+                      @case ('creator') {
+                        <span class="wt-clip" [attr.title]="row.createdBy?.displayName">{{
+                          row.createdBy?.displayName ?? '-'
                         }}</span>
-                      } @else {
-                        <span aria-label="Not closed">-</span>
+                      }
+                      @case ('requestor') {
+                        <span class="wt-clip" [attr.title]="row.requestorName">{{
+                          row.requestorName
+                        }}</span>
+                      }
+                      @case ('due') {
+                        <mf-due-cell
+                          [due]="row"
+                          [status]="row.status"
+                          [layout]="density() === 'compact' ? 'inline' : 'two-line'"
+                        />
+                      }
+                      @case ('status') {
+                        <div [attr.title]="holdTitle(row)">
+                          @if (editable('status', row)) {
+                            <mf-row-edit
+                              field="status"
+                              [row]="row"
+                              (rowChange)="rowChange.emit($event)"
+                            />
+                          } @else {
+                            <mf-status-badge [code]="row.status" [label]="row.statusLabel" />
+                          }
+                          @if (row.status === 'ON_HOLD' && row.holdReason) {
+                            <mf-hold-note
+                              [holdReason]="row.holdReason"
+                              [truncated]="row.holdReasonTruncated"
+                              [quiet]="density() === 'compact'"
+                            />
+                          }
+                        </div>
+                      }
+                      @case ('closed') {
+                        @if (row.closedAtUtc) {
+                          <span class="wt-closed" [attr.title]="closedTitle(row.closedAtUtc)">{{
+                            dayOf(row.closedAtUtc)
+                          }}</span>
+                        } @else {
+                          <span aria-label="Not closed">-</span>
+                        }
+                      }
+                      @case ('age') {
+                        <span class="wt-age" [attr.title]="ageTitle(row)"
+                          >{{ ageDays(row) }} d</span
+                        >
+                      }
+                      @case ('created') {
+                        {{ dayOf(row.createdAtUtc) }}
+                      }
+                      @case ('updated') {
+                        {{ row.updatedAtUtc | mfDate }}
                       }
                     }
-                    @case ('age') {
-                      <span class="wt-age" [attr.title]="ageTitle(row)">{{ ageDays(row) }} d</span>
-                    }
-                    @case ('created') {
-                      {{ dayOf(row.createdAtUtc) }}
-                    }
-                    @case ('updated') {
-                      {{ row.updatedAtUtc | mfDate }}
-                    }
-                  }
-                </td>
-              }
-            </tr>
-          }
-          <span mfEmptyAction><ng-content select="[empty-action]" /></span>
-        </tbody>
-      </table>
+                  </td>
+                }
+              </tr>
+            }
+            <span mfEmptyAction><ng-container [ngTemplateOutlet]="emptyAction" /></span>
+          </tbody>
+        </table>
+      }
+      <ng-template #emptyAction><ng-content select="[empty-action]" /></ng-template>
       <ng-template #prog let-row>
         @if (row.workflow.stepsTotal === 0) {
           -
@@ -472,6 +499,16 @@ export class TaskTable {
     { initialValue: this.router.url },
   );
   private readonly wrap = viewChild<ElementRef<HTMLElement>>('wrap');
+  private readonly emptyAction = viewChild<TemplateRef<unknown>>('emptyAction');
+  protected readonly emptyActionTpl = computed(() => this.emptyAction() ?? null);
+
+  /**
+   * The work lists (not the Matter and Project grids) are cards below 640 px (#192). The page turns it on; the viewport decides. Where
+   * `matchMedia` does not exist (unit tests) the table is shown.
+   */
+  readonly phoneCards = input(false);
+  private readonly phone = signal(false);
+  protected readonly cardMode = computed(() => this.phoneCards() && this.phone());
 
   /** Width of the table's box in px (0 until measured); narrow boxes drop the lowest-priority columns instead of scrolling. */
   protected readonly boxWidth = signal(0);
@@ -524,8 +561,8 @@ export class TaskTable {
   );
 
   /**
-   * Keyboard model of the grid (#181). It reads only stable hooks, not the cell layout: `tr[data-task]` for a row, `a.wt-title` for the
-   * title link, `td[data-col=status|priority] [data-inline-trigger]` for the menus. Down/Up move between the title links of the rows;
+   * Keyboard model of the grid (#181). It reads only stable hooks, not the cell layout: `[data-task]` for a row (a `tr`, or a card `li`), `a.wt-title` for the
+   * title link, `[data-col=status|priority] [data-inline-trigger]` for the menus. Down/Up move between the title links of the rows;
    * J and K do the same and S and P open the Status and Priority menus, but only while the keyboard shortcuts are on (single-character
    * keys, WCAG 2.1.4). Keys typed into a control, or inside an open menu, are left alone. Enter is the link's own.
    */
@@ -533,7 +570,7 @@ export class TaskTable {
     if (event.defaultPrevented || event.isComposing) return;
     const target = event.target as HTMLElement;
     if (isEditable(target) || target.closest('.im-pop')) return;
-    const row = target.closest<HTMLElement>('tr[data-task]');
+    const row = target.closest<HTMLElement>('[data-task]');
     if (!row) return;
     const arrow = event.key === 'ArrowDown' || event.key === 'ArrowUp';
     const character = !arrow;
@@ -541,7 +578,7 @@ export class TaskTable {
     const step = isShortcut('row-next', event) ? 1 : isShortcut('row-prev', event) ? -1 : 0;
     if (step !== 0) {
       const rows = Array.from(
-        row.closest('tbody')?.querySelectorAll<HTMLElement>('tr[data-task]:not([hidden])') ?? [],
+        row.closest('tbody, ul')?.querySelectorAll<HTMLElement>('[data-task]:not([hidden])') ?? [],
       );
       const next = rows[rows.indexOf(row) + step];
       event.preventDefault();
@@ -554,7 +591,7 @@ export class TaskTable {
         ? 'priority'
         : null;
     if (!menu) return;
-    const trigger = row.querySelector<HTMLElement>(`td[data-col="${menu}"] [data-inline-trigger]`);
+    const trigger = row.querySelector<HTMLElement>(`[data-col="${menu}"] [data-inline-trigger]`);
     // No trigger means the person may not change it (or the column is folded away): the key does nothing.
     if (!trigger) return;
     event.preventDefault();
@@ -569,7 +606,10 @@ export class TaskTable {
     const target = event.target as HTMLElement;
     if (target.closest('.im-pop')) return;
     this.returnTo = null;
-    if (!target.matches('[data-inline-trigger]') || target.closest('tr') !== back.closest('tr'))
+    if (
+      !target.matches('[data-inline-trigger]') ||
+      target.closest('[data-task]') !== back.closest('[data-task]')
+    )
       return;
     // The trigger gets focus while the menu is still being removed; once that has settled, and nothing else (a dialog) took the focus,
     // the row's title link is where the person continues.
@@ -647,6 +687,13 @@ export class TaskTable {
   constructor() {
     const destroyRef = inject(DestroyRef);
     destroyRef.onDestroy(() => this.menuRef?.destroy());
+    if (typeof matchMedia === 'function') {
+      const query = matchMedia(PHONE_CARDS_QUERY);
+      const follow = (): void => this.phone.set(query.matches);
+      follow();
+      query.addEventListener?.('change', follow);
+      destroyRef.onDestroy(() => query.removeEventListener?.('change', follow));
+    }
     // Collapsed groups are forgotten when the grouping goes away (not persisted).
     effect(() => {
       if (this.groupBuckets() === null) this.collapsedGroups.set(new Set());

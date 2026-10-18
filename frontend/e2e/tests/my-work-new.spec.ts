@@ -71,7 +71,7 @@ test.describe('My Work: New', () => {
 
     const strip = page.locator('[data-strip]');
     const item = page.locator('[data-strip-item="new"]');
-    const rows = page.locator('tr[data-task]');
+    const rows = page.locator('[data-task]');
     await expect(rows).toHaveCount(5);
     await expect(item).toContainText('New 3');
     // After ASAP and On hold.
@@ -133,7 +133,7 @@ test.describe('My Work: New', () => {
     const myWork = new MyWorkPage(page);
     await myWork.open();
     await expect(page.locator('[data-strip-item="overdue"]')).toBeVisible();
-    await expect(page.locator('tr[data-task]')).toHaveCount(1);
+    await expect(page.locator('[data-task]')).toHaveCount(1);
     await expect(page.locator('[data-strip-item="new"]')).toHaveCount(0);
     await expect(page.locator('[data-new-dot]')).toHaveCount(0);
   });
@@ -161,7 +161,7 @@ test.describe('My Work: New', () => {
       await myWork.open('?view=active');
       await expect(page.locator('[data-strip-item="new"]')).toContainText('New 3');
       await expect(page.locator('[data-new-dot]')).toHaveCount(3);
-      await expect(page.locator('tbody')).not.toContainText('Loading');
+      await expect(page.locator('[data-loading]')).toHaveCount(0);
       expect(await axeViolations(page), `axe at ${w}`).toEqual([]);
       expect(
         await page.evaluate(
@@ -178,7 +178,7 @@ test.describe('My Work: New', () => {
       }
       await page.locator('[data-strip-item="new"]').click();
       await expect(page).toHaveURL(/new=1/);
-      await expect(page.locator('tr[data-task]')).toHaveCount(3);
+      await expect(page.locator('[data-task]')).toHaveCount(3);
       expect(await axeViolations(page), `axe filtered at ${w}`).toEqual([]);
       await shot(page, `new-${w}x${h}`);
     }

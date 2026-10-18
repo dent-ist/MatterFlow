@@ -60,7 +60,7 @@ test.describe('My Work needs-attention strip', () => {
 
     const strip = page.locator('[data-strip]');
     const item = (key: string) => page.locator(`[data-strip-item="${key}"]`);
-    const rows = page.locator('tr[data-task]');
+    const rows = page.locator('[data-task]');
     await expect(strip).toContainText('Overdue 2');
     await expect(strip).toContainText('Due today 1');
     await expect(strip).toContainText('ASAP 1');
@@ -133,7 +133,7 @@ test.describe('My Work needs-attention strip', () => {
       const strip = page.locator('[data-strip]');
       await expect(strip).toContainText('Overdue 1');
       await expect(page.locator('[data-strip-item="onHold"]')).toContainText('On hold 0');
-      await expect(page.locator('tbody')).not.toContainText('Loading');
+      await expect(page.locator('[data-loading]')).toHaveCount(0);
       expect(await axeViolations(page), `axe at ${w}`).toEqual([]);
       expect(
         await page.evaluate(

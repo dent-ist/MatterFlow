@@ -102,7 +102,7 @@ test.describe('Drag resize (#204)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open(`?q=${encodeURIComponent(tag)}`);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(4);
+    await expect(page.locator('[data-task]')).toHaveCount(4);
 
     const due0 = await width(page, 'due');
     const title0 = await width(page, 'title');
@@ -133,7 +133,7 @@ test.describe('Drag resize (#204)', () => {
 
     // Reload: still 180. The sort in the URL was never touched.
     await page.reload();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(4);
+    await expect(page.locator('[data-task]')).toHaveCount(4);
     expect(Math.abs((await width(page, 'due')) - 180)).toBeLessThanOrEqual(1);
     expect(page.url()).not.toContain('sort=');
 
@@ -143,7 +143,7 @@ test.describe('Drag resize (#204)', () => {
         if (new RegExp(re).test(k)) localStorage.removeItem(k);
     }, WIDTHS_KEY.source);
     await page.reload();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(4);
+    await expect(page.locator('[data-task]')).toHaveCount(4);
     expect(Math.round(await width(page, 'due'))).toBe(136);
   });
 
@@ -157,7 +157,7 @@ test.describe('Drag resize (#204)', () => {
     const page = await asUser('ke\\kekim');
     await page.setViewportSize({ width: 1920, height: 1080 });
     await new TaskQueuePage(page).open(`?q=${encodeURIComponent(tag)}`);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(1);
+    await expect(page.locator('[data-task]')).toHaveCount(1);
     expect(await handle(page, 'title').count()).toBe(0);
 
     await dragGrow(page, 'due', 400);
@@ -183,7 +183,7 @@ test.describe('Drag resize (#204)', () => {
     const page = await asUser('ke\\kekim');
     await page.setViewportSize({ width: 1366, height: 768 });
     await new TaskQueuePage(page).open(`?q=${encodeURIComponent(tag)}`);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(1);
+    await expect(page.locator('[data-task]')).toHaveCount(1);
     const before = await width(page, 'status');
 
     await dragGrow(page, 'status', 40, false);
@@ -238,21 +238,21 @@ test.describe('Drag resize (#204)', () => {
 
     const myWork = new MyWorkPage(page);
     await myWork.open(`?q=${encodeURIComponent(`Mine ${tag}`)}`);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(1);
+    await expect(page.locator('[data-task]')).toHaveCount(1);
     const due0 = await width(page, 'due');
     await dragGrow(page, 'due', 30);
     expect(Math.abs((await width(page, 'due')) - (due0 + 30))).toBeLessThanOrEqual(1);
     await expectColumnAligned(page, 'due');
     await shot(page, 'my-work-resized-1366x768');
     await page.reload();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(1);
+    await expect(page.locator('[data-task]')).toHaveCount(1);
     expect(Math.abs((await width(page, 'due')) - (due0 + 30))).toBeLessThanOrEqual(1);
 
     const podWork = new PodWorkPage(page);
     await podWork.open();
     await podWork.choosePod(pod.name);
     await podWork.search(`Pod ${tag}`);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(1);
+    await expect(page.locator('[data-task]')).toHaveCount(1);
     expect(Math.round(await width(page, 'due'))).toBe(136); // Pod Work has its own scope
     const assignee0 = await width(page, 'assignee');
     await dragGrow(page, 'assignee', -24);
@@ -260,7 +260,7 @@ test.describe('Drag resize (#204)', () => {
     await expectColumnAligned(page, 'assignee');
     await shot(page, 'pod-work-resized-1366x768');
     await page.reload();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(1);
+    await expect(page.locator('[data-task]')).toHaveCount(1);
     expect(Math.abs((await width(page, 'assignee')) - (assignee0 - 24))).toBeLessThanOrEqual(1);
     const scopes = Object.keys(await stored(page));
     expect(scopes.some((k) => k.includes('myWork.active'))).toBe(true);
@@ -268,7 +268,7 @@ test.describe('Drag resize (#204)', () => {
 
     // The Task Queue is a third scope: untouched.
     await new TaskQueuePage(page).open(`?q=${encodeURIComponent(tag)}`);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(Math.round(await width(page, 'due'))).toBe(136);
   });
 
@@ -282,12 +282,12 @@ test.describe('Drag resize (#204)', () => {
     const page = await asUser('ke\\kekim');
     await page.setViewportSize({ width: 1366, height: 768 });
     await new TaskQueuePage(page).open(`?q=${encodeURIComponent(tag)}`);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(1);
+    await expect(page.locator('[data-task]')).toHaveCount(1);
     const rows = async (n: number) =>
       page.evaluate((count) => {
         const body = document.querySelector('tbody')!;
-        const first = body.querySelector('tr[data-task]')!;
-        while (body.querySelectorAll('tr[data-task]').length < count)
+        const first = body.querySelector('[data-task]')!;
+        while (body.querySelectorAll('[data-task]').length < count)
           body.append(first.cloneNode(true));
         // Settle the layout of the clones, so the drag measures its own relayout and not theirs.
         return new Promise<void>((done) =>
@@ -384,7 +384,7 @@ test.describe('Drag resize (#204)', () => {
     ]) {
       await page.setViewportSize({ width: w, height: h });
       await queue.open(`?q=${encodeURIComponent(tag)}`);
-      await expect(page.locator('tbody tr[data-task]')).toHaveCount(1);
+      await expect(page.locator('[data-task]')).toHaveCount(1);
       const visible = await page
         .locator('thead .wt-resize')
         .evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).length);
@@ -396,14 +396,14 @@ test.describe('Drag resize (#204)', () => {
 
     await page.setViewportSize({ width: 768, height: 1024 });
     await queue.open(`?q=${encodeURIComponent(tag)}`);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(1);
+    await expect(page.locator('[data-task]')).toHaveCount(1);
     expect(await handle(page, 'matter').evaluate((e) => getComputedStyle(e).touchAction)).toBe(
       'none',
     );
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
     await page.reload();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(1);
+    await expect(page.locator('[data-task]')).toHaveCount(1);
     const before = await width(page, 'matter');
     const box = (await handle(page, 'matter').boundingBox())!;
     const x = box.x + box.width / 2;

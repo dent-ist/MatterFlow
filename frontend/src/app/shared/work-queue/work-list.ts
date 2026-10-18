@@ -79,6 +79,7 @@ export type WorkListState = 'loading' | 'ready' | 'error';
       [newSince]="newSince()"
       [leaving]="leaving()"
       [from]="from()"
+      [phoneCards]="true"
       [groupBuckets]="groupBuckets()"
       [groupOffset]="groupOffset()"
       [groupDir]="groupDir()"
@@ -229,7 +230,7 @@ export class WorkList {
   private focusList(): void {
     const root = this.host.nativeElement;
     const target =
-      root.querySelector<HTMLElement>('tbody tr[data-task] a.wt-title') ??
+      root.querySelector<HTMLElement>('[data-task] a.wt-title') ??
       root.querySelector<HTMLElement>('.wt-wrap');
     target?.focus();
   }

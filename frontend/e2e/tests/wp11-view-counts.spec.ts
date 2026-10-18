@@ -74,7 +74,7 @@ const isQueue = (url: string) => /\/api\/v1\/task-queue\?/.test(url);
 
 async function rowNumbers(page: Page): Promise<string[]> {
   return page
-    .locator('tbody tr[data-task]')
+    .locator('[data-task]')
     .evaluateAll((rows) => rows.map((r) => r.getAttribute('data-task') ?? ''));
 }
 
@@ -150,7 +150,7 @@ test.describe('Quick view counts and order (WP11)', () => {
       dueDate: dateInZone(FIRM_ZONE, -3),
     });
     await queue.open(`?status=NEW&q=${token}`);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(1);
+    await expect(page.locator('[data-task]')).toHaveCount(1);
     // A text filter that matches one task: the counts are those of the whole queue, including the new task.
     await expect(async () => {
       expect(await shown(page, 'overdue')).toBeGreaterThanOrEqual(before + 1);
@@ -260,14 +260,14 @@ test.describe('Quick view counts and order (WP11)', () => {
       .getByRole('link', { name: /View all overdue tasks/ })
       .click();
     await expect(page).toHaveURL(/sort=priority&dir=asc/);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     const fromDashboard = await rowNumbers(page);
 
     const queue = new TaskQueuePage(page);
     await queue.open();
     await view(page, 'overdue').click();
     await expect(page).toHaveURL(/sort=priority&dir=asc/);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     const fromView = await rowNumbers(page);
     expect(fromView.length).toBeGreaterThan(0);
     expect(fromView).toEqual(fromDashboard);

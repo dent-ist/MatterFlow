@@ -67,11 +67,11 @@ async function titlesWith(page: Page, token: string): Promise<string[]> {
   await filterInput(page, 'q').fill(token);
   await filterInput(page, 'q').press('Enter');
   await expect(page).toHaveURL(new RegExp(`q=${token}`));
-  await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+  await expect(page.locator('[data-task]').first()).toBeVisible();
   // Settled: one response later the rows are the filtered ones.
   await page.waitForLoadState('networkidle');
   return page
-    .locator('tbody tr[data-task] .wt-title')
+    .locator('[data-task] .wt-title')
     .evaluateAll((links) => links.map((l) => (l.textContent ?? '').trim()));
 }
 

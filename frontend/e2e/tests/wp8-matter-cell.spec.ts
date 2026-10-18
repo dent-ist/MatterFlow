@@ -64,8 +64,8 @@ test.describe('Matter cell (#197)', () => {
       await page.setViewportSize({ width, height });
       const queue = new TaskQueuePage(page);
       await queue.open(`?q=${w.tag}`);
-      const longRow = page.locator(`tr[data-task="${w.long.taskNumber}"]`);
-      const shortRow = page.locator(`tr[data-task="${w.short.taskNumber}"]`);
+      const longRow = page.locator(`[data-task="${w.long.taskNumber}"]`);
+      const shortRow = page.locator(`[data-task="${w.short.taskNumber}"]`);
       await expect(longRow).toBeVisible();
       if (width >= 960) {
         const cell = longRow.locator('td[data-col="matter"]');
@@ -109,8 +109,8 @@ test.describe('Matter cell (#197)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open(`?q=${w.tag}`);
-    const longRow = page.locator(`tr[data-task="${w.long.taskNumber}"]`);
-    const shortRow = page.locator(`tr[data-task="${w.short.taskNumber}"]`);
+    const longRow = page.locator(`[data-task="${w.long.taskNumber}"]`);
+    const shortRow = page.locator(`[data-task="${w.short.taskNumber}"]`);
     await expect(longRow.locator('td[data-col="matter"] a')).toHaveAttribute(
       'href',
       `/matters/${w.matterLong.matterId}`,

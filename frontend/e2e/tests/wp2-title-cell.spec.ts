@@ -50,7 +50,7 @@ test.describe('Title cell (#196)', () => {
     ]) {
       await page.setViewportSize({ width, height });
       await new MyWorkPage(page).open();
-      const rowOf = (t: { taskNumber: string }) => page.locator(`tr[data-task="${t.taskNumber}"]`);
+      const rowOf = (t: { taskNumber: string }) => page.locator(`[data-task="${t.taskNumber}"]`);
       await expect(rowOf(short)).toBeVisible();
       await expect(rowOf(long)).toBeVisible();
       await expect(rowOf(token)).toBeVisible();
@@ -67,7 +67,7 @@ test.describe('Title cell (#196)', () => {
         expect(await link.getAttribute('title')).toBeTruthy();
       }
       const widths = await page.evaluate(() =>
-        Array.from(document.querySelectorAll('tbody tr[data-task] td[data-col="title"]')).map(
+        Array.from(document.querySelectorAll('[data-task] td[data-col="title"]')).map(
           (c) => c.getBoundingClientRect().width,
         ),
       );
@@ -94,11 +94,11 @@ test.describe('Title cell (#196)', () => {
     const queue = new TaskQueuePage(page);
     await queue.open();
     await queue.search(tag);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     await expect(page.locator(SUB)).toHaveCount(0);
     await expect(page.locator('td[data-col="title"] a[href^="/matters"]')).toHaveCount(0);
     // The key model hooks stay.
-    await expect(page.locator('tr[data-task] a.wt-title').first()).toBeVisible();
+    await expect(page.locator('[data-task] a.wt-title').first()).toBeVisible();
     await shot(page, 'task-queue-title-only-1366x768');
     await axeClean(page, 'Task Queue 1366');
   });
@@ -115,7 +115,7 @@ test.describe('Title cell (#196)', () => {
     ]) {
       await page.setViewportSize({ width, height });
       await new MyWorkPage(page).open();
-      const row = page.locator(`tr[data-task="${long.taskNumber}"]`);
+      const row = page.locator(`[data-task="${long.taskNumber}"]`);
       await expect(row).toBeVisible();
       await expect(page.locator(SUB)).toHaveCount(0);
       const box = (await row.locator('a.wt-title').boundingBox())!;

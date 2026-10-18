@@ -55,8 +55,8 @@ test.describe('Task Queue: dividers when sorted by Due', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open(`?matter=${matter}&sort=due&dir=asc&pageSize=25`);
-    const rows = page.locator('tr[data-task]');
-    const headers = page.locator('tr.wt-group');
+    const rows = page.locator('[data-task]');
+    const headers = page.locator('tr.wt-group, li.tc-group');
     await expect(rows).toHaveCount(25);
     await expect(headers).toHaveCount(1);
     await expect(headers.first()).toContainText('ASAP (30 tasks)');
@@ -97,7 +97,7 @@ test.describe('Task Queue: dividers when sorted by Due', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open(`?matter=${matter}&sort=due&dir=desc`);
-    const headers = page.locator('tr.wt-group');
+    const headers = page.locator('tr.wt-group, li.tc-group');
     await expect(headers).toHaveCount(5);
     await expect(headers.nth(0)).toContainText('Later (3 tasks)');
     await expect(headers.nth(1)).toContainText('Tomorrow (1 task)');
@@ -133,7 +133,7 @@ test.describe('Task Queue: dividers when sorted by Due', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open(`?matter=${matter}&sort=due&dir=asc&pageSize=25&page=2`);
-    const headers = page.locator('tr.wt-group');
+    const headers = page.locator('tr.wt-group, li.tc-group');
     await expect(headers).toHaveCount(5);
     const asap = headers.first().getByRole('button');
     await asap.focus();
@@ -141,18 +141,18 @@ test.describe('Task Queue: dividers when sorted by Due', () => {
     await page.keyboard.press('Enter');
     await expect(asap).toHaveAttribute('aria-expanded', 'false');
     // 15 rows, 5 of them in the collapsed ASAP bucket.
-    await expect(page.locator('tr[data-task]:visible')).toHaveCount(10);
+    await expect(page.locator('[data-task]:visible')).toHaveCount(10);
     // J from the first visible title goes to the second, never into the hidden rows.
-    const first = page.locator('tr[data-task]:visible a.wt-title').first();
+    const first = page.locator('[data-task]:visible a.wt-title').first();
     await first.focus();
     await page.keyboard.press('j');
-    await expect(page.locator('tr[data-task]:visible a.wt-title').nth(1)).toBeFocused();
+    await expect(page.locator('[data-task]:visible a.wt-title').nth(1)).toBeFocused();
     await page.keyboard.press('k');
     await expect(first).toBeFocused();
     await page.keyboard.press('Space');
     // Space on a title opens nothing; collapse state is not stored, a reload shows every group open.
     await page.reload();
-    await expect(page.locator('tr[data-task]:visible')).toHaveCount(15);
+    await expect(page.locator('[data-task]:visible')).toHaveCount(15);
   });
 
   test('#232: axe is clean at four sizes, no page scroll, dividers span the table', async ({
@@ -165,9 +165,9 @@ test.describe('Task Queue: dividers when sorted by Due', () => {
     for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });
       await queue.open(`?matter=${matter}&sort=due&dir=asc&pageSize=25`);
-      const headers = page.locator('tr.wt-group');
+      const headers = page.locator('tr.wt-group, li.tc-group');
       await expect(headers.first()).toContainText('ASAP (30');
-      await expect(page.locator('tbody')).not.toContainText('Loading');
+      await expect(page.locator('[data-loading]')).toHaveCount(0);
       expect(await axeViolations(page), `axe at ${w}`).toEqual([]);
       expect(
         await page.evaluate(
@@ -175,17 +175,26 @@ test.describe('Task Queue: dividers when sorted by Due', () => {
         ),
         `no horizontal page scroll at ${w}`,
       ).toBe(false);
-      const spans = await headers.first().evaluate((tr) => {
-        const th = tr.querySelector('th')!;
-        const head = tr.closest('table')!.querySelectorAll('thead tr:first-child th').length;
-        return { colspan: Number(th.getAttribute('colspan')), head };
-      });
-      expect(spans.colspan, `the divider spans every shown column at ${w}`).toBe(spans.head);
+      if (w < 640) {
+        // Phone cards (#192): the divider is a list item that spans the list.
+        const span = await headers.first().evaluate((li) => ({
+          li: Math.round(li.getBoundingClientRect().width),
+          list: Math.round(li.closest('ul')!.getBoundingClientRect().width),
+        }));
+        expect(span.li, `the divider spans the list at ${w}`).toBeGreaterThanOrEqual(span.list - 1);
+      } else {
+        const spans = await headers.first().evaluate((tr) => {
+          const th = tr.querySelector('th')!;
+          const head = tr.closest('table')!.querySelectorAll('thead tr:first-child th').length;
+          return { colspan: Number(th.getAttribute('colspan')), head };
+        });
+        expect(spans.colspan, `the divider spans every shown column at ${w}`).toBe(spans.head);
+      }
       await shot(page, `due-groups-${w}x${h}`);
     }
     await page.setViewportSize({ width: 1366, height: 768 });
     await queue.open(`?matter=${matter}&sort=due&dir=asc&pageSize=25`);
-    await page.locator('tr.wt-group').first().getByRole('button').click();
+    await page.locator('tr.wt-group, li.tc-group').first().getByRole('button').click();
     await shot(page, 'due-collapsed-1366x768');
     expect(await axeViolations(page), 'axe collapsed').toEqual([]);
   });

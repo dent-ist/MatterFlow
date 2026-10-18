@@ -43,14 +43,14 @@ function measure(page: Page): Promise<Measure> {
     document
       .querySelectorAll<HTMLElement>('thead tr:first-child th')
       .forEach((th) => (widths[th.dataset['col'] ?? 'actions'] = th.getBoundingClientRect().width));
-    const rows = Array.from(document.querySelectorAll<HTMLElement>('tbody tr[data-task]'))
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-task]'))
       .filter((r) => !r.hidden)
       .map((r) => ({
         height: r.getBoundingClientRect().height,
         link: r.querySelector('a.wt-title')?.getBoundingClientRect().height ?? 0,
         held: !!r.querySelector('[data-hold-reason]'),
       }));
-    const clipped = Array.from(document.querySelectorAll<HTMLElement>('tbody tr[data-task] td'))
+    const clipped = Array.from(document.querySelectorAll<HTMLElement>('[data-task] td'))
       .filter(
         (td) =>
           !['priority', 'status', 'assignee'].includes(td.dataset['col'] ?? '') &&
@@ -123,7 +123,7 @@ test.describe('Fixed layout (#200)', () => {
       for (const url of urls) {
         await page.goto(url);
         await expect(page.getByRole('heading', { name: 'Task Queue', level: 1 })).toBeVisible();
-        await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+        await expect(page.locator('[data-task]').first()).toBeVisible();
         const m = await measure(page);
         reference ??= m;
         // #210: every row is 44 px: a one-line title, a two-line title, the 170-character title, the token and the On Hold row with its reason.
@@ -139,7 +139,7 @@ test.describe('Fixed layout (#200)', () => {
       }
       // The two most-quoted numbers of the review: Due is 136 px (not 403 at 1920) and the Title takes the rest.
       await page.goto(urls[0]);
-      await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+      await expect(page.locator('[data-task]').first()).toBeVisible();
       const m = await measure(page);
       expect(Math.round(m.widths['due'])).toBe(136);
       expect(Math.round(m.widths['ref'])).toBe(112);
@@ -155,7 +155,7 @@ test.describe('Fixed layout (#200)', () => {
     // The pause marker and a four-digit number fit in the 112 px Ref column.
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/tasks?${base}&status=ON_HOLD`);
-    const cell = page.locator('tbody tr[data-task] td[data-col="ref"]').first();
+    const cell = page.locator('[data-task] td[data-col="ref"]').first();
     await expect(cell.locator('[data-hold-mark]')).toBeVisible();
     expect(await cell.evaluate((n) => n.scrollWidth <= n.clientWidth + 1), 'Ref fits').toBe(true);
     await shot(page, 'task-queue-hold-row-ref-1366x768');
@@ -184,11 +184,11 @@ test.describe('Fixed layout (#200)', () => {
     ]) {
       await page.setViewportSize({ width, height });
       await myWork.open();
-      await expect(page.locator('tr[data-task]')).toHaveCount(3);
+      await expect(page.locator('[data-task]')).toHaveCount(3);
       const all = await measure(page);
       await myWork.open(`?q=${encodeURIComponent(`Short ${tag}`)}`);
-      await expect(page.locator('tr[data-task]')).toHaveCount(1);
-      await expect(page.locator(`tr[data-task="${short.taskNumber}"]`)).toBeVisible();
+      await expect(page.locator('[data-task]')).toHaveCount(1);
+      await expect(page.locator(`[data-task="${short.taskNumber}"]`)).toBeVisible();
       const one = await measure(page);
       for (const [key, w] of Object.entries(all.widths))
         expect(Math.abs(w - one.widths[key]), `${key} at ${width}`).toBeLessThanOrEqual(1);
@@ -241,7 +241,7 @@ test.describe('Fixed layout (#200)', () => {
         `skeleton ${key} equals the header`,
       ).toBeLessThanOrEqual(1);
     release();
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     const after = await measure(page);
     for (const [key, w] of Object.entries(head.widths))
       expect(

@@ -57,8 +57,8 @@ test.describe('My Work: Group by due', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const myWork = new MyWorkPage(page);
     await myWork.open('?pageSize=25');
-    const rows = page.locator('tr[data-task]');
-    const headers = page.locator('tr.wt-group');
+    const rows = page.locator('[data-task]');
+    const headers = page.locator('tr.wt-group, li.tc-group');
     await expect(rows).toHaveCount(25);
     await expect(headers).toHaveCount(0);
 
@@ -85,7 +85,7 @@ test.describe('My Work: Group by due', () => {
 
     // Rows inside a group: overdue rows are the oldest due first within the same priority.
     const overdueTitles = await page
-      .locator('tr[data-task]')
+      .locator('[data-task]')
       .evaluateAll((trs) => trs.map((tr) => tr.querySelector('a.wt-title')?.textContent?.trim()));
     expect(overdueTitles.slice(14, 23).map((t) => t?.split(' ')[0])).toEqual([
       'Late9',
@@ -115,10 +115,10 @@ test.describe('My Work: Group by due', () => {
     await first.focus();
     await page.keyboard.press('Enter');
     await expect(first).toHaveAttribute('aria-expanded', 'false');
-    await expect(page.locator('tr[data-task]:visible')).toHaveCount(4);
+    await expect(page.locator('[data-task]:visible')).toHaveCount(4);
     await page.keyboard.press('Space');
     await expect(first).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.locator('tr[data-task]:visible')).toHaveCount(5);
+    await expect(page.locator('[data-task]:visible')).toHaveCount(5);
     await expect(first).toContainText('Today (3 tasks), continued');
     await expect(headers.first().locator('th')).toHaveAttribute('scope', 'colgroup');
 
@@ -159,15 +159,15 @@ test.describe('My Work: Group by due', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const myWork = new MyWorkPage(page);
     await myWork.open('?group=due&overdue=true');
-    const headers = page.locator('tr.wt-group');
+    const headers = page.locator('tr.wt-group, li.tc-group');
     await expect(headers).toHaveCount(1);
     await expect(headers.first()).toContainText('Overdue (9');
-    await expect(page.locator('tr[data-task]')).toHaveCount(9);
+    await expect(page.locator('[data-task]')).toHaveCount(9);
 
     await page.getByRole('button', { name: 'Remove grouping' }).click();
     await expect(page).not.toHaveURL(/group=due/);
     await expect(headers).toHaveCount(0);
-    await expect(page.locator('tr[data-task]')).toHaveCount(9);
+    await expect(page.locator('[data-task]')).toHaveCount(9);
   });
 
   test('M12.1: sizes, axe, no horizontal page scroll, headers span the list at 375', async ({
@@ -181,9 +181,9 @@ test.describe('My Work: Group by due', () => {
     for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });
       await myWork.open('?group=due');
-      const headers = page.locator('tr.wt-group');
+      const headers = page.locator('tr.wt-group, li.tc-group');
       await expect(headers.first()).toContainText('ASAP (14');
-      await expect(page.locator('tbody')).not.toContainText('Loading');
+      await expect(page.locator('[data-loading]')).toHaveCount(0);
       expect(await axeViolations(page), `axe at ${w}`).toEqual([]);
       expect(
         await page.evaluate(
@@ -191,22 +191,35 @@ test.describe('My Work: Group by due', () => {
         ),
         `no horizontal page scroll at ${w}`,
       ).toBe(false);
-      const spans = await headers.first().evaluate((tr) => {
-        const th = tr.querySelector('th')!.getBoundingClientRect();
-        const table = tr.closest('table')!.getBoundingClientRect();
-        return { th: Math.round(th.width), table: Math.round(table.width) };
-      });
-      expect(spans.th, `the group header spans the table at ${w}`).toBeGreaterThanOrEqual(
-        spans.table - 1,
-      );
-      const btn = await headers.first().getByRole('button').boundingBox();
-      expect(btn!.height, `target height at ${w}`).toBeGreaterThanOrEqual(24);
+      if (w < 640) {
+        // Phone cards (#192): the group header is a 44 px button spanning the list.
+        const span = await headers.first().evaluate((li) => ({
+          li: Math.round(li.getBoundingClientRect().width),
+          list: Math.round(li.closest('ul')!.getBoundingClientRect().width),
+        }));
+        expect(span.li, `the group header spans the list at ${w}`).toBeGreaterThanOrEqual(
+          span.list - 1,
+        );
+        const btn = await headers.first().getByRole('button').boundingBox();
+        expect(btn!.height, `target height at ${w}`).toBeGreaterThanOrEqual(44);
+      } else {
+        const spans = await headers.first().evaluate((tr) => {
+          const th = tr.querySelector('th')!.getBoundingClientRect();
+          const table = tr.closest('table')!.getBoundingClientRect();
+          return { th: Math.round(th.width), table: Math.round(table.width) };
+        });
+        expect(spans.th, `the group header spans the table at ${w}`).toBeGreaterThanOrEqual(
+          spans.table - 1,
+        );
+        const btn = await headers.first().getByRole('button').boundingBox();
+        expect(btn!.height, `target height at ${w}`).toBeGreaterThanOrEqual(24);
+      }
       await shot(page, `grouped-${w}x${h}`);
     }
     // Collapsed state, for the record.
     await page.setViewportSize({ width: 1366, height: 768 });
     await myWork.open('?group=due');
-    await page.locator('tr.wt-group').nth(0).getByRole('button').click();
+    await page.locator('tr.wt-group, li.tc-group').nth(0).getByRole('button').click();
     await shot(page, 'grouped-collapsed-1366x768');
     expect(await axeViolations(page), 'axe collapsed').toEqual([]);
   });

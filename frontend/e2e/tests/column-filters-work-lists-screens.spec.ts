@@ -59,7 +59,7 @@ test.describe('column filters work lists screenshots', () => {
       await p.screenshot({ path: path.join(OUT!, `${name}-${size.width}x${size.height}.png`) });
     };
     const toggle = page.getByRole('button', { name: /^Filters/ });
-    const first = page.locator('tr[data-task]').first();
+    const first = page.locator('[data-task]').first();
 
     await page.setViewportSize({ width: 1366, height: 768 });
 
@@ -131,7 +131,7 @@ test.describe('column filters work lists screenshots', () => {
     );
     await mine.setViewportSize({ width: 1366, height: 768 });
     await mine.goto('/my-work');
-    await expect(mine.locator('tr[data-task]').first()).toBeVisible();
+    await expect(mine.locator('[data-task]').first()).toBeVisible();
     await shot(mine, 'my-work-active');
     await mine.getByRole('tab', { name: /^Created by me/ }).click();
     await expect(mine.getByRole('tab', { name: /^Created by me/ })).toHaveAttribute(
@@ -148,7 +148,7 @@ test.describe('column filters work lists screenshots', () => {
 
     // Pod Work
     await mine.goto(`/pods/work?podId=${pod.podId}`);
-    await expect(mine.locator('tr[data-task]').first()).toBeVisible();
+    await expect(mine.locator('[data-task]').first()).toBeVisible();
     await shot(mine, 'pod-work-unassigned');
     await mine.getByRole('tab', { name: /^By member/ }).click();
     await mine.getByRole('button', { name: `Show tasks of ${colleague.username}` }).click();
@@ -157,13 +157,13 @@ test.describe('column filters work lists screenshots', () => {
 
     // Matter and Project tasks
     await page.goto(`/matters/${world.matter.matterId}?tab=tasks`);
-    await expect(page.locator('mf-scoped-tasks tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('mf-scoped-tasks [data-task]').first()).toBeVisible();
     await toggle.click();
     await shot(page, 'matter-tasks-filters-open');
     await page.goto(
       `/matters/${world.matter.matterId}?tab=tasks&status=&project=${project.projectId}`,
     );
-    await expect(page.locator('mf-scoped-tasks tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('mf-scoped-tasks [data-task]').first()).toBeVisible();
     await shot(page, 'matter-tasks-filtered');
 
     // Users: the Availability select shows "Out of office" in full.

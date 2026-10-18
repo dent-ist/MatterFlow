@@ -50,7 +50,7 @@ interface Boxes {
 
 function boxes(page: Page): Promise<Boxes> {
   return page.evaluate(() => {
-    const rows = Array.from(document.querySelectorAll<HTMLElement>('tbody tr[data-task]')).filter(
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-task]')).filter(
       (r) => !r.hidden,
     );
     return {
@@ -71,7 +71,7 @@ function boxes(page: Page): Promise<Boxes> {
 }
 
 async function expect36(page: Page, what: string, count: number): Promise<void> {
-  await expect(page.locator('tbody tr[data-task]:not([hidden])')).toHaveCount(count);
+  await expect(page.locator('[data-task]:not([hidden])')).toHaveCount(count);
   await expect(page.locator('table.wt')).toHaveClass(/wt--compact/);
   const m = await boxes(page);
   for (const h of m.heights)
@@ -79,7 +79,7 @@ async function expect36(page: Page, what: string, count: number): Promise<void> 
   expect(m.spill, `${what}: no cell is taller than its row`).toEqual([]);
   // One line per cell: every text-bearing element in a row is no taller than a line of the cell (24 px), and no pill wraps.
   const tall = await page.evaluate(() =>
-    Array.from(document.querySelectorAll<HTMLElement>('tbody tr[data-task]:not([hidden]) td *'))
+    Array.from(document.querySelectorAll<HTMLElement>('[data-task]:not([hidden]) td *'))
       .filter((e) => e.children.length === 0 && (e.textContent ?? '').trim().length > 0)
       .filter((e) => {
         const b = e.getBoundingClientRect();
@@ -94,7 +94,7 @@ function visibleRows(page: Page): Promise<number> {
   return page.evaluate(() => {
     const wrap = document.querySelector('.wt-wrap')!.getBoundingClientRect();
     const head = document.querySelector('thead')!.getBoundingClientRect();
-    return Array.from(document.querySelectorAll<HTMLElement>('tbody tr[data-task]')).filter((r) => {
+    return Array.from(document.querySelectorAll<HTMLElement>('[data-task]')).filter((r) => {
       const b = r.getBoundingClientRect();
       return !r.hidden && b.top >= head.bottom - 1 && b.bottom <= wrap.bottom + 1;
     }).length;
@@ -223,7 +223,7 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
     }
     await page.setViewportSize({ width: 1366, height: 768 });
     await myWork.open();
-    const row = page.locator('tr[data-task]').filter({ hasText: new RegExp(`Held ${tag}`) });
+    const row = page.locator('[data-task]').filter({ hasText: new RegExp(`Held ${tag}`) });
     // The pause marker stays; the reason is not drawn but the status cell tooltip and the accessible text carry it.
     await expect(row.locator('[data-hold-mark]')).toHaveAccessibleName('On hold');
     await expect(row.locator('td[data-col="status"] > div')).toHaveAttribute(
@@ -255,7 +255,7 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
     const small = await page.evaluate(() =>
       Array.from(
         document.querySelectorAll<HTMLElement>(
-          'tbody tr[data-task] a, tbody tr[data-task] button, tbody tr[data-task] input',
+          '[data-task] a, [data-task] button, [data-task] input',
         ),
       )
         .map((e) => ({ e, b: e.getBoundingClientRect() }))
@@ -267,7 +267,7 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
 
     for (const forced of [false, true]) {
       await page.emulateMedia({ forcedColors: forced ? 'active' : 'none' });
-      const row = page.locator('tbody tr[data-task]').first();
+      const row = page.locator('[data-task]').first();
       for (const sel of [
         'a.wt-title',
         'td[data-col="status"] button',
@@ -309,12 +309,12 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
     await page.emulateMedia({ forcedColors: 'none' });
 
     // J / K behave as in Comfortable: the next row takes focus and shows its ring.
-    await page.locator('tbody tr[data-task] a.wt-title').first().focus();
+    await page.locator('[data-task] a.wt-title').first().focus();
     await page.keyboard.press('j');
-    const second = page.locator('tbody tr[data-task]').nth(1);
+    const second = page.locator('[data-task]').nth(1);
     await expect(second.locator('a.wt-title')).toBeFocused();
     await page.keyboard.press('k');
-    await expect(page.locator('tbody tr[data-task]').first().locator('a.wt-title')).toBeFocused();
+    await expect(page.locator('[data-task]').first().locator('a.wt-title')).toBeFocused();
   });
 
   test('rows visible at 1366x768: Task Queue 13 and My Work 11 (14 and 12 with the filter row closed), 23 at 1920 (and report)', async ({
@@ -331,11 +331,11 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
     await compactFor(page, me.userId);
     await page.setViewportSize({ width: 1366, height: 768 });
     await new TaskQueuePage(page).open();
-    await expect(page.locator('tbody tr[data-task]').nth(15)).toBeVisible();
+    await expect(page.locator('[data-task]').nth(15)).toBeVisible();
     const queue = await visibleRows(page);
     await shot(page, 'task-queue-rows-visible-1366x768');
     await new MyWorkPage(page).open();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(18);
+    await expect(page.locator('[data-task]')).toHaveCount(18);
     const mine = await visibleRows(page);
     await shot(page, 'my-work-rows-visible-1366x768');
     await new TaskQueuePage(page).open();
@@ -344,7 +344,7 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
     const queueClosed = await visibleRows(page);
     await shot(page, 'task-queue-rows-visible-filter-row-closed-1366x768');
     await new MyWorkPage(page).open();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(18);
+    await expect(page.locator('[data-task]')).toHaveCount(18);
     if ((await page.locator('tr[data-filter-row]').count()) > 0)
       await page.getByRole('button', { name: /^Filters/ }).click();
     await expect(page.locator('tr[data-filter-row]')).toHaveCount(0);
@@ -359,7 +359,7 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
     ).toBeGreaterThanOrEqual(14);
     await page.setViewportSize({ width: 1920, height: 1080 });
     await new TaskQueuePage(page).open();
-    await expect(page.locator('tbody tr[data-task]').nth(15)).toBeVisible();
+    await expect(page.locator('[data-task]').nth(15)).toBeVisible();
     const queue1920 = await visibleRows(page);
     console.log(
       `ROWS VISIBLE Compact 1366x768: Task Queue ${queue}, My Work ${mine}; 1920x1080 Task Queue ${queue1920}`,
@@ -391,19 +391,17 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
     ]) {
       await page.setViewportSize({ width, height });
       await new MyWorkPage(page).open();
-      await expect(page.locator('tbody tr[data-task]')).toHaveCount(active);
+      await expect(page.locator('[data-task]')).toHaveCount(active);
       await axeClean(page, `My Work ${width}`);
       await shot(page, `my-work-compact-axe-${width}x${height}`);
       await new TaskQueuePage(page).open(`?q=${tag}`);
-      await expect(page.locator('tbody tr[data-task]')).toHaveCount(active + closed);
+      await expect(page.locator('[data-task]')).toHaveCount(active + closed);
       await axeClean(page, `Task Queue ${width}`);
       const podWork = new PodWorkPage(page);
       await podWork.open();
       await podWork.choosePod(pod.name);
       await podWork.tab(/^All pod tasks/).click();
-      await expect(page.locator('tbody tr[data-task]').filter({ hasText: tag })).toHaveCount(
-        active,
-      );
+      await expect(page.locator('[data-task]').filter({ hasText: tag })).toHaveCount(active);
       await axeClean(page, `Pod Work ${width}`);
     }
   });
@@ -419,7 +417,7 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
     await page.emulateMedia({ forcedColors: 'active' });
     await page.setViewportSize({ width: 1366, height: 768 });
     await new MyWorkPage(page).open();
-    await page.locator('tbody tr[data-task] a.wt-title').first().focus();
+    await page.locator('[data-task] a.wt-title').first().focus();
     await shot(page, 'forced-colours-compact-1366x768');
     await axeClean(page, 'forced colours');
   });
@@ -473,9 +471,9 @@ test.describe('Skeleton rows in Compact', () => {
       await axeClean(page, `skeleton ${name}`);
       hold = false;
       release();
-      await expect(page.locator('tbody tr[data-task]')).toHaveCount(count);
+      await expect(page.locator('[data-task]')).toHaveCount(count);
       await expect(body.locator('tr[data-skeleton]')).toHaveCount(0);
-      const rowAfter = (await page.locator('tbody tr[data-task]').first().boundingBox())!.height;
+      const rowAfter = (await page.locator('[data-task]').first().boundingBox())!.height;
       expect(Math.abs(rowAfter - heights[0]), 'row height before and after').toBeLessThanOrEqual(1);
     }
     const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);

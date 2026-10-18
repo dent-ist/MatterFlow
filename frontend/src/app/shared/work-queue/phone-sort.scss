@@ -1,0 +1,25 @@
+.ps {
+  display: grid;
+  gap: var(--mf-s3);
+}
+
+.ps-field {
+  display: grid;
+  gap: var(--mf-s1);
+}
+
+.ps-field label {
+  font-size: var(--mf-fs-sm);
+  font-weight: 600;
+}
+
+/* 44 px targets, like the other controls of the sheet. */
+.ps-field select {
+  min-height: 44px;
+}
+
+.ps-note {
+  margin: 0;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}

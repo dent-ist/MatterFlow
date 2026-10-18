@@ -47,7 +47,7 @@ test.beforeAll(async ({ seed }) => {
 
 const pager = (page: Page) => page.locator('mf-pager');
 const button = (page: Page, name: string) => pager(page).getByRole('button', { name, exact: true });
-const live = (page: Page) => page.locator('mf-work-list [role="status"]');
+const live = (page: Page) => page.locator('mf-work-list .wl-sr');
 
 test.describe('Pager (#237)', () => {
   test('Page n of m, First and Last, the URL and one announcement per page change', async ({
@@ -81,13 +81,13 @@ test.describe('Pager (#237)', () => {
     await expect(button(page, 'Next')).toBeDisabled();
     await expect(button(page, 'Last')).toBeDisabled();
     await expect(live(page)).toHaveText(`${TOTAL} tasks, page 3 of 3, showing 51 to 60`);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(10);
+    await expect(page.locator('[data-task]')).toHaveCount(10);
     await shot(page, 'last-page-1366x768');
 
     await button(page, 'First').click();
     await expect(pager(page).locator('[data-page]')).toHaveText('Page 1 of 3');
     expect(new URL(page.url()).searchParams.has('page')).toBe(false);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(25);
+    await expect(page.locator('[data-task]')).toHaveCount(25);
   });
 
   test('pages = ceil(total / size) for every size, and the keyboard reaches and works the buttons', async ({

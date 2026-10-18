@@ -9,7 +9,7 @@ import { uid } from '../support/seed';
  * unassigned last. Own tagged tasks, own clients and users; nothing depends on global counts.
  */
 async function column(page: Page, key: string): Promise<string[]> {
-  const cells = await page.locator(`tbody tr[data-task] td[data-col="${key}"]`).allTextContents();
+  const cells = await page.locator(`[data-task] td[data-col="${key}"]`).allTextContents();
   return cells.map((c) => c.replace(/\s+/g, ' ').trim());
 }
 
@@ -36,11 +36,12 @@ test.describe('Task Queue Assignee and Client sorts', () => {
     const role = await seed.role(['Task.View', 'Matter.View'], `E2E sorter ${uid()}`);
     const viewer = await seed.user([role.name], 'sort-viewer');
     const page = await asUser(viewer.username);
-    await page.setViewportSize({ width: 1366, height: 768 });
+    // 1920 px: at 1366 the narrow rule (#201) drops the added Client column (Matter is a default column since #198).
+    await page.setViewportSize({ width: 1920, height: 1080 });
     const queue = new TaskQueuePage(page);
     await queue.open();
     await queue.search(tag);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(3);
+    await expect(page.locator('[data-task]')).toHaveCount(3);
 
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
     await page.getByLabel('Client', { exact: true }).check();
@@ -88,7 +89,7 @@ test.describe('Task Queue Assignee and Client sorts', () => {
         [375, 812],
       ]) {
         await page.setViewportSize({ width: w, height: h });
-        await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+        await expect(page.locator('[data-task]').first()).toBeVisible();
         expect(await axeViolations(page), `axe at ${w}`).toEqual([]);
       }
     }

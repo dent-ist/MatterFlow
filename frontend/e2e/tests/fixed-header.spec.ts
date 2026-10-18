@@ -65,14 +65,14 @@ test.describe('Fixed-header screens at 1366x768', () => {
     const heading = page.getByRole('heading', { name: 'Task Queue', level: 1 });
     await expect(heading).toBeVisible();
     const region = page.getByRole('region', { name: 'Task Queue list, scrollable' });
-    await expect(region.locator('tr[data-task]').first()).toBeVisible();
+    await expect(region.locator('[data-task]').first()).toBeVisible();
     await expect(page.locator('mf-fixed-page')).toHaveAttribute('data-fixed-page', '');
 
     const filterRow = region.locator('tr[data-filter-row] td').first();
     await expect(filterRow).toBeVisible(); // open by default on the work lists
     const filters = page.getByRole('button', { name: /^Filters/ });
     const header = region.locator('thead th').first();
-    const firstRow = region.locator('tr[data-task]').first();
+    const firstRow = region.locator('[data-task]').first();
     const pager = page.getByRole('navigation', { name: 'Pagination' });
     const before = {
       heading: await box(heading),
@@ -111,8 +111,8 @@ test.describe('Fixed-header screens at 1366x768', () => {
   }) => {
     await page.goto(`/tasks?q=${bulk.tag}`);
     const region = page.getByRole('region', { name: 'Task Queue list, scrollable' });
-    await expect(region.locator('tr[data-task]').first()).toBeVisible();
-    expect(await visibleRows(page, region, 'tr[data-task]')).toBeGreaterThanOrEqual(8);
+    await expect(region.locator('[data-task]').first()).toBeVisible();
+    expect(await visibleRows(page, region, '[data-task]')).toBeGreaterThanOrEqual(8);
     const pager = await box(page.getByRole('navigation', { name: 'Pagination' }));
     expect(pager.y + pager.height).toBeLessThanOrEqual(768);
   });
@@ -127,7 +127,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
       await page.goto(path);
       await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible();
       const grid = page.locator('[role="region"][aria-label$="list, scrollable"]');
-      await expect(grid.locator('tr[data-task]').first()).toBeVisible();
+      await expect(grid.locator('[data-task]').first()).toBeVisible();
       const tabs = page.getByRole('tablist', { name: tablist });
       const before = {
         tabs: await box(tabs),
@@ -246,7 +246,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
   }) => {
     await page.goto('/tasks');
     const region = page.getByRole('region', { name: 'Task Queue list, scrollable' });
-    await expect(region.locator('tr[data-task]').first()).toBeVisible();
+    await expect(region.locator('[data-task]').first()).toBeVisible();
     const toggle = page.getByRole('button', { name: /^Filters/ });
     const open = await box(region);
     await toggle.click(); // close it (open by default)
@@ -266,10 +266,10 @@ test.describe('Fixed-header screens at 1366x768', () => {
   }) => {
     await page.goto('/tasks');
     const region = page.getByRole('region', { name: 'Task Queue list, scrollable' });
-    await expect(region.locator('tr[data-task]').first()).toBeVisible();
+    await expect(region.locator('[data-task]').first()).toBeVisible();
 
     // A status menu on a row near the bottom edge of the grid opens fully on screen and its items can be reached.
-    const rows = region.locator('tr[data-task]');
+    const rows = region.locator('[data-task]');
     const last = rows.nth(7);
     await last.scrollIntoViewIfNeeded();
     const trigger = last.getByRole('button', { name: /status/i }).first();
@@ -335,19 +335,19 @@ test.describe('Fixed-header screens at 1366x768', () => {
   test('Back restores the grid scroll position', async ({ page }) => {
     await page.goto('/tasks');
     const region = page.getByRole('region', { name: 'Task Queue list, scrollable' });
-    await expect(region.locator('tr[data-task]').first()).toBeVisible();
+    await expect(region.locator('[data-task]').first()).toBeVisible();
     await scrollRegion(region, 900);
     const top = await scrollTopOf(region);
     expect(top).toBeGreaterThan(500);
     // A DOM click, so Playwright does not scroll the grid before it leaves.
     await region
-      .locator('tr[data-task] a')
+      .locator('[data-task] a')
       .nth(14)
       .evaluate((el) => (el as HTMLElement).click());
     await expect(page).toHaveURL(/\/tasks\/\d+/);
     await page.goBack();
     const back = page.getByRole('region', { name: 'Task Queue list, scrollable' });
-    await expect(back.locator('tr[data-task]').first()).toBeVisible();
+    await expect(back.locator('[data-task]').first()).toBeVisible();
     await expect.poll(() => scrollTopOf(back), { timeout: 8000 }).toBeGreaterThan(top - 80);
   });
 
@@ -406,7 +406,7 @@ test.describe('Fixed-header screens fall back to normal page scrolling', () => {
     await page.setViewportSize({ width: 1280, height: 500 });
     await page.goto('/tasks');
     const region = page.getByRole('region', { name: 'Task Queue list, scrollable' });
-    await expect(region.locator('tr[data-task]').first()).toBeVisible();
+    await expect(region.locator('[data-task]').first()).toBeVisible();
     expect(await documentOverflow(page)).toBeGreaterThan(100);
     await page.mouse.wheel(0, 500);
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);

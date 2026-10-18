@@ -47,7 +47,7 @@ const headers = (page: Page) =>
 /** Rows whose bottom edge is inside the scrolling grid box: what is on screen without scrolling. */
 async function rowsInView(page: Page): Promise<number> {
   return page.evaluate(() => {
-    const rows = Array.from(document.querySelectorAll('tbody tr[data-task]'));
+    const rows = Array.from(document.querySelectorAll('[data-task]'));
     const wrap = document.querySelector('.wt-wrap') as HTMLElement;
     const box = wrap.getBoundingClientRect();
     return rows.filter((r) => r.getBoundingClientRect().bottom <= box.bottom + 1).length;
@@ -73,7 +73,7 @@ test.describe('My Work per-tab columns', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const myWork = new MyWorkPage(page);
     await myWork.open();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(14);
+    await expect(page.locator('[data-task]')).toHaveCount(14);
     expect(await headers(page)).toEqual([
       'Ref',
       'Title',
@@ -96,7 +96,7 @@ test.describe('My Work per-tab columns', () => {
     ]);
     await myWork.open('?view=active');
 
-    const row = page.locator('tbody tr[data-task]').first();
+    const row = page.locator('[data-task]').first();
     // #196: the Title cell holds the type icon and the title only; the matter reference lives in the Matter column.
     await expect(
       row.locator('.wt-subline, .wt-sub, [data-title-context], [data-sub-ref]'),
@@ -128,13 +128,13 @@ test.describe('My Work per-tab columns', () => {
     // The Matter filter is still reachable: a matter text in the address filters the rows.
     const ref = String(world.matter.matterRef);
     await myWork.open(`?matterText=${encodeURIComponent(ref)}`);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(14);
+    await expect(page.locator('[data-task]')).toHaveCount(14);
     await myWork.open('?matterText=no-such-matter-9999');
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(0);
+    await expect(page.locator('[data-task]')).toHaveCount(0);
 
     await page.setViewportSize({ width: 1920, height: 1080 });
     await myWork.open('?view=active');
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(14);
+    await expect(page.locator('[data-task]')).toHaveCount(14);
     expect(await rowsInView(page)).toBeGreaterThanOrEqual(14);
     await shot(page, 'a2-active-1920x1080');
   });
@@ -178,9 +178,7 @@ test.describe('My Work per-tab columns', () => {
     await page.reload();
     await expect(page.locator('[data-columns-notice]')).toHaveCount(0);
     expect(await headers(page)).toEqual(['Ref', 'Title', 'Matter', 'Client', 'Status']);
-    await expect(page.locator('tbody tr[data-task]').first().locator('[data-sub-ref]')).toHaveCount(
-      0,
-    );
+    await expect(page.locator('[data-task]').first().locator('[data-sub-ref]')).toHaveCount(0);
   });
 
   test('B1, B3, B2: Created by me columns, Age, Open by default, All with a chip, and the counts', async ({
@@ -228,7 +226,7 @@ test.describe('My Work per-tab columns', () => {
       'Age',
     ]);
     // Open by default: the closed task is not here, the Status filter says Open without a chip, and the tab count follows the grid.
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(2);
+    await expect(page.locator('[data-task]')).toHaveCount(2);
     await myWork.expectNotListed(`Finished ${tag}`);
     await expect(page.locator('tr[data-filter-row] [data-filter="status"]')).toContainText('Open');
     await expect(page.getByRole('button', { name: /^Filters \(1\)/ })).toBeVisible();
@@ -252,7 +250,7 @@ test.describe('My Work per-tab columns', () => {
     // All statuses: written to the address, with a chip, and the closed task joins (with how long it took).
     const countOpen = await tabCountOf(page);
     await myWork.open(`?view=createdByMe&status=&q=${tag}`);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(3);
+    await expect(page.locator('[data-task]')).toHaveCount(3);
     await expect(page.locator('tr[data-filter-row] [data-filter="status"]')).toContainText('All');
     // "All" is a chosen filter: the Filters button counts it (the q search and the status).
     await expect(page.getByRole('button', { name: /^Filters \(2\)/ })).toBeVisible();
@@ -267,17 +265,17 @@ test.describe('My Work per-tab columns', () => {
 
     // A bare link means Open; a link with another filter and no status means every status (the Task Queue rule).
     await myWork.open(`?view=createdByMe&q=${tag}`);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(3);
+    await expect(page.locator('[data-task]')).toHaveCount(3);
     await myWork.open('?view=createdByMe');
     await myWork.search(tag);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(2);
+    await expect(page.locator('[data-task]')).toHaveCount(2);
     // Typing a search keeps the Open statuses in the address, so the list does not widen by itself.
     await expect(page).toHaveURL(/status=NEW/);
 
     // The Task Queue agrees with the tab on the Open default.
     await page.getByRole('link', { name: 'Open in Task Queue' }).click();
     await expect(page.getByRole('heading', { name: 'Task Queue', level: 1 })).toBeVisible();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(2);
+    await expect(page.locator('[data-task]')).toHaveCount(2);
   });
 
   test('B1: without Task.Assign the Assignee cell is plain text, "Unassigned" muted italic', async ({
@@ -351,7 +349,7 @@ test.describe('My Work per-tab columns', () => {
     const myWork = new MyWorkPage(page);
     await myWork.open('?view=completed');
     await myWork.search(tag);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(1);
+    await expect(page.locator('[data-task]')).toHaveCount(1);
     expect(await headers(page)).toEqual(['Ref', 'Title', 'Matter', 'Status', 'Closed']);
     await expect(page.locator('.pi-bolt')).toHaveCount(0);
     await shot(page, 'c2-closed-1366x768');
@@ -360,7 +358,7 @@ test.describe('My Work per-tab columns', () => {
     await page.getByLabel('Priority', { exact: true }).check();
     await page.getByLabel('Due', { exact: true }).check();
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
-    const row = page.locator('tbody tr[data-task]').first();
+    const row = page.locator('[data-task]').first();
     await expect(row.locator('td[data-col="priority"] .badge')).toHaveClass(/muted/);
     const bg = await row
       .locator('td[data-col="priority"] .badge')
@@ -399,7 +397,7 @@ test.describe('My Work per-tab columns', () => {
         ['completed', 'closed'],
       ] as const) {
         await myWork.open(`?view=${view}`);
-        await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+        await expect(page.locator('[data-task]').first()).toBeVisible();
         expect(await axeViolations(page), `${name} at ${w}`).toEqual([]);
         const overflow = await page.evaluate(
           () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

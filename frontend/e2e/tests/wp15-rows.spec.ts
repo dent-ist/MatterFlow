@@ -44,7 +44,7 @@ interface Boxes {
 /** Heights of the data rows and of the group header rows on the page. */
 function boxes(page: Page): Promise<Boxes> {
   return page.evaluate(() => {
-    const rows = Array.from(document.querySelectorAll<HTMLElement>('tbody tr[data-task]')).filter(
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-task]')).filter(
       (r) => !r.hidden,
     );
     return {
@@ -66,7 +66,7 @@ function boxes(page: Page): Promise<Boxes> {
 
 /** Asserts that every row is 44 px (within 1 px) and that no cell is taller than its row. */
 async function expect44(page: Page, what: string, count: number): Promise<void> {
-  await expect(page.locator('tbody tr[data-task]:not([hidden])')).toHaveCount(count);
+  await expect(page.locator('[data-task]:not([hidden])')).toHaveCount(count);
   const m = await boxes(page);
   for (const h of m.heights)
     expect(Math.abs(h - 44), `${what}: row heights ${m.heights}`).toBeLessThanOrEqual(1);
@@ -78,7 +78,7 @@ function visibleRows(page: Page): Promise<number> {
   return page.evaluate(() => {
     const wrap = document.querySelector('.wt-wrap')!.getBoundingClientRect();
     const head = document.querySelector('thead')!.getBoundingClientRect();
-    return Array.from(document.querySelectorAll<HTMLElement>('tbody tr[data-task]')).filter((r) => {
+    return Array.from(document.querySelectorAll<HTMLElement>('[data-task]')).filter((r) => {
       const b = r.getBoundingClientRect();
       return !r.hidden && b.top >= head.bottom - 1 && b.bottom <= wrap.bottom + 1;
     }).length;
@@ -203,7 +203,7 @@ test.describe('Fixed 44 px rows (#210)', () => {
     const page = await asUser(me.username);
     await page.setViewportSize({ width: 1366, height: 768 });
     await new MyWorkPage(page).open();
-    const row = page.locator('tr[data-task]').filter({ hasText: new RegExp(`Held ${tag}`) });
+    const row = page.locator('[data-task]').filter({ hasText: new RegExp(`Held ${tag}`) });
     await expect(row.locator('[data-hold-mark]')).toHaveAccessibleName('On hold');
     const reason = row.locator('[data-hold-reason]');
     await expect(reason).toHaveText(/^Waiting for the custodian/);
@@ -232,11 +232,11 @@ test.describe('Fixed 44 px rows (#210)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     // The default Task Queue (no filter, so no "Clear filters" line in the toolbar); the shared database holds more than 11 open tasks.
     await new TaskQueuePage(page).open();
-    await expect(page.locator('tbody tr[data-task]').nth(11)).toBeVisible();
+    await expect(page.locator('[data-task]').nth(11)).toBeVisible();
     const queue = await visibleRows(page);
     await shot(page, 'task-queue-rows-visible-1366x768');
     await new MyWorkPage(page).open();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(16);
+    await expect(page.locator('[data-task]')).toHaveCount(16);
     const mine = await visibleRows(page);
     await shot(page, 'my-work-rows-visible-1366x768');
     console.log(`ROWS VISIBLE 1366x768: Task Queue ${queue}, My Work ${mine}`);
@@ -244,7 +244,7 @@ test.describe('Fixed 44 px rows (#210)', () => {
     expect(mine, 'My Work rows visible').toBeGreaterThanOrEqual(9);
   });
 
-  test('axe: the grid with every kind of row has no violations at 1366, 1920, 768 and 375', async ({
+  test('axe: the grid with every kind of row has no violations at 1366, 1920, 768 and 640', async ({
     seed,
     admin,
     asUser,
@@ -257,19 +257,19 @@ test.describe('Fixed 44 px rows (#210)', () => {
       [1366, 768],
       [1920, 1080],
       [768, 1024],
-      [375, 812],
+      [640, 900],
     ]) {
       await page.setViewportSize({ width, height });
       await new MyWorkPage(page).open();
-      await expect(page.locator('tbody tr[data-task]')).toHaveCount(active);
+      await expect(page.locator('[data-task]')).toHaveCount(active);
       const m = await boxes(page);
-      // Every width, the phone included (the hold reason sits under a one-line title there): no row is taller than 44 px.
+      // Every table width down to 640 px (below that the list is cards, #192): no row is taller than 44 px.
       for (const h of m.heights)
         expect(Math.abs(h - 44), `rows at ${width}: ${m.heights}`).toBeLessThanOrEqual(1);
       await axeClean(page, `My Work ${width}`);
       await shot(page, `my-work-axe-${width}x${height}`);
       await new TaskQueuePage(page).open(`?q=${tag}`);
-      await expect(page.locator('tbody tr[data-task]')).toHaveCount(active + closed);
+      await expect(page.locator('[data-task]')).toHaveCount(active + closed);
       await axeClean(page, `Task Queue ${width}`);
     }
   });
@@ -344,7 +344,7 @@ test.describe('Skeleton rows (#212)', () => {
       await axeClean(page, `skeleton ${name}`);
       hold = false;
       release();
-      await expect(page.locator('tbody tr[data-task]')).toHaveCount(count);
+      await expect(page.locator('[data-task]')).toHaveCount(count);
       await expect(body.locator('tr[data-skeleton]')).toHaveCount(0);
       const after = await widths();
       before.forEach((w, i) =>
@@ -354,7 +354,7 @@ test.describe('Skeleton rows (#212)', () => {
       );
       const title = before[1];
       expect(Math.abs(title - after[1]), 'Title width').toBeLessThanOrEqual(2);
-      const rowAfter = (await page.locator('tbody tr[data-task]').first().boundingBox())!.height;
+      const rowAfter = (await page.locator('[data-task]').first().boundingBox())!.height;
       expect(Math.abs(rowAfter - rowHeight), 'row height before and after').toBeLessThanOrEqual(1);
     }
     const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);

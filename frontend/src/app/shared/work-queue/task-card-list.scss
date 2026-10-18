@@ -1,0 +1,354 @@
+/* Task cards below 640 px (task-card-list.ts, #192). Global (no encapsulation) so the inline editors inside can be sized; every rule starts with .tc. */
+.tc-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tc {
+  position: relative;
+  border-bottom: 1px solid var(--mf-border);
+  background: var(--mf-surface);
+}
+
+.tc--overdue {
+  box-shadow: inset 4px 0 0 var(--mf-due-overdue);
+}
+
+.tc--leaving {
+  color: var(--mf-text-muted);
+}
+
+.tc[hidden] {
+  display: none;
+}
+
+.tc article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  min-width: 0;
+  padding: 6px var(--mf-s3) 2px;
+}
+
+/* Line 1: the type icon and the title, two lines at most; the whole card area of the line opens the task (the link's box is stretched over it). */
+.tc-h {
+  display: flex;
+  gap: var(--mf-s2);
+  margin: 0;
+  font-size: var(--mf-fs-lg);
+  font-weight: 600;
+}
+
+.tc-title {
+  display: -webkit-box;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 24px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--mf-link);
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+.tc-title::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.tc-title:focus-visible {
+  outline: none;
+}
+
+.tc-title:focus-visible::after {
+  outline: 2px solid var(--mf-focus, var(--mf-primary));
+  outline-offset: -2px;
+}
+
+/* The parts that must stay clickable sit above the stretched link (later in the page and positioned; no z-index, so the inline menus, which are
+   fixed inside them, are not held under the pager). */
+.tc-sub,
+.tc-chips,
+.tc-meta,
+.tc mf-hold-note {
+  position: relative;
+}
+
+/* Line 2: Client . matter reference (and the task number when there is no assignee line). */
+.tc-sub {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s1);
+  min-height: 24px;
+  margin: 0;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-md);
+}
+
+.tc-client {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tc-sub mf-matter-ref {
+  flex: none;
+  white-space: nowrap;
+}
+
+.tc-sub a.mf-ref {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+.tc-sensitive {
+  color: var(--mf-warning);
+}
+
+/* Line 3: the chips. The editors are 44 px high (the badge inside stays 26 px); Due takes the room between them. */
+.tc-chips {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  min-height: 44px;
+}
+
+.tc-chip {
+  flex: none;
+  max-width: 100%;
+}
+
+.tc-chip--status {
+  margin-left: auto;
+}
+
+.tc-due {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: var(--mf-fs-md);
+}
+
+/* No alert or clock icon in the second line of Due: the words and the colour say it, and the chips need the room. */
+.tc .tc-due .dc-l2 .pi {
+  display: none;
+}
+
+.tc-closed {
+  overflow: hidden;
+  color: var(--mf-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tc .tc-chip .im-trigger,
+.tc .tc-who .im-trigger {
+  gap: 2px;
+  min-height: 44px;
+  padding-inline: 2px;
+}
+
+/* A card narrower than 340 px (a phone under 372 px wide: the page has 16 px on each side) has no room for three chips side by side: Priority
+   and Status stay on one line, Due goes under them on one line ("Oct 17 Overdue 2d"). Not a container query: containment would make the card the
+   containing block of the fixed inline menus. */
+@media (max-width: 371.98px) {
+  .tc-chips {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+
+  .tc-due {
+    order: 3;
+    flex: 1 0 100%;
+    min-height: 28px;
+  }
+
+  .tc .tc-due .dc {
+    flex-direction: row;
+    gap: var(--mf-s2);
+    align-items: baseline;
+    justify-content: flex-start;
+  }
+}
+
+.tc mf-hold-note {
+  padding-block: 2px;
+}
+
+/* Line 4: the assignee and the task number. */
+.tc-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mf-s2);
+  min-height: 28px;
+  color: var(--mf-text-muted);
+}
+
+.tc-who {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  min-width: 0;
+  color: var(--mf-text);
+}
+
+.tc-name,
+.tc-pod {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tc-muted {
+  color: var(--mf-text-muted);
+}
+
+.tc-unassigned {
+  font-style: italic;
+}
+
+.tc .tc-who .re-link {
+  min-height: 44px;
+}
+
+.tc-avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--mf-border-strong);
+  border-radius: 50%;
+  background: var(--mf-surface-alt);
+  color: var(--mf-text);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tc .wt-newdot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: var(--mf-s1);
+  border-radius: 50%;
+  background: var(--mf-primary);
+  vertical-align: middle;
+}
+
+.tc-num {
+  flex: none;
+  margin-left: auto;
+  font-family: var(--mf-font-mono);
+  font-size: var(--mf-fs-sm);
+  white-space: nowrap;
+}
+
+/* Group headers (the Due sort): one 44 px button per group. */
+.tc-group {
+  background: var(--mf-surface-alt);
+  border-bottom: 1px solid var(--mf-border-strong);
+}
+
+.tc-group__btn {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--mf-s3);
+  border: 0;
+  background: transparent;
+  color: var(--mf-text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tc-group__btn .pi {
+  font-size: var(--mf-fs-xs);
+}
+
+.tc-group__count {
+  color: var(--mf-text-muted);
+  font-weight: 400;
+}
+
+/* States */
+.tc-state {
+  padding: var(--mf-s5);
+  background: var(--mf-surface);
+  text-align: center;
+}
+
+.tc-state p {
+  margin: 0 0 var(--mf-s2);
+}
+
+.tc-alert {
+  margin-bottom: var(--mf-s2);
+  color: var(--mf-danger);
+}
+
+.tc--sk {
+  display: grid;
+  gap: var(--mf-s2);
+  padding: var(--mf-s3);
+}
+
+.tc-sk {
+  display: block;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--mf-border);
+  opacity: 0.55;
+}
+
+.tc-sk--title {
+  width: 70%;
+  height: 16px;
+}
+
+.tc-sk--sub {
+  width: 45%;
+}
+
+.tc-sk--chips {
+  width: 90%;
+  height: 26px;
+  border-radius: 13px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tc-sk {
+    animation: tc-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes tc-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (forced-colors: active) {
+  .tc--overdue {
+    border-inline-start: 4px solid CanvasText;
+  }
+}
+
+@media print {
+  .tc-list {
+    break-inside: auto;
+  }
+  .tc {
+    break-inside: avoid;
+  }
+}

@@ -92,7 +92,7 @@ test.describe('WP7: inline row actions', () => {
       page.getByRole('status').filter({ hasText: 'cancelled. Removed from Active.' }).first(),
     ).toBeAttached();
     const focusInRows = await page.evaluate(
-      () => !!document.activeElement?.closest('tr[data-task], [role="region"]'),
+      () => !!document.activeElement?.closest('[data-task], [role="region"]'),
     );
     expect(focusInRows).toBe(true);
     await shot(page, 'bug9-row-removed-1366x768');
@@ -221,7 +221,8 @@ test.describe('WP7: inline row actions', () => {
       await expect(undo).toBeVisible();
       await expectClear(undo, pager, size.name);
       await expect(pager.getByRole('button', { name: 'Previous' })).toBeVisible();
-      await expect(page.locator('[data-range]')).toBeVisible();
+      // The pager is one row on a phone: "Page n of m" instead of the range.
+      await expect(page.locator(size.width < 640 ? '[data-page]' : '[data-range]')).toBeVisible();
       await shot(page, `toast-undo-${size.name}`);
       await pageAxe(page, `undo toast ${size.name}`);
       await page.locator('[data-undo-dismiss]').click();
