@@ -97,6 +97,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
         [emptyText]="emptyText()"
         [sort]="sort()"
         [dir]="dir()"
+        [widthsEditable]="false"
         [resetKey]="filterKey() + '|' + sort() + '|' + dir() + '|' + page()"
         (sortChange)="sortBy($event)"
         (retry)="load()"

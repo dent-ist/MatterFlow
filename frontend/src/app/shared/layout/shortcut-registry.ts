@@ -111,6 +111,18 @@ export const ROW_SHORTCUTS: readonly ShortcutDef[] = [
     does: 'Open the Priority menu of the task you are on (if you may change it)',
     matches: (e) => plain(e) && !e.shiftKey && lower(e) === 'p',
   },
+  // Not single characters, so they stay on when "Keyboard shortcuts" is off (WCAG 2.1.4). Handled by the grid's header cells.
+  {
+    id: 'column-menu',
+    group: 'work-lists',
+    keys: ['Menu', 'Shift + F10'],
+    does: 'Open the column menu (widen, narrow, fit, reset, hide, sort) of the column header you are on',
+    matches: (e) =>
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey &&
+      (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)),
+  },
 ];
 
 /** `g` then a letter goes to a work page (#181); the second key must follow within `GO_SEQUENCE_MS`. */

@@ -153,6 +153,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
         (rowChange)="replaceRow($event)"
         (columnsShown)="shownColumns.set($event)"
         (columnResized)="onColumnResized($event)"
+        (columnAction)="onColumnAction($event)"
       >
         <mf-sort-note foot-note [sort]="state().sort" [dir]="state().dir" />
         @if (empty().createTask) {

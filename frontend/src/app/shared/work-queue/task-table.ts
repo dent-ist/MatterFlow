@@ -1,8 +1,11 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ComponentRef,
   DestroyRef,
   ElementRef,
+  Injector,
+  ViewContainerRef,
   afterNextRender,
   computed,
   inject,
@@ -41,12 +44,22 @@ import {
   ASSIGNEE_WITH_LINK_PX,
   ColumnWidthMap,
   ROOT_PX,
+  columnWidthRem,
   pxToRem,
+  remToPx,
   tableMinRem,
   widthVars,
 } from './column-widths';
 import { narrowDrops } from './narrow-columns';
-import { ResizeSide, resizeSide, startColumnResize } from './column-resize';
+import { RESIZE_MIN_VIEWPORT_PX, ResizeSide, resizeSide, startColumnResize } from './column-resize';
+import type { ColumnMenu } from './column-menu';
+import {
+  ColumnAction,
+  ColumnMenuId,
+  columnMenuItems,
+  steppedPx,
+  widthMessage,
+} from './column-menu-items';
 import { InlineField, canEditField } from './inline-edit';
 import { CLOSED_STATUSES, SortDirection } from './queue-filters';
 import { hasStepLink, stepLinkLabel, stepQueryParams } from './step-link';
@@ -56,6 +69,8 @@ import { isShortcut } from '../layout/shortcut-registry';
 import { TaskSkeleton } from './task-skeleton';
 
 const NARROW_BELOW = 760;
+/** A touch held this long on a header opens its column menu (PM ruling on #207). */
+const LONG_PRESS_MS = 500;
 
 /**
  * The table behind Task Queue, My Work and Pod Work (UX 5.2, S02 to S04): a real `<table>` with sortable header buttons that
@@ -121,9 +136,25 @@ const NARROW_BELOW = 760;
         <thead>
           <tr>
             @for (col of shownColumns(); track col.key) {
-              <th scope="col" [attr.aria-sort]="ariaSort(col)" [attr.data-col]="col.key">
+              <!-- Column menu (#207): the Menu key or Shift+F10 on the sort button (or on the header of a column that cannot sort), a right
+                   click, or a long press. A sortable header adds no tab stop; one that cannot sort becomes one only while the menu is on. -->
+              <th
+                scope="col"
+                [attr.aria-sort]="ariaSort(col)"
+                [attr.data-col]="col.key"
+                [attr.tabindex]="!col.sortField && menuOn() ? 0 : null"
+                [attr.data-col-focus]="!col.sortField && menuOn() ? '' : null"
+                (keydown)="headerKey($event, col)"
+                (contextmenu)="headerContext($event, col)"
+                (pointerdown)="headerPress($event, col)"
+              >
                 @if (col.sortField) {
-                  <button type="button" class="wt-sort" (click)="sortChange.emit(col.sortField)">
+                  <button
+                    type="button"
+                    class="wt-sort"
+                    data-col-focus
+                    (click)="sortChange.emit(col.sortField)"
+                  >
                     {{ col.label }}
                     <i class="pi" [class]="sortIcon(col)" aria-hidden="true"></i>
                   </button>
@@ -137,8 +168,9 @@ const NARROW_BELOW = 760;
                     aria-hidden="true"
                     [attr.data-resize]="col.key"
                     [attr.data-side]="side"
+                    title="Double-click to fit the rows on this page"
                     (pointerdown)="resizeStart($event, col, side)"
-                    (dblclick)="columnFit.emit(col.key)"
+                    (dblclick)="fitNow(col)"
                   ></span>
                 }
               </th>
@@ -594,8 +626,12 @@ export class TaskTable {
   readonly sortChange = output<string>();
   /** A drag on a header edge ended with a new width (#204): the page stores it (`WorkWidths`). `defaultRem` is the default in force. */
   readonly columnResized = output<{ key: string; rem: number; defaultRem?: number }>();
-  /** Double-click on a handle: the hook of "fit to content" (#205); nothing listens yet. */
-  readonly columnFit = output<string>();
+  /** What the column menu asks of the page (#207): sort one way, hide a column, forget a stored width. Widths go through `columnResized`. */
+  readonly columnAction = output<ColumnAction>();
+  /** A polite message for the list's live region ("Due column 144 pixels"). */
+  readonly announce = output<string>();
+  /** False where the page stores no widths (a record page): no handles' double-click and no column menu. */
+  readonly widthsEditable = input(true);
   readonly retry = output<void>();
   readonly clearFilters = output<void>();
   /** The keys of the columns that are on screen now (the table folds some away on a narrow window). */
@@ -607,6 +643,7 @@ export class TaskTable {
 
   constructor() {
     const destroyRef = inject(DestroyRef);
+    destroyRef.onDestroy(() => this.menuRef?.destroy());
     // Collapsed groups are forgotten when the grouping goes away (not persisted).
     effect(() => {
       if (this.groupBuckets() === null) this.collapsedGroups.set(new Set());
@@ -623,6 +660,7 @@ export class TaskTable {
         const root = parseFloat(getComputedStyle(document.documentElement).fontSize);
         this.rootPx.set(root > 0 ? root : ROOT_PX);
         this.overflowing.set(el.scrollWidth > el.clientWidth + 1);
+        this.wide.set(window.innerWidth >= RESIZE_MIN_VIEWPORT_PX);
       };
       measure();
       // The keyboard model listens on the scrolling region (rows come and go under it).
@@ -705,14 +743,203 @@ export class TaskTable {
       .join(','),
   );
 
+  // ---- fit and the column menu (#205, #207)
+
+  private readonly injector = inject(Injector);
+  /** False on a phone (below 640 px the grid is cards or scrolls: no resizing, no menu). */
+  private readonly wide = signal(true);
+  protected readonly menuOn = computed(() => this.widthsEditable() && this.wide());
+  protected readonly menu = signal<{
+    col: ColumnDef;
+    x: number;
+    y: number;
+    trigger: HTMLElement;
+  } | null>(null);
+
+  private widthPx(col: ColumnDef): number {
+    return Math.round(remToPx(columnWidthRem(col, this.effectiveWidths())));
+  }
+  private defaultPx(col: ColumnDef): number {
+    return this.assignLink() && col.key === 'assignee' ? ASSIGNEE_WITH_LINK_PX : col.width;
+  }
+
+  protected readonly menuItems = computed(() => {
+    const m = this.menu();
+    if (!m) return [];
+    return columnMenuItems(m.col, {
+      currentPx: this.widthPx(m.col),
+      stored: m.col.key in this.colWidths(),
+      canHide: true,
+    });
+  });
+
+  /** Stores a width (px at the default zoom) through the page and tells the list's live region. */
+  private applyWidth(col: ColumnDef, px: number): void {
+    this.columnResized.emit({
+      key: col.key,
+      rem: pxToRem(px),
+      defaultRem:
+        this.assignLink() && col.key === 'assignee' ? pxToRem(this.defaultPx(col)) : undefined,
+    });
+    this.announce.emit(widthMessage(col, px));
+  }
+
+  /** Double-click on a handle, or "Fit to content": the widest of the header and the rows on this page (`column-fit.ts`, loaded now). */
+  protected fitNow(col: ColumnDef): void {
+    const table = this.wrap()?.nativeElement.querySelector('table');
+    if (!table || !this.menuOn()) return;
+    void import('./column-fit').then(({ fitColumn }) => {
+      const px = fitColumn(table, col, this.rootPx());
+      if (px !== null) this.applyWidth(col, px);
+    });
+  }
+
+  private headerControl(th: HTMLElement): HTMLElement {
+    return th.querySelector<HTMLElement>('[data-col-focus]') ?? th;
+  }
+
+  private readonly vcr = inject(ViewContainerRef);
+  private menuRef: ComponentRef<ColumnMenu> | null = null;
+
+  /** Opens the menu; its component loads on first use (a small chunk, not part of the first page load). */
+  private openMenu(col: ColumnDef, th: HTMLElement, x: number, y: number): void {
+    if (!this.menuOn()) return;
+    const mine = { col, x, y, trigger: this.headerControl(th) };
+    this.menu.set(mine);
+    void import('./column-menu').then(({ ColumnMenu }) => {
+      // Closed, or opened somewhere else, while the chunk was loading.
+      if (this.menu() !== mine) return;
+      this.menuRef?.destroy();
+      const ref = this.vcr.createComponent(ColumnMenu);
+      ref.setInput('items', this.menuItems());
+      ref.setInput('label', col.label);
+      ref.setInput('x', x);
+      ref.setInput('y', y);
+      ref.setInput('trigger', mine.trigger);
+      ref.instance.picked.subscribe((id) => this.menuPick(id));
+      ref.instance.closed.subscribe((focus) => this.closeMenu(focus));
+      this.menuRef = ref;
+    });
+  }
+
+  /** Menu key or Shift+F10 on the header's own control (its sort button, or the header of a column that cannot sort). */
+  protected headerKey(event: KeyboardEvent, col: ColumnDef): void {
+    if (!this.menuOn() || !isShortcut('column-menu', event)) return;
+    const th = event.currentTarget as HTMLElement;
+    const control = this.headerControl(th);
+    if (event.target !== control) return;
+    event.preventDefault();
+    const box = control.getBoundingClientRect();
+    this.openMenu(col, th, box.left, box.bottom + 2);
+  }
+
+  /** Right click (and the long press of some touch browsers): the menu opens at the pointer and the browser's menu stays away. */
+  protected headerContext(event: MouseEvent, col: ColumnDef): void {
+    if (!this.menuOn()) return;
+    event.preventDefault();
+    if (this.menu()?.col.key === col.key && event.detail === 0) return;
+    this.openMenu(col, event.currentTarget as HTMLElement, event.clientX, event.clientY);
+  }
+
+  /** Long press (touch, 500 ms) on a header; moving more than 10 px or lifting first is a scroll or a tap (a tap still sorts). */
+  protected headerPress(event: PointerEvent, col: ColumnDef): void {
+    if (event.pointerType !== 'touch' || !this.menuOn()) return;
+    if ((event.target as HTMLElement).closest('.wt-resize')) return;
+    const th = event.currentTarget as HTMLElement;
+    const x0 = event.clientX;
+    const y0 = event.clientY;
+    const stop = (): void => {
+      clearTimeout(timer);
+      th.removeEventListener('pointermove', move);
+      th.removeEventListener('pointerup', stop);
+      th.removeEventListener('pointercancel', stop);
+    };
+    const move = (e: PointerEvent): void => {
+      if (Math.hypot(e.clientX - x0, e.clientY - y0) > 10) stop();
+    };
+    const timer = setTimeout(() => {
+      stop();
+      // The release after a long press must not also sort.
+      const swallow = (e: Event): void => {
+        e.stopPropagation();
+        e.preventDefault();
+        th.removeEventListener('click', swallow, true);
+      };
+      th.addEventListener('click', swallow, true);
+      setTimeout(() => th.removeEventListener('click', swallow, true), 800);
+      this.openMenu(col, th, x0, y0);
+    }, LONG_PRESS_MS);
+    th.addEventListener('pointermove', move);
+    th.addEventListener('pointerup', stop);
+    th.addEventListener('pointercancel', stop);
+  }
+
+  protected closeMenu(returnFocus: boolean): void {
+    const m = this.menu();
+    this.menu.set(null);
+    this.menuRef?.destroy();
+    this.menuRef = null;
+    if (returnFocus) m?.trigger.focus();
+  }
+
+  protected menuPick(id: ColumnMenuId): void {
+    const m = this.menu();
+    if (!m) return;
+    const { col, trigger } = m;
+    this.closeMenu(false);
+    switch (id) {
+      case 'sort-asc':
+      case 'sort-desc':
+        if (col.sortField)
+          this.columnAction.emit({
+            kind: 'sort',
+            field: col.sortField,
+            dir: id === 'sort-asc' ? 'asc' : 'desc',
+          });
+        break;
+      case 'widen':
+      case 'narrow':
+        this.applyWidth(col, steppedPx(col, this.widthPx(col), id === 'widen' ? 1 : -1));
+        break;
+      case 'fit':
+        this.fitNow(col);
+        break;
+      case 'reset':
+        this.columnAction.emit({ kind: 'reset', key: col.key });
+        this.announce.emit(widthMessage(col, this.defaultPx(col)));
+        break;
+      case 'hide': {
+        const shown = this.shownColumns();
+        const at = shown.findIndex((c) => c.key === col.key);
+        const next = shown[at + 1] ?? shown[at - 1];
+        this.columnAction.emit({ kind: 'hide', key: col.key });
+        this.announce.emit(`${col.label} column hidden`);
+        // The header that had the focus goes away: continue on its neighbour.
+        afterNextRender(
+          () => {
+            const th = next
+              ? this.wrap()?.nativeElement.querySelector<HTMLElement>(
+                  `thead tr:first-child th[data-col="${next.key}"]`,
+                )
+              : null;
+            if (th) this.headerControl(th).focus();
+          },
+          { injector: this.injector },
+        );
+        return;
+      }
+    }
+    trigger.focus();
+  }
+
   protected resizeSideOf(col: ColumnDef): ResizeSide | null {
-    return resizeSide(col, this.shownColumns());
+    return this.widthsEditable() ? resizeSide(col, this.shownColumns()) : null;
   }
 
   protected resizeStart(event: PointerEvent, col: ColumnDef, side: ResizeSide): void {
     const handle = event.currentTarget as HTMLElement;
     const table = handle.closest('table');
-    if (!table) return;
+    if (!table || !this.widthsEditable()) return;
     startColumnResize({
       handle,
       event,

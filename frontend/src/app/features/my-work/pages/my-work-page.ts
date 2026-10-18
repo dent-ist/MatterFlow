@@ -264,6 +264,7 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
           (rowChange)="replaceRow($event)"
           (columnsShown)="shownColumns.set($event)"
           (columnResized)="onColumnResized($event)"
+          (columnAction)="onColumnAction($event)"
         >
           @if (noOpenCreated()) {
             <button

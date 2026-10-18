@@ -30,6 +30,7 @@ import {
   savePageSize,
 } from './column-prefs';
 import { ColumnWidthMap } from './column-widths';
+import { ColumnAction } from './column-menu-items';
 import { WorkWidths } from './work-widths';
 import { forgetLastView, loadLastView, saveLastView } from './last-view';
 import {
@@ -145,6 +146,16 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   /** A drag on a header edge ended (#204): the width is remembered for this scope and user, and shows at once. */
   protected onColumnResized(e: { key: string; rem: number; defaultRem?: number }): void {
     this.widthStore.set(this.columnScope(), this.userId(), e.key, e.rem, e.defaultRem);
+  }
+  /** The column menu (#207): sort one way, hide the column (it stays in the Columns panel, unchecked), or forget its stored width. */
+  protected onColumnAction(a: ColumnAction): void {
+    if (a.kind === 'reset') {
+      this.widthStore.reset(this.columnScope(), this.userId(), a.key);
+    } else if (a.kind === 'hide') {
+      this.setColumns(this.prefs().columns.filter((k) => k !== a.key));
+    } else {
+      this.navigate({ ...this.state(), group: null, sort: a.field, dir: a.dir, page: 1 });
+    }
   }
   /** The current tab's default set, for "Reset columns". */
   protected readonly columnDefaults = computed(() => defaultColumns(this.columnScope()));

@@ -11,6 +11,7 @@ import {
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 import { MyWorkBucketCounts, TaskQueueRow } from '../../api/generated/api-client';
 import { ListFilters } from '../filters/list-filters';
@@ -20,6 +21,7 @@ import { PageFooter } from '../ui/page-footer';
 import { Pager } from '../ui/pager';
 import { Density } from './column-prefs';
 import { ColumnWidthMap } from './column-widths';
+import { ColumnAction } from './column-menu-items';
 import { PAGE_SIZES, SortDirection } from './queue-filters';
 import { resultsAnnouncement } from './list-announce';
 import { TaskTable } from './task-table';
@@ -43,6 +45,8 @@ export type WorkListState = 'loading' | 'ready' | 'error';
   styleUrl: './work-list.scss',
   template: `
     <div class="wl-sr" role="status" aria-live="polite">{{ announcement() }}</div>
+    <!-- A column's new width ("Due column 144 pixels"), apart from the results message so the count is not read again. -->
+    <div class="wl-note" role="status" aria-live="polite" data-width-note>{{ widthNote() }}</div>
 
     <!-- The column headers and the filter row always show; loading, error and empty are rows of the table body. -->
     <mf-task-table
@@ -68,6 +72,8 @@ export type WorkListState = 'loading' | 'ready' | 'error';
       [groupOffset]="groupOffset()"
       (sortChange)="sortChange.emit($event)"
       (columnResized)="columnResized.emit($event)"
+      (columnAction)="columnAction.emit($event)"
+      (announce)="say($event)"
       (retry)="onRetry()"
       (clearFilters)="clearFilters.emit()"
       (columnsShown)="columnsShown.emit($event)"
@@ -138,7 +144,16 @@ export class WorkList {
   readonly columnsShown = output<string[]>();
   /** A column was resized by dragging its header edge (#204). */
   readonly columnResized = output<{ key: string; rem: number; defaultRem?: number }>();
+  /** The column menu asks the page to sort one way, hide a column or forget a stored width (#207). */
+  readonly columnAction = output<ColumnAction>();
   readonly rowChange = output<TaskQueueRow>();
+
+  /** The last width message, read once by the screen reader (cleared first so the same message can be said again). */
+  protected readonly widthNote = signal('');
+  protected say(message: string): void {
+    this.widthNote.set('');
+    setTimeout(() => this.widthNote.set(message), 50);
+  }
 
   protected readonly sizes = PAGE_SIZES;
   /** The list is short (10 or fewer), unfiltered and loaded. */
