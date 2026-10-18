@@ -319,12 +319,12 @@ describe('TaskTable', () => {
     expect(icon.querySelector('mf-task-type-icon svg')?.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('marks the Actions column so it can stay visible while the table scrolls', async () => {
-    await create([aRow({ assignedUser: undefined, status: 'NEW' })], ['ref', 'title'], {
-      showAssign: true,
+  it('has no Actions column: Pod Work\'s "Assign to me" lives in the Assignee cell (#199)', async () => {
+    await create([aRow({ assignedUser: undefined, status: 'NEW' })], ['ref', 'title', 'assignee'], {
+      assignLink: true,
     });
-    expect(el().querySelector('th.wt-actions')).not.toBeNull();
-    expect(el().querySelector('td.wt-actions .wt-action')).not.toBeNull();
+    expect(el().querySelector('th.wt-actions, td.wt-actions')).toBeNull();
+    expect(el().querySelectorAll('thead th').length).toBe(3);
   });
 
   it('keeps the "Scroll sideways" hint in the page but visible only when the table overflows', async () => {
@@ -568,24 +568,21 @@ describe('TaskTable', () => {
     expect(el().querySelector('.wt-wrap')!.classList).toContain('wt-dim');
   });
 
-  it('offers "Assign to me" only on unassigned open rows', async () => {
+  it('shows the "Assign to me" link-button only in the Assignee cell of unassigned open rows', async () => {
     await create(
       [
         aRow({ taskId: 1, assignedUser: undefined, status: 'NEW' }),
         aRow({ taskId: 2 }),
         aRow({ taskId: 3, assignedUser: undefined, status: 'CANCELLED' }),
       ],
-      ['ref', 'title'],
-      { showAssign: true },
+      ['ref', 'title', 'assignee'],
+      { assignLink: true },
+      ['Task.Assign'],
     );
-    const buttons = el().querySelectorAll<HTMLButtonElement>('tbody .wt-action');
+    const buttons = el().querySelectorAll<HTMLButtonElement>('tbody [data-assign-link]');
     expect(buttons.length).toBe(1);
-    expect(buttons[0].getAttribute('aria-label')).toBe('Assign to me, TSK-1042');
-
-    const emitted: number[] = [];
-    fixture.componentInstance.assignToMe.subscribe((r) => emitted.push(r.taskId));
-    buttons[0].click();
-    expect(emitted).toEqual([1]);
+    expect(buttons[0].getAttribute('aria-label')).toBe('Assign TSK-1042 to me');
+    expect(buttons[0].closest('td')!.getAttribute('data-col')).toBe('assignee');
   });
 
   it('has a caption for screen readers and a real table structure', async () => {

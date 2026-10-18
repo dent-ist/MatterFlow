@@ -21,7 +21,8 @@ test.describe('Assignment by a technician (SCN-006)', () => {
     await expect(podWork.row(task.taskNumber)).toBeVisible();
     await expect(podWork.row(task.taskNumber)).toContainText('Unassigned');
     await podWork.assignToMe(task.taskNumber).click();
-    await expect(podWork.row(task.taskNumber)).toHaveCount(0);
+    // The row shows the new assignee, then leaves the Unassigned tab after a few seconds.
+    await expect(podWork.row(task.taskNumber)).toHaveCount(0, { timeout: 15_000 });
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);

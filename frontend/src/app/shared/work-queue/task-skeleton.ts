@@ -24,9 +24,6 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, input } from '@a
         }
       </td>
     }
-    @if (showAssign()) {
-      <td class="wt-actions"><span class="sk sk--action"></span></td>
-    }
   `,
   styles: `
     tr[mfTaskSkeleton] td {
@@ -89,5 +86,4 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, input } from '@a
 })
 export class TaskSkeleton {
   readonly columns = input.required<readonly string[]>();
-  readonly showAssign = input(false);
 }

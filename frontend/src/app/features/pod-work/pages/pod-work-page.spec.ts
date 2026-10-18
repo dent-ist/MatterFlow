@@ -6,6 +6,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { PodWorkClient, TaskQueueRow, TasksClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
+import { UndoService } from '../../../core/notify/undo.service';
 import { Permission } from '../../../core/auth/permissions';
 import { apiError } from '../../../core/lookups/lookups-testing';
 import {
@@ -73,7 +74,19 @@ describe('PodWorkPage', () => {
   ) {
     const rows = options.rows ?? [aRow({ assignedUser: undefined, status: 'NEW' })];
     getPodWork = vi.fn().mockReturnValue(options.response ?? of(podPage(rows)));
-    assignTask = vi.fn().mockReturnValue(of({}));
+    assignTask = vi.fn().mockImplementation(() => {
+      const row = rows[0];
+      return of({
+        taskId: row.taskId,
+        taskNumber: row.taskNumber,
+        status: row.status === 'NEW' ? 'IN_PROGRESS' : row.status,
+        statusLabel: row.status === 'NEW' ? 'In Progress' : row.statusLabel,
+        priority: row.priority,
+        assignedPod: row.assignedPod,
+        assignedUser: { userId: 1, displayName: 'Test User', isActive: true },
+        rowVersion: 'BBBB',
+      });
+    });
     toasts = [];
     TestBed.configureTestingModule({
       providers: [
@@ -302,13 +315,33 @@ describe('PodWorkPage', () => {
     expect(tabs[0]).toBe('Unassigned (6)');
   });
 
-  it('assigns a task to me, says that a New task was started, and reloads', async () => {
+  const link = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('[data-assign-link]');
+
+  it('has no Actions column: "Assign to me" sits in the Assignee cell, named with the task number (#199)', async () => {
     const el = await open('/pods/work?podId=5');
-    el.querySelector<HTMLButtonElement>('.wt-action')!.click();
+    expect(el.querySelector('th.wt-actions, td.wt-actions')).toBeNull();
+    const button = link(el)!;
+    expect(button.textContent!.trim()).toBe('Assign to me');
+    expect(button.getAttribute('aria-label')).toBe('Assign TSK-1042 to me');
+    expect(button.closest('td')!.getAttribute('data-col')).toBe('assignee');
+    expect(button.closest('td')!.textContent).toContain('Unassigned');
+  });
+
+  it('assigns a task to me with the shared inline flow: row shows the user, Undo toast, counts refresh, no list reload', async () => {
+    const el = await open('/pods/work?podId=5');
+    getPodWork.mockReturnValue(
+      of(podPage([], { counts: { queue: 5, members: 32, attention: 7, all: 37 } })),
+    );
+    link(el)!.click();
     await settle();
 
     expect(assignTask).toHaveBeenCalledWith(1042, { rowVersion: 'AAAA', podId: 5, userId: 1 });
-    expect(toasts.map((t) => t.summary)).toEqual(['Assigned to you. Task moved to In Progress.']);
+    const offer = TestBed.inject(UndoService).current();
+    expect(offer?.message).toContain('Assigned to you.');
+    expect(offer?.message).toContain('Task moved to In Progress');
+    // The row stays on screen (muted) with its new assignee, then leaves; the tab count already follows.
+    expect(el.querySelector('tr[data-task="TSK-1042"]')!.textContent).toContain('Test User');
+    expect(tab(el, 'Unassigned').textContent).toContain('(5)');
     expect(getPodWork).toHaveBeenCalledTimes(2);
   });
 
@@ -316,34 +349,33 @@ describe('PodWorkPage', () => {
     const el = await open('/pods/work?podId=5', {
       rows: [aRow({ assignedUser: undefined, status: 'ON_HOLD' })],
     });
-    el.querySelector<HTMLButtonElement>('.wt-action')!.click();
+    link(el)!.click();
     await settle();
-    expect(toasts.map((t) => t.summary)).toEqual(['Assigned to you.']);
+    expect(TestBed.inject(UndoService).current()?.message).toBe('Assigned to you.');
   });
 
-  it('refreshes and says so when someone else changed the task first', async () => {
+  it('refreshes the row and says so when someone else changed the task first', async () => {
     const el = await open('/pods/work?podId=5');
     assignTask.mockReturnValue(
       throwError(() =>
         apiError(409, 'CONCURRENCY_CONFLICT', 'The task was changed by someone else.'),
       ),
     );
-    el.querySelector<HTMLButtonElement>('.wt-action')!.click();
+    link(el)!.click();
     await settle();
 
     expect(toasts.map((t) => [t.severity, t.summary])).toEqual([
-      ['error', 'Someone else changed this task. The list was refreshed.'],
+      ['error', 'Someone else changed this task. The row was refreshed.'],
     ]);
-    expect(getPodWork).toHaveBeenCalledTimes(2);
   });
 
   it('hides "Assign to me" without Task.Assign and on the By member tab', async () => {
     let el = await open('/pods/work?podId=5', { permissions: ['Task.View', 'Pod.View'] });
-    expect(el.querySelector('.wt-action')).toBeNull();
+    expect(link(el)).toBeNull();
 
     TestBed.resetTestingModule();
     el = await open('/pods/work?podId=5&view=members');
-    expect(el.querySelector('.wt-action')).toBeNull();
+    expect(link(el)).toBeNull();
   });
 
   it('guides a user who is in no Pod', async () => {

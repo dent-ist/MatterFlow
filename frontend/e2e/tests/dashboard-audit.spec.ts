@@ -175,8 +175,8 @@ test.describe('Dashboard actions and click-through', () => {
     // Focus is on a link of the list (not the page body) and the change is announced politely.
     await expect(panel.locator(':focus')).toHaveCount(1);
     await expect(page.locator('[data-dash-live]')).toContainText(`${number} assigned to`);
-    // The toast names the assignment ("Task moved to In Progress" too when the task was New; covered by the unit tests).
-    await expect(page.locator('[data-undo-message]')).toContainText(`${number} assigned to`);
+    // The toast is the shared "Assign to me" one (#234): "Assigned to you." ("Task moved to In Progress" too when the task was New; covered by the unit tests).
+    await expect(page.locator('[data-undo-message]')).toContainText('Assigned to you.');
     await recount;
 
     // Alt+Z (the toast's Undo) puts it back and the list is read again.

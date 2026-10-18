@@ -70,6 +70,30 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
   selector: 'mf-row-edit',
   imports: [InlineMenu, InlineStatusFlow, PriorityBadge, StatusBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.re-with-link]': 'showLink()' },
+  styles: `
+    :host.re-with-link {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      max-width: 100%;
+      white-space: nowrap;
+    }
+    .re-link {
+      min-height: var(--mf-target-min, 1.5rem);
+      padding: 0 var(--mf-s1);
+      border: 0;
+      background: transparent;
+      color: var(--mf-primary);
+      font: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .re-link[aria-disabled='true'] {
+      cursor: progress;
+      opacity: 0.7;
+    }
+  `,
   template: `
     @let r = row();
     <mf-inline-menu
@@ -114,6 +138,19 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
         }
       }
     </mf-inline-menu>
+    @if (showLink()) {
+      <!-- Pod Work: the same "Assign to me" as the menu's first item, next to "Unassigned" so it is one click (#199). -->
+      <button
+        type="button"
+        class="re-link"
+        data-assign-link
+        [attr.aria-label]="'Assign ' + r.taskNumber + ' to me'"
+        [attr.aria-disabled]="busy() ? 'true' : null"
+        (click)="$event.stopPropagation(); assignToMe()"
+      >
+        Assign to me
+      </button>
+    }
     @if (flow(); as action) {
       <mf-inline-status-flow
         [row]="r"
@@ -153,6 +190,10 @@ export class RowEdit {
   readonly transitions = input<TaskTransitionOption[] | null>(null);
   /** Assignee cell only: offers "Assign to me" as the first choice of the menu, above the search box, for a Task nobody is assigned to (the Dashboard's unassigned queue). */
   readonly assignMe = input(false);
+  /** Assignee cell only: "Assign to me" is the first item of the menu for any Task that is not already the user's (work grids). */
+  readonly selfAssign = input(false);
+  /** Assignee cell only: an "Assign to me" link-button next to "Unassigned" (Pod Work); the same action as the menu's first item. */
+  readonly assignLink = input(false);
   /** Assignee cell only: the visible text of the trigger while nobody is assigned ("Assign" in the Dashboard lists, so "Unassigned" is not repeated on every row). */
   readonly emptyLabel = input('Unassigned');
   /** Assignee cell only: shows this PrimeIcons class (for example `pi-user-edit`) as an icon button named "Reassign <number>" instead of the assignee's name. */
@@ -280,13 +321,27 @@ export class RowEdit {
     }
   });
 
-  /** The first menu choice for an unassigned Task when `assignMe` is on: named with the task number, like the other row actions. */
+  /** The first menu choice when `assignMe` or `selfAssign` is on and the Task is not already the user's: named with the task number, like the other row actions. */
   protected readonly leadAction = computed(() => {
     const r = this.row();
-    return this.field() === 'assignee' && this.assignMe() && !r.assignedUser && this.myId() > 0
+    const wanted = this.assignMe() || this.selfAssign();
+    return this.field() === 'assignee' &&
+      wanted &&
+      this.myId() > 0 &&
+      r.assignedUser?.userId !== this.myId()
       ? { label: 'Assign to me', ariaLabel: `Assign ${r.taskNumber} to me` }
       : null;
   });
+
+  /** The link-button of Pod Work: only for a Task nobody holds. */
+  protected readonly showLink = computed(
+    () =>
+      this.field() === 'assignee' &&
+      this.assignLink() &&
+      !this.triggerIcon() &&
+      !this.row().assignedUser &&
+      this.myId() > 0,
+  );
 
   /** Assigns the Task to the signed-in user, exactly as picking them in the menu would (a New Task starts, Undo is offered). */
   protected async assignToMe(): Promise<void> {
@@ -445,7 +500,9 @@ export class RowEdit {
           (t) =>
             userId === undefined
               ? `${r.taskNumber} is unassigned.`
-              : `${r.taskNumber} assigned to ${option.label}.` +
+              : (userId === this.myId()
+                  ? 'Assigned to you.'
+                  : `${r.taskNumber} assigned to ${option.label}.`) +
                 (r.status === 'NEW' && t.status !== 'NEW'
                   ? ` Task moved to ${t.statusLabel}. Undo puts the assignee back; the status stays.`
                   : ''),

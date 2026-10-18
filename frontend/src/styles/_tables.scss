@@ -112,3 +112,10 @@ td.mf-col-actions {
 .wt td[data-col='client'] .wt-clip {
   white-space: nowrap;
 }
+
+/* Pod Work (#199): "Unassigned" and its "Assign to me" link-button share one line, so the Assignee cell may be wider than the 8rem of a name.
+   !important: the table's own encapsulated rule for the cell (display: block, max-width 8rem) is more specific than any global selector. */
+.wt td[data-col='assignee'] mf-row-edit.re-with-link {
+  display: inline-flex !important;
+  max-width: none !important;
+}

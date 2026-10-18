@@ -364,15 +364,26 @@ describe('RowEdit', () => {
     expect(tasks['assignTask']).toHaveBeenCalled();
   });
 
-  it('assignee: "Assign to me" is the first choice of the menu only when asked for and only for an unassigned task, and assigns the signed-in user', async () => {
+  it('assignee: "Assign to me" is the first choice of the menu when asked for and the task is not already the signed-in user\'s, and assigns them', async () => {
     const unassigned = aRow({ status: 'NEW', assignedUser: undefined });
     await create('assignee', unassigned);
     await open();
     expect(document.querySelector('[data-lead]')).toBeNull();
 
+    // Assigned to someone else: still offered (take over); assigned to the user: not.
     TestBed.resetTestingModule();
     await create('assignee', aRow());
-    fixture.componentRef.setInput('assignMe', true);
+    fixture.componentRef.setInput('selfAssign', true);
+    fixture.detectChanges();
+    await open();
+    expect(document.querySelector('[data-lead]')).not.toBeNull();
+
+    TestBed.resetTestingModule();
+    await create(
+      'assignee',
+      aRow({ assignedUser: { userId: 1, displayName: 'Test User', isActive: true } }),
+    );
+    fixture.componentRef.setInput('selfAssign', true);
     fixture.detectChanges();
     await open();
     expect(document.querySelector('[data-lead]')).toBeNull();
@@ -381,8 +392,8 @@ describe('RowEdit', () => {
     await create('assignee', unassigned);
     fixture.componentRef.setInput('assignMe', true);
     fixture.detectChanges();
-    // No separate link next to the menu any more.
-    expect(el().querySelector('[data-assign-me]')).toBeNull();
+    // No separate link next to the menu unless asked for.
+    expect(el().querySelector('[data-assign-link]')).toBeNull();
     expect(trigger().getAttribute('aria-label')).toBe('Unassigned, change assignee of TSK-1042');
     expect(trigger().classList).toContain('im-outlined');
     await open();
@@ -400,7 +411,35 @@ describe('RowEdit', () => {
       userId: 1,
     });
     expect(emitted[0].assignedUser?.displayName).toBe('Test User');
-    expect(undo.current()).not.toBeNull();
+    expect(undo.current()?.message).toContain('Assigned to you.');
+  });
+
+  it('assignee: the "Assign to me" link-button is the same action as the menu item, with an Undo toast', async () => {
+    const unassigned = aRow({ status: 'IN_PROGRESS', assignedUser: undefined });
+    await create('assignee', unassigned);
+    expect(el().querySelector('[data-assign-link]')).toBeNull();
+
+    fixture.componentRef.setInput('assignLink', true);
+    fixture.detectChanges();
+    const link = el().querySelector<HTMLButtonElement>('[data-assign-link]')!;
+    expect(link.getAttribute('aria-label')).toBe('Assign TSK-1042 to me');
+    expect(link.textContent!.trim()).toBe('Assign to me');
+    link.click();
+    await fixture.whenStable();
+    expect(tasks['assignTask']).toHaveBeenCalledWith(1042, {
+      rowVersion: 'AAAA',
+      podId: 5,
+      userId: 1,
+    });
+    expect(emitted.at(-1)?.assignedUser?.userId).toBe(4);
+    expect(undo.current()?.message).toBe('Assigned to you.');
+
+    // Not for a task somebody holds, nor for the icon trigger.
+    TestBed.resetTestingModule();
+    await create('assignee', aRow());
+    fixture.componentRef.setInput('assignLink', true);
+    fixture.detectChanges();
+    expect(el().querySelector('[data-assign-link]')).toBeNull();
   });
 
   it('assignee without a Pod searches all users', async () => {

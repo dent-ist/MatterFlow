@@ -83,6 +83,6 @@ export class PodWorkPage extends WorkListPage {
   }
 
   assignToMe(taskNumber: string): Locator {
-    return this.page.getByRole('button', { name: `Assign to me, ${taskNumber}` });
+    return this.page.getByRole('button', { name: `Assign ${taskNumber} to me`, exact: true });
   }
 }

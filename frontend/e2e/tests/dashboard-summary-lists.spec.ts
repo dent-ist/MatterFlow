@@ -382,7 +382,7 @@ test.describe('dashboard summary lists', () => {
       await assignToMeFromRow(first, number);
       const toast = page.locator('[data-undo-toast]');
       await expect(toast).toBeVisible();
-      await expect(page.locator('[data-undo-message]')).toContainText(`${number} assigned to`);
+      await expect(page.locator('[data-undo-message]')).toContainText('Assigned to you.');
       await page.waitForTimeout(300);
       const t = (await toast.boundingBox())!;
       // Bottom left of the main column from 1024px; the full width at the bottom below.

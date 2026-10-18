@@ -58,7 +58,7 @@ export type WorkListState = 'loading' | 'ready' | 'error';
       [density]="density()"
       [sort]="sort()"
       [dir]="dir()"
-      [showAssign]="showAssign()"
+      [assignLink]="assignLink()"
       [newSince]="newSince()"
       [leaving]="leaving()"
       [from]="from()"
@@ -68,7 +68,6 @@ export type WorkListState = 'loading' | 'ready' | 'error';
       (retry)="onRetry()"
       (clearFilters)="clearFilters.emit()"
       (columnsShown)="columnsShown.emit($event)"
-      (assignToMe)="assignToMe.emit($event)"
       (rowChange)="rowChange.emit($event)"
     >
       <ng-content select="[empty-action]" ngProjectAs="[empty-action]" />
@@ -114,7 +113,8 @@ export class WorkList {
   readonly emptyParts = input<readonly CopyPart[] | null>(null);
   /** The projected `[near-empty]` note may show under the last row (My Work, Active) when the list is short and unfiltered. */
   readonly nearEmpty = input(false);
-  readonly showAssign = input(false);
+  /** Pod Work: an "Assign to me" link-button next to "Unassigned" in the Assignee cell. */
+  readonly assignLink = input(false);
   /** The list the rows belong to: task links carry `?from=`, and Back from a task focuses the row that was left (M7). */
   readonly from = input<DrillSource | null>(null);
   /** Instant (ms) of the previous visit; rows created after it show a "New" marker. */
@@ -131,7 +131,6 @@ export class WorkList {
   readonly retry = output<void>();
   readonly clearFilters = output<void>();
   readonly columnsShown = output<string[]>();
-  readonly assignToMe = output<TaskQueueRow>();
   readonly rowChange = output<TaskQueueRow>();
 
   protected readonly sizes = PAGE_SIZES;

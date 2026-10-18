@@ -117,9 +117,6 @@ const NARROW_BELOW = 760;
                 }
               </th>
             }
-            @if (showAssign()) {
-              <th scope="col" class="wt-actions">Actions</th>
-            }
           </tr>
           @if (filters(); as f) {
             @if (f.rowVisible()) {
@@ -158,7 +155,7 @@ const NARROW_BELOW = 760;
               </td>
             </tr>
             @for (n of skeletonRows; track n) {
-              <tr mfTaskSkeleton [columns]="shownKeyList()" [showAssign]="showAssign()"></tr>
+              <tr mfTaskSkeleton [columns]="shownKeyList()"></tr>
             }
           }
           @for (row of rows(); track row.taskId; let i = $index) {
@@ -282,6 +279,8 @@ const NARROW_BELOW = 760;
                         <mf-row-edit
                           field="assignee"
                           [row]="row"
+                          [selfAssign]="true"
+                          [assignLink]="assignLink()"
                           (rowChange)="rowChange.emit($event)"
                         />
                       } @else if (row.assignedUser; as user) {
@@ -367,20 +366,6 @@ const NARROW_BELOW = 760;
                     @case ('updated') {
                       {{ row.updatedAtUtc | mfDate }}
                     }
-                  }
-                </td>
-              }
-              @if (showAssign()) {
-                <td class="wt-actions">
-                  @if (canAssign(row)) {
-                    <button
-                      type="button"
-                      class="wt-action"
-                      (click)="assignToMe.emit(row)"
-                      [attr.aria-label]="'Assign to me, ' + row.taskNumber"
-                    >
-                      Assign to me
-                    </button>
                   }
                 </td>
               }
@@ -473,8 +458,8 @@ export class TaskTable {
   /** Current API sort field; null shows no sort indicator (the default order applies). */
   readonly sort = input<string | null>(null);
   readonly dir = input<SortDirection | null>(null);
-  /** Adds an "Assign to me" action to unassigned open rows. */
-  readonly showAssign = input(false);
+  /** Shows the "Assign to me" link-button next to "Unassigned" in the Assignee cell (Pod Work). */
+  readonly assignLink = input(false);
   /** Instant (ms) of the user's previous visit; tasks created after it get a "New" marker. Null shows no markers (My Work only). */
   readonly newSince = input<number | null>(null);
   /** The list the table belongs to: its task links carry `?from=` and the view to return to (M7). Null on record pages. */
@@ -591,7 +576,6 @@ export class TaskTable {
   readonly clearFilters = output<void>();
   /** The keys of the columns that are on screen now (the table folds some away on a narrow window). */
   readonly columnsShown = output<string[]>();
-  readonly assignToMe = output<TaskQueueRow>();
   /** A row changed from the table (an inline edit): the optimistic row, then the server's row or the original again. */
   /** Tasks that just left the tab: their rows show muted until the page removes them. */
   readonly leaving = input<ReadonlySet<number>>(new Set());
@@ -672,14 +656,9 @@ export class TaskTable {
   protected readonly skeletonRows = [1, 2, 3, 4, 5, 6, 7, 8];
   protected readonly shownKeyList = computed(() => this.shownColumns().map((c) => c.key));
 
-  protected readonly columnCount = computed(
-    () => this.shownColumns().length + (this.showAssign() ? 1 : 0),
-  );
-  /** The filter row's cells: the shown columns, and an empty cell for the Actions column. */
-  protected readonly filterColumns = computed(() => [
-    ...this.shownColumns().map((c) => c.key),
-    ...(this.showAssign() ? ['actions'] : []),
-  ]);
+  protected readonly columnCount = computed(() => this.shownColumns().length);
+  /** The filter row's cells: the shown columns. */
+  protected readonly filterColumns = computed(() => this.shownColumns().map((c) => c.key));
   private readonly shownKeys = computed(() =>
     this.shownColumns()
       .map((c) => c.key)
@@ -709,10 +688,6 @@ export class TaskTable {
 
   protected editable(field: InlineField, row: TaskQueueRow): boolean {
     return canEditField(field, row, (p) => this.auth.has(p));
-  }
-
-  protected canAssign(row: TaskQueueRow): boolean {
-    return !row.assignedUser && ['NEW', 'IN_PROGRESS', 'ON_HOLD'].includes(row.status);
   }
 
   protected isNew(row: TaskQueueRow): boolean {

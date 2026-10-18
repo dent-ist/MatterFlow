@@ -9,16 +9,13 @@ import {
   signal,
 } from '@angular/core';
 import { ParamMap } from '@angular/router';
-import { Observable, firstValueFrom } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   PodWorkClient,
   PodWorkPage as PodWorkData,
   TaskQueueRow,
-  TasksClient,
 } from '../../../api/generated/api-client';
-import { ApiError } from '../../../core/http/api-error';
 import { PageTitle } from '../../../core/title/page-title';
-import { NotificationService } from '../../../core/notify/notification.service';
 import { loadLastPod, saveLastPod } from '../../../shared/work-queue/column-prefs';
 import { FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
@@ -213,14 +210,13 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
             [caption]="caption()"
             [scope]="tabLabel()"
             [emptyText]="emptyText()"
-            [showAssign]="canAssign()"
+            [assignLink]="canAssign()"
             (sortChange)="sortBy($event)"
             (pageChange)="goToPage($event)"
             (pageSizeChange)="setPageSize($event)"
             (retry)="load()"
             (clearFilters)="clearFilters()"
             (rowChange)="replaceRow($event)"
-            (assignToMe)="assignToMe($event)"
             (columnsShown)="shownColumns.set($event)"
           />
         </div>
@@ -230,8 +226,6 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
 })
 export class PodWorkPage extends QueuePageBase<PodWorkData> {
   private readonly api = inject(PodWorkClient);
-  private readonly tasks = inject(TasksClient);
-  private readonly notify = inject(NotificationService);
 
   protected readonly tab = computed<TabKey>(() => {
     const view = this.state().view;
@@ -406,29 +400,17 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
     this.navigate({ ...s, page: 1, filters: { ...s.filters, assignee } });
   }
 
-  /** The lightweight self-assign (UX S04): ordinary assignment through the Task API; assigning a person starts a New task. */
-  protected async assignToMe(row: TaskQueueRow): Promise<void> {
-    const me = this.userId();
-    if (me === null) return;
-    try {
-      await firstValueFrom(
-        this.tasks.assignTask(row.taskId, {
-          rowVersion: row.rowVersion,
-          podId: row.assignedPod?.podId ?? this.data()?.pod?.podId,
-          userId: me,
-        }),
-      );
-      this.notify.success(
-        row.status === 'NEW' ? 'Assigned to you. Task moved to In Progress.' : 'Assigned to you.',
-      );
-    } catch (error) {
-      const conflict = error instanceof ApiError && error.status === 409;
-      this.notify.error(
-        conflict
-          ? 'Someone else changed this task. The list was refreshed.'
-          : "We couldn't assign this task. Try again.",
-      );
-    }
-    await this.load();
+  /** An assigned task no longer belongs in the Unassigned tab: its row shows the new assignee, then leaves (Undo keeps it). */
+  protected override leavesView(row: TaskQueueRow): boolean {
+    return this.tab() === 'queue' && !!row.assignedUser;
+  }
+
+  protected override leftText(row: TaskQueueRow): string {
+    return `assigned to ${row.assignedUser?.displayName ?? 'someone'}. Removed from ${this.tabLabel()}.`;
+  }
+
+  /** The tab counts and the header numbers follow the assignment while the row is still on screen. */
+  protected override mergeCounts(current: PodWorkData, fresh: PodWorkData): PodWorkData {
+    return { ...current, counts: fresh.counts, summary: fresh.summary };
   }
 }
