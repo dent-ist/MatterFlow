@@ -75,7 +75,7 @@ public static class TaskLifecycle
         Set(TaskStatusCode.OnHold, TaskStatusCode.Cancelled, Kind.Cancel);
 
         Set(TaskStatusCode.Completed, TaskStatusCode.InProgress, Kind.Reopen);
-        Set(TaskStatusCode.Completed, TaskStatusCode.Cancelled, Kind.Cancel);
+        // Completed to Cancelled is not offered: a closed task is only reopened (PM decision, Task Queue review BUG-TQ4).
 
         Set(TaskStatusCode.Cancelled, TaskStatusCode.InProgress, Kind.Reopen);
         return m;

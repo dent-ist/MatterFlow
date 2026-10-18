@@ -35,10 +35,7 @@ const MATRIX: Readonly<Record<string, readonly [StatusAction, string, string][]>
     ['RESUME', 'IN_PROGRESS', 'Task.ChangeStatus'],
     ['CANCEL', 'CANCELLED', 'Task.Cancel'],
   ],
-  COMPLETED: [
-    ['REOPEN', 'IN_PROGRESS', 'Task.Reopen'],
-    ['CANCEL', 'CANCELLED', 'Task.Cancel'],
-  ],
+  COMPLETED: [['REOPEN', 'IN_PROGRESS', 'Task.Reopen']],
   CANCELLED: [['REOPEN', 'IN_PROGRESS', 'Task.Reopen']],
 };
 

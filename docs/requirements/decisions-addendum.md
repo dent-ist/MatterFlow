@@ -8,7 +8,7 @@
 - A Task's **Project may change**, within the same Matter.
 - Task form values (Task Type request form) are **editable** and audited. Values stay on the form version the Task was created under.
 - Editing a **Completed or Cancelled** Task requires first moving it back to **In Progress** (both are reopenable; Cancelled is not terminal). Reopening is blocked while the Matter is inactive.
-- A Task can be **Cancelled at any time**, with a **mandatory comment**; unresolved workflow steps do not block Cancel.
+- A Task can be **Cancelled from any open state** (New, In Progress, On Hold), with a **mandatory comment** (PM decision, Task Queue review BUG-TQ4: a Completed or Cancelled task is only reopened); unresolved workflow steps do not block Cancel.
 - Reopening a step on a Completed Task **auto-moves the Task to In Progress** (audit both events).
 - **Assigning a user** moves a New Task to In Progress automatically. Pod-only assignment does not. Unassigning later does not revert status.
 - Editing a Step Definition in the library **does not** change already-published Workflow Versions (snapshot on publish).
@@ -93,7 +93,7 @@
 
 ## N. QA findings resolved by the project manager (2026-10-14)
 
-See `docs/qa/findings.md`. Notable: Completed -> Cancelled is allowed directly (Cancel "at any time"); a NEW Task can be Completed (bulk-complete applies); bulk-complete is all-or-nothing.
+See `docs/qa/findings.md`. Notable: Completed -> Cancelled was allowed directly but is refused since BUG-TQ4 (#235; reopen first); a NEW Task can be Completed (bulk-complete applies); bulk-complete is all-or-nothing.
 
 ## O. Decisions from the SME review (2026-10-14)
 

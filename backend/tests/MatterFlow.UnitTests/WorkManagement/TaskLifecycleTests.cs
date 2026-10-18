@@ -25,7 +25,6 @@ public class TaskLifecycleTests
         [(H, P)] = "Task.ChangeStatus",
         [(H, X)] = "Task.Cancel",
         [(C, P)] = "Task.Reopen",
-        [(C, X)] = "Task.Cancel",
         [(X, P)] = "Task.Reopen",
     };
 
@@ -90,10 +89,10 @@ public class TaskLifecycleTests
     }
 
     [Fact]
-    public void Matrix_has_exactly_twelve_allowed_cells()
+    public void Matrix_has_exactly_eleven_allowed_cells()
     {
         var count = (from f in All from t in All where TaskLifecycle.IsStructurallyAllowed(f, t) select 1).Count();
-        count.ShouldBe(12);
+        count.ShouldBe(11);
         count.ShouldBe(Allowed.Count);
     }
 
@@ -110,11 +109,13 @@ public class TaskLifecycleTests
     }
 
     [Fact]
-    public void Completed_to_cancelled_is_direct_and_clears_completed_at()
+    public void A_closed_task_cannot_move_to_the_other_closed_status()
     {
-        var d = TaskLifecycle.Evaluate(C, X, new TransitionContext(false, true));
-        d.Allowed.ShouldBeTrue();
-        d.Effects!.ClearCompletedAt.ShouldBeTrue();
+        foreach (var matter in new[] { true, false })
+        {
+            TaskLifecycle.Evaluate(C, X, new TransitionContext(matter, true, true)).ErrorCode.ShouldBe("INVALID_STATUS_TRANSITION");
+            TaskLifecycle.Evaluate(X, C, new TransitionContext(matter, true, true)).ErrorCode.ShouldBe("INVALID_STATUS_TRANSITION");
+        }
     }
 
     [Fact]

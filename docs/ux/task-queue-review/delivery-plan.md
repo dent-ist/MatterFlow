@@ -167,7 +167,7 @@ Issues closed, tests green twice, axe clean at four sizes, screenshots in `fixes
 - WP4 Copy (2026-10-18, b8c2efd): #225 done, #226 done, #227 done; unit specs (task-queue, my-work, pod-work, filters, work-queue, dashboard-links), lint, prettier, tsc app+spec+e2e green; e2e task-queue-copy (4, axe at 1366/1920/768/375), my-work-vocabulary, column-filters-work-lists, dashboard-audit, assignment-and-views green; initial bundle 634.75 kB; screenshots `fixes/wp4/`; known limits: All open is not named in the title/caption; Due soon, ASAP and On hold empty texts are ready for #220 but untested in the UI until it lands.
 - WP5 Toolbar: not started.
 - WP6 Assign to me: not started.
-- WP7 Closed row menu: not started.
+- WP7 Closed row menu (2026-10-18, commit sha in the issue #235 comment): #235 done; server refuses Completed to Cancelled (`INVALID_STATUS_TRANSITION`, 409; `TaskLifecycle` matrix cell removed, so `allowedActions` and the Task detail menu follow), inline menu `inline-edit.ts` offers only Reopen on closed rows; unit + Tasks integration + e2e (axe, 4 sizes) green; no API shape change, bundle unchanged; screenshots `fixes/wp-actions/`; known limit: none.
 - WP8 Matter cell and defaults: not started.
 - WP9 Fixed layout: not started.
 - WP10 View counts: not started.

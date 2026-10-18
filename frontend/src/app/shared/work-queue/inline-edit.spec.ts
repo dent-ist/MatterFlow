@@ -10,7 +10,7 @@ describe('statusChoices (TaskLifecycle matrix)', () => {
     expect(actions('NEW')).toEqual(['START', 'HOLD', 'COMPLETE', 'CANCEL']);
     expect(actions('IN_PROGRESS')).toEqual(['HOLD', 'COMPLETE', 'CANCEL']);
     expect(actions('ON_HOLD')).toEqual(['RESUME', 'CANCEL']);
-    expect(actions('COMPLETED')).toEqual(['REOPEN', 'CANCEL']);
+    expect(actions('COMPLETED')).toEqual(['REOPEN']);
     expect(actions('CANCELLED')).toEqual(['REOPEN']);
   });
 

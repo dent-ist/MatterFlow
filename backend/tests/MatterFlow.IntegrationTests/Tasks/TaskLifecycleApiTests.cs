@@ -19,7 +19,7 @@ public sealed class TaskLifecycleApiTests(SqlServerFixture sql) : IAsyncLifetime
         ["NEW"] = ["IN_PROGRESS", "ON_HOLD", "COMPLETED", "CANCELLED"],
         ["IN_PROGRESS"] = ["ON_HOLD", "COMPLETED", "CANCELLED"],
         ["ON_HOLD"] = ["IN_PROGRESS", "CANCELLED"],
-        ["COMPLETED"] = ["IN_PROGRESS", "CANCELLED"],
+        ["COMPLETED"] = ["IN_PROGRESS"],
         ["CANCELLED"] = ["IN_PROGRESS"],
     };
 
@@ -104,7 +104,6 @@ public sealed class TaskLifecycleApiTests(SqlServerFixture sql) : IAsyncLifetime
     [InlineData("IN_PROGRESS", "COMPLETED", "Task.Complete")]
     [InlineData("NEW", "COMPLETED", "Task.Complete")]
     [InlineData("IN_PROGRESS", "CANCELLED", "Task.Cancel")]
-    [InlineData("COMPLETED", "CANCELLED", "Task.Cancel")]
     [InlineData("COMPLETED", "IN_PROGRESS", "Task.Reopen")]
     [InlineData("CANCELLED", "IN_PROGRESS", "Task.Reopen")]
     public async Task Each_transition_needs_its_own_permission_and_a_denial_changes_nothing(string from, string to, string permission)
@@ -394,17 +393,40 @@ public sealed class TaskLifecycleApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Cancel_ignores_unresolved_steps_and_a_completed_task_can_be_cancelled_directly()
+    public async Task Cancel_ignores_unresolved_steps()
     {
         var withSteps = await _h.CreateTaskAsync(_w, ordered: true);
         var cancelled = await _h.PostAsync(TaskId(withSteps), "cancel", new { comment = "Client withdrew", rowVersion = RowVersion(withSteps) });
         Status(cancelled).ShouldBe("CANCELLED");
         cancelled.GetProperty("workflow").GetProperty("steps").EnumerateArray().ShouldAllBe(s => s.GetProperty("status").GetString() == "PENDING");
+    }
 
+    [Fact]
+    public async Task A_closed_task_is_only_reopened_cancelling_a_completed_or_completing_a_cancelled_task_is_refused()
+    {
+        // Completed -> Cancelled: refused on the dedicated endpoint and the generic one, nothing changes, nothing is audited, the comment is not stored.
         var completed = await _h.ReachAsync(_w, "COMPLETED");
-        var recancelled = await _h.PostAsync(TaskId(completed), "cancel", new { comment = "Cancel after completion", rowVersion = RowVersion(completed) });
-        Status(recancelled).ShouldBe("CANCELLED");
-        recancelled.GetProperty("completedAtUtc").ValueKind.ShouldBe(JsonValueKind.Null);
+        var auditBefore = (await _h.AuditAsync(TaskId(completed))).Count;
+        await ProblemAsync(await _h.Admin.PostAsJsonAsync($"/api/v1/tasks/{TaskId(completed)}/cancel", new { comment = "Cancel after completion", rowVersion = RowVersion(completed) }),
+            HttpStatusCode.Conflict, "INVALID_STATUS_TRANSITION");
+        await ProblemAsync(await TryStatusAsync(completed, "CANCELLED"), HttpStatusCode.Conflict, "INVALID_STATUS_TRANSITION");
+        var unchanged = await _h.GetTaskAsync(TaskId(completed));
+        Status(unchanged).ShouldBe("COMPLETED");
+        RowVersion(unchanged).ShouldBe(RowVersion(completed));
+        (await _h.AuditAsync(TaskId(completed))).Count.ShouldBe(auditBefore);
+        unchanged.GetProperty("allowedActions").GetProperty("transitions").EnumerateArray()
+            .Select(t => t.GetProperty("action").GetString()).ShouldBe(["REOPEN"]);
+
+        // Cancelled -> Completed: refused too.
+        var cancelled = await _h.ReachAsync(_w, "CANCELLED");
+        await ProblemAsync(await _h.Admin.PostAsJsonAsync($"/api/v1/tasks/{TaskId(cancelled)}/complete", new { completeUnresolvedSteps = true, rowVersion = RowVersion(cancelled), workflowRowVersion = WorkflowRowVersion(cancelled) }),
+            HttpStatusCode.Conflict, "INVALID_STATUS_TRANSITION");
+        Status(await _h.GetTaskAsync(TaskId(cancelled))).ShouldBe("CANCELLED");
+
+        // Reopen still works from both, and the reopened task can then be cancelled.
+        var reopened = await _h.PostAsync(TaskId(completed), "reopen", new { rowVersion = RowVersion(unchanged) });
+        Status(reopened).ShouldBe("IN_PROGRESS");
+        Status(await _h.PostAsync(TaskId(reopened), "cancel", new { comment = "Cancel after reopening", rowVersion = RowVersion(reopened) })).ShouldBe("CANCELLED");
     }
 
     // ---- concurrency and validation

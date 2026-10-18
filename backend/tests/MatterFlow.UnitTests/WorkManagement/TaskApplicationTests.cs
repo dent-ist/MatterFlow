@@ -86,7 +86,7 @@ public class TaskActionRulesTests
     [InlineData(TaskStatusCode.New, "START,HOLD,COMPLETE,CANCEL")]
     [InlineData(TaskStatusCode.InProgress, "HOLD,COMPLETE,CANCEL")]
     [InlineData(TaskStatusCode.OnHold, "RESUME,CANCEL")]
-    [InlineData(TaskStatusCode.Completed, "REOPEN,CANCEL")]
+    [InlineData(TaskStatusCode.Completed, "REOPEN")]
     [InlineData(TaskStatusCode.Cancelled, "REOPEN")]
     public void Transitions_follow_the_matrix(TaskStatusCode status, string expected)
     {
@@ -120,14 +120,14 @@ public class TaskActionRulesTests
     }
 
     [Fact]
-    public void Reopening_is_blocked_while_the_matter_is_inactive_but_cancel_of_a_completed_task_is_not()
+    public void Reopening_is_blocked_while_the_matter_is_inactive_and_a_completed_task_offers_nothing_else()
     {
         var actions = Compute(TaskStatusCode.Completed, matterActive: false);
 
         var reopen = actions.Transitions.Single(t => t.Action == "REOPEN");
         reopen.Permitted.ShouldBeFalse();
         reopen.BlockedReason.ShouldBe(ErrorCodes.MatterInactive);
-        actions.Transitions.Single(t => t.Action == "CANCEL").Permitted.ShouldBeTrue();
+        actions.Transitions.Count.ShouldBe(1);
         actions.CanReopenSteps.ShouldBeFalse();
     }
 
