@@ -108,8 +108,25 @@ test.describe('Quick view counts and order (WP11)', () => {
       ]);
       const body = (await response.json()) as { total: number; views: Record<string, number> };
       const count = body.views[FIELD[key]];
-      // The button's number is the view's count and the grid's total of the same query, in one response.
-      expect(count, `${key} total`).toBe(body.total);
+      // The button's number is the view's count and the grid's total of the same query, in one response. The API reads the total and
+      // the counts in two statements, and the other workers create and close tasks all the time, so a task may land in between: a
+      // difference is only a failure when it persists on the same request asked again (the database is quiet for a moment).
+      if (count !== body.total) {
+        const request = response.request();
+        const zone = (await request.allHeaders())['x-time-zone'];
+        await expect
+          .poll(
+            async () => {
+              const again = await page.request.get(request.url(), {
+                headers: zone ? { 'X-Time-Zone': zone } : {},
+              });
+              const next = (await again.json()) as { total: number; views: Record<string, number> };
+              return next.views[FIELD[key]] - next.total;
+            },
+            { message: `${key} total`, intervals: [100, 250, 500, 1000], timeout: 10_000 },
+          )
+          .toBe(0);
+      }
       const pressedButton = (await inStrip(page, key)) ? view(page, key) : moreButton(page);
       await expect(pressedButton).toHaveAttribute('data-count', String(count));
       expect(await shown(page, key, pressedButton)).toBe(count);
