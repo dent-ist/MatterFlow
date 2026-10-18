@@ -70,6 +70,8 @@ async function titlesWith(page: Page, token: string): Promise<string[]> {
   await expect(page.locator('[data-task]').first()).toBeVisible();
   // Settled: one response later the rows are the filtered ones.
   await page.waitForLoadState('networkidle');
+  // Under load the filtered response can arrive after the idle check: wait until no row of the previous list is left.
+  await expect(page.locator('[data-task]').filter({ hasNotText: token })).toHaveCount(0);
   return page
     .locator('[data-task] .wt-title')
     .evaluateAll((links) => links.map((l) => (l.textContent ?? '').trim()));

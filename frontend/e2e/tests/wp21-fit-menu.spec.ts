@@ -287,6 +287,8 @@ test.describe('Column header menu (#207)', () => {
     await expect(menu(page)).toHaveCount(0);
     await expect(sortButton(page, 'status')).toBeFocused();
     await page.keyboard.press('Shift+F10');
+    // The menu opens after a frame: a Tab pressed before it has focus would move on in the header and the menu would open behind it.
+    await expect(item(page, 'sort-asc')).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(menu(page)).toHaveCount(0);
     await expect(sortButton(page, 'status')).toBeFocused();

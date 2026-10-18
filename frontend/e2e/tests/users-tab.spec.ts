@@ -420,6 +420,8 @@ test.describe('Users tab: workload', () => {
     const low = card(page, 'low');
     await expect(low).toHaveAttribute('data-tone', 'low');
     await low.locator('[data-user-open]').click();
+    // Wait for the whole list: a click on a row of the first render opens a menu that the list's own re-render then removes.
+    await expect(page.locator('[data-drawer-tasks] li')).toHaveCount(4);
     const row = page.locator('[data-drawer-tasks] li').first();
     await row.locator('[data-field="priority"] [data-inline-trigger]').click();
     await page.getByRole('menuitemradio', { name: 'Critical', exact: true }).click();

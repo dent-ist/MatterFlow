@@ -5,7 +5,10 @@ import { expect, Locator } from '@playwright/test';
  * Opens the menu of `row` (a `li[data-task]`) with the pointer and picks it.
  */
 export async function assignToMeFromRow(row: Locator, number: string): Promise<void> {
-  await row.getByRole('button', { name: `Assign ${number}`, exact: true }).click();
+  const trigger = row.getByRole('button', { name: `Assign ${number}`, exact: true });
+  // Scroll first: a scroll after the click (a row just under the fold on a phone) closes an inline menu by design.
+  await trigger.scrollIntoViewIfNeeded();
+  await trigger.click();
   await row
     .page()
     .getByRole('button', { name: `Assign ${number} to me`, exact: true })

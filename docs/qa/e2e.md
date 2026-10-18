@@ -48,7 +48,7 @@ npm run e2e:report                                # opens playwright-report/ aft
 npm run e2e:typecheck                             # tsc over frontend/e2e
 ```
 
-The suite is 109 spec files and 921 tests (`npx playwright test -c e2e/playwright.config.ts --list`). A full run on a loaded machine takes well over half an hour with two workers, plus roughly two minutes for the build and the SQL container; run a spec or a `-g` pattern while you work and the whole suite before a release.
+The suite is 111 spec files and 942 tests (`npx playwright test -c e2e/playwright.config.ts --list`). A full run on a loaded machine takes well over half an hour with two workers, plus roughly two minutes for the build and the SQL container; run a spec or a `-g` pattern while you work and the whole suite before a release.
 
 ## Demo data is separate
 
