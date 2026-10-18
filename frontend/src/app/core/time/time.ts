@@ -307,3 +307,163 @@ function overdueDuration(instant: Date | null, calendarDays: number, now: Date):
   const hours = Math.floor(ms / 3_600_000);
   return hours >= 1 ? `${hours}h` : '<1h';
 }
+
+// ---------------------------------------------------------------------------------------------
+// Two-line Due cell (TQ-WP1, #208)
+// ---------------------------------------------------------------------------------------------
+
+export type DueTone = 'overdue' | 'today' | 'soon' | 'none' | 'asap' | 'closed';
+
+/** What the Due cell, the Dashboard lists, the Swimlane card and the task header show for one row. */
+export interface DueCell {
+  tone: DueTone;
+  /** Short date text, no zone: `ASAP`, `Oct 17, 10:00 AM`, `Oct 13`, `Jan 5, 2027`. */
+  line1: string;
+  /** Relative text: `Overdue 6h`, `Due today`, `Tomorrow`, `In 2 days`; empty for later, closed and ASAP. */
+  line2: string;
+  /** One spoken sentence, e.g. `Due Oct 17 at 10:00 AM, overdue 6 hours`. */
+  sentence: string;
+  /** Full date with the zone abbreviation for a timed due (`Oct 17, 2026, 10:00 AM EDT`). */
+  tooltip: string;
+  overdue: boolean;
+  hasTime: boolean;
+  /** Whole calendar days from today (viewer's zone); set for open tasks with a due date. Negative when overdue. */
+  daysUntil?: number;
+}
+
+function formatTimeOnly(instant: Date, zone: string): string {
+  return clean(formatter(zone, { hour: 'numeric', minute: '2-digit' }).format(instant));
+}
+
+function formatMonthDay(d: CalendarDay): string {
+  return clean(
+    formatter('UTC', { month: 'short', day: 'numeric' }).format(
+      new Date(Date.UTC(d.year, d.month - 1, d.day)),
+    ),
+  );
+}
+
+function plural(n: number, unit: string): string {
+  return `${n} ${unit}${n === 1 ? '' : 's'}`;
+}
+
+/** The overdue duration of `overdueDuration` ("6h", "4d", "<1h") in words. */
+function spokenDuration(short: string): string {
+  if (short === '<1h') return 'less than 1 hour';
+  const n = Number.parseInt(short, 10);
+  return short.endsWith('h') ? plural(n, 'hour') : plural(n, 'day');
+}
+
+/**
+ * The two-line Due cell logic (#208). Eight states: ASAP, overdue timed, overdue date-only, due today, tomorrow, in 2 days, later, closed.
+ * The year shows only when the due day is outside the current calendar year in the viewer's zone; the zone abbreviation is only in the
+ * tooltip. Timed dues are instants (every viewer sees the same moment in their own zone), date-only dues are floating calendar days
+ * judged in the viewer's zone (addendum M). A task the Dashboard Due soon tile counts (today, tomorrow, in 2 days) always has line 2.
+ * `describeDue` stays as it was for older callers.
+ */
+export function describeDueCell(
+  due: DueInput | null | undefined,
+  now: Date,
+  zone: string,
+  status?: string | null,
+): DueCell {
+  const dueAt = due?.dueAtUtc ? new Date(due.dueAtUtc) : null;
+  const dueDay = due?.dueDate ? parseDateOnly(due.dueDate) : null;
+  const validAt = dueAt && !Number.isNaN(dueAt.getTime()) ? dueAt : null;
+
+  if (!validAt && !dueDay) {
+    return {
+      tone: 'asap',
+      line1: 'ASAP',
+      line2: '',
+      sentence: 'No due date, ASAP',
+      tooltip: 'No due date set. Handle promptly.',
+      overdue: false,
+      hasTime: false,
+    };
+  }
+
+  const hasTime = !!validAt;
+  const day: CalendarDay = validAt ? calendarDayInZone(validAt, zone) : (dueDay as CalendarDay);
+  const todayDay = calendarDayInZone(now, zone);
+  const dayText = day.year === todayDay.year ? formatMonthDay(day) : formatCalendarDay(day);
+  const timeText = validAt ? formatTimeOnly(validAt, zone) : '';
+  const withTime = validAt ? `${dayText}, ${timeText}` : dayText;
+  const tooltip = validAt ? formatInstant(validAt, zone) : formatCalendarDay(day);
+  const closed = !!status && CLOSED_STATUSES.includes(status);
+  const delta = dayIndex(day) - dayIndex(todayDay);
+
+  if (closed) {
+    return {
+      tone: 'closed',
+      line1: dayText,
+      line2: '',
+      sentence: `Was due ${dayText}`,
+      tooltip,
+      overdue: false,
+      hasTime,
+    };
+  }
+
+  const at = validAt ? ` at ${timeText}` : '';
+  const overdue = validAt ? now.getTime() > validAt.getTime() : delta < 0;
+  if (overdue) {
+    const short = overdueDuration(validAt, -delta, now);
+    return {
+      tone: 'overdue',
+      line1: withTime,
+      line2: `Overdue ${short}`,
+      sentence: `Due ${dayText}${at}, overdue ${spokenDuration(short)}`,
+      tooltip,
+      overdue: true,
+      hasTime,
+      daysUntil: delta,
+    };
+  }
+  if (delta === 0) {
+    return {
+      tone: 'today',
+      line1: withTime,
+      line2: 'Due today',
+      sentence: `Due today, ${dayText}${at}`,
+      tooltip,
+      overdue: false,
+      hasTime,
+      daysUntil: 0,
+    };
+  }
+  if (delta === 1) {
+    return {
+      tone: 'soon',
+      line1: withTime,
+      line2: 'Tomorrow',
+      sentence: `Due tomorrow, ${dayText}${at}`,
+      tooltip,
+      overdue: false,
+      hasTime,
+      daysUntil: 1,
+    };
+  }
+  if (delta <= DUE_SOON_DAYS) {
+    return {
+      tone: 'soon',
+      line1: withTime,
+      line2: `In ${plural(delta, 'day')}`,
+      sentence: `Due ${dayText}${at}, in ${plural(delta, 'day')}`,
+      tooltip,
+      overdue: false,
+      hasTime,
+      daysUntil: delta,
+    };
+  }
+  return {
+    tone: 'none',
+    line1: dayText,
+    line2: '',
+    sentence: `Due ${dayText}`,
+    tooltip,
+    overdue: false,
+    hasTime,
+    daysUntil: delta,
+  };
+}
