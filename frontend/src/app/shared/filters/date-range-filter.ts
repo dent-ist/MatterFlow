@@ -179,18 +179,22 @@ export class ColumnDateRangeFilter {
   protected readonly hasValue = computed(() => !!this.draft().from || !!this.draft().to);
   protected readonly hasDraft = this.hasValue;
   protected readonly reversed = computed(() => rangeReversed(this.draft()));
-  protected readonly summary = computed(() =>
-    this.hasValue()
-      ? shortRange(this.draft(), todayInZone(this.clock.now(), this.zone).year)
-      : this.emptyLabel(),
+  protected readonly chosen = computed(() =>
+    matchingPreset(this.draft(), todayInZone(this.clock.now(), this.zone), this.presets()),
   );
+
+  /** The button text: the preset's name when both dates equal a preset ("Next 7 days", #155), else the dates. */
+  protected readonly summary = computed(() => {
+    if (!this.hasValue()) return this.emptyLabel();
+    const draft = this.draft();
+    const key = draft.from && draft.to ? this.chosen() : null;
+    const named = key ? DATE_PRESETS.find((p) => p.key === key)?.label : null;
+    return named ?? shortRange(draft, todayInZone(this.clock.now(), this.zone).year);
+  });
   protected readonly presetList = computed(() =>
     this.presets()
       .map((k) => DATE_PRESETS.find((p) => p.key === k))
       .filter((p): p is (typeof DATE_PRESETS)[number] => !!p),
-  );
-  protected readonly chosen = computed(() =>
-    matchingPreset(this.draft(), todayInZone(this.clock.now(), this.zone), this.presets()),
   );
 
   constructor() {

@@ -23,7 +23,10 @@ import { PageFooter } from '../ui/page-footer';
 import { Pager } from '../ui/pager';
 import { QueueChoices, mergeOptions } from './queue-choices';
 import { OPEN_STATUSES, parseQueueState, queueArgs } from './queue-filters';
+import { ColumnAction } from './column-menu-items';
+import { ColumnWidthMap } from './column-widths';
 import { TaskTable } from './task-table';
+import { WorkWidths } from './work-widths';
 
 const PAGE_SIZE = 25;
 const MATTER_COLUMNS = ['ref', 'title', 'project', 'priority', 'assignee', 'due', 'status'];
@@ -97,7 +100,10 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
         [emptyText]="emptyText()"
         [sort]="sort()"
         [dir]="dir()"
-        [widthsEditable]="false"
+        [colWidths]="colWidths()"
+        [canHideColumns]="false"
+        (columnResized)="onColumnResized($event)"
+        (columnAction)="onColumnAction($event)"
         [resetKey]="filterKey() + '|' + sort() + '|' + dir() + '|' + page()"
         (sortChange)="sortBy($event)"
         (retry)="load()"
@@ -135,6 +141,7 @@ export class ScopedTasks {
   private readonly auth = inject(AuthStore);
   private readonly lookups = inject(LookupStore);
   private readonly choices = inject(QueueChoices);
+  private readonly widthStore = inject(WorkWidths);
 
   protected readonly pageSize = PAGE_SIZE;
   protected readonly canView = computed(() => this.auth.has('Task.View'));
@@ -146,6 +153,13 @@ export class ScopedTasks {
   protected readonly total = signal(0);
   protected readonly columns = computed(() =>
     this.projectId() === null ? MATTER_COLUMNS : PROJECT_COLUMNS,
+  );
+  /** Where the widths of this grid are remembered (#203): one scope for every Matter's Tasks tab, one for every Project's list. */
+  private readonly widthScope = computed(() =>
+    this.projectId() === null ? 'matterTasks' : 'projectTasks',
+  );
+  protected readonly colWidths = computed<ColumnWidthMap>(() =>
+    this.widthStore.widths(this.widthScope(), this.auth.profile()?.userId ?? null),
   );
   protected readonly caption = computed(() =>
     this.projectId() === null ? 'Tasks of this matter' : 'Tasks of this project',
@@ -264,6 +278,28 @@ export class ScopedTasks {
   protected goTo(page: number): void {
     this.page.set(page);
     void this.load();
+  }
+
+  protected onColumnResized(e: { key: string; rem: number; defaultRem?: number }): void {
+    this.widthStore.set(
+      this.widthScope(),
+      this.auth.profile()?.userId ?? null,
+      e.key,
+      e.rem,
+      e.defaultRem,
+    );
+  }
+
+  /** The column menu: forget a width, or sort one way (the column set is fixed here, so "Hide column" is not offered). */
+  protected onColumnAction(a: ColumnAction): void {
+    if (a.kind === 'reset') {
+      this.widthStore.reset(this.widthScope(), this.auth.profile()?.userId ?? null, a.key);
+    } else if (a.kind === 'sort') {
+      this.sort.set(a.field);
+      this.dir.set(a.dir);
+      this.page.set(1);
+      void this.load();
+    }
   }
 
   protected sortBy(field: string): void {

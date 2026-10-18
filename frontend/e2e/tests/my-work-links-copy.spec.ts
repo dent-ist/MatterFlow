@@ -309,6 +309,23 @@ test.describe('My Work links, filters and copy', () => {
     );
     await expect(page.locator(`[data-task]`).filter({ hasText: `Soon ${tag}` })).toHaveCount(1);
     expect(typed).toContain('dueFrom=');
+    // The filter button reads the preset's name when the range equals a preset (also for the typed range), else the dates (#155).
+    const dueButton = page.getByRole('button', { name: /^Filter by Due/ });
+    await expect(dueButton).toHaveAccessibleName('Filter by Due, Next 7 days');
+    await myWork.open(
+      `?view=active&dueFrom=${dateInZone(FIRM_ZONE, 0)}&dueTo=${dateInZone(FIRM_ZONE, 8)}`,
+    );
+    await expect(dueButton).not.toHaveAccessibleName(/Next 7 days/);
+    await expect(dueButton).toHaveAccessibleName(/\d/);
+    // The chip (always shown in the 375 px sheet layout) says "Due: Next 7 days", or the dates for a custom range.
+    await page.setViewportSize({ width: 375, height: 812 });
+    const chip = page.locator('[data-filter-chips] [data-chip="due"]');
+    await expect(chip).toContainText(/Due: [A-Z][a-z]{2} \d+/);
+    await myWork.open(
+      `?view=active&dueFrom=${dateInZone(FIRM_ZONE, 0)}&dueTo=${dateInZone(FIRM_ZONE, 6)}`,
+    );
+    await expect(chip).toHaveText(/Due: Next 7 days/);
+    await page.setViewportSize({ width: 1920, height: 1080 });
 
     // The tab-owned cells and the Status choices at every width (at 375 the filters are in the sheet).
     for (const [w, h] of SIZES) {

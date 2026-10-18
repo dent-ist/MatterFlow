@@ -2,6 +2,8 @@ import { DestroyRef, Signal, computed, effect, inject, signal, untracked } from 
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { AuthStore } from '../../core/auth/auth.store';
+import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
+import { todayInZone } from './date-presets';
 import { readFlag, writeFlag } from '../ui/column-filters';
 import {
   FilterChip,
@@ -66,6 +68,8 @@ export class ListFilters {
   private readonly route = inject(ActivatedRoute);
   private readonly auth = inject(AuthStore, { optional: true });
   private readonly destroyRef = inject(DestroyRef);
+  private readonly clock = inject(Clock);
+  private readonly zone = inject(USER_TIME_ZONE);
 
   readonly defs: Signal<readonly FilterDef[]>;
   readonly screen: string;
@@ -156,6 +160,7 @@ export class ListFilters {
     });
     this.chips = computed(() => {
       const v = this.values();
+      const today = todayInZone(this.clock.now(), this.zone);
       const cols = this.visible();
       return this.defs()
         .filter(counted)
@@ -164,6 +169,7 @@ export class ListFilters {
             d,
             v[d.key] ?? defaultValue(d),
             !!d.column && !!cols && !cols.includes(d.column),
+            today,
           ),
         );
     });
@@ -181,9 +187,10 @@ export class ListFilters {
     });
     this.printLine = computed(() => {
       const v = this.values();
+      const today = todayInZone(this.clock.now(), this.zone);
       const parts = this.defs()
         .filter((d) => enabled(d) && !isEmpty(v[d.key] ?? defaultValue(d)))
-        .map((d) => printText(d, v[d.key]));
+        .map((d) => printText(d, v[d.key], today));
       return parts.length > 0 ? `Filters: ${parts.join(', ')}` : '';
     });
     this.isDeepLink = computed(() => hasFilterParams(this.defs(), this.params()));

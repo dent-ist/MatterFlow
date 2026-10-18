@@ -38,6 +38,25 @@ describe('date range column filter', () => {
   });
   afterEach(() => TestBed.resetTestingModule());
 
+  it('shows the preset name on the button when the range equals a preset, else the dates (#155)', () => {
+    // Thursday 15 Oct 2026 in Los Angeles: Next 7 days is Oct 15 to Oct 21.
+    create({ presets: ['today', 'next7', 'thisWeek'] });
+    fixture.componentRef.setInput('value', { from: '2026-10-15', to: '2026-10-21' });
+    fixture.detectChanges();
+    expect(button().textContent).toContain('Next 7 days');
+    expect(button().getAttribute('aria-label')).toBe('Filter by Due, Next 7 days');
+    fixture.componentRef.setInput('value', { from: '2026-10-15', to: '2026-10-22' });
+    fixture.detectChanges();
+    expect(button().textContent).toContain('Oct 15 to Oct 22');
+    // A preset the filter does not offer, and an open-ended range, keep the dates.
+    fixture.componentRef.setInput('value', { from: '2026-10-09', to: '2026-10-15' });
+    fixture.detectChanges();
+    expect(button().textContent).toContain('Oct 9 to Oct 15');
+    fixture.componentRef.setInput('value', { from: '2026-10-15', to: '' });
+    fixture.detectChanges();
+    expect(button().textContent).toContain('From Oct 15');
+  });
+
   it('is a button named for its column that says Any date or the range', () => {
     create();
     expect(button().getAttribute('aria-label')).toBe('Filter by Due, Any date');

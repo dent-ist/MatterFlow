@@ -174,6 +174,16 @@ describe('TaskTable column menu (#207) and fit (#205)', () => {
     expect(menu()!.querySelector('[data-item="sort-asc"]')).toBeNull();
   });
 
+  it('canHideColumns off (the Matter and Project grids): the menu has no Hide column, the rest stays', async () => {
+    await create();
+    fixture.componentRef.setInput('canHideColumns', false);
+    await settle();
+    await openMenu('due');
+    expect(item('widen')).not.toBeNull();
+    expect(item('sort-asc')).not.toBeNull();
+    expect(menu()!.querySelector('[data-item="hide"]')).toBeNull();
+  });
+
   it('a right click opens it and keeps the browser menu away', async () => {
     await create();
     const event = new MouseEvent('contextmenu', {

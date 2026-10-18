@@ -1,5 +1,6 @@
 import { ParamMap } from '@angular/router';
-import { formatDateOnly, parseDateOnly } from '../../core/time/time';
+import { CalendarDay, formatDateOnly, parseDateOnly } from '../../core/time/time';
+import { DATE_PRESETS, DEFAULT_DATE_PRESETS, matchingPreset } from './date-presets';
 
 /**
  * The declarative model behind every column filter (docs/ux/column-filters-review.md section 4.1): a screen declares one `FilterDef[]`
@@ -378,21 +379,36 @@ export function optionLabel(def: FilterDef, value: string): string {
 }
 
 /** "Oct 1, 2026 to Oct 16, 2026" / "from Oct 1, 2026" / "until Oct 16, 2026"; numbers are shown as they are. */
-export function rangeText(def: FilterDef, r: RangeValue): string {
+export function rangeText(def: FilterDef, r: RangeValue, today?: CalendarDay | null): string {
+  const named = today ? presetName(def, r, today) : null;
+  if (named) return named;
   const f = (v: string) => (def.type === 'dateRange' ? formatDateOnly(v) : v);
   if (r.from && r.to) return r.from === r.to ? f(r.from) : `${f(r.from)} to ${f(r.to)}`;
   if (r.from) return def.type === 'dateRange' ? `from ${f(r.from)}` : `${f(r.from)} or more`;
   return def.type === 'dateRange' ? `until ${f(r.to)}` : `${f(r.to)} or less`;
 }
 
-/** The value part of the text for one value ("Critical", "Oct 1, 2026 to Oct 16, 2026"); lists join with commas. */
-export function valueText(def: FilterDef, value: FilterValue): string {
+/**
+ * The name of the preset a closed date range equals today ("Next 7 days"), or null for a custom range (#155): the chip then shows
+ * the dates. Only the presets the filter offers count (`def.presets`, else the default list).
+ */
+export function presetName(def: FilterDef, r: RangeValue, today: CalendarDay): string | null {
+  if (def.type !== 'dateRange' || !r.from || !r.to) return null;
+  const key = matchingPreset(r, today, def.presets ?? DEFAULT_DATE_PRESETS);
+  return key ? (DATE_PRESETS.find((p) => p.key === key)?.label ?? null) : null;
+}
+
+/**
+ * The value part of the text for one value ("Critical", "Oct 1, 2026 to Oct 16, 2026"); lists join with commas. `today` (the viewer's
+ * calendar day) lets a date range that equals a preset read as the preset's name.
+ */
+export function valueText(def: FilterDef, value: FilterValue, today?: CalendarDay | null): string {
   if (typeof value === 'string') {
     if (def.type === 'text') return def.valueLabel ? def.valueLabel(value) : value;
     if (def.type === 'triState') return triLabel(def, value);
     return value === '' ? (selectOptions(def)[0]?.label ?? '') : optionLabel(def, value);
   }
-  if (isRange(value)) return rangeText(def, value);
+  if (isRange(value)) return rangeText(def, value, today);
   return groupOf(def, value)?.label ?? value.map((v) => optionLabel(def, v)).join(', ');
 }
 
@@ -422,6 +438,7 @@ export function buildChips(
   def: FilterDef,
   value: FilterValue,
   hiddenColumn: boolean,
+  today?: CalendarDay | null,
 ): FilterChip[] {
   if (!isActive(def, value)) {
     return [];
@@ -455,7 +472,7 @@ export function buildChips(
     {
       ...base,
       id: def.key,
-      label: chipLabel(def, valueText(def, value)),
+      label: chipLabel(def, valueText(def, value, today)),
       remaining: defaultValue(def),
     },
   ];
@@ -473,12 +490,12 @@ export function chipLabel(def: FilterDef, text: string): string {
 }
 
 /** "Status Active, Priority Critical or High": the line printed above a filtered grid. */
-export function printText(def: FilterDef, value: FilterValue): string {
+export function printText(def: FilterDef, value: FilterValue, today?: CalendarDay | null): string {
   if (typeof value !== 'string' && !isRange(value)) {
     const group = groupOf(def, value);
     if (group) return `${def.label} ${group.label}`;
     return `${def.label} ${value.map((v) => optionLabel(def, v)).join(' or ')}`;
   }
-  const text = valueText(def, value);
+  const text = valueText(def, value, today);
   return chipLabel(def, text) === text ? text : `${def.label} ${text}`;
 }

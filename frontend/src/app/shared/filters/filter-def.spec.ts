@@ -193,6 +193,44 @@ describe('filter definitions', () => {
       expect(selectOptions(STATUS)).toHaveLength(3);
     });
 
+    it('names the preset a closed date range equals, else shows the dates (#155)', () => {
+      const due: FilterDef = {
+        key: 'due',
+        label: 'Due',
+        column: 'due',
+        type: 'dateRange',
+        presets: ['today', 'tomorrow', 'next7', 'thisWeek', 'nextWeek', 'thisMonth'],
+      };
+      const wed = { year: 2026, month: 10, day: 21 };
+      // Next 7 days on a Wednesday: Wed to next Tue.
+      const next7 = { from: '2026-10-21', to: '2026-10-27' };
+      expect(buildChips(due, next7, false, wed)[0].label).toBe('Due: Next 7 days');
+      expect(buildChips(due, { from: '2026-10-21', to: '2026-10-21' }, false, wed)[0].label).toBe(
+        'Due: Today',
+      );
+      expect(buildChips(due, { from: '2026-10-19', to: '2026-10-25' }, false, wed)[0].label).toBe(
+        'Due: This week',
+      );
+      // A custom range, an open-ended range, and no calendar day all keep the dates.
+      expect(buildChips(due, { from: '2026-10-21', to: '2026-10-28' }, false, wed)[0].label).toBe(
+        'Due: Oct 21, 2026 to Oct 28, 2026',
+      );
+      expect(buildChips(due, { from: '2026-10-21', to: '' }, false, wed)[0].label).toBe(
+        'Due: from Oct 21, 2026',
+      );
+      expect(buildChips(due, next7, false)[0].label).toBe('Due: Oct 21, 2026 to Oct 27, 2026');
+      // A preset the filter does not offer is not a name (Last 7 days is not a Due preset).
+      expect(buildChips(due, { from: '2026-10-15', to: '2026-10-21' }, false, wed)[0].label).toBe(
+        'Due: Oct 15, 2026 to Oct 21, 2026',
+      );
+      // Created keeps its past presets, and the print line uses the same name.
+      const created: FilterDef = { ...due, key: 'created', label: 'Created', presets: undefined };
+      expect(
+        buildChips(created, { from: '2026-10-15', to: '2026-10-21' }, false, wed)[0].label,
+      ).toBe('Created: Last 7 days');
+      expect(printText(due, next7, wed)).toBe('Due Next 7 days');
+    });
+
     it('makes one chip per chosen value, named for the filter, with the value left after removing it', () => {
       const chips = buildChips(PRIORITY, ['1', '2'], false);
       expect(chips.map((c) => c.label)).toEqual(['Priority: Critical', 'Priority: High']);

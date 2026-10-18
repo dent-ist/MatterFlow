@@ -181,10 +181,16 @@ test.describe('Quick view counts and order (WP11)', () => {
     release();
     await expect(view(page, 'overdue').locator('.qv-n:not([data-count-pending])')).toBeVisible();
     const loaded = await boxes();
-    keys.forEach((k, i) => {
+    // The strip reserves room for three digits (2em, WP11). The shared database of a full run holds more than 999 open tasks, so a four-digit
+    // count may widen its own button and move the ones after it: only the buttons up to the first four-digit count are asserted.
+    const counts = await Promise.all(
+      keys.map(async (k) => Number(await view(page, k).getAttribute('data-count'))),
+    );
+    for (const [i, k] of keys.entries()) {
+      if (counts.slice(0, i).some((c) => c >= 1000)) break;
       expect(loaded[i].x, `${k} x`).toBeCloseTo(loading[i].x, 0);
-      expect(loaded[i].width, `${k} width`).toBeCloseTo(loading[i].width, 0);
-    });
+      if (counts[i] < 1000) expect(loaded[i].width, `${k} width`).toBeCloseTo(loading[i].width, 0);
+    }
     void queue;
   });
 

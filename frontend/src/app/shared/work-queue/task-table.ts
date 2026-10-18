@@ -673,8 +673,10 @@ export class TaskTable {
   readonly columnAction = output<ColumnAction>();
   /** A polite message for the list's live region ("Due column 144 pixels"). */
   readonly announce = output<string>();
-  /** False where the page stores no widths (a record page): no handles' double-click and no column menu. */
+  /** False where the page stores no widths: no handles and no column menu. */
   readonly widthsEditable = input(true);
+  /** False where the column set is fixed (the Matter and Project grids): the column menu has no "Hide column". */
+  readonly canHideColumns = input(true);
   readonly retry = output<void>();
   readonly clearFilters = output<void>();
   /** The keys of the columns that are on screen now (the table folds some away on a narrow window). */
@@ -819,7 +821,7 @@ export class TaskTable {
     return columnMenuItems(m.col, {
       currentPx: this.widthPx(m.col),
       stored: m.col.key in this.colWidths(),
-      canHide: true,
+      canHide: this.canHideColumns(),
     });
   });
 
