@@ -189,9 +189,16 @@ test.describe('More views (WP16)', () => {
     await expect(panel).toHaveCount(0);
     await expect(moreButton(page)).toHaveAttribute('aria-expanded', 'false');
 
-    // From the keyboard alone: every view is reachable, More opens with Enter and a view is chosen with Enter.
+    // From the keyboard alone (#236): the strip is one toolbar with one Tab stop, so the arrow keys, not Tab, walk its buttons: every view
+    // is reachable, End lands on More (the last button), Enter opens it and a view is chosen with Enter.
     await stripView(page, 'allOpen').focus();
-    for (const tab of keys.map(() => 'Tab')) await page.keyboard.press(tab);
+    for (let i = 1; i < keys.length; i++) await page.keyboard.press('ArrowRight');
+    await expect(stripView(page, keys[keys.length - 1] as ViewKey)).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(moreButton(page)).toBeFocused();
+    await page.keyboard.press('Home');
+    await expect(stripView(page, 'allOpen')).toBeFocused();
+    await page.keyboard.press('End');
     await expect(moreButton(page)).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(panel.locator('[data-view]').first()).toBeFocused();

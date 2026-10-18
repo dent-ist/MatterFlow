@@ -386,7 +386,8 @@ test.describe('My Work links, filters and copy', () => {
 
     for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });
-      await expect(error).toBeVisible();
+      // Below 640 px the list is cards (#192): the same message sits in the card list's error block, not in a table body.
+      await expect(w < 640 ? page.locator('[data-error]') : error).toBeVisible();
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth,
       );

@@ -43,6 +43,38 @@
   --mf-s1: 4px; --mf-s2: 8px; --mf-s3: 12px; --mf-s4: 16px; --mf-s5: 24px; --mf-s6: 32px; --mf-s7: 48px;
   --mf-radius: 4px; --mf-radius-lg: 8px;
   --mf-row-h: 40px; --mf-row-h-compact: 32px; --mf-target-min: 24px; /* WCAG 2.2 target size, exceeds 2.1 */
+  /* Work grid (mf-task-table: Task Queue, My Work, Pod Work, Matter and Project task lists; ux-spec 5.2). These are the documented
+     numbers; the grid's styles (task-table.scss, src/styles/_tables.scss) carry them as literals, so change both together.
+     --mf-row-h above is for generic tables and pickers, not the work grid. */
+  --mf-grid-row-h: 44px;          /* Comfortable row, exact, in every state (2 px padding, 1 px line, at most 39 px of content) */
+  --mf-grid-row-h-compact: 36px;  /* Compact row, exact, one line per cell */
+  --mf-grid-line-h: 18px;         /* the two-line cells (Title, Matter, Due): two lines are 36 px */
+  --mf-grid-head-h: 40px;         /* header row and inline filter row */
+  --mf-grid-group-h: 36px;        /* Due-sort divider rows, both densities */
+  /* Work grid column widths in CSS px at the default zoom (the grid applies them in rem at the app's 14 px root, so text zoom scales them).
+     -w default, -min and -max a user may resize to (columns panel, header menu, drag). The Title is the spring: no width, 160 px minimum,
+     never stored. A unit test (column-prefs.spec.ts) keeps these equal to WORK_COLUMNS in column-prefs.ts. */
+  --mf-col-ref-w: 112px; --mf-col-ref-min: 80px; --mf-col-ref-max: 120px;
+  --mf-col-matter-w: 160px; --mf-col-matter-min: 112px; --mf-col-matter-max: 320px;
+  --mf-col-client-w: 140px; --mf-col-client-min: 96px; --mf-col-client-max: 280px;
+  --mf-col-project-w: 140px; --mf-col-project-min: 96px; --mf-col-project-max: 280px;
+  --mf-col-type-w: 140px; --mf-col-type-min: 96px; --mf-col-type-max: 280px;
+  --mf-col-workflow-w: 150px; --mf-col-workflow-min: 96px; --mf-col-workflow-max: 280px;
+  --mf-col-progress-w: 160px; --mf-col-progress-min: 120px; --mf-col-progress-max: 320px;
+  --mf-col-priority-w: 112px; --mf-col-priority-min: 96px; --mf-col-priority-max: 160px;
+  --mf-col-pod-w: 140px; --mf-col-pod-min: 96px; --mf-col-pod-max: 280px;
+  --mf-col-assignee-w: 136px; --mf-col-assignee-min: 112px; --mf-col-assignee-max: 240px;
+  --mf-col-creator-w: 140px; --mf-col-creator-min: 96px; --mf-col-creator-max: 280px;
+  --mf-col-requestor-w: 140px; --mf-col-requestor-min: 96px; --mf-col-requestor-max: 280px;
+  --mf-col-due-w: 136px; --mf-col-due-min: 120px; --mf-col-due-max: 200px;
+  --mf-col-status-w: 140px; --mf-col-status-min: 112px; --mf-col-status-max: 200px;
+  --mf-col-closed-w: 104px; --mf-col-closed-min: 88px; --mf-col-closed-max: 160px;
+  --mf-col-age-w: 64px; --mf-col-age-min: 56px; --mf-col-age-max: 100px;
+  --mf-col-created-w: 104px; --mf-col-created-min: 88px; --mf-col-created-max: 160px;
+  --mf-col-updated-w: 120px; --mf-col-updated-min: 96px; --mf-col-updated-max: 180px;
+  --mf-col-title-min: 160px;
+  --mf-col-assignee-pod-work-w: 216px;  /* Assignee on Pod Work, where "Assign to me" shares the cell */
+  --mf-narrow-title-min: 200px;   /* the narrow-box rule: autoHide columns drop out while the Title would be narrower than this */
   --mf-shadow-1: 0 1px 2px rgba(0,0,0,.12);
   --mf-shadow-2: 0 4px 16px rgba(0,0,0,.18);
 }

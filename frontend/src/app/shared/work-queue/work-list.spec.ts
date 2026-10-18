@@ -82,6 +82,8 @@ describe('WorkList', () => {
     await create([], { state: 'error' });
     expect(el().querySelector('table thead th')).not.toBeNull();
     expect(el().querySelector('tbody [data-error]')!.textContent).toContain("Couldn't load tasks");
+    // The live region says the same words as the row (#193), not a second wording.
+    expect(el().querySelector('[role="status"]')!.textContent).toContain("Couldn't load tasks.");
     let retried = 0;
     fixture.componentInstance.retry.subscribe(() => retried++);
     el().querySelector<HTMLButtonElement>('tbody [data-error] button, tbody button')!.click();

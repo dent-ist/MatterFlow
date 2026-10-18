@@ -1,5 +1,9 @@
+/// <reference types="node" />
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   DEFAULT_COLUMNS,
+  WORK_COLUMNS,
   columnScope,
   defaultColumns,
   loadColumns,
@@ -16,6 +20,7 @@ import {
   columnsNoticePending,
   dismissColumnsNotice,
 } from './column-prefs';
+import { ASSIGNEE_WITH_LINK_PX } from './column-widths';
 
 const OLD_MY_WORK = ['ref', 'title', 'matter', 'priority', 'progress', 'due', 'status'];
 
@@ -242,5 +247,23 @@ describe('work table preferences', () => {
     saveLastPod(1, 4);
     expect(loadLastPod(1)).toBe(4);
     expect(loadLastPod(2)).toBeNull();
+  });
+
+  it('docs/ux/tokens.css repeats the column widths of the contract (ux-spec 5.2): default, minimum and maximum', () => {
+    const css = readFileSync(join(process.cwd(), '..', 'docs', 'ux', 'tokens.css'), 'utf8');
+    const token = (name: string): number | null => {
+      const m = css.match(new RegExp(`--mf-col-${name}:\\s*(\\d+)px`));
+      return m ? Number(m[1]) : null;
+    };
+    for (const def of WORK_COLUMNS) {
+      if (def.fill) {
+        expect(token(`${def.key}-min`)).toBe(def.minWidth);
+        continue;
+      }
+      expect(token(`${def.key}-w`), `${def.key} default`).toBe(def.width);
+      expect(token(`${def.key}-min`), `${def.key} minimum`).toBe(def.minWidth);
+      expect(token(`${def.key}-max`), `${def.key} maximum`).toBe(def.maxWidth);
+    }
+    expect(token('assignee-pod-work-w')).toBe(ASSIGNEE_WITH_LINK_PX);
   });
 });

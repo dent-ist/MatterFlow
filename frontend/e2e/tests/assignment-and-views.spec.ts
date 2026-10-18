@@ -216,6 +216,6 @@ test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
     await queue.search(task.title);
     await queue.expectListed(task.title);
     await queue.search(`nothing-matches-${uid()}`);
-    await expect(page.locator('[data-empty]')).toContainText('No tasks match these filters');
+    await expect(page.locator('tbody [data-empty]')).toContainText('No tasks match these filters');
   });
 });

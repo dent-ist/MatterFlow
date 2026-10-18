@@ -198,7 +198,7 @@ falling back to `ConnectionStrings:Default`; the application uses `ConnectionStr
 | `nightly.yml` | daily and manual | Full backend suite with coverage plus frontend tests and build. |
 | `codeql.yml` | push to `dev`, weekly | CodeQL for C# and JavaScript/TypeScript. |
 | `publish.yml` | push to `dev`, manual | Builds the deployable package (`deploy/publish.sh`, win-x64) and uploads it as the artifact `matterflow-publish-<sha>`. |
-| `e2e.yml` | manual, nightly, PRs labelled `e2e` | Playwright end-to-end suite (`frontend/e2e`, about 80 tests, SCN-001..020 and more) against SQL Server in Docker and the real API; traces and screenshots are uploaded on failure. Run locally with `cd frontend && npm run e2e` (see `docs/qa/e2e.md`). |
+| `e2e.yml` | manual, nightly, PRs labelled `e2e` | Playwright end-to-end suite (`frontend/e2e`, 109 spec files and about 920 tests: SCN-001..020, the work lists, the Dashboard and the UX epics) against SQL Server in Docker and the real API; traces and screenshots are uploaded on failure. Run locally with `cd frontend && npm run e2e` (see `docs/qa/e2e.md`). |
 
 `.github/dependabot.yml` opens weekly grouped (minor/patch) updates for NuGet, npm and GitHub Actions.
 
@@ -216,11 +216,15 @@ dotnet MatterFlow.Api.dll --migrate-only              # apply schema scripts wit
 `appsettings.Production.template.json`. Probes: `/health/live` (process up) and `/health/ready` (database reachable, no pending schema script; 503 with a short
 JSON reason otherwise). The `publish` workflow uploads the package as an artifact on every push to `dev`.
 
+## Keyboard shortcuts
+
+Press `?` in the app for the list that applies to the screen you are on. On the work lists (Task Queue, My Work, Pod Work), with focus in the grid: `J` / Down and `K` / Up move between tasks, `Enter` opens the task, `S` and `P` open the Status and Priority menus of the task, `Menu` or `Shift+F10` on a column header opens the column menu. The first Tab stop is "Skip to task list"; the Quick views are one Tab stop with Left, Right, Home and End. Anywhere: `Ctrl+K` search, `/` first text filter, `g` then `m`, `t` or `p` go to My Work, Task Queue and Pod Work. The "Keyboard shortcuts" switch in the `?` help turns the single-character keys off for the user (WCAG 2.1.4); arrows, `Enter`, `Esc`, `Ctrl+K` and `Menu` stay on. The full model is in `docs/ux/ux-spec.md` section 5.2, and a new shortcut is added in `frontend/src/app/shared/layout/shortcut-registry.ts` in the same change as its handler.
+
 ## Documentation map
 
 - `docs/architecture.md`: decisions, modules, schema runner, auth, CI outline, build phases
 - `docs/requirements/baseline-v1.1.md` and `decisions-addendum.md`: requirements and later decisions
-- `docs/erd.md`: data model; `docs/ux/ux-spec.md` and `tokens.css`: UX
+- `docs/erd.md`: data model; `docs/ux/ux-spec.md` and `tokens.css`: UX (the work grid contract is ux-spec 5.2; the Task Queue and My Work reviews and their delivery plans are in `docs/ux/task-queue-review/` and `docs/ux/my-work-review/`)
 - `docs/qa/`: test plan, traceability, risk register, permission matrix tests
 - `docs/runbook.md`: deployment and operations; `docs/dev-environment.md`: cloud container notes
 - `docs/adr/`: spikes and decision records

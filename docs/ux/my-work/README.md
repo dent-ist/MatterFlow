@@ -17,3 +17,14 @@ step on a second line with the full text as a tooltip); Title cell with a muted 
 "Overdue 2d" / "Due today" with colour, icon and words, "Tomorrow" in words; a "New" badge for tasks created since the last visit (My Work only);
 zero tab counts muted, bold counts only for Active and Due soon above zero; "Sorted by Priority" with the full default rule behind an info button.
 Task type icons are not shown yet: the shared icon component is not on `dev` at the time of this change.
+
+## Since these screenshots
+
+The screenshots above are the first My Work pass and are kept as history; several things on them have changed (the specification is `docs/ux/ux-spec.md` S02, the decisions are `docs/requirements/decisions-addendum.md` sections T and U):
+
+- The tabs are Active, **Due soon and overdue**, **Closed** and Created by me; a needs-attention strip (Overdue, Due today, ASAP, On hold, New) sits above them. The "New" badge is now a dot in the Ref cell and a strip item.
+- The Title cell is the type icon and the title only: the muted "Client . Matter" line was removed again (Task Queue epic #195, #196). Matter is its own two-line column (reference over name) and is back in every default set; Client is a one-line column in the chooser.
+- The Due cell has two lines (the date, then "Overdue 2d", "Due today", "Tomorrow", "In 2 days") and no zone abbreviation; Workflow progress is one text line "n of m done . step", with no bar.
+- Rows are exactly 44 px (Comfortable) or 36 px (Compact); below 640 px every tab is a list of cards.
+- The sort note ("Sorted by Priority") stays on My Work; on the Task Queue it moved into the footer.
+- Current screenshots of all four lists at four widths are in `docs/ux/my-work-review/fixes/final/` and `docs/ux/task-queue-review/fixes/`.

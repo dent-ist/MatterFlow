@@ -242,7 +242,7 @@ export class WorkList {
   protected readonly announcement = computed(() => {
     if (this.state() === 'loading') return 'Loading tasks';
     const total = this.total();
-    if (this.state() === 'error') return 'Could not load tasks';
+    if (this.state() === 'error') return "Couldn't load tasks.";
     return resultsAnnouncement(this.scope(), total, this.page(), this.pageSize());
   });
 }
