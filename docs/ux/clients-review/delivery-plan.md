@@ -148,7 +148,7 @@ Contract e2e over six screens at four sizes (axe 0, no horizontal scroll, 44 px 
 (One line per work package; keep other packages' lines when merging. Format: `WPn name (date, commit): issues done / open; tests; bundle size; screenshots folder; known limits.`)
 
 - Planning (2026-10-18): epic #245 and issues #246 to #287 created and linked as sub-issues; PM requirements review comments posted on every issue and on the epic; no issue is blocked on the owner; SQL script 28 is free and none is planned.
-- WP1 Detail-page bugs and states: not started.
+- WP1 Detail-page bugs and states (2026-10-18, 58d5e0c): #246, #247, #248, #249, #250 done; 2475 unit tests green, WP1 e2e 25/25 green, regression subset green except the Task Queue fixed-header filter-row test, which found no task rows in the serial run and was not re-run (unrelated to the detail pages); initial bundle 641.07 kB (172.71 kB transfer); screenshots in `fixes/wp1/`; known limits: e2e was run before the rebase onto WP11, not repeated after it.
 - WP2 List bugs and states: not started.
 - WP3 Record header: not started.
 - WP4 Project Details tabs: not started.
