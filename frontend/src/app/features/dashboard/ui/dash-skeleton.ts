@@ -216,10 +216,13 @@ export type DashSkeletonKind =
         height: 28px;
       }
     }
+    /* The lane switcher (42 px, then 7 px before the board) is one line since the phone navigation gave the content the whole width (320 to
+       899 px measured): with the two 12 px gaps of this column that is 37 px, so the board starts where the silhouette's lanes did (the old
+       56 px was measured with wrapped lane names and shifted the board by 19 px, layout shift 0.04 to 0.09). */
     @media (max-width: 899px) {
       .sil--swimlane .c2 {
         display: block;
-        height: 56px;
+        height: 37px;
       }
     }
     @media (max-width: 560px) {

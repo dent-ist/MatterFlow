@@ -325,6 +325,13 @@ let nextId = 0;
     .lane--natural .head {
       position: static;
     }
+    /* On a phone the hint ("Waiting to be started · oldest 14d") has its own line. Beside the name and the count it fitted by a few pixels with
+       the placeholder age of the loading state ("oldest 0d") and wrapped as soon as the real age was longer ("oldest 14d", "oldest today"), which
+       pushed the whole lane down 15 px when the board arrived (layout shift 0.085 at 375, more with older tasks). */
+    .lane--natural .hint {
+      flex-basis: 100%;
+      text-align: left;
+    }
     .lane--natural .body {
       flex: none;
       overflow: visible;
