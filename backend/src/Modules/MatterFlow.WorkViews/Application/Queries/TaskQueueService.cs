@@ -463,6 +463,9 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         var sortRows = from t in rows
                        join p in db.Set<Priority>().AsNoTracking() on t.PriorityId equals p.Id
                        join m in db.Set<Matter>().AsNoTracking() on t.MatterId equals m.Id
+                       join c in db.Set<Client>().AsNoTracking() on m.ClientId equals c.Id
+                       join au in db.Set<AppUser>().AsNoTracking() on t.AssignedUserId equals (int?)au.Id into assignees
+                       from au in assignees.DefaultIfEmpty()
                        select new TaskSortRow
                        {
                            Id = t.Id,
@@ -476,6 +479,8 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                            ModifiedAtUtc = t.ModifiedAtUtc,
                            TitleKey = EF.Functions.Collate(t.Title, TitleCollation),
                            MatterRef = m.MatterRef,
+                           AssigneeKey = au == null ? null : EF.Functions.Collate(au.DisplayName, TitleCollation),
+                           ClientKey = EF.Functions.Collate(c.Name, TitleCollation),
                        };
         var ordered = groupByDue ? TaskQueueRules.OrderByDueBucket(sortRows, queueClock) : sort == TaskQueueRules.SortDueSoonDefault ? TaskQueueRules.OrderDueSoon(sortRows, queueClock) : TaskQueueRules.Order(sortRows, sort, descending);
         var ids = await ordered.Select(r => r.Id).Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);

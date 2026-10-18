@@ -453,6 +453,20 @@ describe('TaskTable', () => {
     expect(emitted).toEqual(['priority', 'status']);
   });
 
+  it('makes the Assignee and Client headers sort buttons with aria-sort', async () => {
+    await create([aRow()], ['client', 'assignee', 'pod'], { sort: 'assignee', dir: 'asc' });
+    const header = (key: string) => el().querySelector(`th[data-col="${key}"]`)!;
+    expect(header('assignee').getAttribute('aria-sort')).toBe('ascending');
+    expect(header('client').getAttribute('aria-sort')).toBe('none');
+    expect(header('pod').getAttribute('aria-sort')).toBeNull();
+
+    const emitted: string[] = [];
+    fixture.componentInstance.sortChange.subscribe((f) => emitted.push(f));
+    header('client').querySelector('button')!.click();
+    header('assignee').querySelector('button')!.click();
+    expect(emitted).toEqual(['client', 'assignee']);
+  });
+
   it('has no sort indicator under the default order', async () => {
     await create([aRow()], ['priority', 'due']);
     const sorts = Array.from(el().querySelectorAll('th[aria-sort]')).map((h) =>

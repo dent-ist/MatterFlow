@@ -55,6 +55,12 @@ public sealed class TaskSortRow
 
     /// <summary>The Matter reference (zero-padded by its generator, so the text order is the numeric order).</summary>
     public string MatterRef { get; init; } = string.Empty;
+
+    /// <summary>The assignee's display name in the accent- and case-insensitive collation; null for a Task with no individual assignee.</summary>
+    public string? AssigneeKey { get; init; }
+
+    /// <summary>The client name in the accent- and case-insensitive collation (the plain name in tests).</summary>
+    public string ClientKey { get; init; } = string.Empty;
 }
 
 /// <summary>
@@ -75,6 +81,8 @@ public static class TaskQueueRules
     public const string SortMatter = "matter";
     public const string SortUpdated = "updated";
     public const string SortAge = "age";
+    public const string SortAssignee = "assignee";
+    public const string SortClient = "client";
     /// <summary>Priority (most urgent first), then oldest first; ignores due dates (the Dashboard's unassigned queue).</summary>
     public const string SortPriorityAge = "priorityAge";
 
@@ -90,7 +98,7 @@ public static class TaskQueueRules
     /// </summary>
     public const int DueSoonDays = 2;
 
-    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge, SortClosed, SortTitle, SortMatter, SortUpdated, SortAge];
+    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge, SortClosed, SortTitle, SortMatter, SortUpdated, SortAge, SortAssignee, SortClient];
 
     /// <summary>NEW, IN_PROGRESS or ON_HOLD.</summary>
     public static Expression<Func<WorkTask, bool>> Open { get; } =
@@ -238,6 +246,15 @@ public static class TaskQueueRules
             case SortAge:
                 // Age ascending is the youngest first: the inverse of Created, so the arrow means what it says.
                 return descending ? rows.OrderBy(r => r.CreatedAtUtc).ThenBy(r => r.Id) : rows.OrderByDescending(r => r.CreatedAtUtc).ThenByDescending(r => r.Id);
+            case SortAssignee:
+                // Unassigned Tasks come last in either direction; ties fall back to the unique task id.
+                return descending
+                    ? rows.OrderBy(r => r.AssigneeKey == null ? 1 : 0).ThenByDescending(r => r.AssigneeKey).ThenByDescending(r => r.Id)
+                    : rows.OrderBy(r => r.AssigneeKey == null ? 1 : 0).ThenBy(r => r.AssigneeKey).ThenBy(r => r.Id);
+            case SortClient:
+                return descending
+                    ? rows.OrderByDescending(r => r.ClientKey).ThenByDescending(r => r.MatterRef).ThenByDescending(r => r.Id)
+                    : rows.OrderBy(r => r.ClientKey).ThenBy(r => r.MatterRef).ThenBy(r => r.Id);
             default:
                 return WithDefaultTail(rows.OrderBy(r => r.PrioritySortOrder));
         }

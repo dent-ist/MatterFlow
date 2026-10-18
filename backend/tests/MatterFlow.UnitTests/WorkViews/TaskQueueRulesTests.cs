@@ -443,6 +443,24 @@ public class TaskQueueRulesTests
     }
 
     [Fact]
+    public void Assignee_sort_puts_unassigned_last_both_ways_and_client_sort_ties_by_matter_then_id()
+    {
+        static TaskSortRow A(long id, string? assignee) => new() { Id = id, AssigneeKey = assignee };
+        var rows = new[] { A(1, "zoe"), A(2, null), A(3, "adam"), A(4, "adam"), A(5, null) }.AsQueryable();
+        Ids(rows, TaskQueueRules.SortAssignee).ShouldBe([3, 4, 1, 2, 5]);
+        Ids(rows, TaskQueueRules.SortAssignee, descending: true).ShouldBe([1, 4, 3, 5, 2]);
+        TaskQueueRules.DefaultsToDescending(TaskQueueRules.SortAssignee).ShouldBeFalse();
+
+        static TaskSortRow C(long id, string client, string matter) => new() { Id = id, ClientKey = client, MatterRef = matter };
+        var clients = new[] { C(1, "b", "00002-0001"), C(2, "a", "00009-0001"), C(3, "b", "00001-0001"), C(4, "b", "00001-0001") }.AsQueryable();
+        Ids(clients, TaskQueueRules.SortClient).ShouldBe([2, 3, 4, 1]);
+        Ids(clients, TaskQueueRules.SortClient, descending: true).ShouldBe([1, 4, 3, 2]);
+        TaskQueueRules.DefaultsToDescending(TaskQueueRules.SortClient).ShouldBeFalse();
+        TaskQueueRules.SortFields.ShouldContain(TaskQueueRules.SortAssignee);
+        TaskQueueRules.SortFields.ShouldContain(TaskQueueRules.SortClient);
+    }
+
+    [Fact]
     public void Updated_sort_puts_never_updated_last_and_age_is_created_reversed()
     {
         TaskSortRow R(long id, int? updatedDays, int createdDays) => new()

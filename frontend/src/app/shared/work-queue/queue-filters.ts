@@ -73,6 +73,8 @@ export const SORT_FIELDS: readonly string[] = [
   'matter',
   'updated',
   'age',
+  'assignee',
+  'client',
 ];
 export const PAGE_SIZES: readonly number[] = [25, 50, 100];
 export const DEFAULT_PAGE_SIZE = 50;

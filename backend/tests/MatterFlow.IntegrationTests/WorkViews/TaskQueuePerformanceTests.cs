@@ -136,7 +136,7 @@ public sealed partial class TaskQueuePerformanceTests(SqlServerFixture sql, ITes
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         var baseline = 0;
-        foreach (var sort in new[] { "default", "title", "matter", "updated", "age", "closed" })
+        foreach (var sort in new[] { "default", "title", "matter", "updated", "age", "closed", "assignee", "client" })
             foreach (var dir in new[] { "asc", "desc" })
             {
                 var query = $"/api/v1/task-queue?pageSize=50&sort={sort}&dir={dir}";

@@ -147,6 +147,68 @@ public sealed class TaskQueueSortApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Assignee_and_client_sorts_ignore_case_and_accents_put_unassigned_last_and_page_stably()
+    {
+        // Own tasks on three clients and three assignees; names chosen so that accents and case decide the order.
+        var mA = await _h.CreateMatterAsync("343", "21");
+        var mB = await _h.CreateMatterAsync("100", "22");
+        var mC = await _h.CreateMatterAsync("200", "23");
+        await _h.ExecuteAsync("UPDATE dbo.Client SET Name = N'étoile' WHERE Name = N'Acme Corp 343';"
+            + "UPDATE dbo.Client SET Name = N'Zulu' WHERE Name = N'Acme Corp 100';"
+            + "UPDATE dbo.Client SET Name = N'apple Ltd' WHERE Name = N'Acme Corp 200';");
+        var zoe = await _h.UserIdAsync("sort-zoe");
+        var emile = await _h.UserIdAsync("sort-emile");
+        var adam = await _h.UserIdAsync("sort-adam");
+        await _h.ExecuteAsync($"UPDATE dbo.AppUser SET DisplayName = N'Zoe' WHERE UserId = {zoe};"
+            + $"UPDATE dbo.AppUser SET DisplayName = N'émile' WHERE UserId = {emile};"
+            + $"UPDATE dbo.AppUser SET DisplayName = N'adam' WHERE UserId = {adam};");
+
+        // matter, assignee: t1 Zulu/Zoe, t2 étoile/-, t3 apple/émile, t4 étoile/adam, t5 Zulu/-, t6 apple/émile
+        (int Matter, int? User)[] plan = [(mB, zoe), (mA, null), (mC, emile), (mA, adam), (mB, null), (mC, emile)];
+        var t = new List<long>();
+        foreach (var (matter, user) in plan)
+        {
+            var body = _h.NewTask(_w, title: "sorting", extra: new() { ["matterId"] = matter });
+            var id = TaskId(await OkAsync(await _h.Admin.PostAsJsonAsync("/api/v1/tasks", body), HttpStatusCode.Created));
+            t.Add(id);
+            if (user is { } u)
+                await _h.ExecuteAsync($"UPDATE dbo.Task SET AssignedUserId = {u}, AssignedAt = SYSUTCDATETIME() WHERE TaskId = {id};");
+        }
+
+        List<long> Mine(JsonElement page) => [.. IdsOf(page).Where(t.Contains)];
+
+        foreach (var path in new[] { "task-queue", "my-work", "pod-work" })
+        {
+            // The two non-queue lists only show the viewer's own and pod Tasks, so they are checked for acceptance and a stable order.
+            await OkAsync(await _h.Admin.GetAsync($"/api/v1/{path}?sort=assignee&dir=asc"));
+            await OkAsync(await _h.Admin.GetAsync($"/api/v1/{path}?sort=client&dir=desc"));
+        }
+
+        // Assignee: adam, émile (t3, t6 by id), Zoe, then the unassigned (t2, t5; ties by id in the direction) in both.
+        Mine(await ListAsync("task-queue", "sort=assignee&dir=asc")).ShouldBe([t[3], t[2], t[5], t[0], t[1], t[4]]);
+        Mine(await ListAsync("task-queue", "sort=assignee&dir=desc")).ShouldBe([t[0], t[5], t[2], t[3], t[4], t[1]]);
+        // Client: apple, étoile, Zulu; ties by matter reference then id.
+        Mine(await ListAsync("task-queue", "sort=client&dir=asc")).ShouldBe([t[2], t[5], t[1], t[3], t[0], t[4]]);
+        Mine(await ListAsync("task-queue", "sort=client&dir=desc")).ShouldBe([t[4], t[0], t[3], t[1], t[5], t[2]]);
+
+        foreach (var sort in new[] { "assignee", "client" })
+        {
+            var all = Mine(await ListAsync("task-queue", $"sort={sort}&dir=asc"));
+            var seen = new List<long>();
+            for (var page = 1; page <= 40; page++)
+            {
+                var ids = IdsOf(await OkAsync(await _h.Admin.GetAsync($"/api/v1/task-queue?pageSize=3&page={page}&sort={sort}&dir=asc")));
+                if (ids.Count == 0)
+                    break;
+                seen.AddRange(ids);
+            }
+
+            seen.Distinct().Count().ShouldBe(seen.Count, $"{sort}: no row repeats across pages");
+            seen.Where(t.Contains).ShouldBe(all, sort);
+        }
+    }
+
+    [Fact]
     public async Task Unknown_sort_values_are_still_a_400()
     {
         (await _h.Admin.GetAsync("/api/v1/task-queue?sort=bogus")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);

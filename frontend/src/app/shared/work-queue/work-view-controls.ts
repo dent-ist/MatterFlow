@@ -28,6 +28,8 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
   matter: 'Matter',
   updated: 'Updated',
   age: 'Age',
+  assignee: 'Assignee',
+  client: 'Client',
 };
 
 /**
