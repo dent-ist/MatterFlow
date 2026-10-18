@@ -268,7 +268,7 @@ test.describe('Column filters on the record lists', () => {
       const client = await seed.client({ name: `CM Client ${token}` });
       await seed.matter({ client, number: '00001', name: `Alpha ${token}` });
       await seed.matter({ client, number: '00002', name: `Beta ${token}`, sensitive: true });
-      await page.goto(`/clients/${client.clientId}`);
+      await page.goto(`/clients/${client.clientId}?tab=matters`);
       const region = grid(page, 'Matters list');
       const rows = region.locator('tbody tr');
       await expect(rows).toHaveCount(2);
@@ -402,7 +402,7 @@ test.describe('Column filters on the record lists', () => {
       ['/clients', 'Clients list'],
       ['/matters', 'Matters list'],
       ['/projects', 'Projects list'],
-      [`/clients/${client.clientId}`, 'Matters list'],
+      [`/clients/${client.clientId}?tab=matters`, 'Matters list'],
       [`/matters/${matter.matterId}?tab=assets`, 'Assets list'],
     ] as const) {
       await page.goto(url);

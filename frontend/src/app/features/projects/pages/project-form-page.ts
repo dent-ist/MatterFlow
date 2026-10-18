@@ -349,7 +349,7 @@ export class ProjectFormPage implements HasUnsavedChanges {
     const id = this.projectId();
     const matter = this.matterId();
     void this.router.navigateByUrl(
-      id ? `/projects/${id}` : matter ? `/matters/${matter}` : '/projects',
+      id ? `/projects/${id}` : matter ? `/matters/${matter}?tab=projects` : '/projects',
     );
   }
 }

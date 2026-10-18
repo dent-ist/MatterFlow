@@ -156,11 +156,13 @@ test.describe('column filters work lists screenshots', () => {
     await shot(mine, 'pod-work-by-member');
 
     // Matter and Project tasks
-    await page.goto(`/matters/${world.matter.matterId}`);
+    await page.goto(`/matters/${world.matter.matterId}?tab=tasks`);
     await expect(page.locator('mf-scoped-tasks tr[data-task]').first()).toBeVisible();
     await toggle.click();
     await shot(page, 'matter-tasks-filters-open');
-    await page.goto(`/matters/${world.matter.matterId}?status=&project=${project.projectId}`);
+    await page.goto(
+      `/matters/${world.matter.matterId}?tab=tasks&status=&project=${project.projectId}`,
+    );
     await expect(page.locator('mf-scoped-tasks tr[data-task]').first()).toBeVisible();
     await shot(page, 'matter-tasks-filtered');
 

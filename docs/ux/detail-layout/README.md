@@ -1,5 +1,7 @@
 # Detail layout: main area + Details panel
 
+> **Update (#244):** the Client and Matter pages no longer use this layout. Their Details are the first tab (the default) and the right-hand panel is gone; see `docs/ux/org-details-tab/` and S05/S06 in `ux-spec.md`. The text and screenshots below still describe the Project page (and the earlier Client and Matter pages).
+
 The Client, Matter and Project detail pages share one layout (`mf-detail-layout`, `frontend/src/app/shared/ui/detail-layout.ts`).
 
 | Part | Behaviour |

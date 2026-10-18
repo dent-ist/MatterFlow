@@ -239,6 +239,14 @@ describe('Projects pages', () => {
       await settle(fixture);
     }
 
+    it("Cancel from a matter goes back to that matter's Projects tab", async () => {
+      await create({ matterId: '7' }, ['Project.View', 'Project.Create']);
+      el()
+        .querySelectorAll<HTMLButtonElement>('button')
+        .forEach((b) => b.textContent?.trim() === 'Cancel' && b.click());
+      expect(navigateByUrl).toHaveBeenCalledWith('/matters/7?tab=projects');
+    });
+
     it('creates in the launching matter, with the matter prefilled and locked', async () => {
       await create({ matterId: '7' }, ['Project.View', 'Project.Create']);
 

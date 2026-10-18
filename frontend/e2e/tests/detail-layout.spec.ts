@@ -2,7 +2,7 @@ import { Page } from '@playwright/test';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 
-/** The Client, Matter and Project detail pages: main area + Details panel, and the Activity drawer (docs/ux/detail-layout). */
+/** The Client, Matter and Project detail pages: Client and Matter have Details as their first tab, Project keeps its Details panel; the Activity drawer (docs/ux/detail-layout). */
 test.describe('Detail pages: main area, Details panel and Activity drawer', () => {
   const panel = (page: Page) => page.getByRole('complementary', { name: 'Details' });
 
@@ -21,7 +21,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     expect(overflow).toBeLessThanOrEqual(0);
   }
 
-  test('Client: Matters grid on the left, Details panel on the right, no section tabs', async ({
+  test('Client: Details is the first tab and the default; the Matters tab has the grid across the full width; no side panel', async ({
     page,
     seed,
   }) => {
@@ -31,22 +31,29 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await page.goto(`/clients/${client.clientId}`);
 
     await expect(page.getByRole('heading', { level: 1 })).toContainText(client.name);
+    await expect(page.getByRole('tab')).toHaveText(['Details', 'Matters']);
+    await expect(page.getByRole('tab', { name: 'Details' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(panel(page)).toHaveCount(0);
+    const details = page.getByRole('tabpanel');
+    await expect(details).toContainText(client.clientNumber);
+    await expect(details).toContainText(client.name);
+    await expect(details.getByRole('button', { name: 'Edit' })).toBeVisible();
+    await expect(details.getByRole('button', { name: 'Set inactive' })).toBeVisible();
+
+    await page.getByRole('tab', { name: 'Matters' }).click();
+    await expect(page).toHaveURL(/tab=matters/);
     const row = page.getByRole('row').filter({ hasText: matter.name });
     await expect(row.getByRole('link', { name: matter.matterRef })).toHaveAttribute(
       'href',
       `/matters/${matter.matterId}`,
     );
-    await expect(panel(page)).toContainText(client.clientNumber);
-    await expect(panel(page)).toContainText(client.name);
-    await expect(panel(page).getByRole('button', { name: 'Edit' })).toBeVisible();
-    await expect(panel(page).getByRole('button', { name: 'Set inactive' })).toBeVisible();
-    await expect(page.getByRole('tab')).toHaveCount(0);
-
-    const grid = await row.boundingBox();
-    const side = await panel(page).boundingBox();
-    expect(side!.x).toBeGreaterThan(grid!.x + grid!.width - 1); // beside the grid, on the right
-    expect(side!.width).toBeGreaterThan(330);
-    expect(side!.width).toBeLessThan(350);
+    const grid = (await page
+      .getByRole('region', { name: 'Matters list, scrollable' })
+      .boundingBox())!;
+    expect(grid.width).toBeGreaterThan(1280 - 300); // the whole page width (less the menu), not beside a panel
 
     await page.getByRole('button', { name: 'Create matter' }).click();
     await expect(page).toHaveURL(new RegExp(`/matters/new\\?clientId=${client.clientId}$`));
@@ -59,7 +66,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     const client = await seed.client({ name: `Filter Client ${uid()}` });
     const active = await seed.matter({ client, number: '00001', name: `Alpha ${uid()}` });
     await seed.matter({ client, number: '00002', name: `Beta ${uid()}` });
-    await page.goto(`/clients/${client.clientId}`);
+    await page.goto(`/clients/${client.clientId}?tab=matters`);
 
     await page.getByRole('button', { name: /^Filters/ }).click();
     await page.getByRole('textbox', { name: 'Filter by Name' }).fill(active.name);
@@ -91,13 +98,17 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(button).toBeFocused();
   });
 
-  test('Old ?tab= links: activity opens the drawer, details just shows the page', async ({
+  test('Old ?tab= links: activity opens the drawer, details shows the Details tab', async ({
     page,
     seed,
   }) => {
     const world = await seed.world();
     await page.goto(`/matters/${world.matter.matterId}?tab=details`);
-    await expect(panel(page)).toContainText(world.matter.matterRef);
+    await expect(page.getByRole('tab', { name: 'Details' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(page.getByRole('tabpanel')).toContainText(world.matter.matterRef);
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
     await page.goto(`/matters/${world.matter.matterId}?tab=activity`);
@@ -108,7 +119,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(page).not.toHaveURL(/tab=activity/);
   });
 
-  test('Matter: Tasks / Projects / Assets tabs in the main area, Details with Edit and Set inactive on the side', async ({
+  test('Matter: Details, Tasks, Projects and Assets tabs; Details has the facts, Edit and Set inactive', async ({
     page,
     seed,
   }) => {
@@ -118,57 +129,45 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(`/matters/${world.matter.matterId}`);
 
-    await expect(page.getByRole('tab')).toHaveText([/Tasks/, /Projects/, /Assets/]);
+    await expect(page.getByRole('tab')).toHaveText([/Details/, /Tasks/, /Projects/, /Assets/]);
+    await expect(panel(page)).toHaveCount(0);
+    const details = page.getByRole('tabpanel');
+    await expect(details).toContainText('Sensitive');
+    await expect(details).toContainText(world.matter.matterRef);
+    await expect(details.getByRole('button', { name: 'Edit' })).toBeVisible();
+    // One task is open, so deactivation is disabled and says why.
+    await expect(details.getByRole('button', { name: 'Set inactive' })).toBeDisabled();
+    await expect(details).toContainText("aren't Completed or Cancelled");
+
+    await page.getByRole('tab', { name: /Tasks/ }).click();
+    await expect(page).toHaveURL(/tab=tasks/);
     await expect(
       page.getByRole('link', { name: task.taskRef ?? task.title }).first(),
     ).toBeVisible();
-    await showDetails(page);
-    await expect(panel(page)).toContainText('Sensitive');
-    await expect(panel(page).getByRole('button', { name: 'Edit' })).toBeVisible();
-    // One task is open, so deactivation is disabled and says why.
-    await expect(panel(page).getByRole('button', { name: 'Set inactive' })).toBeDisabled();
-    await expect(panel(page)).toContainText("aren't Completed or Cancelled");
 
     await page.getByRole('tab', { name: /Projects/ }).click();
     await expect(page).toHaveURL(/tab=projects/);
     await expect(page.getByRole('link', { name: project.name })).toBeVisible();
-    await expect(panel(page)).toBeVisible();
+
+    await page.getByRole('tab', { name: 'Details' }).click();
+    await expect(page).not.toHaveURL(/tab=/);
   });
 
-  test('Matter at 1280 px: the Details panel starts collapsed so the Tasks grid gets the width; the choice is remembered; from 1400 px it is always open', async ({
+  test('Matter at 1280 px: the Tasks grid uses the whole page width (no Details panel beside it)', async ({
     page,
     seed,
   }) => {
     const world = await seed.world();
     await seed.task(world);
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto(`/matters/${world.matter.matterId}`);
+    await page.goto(`/matters/${world.matter.matterId}?tab=tasks`);
 
-    const toggle = panel(page).getByRole('button', { name: 'Details' });
-    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(panel(page).getByRole('button', { name: 'Edit' })).toBeHidden();
+    await expect(panel(page)).toHaveCount(0);
     const grid = page.locator('.wt-wrap');
     await expect(grid).toBeVisible();
-    const collapsedWidth = (await grid.boundingBox())!.width;
+    expect((await grid.boundingBox())!.width).toBeGreaterThan(1280 - 300);
     // Status and Due are not scrolled out of view: the table is not wider than its box.
     expect(await grid.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
-
-    await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await expect(panel(page).getByRole('button', { name: 'Edit' })).toBeVisible();
-    expect((await grid.boundingBox())!.width).toBeLessThan(collapsedWidth - 200);
-
-    await page.reload();
-    await expect(panel(page).getByRole('button', { name: 'Details' })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
-    await toggle.click(); // leave the stored choice as it was for later tests of this worker
-
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await expect(panel(page).getByRole('button', { name: 'Details' })).toHaveCount(0);
-    await expect(panel(page).getByRole('button', { name: 'Edit' })).toBeVisible();
-    expect((await panel(page).boundingBox())!.width).toBeGreaterThan(330);
   });
 
   test('Project: Tasks grid in the main area; Archive and Restore from the Details panel', async ({
@@ -188,36 +187,26 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(panel(page)).toContainText('Archived');
   });
 
-  test('Narrow screens: the Details panel moves above the main area as a collapsible summary, without page scroll', async ({
+  test('Narrow screens: the Details tab is one column without page scroll', async ({
     page,
     seed,
   }) => {
-    const longName = `A very long client name that must wrap inside the panel without any sideways scrolling ${uid()}`;
+    const longName = `A very long client name that must wrap inside the tab without any sideways scrolling ${uid()}`;
     const client = await seed.client({ name: longName });
     await seed.matter({ client, name: `Narrow Matter ${uid()}` });
     const url = `/clients/${client.clientId}`;
 
-    // Tablet: expanded, above the grid.
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto(url);
-    const toggle = panel(page).getByRole('button', { name: 'Details' });
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await expect(panel(page)).toContainText(longName);
-    const side = await panel(page).boundingBox();
-    const grid = await page.getByRole('heading', { level: 2, name: 'Matters' }).boundingBox();
-    expect(side!.y).toBeLessThan(grid!.y);
+    await expect(page.getByRole('tabpanel')).toContainText(longName);
     await noHorizontalScroll(page);
 
-    // Phone: collapsed until opened.
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(url);
-    const phoneToggle = panel(page).getByRole('button', { name: 'Details' });
-    await expect(phoneToggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(panel(page).getByRole('button', { name: 'Edit' })).toBeHidden();
+    await expect(page.getByRole('tabpanel').getByRole('button', { name: 'Edit' })).toBeVisible();
     await noHorizontalScroll(page);
-    await phoneToggle.click();
-    await expect(phoneToggle).toHaveAttribute('aria-expanded', 'true');
-    await expect(panel(page).getByRole('button', { name: 'Edit' })).toBeVisible();
-    await noHorizontalScroll(page);
+    const dt = (await page.locator('[data-details-tab] dt').first().boundingBox())!;
+    const dd = (await page.locator('[data-details-tab] dd').first().boundingBox())!;
+    expect(dd.y).toBeGreaterThan(dt.y); // label above value: single column
   });
 });

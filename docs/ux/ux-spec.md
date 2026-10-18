@@ -465,9 +465,11 @@ Edit: Client number locked with a "Change number" link (needs `Client.Edit`; con
 ```text
 Clients > 00343 Acme Corp                                   [Edit] [Set inactive]
 00343  Acme Corp   (Active)     Custom: Industry = Pharma
-[ Matters (4) ] [ Details ] [ Activity ]
- Matters table: Matter ref, Name, Status, Open tasks, [+ New Matter for this client]
+[ Details ] [ Matters ]                      (Activity: header button, opens a right-side drawer)
+ Details tab (default, first): Client number, Name, Status, Created, Last changed, custom fields; [Edit] [Set inactive].
+ Matters tab (?tab=matters): Matters table: Matter ref, Name, Status, Open tasks, [+ New Matter for this client]
 ```
+- **Details is the first tab (#244).** There is no Details panel on the right: both tabs use the full page width. Details is selected when the address has no `tab`; `?tab=matters` opens the grid; `?tab=activity` opens the Activity drawer over Details. The Matters filters, paging and sort leave the address when the tab changes. The Details tab is a left-aligned definition list (about 70 characters wide, one column below 600 px) that scrolls inside the tab panel; the header and tab list stay put. Edit and Set inactive keep their permission (`Client.Edit`); the dialog returns focus to the Set inactive button.
 - Set inactive: allowed (Client inactive does not itself change Tasks) [UX-PROPOSAL: inactive Client blocks creating new Matters]; confirm dialog states the consequence.
 **States.** Loading skeleton; not found -> 404; save error -> field errors + summary.
 **Permissions.** `Client.View`; `Client.Create`; `Client.Edit`.
@@ -498,10 +500,12 @@ Live combined-reference preview updates as the user types. Messages: "Select a c
 ```text
 Matters > 00343-00012 Merger Review                  [+ Create Task] [+ New Project] [+ New Asset] [Edit] [Set inactive]
 00343-00012  Merger Review   Client: 00343 Acme Corp   (Active)
-[ Tasks (7 open) ] [ Projects (3) ] [ Assets (212) ] [ Details ] [ Activity ]
-Tasks tab: table (Task Queue columns subset) grouped optionally by Project; filter "Project: All / None / <name>".
-Projects tab: list of projects with task counts.  Assets tab: asset list scoped to matter.
+[ Details ] [ Tasks (7 open) ] [ Projects (3) ] [ Assets ]      (Activity: header button, opens a right-side drawer)
+Details tab (default, first): Matter reference, Client (a link with Client.View), Matter number, Name, Status, Sensitive, Created, Last changed, custom fields; [Edit] [Set inactive].
+Tasks tab (?tab=tasks): table (Task Queue columns subset) grouped optionally by Project; filter "Project: All / None / <name>".
+Projects tab (?tab=projects): list of projects.  Assets tab (?tab=assets): asset list scoped to matter.
 ```
+- **Details is the first tab (#244).** The right-hand Details panel is gone, so the Tasks grid (and every other tab) uses the full page width. No `tab` in the address means Details; `?tab=tasks|projects|assets` deep links keep working, `?tab=activity` opens the Activity drawer over Details, anything else shows Details. Links that mean the task or asset list (cancel of New project / New asset launched from the matter) carry `?tab=projects` / `?tab=assets`. The Tasks and Assets filters, paging and sort leave the address when the tab changes. Tabs are the shared `mf-tabs` (arrow keys, Home/End, roving tabindex, panel `matter-panel`). Details is a left-aligned definition list (about 70 characters wide, one column below 600 px) that scrolls inside the panel (`mfScrollArea` "Matter details") while the header, banners and tab list stay fixed. Edit (`Matter.Edit`) and Set inactive (`Matter.SetActive`, disabled with a reason while tasks are open) are unchanged. Screenshots: `docs/ux/org-details-tab/`.
 **Set inactive.** Allowed only when all Tasks are Completed or Cancelled.
 - If blocked: dialog "This matter has N tasks that aren't Completed or Cancelled. Finish or cancel them first." + button "View open tasks" (opens Task Queue filtered) and Close. The action itself shows enabled (so the reason is reachable) but the dialog explains; alternatively disabled with reason tooltip. [UX-PROPOSAL: disabled-with-reason + hint text.]
 - Inactive Matter shows a persistent banner "This matter is inactive. New tasks can't be created and completed or cancelled tasks can't be reopened." Create Task and Reopen are disabled with that reason. Reactivate action available to `Matter.Edit`.
@@ -1323,7 +1327,7 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S05-4 Search by `343`/`00343`/name works.
 - [ ] UAT-S05-5 Number locked on edit; change requires confirm dialog and is audited.
 - [ ] UAT-S05-6 Custom fields render and validate.
-- [ ] UAT-S05-7 Detail shows matters; New Matter shortcut prefilled.
+- [ ] UAT-S05-7 Detail opens on a Details tab (number, name, status, custom fields, Edit / Set inactive) with no side panel; the Matters tab (`?tab=matters`) shows matters; New Matter shortcut prefilled.
 - [ ] UAT-S05-8 Create/Edit buttons hidden without permission.
 
 ### S06 Matters
@@ -1332,7 +1336,7 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S06-3 Client locked after creation.
 - [ ] UAT-S06-4 Set inactive blocked when any task is not Completed/Cancelled, with link to those tasks.
 - [ ] UAT-S06-5 Inactive matter: banner shown; Create Task disabled with reason; reopen disabled with reason.
-- [ ] UAT-S06-6 Detail tabs Tasks/Projects/Assets show correct data; Create Task prefilled.
+- [ ] UAT-S06-6 Detail tabs are Details (first, default), Tasks, Projects, Assets, with no side panel; `?tab=tasks|projects|assets` deep links show correct data; Create Task prefilled.
 - [ ] UAT-S06-7 Search accepts unpadded and hyphenated forms.
 
 ### S07 Projects

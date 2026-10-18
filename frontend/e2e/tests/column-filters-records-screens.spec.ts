@@ -79,7 +79,7 @@ test.describe('column filters records screenshots', () => {
     await shot(page, 'projects-filters-open');
 
     // Client page, Matters grid
-    await page.goto(`/clients/${clientId}`);
+    await page.goto(`/clients/${clientId}?tab=matters`);
     await expect(first('Matters list')).toBeVisible();
     await shot(page, 'client-matters-closed');
     await toggle.click();

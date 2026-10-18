@@ -194,6 +194,33 @@
   margin: 0 0 var(--mf-s3);
 }
 
+/* The Details tab of a record page: a readable definition list, left aligned, scrolling inside the tab panel. */
+.pg-details {
+  max-width: 70ch;
+  padding-bottom: var(--mf-s4);
+}
+
+.pg-details .pg-dl dd {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 599px) {
+  .pg-details .pg-dl {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .pg-details .pg-dl dt {
+    margin-top: var(--mf-s3);
+    color: var(--mf-text-muted);
+    font-size: var(--mf-fs-sm);
+  }
+
+  .pg-details .pg-dl dt:first-child {
+    margin-top: 0;
+  }
+}
+
 .pg-dl--stacked {
   grid-template-columns: minmax(0, 1fr);
   gap: 0;

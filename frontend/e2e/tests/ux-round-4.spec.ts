@@ -71,7 +71,7 @@ test.describe('Round 4: layout and responsive', () => {
     };
     await fits('/my-work', 1280);
     await fits('/tasks', 1280);
-    await fits(`/matters/${world.matter.matterId}`, 1280);
+    await fits(`/matters/${world.matter.matterId}?tab=tasks`, 1280);
     await fits('/tasks', 1024);
     await fits('/my-work', 1024);
   });
@@ -82,7 +82,7 @@ test.describe('Round 4: layout and responsive', () => {
   }) => {
     const world = await seed.world();
     const task = await seed.task(world, { title: `Context ${uid()}` });
-    await page.goto(`/matters/${world.matter.matterId}`);
+    await page.goto(`/matters/${world.matter.matterId}?tab=tasks`);
     await expect(page.locator(`tr[data-task="${task.taskNumber}"]`)).toBeVisible();
     await expect(page.locator('[data-title-context], .wt-subline')).toHaveCount(0);
     await page.goto(`/tasks?q=${encodeURIComponent(task.title)}`);
@@ -463,7 +463,7 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     expect(columns.y + columns.height).toBeLessThanOrEqual(header.y + 1);
 
     const client = await seed.client();
-    await page.goto(`/clients/${client.clientId}`);
+    await page.goto(`/clients/${client.clientId}?tab=matters`);
     const [button, input] = [
       (await page.getByRole('button', { name: 'Create matter' }).boundingBox())!,
       (await page.getByRole('button', { name: /^Filters/ }).boundingBox())!,

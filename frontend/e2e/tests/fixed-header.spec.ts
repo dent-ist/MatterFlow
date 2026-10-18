@@ -172,14 +172,14 @@ test.describe('Fixed-header screens at 1366x768', () => {
     await expect.poll(() => scrollTopOf(region)).toBe(0);
   });
 
-  test("Client page: the header and Details panel stay put while the client's Matters grid scrolls", async ({
+  test("Client page: the header and tabs stay put while the client's Matters grid scrolls", async ({
     page,
   }) => {
-    await page.goto(`/clients/${bulk.mainClient.clientId}`);
+    await page.goto(`/clients/${bulk.mainClient.clientId}?tab=matters`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     const region = page.getByRole('region', { name: 'Matters list, scrollable' });
     await expect(region.locator('tbody tr').first()).toBeVisible();
-    const details = page.getByRole('complementary', { name: 'Details' });
+    const details = page.getByRole('tab', { name: 'Details' });
     const title = page.getByRole('heading', { level: 1 });
     const before = { details: await box(details), title: await box(title) };
     expect(await documentOverflow(page)).toBeLessThanOrEqual(0);
@@ -189,10 +189,8 @@ test.describe('Fixed-header screens at 1366x768', () => {
     expect(await box(title)).toEqual(before.title);
   });
 
-  test('Matter page: the Tasks grid scrolls under the pinned header, tabs and Details panel', async ({
-    page,
-  }) => {
-    await page.goto(`/matters/${bulk.mainMatter.matterId}`);
+  test('Matter page: the Tasks grid scrolls under the pinned header and tabs', async ({ page }) => {
+    await page.goto(`/matters/${bulk.mainMatter.matterId}?tab=tasks`);
     await expect(page.getByRole('tab', { name: /Tasks/ })).toBeVisible();
     const tab = page.getByRole('tab', { name: /Tasks/ });
     const before = await box(tab);

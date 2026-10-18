@@ -425,7 +425,7 @@ test.describe('Column filters on the work lists', () => {
       const closed = await seed.task(world, { title: `Closed ${token}` });
       expect((await new TaskApi(admin, closed.taskId).cancel('Done')).status).toBeLessThan(300);
 
-      await page.goto(`/matters/${world.matter.matterId}`);
+      await page.goto(`/matters/${world.matter.matterId}?tab=tasks`);
       const tasks = page.locator('mf-scoped-tasks');
       await expect(tasks.locator(`tr[data-task="${open.taskNumber}"]`)).toBeVisible();
       await expect(tasks.locator(`tr[data-task="${closed.taskNumber}"]`)).toHaveCount(0);
@@ -435,12 +435,12 @@ test.describe('Column filters on the work lists', () => {
       await toggle(page).click();
       await expect(tasks.locator('tr[data-filter-row]')).toBeVisible();
       await expect(multi(page, 'Status')).toContainText('Open');
-      await page.goto(`/matters/${world.matter.matterId}?status=`);
+      await page.goto(`/matters/${world.matter.matterId}?tab=tasks&status=`);
       await expect(tasks.locator(`tr[data-task="${closed.taskNumber}"]`)).toBeVisible();
       await expect(multi(page, 'Status')).toContainText('All');
 
       // Project on a Matter: a choice of its projects.
-      await page.goto(`/matters/${world.matter.matterId}?project=${project.projectId}`);
+      await page.goto(`/matters/${world.matter.matterId}?tab=tasks&project=${project.projectId}`);
       await expect(tasks.locator(`tr[data-task="${open.taskNumber}"]`)).toBeVisible();
       await expect(tasks.locator(`tr[data-task="${closed.taskNumber}"]`)).toHaveCount(0);
       await expect(page.getByRole('combobox', { name: 'Filter by Project' })).toBeVisible();
@@ -516,7 +516,7 @@ test.describe('Column filters on the work lists', () => {
       ['/tasks', 'Title or Ref', true],
       ['/my-work', 'Title or Ref', true],
       [`/pods/work?podId=${pod.podId}&view=all`, 'Title or Ref', true],
-      [`/matters/${world.matter.matterId}`, 'Title or Ref', false],
+      [`/matters/${world.matter.matterId}?tab=tasks`, 'Title or Ref', false],
     ] as const;
     for (const [url, column, openByDefault] of screens) {
       await page.goto(url);

@@ -740,6 +740,14 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(externalReferenceError('www.example.com')).toContain('valid URL');
     });
 
+    it("Cancel from a matter goes back to that matter's Assets tab", async () => {
+      await create({ matterId: '7' }, ['Asset.View', 'Asset.Create']);
+      el()
+        .querySelectorAll<HTMLButtonElement>('button')
+        .forEach((b) => b.textContent?.trim() === 'Cancel' && b.click());
+      expect(navigateByUrl).toHaveBeenCalledWith('/matters/7?tab=assets');
+    });
+
     it('creates in the launching matter with the matter locked and the type fields from the published form', async () => {
       await create({ matterId: '7' }, ['Asset.View', 'Asset.Create']);
 

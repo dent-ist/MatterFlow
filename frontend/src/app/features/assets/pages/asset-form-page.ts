@@ -518,7 +518,7 @@ export class AssetFormPage implements HasUnsavedChanges {
     const id = this.assetId();
     const matter = this.matterId();
     void this.router.navigateByUrl(
-      id ? `/assets?selected=${id}` : matter ? `/matters/${matter}` : '/assets',
+      id ? `/assets?selected=${id}` : matter ? `/matters/${matter}?tab=assets` : '/assets',
     );
   }
 }

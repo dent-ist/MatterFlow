@@ -27,7 +27,18 @@ describe('ClientDetailPage', () => {
   let query: ReturnType<typeof fakeQuery>;
   const el = (): HTMLElement => fixture.nativeElement;
 
-  async function create(permissions: Permission[]) {
+  const tab = (label: string): HTMLElement =>
+    Array.from(el().querySelectorAll<HTMLElement>('[role=tab]')).find((t) =>
+      t.textContent!.trim().startsWith(label),
+    )!;
+
+  /** The tab lives in the address (`?tab=`); the router binds it to the page input, so tests set the input. */
+  async function openTab(key: string | undefined): Promise<void> {
+    fixture.componentRef.setInput('tab', key);
+    await settle(fixture);
+  }
+
+  async function create(permissions: Permission[], startTab?: string) {
     localStorage.clear();
     query = fakeQuery();
     clients = {
@@ -55,11 +66,12 @@ describe('ClientDetailPage', () => {
     await TestBed.inject(AuthStore).ensureLoaded();
     fixture = TestBed.createComponent(ClientDetailPage);
     fixture.componentRef.setInput('clientId', '1');
+    if (startTab) fixture.componentRef.setInput('tab', startTab);
     await settle(fixture);
   }
 
-  it('shows the number prominently with the matters of the client in the main area', async () => {
-    await create(['Client.View', 'Matter.View']);
+  it('shows the number prominently with the matters of the client in the Matters tab', async () => {
+    await create(['Client.View', 'Matter.View'], 'matters');
 
     expect(el().querySelector('[data-ref]')?.textContent?.trim()).toBe('00343');
     expect(el().querySelector('h1')?.textContent).toContain('Acme Corp');
@@ -75,27 +87,73 @@ describe('ClientDetailPage', () => {
       25,
       undefined,
     );
-    const ref = el().querySelector('[data-detail-main] tbody .mf-ref');
+    const ref = el().querySelector('mf-client-matters tbody .mf-ref');
     expect(ref?.textContent).toBe('00343-00012');
     expect(ref?.getAttribute('href')).toBe('/matters/7');
-    expect(el().querySelector('[data-detail-main] h2')?.textContent).toContain('Matters');
-    expect(el().querySelector('[role=tab]')).toBeNull();
+    expect(tab('Matters').getAttribute('aria-selected')).toBe('true');
   });
 
-  it('shows the fields in a labelled Details panel on the side', async () => {
+  it('has Details and Matters tabs, Details first and the default; ?tab= selects the others', async () => {
     await create(['Client.View', 'Matter.View']);
 
-    const aside = el().querySelector('aside')!;
-    const heading = document.getElementById(aside.getAttribute('aria-labelledby')!)!;
-    expect(heading.textContent?.trim()).toBe('Details');
-    expect(aside.textContent).toContain('00343');
-    expect(aside.textContent).toContain('Acme Corp');
-    expect(aside.querySelector('mf-active-badge')?.textContent).toContain('Active');
-    expect(aside.textContent).toContain('Created');
+    expect(
+      Array.from(el().querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
+    ).toEqual(['Details', 'Matters']);
+    expect(tab('Details').getAttribute('aria-selected')).toBe('true');
+    expect(el().querySelector('[role=tabpanel]')!.getAttribute('aria-labelledby')).toBe(
+      'client-tab-details',
+    );
+    expect(matters.listMatters).not.toHaveBeenCalled(); // the grid loads when its tab opens
+    expect(el().querySelector('aside')).toBeNull();
+
+    await openTab('matters');
+    expect(tab('Matters').getAttribute('aria-selected')).toBe('true');
+    expect(matters.listMatters).toHaveBeenCalled();
+    for (const key of [undefined, 'details', 'nonsense']) {
+      await openTab(key);
+      expect(tab('Details').getAttribute('aria-selected')).toBe('true');
+    }
+  });
+
+  it('keeps the tab in the address (absent for Details)', async () => {
+    await create(['Client.View', 'Matter.View']);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+    tab('Matters').click();
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: {
+        tab: 'matters',
+        q: null,
+        matterRef: null,
+        name: null,
+        isSensitive: null,
+        status: null,
+        page: null,
+        size: null,
+        sort: null,
+      },
+      queryParamsHandling: 'merge',
+    });
+    await openTab('matters'); // the page input follows the address
+    tab('Details').click();
+    expect(
+      (navigate.mock.lastCall![1] as { queryParams: { tab: unknown } }).queryParams.tab,
+    ).toBeNull();
+  });
+
+  it('shows the fields in the Details tab, with no side panel', async () => {
+    await create(['Client.View', 'Matter.View']);
+
+    expect(el().querySelector('aside')).toBeNull();
+    const details = el().querySelector('[role=tabpanel] [data-details-tab]')!;
+    expect(details.textContent).toContain('00343');
+    expect(details.textContent).toContain('Acme Corp');
+    expect(details.querySelector('mf-active-badge')?.textContent).toContain('Active');
+    expect(details.textContent).toContain('Created');
   });
 
   it('has column filters for Matter and Name and a Status that shows Active; no search box', async () => {
-    await create(['Client.View', 'Matter.View']);
+    await create(['Client.View', 'Matter.View'], 'matters');
     expect(el().querySelector('#client-matter-search, #client-matter-status')).toBeNull();
     expect(el().querySelector('[data-filter-row]')).toBeNull(); // closed by default
     el().querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
@@ -110,7 +168,7 @@ describe('ClientDetailPage', () => {
   });
 
   it('filters, sorts and pages the matters through the address', async () => {
-    await create(['Client.View', 'Matter.View']);
+    await create(['Client.View', 'Matter.View'], 'matters');
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     el().querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
     await settle(fixture);
@@ -154,19 +212,19 @@ describe('ClientDetailPage', () => {
   });
 
   it('keeps the headers and filter row in the empty state and shows a retry inside the grid', async () => {
-    await create(['Client.View', 'Matter.View']);
+    await create(['Client.View', 'Matter.View'], 'matters');
     matters.listMatters.mockReturnValue(ok(pageOfMatters()));
     query.set({ name: 'zzz' });
     await settle(fixture);
     expect(el().textContent).toContain('No matters match');
-    expect(el().querySelector('[data-detail-main] thead th')).not.toBeNull();
+    expect(el().querySelector('mf-client-matters thead th')).not.toBeNull();
     expect(el().querySelector('[data-filter-row]')).not.toBeNull();
 
     matters.listMatters.mockReturnValue(apiError(500, { title: 'x', status: 500 } as never));
     query.set({ name: 'yyy' });
     await settle(fixture);
-    expect(el().querySelector('[data-detail-main] [role=alert]')).not.toBeNull();
-    expect(el().querySelector('[data-detail-main] thead th')).not.toBeNull();
+    expect(el().querySelector('mf-client-matters [role=alert]')).not.toBeNull();
+    expect(el().querySelector('mf-client-matters thead th')).not.toBeNull();
   });
 
   it('gates the actions by permission', async () => {
@@ -174,30 +232,31 @@ describe('ClientDetailPage', () => {
 
     expect(buttonByLabel(el(), 'Edit')).toBeUndefined();
     expect(buttonByLabel(el(), 'Set inactive')).toBeUndefined();
-    expect(buttonByLabel(el(), 'Create matter')).toBeUndefined();
     expect(buttonByLabel(el(), 'Activity')).toBeUndefined();
+    await openTab('matters');
+    expect(buttonByLabel(el(), 'Create matter')).toBeUndefined();
     expect(matters.listMatters).not.toHaveBeenCalled();
     expect(el().querySelector('[data-no-access=matters]')).not.toBeNull();
   });
 
-  it('opens Edit from the Details panel', async () => {
+  it('opens Edit from the Details tab', async () => {
     await create(['Client.View', 'Client.Edit']);
 
     const edit = buttonByLabel(el(), 'Edit')!;
-    expect(el().querySelector('aside')!.contains(edit)).toBe(true);
+    expect(el().querySelector('[data-details-tab]')!.contains(edit)).toBe(true);
     edit.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/clients/1/edit');
   });
 
   it('starts a matter for this client, prefilled', async () => {
-    await create(['Client.View', 'Matter.View', 'Matter.Create']);
+    await create(['Client.View', 'Matter.View', 'Matter.Create'], 'matters');
 
     buttonByLabel(el(), 'Create matter')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/matters/new?clientId=1');
   });
 
   it('disables Create matter with a visible reason for an inactive client', async () => {
-    await create(['Client.View', 'Matter.View', 'Matter.Create']);
+    await create(['Client.View', 'Matter.View', 'Matter.Create'], 'matters');
     clients.getClient.mockReturnValue(ok(aClient({ isActive: false })));
     await fixture.componentInstance.load();
     await settle(fixture);
@@ -226,7 +285,9 @@ describe('ClientDetailPage', () => {
       isActive: false,
       rowVersion: 'AAAA',
     });
-    expect(el().querySelector('aside mf-active-badge')?.textContent).toContain('Inactive');
+    expect(el().querySelector('[data-details-tab] mf-active-badge')?.textContent).toContain(
+      'Inactive',
+    );
   });
 
   it('shows a not-found state with Retry', async () => {
@@ -240,7 +301,6 @@ describe('ClientDetailPage', () => {
 
   it('offers Activity as a header button (Audit.View) that opens the drawer titled with the client', async () => {
     await create(['Client.View', 'Audit.View']);
-    expect(el().querySelector('[role=tab]')).toBeNull();
     expect(document.body.querySelector('.mf-drawer')).toBeNull();
 
     buttonByLabel(el(), 'Activity')!.click();
@@ -250,15 +310,16 @@ describe('ClientDetailPage', () => {
     expect(drawer.querySelector('mf-entity-activity')).not.toBeNull();
   });
 
-  it('opens the drawer for an old ?tab=activity link and ignores ?tab=details', async () => {
+  it('opens the drawer for an old ?tab=activity link (showing Details) and ?tab=details just shows Details', async () => {
     await create(['Client.View', 'Audit.View']);
     fixture.componentRef.setInput('tab', 'details');
     await settle(fixture);
     expect(document.body.querySelector('.mf-drawer')).toBeNull();
-    expect(el().querySelector('aside')).not.toBeNull();
+    expect(tab('Details').getAttribute('aria-selected')).toBe('true');
 
     fixture.componentRef.setInput('tab', 'activity');
     await settle(fixture);
     expect(document.body.querySelector('.mf-drawer')).not.toBeNull();
+    expect(tab('Details').getAttribute('aria-selected')).toBe('true');
   });
 });
