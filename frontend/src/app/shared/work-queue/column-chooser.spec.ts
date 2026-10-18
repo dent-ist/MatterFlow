@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ColumnChooser } from './column-chooser';
+import { WORK_COLUMNS } from './column-prefs';
 
 describe('ColumnChooser', () => {
   let fixture: ComponentFixture<ColumnChooser>;
@@ -68,5 +69,43 @@ describe('ColumnChooser', () => {
     fixture.componentRef.setInput('columns', ['ref', 'title', 'matter', 'status']);
     fixture.detectChanges();
     expect(el().querySelector<HTMLButtonElement>('[data-columns-reset]')!.disabled).toBe(true);
+  });
+
+  it('groups the list under Task, Where, Who, When and State and lists every column once', async () => {
+    await create();
+    const legends = Array.from(el().querySelectorAll('[data-columns-group] legend')).map((l) =>
+      l.textContent?.trim(),
+    );
+    expect(legends).toEqual(['Task', 'Where', 'Who', 'When', 'State']);
+    const labels = Array.from(el().querySelectorAll('[data-columns-group] .cc-check')).map((l) =>
+      l.textContent?.replace('(always shown)', '').trim(),
+    );
+    expect(labels.length).toBe(WORK_COLUMNS.length);
+    expect(new Set(labels).size).toBe(WORK_COLUMNS.length);
+    expect(
+      el().querySelectorAll('[data-columns-group] input[type=checkbox][disabled]').length,
+    ).toBe(2);
+  });
+
+  it('shows Column widths and Reset all widths only for a grid whose widths can be edited', async () => {
+    await create();
+    expect(el().querySelector('[data-widths-set]')).toBeNull();
+    expect(el().querySelector('[data-widths-reset]')).toBeNull();
+    fixture.destroy();
+
+    localStorage.clear();
+    await create({ widthScope: 'taskQueue', widthUser: 3 });
+    expect(el().querySelector('[data-widths-set]')).not.toBeNull();
+    const all = el().querySelector<HTMLElement>('[data-widths-reset]')!;
+    expect(all.getAttribute('aria-disabled')).toBe('true');
+    el().querySelector<HTMLElement>('[data-width-row="status"] [data-width-plus]')!.click();
+    fixture.detectChanges();
+    expect(all.getAttribute('aria-disabled')).toBeNull();
+    all.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(all.getAttribute('aria-disabled')).toBe('true');
+    expect(el().querySelector('[data-columns-live]')!.textContent).toContain('widths reset');
+    localStorage.clear();
   });
 });

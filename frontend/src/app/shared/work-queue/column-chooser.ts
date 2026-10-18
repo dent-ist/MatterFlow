@@ -1,11 +1,30 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { Dismissable } from '../ui/dismissable';
-import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
+import { ColumnScope, ColumnDef, WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
+import { ColumnWidthsPanel } from './column-widths-panel';
+import { WorkWidths } from './work-widths';
+
+/** The panel's groups (#230): what a column is for. The table keeps the canonical `WORK_COLUMNS` order. */
+const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
+  { label: 'Task', keys: ['ref', 'title', 'type', 'workflow', 'progress'] },
+  { label: 'Where', keys: ['matter', 'client', 'project'] },
+  { label: 'Who', keys: ['assignee', 'pod', 'creator', 'requestor'] },
+  { label: 'When', keys: ['due', 'created', 'updated', 'closed', 'age'] },
+  { label: 'State', keys: ['priority', 'status'] },
+];
 
 /** "Columns" and "Density" controls (UX 5.2): Ref and Title are always shown; the choice is remembered per user by the page. */
 @Component({
   selector: 'mf-column-chooser',
-  imports: [Dismissable],
+  imports: [Dismissable, ColumnWidthsPanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="cc">
@@ -28,74 +47,90 @@ import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
           aria-label="Table columns, density and grouping"
           data-columns-panel
           [style.--cc-max.px]="maxHeight()"
+          [style.--cc-maxw.px]="maxWidth()"
           [mfDismissable]="btn"
           (dismissed)="open.set(false)"
         >
           <div class="cc-body" data-columns-scroll>
-            <fieldset class="cc-set">
-              <legend>Columns</legend>
+            <div class="cc-cols" role="group" aria-label="Columns">
               @if (note(); as n) {
                 <p class="cc-view-note" data-columns-view-note>Modified by this view. {{ n }}</p>
               }
-              @for (col of all; track col.key) {
-                <label class="cc-check">
-                  <input
-                    type="checkbox"
-                    [checked]="col.locked || columns().includes(col.key)"
-                    [disabled]="col.locked"
-                    (change)="toggle(col.key)"
-                  />
-                  {{ col.label }}
-                  @if (col.locked) {
-                    <span class="cc-note">(always shown)</span>
+              @for (group of groups; track group.label) {
+                <fieldset class="cc-set" [attr.data-columns-group]="group.label">
+                  <legend>{{ group.label }}</legend>
+                  @for (col of group.columns; track col.key) {
+                    <label class="cc-check">
+                      <input
+                        type="checkbox"
+                        [checked]="col.locked || columns().includes(col.key)"
+                        [disabled]="col.locked"
+                        (change)="toggle(col.key)"
+                      />
+                      {{ col.label }}
+                      @if (col.locked) {
+                        <span class="cc-note">(always shown)</span>
+                      }
+                    </label>
                   }
-                </label>
+                </fieldset>
               }
-            </fieldset>
-            <fieldset class="cc-set">
-              <legend>Density</legend>
-              <label class="cc-check">
-                <input
-                  type="radio"
-                  name="cc-density"
-                  [checked]="density() === 'comfortable'"
-                  (change)="densityChange.emit('comfortable')"
-                />
-                Comfortable
-              </label>
-              <label class="cc-check">
-                <input
-                  type="radio"
-                  name="cc-density"
-                  [checked]="density() === 'compact'"
-                  (change)="densityChange.emit('compact')"
-                />
-                Compact
-              </label>
-            </fieldset>
-            @if (groupable()) {
-              <fieldset class="cc-set" data-group-set>
-                <legend>Group by</legend>
+            </div>
+            <div class="cc-side">
+              <fieldset class="cc-set">
+                <legend>Density</legend>
                 <label class="cc-check">
                   <input
                     type="radio"
-                    name="cc-group"
-                    [checked]="group() === null"
-                    (change)="groupChange.emit(null)"
+                    name="cc-density"
+                    [checked]="density() === 'comfortable'"
+                    (change)="densityChange.emit('comfortable')"
                   />
-                  None
+                  Comfortable
                 </label>
                 <label class="cc-check">
                   <input
                     type="radio"
-                    name="cc-group"
-                    data-group-due
-                    [checked]="group() === 'due'"
-                    (change)="groupChange.emit('due')"
+                    name="cc-density"
+                    [checked]="density() === 'compact'"
+                    (change)="densityChange.emit('compact')"
                   />
-                  Due
+                  Compact
                 </label>
               </fieldset>
+              @if (groupable()) {
+                <fieldset class="cc-set" data-group-set>
+                  <legend>Group by</legend>
+                  <label class="cc-check">
+                    <input
+                      type="radio"
+                      name="cc-group"
+                      [checked]="group() === null"
+                      (change)="groupChange.emit(null)"
+                    />
+                    None
+                  </label>
+                  <label class="cc-check">
+                    <input
+                      type="radio"
+                      name="cc-group"
+                      data-group-due
+                      [checked]="group() === 'due'"
+                      (change)="groupChange.emit('due')"
+                    />
+                    Due
+                  </label>
+                </fieldset>
+              }
+            </div>
+            @if (widthScope(); as scope) {
+              <mf-column-widths-panel
+                [columns]="columns()"
+                [scope]="scope"
+                [userId]="widthUser()"
+                [assignLink]="widthAssignLink()"
+                (announced)="say($event)"
+              />
             }
           </div>
           <div class="cc-foot">
@@ -108,6 +143,17 @@ import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
                 (click)="reset(def)"
               >
                 Reset columns
+              </button>
+            }
+            @if (widthScope()) {
+              <button
+                type="button"
+                class="mf-btn mf-btn--text cc-widths-reset"
+                data-widths-reset
+                [attr.aria-disabled]="hasWidths() ? null : 'true'"
+                (click)="resetWidths()"
+              >
+                Reset all widths
               </button>
             }
             <button type="button" class="mf-btn cc-done" data-columns-close (click)="close()">
@@ -153,6 +199,7 @@ import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
     .cc-body {
       display: flex;
       flex: 1 1 auto;
+      flex-wrap: wrap;
       gap: var(--mf-s5);
       min-height: 0;
       padding: var(--mf-s4);
@@ -176,6 +223,38 @@ import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
     .cc-done {
       margin-left: auto;
     }
+    .cc-foot {
+      flex-wrap: wrap;
+    }
+    .cc-widths-reset[aria-disabled='true'] {
+      opacity: 0.5;
+      cursor: default;
+    }
+    @media (max-width: 639.98px) {
+      .cc-widths-reset {
+        display: none;
+      }
+    }
+    /* The groups sit in two columns where there is room (#230); Density and Group by stand beside them. */
+    .cc-cols {
+      display: grid;
+      grid-template-columns: repeat(2, max-content);
+      align-content: start;
+      gap: var(--mf-s3) var(--mf-s5);
+    }
+    .cc-cols .cc-view-note {
+      grid-column: 1 / -1;
+      margin: 0;
+    }
+    .cc-side {
+      display: grid;
+      align-content: start;
+      gap: var(--mf-s3);
+    }
+    .cc-panel {
+      width: max-content;
+      max-width: min(46rem, var(--cc-maxw, calc(100vw - 2rem)));
+    }
     /* A phone: the panel is a bottom sheet, full width, at most 70% of the screen. */
     @media (max-width: 480px) {
       .cc-panel {
@@ -186,9 +265,17 @@ import { WORK_COLUMNS, Density, normalizeColumns } from './column-prefs';
         border-radius: var(--mf-radius) var(--mf-radius) 0 0;
         z-index: 1100;
       }
+      .cc-panel {
+        width: auto;
+        max-width: none;
+      }
       .cc-body {
         flex-direction: column;
+        flex-wrap: nowrap;
         gap: var(--mf-s3);
+      }
+      .cc-cols {
+        grid-template-columns: 1fr;
       }
     }
     .cc-set {
@@ -227,11 +314,27 @@ export class ColumnChooser {
   readonly groupable = input(false);
   readonly group = input<'due' | null>(null);
 
+  /** Where the widths of this grid live (`columnScope`); null hides "Column widths" (a grid whose widths cannot be edited). */
+  readonly widthScope = input<ColumnScope | null>(null);
+  readonly widthUser = input<number | null>(null);
+  /** Pod Work: the Assignee default is wider where "Assign to me" sits beside "Unassigned". */
+  readonly widthAssignLink = input(false);
+
   readonly columnsChange = output<string[]>();
   readonly densityChange = output<Density>();
   readonly groupChange = output<'due' | null>();
 
-  protected readonly all = WORK_COLUMNS;
+  protected readonly groups: readonly { label: string; columns: ColumnDef[] }[] = GROUPS.map(
+    (g) => ({
+      label: g.label,
+      columns: g.keys.map((k) => WORK_COLUMNS.find((c) => c.key === k)!),
+    }),
+  );
+  private readonly widthStore = inject(WorkWidths);
+  protected readonly hasWidths = computed(() => {
+    const scope = this.widthScope();
+    return !!scope && this.widthStore.has(scope, this.widthUser());
+  });
   protected readonly open = signal(false);
   protected readonly announce = signal('');
   protected readonly isDefault = computed(() => {
@@ -241,17 +344,34 @@ export class ColumnChooser {
 
   /** Room below the button, measured when the panel opens (the toolbar sits well below the header on a short window). */
   protected readonly maxHeight = signal<number | null>(null);
+  protected readonly maxWidth = signal<number | null>(null);
 
   protected togglePanel(btn: HTMLElement): void {
     if (!this.open()) {
       const room = window.innerHeight - btn.getBoundingClientRect().bottom - 4 - 12;
       this.maxHeight.set(Math.max(180, Math.floor(room)));
+      // The panel hangs from the button's right edge and must not run over the side navigation: it is at most as wide as the room to the left of it.
+      const left = btn.closest('main')?.getBoundingClientRect().left ?? 0;
+      this.maxWidth.set(Math.max(280, Math.floor(btn.getBoundingClientRect().right - left - 8)));
     }
     this.open.update((v) => !v);
   }
 
   protected close(): void {
     this.open.set(false);
+  }
+
+  /** A polite message; the same text twice in a row is announced again. */
+  protected say(text: string): void {
+    this.announce.set('');
+    queueMicrotask(() => this.announce.set(text));
+  }
+
+  protected resetWidths(): void {
+    const scope = this.widthScope();
+    if (!scope || !this.hasWidths()) return;
+    this.widthStore.resetAll(scope, this.widthUser());
+    this.say('All column widths reset to the default.');
   }
 
   protected reset(def: readonly string[]): void {

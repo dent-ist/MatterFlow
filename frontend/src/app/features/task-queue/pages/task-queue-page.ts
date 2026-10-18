@@ -114,6 +114,8 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
           (resetSort)="resetSort()"
           (columnsChange)="setColumns($event)"
           [defaultColumns]="columnDefaults()"
+          [widthScope]="columnScope()"
+          [widthUser]="userId()"
           (densityChange)="setDensity($event)"
         />
         @if (state().sort) {

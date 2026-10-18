@@ -201,6 +201,8 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
             (resetSort)="resetSort()"
             (columnsChange)="setColumns($event)"
             [defaultColumns]="columnDefaults()"
+            [widthScope]="columnScope()"
+            [widthUser]="userId()"
             (densityChange)="setDensity($event)"
           >
             @if (!filters.sheetMode()) {

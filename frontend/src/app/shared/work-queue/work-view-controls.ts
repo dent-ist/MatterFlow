@@ -102,6 +102,9 @@ import { DESC_FIRST, SORT_LABELS } from './sort-note';
       [note]="columnsNote()"
       [density]="density()"
       [defaults]="defaultColumns()"
+      [widthScope]="widthScope()"
+      [widthUser]="widthUser()"
+      [widthAssignLink]="widthAssignLink()"
       [groupable]="groupable()"
       [group]="grouped() ? 'due' : null"
       (groupChange)="groupChange.emit($event)"
@@ -129,6 +132,11 @@ export class WorkViewControls {
   readonly density = input<Density>('comfortable');
   /** The current tab's default column set: when given, the Columns panel offers "Reset columns" (needs the per-tab sets of #152). */
   readonly defaultColumns = input<readonly string[] | null>(null);
+
+  /** Where the grid's widths live (#206): the Columns panel offers "Column widths" for it. Null hides the section. */
+  readonly widthScope = input<string | null>(null);
+  readonly widthUser = input<number | null>(null);
+  readonly widthAssignLink = input(false);
 
   /** My Work, Active tab: the Group by choice is offered, and `grouped` says the list is grouped by due. */
   readonly groupable = input(false);

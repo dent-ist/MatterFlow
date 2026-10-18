@@ -191,6 +191,9 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
               (resetSort)="resetSort()"
               (columnsChange)="setColumns($event)"
               [defaultColumns]="columnDefaults()"
+              [widthScope]="columnScope()"
+              [widthUser]="userId()"
+              [widthAssignLink]="canAssign()"
               (densityChange)="setDensity($event)"
             />
           </mf-filters-bar>

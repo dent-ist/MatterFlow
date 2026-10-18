@@ -130,8 +130,9 @@ test.describe('WP1: dialogs, popovers, shortcut list', () => {
         .locator('[data-columns-scroll]')
         .evaluate((e) => ({ sh: e.scrollHeight, ch: e.clientHeight }));
       if (scroll.sh > scroll.ch) {
-        await mine.locator('[data-columns-scroll]').evaluate((e) => e.scrollTo(0, e.scrollHeight));
-        await expect(mine.getByRole('checkbox', { name: /^Updated/ })).toBeInViewport();
+        // The list is grouped (#230) and Column widths follow it (#206): the last choice, Status, is reached by scrolling.
+        await mine.getByRole('checkbox', { name: /^Status/ }).scrollIntoViewIfNeeded();
+        await expect(mine.getByRole('checkbox', { name: /^Status/ })).toBeInViewport();
         await mine.locator('[data-columns-scroll]').evaluate((e) => e.scrollTo(0, 0));
       }
       await shot(mine, `columns-panel-${size.name}`);
