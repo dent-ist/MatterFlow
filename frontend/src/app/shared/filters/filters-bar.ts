@@ -142,6 +142,7 @@ export class MoreFilters {
  *     <span mfBarStart>...presets...</span>   <!-- optional, left -->
  *     ...Columns, Sorted by...                 <!-- optional, before Other filters -->
  *     <a mfSheetFooter>...</a>                 <!-- optional, in the footer of the Filters sheet (narrow windows) -->
+ *     <mf-phone-sort mfSheetSort ...>          <!-- optional, above the filters in the sheet (work lists, #192) -->
  *   </mf-filters-bar>
  */
 @Component({
@@ -219,6 +220,7 @@ export class MoreFilters {
       <p class="fbar__print" data-filter-print>{{ line }}</p>
     }
     <mf-filter-sheet [filters]="filters()" [clearAlso]="clearAlso()">
+      <ng-content select="[mfSheetSort]" ngProjectAs="[mfSheetSort]" />
       <ng-content select="[mfSheetFooter]" ngProjectAs="[mfSheetFooter]" />
     </mf-filter-sheet>
   `,
@@ -241,6 +243,12 @@ export class MoreFilters {
     /* Row 1 of the stacked bar: the quick views at the left (their own auto margin), the buttons at the right, never re-ordered. */
     .fbar--row1 {
       margin-bottom: var(--mf-s1);
+    }
+    /* A phone (the work lists, #192): one Filters button; its sheet holds every filter, so "Other filters" is not offered. */
+    @media (width < 640px) {
+      .fbar--row1 mf-more-filters {
+        display: none;
+      }
     }
     .fbar--row2 {
       justify-content: flex-start;

@@ -3,6 +3,13 @@
   align-items: center;
 }
 
+/* The pager is one row on a phone; the order is named by the Sort by select of the Filters sheet (#192). */
+@media (width < 640px) {
+  :host {
+    display: none;
+  }
+}
+
 .sn {
   position: relative;
   display: inline-flex;

@@ -44,7 +44,7 @@ const stored = (page: Page): Promise<Record<string, Record<string, number>>> =>
 
 async function openQueue(page: Page, tag: string, rows: number): Promise<void> {
   await new TaskQueuePage(page).open(`?q=${encodeURIComponent(tag)}`);
-  await expect(page.locator('tbody tr[data-task]')).toHaveCount(rows);
+  await expect(page.locator('[data-task]')).toHaveCount(rows);
 }
 
 /** Opens the panel the way a keyboard user does: focus on the button, Enter. */
@@ -108,7 +108,7 @@ test.describe('Column widths in the Columns panel (#206)', () => {
 
     expect(Object.values(await stored(page))).toEqual([{ due: 160 }]);
     await page.reload();
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(3);
+    await expect(page.locator('[data-task]')).toHaveCount(3);
     expect(await gridWidth(page, 'due')).toBe(160);
   });
 
@@ -268,7 +268,7 @@ for (const size of [
   });
 }
 
-test('375 px: the panel is a bottom sheet with Columns and Density, without Column widths; axe is clean', async ({
+test('375 px: the grid is cards, so there is no Columns button (and no Column widths); the Filters sheet starts with Sort by; axe is clean', async ({
   seed,
   asUser,
 }) => {
@@ -277,11 +277,10 @@ test('375 px: the panel is a bottom sheet with Columns and Density, without Colu
   const page = await asUser('ke\\kekim');
   await page.setViewportSize({ width: 375, height: 812 });
   await new TaskQueuePage(page).open(`?q=${encodeURIComponent(tag)}`);
-  await openPanel(page);
-  await expect(page.locator('[data-columns-group]')).toHaveCount(5);
-  await expect(page.locator('[data-widths-set]')).toBeHidden();
-  await expect(page.locator('[data-widths-reset]')).toBeHidden();
-  await expect(page.getByRole('radio', { name: 'Compact' })).toBeVisible();
-  await axeClean(page, 'panel open 375');
-  await shot(page, 'panel-375x812');
+  await expect(page.locator('li[data-task]').first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Columns', exact: true })).toHaveCount(0);
+  await expect(page.locator('[data-widths-set]')).toHaveCount(0);
+  await page.getByRole('button', { name: /^Filters/ }).click();
+  await expect(page.getByRole('dialog', { name: 'Filters' }).getByLabel('Sort by')).toBeVisible();
+  await axeClean(page, 'filters sheet 375');
 });

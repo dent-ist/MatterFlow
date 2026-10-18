@@ -23,6 +23,17 @@ import { FiltersTestHost, Mounted, cleanup, mountFilters } from './filters-testi
 })
 class Host extends FiltersTestHost {}
 
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FiltersBar],
+  template: `
+    <mf-filters-bar [filters]="filters" controls="row">
+      <p mfSheetSort id="sort-slot">Sort by</p>
+    </mf-filters-bar>
+  `,
+})
+class SortHost extends FiltersTestHost {}
+
 describe('filter sheet', { timeout: 20_000 }, () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -48,6 +59,16 @@ describe('filter sheet', { timeout: 20_000 }, () => {
     expect(sheet()!.querySelector('h2')?.textContent).toContain('Filters');
     expect(sheet()!.getAttribute('aria-labelledby')).toBe(sheet()!.querySelector('h2')!.id);
     expect(toggle().getAttribute('aria-haspopup')).toBe('dialog');
+  });
+
+  it('shows a projected [mfSheetSort] control (the phone sort select) above the filters, only while the sheet is open', async () => {
+    m = await mountFilters(SortHost, { narrow: true });
+    expect(m.el.querySelector('#sort-slot')).toBeNull();
+    toggle().click();
+    await m.settle();
+    const slot = sheet()!.querySelector('.fs-body > #sort-slot');
+    expect(slot).not.toBeNull();
+    expect(sheet()!.querySelector('.fs-body')!.firstElementChild).toBe(slot);
   });
 
   it('keeps the row on a wide window', async () => {

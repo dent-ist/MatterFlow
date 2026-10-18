@@ -52,6 +52,7 @@ import {
   taskQueueArgs,
 } from '../../../shared/work-queue/queue-filters';
 import { SortNote } from '../../../shared/work-queue/sort-note';
+import { PhoneSort } from '../../../shared/work-queue/phone-sort';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
 
@@ -72,6 +73,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
     Button,
     HasPermissionDirective,
     FiltersBar,
+    PhoneSort,
     QuickViews,
     WorkList,
     WorkViewControls,
@@ -119,6 +121,12 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
           [widthScope]="columnScope()"
           [widthUser]="userId()"
           (densityChange)="setDensity($event)"
+        />
+        <mf-phone-sort
+          mfSheetSort
+          [sort]="state().sort"
+          [dir]="state().dir"
+          (sortPick)="pickSort($event)"
         />
         @if (state().sort) {
           <button

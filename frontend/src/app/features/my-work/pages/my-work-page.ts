@@ -46,6 +46,7 @@ import {
   sameSet,
 } from '../../../shared/work-queue/queue-filters';
 import { openInQueueParams } from '../../../shared/work-queue/queue-link';
+import { PhoneSort, SortChoice } from '../../../shared/work-queue/phone-sort';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
@@ -142,6 +143,7 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
     RouterLink,
     CopyParts,
     FiltersBar,
+    PhoneSort,
     WorkList,
     WorkStrip,
     WorkTabs,
@@ -224,6 +226,17 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
               </button>
             }
           </mf-work-view-controls>
+          <mf-phone-sort
+            mfSheetSort
+            [sort]="state().sort"
+            [dir]="state().dir"
+            [defaultLabel]="defaultLabel()"
+            [defaultOrder]="defaultOrder()"
+            [groupable]="tab() === 'active'"
+            [grouped]="grouped()"
+            (sortPick)="pickSort($event)"
+            (groupChange)="setGroup($event)"
+          />
           <a
             mfSheetFooter
             class="mf-btn mw-queue mw-queue--sheet"
@@ -398,6 +411,15 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
       saveGroup(this.userId(), null);
     }
     super.sortBy(field);
+  }
+
+  /** The phone's Sort by select is a header sort too: it turns grouping off for good. */
+  protected override pickSort(choice: SortChoice | null): void {
+    if (choice && this.grouped()) {
+      this.groupPref.set(null);
+      saveGroup(this.userId(), null);
+    }
+    super.pickSort(choice);
   }
 
   protected override resetView(): void {

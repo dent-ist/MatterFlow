@@ -114,6 +114,11 @@ test.describe('WP1: dialogs, popovers, shortcut list', () => {
       await mine.setViewportSize({ width: size.width, height: size.height });
       const myWork = new MyWorkPage(mine);
       await myWork.open();
+      if (size.width < 640) {
+        // Phone cards (#192): the tab's columns decide the chips; the Columns button is not offered.
+        await expect(columnsButton(mine)).toHaveCount(0);
+        continue;
+      }
 
       await columnsButton(mine).click();
       await expect(columnsPanel(mine)).toBeVisible();

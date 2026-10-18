@@ -61,7 +61,7 @@ test.describe('Quick views are one toolbar (#236)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open();
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
 
     await expect(toolbar(page)).toHaveAttribute('aria-orientation', 'horizontal');
     expect(await stops(page)).toBe(1);
@@ -107,14 +107,14 @@ test.describe('Quick views are one toolbar (#236)', () => {
 
     // Measured: with the skip link two presses (Tab, Enter); without it the walk is recorded.
     await queue.open(`?q=${tag}`);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: 'Skip to task list' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('tbody a.wt-title').first()).toBeFocused();
     await queue.open(`?q=${tag}`);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     const walk = await walkToFirstRow(page);
     // The quick views take one stop (nine buttons before). The whole walk is recorded: #236 asked for at most 25, which the toolbar alone
     // cannot reach (the side navigation, the filter row and the column sort buttons are the rest).
@@ -134,7 +134,7 @@ test.describe('Quick views are one toolbar (#236)', () => {
     const page = await asUser('ke\\kekim');
     await page.setViewportSize({ width: 1366, height: 768 });
     await new TaskQueuePage(page).open();
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-task]').first()).toBeVisible();
     await page.locator('body').click({ position: { x: 5, y: 5 } });
     await page.keyboard.press('?');
     const help = page.locator('[data-shortcut-help]');
@@ -218,6 +218,12 @@ test.describe('Closed instead of Due suggestion (#231)', () => {
       const page = await asUser('ke\\kekim');
       await page.setViewportSize({ width: w, height: h });
       await new TaskQueuePage(page).open('?status=COMPLETED');
+      if (w < 640) {
+        // Phone cards (#192): the Columns panel, which holds the suggestion, is not offered.
+        await expect(columnsButton(page)).toHaveCount(0);
+        await axeClean(page, `closed cards ${w}`);
+        return;
+      }
       await columnsButton(page).click();
       await expect(suggest(page)).toBeVisible();
       await axeClean(page, `suggestion ${w}`);

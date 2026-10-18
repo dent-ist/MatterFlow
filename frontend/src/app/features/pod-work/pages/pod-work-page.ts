@@ -26,6 +26,7 @@ import { OPEN_STATUSES, QueueState, queueArgs } from '../../../shared/work-queue
 import { PodOption } from '../../../shared/work-queue/pod-options';
 import { QueuePageBase } from '../../../shared/work-queue/queue-page';
 import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
+import { PhoneSort } from '../../../shared/work-queue/phone-sort';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
@@ -47,6 +48,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
     PageHeader,
     ScrollArea,
     FiltersBar,
+    PhoneSort,
     WorkList,
     WorkStrip,
     WorkTabs,
@@ -197,6 +199,12 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
               [widthUser]="userId()"
               [widthAssignLink]="canAssign()"
               (densityChange)="setDensity($event)"
+            />
+            <mf-phone-sort
+              mfSheetSort
+              [sort]="state().sort"
+              [dir]="state().dir"
+              (sortPick)="pickSort($event)"
             />
           </mf-filters-bar>
           <mf-work-list

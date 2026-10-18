@@ -63,3 +63,12 @@
   box-shadow: var(--mf-shadow-2);
   color: var(--mf-text);
 }
+
+/* Below 640 px the grid is cards: no Columns button (the tab's columns decide the chips) and no Sorted by note here; the order is the Sort by
+   select of the Filters sheet (#192, #238). */
+@media (width < 640px) {
+  mf-column-chooser,
+  [data-sort-note] {
+    display: none;
+  }
+}

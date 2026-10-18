@@ -27,7 +27,7 @@ const FOCUSABLE =
  * (`ListFilters.sheetMode()`), where the filter row is not usable. A modal dialog named "Filters": focus moves in and is kept inside,
  * Esc (when no filled box needs it) and Close shut it and give focus back to the Filters button. Controls are the row's controls
  * rendered stacked and expanded (no nested overlays) with 44 px targets, changes apply live, and the footer reads "Show 42 results"
- * (it just closes the sheet) beside "Clear filters". It is part of `mf-filters-bar`, so a page does not place it.
+ * (it just closes the sheet) beside "Clear filters". A page may project `[mfSheetSort]` (the phone's Sort by select, #192) above the filters. It is part of `mf-filters-bar`, so a page does not place it.
  */
 @Component({
   selector: 'mf-filter-sheet',
@@ -66,6 +66,7 @@ const FOCUSABLE =
           </button>
         </header>
         <div class="fs-body">
+          <ng-content select="[mfSheetSort]" />
           @for (d of controls(); track d.key) {
             <div class="fs-field" role="group" [attr.aria-label]="d.label">
               <span class="fs-label" aria-hidden="true">{{ d.label }}</span>

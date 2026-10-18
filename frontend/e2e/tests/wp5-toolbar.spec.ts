@@ -257,7 +257,9 @@ test.describe('Task Queue toolbar (WP5)', () => {
       await shot(page, `chip-sort-${w}x${h}`);
       // The info popover opens above the footer (the footer shows while the list has rows: the plain open list does).
       await page.goto('/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD');
-      await expect(page.locator('tr[data-task]').first()).toBeVisible();
+      await expect(page.locator('[data-task]').first()).toBeVisible();
+      // Below 640 px (cards, #192) the sort note leaves the footer: the Sort by select of the Filters sheet names the order.
+      if (w < 640) continue;
       await page.getByRole('button', { name: 'How the default order works' }).click();
       await expect(page.locator('[data-sort-rule]')).toBeVisible();
       expect(await axeViolations(page), `info at ${w}`).toEqual([]);
