@@ -294,7 +294,7 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   protected restore(view: QueueState): void {
     this.filters.resetHandler = () => this.resetView();
     this.filters.markRestored(this.restoredLabel(view));
-    this.navigate(view, true);
+    this.navigate(view, true, false);
   }
 
   /** "Reset to default": the plain list URL, the remembered view forgotten (column and density preferences stay), focus on the heading. */
@@ -457,7 +457,16 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
 
   // ---- URL
 
-  protected navigate(next: QueueState, replaceUrl = false): void {
+  /**
+   * The restored-view notice goes with the first thing the person does (#217): a sort, page, view, tab or column change. A replacing
+   * navigation is the page's own (the landing tab, the restore itself) and leaves it. Notices with their own text stay until dismissed.
+   */
+  protected userActed(): void {
+    if (!this.filters.noticeMessage()) this.filters.dismissRestored();
+  }
+
+  protected navigate(next: QueueState, replaceUrl = false, byUser = !replaceUrl): void {
+    if (byUser) this.userActed();
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: toQueryParams(next, { explicitStatus: this.defaultStatus().length > 0 }),
@@ -506,6 +515,7 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   // ---- table preferences
 
   protected setColumns(columns: string[]): void {
+    this.userActed();
     const scope = this.columnScope();
     const next = normalizeColumns(columns);
     const def = defaultColumns(scope);
@@ -520,6 +530,7 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   }
 
   protected setDensity(density: Density): void {
+    this.userActed();
     this.density.set(density);
     saveDensity(this.pageKey, this.userId(), density);
   }

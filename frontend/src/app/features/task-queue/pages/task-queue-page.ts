@@ -37,6 +37,7 @@ import {
   builtInFilters,
   queueArgs,
 } from '../../../shared/work-queue/queue-filters';
+import { SortNote } from '../../../shared/work-queue/sort-note';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
 
@@ -59,6 +60,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
     QuickViews,
     WorkList,
     WorkViewControls,
+    SortNote,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
@@ -69,6 +71,8 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
       <mf-filters-bar
         [filters]="filters"
         controls="work-filter-row"
+        [stacked]="true"
+        [endActive]="!!state().sort"
         (showColumn)="showColumn($event)"
       >
         <mf-quick-views
@@ -80,6 +84,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
         <mf-work-view-controls
           [sort]="state().sort"
           [dir]="state().dir"
+          [sortNote]="false"
           [columns]="prefs().columns"
           [density]="prefs().density"
           (resetSort)="resetSort()"
@@ -87,6 +92,17 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
           [defaultColumns]="columnDefaults()"
           (densityChange)="setDensity($event)"
         />
+        @if (state().sort) {
+          <button
+            mfBarEnd
+            type="button"
+            class="mf-btn mf-btn--text"
+            data-reset-sort
+            (click)="resetSort()"
+          >
+            Reset sort
+          </button>
+        }
       </mf-filters-bar>
       <mf-work-list
         from="task-queue"
@@ -112,6 +128,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
         (rowChange)="replaceRow($event)"
         (columnsShown)="shownColumns.set($event)"
       >
+        <mf-sort-note foot-note [sort]="state().sort" [dir]="state().dir" />
         @if (empty().createTask) {
           <p-button
             empty-action

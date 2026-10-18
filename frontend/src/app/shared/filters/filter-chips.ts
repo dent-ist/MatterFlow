@@ -171,11 +171,12 @@ export class FilterChips {
         }
         <button
           type="button"
-          class="mf-btn mf-btn--text"
-          aria-label="Dismiss notice"
+          class="fn__x"
+          aria-label="Dismiss"
+          data-dismiss-notice
           (click)="filters().dismissRestored()"
         >
-          Dismiss
+          <i class="pi pi-times" aria-hidden="true"></i>
         </button>
       </p>
     }
@@ -192,6 +193,40 @@ export class FilterChips {
       border-radius: var(--mf-radius);
       background: var(--mf-surface-alt);
       font-size: var(--mf-fs-sm);
+    }
+    /* In row 2 of the stacked toolbar (#217) the bar owns the spacing and the notice takes the row's place. */
+    :host-context(.fbar--row2) {
+      display: block;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    /* The same 32 px as a chip row with Clear filters, so the grid does not move when the notice is swapped for chips. */
+    :host-context(.fbar--row2) .fn {
+      box-sizing: border-box;
+      min-height: 32px;
+      margin: 0;
+      padding-block: 0;
+    }
+    .fn__x {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      min-height: 24px;
+      margin-left: auto;
+      padding: 0;
+      border: 0;
+      border-radius: var(--mf-radius);
+      background: transparent;
+      color: var(--mf-text-muted);
+      cursor: pointer;
+    }
+    .fn__x:hover {
+      background: var(--mf-surface-alt);
+      color: var(--mf-text);
+    }
+    .fn__x .pi {
+      font-size: 0.625rem;
     }
     @media print {
       .fn {

@@ -1,0 +1,61 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+}
+
+.sn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mf-s1);
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.sn-label .pi {
+  font-size: var(--mf-fs-xs);
+}
+
+.sn-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.sn-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--mf-target-min);
+  height: var(--mf-target-min);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--mf-text-muted);
+  cursor: pointer;
+}
+
+.sn-info:hover {
+  color: var(--mf-text);
+}
+
+/* Opens above the footer it sits in. */
+.sn-rule {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  z-index: 5;
+  width: max-content;
+  max-width: min(320px, 80vw);
+  margin: 0 0 var(--mf-s1);
+  padding: var(--mf-s2) var(--mf-s3);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-2);
+  color: var(--mf-text);
+}

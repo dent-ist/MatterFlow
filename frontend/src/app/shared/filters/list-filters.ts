@@ -269,6 +269,8 @@ export class ListFilters {
   }
 
   private write(params: QueryParams, replace?: boolean): void {
+    // A change by the person ends the restored-view notice (#217); notices with their own text stay until dismissed.
+    if (!replace && !this.noticeMessage()) this.restored.set(false);
     void this.router.navigate([], {
       queryParams: { ...this.keepBareDefaults(params), page: null },
       queryParamsHandling: 'merge',

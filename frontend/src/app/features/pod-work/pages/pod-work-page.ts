@@ -173,6 +173,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
           <mf-filters-bar
             [filters]="filters"
             controls="work-filter-row"
+            [stacked]="true"
             (showColumn)="showColumn($event)"
           >
             <mf-work-view-controls

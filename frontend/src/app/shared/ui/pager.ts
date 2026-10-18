@@ -24,6 +24,7 @@ let nextId = 0;
         </label>
       }
       <span data-range>{{ range() }}</span>
+      <ng-content select="[pager-note]" />
       <button
         type="button"
         class="mf-btn"

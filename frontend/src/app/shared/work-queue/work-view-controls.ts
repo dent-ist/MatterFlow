@@ -12,25 +12,7 @@ import { Dismissable } from '../ui/dismissable';
 import { ColumnChooser } from './column-chooser';
 import { Density } from './column-prefs';
 import { SortDirection } from './queue-filters';
-
-/** Sorts whose first click goes newest first. */
-const DESC_FIRST: ReadonlySet<string> = new Set(['created', 'completed', 'closed', 'updated']);
-
-const SORT_LABELS: Readonly<Record<string, string>> = {
-  priority: 'Priority',
-  due: 'Due date',
-  created: 'Created',
-  number: 'Ref',
-  status: 'Status',
-  completed: 'Closed',
-  closed: 'Closed',
-  title: 'Title',
-  matter: 'Matter',
-  updated: 'Updated',
-  age: 'Age',
-  assignee: 'Assignee',
-  client: 'Client',
-};
+import { DESC_FIRST, SORT_LABELS } from './sort-note';
 
 /**
  * The right end of the work toolbar: a short "Sorted by Priority" note with the sort direction, an info button that opens the full
@@ -42,58 +24,60 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './work-view-controls.scss',
   template: `
-    <div class="vc-sort" data-sort-note>
-      @if (grouped()) {
-        <span class="vc-label" data-grouped-note
-          >Grouped by due <i class="pi pi-sort-amount-up-alt" aria-hidden="true"></i
-        ></span>
-        <button
-          type="button"
-          class="mf-btn mf-btn--text"
-          data-ungroup
-          (click)="groupChange.emit(null)"
-        >
-          Remove grouping
-        </button>
-      } @else if (sort(); as s) {
-        <span class="vc-label"
-          >Sorted by {{ sortLabel() }}
-          <i class="pi" [class]="dirIcon()" aria-hidden="true"></i>
-          <span class="vc-sr">({{ dir() === 'desc' ? 'descending' : 'ascending' }})</span>
-        </span>
-        <button type="button" class="mf-btn mf-btn--text" (click)="resetSort.emit()">
-          Reset sort
-        </button>
-      } @else {
-        <span class="vc-label"
-          >Sorted by {{ defaultLabel() }}
-          <i class="pi pi-sort-amount-up-alt" aria-hidden="true"></i>
-        </span>
-        <button
-          #infoBtn
-          type="button"
-          class="vc-info"
-          aria-label="How the default order works"
-          aria-controls="vc-rule"
-          [attr.aria-expanded]="info()"
-          (click)="info.set(!info())"
-        >
-          <i class="pi pi-info-circle" aria-hidden="true"></i>
-        </button>
-        @if (info()) {
-          <p
-            id="vc-rule"
-            class="vc-rule"
-            role="note"
-            data-sort-rule
-            [mfDismissable]="infoBtn"
-            (dismissed)="info.set(false)"
+    @if (sortNote()) {
+      <div class="vc-sort" data-sort-note>
+        @if (grouped()) {
+          <span class="vc-label" data-grouped-note
+            >Grouped by due <i class="pi pi-sort-amount-up-alt" aria-hidden="true"></i
+          ></span>
+          <button
+            type="button"
+            class="mf-btn mf-btn--text"
+            data-ungroup
+            (click)="groupChange.emit(null)"
           >
-            {{ defaultOrder() }}. Choosing a column header sorts by it and replaces this order.
-          </p>
+            Remove grouping
+          </button>
+        } @else if (sort(); as s) {
+          <span class="vc-label"
+            >Sorted by {{ sortLabel() }}
+            <i class="pi" [class]="dirIcon()" aria-hidden="true"></i>
+            <span class="vc-sr">({{ dir() === 'desc' ? 'descending' : 'ascending' }})</span>
+          </span>
+          <button type="button" class="mf-btn mf-btn--text" (click)="resetSort.emit()">
+            Reset sort
+          </button>
+        } @else {
+          <span class="vc-label"
+            >Sorted by {{ defaultLabel() }}
+            <i class="pi pi-sort-amount-up-alt" aria-hidden="true"></i>
+          </span>
+          <button
+            #infoBtn
+            type="button"
+            class="vc-info"
+            aria-label="How the default order works"
+            aria-controls="vc-rule"
+            [attr.aria-expanded]="info()"
+            (click)="info.set(!info())"
+          >
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+          </button>
+          @if (info()) {
+            <p
+              id="vc-rule"
+              class="vc-rule"
+              role="note"
+              data-sort-rule
+              [mfDismissable]="infoBtn"
+              (dismissed)="info.set(false)"
+            >
+              {{ defaultOrder() }}. Choosing a column header sorts by it and replaces this order.
+            </p>
+          }
         }
-      }
-    </div>
+      </div>
+    }
     @if (tabHelp(); as help) {
       <div class="vc-sort vc-tab" data-tab-help>
         <button
@@ -127,6 +111,8 @@ const SORT_LABELS: Readonly<Record<string, string>> = {
 })
 export class WorkViewControls {
   readonly sort = input<string | null>(null);
+  /** False where the page shows the sorted-by note elsewhere (the Task Queue footer, #216). */
+  readonly sortNote = input(true);
   readonly dir = input<SortDirection | null>(null);
   /** The full default rule, for the info popover. */
   readonly defaultOrder = input('Default order: Priority, ASAP first, Due date, Oldest');

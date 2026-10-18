@@ -316,10 +316,30 @@ describe('TaskQueuePage', () => {
     await settle();
     expect(query()['dir']).toBe('desc');
 
-    el.querySelector<HTMLButtonElement>('[data-sort-note] button')!.click();
+    // The sorted-by note is in the footer; "Reset sort" is at the right end of row 2.
+    expect(el.querySelector('[data-toolbar-row2] [data-reset-sort]')).not.toBeNull();
+    expect(el.querySelector('.mf-pager [data-sort-note]')!.textContent).toContain(
+      'Sorted by Priority',
+    );
+    el.querySelector<HTMLButtonElement>('[data-reset-sort]')!.click();
     await settle();
+    expect(el.querySelector('[data-reset-sort]')).toBeNull();
     expect(query()['sort']).toBeUndefined();
     expect(lastArgs()[ARG.sort]).toBeUndefined();
+  });
+
+  it('the restored notice sits in row 2 and goes with the first action (a sort, a page change), not before', async () => {
+    localStorage.setItem(
+      'mf.work-view.v1.queue.1',
+      JSON.stringify({ status: ['NEW'], overdue: 'true' }),
+    );
+    const el = await open('/tasks');
+    expect(el.querySelector('[data-toolbar-row2] [data-restored-notice]')).not.toBeNull();
+    await settle();
+    expect(el.querySelector('[data-restored-notice]')).not.toBeNull();
+    el.querySelector<HTMLElement>('thead th[data-col="priority"] button')!.click();
+    await settle();
+    expect(el.querySelector('[data-restored-notice]')).toBeNull();
   });
 
   it('sorting on a plain /tasks keeps the open statuses', async () => {

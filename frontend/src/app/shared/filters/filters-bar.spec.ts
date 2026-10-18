@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FiltersBar } from './filters-bar';
 import { FiltersTestHost, Mounted, cleanup, mountFilters } from './filters-testing';
 
@@ -17,6 +17,21 @@ import { FiltersTestHost, Mounted, cleanup, mountFilters } from './filters-testi
   `,
 })
 class Host extends FiltersTestHost {}
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FiltersBar],
+  template: `
+    <mf-filters-bar [filters]="filters" controls="row" [stacked]="true" [endActive]="end()">
+      <span mfBarStart class="views">Views</span>
+      <span class="extra">Columns</span>
+      <button mfBarEnd type="button" class="reset">Reset sort</button>
+    </mf-filters-bar>
+  `,
+})
+class StackedHost extends FiltersTestHost {
+  end = signal(false);
+}
 
 describe('filters bar', { timeout: 20_000 }, () => {
   afterEach(() => {
@@ -244,9 +259,9 @@ describe('filters bar', { timeout: 20_000 }, () => {
       const notice = m.el.querySelector('[data-restored-notice]')!;
       expect(notice.getAttribute('role')).toBe('status');
       expect(notice.textContent).toContain('Restored your last view');
-      Array.from(notice.querySelectorAll('button'))
-        .find((b) => b.textContent!.includes('Dismiss'))!
-        .click();
+      const x = notice.querySelector<HTMLButtonElement>('[data-dismiss-notice]')!;
+      expect(x.getAttribute('aria-label')).toBe('Dismiss');
+      x.click();
       await m.settle();
       expect(m.el.querySelector('[data-restored-notice]')).toBeNull();
 
@@ -258,6 +273,53 @@ describe('filters bar', { timeout: 20_000 }, () => {
       await m.settle();
       expect(m.router.url).toBe('/list');
       expect(m.el.querySelector('[data-restored-notice]')).toBeNull();
+    });
+  });
+
+  describe('stacked toolbar (two fixed rows)', () => {
+    let sm: Mounted<StackedHost>;
+    const row1 = () => sm.el.querySelector('.fbar--row1')!;
+    const row2 = () => sm.el.querySelector('[data-toolbar-row2]');
+
+    it('keeps the views, Columns, More filters and Filters in row 1 and has no row 2 with nothing to say', async () => {
+      sm = await mountFilters(StackedHost, { url: '/list' });
+      expect(row2()).toBeNull();
+      const order = Array.from(row1().children).map((c) =>
+        c.classList.contains('views')
+          ? 'views'
+          : c.classList.contains('extra')
+            ? 'extra'
+            : c.tagName.toLowerCase(),
+      );
+      expect(order[0]).toBe('views');
+      expect(order.at(-1)).toBe('mf-filters-toggle');
+      expect(sm.el.querySelector('.fbar--row1 [data-clear-filters]')).toBeNull();
+    });
+
+    it('puts chips and Clear filters in row 2, below an unchanged row 1', async () => {
+      sm = await mountFilters(StackedHost, { url: '/list' });
+      const before = Array.from(row1().children).map((c) => c.tagName + c.className);
+      await sm.go('/list?name=a&status=all');
+      expect(row2()).not.toBeNull();
+      expect(row2()!.querySelector('[data-clear-filters]')).not.toBeNull();
+      expect(Array.from(row1().children).map((c) => c.tagName + c.className)).toEqual(before);
+    });
+
+    it('shows the restored notice in row 2 and the x removes it', async () => {
+      sm = await mountFilters(StackedHost, { url: '/list' });
+      sm.filters.markRestored();
+      await sm.settle();
+      expect(row2()!.querySelector('[data-restored-notice]')).not.toBeNull();
+      row2()!.querySelector<HTMLButtonElement>('[data-dismiss-notice]')!.click();
+      await sm.settle();
+      expect(row2()).toBeNull();
+    });
+
+    it('holds row 2 for the end slot (Reset sort) when the page says it has something', async () => {
+      sm = await mountFilters(StackedHost, { url: '/list' });
+      sm.host.end.set(true);
+      await sm.settle();
+      expect(row2()?.querySelector('.reset')).not.toBeNull();
     });
   });
 });

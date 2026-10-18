@@ -3,6 +3,8 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
+  /* At the right end of the bar whatever sits (or does not sit) before it. */
+  margin-left: auto;
   gap: var(--mf-s3);
 }
 

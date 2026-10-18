@@ -149,25 +149,29 @@ export class MoreFilters {
   imports: [FiltersToggle, FilterChips, FilterNotice, FilterSheet, MoreFilters],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-filter-notice [filters]="filters()" />
-    <div class="fbar" data-grid-toolbar>
+    @if (!stacked()) {
+      <mf-filter-notice [filters]="filters()" />
+    }
+    <div class="fbar" [class.fbar--row1]="stacked()" data-grid-toolbar>
       <ng-content select="[mfBarStart]" />
-      <div class="fbar__chips">
-        <mf-filter-chips
-          [filters]="filters()"
-          [mode]="filters().rowVisible() ? 'hidden' : 'all'"
-          (showColumn)="showColumn.emit($event)"
-        />
-      </div>
-      @if (filters().activeCount() > 0) {
-        <button
-          type="button"
-          class="mf-btn mf-btn--text"
-          data-clear-filters
-          (click)="filters().clear(clearAlso())"
-        >
-          Clear filters
-        </button>
+      @if (!stacked()) {
+        <div class="fbar__chips">
+          <mf-filter-chips
+            [filters]="filters()"
+            [mode]="filters().rowVisible() ? 'hidden' : 'all'"
+            (showColumn)="showColumn.emit($event)"
+          />
+        </div>
+        @if (filters().activeCount() > 0) {
+          <button
+            type="button"
+            class="mf-btn mf-btn--text"
+            data-clear-filters
+            (click)="filters().clear(clearAlso())"
+          >
+            Clear filters
+          </button>
+        }
       }
       <ng-content />
       @if (filters().moreDefs().length > 0) {
@@ -181,6 +185,33 @@ export class MoreFilters {
         (toggled)="filters().toggle()"
       />
     </div>
+    @if (stacked() && rowTwo()) {
+      <!-- Row 2 (#216, #217): the restored notice or the chips with Clear filters, and Reset sort at the right; it exists only when it has something to say. -->
+      <div class="fbar fbar--row2" data-toolbar-row2>
+        @if (filters().restored()) {
+          <mf-filter-notice [filters]="filters()" />
+        } @else {
+          <div class="fbar__chips">
+            <mf-filter-chips
+              [filters]="filters()"
+              [mode]="filters().rowVisible() ? 'hidden' : 'all'"
+              (showColumn)="showColumn.emit($event)"
+            />
+          </div>
+          @if (filters().activeCount() > 0) {
+            <button
+              type="button"
+              class="mf-btn mf-btn--text"
+              data-clear-filters
+              (click)="filters().clear(clearAlso())"
+            >
+              Clear filters
+            </button>
+          }
+        }
+        <span class="fbar__end"><ng-content select="[mfBarEnd]" /></span>
+      </div>
+    }
     <p class="fbar__live" role="status" aria-live="polite" aria-atomic="true" data-filter-live>
       {{ filters().announcement() }}
     </p>
@@ -206,6 +237,21 @@ export class MoreFilters {
     .fbar__chips {
       min-width: 0;
       margin-right: auto;
+    }
+    /* Row 1 of the stacked bar: the quick views at the left (their own auto margin), the buttons at the right, never re-ordered. */
+    .fbar--row1 {
+      margin-bottom: var(--mf-s1);
+    }
+    .fbar--row2 {
+      justify-content: flex-start;
+      min-height: 32px;
+      margin-bottom: var(--mf-s1);
+    }
+    .fbar--row2 .fbar__chips {
+      margin-right: 0;
+    }
+    .fbar__end {
+      margin-left: auto;
     }
     .fbar__live {
       position: absolute;
@@ -237,8 +283,22 @@ export class FiltersBar {
   readonly controls = input('');
   /** Legacy parameters that Clear filters drops too. */
   readonly clearAlso = input<readonly string[]>([]);
+  /**
+   * Two fixed rows (the Task Queue, My Work and Pod Work toolbars): row 1 holds the views, Columns, More filters and Filters; row 2
+   * (the restored notice, or the chips with Clear filters, and the `[mfBarEnd]` slot such as Reset sort) shows only when it has something.
+   */
+  readonly stacked = input(false);
+  /** Stacked bar: the `[mfBarEnd]` slot has something to show (Reset sort), so row 2 is there even without chips. */
+  readonly endActive = input(false);
   /** A chip on a hidden column asks for the column back (the page owns the column chooser). */
   readonly showColumn = output<string>();
+
+  /** Row 2 exists while there is a notice, a chip to show, an active filter (Clear filters) or something at its end. */
+  protected readonly rowTwo = computed(() => {
+    const f = this.filters();
+    const chips = f.rowVisible() ? f.hiddenChips() : f.chips();
+    return f.restored() || chips.length > 0 || f.activeCount() > 0 || this.endActive();
+  });
 
   private readonly injector = inject(Injector);
   private readonly router = inject(Router);

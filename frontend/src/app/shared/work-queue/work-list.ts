@@ -84,7 +84,9 @@ export type WorkListState = 'loading' | 'ready' | 'error';
           [total]="total()"
           (pageChange)="pageChange.emit($event)"
           (pageSizeChange)="pageSizeChange.emit($event)"
-        />
+        >
+          <ng-content select="[foot-note]" ngProjectAs="[pager-note]" />
+        </mf-pager>
       }
     </div>
   `,

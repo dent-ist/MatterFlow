@@ -48,6 +48,13 @@ describe('WorkViewControls', () => {
     expect(reset).toBe(1);
   });
 
+  it('leaves the sorted-by note to the page when asked (Task Queue footer, #216)', async () => {
+    await create({ sortNote: false, sort: 'due' });
+    expect(el().querySelector('[data-sort-note]')).toBeNull();
+    expect(el().textContent).not.toContain('Reset sort');
+    expect(el().querySelector('.cc-button')).not.toBeNull();
+  });
+
   it('changes columns and density through the column chooser, never offering to hide Ref or Title', async () => {
     await create();
     el().querySelector<HTMLButtonElement>('.cc-button')!.click();
