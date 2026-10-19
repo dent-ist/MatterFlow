@@ -21,7 +21,10 @@ describe('ListReturn (#354)', () => {
     const back = new ListReturn(ADMIN_LIST.steps, router);
     expect(back.url).toBe('/admin/steps?page=2&size=50&title=ocr');
     expect(router.serializeUrl(back.tree)).toBe('/admin/steps?page=2&size=50&title=ocr');
-    expect(back.carry).toEqual({ returnTo: '/admin/steps?page=2&size=50&title=ocr' });
+    expect(back.carry).toEqual({
+      returnTo: '/admin/steps?page=2&size=50&title=ocr',
+      keepRow: true,
+    });
     expect(back.extras).toEqual({ state: back.carry });
     // The crumb asks the list to put focus back on the row.
     const crumb = back.crumb('Workflow Steps');
@@ -29,12 +32,13 @@ describe('ListReturn (#354)', () => {
     expect(crumb.state).toEqual({ restoreFocus: true });
   });
 
-  it('is the plain list when the page was opened with no state, and carries nothing on', () => {
+  it('is the plain list when the page was opened with no state, and carries only the row on', () => {
     openedWith(null);
     const back = new ListReturn(ADMIN_LIST.taskTypes, router);
     expect(back.url).toBe('/admin/task-types');
-    expect(back.carry).toBeUndefined();
-    expect(back.extras).toEqual({});
+    // No address to carry, but the row left is kept two pages deep (#354).
+    expect(back.carry).toEqual({ keepRow: true });
+    expect(back.extras).toEqual({ state: { keepRow: true } });
   });
 
   it('ignores a return address of another section or another admin list, or a malformed one', () => {
@@ -49,7 +53,7 @@ describe('ListReturn (#354)', () => {
       openedWith({ returnTo });
       const back = new ListReturn(ADMIN_LIST.steps, router);
       expect(back.url, JSON.stringify(returnTo)).toBe('/admin/steps');
-      expect(back.carry).toBeUndefined();
+      expect(back.carry).toEqual({ keepRow: true });
     }
   });
 });

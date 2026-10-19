@@ -236,6 +236,71 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
     await expect(rowLink(page, steps.ids[28])).toBeFocused();
   });
 
+  test('two pages deep (list, record, form designer or version page) the crumb of the list puts focus on the row that was left', async ({
+    page,
+    admin,
+  }) => {
+    const types = await seedMany(admin, 'types');
+    const flows = await seedMany(admin, 'workflows');
+    const steps = await seedMany(admin, 'steps');
+
+    // Task Types: row, record page, form designer; the list crumb (two levels up) lands on the row.
+    const typesUrl = `/admin/task-types?name=${types.token}&size=25&page=2`;
+    await page.goto(typesUrl);
+    const typeId = types.ids[27];
+    await rowLink(page, typeId).click();
+    await page.getByRole('link', { name: 'Open the form designer' }).click();
+    await expect(page).toHaveURL(new RegExp(`/admin/task-types/${typeId}/form$`));
+    await crumb(page, 'Task Types').click();
+    expect(urlOf(page)).toBe(typesUrl);
+    await expect(rowLink(page, typeId)).toBeFocused();
+
+    // One level up first (the record's own crumb), then the list crumb from the record page: still the same row.
+    await rowLink(page, typeId).click();
+    await page.getByRole('link', { name: 'Open the form designer' }).click();
+    await page
+      .getByRole('navigation', { name: 'Breadcrumb' })
+      .getByRole('link', { name: types.names[27] })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/admin/task-types/${typeId}$`));
+    await crumb(page, 'Task Types').click();
+    expect(urlOf(page)).toBe(typesUrl);
+    await expect(rowLink(page, typeId)).toBeFocused();
+
+    // Steps: row, step page, form designer.
+    const stepsUrl = `/admin/steps?title=${steps.token}&size=25&page=2`;
+    await page.goto(stepsUrl);
+    await rowLink(page, steps.ids[26]).click();
+    await page.getByRole('link', { name: 'Edit inputs in the form designer' }).click();
+    await expect(page).toHaveURL(new RegExp(`/admin/steps/${steps.ids[26]}/form$`));
+    await crumb(page, 'Workflow Steps').click();
+    expect(urlOf(page)).toBe(stepsUrl);
+    await expect(rowLink(page, steps.ids[26])).toBeFocused();
+
+    // Workflows: row, workflow page, version page.
+    const flowsUrl = `/admin/workflows?name=${flows.token}&size=25&page=2`;
+    await page.goto(flowsUrl);
+    await rowLink(page, flows.ids[25]).click();
+    await page.getByRole('link', { name: /Open draft v1/ }).click();
+    await expect(page).toHaveURL(new RegExp(`/admin/workflows/${flows.ids[25]}/versions/\\d+$`));
+    await crumb(page, 'Workflows').click();
+    expect(urlOf(page)).toBe(flowsUrl);
+    await expect(rowLink(page, flows.ids[25])).toBeFocused();
+
+    // Browser Back twice does the same (it always did) and a reload in between is not a return.
+    await rowLink(page, flows.ids[25]).click();
+    await page.getByRole('link', { name: /Open draft v1/ }).click();
+    await page.goBack();
+    await page.goBack();
+    expect(urlOf(page)).toBe(flowsUrl);
+    await expect(rowLink(page, flows.ids[25])).toBeFocused();
+    await rowLink(page, flows.ids[25]).click();
+    await page.getByRole('link', { name: /Open draft v1/ }).click();
+    await page.reload();
+    await crumb(page, 'Workflows').click();
+    expect(urlOf(page)).toBe(flowsUrl);
+  });
+
   test('a row that left the filtered result puts focus on the page heading; a return address from another section is ignored', async ({
     page,
     admin,

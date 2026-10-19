@@ -182,6 +182,26 @@ describe('record list rows (#281)', () => {
     expect(drill.returnUrl('/clients')).toBe('/clients');
   });
 
+  it('keeps the row two pages deep when the link says keepRow, and forgets it without (#354)', async () => {
+    const { drill, router } = setup();
+    await router.navigateByUrl('/clients?name=a');
+    drill.leaveRow('clients', 5);
+    await router.navigateByUrl('/clients/5', { state: { keepRow: true } });
+    // One level deeper into the same record (a different path): the row stays remembered.
+    await router.navigateByUrl('/other', { state: { keepRow: true } });
+    // The crumb two levels up asks for the return and takes the row of the list it was left from.
+    await router.navigateByUrl('/clients?name=a', { state: { restoreFocus: true } });
+    expect(drill.takeRow('clients')).toBe('5');
+    expect(drill.takeRow('clients')).toBeNull();
+
+    // Without keepRow the second page forgets it (the unchanged rule).
+    drill.leaveRow('clients', 6);
+    await router.navigateByUrl('/clients/6');
+    await router.navigateByUrl('/other');
+    await router.navigateByUrl('/clients?name=a', { state: { restoreFocus: true } });
+    expect(drill.takeRow('clients')).toBeNull();
+  });
+
   it('returns the exact list view only for an address of that list', async () => {
     const { drill, router } = setup();
     expect(drill.returnUrl('/clients')).toBe('/clients');

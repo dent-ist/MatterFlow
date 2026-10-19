@@ -55,15 +55,19 @@ function openedWith(): unknown {
 export class ListReturn {
   /** The exact address of the list, or its plain path. */
   readonly url: string;
-  /** The state that carries the address on to the next page of the record; undefined when the page has none to carry. */
-  readonly carry: { returnTo: string } | undefined;
+  /**
+   * The state that carries the page's origin on to the next page of the record: the list address (when it is not the plain list) and
+   * `keepRow`, which asks `DrillReturn` to keep the row that was left, so a breadcrumb two pages deep (list, record, form designer)
+   * still puts focus back on the row (#354).
+   */
+  readonly carry: { returnTo?: string; keepRow: true };
 
   constructor(
     list: Pick<AdminList, 'path'>,
     private readonly router: Router,
   ) {
     this.url = originUrl([list.path], list.path, openedWith());
-    this.carry = this.url === list.path ? undefined : { returnTo: this.url };
+    this.carry = this.url === list.path ? { keepRow: true } : { returnTo: this.url, keepRow: true };
   }
 
   get tree(): UrlTree {
@@ -76,7 +80,7 @@ export class ListReturn {
   }
 
   /** Router extras for `router.navigate` that carry the address on. */
-  get extras(): { state: { returnTo: string } } | Record<string, never> {
-    return this.carry ? { state: this.carry } : {};
+  get extras(): { state: { returnTo?: string; keepRow: true } } {
+    return { state: this.carry };
   }
 }

@@ -146,13 +146,16 @@ export class DrillReturn {
       .pipe(filter((e): e is NavigationStart => e instanceof NavigationStart))
       .subscribe((e) => {
         const state = this.router.currentNavigation()?.extras.state as
-          { restoreFocus?: boolean } | undefined;
+          { restoreFocus?: boolean; keepRow?: boolean } | undefined;
         this.returning = e.navigationTrigger === 'popstate' || state?.restoreFocus === true;
         if (!this.returning) {
           // A forward navigation: the one that leaves a row keeps it for a "Back to ..." link; a later one to another page forgets it
           // (a tab or a filter inside the record page changes only the address's query).
+          // A link that sends `keepRow` goes one level deeper into the same record (Task Type page to its form designer, #354): the row
+          // stays remembered, so the breadcrumb two levels up still lands on it.
           if (this.leaving) this.leaving = false;
-          else if (pathOf(e.url) !== pathOf(this.router.url)) this.leftRow = null;
+          else if (state?.keepRow !== true && pathOf(e.url) !== pathOf(this.router.url))
+            this.leftRow = null;
           this.pending = null;
           return;
         }
