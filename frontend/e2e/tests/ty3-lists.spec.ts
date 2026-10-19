@@ -68,7 +68,11 @@ function expectRow44(height: number, label: string): void {
   expect(height, label).toBeLessThanOrEqual(45);
 }
 
-const rowOf = (page: Page, name: string): Locator => page.locator(`tr[data-row="${name}"]`);
+/** The row of a record in the table, or its card below 640 px (#374, #375: the phone lists are cards with the same menu). */
+const rowOf = (page: Page, name: string): Locator =>
+  page.locator(
+    `tr[data-row="${name}"], li[data-record-card]:has(a[data-card-name][title="${name}"])`,
+  );
 const menuButton = (page: Page, name: string): Locator =>
   rowOf(page, name).getByRole('button', { name: `Actions for ${name}` });
 
@@ -101,7 +105,10 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
         await expect(button, key).toBeVisible();
 
         // Visible inside the table's box without scrolling it, and the page does not scroll sideways.
-        const wrap = (await page.locator('.mf-table-wrap').first().boundingBox())!;
+        const wrap = (await page
+          .locator('.mf-table-wrap, ul[data-record-cards]')
+          .first()
+          .boundingBox())!;
         const box = (await button.boundingBox())!;
         expect(box.x, key).toBeGreaterThanOrEqual(wrap.x - 1);
         expect(box.x + box.width, key).toBeLessThanOrEqual(wrap.x + wrap.width + 1);
@@ -287,11 +294,40 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
         }
         await page.setViewportSize({ width: size.w, height: size.h });
 
+        // Below 640 px the lists are cards (#374, #375): the 44 px rule is the table's; the cards keep the tooltips, the no-scroll and axe.
+        const cardsOnly = size.w < 640;
         await page.goto(`/admin/workflows?name=${token}`);
         for (const name of [longName, plain.name]) {
           const row = rowOf(page, name);
           await expect(row).toBeVisible();
-          expectRow44((await row.boundingBox())!.height, name);
+          if (!cardsOnly) expectRow44((await row.boundingBox())!.height, name);
+        }
+        if (cardsOnly) {
+          await expect(rowOf(page, longName).locator('a[data-card-name]')).toHaveAttribute(
+            'title',
+            longName,
+          );
+          expect(
+            await page.evaluate(
+              () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+            ),
+          ).toBe(true);
+          expect(await axeViolations(page), 'workflows cards axe').toEqual([]);
+          await shot(page, 'workflows-long', size.w);
+          await page.goto(`/admin/steps?title=${token}`);
+          await expect(rowOf(page, longTitle)).toBeVisible();
+          await expect(rowOf(page, longTitle).locator('a[data-card-name]')).toHaveAttribute(
+            'title',
+            longTitle,
+          );
+          expect(
+            await page.evaluate(
+              () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+            ),
+          ).toBe(true);
+          expect(await axeViolations(page), 'steps cards axe').toEqual([]);
+          await shot(page, 'steps-long', size.w);
+          return;
         }
         const nameLink = rowOf(page, longName).locator('a.pg-name');
         await expect(nameLink).toHaveAttribute('title', longName);
@@ -317,8 +353,8 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
         await expect(used).toHaveText('5');
         await expect(used).toHaveAttribute('aria-label', 'Used in 5 workflows');
         expect((await used.boundingBox())!.height).toBeLessThanOrEqual(26);
-        // Two tag chips and "+n".
-        await expect(stepRow.locator('[data-tag]')).toHaveCount(2);
+        // Two tag chips and "+n" (one below 1024 px, #375).
+        await expect(stepRow.locator('[data-tag]')).toHaveCount(size.w >= 1024 ? 2 : 1);
         await expect(stepRow.locator('[data-tags-more]')).toBeVisible();
         const headers = await page.locator('thead tr:first-child th').allInnerTexts();
         if (size.w >= 1200) {

@@ -200,7 +200,8 @@ test.describe('Column filters on the administration lists', () => {
       await page.goto('/admin/task-types');
       await expect(grid(page, 'Task types list').locator('tbody tr').first()).toBeVisible();
       await expect(page.locator('#task-type-search, #task-type-status')).toHaveCount(0);
-      await toggle(page).click();
+      // Open by default from 640 px (#365).
+      await openRow(page);
       await text(page, 'Name').fill(token);
       const rows = grid(page, 'Task types list').locator('tbody tr');
       await expect(rows).toHaveCount(2);

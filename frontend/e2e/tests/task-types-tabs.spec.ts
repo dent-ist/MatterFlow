@@ -380,7 +380,8 @@ test.describe('Task type, workflow and step cross-links', () => {
       ]) {
         await page.goto(url);
         await expect(page.getByRole('tab', { selected: true })).toBeVisible();
-        await expect(page.locator('tbody tr').first()).toBeVisible();
+        // A table row, or a card below 640 px (#374, #375).
+        await expect(page.locator('tbody tr, li[data-record-card]').first()).toBeVisible();
         expect(await axeViolations(page), `${url} at ${size.width}`).toEqual([]);
       }
     }
