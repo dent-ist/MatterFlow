@@ -48,6 +48,7 @@ import {
 import { RecordSort } from '../../../shared/ui/record-sort';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
+import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { TagChips } from '../../../shared/ui/tag-chips';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
@@ -98,6 +99,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
     RecordCardDef,
     RecordCard,
     RecordSort,
+    WorkStrip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -107,6 +109,14 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
     @if (failure()) {
       <p class="pg-alert" role="alert" data-failure>{{ failure() }}</p>
     }
+
+    <mf-work-strip
+      label="Steps summary"
+      [items]="stripItems()"
+      [interactive]="true"
+      [active]="stripActive()"
+      (pick)="pickStrip($event)"
+    />
 
     <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">
       <mf-record-sort
@@ -363,6 +373,48 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   protected readonly tagOptions = signal<FilterOption[]>([]);
   /** The library-wide counts of the last answer (no filter applies to them). */
   protected readonly summary = signal<StepListSummary | null>(null);
+  /**
+   * The health strip (#368): Active, Not used, Inputs in draft and Inactive, only from the summary of the API answer (counted over the whole
+   * library, whatever the filters), `--` until the first answer. Active, Not used and Inactive put their filter in the address; Inputs in
+   * draft is a plain count, because the API has no filter for it yet.
+   */
+  protected readonly stripItems = computed<WorkStripItem[]>(() => {
+    const s = this.summary();
+    return [
+      { key: 'active', label: 'Active', count: s?.active ?? null },
+      { key: 'notUsed', label: 'Not used', count: s?.notUsed ?? null },
+      {
+        key: 'inputsDraft',
+        label: 'Inputs in draft',
+        count: s?.inputsInDraft ?? null,
+        inert: true,
+      },
+      { key: 'inactive', label: 'Inactive', count: s?.inactive ?? null },
+    ];
+  });
+
+  /** The chip that matches the address exactly, or none. */
+  protected readonly stripActive = computed<string | null>(() => {
+    const status = parseStatus(this.filters.text('status'));
+    const used = this.filters.text('used');
+    if (status === 'inactive') return !used ? 'inactive' : null;
+    if (status !== 'active') return null;
+    if (used === 'false') return 'notUsed';
+    return !used ? 'active' : null;
+  });
+
+  /** A chip puts its filters in the address and takes the others off; the pressed chip again goes back to Active. */
+  protected pickStrip(key: string): void {
+    const to = key === this.stripActive() ? 'active' : key;
+    this.navigate({
+      status: to === 'inactive' ? 'inactive' : null,
+      used: to === 'notUsed' ? 'false' : null,
+      page: null,
+    });
+    const item = this.stripItems().find((i) => i.key === to);
+    if (item) this.announcement.set(`${item.label}: ${item.count ?? 0} steps.`);
+  }
+
   protected readonly busy = signal(false);
   protected readonly failure = signal('');
   protected readonly announcement = signal('');
@@ -547,7 +599,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
       this.pageNumber(),
       this.pageSize(),
     );
-    // The library-wide counts of the answer: the tab's count (#364).
+    // The library-wide counts of the answer: the tab's count (#364) and, later, the health strip.
     this.summary.set(page.summary ?? null);
     return page;
   }

@@ -21,6 +21,8 @@ export interface WorkStripItem {
   alert?: boolean;
   /** Link mode: the item is an `<a>` to this address (no `aria-pressed`). Ignored while the strip is `interactive`. */
   link?: WorkStripLink;
+  /** In an `interactive` strip: a plain count that is not a toggle (a number that has no filter behind it). */
+  inert?: boolean;
 }
 
 /**
@@ -49,7 +51,7 @@ export interface WorkStripItem {
               >
                 <ng-container *ngTemplateOutlet="body; context: { $implicit: item }" />
               </a>
-            } @else if (interactive()) {
+            } @else if (interactive() && !item.inert) {
               <button
                 type="button"
                 class="item"

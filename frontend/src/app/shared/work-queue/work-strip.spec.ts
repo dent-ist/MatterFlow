@@ -64,6 +64,20 @@ describe('WorkStrip', () => {
     expect(f.componentInstance.picked).toEqual(['b']);
   });
 
+  it('keeps an inert item as a plain count inside an interactive strip', () => {
+    const { f, el } = create();
+    f.componentInstance.items.set([
+      { key: 'a', label: 'Active', count: 4 },
+      { key: 'b', label: 'Inputs in draft', count: 2, inert: true },
+    ]);
+    f.detectChanges();
+    expect(el.querySelectorAll('button').length).toBe(1);
+    const inert = el.querySelector('[data-strip-item="b"]')!;
+    expect(inert.tagName).toBe('SPAN');
+    expect(inert.hasAttribute('aria-pressed')).toBe(false);
+    expect(inert.textContent!.replace(/\s+/g, ' ').trim()).toBe('Inputs in draft 2');
+  });
+
   it('renders plain text, no buttons, when not interactive', () => {
     const { f, el } = create();
     f.componentInstance.interactive.set(false);

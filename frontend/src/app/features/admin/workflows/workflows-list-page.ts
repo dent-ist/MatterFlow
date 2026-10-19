@@ -53,6 +53,7 @@ import {
 import { RecordSort } from '../../../shared/ui/record-sort';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
+import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions'] as const;
@@ -93,6 +94,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
     RecordCardDef,
     RecordCard,
     RecordSort,
+    WorkStrip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -102,6 +104,14 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
     @if (failure()) {
       <p class="pg-alert" role="alert" data-failure>{{ failure() }}</p>
     }
+
+    <mf-work-strip
+      label="Workflows summary"
+      [items]="stripItems()"
+      [interactive]="true"
+      [active]="stripActive()"
+      (pick)="pickStrip($event)"
+    />
 
     <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">
       <mf-record-sort
@@ -430,6 +440,53 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   protected readonly canOpenTaskTypes = computed(() => this.auth.has('TaskType.Manage'));
   /** The library-wide counts of the last answer (no filter applies to them). */
   protected readonly summary = signal<WorkflowListSummary | null>(null);
+  /**
+   * The health strip (#368): Published, Draft in progress, Not published and Inactive, only from the summary of the API answer (counted
+   * over the whole library, whatever the filters), `--` until the first answer. A chip puts its filter in the address.
+   */
+  protected readonly stripItems = computed<WorkStripItem[]>(() => {
+    const s = this.summary();
+    return [
+      { key: 'published', label: 'Published', count: s?.published ?? null },
+      { key: 'draft', label: 'Draft in progress', count: s?.draftInProgress ?? null },
+      { key: 'notPublished', label: 'Not published', count: s?.notPublished ?? null },
+      { key: 'inactive', label: 'Inactive', count: s?.inactive ?? null },
+    ];
+  });
+
+  /** The chip that matches the address exactly, or none. */
+  protected readonly stripActive = computed<string | null>(() => {
+    const status = parseStatus(this.filters.text('status'));
+    const published = this.filters.text('hasPublished');
+    const draft = this.filters.text('hasDraft');
+    if (status === 'inactive') return !published && !draft ? 'inactive' : null;
+    if (status !== 'active') return null;
+    if (published === 'true' && !draft) return 'published';
+    if (draft === 'true' && !published) return 'draft';
+    return published === 'false' && !draft ? 'notPublished' : null;
+  });
+
+  /** A chip puts its filters in the address and takes the others off; the pressed chip again clears them. */
+  protected pickStrip(key: string): void {
+    const off = key === this.stripActive();
+    this.navigate({
+      status: !off && key === 'inactive' ? 'inactive' : null,
+      hasPublished: off
+        ? null
+        : key === 'published'
+          ? 'true'
+          : key === 'notPublished'
+            ? 'false'
+            : null,
+      hasDraft: !off && key === 'draft' ? 'true' : null,
+      page: null,
+    });
+    const item = this.stripItems().find((i) => i.key === key);
+    this.announcement.set(
+      off ? 'Showing all active workflows.' : `${item?.label}: ${item?.count ?? 0} workflows.`,
+    );
+  }
+
   protected readonly busy = signal(false);
   protected readonly failure = signal('');
   protected readonly announcement = signal('');
@@ -608,7 +665,7 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
       this.pageNumber(),
       this.pageSize(),
     );
-    // The library-wide counts of the answer: the tab's count (#364).
+    // The library-wide counts of the answer: the tab's count (#364) and, later, the health strip.
     this.summary.set(page.summary ?? null);
     return page;
   }
