@@ -35,6 +35,7 @@ import { ErrorReference } from '../../../shared/ui/error-reference';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { Badge, workflowStatusTone } from '../../../shared/ui/badge';
 import { Crumb, PageHeader } from '../../../shared/ui/page-header';
+import { ADMIN_LIST, ListReturn } from '../list-return';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { WorkflowVersionBar } from './workflow-version-bar';
 import { SearchBox } from '../../../shared/ui/search-box';
@@ -107,7 +108,7 @@ const UNORDERED_TEXT =
         [crumbs]="[
           { label: 'Administration' },
           { label: 'Task Types', link: '/admin/task-types' },
-          { label: 'Workflows', link: '/admin/workflows' },
+          listCrumb,
           { label: 'Version' },
         ]"
       />
@@ -117,8 +118,8 @@ const UNORDERED_TEXT =
         [crumbs]="[
           { label: 'Administration' },
           { label: 'Task Types', link: '/admin/task-types' },
-          { label: 'Workflows', link: '/admin/workflows' },
-          { label: v.workflowName, link: ['/admin/workflows', workflowId()] },
+          listCrumb,
+          { label: v.workflowName, link: ['/admin/workflows', workflowId()], state: back.carry },
           { label: 'v' + v.version.versionNo },
         ]"
       >
@@ -160,7 +161,10 @@ const UNORDERED_TEXT =
             This version is {{ v.version.status === 'Published' ? 'published' : 'retired' }} and
             cannot be edited.
             @if (workflow()?.draftVersionId; as d) {
-              <a class="pg-link" [routerLink]="['/admin/workflows', workflowId(), 'versions', d]"
+              <a
+                class="pg-link"
+                [routerLink]="['/admin/workflows', workflowId(), 'versions', d]"
+                [state]="back.carry"
                 >Open the draft (v{{ workflow()?.draftVersionNo }})</a
               >
             } @else {
@@ -601,6 +605,9 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
   private readonly steps = inject(StepDefinitionsClient);
   private readonly forms = inject(FormsClient);
   private readonly router = inject(Router);
+  /** The exact list view this page was opened from (#354): the crumb and the links back to the workflow return to it. */
+  protected readonly back = new ListReturn(ADMIN_LIST.workflows, this.router);
+  protected readonly listCrumb = this.back.crumb('Workflows');
   private readonly notify = inject(NotificationService);
   private readonly pageTitle = inject(PageTitle);
   private readonly injector = inject(Injector);
@@ -616,7 +623,9 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
   private readonly parentName = signal<string | null>(null);
   protected readonly parentCrumb = computed<Crumb | null>(() => {
     const name = this.parentName();
-    return name ? { label: name, link: ['/admin/workflows', this.workflowId()] } : null;
+    return name
+      ? { label: name, link: ['/admin/workflows', this.workflowId()], state: this.back.carry }
+      : null;
   });
   protected readonly version = signal<WorkflowVersionDetail | null>(null);
   protected readonly workflow = signal<WorkflowSummary | null>(null);
@@ -998,7 +1007,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
     if (!result) return;
     this.notify.success(`${result.workflowName} v${result.version.versionNo} published`);
     this.leaving = true;
-    await this.router.navigate(['/admin/workflows', v.workflowDefinitionId]);
+    await this.router.navigate(['/admin/workflows', v.workflowDefinitionId], this.back.extras);
   }
 
   protected async retire(): Promise<void> {
@@ -1035,12 +1044,10 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
     );
     if (!draft) return;
     this.notify.success(`Draft v${draft.version.versionNo} created`);
-    await this.router.navigate([
-      '/admin/workflows',
-      v.workflowDefinitionId,
-      'versions',
-      draft.version.workflowVersionId,
-    ]);
+    await this.router.navigate(
+      ['/admin/workflows', v.workflowDefinitionId, 'versions', draft.version.workflowVersionId],
+      this.back.extras,
+    );
   }
 
   protected async discard(): Promise<void> {
@@ -1058,7 +1065,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
     if (!done) return;
     this.notify.success('Draft discarded');
     this.leaving = true;
-    await this.router.navigate(['/admin/workflows', v.workflowDefinitionId]);
+    await this.router.navigate(['/admin/workflows', v.workflowDefinitionId], this.back.extras);
   }
 
   private patch(index: number, change: Partial<PlacementRow>): void {

@@ -526,7 +526,9 @@ describe('WorkflowsListPage row menu', () => {
     expect(entries()).toEqual(['open-draft', 'deactivate']);
     const go = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     el.querySelector<HTMLButtonElement>('[data-action=open-draft]')!.click();
-    expect(go).toHaveBeenCalledWith(['/admin/workflows', 2, 'versions', 20]);
+    expect(go).toHaveBeenCalledWith(['/admin/workflows', 2, 'versions', 20], {
+      state: { returnTo: expect.any(String) },
+    });
 
     // Deactivate asks first, then saves with the row version.
     await openMenu(fixture, 'Standard Processing');
@@ -620,7 +622,7 @@ describe('WorkflowEditPage', () => {
     buttonByLabel(el, 'Create new draft from v2')!.click();
     await settle(fixture);
     expect(api.createWorkflowDraft).toHaveBeenCalledWith(1, { fromVersionId: 11 });
-    expect(navigate).toHaveBeenCalledWith(['/admin/workflows', 1, 'versions', 12]);
+    expect(navigate).toHaveBeenCalledWith(['/admin/workflows', 1, 'versions', 12], {});
   });
 
   it('shows the workflow status in the header and links to the draft in progress', async () => {
@@ -946,7 +948,7 @@ describe('WorkflowVersionPage draft editor', () => {
     expect(a.workflows['publishWorkflowVersion']).toHaveBeenCalledWith(1, 12, {
       rowVersion: 'NEW',
     });
-    expect(navigate).toHaveBeenCalledWith(['/admin/workflows', 1]);
+    expect(navigate).toHaveBeenCalledWith(['/admin/workflows', 1], {});
   });
 
   it('shows server validation errors inline when publishing fails', async () => {
@@ -1042,7 +1044,7 @@ describe('WorkflowVersionPage published version', () => {
     buttonByLabel(el, 'Create new draft from v2')!.click();
     await settle(fixture);
     expect(workflows.createWorkflowDraft).toHaveBeenCalledWith(1, { fromVersionId: 11 });
-    expect(navigate).toHaveBeenCalledWith(['/admin/workflows', 1, 'versions', 12]);
+    expect(navigate).toHaveBeenCalledWith(['/admin/workflows', 1, 'versions', 12], {});
   });
 
   it('retires after confirmation', async () => {

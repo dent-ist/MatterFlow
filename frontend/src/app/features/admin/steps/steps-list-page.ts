@@ -28,6 +28,9 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
+import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
+import { DrillReturn } from '../../../shared/work-queue/drill';
+import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { Pager } from '../../../shared/ui/pager';
@@ -51,6 +54,7 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status', 'actions'] 
     ActionMenu,
     ConfirmDialog,
     RouterLink,
+    RowLink,
     Button,
     Pager,
     SortHeader,
@@ -129,6 +133,9 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status', 'actions'] 
                   <a
                     class="pg-link pg-name"
                     [routerLink]="['/admin/steps', s.stepDefinitionId]"
+                    [mfRowLink]="listId"
+                    [rowKey]="s.stepDefinitionId"
+                    [state]="leave.state()"
                     [title]="s.title"
                     >{{ s.title }}</a
                   >
@@ -205,6 +212,9 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   private readonly api = inject(StepDefinitionsClient);
   private readonly injector = inject(Injector);
   private readonly notify = inject(NotificationService);
+  private readonly drill = inject(DrillReturn);
+  protected readonly leave = inject(AdminListLeave);
+  protected readonly listId = ADMIN_LIST.steps.id;
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
   protected readonly defaultSort = 'title';
@@ -273,6 +283,8 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
 
   constructor() {
     super();
+    // Back (or a breadcrumb) from a record puts focus on the name link of the row that was left (#354).
+    restoreRowFocus(this.listId, () => this.state() === 'ready');
     // The tags to choose from follow the status filter.
     effect(() => {
       const status = this.statusValue();
@@ -295,7 +307,12 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
         id: 'edit-inputs',
         label: 'Edit inputs',
         icon: 'pi-file-edit',
-        run: () => void this.router.navigate(['/admin/steps', s.stepDefinitionId, 'form']),
+        run: () => {
+          this.drill.leaveRow(this.listId, s.stepDefinitionId);
+          void this.router.navigate(['/admin/steps', s.stepDefinitionId, 'form'], {
+            state: this.leave.state(),
+          });
+        },
       },
       s.isActive
         ? {

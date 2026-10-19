@@ -25,6 +25,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { DIALOG_COPY } from '../shared/dialog-copy';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { ADMIN_LIST, ListReturn } from '../list-return';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { DEFAULT_TASK_TYPE_ICON } from '../../../shared/icons/task-type-icon';
 import { TaskTypeIconPicker } from '../../../shared/icons/task-type-icon-picker';
@@ -82,6 +83,9 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
   private readonly api = inject(TaskTypesApi);
   private readonly lookup = inject(WorkflowLookup);
   private readonly router = inject(Router);
+  /** The exact list view this page was opened from (#354): the crumb, Cancel and the links on to the record's other pages return to it. */
+  protected readonly back = new ListReturn(ADMIN_LIST.taskTypes, this.router);
+  protected readonly listCrumb = this.back.crumb('Task Types');
   private readonly notify = inject(NotificationService);
   private readonly pageTitle = inject(PageTitle);
   private readonly injector = inject(Injector);
@@ -167,7 +171,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
   }
 
   protected cancel(): void {
-    void this.router.navigateByUrl('/admin/task-types');
+    void this.router.navigateByUrl(this.back.tree, { state: this.listCrumb.state });
   }
 
   protected retry(): void {

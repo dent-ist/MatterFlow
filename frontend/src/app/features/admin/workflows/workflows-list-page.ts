@@ -36,6 +36,9 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
+import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
+import { DrillReturn } from '../../../shared/work-queue/drill';
+import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { Pager } from '../../../shared/ui/pager';
@@ -57,6 +60,7 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions']
     ActionMenu,
     ConfirmDialog,
     RouterLink,
+    RowLink,
     Button,
     Pager,
     SortHeader,
@@ -144,6 +148,9 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions']
                     class="pg-link pg-name"
                     [class.pg-name--one]="!!w.description"
                     [routerLink]="['/admin/workflows', w.workflowDefinitionId]"
+                    [mfRowLink]="listId"
+                    [rowKey]="w.workflowDefinitionId"
+                    [state]="leave.state()"
                     [title]="w.name"
                     >{{ w.name }}</a
                   >
@@ -225,6 +232,9 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   private readonly injector = inject(Injector);
   private readonly auth = inject(AuthStore);
   private readonly notify = inject(NotificationService);
+  private readonly drill = inject(DrillReturn);
+  protected readonly leave = inject(AdminListLeave);
+  protected readonly listId = ADMIN_LIST.workflows.id;
 
   protected readonly defaultSort = 'name';
   protected readonly columns = COLUMNS;
@@ -311,6 +321,8 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
 
   constructor() {
     super();
+    // Back (or a breadcrumb) from a record puts focus on the name link of the row that was left (#354).
+    restoreRowFocus(this.listId, () => this.state() === 'ready');
     // The controls move into the sheet while the grid scrolls sideways.
     afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
       injector: this.injector,
@@ -373,13 +385,15 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
         id: 'open-draft',
         label: `Open draft v${w.draftVersionNo}`,
         icon: 'pi-pencil',
-        run: () =>
-          void this.router.navigate([
-            '/admin/workflows',
-            w.workflowDefinitionId,
-            'versions',
-            draft,
-          ]),
+        run: () => {
+          this.drill.leaveRow(this.listId, w.workflowDefinitionId);
+          void this.router.navigate(
+            ['/admin/workflows', w.workflowDefinitionId, 'versions', draft],
+            {
+              state: this.leave.state(),
+            },
+          );
+        },
       });
     }
     items.push(

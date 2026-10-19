@@ -11,7 +11,7 @@
     [heading]="isNew() ? 'New task type' : (taskType()?.name ?? 'Task type')"
     [crumbs]="[
       { label: 'Administration' },
-      { label: 'Task Types', link: '/admin/task-types' },
+      listCrumb,
       { label: isNew() ? 'New' : (taskType()?.name ?? 'Edit') },
     ]"
   />
@@ -125,7 +125,11 @@
           <h2 id="tt-form">Request form</h2>
           @if (taskType(); as t) {
             <p data-form-summary>{{ formSummary(t) }}</p>
-            <a class="open-form" [routerLink]="['/admin/task-types', t.id, 'form']" data-open-form
+            <a
+              class="open-form"
+              [routerLink]="['/admin/task-types', t.id, 'form']"
+              [state]="back.carry"
+              data-open-form
               >Open the form designer</a
             >
             @if (dirty()) {

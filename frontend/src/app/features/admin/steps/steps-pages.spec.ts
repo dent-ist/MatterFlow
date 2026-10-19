@@ -277,7 +277,9 @@ describe('StepsListPage row menu', () => {
     expect(entries(el)).toEqual(['edit-inputs', 'deactivate']);
     const go = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     el.querySelector<HTMLButtonElement>('[data-action=edit-inputs]')!.click();
-    expect(go).toHaveBeenCalledWith(['/admin/steps', 4, 'form']);
+    expect(go).toHaveBeenCalledWith(['/admin/steps', 4, 'form'], {
+      state: { returnTo: expect.any(String) },
+    });
 
     el.querySelector<HTMLButtonElement>(
       'tr[data-row="Deduplicate"] button[data-overflow]',

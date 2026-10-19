@@ -24,6 +24,9 @@ import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { LocalListPage } from '../../../shared/ui/list-query';
+import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
+import { DrillReturn } from '../../../shared/work-queue/drill';
+import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
@@ -64,6 +67,7 @@ const FORM_OPTIONS = [
     ActiveBadge,
     ActionMenu,
     RouterLink,
+    RowLink,
     Pager,
     SortHeader,
     GridBody,
@@ -81,6 +85,9 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   private readonly workflows = inject(WorkflowLookup);
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
+  private readonly drill = inject(DrillReturn);
+  protected readonly leave = inject(AdminListLeave);
+  protected readonly listId = ADMIN_LIST.taskTypes.id;
 
   protected readonly defaultSort = 'name';
   protected readonly workflowOptions = signal<ReadonlyMap<number, WorkflowOption>>(new Map());
@@ -143,6 +150,8 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
 
   constructor() {
     super();
+    // Back (or a breadcrumb) from a record puts focus on the name link of the row that was left (#354).
+    restoreRowFocus(this.listId, () => this.state() === 'ready');
     // Loads the list, and again when the workflow filter changes.
     effect(() => {
       this.workflowId();
@@ -269,7 +278,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
         id: 'edit-form',
         label: 'Edit form',
         icon: 'pi-file-edit',
-        run: () => void this.router.navigate(['/admin/task-types', t.id, 'form']),
+        run: () => this.open(t, ['/admin/task-types', t.id, 'form']),
       },
       t.isActive
         ? {
@@ -290,6 +299,12 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
             run: () => void this.setActive(t, true),
           },
     ];
+  }
+
+  /** A row menu entry that opens a page of the record: remembers the row and the list address like the name link does. */
+  private open(t: TaskTypeView, commands: unknown[]): void {
+    this.drill.leaveRow(this.listId, t.id);
+    void this.router.navigate(commands, { state: this.leave.state() });
   }
 
   protected menuFor(t: TaskTypeView): readonly MenuAction[] {

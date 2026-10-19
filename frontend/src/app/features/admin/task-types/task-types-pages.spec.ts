@@ -72,7 +72,9 @@ describe('TaskTypesPage', () => {
     const router = TestBed.inject(Router);
     const go = vi.spyOn(router, 'navigate').mockResolvedValue(true);
     el().querySelector<HTMLButtonElement>('[data-action=edit-form]')!.click();
-    expect(go).toHaveBeenCalledWith(['/admin/task-types', 1, 'form']);
+    expect(go).toHaveBeenCalledWith(['/admin/task-types', 1, 'form'], {
+      state: { returnTo: expect.any(String) },
+    });
   });
 
   it('lists task types with form status and the eligible workflows as chips, the default marked', () => {
@@ -97,6 +99,11 @@ describe('TaskTypesPage', () => {
     );
     expect(r.querySelector('[data-assoc-more]')).toBeNull();
     expect(r.querySelector('[data-warning]')).toBeNull();
+    // The name is the row link of the list (#354): Back puts focus on it again.
+    const link = r.querySelector<HTMLAnchorElement>('a[data-row-key]')!;
+    expect(link.getAttribute('data-row-list')).toBe('admin-task-types');
+    expect(link.getAttribute('data-row-key')).toBe('1');
+    expect(link.getAttribute('href')).toBe('/admin/task-types/1');
   });
 
   it('shows each type with its icon in neutral colour before the name', () => {

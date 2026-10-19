@@ -31,6 +31,7 @@ import { ActiveBadge, Badge, BadgeTone, workflowStatusTone } from '../../../shar
 import { DIALOG_COPY } from '../shared/dialog-copy';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { ADMIN_LIST, ListReturn } from '../list-return';
 
 /**
  * Admin: create or edit a workflow (UX S16). Name, description and (on create) Ordered or Unordered live here; the steps are edited
@@ -65,7 +66,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
         [crumbs]="[
           { label: 'Administration' },
           { label: 'Task Types', link: '/admin/task-types' },
-          { label: 'Workflows', link: '/admin/workflows' },
+          listCrumb,
           { label: isEdit() ? name() || 'Edit' : 'New' },
         ]"
         [heading]="isEdit() ? name() || 'Edit workflow' : 'New workflow'"
@@ -82,6 +83,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
                   'versions',
                   w.draftVersionId,
                 ]"
+                [state]="back.carry"
                 >Open draft v{{ w.draftVersionNo }}</a
               >
             }
@@ -231,6 +233,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
                                 'versions',
                                 v.workflowVersionId,
                               ]"
+                              [state]="back.carry"
                               [attr.aria-label]="
                                 (isDraft(v) ? 'Edit draft v' : 'View v') + v.versionNo
                               "
@@ -297,6 +300,9 @@ export class WorkflowEditPage implements HasUnsavedChanges {
 
   private readonly api = inject(WorkflowsClient);
   private readonly router = inject(Router);
+  /** The exact list view this page was opened from (#354): the crumb, Cancel and the links on to the record's other pages return to it. */
+  protected readonly back = new ListReturn(ADMIN_LIST.workflows, this.router);
+  protected readonly listCrumb = this.back.crumb('Workflows');
   private readonly notify = inject(NotificationService);
   private readonly pageTitle = inject(PageTitle);
   private readonly injector = inject(Injector);
@@ -440,12 +446,10 @@ export class WorkflowEditPage implements HasUnsavedChanges {
     );
     if (!draft) return;
     this.notify.success(`Draft v${draft.version.versionNo} created`);
-    await this.router.navigate([
-      '/admin/workflows',
-      w.workflowDefinitionId,
-      'versions',
-      draft.version.workflowVersionId,
-    ]);
+    await this.router.navigate(
+      ['/admin/workflows', w.workflowDefinitionId, 'versions', draft.version.workflowVersionId],
+      this.back.extras,
+    );
   }
 
   protected fieldError(key: string): string | null {
@@ -453,7 +457,7 @@ export class WorkflowEditPage implements HasUnsavedChanges {
   }
 
   protected cancel(): void {
-    void this.router.navigateByUrl('/admin/workflows');
+    void this.router.navigateByUrl(this.back.tree, { state: this.listCrumb.state });
   }
 
   private resetErrors(): void {

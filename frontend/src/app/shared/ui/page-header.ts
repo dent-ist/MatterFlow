@@ -51,7 +51,7 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
                 @if (c.skeleton) {
                   <span class="ph__sk" aria-hidden="true" data-crumb-skeleton></span>
                 } @else if (c.link && !last) {
-                  <a [routerLink]="c.link">{{ c.label }}</a>
+                  <a [routerLink]="c.link" [state]="c.state">{{ c.label }}</a>
                 } @else if (last && c.label.length > crumbMax) {
                   <span aria-current="page" [attr.title]="c.label" data-crumb-clamped>
                     <span aria-hidden="true">{{ cut(c.label) }}</span>

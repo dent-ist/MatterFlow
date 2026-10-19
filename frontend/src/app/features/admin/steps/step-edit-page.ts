@@ -25,6 +25,7 @@ import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/u
 import { DIALOG_COPY } from '../shared/dialog-copy';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { ADMIN_LIST, ListReturn } from '../list-return';
 
 /** True for an empty value or a full http(s) address (mirrors the server rule). */
 export function isValidDocumentationUrl(value: string): boolean {
@@ -67,7 +68,7 @@ function sameTags(a: readonly string[], b: readonly string[]): boolean {
         [crumbs]="[
           { label: 'Administration' },
           { label: 'Task Types', link: '/admin/task-types' },
-          { label: 'Workflow Steps', link: '/admin/steps' },
+          listCrumb,
           { label: isEdit() ? original()?.title || 'Edit' : 'New' },
         ]"
         [heading]="isEdit() ? 'Edit step' : 'New step'"
@@ -158,6 +159,7 @@ function sameTags(a: readonly string[], b: readonly string[]): boolean {
                   class="pg-link"
                   data-form-link
                   [routerLink]="['/admin/steps', o.stepDefinitionId, 'form']"
+                  [state]="back.carry"
                   >Edit inputs in the form designer</a
                 >
               }
@@ -235,6 +237,9 @@ export class StepEditPage implements HasUnsavedChanges {
 
   private readonly api = inject(StepDefinitionsClient);
   private readonly router = inject(Router);
+  /** The exact list view this page was opened from (#354): the crumb, Cancel and the links on to the record's other pages return to it. */
+  protected readonly back = new ListReturn(ADMIN_LIST.steps, this.router);
+  protected readonly listCrumb = this.back.crumb('Workflow Steps');
   private readonly notify = inject(NotificationService);
   private readonly pageTitle = inject(PageTitle);
   private readonly injector = inject(Injector);
@@ -417,7 +422,7 @@ export class StepEditPage implements HasUnsavedChanges {
   }
 
   protected cancel(): void {
-    void this.router.navigateByUrl('/admin/steps');
+    void this.router.navigateByUrl(this.back.tree, { state: this.listCrumb.state });
   }
 
   private resetErrors(): void {

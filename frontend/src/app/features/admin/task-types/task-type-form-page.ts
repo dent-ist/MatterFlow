@@ -27,6 +27,7 @@ import {
 } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
 
+import { Router } from '@angular/router';
 import { ApiError } from '../../../core/http/api-error';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { FormDesignerApi, FormOwner, FormVersion, FormVersionSummary } from './form-designer-api';
@@ -42,6 +43,7 @@ import {
   recordStateTitle,
 } from '../../../shared/ui/record-state';
 import { Crumb, PageHeader } from '../../../shared/ui/page-header';
+import { ADMIN_LIST, ListReturn } from '../list-return';
 
 type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | null;
 
@@ -81,15 +83,31 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   readonly parentCrumbs = input<readonly Crumb[], readonly Crumb[] | undefined>([], {
     transform: (v) => v ?? [],
   });
+  /**
+   * The exact list view the page was opened from, for the Task Types and Workflow Steps owners (#354); the Asset Types and Custom Fields
+   * owners have no row link that carries one, so their crumb is the plain section as before.
+   */
+  private readonly router = inject(Router);
+  private readonly back = computed(() => {
+    const list = [ADMIN_LIST.taskTypes, ADMIN_LIST.steps].find(
+      (l) => l.path === this.sectionPath(),
+    );
+    return list ? new ListReturn(list, this.router) : null;
+  });
   /** `Task Types > Access Request > Form`: every segment is a link where the owner has a page of its own. */
   protected readonly formCrumbs = computed<Crumb[]>(() => {
     const o = this.owner();
     if (!o) return [];
     const hasPage = ['Task Type', 'Step'].includes(this.ownerLabel());
+    const back = this.back();
     return [
       ...this.parentCrumbs(),
-      { label: this.heading(), link: this.sectionPath() },
-      { label: o.name, link: hasPage ? [this.sectionPath(), this.ownerId()] : undefined },
+      back ? back.crumb(this.heading()) : { label: this.heading(), link: this.sectionPath() },
+      {
+        label: o.name,
+        link: hasPage ? [this.sectionPath(), this.ownerId()] : undefined,
+        state: back?.carry,
+      },
       { label: 'Form' },
     ];
   });
