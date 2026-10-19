@@ -12,7 +12,6 @@ import {
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import {
   StepDefinitionsClient,
@@ -47,6 +46,16 @@ import { Pager } from '../../../shared/ui/pager';
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions'] as const;
 
+/** One skeleton bone per column, as wide as its usual content (#370: one definition of the columns for the table and its skeleton). */
+const BONES: Record<(typeof COLUMNS)[number], string> = {
+  name: '12rem',
+  taskTypes: '12rem',
+  published: '8rem',
+  draft: '4rem',
+  status: '4rem',
+  actions: '1.5rem',
+};
+
 /**
  * Admin: the Workflows tab of the Workflows page (UX S16), the workflow list. Inline column filters (Name, Latest published, Draft,
  * Status with Active by default), sortable by name, server paged; state lives in the URL (`name`, `hasPublished`, `hasDraft`, `status`,
@@ -62,7 +71,6 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions']
     ConfirmDialog,
     RouterLink,
     RowLink,
-    Button,
     Pager,
     SortHeader,
     GridBody,
@@ -139,18 +147,18 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions']
           <tbody
             mfGridBody
             noun="workflows"
-            emptyText="No workflows yet. Create the first workflow."
+            emptyText="No workflows yet. Use New workflow above to add the first one."
             [state]="state()"
             [empty]="rows().length === 0"
             [filtered]="filters.activeCount() > 0"
-            [columns]="6"
+            [columns]="columns.length"
+            [skeleton]="skeleton"
             (retry)="load()"
             (clear)="clear()"
             [hidden]="hiddenCount()"
             hiddenLabel="inactive"
             (showAll)="showAll()"
           >
-            <p-button mfEmptyAction label="New workflow" (onClick)="go('/admin/workflows/new')" />
             @for (w of rows(); track w.workflowDefinitionId) {
               <tr [attr.data-row]="w.name">
                 <td class="ad-name">
@@ -252,6 +260,7 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
 
   protected readonly defaultSort = 'name';
   protected readonly columns = COLUMNS;
+  protected readonly skeleton = COLUMNS.map((c) => BONES[c]);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
   /**

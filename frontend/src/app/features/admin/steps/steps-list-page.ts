@@ -12,7 +12,6 @@ import {
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { StepDefinitionSummary, StepDefinitionsClient } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
@@ -41,6 +40,16 @@ import { TagChips } from '../../../shared/ui/tag-chips';
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status', 'actions'] as const;
 
+/** One skeleton bone per column, as wide as its usual content (#370: one definition of the columns for the table and its skeleton). */
+const BONES: Record<(typeof COLUMNS)[number], string> = {
+  title: '12rem',
+  description: '14rem',
+  tags: '8rem',
+  usedIn: '2rem',
+  status: '4rem',
+  actions: '1.5rem',
+};
+
 /**
  * Admin: the Workflow Steps tab of the Workflows page (UX S15), the step library list. Inline column filters: Title (`title`),
  * Description (`description`), Tags (`tags`, several; with `tagMatch` all or any under it), Used in (`used`) and Status (`status`,
@@ -56,7 +65,6 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status', 'actions'] 
     ConfirmDialog,
     RouterLink,
     RowLink,
-    Button,
     Pager,
     SortHeader,
     GridBody,
@@ -126,18 +134,18 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status', 'actions'] 
           <tbody
             mfGridBody
             noun="steps"
-            emptyText="No steps yet. Add the first reusable step."
+            emptyText="No steps yet. Use New step above to add the first reusable one."
             [state]="state()"
             [empty]="rows().length === 0"
             [filtered]="filters.activeCount() > 0"
             [columns]="columns().length"
+            [skeleton]="skeleton()"
             (retry)="load()"
             (clear)="clear()"
             [hidden]="hiddenCount()"
             hiddenLabel="inactive"
             (showAll)="showAll()"
           >
-            <p-button mfEmptyAction label="New step" (onClick)="go('/admin/steps/new')" />
             @for (s of rows(); track s.stepDefinitionId) {
               <tr [attr.data-row]="s.title">
                 <td class="ad-spring">
@@ -237,6 +245,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   protected readonly columns = computed(() =>
     this.showDescription() ? [...COLUMNS] : COLUMNS.filter((c) => c !== 'description'),
   );
+  protected readonly skeleton = computed(() => this.columns().map((c) => BONES[c]));
   /** The tags to choose from, with how many steps of the chosen status carry each. */
   protected readonly tagOptions = signal<FilterOption[]>([]);
   protected readonly busy = signal(false);

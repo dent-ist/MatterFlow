@@ -43,6 +43,18 @@ import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = ['name', 'form', 'workflows', 'status', 'actions'] as const;
 
+/**
+ * The skeleton rows of the loading state: one bone per column, as wide as the column's usual content, so the table that replaces them
+ * keeps its shape (#370: one definition of the columns for the table and its skeleton).
+ */
+const BONES: Record<(typeof COLUMNS)[number], string> = {
+  name: '12rem',
+  form: '5rem',
+  workflows: '14rem',
+  status: '4rem',
+  actions: '1.5rem',
+};
+
 /** Request form filter values (the `form` parameter) and the form statuses they match. */
 const FORM_OPTIONS = [
   { value: 'published', label: 'Published' },
@@ -99,6 +111,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   private readonly injector = inject(Injector);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
   protected readonly columns = COLUMNS;
+  protected readonly skeleton = COLUMNS.map((c) => BONES[c]);
 
   /**
    * Inline column filters: Name (`name`), Request form (`form`) and Status (`status`, Active by default), all applied here because the

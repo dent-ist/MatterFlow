@@ -62,20 +62,18 @@
         mfGridBody
         noun="task types"
         [filters]="filters"
-        emptyText="No task types yet. Create the first one."
+        emptyText="No task types yet. Use New task type above to add the first one."
         [state]="state()"
         [empty]="rows().length === 0"
         [filtered]="filters.activeCount() > 0"
-        [columns]="5"
+        [columns]="columns.length"
+        [skeleton]="skeleton"
         (retry)="load()"
         (clear)="clear()"
         [hidden]="hiddenCount()"
         hiddenLabel="inactive"
         (showAll)="showAll()"
       >
-        <a mfEmptyAction class="mf-btn mf-btn--primary" routerLink="/admin/task-types/new">
-          <i class="pi pi-plus" aria-hidden="true"></i> New task type
-        </a>
         @for (t of rows(); track t.id) {
           <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
             <td>
