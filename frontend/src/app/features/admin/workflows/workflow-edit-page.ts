@@ -28,6 +28,7 @@ import { focusFirstInvalid } from '../../../shared/forms/focus-invalid';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ActiveBadge, Badge, BadgeTone, workflowStatusTone } from '../../../shared/ui/badge';
+import { DIALOG_COPY } from '../shared/dialog-copy';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
 
@@ -275,10 +276,10 @@ import { PageHeader } from '../../../shared/ui/page-header';
     }
 
     <mf-confirm-dialog
-      title="Deactivate workflow?"
-      confirmLabel="Deactivate workflow"
-      cancelLabel="Keep active"
-      [danger]="true"
+      [title]="copy.title"
+      [confirmLabel]="copy.confirm"
+      [cancelLabel]="copy.cancel"
+      [danger]="copy.danger"
       [busy]="busy()"
       [(visible)]="deactivateOpen"
       (confirmed)="confirmDeactivate()"
@@ -312,6 +313,7 @@ export class WorkflowEditPage implements HasUnsavedChanges {
   protected readonly isActive = signal(true);
   protected readonly isOrdered = signal(true);
   protected readonly busy = signal(false);
+  protected readonly copy = DIALOG_COPY.deactivateWorkflow;
   protected readonly deactivateOpen = signal(false);
   protected readonly submitted = signal(false);
   protected readonly serverErrors = signal<Record<string, string>>({});

@@ -218,10 +218,10 @@
   }
 
   <mf-confirm-dialog
-    title="Deactivate task type?"
-    confirmLabel="Deactivate task type"
-    cancelLabel="Keep active"
-    [danger]="true"
+    [title]="copy.title"
+    [confirmLabel]="copy.confirm"
+    [cancelLabel]="copy.cancel"
+    [danger]="copy.danger"
     [busy]="busy()"
     [(visible)]="deactivateOpen"
     (confirmed)="confirmDeactivate()"

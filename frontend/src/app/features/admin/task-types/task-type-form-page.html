@@ -149,17 +149,10 @@
     [closable]="true"
     closeAriaLabel="Close dialog"
     [mfDialogFocus]="dialogOpen()"
-    [focusOnShow]="true"
+    [focusOnShow]="false"
+    (onShow)="focusPrimary()"
     [style]="{ width: '34rem', maxWidth: '95vw' }"
-    [header]="
-      dialog() === 'publish'
-        ? 'Publish version ' + current()?.versionNo
-        : dialog() === 'retire'
-          ? 'Retire version ' + current()?.versionNo
-          : dialog() === 'conflict'
-            ? 'This draft was changed by someone else'
-            : 'Discard unsaved changes?'
-    "
+    [header]="dialogTitle()"
   >
     @switch (dialog()) {
       @case ('publish') {
@@ -200,9 +193,14 @@
             (ngModelChange)="publishNote.set($event)"
           ></textarea>
           <div class="ttf__dialog-actions">
-            <p-button label="Cancel" severity="secondary" (onClick)="closeDialog()" />
             <p-button
-              [label]="'Publish version ' + current()?.versionNo"
+              [label]="publishText().cancel"
+              severity="secondary"
+              (onClick)="closeDialog()"
+            />
+            <p-button
+              data-primary
+              [label]="publishText().confirm"
               [disabled]="busy()"
               (onClick)="confirmPublish()"
             />
@@ -215,9 +213,14 @@
             New {{ recordNoun() }} can't use a retired version. Existing {{ recordNoun() }} keep it.
           </p>
           <div class="ttf__dialog-actions">
-            <p-button label="Cancel" severity="secondary" (onClick)="closeDialog()" />
             <p-button
-              label="Retire version"
+              [label]="retireText().cancel"
+              severity="secondary"
+              (onClick)="closeDialog()"
+            />
+            <p-button
+              data-primary
+              [label]="retireText().confirm"
               severity="danger"
               styleClass="mf-btn--solid"
               (onClick)="confirmRetire()"
@@ -233,11 +236,11 @@
           </p>
           <div class="ttf__dialog-actions">
             <p-button
-              label="Reload latest"
+              [label]="copy.conflict.cancel"
               severity="secondary"
               (onClick)="resolveConflict(false)"
             />
-            <p-button label="Keep my changes" (onClick)="resolveConflict(true)" />
+            <p-button [label]="copy.conflict.confirm" (onClick)="resolveConflict(true)" />
           </div>
         </div>
       }
@@ -245,9 +248,13 @@
         <div class="ttf__dialog" data-dialog="discard">
           <p>You have unsaved changes to this draft. Opening another version discards them.</p>
           <div class="ttf__dialog-actions">
-            <p-button label="Keep editing" severity="secondary" (onClick)="closeDialog()" />
             <p-button
-              label="Discard changes"
+              [label]="copy.discardChanges.cancel"
+              severity="secondary"
+              (onClick)="closeDialog()"
+            />
+            <p-button
+              [label]="copy.discardChanges.confirm"
               severity="danger"
               styleClass="mf-btn--solid"
               (onClick)="confirmDiscard()"

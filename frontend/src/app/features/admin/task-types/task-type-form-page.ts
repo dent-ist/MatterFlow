@@ -33,6 +33,7 @@ import { FormDesignerApi, FormOwner, FormVersion, FormVersionSummary } from './f
 import { publishIssuesOf } from './form-mapping';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { QuietRequests } from '../../../core/http/interceptors';
+import { DIALOG_COPY, publishCopy, retireCopy } from '../shared/dialog-copy';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import {
   RecordKind,
@@ -156,6 +157,36 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
     () => !this.readOnly() && !this.busy() && !hasErrors(this.issues()),
   );
   protected readonly dialogOpen = computed(() => this.dialog() !== null);
+  /** The dialogs' wording comes from the one table (#362). */
+  protected readonly copy = DIALOG_COPY;
+  protected readonly publishText = computed(() => publishCopy(this.current()?.versionNo ?? ''));
+  protected readonly retireText = computed(() => retireCopy(this.current()?.versionNo ?? ''));
+  protected readonly dialogTitle = computed(() => {
+    switch (this.dialog()) {
+      case 'publish':
+        return this.publishText().title;
+      case 'retire':
+        return this.retireText().title;
+      case 'conflict':
+        return DIALOG_COPY.conflict.title;
+      default:
+        return DIALOG_COPY.discardChanges.title;
+    }
+  });
+
+  /**
+   * The publish and retire dialogs open on their primary action, so it is not two Tabs away behind the optional Version note (the note
+   * stays in the Tab order, just before the buttons). The other dialogs keep PrimeNG's first-control focus.
+   */
+  protected focusPrimary(): void {
+    const kind = this.dialog();
+    const root = document.querySelector<HTMLElement>(`[data-dialog="${kind}"]`);
+    const target =
+      kind === 'publish' || kind === 'retire'
+        ? root?.querySelector<HTMLElement>('[data-primary] button')
+        : root?.querySelector<HTMLElement>('input, textarea, select, button');
+    target?.focus();
+  }
 
   constructor() {
     effect(() => {

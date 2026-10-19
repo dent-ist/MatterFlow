@@ -22,6 +22,7 @@ import { focusFirstInvalid } from '../../../shared/forms/focus-invalid';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { TaskTypeView, TaskTypesApi } from './task-types-api';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { DIALOG_COPY } from '../shared/dialog-copy';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
@@ -151,6 +152,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     );
   }
 
+  protected readonly copy = DIALOG_COPY.deactivateTaskType;
   protected readonly deactivateOpen = signal(false);
 
   protected confirmDeactivate(): void {

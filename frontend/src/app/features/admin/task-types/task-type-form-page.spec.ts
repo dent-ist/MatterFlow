@@ -98,11 +98,14 @@ describe('TaskTypeFormPage', () => {
     await press('Publish...');
 
     const dialog = q('[data-dialog="publish"]', document.body);
+    // The primary action has focus; the Version note stays reachable (#362).
+    expect(document.activeElement?.textContent?.trim()).toBe('Publish v2');
+    expect(dialog.querySelector('#ttf-note')).not.toBeNull();
     expect(dialog.textContent).toContain('Added: Text');
     expect(dialog.textContent).toContain('Existing tasks keep form version 1');
     expect(dialog.textContent).toContain("Published versions can't be edited.");
 
-    await press('Publish version 2', document.body);
+    await press('Publish v2', document.body);
     expect(q('[data-status]').textContent).toContain('Published v2');
     expect(q('[data-readonly-banner]')).not.toBeNull();
     const rows = Array.from(el().querySelectorAll('.ttf__table tbody tr')).map((r) =>
@@ -159,7 +162,7 @@ describe('TaskTypeFormPage', () => {
       ),
     );
     await press('Publish...');
-    await press('Publish version 2', document.body);
+    await press('Publish v2', document.body);
 
     expect(q('[role=alert]').textContent).toContain('The server found 2 problems');
     const issues = el().querySelector('.fd__issue-list')!.textContent!;
@@ -215,7 +218,9 @@ describe('TaskTypeFormPage', () => {
   it('retires a published version after confirmation', async () => {
     await press('Retire version');
     expect(q('[data-dialog="retire"]', document.body)).not.toBeNull();
-    await press('Retire version', document.body.querySelector('[data-dialog="retire"]')!);
+    // The dialog opens on its primary action and uses the shared wording (#362).
+    expect(document.activeElement?.textContent?.trim()).toBe('Retire v1');
+    await press('Retire v1', document.body.querySelector('[data-dialog="retire"]')!);
     expect(q('[data-status]').textContent).toContain('Retired v1');
   });
 });

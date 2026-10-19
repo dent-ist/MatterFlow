@@ -22,6 +22,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { TagInput } from '../../../shared/ui/tag-input';
 import { TextField } from '../../../shared/ui/text-field';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
+import { DIALOG_COPY } from '../shared/dialog-copy';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
 
@@ -213,10 +214,10 @@ function sameTags(a: readonly string[], b: readonly string[]): boolean {
     }
 
     <mf-confirm-dialog
-      title="Deactivate step?"
-      confirmLabel="Deactivate step"
-      cancelLabel="Keep active"
-      [danger]="true"
+      [title]="copy.title"
+      [confirmLabel]="copy.confirm"
+      [cancelLabel]="copy.cancel"
+      [danger]="copy.danger"
       [busy]="busy()"
       [(visible)]="deactivateOpen"
       (confirmed)="deactivate()"
@@ -254,6 +255,7 @@ export class StepEditPage implements HasUnsavedChanges {
   protected readonly serverErrors = signal<Record<string, string>>({});
   protected readonly summary = signal<string[]>([]);
   protected readonly conflict = signal(false);
+  protected readonly copy = DIALOG_COPY.deactivateStep;
   protected readonly deactivateOpen = signal(false);
   private saved = false;
   private suggestRequest = 0;
