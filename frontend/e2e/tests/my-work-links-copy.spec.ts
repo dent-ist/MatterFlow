@@ -287,7 +287,11 @@ test.describe('My Work links, filters and copy', () => {
     await myWork.open('?view=active&status=NEW');
     await expect(page.locator('tr[data-filter-row] [data-filter="status"]')).toContainText('New');
     await expect(page.locator('tbody td[data-empty="filtered"]')).toBeVisible();
-    await page.locator('[data-clear-filters]').click();
+    // The empty state carries the one Clear filters (the bar shows none while it does; re-review RR-02).
+    await page
+      .locator('tbody td[data-empty="filtered"]')
+      .getByRole('button', { name: 'Clear filters' })
+      .click();
     await expect(page).not.toHaveURL(/status=/);
 
     // Due presets, in order, without Overdue; "Next 7 days" equals the range typed by hand.

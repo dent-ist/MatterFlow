@@ -207,11 +207,11 @@ test.describe('Microcopy (#228, #229)', () => {
       );
       await expect(row.locator('input[data-filter="matterText"]')).toHaveAttribute(
         'placeholder',
-        'Matter',
+        'Matter Number', // the column is Matter Number since #348
       );
       await expect(row.locator('input[data-filter="matterText"]')).toHaveAttribute(
         'aria-label',
-        'Filter by Matter',
+        'Filter by Matter Number',
       );
       await expect(page.getByRole('button', { name: 'Other filters' })).toBeVisible();
       await expect(page.getByText('More filters')).toHaveCount(0);
