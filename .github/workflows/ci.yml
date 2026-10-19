@@ -41,7 +41,7 @@ jobs:
             dotnet test "tests/$project" --no-build -c Release \
               --logger "trx;LogFileName=$project.trx" --results-directory ../TestResults/quick
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: backend-test-results-quick
@@ -75,7 +75,7 @@ jobs:
             dotnet test "tests/$project" --no-build -c Release \
               --logger "trx;LogFileName=$project.trx" --results-directory ../TestResults/integration
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: backend-test-results-integration

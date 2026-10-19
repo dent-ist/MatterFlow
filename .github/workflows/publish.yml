@@ -39,7 +39,7 @@ jobs:
           test -f artifacts/publish/web.config
           test -f artifacts/publish/wwwroot/index.html
           test -f artifacts/publish/appsettings.Production.template.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: matterflow-publish-${{ github.sha }}
           path: artifacts/publish

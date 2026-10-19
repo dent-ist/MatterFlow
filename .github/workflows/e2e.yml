@@ -50,7 +50,7 @@ jobs:
         run: npm run e2e
       - name: Upload Playwright report, traces, screenshots and videos
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-report-${{ github.run_id }}
           path: |
@@ -60,7 +60,7 @@ jobs:
           retention-days: 14
       - name: Upload API log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-api-log-${{ github.run_id }}
           path: artifacts/e2e-api.log
