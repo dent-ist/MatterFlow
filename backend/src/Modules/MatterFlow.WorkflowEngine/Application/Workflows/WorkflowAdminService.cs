@@ -5,6 +5,7 @@ using MatterFlow.Identity.Contracts;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
+using MatterFlow.SharedKernel.Tasks;
 using MatterFlow.SharedKernel.Time;
 using MatterFlow.WorkflowEngine.Contracts;
 using MatterFlow.WorkflowEngine.Domain;
@@ -25,7 +26,9 @@ public sealed class WorkflowAdminService(
     IPermissionChecker permissions,
     ICurrentUser currentUser,
     IClock clock,
-    IAuditWriter audit)
+    IAuditWriter audit,
+    IConfigurationTaskCounts taskCounts,
+    IUserDirectory users)
 {
     private const int MaxSteps = 200;
     private const string ObjectType = nameof(WorkflowDefinition);
@@ -754,8 +757,24 @@ public sealed class WorkflowAdminService(
             .OrderByDescending(v => v.VersionNo)
             .Select(v => new { Version = v, StepCount = v.Steps.Count })
             .ToListAsync(ct);
-        return new WorkflowDetail(summary, versions.Select(v => ToSummary(v.Version, v.StepCount)).ToList());
+
+        // One grouped read for the open Task counts of every version and one lookup for the creators' names (never one per version).
+        var open = await OpenCountsAsync(versions.Select(v => v.Version.Id).ToList(), ct);
+        var names = await users.FindManyAsync([.. versions.Select(v => v.Version.CreatedByUserId).OfType<int>().Distinct()], ct);
+        return new WorkflowDetail(
+            summary,
+            [.. versions.Select(v => ToSummary(v.Version, v.StepCount, open is null ? null : open.GetValueOrDefault(v.Version.Id), NameOf(names, v.Version.CreatedByUserId)))]);
     }
+
+    private static string? NameOf(IReadOnlyDictionary<int, UserInfo> names, int? userId) =>
+        userId is { } id && names.TryGetValue(id, out var user) ? user.DisplayName : null;
+
+    /// <summary>
+    /// The open Task count of each version (one grouped statement), or null when the viewer may not see Tasks, so responses carry null instead
+    /// of a made-up 0. A version nobody runs on is 0.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<int, int>?> OpenCountsAsync(IReadOnlyCollection<int> versionIds, CancellationToken ct) =>
+        permissions.Has(Permissions.Task.View) ? await taskCounts.OpenByWorkflowVersionAsync(versionIds, ct) : null;
 
     private async Task<IReadOnlyList<WorkflowSummary>> SummariesAsync(IReadOnlyList<WorkflowDefinition> definitions, IReadOnlyList<TaskTypeWorkflowLink>? allLinks, CancellationToken ct)
     {
@@ -798,8 +817,8 @@ public sealed class WorkflowAdminService(
         ];
     }
 
-    private static WorkflowVersionSummary ToSummary(WorkflowVersion v, int stepCount) =>
-        new(v.Id, v.VersionNo, v.Status, v.IsOrdered, stepCount, v.CreatedAtUtc, v.PublishedAt, v.PublishedByUserId, WorkflowSupport.FormatRowVersion(v.RowVersion));
+    private static WorkflowVersionSummary ToSummary(WorkflowVersion v, int stepCount, int? openTaskCount, string? createdByName) =>
+        new(v.Id, v.VersionNo, v.Status, v.IsOrdered, stepCount, v.CreatedAtUtc, v.PublishedAt, v.PublishedByUserId, WorkflowSupport.FormatRowVersion(v.RowVersion), openTaskCount, v.CreatedByUserId, createdByName);
 
     private async Task<WorkflowVersionDetail> ReadVersionAsync(WorkflowVersion version, CancellationToken ct)
     {
@@ -821,7 +840,13 @@ public sealed class WorkflowAdminService(
                 s.IsSkippable,
                 s.SkipCommentRequired,
                 src.IsActive)).ToListAsync(ct);
+        var open = await OpenCountsAsync([version.Id], ct);
+        var names = await users.FindManyAsync(version.CreatedByUserId is { } creator ? [creator] : [], ct);
         // Re-read the row version: saves move it, and the tracked entity has it refreshed by EF.
-        return new WorkflowVersionDetail(version.WorkflowDefinitionId, name, ToSummary(version, steps.Count), steps);
+        return new WorkflowVersionDetail(
+            version.WorkflowDefinitionId,
+            name,
+            ToSummary(version, steps.Count, open is null ? null : open.GetValueOrDefault(version.Id), NameOf(names, version.CreatedByUserId)),
+            steps);
     }
 }

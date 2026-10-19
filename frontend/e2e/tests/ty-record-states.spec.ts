@@ -270,13 +270,9 @@ test.describe('Task Types administration: not found, no access, failure (#353)',
     const wfPage = await asUser((await seed.user([wfRole.name], 'tt-wfonly')).username);
     for (const r of ROUTES.filter((x) => x.key !== 'task-type' && x.key !== 'task-type-form')) {
       await wfPage.goto(r.url);
-      // GET /workflows/{id}/versions/{id} needs Task.View on the server (WorkflowPolicies.TaskView), so a Workflow.Manage-only
-      // person is answered 403 there: the page says so instead of "couldn't load" (a server rule, recorded in the #353 report).
-      await expect(heading(wfPage)).toHaveText(
-        r.key === 'version'
-          ? "You don't have access to this workflow version."
-          : `We couldn't find that ${r.noun}.`,
-      );
+      // GET /workflows/{id}/versions/{id} accepts Workflow.Manage as well as Task.View (#416), so a Workflow.Manage-only person
+      // gets the same "couldn't find" state on a missing version as on every other route.
+      await expect(heading(wfPage)).toHaveText(`We couldn't find that ${r.noun}.`);
       await expect(wfPage.getByRole('link', { name: `Go to ${r.list}` })).toBeVisible();
     }
     await wfPage.goto('/admin/task-types/99999999');

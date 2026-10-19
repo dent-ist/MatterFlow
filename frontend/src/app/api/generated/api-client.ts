@@ -13894,6 +13894,9 @@ export interface WorkflowVersionSummary {
     publishedAtUtc: string | undefined;
     publishedByUserId: number | undefined;
     rowVersion: string;
+    openTaskCount?: number | undefined;
+    createdByUserId?: number | undefined;
+    createdByName?: string | undefined;
 
     [key: string]: any;
 }

@@ -1,4 +1,5 @@
 using MatterFlow.SharedKernel.Tasks;
+using MatterFlow.WorkflowEngine.Domain;
 using MatterFlow.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,6 +23,22 @@ public sealed class ConfigurationTaskCounts(DbContext db) : IConfigurationTaskCo
             .Where(t => ids.Contains(t.TaskTypeId))
             .GroupBy(t => t.TaskTypeId)
             .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+        return rows.ToDictionary(r => r.Key, r => r.Count);
+    }
+
+    public async Task<IReadOnlyDictionary<int, int>> OpenByWorkflowVersionAsync(IReadOnlyCollection<int> workflowVersionIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(workflowVersionIds);
+        if (workflowVersionIds.Count == 0)
+            return new Dictionary<int, int>();
+
+        var ids = workflowVersionIds.Distinct().ToList();
+        var rows = await (from t in db.Set<WorkTask>().AsNoTracking().Where(TaskQueueRules.Open)
+                          join i in db.Set<WorkflowInstanceRecord>().AsNoTracking() on t.WorkflowInstanceId equals i.Id
+                          where ids.Contains(i.WorkflowVersionId)
+                          group t by i.WorkflowVersionId into g
+                          select new { Key = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken);
         return rows.ToDictionary(r => r.Key, r => r.Count);
     }

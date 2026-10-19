@@ -87,6 +87,12 @@ public sealed record WorkflowListPage(
 /// <param name="PublishedAtUtc">When it was published.</param>
 /// <param name="PublishedByUserId">Who published it.</param>
 /// <param name="RowVersion">Concurrency token (base64) to send back when saving, publishing or retiring.</param>
+/// <param name="OpenTaskCount">
+/// Tasks running on this version that are open (New, In Progress or On Hold, the Task Queue definition); completed and cancelled Tasks are not
+/// counted. A draft has none (0). Counted over every pod (configuration data); null, not 0, when the viewer lacks <c>Task.View</c>.
+/// </param>
+/// <param name="CreatedByUserId">Who created the version.</param>
+/// <param name="CreatedByName">Display name of the creator, when known.</param>
 public sealed record WorkflowVersionSummary(
     [property: Required] int WorkflowVersionId,
     [property: Required] int VersionNo,
@@ -96,7 +102,10 @@ public sealed record WorkflowVersionSummary(
     [property: Required] DateTime CreatedAtUtc,
     DateTime? PublishedAtUtc,
     int? PublishedByUserId,
-    [property: Required] string RowVersion);
+    [property: Required] string RowVersion,
+    int? OpenTaskCount = null,
+    int? CreatedByUserId = null,
+    string? CreatedByName = null);
 
 /// <summary>A workflow with its versions.</summary>
 /// <param name="Workflow">The workflow.</param>

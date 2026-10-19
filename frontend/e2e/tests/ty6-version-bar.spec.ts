@@ -235,16 +235,15 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
     await expect(bar(page).getByRole('button', { name: 'Save draft' })).toBeDisabled();
   });
 
-  test('permissions: Workflow.Manage with Task.View gets the bar; TaskType.Manage only and Task.View only get the 403 page', async ({
+  test('permissions: Workflow.Manage alone gets the bar; TaskType.Manage and Task.View only get the 403 page', async ({
     seed,
     admin,
     asUser,
   }) => {
     test.setTimeout(120_000);
     const { url } = await draftWorld(seed, admin, 3);
-    // Workflow.Manage alone opens the page but the version endpoint also needs Task.View (a load error otherwise): the Workflow
-    // administrator role carries both.
-    const wfRole = await seed.role(['Workflow.Manage', 'Task.View'], 'Workflow admin');
+    // Workflow.Manage alone opens the version page: the version endpoint accepts Task.View or Workflow.Manage (#416).
+    const wfRole = await seed.role(['Workflow.Manage'], 'Workflow admin');
     const wfUser = await seed.user([wfRole.name], 'wf-only');
     const wfPage = await asUser(wfUser.username);
     await wfPage.goto(url);

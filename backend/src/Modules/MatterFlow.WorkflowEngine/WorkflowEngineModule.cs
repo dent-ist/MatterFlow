@@ -1,8 +1,10 @@
+using MatterFlow.SharedKernel.Tasks;
 using MatterFlow.WorkflowEngine.Application.Instances;
 using MatterFlow.WorkflowEngine.Application.Steps;
 using MatterFlow.WorkflowEngine.Application.Workflows;
 using MatterFlow.WorkflowEngine.Contracts;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MatterFlow.WorkflowEngine;
 
@@ -17,6 +19,7 @@ public static class WorkflowEngineModule
     {
         services.AddControllers().AddApplicationPart(typeof(WorkflowEngineModule).Assembly);
 
+        services.TryAddScoped<IConfigurationTaskCounts, NoTasksConfigurationTaskCounts>();
         services.AddScoped<StepDefinitionService>();
         services.AddScoped<WorkflowAdminService>();
         services.AddScoped<IWorkflowCatalog, WorkflowCatalog>();

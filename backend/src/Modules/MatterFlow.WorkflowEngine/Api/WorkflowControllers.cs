@@ -20,6 +20,9 @@ internal static class WorkflowPolicies
 
     /// <summary>Read published workflows (Task screens, Task Type eligibility pickers).</summary>
     public const string TaskView = Prefix + Permissions.Task.View;
+
+    /// <summary>Either permission is enough (a "Perm:" policy name may list alternatives separated by <c>|</c>): readers of a version.</summary>
+    public const string TaskViewOrManage = Prefix + Permissions.Task.View + "|" + Permissions.Workflow.Manage;
 }
 
 internal static class WorkflowFilters
@@ -138,7 +141,7 @@ public class WorkflowsController(WorkflowAdminService workflows, IWorkflowCatalo
         return CreatedAtRoute("GetWorkflow", new { id = created.Workflow.WorkflowDefinitionId }, created);
     }
 
-    /// <summary>Gets a workflow with its versions.</summary>
+    /// <summary>Gets a workflow with its versions; each version carries its open Task count (null without Task.View) and its creator.</summary>
     [HttpGet("{id:int}", Name = "GetWorkflow")]
     [Authorize(Policy = WorkflowPolicies.Manage)]
     [ProducesResponseType<WorkflowDetail>(StatusCodes.Status200OK, "application/json")]
@@ -171,9 +174,12 @@ public class WorkflowsController(WorkflowAdminService workflows, IWorkflowCatalo
         return CreatedAtRoute("GetWorkflowVersion", new { id, versionId = draft.Version.WorkflowVersionId }, draft);
     }
 
-    /// <summary>A version with its steps. Published and retired versions are readable with Task.View; a draft needs Workflow.Manage.</summary>
+    /// <summary>
+    /// A version with its steps, its open Task count (null without Task.View) and who created it. Either Task.View or Workflow.Manage opens the
+    /// endpoint, so a workflow administrator can open the versions they manage (#416); a draft still needs Workflow.Manage.
+    /// </summary>
     [HttpGet("{id:int}/versions/{versionId:int}", Name = "GetWorkflowVersion")]
-    [Authorize(Policy = WorkflowPolicies.TaskView)]
+    [Authorize(Policy = WorkflowPolicies.TaskViewOrManage)]
     [ProducesResponseType<WorkflowVersionDetail>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<WorkflowVersionDetail>> GetVersion(int id, int versionId, CancellationToken cancellationToken) =>
         (await workflows.GetVersionAsync(id, versionId, cancellationToken)).OrThrow();

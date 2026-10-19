@@ -17217,6 +17217,26 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "openTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "createdByUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "createdByName": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
