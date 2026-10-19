@@ -1,4 +1,11 @@
-import { DIALOG_COPY, DialogCopy, impactLine, publishCopy, retireCopy } from './dialog-copy';
+import {
+  DIALOG_COPY,
+  DialogCopy,
+  impactLine,
+  listNames,
+  publishCopy,
+  retireCopy,
+} from './dialog-copy';
 
 describe('dialog wording table (#362)', () => {
   const all: [string, DialogCopy][] = [
@@ -157,5 +164,16 @@ describe('impactLine (#362)', () => {
     expect(impactLine('publishVersion', { firstVersion: true, usableTaskTypes: 0 }).text).toBe(
       'New tasks use this version.',
     );
+  });
+});
+
+describe('listNames (#379)', () => {
+  it('lists up to three names and then "and n others"', () => {
+    expect(listNames([])).toBe('');
+    expect(listNames(['A'])).toBe('A');
+    expect(listNames(['A', 'B'])).toBe('A and B');
+    expect(listNames(['A', 'B', 'C'])).toBe('A, B and C');
+    expect(listNames(['A', 'B', 'C', 'D'])).toBe('A, B, C and 1 other');
+    expect(listNames(['A', 'B', 'C', 'D', 'E'])).toBe('A, B, C and 2 others');
   });
 });

@@ -46,6 +46,7 @@ import { RecordSort } from '../../../shared/ui/record-sort';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { TaskCount } from '../../../shared/ui/task-count';
+import { DIALOG_COPY, impactLine, listNames } from '../shared/dialog-copy';
 import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { parseStatus } from '../../../shared/ui/list-helpers';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
@@ -241,6 +242,35 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   protected readonly announcement = signal('');
   protected readonly deactivateOpen = signal(false);
   protected readonly deactivateTarget = signal<TaskTypeView | null>(null);
+  protected readonly deactivateCopy = DIALOG_COPY.deactivateTaskType;
+
+  /**
+   * The active workflows that would be left without an active task type if the one in the dialog went (#379), from the list that is
+   * loaded. A list limited to a workflow (`?workflow=`) is not the whole set, so nothing is claimed then.
+   */
+  private readonly workflowsLeftBare = computed<string[]>(() => {
+    const t = this.deactivateTarget();
+    if (!t || this.workflowId() !== undefined) return [];
+    const others = this.all().filter((o) => o.id !== t.id && o.isActive);
+    return t.eligibleWorkflowIds
+      .filter(
+        (id) =>
+          this.workflowOptions().get(id)?.isActive !== false &&
+          !others.some((o) => o.eligibleWorkflowIds.includes(id)),
+      )
+      .map((id) => this.workflowName(id))
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  });
+
+  /** What the Deactivate dialog adds to its first sentence: the open tasks that keep the type and the workflows left bare. */
+  protected readonly deactivateImpact = computed(() => {
+    const t = this.deactivateTarget();
+    const impact = impactLine('deactivateTaskType', {
+      openTasks: t?.openTaskCount ?? null,
+      names: this.workflowsLeftBare(),
+    });
+    return { text: impact.text, names: listNames(impact.names) };
+  });
 
   constructor() {
     super();

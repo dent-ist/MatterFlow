@@ -271,7 +271,7 @@
                       data-not-usable
                       >Not usable</mf-badge
                     >
-                    <span class="sr-only" [id]="'tt-nu-' + t.id">{{ why }}</span>
+                    <span class="sr-only" [id]="'tt-nu-' + t.id" data-warning>{{ why }}</span>
                   }
                 </span>
               </td>
@@ -303,16 +303,22 @@
   />
 }
 <mf-confirm-dialog
-  title="Deactivate task type?"
-  confirmLabel="Deactivate task type"
-  cancelLabel="Keep active"
-  [danger]="true"
+  [title]="deactivateCopy.title"
+  [confirmLabel]="deactivateCopy.confirm"
+  [cancelLabel]="deactivateCopy.cancel"
+  [danger]="deactivateCopy.danger"
   [busy]="busy()"
   [(visible)]="deactivateOpen"
   (confirmed)="confirmDeactivate()"
 >
   <p>
-    {{ deactivateTarget()?.name }} will no longer be offered when people create tasks. Existing
-    tasks keep this type, and you can activate it again later.
+    {{ deactivateTarget()?.name }} will no longer be offered when people create tasks.
+    @if (deactivateImpact().text) {
+      <span data-impact>{{ deactivateImpact().text }}</span>
+    }
   </p>
+  @if (deactivateImpact().names) {
+    <p data-impact-names>{{ deactivateImpact().names }}.</p>
+  }
+  <p>You can activate it again later.</p>
 </mf-confirm-dialog>

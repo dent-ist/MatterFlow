@@ -1,12 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
 import { MessageService } from 'primeng/api';
 import { StubWorkflowLookup, WorkflowLookup } from '../../../core/lookups/workflow-lookup';
 import { InMemoryTaskTypesApi } from './in-memory-task-types-api';
-import { TaskTypesApi } from './task-types-api';
+import { TaskTypeView, TaskTypesApi } from './task-types-api';
 import { TaskTypesPage } from './task-types-page';
 
 async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
@@ -38,6 +39,120 @@ function configure(...permissions: Permission[]): InMemoryTaskTypesApi {
   });
   return api;
 }
+
+describe('TaskTypesPage deactivate dialog impact (#379)', () => {
+  const type = (id: number, name: string, over: Partial<TaskTypeView> = {}): TaskTypeView => ({
+    id,
+    name,
+    description: undefined,
+    iconKey: 'cpu-2',
+    isActive: true,
+    defaultWorkflowDefinitionId: 1,
+    eligibleWorkflowIds: [1],
+    formDefinitionId: id,
+    formStatus: undefined,
+    publishedFormVersionId: undefined,
+    publishedFormVersionNo: undefined,
+    draftFormVersionNo: undefined,
+    hasFormFields: false,
+    isUsable: true,
+    usabilityIssues: [],
+    rowVersion: 'rv',
+    openTaskCount: 14,
+    ...over,
+  });
+
+  /** Opens the list over `rows` and the Deactivate dialog of `name`; returns what the dialog says. */
+  async function dialogOf(rows: TaskTypeView[], name: string): Promise<HTMLElement> {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: '**', children: [] }]),
+        { provide: TaskTypesApi, useValue: { list: () => of(rows) } },
+        { provide: WorkflowLookup, useClass: StubWorkflowLookup },
+        { provide: MessageService, useValue: { add: vi.fn() } },
+        provideFakeMe(new FakeMeApi(withPermissions('TaskType.Manage', 'Workflow.Manage'))),
+      ],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
+    const fixture = TestBed.createComponent(TaskTypesPage);
+    await settle(fixture);
+    const row = fixture.nativeElement.querySelector(`[data-row="${name}"]`)!;
+    row.querySelector('button[data-overflow]')!.click();
+    await settle(fixture);
+    fixture.nativeElement.querySelector('[role=menuitem][data-action="deactivate"]')!.click();
+    await settle(fixture);
+    return document.querySelector('.p-dialog') as HTMLElement;
+  }
+  const said = (dialog: HTMLElement) => dialog.textContent!.replace(/\s+/g, ' ').trim();
+
+  it('says how many open tasks keep the type: none, one, many', async () => {
+    for (const [count, sentence] of [
+      [0, 'No open tasks use this task type.'],
+      [1, '1 open task keeps this type.'],
+      [14, '14 open tasks keep this type.'],
+    ] as const) {
+      TestBed.resetTestingModule();
+      const dialog = await dialogOf(
+        [type(1, 'Alpha', { openTaskCount: count }), type(2, 'Beta')],
+        'Alpha',
+      );
+      expect(said(dialog), `${count} open`).toContain(
+        `Alpha will no longer be offered when people create tasks. ${sentence}`,
+      );
+      expect(said(dialog)).toContain('You can activate it again later.');
+    }
+  });
+
+  it('leaves the sentence out when the API gave no count', async () => {
+    const dialog = await dialogOf(
+      [type(1, 'Alpha', { openTaskCount: undefined }), type(2, 'Beta')],
+      'Alpha',
+    );
+    expect(said(dialog)).not.toContain('open task');
+    expect(said(dialog)).toContain('Alpha will no longer be offered when people create tasks.');
+  });
+
+  it('names the workflows that lose their last task type, up to three and then "and n others"', async () => {
+    // Alpha is the only active type of workflows 1 and 4; Beta keeps workflow 2 and 3.
+    let dialog = await dialogOf(
+      [
+        type(1, 'Alpha', { eligibleWorkflowIds: [1, 2, 4] }),
+        type(2, 'Beta', { eligibleWorkflowIds: [2, 3] }),
+      ],
+      'Alpha',
+    );
+    expect(said(dialog)).toContain('2 workflows are left without a task type.');
+    expect(dialog.querySelector('[data-impact-names]')!.textContent).toContain(
+      'Production and Standard Processing',
+    );
+    TestBed.resetTestingModule();
+
+    // An inactive type does not keep a workflow; one workflow reads as one.
+    dialog = await dialogOf(
+      [
+        type(1, 'Alpha', { eligibleWorkflowIds: [1] }),
+        type(2, 'Beta', { eligibleWorkflowIds: [1], isActive: false }),
+      ],
+      'Alpha',
+    );
+    expect(said(dialog)).toContain('1 workflow is left without a task type.');
+    expect(dialog.querySelector('[data-impact-names]')!.textContent).toContain(
+      'Standard Processing',
+    );
+    TestBed.resetTestingModule();
+
+    // A workflow another active type keeps is not named.
+    dialog = await dialogOf(
+      [
+        type(1, 'Alpha', { eligibleWorkflowIds: [1] }),
+        type(2, 'Beta', { eligibleWorkflowIds: [1] }),
+      ],
+      'Alpha',
+    );
+    expect(dialog.querySelector('[data-impact-names]')).toBeNull();
+    expect(said(dialog)).not.toContain('left without a task type');
+  });
+});
 
 describe('TaskTypesPage phone cards and narrow columns (#374)', () => {
   /** A window `width` px wide (the list reads `matchMedia`; jsdom has none). */
@@ -258,6 +373,7 @@ describe('TaskTypesPage', () => {
       queryParams: { status: null, form: null, usable: 'no', page: null },
       queryParamsHandling: 'merge',
     });
+    await settle(fixture);
     expect(el().querySelector('[data-announce]')!.textContent).toContain('Not usable: 1');
     item('inactive').dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(navigate).toHaveBeenLastCalledWith([], {

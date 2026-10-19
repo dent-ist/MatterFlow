@@ -246,3 +246,61 @@ test.describe('Open tasks (#373)', () => {
     await shot(page, 'p373-card');
   });
 });
+
+test.describe('Deactivate confirm (#379)', () => {
+  test('says how many open tasks keep the type and which workflows lose their last task type; focus returns to the row menu', async ({
+    page,
+    seed,
+    admin,
+  }) => {
+    const token = uid();
+    const w = await seed.world();
+    const shared = await seed.workflow({ name: `${token} Shared flow`, stepCount: 1 });
+    // The world's own workflow is only this type's; the shared one also belongs to another type.
+    const other = await seed.taskType({ name: `${token} Other`, workflows: [shared] });
+    const current = await admin.get(`/api/v1/task-types/${w.taskType.id}`);
+    await admin.put(`/api/v1/task-types/${w.taskType.id}`, {
+      name: `${token} Subject`,
+      description: null,
+      iconKey: current.iconKey,
+      isActive: true,
+      eligibleWorkflowIds: [...current.eligibleWorkflowIds, shared.workflowDefinitionId],
+      defaultWorkflowDefinitionId: current.defaultWorkflowDefinitionId,
+      rowVersion: current.rowVersion,
+    });
+    for (let i = 0; i < 2; i++) await seed.task(w);
+    expect(other.id).toBeGreaterThan(0);
+
+    await page.setViewportSize(SIZES[0]);
+    await page.goto(`/admin/task-types?name=${token}`);
+    const menu = page.getByRole('button', { name: `Actions for ${token} Subject` });
+    await menu.click();
+    await page.getByRole('menuitem', { name: 'Deactivate' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Deactivate task type?' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText(
+      `${token} Subject will no longer be offered when people create tasks.`,
+    );
+    await expect(dialog).toContainText('2 open tasks keep this type.');
+    // Only the world's own workflow is left without a task type: the shared one still has the other type.
+    await expect(dialog).toContainText('1 workflow is left without a task type.');
+    await expect(dialog.locator('[data-impact-names]')).toContainText(w.workflow.name);
+    await expect(dialog.locator('[data-impact-names]')).not.toContainText(shared.name);
+    await expect(dialog).toContainText('You can activate it again later.');
+    await shot(page, 'p379-deactivate-dialog');
+    if (axeAvailable()) expect(await axeViolations(page), 'dialog open').toEqual([]);
+
+    // Keep active: the dialog closes and focus is back on the opener.
+    await dialog.getByRole('button', { name: 'Keep active' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(menu).toBeFocused();
+
+    // A type nobody uses says so.
+    const quiet = await seed.taskType({ name: `${token} Quiet`, workflows: [shared] });
+    await page.goto(`/admin/task-types?name=${token}%20Quiet`);
+    await page.getByRole('button', { name: `Actions for ${token} Quiet` }).click();
+    await page.getByRole('menuitem', { name: 'Deactivate' }).click();
+    await expect(page.getByRole('dialog')).toContainText('No open tasks use this task type.');
+    expect(quiet.id).toBeGreaterThan(0);
+  });
+});

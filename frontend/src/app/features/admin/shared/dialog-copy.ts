@@ -207,3 +207,18 @@ function dependents(names: readonly string[]): string {
   const more = names.length - 1;
   return `${names[0]} and ${more} other task types have`;
 }
+
+/**
+ * A list of names for a dialog, at most `max` (three by default) and then "and n others": `A`, `A and B`, `A, B and C`,
+ * `A, B, C and 2 others` (PM decision of #379). Empty for no names.
+ */
+export function listNames(names: readonly string[], max = 3): string {
+  if (names.length === 0) return '';
+  if (names.length <= max) {
+    return names.length === 1
+      ? names[0]
+      : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  }
+  const rest = names.length - max;
+  return `${names.slice(0, max).join(', ')} and ${rest} ${rest === 1 ? 'other' : 'others'}`;
+}
