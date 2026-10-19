@@ -744,46 +744,53 @@ Asset type change after creation: not allowed [UX-PROPOSAL: type drives the fiel
 **Entry points.** Header "+ Create Task", Task Queue, Matter detail (Matter prefilled), Project detail (Matter + Project prefilled), Pod Work (Pod prefilled).
 
 ```text
-Create Task
-+-- Quick fill from email (optional) -----------------------------------------------------------+
+Tasks > Create task                       (Tasks > 00343-00012 Merger Review > Create task from a matter you may open)
+[+] Create task
+Choose a task type to start                (after the choice: Task type Data Processing)
++-- Quick fill from email (optional) -------------------------------------------------------------+
 |  [ Drop an Outlook email here ]   or   [ Paste email text ]   or   [ Choose .eml/.msg file ]   |
-|  Drag-and-drop from new Outlook may not work in your browser. Paste always works.               |
 |  We read the subject, body, sender and sent date. Attachments and the original email are NOT saved.|
 +------------------------------------------------------------------------------------------------+
  (after parse) [ok] Filled Title, Description, Requestor, Sent date.   [Review highlighted fields] [Clear]
 
-1 Where
- Matter (required)   [ typeahead 343-12 / name v ]  Only active matters are listed.
- Project (optional)  [ none v ]            (depends on Matter)
-2 What
- Title (required)        [______________________________]
- Description             [ multiline ____________________ ]   (plain text; email body prefilled)
- Task type (required)    [ Select... v ]
- Workflow (required)     ( ) Standard Processing v2   ( ) Rush Processing v1     <- only published, eligible for type
-                         [Preview steps v]   Ordered workflow: steps must be done in order.
-3 Request details       (DynamicForm for the selected Task Type form version, with conditional rules)
- Requires OCR? [x]   -> OCR language (required) [ English v ]
-4 Who is asking
- Requestor name (required)  [______________]   Requestor email (optional) [______________]
- Source email sent: Oct 13, 2026 9:12 AM (read-only, shown only when filled from email)
-5 Priority, due, assignment
- Priority (required)   [ Normal v ]
- Due date              [ date ] [ time optional ]   (empty = ASAP, handled promptly, never overdue)   [x] No due date (ASAP)
- Pod                   [ none v ]       Assignee [ none v ]
+What kind of task is this?                  (step 1: the chooser; type, workflow and matter can't be changed later)
+ Search task types [ Name or description ]   3 of 12 task types
+ +----------------+ +----------------+ +----------------+      3 cards per row from 1024 px, 2 from 640, 1 below;
+ | [icon] Data    | | [icon] Review  | | [icon] Export  |      the description is cut after the last whole word
+ | Processing     | | ...            | | ...            |      (110 characters), the whole text is the tooltip
+ +----------------+ +----------------+ +----------------+
+
+(after the choice, one 720 px column)
+ +-- Matter -----------+-- Task type ----+-- Workflow ---------------------------------+
+ | 00343-00012 Merger  | Data Processing | Standard Processing v2 (6 steps, ordered)    |
+ +---------------------+-----------------+----------------------------------------------+
+ Type, workflow and matter can't be changed after you create the task.
+ [icon] Task type Data Processing                                     [Change type]
+
+ Task
+  Matter (required)        [ typeahead 343-12 / name v ]  Only active matters are listed.
+  Title (required)         [______________________________]  n / 200
+  Requestor name (required) [______________]   Requestor email (optional) [______________]
+ Request details           (DynamicForm for the selected Task Type form version, with conditional rules)
+  Requires OCR? [x]   -> OCR language (required) [ English v ]
+ Workflow (required)       ( ) Standard Processing v2   ( ) Rush Processing v1     [Preview steps v]
+ More details
+  Project (optional)  [ none v ]            Description  [ rich text ___ ]   Source email sent: Oct 13, 2026 9:12 AM
+ Priority, due date and assignment
+  Priority (required) [ Normal v ]   Due date [ date ] [ time optional ] [x] No due date (ASAP)
+  Pod [ none v ]   Assignee [ none v ]
    helper: "Assigning a person starts the task (In Progress). Assigning only a Pod doesn't."
 -------------------------------------------------------------------------------------------------
-Summary: Matter 00343-00012 | Type: Data Processing | Workflow: Standard Processing v2 (6 steps, ordered)
-Type, workflow and matter can't be changed after you create the task.
-[Create task] [Create and add another] [Cancel]
+[Create task] [Create and add another] [Cancel]              (sticky footer)
 ```
-**Layout.** Single scrolling page, sections numbered, left-aligned form column (max 720 px) with a sticky right-hand "Summary" card on wide screens (>=1280). Not a wizard; sections 3+ unlock progressively: Task type must be chosen before Workflow and Request details render.
+**Layout (Task Detail epic T8, #322, #323).** The page uses the shared record header (`mf-record-header`, kind `task`): the h1 "Create task" with a plus icon in the `mfIcon` slot, the crumb `Tasks > Create task` (or `Tasks > matter > Create task` when opened from a matter the person may open) and the chosen type as the one context line ("Choose a task type to start" before). There are two steps on one page: the **type chooser** (cards: 3 per row from 1024 px, 2 from 640, 1 below; the search box appears when there are many types; the description is cut after the last whole word at 110 characters with the whole text as the tooltip) and then the form. The form is **one 720 px column** with one input width rule (`--mf-field-max`, default 480 px for other forms); the former sticky right-hand Summary card is now a **three-tile strip** (Matter, Task type, Workflow) above the form, built locally from the work-strip tokens, with the sentence that type, workflow and matter can't be changed; the action row is a sticky footer. Not a wizard otherwise: Task type must be chosen before Workflow and Request details render. The form engine and Fill from email are unchanged.
 
 **Fields and rules.**
 | Field | Required | Rules / behavior | Error message |
 |---|---|---|---|
 | Matter | Yes | Active matters only; if launched from a Matter, prefilled and still changeable until submit | "Select a matter." / "This matter is inactive. Choose an active matter." |
 | Project | No | Lists only projects of selected Matter; clears if Matter changes (with note) | "That project doesn't belong to this matter." |
-| Title | Yes | max 250; prefilled from Subject | "Enter a title." |
+| Title | Yes | max 200, 2 to 4 line auto-growing box with an `n / 200` counter (announced from 180), line breaks stripped; prefilled from Subject | "Enter a title." |
 | Description | No | prefilled from the email's HTML body (tables kept, sanitized) or its plain text; rich text editor (decision R) | n/a |
 | Task type | Yes | active types with >=1 published eligible workflow; types without one are listed disabled "(no workflow available)" | "Select a task type." |
 | Workflow | Yes | exactly one; radio list; default pre-selected if the type has a default but user must see it; current published version per workflow only | "Select a workflow." |
@@ -818,47 +825,68 @@ Rules:
 
 ### S10 Task detail
 
-**Purpose.** Single source of truth for one Task: metadata, workflow execution, comments, assets, history.
+**Purpose.** Single source of truth for one Task: what it is, who has it, what state it is in, workflow execution, assets, comments and history. The page follows the Task Detail epic #288 (issues #289 to #331); the decisions are in `decisions-addendum.md` section W and the plan, with what each package shipped and where it deviated, in `docs/ux/task-detail-review/delivery-plan.md` section 4. **Where the code differs from the issues, this section follows the code** (listed in section W, "Code versus plan").
 
 ```text
-Tasks > 00343-00012 Merger Review > TSK-1042
-TSK-1042  Process Smith custodians                           [Change status v] [Edit] [Cancel task] [...]
-[In Progress]  [Critical]  Due: ASAP   Pod: Pod A   Assignee: Tariq M. [Change]   Matter: 00343-00012 Merger Review
-Type: Data Processing   Workflow: Standard Processing v2 (ordered)    Workflow: 3 of 6 resolved [=====-----]
-(banner when Completed/Cancelled: "This task is Completed. Move it back to In Progress to edit." [Reopen task])
-(banner when matter inactive: "Matter is inactive. This task can't be reopened.")
-  WORKFLOW (main, fluid)                              | DETAILS (side panel, 340 px, sticky)
-  (3) Deduplicate  [current, expanded]                |   requestor, dates, due, project, pod, request form
-  (1)(2)(4)(5) one-line summaries                     |   [Edit details]
-  COMMENTS (composer + thread)                        | ASSETS (links, roles, Link asset)
+Tasks > 00343-00012 Merger Review > TSK-1042                       (crumb; "Back to My Work" on a phone)
+[icon] TSK-1042  Process Smith custodians                  [Edit] [Activity] [Complete task] [...]
+Matter 00343-00012 Merger Review . Client 00343 . Data Processing . Standard Processing v2 (ordered)
+(Sensitive matter: one line)   (View only: you don't have permission to edit tasks.)
++--------+----------+---------+-----------+---------+----------------------+
+| Status | Priority | Due     | Assignee  | Pod     | Workflow             |
+| [In Pr]| [Critical]| Oct 14  | Tariq M.  | Pod A   | 3 of 6 resolved      |
++--------+----------+---------+-----------+---------+----------------------+
+(status note, only On hold / Completed / Cancelled)
+  On hold since Oct 18, 4:03 PM by KE\kekim: Waiting for the client's reply   [Show more]
+Workflow 3/6   Assets 2   Comments 48                                (section nav, sticky from 640 px)
+  WORKFLOW (left column)                                  | DETAILS (side panel, from 1100 px,
+  one-line head: heading, mode sentence, [Show All v]     |  sticky, splitter, no nested scroll)
+  (3) Deduplicate [current, expanded] ...                 |   Description (12 lines, Show more)
+  (1)(2)(4)(5) one-line summaries                         |   Task information (requestor, project,
+  ASSETS (full width of the left column)                  |     created, last updated)
+  COMMENTS (full width of the left column)                |   Request details (Search and Culling,
+    composer above the thread when there are > 5 comments |     form 1)   14 fields   [open/closed]
+                                                          |
+Below 1100 px one column: header, strip, note, nav, Workflow, Assets, Comments, then
+Details as a closed disclosure:  > Details   Requestor Dana W-M . 14 request fields
 ```
-**Page layout (single page, `mf-detail-layout`, docs/ux/task-detail).** The former Details / Workflow / Comments / Assets / Activity tabs are one page, like Client, Matter and Project. Main column: Workflow, then Comments (loaded when scrolled near). Side panel (`aside`, from 1100 px, sticky, own scroll): Details, then Assets. Below 1100 px one column: Details (collapsible, collapsed on phones), Workflow, Comments, Assets, plus a "Jump to" link row (Workflow, Comments, Assets) that scrolls and moves focus to the section heading. Activity is a right-side drawer opened by the header's Activity button. Old links: `?tab=workflow|comments|assets` scroll to the section, `?tab=activity` opens the drawer, `?tab=details` shows the page; `?step=<id>` opens that step. Only the current step is expanded; other steps are one-line summaries that can be opened. Edit (the header's one Edit button; the panel has no pencil, T9 #326) opens the edit form in a dialog and returns to the same page. There is **no Attachments section** (nothing is stored).
 
-**Header.** Ref, title, status badge, priority badge (inline editable with `Task.SetPriority`), due (`DueCell`), Pod, assignee (inline editable with `Task.Assign`/`Reassign`), Matter ref link, workflow name + version + progress. Primary actions: **Change status** menu, **Edit**, **Cancel task**. The same status control is the only place status changes (plus Complete in the Workflow tab when all resolved).
+**Page layout (single page, `mf-detail-layout`).** The former Details / Workflow / Comments / Assets / Activity tabs are one page, like Client, Matter and Project (UAT-S10-2 re-confirmed by the epic: one page, a section nav, no tabs). From **1100 px** two columns: the left column holds Workflow, then Assets, then Comments (**owner request: Assets first, Comments below it, each the full width of the left column at every width, never side by side**); the right column is the Details panel (sticky, sized by its content, draggable splitter, width remembered per person in `mf.detail-panel.open` and `mf.task-detail.split.<userId>`). Below 1100 px one column in the order **header, facts strip, status note, section nav, Workflow, Assets, Comments, Details**; Details is a **closed disclosure** (`aria-expanded`, 44 px target) whose button carries the one-line summary `Requestor Dana W-M . 14 request fields` and which is remembered per person (`mf.task-detail.details.open.<userId>`; `?tab=details` opens it without remembering). The wide panel hands the mouse wheel on to the page at its ends and shows a bottom fade while more is below; with Request details closed and a long description it has no scrollbar and no fade (1366x768, 1920x1080). Activity is a right-side drawer opened by the header's Activity button. Old links: `?tab=workflow|comments|assets` scroll to the section and focus its heading, `?tab=activity` opens the drawer, `?tab=details` shows the page and opens the disclosure; `?step=<id>` opens that step. There is **no Attachments section** (nothing is stored). Measured Workflow heading y (typical overdue task / 200-character sensitive task): 375 px 377 / 425, 768 px 324 / 349, 1366 and 1920 px 269 / 294.
 
-**Immutable fields.** Matter, Task Type, Workflow (and version) are shown read-only with a lock icon and tooltip "Can't be changed after creation. To correct it, cancel this task and create a new one." Project is editable (same Matter only).
+**Header (`mf-record-header`, kind `task`).** The same component as the Client, Matter and Project pages with a different data set.
+- **Crumb:** `Tasks > matter > TSK-n` (the matter only with `Matter.View`); the middle step is cut at 40 characters with the full text as a tooltip and for screen readers. The first crumb names the page the task was opened from (see "Drill-in" below). Below 640 px the crumb becomes "Back to <list>".
+- **Title:** `TSK-n  title` is the one `h1`, 22 px (18 px on a phone), one line, two at most, the full title as a tooltip; the task type icon sits in front of it. No Active badge.
+- **Context line:** one muted line `Matter 00343-00012 Merger Review . Client 00343 . Data Processing . Standard Processing v2 (ordered)`; the matter reference links with `Matter.View`, the client number with `Client.View`, otherwise plain text; the whole sentence is the tooltip. Matter, Task type and Workflow are immutable (the lock explanation, "Can't be changed after creation. To correct it, cancel this task and create a new one.", is in the Edit dialog's locked block).
+- **Actions** (data, `RecordAction`, permission-gated), in this order: **Edit** (`Task.Edit`), **Activity**, the primary **Complete task** (**Reopen task** on a closed task; no primary on an On hold task, whose Resume is in the overflow), and the "..." overflow with **Put on hold** or **Resume**, **Copy link**, a divider and **Cancel task** (danger, last). Complete is **never disabled for missing information**: while steps need information it keeps the `n steps need information` hint (tooltip and `aria-describedby`; the dialog then offers "Go to first step"). A status action the Matter blocks is shown disabled with its reason; one the person has no permission for is absent. On a phone the primary and the overflow share one row of 44 px targets and Edit and Activity move into the overflow. There is one Edit control on the page (the Details panel has no pencil).
+- **Sensitive note:** one line under the title (`data-sensitive-banner`), a warning only.
+- **View only line:** a person who can change nothing on the task (no edit, assign, priority, status, workflow permission) sees "View only: you don't have permission to edit tasks." once, under the header; commenting alone does not count as editing.
 
-#### Details tab
-```text
-Details                                                       [Edit details]
-Title            Process Smith custodians
-Description      (multi-line)
-Requestor        Jane Roe  <jane.roe@client.com>        (email link; optional)
-Source email sent  Oct 13, 2026 9:12 AM  (only when created from email)
-Project          Custodian Processing  [Move]
-Priority / Due / Pod / Assignee (also editable inline in header)
-Created by / on  Dana P., Oct 13 9:20 AM       Last updated ...
--- Request details (Task Type form: Data Processing, form v3) --
-  Requires OCR?  Yes     OCR language  English
--- Task Type and Workflow  [locked]
-```
-Edit mode: fields become inputs in place (page-level Save/Cancel), same validation as Create. Request detail values edit against the **form version the task was created under** (a small caption "Form version 3"); conditional rules apply. Saved edits are audited with before/after. Editing is disabled when status is Completed/Cancelled (banner + Reopen) and when the Matter is inactive.
+**Facts strip (`mf-task-facts`).** Exactly **six tiles**, each fact once: **Status** (menu), **Priority** (menu), **Due** (`mf-due-cell`, inline; a closed task with a due date reads `Was due Oct 14`), **Assignee** (menu), **Pod** (an en dash and "No pod" for readers when empty) and **Workflow** `2 of 3 resolved` ("No steps" without steps). The three menus are the same `mf-row-edit` menus as the work lists, with the same names and words (a person without the permission sees the plain badge or text); they are plain while the Edit dialog is open. **Status menu:** one label per item (the target status only as a tooltip), a divider, Cancel task last in the danger style; a closed task offers only Reopen. **Assignee menu:** **Assign to me** is the first item; each Pod member shows `n open` (read from the Pod Work loads, quiet and best effort; needs `Pod.View`, otherwise the hint is simply absent). The look is the global `_facts-strip.scss` (the work-strip tile tokens, no new token). Below 640 px the strip is 2 x 3.
 
-#### Workflow tab: stepper
+**Status note (`mf-task-status-note`).** One neutral note under the header replaces every old banner (the closed banner, the reason banner, the Workflow notice and the step footer line). Texts: `Completed Oct 18, 4:03 PM by Test User 01`, `Cancelled Oct 18, 4:03 PM by KE\kekim: Duplicate of an earlier request`, `On hold since Oct 18, 4:03 PM by KE\kekim: <reason>`. The time is in the viewer's zone (year only outside this year), the full date and whole reason are the tooltip, a reason over two lines is cut with Show more / Show less; grey icons, no warning colours, **no buttons** (Reopen task and Resume stay in the header). A closed task in an inactive Matter adds the one sentence that it cannot be reopened. The actor is `TaskResponse.statusChangedBy`, read from the audit trail, so a task completed before audit existed shows no "by".
+
+**Section nav (`mf-section-nav`).** `Workflow 2/3   Assets 0   Comments 48` as real anchors at every width, in the page's order; the counts are those the sections already report (Assets shows no count without `Asset.View`). A scroll-spy sets `aria-current="location"` (a click pins the chosen section until the next hand scroll). Sticky under the app header from 640 px, static below. A click opens a collapsed section, scrolls it in under the header and the nav and focuses its heading; reduced motion scrolls instantly (no smooth scrolling is used).
+
+**Workflow.** The head is one row: the heading, the one-line mode sentence ("Ordered: complete or skip each step in order" / "Unordered: work these in any order") and at the right the **Show All / Unresolved** filter (56 px at most at 1366 and 1920). The filter appears **from 6 steps**, for ordered and unordered workflows alike. A step's number and title are one item (a long title wraps beside its number; the date and badge wrap below). The step stepper, skip, reopen and completion rules are unchanged (below).
+
+**Assets.** A disclosure bar `Assets (n)` with the "Link asset" quick action (needs `Asset.Link`, `Asset.View` and the right to edit the task); a closed task shows "Linked assets can't be changed while the task is Completed or Cancelled. Reopen it to change them." Without `Asset.View` the bar reads "Assets" and the panel the explanation "You don't have permission to view assets, so linked assets aren't shown here." (the one designed no-access notice of the page); asset references in the request form read `Asset 12 (not available)` and **no request goes to the Asset API**.
+
+**Comments.** Above **5 comments** the composer is above the thread (below it for 5 or fewer); without `Task.Comment` the internal-only note takes the composer's place. A long thread shows `Showing latest 3 of 48. Show all` (and `Showing all 48. Show latest 3`), remembered per person; the old "Show latest" select is gone.
+
+**Details panel.** `Description` (cut at **12 lines** with "Show more / Show less" only when it overflows, measured before the first paint; links, lists and tables inside keep working), `Task information` (Requestor with a mail link, Request sent, Project, Created and Last updated; Type, Pod and Due are not repeated here) and the **request details section** (`mf-request-section`, shared with the Edit dialog): `Request details (Search and Culling, form 1)  14 fields`, **open at 6 fields or fewer and closed above**, the choice remembered per task type and person (`mf.task-detail.request.open.<userId>.<typeId>`); the body is hidden, not removed, so the dialog still validates, and the dialog opens it on a request-form error.
+
+**Edit dialog (`mf-task-edit-dialog`).** Opened by the header's Edit; 720 px wide (the screen's width below 720); header and footer stay in place (Save changes, Cancel); the body scrolls; every grid column is `minmax(0, 1fr)` so nothing scrolls sideways at 375 px. Sections: **Task** (title, description, requestor, project, priority, due), **Request details** (the same section component, default open/closed as the page, kept mounted so it validates, opened on its own error) and **Assignment** (Pod, assignee; only with `Task.Assign`). The Title is `mf-title-area`: a 2 to 4 line auto-growing textarea with an `n / 200` counter (announced politely from 180 characters and on error; line breaks stripped; Enter does nothing). A failed Save puts the cursor in the first invalid field (the summary stays), server field errors map back onto the fields. **Esc is ignored with unsaved changes.** A locked block lists Matter, Task type and Workflow with the lock explanation.
+
+**Immutable fields.** Matter, Task Type, Workflow (and version) are shown read-only (context line, Edit dialog). Project is editable (same Matter only).
+
+#### Details
+Request form values are edited in the Edit dialog against the **form version the task was created under** (a caption "Form version 3"); conditional rules apply. Saved edits are audited with before/after. Editing is not offered when status is Completed/Cancelled (the status note and Reopen) and when the Matter is inactive.
+
+#### Workflow: stepper
 Two layouts driven by workflow mode.
 
 ```text
-Workflow: Standard Processing v2    ORDERED - complete or skip each step in order      Resolved 3 of 6
+Workflow   ORDERED - complete or skip each step in order                        [Show All v]
 (1) [ok] Intake QC                Completed  Oct 13 by Tariq   [Reopen]
 (2) [//] Load to Relativity       Skipped    "Already loaded by vendor"  [Reopen]
 (3) [>>] Deduplicate              In progress  <- current                [expand]
@@ -868,20 +896,14 @@ Workflow: Standard Processing v2    ORDERED - complete or skip each step in orde
 (4) [  ] OCR                      Pending (locked until step 3 is resolved)
 (5) [  ] QC sample                Pending (locked)
 (6) [  ] Handover                 Pending (locked)
------------------------------------------------------------------------------
-Task completion: 3 required steps unresolved.      [Complete task] (disabled with reason)
 ```
-Unordered:
-```text
-Workflow: Quick Export    UNORDERED - work these in any order            Resolved 1 of 4
-[ Steps list as accordion; each row: icon, title, status, Required/Optional tag, Complete / Skip / Reopen ]
-No "locked" states. A filter "Show: All | Unresolved".
-```
-**Step states** (internal `PENDING`, `IN_PROGRESS`, `COMPLETED`, `SKIPPED`; reopen = audited return to In Progress): icon + text, never colour only. Header summary "n of m resolved" (resolved = Completed or Skipped).
+There is no progress bar or "Resolved n of m" line in the Workflow head: the progress is the Workflow tile of the facts strip and the count in the section nav. The Complete block is not in the Workflow section; Complete task is the header's primary action. Unordered: the same rows with no locked states, the filter from 6 steps.
+
+**Step states** (internal `PENDING`, `IN_PROGRESS`, `COMPLETED`, `SKIPPED`; reopen = audited return to In Progress): icon + text, never colour only. "n of m resolved" counts Completed or Skipped.
 **Ordered rules in the UI.**
 - Only the first unresolved step (the "current" step) can be started/completed/skipped. Later pending steps show a lock icon and "Complete or skip step N first". They remain expandable for reading instructions.
 - Reopened earlier step: shown with an amber "Reopened" tag; downstream completed steps **stay** Completed and unchanged. A note beneath: "Step 2 was reopened. Later steps are unchanged. Resolve step 2 before completing the task." The task cannot be completed until the reopened step is resolved. New (pending) downstream steps remain locked behind the reopened step.
-**Completing a step.** "Mark complete" validates required visible inputs (conditional rules apply: hidden inputs not required). Field errors show inline: "Enter <label> to complete this step." Save inputs without completing is allowed (draft values) [UX-PROPOSAL]. Starting or completing a step does not change Task status: workflow progress and lifecycle are independent, except the addendum rules (assigning a user, reopening a step on a Completed Task). If a user marks a step complete on a NEW task, no automatic status change (Appendix D asks the PO).
+**Completing a step.** "Mark complete" validates required visible inputs (conditional rules apply: hidden inputs not required). Field errors show inline: "Enter <label> to complete this step." Save inputs without completing is allowed (draft values). Starting or completing a step does not change Task status: workflow progress and lifecycle are independent, except the addendum rules (assigning a user, reopening a step on a Completed Task).
 **Skip with comment dialog.**
 ```text
 Skip "Load to Relativity"?
@@ -893,58 +915,60 @@ Comment (required)   [ rich-less multi-line, 2000 max ]    <- label shows "(requ
 - Skip button appears only for skippable steps. For non-skippable steps no Skip button is rendered; the info line says "This step is required and can't be skipped." (read via `aria-describedby`).
 - Required skip comment -> inline error "Add a comment to skip this step."
 - Skip comment later editable on a Skipped step by editing after reopening or via "Edit comment" (audited).
-**Reopen step.** One click opens a small confirm popover (not a reason prompt; no reason required in Phase 1): "Reopen this step so you can change it? Later steps keep their status." [Reopen step] [Keep as is]. After reopening, the step opens in edit mode and its prior values are shown.
-- If the Task is **Completed**, the popover adds "This task is Completed. Reopening a step will move the task back to In Progress." and the action does both, audited as two events; the Activity tab shows "Task status changed to In Progress (step reopened)". If the Matter is inactive, the control is disabled with reason.
+**Reopen step.** One click opens a small confirm popover (no reason in Phase 1): "Reopen this step so you can change it? Later steps keep their status." [Reopen step] [Keep as is]. After reopening, the step opens in edit mode and its prior values are shown.
+- If the Task is **Completed**, the popover adds "This task is Completed. Reopening a step will move the task back to In Progress." and the action does both, audited as two events; the Activity drawer shows "Task status changed to In Progress (step reopened)". If the Matter is inactive, the control is disabled with reason.
 - Requires `Workflow.StepReopen`; editing inputs requires `Workflow.StepEdit`; completing/skipping requires `Workflow.Execute`.
-**Complete task.** Button at the end of the Workflow tab and in the Change status menu. **Always enabled** (with `Task.Complete`). If steps are unresolved, a confirmation dialog appears: "You have N steps not completed. Do you want to mark them all completed?" [Mark all completed and finish task] / [Cancel] (addendum K). Confirm completes the unresolved steps (as Completed, not Skipped) and the Task in one action. If any of those steps is missing required inputs, the dialog instead lists them ("These steps need required information first: ...") with links to the steps, and the Task stays open. SUPERSEDES the disabled-state text below. If an optional/skippable step is unresolved, the dialog lists it: "Optional step X is unresolved. It will stay unresolved." only if the workflow's completion policy permits; otherwise it must be skipped (Appendix D: OPEN-05). Disabled reason: "2 required steps are unresolved: Deduplicate, OCR." with links that scroll to the steps. Requires `Task.Complete`.
-**No step assignee picker, no approval controls, no approver fields.** If the workflow's step instructions mention approvals, the UI shows the instruction text only; users record outside approvals in a comment.
+**Complete task.** The header's primary button (and the Status menu's Complete). **Never disabled for missing information** (with `Task.Complete`). If steps are unresolved but ready, a confirmation dialog appears: "You have N steps not completed. Do you want to mark them all completed?" [Complete all steps and finish] / [Cancel] (addendum K). Confirm completes the unresolved steps (as Completed, not Skipped) and the Task in one action. If any of those steps is missing required inputs, the dialog instead lists them ("These steps need required information first: ...") with links, its primary button is **Go to first step** (opens, scrolls to and focuses the step; from a work list it opens the Task at `?tab=workflow&step=`), and the Task stays open. The button's hint `n steps need information` is shown before the click (tooltip, `aria-describedby`, the menu item's note). Optional/skippable steps follow the workflow's completion policy (Appendix D: OPEN-05). The blocked-step links are 24 px targets.
+**No step assignee picker, no approval controls, no approver fields.**
 
 #### Status change rules (UI)
-The Change status menu lists only valid targets for the current state (see Appendix B):
+The Status menu lists only valid targets for the current state (see Appendix B):
 | From | Allowed to | Notes |
 |---|---|---|
 | New | In Progress, On Hold, Cancelled | Assigning a user auto-moves New -> In Progress (toast) |
-| In Progress | On Hold, Completed*, Cancelled | *Completed only when workflow resolved |
-| On Hold | In Progress, Cancelled | |
-| Completed | In Progress | = Reopen; blocked if Matter inactive |
-| Cancelled | In Progress | = Reopen; blocked if Matter inactive |
-Unassigning later does **not** revert status. Any transition is audited. Permissions: `Task.ChangeStatus`, `Task.Complete`, `Task.Reopen`.
-**Cancel task dialog (mandatory comment, any time).**
-```text
-Cancel TSK-1042?
-This marks the task Cancelled. Unresolved workflow steps don't block this. You can reopen it later.
-Comment (required)  [______________________________]   (saved as a comment on the task)
-[Cancel task] [Keep task]
-```
-Error: "Add a comment explaining why you're cancelling." The comment is posted to the Comments tab and referenced in Activity.
-**Reopen task.** From banner or Change status: confirm "Move TSK-1042 back to In Progress?" [Reopen] [Keep]. No reason required. Disabled with reason when Matter inactive.
+| In Progress | On Hold, Completed*, Cancelled | *Completed through the Complete flow |
+| On Hold | In Progress (Resume), Cancelled | |
+| Completed | In Progress | = Reopen task; blocked if Matter inactive |
+| Cancelled | In Progress | = Reopen task; blocked if Matter inactive |
+Unassigning later does **not** revert status. Any transition is audited. Permissions: `Task.ChangeStatus`, `Task.Complete`, `Task.Cancel`, `Task.Reopen`.
+**Dialog wording.** Put on hold: field "Reason", dismiss "Close". Cancel task: field "Reason" (required: "Add a comment explaining why you're cancelling."), buttons "Cancel task" and "Keep task"; the comment is posted to Comments and shown in Activity. Reopen task: "Move TSK-1042 back to In Progress?" [Reopen] [Keep]; no reason; disabled with reason when the Matter is inactive.
+**Focus after an action.** After Complete (straight through or after the bulk dialog), Put on hold, Resume, Reopen and Cancel task, focus goes to the **Status menu button** (waits until the closed dialog has left the page), or to the page heading for a person with no Status menu; a failed or cancelled action moves nothing.
 
-#### Comments tab
+#### Comments
 ```text
-Comments (5)                                      Oldest first | Newest first
+Comments (5)
+[ Write a comment... ]            (composer first above 5 comments; Ctrl+Enter posts)
 +-- Dana P.  Oct 13, 9:25 AM ---------------------------------------+
 | Called the client; approved by A. Lee (email 10/13). [edit] [delete] (own comments)|
 | Edited Oct 13, 10:01 AM  [View edit history]                                         |
 +----------------------------------------------------------------------+
-[ B I | list | numbered | link ]  Add a comment... (Ctrl+Enter to post)    [Post comment]
+Showing latest 3 of 48. Show all
 Internal only: comments are visible to people who can view tasks.
 ```
 - Rich text with bold/italic/lists/links and tables (see §5.5, decision R); sanitized server-side; no attachments/images/mentions.
-- Authors edit/delete their own comments; edit shows "Edited" marker and "View edit history" (list of previous versions with timestamps); delete is a soft-delete: confirm "Delete this comment? It will be hidden from view but kept in the audit record." then the comment disappears (no tombstone in the thread for others; Activity records "Comment deleted" [UX-PROPOSAL]).
+- Authors edit/delete their own comments; edit shows "Edited" and "View edit history"; delete is a soft-delete: confirm "Delete this comment? It will be hidden from view but kept in the audit record."
 - Cancel comments appear as comments with a "Cancellation reason" tag.
 - Posting requires `Task.Comment`; users without it see read-only comments.
 - Empty: "No comments yet." Error on post: inline, keeps typed text.
 - Comments are separate from system history (Activity).
 
-#### Assets tab
-Table of linked Assets (Name, Type, External ref, Link label Source/Destination/Subject/Result, Remove link). "Link asset" opens a picker restricted to the Task's Matter Assets (search + paginate; 200 to 300 assets). Duplicate links prevented. "New asset" shortcut creates an Asset for the same Matter then links it. Needs `Asset.Link` (and `Task.Edit`). Empty: "No assets linked."
+#### Assets
+Linked Assets (Name, Type, External ref, Link label Source/Destination/Subject/Result, Remove link). "Link asset" opens a picker restricted to the Task's Matter Assets (search + paginate). Duplicate links prevented. Needs `Asset.Link` (and `Task.Edit`). Empty: "No assets linked."
 
-#### Activity tab
-Chronological, filterable by type (Status, Assignment, Fields, Workflow, Comments, Assets). Each event: actor, time (firm timezone, tooltip UTC), event text, and "View changes" showing old -> new values (viewing before/after values may be limited by `Audit.View` [UX-PROPOSAL: tab visible to everyone with `Task.View` but values hidden without `Audit.View`]). Paginated, read-only. Empty: not possible (creation event always exists).
+#### Activity (drawer)
+Chronological, filterable by type (Status, Assignment, Fields, Workflow, Comments, Assets). Each event: actor, time (viewer's zone, tooltip UTC), event text, and "View changes" showing old -> new values. Dates in sentences and changes are `Oct 15, 2026` (whole-value calendar dates only; free text is never rewritten). The drawer title is clamped to two lines with the whole text as a tooltip. A failed load shows one inline message with Retry (a failed "Load more" one message under the list). **Comment events** carry `commentId` and an `excerpt` (visible text of the comment, whitespace collapsed, at most 80 characters, cut at a word and ended with "..."; null for a deleted or empty comment and for other event types): the excerpt is a link that closes the drawer, opens Comments, loads older pages when needed, shows the whole thread for now (not remembered), scrolls to the comment, highlights it for 4 seconds and focuses it. **Folding rule:** 3 or more consecutive plain "Comment added" events by one person, each at most 10 minutes after the previous one, fold into `KE\kekim added 12 comments (4:03 to 4:05 PM)` with a Show/Hide control; edits, deletes, hold and cancel reasons and every other event type are never folded; "Load more" extends a fold (a fold counts the events loaded so far, a page holds 25). The tab title becomes `Activity - TSK-n title` while the drawer is open and stays pinned when it closes.
 
-**Concurrency.** Row-version conflict on any save opens the conflict dialog. Step updates are per-step atomic.
-**States.** Loading skeleton of header + tabs; 404 if no such task; error banner with Retry; read-only mode for users lacking edit permissions (controls hidden).
-**Keyboard.** Tabs per WAI-ARIA (arrow keys); `S` shortcut not used; focus moves to first error on failed save/complete.
+#### Drill-in, `?from=` and the way back
+`?from=` names the page the task was opened from. The work lists (`my-work`, `task-queue`, `pod-work`) are as in S02 to S04; **for the Task page only** it also accepts `matter`, `project`, `dashboard` and `search` (this reverses decision T, "Dashboard lists unchanged", for the Task page only, as the PM ruled). Task links on a Matter's and a Project's Tasks grid, on the Dashboard (the Summary lists, the Swimlane card and drawer, the Users table and its drawers) and in Search (results page and Advanced Search) carry `from=<origin>` and the exact address of the page in the router state `returnTo`. The crumb names the origin ("Matter 00107-00001", "Project Alpha", "Dashboard", "Search", "My Work"), and the crumb and "Back to ..." go to the exact view (filters, tab, query) with focus on the link that was left; browser Back does the same. The return address is read once when the page opens, and only an address on the origin's own path is used (otherwise `/matters/<id>?tab=tasks`, `/projects/<id>`, `/dashboard`, `/search`). A Matter origin is the one crumb (the matter is not repeated). **An origin the person cannot use is dropped** and the page behaves as opened without `from`: Matter or Project without the View permission, a task without a project, Pod Work without `Pod.View`, the Dashboard without `Dashboard.View` plus at least one Dashboard tab permission. An unknown value is ignored. The navigation keeps Matters, Projects, Dashboard, My Work, Task Queue or Pod Work current (Search has no item). Exactly one link to the origin is visible at every width (the crumb from 640 px, "Back to ..." below it).
+
+#### Keyboard
+- **Tab order:** app shell (skip link "Skip to main content", then the navigation), then the page: crumb, matter crumb, Edit, Activity, Complete task, More actions, the matter and client links of the context line, the Status, Priority and Assignee menus, the three section links, then the Workflow. The count to the first Workflow step is **recorded, not gated** (33 stops at 1366 for a System Admin, 19 in the shell and 14 in the page; 27 for an assignee Data Technician, 25 without Asset.View, 12 for Task.View only; `task-permissions-t10.spec.ts` prints and annotates the number for every role, annotation `tab-stops-before-first-step`). The page has no skip link of its own.
+- **Shortcuts C, A, S** (T9, #327): `C` writes a comment (opens Comments and focuses the composer), `A` opens the Assignee menu, `S` opens the Status menu. Only with the per-user **Keyboard shortcuts** switch on (WCAG 2.1.4), no modifier (Shift + letter is a capital), never in a field, menu, dialog or the Edit form, not while the `g` chord is pending, and nothing when the control is not on the page (no `Task.Comment`, no assign or status right). A menu button that is out of view is scrolled to first and pressed after the scroll ends (inline menus close on scroll). They are listed in the `?` help under "This page" while a task is open.
+- Menus: Enter, Space or Arrow Down opens; arrows move; Esc closes and returns focus to the button. The Activity drawer, the Edit dialog and the confirm dialogs trap focus and return it to the opener.
+
+**Concurrency.** Row-version conflict on any save shows the conflict banner "This task was changed by someone else, so your change wasn't saved." with Reload. Step updates are per-step atomic.
+**States.** Loading: `mf-record-skeleton kind="task"` (the same header, six-tile strip and nav row at today's heights, reduced motion honoured); 404 "We couldn't find that task."; 403 "You don't have access to this task."; failure "Couldn't load this task." with the error reference and Retry (shared `mf-record-state`); tab titles "Task not found", "No access to this task", "Task could not be loaded"; the generic 403/404 pages link to a page the person can open. Read-only mode for users lacking edit permissions: controls are absent, not disabled (a status action blocked by an inactive Matter is the exception: disabled with its reason).
+**Permissions (the matrix is walked by `task-permissions-t10.spec.ts`).** A link exists only when its target opens for the person; a control without its permission is absent. Matter crumb and context link: `Matter.View`; Client link: `Client.View`; Assets section and count: `Asset.View`; Link asset: `Asset.Link` + `Asset.View` + edit right; composer: `Task.Comment`; Edit: `Task.Edit`; Assignee menu: `Task.Assign`; Priority menu: `Task.SetPriority`; Status menu, Complete, Hold, Cancel, Reopen: the status permissions; the `n open` hint: `Pod.View`; origins: see Drill-in.
 
 ---
 
@@ -1241,7 +1265,13 @@ Prefix `mf-`. Standalone components, OnPush, signals-friendly inputs, a11y built
 | `mf-app-shell` | Header, left nav, banners, skip link, router outlet | `navItems`, permissions | all |
 | `mf-global-search` | Header combobox typeahead (number-aware) | `query`, `(select)`, `(viewAll)` | header, S11/S20 |
 | `mf-page-header` | Breadcrumb, H1, action slot | `title`, `crumbs[]` | all |
-| `mf-record-header` | Header of a Client, Matter or Project: crumb (last step cut at 40 characters), title at H2, badges, context line, Sensitive note, action buttons and the overflow; actions are data (`RecordAction`: `role` edit, activity, primary, secondary, state); skeleton mode draws the same boxes | `kind`, `parents[]`, `current`, `ref`, `name`, `actions[]`, `skeleton` | S05-S07 (5.9) |
+| `mf-record-header` | Header of a Client, Matter or Project: crumb (last step cut at 40 characters), title at H2, badges, context line, Sensitive note, action buttons and the overflow; actions are data (`RecordAction`: `role` edit, activity, primary, secondary, state); skeleton mode draws the same boxes | `kind`, `parents[]`, `current`, `ref`, `name`, `actions[]`, `skeleton` | S05-S07 (5.9), S09, S10 |
+| `mf-task-facts` | The six-tile facts strip of the Task page (Status, Priority, Due, Assignee menus as `mf-row-edit`, Pod, workflow progress); focus to the Status button after an action | store | S10 |
+| `mf-task-status-note` | The one neutral note for On hold, Completed and Cancelled (when, who, reason, Show more) | store | S10 |
+| `mf-section-nav` | Anchors with counts and scroll-spy (`aria-current="location"`), sticky from 640 px | `items[]`, `label`, `(navigate)` | S10 |
+| `mf-request-section` | Collapsible "Request details (type, form n) n fields", open at 6 fields or fewer, remembered per type | `heading`, `count`, `open` | S10 details, Edit dialog |
+| `mf-clamped-rich` | Rich text cut at 12 lines with Show more / Show less only when it overflows | `html`, `format` | S10 description |
+| `mf-task-edit-dialog` / `mf-title-area` | The Edit dialog (720 px, sticky footer, three sections) / 2 to 4 line title box with `n / 200` counter | `definition` / `maxLength`, `value` | S10, S09 |
 | `mf-action-menu` | The "..." ARIA menu button of a record header; disabled entries keep focus and show their reason | `items[]`, `label` | record header |
 | `mf-record-skeleton` / `mf-record-state` | Loading page (real crumb and tab labels with `--`, five 44 px rows) / 404, 403 and failure page with the error reference and Retry | `kind`, `activeTab` / `kind`, `state` | S05-S07 |
 | `mf-tabs` | Tab list with roving tabindex, counts (`Matters, 63` as the accessible name), edge fade and chevron, selected tab scrolled into view | `tabs[]`, `selected`, `(tabChange)` | record pages, admin |
@@ -1368,6 +1398,26 @@ Create task, Create and add another, Save changes, Save draft, Publish version <
 | Copy button in a list row | Visible on hover and row focus; the `?` help: "On a matter name in a list, step to its Copy button (Tab skips it); left arrow or Shift + Tab comes back" |
 | Skip link | "On Clients, Matters, Projects and their tabs, the first stop is 'Skip to table'; press Enter to land on the first row" |
 
+**Task page (epic #288).**
+| Context | Text |
+|---|---|
+| Header actions | "Edit", "Activity", "Complete task" (closed: "Reopen task"), overflow "More actions": "Put on hold" / "Resume", "Copy link", "Cancel task"; the same words as the work lists. Toast "Link copied." |
+| Complete hint | "3 steps need information" (singular "1 step needs information"): tooltip, `aria-describedby`, and the note under the Complete item of the Status menu |
+| View only | "View only: you don't have permission to edit tasks." |
+| Status note | "Completed Oct 18, 4:03 PM by Test User 01"; "Cancelled Oct 18, 4:03 PM by KE\kekim: Duplicate of an earlier request"; "On hold since Oct 18, 4:03 PM by KE\kekim: <reason>" with "Show more" / "Show less"; closed in an inactive matter adds "The matter is inactive, so this task can't be reopened." |
+| Due tile, closed task | "Was due Oct 14" (a dash without a due date) |
+| Facts strip | Tiles "Status", "Priority", "Due", "Assignee" ("Unassigned"), "Pod" (en dash, spoken "No pod"), "Workflow" ("2 of 3 resolved", "No steps") |
+| Assignee menu | First item "Assign to me"; then "Unassigned" (hint "Remove the assignee") and the Pod members, each with "n open" |
+| Section nav | Label "Sections"; "Workflow 2/3", "Assets 0" (no count without `Asset.View`), "Comments 48" |
+| Details disclosure | Button "Details" with the summary "Requestor Dana W-M . 14 request fields"; request section "Request details (Search and Culling, form 1)" with "14 fields" |
+| Workflow head | "Ordered: complete or skip each step in order" / "Unordered: work these in any order"; filter "Show All" / "Unresolved" from 6 steps |
+| Comments | "Showing latest 3 of 48. Show all" / "Showing all 48. Show latest 3"; composer placeholder "Add a comment... (Ctrl+Enter to post)" |
+| Assets without `Asset.View` | "You don't have permission to view assets, so linked assets aren't shown here."; request-form references "Asset 12 (not available)" |
+| Activity | Folded run "KE\kekim added 12 comments (4:03 to 4:05 PM)" with Show / Hide; comment excerpt as a link; dates "Oct 15, 2026" |
+| Edit dialog | Title "Edit task details"; sections "Task", "Request details", "Assignment"; buttons "Save changes" / "Cancel"; counter "n / 200" |
+| States | "We couldn't find that task." / "You don't have access to this task." / "Couldn't load this task." with the reference and Retry; tab titles "Task not found", "No access to this task", "Task could not be loaded" |
+| Create task | h1 "Create task"; "Choose a task type to start"; "What kind of task is this?"; "Search task types"; "Type, workflow and matter can't be changed after you create the task."; "Change type" |
+
 **Work vocabulary (BUG-13, M5; one set of words on the Dashboard, My Work, the Task Queue links and the docs).**
 | Term | Meaning |
 |---|---|
@@ -1418,7 +1468,9 @@ Create task, Create and add another, Save changes, Save draft, Publish version <
 
 ### 8.4 Dialogs and confirmations
 - **Cancel task:** title "Cancel <TSK-1042>?" body "This marks the task Cancelled. Unresolved steps don't block this. You can reopen it later." buttons "Cancel task" / "Keep task".
-- **Reopen task:** "Move <TSK-1042> back to In Progress?" "Reopen" / "Keep as is". Completed/Cancelled + inactive matter: disabled, reason "The matter is inactive, so this task can't be reopened."
+- **Put on hold:** field "Reason", buttons "Put on hold" / "Close" (T4 #305).
+- **Complete task with unresolved steps:** "You have <n> steps not completed. Do you want to mark them all completed?" buttons "Complete all steps and finish" / "Cancel"; when steps need information the dialog lists them and the primary button is "Go to first step" with "Close".
+- **Reopen task:** "Move <TSK-1042> back to In Progress?" "Reopen" / "Keep" (the dialog's buttons are Reopen and Keep). Completed/Cancelled + inactive matter: disabled, reason "The matter is inactive, so this task can't be reopened."
 - **Reopen step on completed task:** "Reopening this step moves the task back to In Progress. Later steps keep their status."
 - **Skip step:** "Skip <step>? Skipped steps count as resolved."
 - **Set matter inactive (blocked):** "This matter has <n> tasks that aren't Completed or Cancelled. Finish or cancel them first."
@@ -1442,7 +1494,7 @@ Create task, Create and add another, Save changes, Save draft, Publish version <
 | Queue empty | "No tasks yet." |
 | Filter empty | "No tasks match these filters." |
 | Task list error | "Couldn't load tasks." with the reference, Copy and Retry; the same row on a first load and on a reload, and the same words in the live region. |
-| Record page not found / no access / failed (Client, Matter, Project) | "We couldn't find that client." with "Go to clients" / "You don't have access to this client." with the same link / "Couldn't load this client." with "Something went wrong. Try again.", the reference and Retry. Matter and project in place of client. |
+| Record page not found / no access / failed (Client, Matter, Project, Task) | "We couldn't find that client." with "Go to clients" / "You don't have access to this client." with the same link / "Couldn't load this client." with "Something went wrong. Try again.", the reference and Retry. Matter and project in place of client. |
 | Record list empty, filtered, no access, failed | "No clients yet." (Matters: "No matters yet."; client's Matters tab: "No matters yet for this client."; Projects: "No projects yet. Open a matter and choose New project."; matter Projects tab: "No projects in this matter yet."; Assets tab: "No assets in this matter yet.") with the creation button when permitted / "No clients match these filters" with Clear filters / "You don't have access to clients." / "Couldn't load clients." with the reference and Retry. The record lists say the noun in the plural; the pages in the singular. |
 | Record list loading | Skeleton rows (five cards on a phone) with the final widths and 44 px height; "Loading clients" in the live region; a record page says "Loading client" once and "Loaded" after a Retry. |
 | Task list loading | Skeleton rows (cards on a phone) with the final column widths and row height; "Loading tasks" in the live region. |
@@ -1625,10 +1677,12 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S09-15 Create and add another keeps Matter/Project/Priority/Pod.
 - [ ] UAT-S09-16 Past due date shows a warning but is allowed.
 - [ ] UAT-S09-17 Quick fill is fully keyboard operable.
+- [ ] UAT-S09-18 Create task uses the record header (h1, crumb, type as context line); the type chooser shows 3 cards per row from 1024 px, 2 from 640, 1 below, with descriptions cut at a whole word.
+- [ ] UAT-S09-19 The form is one 720 px column with one input width; Matter, Task type and Workflow are a three-tile strip with the "can't be changed" sentence; the Title box shows `n / 200`.
 
 ### S10 Task detail
-- [ ] UAT-S10-1 Header always shows Matter ref, title, priority, status, Pod/assignee, due/ASAP, workflow.
-- [ ] UAT-S10-2 One page: Workflow and Comments (main), Details and Assets (side panel), Activity drawer. No tabs, no Attachments section.
+- [ ] UAT-S10-1 Header and facts strip always show the task number and title, the Matter ref, Client, task type and workflow (context line), and the six tiles Status, Priority, Due, Assignee, Pod and Workflow progress, each fact once.
+- [ ] UAT-S10-2 One page (re-confirmed by the Task Detail epic): header, six-tile facts strip, status note, section nav, then Workflow, Assets and Comments (left column, Assets first, each full width) and Details (side panel from 1100 px, closed disclosure below), Activity drawer. No tabs, no Attachments section.
 - [ ] UAT-S10-3 Matter, Task Type, Workflow are read-only with lock explanation; Project is editable within the Matter.
 - [ ] UAT-S10-4 Request form values editable and audited; form version caption shown.
 - [ ] UAT-S10-5 Completed/Cancelled tasks are read-only until moved to In Progress; blocked with reason when Matter inactive.
@@ -1650,6 +1704,20 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S10-21 Concurrency conflict dialog appears when another user changed the task.
 - [ ] UAT-S10-22 No step assignee, no approval UI.
 - [ ] UAT-S10-23 Stepper uses ordered list semantics with `aria-current`, lock reasons accessible.
+- [ ] UAT-S10-24 Header actions: Edit, Activity, the primary Complete task (Reopen task on a closed task), overflow with Put on hold or Resume, Copy link and Cancel task last; one Edit control on the page; on a phone Edit and Activity are in the overflow.
+- [ ] UAT-S10-25 Complete task is never disabled for missing information: it shows "n steps need information" and the dialog's primary button is "Go to first step".
+- [ ] UAT-S10-26 One neutral status note for On hold, Completed and Cancelled (when, who, reason; Show more for a long reason); a closed task shows "Was due Oct 14" in the Due tile.
+- [ ] UAT-S10-27 Section nav `Workflow 2/3, Assets n, Comments n` at every width: sticky from 640 px, `aria-current` follows the scroll, a click opens a collapsed section and focuses its heading.
+- [ ] UAT-S10-28 Below 1100 px the order is Workflow, Assets, Comments, Details (closed disclosure with a one-line summary); Assets and Comments are never side by side.
+- [ ] UAT-S10-29 Request details section: open at 6 fields or fewer, closed above, remembered per task type; a long description is cut at 12 lines with Show more / Show less; no nested scrollbar in the wide Details panel.
+- [ ] UAT-S10-30 Edit dialog: 720 px, sticky Save footer, sections Task / Request details / Assignment, title box with counter, no sideways scroll at 375 px, Esc ignored with unsaved changes.
+- [ ] UAT-S10-31 Comments: composer above the thread above 5 comments; "Showing latest 3 of 48. Show all". Activity: comment events link to the comment (excerpt), 3 or more comments in a row by one person within 10 minutes fold into one line.
+- [ ] UAT-S10-32 Drill-in: a task opened from a Matter, Project, Dashboard or Search names that page in the crumb and goes back to the exact view with focus on the link; an origin the person cannot use is dropped; one way back is visible at every width.
+- [ ] UAT-S10-33 Shortcuts C, A and S work only with "Keyboard shortcuts" on, never in a field, menu or dialog, and only when the control is on the page; focus lands on the Status menu button after Complete, Hold, Resume, Reopen and Cancel.
+- [ ] UAT-S10-34 Permission variants (System Admin, assignee Data Technician, Task.View only, no Asset.View, no Matter.View, no Client.View, no Project.View, no Pod.View, no Dashboard.View): no 401/403/404 request, no toast, every link opens, every control present exactly when allowed, "View only" line shown when nothing can be changed.
+- [ ] UAT-S10-35 Loading skeleton, 404, 403 and failure use the shared record states with tab titles "Task not found", "No access to this task", "Task could not be loaded".
+- [ ] UAT-S10-36 Asset references in the request form and the Assets section make no Asset API request without `Asset.View` (they read "Asset n (not available)").
+- [ ] UAT-S10-37 axe 0 and no page-level sideways scroll at 375, 768, 1366 and 1920 px, also with a menu, the Activity drawer or the Edit dialog open.
 
 ### S11 and S20 Search
 - [ ] UAT-S11-1 Header search visible on every page except Access Pending.
@@ -1771,7 +1839,7 @@ Internal codes fixed: NEW, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED. Rules (ad
 - On Hold -> In Progress; -> Cancelled (comment).
 - Completed -> In Progress (reopen; blocked if Matter inactive); Cancelled -> In Progress (reopen; same block).
 - Completed -> Cancelled and Cancelled -> Completed are not offered (go via In Progress) [UX-PROPOSAL].
-- Cancel allowed from every **open** state (New, In Progress, On Hold), comment mandatory, workflow state irrelevant. A Completed or Cancelled task offers only Reopen, in every menu (inline Status menu, Change status menu) and the header "Cancel task" button is hidden for it. Decision (PM), Task Queue review BUG-TQ4: this resolves the earlier contradiction with the line above.
+- Cancel allowed from every **open** state (New, In Progress, On Hold), comment mandatory, workflow state irrelevant. A Completed or Cancelled task offers only Reopen, in every menu (the inline Status menus and the Task page's header) and "Cancel task" is not offered for it. Decision (PM), Task Queue review BUG-TQ4: this resolves the earlier contradiction with the line above.
 - Editing a Completed/Cancelled Task requires first moving to In Progress.
 - Reopening a step on a Completed Task auto-moves it to In Progress.
 - Assigning a user to New -> In Progress. Pod-only assignment: no change. Unassigning: no revert.
@@ -1786,21 +1854,21 @@ Internal codes fixed: NEW, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED. Rules (ad
 | `Project.View/Create/Edit/Archive` | Projects list/dialog, archive; the Projects tab of a Matter and the Project cell of the Tasks grids |
 | `Task.View` | All task screens, search results for tasks, dashboard drill-through; the summary strip, the Open tasks and Overdue columns, their links and the tab counts of Client, Matter and Project (absent without it, never 0) |
 | `Task.Create` | Create Task buttons and page |
-| `Task.Edit` | Edit details, request form values, move Project |
-| `Task.Assign` / `Task.Reassign` | Assignee/Pod pickers, Assign to me |
-| `Task.SetPriority` | Priority inline/edit control |
-| `Task.ChangeStatus` / `Task.Complete` / `Task.Reopen` | Status menu entries; Complete; reopen task |
-| `Task.Comment` | Comment composer, cancel (comment is part of cancel) |
+| `Task.Edit` | The header's Edit and the Edit dialog (details, request form values, move Project); with `Asset.Link` and `Asset.View`, Link asset and Remove link |
+| `Task.Assign` / `Task.Reassign` | Assignee menu (Assign to me first) and the Edit dialog's Assignment section (Pod, assignee); shortcut `A` |
+| `Task.SetPriority` | Priority menu in the facts strip and work lists |
+| `Task.ChangeStatus` / `Task.Complete` / `Task.Cancel` / `Task.Reopen` | Status menu (shortcut `S`) and header entries: Complete task, Put on hold, Resume, Cancel task, Reopen task (absent without the permission, disabled with the reason when the Matter is inactive) |
+| `Task.Comment` | Comment composer (shortcut `C`); without it the internal-only note takes its place |
 | `Workflow.Execute` / `Workflow.StepEdit` / `Workflow.StepReopen` | Complete/skip steps; edit inputs; reopen step |
-| `Asset.View/Create/Edit/Link` | Assets screens; link in Task; the Assets tab of a Matter |
-| `Pod.View/Manage/ManageMembers` | Pod Work, Pods admin |
+| `Asset.View/Create/Edit/Link` | Assets screens; the Assets tab of a Matter; on the Task page `Asset.View` shows the Assets section's list and count and the asset names in the request form (otherwise "not available", no Asset API request), `Asset.Link` the Link asset button |
+| `Pod.View/Manage/ManageMembers` | Pod Work, Pods admin; on the Task page the `n open` hint in the Assignee menu, the Pod choice in Edit and Pod Work as a `?from=` origin |
 | `Role.Manage` | Users & Roles admin (incl. grant access) |
 | `User.Manage` | Administration > Users edits, and "Edit availability" for another person (everyone edits their own availability with `Task.View`) |
 | `Dashboard.ViewCoverage` | The Coverage view inside the Users tab (needs `Dashboard.View`) |
 | `TaskType.Manage` | Task Types and form designer |
 | `Workflow.Manage` | Step Library, Workflow designer |
 | `AssetType.Manage`, `CustomField.Manage`, `Priority.Manage`, `StatusLabel.Manage` | respective admin screens |
-| `Dashboard.View` | Dashboard nav item and route (403 without it); a tab permission has no effect without it |
+| `Dashboard.View` | Dashboard nav item and route (403 without it); a tab permission has no effect without it; the Task page offers `?from=dashboard` only with `Dashboard.View` and at least one tab permission |
 | `Dashboard.ViewUnassigned` | The Summary tab with only the Unassigned queue (technicians; needs `Dashboard.View`) |
 | `Dashboard.ViewSummary` / `ViewBreakdowns` / `ViewTrends` / `ViewSwimlane` / `ViewUsers` | The Summary, Breakdowns, Trends, Swimlane and Users tabs of the Dashboard (and the matching part of the server payload) |
 | `Audit.View` | Audit Logs; old/new values in Activity |
