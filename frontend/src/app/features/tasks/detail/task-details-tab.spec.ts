@@ -28,8 +28,18 @@ const schema = {
   ],
 };
 
+const fieldsOf = (n: number) => ({
+  fields: Array.from({ length: n }, (_, i) => ({
+    key: `f${i + 1}`,
+    control: 'TEXT',
+    label: `Field ${i + 1}`,
+    options: [],
+  })),
+});
+
 describe('Details tab', () => {
   afterEach(() => TestBed.resetTestingModule());
+  beforeEach(() => localStorage.clear());
 
   it('shows the read view in the panel and the request form values; the locked fields and their explanation come with the form', async () => {
     const { fixture, el } = await mountTaskPage(
@@ -50,7 +60,9 @@ describe('Details tab', () => {
     expect(view).not.toContain('Data Processing');
     expect(view).not.toContain('Task type');
     expect(q(el, '[data-view] a[href="mailto:jane.roe@client.com"]')).not.toBeNull();
-    expect(q(el, '[data-request-form]')!.textContent).toContain('form version 3');
+    expect(q(el, '[data-request-form]')!.textContent).toContain(
+      'Request details (Data Processing, form 3)',
+    );
     expect(q(el, '[data-request-form]')!.textContent).toContain('English');
     expect(q(el, '[data-locked-fields]')).toBeNull();
 
@@ -283,11 +295,11 @@ describe('Details tab', () => {
     expect(fakes.tasks['updateTask']).not.toHaveBeenCalled();
   });
 
-  it('groups the dialog into Task, Request details (collapsed, kept mounted) and Assignment, with the Save footer outside the scrolling form', async () => {
+  it('groups the dialog into Task, Request details (collapsed from 7 fields, kept mounted) and Assignment, with the Save footer outside the scrolling form', async () => {
     const { fixture, el } = await mountTaskPage(
       aTask({ formVersionId: 3, formVersionNo: 3, formValues: { ocr: true, language: 'English' } }),
       ['Task.View', 'Task.Edit'],
-      { forms: { getFormVersionSchema: vi.fn().mockReturnValue(of(schema)) } },
+      { forms: { getFormVersionSchema: vi.fn().mockReturnValue(of(fieldsOf(8))) } },
     );
     await click(fixture, q(el, '[data-edit-details]'));
     const body = document.body;
@@ -295,7 +307,7 @@ describe('Details tab', () => {
     expect(q(body, '[data-section="assignment"]')).not.toBeNull();
     const toggle = q(body, '[data-request-toggle]')!;
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(toggle.textContent).toContain('2 fields');
+    expect(toggle.textContent).toContain('8 fields');
     // Collapsed, not removed: the form still holds its fields so it validates and saves.
     expect(q(body, '[data-request-body]')!.hasAttribute('hidden')).toBe(true);
     expect(
@@ -315,7 +327,7 @@ describe('Details tab', () => {
       aTask({ formVersionId: 3 }),
       ['Task.View', 'Task.Edit'],
       {
-        forms: { getFormVersionSchema: vi.fn().mockReturnValue(of(schema)) },
+        forms: { getFormVersionSchema: vi.fn().mockReturnValue(of(fieldsOf(8))) },
       },
     );
     await click(fixture, q(el, '[data-edit-details]'));
@@ -324,6 +336,16 @@ describe('Details tab', () => {
     await new Promise((r) => setTimeout(r, 30));
     expect(q(document.body, '[data-request-toggle]')!.getAttribute('aria-expanded')).toBe('false');
     expect(document.activeElement?.id).toBe('td-title');
+  });
+
+  it('opens Request details in the dialog for 6 fields or fewer and honours the remembered choice', async () => {
+    const { fixture, el } = await mountTaskPage(
+      aTask({ formVersionId: 3 }),
+      ['Task.View', 'Task.Edit'],
+      { forms: { getFormVersionSchema: vi.fn().mockReturnValue(of(fieldsOf(6))) } },
+    );
+    await click(fixture, q(el, '[data-edit-details]'));
+    expect(q(document.body, '[data-request-toggle]')!.getAttribute('aria-expanded')).toBe('true');
   });
 
   it('saves with the rowVersion and leaves edit mode', async () => {
@@ -481,5 +503,62 @@ describe('Details tab', () => {
     await type(fixture, document.body, '#td-due-date', '2020-01-02');
     expect(q(document.body, '[data-past-due]')!.textContent).toContain('already passed');
     expect((q(document.body, '[data-save]') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  describe('Request details section (#313)', () => {
+    const mount = (n: number, taskTypeId = 7) =>
+      mountTaskPage(
+        aTask({
+          formVersionId: 3,
+          formVersionNo: 1,
+          taskType: { taskTypeId, name: 'Search and Culling', iconKey: 'x' },
+          formValues: { f1: 'a' },
+        }),
+        ['Task.View', 'Task.Edit'],
+        { forms: { getFormVersionSchema: vi.fn().mockReturnValue(of(fieldsOf(n))) } },
+      );
+    const toggle = (el: HTMLElement) => q(el, '[data-request-form] [data-request-toggle]')!;
+
+    it('is closed for 14 fields and open for 5, with the type, the form and the count in its heading', async () => {
+      const long = await mount(14);
+      expect(toggle(long.el).getAttribute('aria-expanded')).toBe('false');
+      expect(toggle(long.el).textContent).toContain('Request details (Search and Culling, form 1)');
+      expect(toggle(long.el).textContent).toContain('14 fields');
+      expect(q(long.el, '[data-request-form] [data-request-body]')!.hasAttribute('hidden')).toBe(
+        true,
+      );
+      TestBed.resetTestingModule();
+      const short = await mount(5);
+      expect(toggle(short.el).getAttribute('aria-expanded')).toBe('true');
+      expect(toggle(short.el).textContent).toContain('5 fields');
+    });
+
+    it('opens with a click, names its body with aria-controls and remembers the choice per task type and person', async () => {
+      const { fixture, el } = await mount(14);
+      const t = toggle(el);
+      expect(el.querySelector('#' + t.getAttribute('aria-controls'))).not.toBeNull();
+      await click(fixture, t);
+      expect(t.getAttribute('aria-expanded')).toBe('true');
+      const keys = Object.keys(localStorage).filter((k) => k.startsWith('mf.task-detail.request'));
+      expect(keys).toHaveLength(1);
+      expect(keys[0]).toMatch(/\.7$/);
+      expect(localStorage.getItem(keys[0])).toBe('1');
+
+      TestBed.resetTestingModule();
+      const again = await mount(14); // same type: stays open
+      expect(toggle(again.el).getAttribute('aria-expanded')).toBe('true');
+      TestBed.resetTestingModule();
+      const other = await mount(14, 8); // another type: default (closed)
+      expect(toggle(other.el).getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('a short form the person closed stays closed for that type', async () => {
+      const first = await mount(5);
+      await click(first.fixture, toggle(first.el));
+      expect(toggle(first.el).getAttribute('aria-expanded')).toBe('false');
+      TestBed.resetTestingModule();
+      const again = await mount(5);
+      expect(toggle(again.el).getAttribute('aria-expanded')).toBe('false');
+    });
   });
 });

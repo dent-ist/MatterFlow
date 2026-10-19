@@ -101,6 +101,9 @@ test.describe('Task detail: single page layout', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     const aside = page.getByRole('complementary', { name: 'Details' });
+    // A long description is cut at about 12 lines (T6, #314): the panel is taller than the window once it is opened.
+    const more = page.locator('[data-description-more]');
+    if ((await more.count()) > 0) await more.click();
     const scrolls = await aside.evaluate((el) => el.scrollHeight > el.clientHeight);
     expect(scrolls).toBe(true);
     expect(await aside.evaluate((el) => getComputedStyle(el).overflowY)).toBe('auto');

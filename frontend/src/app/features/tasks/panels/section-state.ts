@@ -11,6 +11,19 @@ export const sectionOpenKey = (section: PanelSection, userId: number | null | un
 /** Where a person's choice for the Details disclosure below 1100 px is remembered (closed until opened). */
 export const detailsOpenKey = (userId: number | null | undefined): string =>
   `mf.task-detail.details.open.${who(userId)}`;
+/** A request form with this many fields or fewer starts open; a longer one starts closed (#313). */
+export const REQUEST_OPEN_MAX_FIELDS = 6;
+/** Where a person's open / closed choice for the Request details of one task type is remembered. */
+export const requestOpenKey = (
+  userId: number | null | undefined,
+  taskTypeId: number | null | undefined,
+): string => `mf.task-detail.request.open.${who(userId)}.${taskTypeId ?? 'none'}`;
+/** Request details open or closed: the person's remembered choice for the task type, else open only for a short form. */
+export const requestInitiallyOpen = (
+  userId: number | null | undefined,
+  taskTypeId: number | null | undefined,
+  fieldCount: number,
+): boolean => readOpen(requestOpenKey(userId, taskTypeId)) ?? fieldCount <= REQUEST_OPEN_MAX_FIELDS;
 /** When the person last saw the Comments of one Task (epoch ms). */
 export const commentsSeenKey = (userId: number | null | undefined, taskId: number): string =>
   `mf.task-detail.comments.seen.${who(userId)}.${taskId}`;

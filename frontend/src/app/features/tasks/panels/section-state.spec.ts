@@ -6,6 +6,8 @@ import {
   latestOf,
   readOpen,
   readSeen,
+  requestInitiallyOpen,
+  requestOpenKey,
   saveOpen,
   saveSeen,
   shortAgo,
@@ -97,5 +99,22 @@ describe('section-state', () => {
     expect(assetsPreview(links.slice(0, 1))).toBe('Workspace Name');
     expect(assetsPreview(links.slice(0, 2))).toBe('Workspace Name, Review set');
     expect(assetsPreview(links)).toBe('Workspace Name, Review set +1 more');
+  });
+});
+
+describe('request details state (#313)', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('starts open for 6 fields or fewer and closed for more, unless the person chose for this task type', () => {
+    expect(requestInitiallyOpen(1, 7, 5)).toBe(true);
+    expect(requestInitiallyOpen(1, 7, 6)).toBe(true);
+    expect(requestInitiallyOpen(1, 7, 7)).toBe(false);
+    expect(requestInitiallyOpen(1, 7, 14)).toBe(false);
+    saveOpen(requestOpenKey(1, 7), true);
+    expect(requestInitiallyOpen(1, 7, 14)).toBe(true);
+    expect(requestInitiallyOpen(1, 8, 14)).toBe(false); // another type
+    expect(requestInitiallyOpen(2, 7, 14)).toBe(false); // another person
+    saveOpen(requestOpenKey(1, 7), false);
+    expect(requestInitiallyOpen(1, 7, 3)).toBe(false);
   });
 });

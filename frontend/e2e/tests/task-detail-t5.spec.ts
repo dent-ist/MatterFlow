@@ -458,6 +458,8 @@ test.describe('Task T5: the Details panel without a nested scroll trap (#309)', 
     await new TaskDetailPage(page).open(task.taskId);
     const aside = page.locator('[data-detail-panel]');
     await expect(aside).toBeVisible();
+    // T6 (#314) cuts a long description at about 12 lines; the panel is long again once the person has opened it.
+    await page.locator('[data-description-more]').click();
     const m = await aside.evaluate((el) => ({
       over: getComputedStyle(el).overscrollBehaviorY,
       overflow: getComputedStyle(el).overflowY,

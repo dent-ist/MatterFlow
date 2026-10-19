@@ -155,6 +155,19 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
               </div>
             </div>
 
+            @if (t.allowedActions.canEdit) {
+              <button
+                mfAsideAction
+                type="button"
+                class="mf-btn mf-btn--icon"
+                data-edit-details
+                aria-label="Edit details"
+                title="Edit details"
+                (click)="editDetails()"
+              >
+                <i class="pi pi-pencil" aria-hidden="true"></i>
+              </button>
+            }
             <div mfAside data-section="details">
               <mf-task-details-tab />
             </div>
@@ -389,6 +402,12 @@ export class TaskDetailPage implements HasUnsavedChanges {
 
   protected jump(section: string): void {
     if (isSection(section)) this.store.showSection(section);
+  }
+
+  /** The pencil on the Details heading: the same Edit dialog as the header's Edit; focus comes back to the pencil. */
+  protected editDetails(): void {
+    this.store.editOrigin.set('panel');
+    this.store.editing.set(true);
   }
 
   protected rememberDetails(open: boolean | null): void {

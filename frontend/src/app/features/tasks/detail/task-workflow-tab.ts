@@ -2,8 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { TaskStep } from './task-step';
 import { TaskDetailStore } from './task-detail.store';
 
+/** The Show All / Unresolved filter appears from this many steps. */
+export const FILTER_MIN_STEPS = 6;
+
 /**
- * Workflow section (UX S10): the stepper for ordered and unordered workflows and the progress summary. Why the steps are read-only on an On Hold,
+ * Workflow section (UX S10): the stepper for ordered and unordered workflows. Progress is in the facts strip and the section nav. Why the steps are read-only on an On Hold,
  * Completed or Cancelled task is said once, by the status note under the header (#301). The Complete task action is in the page header (#298).
  */
 @Component({
@@ -14,54 +17,39 @@ import { TaskDetailStore } from './task-detail.store';
   template: `
     @if (wf(); as w) {
       <section aria-labelledby="wf-h" data-workflow-tab>
-        <div class="wf__top">
-          <div class="wf__summary">
-            <h2 id="wf-h" class="wf__title" tabindex="-1" data-section-heading>
-              Workflow
-              <span class="wf__mode" data-mode>
-                {{
-                  w.isOrdered
-                    ? 'Ordered: complete or skip each step in order'
-                    : 'Unordered: work these in any order'
-                }}
-              </span>
-            </h2>
-            <p class="wf__progress" data-progress>
-              Resolved {{ w.progress.resolved }} of {{ w.progress.total }}
-              <progress
-                [max]="w.progress.total"
-                [value]="w.progress.resolved"
-                [attr.aria-label]="
-                  'Resolved ' + w.progress.resolved + ' of ' + w.progress.total + ' steps'
-                "
-              ></progress>
-            </p>
-          </div>
+        <div class="wf__head">
+          <h2 id="wf-h" class="wf__title" tabindex="-1" data-section-heading>Workflow</h2>
+          <p class="wf__mode" data-mode>
+            {{
+              w.isOrdered
+                ? 'Ordered: complete or skip each step in order'
+                : 'Unordered: work these in any order'
+            }}
+          </p>
+          @if (showFilter()) {
+            <div class="wf__filter" role="group" aria-label="Show steps" data-filter-group>
+              <span class="pg-label">Show:</span>
+              <button
+                type="button"
+                class="chip"
+                data-filter="all"
+                [attr.aria-pressed]="filter() === 'all'"
+                (click)="filter.set('all')"
+              >
+                All
+              </button>
+              <button
+                type="button"
+                class="chip"
+                data-filter="unresolved"
+                [attr.aria-pressed]="filter() === 'unresolved'"
+                (click)="filter.set('unresolved')"
+              >
+                Unresolved
+              </button>
+            </div>
+          }
         </div>
-
-        @if (!w.isOrdered) {
-          <div class="wf__filter" role="group" aria-label="Show steps">
-            <span class="pg-label">Show:</span>
-            <button
-              type="button"
-              class="chip"
-              data-filter="all"
-              [attr.aria-pressed]="filter() === 'all'"
-              (click)="filter.set('all')"
-            >
-              All
-            </button>
-            <button
-              type="button"
-              class="chip"
-              data-filter="unresolved"
-              [attr.aria-pressed]="filter() === 'unresolved'"
-              (click)="filter.set('unresolved')"
-            >
-              Unresolved
-            </button>
-          </div>
-        }
 
         <ol class="wf__steps" [attr.aria-label]="'Workflow steps'">
           @for (s of visibleSteps(); track s.stepInstanceId) {
@@ -79,8 +67,17 @@ import { TaskDetailStore } from './task-detail.store';
     }
   `,
   styles: `
+    /* One row: the heading, the one-line mode sentence and, from 6 steps, the filter at the right (#310). */
+    .wf__head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      column-gap: var(--mf-s3);
+      row-gap: var(--mf-s1);
+      margin-bottom: var(--mf-s3);
+    }
     .wf__title {
-      margin: 0 0 var(--mf-s1);
+      margin: 0;
       font-size: var(--mf-fs-h3);
       scroll-margin-top: calc(var(--mf-header-h, 3.75rem) + var(--mf-s4));
     }
@@ -92,22 +89,17 @@ import { TaskDetailStore } from './task-detail.store';
       outline-offset: 2px;
     }
     .wf__mode {
-      margin-left: var(--mf-s2);
+      flex: 1 1 14rem;
+      min-width: 0;
+      margin: 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
-      font-weight: 400;
-    }
-    .wf__progress {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s3);
-      margin: 0 0 var(--mf-s3);
     }
     .wf__filter {
       display: flex;
       align-items: center;
       gap: var(--mf-s2);
-      margin-bottom: var(--mf-s3);
+      margin-left: auto;
     }
     .chip {
       min-height: var(--mf-target-min);
@@ -130,21 +122,6 @@ import { TaskDetailStore } from './task-detail.store';
       padding: 0;
       list-style: none;
     }
-    .wf__top {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: var(--mf-s3);
-      margin-bottom: var(--mf-s3);
-    }
-    .wf__summary {
-      flex: 1 1 18rem;
-      min-width: 0;
-    }
-    .wf__summary .wf__progress {
-      margin-bottom: 0;
-    }
   `,
 })
 export class TaskWorkflowTab {
@@ -153,10 +130,15 @@ export class TaskWorkflowTab {
 
   protected readonly wf = computed(() => this.store.task()?.workflow ?? null);
 
+  /** The Show filter is noise for a short workflow: it appears from 6 steps (#310). */
+  protected readonly showFilter = computed(
+    () => (this.wf()?.steps.length ?? 0) >= FILTER_MIN_STEPS,
+  );
+
   protected readonly visibleSteps = computed(() => {
     const w = this.wf();
     if (!w) return [];
-    return this.filter() === 'unresolved' && !w.isOrdered
+    return this.filter() === 'unresolved' && this.showFilter()
       ? w.steps.filter((s) => s.status !== 'COMPLETED' && s.status !== 'SKIPPED')
       : w.steps;
   });

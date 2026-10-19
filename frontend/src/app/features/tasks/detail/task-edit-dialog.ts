@@ -54,6 +54,8 @@ import {
   htmlToText,
   isBlankHtml,
 } from '../panels/rich-text';
+import { requestInitiallyOpen, requestOpenKey, saveOpen } from '../panels/section-state';
+import { RequestSection, requestHeadingText } from './request-section';
 import { TaskDetailStore } from './task-detail.store';
 import { valuesPatch } from './task-step';
 import { MatterRef } from '../../../shared/ui/matter-ref';
@@ -95,6 +97,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
   selector: 'mf-task-edit-dialog',
   imports: [
     DynamicForm,
+    RequestSection,
     DateInput,
     Dialog,
     DialogFocus,
@@ -293,33 +296,12 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
 
           @if (definition(); as def) {
             <section class="dt__sec" data-section="request">
-              <h3 class="dt__sech">
-                <button
-                  type="button"
-                  class="dt__toggle"
-                  aria-controls="td-request-body"
-                  data-request-toggle
-                  [attr.aria-expanded]="requestOpen()"
-                  (click)="requestOpen.set(!requestOpen())"
-                >
-                  <i
-                    class="pi"
-                    [class.pi-chevron-down]="requestOpen()"
-                    [class.pi-chevron-right]="!requestOpen()"
-                    aria-hidden="true"
-                  ></i>
-                  <span class="dt__toggle-text"
-                    >Request details (form version {{ t.formVersionNo }})</span
-                  >
-                  <span class="dt__toggle-count">{{ fieldCount(def) }}</span>
-                </button>
-              </h3>
               <!-- Hidden, not removed: the form keeps its values and still validates while it is collapsed. -->
-              <div
-                id="td-request-body"
-                class="dt__body"
-                data-request-body
-                [hidden]="!requestOpen()"
+              <mf-request-section
+                [heading]="requestHeading()"
+                [count]="def.fields.length"
+                [open]="requestOpen()"
+                (openChange)="rememberRequestOpen($event)"
               >
                 <mf-dynamic-form
                   [definition]="def"
@@ -327,7 +309,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
                   [serverErrors]="formErrors()"
                   (valuesChange)="onFormValues()"
                 />
-              </div>
+              </mf-request-section>
             </section>
           }
 
@@ -459,42 +441,6 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
     .dt__rich {
       min-width: 0;
     }
-    .dt__toggle {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      width: 100%;
-      min-height: 2.75rem;
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface-alt);
-      color: var(--mf-text);
-      font: inherit;
-      font-weight: 600;
-      text-align: left;
-      cursor: pointer;
-    }
-    .dt__toggle:hover {
-      background: var(--mf-selected-bg);
-    }
-    .dt__toggle-text {
-      flex: 1 1 auto;
-      min-width: 0;
-      overflow-wrap: anywhere;
-    }
-    .dt__toggle-count {
-      flex: none;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-      font-weight: 400;
-    }
-    .dt__body {
-      min-width: 0;
-    }
-    .dt__body[hidden] {
-      display: none;
-    }
     .dt__due {
       display: grid;
       gap: var(--mf-s2);
@@ -560,8 +506,12 @@ export class TaskEditDialog {
   protected readonly dueDateBad = signal(false);
   protected readonly formErrors = signal<ServerFieldError[]>([]);
   protected readonly summary = signal<string[]>([]);
-  /** The Request details section is collapsed when the dialog opens and opens itself on an error. */
+  /**
+   * The Request details section opens as the page's does (open for 6 fields or fewer, else closed, unless the person chose for this
+   * task type) and opens itself on an error.
+   */
   protected readonly requestOpen = signal(false);
+  protected readonly requestHeading = computed(() => requestHeadingText(this.store.task()));
 
   protected readonly projects = signal<ProjectResponse[]>([]);
   protected readonly pods = signal<PodSummary[]>([]);
@@ -674,9 +624,12 @@ export class TaskEditDialog {
     };
   }
 
-  protected fieldCount(def: FormDefinition): string {
-    const n = def.fields.length;
-    return `${n} ${n === 1 ? 'field' : 'fields'}`;
+  protected rememberRequestOpen(open: boolean): void {
+    this.requestOpen.set(open);
+    saveOpen(
+      requestOpenKey(this.auth.profile()?.userId, this.store.task()?.taskType?.taskTypeId),
+      open,
+    );
   }
 
   private beginEdit(): void {
@@ -711,7 +664,13 @@ export class TaskEditDialog {
     this.fieldErrors.set({});
     this.formErrors.set([]);
     this.summary.set([]);
-    this.requestOpen.set(false);
+    this.requestOpen.set(
+      requestInitiallyOpen(
+        this.auth.profile()?.userId,
+        t.taskType?.taskTypeId,
+        this.definition()?.fields.length ?? 0,
+      ),
+    );
     this.store.dirty.set(false);
     void this.loadOptions(t.matter.matterId);
   }

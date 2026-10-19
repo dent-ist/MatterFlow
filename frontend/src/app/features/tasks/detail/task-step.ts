@@ -82,17 +82,22 @@ export function valuesPatch(
               aria-hidden="true"
             ></i>
             <i class="pi" [class]="locked() ? 'pi-lock' : status().icon" aria-hidden="true"></i>
-            <span class="step__no">{{ s.sequenceNo }}.</span>
-            <span class="step__title">{{ s.title }}</span>
-            @if (s.isCurrent && ordered()) {
-              <mf-badge tone="info" data-current>Current step</mf-badge>
-            }
-            @if (open()) {
-              <mf-badge tone="neutral">{{ s.isSkippable ? 'Skippable' : 'Required' }}</mf-badge>
-            }
-            @if (s.isReopenedPrerequisite) {
-              <mf-badge tone="warning" data-reopened>Reopened</mf-badge>
-            }
+            <span class="step__label">
+              <!-- The number and the title are one item, so a long title wraps beside its number, never under it (BUG-7). -->
+              <span class="step__name"
+                ><span class="step__no">{{ s.sequenceNo }}.</span>{{ ' '
+                }}<span class="step__title">{{ s.title }}</span></span
+              >
+              @if (s.isCurrent && ordered()) {
+                <mf-badge tone="info" data-current>Current step</mf-badge>
+              }
+              @if (open()) {
+                <mf-badge tone="neutral">{{ s.isSkippable ? 'Skippable' : 'Required' }}</mf-badge>
+              }
+              @if (s.isReopenedPrerequisite) {
+                <mf-badge tone="warning" data-reopened>Reopened</mf-badge>
+              }
+            </span>
           </button>
         </h3>
         <div class="step__aside">
@@ -350,7 +355,6 @@ export function valuesPatch(
     }
     .step__toggle {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
       gap: var(--mf-s2);
       width: 100%;
@@ -367,9 +371,25 @@ export function valuesPatch(
       outline: 2px solid var(--mf-focus);
       outline-offset: 2px;
     }
+    .step__toggle > .pi {
+      flex: none;
+    }
     .step__chevron {
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
+    }
+    /* Name and tags: the name takes the room it needs and wraps its text; the tags follow it, or drop to the next line. */
+    .step__label {
+      display: flex;
+      flex: 1 1 0;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s1) var(--mf-s2);
+      min-width: 0;
+    }
+    .step__name {
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
     .step__title {
       font-weight: 600;

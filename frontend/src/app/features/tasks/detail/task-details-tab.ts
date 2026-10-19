@@ -4,6 +4,7 @@ import {
   computed,
   effect,
   inject,
+  linkedSignal,
   signal,
   untracked,
 } from '@angular/core';
@@ -13,7 +14,11 @@ import { FormsClient } from '../../../api/generated/api-client';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
+import { AuthStore } from '../../../core/auth/auth.store';
+import { ClampedRich } from '../panels/clamped-rich';
 import { decorateLinks, descriptionToHtml } from '../panels/rich-text';
+import { requestInitiallyOpen, requestOpenKey, saveOpen } from '../panels/section-state';
+import { RequestSection, requestHeadingText } from './request-section';
 import { TaskDetailStore } from './task-detail.store';
 import { TaskEditDialog } from './task-edit-dialog';
 
@@ -24,37 +29,17 @@ import { TaskEditDialog } from './task-edit-dialog';
  */
 @Component({
   selector: 'mf-task-details-tab',
-  imports: [DynamicForm, MfDatePipe, TaskEditDialog],
+  imports: [ClampedRich, DynamicForm, MfDatePipe, RequestSection, TaskEditDialog],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', '../../../shared/ui/form-field.scss'],
   template: `
     @if (store.task(); as t) {
       <div data-details-tab>
-        @if (t.allowedActions.canEdit) {
-          <div class="pg-panel-actions dt__corner">
-            <button
-              type="button"
-              class="mf-btn mf-btn--icon"
-              data-edit-details
-              aria-label="Edit details"
-              title="Edit details"
-              (click)="openEdit()"
-            >
-              <i class="pi pi-pencil" aria-hidden="true"></i>
-            </button>
-          </div>
-        }
-
         @if (t.description) {
           <div class="dt__description">
             <h3 class="dt__sub dt__sub--first">Description</h3>
-            <div
-              class="mf-rich"
-              data-description
-              [attr.data-format]="t.descriptionFormat"
-              [innerHTML]="descriptionHtml()"
-            ></div>
+            <mf-clamped-rich [html]="descriptionHtml()" [format]="t.descriptionFormat" />
           </div>
         }
 
@@ -90,12 +75,20 @@ import { TaskEditDialog } from './task-edit-dialog';
         </section>
 
         @if (!editing() && schema(); as definition) {
-          <section class="dt__request" aria-labelledby="td-request-h" data-request-form>
-            <h3 id="td-request-h" class="dt__sub">
-              Request details (form version {{ t.formVersionNo }})
-            </h3>
-            <mf-dynamic-form [definition]="definition" [values]="formValues()" [readOnly]="true" />
-          </section>
+          <div class="dt__request" data-request-form>
+            <mf-request-section
+              [heading]="requestHeading()"
+              [count]="definition.fields.length"
+              [open]="requestOpen()"
+              (openChange)="rememberRequestOpen($event)"
+            >
+              <mf-dynamic-form
+                [definition]="definition"
+                [values]="formValues()"
+                [readOnly]="true"
+              />
+            </mf-request-section>
+          </div>
         }
 
         <mf-task-edit-dialog [definition]="schema()" />
@@ -110,14 +103,8 @@ import { TaskEditDialog } from './task-edit-dialog';
     .dt__sub--first {
       margin-top: 0;
     }
-    /* Edit sits in the top right corner of the panel as an icon. */
-    .dt__corner {
-      justify-content: flex-end;
-      margin-bottom: var(--mf-s1);
-    }
-    /* Task information: label / value rows, slightly indented under its heading (as the Request details block below). */
+    /* Task information: label / value rows. Every sub-heading and block starts at the panel's left edge. */
     .dt__facts {
-      margin-left: var(--mf-s3);
       gap: var(--mf-s1) var(--mf-s4);
       font-size: var(--mf-fs-sm);
     }
@@ -139,10 +126,7 @@ import { TaskEditDialog } from './task-edit-dialog';
       margin-left: var(--mf-s4);
     }
     .dt__request {
-      margin-left: var(--mf-s3);
-    }
-    .dt__request > .dt__sub {
-      margin-left: calc(var(--mf-s3) * -1);
+      margin-top: var(--mf-s4);
     }
     .pre {
       white-space: pre-wrap;
@@ -156,9 +140,30 @@ export class TaskDetailsTab {
 
   protected readonly schema = signal<FormDefinition | null>(null);
 
+  private readonly auth = inject(AuthStore);
+
   protected readonly formValues = computed(
     () => (this.store.task()?.formValues ?? {}) as Record<string, unknown>,
   );
+
+  protected readonly requestHeading = computed(() => requestHeadingText(this.store.task()));
+
+  /** Open for a short form (6 fields or fewer), closed for a longer one, unless the person chose for this task type (#313). */
+  protected readonly requestOpen = linkedSignal(() =>
+    requestInitiallyOpen(
+      this.auth.profile()?.userId,
+      this.store.task()?.taskType?.taskTypeId,
+      this.schema()?.fields.length ?? 0,
+    ),
+  );
+
+  protected rememberRequestOpen(open: boolean): void {
+    this.requestOpen.set(open);
+    saveOpen(
+      requestOpenKey(this.auth.profile()?.userId, this.store.task()?.taskType?.taskTypeId),
+      open,
+    );
+  }
 
   /** The description for reading: saved text is escaped, saved rich text is already sanitized; links show their real host. */
   protected readonly descriptionHtml = computed(() => {
@@ -188,10 +193,5 @@ export class TaskDetailsTab {
     } catch {
       this.schema.set(null);
     }
-  }
-
-  protected openEdit(): void {
-    this.store.editOrigin.set('panel');
-    this.store.editing.set(true);
   }
 }

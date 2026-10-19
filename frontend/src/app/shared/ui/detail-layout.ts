@@ -87,7 +87,8 @@ function savePanelOpen(open: boolean): void {
  *   LAST instead (main, `mfBelow`, then Details), closed at every width unless the person opened it (`narrowOpen`, remembered by the
  *   page), and the button carries a one-line `summary` (T5, #307).
  *
- * Slots: `mfMain` (the main area), `mfAside` (the Details content; the panel adds the "Details" heading, which names the `aside`) and the
+ * Slots: `mfMain` (the main area), `mfAside` (the Details content; the panel adds the "Details" heading, which names the `aside`),
+ * `mfAsideAction` (an action on the heading's row, at the right, shown while the panel is open: the Task's Edit pencil, #312) and the
  * optional `mfTop` and `mfBelow` (only with `split`: `mfTop` above the main area, for example the Task's section nav, which sticks while the
  * whole column scrolls; `mfBelow` under it, inside the same column, for example the Task's Comments and Assets).
  *
@@ -197,6 +198,9 @@ function savePanelOpen(open: boolean): void {
               <span class="dl__t">{{ heading() }}</span>
             }
           </h2>
+          @if (isOpen()) {
+            <ng-content select="[mfAsideAction]" />
+          }
           @if (splitting() && pct() !== splitDefault) {
             <button type="button" class="dl__reset" data-split-reset (click)="resetSplit()">
               Reset layout

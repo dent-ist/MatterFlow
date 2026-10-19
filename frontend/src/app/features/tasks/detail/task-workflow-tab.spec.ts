@@ -87,7 +87,9 @@ describe('Workflow tab: ordered stepper', () => {
     );
     expect(items[4].querySelector('[data-locked]')).not.toBeNull();
     expect(q(el, '[data-mode]')!.textContent).toContain('Ordered');
-    expect(q(el, '[data-workflow-tab] [data-progress]')!.textContent).toContain('Resolved 2 of 5');
+    // Progress lives in the facts strip and the section nav, not in the Workflow head (#310).
+    expect(q(el, '[data-workflow-tab] [data-progress]')).toBeNull();
+    expect(q(el, '[data-workflow-tab] progress')).toBeNull();
   });
 
   it('keeps the status and the resolved date in a fixed right-hand column, outside the toggle button', async () => {
@@ -110,7 +112,7 @@ describe('Workflow tab: ordered stepper', () => {
     const { el } = await mountWorkflow(aTask({ workflow: { steps: orderedSteps() } as never }));
     expect(q(el, '[data-complete-task]')).toBeNull();
     expect(q(el, '[data-complete-task-button]')).toBeNull();
-    expect(q(el, '.wf__top')!.textContent).not.toContain('Complete task');
+    expect(q(el, '.wf__head')!.textContent).not.toContain('Complete task');
   });
 
   it('expands only the current step; the others are one-line summaries the user can open', async () => {
@@ -408,7 +410,7 @@ describe('Workflow tab: unordered', () => {
     (b.querySelector('.step__toggle') as HTMLElement).click();
   });
 
-  it('opens a pending step and offers Start / Complete, and filters to unresolved steps', async () => {
+  it('opens a pending step and offers Start / Complete, (a 3-step workflow has no filter)', async () => {
     const { fixture, el, fakes } = await mountWorkflow(unordered(), {
       workflow: { startTaskStep: vi.fn().mockReturnValue(of(stepResponse(unordered()))) },
     });
@@ -417,10 +419,63 @@ describe('Workflow tab: unordered', () => {
     await click(fixture, q(el, '[data-step-id="202"] [data-start]'));
     expect(fakes.workflow['startTaskStep']).toHaveBeenCalledWith(1042, 202, { rowVersion: 'WF1' });
 
+    // A 3-step workflow has no filter (#310).
+    expect(q(el, '[data-filter-group]')).toBeNull();
+  });
+
+  it('shows the Show filter from 6 steps and filters to the unresolved ones', async () => {
+    const six = Array.from({ length: 6 }, (_, i) =>
+      aStep({
+        stepInstanceId: 300 + i,
+        sequenceNo: i + 1,
+        title: `Step ${i + 1}`,
+        status: i < 2 ? 'COMPLETED' : 'PENDING',
+        hasBeenResolved: i < 2,
+      }),
+    );
+    const { fixture, el } = await mountWorkflow(
+      aTask({ workflow: { isOrdered: false, steps: six } as never }),
+    );
+    expect(q(el, '[data-filter-group]')).not.toBeNull();
+    const rows = () => el.querySelectorAll('ol.wf__steps > li').length;
+    expect(rows()).toBe(6);
     await click(fixture, q(el, '[data-filter=unresolved]'));
-    expect(Array.from(el.querySelectorAll('ol.wf__steps > li'))).toHaveLength(2);
+    expect(rows()).toBe(4);
+    expect(q(el, '[data-filter=unresolved]')!.getAttribute('aria-pressed')).toBe('true');
     await click(fixture, q(el, '[data-filter=all]'));
-    expect(Array.from(el.querySelectorAll('ol.wf__steps > li'))).toHaveLength(3);
+    expect(rows()).toBe(6);
+  });
+
+  it('hides the filter for 5 steps and shows it for 6 ordered steps too', async () => {
+    const steps = (n: number) =>
+      Array.from({ length: n }, (_, i) => aStep({ stepInstanceId: 400 + i, sequenceNo: i + 1 }));
+    const five = await mountWorkflow(aTask({ workflow: { steps: steps(5) } as never }));
+    expect(q(five.el, '[data-filter-group]')).toBeNull();
+    TestBed.resetTestingModule();
+    const six = await mountWorkflow(aTask({ workflow: { steps: steps(6) } as never }));
+    expect(q(six.el, '[data-filter-group]')).not.toBeNull();
+  });
+
+  it('keeps a step number and its title in one item, so a long title wraps beside the number (BUG-7)', async () => {
+    const long = 'A very long step title '.repeat(12).trim();
+    const { el } = await mountWorkflow(
+      aTask({
+        workflow: {
+          steps: [
+            aStep({
+              stepInstanceId: 501,
+              sequenceNo: 2,
+              title: long,
+              status: 'COMPLETED',
+              hasBeenResolved: true,
+            }),
+          ],
+        } as never,
+      }),
+    );
+    const name = q(el, '[data-step-id="501"] .step__name')!;
+    expect(name.querySelector('.step__no')!.textContent).toBe('2.');
+    expect(name.querySelector('.step__title')!.textContent).toBe(long);
   });
 });
 
