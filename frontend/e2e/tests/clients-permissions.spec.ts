@@ -296,9 +296,10 @@ test.describe('#285: permission matrix, no dead links', () => {
         await settle(page);
         expect(seen.failed, `requests that failed behind ${target}`).toEqual([]);
         await expect(
-          // "You don't have permission to view tasks." on a Tasks tab is the designed explanation, not an error.
+          // "You don't have permission to view tasks." on a Tasks tab and the one sentence on a Task page's Assets tab without Asset.View
+          // (#347) are the designed explanations, not errors.
           page.locator(
-            '#mf-main [role=alert], .p-toast-message, [data-no-access]:not([data-no-access=tasks]), [data-forbidden]',
+            '#mf-main [role=alert], .p-toast-message, [data-no-access]:not([data-no-access=tasks]):not(.tl__note), [data-forbidden]',
           ),
           `error or no-access notice behind ${target}`,
         ).toHaveCount(0);
