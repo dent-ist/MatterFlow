@@ -18,7 +18,7 @@ test.describe('Task detail: collapsible Comments and Assets', () => {
     ).toBeLessThanOrEqual(0);
   };
 
-  test('both sections start collapsed side by side, with counts and previews in the bars', async ({
+  test('both sections start collapsed and stacked (Assets, Comments), with counts and previews in the bars', async ({
     page,
     seed,
     admin,
@@ -45,18 +45,19 @@ test.describe('Task detail: collapsible Comments and Assets', () => {
     await expect(detail.section('Assets').locator('[data-preview]')).toHaveText(/ \+6 more$/);
     await expect(detail.commentItems).toHaveCount(0);
 
-    // Two slim bars level with each other under the Workflow.
+    // Two slim bars stacked under the Workflow, Assets first, each as wide as the Workflow.
     const workflow = await box(page, '[data-section="workflow"]');
     const comments = await box(page, '[data-section="comments"]');
     const assets = await box(page, '[data-section="assets"]');
-    expect(comments.y).toBeGreaterThan(workflow.y + workflow.height - 1);
-    expect(assets.x).toBeGreaterThan(comments.x + comments.width - 1);
-    expect(Math.abs(assets.y - comments.y)).toBeLessThanOrEqual(1);
+    expect(assets.y).toBeGreaterThan(workflow.y + workflow.height - 1);
+    expect(comments.y).toBeGreaterThan(assets.y + assets.height - 1);
+    expect(Math.abs(assets.width - workflow.width)).toBeLessThanOrEqual(2);
+    expect(Math.abs(comments.width - workflow.width)).toBeLessThanOrEqual(2);
     expect(comments.height).toBeLessThan(100);
     await noHorizontalScroll(page);
   });
 
-  test('a click anywhere on the bar toggles; Enter and Space work; sections open independently and the open one takes the whole row', async ({
+  test('a click anywhere on the bar toggles; Enter and Space work; sections open independently and stay stacked, full width', async ({
     page,
     seed,
     admin,
@@ -70,20 +71,21 @@ test.describe('Task detail: collapsible Comments and Assets', () => {
     await detail.section('Comments').locator('[data-preview]').click();
     await expect(detail.toggle('Comments')).toHaveAttribute('aria-expanded', 'true');
     await expect(detail.commentItems.first()).toBeVisible();
-    // Only Comments is open: it spans the whole left column, the Assets bar is stacked under it.
+    // Only Comments is open: it spans the whole left column, under the Assets bar.
     const workflow = await box(page, '[data-section="workflow"]');
     const comments = await box(page, '[data-section="comments"]');
     const assets = await box(page, '[data-section="assets"]');
     expect(Math.abs(comments.width - workflow.width)).toBeLessThanOrEqual(2);
-    expect(assets.y).toBeGreaterThan(comments.y + comments.height - 1);
+    expect(comments.y).toBeGreaterThan(assets.y + assets.height - 1);
 
     await detail.toggle('Assets').focus();
     await page.keyboard.press('Enter');
     await expect(detail.toggle('Assets')).toHaveAttribute('aria-expanded', 'true');
-    // Both open: side by side again.
+    // Both open: still stacked, each the full width.
     const both = await box(page, '[data-section="assets"]');
     const left = await box(page, '[data-section="comments"]');
-    expect(both.x).toBeGreaterThan(left.x + left.width - 1);
+    expect(left.y).toBeGreaterThan(both.y + both.height - 1);
+    expect(Math.abs(both.width - workflow.width)).toBeLessThanOrEqual(2);
 
     await detail.toggle('Assets').focus();
     await page.keyboard.press('Space');
@@ -256,7 +258,7 @@ test.describe('Task detail: collapsible Comments and Assets', () => {
     await expect(comments.getByPlaceholder('Write a comment...')).toBeVisible();
   });
 
-  test('375 px: collapsed bars stack under the Workflow, Jump to opens a section, no sideways scroll', async ({
+  test('375 px: collapsed bars stack under the Workflow, the section nav opens a section, no sideways scroll', async ({
     page,
     seed,
     admin,
@@ -269,10 +271,10 @@ test.describe('Task detail: collapsible Comments and Assets', () => {
     await expect(detail.toggle('Assets')).toHaveAttribute('aria-expanded', 'false');
     const comments = await box(page, '[data-section="comments"]');
     const assets = await box(page, '[data-section="assets"]');
-    expect(assets.y).toBeGreaterThan(comments.y + comments.height - 1);
+    expect(comments.y).toBeGreaterThan(assets.y + assets.height - 1);
     await noHorizontalScroll(page);
 
-    const jump = page.getByRole('navigation', { name: 'Jump to' });
+    const jump = page.getByRole('navigation', { name: 'Sections' });
     await jump.getByRole('link', { name: 'Assets' }).click();
     await expect(detail.toggle('Assets')).toHaveAttribute('aria-expanded', 'true');
     await expect(detail.section('Assets').locator('[data-section-heading]')).toBeFocused();

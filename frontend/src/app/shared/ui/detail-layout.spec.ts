@@ -23,14 +23,24 @@ class Host {}
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DetailLayout],
   template: `
-    <mf-detail-layout [split]="true" splitKey="test.split">
+    <mf-detail-layout
+      [split]="true"
+      splitKey="test.split"
+      [summary]="summary"
+      [narrowOpen]="chosen"
+      (narrowOpenChange)="chosen = $event"
+    >
+      <nav mfTop data-top>Sections</nav>
       <p mfMain data-m>Workflow</p>
       <div mfBelow data-b>Comments and Assets</div>
       <p mfAside data-a>Field values</p>
     </mf-detail-layout>
   `,
 })
-class SplitHost {}
+class SplitHost {
+  summary = 'Requestor Dana W-M · 14 request fields';
+  chosen: boolean | null = null;
+}
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -344,18 +354,69 @@ describe('DetailLayout', () => {
       set.mockRestore();
     });
 
-    it('has no splitter below 1100 px: Details first, then the left column in one flow', async () => {
+    it('has no splitter below 1100 px: the left column (nav, Workflow, below sections) first, Details last (#307)', async () => {
       const { el, layout, handle } = await renderSplit(768);
       expect(handle()).toBeNull();
       expect(layout.style.getPropertyValue('--dl-cols')).toBe('');
       const kids = Array.from(layout.children).map((c) => (c.matches('aside') ? 'aside' : 'left'));
-      expect(kids).toEqual(['aside', 'left']);
+      expect(kids).toEqual(['left', 'aside']);
       expect(el.querySelector('[data-split-reset]')).toBeNull();
       const left = el.querySelector('[data-detail-left]')!;
-      expect(Array.from(left.children).map((c) => c.getAttribute('class'))).toEqual([
+      expect(Array.from(left.children).map((c) => c.getAttribute('class') ?? c.tagName)).toEqual([
+        'NAV',
         'dl__main',
         'dl__below',
       ]);
+    });
+
+    it.each([375, 768, 1024])(
+      'Details is a closed disclosure with the one-line summary at %s px, and opens with the keyboard and keeps focus',
+      async (width) => {
+        const { el } = await renderSplit(width);
+        const toggle = el.querySelector<HTMLButtonElement>('[data-detail-toggle]')!;
+        expect(toggle.getAttribute('aria-expanded')).toBe('false');
+        expect(el.querySelector('[data-detail-body]')!.hasAttribute('hidden')).toBe(true);
+        expect(el.querySelector('[data-detail-summary]')!.textContent).toBe(
+          'Requestor Dana W-M · 14 request fields',
+        );
+        toggle.focus();
+        toggle.click();
+        await settle(splitFixture);
+        expect(toggle.getAttribute('aria-expanded')).toBe('true');
+        expect(el.querySelector('[data-detail-body]')!.hasAttribute('hidden')).toBe(false);
+        expect(document.activeElement).toBe(toggle);
+        expect(splitFixture.componentInstance.chosen).toBe(true);
+      },
+    );
+
+    it('starts open below 1100 px when the page says the person opened it, and shows no summary from 1100 px', async () => {
+      splitFixture = undefined as never;
+      mockViewport(768);
+      splitFixture = TestBed.createComponent(SplitHost);
+      splitFixture.componentInstance.chosen = true;
+      await settle(splitFixture);
+      const el = splitFixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-detail-toggle]')!.getAttribute('aria-expanded')).toBe('true');
+      expect(el.querySelector('[data-detail-fade]')).not.toBeNull();
+      TestBed.resetTestingModule();
+      const wide = await renderSplit(1280);
+      expect(wide.el.querySelector('[data-detail-toggle]')).toBeNull();
+      expect(wide.el.querySelector('[data-detail-summary]')).toBeNull();
+    });
+
+    it('the wide panel hands the wheel on to the page and keeps a bottom fade for the scroll cue (#309)', async () => {
+      const { el } = await renderSplit(1280);
+      const aside = el.querySelector<HTMLElement>('[data-detail-panel]')!;
+      expect(aside.classList.contains('dl__aside--more')).toBe(false);
+      Object.defineProperty(aside, 'scrollHeight', { value: 900, configurable: true });
+      Object.defineProperty(aside, 'clientHeight', { value: 500, configurable: true });
+      aside.dispatchEvent(new Event('scroll'));
+      await settle(splitFixture);
+      expect(aside.classList.contains('dl__aside--more')).toBe(true);
+      aside.scrollTop = 400;
+      aside.dispatchEvent(new Event('scroll'));
+      await settle(splitFixture);
+      expect(aside.classList.contains('dl__aside--more')).toBe(false);
     });
 
     it('does not add a splitter to the other detail pages', async () => {

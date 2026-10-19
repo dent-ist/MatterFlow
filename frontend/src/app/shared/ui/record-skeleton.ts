@@ -95,6 +95,7 @@ const ROWS = [0, 1, 2, 3, 4] as const;
         }
       </ul>
       <mf-detail-layout [split]="true" [splitKey]="splitKey()">
+        <div mfTop class="rk__bar rk__nav"></div>
         <div mfMain>
           <div class="rk__bar rk__h2"></div>
           <ng-container *ngTemplateOutlet="rowsTpl" />
@@ -166,6 +167,20 @@ const ROWS = [0, 1, 2, 3, 4] as const;
     .rk__cell {
       width: 55%;
       height: 12px;
+    }
+    /* The section nav of the Task page (same box as mf-section-nav, so nothing moves when the page arrives). */
+    .rk__nav {
+      display: block;
+      width: 16rem;
+      max-width: 100%;
+      height: 1.75rem;
+      margin-bottom: var(--mf-s2);
+    }
+    @media (min-width: 640px) {
+      .rk__nav {
+        height: 2.25rem;
+        margin-bottom: var(--mf-s3);
+      }
     }
     .rk__h2 {
       display: block;

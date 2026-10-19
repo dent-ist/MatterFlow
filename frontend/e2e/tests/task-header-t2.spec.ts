@@ -224,8 +224,10 @@ test.describe('Task header T2: record header, 200-character title, targets (#296
     }
     console.log('T2 typical task Workflow y', JSON.stringify(tops));
     // The review measured 235 at 1366 for this task (header 223 px); the strip replaces the three-line block, so it does not get lower.
-    expect(tops[1366]).toBeLessThanOrEqual(235);
-    expect(tops[1920]).toBeLessThanOrEqual(235);
+    // The section nav of T5 (#308, one 32 px row and 8 px gap above the Workflow at every width) is not part of this header's budget.
+    const NAV = 40;
+    expect(tops[1366]).toBeLessThanOrEqual(235 + NAV);
+    expect(tops[1920]).toBeLessThanOrEqual(235 + NAV);
     await atEverySize(page, 'header-overdue', async () => {
       await detail.open(task.taskId);
     });

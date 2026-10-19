@@ -8,6 +8,9 @@ const who = (userId: number | null | undefined): string => String(userId ?? 'ano
 /** Where a person's open / closed choice for a section is remembered (`localStorage`). */
 export const sectionOpenKey = (section: PanelSection, userId: number | null | undefined): string =>
   `mf.task-detail.${section}.open.${who(userId)}`;
+/** Where a person's choice for the Details disclosure below 1100 px is remembered (closed until opened). */
+export const detailsOpenKey = (userId: number | null | undefined): string =>
+  `mf.task-detail.details.open.${who(userId)}`;
 /** When the person last saw the Comments of one Task (epoch ms). */
 export const commentsSeenKey = (userId: number | null | undefined, taskId: number): string =>
   `mf.task-detail.comments.seen.${who(userId)}.${taskId}`;

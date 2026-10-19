@@ -4,9 +4,11 @@ import {
   DestroyRef,
   ElementRef,
   computed,
+  effect,
   inject,
   input,
   linkedSignal,
+  model,
   signal,
   viewChild,
 } from '@angular/core';
@@ -81,10 +83,16 @@ function savePanelOpen(open: boolean): void {
  * - `collapsible` (Matter and Project, whose main area is a wide task grid): between 1100 and 1399 px the panel can be collapsed to a
  *   slim "Details" button so the grid gets the width. It starts collapsed there and the choice is remembered. From 1400 px it is always open.
  * - Below 1100 px: one column; the panel moves ABOVE the main area (also in the reading and tab order) and its heading becomes a
- *   disclosure button (`aria-expanded`). It starts collapsed on phones and expanded on tablets.
+ *   disclosure button (`aria-expanded`). It starts collapsed on phones and expanded on tablets. A `split` layout (the Task page) puts it
+ *   LAST instead (main, `mfBelow`, then Details), closed at every width unless the person opened it (`narrowOpen`, remembered by the
+ *   page), and the button carries a one-line `summary` (T5, #307).
  *
  * Slots: `mfMain` (the main area), `mfAside` (the Details content; the panel adds the "Details" heading, which names the `aside`) and the
- * optional `mfBelow` (only with `split`: sections under the main area inside the same column, for example the Task's Comments and Assets).
+ * optional `mfTop` and `mfBelow` (only with `split`: `mfTop` above the main area, for example the Task's section nav, which sticks while the
+ * whole column scrolls; `mfBelow` under it, inside the same column, for example the Task's Comments and Assets).
+ *
+ * A wide panel that is taller than the window scrolls inside itself, hands the wheel on to the page at its ends (no scroll trap) and shows
+ * a fade at its bottom edge while more is below (T5, #309).
  *
  * `split` (the Task page) makes the two columns resizable: the main column gets 60 % by default (35 to 70 %), a separator between the columns
  * is dragged (pointer and touch) or moved with the keyboard, the share is remembered under `splitKey` and a double click, Enter or the
@@ -109,11 +117,12 @@ function savePanelOpen(open: boolean): void {
       data-detail-layout
       [attr.data-layout]="wide() ? (mid() ? 'wide-collapsible' : 'wide') : 'narrow'"
     >
-      @if (!wide()) {
+      @if (!wide() && !split()) {
         <ng-container [ngTemplateOutlet]="panel" />
       }
       @if (split()) {
         <div class="dl__left" data-detail-left>
+          <ng-content select="[mfTop]" />
           <div class="dl__main" data-detail-main>
             <ng-container [ngTemplateOutlet]="main" />
           </div>
@@ -151,7 +160,7 @@ function savePanelOpen(open: boolean): void {
           <span class="dl__grip" aria-hidden="true"></span>
         </div>
       }
-      @if (wide()) {
+      @if (wide() || split()) {
         <ng-container [ngTemplateOutlet]="panel" />
       }
     </div>
@@ -159,7 +168,14 @@ function savePanelOpen(open: boolean): void {
     <ng-template #main><ng-content select="[mfMain]" /></ng-template>
 
     <ng-template #panel>
-      <aside class="dl__aside" [attr.aria-labelledby]="uid + '-h'" data-detail-panel>
+      <aside
+        #aside
+        class="dl__aside"
+        [class.dl__aside--more]="more()"
+        [attr.aria-labelledby]="uid + '-h'"
+        data-detail-panel
+        (scroll)="measure()"
+      >
         <div class="dl__bar">
           <h2 class="dl__h" [id]="uid + '-h'">
             @if (!wide() || mid()) {
@@ -171,7 +187,10 @@ function savePanelOpen(open: boolean): void {
                 [attr.aria-controls]="uid + '-body'"
                 (click)="toggle()"
               >
-                <span>{{ heading() }}</span>
+                <span class="dl__ht">{{ heading() }}</span>
+                @if (summary() && !wide()) {
+                  <span class="dl__sum" data-detail-summary>{{ summary() }}</span>
+                }
                 <i class="pi dl__chevron" [class]="chevron()" aria-hidden="true"></i>
               </button>
             } @else {
@@ -187,6 +206,7 @@ function savePanelOpen(open: boolean): void {
         <div class="dl__body" [id]="uid + '-body'" [hidden]="!isOpen()" data-detail-body>
           <ng-content select="[mfAside]" />
         </div>
+        <div class="dl__fade" aria-hidden="true" data-detail-fade></div>
       </aside>
     </ng-template>
   `,
@@ -321,7 +341,22 @@ function savePanelOpen(open: boolean): void {
       max-height: calc(100vh - var(--mf-header-h, 3.75rem) - var(--mf-s5) - var(--mf-s4));
       margin-bottom: 0;
       overflow-y: auto;
-      overscroll-behavior: contain;
+      /* The wheel goes on to the page at the panel's ends (#309): the panel is never a scroll trap. */
+      overscroll-behavior: auto;
+    }
+    /* The cue that more is below: a fade over the panel's bottom edge, only while the panel still has something to scroll to. */
+    .dl__fade {
+      display: none;
+    }
+    .dl--wide .dl__aside--more .dl__fade {
+      display: block;
+      position: sticky;
+      bottom: 0;
+      height: 2.5rem;
+      margin-top: -2.5rem;
+      border-radius: 0 0 var(--mf-radius) var(--mf-radius);
+      background: linear-gradient(to bottom, transparent, var(--mf-surface));
+      pointer-events: none;
     }
     .dl__h {
       margin: 0;
@@ -337,6 +372,7 @@ function savePanelOpen(open: boolean): void {
       align-items: center;
       justify-content: space-between;
       gap: var(--mf-s3);
+      box-sizing: border-box;
       width: 100%;
       min-height: 2.75rem;
       padding: var(--mf-s3) var(--mf-s4);
@@ -347,6 +383,24 @@ function savePanelOpen(open: boolean): void {
       font-weight: 600;
       text-align: left;
       cursor: pointer;
+    }
+    .dl__ht {
+      flex: none;
+    }
+    /* The one-line summary of a closed Details (#307): it takes the room that is left and ends in an ellipsis. */
+    .dl__sum {
+      flex: 1 1 0;
+      min-width: 0;
+      overflow: hidden;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+      font-weight: 400;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .dl__chevron {
+      flex: none;
+      margin-left: auto;
     }
     .dl__toggle:focus-visible {
       outline: 2px solid var(--mf-focus);
@@ -414,6 +468,13 @@ export class DetailLayout {
   readonly split = input(false);
   /** localStorage key that remembers the width (include the user id); empty means not remembered. */
   readonly splitKey = input('');
+  /** One line that says what a closed Details holds (below 1100 px, `split` layouts: the button shows it next to the heading). */
+  readonly summary = input('');
+  /**
+   * Whether Details is open below 1100 px in a `split` layout. `null` = nothing chosen: closed. The page remembers the choice (it
+   * listens to `narrowOpenChange`, which fires for the person's own toggle only) and may set it to show Details (`?tab=details`).
+   */
+  readonly narrowOpen = model<boolean | null>(null);
 
   protected readonly splitDefault = SPLIT_DEFAULT;
   protected readonly splitMin = SPLIT_MIN;
@@ -446,12 +507,19 @@ export class DetailLayout {
   protected readonly midOpen = signal(false);
   /** Wide but not extra wide, in a collapsible layout: the panel has a toggle. */
   protected readonly mid = computed(() => this.collapsible() && this.wide() && !this.xwide());
-  protected readonly isOpen = computed(() =>
-    !this.wide() ? this.open() : this.mid() ? this.midOpen() : true,
+  /** The disclosure below 1100 px: a `split` layout is closed until opened, the others follow the screen size. */
+  private readonly narrowIsOpen = computed(() =>
+    this.split() ? (this.narrowOpen() ?? false) : this.open(),
   );
+  protected readonly isOpen = computed(() =>
+    !this.wide() ? this.narrowIsOpen() : this.mid() ? this.midOpen() : true,
+  );
+  /** The wide panel scrolls and has more below its visible part (the fade cue). */
+  protected readonly more = signal(false);
+  private readonly aside = viewChild<ElementRef<HTMLElement>>('aside');
   protected readonly chevron = computed(() =>
     !this.wide()
-      ? this.open()
+      ? this.narrowIsOpen()
         ? 'pi-chevron-up'
         : 'pi-chevron-down'
       : this.midOpen()
@@ -464,9 +532,19 @@ export class DetailLayout {
       const next = !this.midOpen();
       this.midOpen.set(next);
       savePanelOpen(next);
+    } else if (this.split()) {
+      const next = !this.narrowIsOpen();
+      this.narrowOpen.set(next);
     } else {
       this.open.set(!this.open());
     }
+  }
+
+  /** Reads the panel's scroll position for the fade cue. */
+  protected measure(): void {
+    const el = this.aside()?.nativeElement;
+    if (!el) return;
+    this.more.set(this.wide() && el.scrollHeight - el.scrollTop - el.clientHeight > 2);
   }
 
   /** Sets the share (clamped to 35 to 70 %); `persist` writes it to storage (end of a drag, every key press). */
@@ -545,6 +623,18 @@ export class DetailLayout {
   constructor() {
     inject(DestroyRef).onDestroy(() => {
       if (this.dragPointer !== null) document.body.style.userSelect = this.previousUserSelect;
+    });
+    // The fade cue follows the panel's size (content arriving, the window resizing, the panel opening).
+    effect((onCleanup) => {
+      const el = this.aside()?.nativeElement;
+      this.wide();
+      if (!el || typeof ResizeObserver === 'undefined') return;
+      const observer = new ResizeObserver(() => this.measure());
+      observer.observe(el);
+      const body = el.querySelector('[data-detail-body]');
+      if (body) observer.observe(body);
+      this.measure();
+      onCleanup(() => observer.disconnect());
     });
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
     const wide = window.matchMedia(DETAIL_WIDE_QUERY);

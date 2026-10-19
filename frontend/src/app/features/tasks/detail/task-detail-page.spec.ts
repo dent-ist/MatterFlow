@@ -621,14 +621,14 @@ describe('TaskDetailPage layout and states', () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => TestBed.resetTestingModule());
 
-  it('is one page: Workflow in the main column, Comments and Assets below it, Details in the side panel, no tabs', async () => {
+  it('is one page: Workflow in the main column, Assets and Comments below it, Details in the side panel, no tabs', async () => {
     const { el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
 
     expect(q(el, '[role=tablist]')).toBeNull();
     expect(q(el, '[role=tab]')).toBeNull();
     const main = q(el, '[data-detail-main]')!;
     expect(q(main, '[data-section=workflow] [data-workflow-tab]')).not.toBeNull();
-    // Comments and Assets sit side by side under the Workflow, in the same (left) column.
+    // Assets, then Comments, stacked under the Workflow, in the same (left) column.
     const left = q(el, '[data-detail-left]')!;
     expect(left.contains(main)).toBe(true);
     const below = q(left, '[data-detail-below]')!;
@@ -642,31 +642,29 @@ describe('TaskDetailPage layout and states', () => {
     expect(q(el, 'mf-task-activity')).toBeNull();
   });
 
-  it('keeps the heading order: one h1, h2 sections Workflow, Comments, Assets, Details', async () => {
+  it('keeps the heading order: one h1, h2 sections Workflow, Assets, Comments, Details', async () => {
     const { el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
     expect(el.querySelectorAll('h1').length).toBe(1);
     const h2 = Array.from(el.querySelectorAll('h2')).map(
       (h) => h.textContent!.replace(/\s+/g, ' ').trim().split(' ')[0],
     );
-    expect(h2).toEqual(['Workflow', 'Comments', 'Assets', 'Details']);
+    expect(h2).toEqual(['Workflow', 'Assets', 'Comments', 'Details']);
     expect(q(el, 'aside')!.getAttribute('aria-labelledby')).toBe(q(el, 'aside h2')!.id);
   });
 
-  it('has a Jump to row whose links scroll to the section and move focus to its heading', async () => {
+  it('has a section nav with counts whose links scroll to the section and move focus to its heading', async () => {
     const { fixture, el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
     document.body.appendChild(el);
-    const nav = q(el, 'nav[aria-label="Jump to"]')!;
-    expect(Array.from(nav.querySelectorAll('a')).map((a) => a.textContent!.trim())).toEqual([
-      'Workflow',
-      'Comments',
-      'Assets',
-    ]);
+    const nav = q(el, 'nav[aria-label="Sections"]')!;
+    expect(
+      Array.from(nav.querySelectorAll('a')).map((a) => a.textContent!.replace(/\s+/g, ' ').trim()),
+    ).toEqual(['Workflow 1/3', 'Assets 0', 'Comments 0']);
     for (const [name, selector] of [
       ['workflow', '#wf-h'],
       ['comments', '[data-section=comments] [data-section-heading]'],
       ['assets', '[data-section=assets] [data-section-heading]'],
     ]) {
-      await click(fixture, q(nav, `[data-jump-to=${name}]`));
+      await click(fixture, q(nav, `[data-section-link=${name}]`));
       await new Promise((r) => setTimeout(r, 10));
       expect(document.activeElement).toBe(q(el, selector));
     }
@@ -683,7 +681,8 @@ describe('TaskDetailPage layout and states', () => {
       await new Promise((r) => setTimeout(r, 20));
       const heading = q(el, `[data-section=${name}] [data-section-heading]`);
       expect(heading).not.toBeNull();
-      expect(scroll.mock.contexts).toContain(heading);
+      // The section's box is scrolled to (its margin clears the sticky nav); the heading takes the focus.
+      expect(scroll.mock.contexts).toContain(heading!.closest('[data-section]'));
       expect(heading!.getAttribute('tabindex')).toBe('-1');
       expect(fixture.debugElement.injector.get(TaskDetailStore).activityOpen()).toBe(false);
     },
@@ -890,25 +889,27 @@ describe('TaskDetailPage layout and states', () => {
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
   });
 
-  it('starts with Comments and Assets collapsed, side by side as two slim bars', async () => {
+  it('starts with Assets and Comments collapsed, as two slim bars stacked in that order', async () => {
     const { el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
     for (const name of ['comments', 'assets']) {
       const toggle = q(el, `[data-section=${name}] [data-toggle]`)!;
       expect(toggle.getAttribute('aria-expanded')).toBe('false');
     }
-    expect(q(el, '.bottom')!.classList).toContain('bottom--split');
+    expect(
+      q(el, '[data-section=assets]')!.compareDocumentPosition(q(el, '[data-section=comments]')!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(q(el, '[data-section=comments] [data-comment-id]')).toBeNull();
   });
 
-  it('opens a section from its bar, and one open section takes the whole row (stacked)', async () => {
+  it('opens a section from its bar; the sections are always stacked, never side by side', async () => {
     const { fixture, el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
     await click(fixture, q(el, '[data-section=assets] [data-toggle]'));
     expect(q(el, '[data-section=assets] [data-toggle]')!.getAttribute('aria-expanded')).toBe(
       'true',
     );
-    expect(q(el, '.bottom')!.classList).not.toContain('bottom--split');
     await click(fixture, q(el, '[data-section=comments] [data-toggle]'));
-    expect(q(el, '.bottom')!.classList).toContain('bottom--split');
+    expect(q(el, '.bottom')!.className).toBe('bottom');
   });
 
   it('applies the remembered choice of this user before the first render', async () => {
@@ -925,7 +926,7 @@ describe('TaskDetailPage layout and states', () => {
   });
 
   it.each(['comments', 'assets'])(
-    'the deep link ?tab=%s and Jump to expand the section without changing what is remembered',
+    'the deep link ?tab=%s and the section nav expand the section without changing what is remembered',
     async (name) => {
       localStorage.clear();
       const { fixture, el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View'], {}, name);
@@ -938,12 +939,73 @@ describe('TaskDetailPage layout and states', () => {
     },
   );
 
-  it('Jump to expands a collapsed section', async () => {
+  it('the section nav expands a collapsed section', async () => {
     const { fixture, el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
-    await click(fixture, q(el, '[data-jump-to=comments]'));
+    await click(fixture, q(el, '[data-section-link=comments]'));
     expect(q(el, '[data-section=comments] [data-toggle]')!.getAttribute('aria-expanded')).toBe(
       'true',
     );
+  });
+
+  it('the section nav shows the counts the sections report (comments, assets) once they are known', async () => {
+    const { fixture, el } = await mountTaskPage(aTask(), [...PERMS, 'Asset.View']);
+    await settle(fixture);
+    const text = (key: string) =>
+      q(el, `[data-section-link=${key}]`)!.textContent!.replace(/\s+/g, ' ').trim();
+    expect(text('comments')).toMatch(/^Comments \d+$/);
+    expect(text('assets')).toMatch(/^Assets \d+$/);
+  });
+
+  it('Assets shows no count without Asset.View, where the section cannot list the links', async () => {
+    const { el } = await mountTaskPage(aTask(), PERMS);
+    expect(q(el, '[data-section-link=assets]')!.textContent!.trim()).toBe('Assets');
+  });
+
+  describe('Details below 1100 px (#307)', () => {
+    const original = window.matchMedia;
+    beforeEach(() => {
+      localStorage.clear();
+      window.matchMedia = ((query: string) => ({
+        matches: 768 >= Number(/min-width:\s*(\d+)px/.exec(query)?.[1] ?? 0),
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      })) as never;
+    });
+    afterEach(() => {
+      window.matchMedia = original;
+      localStorage.clear();
+    });
+    const expanded = (el: HTMLElement) =>
+      q(el, '[data-detail-toggle]')!.getAttribute('aria-expanded');
+
+    it('is closed with the one-line summary, after the Workflow, Assets and Comments in the reading order', async () => {
+      const { el } = await mountTaskPage(aTask(), PERMS);
+      expect(expanded(el)).toBe('false');
+      expect(q(el, '[data-detail-summary]')!.textContent).toMatch(/^Requestor .+/);
+      const order = Array.from(el.querySelectorAll('mf-detail-layout h2')).map(
+        (h) => /^(Workflow|Comments|Assets|Details)/.exec(h.textContent!.trim())![1],
+      );
+      expect(order).toEqual(['Workflow', 'Assets', 'Comments', 'Details']);
+      expect(q(el, '[data-detail-left] [data-section-nav]')).not.toBeNull();
+    });
+
+    it('opens with a click, remembers the choice for this person and starts open next time', async () => {
+      const first = await mountTaskPage(aTask(), PERMS);
+      await click(first.fixture, q(first.el, '[data-detail-toggle]'));
+      expect(expanded(first.el)).toBe('true');
+      expect(localStorage.getItem('mf.task-detail.details.open.1')).toBe('1');
+      TestBed.resetTestingModule();
+      const again = await mountTaskPage(aTask(), PERMS);
+      expect(expanded(again.el)).toBe('true');
+    });
+
+    it('?tab=details opens it without changing what is remembered', async () => {
+      const { fixture, el } = await mountTaskPage(aTask(), PERMS, {}, 'details');
+      await settle(fixture);
+      expect(expanded(el)).toBe('true');
+      expect(localStorage.getItem('mf.task-detail.details.open.1')).toBeNull();
+    });
   });
 });
 

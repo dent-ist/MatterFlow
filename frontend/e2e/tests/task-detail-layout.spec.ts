@@ -27,7 +27,7 @@ test.describe('Task detail: single page layout', () => {
     [1366, 768],
     [1920, 1080],
   ] as const) {
-    test(`${width} px: Workflow above Comments | Assets on the left (60 %), Details on the right (40 %), nothing clipped`, async ({
+    test(`${width} px: Workflow above Assets above Comments, each full width, on the left (60 %), Details on the right (40 %), nothing clipped`, async ({
       page,
       seed,
       admin,
@@ -44,7 +44,7 @@ test.describe('Task detail: single page layout', () => {
       await expect(page.getByRole('heading', { level: 1 })).toContainText(task.title);
       await expect(
         page.getByRole('heading', { level: 2, name: /^(Workflow|Comments|Details|Assets)/ }),
-      ).toHaveText([/Workflow/, /Comments/, /Assets/, /Details/]);
+      ).toHaveText([/Workflow/, /Assets/, /Comments/, /Details/]);
 
       const aside = page.getByRole('complementary', { name: 'Details' });
       await expect(aside.getByRole('button', { name: 'Edit details' })).toBeVisible();
@@ -56,19 +56,19 @@ test.describe('Task detail: single page layout', () => {
       const side = await box(aside);
       const layout = await box(page.locator('[data-detail-layout]'));
 
-      // Comments left, Assets right, both under the Workflow, level with each other, each about half of the left column.
-      expect(comments.y).toBeGreaterThan(workflow.y + workflow.height - 1);
-      expect(assets.x).toBeGreaterThan(comments.x + comments.width - 1);
-      expect(Math.abs(assets.y - comments.y)).toBeLessThanOrEqual(1);
-      expect(Math.abs(assets.height - comments.height)).toBeLessThanOrEqual(1);
-      expect(Math.abs(comments.width - assets.width)).toBeLessThanOrEqual(20);
+      // Assets first, Comments below it, both under the Workflow and as wide as it (owner request: stacked, never side by side).
+      expect(assets.y).toBeGreaterThan(workflow.y + workflow.height - 1);
+      expect(comments.y).toBeGreaterThan(assets.y + assets.height - 1);
+      expect(Math.abs(assets.width - workflow.width)).toBeLessThanOrEqual(2);
+      expect(Math.abs(comments.width - workflow.width)).toBeLessThanOrEqual(2);
+      expect(Math.abs(assets.x - comments.x)).toBeLessThanOrEqual(1);
       // Left column about 60 % of the layout, Details about 40 % and to its right.
       expect(side.x).toBeGreaterThan(workflow.x + workflow.width - 1);
       expect(workflow.width / layout.width).toBeGreaterThan(0.56);
       expect(workflow.width / layout.width).toBeLessThan(0.61);
       expect(side.width / layout.width).toBeGreaterThan(0.36);
       expect(side.width / layout.width).toBeLessThan(0.41);
-      await expect(page.getByRole('navigation', { name: 'Jump to' })).toBeHidden();
+      await expect(page.getByRole('navigation', { name: 'Sections' })).toBeVisible();
 
       // Nothing clipped: no sideways scroll, every step row inside its box, the status badge inside the row.
       await noHorizontalScroll(page);
@@ -203,7 +203,7 @@ test.describe('Task detail: single page layout', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await expect(detail.splitter).toHaveCount(0);
-    await expect(page.getByRole('navigation', { name: 'Jump to' })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Sections' })).toBeVisible();
     await noHorizontalScroll(page);
   });
 
@@ -301,10 +301,11 @@ test.describe('Task detail: single page layout', () => {
     await expect(assets).toBeFocused();
     const comments = page.getByRole('region', { name: 'Comment thread, scrollable' });
     await expect(comments).toHaveAttribute('tabindex', '0');
-    // Both panels stay level (same top and height).
+    // Stacked, Assets first, each as wide as the other (owner request: never side by side).
     const a = await box(detail.section('Assets'));
     const c = await box(detail.section('Comments'));
-    expect(Math.abs(a.height - c.height)).toBeLessThanOrEqual(1);
+    expect(c.y).toBeGreaterThan(a.y + a.height - 1);
+    expect(Math.abs(a.width - c.width)).toBeLessThanOrEqual(1);
   });
 
   test('rich-text tables scroll inside their own box and never widen the page', async ({
@@ -397,7 +398,7 @@ test.describe('Task detail: single page layout', () => {
     await expect(detail.step(load).root.locator('[data-current]')).toBeVisible();
   });
 
-  test('375 px: Details (collapsed), Workflow, Comments, Assets in one column with a Jump to row and no sideways scroll', async ({
+  test('375 px: Workflow, Assets, Comments, then Details (collapsed) in one column with the section nav and no sideways scroll', async ({
     page,
     seed,
   }) => {
@@ -407,7 +408,7 @@ test.describe('Task detail: single page layout', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
 
-    const toggle = page.getByRole('button', { name: 'Details', exact: true });
+    const toggle = page.locator('[data-detail-toggle]');
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     await expect(page.getByRole('button', { name: 'Edit details' })).toBeHidden();
     await noHorizontalScroll(page);
@@ -417,12 +418,12 @@ test.describe('Task detail: single page layout', () => {
     const workflow = await y(detail.section('Workflow'));
     const comments = await y(detail.section('Comments'));
     const assets = await y(detail.section('Assets'));
-    expect(details).toBeLessThan(workflow);
-    expect(workflow).toBeLessThan(comments);
-    expect(comments).toBeLessThan(assets);
+    expect(workflow).toBeLessThan(assets);
+    expect(assets).toBeLessThan(comments);
+    expect(comments).toBeLessThan(details);
 
-    const jump = page.getByRole('navigation', { name: 'Jump to' });
-    await expect(jump.getByRole('link')).toHaveText(['Workflow', 'Comments', 'Assets']);
+    const jump = page.getByRole('navigation', { name: 'Sections' });
+    await expect(jump.getByRole('link')).toHaveText([/^Workflow/, /^Assets/, /^Comments/]);
     await jump.getByRole('link', { name: 'Assets' }).click();
     await expect(detail.section('Assets').locator('[data-section-heading]')).toBeFocused();
     await jump.getByRole('link', { name: 'Comments' }).click();
