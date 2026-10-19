@@ -16,6 +16,15 @@ export interface Crumb {
   skeleton?: boolean;
 }
 
+/** Longest last breadcrumb step (the current page) before it is cut with an ellipsis; the full text is its tooltip and accessible name. */
+export const CRUMB_MAX = 40;
+
+/** `label` cut to `max` characters with an ellipsis as the last one; shorter text is returned as it is. */
+export function truncateCrumb(label: string, max = CRUMB_MAX): string {
+  const text = label.trim();
+  return text.length <= max ? text : text.slice(0, max - 1).trimEnd() + '…';
+}
+
 /**
  * The page header of every screen (UXR-02, UXR-03; UX spec `mf-page-header`):
  *
@@ -43,6 +52,11 @@ export interface Crumb {
                   <span class="ph__sk" aria-hidden="true" data-crumb-skeleton></span>
                 } @else if (c.link && !last) {
                   <a [routerLink]="c.link">{{ c.label }}</a>
+                } @else if (last && c.label.length > crumbMax) {
+                  <span aria-current="page" [attr.title]="c.label" data-crumb-clamped>
+                    <span aria-hidden="true">{{ cut(c.label) }}</span>
+                    <span class="ph__sr">{{ c.label }}</span>
+                  </span>
                 } @else {
                   <span [attr.aria-current]="last ? 'page' : null">{{ c.label }}</span>
                 }
@@ -95,6 +109,18 @@ export interface Crumb {
     }
     .ph__crumbs a {
       color: var(--mf-link);
+      /* A crumb link keeps a 24 px target (WCAG 2.5.8, axe target-size, BUG-5); wrapped rows must not overlap, so the row is 24 px tall. */
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+    }
+    .ph__sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
     .ph__sk {
       display: inline-block;
@@ -210,6 +236,11 @@ export class PageHeader {
    * (the one in the left navigation, see `section-icons.ts`); an empty string shows none.
    */
   readonly icon = input<string | null>(null);
+
+  protected readonly crumbMax = CRUMB_MAX;
+  protected cut(label: string): string {
+    return truncateCrumb(label);
+  }
 
   /** Inside a fixed-header page (`mf-fixed-page`) the header is compact. */
   protected readonly compact = inject(FixedPage, { optional: true }) !== null;

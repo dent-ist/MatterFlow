@@ -135,4 +135,25 @@ describe('mf-page-header', () => {
       expect(icons(await at('/nowhere-in-nav'))).toEqual([null, 'ph__icon pi pi-star', null]);
     });
   });
+
+  it('cuts a long last crumb at 40 characters, with the full text as tooltip and accessible name (BUG-5, #360)', async () => {
+    const { el, host, fixture } = await render();
+    const long = 'Large Production Workflow With A Very Long Name For Review';
+    host.crumbs.set([{ label: 'Workflows', link: '/admin/workflows' }, { label: long }]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const clamped = header(el, 0).querySelector('[data-crumb-clamped]')!;
+    expect(clamped.getAttribute('title')).toBe(long);
+    expect(clamped.querySelector('[aria-hidden="true"]')!.textContent!.length).toBe(40);
+    expect(clamped.querySelector('[aria-hidden="true"]')!.textContent).toMatch(/…$/);
+    expect(clamped.textContent).toContain(long);
+  });
+
+  it('keeps a short last crumb as it is', async () => {
+    const { el, host, fixture } = await render();
+    host.crumbs.set([{ label: 'Workflows', link: '/admin/workflows' }, { label: 'Short' }]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(header(el, 0).querySelector('[data-crumb-clamped]')).toBeNull();
+  });
 });

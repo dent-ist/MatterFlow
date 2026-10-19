@@ -13,24 +13,17 @@ import { iconForPath } from '../layout/section-icons';
 import { ActionMenu, MenuAction } from './action-menu';
 import { ActiveBadge, SensitiveBadge } from './badge';
 import { MatterRef } from './matter-ref';
-import { Crumb, RecordTitle } from './page-header';
+import { CRUMB_MAX, Crumb, RecordTitle, truncateCrumb } from './page-header';
 import { RecordKind } from './record-state';
 import { DrillReturn } from '../work-queue/drill';
 import { RETURN_STATE } from './row-nav';
 
-/** Longest last breadcrumb step (the current page) before it is cut with an ellipsis; the full text is its tooltip (H1, #253). */
-export const CRUMB_MAX = 40;
+export { CRUMB_MAX, truncateCrumb } from './page-header';
 
 /** The text of the sentence in the Sensitive note (wording from the Sensitive banner, unchanged). */
 export const SENSITIVE_LEAD = 'Sensitive matter.';
 export const SENSITIVE_TEXT =
   'Handle its tasks and assets with extra care. This flag is a warning only and does not restrict who can see them.';
-
-/** `label` cut to `max` characters with an ellipsis as the last one; shorter text is returned as it is. */
-export function truncateCrumb(label: string, max = CRUMB_MAX): string {
-  const text = label.trim();
-  return text.length <= max ? text : text.slice(0, max - 1).trimEnd() + '…';
-}
 
 /** The queries the header follows: phone is below 640 px (as the work-list cards), desktop is 1024 px and up (H2, #254). */
 const PHONE_QUERY = '(max-width: 639.98px)';
