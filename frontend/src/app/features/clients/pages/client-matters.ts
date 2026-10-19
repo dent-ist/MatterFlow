@@ -114,6 +114,9 @@ const BONES: Record<string, string> = {
           [filtered]="filters.activeCount() > 0"
           (retry)="load()"
           (clear)="clear()"
+          [hidden]="hiddenCount()"
+          hiddenLabel="inactive"
+          (showAll)="showAll()"
         >
           <span mfEmptyAction *mfHasPermission="'Matter.Create'">
             @if (clientActive()) {
@@ -241,6 +244,9 @@ const BONES: Record<string, string> = {
                 [skeleton]="skeleton()"
                 (retry)="load()"
                 (clear)="clear()"
+                [hidden]="hiddenCount()"
+                hiddenLabel="inactive"
+                (showAll)="showAll()"
               >
                 <span mfEmptyAction *mfHasPermission="'Matter.Create'">
                   @if (clientActive()) {

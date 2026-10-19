@@ -101,6 +101,28 @@ td.us-seen {
   white-space: nowrap;
 }
 
+/* At 1366 the nine columns are wider than the box (the filters are then in the sheet), so the row actions stay in view at the right edge
+   while the other columns scroll under them: Open and Grant access are never out of sight. */
+th.mf-col-actions,
+td.mf-col-actions {
+  position: sticky;
+  right: 0;
+  box-shadow: -1px 0 0 var(--mf-border);
+}
+
+td.mf-col-actions {
+  z-index: 1;
+  background: var(--mf-surface);
+}
+
+th.mf-col-actions {
+  z-index: 3;
+}
+
+tr.mf-selected td.mf-col-actions {
+  background: var(--mf-selected-bg);
+}
+
 tr.mf-selected {
   background: var(--mf-selected-bg);
 }

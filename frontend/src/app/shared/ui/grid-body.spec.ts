@@ -24,6 +24,8 @@ import { GridBody } from './grid-body';
         [columns]="2"
         [skeleton]="skeleton()"
         [filters]="listFilters()"
+        [hidden]="hidden()"
+        (showAll)="shownAll = shownAll + 1"
         (retry)="retried = retried + 1"
         (clear)="cleared = cleared + 1"
       >
@@ -42,6 +44,8 @@ class Host {
   readonly filtered = signal(false);
   readonly skeleton = signal<readonly string[]>(['7rem', '14rem']);
   readonly listFilters = signal<ListFilters | null>(null);
+  readonly hidden = signal(0);
+  shownAll = 0;
   retried = 0;
   cleared = 0;
 }
@@ -171,5 +175,22 @@ describe('GridBody', () => {
     expect(flag()).toBe(true);
     f.destroy();
     expect(flag()).toBe(false);
+  });
+
+  it('a filtered empty list says how many records the default Status hides and offers Show all', () => {
+    const f = create();
+    f.componentInstance.empty.set(true);
+    f.componentInstance.filtered.set(true);
+    f.detectChanges();
+    expect(el(f).querySelector('[data-hidden-hint]')).toBeNull();
+    f.componentInstance.hidden.set(2);
+    f.detectChanges();
+    const hint = el(f).querySelector('[data-hidden-hint]')!;
+    expect(hint.textContent).toContain('2 inactive hidden');
+    hint.querySelector<HTMLButtonElement>('[data-show-all]')!.click();
+    expect(f.componentInstance.shownAll).toBe(1);
+    f.componentInstance.filtered.set(false);
+    f.detectChanges();
+    expect(el(f).querySelector('[data-hidden-hint]')).toBeNull();
   });
 });

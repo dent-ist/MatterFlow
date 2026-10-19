@@ -409,7 +409,9 @@ test.describe('Column filters on the work lists', () => {
       await page.getByRole('button', { name: 'Other filters' }).click();
       await expect(page.getByRole('button', { name: 'Pod', exact: true })).toHaveCount(0);
       await page.keyboard.press('Escape');
-      await expect(page.getByRole('textbox', { name: 'Filter by Assignee' })).toBeDisabled();
+      // Not an empty grey box: the cell says what the tab decides (re-review, as the My Work tabs do).
+      await expect(rowControl(page, 'assignee')).toHaveAttribute('data-filter-fixed', '');
+      await expect(rowControl(page, 'assignee')).toContainText('Unassigned');
       await expect(page.locator('[data-filter-disabled]').first()).toHaveAttribute(
         'title',
         /nobody holds/,

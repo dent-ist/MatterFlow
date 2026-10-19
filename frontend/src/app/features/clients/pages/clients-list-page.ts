@@ -117,6 +117,9 @@ const BONES: Record<string, string> = {
             [filtered]="filters.activeCount() > 0"
             (retry)="load()"
             (clear)="clear()"
+            [hidden]="hiddenCount()"
+            hiddenLabel="inactive"
+            (showAll)="showAll()"
           >
             <p-button
               mfEmptyAction
@@ -233,6 +236,9 @@ const BONES: Record<string, string> = {
                   [skeleton]="skeleton()"
                   (retry)="load()"
                   (clear)="clear()"
+                  [hidden]="hiddenCount()"
+                  hiddenLabel="inactive"
+                  (showAll)="showAll()"
                 >
                   <p-button
                     mfEmptyAction

@@ -87,6 +87,19 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
             <td [attr.colspan]="columns()" [attr.data-empty]="filtered() ? 'filtered' : 'none'">
               @if (filtered()) {
                 <p>No {{ noun() }} match these filters</p>
+                @if (hidden() > 0) {
+                  <p class="gb-hint" data-hidden-hint>
+                    {{ hidden() }} {{ hiddenLabel() }} hidden
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text"
+                      data-show-all
+                      (click)="showAll.emit()"
+                    >
+                      Show all
+                    </button>
+                  </p>
+                }
                 <p-button label="Clear filters" severity="secondary" (onClick)="clear.emit()" />
               } @else {
                 <p>
@@ -115,6 +128,9 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
     }
     .gb-state p {
       margin: 0 0 var(--mf-s2);
+    }
+    .gb-hint {
+      color: var(--mf-text-muted);
     }
     .gb-alert {
       margin-bottom: var(--mf-s2);
@@ -161,6 +177,9 @@ export class GridBody {
    * Clear filters button, the bar above the grid shows none (one Clear filters at a time).
    */
   readonly filters = input<ListFilters | null>(null);
+  /** Records the default Status hides ("3"): a filtered empty list then says "3 inactive hidden  Show all" (the pager is not there to say it). */
+  readonly hidden = input(0);
+  readonly hiddenLabel = input('inactive');
   /** Plural, lowercase: "clients". */
   readonly noun = input.required<string>();
   /** First-run text; defaults to "No {noun} yet.". */
@@ -208,4 +227,5 @@ export class GridBody {
 
   readonly retry = output<void>();
   readonly clear = output<void>();
+  readonly showAll = output<void>();
 }

@@ -108,6 +108,9 @@ const COLUMNS = ['name', 'type', 'externalReference', 'status'] as const;
             [columns]="4"
             (retry)="load()"
             (clear)="clear()"
+            [hidden]="hiddenCount()"
+            hiddenLabel="inactive"
+            (showAll)="showAll()"
           >
             <p-button
               mfEmptyAction

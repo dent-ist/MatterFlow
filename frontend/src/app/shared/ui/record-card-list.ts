@@ -118,6 +118,19 @@ export class RecordCardDef<T = unknown> {
           <div class="rc-state" [attr.data-empty]="filtered() ? 'filtered' : 'none'">
             @if (filtered()) {
               <p>No {{ noun() }} match these filters</p>
+              @if (hidden() > 0) {
+                <p class="rc-hint" data-hidden-hint>
+                  {{ hidden() }} {{ hiddenLabel() }} hidden
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text"
+                    data-show-all
+                    (click)="showAll.emit()"
+                  >
+                    Show all
+                  </button>
+                </p>
+              }
               <button type="button" class="mf-btn" (click)="clear.emit()">Clear filters</button>
             } @else {
               <p>
@@ -169,8 +182,13 @@ export class RecordCardList {
   /** First-run text with links in it; replaces `emptyText` when set. */
   readonly emptyParts = input<readonly CopyPart[] | null>(null);
 
+  /** Records the default Status hides ("3"): a filtered empty list then says "3 inactive hidden  Show all". */
+  readonly hidden = input(0);
+  readonly hiddenLabel = input('inactive');
+
   readonly retry = output<void>();
   readonly clear = output<void>();
+  readonly showAll = output<void>();
 
   protected readonly skeletonCards = [1, 2, 3, 4, 5];
 

@@ -22,8 +22,10 @@ interface Row {
       [state]="state()"
       [empty]="rows().length === 0"
       [filtered]="filtered()"
+      [hidden]="hidden()"
       (retry)="retried = retried + 1"
       (clear)="cleared = cleared + 1"
+      (showAll)="shownAll = shownAll + 1"
     >
       <button mfEmptyAction type="button">New client</button>
       <ng-template [mfRecordCard]="rows()" let-r>
@@ -63,8 +65,10 @@ class Host {
     { id: 1, name: 'Acme Corp', open: 14, overdue: 3 },
     { id: 2, name: 'Beta Ltd', open: 0, overdue: 0 },
   ]);
+  readonly hidden = signal(0);
   retried = 0;
   cleared = 0;
+  shownAll = 0;
 }
 
 describe('RecordCardList', () => {
@@ -149,6 +153,28 @@ describe('RecordCardList', () => {
     expect(filtered.textContent).toContain('No clients match these filters');
     filtered.querySelector<HTMLButtonElement>('button')!.click();
     expect(f.componentInstance.cleared).toBe(1);
+  });
+});
+
+describe('RecordCardList hidden records', () => {
+  it('a filtered empty list says how many records the default Status hides and offers Show all', () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const f = TestBed.createComponent(Host);
+    document.body.appendChild(f.nativeElement);
+    f.componentInstance.rows.set([]);
+    f.componentInstance.filtered.set(true);
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('[data-hidden-hint]')).toBeNull();
+    f.componentInstance.hidden.set(3);
+    f.detectChanges();
+    const hint = f.nativeElement.querySelector('[data-hidden-hint]') as HTMLElement;
+    expect(hint.textContent).toContain('3 inactive hidden');
+    (hint.querySelector('[data-show-all]') as HTMLButtonElement).click();
+    expect(f.componentInstance.shownAll).toBe(1);
+    // Never in the first-run empty state (no filters): there is nothing hidden "by the filters" to show.
+    f.componentInstance.filtered.set(false);
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('[data-hidden-hint]')).toBeNull();
   });
 });
 

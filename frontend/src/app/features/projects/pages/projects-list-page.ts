@@ -125,6 +125,9 @@ const BONES: Record<string, string> = {
             [emptyParts]="emptyParts()"
             (retry)="load()"
             (clear)="clear()"
+            [hidden]="hiddenCount()"
+            hiddenLabel="archived"
+            (showAll)="showAll()"
           >
             <ng-template [mfRecordCard]="rows()" let-p>
               <mf-record-card
@@ -247,6 +250,9 @@ const BONES: Record<string, string> = {
                   [skeleton]="skeleton()"
                   (retry)="load()"
                   (clear)="clear()"
+                  [hidden]="hiddenCount()"
+                  hiddenLabel="archived"
+                  (showAll)="showAll()"
                 >
                   @for (p of rows(); track p.projectId) {
                     <tr>

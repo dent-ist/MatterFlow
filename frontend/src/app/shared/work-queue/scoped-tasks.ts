@@ -257,7 +257,14 @@ export class ScopedTasks {
   private readonly defs = computed((): FilterDef[] => {
     const lookups = this.lookups;
     const defs: FilterDef[] = [
-      { key: 'q', label: 'Title or Ref', column: 'ref', type: 'text', span: 2 },
+      {
+        key: 'q',
+        label: 'Title or Ref',
+        placeholder: 'Title or ref',
+        column: 'ref',
+        type: 'text',
+        span: 2,
+      },
       ...(this.withProject()
         ? ([
             {
