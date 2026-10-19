@@ -330,7 +330,7 @@ test.describe('Rich text description with tables (issue #80)', () => {
     await expect(view.locator('b')).toHaveCount(0);
 
     // Editing something else leaves the text alone.
-    await page.locator('[data-edit-details]').click();
+    await new TaskDetailPage(page).openEdit();
     const editor = page.locator('[data-edit-form] [data-description-editor] [role=textbox]');
     await expect(editor).toContainText('Old line 1');
     await page.locator('#td-title').fill('Only the title changed');
@@ -341,7 +341,7 @@ test.describe('Rich text description with tables (issue #80)', () => {
     expect(saved.description).toBe('Old line 1\nOld line <b>2</b> & more\n\nSecond paragraph');
 
     // Editing the description converts it to rich text.
-    await page.locator('[data-edit-details]').click();
+    await new TaskDetailPage(page).openEdit();
     await page.locator('[data-edit-form] [data-description-editor] [role=textbox]').click();
     await page.keyboard.press('Control+End');
     await page.keyboard.type(' Added.');
@@ -394,7 +394,7 @@ test.describe('Rich text description with tables (issue #80)', () => {
     const world = await seed.world();
     const task = await seed.task(world, { description: '<p>Start</p>' });
     await new TaskDetailPage(page).open(task.taskId);
-    await page.locator('[data-edit-details]').click();
+    await new TaskDetailPage(page).openEdit();
     const dialog = page.locator('[data-edit-form]');
     const editor = dialog.locator('[data-description-editor] [role=textbox]');
     await editor.click();

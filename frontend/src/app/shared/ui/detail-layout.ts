@@ -88,7 +88,7 @@ function savePanelOpen(open: boolean): void {
  *   page), and the button carries a one-line `summary` (T5, #307).
  *
  * Slots: `mfMain` (the main area), `mfAside` (the Details content; the panel adds the "Details" heading, which names the `aside`),
- * `mfAsideAction` (an action on the heading's row, at the right, shown while the panel is open: the Task's Edit pencil, #312) and the
+ * `mfAsideAction` (an action on the heading's row, at the right, shown while the panel is open; the Task page uses none: its one Edit is the header's, #326) and the
  * optional `mfTop` and `mfBelow` (only with `split`: `mfTop` above the main area, for example the Task's section nav, which sticks while the
  * whole column scrolls; `mfBelow` under it, inside the same column, for example the Task's Comments and Assets).
  *

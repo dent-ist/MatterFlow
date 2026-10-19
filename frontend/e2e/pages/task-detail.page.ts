@@ -180,6 +180,20 @@ export class TaskDetailPage {
     return drawer;
   }
 
+  /**
+   * Opens the Edit dialog from the header's Edit (the one Edit control, K1 #326): the button where it fits, else the overflow menu
+   * (a phone and a tablet fold it away).
+   */
+  async openEdit(): Promise<void> {
+    const button = this.header.locator('[data-page-actions] > button[data-action="edit"]');
+    if (await button.isVisible()) await button.click();
+    else {
+      await this.header.locator('[data-overflow]').click();
+      await this.page.getByRole('menuitem', { name: 'Edit' }).click();
+    }
+    await expect(this.page.getByRole('dialog', { name: 'Edit task details' })).toBeVisible();
+  }
+
   /** The status badge text in the header (New, In Progress, On Hold, Completed, Cancelled). */
   async expectStatus(label: string): Promise<void> {
     await expect(this.header).toContainText(new RegExp(`\\b${label}\\b`));

@@ -44,6 +44,7 @@ import {
   plural,
   userQueueParams,
 } from './users-model';
+import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -216,9 +217,13 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
                         [attr.data-task-id]="r.taskId"
                       >
                         <div class="main">
-                          <a class="ref mf-ref" [routerLink]="['/tasks', r.taskId]">{{
-                            r.taskNumber
-                          }}</a>
+                          <a
+                            class="ref mf-ref"
+                            [routerLink]="['/tasks', r.taskId]"
+                            [queryParams]="origin.params('dashboard')"
+                            [state]="origin.state()"
+                            >{{ r.taskNumber }}</a
+                          >
                           <span
                             class="type"
                             role="img"
@@ -463,6 +468,8 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
   `,
 })
 export class UsersDrawer {
+  /** Task links carry `?from=dashboard` and this view's address, so the Task page can bring the person back (T9, #324). */
+  protected readonly origin = inject(TaskOriginLinks);
   private readonly queue = inject(TaskQueueClient);
   private readonly auth = inject(AuthStore);
   private readonly quiet = inject(QuietRequests);

@@ -410,8 +410,8 @@ export class MatterDetailPage {
   });
 
   constructor() {
-    // Back from a project: the Projects tab focuses the row left, every other return focuses the selected tab.
-    restoreTabFocus(() => this.state() === 'ready', ['matter-projects']);
+    // Back from a project or a task: the Projects or Tasks tab focuses the row left, every other return focuses the selected tab.
+    restoreTabFocus(() => this.state() === 'ready', ['matter-projects', 'matter-tasks']);
     // `00107-00001 Name: Tasks` once the record is known, `Matter` until then (#248); kept through tab changes.
     effect(() => {
       const m = this.state() === 'ready' ? this.matter() : null;

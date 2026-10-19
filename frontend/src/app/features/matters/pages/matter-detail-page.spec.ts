@@ -342,7 +342,7 @@ describe('MatterDetailPage', () => {
     expect(args[11]).toBeUndefined();
     expect(args[2]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
     expect(el().querySelector('tbody tr[data-task=TSK-1042] a')?.getAttribute('href')).toBe(
-      '/tasks/1042',
+      '/tasks/1042?from=matter',
     );
 
     // The "Show" select is the Status column filter now: open by default, every status on request, from the address.

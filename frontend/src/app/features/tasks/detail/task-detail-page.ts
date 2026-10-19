@@ -22,6 +22,7 @@ import { TaskDetailStore, TaskSection } from './task-detail.store';
 import { TaskDetailsTab } from './task-details-tab';
 import { TaskHeader } from './task-header';
 import { TaskStatusNote } from './task-status-note';
+import { registerTaskShortcuts } from './task-shortcuts';
 import { TaskWorkflowTab } from './task-workflow-tab';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
@@ -155,19 +156,6 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
               </div>
             </div>
 
-            @if (t.allowedActions.canEdit) {
-              <button
-                mfAsideAction
-                type="button"
-                class="mf-btn mf-btn--icon"
-                data-edit-details
-                aria-label="Edit details"
-                title="Edit details"
-                (click)="editDetails()"
-              >
-                <i class="pi pi-pencil" aria-hidden="true"></i>
-              </button>
-            }
             <div mfAside data-section="details">
               <mf-task-details-tab />
             </div>
@@ -342,6 +330,8 @@ export class TaskDetailPage implements HasUnsavedChanges {
   );
 
   constructor() {
+    // C, A and S (comment, Assignee menu, Status menu) while "Keyboard shortcuts" is on (K2, #327).
+    registerTaskShortcuts();
     // `TSK-12 Title cut at 60 characters`, `Activity - TSK-12 ...` while the drawer is open; the error states name themselves (#290, #295).
     // Pinned, so a navigation that only changes the address (closing the drawer removes `?tab=activity`) keeps it.
     effect(() => {
@@ -402,12 +392,6 @@ export class TaskDetailPage implements HasUnsavedChanges {
 
   protected jump(section: string): void {
     if (isSection(section)) this.store.showSection(section);
-  }
-
-  /** The pencil on the Details heading: the same Edit dialog as the header's Edit; focus comes back to the pencil. */
-  protected editDetails(): void {
-    this.store.editOrigin.set('panel');
-    this.store.editing.set(true);
   }
 
   protected rememberDetails(open: boolean | null): void {

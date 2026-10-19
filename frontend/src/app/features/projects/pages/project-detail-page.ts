@@ -274,7 +274,8 @@ export class ProjectDetailPage {
   });
 
   constructor() {
-    restoreTabFocus(() => this.state() === 'ready', []);
+    // Back from a task: the Tasks grid focuses the row left, every other return focuses the selected tab.
+    restoreTabFocus(() => this.state() === 'ready', ['project-tasks']);
     // `Name: Tasks` once the record is known, `Project` until then (#248); kept through tab changes.
     effect(() => {
       const p = this.state() === 'ready' ? this.project() : null;

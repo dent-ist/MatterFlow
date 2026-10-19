@@ -12,6 +12,7 @@ import { canEditField } from '../../../shared/work-queue/inline-edit';
 import { DueCell } from '../../../shared/work-queue/due-cell';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { Density, applyRow, cardToRow } from './swimlane-model';
+import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 
 /** Initials for the avatar: first letters of the first and last word. */
 export function initials(name: string): string {
@@ -86,7 +87,14 @@ export function initials(name: string): string {
             <mf-task-type-icon [iconKey]="c.taskTypeIconKey" size="sm" />
             <span class="sr-only">{{ c.taskTypeName }}</span>
           </span>
-          <a class="ref mf-ref" [routerLink]="['/tasks', c.taskId]" data-card-ref>{{ c.ref }}</a>
+          <a
+            class="ref mf-ref"
+            [routerLink]="['/tasks', c.taskId]"
+            [queryParams]="origin.params('dashboard')"
+            [state]="origin.state()"
+            data-card-ref
+            >{{ c.ref }}</a
+          >
           <h4 class="title">
             <button
               type="button"
@@ -160,7 +168,14 @@ export function initials(name: string): string {
               <mf-task-type-icon [iconKey]="c.taskTypeIconKey" size="sm" />
               <span class="sr-only">{{ c.taskTypeName }}</span>
             </span>
-            <a class="ref mf-ref" [routerLink]="['/tasks', c.taskId]" data-card-ref>{{ c.ref }}</a>
+            <a
+              class="ref mf-ref"
+              [routerLink]="['/tasks', c.taskId]"
+              [queryParams]="origin.params('dashboard')"
+              [state]="origin.state()"
+              data-card-ref
+              >{{ c.ref }}</a
+            >
             @if (!showWhere() && c.matterIsSensitive) {
               <span class="mark mark--sens" data-sensitive title="Sensitive matter">
                 <i class="pi pi-lock" aria-hidden="true"></i>
@@ -581,6 +596,8 @@ export function initials(name: string): string {
   `,
 })
 export class SwimlaneCardView {
+  /** Task links carry `?from=dashboard` and this view's address, so the Task page can bring the person back (T9, #324). */
+  protected readonly origin = inject(TaskOriginLinks);
   private readonly auth = inject(AuthStore);
   private readonly lookups = inject(LookupStore);
 

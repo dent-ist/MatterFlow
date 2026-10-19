@@ -381,7 +381,6 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     await new TaskDetailPage(viewerPage).open(task.taskId);
     await expect(viewerPage.locator('[data-view-only]')).toBeVisible();
     await expect(viewerPage.locator('[data-task-header] [data-action="edit"]')).toHaveCount(0);
-    await expect(viewerPage.locator('[data-edit-details]')).toHaveCount(0);
     const none = await seed.role(['Matter.View'], `E2E T8 none ${token}`);
     const nobody = await seed.user([none.name], `t8n-${token}`);
     const deniedPage = await asUser(nobody.username);

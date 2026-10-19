@@ -61,6 +61,16 @@ export class TaskDetailStore {
   private readonly auth = inject(AuthStore);
 
   readonly taskId = signal(0);
+  /**
+   * The address of the page the task was opened from (router state `returnTo`), read once when the page opens: later navigations on this
+   * page (closing the Activity drawer) replace the history entry's state, and Back must still return to the same view (#324).
+   */
+  readonly returnTo: unknown =
+    typeof history === 'undefined'
+      ? null
+      : (history.state as { returnTo?: unknown } | null)?.returnTo;
+  /** Counts the successful status actions; the facts strip puts focus on the Status menu button after each (K3, #328). */
+  readonly statusFocus = signal(0);
   /** The shared load flow of the record pages (#290): skeleton while loading, `mf-record-state` for 404, 403 and failures, quiet request. */
   readonly flow = new RecordLoadFlow('task');
   readonly state = this.flow.state;
@@ -76,8 +86,6 @@ export class TaskDetailStore {
   readonly activityOpen = signal(false);
   /** The comment the Activity asked to show; the Comments section scrolls to it and highlights it. `seq` makes a repeated request count. */
   readonly commentFocus = signal<{ commentId: number; seq: number } | null>(null);
-  /** Where the Edit form was opened from, so focus goes back there when it closes. */
-  readonly editOrigin = signal<'header' | 'panel'>('header');
   readonly editing = signal(false);
   readonly dirty = signal(false);
   readonly dialog = signal<ActionDialog | null>(null);
@@ -181,7 +189,10 @@ export class TaskDetailStore {
             status: 'IN_PROGRESS',
           }),
         );
-        if (result.ok) this.notify.success(`${result.task.taskNumber} is In Progress.`);
+        if (result.ok) {
+          this.notify.success(`${result.task.taskNumber} is In Progress.`);
+          this.statusDone();
+        }
         break;
       }
       case 'HOLD':
@@ -215,6 +226,7 @@ export class TaskDetailStore {
           ? `${result.task.taskNumber} is On Hold.`
           : `${result.task.taskNumber} cancelled.`,
       );
+      this.statusDone();
     } else if (this.conflict()) {
       this.dialog.set(null);
     }
@@ -227,6 +239,7 @@ export class TaskDetailStore {
     );
     if (result.ok) this.notify.success(`${result.task.taskNumber} is back In Progress.`);
     this.dialog.set(null);
+    if (result.ok) this.statusDone();
   }
 
   /** Complete: straight through when every step is resolved, otherwise the bulk-complete or blocked dialog (addendum K). */
@@ -246,7 +259,10 @@ export class TaskDetailStore {
           completeUnresolvedSteps: false,
         }),
       );
-      if (result.ok) this.notify.success(`${result.task.taskNumber} completed.`);
+      if (result.ok) {
+        this.notify.success(`${result.task.taskNumber} completed.`);
+        this.statusDone();
+      }
       return;
     }
     this.dialog.set({ kind: 'complete', check });
@@ -266,6 +282,7 @@ export class TaskDetailStore {
     if (result.ok) {
       this.dialog.set(null);
       this.notify.success(`${result.task.taskNumber} completed.`);
+      this.statusDone();
       return;
     }
     if (
@@ -282,6 +299,11 @@ export class TaskDetailStore {
     } else {
       this.dialog.set(null);
     }
+  }
+
+  /** A status action went through: the facts strip puts focus on the Status menu button (K3, #328). */
+  private statusDone(): void {
+    this.statusFocus.update((n) => n + 1);
   }
 
   closeDialog(): void {

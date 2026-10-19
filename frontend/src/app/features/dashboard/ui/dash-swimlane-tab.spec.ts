@@ -364,7 +364,9 @@ describe('DashSwimlaneTab', () => {
     expect(text(card.querySelector('[data-field="priority"]'))).toContain('Critical');
     expect(card.querySelector('[data-field="priority"] .bars')).not.toBeNull();
     expect(card.querySelector('.bar')!.getAttribute('aria-hidden')).toBe('true');
-    expect(card.querySelector('[data-card-ref]')!.getAttribute('href')).toBe('/tasks/3');
+    expect(card.querySelector('[data-card-ref]')!.getAttribute('href')).toBe(
+      '/tasks/3?from=dashboard',
+    );
     expect(text(card.querySelector('.title'))).toBe('Out of office owner');
     // Client and matter name on one line; the matter number is in the tooltip (and the drawer).
     expect(text(card.querySelector('[data-where]'))).toMatch(/^Acme Corp \/ \S/);
@@ -996,7 +998,9 @@ describe('DashSwimlaneTab', () => {
       ).toEqual(['Collect:Done', 'Review:Next']);
       expect(text(peek.querySelector('[data-peek-comments]'))).toContain('Pat Partner');
       expect(text(peek.querySelector('[data-peek-comments]'))).toContain('Please hurry');
-      expect(peek.querySelector('[data-open-task]')!.getAttribute('href')).toBe('/tasks/3');
+      expect(peek.querySelector('[data-open-task]')!.getAttribute('href')).toBe(
+        '/tasks/3?from=dashboard',
+      );
       expect(document.querySelector('.mf-swl-drawer')).not.toBeNull();
     });
 
@@ -1136,7 +1140,9 @@ describe('DashSwimlaneTab', () => {
       expect(card.querySelector('[data-level-glyph]')).not.toBeNull();
       expect(card.querySelectorAll('.lvl-bar.on').length).toBe(4);
       expect(card.querySelector('mf-task-type-icon')).not.toBeNull();
-      expect(card.querySelector('[data-card-ref]')!.getAttribute('href')).toBe('/tasks/3');
+      expect(card.querySelector('[data-card-ref]')!.getAttribute('href')).toBe(
+        '/tasks/3?from=dashboard',
+      );
       expect(text(card.querySelector('.title'))).toBe('Out of office owner');
       expect(text(card.querySelector('[data-avatar]'))).toContain('TM');
       expect(card.querySelector('[data-ooo]')!.getAttribute('title')).toBe('Out of office: Leave');

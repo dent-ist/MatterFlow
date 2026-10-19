@@ -368,7 +368,8 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
   test('a page without a task list has only "Skip to main content"', async ({ seed, asUser }) => {
     const { me } = await worker(seed, 1);
     const page = await asUser(me.username);
-    await page.goto('/matters');
+    // Matters has its own "Skip to table" since #283; the account page has no list.
+    await page.goto('/profile');
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();

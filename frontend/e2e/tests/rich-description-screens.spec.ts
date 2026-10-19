@@ -109,7 +109,7 @@ test.describe('rich description screenshots', () => {
       await check(`details ${size.name}`, '[data-description]');
 
       // 3. The Edit dialog with the same table in the editor.
-      await page.locator('[data-edit-details]').click();
+      await detail.openEdit();
       await expect(page.locator('[data-edit-form] [data-description-editor] table')).toBeVisible();
       await page.locator('[data-edit-form] [data-description-editor] td').first().click();
       await shoot(page, `edit-dialog-${size.name}`);

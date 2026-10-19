@@ -65,6 +65,20 @@ describe('SearchResultsPage', () => {
     );
   });
 
+  it('a task result remembers this view for the Task page (from=search, the row for Back); other results are plain links (T9, #324)', async () => {
+    const fixture = await create('343');
+    const el: HTMLElement = fixture.nativeElement;
+    const task = sections(el)[2].querySelector<HTMLAnchorElement>(
+      '[data-hit-row] a:not([tabindex])',
+    )!;
+    expect(task.getAttribute('href')).toContain('from=search');
+    expect(task.getAttribute('data-row-list')).toBe('search');
+    expect(task.getAttribute('data-row-key')).not.toBeNull();
+    const matter = sections(el)[0].querySelector<HTMLAnchorElement>('[data-hit-row] a')!;
+    expect(matter.getAttribute('href')).toBe('/matters/7');
+    expect(matter.getAttribute('data-row-list')).toBeNull();
+  });
+
   it('shows only the columns that fit each type, with the reference as a link', async () => {
     const fixture = await create('343');
     const el: HTMLElement = fixture.nativeElement;

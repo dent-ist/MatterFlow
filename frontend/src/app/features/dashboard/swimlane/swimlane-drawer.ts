@@ -34,6 +34,7 @@ import { canEditField } from '../../../shared/work-queue/inline-edit';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { htmlToPlainText, htmlToText } from '../../tasks/panels/rich-text';
 import { applyRow, cardToRow } from './swimlane-model';
+import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -170,7 +171,13 @@ export const PEEK_COMMENTS = 3;
               </div>
             </dl>
             <p class="actions">
-              <a class="mf-btn mf-btn--primary" data-open-task [routerLink]="['/tasks', c.taskId]">
+              <a
+                class="mf-btn mf-btn--primary"
+                data-open-task
+                [routerLink]="['/tasks', c.taskId]"
+                [queryParams]="origin.params('dashboard')"
+                [state]="origin.state()"
+              >
                 Open full task
                 <i class="pi pi-arrow-right" aria-hidden="true"></i>
               </a>
@@ -390,6 +397,8 @@ export const PEEK_COMMENTS = 3;
   `,
 })
 export class SwimlaneDrawer {
+  /** Task links carry `?from=dashboard` and this view's address, so the Task page can bring the person back (T9, #324). */
+  protected readonly origin = inject(TaskOriginLinks);
   private readonly tasks = inject(TasksClient);
   private readonly commentsApi = inject(TaskCommentsClient);
   private readonly quiet = inject(QuietRequests);

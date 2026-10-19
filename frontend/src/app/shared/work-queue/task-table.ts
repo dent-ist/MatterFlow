@@ -20,7 +20,8 @@ import { NgTemplateOutlet } from '@angular/common';
 import { NavigationEnd, Params, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
-import { DrillReturn, DrillSource } from './drill';
+import { DrillReturn, DrillSource, RecordOrigin } from './drill';
+import { RowLink } from '../ui/row-nav';
 import { LoadState } from '../ui/data-table';
 import { ScrollArea } from '../ui/fixed-page';
 import { ColumnFilterRow } from '../filters/column-filter-row';
@@ -85,6 +86,7 @@ const LONG_PRESS_MS = 500;
   imports: [
     TaskTypeIcon,
     RouterLink,
+    RowLink,
     MatterCell,
     ProjectCell,
     DueCell,
@@ -299,6 +301,8 @@ const LONG_PRESS_MS = 500;
                               [routerLink]="['/tasks', row.taskId]"
                               [queryParams]="linkParams()"
                               [state]="linkState()"
+                              [mfRowLink]="rowList()"
+                              [rowKey]="row.taskId"
                               [attr.data-task-id]="row.taskId"
                               [attr.title]="titleTip(row)"
                               (click)="drillOut($event, row)"
@@ -473,6 +477,8 @@ const LONG_PRESS_MS = 500;
               [routerLink]="['/tasks', row.taskId]"
               [queryParams]="stepQuery(row)"
               [state]="linkState()"
+              [mfRowLink]="rowList()"
+              [rowKey]="row.taskId"
               (click)="drillOut($event, row)"
               [attr.aria-label]="stepLabel(row)"
               >{{ row.workflow.currentStepName }}</a
@@ -565,9 +571,19 @@ export class TaskTable {
   /** The list the table belongs to: its task links carry `?from=` and the view to return to (M7). Null on record pages. */
   readonly from = input<DrillSource | null>(null);
 
-  protected readonly linkParams = computed(() => (this.from() ? { from: this.from() } : null));
+  /**
+   * The record page the table sits on (a Matter's or Project's Tasks tab; T9, #324): its task links carry `?from=matter|project` and the exact
+   * address, and `rowList` names the list so Back focuses the title link that was left (`mfRowLink`, `restoreRowFocus`).
+   */
+  readonly origin = input<RecordOrigin | null>(null);
+  readonly rowList = input('');
+
+  protected readonly linkParams = computed(() => {
+    const from = this.from() ?? this.origin();
+    return from ? { from } : null;
+  });
   protected readonly linkState = computed(() =>
-    this.from() ? { returnTo: this.here() } : undefined,
+    this.from() || this.origin() ? { returnTo: this.here() } : undefined,
   );
 
   /**
@@ -1064,7 +1080,7 @@ export class TaskTable {
   }
 
   protected stepQuery(row: TaskQueueRow): Params {
-    const from = this.from();
+    const from = this.from() ?? this.origin();
     return from
       ? { ...stepQueryParams(row.workflow.currentStepId as number), from }
       : stepQueryParams(row.workflow.currentStepId as number);

@@ -96,13 +96,13 @@ function focusHeading(): void {
  * Back from a record to a list (#281): once the list has its rows (`ready()` turns true), focus goes to the name link of the row the
  * person left; when that row is not on the page any more (a filter changed, the record was deleted) it goes to the list heading. Nothing
  * happens when the list was not reached by a return (a forward visit, a reload, a different list). No scroll jump beyond `nearest`.
- * Call it in the list's constructor. `fallback` may name a better place than the heading for a row that is not there (the toggle of a
+ * Call it in the list's constructor (`list` may be a function when the id depends on an input). `fallback` may name a better place than the heading for a row that is not there (the toggle of a
  * collapsed group that holds it).
  *
  *   restoreRowFocus('clients', () => this.state() === 'ready');
  */
 export function restoreRowFocus(
-  list: string,
+  listId: string | (() => string),
   ready: () => boolean,
   fallback?: (key: string) => HTMLElement | null,
 ): void {
@@ -112,6 +112,8 @@ export function restoreRowFocus(
   effect(() => {
     if (handled || !ready()) return;
     handled = true;
+    // A list whose id is known only once its inputs are set (a table that serves a Matter and a Project) passes a function.
+    const list = untracked(() => (typeof listId === 'function' ? listId() : listId));
     const key = untracked(() => drill.takeRow(list));
     if (key === null) return;
     afterNextRender(

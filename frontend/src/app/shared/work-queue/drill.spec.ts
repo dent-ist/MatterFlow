@@ -1,7 +1,17 @@
 import { TestBed } from '@angular/core/testing';
 import { NavigationStart, Router, provideRouter } from '@angular/router';
 import { Subject } from 'rxjs';
-import { DrillReturn, listUrl, parseFrom, parseRowRef } from './drill';
+import {
+  DrillReturn,
+  RECORD_ORIGINS,
+  isRecordOrigin,
+  listUrl,
+  originNav,
+  originUrl,
+  parseFrom,
+  parseOrigin,
+  parseRowRef,
+} from './drill';
 
 describe('drill-in context (M7)', () => {
   it('whitelists the from values', () => {
@@ -19,6 +29,66 @@ describe('drill-in context (M7)', () => {
     expect(listUrl('my-work', '/admin/users')).toBe('/my-work');
     expect(listUrl('my-work', '//evil.example/my-work')).toBe('/my-work');
     expect(listUrl('pod-work', '/pods/work?podId=2')).toBe('/pods/work?podId=2');
+  });
+
+  describe('origins of the Task page (T9, #324)', () => {
+    it('whitelists the three lists and the four record pages, nothing else', () => {
+      for (const ok of [
+        'my-work',
+        'task-queue',
+        'pod-work',
+        'matter',
+        'project',
+        'dashboard',
+        'search',
+      ]) {
+        expect(parseOrigin(ok)).toBe(ok);
+      }
+      for (const bad of [
+        '',
+        null,
+        undefined,
+        'constructor',
+        '__proto__',
+        'toString',
+        'MATTER',
+        '//x',
+      ]) {
+        expect(parseOrigin(bad)).toBeNull();
+      }
+      // The work lists' own parser is unchanged.
+      expect(parseFrom('matter')).toBeNull();
+      expect(isRecordOrigin('matter')).toBe(true);
+      expect(isRecordOrigin('my-work')).toBe(false);
+    });
+
+    it('keeps the origin page current in the navigation (Search is not in it)', () => {
+      expect(originNav('my-work')).toBe('/my-work');
+      expect(originNav('task-queue')).toBe('/tasks');
+      expect(originNav('matter')).toBe('/matters');
+      expect(originNav('project')).toBe('/projects');
+      expect(originNav('dashboard')).toBe('/dashboard');
+      expect(originNav('search')).toBeNull();
+      expect(RECORD_ORIGINS.search.paths).toEqual(['/search', '/search/advanced']);
+    });
+
+    it('returns to the exact address only when it is on one of the origin paths', () => {
+      const paths = ['/matters/7'];
+      expect(originUrl(paths, '/matters/7?tab=tasks', '/matters/7?tab=tasks&status=NEW')).toBe(
+        '/matters/7?tab=tasks&status=NEW',
+      );
+      expect(originUrl(paths, '/matters/7?tab=tasks', '/matters/8?tab=tasks')).toBe(
+        '/matters/7?tab=tasks',
+      );
+      expect(originUrl(paths, '/m', '/matters/7/evil')).toBe('/m');
+      expect(originUrl(paths, '/m', '//evil.example/matters/7')).toBe('/m');
+      expect(originUrl(paths, '/m', 'https://evil.example/matters/7')).toBe('/m');
+      expect(originUrl(paths, '/m', undefined)).toBe('/m');
+      expect(originUrl(paths, '/m', 42)).toBe('/m');
+      expect(originUrl(RECORD_ORIGINS.search.paths, '/search', '/search/advanced?type=task')).toBe(
+        '/search/advanced?type=task',
+      );
+    });
   });
 
   describe('DrillReturn', () => {

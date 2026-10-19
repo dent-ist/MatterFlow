@@ -47,7 +47,9 @@ test.describe('Task detail: single page layout', () => {
       ).toHaveText([/Workflow/, /Assets/, /Comments/, /Details/]);
 
       const aside = page.getByRole('complementary', { name: 'Details' });
-      await expect(aside.getByRole('button', { name: 'Edit details' })).toBeVisible();
+      await expect(aside.locator('[data-view]')).toBeVisible();
+      // The panel has no Edit of its own: the header's Edit is the one entry point (K1, #326).
+      await expect(aside.getByRole('button', { name: 'Edit details' })).toHaveCount(0);
       await expect(aside.locator('[data-section="assets"]')).toHaveCount(0);
 
       const workflow = await box(detail.section('Workflow'));
@@ -413,7 +415,9 @@ test.describe('Task detail: single page layout', () => {
 
     const toggle = page.locator('[data-detail-toggle]');
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(page.getByRole('button', { name: 'Edit details' })).toBeHidden();
+    await expect(
+      page.getByRole('complementary', { name: 'Details' }).locator('[data-view]'),
+    ).toBeHidden();
     await noHorizontalScroll(page);
 
     const y = async (locator: ReturnType<Page['locator']>) => (await locator.boundingBox())!.y;
@@ -435,7 +439,9 @@ test.describe('Task detail: single page layout', () => {
 
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.getByRole('button', { name: 'Edit details' })).toBeVisible();
+    await expect(
+      page.getByRole('complementary', { name: 'Details' }).locator('[data-view]'),
+    ).toBeVisible();
     await noHorizontalScroll(page);
 
     await page.setViewportSize({ width: 768, height: 1024 });
@@ -508,7 +514,7 @@ test.describe('Task detail: single page layout', () => {
     await expect(button).toBeFocused();
   });
 
-  test('Edit details in the side panel opens the form in a dialog and saves back to the same page', async ({
+  test('the header Edit opens the form in a dialog and saves back to the same page', async ({
     page,
     seed,
   }) => {
@@ -518,7 +524,7 @@ test.describe('Task detail: single page layout', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
 
-    const open = page.getByRole('button', { name: 'Edit details' });
+    const open = page.locator('[data-task-header] [data-action="edit"]');
     await open.click();
     const dialog = page.getByRole('dialog', { name: 'Edit task details' });
     await expect(dialog).toBeVisible();

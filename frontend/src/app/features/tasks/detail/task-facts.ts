@@ -1,4 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import {
   TaskQueueRow,
   TaskResponse,
@@ -30,6 +41,28 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
     statusChangedAtUtc: t.statusChangedAtUtc,
     rowVersion: t.rowVersion,
   } as TaskQueueRow;
+}
+
+/**
+ * Runs `then` once no dialog is on screen. A dialog that has just closed stays in the page until its leave animation ends and its focus trap
+ * pulls focus back into it meanwhile, so focus put elsewhere before then is lost (K3, #328). Gives up after 2 seconds and runs anyway.
+ */
+function whenNoDialog(then: () => void): void {
+  if (!document.querySelector('.p-dialog-mask')) {
+    then();
+    return;
+  }
+  const watcher = new MutationObserver(() => {
+    if (document.querySelector('.p-dialog-mask')) return;
+    done();
+  });
+  const giveUp = setTimeout(() => done(), 2000);
+  function done(): void {
+    watcher.disconnect();
+    clearTimeout(giveUp);
+    then();
+  }
+  watcher.observe(document.body, { childList: true, subtree: true });
 }
 
 /**
@@ -150,6 +183,39 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
 })
 export class TaskFacts {
   protected readonly store = inject(TaskDetailStore);
+  private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  constructor() {
+    // After Complete, Hold, Resume, Reopen or Cancel (from the header, its overflow or a dialog) focus goes to the Status menu button, never to
+    // <body>: the button that was used is gone or replaced by then (K3, #328). Without a Status menu (a person who may not change it) the
+    // page heading takes it.
+    let seen = this.store.statusFocus();
+    effect(() => {
+      const count = this.store.statusFocus();
+      if (count === seen) return;
+      seen = count;
+      untracked(() =>
+        afterNextRender(() => whenNoDialog(() => this.focusStatus()), { injector: this.injector }),
+      );
+    });
+  }
+
+  /** The Status menu button, else the page heading (a person who may not change the status has no menu). */
+  private focusStatus(): void {
+    const trigger = this.host.nativeElement.querySelector<HTMLElement>(
+      '[data-status] [data-inline-trigger]',
+    );
+    if (trigger) {
+      trigger.focus();
+      return;
+    }
+    const heading = this.host.nativeElement
+      .closest('[data-task-header]')
+      ?.querySelector<HTMLElement>('[data-page-title]');
+    heading?.setAttribute('tabindex', '-1');
+    heading?.focus();
+  }
 
   /** A change made from a chip, shown at once; it only counts while the Task it was made on is still the one on screen. */
   protected readonly override = signal<{ basis: TaskResponse; row: TaskQueueRow } | null>(null);

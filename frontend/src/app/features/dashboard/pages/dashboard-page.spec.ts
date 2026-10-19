@@ -908,7 +908,7 @@ describe('DashboardPage', () => {
     expect(text(panel.querySelector('[data-order]'))).toBe('Highest priority first, then oldest.');
     expect(text(panel.querySelector('[data-total]'))).toBe('17');
     const row = panel.querySelector('li')!;
-    expect(row.querySelector('a.main')!.getAttribute('href')).toBe('/tasks/21');
+    expect(row.querySelector('a.main')!.getAttribute('href')).toBe('/tasks/21?from=dashboard');
     expect(text(row.querySelector('.ref'))).toBe('TSK-21');
     expect(text(row.querySelector('.title'))).toBe('Unassigned intake');
     expect(text(row.querySelector('mf-matter-ref'))).toContain('00343-00012');

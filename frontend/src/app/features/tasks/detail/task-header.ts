@@ -1,8 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, UrlTree } from '@angular/router';
 import { map } from 'rxjs';
-import { DRILL_SOURCES, listUrl, parseFrom } from '../../../shared/work-queue/drill';
+import {
+  DRILL_SOURCES,
+  RECORD_ORIGINS,
+  isRecordOrigin,
+  listUrl,
+  originUrl,
+  parseOrigin,
+} from '../../../shared/work-queue/drill';
+import { RETURN_STATE } from '../../../shared/ui/row-nav';
 import { TaskTransitionOption } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
@@ -126,43 +134,84 @@ export class TaskHeader {
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
 
-  /** The list the task was opened from (`?from=`, whitelisted); null for any other value or none (M7). */
+  /** The page the task was opened from (`?from=`, whitelisted); null for any other value or none (M7, #324). */
   private readonly from = toSignal(
-    this.route.queryParamMap.pipe(map((q) => parseFrom(q.get('from')))),
-    { initialValue: parseFrom(this.route.snapshot.queryParamMap.get('from')) },
+    this.route.queryParamMap.pipe(map((q) => parseOrigin(q.get('from')))),
+    { initialValue: parseOrigin(this.route.snapshot.queryParamMap.get('from')) },
   );
-  private readonly source = computed(() => {
+
+  /**
+   * Where Back and the first crumb go (#324, #325): the exact view the person left (history state `returnTo`, read when the page opened:
+   * filters, tab, search text) or the plain page. A work list, a Matter's or Project's Tasks tab, the Dashboard or Search; a Matter or
+   * Project the person may not open, or a task with no project, is not an origin (nothing to go back to), so the page behaves as opened
+   * without `from`. `hidesMatter`: the origin is the matter itself, so the matter is not a second crumb.
+   */
+  private readonly origin = computed<{
+    label: string;
+    link: UrlTree;
+    hidesMatter: boolean;
+  } | null>(() => {
     const from = this.from();
-    return from ? DRILL_SOURCES[from] : null;
-  });
-  /** The exact list view when the browser still knows it (history state `returnTo`), else the plain list path. */
-  private readonly listTree = computed(() => {
-    const from = this.from();
-    if (!from) return this.router.parseUrl('/tasks');
-    const state: unknown = typeof history === 'undefined' ? null : history.state;
-    const returnTo = (state as { returnTo?: unknown } | null)?.returnTo;
-    return this.router.parseUrl(listUrl(from, returnTo));
+    const t = this.store.task();
+    if (!from || !t) return null;
+    const returnTo = this.store.returnTo;
+    if (!isRecordOrigin(from)) {
+      return {
+        label: DRILL_SOURCES[from].label,
+        link: this.router.parseUrl(listUrl(from, returnTo)),
+        hidesMatter: false,
+      };
+    }
+    const at = (
+      paths: readonly string[],
+      fallback: string,
+      label: string,
+      hidesMatter = false,
+    ) => ({
+      label,
+      link: this.router.parseUrl(originUrl(paths, fallback, returnTo)),
+      hidesMatter,
+    });
+    switch (from) {
+      case 'matter': {
+        if (!this.auth.canLink('matter')) return null;
+        const base = `/matters/${t.matter.matterId}`;
+        return at([base], `${base}?tab=tasks`, `Matter ${t.matter.matterRef}`, true);
+      }
+      case 'project': {
+        if (!this.auth.canLink('project') || !t.project) return null;
+        const base = `/projects/${t.project.projectId}`;
+        return at([base], base, `Project ${t.project.name}`);
+      }
+      case 'dashboard':
+        return this.auth.has('Dashboard.View')
+          ? at(RECORD_ORIGINS.dashboard.paths, '/dashboard', RECORD_ORIGINS.dashboard.label)
+          : null;
+      case 'search':
+        return at(RECORD_ORIGINS.search.paths, '/search', RECORD_ORIGINS.search.label);
+    }
   });
 
-  /** "Back to My Work" on a phone: the list the task was opened from, with focus returning to the row (`restoreFocus`). */
+  /** "Back to My Work" on a phone: the page the task was opened from, with focus returning to the row (`RETURN_STATE`). */
   protected readonly backTo = computed(() => {
-    const src = this.source();
-    return src
-      ? { label: src.label, link: this.listTree(), state: { restoreFocus: true } }
+    const o = this.origin();
+    return o
+      ? { label: o.label, link: o.link, state: { ...RETURN_STATE } }
       : { label: 'Tasks', link: '/tasks' };
   });
 
-  /** `Tasks > 00343-00012 Merger Review > TSK-1`: the list the person came from, then the matter for people who may open it. */
+  /** `Tasks > 00343-00012 Merger Review > TSK-1`: the page the person came from, then the matter for people who may open it. */
   protected readonly parents = computed<Crumb[]>(() => {
     const t = this.store.task();
     if (!t) return [];
-    const source = this.source();
+    const source = this.origin();
     const list: Crumb = {
       label: source?.label ?? 'Tasks',
-      link: this.listTree(),
-      // From a list the crumb brings the person back to the row they left, as "Back to ..." does.
-      state: source ? { restoreFocus: true } : undefined,
+      link: source?.link ?? this.router.parseUrl('/tasks'),
+      // From a page the crumb brings the person back to the row they left, as "Back to ..." does.
+      state: source ? { ...RETURN_STATE } : undefined,
     };
+    if (source?.hidesMatter) return [list];
     return this.auth.canLink('matter')
       ? [
           list,
@@ -280,7 +329,6 @@ export class TaskHeader {
   });
 
   protected edit(): void {
-    this.store.editOrigin.set('header');
     this.store.editing.set(true);
   }
 

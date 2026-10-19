@@ -1,7 +1,13 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { DRILL_SOURCES, parseFrom } from '../work-queue/drill';
+import {
+  DRILL_SOURCES,
+  RECORD_ORIGINS,
+  isRecordOrigin,
+  originNav,
+  parseOrigin,
+} from '../work-queue/drill';
 import { DetailLayout } from './detail-layout';
 import { Crumb } from './page-header';
 import { RecordHeader } from './record-header';
@@ -230,8 +236,12 @@ export class RecordSkeleton {
   private readonly route = inject(ActivatedRoute);
   /** The list the Task was opened from (`?from=`), as the real header names it. */
   private readonly source = computed(() => {
-    const from = parseFrom(this.route.snapshot.queryParamMap.get('from'));
-    return from ? DRILL_SOURCES[from] : null;
+    const from = parseOrigin(this.route.snapshot.queryParamMap.get('from'));
+    if (!from) return null;
+    // A Matter's, Project's, Dashboard's or Search origin is named by its kind until the task says which one (T9, #324).
+    return isRecordOrigin(from)
+      ? { label: RECORD_ORIGINS[from].label, path: originNav(from) ?? '/search' }
+      : DRILL_SOURCES[from];
   });
   protected readonly taskParents = computed<Crumb[]>(() => [
     { label: this.source()?.label ?? 'Tasks', link: this.source()?.path ?? '/tasks' },

@@ -38,6 +38,7 @@ import { emptyState, taskQueueArgs } from '../../../shared/work-queue/queue-filt
 import { DueCell } from '../../../shared/work-queue/due-cell';
 import { ageInDays } from '../ui/task-list-panel';
 import { loadLevelOf, plural } from './users-model';
+import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -305,6 +306,8 @@ export function assignHint(
                           <a
                             class="ref mf-ref"
                             [routerLink]="['/tasks', r.taskId]"
+                            [queryParams]="origin.params('dashboard')"
+                            [state]="origin.state()"
                             target="_blank"
                             >{{ r.taskNumber }}</a
                           >
@@ -541,6 +544,8 @@ export function assignHint(
   `,
 })
 export class UsersAssign {
+  /** Task links carry `?from=dashboard` and this view's address, so the Task page can bring the person back (T9, #324). */
+  protected readonly origin = inject(TaskOriginLinks);
   private readonly queue = inject(TaskQueueClient);
   private readonly tasks = inject(TasksClient);
   private readonly notify = inject(NotificationService);

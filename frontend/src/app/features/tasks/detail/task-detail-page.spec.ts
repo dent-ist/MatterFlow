@@ -61,7 +61,7 @@ describe('TaskDetailPage header', () => {
 
     expect(el.querySelectorAll('[data-action="edit"]').length).toBe(1);
     expect(q(el, '[data-action="edit"]')!.textContent!.trim()).toBe('Edit');
-    expect(q(el, '[data-edit-details]')).not.toBeNull();
+    expect(q(el, '[data-edit-details]')).toBeNull();
     expect(q(el, '[data-action="activity"]')!.textContent).toContain('Activity');
     expect(q(el, '[data-status] [data-inline-trigger]')).not.toBeNull();
     expect(q(el, '[data-priority] [data-inline-trigger]')).not.toBeNull();
@@ -1015,8 +1015,13 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
     history.replaceState(null, '');
   });
 
-  async function openFrom(from: string, returnTo?: string) {
-    return mountTaskPage(aTask(), PERMS, {}, undefined, () => {
+  async function openFrom(
+    from: string,
+    returnTo?: string,
+    task = aTask(),
+    perms: Permission[] = PERMS,
+  ) {
+    return mountTaskPage(task, perms, {}, undefined, () => {
       const route = TestBed.inject(ActivatedRoute);
       (route.queryParams as BehaviorSubject<Params>).next({ from });
       route.snapshot.queryParams = { from };
@@ -1044,6 +1049,76 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
     const foreign = await openFrom('pod-work', '/admin/users?x=1');
     expect(crumb(foreign.el).textContent!.trim()).toBe('Pod Work');
     expect(crumb(foreign.el).getAttribute('href')).toBe('/pods/work');
+  });
+
+  describe('from a Matter, Project, Dashboard or Search (T9, #324)', () => {
+    const crumbs = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLAnchorElement>('nav[aria-label="Breadcrumb"] li a')).map(
+        (a) => [a.textContent!.trim(), a.getAttribute('href')],
+      );
+    const back = (el: HTMLElement) => q(el, '[data-back-link]') as HTMLAnchorElement;
+
+    it('Matter: the crumb names the matter and returns to the exact Tasks view; the matter is not a second crumb', async () => {
+      const { el } = await openFrom('matter', '/matters/7?tab=tasks&status=NEW&q=abc', undefined, [
+        ...PERMS,
+        'Matter.View',
+      ]);
+      expect(crumbs(el)).toEqual([['Matter 00343-00012', '/matters/7?tab=tasks&status=NEW&q=abc']]);
+      expect(back(el).textContent).toContain('Back to Matter 00343-00012');
+      expect(back(el).getAttribute('href')).toBe('/matters/7?tab=tasks&status=NEW&q=abc');
+    });
+
+    it('Matter: a foreign or other-matter address falls back to the matter Tasks tab; without Matter.View the origin is ignored', async () => {
+      const other = await openFrom('matter', '/matters/8?tab=tasks', undefined, [
+        ...PERMS,
+        'Matter.View',
+      ]);
+      expect(crumbs(other.el)).toEqual([['Matter 00343-00012', '/matters/7?tab=tasks']]);
+      TestBed.resetTestingModule();
+      const none = await openFrom('matter', '/matters/7?tab=tasks');
+      expect(crumbs(none.el)).toEqual([['Tasks', '/tasks']]);
+      expect(back(none.el).getAttribute('href')).toBe('/tasks');
+    });
+
+    it('Project: the crumb names the project and keeps the matter as the next crumb; a task without a project ignores the origin', async () => {
+      const task = aTask({ project: { projectId: 3, name: 'Alpha review', isActive: true } });
+      const { el } = await openFrom('project', '/projects/3?tab=tasks&priority=1', task, [
+        ...PERMS,
+        'Matter.View',
+        'Project.View',
+      ]);
+      expect(crumbs(el)).toEqual([
+        ['Project Alpha review', '/projects/3?tab=tasks&priority=1'],
+        ['00343-00012 Merger Review', '/matters/7'],
+      ]);
+      TestBed.resetTestingModule();
+      const bare = await openFrom('project', '/projects/3', aTask({ project: undefined }), [
+        ...PERMS,
+        'Project.View',
+      ]);
+      expect(crumbs(bare.el)[0]).toEqual(['Tasks', '/tasks']);
+    });
+
+    it('Dashboard and Search: the exact address comes back; a foreign address falls back to the page', async () => {
+      const dash = await openFrom('dashboard', '/dashboard?pod=4', undefined, [
+        ...PERMS,
+        'Dashboard.View',
+      ]);
+      expect(crumbs(dash.el)).toEqual([['Dashboard', '/dashboard?pod=4']]);
+      TestBed.resetTestingModule();
+      const search = await openFrom('search', '/search?q=merger');
+      expect(crumbs(search.el)).toEqual([['Search', '/search?q=merger']]);
+      expect(back(search.el).getAttribute('href')).toBe('/search?q=merger');
+      TestBed.resetTestingModule();
+      const adv = await openFrom('search', '/search/advanced?type=task&q=x');
+      expect(crumbs(adv.el)).toEqual([['Search', '/search/advanced?type=task&q=x']]);
+      TestBed.resetTestingModule();
+      const foreign = await openFrom('search', '//evil.example/search');
+      expect(crumbs(foreign.el)).toEqual([['Search', '/search']]);
+      TestBed.resetTestingModule();
+      const denied = await openFrom('dashboard', '/dashboard');
+      expect(crumbs(denied.el)).toEqual([['Tasks', '/tasks']]);
+    });
   });
 
   it('keeps the default crumb and a Back link to the Task list for an unknown from value', async () => {

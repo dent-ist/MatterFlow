@@ -23,6 +23,7 @@ import {
 import { HitTable } from './hit-table';
 import { ErrorReference } from '../../shared/ui/error-reference';
 import { PageHeader } from '../../shared/ui/page-header';
+import { restoreRowFocus } from '../../shared/ui/row-nav';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -210,6 +211,8 @@ export class SearchResultsPage {
   private requestId = 0;
 
   constructor() {
+    // Back from a task result: focus the link that was left (T9, #324).
+    restoreRowFocus('search', () => this.state() === 'ready');
     effect(() => {
       this.q();
       untracked(() => void this.load());

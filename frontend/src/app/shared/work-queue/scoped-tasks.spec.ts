@@ -221,6 +221,19 @@ describe('ScopedTasks', () => {
     expect(el().querySelector('mf-project-cell span')!.getAttribute('title')).toBe('Wave 1');
   });
 
+  it('task links carry the origin and name their list for Back: a matter grid and a project grid (T9, #324)', async () => {
+    await create(['Task.View']);
+    const link = el().querySelector<HTMLAnchorElement>('a.wt-title')!;
+    expect(link.getAttribute('href')).toContain('from=matter');
+    expect(link.getAttribute('data-row-list')).toBe('matter-tasks');
+    expect(link.getAttribute('data-row-key')).toBe(String(aRow().taskId));
+    TestBed.resetTestingModule();
+    await create(['Task.View'], { projectId: 3 });
+    const project = el().querySelector<HTMLAnchorElement>('a.wt-title')!;
+    expect(project.getAttribute('href')).toContain('from=project');
+    expect(project.getAttribute('data-row-list')).toBe('project-tasks');
+  });
+
   it('disables Status while a view is pressed, and Due for Due soon', async () => {
     await create(['Task.View'], {}, { view: 'dueSoon' });
     fixture.componentInstance['filters'].open.set(true);

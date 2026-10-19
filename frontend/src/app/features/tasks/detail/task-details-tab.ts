@@ -24,8 +24,8 @@ import { TaskEditDialog } from './task-edit-dialog';
 
 /**
  * Details panel (UX S10) of the Task page, in the side panel of `mf-detail-layout` (the layout adds the "Details" heading): the
- * read view (requestor, dates, project, request-form values; Due, Pod and the type are in the header) and, behind "Edit details" (or the header's Edit), the
- * Edit dialog (`mf-task-edit-dialog`). Closing the dialog returns to the same page.
+ * read view (requestor, dates, project, request-form values; Due, Pod and the type are in the header) and the Edit dialog
+ * (`mf-task-edit-dialog`), opened by the header's Edit, the one Edit control (K1, #326). Closing the dialog returns to the same page.
  */
 @Component({
   selector: 'mf-task-details-tab',

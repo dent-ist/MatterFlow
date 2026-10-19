@@ -34,6 +34,7 @@ import { Pager } from '../../shared/ui/pager';
 import { HitTable } from './hit-table';
 import { ErrorReference } from '../../shared/ui/error-reference';
 import { PageHeader } from '../../shared/ui/page-header';
+import { restoreRowFocus } from '../../shared/ui/row-nav';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 type Tri = 'any' | 'true' | 'false';
@@ -413,6 +414,8 @@ export class AdvancedSearchPage {
   };
 
   constructor() {
+    // Back from a task result: focus the link that was left (T9, #324).
+    restoreRowFocus('search', () => this.state() === 'ready');
     // Follow the URL: fill the form from it and, when it names a search, run it.
     effect(() => {
       this.type();

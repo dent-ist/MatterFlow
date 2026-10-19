@@ -26,6 +26,59 @@ export function parseFrom(value: string | null | undefined): DrillSource | null 
 }
 
 /**
+ * The pages other than the three work lists a task is opened from (T9, #324): a Matter's or a Project's Tasks tab, the Dashboard and Search.
+ * Only the Task page reads them (its crumb, Back link and navigation highlight); the work lists' own `DRILL_SOURCES` are unchanged.
+ */
+export type RecordOrigin = 'matter' | 'project' | 'dashboard' | 'search';
+export type TaskOrigin = DrillSource | RecordOrigin;
+
+export interface RecordOriginInfo {
+  /** The crumb and "Back to" label when the page has no better name ("Matter 00107-00001" is built from the task). */
+  label: string;
+  /** The navigation item that stays current while the task is open (null: Search is not in the navigation). */
+  nav: string | null;
+  /** The paths of the origin page that count as "the page the person came from"; the Task page only returns to an address on one of them. */
+  paths: readonly string[];
+}
+
+export const RECORD_ORIGINS: Readonly<Record<RecordOrigin, RecordOriginInfo>> = {
+  matter: { label: 'Matter', nav: '/matters', paths: [] },
+  project: { label: 'Project', nav: '/projects', paths: [] },
+  dashboard: { label: 'Dashboard', nav: '/dashboard', paths: ['/dashboard'] },
+  search: { label: 'Search', nav: null, paths: ['/search', '/search/advanced'] },
+};
+
+/** The whitelisted value of `?from=` for the Task page (the work lists and the record pages), or null: anything else is dropped. */
+export function parseOrigin(value: string | null | undefined): TaskOrigin | null {
+  if (!value) return null;
+  const list = parseFrom(value);
+  if (list) return list;
+  return Object.prototype.hasOwnProperty.call(RECORD_ORIGINS, value)
+    ? (value as RecordOrigin)
+    : null;
+}
+
+export function isRecordOrigin(origin: TaskOrigin): origin is RecordOrigin {
+  return Object.prototype.hasOwnProperty.call(RECORD_ORIGINS, origin);
+}
+
+/** The navigation item a task opened from `origin` keeps current (Task Queue, My Work, Pod Work, Matters, Projects, Dashboard; none for Search). */
+export function originNav(origin: TaskOrigin): string | null {
+  return isRecordOrigin(origin) ? RECORD_ORIGINS[origin].nav : DRILL_SOURCES[origin].path;
+}
+
+/**
+ * The exact address the person came from, from history state `returnTo` (filters, tab, query kept): only an address on one of the origin's
+ * own `paths` counts (the state is data a link or an old entry could carry), so a foreign or malformed value falls back to `fallback`.
+ */
+export function originUrl(paths: readonly string[], fallback: string, returnTo: unknown): string {
+  if (typeof returnTo !== 'string' || !returnTo.startsWith('/') || returnTo.startsWith('//'))
+    return fallback;
+  const bare = returnTo.split(/[?#]/)[0];
+  return paths.includes(bare) ? returnTo : fallback;
+}
+
+/**
  * The URL of the exact list view (filters, tab, sort) the person came from, from history state `returnTo`; only an address on the list's own
  * path counts (the state is data a link or an old entry could carry), so a bad value falls back to the plain list path.
  */

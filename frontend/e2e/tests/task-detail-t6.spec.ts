@@ -281,12 +281,8 @@ test.describe('Task T6: Details heading, alignment and Request details (#312, #3
         await openFresh(p, task.taskId);
         await openDetails(p);
         const heading = await rect(p.locator('[data-detail-panel] h2'));
-        const pencil = await rect(p.locator('[data-edit-details]'));
-        expect(
-          Math.abs(pencil.top + pencil.height / 2 - (heading.top + heading.height / 2)),
-          `pencil and heading share a row at ${size.width}`,
-        ).toBeLessThanOrEqual(4);
-        expect(pencil.left).toBeGreaterThan(heading.left + 40);
+        // T9 (#326): the header's Edit is the one Edit control, so the heading row has no pencil any more.
+        await expect(p.locator('[data-edit-details]')).toHaveCount(0);
         const description = await rect(p.getByRole('heading', { name: 'Description', level: 3 }));
         expect(
           description.top - heading.bottom,
@@ -359,7 +355,7 @@ test.describe('Task T6: Details heading, alignment and Request details (#312, #3
     const short = await seeded(seed, admin, { fieldCount: 5 });
     await page.setViewportSize({ width: 1366, height: 768 });
     await openFresh(page, long.task.taskId);
-    await page.locator('[data-edit-details]').click();
+    await new TaskDetailPage(page).openEdit();
     const dialogToggle = page.locator('[role=dialog] [data-request-toggle]');
     await expect(dialogToggle).toHaveAttribute('aria-expanded', 'false');
     await expect(dialogToggle).toContainText('14 fields');
@@ -368,7 +364,7 @@ test.describe('Task T6: Details heading, alignment and Request details (#312, #3
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
     await new TaskDetailPage(page).open(short.task.taskId);
-    await page.locator('[data-edit-details]').click();
+    await new TaskDetailPage(page).openEdit();
     await expect(page.locator('[role=dialog] [data-request-toggle]')).toHaveAttribute(
       'aria-expanded',
       'true',
@@ -529,18 +525,17 @@ test.describe('Task T6: long values and permission variants', () => {
     const nonePage = await asUser(nobody.username);
 
     for (const size of SIZES) {
-      for (const [name, p, canEdit] of [
-        ['admin', page, true],
-        ['technician', techPage, true],
-        ['view-only', viewPage, false],
+      for (const [name, p] of [
+        ['admin', page],
+        ['technician', techPage],
+        ['view-only', viewPage],
       ] as const) {
         await p.setViewportSize(size);
         await openFresh(p, task.taskId);
         await openDetails(p);
         await expect(p.locator('[data-filter-group]'), `${name} filter`).toBeVisible();
-        await expect(p.locator('[data-edit-details]'), `${name} pencil`).toHaveCount(
-          canEdit ? 1 : 0,
-        );
+        // The panel has no pencil for anyone (T9, #326); the header's Edit follows the right to edit.
+        await expect(p.locator('[data-edit-details]'), `${name} pencil`).toHaveCount(0);
         await expect(requestToggle(p), `${name} request`).toBeVisible();
         await expect(p.locator('[data-description-more]'), `${name} more`).toBeVisible();
         await check(p, `roles-${name}`);

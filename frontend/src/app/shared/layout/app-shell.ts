@@ -22,7 +22,7 @@ import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { SEARCH_TYPES } from '../search/search-meta';
 import { GlobalSearch } from '../search/global-search';
 import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem } from './nav-items';
-import { DRILL_SOURCES, parseFrom } from '../work-queue/drill';
+import { originNav, parseOrigin } from '../work-queue/drill';
 import { ShortcutHelpState } from './shortcut-help-state';
 import { KeyboardShortcuts } from './keyboard-shortcuts';
 import { SkipTarget } from './skip-target';
@@ -186,9 +186,10 @@ export class AppShell {
     const [path, query] = this.url().split('#')[0].split('?');
     const from =
       /^\/tasks\/[^/]+$/.test(path) && path !== '/tasks/new'
-        ? parseFrom(new URLSearchParams(query ?? '').get('from'))
+        ? parseOrigin(new URLSearchParams(query ?? '').get('from'))
         : null;
-    if (from) return item.path === DRILL_SOURCES[from].path;
+    // From a Matter's or Project's Tasks tab, the Dashboard or Search the page they came from stays current (Search is not in the menu).
+    if (from) return item.path === originNav(from);
     return path === item.path || path.startsWith(item.path + '/');
   }
 

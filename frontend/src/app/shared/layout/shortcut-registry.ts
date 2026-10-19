@@ -125,6 +125,35 @@ export const ROW_SHORTCUTS: readonly ShortcutDef[] = [
   },
 ];
 
+/**
+ * Single-character shortcuts of the Task page (K2, #327): C adds a comment, A opens the Assignee menu, S opens the Status menu. Like the
+ * row shortcuts they act only while "Keyboard shortcuts" is on (WCAG 2.1.4), never in a field, a menu or a dialog, and the page lists them
+ * in the help while a task is open (`registerTaskShortcuts`).
+ */
+export const TASK_SHORTCUTS: readonly ShortcutDef[] = [
+  {
+    id: 'task-comment',
+    group: 'page',
+    keys: ['C'],
+    does: 'On a task: write a comment (opens Comments, if you may comment)',
+    matches: (e) => plain(e) && !e.shiftKey && lower(e) === 'c',
+  },
+  {
+    id: 'task-assignee',
+    group: 'page',
+    keys: ['A'],
+    does: 'On a task: open the Assignee menu (if you may assign)',
+    matches: (e) => plain(e) && !e.shiftKey && lower(e) === 'a',
+  },
+  {
+    id: 'task-status',
+    group: 'page',
+    keys: ['S'],
+    does: 'On a task: open the Status menu (if you may change it)',
+    matches: (e) => plain(e) && !e.shiftKey && lower(e) === 's',
+  },
+];
+
 /** The arrow keys of the Quick views toolbar (#236). Not single characters, so they stay on when "Keyboard shortcuts" is off (WCAG 2.1.4). */
 export const QUICK_VIEW_SHORTCUTS: readonly ShortcutDef[] = [
   {
@@ -177,7 +206,10 @@ export const goShortcut = (t: GoTarget): ShortcutDef => ({
 });
 
 const BY_ID = new Map<string, ShortcutDef>(
-  [...GLOBAL_SHORTCUTS, ...ROW_SHORTCUTS, ...QUICK_VIEW_SHORTCUTS].map((s) => [s.id, s]),
+  [...GLOBAL_SHORTCUTS, ...ROW_SHORTCUTS, ...TASK_SHORTCUTS, ...QUICK_VIEW_SHORTCUTS].map((s) => [
+    s.id,
+    s,
+  ]),
 );
 
 /** Whether a keydown event is the shortcut with this id: the handlers call this, so a key and its help line cannot drift apart. */

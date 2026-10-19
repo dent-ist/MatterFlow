@@ -19,6 +19,8 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
+import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
+import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { LIST_ORDER, ListKind, queueParamsSorted } from '../dashboard-links';
 import { DashState } from './dash-state';
 
@@ -54,7 +56,16 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
  */
 @Component({
   selector: 'mf-dash-task-list',
-  imports: [RouterLink, MatterRef, PriorityBadge, RowEdit, TaskTypeIcon, DueCell, DashState],
+  imports: [
+    RouterLink,
+    RowLink,
+    MatterRef,
+    PriorityBadge,
+    RowEdit,
+    TaskTypeIcon,
+    DueCell,
+    DashState,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.fill]': 'scroll()' },
   template: `
@@ -145,7 +156,15 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
               <ul>
                 @for (row of shown(); track row.taskId; let i = $index) {
                   <li [attr.data-task]="row.taskNumber" [attr.data-row]="i">
-                    <a class="main" [routerLink]="['/tasks', row.taskId]" [attr.title]="row.title">
+                    <a
+                      class="main"
+                      [routerLink]="['/tasks', row.taskId]"
+                      [queryParams]="origin.params('dashboard')"
+                      [state]="origin.state()"
+                      [mfRowLink]="'dashboard-' + kind()"
+                      [rowKey]="row.taskId"
+                      [attr.title]="row.title"
+                    >
                       <span class="ref">{{ row.taskNumber }}</span>
                       <span
                         class="type"
@@ -545,6 +564,15 @@ export class DashTaskList {
   private readonly zone = inject(USER_TIME_ZONE);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly undo = inject(UndoService);
+  /** Task links carry `?from=dashboard` and this view's address, so the Task page can bring the person back to the row (T9, #324). */
+  protected readonly origin = inject(TaskOriginLinks);
+
+  constructor() {
+    restoreRowFocus(
+      () => 'dashboard-' + this.kind(),
+      () => this.state() === 'ready',
+    );
+  }
 
   readonly kind = input.required<PanelKind>();
   readonly heading = input.required<string>();

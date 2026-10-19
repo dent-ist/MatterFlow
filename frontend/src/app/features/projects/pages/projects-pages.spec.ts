@@ -552,7 +552,7 @@ describe('Projects pages', () => {
       expect(args[11]).toBe(3); // project
       expect(args[2]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']); // open by default
       expect(el().querySelector('tbody tr[data-task=TSK-1042] a')?.getAttribute('href')).toBe(
-        '/tasks/1042',
+        '/tasks/1042?from=project',
       );
       expect(el().querySelector('mf-scoped-tasks [data-create-task]')).toBeNull(); // needs Task.Create
       // A project's tasks have no Project filter (the project is the page).

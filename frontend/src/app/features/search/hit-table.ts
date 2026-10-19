@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { RowLink } from '../../shared/ui/row-nav';
+import { TaskOriginLinks } from '../../shared/work-queue/task-origin';
 import { SearchHit } from '../../api/generated/api-client';
 import { highlightParts } from '../../shared/search/search-meta';
 import { MatterRef } from '../../shared/ui/matter-ref';
@@ -12,7 +14,7 @@ import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
  */
 @Component({
   selector: 'mf-search-hit-table',
-  imports: [ActiveBadge, SensitiveBadge, RouterLink, MatterRef, StatusBadge],
+  imports: [ActiveBadge, SensitiveBadge, RouterLink, RowLink, MatterRef, StatusBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   styles: `
@@ -68,14 +70,28 @@ import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
                 <td class="pg-mono">
                   @if (hit.reference) {
                     <!-- The same destination as the name link; kept out of the tab order and the reading order so it is not announced twice. -->
-                    <a class="pg-link" [routerLink]="hit.path" tabindex="-1" aria-hidden="true">{{
-                      hit.reference
-                    }}</a>
+                    <a
+                      class="pg-link"
+                      [routerLink]="hit.path"
+                      [queryParams]="hit.type === 'task' ? origin.params('search') : null"
+                      [state]="hit.type === 'task' ? origin.state() : undefined"
+                      tabindex="-1"
+                      aria-hidden="true"
+                      >{{ hit.reference }}</a
+                    >
                   }
                 </td>
               }
               <td>
-                <a class="pg-link" [routerLink]="hit.path">
+                <!-- A task result remembers this view (T9, #324): its Back link and crumb return here and focus this link. -->
+                <a
+                  class="pg-link"
+                  [routerLink]="hit.path"
+                  [queryParams]="hit.type === 'task' ? origin.params('search') : null"
+                  [state]="hit.type === 'task' ? origin.state() : undefined"
+                  [mfRowLink]="hit.type === 'task' ? 'search' : ''"
+                  [rowKey]="hit.id"
+                >
                   @for (part of parts(hit.label); track $index) {
                     @if (part.match) {
                       <mark>{{ part.text }}</mark>
@@ -121,6 +137,7 @@ import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
   `,
 })
 export class HitTable {
+  protected readonly origin = inject(TaskOriginLinks);
   readonly hits = input.required<SearchHit[]>();
   /** The text to highlight in names. */
   readonly query = input('');

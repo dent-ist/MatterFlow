@@ -24,6 +24,7 @@ import {
   UserSort,
   toneOf,
 } from './users-model';
+import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 
 /**
  * The compact table view of the Team workload: one row per person with the same facts as the card (state, highest priority, a count per
@@ -155,7 +156,13 @@ import {
               <td>
                 @if (u.nextDue; as n) {
                   <span class="nd" [attr.title]="n.ref + ' ' + nextDue(u)">
-                    <a class="mf-ref" [routerLink]="['/tasks', n.taskId]">{{ n.ref }}</a>
+                    <a
+                      class="mf-ref"
+                      [routerLink]="['/tasks', n.taskId]"
+                      [queryParams]="origin.params('dashboard')"
+                      [state]="origin.state()"
+                      >{{ n.ref }}</a
+                    >
                     {{ nextDue(u) }}
                   </span>
                 } @else {
@@ -447,6 +454,8 @@ import {
   `,
 })
 export class UsersTable {
+  /** Task links carry `?from=dashboard` and this view's address, so the Task page can bring the person back (T9, #324). */
+  protected readonly origin = inject(TaskOriginLinks);
   private readonly zone = inject(USER_TIME_ZONE);
   private readonly clock = inject(Clock);
 

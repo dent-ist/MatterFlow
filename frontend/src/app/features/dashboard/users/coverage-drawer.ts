@@ -26,6 +26,7 @@ import { ErrorReference } from '../../../shared/ui/error-reference';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { emptyState, taskQueueArgs } from '../../../shared/work-queue/queue-filters';
 import { plural } from './coverage-model';
+import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 
 /** The cell a person opened: who, which task type and the period (local days). */
 export interface CoverageTarget {
@@ -135,9 +136,13 @@ export function targetQueueParams(t: CoverageTarget): Record<string, string | st
                 <ul class="rows" data-coverage-tasks>
                   @for (r of rows(); track r.taskId) {
                     <li class="row" [attr.data-task]="r.taskNumber">
-                      <a class="ref mf-ref" [routerLink]="['/tasks', r.taskId]">{{
-                        r.taskNumber
-                      }}</a>
+                      <a
+                        class="ref mf-ref"
+                        [routerLink]="['/tasks', r.taskId]"
+                        [queryParams]="origin.params('dashboard')"
+                        [state]="origin.state()"
+                        >{{ r.taskNumber }}</a
+                      >
                       <span class="title" [attr.title]="r.title">{{ r.title }}</span>
                       <span class="meta">
                         <mf-matter-ref [value]="r.matterRef" [copy]="false" />
@@ -246,6 +251,8 @@ export function targetQueueParams(t: CoverageTarget): Record<string, string | st
   `,
 })
 export class CoverageDrawer {
+  /** Task links carry `?from=dashboard` and this view's address, so the Task page can bring the person back (T9, #324). */
+  protected readonly origin = inject(TaskOriginLinks);
   private readonly queue = inject(TaskQueueClient);
   private readonly zone = inject(USER_TIME_ZONE);
   private seq = 0;

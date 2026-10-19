@@ -52,9 +52,9 @@ describe('Details tab', () => {
     expect(q(el, '[data-description]')!.textContent).toContain('Process the custodians.');
     // Created (and Last updated, when the task was changed) share one row.
     expect(q(el, '.dt__pair')!.textContent).toContain('Created');
-    // Edit is an icon button in the corner, named for screen readers.
-    expect(q(el, '[data-edit-details]')!.getAttribute('aria-label')).toBe('Edit details');
-    expect(q(el, '[data-edit-details]')!.textContent!.trim()).toBe('');
+    // One Edit control: the header's. The panel has no pencil of its own (K1, #326).
+    expect(q(el, '[data-edit-details]')).toBeNull();
+    expect(q(el, '[data-details-tab] .pi-pencil')).toBeNull();
     expect(view).toContain('Jane Roe');
     // Task type, Pod and Due are in the header (the context line and the facts strip), not in the panel again (#297).
     expect(view).not.toContain('Data Processing');
@@ -66,7 +66,7 @@ describe('Details tab', () => {
     expect(q(el, '[data-request-form]')!.textContent).toContain('English');
     expect(q(el, '[data-locked-fields]')).toBeNull();
 
-    await click(fixture, q(el, '[data-edit-details]'));
+    await click(fixture, q(el, '[data-action="edit"]'));
     const locked = q(document.body, '[data-locked-fields]')!.textContent!;
     expect(locked).toContain('Data Processing');
     expect(locked).toContain('Standard Processing v2');
@@ -209,10 +209,10 @@ describe('Details tab', () => {
     });
   });
 
-  it('Edit details in the panel opens the same form as the header Edit and returns to the page', async () => {
+  it('the header Edit opens the form in a dialog and returns to the page', async () => {
     const { fixture, el } = await mountTaskPage(aTask());
     document.body.appendChild(el);
-    const open = q(el, '[data-edit-details]') as HTMLElement;
+    const open = q(el, '[data-action="edit"]') as HTMLElement;
     open.focus();
     await click(fixture, open);
     expect(q(document.body, '[data-edit-form]')).not.toBeNull();
@@ -301,7 +301,7 @@ describe('Details tab', () => {
       ['Task.View', 'Task.Edit'],
       { forms: { getFormVersionSchema: vi.fn().mockReturnValue(of(fieldsOf(8))) } },
     );
-    await click(fixture, q(el, '[data-edit-details]'));
+    await click(fixture, q(el, '[data-action="edit"]'));
     const body = document.body;
     expect(q(body, '[data-section="task"]')).not.toBeNull();
     expect(q(body, '[data-section="assignment"]')).not.toBeNull();
@@ -330,7 +330,7 @@ describe('Details tab', () => {
         forms: { getFormVersionSchema: vi.fn().mockReturnValue(of(fieldsOf(8))) },
       },
     );
-    await click(fixture, q(el, '[data-edit-details]'));
+    await click(fixture, q(el, '[data-action="edit"]'));
     await type(fixture, document.body, '#td-title', '');
     await click(fixture, q(document.body, '[data-save]'));
     await new Promise((r) => setTimeout(r, 30));
@@ -344,7 +344,7 @@ describe('Details tab', () => {
       ['Task.View', 'Task.Edit'],
       { forms: { getFormVersionSchema: vi.fn().mockReturnValue(of(fieldsOf(6))) } },
     );
-    await click(fixture, q(el, '[data-edit-details]'));
+    await click(fixture, q(el, '[data-action="edit"]'));
     expect(q(document.body, '[data-request-toggle]')!.getAttribute('aria-expanded')).toBe('true');
   });
 

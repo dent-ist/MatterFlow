@@ -18,6 +18,7 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { LookupStore } from '../../core/lookups/lookup-store';
 import { SkipTarget } from '../layout/skip-target';
+import { restoreRowFocus } from '../ui/row-nav';
 import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { FilterDef, FilterOption } from '../filters/filter-def';
 import { FiltersBar } from '../filters/filters-bar';
@@ -123,6 +124,8 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
         [columns]="columns()"
         [caption]="caption()"
         [hideContext]="true"
+        [origin]="projectId() === null ? 'matter' : 'project'"
+        [rowList]="rowList()"
         [state]="state()"
         [filters]="filters"
         [filterRowId]="filterRowId"
@@ -336,9 +339,18 @@ export class ScopedTasks {
       : 'No tasks yet.';
   });
 
+  /** The list id of its rows for Back (`mfRowLink`): the Task page returns here and focuses the title link that was left (T9, #324). */
+  protected readonly rowList = computed(() =>
+    this.projectId() === null ? 'matter-tasks' : 'project-tasks',
+  );
+
   private requestId = 0;
 
   constructor() {
+    restoreRowFocus(
+      () => this.rowList(),
+      () => this.state() === 'ready',
+    );
     // The first Tab stop of the page (#283): "Skip to task list" moves to the first task, as on the work pages (#181).
     const skip = inject(SkipTarget);
     const host = inject<ElementRef<HTMLElement>>(ElementRef);

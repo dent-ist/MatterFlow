@@ -639,7 +639,7 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
       await expect(nav(p).getByRole('link')).toHaveCount(3);
       await expect(detailsToggle(p)).toHaveAttribute('aria-expanded', 'false');
       await detailsToggle(p).click();
-      await expect(p.locator('[data-edit-details]')).toBeVisible();
+      await expect(p.locator('[data-section="details"] [data-view]')).toBeVisible();
       await check(p, 'details-open-roles');
     }
   });
