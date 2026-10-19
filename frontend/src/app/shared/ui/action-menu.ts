@@ -180,6 +180,8 @@ export class ActionMenu {
   }
 
   protected onTriggerKey(event: KeyboardEvent): void {
+    // Alt+Arrow belongs to the page (the version page moves a step with it); only the plain arrows open the menu.
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       this.show(event.key === 'ArrowDown' ? 0 : -1);

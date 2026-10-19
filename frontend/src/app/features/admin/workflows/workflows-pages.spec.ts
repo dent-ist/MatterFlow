@@ -15,6 +15,7 @@ import {
   WorkflowsClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { UndoService } from '../../../core/notify/undo.service';
 import {
   FakeMeApi,
   apiError,
@@ -138,9 +139,22 @@ const type = (el: HTMLElement, selector: string, value: string) => {
 };
 
 const titles = (el: HTMLElement) =>
-  Array.from(el.querySelectorAll('[data-steps] ol > li')).map((li) =>
-    li.getAttribute('data-step-row'),
+  Array.from(el.querySelectorAll('[data-steps] ol [data-step-row]')).map((row) =>
+    row.getAttribute('data-step-row'),
   );
+
+/** Opens the overflow menu of a step row and picks an entry (Move up, Move down, Skip rules, Preview inputs, Remove). */
+async function pickRowAction(
+  fixture: { whenStable(): Promise<unknown> },
+  el: HTMLElement,
+  title: string,
+  action: 'up' | 'down' | 'rules' | 'preview' | 'remove',
+): Promise<void> {
+  el.querySelector<HTMLElement>(`[data-step-row="${title}"] [data-overflow]`)!.click();
+  await settle(fixture as never);
+  el.querySelector<HTMLElement>(`[data-step-row="${title}"] [data-action="${action}"]`)!.click();
+  await settle(fixture as never);
+}
 
 describe('WorkflowsListPage', () => {
   it('lists workflows with latest published version, draft and status', async () => {
@@ -748,7 +762,7 @@ describe('WorkflowVersionPage draft editor', () => {
   const click = (el: HTMLElement, selector: string) =>
     el.querySelector<HTMLElement>(selector)!.click();
 
-  it('adds, reorders with buttons and keyboard, and removes steps; the guard tracks edits', async () => {
+  it('adds, reorders from the row menu and with the keyboard, and removes steps; the guard tracks edits', async () => {
     const { fixture, el } = await open();
     expect(titles(el)).toEqual(['Intake QC', 'Load']);
     expect(el.querySelector('[data-status]')?.textContent).toContain('Draft');
@@ -761,13 +775,16 @@ describe('WorkflowVersionPage draft editor', () => {
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
     expect(el.querySelector('[data-live]')?.textContent).toContain('Added OCR at position 3');
 
-    click(el, '[data-move="up"][data-step="5"]');
-    await settle(fixture);
+    await pickRowAction(fixture, el, 'OCR', 'up');
     expect(titles(el)).toEqual(['Intake QC', 'OCR', 'Load']);
-    expect(el.querySelector<HTMLButtonElement>('[data-move="up"][data-step="1"]')!.disabled).toBe(
-      true,
-    );
-    expect(el.querySelector<HTMLButtonElement>('[aria-label="Move OCR up"]')).not.toBeNull();
+    expect(el.querySelector('[data-live]')?.textContent).toContain('Moved OCR to position 2 of 3');
+    // The first row has no Move up, the last has no Move down.
+    el.querySelector<HTMLElement>('[data-step-row="Intake QC"] [data-overflow]')!.click();
+    await settle(fixture);
+    expect(el.querySelector('[data-step-row="Intake QC"] [data-action="up"]')).toBeNull();
+    expect(el.querySelector('[data-step-row="Intake QC"] [data-action="down"]')).not.toBeNull();
+    el.querySelector<HTMLElement>('[data-step-row="Intake QC"] [data-overflow]')!.click();
+    await settle(fixture);
 
     // Keyboard: Alt+ArrowDown on the OCR row moves it down.
     el.querySelector('[data-step-row="OCR"]')!.dispatchEvent(
@@ -782,9 +799,44 @@ describe('WorkflowVersionPage draft editor', () => {
     await settle(fixture);
     expect(titles(el)).toEqual(['Intake QC', 'Load', 'OCR']);
 
-    click(el, '[data-remove="1"]');
-    await settle(fixture);
+    await pickRowAction(fixture, el, 'Intake QC', 'remove');
     expect(titles(el)).toEqual(['Load', 'OCR']);
+  });
+
+  it('removes a step with an Undo that puts it back at its place with its skip rules', async () => {
+    const { fixture, el } = await open();
+    const undo = TestBed.inject(UndoService);
+    click(el, '[data-add="5"]');
+    await settle(fixture);
+    await pickRowAction(fixture, el, 'Load', 'rules');
+    click(el, '[data-skippable="2"]');
+    await settle(fixture);
+    click(el, '[data-comment="2"]');
+    await settle(fixture);
+    await pickRowAction(fixture, el, 'Load', 'remove');
+    expect(titles(el)).toEqual(['Intake QC', 'OCR']);
+    expect(undo.current()?.message).toBe('Removed Load from the workflow.');
+    expect(el.querySelector('[data-live]')?.textContent).toContain('Removed Load. 2 steps remain.');
+
+    await undo.run();
+    await settle(fixture);
+    expect(titles(el)).toEqual(['Intake QC', 'Load', 'OCR']);
+    expect(el.querySelector('[data-step-row="Load"] [data-skip-summary]')?.textContent).toContain(
+      'Skippable - comment',
+    );
+    expect(el.querySelector('[data-live]')?.textContent).toContain(
+      'Restored Load at position 2 of 3',
+    );
+  });
+
+  it('a step row has two Tab stops in a draft: the Skip rules badge and the overflow', async () => {
+    const { el } = await open();
+    const stops = Array.from(
+      el.querySelectorAll('[data-step-row="Intake QC"] button, [data-step-row="Intake QC"] input'),
+    );
+    expect(
+      stops.map((b) => b.hasAttribute('data-rule') || b.hasAttribute('data-overflow')),
+    ).toEqual([true, true]);
   });
 
   it('searches the library after a pause, with a labelled field, hint, count and no-results state', async () => {
@@ -826,12 +878,16 @@ describe('WorkflowVersionPage draft editor', () => {
     expect(
       el.querySelector('[data-step-row="Intake QC"] [data-skip-summary]')?.textContent,
     ).toContain('Required');
-    expect(el.querySelector('[data-library] h2')?.textContent).toContain('Workflow Steps');
+    expect(el.querySelector('#wf-lib-heading')?.textContent).toContain('Workflow Steps');
     expect(el.querySelector('#wf-steps-heading')?.textContent).toContain('(2)');
   });
 
   it('keeps comment-required disabled unless the step is skippable', async () => {
     const { a, fixture, el } = await open();
+    // The rules are in the Skip rules popover of the row (opened from the badge).
+    expect(el.querySelector('[data-comment="1"]')).toBeNull();
+    click(el, '[data-step-row="Intake QC"] [data-rule]');
+    await settle(fixture);
     const comment = () => el.querySelector<HTMLInputElement>('[data-comment="1"]')!;
     expect(comment().disabled).toBe(true);
 
@@ -864,10 +920,14 @@ describe('WorkflowVersionPage draft editor', () => {
     });
   });
 
-  it('explains the mode and confirms a change when steps exist', async () => {
+  it('explains the mode in the bar control and confirms a change when steps exist', async () => {
     const { fixture, el } = await open();
+    const button = () => el.querySelector<HTMLElement>('[data-action-bar] [data-mode-button]')!;
+    expect(button().textContent).toContain('Ordered');
+    expect(el.querySelector('[data-step-row="Load"] .wsr__no')?.textContent).toContain('2');
+    button().click();
+    await settle(fixture);
     expect(el.querySelector('[data-mode-help]')?.textContent).toContain('Ordered:');
-    expect(el.querySelector('[data-step-row="Load"] .wf-step__no')?.textContent).toContain('2');
 
     click(el, '[data-mode="unordered"]');
     await settle(fixture);
@@ -875,14 +935,15 @@ describe('WorkflowVersionPage draft editor', () => {
       'Ordered numbering will be hidden; steps can be done in any order.',
     );
     // Not applied until confirmed.
-    expect(el.querySelector('[data-mode-help]')?.textContent).toContain('Ordered:');
+    expect(button().textContent).toContain('Ordered');
+    expect(button().textContent).not.toContain('Unordered');
     const confirm = Array.from(document.querySelectorAll('button')).find(
       (b) => b.textContent?.trim() === 'Change mode',
     )!;
     confirm.click();
     await settle(fixture);
-    expect(el.querySelector('[data-mode-help]')?.textContent).toContain('Unordered:');
-    expect(el.querySelector('[data-step-row="Load"] .wf-step__no')).toBeNull();
+    expect(button().textContent).toContain('Unordered');
+    expect(el.querySelector('[data-step-row="Load"] .wsr__no')).toBeNull();
   });
 
   it('previews a step input form read-only', async () => {
@@ -915,11 +976,7 @@ describe('WorkflowVersionPage draft editor', () => {
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
 
-    const toggle = el.querySelector<HTMLButtonElement>('[data-preview="1"]')!;
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    toggle.click();
-    await settle(fixture);
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    await pickRowAction(fixture, el, 'Intake QC', 'preview');
     expect(steps.getStepDefinition).toHaveBeenCalledWith(1);
     expect(el.querySelector('[data-preview-box="1"] mf-dynamic-form')).not.toBeNull();
   });
@@ -989,8 +1046,7 @@ describe('WorkflowVersionPage draft editor', () => {
           apiError(409, { status: 409, title: 'Conflict', code: 'CONCURRENCY_CONFLICT' }),
         ),
     });
-    click(el, '[data-remove="2"]');
-    await settle(fixture);
+    await pickRowAction(fixture, el, 'Load', 'remove');
     buttonByLabel(el, 'Save draft')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-conflict]')).not.toBeNull();
@@ -1040,10 +1096,11 @@ describe('WorkflowVersionPage published version', () => {
     expect(el.querySelector('[data-status]')?.textContent).toContain('Published');
     expect(el.querySelector('[data-readonly-banner]')).not.toBeNull();
     expect(el.querySelector('[data-add]')).toBeNull();
-    expect(el.querySelector('[data-move]')).toBeNull();
+    expect(el.querySelector('[data-steps] [data-overflow]')).toBeNull();
     expect(el.querySelector('[data-skippable]')).toBeNull();
     expect(el.querySelector('[data-skip-summary]')?.textContent).toContain('Required');
-    expect(el.querySelector('[data-mode-box]')?.textContent).toContain('Ordered');
+    expect(el.querySelector('[data-mode-badge]')?.textContent).toContain('Ordered');
+    expect(el.querySelector('[data-mode-button]')).toBeNull();
     expect(buttonByLabel(el, 'Publish...')).toBeUndefined();
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
 

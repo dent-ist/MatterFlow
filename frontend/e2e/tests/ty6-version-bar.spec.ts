@@ -1,94 +1,87 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { Page } from '@playwright/test';
-import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
-import { Seeder } from '../support/seed';
-import { Api } from '../support/api';
+import { uid } from '../support/seed';
+import {
+  SIZES,
+  draftWorld,
+  expectNoViolations,
+  noSideScroll,
+  shoot,
+} from '../support/version-page';
 
 /**
- * Task Types UX epic #352, WP-TY6, VP1 (#357): the action bar of the workflow version page stays on screen while the page scrolls.
+ * Task Types UX epic #352, WP-TY6: VP1 (#357) the action bar of the workflow version page stays on screen, and (#393) the page is a
+ * fixed-height page: the header and the bar stay, the steps pane scrolls inside; below 768 px the page scrolls and the bar sticks.
  * Screenshots go to the folder in E2E_SCREENSHOTS (docs/ux/task-types-review/fixes/ty6-version) when it is set.
  */
-const OUT = process.env['E2E_SCREENSHOTS'];
-
-const SIZES = [
-  { w: 1366, h: 768 },
-  { w: 1920, h: 1080 },
-  { w: 768, h: 1024 },
-  { w: 375, h: 812 },
-];
-
-/** A published workflow with `n` steps and an open draft copied from it (the draft has `n` steps too). */
-async function draftWorld(seed: Seeder, admin: Api, n = 13) {
-  const wf = await seed.workflow({ stepCount: n });
-  const draft = await admin.post(`/api/v1/workflows/${wf.workflowDefinitionId}/versions`, {});
-  return {
-    wf,
-    draftId: draft.version.workflowVersionId as number,
-    url: `/admin/workflows/${wf.workflowDefinitionId}/versions/${draft.version.workflowVersionId}`,
-    publishedUrl: `/admin/workflows/${wf.workflowDefinitionId}/versions/${wf.versionId}`,
-  };
-}
-
-async function noSideScroll(page: Page): Promise<void> {
-  const over = await page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-  );
-  expect(over).toBeLessThanOrEqual(0);
-}
-
-async function shoot(page: Page, name: string, size: { w: number; h: number }): Promise<void> {
-  if (!OUT) return;
-  fs.mkdirSync(OUT, { recursive: true });
-  await page.waitForTimeout(250);
-  await page.screenshot({ path: path.join(OUT, `${name}-${size.w}x${size.h}.png`) });
-}
-
-async function expectNoViolations(page: Page, label: string): Promise<void> {
-  if (!axeAvailable()) return;
-  const found = await axeViolations(page);
-  expect(found, `${label}: ${JSON.stringify(found)}`).toEqual([]);
-}
-
 const bar = (page: Page) => page.locator('mf-workflow-version-bar');
 
 test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
   for (const size of SIZES) {
-    test(`the bar keeps its place while the page scrolls, no side scroll, axe 0 at ${size.w}x${size.h}`, async ({
+    test(`the bar keeps its place, the page does not scroll (the steps pane does), no side scroll, axe 0 at ${size.w}x${size.h}`, async ({
       page,
       seed,
       admin,
     }) => {
-      test.setTimeout(120_000);
-      const { url } = await draftWorld(seed, admin);
+      test.setTimeout(180_000);
+      const { url } = await draftWorld(seed, admin, 26);
       await page.setViewportSize({ width: size.w, height: size.h });
       await page.goto(url);
       const save = page.getByRole('button', { name: 'Save draft' });
       const publish = page.getByRole('button', { name: 'Publish...' });
       await expect(publish).toBeVisible();
-      await expect(page.locator('[data-step-row]')).toHaveCount(13);
+      await expect(page.locator('[data-step-row]')).toHaveCount(26);
       await noSideScroll(page);
       await shoot(page, 'draft-top', size);
       await expectNoViolations(page, 'draft idle');
 
-      const scrollable = await page.evaluate(
-        () => document.documentElement.scrollHeight - window.innerHeight,
-      );
-      expect(scrollable).toBeGreaterThan(600);
-      const top = async () => (await bar(page).boundingBox())!.y;
       const header = async () => (await page.locator('header.mf-header').boundingBox())!;
+      const top = async () => (await bar(page).boundingBox())!.y;
       const y0 = await top();
-      for (const to of [300, 900, 100000]) {
-        await page.evaluate((y) => window.scrollTo(0, y), to);
-        await page.waitForTimeout(100);
-        const h = await header();
-        const y = await top();
-        expect(y).toBeGreaterThanOrEqual(h.y + h.height - 1);
-        if (to > 300) expect(Math.abs(y - (h.y + h.height))).toBeLessThanOrEqual(6);
-        await expect(save).toBeInViewport();
-        await expect(publish).toBeInViewport();
-        expect(y).toBeLessThanOrEqual(y0 + 0.5);
+      if (size.w >= 768) {
+        // Fixed height (VP1, #393): the document does not scroll at all; the steps pane scrolls inside.
+        const doc = await page.evaluate(() => ({
+          scroll: document.documentElement.scrollHeight - window.innerHeight,
+          main: Array.from(document.querySelectorAll<HTMLElement>('main, .mf-main')).map(
+            (m) => m.scrollHeight - m.clientHeight,
+          ),
+        }));
+        expect(doc.scroll).toBeLessThanOrEqual(1);
+        for (const over of doc.main) expect(over).toBeLessThanOrEqual(1);
+        const pane = page.getByRole('region', { name: 'Steps in this version, scrollable' });
+        await expect(pane).toBeVisible();
+        const metrics = await pane.evaluate((el) => ({
+          scrolls: el.scrollHeight > el.clientHeight + 10,
+          bottom: el.getBoundingClientRect().bottom,
+        }));
+        expect(metrics.scrolls).toBe(true);
+        expect(metrics.bottom).toBeLessThanOrEqual(size.h);
+        for (const to of [300, 100000]) {
+          await pane.evaluate((el, y) => (el.scrollTop = y), to);
+          await page.waitForTimeout(100);
+          expect(await top()).toBeCloseTo(y0, 0);
+          await expect(save).toBeInViewport();
+          await expect(publish).toBeInViewport();
+          await expect(page.locator('h1')).toBeInViewport();
+        }
+        await expect(page.locator('[data-step-row]').last()).toBeInViewport();
+      } else {
+        // A phone: the page scrolls and the bar sticks under the application header.
+        const scrollable = await page.evaluate(
+          () => document.documentElement.scrollHeight - window.innerHeight,
+        );
+        expect(scrollable).toBeGreaterThan(600);
+        for (const to of [300, 900, 100000]) {
+          await page.evaluate((y) => window.scrollTo(0, y), to);
+          await page.waitForTimeout(100);
+          const h = await header();
+          const y = await top();
+          expect(y).toBeGreaterThanOrEqual(h.y + h.height - 1);
+          if (to > 300) expect(Math.abs(y - (h.y + h.height))).toBeLessThanOrEqual(6);
+          await expect(save).toBeInViewport();
+          await expect(publish).toBeInViewport();
+          expect(y).toBeLessThanOrEqual(y0 + 0.5);
+        }
       }
       await noSideScroll(page);
       await shoot(page, 'draft-scrolled', size);
@@ -104,7 +97,7 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
       await page.keyboard.press('Escape');
       await expect(page.getByRole('button', { name: 'More version actions' })).toBeFocused();
 
-      // The publish dialog open.
+      // The publish dialog open (the page behind it is unaffected).
       await publish.click();
       const dialog = page.getByRole('dialog');
       await expect(dialog.locator('[data-diff]')).toBeVisible();
@@ -130,13 +123,18 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
 
     // Alt+Arrow on a step (the existing shortcut, unchanged) makes the draft dirty.
     const first = page.locator('[data-step-row]').first();
-    await first.getByRole('button', { name: /^Preview inputs of / }).focus();
+    await first.getByRole('button', { name: /^Actions for / }).focus();
     await page.keyboard.press('Alt+ArrowDown');
     await expect(page.locator('[data-dirty]')).toContainText('Unsaved changes');
     await expect(bar(page).locator('[data-dirty]')).toBeVisible();
     await expect(save).toBeEnabled();
 
-    // Tab order in the bar: Save draft, Publish..., More version actions.
+    // Tab order in the bar: the execution mode, Save draft, Publish..., More version actions.
+    await bar(page)
+      .getByRole('button', { name: /^Execution mode/ })
+      .focus();
+    await page.keyboard.press('Tab');
+    await expect(save).toBeFocused();
     await save.focus();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('button', { name: 'Publish...' })).toBeFocused();
@@ -272,4 +270,31 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
     ).toBeVisible();
     await expect(viewerPage.getByRole('button', { name: 'Publish...' })).toHaveCount(0);
   });
+
+  for (const size of SIZES) {
+    test(`a very long workflow name wraps in the header: no side scroll, the bar and the steps stay in view, axe 0 at ${size.w}x${size.h}`, async ({
+      page,
+      seed,
+      admin,
+    }) => {
+      test.setTimeout(120_000);
+      const name =
+        `${uid()} long ${'Large production workflow for the quarterly review '.repeat(3)}`.slice(
+          0,
+          150,
+        );
+      const wf = await seed.workflow({ name, stepCount: 13 });
+      const draft = await admin.post(`/api/v1/workflows/${wf.workflowDefinitionId}/versions`, {});
+      await page.setViewportSize({ width: size.w, height: size.h });
+      await page.goto(
+        `/admin/workflows/${wf.workflowDefinitionId}/versions/${draft.version.workflowVersionId}`,
+      );
+      await expect(page.locator('[data-step-row]')).toHaveCount(13);
+      await noSideScroll(page);
+      await expect(page.getByRole('button', { name: 'Publish...' })).toBeInViewport();
+      await expect(page.locator('[data-step-row]').first()).toBeInViewport();
+      await shoot(page, 'draft-long-workflow-name', size);
+      await expectNoViolations(page, 'long workflow name');
+    });
+  }
 });

@@ -28,7 +28,12 @@ describe('mf-workflow-version-bar (VP1, #357)', () => {
     set('editable', true);
     set('canPublish', true);
     await settle(fixture);
-    expect(labels()).toEqual(['Save draft', 'Publish...', 'More version actions']);
+    expect(labels()).toEqual([
+      'Execution mode: Ordered',
+      'Save draft',
+      'Publish...',
+      'More version actions',
+    ]);
     expect(el().querySelector('[data-dirty]')).toBeNull();
   });
 
@@ -105,5 +110,40 @@ describe('mf-workflow-version-bar (VP1, #357)', () => {
   it('has no overflow for a retired version', async () => {
     await settle(fixture);
     expect(el().querySelector('[data-overflow]')).toBeNull();
+  });
+
+  describe('execution mode (VP4, #397)', () => {
+    it('a draft shows the mode as a button; choosing the other mode asks the page and closes the popover', async () => {
+      set('editable', true);
+      set('isOrdered', true);
+      await settle(fixture);
+      const requests: boolean[] = [];
+      fixture.componentInstance.modeRequest.subscribe((v) => requests.push(v));
+      const button = el().querySelector<HTMLButtonElement>('[data-mode-button]')!;
+      expect(button.textContent).toContain('Ordered');
+      expect(button.getAttribute('aria-expanded')).toBe('false');
+      button.click();
+      await settle(fixture);
+      expect(button.getAttribute('aria-expanded')).toBe('true');
+      expect(el().querySelector('[data-mode-help]')?.textContent).toContain('Ordered:');
+      el().querySelector<HTMLInputElement>('[data-mode="unordered"]')!.click();
+      await settle(fixture);
+      expect(requests).toEqual([false]);
+      expect(el().querySelector('[data-mode-pop]')).toBeNull();
+      // Choosing the mode that is already set asks nothing.
+      button.click();
+      await settle(fixture);
+      el()
+        .querySelector<HTMLInputElement>('[data-mode="ordered"]')!
+        .dispatchEvent(new Event('change'));
+      await settle(fixture);
+      expect(requests).toEqual([false]);
+    });
+
+    it('a read-only version has no mode control (the page shows a badge in the meta line)', async () => {
+      set('editable', false);
+      await settle(fixture);
+      expect(el().querySelector('[data-mode-button]')).toBeNull();
+    });
   });
 });

@@ -3,12 +3,13 @@ import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { Badge } from '../../../shared/ui/badge';
+import { WorkflowModeControl } from './workflow-mode-control';
 
 /**
  * The action bar of the workflow version page (VP1, #357). It sits under the page header and stays under the application header while
  * the page scrolls, so Publish and Save draft never leave the screen (they were at y = -1,097 after one wheel scroll).
  *
- *   draft:      [Unsaved changes]                       [Save draft] [Publish...] [...  Discard draft]
+ *   draft:      [Mode: Ordered v] [Unsaved changes]     [Save draft] [Publish...] [...  Discard draft]
  *   read-only:                                          [Create new draft from vN | Open draft vM] [...  Retire version]
  *
  * The page owns the data and the dialogs; this bar only shows the buttons and says what was pressed. The order in the DOM is the
@@ -16,7 +17,7 @@ import { Badge } from '../../../shared/ui/badge';
  */
 @Component({
   selector: 'mf-workflow-version-bar',
-  imports: [Button, RouterLink, ActionMenu, Badge],
+  imports: [Button, RouterLink, ActionMenu, Badge, WorkflowModeControl],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -64,6 +65,12 @@ import { Badge } from '../../../shared/ui/badge';
         display: none;
       }
     }
+    /* On the fixed-height page the heading never scrolls away, so the bar does not repeat the name. */
+    @media (min-width: 768px) and (min-height: 561px) {
+      .wvb__name {
+        display: none;
+      }
+    }
     .wvb__actions {
       display: flex;
       flex-wrap: wrap;
@@ -80,6 +87,12 @@ import { Badge } from '../../../shared/ui/badge';
     <div class="wvb" role="group" aria-label="Version actions" data-action-bar>
       <div class="wvb__state">
         <span class="wvb__name" data-bar-name>{{ name() }} v{{ versionNo() }}</span>
+        @if (editable()) {
+          <mf-workflow-mode-control
+            [ordered]="isOrdered()"
+            (modeRequest)="modeRequest.emit($event)"
+          />
+        }
         @if (editable() && dirty()) {
           <mf-badge tone="warning" icon="pi-pencil" data-dirty>Unsaved changes</mf-badge>
         }
@@ -126,6 +139,8 @@ export class WorkflowVersionBar {
   readonly published = input(false);
   readonly dirty = input(false);
   readonly busy = input(false);
+  /** The draft's execution mode (the control in the bar asks the page to change it). */
+  readonly isOrdered = input(true);
   /** False while the draft has no steps. */
   readonly canPublish = input(true);
   /** The workflow's open draft (read-only versions link to it instead of offering a second one). */
@@ -137,6 +152,7 @@ export class WorkflowVersionBar {
   readonly discard = output<void>();
   readonly retire = output<void>();
   readonly newDraft = output<void>();
+  readonly modeRequest = output<boolean>();
 
   protected readonly menu = computed<MenuAction[]>(() => {
     if (this.editable()) {

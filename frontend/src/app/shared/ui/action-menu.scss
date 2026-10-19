@@ -27,6 +27,8 @@
 .am__menu--fixed {
   position: fixed;
   left: auto;
+  /* Placed above its button, only `bottom` is set: the base rule's `top` would otherwise squash the menu between the two. */
+  top: auto;
 }
 
 .am__item {

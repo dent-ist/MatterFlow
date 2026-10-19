@@ -1,0 +1,143 @@
+/* A step row of the version page: 44 px, number, one-line title, one rule badge, overflow (VP2). 4 px spacing tokens only. */
+:host {
+  display: block;
+  min-width: 0;
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+}
+
+.wsr__line {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s3);
+  min-height: 42px;
+  padding: 0 var(--mf-s2) 0 var(--mf-s3);
+}
+
+.wsr__no {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--mf-selected-bg);
+  color: var(--mf-primary);
+  font-size: var(--mf-fs-sm);
+  font-weight: 600;
+}
+
+/* One line; a longer title wraps to a second line and is cut there (the whole text is the tooltip and is still in the page). */
+.wsr__title {
+  display: -webkit-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  /* A margin, not padding: the clipped box must hold exactly the lines that show, never a sliver of the third. */
+  margin: var(--mf-s1) 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+  line-height: 1.3;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.wsr__rules {
+  display: inline-flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--mf-s1);
+}
+
+.wsr__rule {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 var(--mf-s1);
+  border: 0;
+  border-radius: var(--mf-radius);
+  background: transparent;
+  cursor: pointer;
+}
+
+.wsr__rule:hover {
+  background: var(--mf-surface-alt);
+}
+
+.wsr__rule:focus-visible {
+  outline: 2px solid var(--mf-focus);
+  outline-offset: 1px;
+}
+
+/* The Skip rules popover (fixed to the window next to the badge by mfFloatPanel). */
+.wsr__pop {
+  z-index: 1100;
+  display: grid;
+  gap: var(--mf-s1);
+  width: max-content;
+  max-width: min(20rem, calc(100vw - 2 * var(--mf-s4)));
+  padding: var(--mf-s3);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-2);
+}
+
+.wsr__opt {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  min-height: var(--mf-target-min);
+  margin: 0;
+}
+
+.wsr__opt input {
+  flex: none;
+  margin: 0;
+}
+
+.wsr__hint,
+.wsr__note {
+  margin: 0;
+}
+
+.wsr__note {
+  padding: 0 var(--mf-s3) var(--mf-s2);
+}
+
+.wsr__preview {
+  margin: 0 var(--mf-s3) var(--mf-s3);
+  padding: var(--mf-s3);
+  border: 1px dashed var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+}
+
+.wsr__preview p {
+  margin: 0;
+}
+
+/* A phone: the badge goes under the title so the title keeps its width. */
+@media (max-width: 639.98px) {
+  .wsr__line {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+
+  .wsr__title {
+    flex-basis: 0;
+    min-width: 8rem;
+  }
+
+  .wsr__rules {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+    padding-bottom: var(--mf-s1);
+  }
+}

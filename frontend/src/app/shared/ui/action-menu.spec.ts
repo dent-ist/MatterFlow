@@ -98,6 +98,22 @@ describe('mf-action-menu', () => {
     expect(el().querySelector('[data-overflow]')).toBeNull();
   });
 
+  it('leaves Alt+Arrow to the page: only the plain arrows open the menu from the button', async () => {
+    trigger().dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'ArrowDown',
+        altKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    await settle(fixture);
+    expect(el().querySelector('[role=menu]')).toBeNull();
+    key(trigger(), 'ArrowDown');
+    await settle(fixture);
+    expect(el().querySelector('[role=menu]')).not.toBeNull();
+  });
+
   it('shows a danger entry in red and a set-apart entry with a divider above it', async () => {
     fixture.componentInstance.items.set([
       { id: 'a', label: 'Alpha', run: run.a },

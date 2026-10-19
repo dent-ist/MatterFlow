@@ -1,0 +1,75 @@
+/* The step library of the version page: a pane (1280 px and wider) or the content of a drawer. Spacing uses the 4 px tokens only. */
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.wsl {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: var(--mf-s3);
+  min-height: 0;
+  min-width: 0;
+}
+
+.wsl__results {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: var(--mf-s2);
+  min-height: 0;
+}
+
+.wsl__count,
+.wsl__added {
+  margin: 0;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.wsl__added:empty {
+  display: none;
+}
+
+/* The scrolling box of the pane (the shared scroll area: focusable, named, as tall as its rows and no taller than the room). */
+.wsl__scroll {
+  padding-right: var(--mf-s1);
+}
+
+.wsl__list {
+  display: grid;
+  gap: var(--mf-s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wsl__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--mf-s1) var(--mf-s3);
+  padding: var(--mf-s2) var(--mf-s3);
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius);
+}
+
+.wsl__text {
+  display: grid;
+  gap: var(--mf-s1);
+  min-width: 0;
+}
+
+.wsl__title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.wsl__desc {
+  font-size: var(--mf-fs-sm);
+  overflow-wrap: anywhere;
+}

@@ -96,6 +96,8 @@ const FIXED_URLS = [
   '/admin/audit',
   // Fixed-height Dashboard (#137): the page never scrolls, only regions inside each tab do.
   '/dashboard',
+  // The workflow version page (VP1, #393): the header and the action bar stay, the steps pane scrolls inside.
+  '/admin/workflows/7/versions/9',
 ];
 
 /** Screens that keep the normal page scroll: forms, the designers, the task page and the system pages. */
@@ -118,7 +120,6 @@ const NORMAL_URLS = [
   '/admin/steps/7/form',
   '/admin/workflows/new',
   '/admin/workflows/7',
-  '/admin/workflows/7/versions/9',
   '/403',
   '/404',
   '/nowhere',
