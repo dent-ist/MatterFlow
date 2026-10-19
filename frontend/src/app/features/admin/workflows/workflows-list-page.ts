@@ -28,6 +28,7 @@ import { statusDef, triBool } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
+import { AdminShellFilters } from '../task-types/shell-filters';
 import { AssocChips, AssocItem } from '../assoc-chips';
 import { AssocFilter } from '../assoc-filter';
 import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
@@ -79,7 +80,7 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions']
       <p class="pg-alert" role="alert" data-failure>{{ failure() }}</p>
     }
 
-    <mf-filters-bar [filters]="filters" controls="workflow-filter-row" [clearAlso]="['q']" />
+    <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']" />
 
     @if (taskTypeId() !== undefined) {
       <mf-assoc-filter
@@ -248,6 +249,8 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   protected readonly filters: ListFilters = new ListFilters({
     screen: 'workflows',
     noun: 'workflows',
+    openByDefault: true,
+    sheetBelow: 640,
     defs: computed((): FilterDef[] => [
       { key: 'name', label: 'Name', column: 'name', type: 'text' },
       {
@@ -321,6 +324,7 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
 
   constructor() {
     super();
+    AdminShellFilters.register({ filters: this.filters, controls: 'workflow-filter-row' });
     // Back (or a breadcrumb) from a record puts focus on the name link of the row that was left (#354).
     restoreRowFocus(this.listId, () => this.state() === 'ready');
     // The controls move into the sheet while the grid scrolls sideways.

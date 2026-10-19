@@ -34,6 +34,7 @@ import { statusDef } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
+import { AdminShellFilters } from './shell-filters';
 import { AssocChips, AssocItem } from '../assoc-chips';
 import { AssocFilter } from '../assoc-filter';
 import { Pager } from '../../../shared/ui/pager';
@@ -107,6 +108,8 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   protected readonly filters: ListFilters = new ListFilters({
     screen: 'task-types',
     noun: 'task types',
+    openByDefault: true,
+    sheetBelow: 640,
     defs: computed((): FilterDef[] => [
       { key: 'name', label: 'Name', column: 'name', type: 'text' },
       {
@@ -150,6 +153,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
 
   constructor() {
     super();
+    AdminShellFilters.register({ filters: this.filters, controls: 'task-type-filter-row' });
     // Back (or a breadcrumb) from a record puts focus on the name link of the row that was left (#354).
     restoreRowFocus(this.listId, () => this.state() === 'ready');
     // Loads the list, and again when the workflow filter changes.

@@ -22,6 +22,7 @@ import { statusDef, triBool } from '../../../shared/filters/common-defs';
 import { FilterDef, FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
+import { AdminShellFilters } from '../task-types/shell-filters';
 import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -72,7 +73,7 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status', 'actions'] 
       <p class="pg-alert" role="alert" data-failure>{{ failure() }}</p>
     }
 
-    <mf-filters-bar [filters]="filters" controls="step-filter-row" [clearAlso]="['q']" />
+    <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']" />
 
     <div class="mf-table-wrap" mfScrollArea="Steps list" #scroll>
       <div class="mf-scroll">
@@ -238,6 +239,8 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   protected readonly filters: ListFilters = new ListFilters({
     screen: 'steps',
     noun: 'steps',
+    openByDefault: true,
+    sheetBelow: 640,
     defs: computed((): FilterDef[] => [
       { key: 'title', label: 'Title', column: 'title', type: 'text' },
       { key: 'description', label: 'Description', column: 'description', type: 'text' },
@@ -283,6 +286,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
 
   constructor() {
     super();
+    AdminShellFilters.register({ filters: this.filters, controls: 'step-filter-row' });
     // Back (or a breadcrumb) from a record puts focus on the name link of the row that was left (#354).
     restoreRowFocus(this.listId, () => this.state() === 'ready');
     // The tags to choose from follow the status filter.

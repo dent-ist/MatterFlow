@@ -8,6 +8,8 @@ import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { StepsListPage } from '../steps/steps-list-page';
 import { WorkflowsListPage } from '../workflows/workflows-list-page';
 import { TaskTypesPage } from './task-types-page';
+import { ListFiltersButton } from '../../../shared/filters/list-filters-button';
+import { AdminShellFilters } from './shell-filters';
 
 export type TaskTypesTab = 'task-types' | 'workflows' | 'steps';
 
@@ -28,11 +30,29 @@ export const TAB_TEXT: Record<TaskTypesTab, string> = {
  */
 @Component({
   selector: 'mf-task-types-admin-page',
-  imports: [FixedPage, PageHeader, Tabs, Button, TaskTypesPage, WorkflowsListPage, StepsListPage],
+  imports: [
+    FixedPage,
+    PageHeader,
+    Tabs,
+    Button,
+    ListFiltersButton,
+    TaskTypesPage,
+    WorkflowsListPage,
+    StepsListPage,
+  ],
+  providers: [AdminShellFilters],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Task Types" [crumbs]="crumbs()" [description]="description()">
+        @if (shell.current(); as f) {
+          <mf-list-filters-button
+            mfActions
+            [filters]="f.filters"
+            [controls]="f.controls"
+            [clearAlso]="['q']"
+          />
+        }
         @switch (current()) {
           @case ('task-types') {
             <p-button
@@ -107,6 +127,7 @@ export const TAB_TEXT: Record<TaskTypesTab, string> = {
 export class TaskTypesAdminPage {
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
+  protected readonly shell = inject(AdminShellFilters);
 
   /** The `:tab` path segment (`task-types`, `workflows` or `steps`). */
   readonly tab = input<string>();

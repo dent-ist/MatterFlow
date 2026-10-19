@@ -4,7 +4,7 @@
   <p class="error" role="alert" data-failure>{{ failure() }}</p>
 }
 
-<mf-filters-bar [filters]="filters" controls="task-type-filter-row" [clearAlso]="['q']" />
+<mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']" />
 
 @if (workflowId(); as id) {
   <mf-assoc-filter
