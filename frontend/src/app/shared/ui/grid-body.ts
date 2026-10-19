@@ -58,7 +58,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
         @for (n of skeletonRows; track n) {
           <tr class="gb-sk" aria-hidden="true" data-skeleton>
             @for (w of bones(); track $index) {
-              <td [class]="skeletonCells()[$index] ?? ''">
+              <td [class]="cellClasses()[$index]">
                 <span class="gb-bone" [style.width]="w"></span>
               </td>
             }
@@ -196,6 +196,9 @@ export class GridBody {
   readonly skeletonCells = input<readonly string[]>([]);
 
   protected readonly skeletonRows = SKELETON_ROWS;
+  protected readonly cellClasses = computed(() =>
+    Array.from({ length: this.columns() }, (_, i) => this.skeletonCells()[i] ?? ''),
+  );
   protected readonly bones = computed(() => {
     const widths = this.skeleton().length > 0 ? this.skeleton() : DEFAULT_BONES;
     return Array.from({ length: this.columns() }, (_, i) => widths[i % widths.length]);
