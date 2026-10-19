@@ -38,6 +38,6 @@
     <PackageVersion Include="Testcontainers.MsSql" Version="4.6.0" />
     <!-- Transitive of Testcontainers; pinned above the vulnerable 2024.2.0 (GHSA-mggc-4xg6-vcxf, GHSA-q939-rpr3-3284). -->
     <PackageVersion Include="SSH.NET" Version="2026.0.0" />
-    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="coverlet.collector" Version="10.1.0" />
   </ItemGroup>
 </Project>
