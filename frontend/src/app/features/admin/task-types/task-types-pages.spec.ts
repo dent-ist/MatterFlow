@@ -211,6 +211,50 @@ describe('TaskTypesPage', () => {
     expect(reversed).toEqual([...reversed].sort((x, y) => Number(y) - Number(x)));
   });
 
+  it('shows the health strip over the whole list and a chip puts its filters in the address (#367)', async () => {
+    // One type without a workflow (not usable, active) and one inactive; Data Processing is usable.
+    for (const name of ['No Flow', 'Old']) {
+      await new Promise<void>((resolve) =>
+        api.create({ name, description: undefined }).subscribe((t) => {
+          if (name === 'Old') {
+            api
+              .update(t.id, { ...t, isActive: false, rowVersion: t.rowVersion })
+              .subscribe(() => resolve());
+          } else resolve();
+        }),
+      );
+    }
+    await (fixture.componentInstance as unknown as { load(): Promise<void> }).load();
+    await settle(fixture);
+    const item = (key: string) => el().querySelector(`[data-strip-item="${key}"]`)!;
+    const n = (key: string) => item(key).querySelector('.n')!.textContent!.trim();
+    expect(el().querySelector('[data-strip]')!.getAttribute('aria-label')).toBe(
+      'Task types summary',
+    );
+    expect([n('active'), n('notUsable'), n('formDraft'), n('inactive')]).toEqual([
+      '2',
+      '1',
+      '0',
+      '1',
+    ]);
+    // Neutral chips: no red, no alert styling.
+    expect(el().querySelectorAll('[data-strip-item].alert')).toHaveLength(0);
+    expect(item('active').getAttribute('aria-pressed')).toBe('true');
+
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    item('notUsable').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { status: null, form: null, usable: 'no', page: null },
+      queryParamsHandling: 'merge',
+    });
+    expect(el().querySelector('[data-announce]')!.textContent).toContain('Not usable: 1');
+    item('inactive').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { status: 'inactive', form: null, usable: null, page: null },
+      queryParamsHandling: 'merge',
+    });
+  });
+
   it('shows each type with its icon in neutral colour before the name', () => {
     const icon = row('Data Processing').querySelector('mf-task-type-icon svg')!;
     expect(icon.getAttribute('aria-hidden')).toBe('true');

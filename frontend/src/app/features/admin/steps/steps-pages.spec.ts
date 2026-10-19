@@ -399,6 +399,45 @@ describe('StepsListPage phone cards and narrow columns (#375)', () => {
   });
 });
 
+describe('StepsListPage health strip (#368)', () => {
+  it('counts only from the API summary; Inputs in draft is a plain count and the others are chips that filter', async () => {
+    const api = {
+      listStepDefinitions: vi.fn().mockReturnValue(
+        ok({
+          items: [summary()],
+          total: 1,
+          page: 1,
+          pageSize: 25,
+          summary: { total: 12, active: 10, inactive: 2, notUsed: 4, inputsInDraft: 3 },
+        }),
+      ),
+      listStepTags: vi.fn().mockReturnValue(ok([])),
+    };
+    await setup(api);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(StepsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    const n = (key: string) =>
+      el.querySelector(`[data-strip-item="${key}"] .n`)!.textContent!.trim();
+    expect([n('active'), n('notUsed'), n('inputsDraft'), n('inactive')]).toEqual([
+      '10',
+      '4',
+      '3',
+      '2',
+    ]);
+    expect(el.querySelector('[data-strip-item="inputsDraft"]')!.tagName).toBe('SPAN');
+    el.querySelector<HTMLButtonElement>('[data-strip-item="notUsed"]')!.click();
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { status: null, used: 'false', page: null },
+      queryParamsHandling: 'merge',
+    });
+    expect(el.querySelector('[data-strip-item="active"]')!.getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+  });
+});
+
 describe('StepsListPage row menu', () => {
   const list = (items: StepDefinitionSummary[]) =>
     vi.fn().mockReturnValue(ok({ items, total: items.length, page: 1, pageSize: 25 }));

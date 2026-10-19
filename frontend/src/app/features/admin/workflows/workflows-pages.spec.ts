@@ -545,6 +545,74 @@ describe('WorkflowsListPage name cell (#356)', () => {
   });
 });
 
+describe('WorkflowsListPage health strip (#368)', () => {
+  const page = (summaryOverride = {}) =>
+    ok({
+      items: [summary()],
+      total: 1,
+      page: 1,
+      pageSize: 25,
+      summary: {
+        total: 9,
+        active: 7,
+        inactive: 2,
+        published: 5,
+        notPublished: 2,
+        draftInProgress: 3,
+        ...summaryOverride,
+      },
+    });
+
+  it('counts only from the API summary, whatever the loaded page holds, and a chip puts its filter in the address', async () => {
+    const api = { listWorkflows: vi.fn().mockReturnValue(page()) };
+    await setup(api);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(WorkflowsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    const n = (key: string) =>
+      el.querySelector(`[data-strip-item="${key}"] .n`)!.textContent!.trim();
+    expect([n('published'), n('draft'), n('notPublished'), n('inactive')]).toEqual([
+      '5',
+      '3',
+      '2',
+      '2',
+    ]);
+    el.querySelector<HTMLButtonElement>('[data-strip-item="notPublished"]')!.click();
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { status: null, hasPublished: 'false', hasDraft: null, page: null },
+      queryParamsHandling: 'merge',
+    });
+    el.querySelector<HTMLButtonElement>('[data-strip-item="draft"]')!.click();
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { status: null, hasPublished: null, hasDraft: 'true', page: null },
+      queryParamsHandling: 'merge',
+    });
+    el.querySelector<HTMLButtonElement>('[data-strip-item="inactive"]')!.click();
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { status: 'inactive', hasPublished: null, hasDraft: null, page: null },
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('shows -- until the first answer and marks the chip that matches the address pressed', async () => {
+    const api = { listWorkflows: vi.fn().mockReturnValue(page()) };
+    await setup(api);
+    await TestBed.inject(Router).navigateByUrl('/x?hasPublished=true');
+    const fixture = TestBed.createComponent(WorkflowsListPage);
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('[data-strip-item="published"] .n')!.textContent!.trim()).toBe('--');
+    await settle(fixture);
+    expect(el.querySelector('[data-strip-item="published"]')!.getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect(el.querySelector('[data-strip-item="draft"]')!.getAttribute('aria-pressed')).toBe(
+      'false',
+    );
+  });
+});
+
 describe('WorkflowsListPage phone cards and narrow columns (#375)', () => {
   /** A window `width` px wide (the lists read `matchMedia`; jsdom has none). */
   const viewport = (width: number) =>
