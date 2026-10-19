@@ -94,7 +94,8 @@ test.describe('column filters records screenshots', () => {
     // Phone: the sheet
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/clients');
-    await expect(first('Clients list')).toBeVisible();
+    // Below 640 px the three lists are cards since WP12 (#275, #276), not table rows.
+    await expect(page.locator('mf-record-card-list li').first()).toBeVisible();
     await shot(page, 'clients-closed');
     await page.getByRole('button', { name: /^Filters/ }).click();
     await expect(page.getByRole('dialog', { name: 'Filters' })).toBeVisible();

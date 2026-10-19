@@ -741,9 +741,14 @@ test.describe('#284: tabs, menus, dialogs and drawers by keyboard', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/matters/${data.m28.matterId}?tab=tasks`);
     await page.getByRole('button', { name: /^Filters/ }).click();
-    const trigger = page
-      .locator('mf-scoped-tasks [data-filter-row] [aria-haspopup=dialog]')
-      .first();
+    // By name, after the whole row is there: the controls appear one after the other, and "the first popover button" can be another one
+    // at the moment of the key press and the Priority one a moment later (1 in 3 runs on a quiet machine).
+    await expect(
+      page.locator('mf-scoped-tasks [data-filter-row] [aria-haspopup=dialog]'),
+    ).toHaveCount(4);
+    const trigger = page.locator('mf-scoped-tasks [data-filter-row]').getByRole('button', {
+      name: /^Filter by Priority/,
+    });
     await trigger.focus();
     await page.keyboard.press('Enter');
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');

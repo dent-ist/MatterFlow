@@ -145,6 +145,12 @@
   white-space: nowrap;
 }
 
+/* The assignee menu is a flex item of .tc-who: its automatic minimum width is the whole account name (one unbroken, nowrap string), so a long
+   name pushed the task number out of the card and the page sideways at 320 px. min-width 0 lets the name's own ellipsis work. */
+.tc .tc-who > mf-row-edit {
+  min-width: 0;
+}
+
 .tc .tc-chip .im-trigger,
 .tc .tc-who .im-trigger {
   gap: 2px;

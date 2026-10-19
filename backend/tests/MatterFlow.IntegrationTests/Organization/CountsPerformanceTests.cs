@@ -128,8 +128,8 @@ public sealed class CountsPerformanceTests(SqlServerFixture sql, ITestOutputHelp
 [Collection(SqlServerCollection.Name)]
 public sealed class CountsLargePerformanceTests(SqlServerFixture sql, ITestOutputHelper output) : CountsPerformanceTestsBase(sql, output, 200, 10, 50_000)
 {
-    // Medians measured on a machine under load (load average 14 to 24, another agent's timing tests running): 41 to 117 ms for the lists (the slowest is
-    // Projects sorted by a count, 4,000 rows), 6 to 42 ms for the summaries. The bound is the one of the Task Queue sort tests; take the idle numbers
-    // before tightening it.
-    protected override int ListBudgetMs => 500;
+    // Idle machine (load average 1 to 3, three runs, final verification 2026-10-20): list medians 30 to 56 ms (the slowest is Projects sorted by a
+    // count, 4,000 rows), summaries 4 to 29 ms. Under load (average 14 to 24) the lists reached 117 ms. The bound is about 4.5 times the idle maximum
+    // and twice the loaded one: a per-row query or a missing index (hundreds of ms at 50,000 tasks) still fails it.
+    protected override int ListBudgetMs => 250;
 }

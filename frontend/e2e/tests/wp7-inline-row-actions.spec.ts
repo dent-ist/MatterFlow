@@ -24,6 +24,24 @@ async function shot(page: Page, name: string): Promise<void> {
   if (dir) await page.screenshot({ path: `${dir}/${name}.png` });
 }
 
+/** A toast fades in: axe reads the half transparent text and reports a contrast of 3.7 (1 in 6 runs). Wait until nothing finite is running. */
+async function animationsDone(page: Page): Promise<void> {
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document
+            .getAnimations()
+            .filter(
+              (a) =>
+                a.playState === 'running' &&
+                (a.effect as KeyframeEffect | null)?.getComputedTiming().iterations !== Infinity,
+            ).length,
+      ),
+    )
+    .toBe(0);
+}
+
 async function pageAxe(page: Page, label: string): Promise<void> {
   if (!axeAvailable()) return;
   expect(await axeViolations(page), label).toEqual([]);
@@ -223,6 +241,7 @@ test.describe('WP7: inline row actions', () => {
       await expect(pager.getByRole('button', { name: 'Previous' })).toBeVisible();
       // The pager is one row on a phone: "Page n of m" instead of the range.
       await expect(page.locator(size.width < 640 ? '[data-page]' : '[data-range]')).toBeVisible();
+      await animationsDone(page);
       await shot(page, `toast-undo-${size.name}`);
       await pageAxe(page, `undo toast ${size.name}`);
       await page.locator('[data-undo-dismiss]').click();
@@ -238,6 +257,7 @@ test.describe('WP7: inline row actions', () => {
       const toast = page.locator('.p-toast-message').first();
       await expect(toast).toBeVisible();
       await expectClear(toast, pager, size.name);
+      await animationsDone(page);
       await shot(page, `toast-plain-${size.name}`);
       await pageAxe(page, `plain toast ${size.name}`);
     });

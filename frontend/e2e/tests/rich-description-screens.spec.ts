@@ -29,9 +29,14 @@ const TABLE = `<p>Hi Nora, please process these custodians into the Harbor Point
 </tbody></table>
 <p>If anything fails QC, tell me before you re-run it. Do not delete the original load files.</p>`;
 
-async function shoot(page: Page, name: string, fullPage = false): Promise<void> {
-  // A toast ("Task created") would cover part of the page.
+/** The "Task created" toast sits bottom right and covers the Details disclosure on a phone: close it before the next click. */
+async function closeToasts(page: Page): Promise<void> {
   for (const close of await page.locator('.p-toast-close-button').all()) await close.click();
+  await expect(page.locator('.p-toast-message')).toHaveCount(0);
+}
+
+async function shoot(page: Page, name: string, fullPage = false): Promise<void> {
+  await closeToasts(page);
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(250);
   await page.screenshot({ path: path.join(OUT!, `${name}.png`), fullPage });
@@ -97,8 +102,9 @@ test.describe('rich description screenshots', () => {
       // 2. The saved task: the table in the Details panel (and the whole page on a phone).
       const taskId = await create.create();
       const detail = new TaskDetailPage(page);
+      await closeToasts(page);
       // On a phone the Details panel starts collapsed behind a disclosure button.
-      if (size.width < 700) {
+      if (size.width < 1100) {
         const toggle = page.locator('[data-detail-toggle]');
         await toggle.waitFor();
         if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click();

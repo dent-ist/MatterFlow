@@ -85,11 +85,13 @@ const top = async (page: Page, selector: string): Promise<number> =>
   (await page.locator(selector).first().boundingBox())!.y;
 
 test.beforeAll(async ({ seed }: { seed: Seeder }) => {
+  // Short means one line at 375 px beside the status badge (about 16 characters at 18 px): the skeleton is one line, a name that wraps
+  // makes the loaded header one line taller (a random 25-character name did that 1 time in 100).
   const client = await seed.client({ name: `Hartwell & Bryce ${uid()}` });
-  const matter = await seed.matter({ client, name: `Short matter ${uid()}` });
+  const matter = await seed.matter({ client, name: `Short M ${uid()}` });
   const longClient = await seed.client({ name: CLIENT_105 });
   const longMatter = await seed.matter({ client: longClient, name: MATTER_150 });
-  const project = await seed.project(matter, `Short project ${uid()}`);
+  const project = await seed.project(matter, `Short P ${uid()}`);
   const longProject = await seed.project(longMatter, PROJECT_130);
   const sensitive = await seed.matter({
     client,
@@ -488,6 +490,8 @@ test.describe('WP3: one action rule (#255)', () => {
           .evaluateAll((bs) => bs.map((b) => b.getAttribute('data-action'))),
       ).toEqual(['edit', 'activity']);
       await page.locator('[data-overflow]').click();
+      // evaluateAll does not wait: the menu is drawn a moment after the click (1 in 100 read an empty list).
+      await expect(page.getByRole('menuitem').first()).toBeVisible();
       expect(
         await page
           .getByRole('menuitem')
@@ -583,6 +587,7 @@ test.describe('WP3: tablet header (#254)', () => {
         .evaluateAll((bs) => bs.map((b) => b.getAttribute('data-action'))),
     ).toEqual(['edit', 'create-task']);
     await page.locator('[data-overflow]').click();
+    await expect(page.getByRole('menuitem').first()).toBeVisible();
     expect(
       await page
         .getByRole('menuitem')

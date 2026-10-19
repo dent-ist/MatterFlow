@@ -194,6 +194,14 @@ export class ColumnWidthsPanel {
     }));
   });
 
+  /**
+   * The width of a column as it is now. A click handler gets the width the template was last rendered with; a second key press (Enter
+   * held down, or two quick presses) can arrive before the next render, and stepping from that stale number loses a step.
+   */
+  private currentPx(def: ColumnDef, rendered: number): number {
+    return this.rows().find((r) => r.def.key === def.key)?.px ?? rendered;
+  }
+
   private defaultRem(def: ColumnDef): number | undefined {
     return this.assignLink() && def.key === 'assignee' ? pxToRem(ASSIGNEE_WITH_LINK_PX) : undefined;
   }
@@ -210,7 +218,7 @@ export class ColumnWidthsPanel {
   /** The - and + buttons: 8 px, 32 px with Shift (Shift + Enter or Space on the keyboard counts too). */
   protected stepBy(def: ColumnDef, current: number, direction: 1 | -1, event: MouseEvent): void {
     const step = event.shiftKey ? WIDTH_STEP_BIG_PX : WIDTH_STEP_PX;
-    this.apply(def, stepWidth(def, current, direction * step));
+    this.apply(def, stepWidth(def, this.currentPx(def, current), direction * step));
   }
 
   /** Up and Down in the field step from the real width (the browser would snap to the 8 px grid of the minimum). */
@@ -223,7 +231,7 @@ export class ColumnWidthsPanel {
   ): void {
     event.preventDefault();
     const step = (event as KeyboardEvent).shiftKey ? WIDTH_STEP_BIG_PX : WIDTH_STEP_PX;
-    const next = stepWidth(def, current, direction * step);
+    const next = stepWidth(def, this.currentPx(def, current), direction * step);
     field.value = String(next);
     this.apply(def, next);
   }

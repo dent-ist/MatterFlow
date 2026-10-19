@@ -246,6 +246,8 @@ test.describe('My Work links, filters and copy', () => {
       page.locator(`tr[data-filter-row] [data-filter-fixed][data-filter="${key}"]`);
     const statusChoices = async () => {
       await page.getByRole('button', { name: /^Filter by Status/ }).click();
+      // allTextContents does not wait: the options are drawn a moment after the popover opens.
+      await expect(page.locator('mf-filter-popover .ms-label').first()).toBeVisible();
       const labels = await page.locator('mf-filter-popover .ms-label').allTextContents();
       await page.keyboard.press('Escape');
       return labels.map((t) => t.replace(/\s+/g, ' ').trim());

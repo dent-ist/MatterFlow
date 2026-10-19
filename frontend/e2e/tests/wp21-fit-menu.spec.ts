@@ -82,7 +82,8 @@ async function seedLong(
     client,
     name: `Extraordinary merger review of ${tag}`,
   });
-  const me = await seed.user(['Data Technician'], 'wp21-fit');
+  // A short account name: the Assignee column is fitted up to 240 px, and a random 11-digit suffix after a long label is cut by that limit.
+  const me = await seed.user(['Data Technician'], 'fit');
   const day = 86_400_000;
   for (let i = 0; i < count; i++) {
     await seed.task(

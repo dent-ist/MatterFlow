@@ -62,10 +62,15 @@ interface Fixture {
 }
 
 /** A user with an overdue, a due-today, an ASAP, an on-hold, a tomorrow, a cancelled and two created-by-me tasks (one handed on, one unassigned). */
-async function setup(seed: Seeder, admin: Api, perms = PERMS): Promise<Fixture> {
+async function setup(
+  seed: Seeder,
+  admin: Api,
+  perms = PERMS,
+  otherLabel = 'cards-other',
+): Promise<Fixture> {
   const role = await seed.role(perms, 'E2E cards');
   const me = await seed.user([role.name], 'cards');
-  const other = await seed.user(['Data Technician'], 'cards-other');
+  const other = await seed.user(['Data Technician'], otherLabel);
   const world = await seed.world();
   const tag = uid();
   const titles = {
@@ -102,6 +107,33 @@ async function setup(seed: Seeder, admin: Api, perms = PERMS): Promise<Fixture> 
 
 test.describe('WP13b: phone cards on My Work', () => {
   let fx: Fixture;
+
+  test('a long assignee account name is cut with an ellipsis: it never covers the task number or widens the card at 320 and 375 px (final verification, 1 run in 30 failed with a long random name)', async ({
+    seed,
+    admin,
+    asUser,
+  }) => {
+    const long = await setup(
+      seed,
+      admin,
+      PERMS,
+      'cards-other-with-a-very-long-account-name-for-the-card',
+    );
+    const page = await asUser(long.username);
+    const myWork = new MyWorkPage(page);
+    for (const width of [320, 375]) {
+      await page.setViewportSize({ width, height: 812 });
+      await myWork.open('?view=createdByMe');
+      const card = page.locator('li[data-task]').filter({ hasText: long.titles.created });
+      await expect(card).toBeVisible();
+      const who = await card.locator('[data-col="assignee"]').boundingBox();
+      const num = await card.locator('.tc-num').boundingBox();
+      expect(who!.x + who!.width, `assignee right edge at ${width}`).toBeLessThanOrEqual(
+        num!.x + 0.5,
+      );
+      expect(await noSideScroll(page), `createdByMe at ${width}`).toBe(true);
+    }
+  });
 
   test.beforeAll(async ({ seed, admin }) => {
     fx = await setup(seed, admin);

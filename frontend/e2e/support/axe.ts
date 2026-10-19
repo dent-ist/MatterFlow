@@ -49,6 +49,21 @@ export interface AxeViolation {
 export async function axeViolations(page: Page, include?: string): Promise<AxeViolation[]> {
   cached ??= axeSource();
   if (cached === null) throw new Error('axe-core is not available');
+  // A toast or a badge that is still fading in is read half transparent (contrast 3.4 to 4.3 on text that is 4.5 or better at rest), and
+  // a grid that is reloading dims its rows (`aria-busy`, 60 percent): let every finite animation and transition finish and the busy
+  // grids settle first (at most 3 s; an endless animation, a spinner, does not count).
+  await page
+    .waitForFunction(
+      () =>
+        !document.querySelector('table[aria-busy="true"], ul[aria-busy="true"]') &&
+        !document.getAnimations().some((a) => {
+          const timing = a.effect?.getComputedTiming();
+          return a.playState === 'running' && !!timing && timing.iterations !== Infinity;
+        }),
+      undefined,
+      { timeout: 3000 },
+    )
+    .catch(() => undefined);
   await page.evaluate(cached);
   return page.evaluate(
     async ({ include }) => {

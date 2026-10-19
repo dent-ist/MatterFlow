@@ -52,6 +52,14 @@ describe('ColumnWidthsPanel', () => {
     expect(said.at(-1)).toBe('Due column 128 pixels');
   });
 
+  it('three quick presses before the next render still step three times (the step reads the current width, not the rendered one)', async () => {
+    for (let i = 0; i < 3; i++) click('due', '[data-width-plus]');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(input('due').value).toBe('160');
+    expect(said.at(-1)).toBe('Due column 160 pixels');
+  });
+
   it('clamps a typed value to the minimum or maximum and shows the clamped value', async () => {
     input('due').value = '999';
     input('due').dispatchEvent(new Event('change'));

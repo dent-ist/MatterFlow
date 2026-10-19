@@ -144,6 +144,8 @@ test.describe('Quick views are one toolbar (#236)', () => {
     await expect(help).toContainText('Open the column menu');
     await shot(page, 'help-1366');
     await page.keyboard.press('Escape');
+    // The dialog gives the focus back when it has closed; a focus() before that is taken away again (17 of 25 runs on a big queue).
+    await expect(help).toBeHidden();
 
     await page.locator('tbody a.wt-title').first().focus();
     await page.keyboard.press('j');

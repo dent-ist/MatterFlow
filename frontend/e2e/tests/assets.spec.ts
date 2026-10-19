@@ -69,7 +69,8 @@ test.describe('Linking assets to a task (SCN-016)', () => {
     const picker = panel.getByRole('combobox', { name: 'Asset to link' });
 
     await picker.fill(foreign.displayName);
-    await expect(page.getByRole('listbox').getByText('No assets match.')).toBeVisible();
+    // With no option the list is a plain list holding the note, not an empty listbox (T1 a11y fix, #289 package).
+    await expect(page.locator('.ap__note', { hasText: 'No assets match.' })).toBeVisible();
     await expect(page.getByRole('option', { name: new RegExp(foreign.displayName) })).toHaveCount(
       0,
     );

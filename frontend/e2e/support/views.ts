@@ -1,4 +1,4 @@
-import { Locator, Page } from '@playwright/test';
+import { expect, Locator, Page } from '@playwright/test';
 
 /**
  * The Task Queue's quick views (WP16, #220): a view is a button in the strip, or - when the toolbar's first line has no room for it, and
@@ -87,11 +87,18 @@ export async function viewAvailable(page: Page, key: ViewKey): Promise<boolean> 
   if (await inStrip(page, key)) return true;
   const menu = page.locator('mf-filter-popover');
   const wasOpen = (await menu.count()) > 0;
-  if (!wasOpen) await moreButton(page).click();
+  if (!wasOpen) {
+    await moreButton(page).click();
+    // The items are drawn a moment after the popover opens: count them only once the first one is there.
+    await expect(page.locator('mf-filter-popover [data-view]').first()).toBeVisible();
+  }
   const there = (await page.locator(`mf-filter-popover [data-view="${key}"]`).count()) > 0;
   if (!wasOpen) {
-    await page.keyboard.press('Escape');
-    await menu.waitFor({ state: 'detached' });
+    // An Escape pressed before the popover has registered its key handler is lost (1 in 100 on a quiet machine): press until it closes.
+    await expect(async () => {
+      await page.keyboard.press('Escape');
+      await expect(menu).toHaveCount(0, { timeout: 1000 });
+    }).toPass({ timeout: 15_000 });
   }
   return there;
 }

@@ -422,6 +422,8 @@ test.describe('Users tab: workload', () => {
     await low.locator('[data-user-open]').click();
     // Wait for the whole list: a click on a row of the first render opens a menu that the list's own re-render then removes.
     await expect(page.locator('[data-drawer-tasks] li')).toHaveCount(4);
+    // ... and for the drawer's own focus move to Close (after its opening animation): a menu opened before it loses focus and closes.
+    await expect(page.getByRole('button', { name: 'Close person details' })).toBeFocused();
     const row = page.locator('[data-drawer-tasks] li').first();
     await row.locator('[data-field="priority"] [data-inline-trigger]').click();
     await page.getByRole('menuitemradio', { name: 'Critical', exact: true }).click();
