@@ -125,7 +125,7 @@ Useful options: `openByDefault`, `visibleColumns` (a signal of the shown column 
 
 ## Batch 2: the record lists
 
-Issue #77 (Batch 2 of epic #75). Clients, Matters, Projects, the Client page's Matters grid and the Matter page's Assets tab lost their standalone search box and status select (`mf-search-box`, `mf-status-filter`, `mf-list-state` on these screens) and use `mf-filters-bar` + `tr[mfColumnFilterRow]`. The filter row is closed by default on all of them (the open state is remembered per screen and user); a link that carries filters opens it.
+Issue #77 (Batch 2 of epic #75). Clients, Matters, Projects, the Client page's Matters grid and the Matter page's Assets tab lost their standalone search box and status select (`mf-search-box`, `mf-status-filter`, `mf-list-state` on these screens) and use `mf-filters-bar` + `tr[mfColumnFilterRow]`. The filter row is closed by default on all of them (the open state is remembered per screen and user); a link that carries filters opens it. **Update (epic #245, #270):** on Clients, Matters, Projects and the client's Matters tab the row is now **open by default from 640 px** (still remembered per screen and user, `mf.<screen>.filters.open.<userId>`), the Filters button and the one Clear filters are in the page header, the default Status is neither counted nor chipped, **Sensitive is a select in the filter row** ("Other filters" is gone from these lists, #272), and New matter is in the record header, not at the left of the bar (#266). See `ux-spec.md` 5.2 (record lists), 5.9 and S05 to S07.
 
 | Screen | Filters (URL parameter) | Notes |
 | --- | --- | --- |

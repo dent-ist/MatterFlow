@@ -75,6 +75,13 @@
   --mf-col-title-min: 160px;
   --mf-col-assignee-pod-work-w: 216px;  /* Assignee on Pod Work, where "Assign to me" shares the cell */
   --mf-narrow-title-min: 200px;   /* the narrow-box rule: autoHide columns drop out while the Title would be narrower than this */
+  /* Clients, Matters and Projects (epic #245, ux-spec 5.9 and S05 to S07): NO token was added. The record pages and lists are built on the
+     tokens above. Numbers they rely on: record lists use the Comfortable work-grid row height (grid-row-h, 44px, in page.scss for .pg-table);
+     the record header title is the H2 size (fs-h2, 22px) and the H3 size (fs-h3, 18px) below 640px; the crumb is fs-sm (13px); the
+     Sensitive note is one 32px line; the summary strip is 28px plus 8px of margin; a phone card is at least 64px; copy button and count
+     hit areas on a card are 44px; every other target is at least target-min (24px). Phone breakpoint 640px (639px is cards, 640px is the
+     table); the Matters Client column shows from 900px and the Projects Client column from 1100px. These are literals in the component
+     styles (record-header.scss, record-card-list.scss, client-overview.scss), like the work grid's, so change docs and styles together. */
   --mf-shadow-1: 0 1px 2px rgba(0,0,0,.12);
   --mf-shadow-2: 0 4px 16px rgba(0,0,0,.18);
 }

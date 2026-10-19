@@ -48,7 +48,7 @@ npm run e2e:report                                # opens playwright-report/ aft
 npm run e2e:typecheck                             # tsc over frontend/e2e
 ```
 
-The suite is 111 spec files and 942 tests (`npx playwright test -c e2e/playwright.config.ts --list`). A full run on a loaded machine takes well over half an hour with two workers, plus roughly two minutes for the build and the SQL container; run a spec or a `-g` pattern while you work and the whole suite before a release.
+The suite is 130 spec files and 1343 tests (`npx playwright test -c e2e/playwright.config.ts --list`; a test that loops over the four screen sizes or the roles counts once per iteration). A full run on a loaded machine takes well over half an hour with two workers, plus roughly two minutes for the build and the SQL container; run a spec or a `-g` pattern while you work and the whole suite before a release.
 
 ## Demo data is separate
 
@@ -171,6 +171,32 @@ The counts are tests at the time of writing (`--list`); the names in a row are t
 | `wp26-print` (1) | Print emulation and PDF page counts of the three work lists (#215) |
 | `fixed-header` (19) | Pinned title, toolbar and header at 1366x768 while the rows scroll; rows in view; the pager on screen |
 | `ux-round-4` (36), `review-round-5` (10) | The older UX review rounds: no page-level sideways scroll, the grids fit or scroll with the hint, tab strips, Users and Swimlane fixes |
+
+**Clients, Matters and Projects (epic #245)**
+
+Counts are `--list` entries at the time of writing (WP14); a spec that loops over the four sizes (1366x768, 1920x1080, 768x1024, 375x812) or over roles counts each pass. Pictures: set `E2E_SCREENSHOTS` to `docs/ux/clients-review/fixes/<package>`. All of these skip their axe checks without axe (`E2E_AXE_PATH`); the permission, key and count checks run without it. Counts are compared with the Task Queue totals behind the links, so these specs seed their own client, matters, projects and tasks and never assert a global number.
+
+| Spec | What it covers |
+|---|---|
+| `detail-page-states` (25) | WP1 (#246 to #250): 404 / 403 / failure text and Retry on the three record pages, the skeleton (crumb, tabs and rows) and a loaded page that does not move (CLS under 0.02), the lost-connection failure, the document title naming record and tab, the "New matter" label and the inactive client rule, natural order (`Wave 7, 15, 23`; `Étude 2` before `etude 10`) in the Matter Projects tab |
+| `wp2-list-states` (18) | WP2 (#251, #252): loading, 500, 403, empty and filtered-empty for Clients, Matters, Projects and the client's Matters tab, CLS under 0.02, the matter reference on one line, axe and no sideways scroll at four sizes |
+| `wp3-record-header` (31) | WP3 (#253 to #256): one-line crumb cut at 40 characters, title at H2, 105/150/130-character names, the action rule per page and role (permission matrix), the "..." menu keys, the phone header with "Back to ...", the Sensitive note on one line, skeleton height equals header height |
+| `wp4-project-tabs` (13) | WP4 (#257): Project tabs Tasks (n) and Details, no side panel, the count, keys, deep link, document title, archived project, permission variants, a 130-character name, axe and no sideways scroll on both tabs |
+| `wp6-client-overview` (14) | WP6 (#260 to #262): the strip 9/3/1/1/1 and its links equal the Task Queue pager totals, a person without `Matter.View` or without `Task.View`, 63 matters, empty and inactive client, `Matters (n)`, Enter follows a link |
+| `wp7-matter-overview` (19) | WP7 (#263 to #265): Matter Overview rows, strip links land on the filtered Tasks tab, toggle behaviour and Back, deep links, project grid, inline edit refreshes the strip, 150-character name above the fold, the Project column, and the consistency check strip = Task Queue total = grid total for every item |
+| `wp8-list-chrome` (31) | WP8 (#269 to #272): 44 px rows and two-line clamp, filter row open by default and remembered, Filters / Clear filters in the header, one chip rule, Status default and the "3 inactive hidden" pager hint with Show all, Sensitive select, no "Other filters" |
+| `wp9-list-columns` (16) | WP9 (#266 to #268): the name is the one link, Open tasks and Overdue equal the Task Queue totals, sort by count (first click most first, reload keeps it), duplicate project names told apart by the Matter cell, archived and 130-character names, no-`Task.View` and no-`Matter.View` variants, Status never clipped |
+| `wp10-matter-tabs` (14) | WP10 (#273, #274): 40-project matter with 7 archived (Archived group by keyboard, natural order), counts equal Task Queue totals, all-archived and empty, archive then Back, assets en dash and `Assets (n)`, three permission variants |
+| `wp11-tabs-pager` (15) | WP11 (#279, #280): the tab strip scroll cue and selected-tab scroll, the pager at 640 to 900 px is one or two rows and never a lone button |
+| `wp12-phone-cards` (23) | WP12 (#275 to #278): cards at 320/375/414/600/639 and the table at 640/768 for the four lists, cards equal the table, Sort by and the Filters sheet (Esc, focus trap), states, permission variants |
+| `clients-keyboard` (54) | WP13 (#281 to #284): Back returns focus to the row (list, client Matters tab, matter Projects tab, "Back to" link, crumb, heading fallback, archived group), a record page focuses its tab, 25 rows = 25 name stops and 0 copy stops with the right arrow to Copy, "Skip to table" / "Skip to task list", Tab stops before the first row recorded in `fixes/wp13/tab-stops.json`, Home / End / arrows on the tabs, Esc and focus return, the overflow menu, confirm dialog, Activity drawer, Filters sheet and column popover with axe, the Task Queue return still works |
+| `clients-permissions` (13) | WP13 (#285): seven roles (System Admin, `Client.View` only, Matter without Client, no `Task.View`, no `Project.View`, no `Matter.View`, no `Asset.View`) walk the three lists and three records and every link of the page content opens without a 401, 403, 404, error alert or toast; controls are checked against the permission (matrix in `docs/ux/clients-review/fixes/wp13/permissions.md`); axe and no sideways scroll |
+
+Also changed by the epic: `matter-client-details-tab` (9) and `detail-layout` (8) now name the Overview tab and the Project tabs; `fixed-header` (19) expects "Skip to table" as the first Tab stop on Clients and cards at 375 px; `wp3-record-header` waits for the menu before reading it. The final verification of the epic (`clients-final`, #287) is listed here when it lands.
+
+**Task Queue final verification.** `final-verification` (6): the Task Queue epic's cross-page checks (#240): no client or matter line under a Title, resizable columns, two-line Due, one row height per density over three pages, the Dashboard drill-through counts, axe at four sizes. (Added to this list in WP14; it ran since the Task Queue epic.)
+
+**Task Detail epic.** The Task page specs (`task-detail-t1` 16, `task-header-t2` 18, `task-status-note-t3` 5, `t4-menus-dialogs` 30, `task-detail-t5` 16, `t7-comments-activity` 23, `t8-edit-create` 22) belong to that epic and are described in its own documentation; they are counted in the totals above.
 
 **Dashboard**
 

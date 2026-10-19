@@ -2,6 +2,8 @@
 
 > **Update (#244):** the Client and Matter pages no longer use this layout. Their Details are the first tab (the default) and the right-hand panel is gone; see `docs/ux/org-details-tab/` and S05/S06 in `ux-spec.md`. The text and screenshots below still describe the Project page (and the earlier Client and Matter pages).
 
+> **Update (#257, epic #245):** the Project page no longer uses this layout either: its Details are the second tab (Tasks (n) is first) and the panel is gone, see `ux-spec.md` 5.9 and S07. `mf-detail-layout` and the stored `mf.detail-panel.open` preference now serve the Task page only (the preference is ignored on a Project). The Client, Matter and Project rows below are history.
+
 The Client, Matter and Project detail pages share one layout (`mf-detail-layout`, `frontend/src/app/shared/ui/detail-layout.ts`).
 
 | Part | Behaviour |

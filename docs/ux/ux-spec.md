@@ -9,7 +9,7 @@ Helper file: `docs/ux/tokens.css` (design tokens as CSS custom properties).
 2. Information architecture and navigation
 3. Design principles
 4. Design tokens, badges, accessibility (WCAG 2.1 AA)
-5. Global patterns (app shell, tables, forms, dialogs, errors, permissions, numbers)
+5. Global patterns (app shell, tables, forms, dialogs, errors, permissions, numbers, record pages)
 6. Screen specifications S01 to S23
 7. Component inventory (Angular)
 8. Copy deck
@@ -119,6 +119,7 @@ Tokens: `docs/ux/tokens.css`. Light theme only in Phase 1 (dark deferred; tokens
 ### 4.2 Typography
 - Segoe UI (firm Windows estate) with system fallbacks; Consolas for Client/Matter numbers and task refs.
 - Scale 12 / 13 / **14 (body, tables)** / 16 / 18 (H3) / 22 (H2) / 28 (H1); line height 1.45; weights 400 and 600.
+- The title of a Client, Matter or Project page is the H2 size (22 px, `--mf-fs-h2`), the H3 size (18 px) below 640 px; its crumb is 13 px. No token was added for the Clients epic.
 - 12 px only for captions and badges (badges semibold). Non-table content works at 200% zoom and 400% reflow (WCAG 1.4.4, 1.4.10); tables scroll horizontally inside their own region.
 
 ### 4.3 Spacing and layout
@@ -194,7 +195,7 @@ One component, `mf-due-cell` (`shared/work-queue/due-cell.ts`), renders `describ
 +----------------+---------------------------------------------------------------------+
  Non-production only: "Dev auth: acting as <user> [switch]" banner (development auth provider).
 ```
-Left nav collapses to icons under 1100 px. Skip link first in DOM. Slim banners for: inactive-matter context, connection lost, dev-auth.
+Left nav collapses to icons under 1100 px. Skip link first in DOM. A page with a list puts its own skip link ahead of "Skip to main content" as the first Tab stop ("Skip to task list" on the work pages, "Skip to table" on Clients, Matters, Projects and the record tabs that list rows; 5.2 and 5.9); a focused skip link fills the header strip on every width with an inside focus ring. Client, Matter and Project pages have a record header instead of the plain page header (5.9). Slim banners for: inactive-matter context, connection lost, dev-auth.
 
 ### 5.2 Tables (all queues and lists)
 - Server-side pagination (default 50; 25/50/100), sort and filter. Footer: "Showing 1-50 of 312", Rows per page, and the pager (see the grid contract below).
@@ -247,6 +248,8 @@ Every other cell (Client, Task type, Workflow, Pod, names, dates, Age, Progress)
 
 *Print.* Print and PDF show the title, a filters line, one print line (page and view "Task Queue: Overdue", "Sorted by Due date, ascending" or "Sorted by default order", "Page 1 of 9, 442 tasks, showing 1-50", "Printed Oct 18, 2026, 3:05 PM EDT") and the grid with a repeating header. Hidden in print: the app header and rail, quick views, filter bar and row, resize handles, tabs, strip, the footer and pager, toasts. Fixed layout and widths are kept (scaled to the sheet); the red bar and pills print.
 
+**Record lists (Clients, Matters, Projects and the client's Matters tab; epic #245).** They use the table contract above with these differences, specified in 5.9 and S05 to S07: rows exactly 44 px (`.pg-table`, `shared/ui/page.scss`), names clamped at two lines with a tooltip, **the name is the only link**, the filter row is open by default from 640 px (remembered per list and person) with the Filters button and the one Clear filters in the page header, the default Status is not counted or chipped and the pager says how many records it hides (`of 37 active - 3 inactive hidden  Show all`), the Open tasks and Overdue count columns link to the Task Queue and sort server-side, there is no column chooser, resizing or density, and below 640 px the list is a column of cards with Sort by in the Filters sheet. The states are the shared ones: skeleton rows with the final widths, "No clients yet." with the creation button, "No clients match these filters" with Clear filters, "You don't have access to clients.", "Couldn't load clients." with the reference and Retry (focus then moves to the first row).
+
 ### 5.3 Forms and validation
 - Single column; label above input; "(required)" text after labels; help text beneath; errors beneath with icon.
 - Validate on blur for format, on submit for required/cross-field. Server errors map by field key; unmapped ones go into a top summary.
@@ -265,17 +268,18 @@ Toolbar: Bold, Italic, Bulleted list, Numbered list, Link, Insert table (decisio
 |---|---|
 | Windows auth failed | Full-page "Can't verify your Windows sign-in", Retry, contact guidance (browser handles the credential prompt) |
 | Zero permissions | Redirect to Access Pending (S21) |
-| 403 page | "You don't have permission to view this." + link home |
+| 403 page | "You don't have permission to view this." + link home. On a Client, Matter or Project page: "You don't have access to this client." with the same link; no Retry |
 | 403 action | Toast: "You don't have permission to <action>."; permission state reloads |
-| 404 | "We couldn't find that." with search box |
+| 404 | "We couldn't find that." with search box. On a Client, Matter or Project page: "We couldn't find that client." (matter, project) with "Go to clients" (or the page the landing rule picks when the person may not open the list); no Retry |
 | 409 conflict | Conflict dialog (§5.3) |
 | 422 validation | Field errors + summary |
-| 5xx / network | Inline alert "Something went wrong. Try again." with Retry and copyable reference id |
+| 5xx / network | Inline alert "Something went wrong. Try again." with Retry and copyable reference id. A Client, Matter or Project page shows the page title "Couldn't load this client." and the alert; the breadcrumb stays, the header and tabs do not; Retry keeps focus, says "Loading client" and, on success, "Loaded" and focuses the heading |
 | Permissions removed mid-session | Next 403 triggers permission refresh; if none left, redirect to Access Pending |
 
 ### 5.7 Permission-gated actions: hide vs disable
-- **Hide** when the user lacks the permission and the action is unrelated to their context (e.g. "New Client" without `Client.Create`).
+- **Hide** when the user lacks the permission and the action is unrelated to their context (e.g. "New client" without `Client.Create`).
 - **Disable with a visible reason (text reachable by focus, `aria-describedby`)** when permitted in general but blocked by state: Reopen or Create Task on an inactive Matter; Complete with unresolved steps; Set Matter inactive with open Tasks.
+- **A link exists only if its target is reachable** (epic #245): a name that would open a page the person may not view (the Client of a Matter without `Client.View`, the Matter of a Project without `Matter.View`, a count link without `Task.View`) is plain text, and a count the person may not see is absent, never a 0. Disabled-with-reason cases of the record pages: New matter for an inactive client, Create task for an inactive matter or an archived project, Set inactive on a matter with open tasks; the Tasks tab without `Task.View` stays and says "You don't have permission to view tasks." (addendum V). Matrix: `docs/ux/clients-review/fixes/wp13/permissions.md`.
 - Angular gating is for usability only; the backend authorizes every call.
 - Phase 1 visibility: anyone with `Task.View` sees all Tasks; no Matter-level hiding in the UI (ethical walls deferred).
 
@@ -284,6 +288,59 @@ Toolbar: Bold, Italic, Bulleted list, Numbered list, Link, Insert table (decisio
 - Elsewhere the padded form is displayed: `00343` and `00343-00012`.
 - All search/lookup/typeahead fields accept padded, unpadded and hyphenated forms: `343`, `00343`, `343-12`, `00343-00012` all find Matter 00343-00012.
 - Numbers are read-only after creation; a restricted, audited "Change number" action (confirm dialog) exists for users with edit permission [UX-PROPOSAL, per baseline §3.1].
+
+### 5.9 Record pages: Client, Matter and Project (epic #245)
+
+The three detail pages share one anatomy; what differs is data (tabs, actions, strip). The numbers below are measured in the e2e suite (`wp3-record-header`, `wp4-project-tabs`, `wp7-matter-overview`, at 1366x768, 1920x1080, 768x1024 and 375x812); decisions are in addendum section V.
+
+```text
+Matters > 00343-00012 > Custodian Processing       crumb: the last step is the current page (cut at 40 characters, full text in the tooltip)
+[icon] 00343-00012 [copy]  Name, at most two lines  (Active) [lock]    [Edit] [Activity] [+ Create task] [...]     record header (mf-record-header)
+Client 00343 Acme Corp                              context line, muted, one line; a link only with the parent's View permission
+[lock] Sensitive matter. Handle ...                 Sensitive note, one 32 px line, only for a Sensitive matter
+[ Overview ] [ Tasks (7) ] [ Projects (3) ] [ Assets (5) ]   tabs (mf-tabs)
+[Open 7] [Overdue 2] [Due soon 1] [ASAP 0] [On hold 1]       summary strip (28 px + 8 px margin)
+... the tab's panel scrolls; header, banners and tab list stay put ...
+```
+
+**Header.** The `h1` holds the type icon of the section, the number or reference in monospace (a Matter's with a copy button), the name and the badges (Active/Inactive, `Archived` for a project, the lock for Sensitive). Title size is the H2 token (22 px, `--mf-fs-h2`; 18 px, `--mf-fs-h3`, below 640 px), name clamped to two lines with the full text as a tooltip, the number or reference never breaks. Long names are a design case: with a 150-character matter name the tabs start at y 175 at 1366x768 (196 and 220 px for client and matter at 375x812), and the Sensitive note moves them by 40 px at most. The breadcrumb is `Clients` / `Matters` (and `Matters > <reference>` on a Project) with the current page as the last, unlinked step (`aria-current`); a step the person may not open is plain text. A crumb or "Back to ..." link to a list returns to the exact list view the person left (filters, sort, page) and focuses the row (see Keyboard below).
+
+**The action rule (C3, #255).** The header holds Edit, Activity, **one primary create action** and a "..." overflow menu; nothing that changes a record is in a tab body.
+
+| Page | Buttons | Overflow ("More actions") |
+|---|---|---|
+| Client | Edit (`Client.Edit`), Activity (`Audit.View`), **New matter** (`Matter.Create`; disabled with the reason for an inactive client) | Set inactive / Set active (`Client.Edit`) |
+| Matter | Edit (`Matter.Edit`), Activity, **Create task** (`Task.Create`; disabled with the reason for an inactive matter) | New project (`Project.Create`), New asset (`Asset.Create`), Set inactive / Set active (`Matter.SetActive`; disabled with the reason while tasks are open) |
+| Project | Edit (`Project.Edit`), Activity, **Create task** (`Task.Create`; prefilled with matter and project; disabled when archived) | Archive / Restore (`Project.Archive`) |
+
+Labels: "New X" for a record, "Create task" for a task, no leading "+" in the text (the icon is decoration). Width: from 1024 px all three buttons; 640 to 1023 px the primary action and the next one of Edit and Activity; below 640 px only the primary action, and what does not fit moves to the overflow in the order Edit, Activity, creations, state change. On a phone "Back to Matters" replaces the trail and shares its row with the primary action and the overflow (44 px targets), so the title has the full width. The overflow is an ARIA menu button: Enter, Space or Down opens, Up opens on the last entry, arrows, Home and End move, Enter or Space picks, Esc closes and returns focus, Tab closes; a disabled entry keeps focus, is `aria-disabled` and shows its reason under the label. The menu is absent when nothing is in it; a person with only View permissions has no buttons and no menu. Empty states of the Projects and Assets tabs keep their own creation button. This reverses the review's "New project in the header" (three create buttons do not fit at 768 px).
+
+**Tabs and addresses.** The shared `mf-tabs`: a tab list with roving tabindex (Left/Right, Home/End; the address and focus follow), a tab panel per record (`client-panel`, `matter-panel`, `project-panel`), an edge fade and a chevron on the side that has more tabs, the selected tab scrolled into view; a counted tab has the accessible name `Matters, 63` (a test that names it by its visible text must use a prefix). The label with its count is `Matters (63)`; `--` while the count loads; no count when the viewer may not see it (never a fake `(0)`).
+
+| Record | Tabs (key, address) | Default |
+|---|---|---|
+| Client | **Overview** (`details`, no `tab`; `?tab=details` works), Matters (n) (`?tab=matters`, only with `Matter.View`) | Overview |
+| Matter | **Overview** (`details`), Tasks (n) (`?tab=tasks`), Projects (n) (`?tab=projects`, `Project.View`), Assets (n) (`?tab=assets`, `Asset.View`) | Overview |
+| Project | Tasks (n) (no `tab`), **Details** (`?tab=details`) | Tasks |
+
+`?tab=activity` opens the Activity drawer over the default tab (with `Audit.View`). An unknown tab, or one the person may not see, shows the default tab. Changing the tab removes the filters, paging and sort of the tab that was left (on a Project the Tasks grid stays mounted, so its filters survive a visit to Details). The browser title is `<number or reference> <name>: <visible tab label> - MatterFlow` (`Overview`, `Matters`, `Tasks`; the record text cut at 60 characters, the count not included); until the record is known it is `Client`, `Matter` or `Project`.
+
+**The summary strip (#260, #261, #263, #264).** `mf-work-strip` in two modes, always Open, Overdue, Due soon, ASAP, On hold, in that order, with the Task Queue's tooltips (8.2). *Link mode* (Overview of Client and Matter): each item is a link; a Client's go to the Task Queue scoped by `client=<id>` (Open = the three open statuses; Overdue `overdue=true`; Due soon `asap=false&overdue=false&dueTo=<today+2>`; ASAP `asap=true`; On hold `status=ON_HOLD`), a Matter's go to its own Tasks tab (`?tab=tasks&view=overdue|dueSoon|asap|onHold`). *Toggle mode* (above the Matter and Project Tasks grids): Open is pressed when `view` is absent; a press writes `view=` (merged, so sort and other filters stay), a second press or Open removes it, another item replaces it, an unknown value is ignored, Back restores it; the grid loads the Task Queue quick view of the same name, so the strip number, the grid total and the total behind the matching Task Queue link are the same number; Status (and Due for Due soon) are disabled with "Set by the Overdue view above." while a view is pressed; an empty view says "No overdue tasks." / "Nothing is due in the next 2 days." / "No open ASAP tasks." / "No tasks on hold."; leaving the Tasks tab drops `view`. A zero is muted in place, Overdue stays red with an icon and the word, unknown is `--`. The strip is absent without `Task.View` and while a summary has no numbers; a failed summary shows "Couldn't load the task numbers." with the reference and Retry. Definitions are the Dashboard's (addendum V, T and U): the counts come from `GET /{clients|matters|projects}/{id}/summary` (`docs/architecture.md` section 11); the strip is 28 px high plus 8 px margin; on a Matter at 1366x768 the Tasks grid shows 8 rows with the 8th ending at y 669.
+
+**Counts in lists.** Open tasks is a right-aligned number, Overdue the shared overdue style (red, alert icon, the word "overdue" in the accessible name and tooltip) above 0 and a muted en dash at 0; a positive count links to the Task Queue (`<client|matter|project>=<id>` with the open statuses, plus `overdue=true`); a zero is plain text. On cards the same counts read "14 open" and "3 overdue" (44 px hit areas).
+
+**Record lists (Clients, Matters, Projects, the client's Matters tab).** Rows 44 px exactly, names clamped at two lines with a tooltip, **the name is the only link** and the number or reference is plain monospace text; the filter row (one `FilterDef[]` per list, 5.2) is open by default from 640 px and remembered in `localStorage` as `mf.<screen>.filters.open.<userId>`; the Filters button and the one Clear filters are in the page header, the toolbar row exists only for the chips of a closed row; the default Status is neither counted nor shown as a chip; the pager shows `Showing 1-37 of 37 active - 3 inactive hidden  Show all` (second request `isActive=false&pageSize=1`, silent when it fails; the hint is not shown in an empty list; `archived` on Projects). Below 640 px each list is a column of cards (`mf-record-card-list`, 639 px is cards and 640 px is the table; the table markup is not rendered below it and no card above): 64 px at least, the name as the one link (its box covers the card), a muted monospace reference line, badges at the top right, counts as words, the copy button of a matter as a 44 px aside; the Filters sheet carries Sort by (a select; the count sorts only with `Task.View`; Clients and Matters show Active/Inactive, Matters also Sensitive, Projects only Archived). The states are those of the table (see 5.6). Tabs inside a record (Projects, Assets, Tasks grids) stay tables with the in-box "scroll sideways" hint on phones.
+
+**Loading.** A record page shows `mf-record-skeleton`: the real breadcrumb from the address, grey bars where the title and context will be, the real tab labels with `--` counts and five 44 px rows, all hidden from assistive technology except one polite "Loading client". Nothing moves when the record arrives: the header skeleton is as tall as the loaded header at every width (`wp3-record-header`) and the layout shift of a loaded record page and of a list is under 0.02 (`detail-page-states`, `wp2-list-states`).
+
+**Keyboard and focus (K-audit, #281 to #284).**
+- **Skip links.** On Clients, Matters, Projects, the client's Matters tab and the matter's Projects and Assets tabs the first Tab stop is **"Skip to table"**, ahead of "Skip to main content"; Enter lands on the first row's name link (the first card on a phone), or on the empty, error or no-access message. The Matter and Project Tasks grids offer **"Skip to task list"** (the Project's grid stays mounted under Details, so it offers it only while Tasks is shown). A focused skip link fills the header strip on every width with an inside focus ring. The `?` help lists both.
+- **One stop per row, the copy button by arrow.** In Matters and the client's Matters tab (and their cards) the name link is the row's Tab stop; the **copy button has `tabindex="-1"`**, keeps its place in the accessibility tree and is reached with the **right arrow** on the name link (left arrow or Shift+Tab back; Tab leaves to the next stop). It is shown on row hover and while the row has focus, always on a phone. Measurable: 25 rows cost 25 name-link stops and 0 copy stops. (The review asked for Tab to reach the button and the next Tab to leave the row, which is two stops per row and contradicts its own target; the target is what is kept.) The Matter header has a permanent copy button.
+- **Focus returns on Back.** Leaving a row with a plain click remembers `{list, key}` in the history entry (the address is untouched). Back (browser Back, the header's "Back to ..." or the crumb) focuses that row's name link once the list is ready, or the page heading when the row is gone, or the toggle of the collapsed Archived group for an archived project. A reload, a forward visit, Back again, another list or a changed filter never moves focus. A record page reached by Back (from the Task Queue through a strip link, from a task, from Edit) focuses its selected tab button, unless the person left a row of a list inside the page (that list focuses its own row). The Task Queue return (`from=`, #160) is unchanged.
+- **Tab stops before the first row** are recorded, not gated (decision U): at 1366 px Clients 33, Matters 36, Projects 33, client Matters tab 37, matter Projects tab 30, Tasks tab 35; with the skip link each is two presses (Tab, Enter). `fixes/wp13/tab-stops.json` holds the numbers.
+- **Menus, dialogs, drawers.** The overflow menu (above), the confirm dialog (Tab and Shift+Tab stay inside, `aria-modal`, Esc closes, focus returns to the trigger), the Activity drawer and the Filters sheet were audited with axe at the four sizes; the column filter popover follows the shared popover rule.
+
+**Permissions.** A link exists only if its target is reachable; a control without its permission is absent, not disabled, except the documented "disabled with a reason" cases (5.7). The full matrix, with the seven roles walked by `clients-permissions.spec.ts`, is `docs/ux/clients-review/fixes/wp13/permissions.md`.
 
 ---
 
@@ -508,20 +565,26 @@ By member tab:
 
 ### S05 Clients
 
-**List.** Purpose: find and maintain Clients.
+**List.** Purpose: find and maintain Clients. A record list: the rules of 5.2 ("Record lists") apply.
 ```text
-Clients                                                   [+ New Client]  (needs Client.Create)
-Search [ 343 or Acme            ]   Status: (Active v)
-+--------------+----------------------+----------+----------+-----------+
-| Client No.   | Name                 | Matters  | Open tasks| Status   |
-| 00343        | Acme Corp            | 4        | 7         | Active   |
-+--------------+----------------------+----------+----------+-----------+
+Clients                                     [Filters v] [+ New client]     (New client needs Client.Create)
++--------------+----------------------+---------+------------+---------+----------+
+| Client number| Name                 | Matters | Open tasks | Overdue | Status   |
+| [ number ]   | [ Name         ]     |         |            |         | [Active v]|   <- filter row, open by default from 640 px
+| 00343        | Acme Corp (link)     | 4       | 14         | 3       | Active   |
++--------------+----------------------+---------+------------+---------+----------+
+Showing 1-37 of 37 active - 3 inactive hidden  Show all          Rows per page [50 v]
 ```
-Search accepts `343` or `00343` or a name fragment. Default sort Client Number ascending. Empty: "No clients yet" + New Client.
+- **Columns (WP9, #268, #266).** Client number (monospace, plain text), **Name (the one link to the client)**, Matters, **Open tasks**, **Overdue**, Status. Open tasks and Overdue are left out without `Task.View`; a positive count is a link to the Task Queue (`client=<id>` with the open statuses, and `overdue=true` for Overdue), a zero is plain text (Overdue shows an en dash). Both sort on the server and the first click sorts most first. Default sort Client number ascending. No column chooser, no resizing.
+- **Filters (WP8).** Client number (a fragment of the padded number: `343` and `00343` both find 00343) and Name (a fragment), and Status with Active as the default. The Filters button and Clear filters sit in the page header; the row is open by default from 640 px and remembered per person. Below 640 px the controls are in the Filters sheet, together with Sort by (Client number, Name, Open tasks, Overdue). The `Matters` count has no sort (the API has none).
+- **Hidden count (#271).** With the default Active the pager reads `of 37 active - 3 inactive hidden` and **Show all** sets Status to All.
+- **Phone (WP12).** Below 640 px: cards (64 px at least, 96 px with a 105-character name): the name as the link, the client number and `4 matters` as a muted line, the Active/Inactive badge, `14 open` and `3 overdue` as links.
+- **States.** Skeleton rows (five cards on a phone) with the final column widths; empty: "No clients yet." with New client (`Client.Create`); empty after filtering: "No clients match these filters" with Clear filters; 403: "You don't have access to clients."; error: "Couldn't load clients." with the reference and Retry (focus then moves to the first row link). Row focus after Back: see 5.9.
+- **Keyboard.** The first Tab stop is "Skip to table" (Enter lands on the first row's name link, or on the empty, error or no-access message). One Tab stop per row (the name link). Back from a client returns focus to that row.
 
 **Create/Edit** (page or dialog).
 ```text
-New Client
+New client
 Client number (required)  [ 343   ]  Will be saved as 00343.   Enter 1 to 5 digits, as issued by the firm's main system.
 Client name   (required)  [____________________]
 Status                    (o) Active ( ) Inactive           (edit only)
@@ -532,72 +595,111 @@ Status                    (o) Active ( ) Inactive           (edit only)
 |---|---|---|
 | Client number | Required; digits only; 1 to 5 digits; unique after zero-padding | "Enter a client number." / "Use digits only." / "Use at most 5 digits." / "Client 00343 already exists." (link to it) |
 | Client name | Required; max 200 | "Enter a client name." |
-Edit: Client number locked with a "Change number" link (needs `Client.Edit`; confirm dialog: "Changing this number changes how matters are named in emails, Relativity workspaces and folders. This change is recorded."). Name always editable.
-**Detail.**
+Edit: Client number locked with a "Change number" link (needs `Client.Edit`; confirm dialog: "Changing this number changes how matters are named in emails, Relativity workspaces and folders. This change is recorded."). Name always editable. (The forms were not part of the Clients epic.)
+**Detail.** A record page (5.9).
 ```text
-Clients > 00343 Acme Corp                                   [Edit] [Set inactive]
-00343  Acme Corp   (Active)     Custom: Industry = Pharma
-[ Details ] [ Matters ]                      (Activity: header button, opens a right-side drawer)
- Details tab (default, first): Client number, Name, Status, Created, Last changed, custom fields; [Edit] [Set inactive].
- Matters tab (?tab=matters): Matters table: Matter ref, Name, Status, Open tasks, [+ New Matter for this client]
+Clients > 00343 Acme Corp
+[icon] 00343  Acme Corp  (Active)                       [Edit] [Activity] [+ New matter] [...]
+                                                         ... = Set inactive / Set active
+[ Overview ] [ Matters (4) ]                 (Activity: header button, opens a right-side drawer)
+ Overview (default): [Open 14] [Overdue 3] [Due soon 2] [ASAP 1] [On hold 1]     (links to the Task Queue, client=<id>)
+   Matters with the most open tasks   (up to 5)     Matter | Name | Open | Overdue | Status        View all 4 matters
+   Created Oct 3, 2026 - Last changed Oct 9, 2026
+   Custom fields
+ Matters tab (?tab=matters): the client's Matters list (same columns as S06 without Client), count in the tab label.
 ```
-- **Details is the first tab (#244).** There is no Details panel on the right: both tabs use the full page width. Details is selected when the address has no `tab`; `?tab=matters` opens the grid; `?tab=activity` opens the Activity drawer over Details. The Matters filters, paging and sort leave the address when the tab changes. The Details tab is a left-aligned definition list (about 70 characters wide, one column below 600 px) that scrolls inside the tab panel; the header and tab list stay put. Edit and Set inactive keep their permission (`Client.Edit`); the dialog returns focus to the Set inactive button.
-- Set inactive: allowed (Client inactive does not itself change Tasks) [UX-PROPOSAL: inactive Client blocks creating new Matters]; confirm dialog states the consequence.
-**States.** Loading skeleton; not found -> 404; save error -> field errors + summary.
-**Permissions.** `Client.View`; `Client.Create`; `Client.Edit`.
+- **Overview is the first tab and the default** (#261; the key `details` and the address are unchanged: no `tab`, and `?tab=details` still works). Both tabs use the full page width. `?tab=activity` opens the Activity drawer over Overview. Filters, paging and sort of the Matters tab leave the address when the tab changes.
+- **Overview content.** The strip counts the tasks of **all the client's matters** (inactive ones included), see 5.9. The table lists the five matters with the most open tasks (the summary's `topMatters`: open desc, overdue desc, reference), each with the reference as a link, Open, Overdue (red with icon and word above 0) and Status; "View all N matters" opens the Matters tab. A client without matters says "No matters yet." with New matter (`Matter.Create`, client active) or the reason when inactive; a client whose matters have no open tasks says "No matter has open tasks." The number, name and status rows of the old Details tab are gone (the header shows them). Without `Task.View` there is no strip and the table lists the first five matters (reference, name, status). Without `Matter.View` there is no table and no Matters tab (`?tab=matters` shows the Overview). A failed summary shows "Couldn't load the task numbers." with the reference and Retry inside the tab; the rest of the tab stays.
+- **Inactive client.** Set inactive is allowed ("Set 00343 Acme Corp inactive? New matters can't be created for an inactive client. Its existing matters and tasks keep working." in the confirm dialog). An inactive client **blocks New matter** (decision V): the header button is disabled with "This client is inactive. Set it active to add matters." (tooltip and screen-reader text), and so is the button in the Overview's empty state.
+- The Edit and Set inactive/active actions keep their permissions (`Client.Edit`); the confirm dialog returns focus to its trigger.
+**States.** Skeleton with the final header and tabs; not found: "We couldn't find that client." with a link to Clients; no access: "You don't have access to this client."; error: "Couldn't load this client." with the reference and Retry (see 5.6); save error: field errors and summary.
+**Permissions.** `Client.View`; `Client.Create`; `Client.Edit`; `Matter.View` (Matters tab and matter links); `Matter.Create` (New matter); `Task.View` (strip and counts); `Audit.View` (Activity). The matrix is `docs/ux/clients-review/fixes/wp13/permissions.md`.
 
 ---
 
 ### S06 Matters
 
-**List.**
+**List.** A record list (5.2). Purpose: find a matter by reference, name or client.
 ```text
-Matters                                                   [+ New Matter]
-Search [ 343-12 | 00343-00012 | name ]  Client [All v]  Status [Active v]
-+---------------+---------------------+----------------+--------+---------+--------+
-| Matter ref    | Name                | Client         | Open tasks | Assets | Status|
-| 00343-00012   | Merger Review       | 00343 Acme     | 7      | 212     | Active |
+Matters                                      [Filters v] [+ New matter]
++---------------+--------------------+-----------------+------------+---------+---------+
+| Reference     | Name               | Client          | Open tasks | Overdue | Status  |
+| [ ref ]       | [ Name        ]    | [ Client     ]  |            |         |[Active v]| [Sensitive v]
+| 00343-00012 [copy] | Merger Review (link) | 00343 Acme | 14       | 3       | Active  |
++---------------+--------------------+-----------------+------------+---------+---------+
 ```
+- **Columns (WP9).** Reference (monospace plain text with a copy button), **Name (the one link to the matter)**, Client (a link with `Client.View`, plain text without; shown from 900 px), Open tasks, Overdue (as on Clients; left out without `Task.View`), Status (Active/Inactive); a Sensitive matter has the lock badge beside its name. The Projects count column is gone. Default sort Reference ascending; the other sorts are Name, Client and the two counts.
+- **Filters (WP8).** Reference, Name, Client (text), Status (Active by default; the pager says `of 120 active - 9 inactive hidden`) and **Sensitive** (a select: Any, Yes, No) in the filter row; "Other filters" is gone. `?clientId=` (a link from a client) shows a removable chip. Below 1100 px Sensitive stacks under Status in the row; below 640 px the controls are in the Filters sheet with Sort by (Reference, Name, Client, Open tasks, Overdue).
+- **Phone (WP12).** Cards as on Clients: the name as the link, the reference with its copy button (44 px), the client text (a link only with `Client.View`), badges (Inactive, Sensitive), `14 open`, `3 overdue`.
+- **Keyboard.** "Skip to table" first. **One Tab stop per row**: the name link (and the Client link when the column is shown). The copy button is not a Tab stop: **the right arrow on the name link steps to it**, the left arrow or Shift+Tab goes back, Tab goes on to the next stop after the row's link. The button shows on row hover and while the row has focus (always on a phone). `?` lists the arrow. Measurable: 25 matters = 25 name stops and 0 copy stops (decision V).
+- **States.** As Clients: "No matters yet." with New matter, "No matters match these filters" with Clear filters, "You don't have access to matters.", "Couldn't load matters." with Retry.
+
 **Create/Edit.**
 ```text
-New Matter
+New matter
 Client (required)   [ typeahead: 343 or Acme  v ]
 Matter number (required) [ 12 ]  Will be saved as 00012.  Combined reference: 00343-00012
 Matter name (required)   [__________________]
 Status (edit only)        Active / Inactive
 -- Custom fields --
 ```
-Live combined-reference preview updates as the user types. Messages: "Select a client." / "Enter a matter number." / "Use digits only (1 to 5)." / "Matter 00012 already exists for client 00343." (unique only within the Client). Client is locked after creation.
-**Detail.**
+Live combined-reference preview updates as the user types. Messages: "Select a client." / "Enter a matter number." / "Use digits only (1 to 5)." / "Matter 00012 already exists for client 00343." (unique only within the Client). Client is locked after creation. (The forms were not part of the Clients epic.)
+**Detail.** A record page (5.9).
 ```text
-Matters > 00343-00012 Merger Review                  [+ Create Task] [+ New Project] [+ New Asset] [Edit] [Set inactive]
-00343-00012  Merger Review   Client: 00343 Acme Corp   (Active)
-[ Details ] [ Tasks (7 open) ] [ Projects (3) ] [ Assets ]      (Activity: header button, opens a right-side drawer)
-Details tab (default, first): Matter reference, Client (a link with Client.View), Matter number, Name, Status, Sensitive, Created, Last changed, custom fields; [Edit] [Set inactive].
-Tasks tab (?tab=tasks): table (Task Queue columns subset) grouped optionally by Project; filter "Project: All / None / <name>".
-Projects tab (?tab=projects): list of projects.  Assets tab (?tab=assets): asset list scoped to matter.
+Matters > 00343-00012 Merger Review
+[icon] 00343-00012 [copy]  Merger Review  (Active) [lock Sensitive]    [Edit] [Activity] [+ Create task] [...]
+Client 00343 Acme Corp                                                  ... = New project, New asset, Set inactive
+[lock] Sensitive matter. Handle its tasks and assets with extra care. This flag is a warning only ...   (only when Sensitive)
+[ Overview ] [ Tasks (7) ] [ Projects (3) ] [ Assets (5) ]       (Activity: header button, opens a right-side drawer)
+Overview (default): [Open 7] [Overdue 2] [Due soon 1] [ASAP 0] [On hold 1]  (links to ?tab=tasks&view=...)
+                    Client (link) | Status | Sensitive (Warning only) | Created | Last changed | custom fields
+Tasks tab (?tab=tasks): the summary strip as toggles (view=), then the scoped Task Queue grid (Project column and filter when the matter has projects).
+Projects tab (?tab=projects): Name (link; description as a muted second line), Open tasks, Overdue, Status; Active first, then "Archived (7)".
+Assets tab (?tab=assets): the matter's assets (en dash for an empty external reference); New asset in the empty state and the header overflow.
 ```
-- **Details is the first tab (#244).** The right-hand Details panel is gone, so the Tasks grid (and every other tab) uses the full page width. No `tab` in the address means Details; `?tab=tasks|projects|assets` deep links keep working, `?tab=activity` opens the Activity drawer over Details, anything else shows Details. Links that mean the task or asset list (cancel of New project / New asset launched from the matter) carry `?tab=projects` / `?tab=assets`. The Tasks and Assets filters, paging and sort leave the address when the tab changes. Tabs are the shared `mf-tabs` (arrow keys, Home/End, roving tabindex, panel `matter-panel`). Details is a left-aligned definition list (about 70 characters wide, one column below 600 px) that scrolls inside the panel (`mfScrollArea` "Matter details") while the header, banners and tab list stay fixed. Edit (`Matter.Edit`) and Set inactive (`Matter.SetActive`, disabled with a reason while tasks are open) are unchanged. Screenshots: `docs/ux/org-details-tab/`.
+- **Overview is the first tab and the default** (#263). No `tab` in the address means Overview; `?tab=tasks|projects|assets` deep links work, `?tab=activity` opens the Activity drawer over Overview, anything else (and a tab the person may not see) shows Overview. Links that mean the project or asset list (cancel of New project / New asset launched from the matter) carry `?tab=projects` / `?tab=assets`. The Tasks and Assets filters, paging and sort leave the address when the tab changes. Tabs are the shared `mf-tabs` (5.9). The Overview is a left-aligned definition list under the strip that scrolls inside the panel (region "Matter overview") while the header, banners and tab list stay fixed; the reference, number and name rows are gone.
+- **Strip.** The Overview's items are links to the matter's own Tasks tab with the matching view (Open = `?tab=tasks`). Above the Tasks grid the same strip toggles a `view` (5.9): the grid then shows exactly the strip number.
+- **Tabs and counts (#262, #264, #273, #274).** Tasks (n) = open tasks, the number loaded with the matter (only with `Task.View`; an inline edit in the grid refreshes the strip but not this number), Projects (n) = all projects, archived included (only with `Project.View`), Assets (n) = all assets, retired included (only with `Asset.View`; the Assets pager says `of 5 active - 1 inactive hidden` so the number and the rows agree; the Assets tab keeps its filter row closed by default). A Matter without `Task.View` still shows the Tasks tab: it says "You don't have permission to view tasks." in a sentence, with no request.
+- **Projects tab.** The projects of the matter sorted with a natural (numeric) order inside each group; Active first, then one collapsed group row `Archived (7)` (`aria-expanded`, Enter and Space; open when every project is archived; absent when none). Name is the one link; a description is a muted second line. Open tasks and Overdue are links to the Task Queue scoped to the project (left out without `Task.View`). Empty: "No projects in this matter yet." with New project.
+- **Header actions.** Edit (`Matter.Edit`), Activity (`Audit.View`), **Create task** (`Task.Create`, disabled with "This matter is inactive. New tasks can't be created." for an inactive matter), and in the overflow New project (`Project.Create`), New asset (`Asset.Create`) and Set inactive / Set active (`Matter.SetActive`). The Assets and Projects tabs have no in-tab create buttons except in their empty states.
 **Set inactive.** Allowed only when all Tasks are Completed or Cancelled.
-- If blocked: dialog "This matter has N tasks that aren't Completed or Cancelled. Finish or cancel them first." + button "View open tasks" (opens Task Queue filtered) and Close. The action itself shows enabled (so the reason is reachable) but the dialog explains; alternatively disabled with reason tooltip. [UX-PROPOSAL: disabled-with-reason + hint text.]
-- Inactive Matter shows a persistent banner "This matter is inactive. New tasks can't be created and completed or cancelled tasks can't be reopened." Create Task and Reopen are disabled with that reason. Reactivate action available to `Matter.Edit`.
-**States/permissions.** `Matter.View/Create/Edit`; Create Task needs `Task.Create` and an active Matter.
+- While tasks are open the overflow item **Set inactive is disabled with the reason** "This matter has N tasks that aren't Completed or Cancelled. Finish or cancel them first." (shown under the item and read with it). If the server still refuses (the tasks changed meanwhile, `MATTER_HAS_OPEN_TASKS`), the dialog "Can't set this matter inactive" gives the same sentence, a Close button and, with `Task.View`, "View open tasks" (opens the Task Queue for the matter).
+- Inactive Matter shows a persistent banner "This matter is inactive. New tasks can't be created and completed or cancelled tasks can't be reopened." Create task and Reopen are disabled with that reason. Set active is in the overflow (`Matter.SetActive`); an inactive client adds the banner "The client 00343 is inactive."
+**States/permissions.** Skeleton with the final header, tabs and rows (`Tasks (--)`); 404 "We couldn't find that matter.", 403 "You don't have access to this matter.", error "Couldn't load this matter." with Retry. `Matter.View/Create/Edit/SetActive`; Create task needs `Task.Create` and an active Matter; the permission matrix is in `fixes/wp13/permissions.md`.
 
 ---
 
 ### S07 Projects
 
 Projects are flat folders of Tasks within a Matter (no nesting).
-**Create/Edit (dialog).** Fields: Matter (prefilled and locked when launched from a Matter; else typeahead; required), Name (required, max 200, unique within Matter [UX-PROPOSAL]), Description (optional), Active toggle (edit), custom fields. Messages: "Enter a project name." "A project named 'X' already exists in this matter."
-**Detail.**
+**Global Projects list** (`/projects`, a record list, 5.2).
 ```text
-Matters > 00343-00012 > Project: Custodian Processing        [+ Create Task] [Edit] [Archive]
-Description ...      Custom: ...
-Tasks table (Project filter fixed). Row action: "Move to another project" (same matter only).
+Projects                                          [Filters v] [+ New project]
++-------------------+----------------------+--------------+------------+---------+----------+
+| Name              | Matter               | Client       | Open tasks | Overdue | Status   |
+| [ Name       ]    | [ Matter     ]       |              |            |         |[Active v]|
+| Custodian Proc.   | 00343-00012          | 00343 Acme   | 6          | 1       | Active   |
+|                   | Merger Review        |              |            |         |          |
 ```
+- **Columns (WP9, #267).** **Name (the one link to the project)**, Matter (the two-line Matter cell of the Task Queue: reference over name, a link with `Matter.View`, so two projects with the same name are told apart), Client (plain text, from 1100 px), Open tasks and Overdue (as on Clients), Status (Active, Archived). Default sort Name; Matter sorts by reference. Status filter default Active, the pager says `of 50 active - 4 archived hidden`.
+- **Phone (WP12).** Cards: name link, the matter (link with `Matter.View`), `Archived` badge only, counts. Sort by: Name, Matter, Open tasks, Overdue.
+- **States.** "No projects yet. Open a matter and choose New project." (the link only with `Matter.View`), "No projects match these filters", 403 "You don't have access to projects.", "Couldn't load projects." with Retry. "Skip to table" is the first Tab stop.
+
+**Create/Edit (dialog).** Fields: Matter (prefilled and locked when launched from a Matter; else typeahead; required), Name (required, max 200, unique within Matter [UX-PROPOSAL]), Description (optional), Active toggle (edit), custom fields. Messages: "Enter a project name." "A project named 'X' already exists in this matter."
+**Detail.** A record page (5.9) with two tabs.
+```text
+Matters > 00343-00012 > Custodian Processing
+[icon] Custodian Processing  (Active)                          [Edit] [Activity] [+ Create task] [...]
+Matter 00343-00012 Merger Review                                 ... = Archive / Restore
+[ Tasks (6) ] [ Details ]
+Tasks (default, no tab in the address): the summary strip as toggles, then the Task Queue grid of this project.
+Details (?tab=details): Matter (link) | Description (only when set) | Status | Created | Last changed | custom fields
+```
+- **No side panel (#257).** The Project page has the same tab strip as the other records and uses the full width. **Tasks (n) is first and the default**; Details holds what the old panel held, without the name (it is in the header). The count is the summary's open-task number (the strip's Open), so it survives a filtered grid and a deep link with filters; until the summary answers it reads `--`; without `Task.View` there is no count. The grid stays mounted while Details is open, so its filters, sort and page survive a visit to Details. An old `?tab=activity` link opens the Activity drawer over Tasks.
+- **Header actions.** Edit (`Project.Edit`), Activity, **Create task** (prefilled with the matter and the project; disabled with "This project is archived. New tasks can't select it." when archived) and in the overflow Archive / Restore (`Project.Archive`). The breadcrumb is `Matters > <matter reference> > <project name>`; the first two steps are plain text without `Matter.View`.
+- A Project without `Task.View` opens on Tasks, which says "You don't have permission to view tasks." (a known design, decision V).
 - Moving a Task between Projects (or to "No project") is a dialog listing only that Matter's Projects; the Matter cannot change. Audited.
-- Archive (inactive) a Project: allowed; existing Tasks keep it; new Tasks cannot select it.
-**Global Projects list** (`/projects`): search by name/matter, columns Name, Matter ref, Open tasks, Status.
+- Archive (inactive) a Project: allowed; the confirm dialog says "Existing tasks keep this project, but new tasks can't select it."; an archived project shows the banner "This project is archived. Existing tasks keep it, but new tasks can't select it."
 **Permissions.** `Project.View/Create/Edit/Archive`.
 
 ---
@@ -1139,6 +1241,14 @@ Prefix `mf-`. Standalone components, OnPush, signals-friendly inputs, a11y built
 | `mf-app-shell` | Header, left nav, banners, skip link, router outlet | `navItems`, permissions | all |
 | `mf-global-search` | Header combobox typeahead (number-aware) | `query`, `(select)`, `(viewAll)` | header, S11/S20 |
 | `mf-page-header` | Breadcrumb, H1, action slot | `title`, `crumbs[]` | all |
+| `mf-record-header` | Header of a Client, Matter or Project: crumb (last step cut at 40 characters), title at H2, badges, context line, Sensitive note, action buttons and the overflow; actions are data (`RecordAction`: `role` edit, activity, primary, secondary, state); skeleton mode draws the same boxes | `kind`, `parents[]`, `current`, `ref`, `name`, `actions[]`, `skeleton` | S05-S07 (5.9) |
+| `mf-action-menu` | The "..." ARIA menu button of a record header; disabled entries keep focus and show their reason | `items[]`, `label` | record header |
+| `mf-record-skeleton` / `mf-record-state` | Loading page (real crumb and tab labels with `--`, five 44 px rows) / 404, 403 and failure page with the error reference and Retry | `kind`, `activeTab` / `kind`, `state` | S05-S07 |
+| `mf-tabs` | Tab list with roving tabindex, counts (`Matters, 63` as the accessible name), edge fade and chevron, selected tab scrolled into view | `tabs[]`, `selected`, `(tabChange)` | record pages, admin |
+| `mf-work-strip` (link and toggle modes) / `mf-summary-strip` | Needs-attention strip; in link mode each item is a link (record Overview), in toggle mode a pressed `view` (Matter and Project Tasks); `mf-summary-strip` loads a matter or project summary and maps it with `recordStripItems()` | `items[]`, `kind`, `id`, `active`, `(pick)` | My Work, Pod Work, S05-S07 |
+| `mf-client-overview` / `mf-matter-projects` | The Client Overview tab / the Matter Projects tab (Active first, collapsed Archived group, natural sort) | `client` / `matterId`, `projects[]` | S05, S06 |
+| `mf-task-count` | One Open tasks or Overdue cell or card count; links to the Task Queue above 0; the overdue style | `kind`, `scope`, `recordId`, `count`, `word` | S05-S07 lists |
+| `mf-record-card-list` / `mf-record-card` | Phone cards (below 640 px) with the table's states; the name is the one link | `noun`, `state`, `empty`, `filtered` | S05-S07 lists |
 | `mf-data-table` | Server-paged sortable table with column chooser, density, skeleton/empty/error | `columns`, `rows`, `sort`, `page`, `state` | S02-S04, lists |
 | `mf-filter-bar` / `mf-filter-drawer` / `mf-filter-chip` | Filters with URL state | `filterDefs`, `(change)` | S02-S04, S11 |
 | `mf-filters-bar` / `mf-column-filter-row` / `mf-filter-chips` / `mf-filter-sheet` (shared/filters) | Inline column filters generated from one `FilterDef[]` with URL state (`ListFilters`); see docs/ux/column-filters/README.md | `filters`, `columns`, `controls` | Assets (more screens: epic #75) |
@@ -1195,6 +1305,8 @@ Tone: plain, specific, no blame, no jargon. Sentence case. Buttons are verbs. Re
 ### 8.1 Buttons and labels
 Create task, Create and add another, Save changes, Save draft, Publish version <n>, Cancel task, Keep task, Reopen task, Reopen step, Skip step, Keep step, Mark complete, Complete task, Assign to me, Post comment, Link asset, Clear all filters, Retry, Check again.
 
+**Record pages and lists (epic #245).** Records are "New X" in sentence case with no leading "+" in the label: New client, New matter, New project, New asset (never "Create matter", "Create client" or "New Matter"); a task is "Create task". Header: Edit, Activity, Set inactive, Set active, Archive, Restore; the overflow is named "More actions". Lists: Filters, Clear filters, Show all (the hidden-records hint), Retry; skip links "Skip to table" and "Skip to task list"; phone: "Back to Clients", "Back to Matters", "Back to Projects"; Overview: "View all 4 matters".
+
 ### 8.2 Tooltips and helper text
 | Context | Text |
 |---|---|
@@ -1238,6 +1350,23 @@ Create task, Create and add another, Save changes, Save draft, Publish version <
 | Closed instead of Due | "Showing finished tasks: show Closed instead of Due" with "Show Closed", "Restore Due" and "Dismiss"; the view note "Recently completed shows Closed instead of Due." |
 | Columns notice | "The client and matter line under task titles is gone. Matter now shows the reference and the ..." with "Add Matter column" (Task Queue and Pod Work, when the user had removed Matter) and "Dismiss". |
 | Assign to me | First item of the Assignee menu and the link-button in an unassigned Pod Work row; toast "Assigned to you." with Undo. |
+
+**Record pages (epic #245).**
+| Context | Text |
+|---|---|
+| New matter, inactive client | "This client is inactive. Set it active to add matters." (tooltip and screen-reader text of the disabled button; visible in the Overview's empty state) |
+| Create task, inactive matter / archived project | "This matter is inactive. New tasks can't be created." / "This project is archived. New tasks can't select it." |
+| Set inactive, open tasks | "This matter has 3 tasks that aren't Completed or Cancelled. Finish or cancel them first." (shown under the disabled menu item) |
+| Client Overview | Section "Matters with the most open tasks" ("Matters" without `Task.View`); "View all 4 matters" (singular "View all 1 matter"); "No matters yet."; "No matter has open tasks."; muted "Created Oct 3, 2026 - Last changed Oct 9, 2026"; "Couldn't load the task numbers." |
+| Matter Overview | Sensitive value "Sensitive" badge with the muted "Warning only"; Sensitive note "Sensitive matter. Handle its tasks and assets with extra care. This flag is a warning only and does not restrict who can see them." |
+| Strip item tooltips | Open "Tasks that are New, In Progress or On Hold"; Overdue "Open tasks whose due date or time has passed"; Due soon "Open tasks due today, tomorrow or in 2 days; not overdue, not ASAP"; ASAP "Open tasks marked ASAP"; On hold "Tasks that are on hold" (the Task Queue's words) |
+| Count cell | Accessible name and tooltip "14 open tasks in Acme Corp", "3 overdue tasks in Acme Corp"; a zero Overdue is an en dash with the hidden words "0 overdue tasks in ..." |
+| Tasks grid, pressed view | Status (and Due for Due soon) disabled: "Set by the Overdue view above."; empty: "No overdue tasks.", "Nothing is due in the next 2 days.", "No open ASAP tasks.", "No tasks on hold." |
+| Tasks tab without `Task.View` | "You don't have permission to view tasks." |
+| Hidden-records hint | "Showing 1-37 of 37 active - 3 inactive hidden" and "Show all" ("archived" on Projects, assets: "of 5 active - 1 inactive hidden") |
+| Archived group | "Archived (7)" |
+| Copy button in a list row | Visible on hover and row focus; the `?` help: "On a matter name in a list, step to its Copy button (Tab skips it); left arrow or Shift + Tab comes back" |
+| Skip link | "On Clients, Matters, Projects and their tabs, the first stop is 'Skip to table'; press Enter to land on the first row" |
 
 **Work vocabulary (BUG-13, M5; one set of words on the Dashboard, My Work, the Task Queue links and the docs).**
 | Term | Meaning |
@@ -1313,6 +1442,9 @@ Create task, Create and add another, Save changes, Save draft, Publish version <
 | Queue empty | "No tasks yet." |
 | Filter empty | "No tasks match these filters." |
 | Task list error | "Couldn't load tasks." with the reference, Copy and Retry; the same row on a first load and on a reload, and the same words in the live region. |
+| Record page not found / no access / failed (Client, Matter, Project) | "We couldn't find that client." with "Go to clients" / "You don't have access to this client." with the same link / "Couldn't load this client." with "Something went wrong. Try again.", the reference and Retry. Matter and project in place of client. |
+| Record list empty, filtered, no access, failed | "No clients yet." (Matters: "No matters yet."; client's Matters tab: "No matters yet for this client."; Projects: "No projects yet. Open a matter and choose New project."; matter Projects tab: "No projects in this matter yet."; Assets tab: "No assets in this matter yet.") with the creation button when permitted / "No clients match these filters" with Clear filters / "You don't have access to clients." / "Couldn't load clients." with the reference and Retry. The record lists say the noun in the plural; the pages in the singular. |
+| Record list loading | Skeleton rows (five cards on a phone) with the final widths and 44 px height; "Loading clients" in the live region; a record page says "Loading client" once and "Loaded" after a Retry. |
 | Task list loading | Skeleton rows (cards on a phone) with the final column widths and row height; "Loading tasks" in the live region. |
 | My Work, Created by me empty | "You have no open tasks you created." with Create task (Task.Create) and, when closed ones exist, "Show closed tasks". |
 | Task Queue, empty view | One good-news sentence per view (8.2), without Clear filters. |
@@ -1355,6 +1487,8 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-X-10 Loading, empty, error states exist and match copy deck.
 - [ ] UAT-X-11 Dates shown in the single firm timezone.
 - [ ] UAT-X-12 Unsaved-changes guard works on every form.
+- [ ] UAT-X-13 A link exists only when its target is reachable by the person (no 403 page behind any link on a Client, Matter or Project page); counts the person may not see are absent, never 0 (epic #245).
+- [ ] UAT-X-14 Pages with a list start with a skip link ("Skip to table" or "Skip to task list"); Back from a record returns focus to the row that was left.
 
 ### S01 Dashboard
 - [ ] UAT-S01-1 The eight Summary tiles (Overdue, Unassigned, On hold, ASAP open; Open, Due soon, Completed, Created) show correct counts, and Completed and Created follow the Period.
@@ -1430,26 +1564,41 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S05-1 Entering `343` previews and saves `00343`; `00343` is treated as the same client (SCN-001).
 - [ ] UAT-S05-2 Duplicate (padded equivalent) rejected with link to existing.
 - [ ] UAT-S05-3 6+ digits and non-digits rejected with copy-deck messages.
-- [ ] UAT-S05-4 Search by `343`/`00343`/name works.
+- [ ] UAT-S05-4 The Client number filter finds a client by `343` or `00343`, the Name filter by a name fragment; Status is Active by default and the pager says how many inactive clients are hidden, with Show all.
 - [ ] UAT-S05-5 Number locked on edit; change requires confirm dialog and is audited.
 - [ ] UAT-S05-6 Custom fields render and validate.
-- [ ] UAT-S05-7 Detail opens on a Details tab (number, name, status, custom fields, Edit / Set inactive) with no side panel; the Matters tab (`?tab=matters`) shows matters; New Matter shortcut prefilled.
-- [ ] UAT-S05-8 Create/Edit buttons hidden without permission.
+- [ ] UAT-S05-7 Detail opens on **Overview** (strip, matters with the most open tasks, Created / Last changed line, custom fields) with no side panel and no number, name or status rows; the **Matters (n)** tab (`?tab=matters`) shows the matters; the header has Edit, Activity, New matter and a "..." menu with Set inactive.
+- [ ] UAT-S05-8 Create/Edit buttons hidden without permission; a person with only `Client.View` has no header buttons and no "..." menu.
+- [ ] UAT-S05-9 The strip order is Open, Overdue, Due soon, ASAP, On hold; each item is a link that opens the Task Queue for this client with the same number as the strip; without `Task.View` there is no strip and no count columns.
+- [ ] UAT-S05-10 List: the name is the only link (the number is plain text); Open tasks and Overdue link to the Task Queue when above 0 and sort most first; rows are 44 px; the filter row is open and its state is remembered; Clear filters is in the page header.
+- [ ] UAT-S05-11 Below 640 px the list is cards (name link, number, `14 open`, `3 overdue`), Sort by is in the Filters sheet; at 640 px it is the table.
+- [ ] UAT-S05-12 An inactive client shows New matter disabled with "This client is inactive. Set it active to add matters."
+- [ ] UAT-S05-13 Tab: "Skip to table" is the first stop and Enter lands on the first row; Back from a client puts focus on that row's name link (the heading when the row is gone); a reload does not move focus.
+- [ ] UAT-S05-14 Not found, no access and a server failure each show their own page text (5.6) with Retry only for the failure.
 
 ### S06 Matters
 - [ ] UAT-S06-1 Same matter number allowed under different clients; duplicate within a client rejected (SCN-002, SCN-003).
 - [ ] UAT-S06-2 Combined reference preview updates live; display `00343-00012`.
 - [ ] UAT-S06-3 Client locked after creation.
-- [ ] UAT-S06-4 Set inactive blocked when any task is not Completed/Cancelled, with link to those tasks.
-- [ ] UAT-S06-5 Inactive matter: banner shown; Create Task disabled with reason; reopen disabled with reason.
-- [ ] UAT-S06-6 Detail tabs are Details (first, default), Tasks, Projects, Assets, with no side panel; `?tab=tasks|projects|assets` deep links show correct data; Create Task prefilled.
+- [ ] UAT-S06-4 Set inactive (header "..." menu) is disabled with its reason while any task is not Completed/Cancelled; when the server still refuses, the dialog explains and links to the open tasks.
+- [ ] UAT-S06-5 Inactive matter: banner shown; Create task disabled with reason; reopen disabled with reason.
+- [ ] UAT-S06-6 Detail tabs are **Overview** (first, default), Tasks (n), Projects (n), Assets (n), with no side panel; `?tab=tasks|projects|assets` deep links show correct data; Create task prefilled; New project and New asset are in the "..." menu; the Overview strip items open the Tasks tab on the matching view.
 - [ ] UAT-S06-7 Search accepts unpadded and hyphenated forms.
+- [ ] UAT-S06-8 List columns are Reference, Name (link), Client (from 900 px; a link only with `Client.View`), Open tasks, Overdue, Status; Sensitive is a select in the filter row and there is no "Other filters".
+- [ ] UAT-S06-9 The strip above the Tasks grid toggles Overdue, Due soon, ASAP and On hold (`view=` in the address, Back restores); the grid total equals the strip number and the Task Queue total behind the matching link.
+- [ ] UAT-S06-10 Projects tab: Active first, `Archived (7)` collapsed (Enter and Space), natural order (`Batch 2` before `Batch 10`), Open tasks and Overdue links; Assets tab: en dash for an empty external reference, count in the tab label.
+- [ ] UAT-S06-11 Keyboard: 25 matters cost 25 name-link Tab stops and no copy-button stop; the right arrow on a name link reaches Copy, the left arrow returns; "Skip to table" first; Back from a matter or a project focuses the row left.
+- [ ] UAT-S06-12 Without `Task.View` the Tasks tab says "You don't have permission to view tasks." and no strip, count column or count link appears; without `Client.View` the client is plain text.
 
 ### S07 Projects
 - [ ] UAT-S07-1 Create from Matter with Matter locked.
 - [ ] UAT-S07-2 Moving a task offers only projects of the same Matter; Matter unchanged (SCN-005).
 - [ ] UAT-S07-3 Archived project can't be chosen for new tasks, existing tasks keep it.
 - [ ] UAT-S07-4 Flat structure (no nesting UI).
+- [ ] UAT-S07-5 Project detail has two tabs, **Tasks (n)** (default, no `tab` in the address) and **Details** (`?tab=details`: Matter, Description only when set, Status, Created, Last changed, custom fields; no Name), the full page width and no side panel; the filters of the Tasks grid survive a visit to Details.
+- [ ] UAT-S07-6 Header: Edit, Activity, Create task, "..." with Archive / Restore; the crumb is Matters > reference > name, the first two plain text without `Matter.View`.
+- [ ] UAT-S07-7 The global list has the columns Name (link), Matter (reference over name), Client (from 1100 px), Open tasks, Overdue, Status; two projects with the same name are told apart by the Matter cell; cards below 640 px.
+- [ ] UAT-S07-8 A 130-character project name keeps the header to the limits of 5.9 (title two lines, tabs not pushed below the fold at 1366x768).
 
 ### S08 Assets
 - [ ] UAT-S08-1 Create with Matter and Asset Type; type-specific fields appear and validate.
@@ -1632,10 +1781,10 @@ Internal codes fixed: NEW, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED. Rules (ad
 
 | Permission | UI it gates |
 |---|---|
-| `Client.View/Create/Edit` | Clients nav, New/Edit client, change number |
-| `Matter.View/Create/Edit` | Matters nav, New/Edit matter, set inactive/active |
-| `Project.View/Create/Edit/Archive` | Projects list/dialog, archive |
-| `Task.View` | All task screens, search results for tasks, dashboard drill-through |
+| `Client.View/Create/Edit` | Clients nav, New/Edit client, Set inactive/active, change number; the Client link of a Matter and the Client column of Matters (plain text without `Client.View`) |
+| `Matter.View/Create/Edit` | Matters nav, New/Edit matter, set inactive/active; the Matters tab and the matter links of a Client, the Matter cell and crumbs of a Project (plain text without `Matter.View`) |
+| `Project.View/Create/Edit/Archive` | Projects list/dialog, archive; the Projects tab of a Matter and the Project cell of the Tasks grids |
+| `Task.View` | All task screens, search results for tasks, dashboard drill-through; the summary strip, the Open tasks and Overdue columns, their links and the tab counts of Client, Matter and Project (absent without it, never 0) |
 | `Task.Create` | Create Task buttons and page |
 | `Task.Edit` | Edit details, request form values, move Project |
 | `Task.Assign` / `Task.Reassign` | Assignee/Pod pickers, Assign to me |
@@ -1643,7 +1792,7 @@ Internal codes fixed: NEW, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED. Rules (ad
 | `Task.ChangeStatus` / `Task.Complete` / `Task.Reopen` | Status menu entries; Complete; reopen task |
 | `Task.Comment` | Comment composer, cancel (comment is part of cancel) |
 | `Workflow.Execute` / `Workflow.StepEdit` / `Workflow.StepReopen` | Complete/skip steps; edit inputs; reopen step |
-| `Asset.View/Create/Edit/Link` | Assets screens; link in Task |
+| `Asset.View/Create/Edit/Link` | Assets screens; link in Task; the Assets tab of a Matter |
 | `Pod.View/Manage/ManageMembers` | Pod Work, Pods admin |
 | `Role.Manage` | Users & Roles admin (incl. grant access) |
 | `User.Manage` | Administration > Users edits, and "Edit availability" for another person (everyone edits their own availability with `Task.View`) |
@@ -1669,7 +1818,7 @@ Items tagged [UX-PROPOSAL] above need confirmation. Highest impact:
 8. **Asset Type changes:** not versioned in baseline; proposed hide-not-delete behavior on removed fields. Link labels (Source/Destination/Subject/Result) configurable (OPEN-14)?
 9. **Dashboard scope**: who gets which tab (`Dashboard.View` plus one permission per tab); whether technicians should see the department counts of Summary or only the unassigned queue (decided, issue #81: only the unassigned queue, `Dashboard.ViewUnassigned`).
 10. **Task Activity values** visible only with `Audit.View`?
-11. **Inactive Client** behavior (blocks new Matters?).
+11. **Inactive Client** behavior: decided (addendum V): an inactive client blocks New matter; the button is disabled with the reason.
 12. **Comment deletion** leaves no tombstone in the thread.
 13. **Draft step input saving** before completion allowed?
 14. **Past due dates** allowed with warning (proposed).
