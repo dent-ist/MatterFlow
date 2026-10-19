@@ -381,22 +381,18 @@ test.describe('Fixed-header screens fall back to normal page scrolling', () => {
     await page.goto('/clients');
     const heading = page.getByRole('heading', { name: 'Clients', level: 1 });
     await expect(heading).toBeVisible();
-    const region = page.getByRole('region', { name: 'Clients list, scrollable' });
-    await expect(region.locator('tbody tr').first()).toBeVisible();
+    // Below 640 px the list is cards (WP12), not a table: the cards are the rows this test needs.
+    const cards = page.getByRole('list', { name: 'Clients' });
+    await expect(cards.locator('[data-record-card]').first()).toBeVisible();
+    await expect(page.locator('table.pg-table')).toHaveCount(0);
     expect(await documentOverflow(page)).toBeGreaterThan(100);
     const before = await box(heading);
     await page.mouse.move(180, 500);
     await page.mouse.wheel(0, 400);
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
     expect((await box(heading)).y).toBeLessThan(before.y - 50); // it scrolled away with the page
-    // The grid is as tall as its rows (no inner vertical scrolling).
-    expect(await region.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
-    expect(
-      await region
-        .locator('thead th')
-        .first()
-        .evaluate((el) => getComputedStyle(el).position),
-    ).toBe('static');
+    // The card list is not a scroll box: no inner vertical scrolling, the page does the scrolling.
+    expect(await cards.evaluate((el) => getComputedStyle(el).overflowY)).toBe('visible');
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
     ).toBeLessThanOrEqual(0);
